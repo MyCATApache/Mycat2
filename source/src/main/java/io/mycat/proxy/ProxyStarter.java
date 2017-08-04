@@ -6,12 +6,13 @@ public class ProxyStarter {
 
 	public static void main(String[] args) throws IOException {
 		int cpus= Runtime.getRuntime().availableProcessors();
-		ProxyRuntimeEnv env=ProxyRuntimeEnv.INSTANCE;
-		env.setBindIP("0.0.0.0");
-		env.setBindPort(8080);
-		env.setNioReactorThreads(cpus);
-		env.setReactorThreads(new ProxyReactorThread[cpus]);
-		ProxyReactorThread[] nioThreads=env.getReactorThreads();
+		ProxyRuntime runtime=ProxyRuntime.INSTANCE;
+		runtime.setBindIP("0.0.0.0");
+		runtime.setBindPort(8080);
+		runtime.setNioReactorThreads(cpus);
+		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
+		runtime.init();
+		ProxyReactorThread[] nioThreads=runtime.getReactorThreads();
 		for(int i=0;i<cpus;i++)
 		{
 			ProxyReactorThread thread=new ProxyReactorThread();

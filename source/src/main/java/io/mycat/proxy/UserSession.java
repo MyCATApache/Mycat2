@@ -19,13 +19,17 @@ public class UserSession {
 	public BufferPool bufPool;
 	public Selector nioSelector;
 	// 前端连接
+	public String frontAddr;
 	public SocketChannel frontChannel;
 	public SelectionKey frontKey;
 	public ProxyBuffer frontBuffer;
 	//后端连接
+	public String backendAddr;
 	public SocketChannel backendChannel;
 	public SelectionKey backendKey;
 	public ProxyBuffer backendBuffer;
+	private boolean closed;
+		
 	public UserSession(BufferPool bufPool,Selector nioSelector,SocketChannel frontChannel)
 	{
 		this.bufPool=bufPool;
@@ -35,22 +39,45 @@ public class UserSession {
 		backendBuffer=new ProxyBuffer(bufPool.allocByteBuffer());
 	}
 	
+	public  boolean isFrontOpen()
+	{
+		return frontChannel!=null && frontChannel.isConnected();
+	}
+	public  boolean isBackendOpen()
+	{
+		return backendChannel!=null && backendChannel.isConnected();
+	}
+	
 	public String sessionInfo()
 	{
-		return frontChannel+"->"+backendChannel;
+		return " ["+this.frontAddr+"->"+this.backendAddr+']';
+	}
+
+	public boolean isClosed() {
+		return closed;
+	}
+
+	public void setClosed(boolean closed) {
+		this.closed = closed;
 	}
 
 	public void close(String message) {
+		if(!this.isClosed())
+		{
 		 logger.info("close session "+this.sessionInfo()+ " for reason "+message);
 			closeSocket(frontChannel);
 			bufPool.recycleBuf(frontBuffer.getBuffer());
 			closeSocket(backendChannel);
 			bufPool.recycleBuf(this.backendBuffer.getBuffer());
+		}else
+		{
+			logger.warn("session already closed "+this.sessionInfo());
+		}
 		
 	}
 	private void closeSocket(Channel channel)
 	{
-		if(channel!=null)
+		if(channel!=null && channel.isOpen())
 		{
 			try {
 				channel.close();

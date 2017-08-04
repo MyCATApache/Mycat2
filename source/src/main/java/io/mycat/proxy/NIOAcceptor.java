@@ -21,7 +21,7 @@ public class NIOAcceptor extends Thread {
 	public void run() {
 		int nioIndex = 0;
 		Selector selector = null;
-		ProxyRuntimeEnv env=ProxyRuntimeEnv.INSTANCE;
+		ProxyRuntime env=ProxyRuntime.INSTANCE;
 		try {
 			selector = Selector.open();
 			final ServerSocketChannel serverChannel = ServerSocketChannel.open();
