@@ -19,7 +19,7 @@ import org.apache.log4j.Logger;
  */
 public class ProxyReactorThread extends Thread {
 	private final static long SELECTOR_TIMEOUT = 100;
-	private final ProxyTransDataNIOHandler proxyTransHandler = new ProxyTransDataNIOHandler();
+	private final DefaultDirectProxyHandler proxyTransHandler = new DefaultDirectProxyHandler();
 	private final static Logger logger = Logger.getLogger(ProxyReactorThread.class);
 	private final Selector selector;
 	private final BufferPool bufPool = new BufferPool(1024 * 10);
