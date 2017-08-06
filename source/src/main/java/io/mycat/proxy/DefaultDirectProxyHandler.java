@@ -3,41 +3,54 @@ package io.mycat.proxy;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import io.mycat.proxy.ProxyBuffer.BufferState;
+import io.mycat.proxy.UserSession.NetOptMode;
 
 /**
- * Handler for client/server communications.
+ * 默认透传的Proxy Handler
+ * 
+ * @author wuzhihui
+ *
  */
-public class DefaultDirectProxyHandler implements NIOProxyHandler {
+public class DefaultDirectProxyHandler<T extends UserSession> implements NIOProxyHandler<T> {
 
-	protected static Logger logger = Logger.getLogger(DefaultDirectProxyHandler.class);
+	protected static Logger logger = LoggerFactory.getLogger(DefaultDirectProxyHandler.class);
 
-	public void onFrontConnected(UserSession userSession) throws IOException {
-		logger.info("front connected  ." + userSession.frontChannel);
-		userSession.frontChannel.register(userSession.nioSelector, SelectionKey.OP_READ, userSession);
+	public void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
+			throws IOException {
+		logger.info("front connected  ." + frontChannel);
+
+		UserSession session = new UserSession(bufPool, nioSelector, frontChannel);
+		session.bufPool = bufPool;
+		session.nioSelector = nioSelector;
+		session.frontChannel = frontChannel;
+		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
+		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
+		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
+		session.frontKey = socketKey;
+
 		// todo ,from config
 		// 尝试连接Server 端口
 		String serverIP = "localhost";
 		int serverPort = 3306;
 		InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
-		userSession.backendChannel = SocketChannel.open();
-		userSession.backendChannel.configureBlocking(false);
-		userSession.backendChannel.connect(serverAddress);
-		SelectionKey selectKey = userSession.backendChannel.register(userSession.nioSelector, SelectionKey.OP_CONNECT,
-				userSession);
-		userSession.backendKey = selectKey;
+		session.backendChannel = SocketChannel.open();
+		session.backendChannel.configureBlocking(false);
+		session.backendChannel.connect(serverAddress);
+		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
+		session.backendKey = selectKey;
 		logger.info("Connecting to server " + serverIP + ":" + serverPort);
 
 	}
 
-	public void onBackendConnect(UserSession userSession, boolean success, String msg) throws IOException {
+	public void onBackendConnect(T userSession, boolean success, String msg) throws IOException {
 		String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
 		logger.info(logInfo + " channel " + userSession.backendChannel);
 		if (success) {
@@ -47,7 +60,7 @@ public class DefaultDirectProxyHandler implements NIOProxyHandler {
 					+ serverRemoteAddr.getHostString() + ":" + serverRemoteAddr.getPort();
 			userSession.backendChannel.register(userSession.nioSelector, SelectionKey.OP_READ, userSession);
 			// 如果发现前端有数据写入到后端的Buffer，就尝试转写到后端
-			if (userSession.backendBuffer.isReadyToRead()) {
+			if (userSession.backendBuffer.isInReading()) {
 				boolean bufferWriteFinished = this.socketWriteFromBuf(false, userSession, userSession.backendChannel,
 						userSession.backendBuffer);
 				if (bufferWriteFinished) {
@@ -60,7 +73,7 @@ public class DefaultDirectProxyHandler implements NIOProxyHandler {
 
 	}
 
-	public void handIO(UserSession userSession, SelectionKey selectionKey) {
+	public void handIO(T userSession, SelectionKey selectionKey) {
 		try {
 			boolean isFront = (selectionKey.channel() == userSession.frontChannel) ? true : false;
 			if (selectionKey.isReadable()) {
@@ -89,68 +102,31 @@ public class DefaultDirectProxyHandler implements NIOProxyHandler {
 
 	}
 
-	public boolean onFrontWriteEvent(UserSession userSession) throws IOException {
+	public boolean onFrontWriteEvent(T userSession) throws IOException {
 		return this.socketWriteFromBuf(true, userSession, userSession.frontChannel, userSession.frontBuffer);
 
 	}
 
-	public boolean onBackendWriteEvent(UserSession userSession) throws IOException {
+	public boolean onBackendWriteEvent(T userSession) throws IOException {
 		return this.socketWriteFromBuf(false, userSession, userSession.backendChannel, userSession.backendBuffer);
 	}
 
-	protected boolean socketReadtoBuf(boolean isFrontChannel, UserSession userSession, SocketChannel channel,
-			ProxyBuffer otherProxyBuf) throws IOException {
-		ByteBuffer buffer = otherProxyBuf.getBuffer();
-		int read = channel.read(buffer);
-		if (read == -1) {
-			this.closeSocket(userSession, channel, true, "read EOF.");
-			return true;
-		}
-
-		else if (read > 0) {
-			// 表明NIO线程可以读取此Buffer的内容并写入对端对端Socket中发送出去
-			buffer.flip();
-			otherProxyBuf.setState(BufferState.READY_TO_READ);
-		}
-		return false;
-	}
-
-	protected void afterSocketRead(boolean socketDataEnd, UserSession userSession,ProxyBuffer proxyBuffer, SocketChannel otherChannel) throws IOException {
-		if (socketDataEnd) {
-			if (proxyBuffer.isReadyToWrite()) {// 表明对端Buffer的数据已经传输完成，可以关闭自己的连接了
-				this.closeSocket(userSession, otherChannel, true, "data trans finished");
-			}
-			return;
-		}
-		if (proxyBuffer.isReadyToRead()) {
-			// 如果读到数据,修改NIO事件，自己不再读数据，对方则感兴趣写数据。
-			modifySelectKey(userSession);
-		}
-	}
-
-	protected boolean socketWriteFromBuf(boolean frontChannel, UserSession userSession, SocketChannel channel,
+	protected boolean socketWriteFromBuf(boolean frontChannel, T userSession, SocketChannel channel,
 			ProxyBuffer proxyBuffer) throws IOException {
-		boolean writeFinished = false;
-		ByteBuffer buffer = proxyBuffer.getBuffer();
-		channel.write(buffer);
-		if (buffer.remaining() == 0) {
-			writeFinished=true;
-		}
+
+		boolean writeFinished = proxyBuffer.readToChannel(channel);
 
 		return writeFinished;
 	}
 
-	protected void afterSocketWrite(UserSession userSession, ProxyBuffer proxyBuffer) throws IOException {
+	protected void afterSocketWrite(T userSession, ProxyBuffer proxyBuffer) throws IOException {
 
 		// 表明NIO线程可以读取对端Socket中发来的数据并且写入此Buffer中，等待下一次传输
-		proxyBuffer.getBuffer().clear();
-		proxyBuffer.setState(BufferState.READY_TO_WRITE);
-		if (proxyBuffer.isReadyToWrite()) {
-			modifySelectKey(userSession);
-		}
+		proxyBuffer.flip();
+		modifySelectKey(userSession);
 	}
 
-	private void closeSocket(UserSession userSession, SocketChannel channel, boolean normal, String msg) {
+	public void closeSocket(T userSession, SocketChannel channel, boolean normal, String msg) {
 		if (channel == null) {
 			return;
 		}
@@ -162,35 +138,54 @@ public class DefaultDirectProxyHandler implements NIOProxyHandler {
 		} catch (IOException e) {
 		}
 		if (channel == userSession.frontChannel) {
-			this.onFrontSocketClosed(userSession, normal);
+			onFrontSocketClosed(userSession, normal);
 			userSession.frontChannel = null;
 		} else if (channel == userSession.frontChannel) {
-			this.onBackendSocketClosed(userSession, normal);
+			onBackendSocketClosed(userSession, normal);
 			userSession.backendChannel = null;
 		}
 
 	}
 
 	/**
-	 * 会同时修改Session中的前后端连接的NIO感兴趣事件
+	 * 根据网络模式确定是否修改前端连接与后端连接的NIO感兴趣事件
 	 * 
 	 * @param userSession
 	 * @throws ClosedChannelException
 	 */
-	public void modifySelectKey(UserSession userSession) throws ClosedChannelException {
-		if (userSession.frontKey != null && userSession.frontKey.isValid()) {
+	public void modifySelectKey(T userSession) throws ClosedChannelException {
+		boolean frontKeyNeedUpdate = false;
+		boolean backKeyNeedUpdate = false;
+		switch (userSession.netOptMode) {
+		case FrontRW: {
+			frontKeyNeedUpdate = true;
+			backKeyNeedUpdate = false;
+			break;
+		}
+		case BackendRW: {
+			frontKeyNeedUpdate = false;
+			backKeyNeedUpdate = true;
+			break;
+		}
+		case DirectTrans: {
+			frontKeyNeedUpdate = true;
+			backKeyNeedUpdate = true;
+			break;
+		}
+		}
+		if (frontKeyNeedUpdate && userSession.frontKey != null && userSession.frontKey.isValid()) {
 			int clientOps = 0;
-			if (userSession.backendBuffer.isReadyToWrite())
+			if (userSession.backendBuffer.isInWriting())
 				clientOps |= SelectionKey.OP_READ;
-			if (userSession.frontBuffer.isReadyToRead())
+			if (userSession.frontBuffer.isInWriting() == false)
 				clientOps |= SelectionKey.OP_WRITE;
 			userSession.frontKey.interestOps(clientOps);
 		}
-		if (userSession.backendKey != null && userSession.backendKey.isValid()) {
+		if (backKeyNeedUpdate && userSession.backendKey != null && userSession.backendKey.isValid()) {
 			int serverOps = 0;
-			if (userSession.frontBuffer.isReadyToWrite())
+			if (userSession.frontBuffer.isInWriting())
 				serverOps |= SelectionKey.OP_READ;
-			if (userSession.backendBuffer.isReadyToRead())
+			if (userSession.backendBuffer.isInWriting() == false)
 				serverOps |= SelectionKey.OP_WRITE;
 			userSession.backendKey.interestOps(serverOps);
 		}
@@ -202,7 +197,7 @@ public class DefaultDirectProxyHandler implements NIOProxyHandler {
 	 * @param userSession
 	 * @param normal
 	 */
-	public void onFrontSocketClosed(UserSession userSession, boolean normal) {
+	public void onFrontSocketClosed(T userSession, boolean normal) {
 		lazyCloseSession(userSession);
 	}
 
@@ -212,11 +207,12 @@ public class DefaultDirectProxyHandler implements NIOProxyHandler {
 	 * @param userSession
 	 * @param normal
 	 */
-	public void onBackendSocketClosed(UserSession userSession, boolean normal) {
+	public void onBackendSocketClosed(T userSession, boolean normal) {
 		lazyCloseSession(userSession);
 	}
 
-	public void lazyCloseSession(UserSession userSession) {
+	@SuppressWarnings("rawtypes")
+	public void lazyCloseSession(final T userSession) {
 		if (userSession.isClosed()) {
 			return;
 		}
@@ -245,29 +241,40 @@ public class DefaultDirectProxyHandler implements NIOProxyHandler {
 		userSession.close("exception:" + exception.getMessage());
 	}
 
-	@Override
-	public void onFrontReaded(UserSession userSession) throws IOException {
-		boolean socketDataEnd = socketReadtoBuf(true, userSession, userSession.frontChannel, userSession.backendBuffer);
-		this.afterSocketRead(socketDataEnd, userSession, userSession.backendBuffer,userSession.backendChannel);
+	public void onFrontReaded(T userSession) throws IOException {
+
+		int readed = userSession.backendBuffer.writeFromChannel(userSession.frontChannel);
+		if (readed == -1) {
+			this.closeSocket(userSession, userSession.frontChannel, true, "read EOF.");
+		} else if (readed > 0) {
+			// 如果读到数据,修改NIO事件，自己不再读数据，对方则感兴趣写数据。
+			userSession.backendBuffer.flip();
+			if (userSession.backendBuffer.isInReading()) {
+				modifySelectKey(userSession);
+			}
+		}
+	}
+
+	public void onBackendReaded(T userSession) throws IOException {
+		int readed = userSession.frontBuffer.writeFromChannel(userSession.backendChannel);
+		if (readed == -1) {
+			this.closeSocket(userSession, userSession.backendChannel, true, "read EOF.");
+		} else if (readed > 0) {
+			// 如果读到数据,修改NIO事件，自己不再读数据，对方则感兴趣写数据。
+			userSession.frontBuffer.flip();
+			if (userSession.frontBuffer.isInReading()) {
+				modifySelectKey(userSession);
+			}
+		}
 
 	}
 
-	@Override
-	public void onBackendReaded(UserSession userSession) throws IOException {
-		boolean socketDataEnd = socketReadtoBuf(false, userSession, userSession.backendChannel,
-				userSession.frontBuffer);
-		this.afterSocketRead(socketDataEnd, userSession, userSession.frontBuffer,userSession.frontChannel);
-
-	}
-
-	@Override
-	public void onFrontWriteFinished(UserSession session) throws IOException {
+	public void onFrontWriteFinished(T session) throws IOException {
 		afterSocketWrite(session, session.frontBuffer);
 
 	}
 
-	@Override
-	public void onBackendWriteFinished(UserSession session) throws IOException {
+	public void onBackendWriteFinished(T session) throws IOException {
 		afterSocketWrite(session, session.backendBuffer);
 
 	}

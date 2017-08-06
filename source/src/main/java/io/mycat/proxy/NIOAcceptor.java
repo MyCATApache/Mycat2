@@ -13,10 +13,11 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
+
+import org.slf4j.*;
 
 public class NIOAcceptor extends Thread {
-	private final static Logger logger = Logger.getLogger(NIOAcceptor.class);
+	private final static Logger logger = LoggerFactory.getLogger(NIOAcceptor.class);
 
 	public void run() {
 		int nioIndex = 0;

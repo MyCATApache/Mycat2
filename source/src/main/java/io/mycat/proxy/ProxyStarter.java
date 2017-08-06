@@ -2,13 +2,18 @@ package io.mycat.proxy;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.DefaultMySQLProxyHandler;
+
 public class ProxyStarter {
 
 	public static void main(String[] args) throws IOException {
-		int cpus= Runtime.getRuntime().availableProcessors();
+		
 		ProxyRuntime runtime=ProxyRuntime.INSTANCE;
 		runtime.setBindIP("0.0.0.0");
 		runtime.setBindPort(8080);
+		//runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
+		//runtime.setNioProxyHandler(new DefaultDirectProxyHandler());
+		int cpus= Runtime.getRuntime().availableProcessors();
 		runtime.setNioReactorThreads(cpus);
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
 		runtime.init();
