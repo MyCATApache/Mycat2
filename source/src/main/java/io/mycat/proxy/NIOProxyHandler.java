@@ -22,14 +22,8 @@ public interface NIOProxyHandler<T extends UserSession> {
 
 	void onBackendReaded(T session) throws IOException;
 
-	void onFrontWriteFinished(T session) throws IOException;
+	void onFrontSocketClosed(T userSession, boolean normal);
 
-	void onBackendWriteFinished(T session) throws IOException;
-	
-    void onFrontSocketClosed(T userSession, boolean normal);
-    
-    void onBackendSocketClosed(T userSession, boolean normal);
-    
-    void closeSocket(T userSession, SocketChannel channel, boolean normal, String msg) ;
+	void onBackendSocketClosed(T userSession, boolean normal);
 
 }

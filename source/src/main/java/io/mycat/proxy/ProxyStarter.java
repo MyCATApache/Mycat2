@@ -2,8 +2,6 @@ package io.mycat.proxy;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.DefaultMySQLProxyHandler;
-
 public class ProxyStarter {
 
 	public static void main(String[] args) throws IOException {

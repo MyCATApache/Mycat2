@@ -1,44 +1,51 @@
 package io.mycat.mycat2.cmd;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.SQLProcessor;
-import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.ProxyBuffer;
 
 public abstract class AbstractSQLProcessor implements SQLProcessor {
-	public final static int msyql_packetHeaderSize = 4;
-	public final static int mysql_packetTypeSize = 1;
+	private static Logger logger = LoggerFactory.getLogger(AbstractSQLProcessor.class);
 
-	public static final boolean validateHeader(final long offset, final long position) {
-		return offset + msyql_packetHeaderSize + mysql_packetTypeSize <= position;
+	public boolean readPackage(MySQLSession session, boolean readFront) throws IOException {
+		ProxyBuffer buffer = session.backendBuffer;
+		SocketChannel channel = session.frontChannel;
+		if (!readFront) {
+			buffer = session.frontBuffer;
+			channel = session.backendChannel;
+		}
+		int readed = session.readFromChannel(buffer, channel);
+		logger.debug("readed {} bytes ", readed);
+		if (readed == -1) {
+			session.closeSocket(channel, true, "read EOF.");
+			return false;
+		} else if (readed == 0) {
+			logger.info("read 0 bytes ,try compact buffer ,session Id :" + session.sessionId);
+			buffer.compact(true);
+			// todo curMSQLPackgInf
+			// 也许要对应的改变位置,如果curMSQLPackgInf是跨Package的，则可能无需改变信息
+			// curPackInf.
+			return false;
+		}
+		buffer.updateReadLimit();
+		return true;
+	}
+
+	@Override
+	public void onFrontClosed(MySQLSession session, boolean normal) {
+		session.lazyCloseSession();
 
 	}
 
-	/**
-	 * 获取报文长度
-	 * 
-	 * @param buffer
-	 *            报文buffer
-	 * @param offset
-	 *            buffer解析位置偏移量
-	 * @param position
-	 *            buffer已读位置偏移量
-	 * @return 报文长度(Header长度+内容长度)
-	 * @throws IOException
-	 */
-	public static final int getPacketLength(ByteBuffer buffer, int offset) throws IOException {
-		int length = buffer.get(offset) & 0xff;
-		length |= (buffer.get(++offset) & 0xff) << 8;
-		length |= (buffer.get(++offset) & 0xff) << 16;
-		return length + msyql_packetHeaderSize;
-	}
-
-	@SuppressWarnings("unchecked")
-	public void closeSocket(MySQLSession userSession, SocketChannel channel, boolean normal, String msg) {
-		ProxyRuntime.INSTANCE.getNioProxyHandler().closeSocket(userSession, channel, normal, msg);
+	@Override
+	public void onBackendClosed(MySQLSession session, boolean normal) {
+		session.lazyCloseSession();
 
 	}
 }

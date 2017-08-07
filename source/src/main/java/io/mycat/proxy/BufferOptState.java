@@ -11,10 +11,6 @@ public class BufferOptState {
 	 */
 	public int startPos;
 	/**
-	 * 用户标记的位置，比如可以用于记录上一次读的位置
-	 */
-	public int markPos;
-	/**
 	 * 读写数据的当前起始位置
 	 */
 	public int optPostion;
@@ -35,8 +31,12 @@ public class BufferOptState {
 
 	@Override
 	public String toString() {
-		return "BufferOptState [startPos=" + startPos + ", markPos=" + markPos + ", optPostion=" + optPostion
+		return "BufferOptState [startPos=" + startPos + ", optPostion=" + optPostion
 				+ ", optLimit=" + optLimit + ", optedTotalLength=" + optedTotalLength + "]";
+	}
+
+	public boolean hasRemain() {
+		return (optPostion<optLimit);
 	}
 	
 	

@@ -10,7 +10,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.mycat.mycat2.DefaultMySQLProxyHandler;
+import io.mycat.mycat2.MySQLProxyHandler;
+import io.mycat.mycat2.MySQLProxyStudyHandler;
 import io.mycat.mycat2.cmd.DirectPassSQLProcessor;
 
 public class ProxyRuntime {
@@ -28,7 +29,8 @@ public class ProxyRuntime {
 	static
 	{
 		//todo ,from properties to load class name
-		nioProxyHandler=new DefaultMySQLProxyHandler();
+		//nioProxyHandler=new MySQLProxyStudyHandler();
+		nioProxyHandler=new MySQLProxyHandler();
 		//nioProxyHandler=new DefaultDirectProxyHandler();
 		//todo from proerpteis to load pool size param
 		schedulerService = Executors.newScheduledThreadPool(1);
