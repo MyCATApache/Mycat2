@@ -2,6 +2,9 @@ package io.mycat.proxy;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.net.MySQLStudySessionManager;
+import io.mycat.mycat2.net.MycatSessionManager;
+
 public class ProxyStarter {
 
 	public static void main(String[] args) throws IOException {
@@ -14,6 +17,11 @@ public class ProxyStarter {
 		int cpus= Runtime.getRuntime().availableProcessors();
 		runtime.setNioReactorThreads(cpus);
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
+		//runtime.setSessionManager(new DefaultTCPProxySessionManager());
+		//Debug观察MySQL协议用
+		//runtime.setSessionManager(new MySQLStudySessionManager());
+		//Mycat 2.0 Session Manager
+		runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
 		ProxyReactorThread[] nioThreads=runtime.getReactorThreads();
 		for(int i=0;i<cpus;i++)

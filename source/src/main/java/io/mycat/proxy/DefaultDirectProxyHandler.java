@@ -4,9 +4,6 @@ package io.mycat.proxy;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,37 +13,8 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class DefaultDirectProxyHandler<T extends UserSession> implements NIOProxyHandler<T> {
-
+public class DefaultDirectProxyHandler<T extends UserSession> implements FrontIOHandler<T> ,BackendIOHandler<T>{
 	protected static Logger logger = LoggerFactory.getLogger(DefaultDirectProxyHandler.class);
-
-	public void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
-			throws IOException {
-		logger.info("front connected  ." + frontChannel);
-
-		UserSession session = new UserSession(bufPool, nioSelector, frontChannel);
-		session.bufPool = bufPool;
-		session.nioSelector = nioSelector;
-		session.frontChannel = frontChannel;
-		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
-		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
-		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
-		session.frontKey = socketKey;
-
-		// todo ,from config
-		// 尝试连接Server 端口
-		String serverIP = "localhost";
-		int serverPort = 3306;
-		InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
-		session.backendChannel = SocketChannel.open();
-		session.backendChannel.configureBlocking(false);
-		session.backendChannel.connect(serverAddress);
-		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
-		session.backendKey = selectKey;
-		logger.info("Connecting to server " + serverIP + ":" + serverPort);
-
-	}
-
 	public void onBackendConnect(T userSession, boolean success, String msg) throws IOException {
 		String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
 		logger.info(logInfo + " channel " + userSession.backendChannel);
@@ -62,30 +30,6 @@ public class DefaultDirectProxyHandler<T extends UserSession> implements NIOProx
 			}
 		} else {
 			userSession.close("backend can't open:" + msg);
-		}
-
-	}
-
-	public void handIO(T userSession, SelectionKey selectionKey) {
-		try {
-			boolean isFront = (selectionKey.channel() == userSession.frontChannel) ? true : false;
-			if (selectionKey.isReadable()) {
-				if (isFront) {
-					onFrontReaded(userSession);
-				} else {
-					onBackendReaded(userSession);
-				}
-			}
-			if (selectionKey.isValid() && selectionKey.isWritable()) {
-				if (isFront) {
-					userSession.writeToChannel(userSession.frontBuffer, userSession.frontChannel);
-				} else {
-					userSession.writeToChannel(userSession.backendBuffer, userSession.backendChannel);
-
-				}
-			}
-		} catch (final Exception exception) {
-			onSocketException(userSession, exception);
 		}
 
 	}
@@ -127,9 +71,9 @@ public class DefaultDirectProxyHandler<T extends UserSession> implements NIOProx
 		userSession.close("exception:" + exception.getMessage());
 	}
 
-	public void onFrontReaded(T userSession) throws IOException {
+	public void onFrontRead(T userSession) throws IOException {
 
-		int readed = userSession.readFromChannel(userSession.backendBuffer,userSession.frontChannel);
+		int readed = userSession.readFromChannel(userSession.backendBuffer, userSession.frontChannel);
 		if (readed == -1) {
 			userSession.closeSocket(userSession.frontChannel, true, "read EOF.");
 		} else if (readed > 0) {
@@ -139,8 +83,8 @@ public class DefaultDirectProxyHandler<T extends UserSession> implements NIOProx
 		}
 	}
 
-	public void onBackendReaded(T userSession) throws IOException {
-		int readed = userSession.readFromChannel(userSession.frontBuffer,userSession.backendChannel);
+	public void onBackendRead(T userSession) throws IOException {
+		int readed = userSession.readFromChannel(userSession.frontBuffer, userSession.backendChannel);
 		if (readed == -1) {
 			userSession.closeSocket(userSession.backendChannel, true, "read EOF.");
 		} else if (readed > 0) {
@@ -148,6 +92,18 @@ public class DefaultDirectProxyHandler<T extends UserSession> implements NIOProx
 			userSession.frontBuffer.flip();
 			userSession.modifySelectKey();
 		}
+
+	}
+
+	@Override
+	public void onFrontWrite(T session) throws IOException {
+		session.writeToChannel(session.frontBuffer, session.frontChannel);
+
+	}
+
+	@Override
+	public void onBackendWrite(T session) throws IOException {
+		session.writeToChannel(session.backendBuffer, session.backendChannel);
 
 	}
 }

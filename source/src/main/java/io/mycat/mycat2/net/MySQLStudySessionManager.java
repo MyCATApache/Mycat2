@@ -1,4 +1,4 @@
-package io.mycat.mycat2;
+package io.mycat.mycat2.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -6,27 +6,26 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.cmd.ClientAuthProcessor;
-import io.mycat.mycat2.cmd.DirectPassSQLProcessor;
-import io.mycat.mysql.Capabilities;
-import io.mycat.mysql.Versions;
-import io.mycat.mysql.packet.HandshakePacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.mycat2.MySQLSession;
 import io.mycat.proxy.BufferPool;
-import io.mycat.proxy.DefaultDirectProxyHandler;
-import io.mycat.util.RandomUtil;
+import io.mycat.proxy.SessionManager;
 
 /**
- * 代理MySQL的ProxyHandler
+ * 用来分析MySQL报文协议的SessionManager，运行过程中打印收发到的消息报文
  * 
  * @author wuzhihui
  *
  */
-public class MySQLProxyStudyHandler extends DefaultDirectProxyHandler<MySQLSession> {
+public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
+	protected static Logger logger = LoggerFactory.getLogger(MySQLStudySessionManager.class);
 
-	
-
-	public void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
+	@Override
+	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
 			throws IOException {
+
 		logger.info("MySQL client connected  ." + frontChannel);
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
@@ -37,10 +36,10 @@ public class MySQLProxyStudyHandler extends DefaultDirectProxyHandler<MySQLSessi
 		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
 		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
 		session.frontKey = socketKey;
-		session.setCurrentSQLProcessor(DirectPassSQLProcessor.INSTANCE);
-	
-//		// todo ,from config
-//		// 尝试连接Server 端口
+		session.setCurProxyHandler(MySQLProcalDebugHandler.INSTANCE);
+
+		// // todo ,from config
+		// // 尝试连接Server 端口
 		String serverIP = "localhost";
 		int serverPort = 3306;
 		InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
@@ -50,21 +49,7 @@ public class MySQLProxyStudyHandler extends DefaultDirectProxyHandler<MySQLSessi
 		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
 		session.backendKey = selectKey;
 		logger.info("Connecting to server " + serverIP + ":" + serverPort);
-
-	}
-
-	@Override
-	public void onFrontReaded(MySQLSession userSession) throws IOException {
-		
-		userSession.getCurSQLProcessor().handFrontPackage(userSession);
-		
-	}
-
-	@Override
-	public void onBackendReaded(MySQLSession userSession) throws IOException {
-
-		userSession.getCurSQLProcessor().handBackendPackage(userSession);
-
+		return session;
 	}
 
 }

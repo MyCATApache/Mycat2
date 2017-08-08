@@ -1,28 +1,58 @@
-package io.mycat.mycat2.cmd;
+package io.mycat.mycat2.net;
 
 import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mysql.packet.AuthPacket;
+import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.DefaultDirectProxyHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.CharsetUtil;
 
-public class ClientAuthProcessor extends AbstractSQLProcessor {
+/**
+ * MySQL客户端登录认证的Handler，为第一个Handler
+ * 
+ * @author wuzhihui
+ *
+ */
+public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSession> {
 	private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0 };
-	private static Logger logger = LoggerFactory.getLogger(ClientAuthProcessor.class);
-	public static ClientAuthProcessor INSTANCE = new ClientAuthProcessor();
-	// private ArrayList<Runnable> pendingJob;
+	
+
+	public static final  MySQLClientAuthHandler INSTANCE=new MySQLClientAuthHandler();
+	/**
+	 * 客户端连接的时候发送欢迎信息，等待用户认证
+	 */
+	public void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
+			throws IOException {
+		logger.info("MySQL client connected  ." + frontChannel);
+
+		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
+		session.bufPool = bufPool;
+		session.nioSelector = nioSelector;
+		session.frontChannel = frontChannel;
+		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
+		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
+		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
+		session.frontKey = socketKey;
+		session.sendAuthPackge();
+		
+
+
+	}
 
 	@Override
-	public void handFrontPackage(MySQLSession session) throws IOException {
-		boolean readed = readPackage(session,true);
+	public void onFrontRead(MySQLSession session) throws IOException {
+		boolean readed = session.readSocket(true);
 		ProxyBuffer backendBuffer = session.backendBuffer;
 		if (readed == false || session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf) == false) {
 			return;
 		}
+		//处理用户认证请情况报文
 		try {
 			backendBuffer.readState.optPostion = 0;
 			AuthPacket auth = new AuthPacket();
@@ -47,7 +77,8 @@ public class ClientAuthProcessor extends AbstractSQLProcessor {
 			boolean succ = success(auth);
 			if (succ) {
 				session.answerFront(AUTH_OK);
-				return;
+				//认证通过，设置当前SQL Handler为默认Handler
+				session.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
 			}
 		} catch (Throwable e) {
 			logger.warn("Frontend FrontendAuthenticatingState error:", e);
@@ -89,24 +120,6 @@ public class ClientAuthProcessor extends AbstractSQLProcessor {
 		// }
 		return true;
 	}
-
-	@Override
-	public void handBackendPackage(MySQLSession session) throws IOException {
-		boolean readed = readPackage(session,false);
-		ProxyBuffer frontBuffer = session.frontBuffer;
-		if (readed == false || session.resolveMySQLPackage(frontBuffer, session.curBackendMSQLPackgInf) == false) {
-			return;
-		}
-		while (frontBuffer.readState.hasRemain()) {
-			boolean resolved = session.resolveMySQLPackage(frontBuffer, session.curBackendMSQLPackgInf);
-			if (!resolved) {
-				logger.warn("has half pakcage ");
-
-				break;
-			}
-		}
-		session.writeToChannel(frontBuffer, session.frontChannel);
-		return;
-	}
-
+	
+	
 }

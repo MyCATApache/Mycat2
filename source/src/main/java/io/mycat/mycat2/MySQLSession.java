@@ -24,7 +24,7 @@ public class MySQLSession extends UserSession {
 	 */
 	public MySQLPackageInf curFrontMSQLPackgInf = new MySQLPackageInf();
 	public MySQLPackageInf curBackendMSQLPackgInf = new MySQLPackageInf();
-	public SQLProcessor curSQLProcessor;
+
 	public byte[] seed;
 
 	protected int getServerCapabilities() {
@@ -74,32 +74,47 @@ public class MySQLSession extends UserSession {
 		// hs.serverCharsetIndex = (byte) (charsetIndex & 0xff);
 		hs.serverStatus = 2;
 		hs.restOfScrambleBuff = rand2;
-		hs.write(backendBuffer);
-		backendBuffer.flip();
-		this.writeToChannel(backendBuffer, this.frontChannel);
+		hs.write(this.frontBuffer);
+		frontBuffer.flip();
+		this.writeToChannel(frontBuffer, this.frontChannel);
 	}
-	
-	
 
 	public MySQLSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) {
 		super(bufPool, nioSelector, frontChannel);
 
 	}
 
-	public void setCurrentSQLProcessor(SQLProcessor sqlCmd) {
-		curSQLProcessor = sqlCmd;
-	}
-
-	public SQLProcessor getCurSQLProcessor() {
-		return curSQLProcessor;
-	}
-
-	public void pushSQLCmd(SQLProcessor sqlCmd) {
-
-	}
-
-	public void popSQLCmd() {
-
+	/**
+	 * 从Socket中读取数据，通常在NIO事件中调用，比如onFrontRead/onBackendRead
+	 * 
+	 * @param session
+	 * @param readFront
+	 * @return
+	 * @throws IOException
+	 */
+	public boolean readSocket(boolean readFront) throws IOException {
+		ProxyBuffer buffer = backendBuffer;
+		SocketChannel channel = frontChannel;
+		if (!readFront) {
+			buffer = frontBuffer;
+			channel = backendChannel;
+		}
+		int readed = readFromChannel(buffer, channel);
+		logger.debug("readed {} total bytes ", readed);
+		if (readed == -1) {
+			closeSocket(channel, true, "read EOF.");
+			return false;
+		} else if (readed == 0) {
+			logger.warn("read 0 bytes ,try compact buffer " + (readFront ? " front " : "backend ") + " ,session Id :"
+					+ sessionId);
+			buffer.compact(true);
+			// todo curMSQLPackgInf
+			// 也许要对应的改变位置,如果curMSQLPackgInf是跨Package的，则可能无需改变信息
+			// curPackInf.
+			return false;
+		}
+		buffer.updateReadLimit();
+		return true;
 	}
 
 	/**
@@ -131,7 +146,7 @@ public class MySQLSession extends UserSession {
 		// 是否讀完一個報文
 
 		if (!ParseUtil.validateHeader(offset, limit)) {
-			logger.debug("not read a whole packet ,session {},offset {} ,readable len {}", sessionId, offset, totalLen);
+			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", sessionId, offset, limit);
 			return false;
 		}
 
@@ -152,13 +167,14 @@ public class MySQLSession extends UserSession {
 			// 读到完整报文
 			curPackInf.crossBuffer = false;
 			curPackInf.remainsBytes = 0;
-			if (ProxyRuntime.INSTANCE.isTraceProtocol()) {
-				final String hexs = StringUtil.dumpAsHex(buffer, curPackInf.startPos, pkgLength);
-				logger.info(
-						" session {} received a packet: startPos={}, offset = {}, length = {}, type = {}, cur total length = {}, packet bytes\n{}",
-						sessionId, curPackInf.startPos, offset, pkgLength, packetType, limit, hexs);
 
+			if (ProxyRuntime.INSTANCE.isTraceProtocol()) {
+				final String hexs = StringUtil.dumpAsHex(buffer, curPackInf.startPos, curPackInf.length);
+				logger.info(
+						"     session {} packet: startPos={}, offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
+						sessionId, curPackInf.startPos, offset, pkgLength, packetType, limit, hexs);
 			}
+
 			offset += pkgLength;
 			readState.optPostion = offset;
 			return true;
