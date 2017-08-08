@@ -6,6 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -19,7 +20,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ProxyReactorThread<T extends UserSession> extends Thread {
-	private final static long SELECTOR_TIMEOUT = 100;
+	private final static long SELECTOR_TIMEOUT = 1000;
 	private final SessionManager<T> sessionMan;
 	private final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
 	private final Selector selector;
@@ -61,12 +62,12 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 
 	}
 
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked" })
 	private void handleREvent(final SocketChannel curChannel, final T session) throws IOException {
 		if (session.frontChannel == curChannel) {
-			session.curProxyHandler.onFrontRead(session);
+			((FrontIOHandler<T>) session.curProxyHandler).onFrontRead(session);
 		} else {
-			session.curProxyHandler.onBackendRead(session);
+			((BackendIOHandler<T>) session.curProxyHandler).onBackendRead(session);
 		}
 	}
 
@@ -80,8 +81,10 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 			}
 		} else {
 			if ((readdyOps & SelectionKey.OP_READ) != 0) {
+				logger.info("readable keys " + curChannel);
 				handleREvent(curChannel, session);
 			} else {
+				logger.info("writable keys " + curChannel);
 				handleWEvent(curChannel, session);
 			}
 		}
@@ -90,9 +93,9 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 	@SuppressWarnings("unchecked")
 	private void handleWEvent(final SocketChannel curChannel, final T session) throws IOException {
 		if (session.frontChannel == curChannel) {
-			session.curProxyHandler.onFrontWrite(session);
+			((FrontIOHandler<T>) session.curProxyHandler).onFrontWrite(session);
 		} else {
-			session.curProxyHandler.onBackendWrite(session);
+			((BackendIOHandler<T>) session.curProxyHandler).onBackendWrite(session);
 		}
 	}
 
@@ -102,7 +105,9 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 		while (true) {
 			try {
 				int selected = selector.select(SELECTOR_TIMEOUT);
-				if (selected == 0) {
+				final Set<SelectionKey> keys = selector.selectedKeys();
+				//logger.info("handler keys ,total " + selected);
+				if (keys.isEmpty()) {
 					if (!pendingJobs.isEmpty()) {
 						ioTimes = 0;
 						this.processNIOJob();
@@ -113,28 +118,31 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 					this.processNIOJob();
 				}
 				ioTimes++;
-				final Set<SelectionKey> keys = selector.selectedKeys();
-				for (final SelectionKey key : keys) {
-
+				Iterator<SelectionKey> itor = selector.selectedKeys().iterator();
+				while (itor.hasNext()) {
+					SelectionKey key = itor.next();
+					itor.remove();
 					final T session = (T) key.attachment();
 					final SocketChannel curChannel = (SocketChannel) key.channel();
 					int readdyOps = key.readyOps();
 					if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
+						logger.info("connectable keys " + key.channel());
 						session.backendChannel = curChannel;
 						try {
-							if (curChannel.isConnectionPending()) {
-								curChannel.finishConnect();
+							if (curChannel.finishConnect()) {
+								((BackendIOHandler<T>) session.curProxyHandler).onBackendConnect(session, true, null);
 							}
-							session.curProxyHandler.onBackendConnect(session, true, null);
+
 						} catch (ConnectException ex) {
-							session.curProxyHandler.onBackendConnect(session, false, ex.getMessage());
+							((BackendIOHandler<T>) session.curProxyHandler).onBackendConnect(session, false,
+									ex.getMessage());
 						}
 
 					} else {
 						try {
 							handleWREvent(curChannel, session, readdyOps);
 						} catch (Exception e) {
-							logger.warn("Socket IO err :",e);
+							logger.warn("Socket IO err :", e);
 							session.close("Socket IO err:" + e);
 							this.allSessions.remove(session);
 						}
@@ -142,9 +150,11 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 
 				}
 				keys.clear();
+
 			} catch (IOException e) {
 				logger.warn("caugh error ", e);
 			}
+
 		}
 
 	}

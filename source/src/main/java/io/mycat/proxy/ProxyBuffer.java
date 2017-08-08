@@ -421,4 +421,19 @@ public class ProxyBuffer {
 		return this;
 	}
 
+	/**
+	 * Reset to write状态，清除数据
+	 */
+	public void reset() {
+		inReading=false;
+		writeState.optPostion=0;
+		writeState.optLimit=buffer.capacity();
+		writeState.curOptedLength=0;
+		writeState.optedTotalLength=0;
+		readState.optPostion=0;
+		readState.optLimit=0;
+		readState.curOptedLength=0;
+		readState.optedTotalLength=0;
+	}
+
 }

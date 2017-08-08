@@ -73,7 +73,9 @@ public class AuthPacket extends MySQLPacket {
         }
     }
 
-
+    public void write(ProxyBuffer buffer) {
+    	this.write(buffer, calcPacketSize());
+    }
     public void write(ProxyBuffer buffer, int pkgSize) {
         buffer.writeFixInt(3, pkgSize);
         buffer.writeByte(packetId);

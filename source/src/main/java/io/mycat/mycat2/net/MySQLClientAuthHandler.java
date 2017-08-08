@@ -120,4 +120,6 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 		// }
 		return true;
 	}
+	
+	
 }

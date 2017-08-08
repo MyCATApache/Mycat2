@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class DefaultDirectProxyHandler<T extends UserSession> implements NIOProxyHandler<T> {
+public class DefaultDirectProxyHandler<T extends UserSession> implements FrontIOHandler<T> ,BackendIOHandler<T>{
 	protected static Logger logger = LoggerFactory.getLogger(DefaultDirectProxyHandler.class);
 	public void onBackendConnect(T userSession, boolean success, String msg) throws IOException {
 		String logInfo = success ? " backend connect success " : "backend connect failed " + msg;

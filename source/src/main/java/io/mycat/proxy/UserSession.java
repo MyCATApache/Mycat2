@@ -7,6 +7,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +37,8 @@ public class UserSession {
 	public String frontAddr;
 	public SocketChannel frontChannel;
 	public SelectionKey frontKey;
-	//保存需要发送到前端连接的数据，透传模式下，通常一端的Socket会把读到的数据写入到对端的Buffer里
-	//参考writeToChannel() 与readFromChannel()方法
+	// 保存需要发送到前端连接的数据，透传模式下，通常一端的Socket会把读到的数据写入到对端的Buffer里
+	// 参考writeToChannel() 与readFromChannel()方法
 	public ProxyBuffer frontBuffer;
 	// 后端连接
 	public String backendAddr;
@@ -44,8 +46,12 @@ public class UserSession {
 	public SelectionKey backendKey;
 	public ProxyBuffer backendBuffer;
 	private boolean closed;
-	//当前NIO ProxyHandler
-	public NIOProxyHandler curProxyHandler;
+	// 当前NIO ProxyHandler
+	public NIOHandler curProxyHandler;
+	/**
+	 * Session会话属性，不能放置大量对象与数据
+	 */
+	private final Map<String, Object> sessionAttrMap = new HashMap<String, Object>();
 
 	public UserSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) {
 		this.bufPool = bufPool;
@@ -54,6 +60,11 @@ public class UserSession {
 		frontBuffer = new ProxyBuffer(bufPool.allocByteBuffer());
 		backendBuffer = new ProxyBuffer(bufPool.allocByteBuffer());
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
+	}
+
+	public ProxyBuffer allocNewProxyBuffer() {
+		logger.info("alloc new ProxyBuffer ");
+		return new ProxyBuffer(bufPool.allocByteBuffer());
 	}
 
 	public boolean isFrontOpen() {
@@ -120,15 +131,16 @@ public class UserSession {
 
 	/**
 	 * 向前端发送数据报文，数据报文从0的位置开始写入，覆盖之前任何从后端读来的数据！！
+	 * 
 	 * @param rawPkg
 	 * @throws IOException
 	 */
-	public void answerFront(byte[] rawPkg) throws IOException
-	{
+	public void answerFront(byte[] rawPkg) throws IOException {
 		frontBuffer.writeBytes(rawPkg);
 		frontBuffer.flip();
-		writeToChannel(frontBuffer,frontChannel);
+		writeToChannel(frontBuffer, frontChannel);
 	}
+
 	/**
 	 * 从内部Buffer数据写入到SocketChannel中发送出去，readState里记录了写到Socket中的数据指针位置 方法，
 	 * 
@@ -182,22 +194,23 @@ public class UserSession {
 		} catch (IOException e) {
 		}
 		if (channel == frontChannel) {
-			curProxyHandler.onFrontSocketClosed(this, normal);
+			((FrontIOHandler) curProxyHandler).onFrontSocketClosed(this, normal);
 			frontChannel = null;
 		} else if (channel == frontChannel) {
-			curProxyHandler.onBackendSocketClosed(this, normal);
+			((BackendIOHandler) curProxyHandler).onBackendSocketClosed(this, normal);
 			backendChannel = null;
 		}
 
 	}
 
-	public void setCurProxyHandler(NIOProxyHandler proxyHandler) {
+	public void setCurProxyHandler(NIOHandler proxyHandler) {
 		curProxyHandler = proxyHandler;
 	}
 
-	public  NIOProxyHandler getCurProxyHandler() {
+	public NIOHandler getCurProxyHandler() {
 		return curProxyHandler;
 	}
+
 	private void closeSocket(Channel channel) {
 		if (channel != null && channel.isOpen()) {
 			try {
@@ -209,6 +222,14 @@ public class UserSession {
 		}
 	}
 
+	public void addSessionAttr(String attrName, Object value) {
+		logger.info("add session attr:" + attrName + " value:" + value);
+	}
+
+	public Map<String, Object> getSessionAttrMap() {
+		return sessionAttrMap;
+	}
+
 	/**
 	 * 根据网络模式确定是否修改前端连接与后端连接的NIO感兴趣事件
 	 * 
@@ -216,8 +237,25 @@ public class UserSession {
 	 * @throws ClosedChannelException
 	 */
 	public void modifySelectKey() throws ClosedChannelException {
-		boolean frontKeyNeedUpdate = true;
-		boolean backKeyNeedUpdate = true;
+		boolean frontKeyNeedUpdate=false;
+		boolean backKeyNeedUpdate=false;
+		switch (netOptMode) {
+		case DirectTrans: {
+			frontKeyNeedUpdate = true;
+			backKeyNeedUpdate = true;
+			break;
+		}
+		case FrontRW: {
+			frontKeyNeedUpdate = true;
+			backKeyNeedUpdate = false;
+			break;
+		}
+		case BackendRW: {
+			frontKeyNeedUpdate = false;
+			backKeyNeedUpdate = true;
+			break;
+		}
+		}
 		if (frontKeyNeedUpdate && frontKey != null && frontKey.isValid()) {
 			int clientOps = 0;
 			if (backendBuffer.isInWriting())

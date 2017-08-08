@@ -1,11 +1,15 @@
 package io.mycat.mycat2.net;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.tasks.BackendAuthProcessor;
 import io.mycat.proxy.DefaultDirectProxyHandler;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -30,8 +34,29 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 		if (backendBuffer.readState.hasRemain()) {
 			logger.warn("front read half package ");
 		}
-		session.writeToChannel(backendBuffer, session.backendChannel);
-		return;
+		if(session.backendChannel==null)
+		{
+			
+			String serverIP = "localhost";
+			int serverPort = 3306;
+			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
+			session.backendChannel = SocketChannel.open();
+			session.backendChannel.configureBlocking(false);
+			session.backendChannel.connect(serverAddress);
+			SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
+			session.backendKey = selectKey;
+			logger.info("Connecting to server " + serverIP + ":" + serverPort);
+			
+			BackendAuthProcessor authProcessor=new BackendAuthProcessor(session);
+			session.setCurProxyHandler(authProcessor);
+			return;
+			
+		}else
+		{
+			session.writeToChannel(backendBuffer, session.backendChannel);
+			return;
+		}
+		
 
 	}
 
