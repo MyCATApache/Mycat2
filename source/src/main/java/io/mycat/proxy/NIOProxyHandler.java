@@ -1,7 +1,6 @@
 package io.mycat.proxy;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
@@ -12,15 +11,16 @@ import java.nio.channels.SocketChannel;
  *
  */
 public interface NIOProxyHandler<T extends UserSession> {
-	void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException;
 
 	void onBackendConnect(T userSession, boolean success, String msg) throws IOException;
 
-	void handIO(T userSession, SelectionKey key) throws IOException;
+	void onFrontRead(T session) throws IOException;
 
-	void onFrontReaded(T session) throws IOException;
+	void onFrontWrite(T session) throws IOException;
 
-	void onBackendReaded(T session) throws IOException;
+	void onBackendRead(T session) throws IOException;
+
+	void onBackendWrite(T session) throws IOException;
 
 	void onFrontSocketClosed(T userSession, boolean normal);
 

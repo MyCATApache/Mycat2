@@ -10,10 +10,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.mycat.mycat2.MySQLProxyHandler;
-import io.mycat.mycat2.MySQLProxyStudyHandler;
-import io.mycat.mycat2.cmd.DirectPassSQLProcessor;
-
 public class ProxyRuntime {
 
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
@@ -21,22 +17,23 @@ public class ProxyRuntime {
 	private String bindIP;
 	private int bindPort;
 	private int nioReactorThreads = 2;
-	private boolean traceProtocol=true;
+	private boolean traceProtocol = true;
 	private ProxyReactorThread[] reactorThreads;
-    private static final NIOProxyHandler nioProxyHandler;
+	private SessionManager sessionManager;
 	private static final ScheduledExecutorService schedulerService;
-
-	static
-	{
-		//todo ,from properties to load class name
-		//nioProxyHandler=new MySQLProxyStudyHandler();
-		nioProxyHandler=new MySQLProxyHandler();
-		//nioProxyHandler=new DefaultDirectProxyHandler();
-		//todo from proerpteis to load pool size param
+	/**
+	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
+	 */
+	private static final boolean nio_biproxyflag = false;
+	static {
+		// todo ,from properties to load class name
+		// nioProxyHandler=new MySQLProxyHandler();
+		// nioProxyHandler=new DefaultDirectProxyHandler();
+		// todo from proerpteis to load pool size param
 		schedulerService = Executors.newScheduledThreadPool(1);
 	}
+
 	public void init() {
-		
 
 	}
 
@@ -68,15 +65,21 @@ public class ProxyRuntime {
 		return reactorThreads;
 	}
 
+	public static boolean isNioBiproxyflag() {
+		return nio_biproxyflag;
+	}
+
 	public void setReactorThreads(ProxyReactorThread[] reactorThreads) {
 		this.reactorThreads = reactorThreads;
 	}
 
-	public NIOProxyHandler getNioProxyHandler() {
-		return nioProxyHandler;
+	public SessionManager getSessionManager() {
+		return sessionManager;
 	}
 
-	
+	public void setSessionManager(SessionManager sessionManager) {
+		this.sessionManager = sessionManager;
+	}
 
 	/**
 	 * 在NIO主线程中调用的任务，通常涉及到ByteBuffer的操作与状态的改变，必须通过这种方式完成数据的交换与同步逻辑！！！
@@ -143,5 +146,5 @@ public class ProxyRuntime {
 	public void setTraceProtocol(boolean traceProtocol) {
 		this.traceProtocol = traceProtocol;
 	}
-	
+
 }

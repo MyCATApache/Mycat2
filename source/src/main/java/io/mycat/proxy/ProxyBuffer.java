@@ -1,12 +1,10 @@
 package io.mycat.proxy;
 
-import java.io.IOException;
 /**
  * 可重用的Buffer，连续读或者写，当空间不够时Compact擦除之前用过的空间，
  * 处于写状态或者读状态之一，不能同时读写，change2Read或change2Write方法来切换读写状态， 只有数据被操作完成（读完或者写完）后State才能被改变
  */
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,8 +49,7 @@ public class ProxyBuffer {
 	 * 交换Read与Write状态
 	 */
 	public void flip() {
-		logger.info("flip, is reading ?" + this.inReading + " write state:" + this.writeState + " ,read state "
-				+ this.readState);
+		
 		if (this.inReading) {
 			// 转为可写状态
 			inReading = false;
@@ -72,9 +69,9 @@ public class ProxyBuffer {
 			readState.optLimit = writeState.optPostion;
 			readState.optedTotalLength = 0;
 		}
+		logger.debug("flip, new state {} , write state: {} ,read state {}", this.inReading?"read":"write", this.writeState,this.readState);
+		
 	}
-
-	
 
 	public void skip(int step) {
 		this.readState.optPostion += step;

@@ -35,6 +35,8 @@ public class UserSession {
 	public String frontAddr;
 	public SocketChannel frontChannel;
 	public SelectionKey frontKey;
+	//保存需要发送到前端连接的数据，透传模式下，通常一端的Socket会把读到的数据写入到对端的Buffer里
+	//参考writeToChannel() 与readFromChannel()方法
 	public ProxyBuffer frontBuffer;
 	// 后端连接
 	public String backendAddr;
@@ -42,6 +44,8 @@ public class UserSession {
 	public SelectionKey backendKey;
 	public ProxyBuffer backendBuffer;
 	private boolean closed;
+	//当前NIO ProxyHandler
+	public NIOProxyHandler curProxyHandler;
 
 	public UserSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) {
 		this.bufPool = bufPool;
@@ -114,11 +118,16 @@ public class UserSession {
 		return readed;
 	}
 
+	/**
+	 * 向前端发送数据报文，数据报文从0的位置开始写入，覆盖之前任何从后端读来的数据！！
+	 * @param rawPkg
+	 * @throws IOException
+	 */
 	public void answerFront(byte[] rawPkg) throws IOException
 	{
-		backendBuffer.writeBytes(rawPkg);
-		backendBuffer.flip();
-		writeToChannel(backendBuffer,frontChannel);
+		frontBuffer.writeBytes(rawPkg);
+		frontBuffer.flip();
+		writeToChannel(frontBuffer,frontChannel);
 	}
 	/**
 	 * 从内部Buffer数据写入到SocketChannel中发送出去，readState里记录了写到Socket中的数据指针位置 方法，
@@ -142,8 +151,8 @@ public class UserSession {
 				buffer.limit(writeState.optPostion);
 				buffer.compact();
 				readState.optPostion = 0;
-				readState.optLimit = buffer.limit();
-				writeState.optPostion = buffer.limit();
+				readState.optLimit = buffer.position();
+				writeState.optPostion = buffer.position();
 				// 切换到写模式，继续从对端Socket读数据
 				proxyBuf.setInReading(false);
 			} else {
@@ -173,15 +182,22 @@ public class UserSession {
 		} catch (IOException e) {
 		}
 		if (channel == frontChannel) {
-			ProxyRuntime.INSTANCE.getNioProxyHandler().onFrontSocketClosed(this, normal);
+			curProxyHandler.onFrontSocketClosed(this, normal);
 			frontChannel = null;
 		} else if (channel == frontChannel) {
-			ProxyRuntime.INSTANCE.getNioProxyHandler().onBackendSocketClosed(this, normal);
+			curProxyHandler.onBackendSocketClosed(this, normal);
 			backendChannel = null;
 		}
 
 	}
 
+	public void setCurProxyHandler(NIOProxyHandler proxyHandler) {
+		curProxyHandler = proxyHandler;
+	}
+
+	public  NIOProxyHandler getCurProxyHandler() {
+		return curProxyHandler;
+	}
 	private void closeSocket(Channel channel) {
 		if (channel != null && channel.isOpen()) {
 			try {
@@ -202,23 +218,6 @@ public class UserSession {
 	public void modifySelectKey() throws ClosedChannelException {
 		boolean frontKeyNeedUpdate = true;
 		boolean backKeyNeedUpdate = true;
-		// switch (userSession.netOptMode) {
-		// case FrontRW: {
-		// frontKeyNeedUpdate = true;
-		// backKeyNeedUpdate = false;
-		// break;
-		// }
-		// case BackendRW: {
-		// frontKeyNeedUpdate = false;
-		// backKeyNeedUpdate = true;
-		// break;
-		// }
-		// case DirectTrans: {
-		// frontKeyNeedUpdate = true;
-		// backKeyNeedUpdate = true;
-		// break;
-		// }
-		// }
 		if (frontKeyNeedUpdate && frontKey != null && frontKey.isValid()) {
 			int clientOps = 0;
 			if (backendBuffer.isInWriting())
