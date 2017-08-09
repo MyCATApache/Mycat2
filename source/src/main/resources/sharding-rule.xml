@@ -1,0 +1,6 @@
+<sharding-rules>
+	      <rule name="auto-sharding-1" algorithm="org.opencloudb.route.function.PartitionByFileMap">
+	      	  <param name="mapFile">sharding-by-enum.txt</param>
+	      </rule>
+</sharding-rules>
+		
