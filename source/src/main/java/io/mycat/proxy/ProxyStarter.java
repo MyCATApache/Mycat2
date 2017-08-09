@@ -19,7 +19,7 @@ public class ProxyStarter {
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
 		//runtime.setSessionManager(new DefaultTCPProxySessionManager());
 		//Debug观察MySQL协议用
-		//runtime.setSessionManager(new MySQLStudySessionManager());
+        //runtime.setSessionManager(new MySQLStudySessionManager());
 		//Mycat 2.0 Session Manager
 		runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();

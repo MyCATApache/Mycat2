@@ -43,18 +43,16 @@ import io.mycat.proxy.ProxyBuffer;
  * @author mycat
  */
 public class EOFPacket extends MySQLPacket {
-
-    public static final byte FIELD_COUNT = (byte) 0xfe;
-    public byte fieldCount = FIELD_COUNT;
+    public byte pkgType = MySQLPacket.EOF_PACKET;
     public int warningCount;
     public int status = 2;
 
 
 
-    public void write(ProxyBuffer buffer, int pkgSize) {
-        buffer.writeFixInt(3,pkgSize);
+    public void write(ProxyBuffer buffer) {
+        buffer.writeFixInt(3,calcPacketSize());
         buffer.writeByte(packetId);
-        buffer.writeLenencInt(fieldCount);
+        buffer.writeLenencInt(pkgType);
         buffer.writeFixInt(2, warningCount);
         buffer.writeFixInt(2, status);
     }

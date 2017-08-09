@@ -23,6 +23,8 @@
  */
 package io.mycat.mysql.packet;
 
+import io.mycat.proxy.ProxyBuffer;
+
 /**
  * @author mycat暂时只发现在load data infile时用到
  */
@@ -38,5 +40,11 @@ public class EmptyPacket extends MySQLPacket {
     protected String getPacketInfo() {
         return "MySQL Empty Packet";
     }
+
+	@Override
+	public void write(ProxyBuffer buffer) {
+		throw new java.lang.RuntimeException("not implmented ,leader want you ");
+		
+	}
 
 }

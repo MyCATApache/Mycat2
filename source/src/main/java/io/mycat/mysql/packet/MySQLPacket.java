@@ -233,8 +233,9 @@ public abstract class MySQLPacket {
                 .append('}').toString();
     }
 
-    public void write(ProxyBuffer buffer, int pkgSize) {
-		
-		
-	}
+    /** 
+     * 写入到Buffer里（为了发送）
+     * @param buffer
+     */
+    public abstract void write(ProxyBuffer buffer);
 }

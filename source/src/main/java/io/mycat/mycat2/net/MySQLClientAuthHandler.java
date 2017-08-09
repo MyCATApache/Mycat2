@@ -49,15 +49,13 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 	public void onFrontRead(MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(true);
 		ProxyBuffer backendBuffer = session.backendBuffer;
-		if (readed == false || session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf) == false) {
+		if (readed == false || session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf,false) == false) {
 			return;
 		}
 		//处理用户认证请情况报文
 		try {
-			backendBuffer.readState.optPostion = 0;
 			AuthPacket auth = new AuthPacket();
 			auth.read(backendBuffer);
-
 			// Fake check user
 			logger.debug("Check user name. " + auth.user);
 			// if (!auth.user.equals("root")) {

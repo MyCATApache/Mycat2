@@ -15,6 +15,6 @@ public interface BackendIOTask<T extends UserSession > extends BackendIOHandler<
 	 * 任务完成后回调
 	 * @param callback
 	 */
-	void setCallback(Runnable callback);
+	void setCallback(AsynTaskCallBack callBack);
 
 }

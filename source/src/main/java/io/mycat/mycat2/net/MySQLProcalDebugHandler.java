@@ -23,7 +23,7 @@ public class MySQLProcalDebugHandler extends DefaultDirectProxyHandler<MySQLSess
 		ProxyBuffer peerBuf = session.backendBuffer;
 		SocketChannel peerChannel = session.backendChannel;
 		MySQLPackageInf curPkgInf = session.curFrontMSQLPackgInf;
-		if (readed == false || session.resolveMySQLPackage(peerBuf, curPkgInf) == false) {
+		if (readed == false || session.resolveMySQLPackage(peerBuf, curPkgInf,true) == false) {
 			return;
 		}
 
@@ -41,8 +41,8 @@ public class MySQLProcalDebugHandler extends DefaultDirectProxyHandler<MySQLSess
 	private void processAllRemainPkg(MySQLSession session, ProxyBuffer theBuf, MySQLPackageInf curPkgInf)
 			throws IOException {
 		int pkgIndex = 2;
-		while (theBuf.readState.hasRemain() && session.resolveMySQLPackage(theBuf, curPkgInf) != false) {
-			logger.info(" parsed No." + pkgIndex + " package ,type " + curPkgInf.pkgType + " len " + curPkgInf.length);
+		while (theBuf.readState.hasRemain() && session.resolveMySQLPackage(theBuf, curPkgInf,true) != false) {
+			logger.info(" parsed No." + pkgIndex + " package ,type " + curPkgInf.pkgType + " len " + curPkgInf.pkgLength);
 			pkgIndex++;
 		}
 		if (theBuf.readState.hasRemain()) {
@@ -57,7 +57,7 @@ public class MySQLProcalDebugHandler extends DefaultDirectProxyHandler<MySQLSess
 		ProxyBuffer peerBuf = session.frontBuffer;
 		SocketChannel peerChannel = session.frontChannel;
 		MySQLPackageInf curPkgInf = session.curBackendMSQLPackgInf;
-		if (readed == false || session.resolveMySQLPackage(peerBuf, curPkgInf) == false) {
+		if (readed == false || session.resolveMySQLPackage(peerBuf, curPkgInf,true) == false) {
 			return;
 		}
 
