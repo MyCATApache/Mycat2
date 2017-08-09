@@ -1,4 +1,4 @@
-package io.mycat.mycat2;
+package io.mycat.mycat2.tasks;
 
 import io.mycat.proxy.BackendIOHandler;
 import io.mycat.proxy.UserSession;
@@ -15,6 +15,6 @@ public interface BackendIOTask<T extends UserSession > extends BackendIOHandler<
 	 * 任务完成后回调
 	 * @param callback
 	 */
-	void setCallback(Runnable callback);
+	void setCallback(AsynTaskCallBack callBack);
 
 }

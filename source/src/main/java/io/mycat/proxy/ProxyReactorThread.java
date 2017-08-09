@@ -81,10 +81,10 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 			}
 		} else {
 			if ((readdyOps & SelectionKey.OP_READ) != 0) {
-				logger.info("readable keys " + curChannel);
+				//logger.info("readable keys " + curChannel);
 				handleREvent(curChannel, session);
 			} else {
-				logger.info("writable keys " + curChannel);
+				//logger.info("writable keys " + curChannel);
 				handleWEvent(curChannel, session);
 			}
 		}
@@ -104,7 +104,7 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 		long ioTimes = 0;
 		while (true) {
 			try {
-				int selected = selector.select(SELECTOR_TIMEOUT);
+				selector.select(SELECTOR_TIMEOUT);
 				final Set<SelectionKey> keys = selector.selectedKeys();
 				//logger.info("handler keys ,total " + selected);
 				if (keys.isEmpty()) {

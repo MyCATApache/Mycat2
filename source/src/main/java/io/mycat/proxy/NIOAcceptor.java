@@ -19,15 +19,17 @@ import org.slf4j.*;
 public class NIOAcceptor extends Thread {
 	private final static Logger logger = LoggerFactory.getLogger(NIOAcceptor.class);
 
+	@SuppressWarnings("rawtypes")
 	public void run() {
 		int nioIndex = 0;
 		Selector selector = null;
 		ProxyRuntime env=ProxyRuntime.INSTANCE;
+		ProxyConfig conf=env.getProxyConfig();
 		try {
 			selector = Selector.open();
 			final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-			String bindAddr = env.getBindIP();
-			final InetSocketAddress isa = new InetSocketAddress(bindAddr, env.getBindPort());
+			String bindAddr = conf.getBindIP();
+			final InetSocketAddress isa = new InetSocketAddress(bindAddr, conf.getBindPort());
 			serverChannel.bind(isa);
 			serverChannel.configureBlocking(false);
 			serverChannel.register(selector, SelectionKey.OP_ACCEPT);
@@ -37,7 +39,7 @@ public class NIOAcceptor extends Thread {
 			return;
 		}
 		logger.info("*** Mycat NIO Proxy Server  *** ,NIO Threads " + env.getNioReactorThreads()
-				+ " listen on " + env.getBindIP() + ":" + env.getBindPort());
+				+ " listen on " + conf.getBindIP() + ":" + conf.getBindPort());
 		while (true) {
 			try {
 				int count = selector.select(1000);

@@ -23,6 +23,7 @@
  */
 package io.mycat.mysql.packet;
 
+import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
@@ -43,27 +44,38 @@ import io.mycat.proxy.ProxyBuffer;
  * @author mycat
  */
 public class ErrorPacket extends MySQLPacket {
-    public static final byte FIELD_COUNT = (byte) 0xff;
+   
     private static final byte SQLSTATE_MARKER = (byte) '#';
     private static final byte[] DEFAULT_SQLSTATE = "HY000".getBytes();
 
-    public byte fieldCount = FIELD_COUNT;
+    public byte pkgType = MySQLPacket.ERROR_PACKET;
     public int errno;
     public byte mark = SQLSTATE_MARKER;
     public byte[] sqlState = DEFAULT_SQLSTATE;
-    public byte[] message;
+    public String message;
 
   
+    public void read(ProxyBuffer byteBuffer) {
+        packetLength =(int) byteBuffer.readFixInt(3);
+        packetId =byteBuffer.readByte();
+        pkgType =byteBuffer.readByte();
+        errno = (int) byteBuffer.readFixInt(2);
+        if (byteBuffer.readState.hasRemain() && (byteBuffer.getByte(byteBuffer.readState.optPostion) == SQLSTATE_MARKER)) {
+        	byteBuffer.skip(1);
+            sqlState = byteBuffer.readBytes(5);
+        }
+        message = byteBuffer.readNULString();
+    }
 
-    public void write(ProxyBuffer buffer, int pkgSize) {
-        buffer.writeFixInt(3,pkgSize);
+    public void write(ProxyBuffer buffer){
+        buffer.writeFixInt(3,calcPacketSize());
         buffer.writeByte(packetId);
-        buffer.writeLenencInt(fieldCount);
+        buffer.writeByte(pkgType);
         buffer.writeFixInt(2,errno);
         buffer.writeByte(mark);
         buffer.writeBytes(sqlState);
         if (message != null) {
-            buffer.writeBytes(message);
+            buffer.writeNULString(message);
 
         }
     }
@@ -72,7 +84,7 @@ public class ErrorPacket extends MySQLPacket {
     public int calcPacketSize() {
         int size = 9;// 1 + 2 + 1 + 5
         if (message != null) {
-            size += message.length;
+            size += message.length()+1;
         }
         return size;
     }

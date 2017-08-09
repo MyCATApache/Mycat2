@@ -21,30 +21,52 @@
  * https://code.google.com/p/opencloudb/.
  *
  */
-package io.mycat.mysql.packet;
-
-import io.mycat.proxy.ProxyBuffer;
+package io.mycat.mycat2.beans;
 
 /**
- * @author mycat暂时只发现在load data infile时用到
+ * connection metadata info
+ * 
+ * @author wuzhih
+ * 
  */
-public class EmptyPacket extends MySQLPacket {
-    public static final byte[] EMPTY = new byte[] { 0, 0, 0,3 };
+public class ConnectionMeta {
+	private final String schema;
+	private final String charset;
+	private final int txIsolation;
+	private final boolean autocommit;
 
-    @Override
-    public int calcPacketSize() {
-        return 0;
-    }
+	public ConnectionMeta(String schema, String charset, int txIsolation, boolean autocommit) {
+		super();
+		this.schema = schema;
+		this.charset = charset;
+		this.txIsolation = txIsolation;
+		this.autocommit = autocommit;
+	}
 
-    @Override
-    protected String getPacketInfo() {
-        return "MySQL Empty Packet";
-    }
+	public String getSchema() {
+		return schema;
+	}
+
+	public String getCharset() {
+		return charset;
+	}
+
+	public int getTxIsolation() {
+		return txIsolation;
+	}
+
+	public boolean isAutocommit() {
+		return autocommit;
+	}
+
+	public boolean isSameSchema(BackConnection theCon) {
+		return theCon.schema.equals(schema);
+	}
 
 	@Override
-	public void write(ProxyBuffer buffer) {
-		throw new java.lang.RuntimeException("not implmented ,leader want you ");
-		
+	public String toString() {
+		return "ConnectionMeta [schema=" + schema + ", charset=" + charset + ", txIsolation=" + txIsolation
+				+ ", autocommit=" + autocommit + "]";
 	}
 
 }

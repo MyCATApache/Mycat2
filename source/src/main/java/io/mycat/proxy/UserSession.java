@@ -62,9 +62,27 @@ public class UserSession {
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
 	}
 
+	/**
+	 * 手动创建的ProxyBuffer需要手动释放，recycleAllocedBuffer()
+	 * 
+	 * @return ProxyBuffer
+	 */
 	public ProxyBuffer allocNewProxyBuffer() {
 		logger.info("alloc new ProxyBuffer ");
 		return new ProxyBuffer(bufPool.allocByteBuffer());
+	}
+
+	/**
+	 * 释放手动分配的ProxyBuffer
+	 * 
+	 * @param curFrontBuffer
+	 */
+	public void recycleAllocedBuffer(ProxyBuffer curFrontBuffer) {
+		logger.info("recycle alloced ProxyBuffer ");
+
+		if (curFrontBuffer != null) {
+			this.bufPool.recycleBuf(curFrontBuffer.getBuffer());
+		}
 	}
 
 	public boolean isFrontOpen() {
@@ -84,14 +102,14 @@ public class UserSession {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public void lazyCloseSession() {
+	public void lazyCloseSession(final String reason) {
 		if (isClosed()) {
 			return;
 		}
 
 		ProxyRuntime.INSTANCE.addDelayedNIOJob(() -> {
 			if (!isClosed()) {
-				close("front closed");
+				close(reason);
 			}
 		}, 10, (ProxyReactorThread) Thread.currentThread());
 	}
@@ -237,8 +255,8 @@ public class UserSession {
 	 * @throws ClosedChannelException
 	 */
 	public void modifySelectKey() throws ClosedChannelException {
-		boolean frontKeyNeedUpdate=false;
-		boolean backKeyNeedUpdate=false;
+		boolean frontKeyNeedUpdate = false;
+		boolean backKeyNeedUpdate = false;
 		switch (netOptMode) {
 		case DirectTrans: {
 			frontKeyNeedUpdate = true;
@@ -273,4 +291,5 @@ public class UserSession {
 			backendKey.interestOps(serverOps);
 		}
 	}
+
 }

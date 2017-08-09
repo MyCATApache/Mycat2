@@ -2,16 +2,16 @@ package io.mycat.proxy;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.net.MySQLStudySessionManager;
-import io.mycat.mycat2.net.MycatSessionManager;
+import io.mycat.mycat2.MySQLStudySessionManager;
 
 public class ProxyStarter {
 
 	public static void main(String[] args) throws IOException {
-		
+		ProxyConfig config=new ProxyConfig();
+		config.setBindIP("0.0.0.0");
+		config.setBindPort(8080);
 		ProxyRuntime runtime=ProxyRuntime.INSTANCE;
-		runtime.setBindIP("0.0.0.0");
-		runtime.setBindPort(8080);
+		runtime.setProxyConfig(config);
 		//runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
 		//runtime.setNioProxyHandler(new DefaultDirectProxyHandler());
 		int cpus= Runtime.getRuntime().availableProcessors();
@@ -19,9 +19,9 @@ public class ProxyStarter {
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
 		//runtime.setSessionManager(new DefaultTCPProxySessionManager());
 		//Debug观察MySQL协议用
-		//runtime.setSessionManager(new MySQLStudySessionManager());
+        runtime.setSessionManager(new MySQLStudySessionManager());
 		//Mycat 2.0 Session Manager
-		runtime.setSessionManager(new MycatSessionManager());
+		//runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
 		ProxyReactorThread[] nioThreads=runtime.getReactorThreads();
 		for(int i=0;i<cpus;i++)

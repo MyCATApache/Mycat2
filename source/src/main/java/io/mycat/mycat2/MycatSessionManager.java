@@ -1,4 +1,4 @@
-package io.mycat.mycat2.net;
+package io.mycat.mycat2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,7 +9,7 @@ import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.net.MySQLClientAuthHandler;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.SessionManager;
 

@@ -9,17 +9,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
+@SuppressWarnings("rawtypes")
 public class ProxyRuntime {
 
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
-	private String bindIP;
-	private int bindPort;
 	private int nioReactorThreads = 2;
 	private boolean traceProtocol = true;
+	
 	private ProxyReactorThread[] reactorThreads;
 	private SessionManager sessionManager;
+	private ProxyConfig proxyConfig;
 	private static final ScheduledExecutorService schedulerService;
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
@@ -37,21 +37,25 @@ public class ProxyRuntime {
 
 	}
 
-	public String getBindIP() {
-		return bindIP;
+   
+
+	public ProxyConfig getProxyConfig() {
+		return proxyConfig;
 	}
 
-	public void setBindIP(String bindIP) {
-		this.bindIP = bindIP;
+
+
+	public void setProxyConfig(ProxyConfig proxyConfig) {
+		this.proxyConfig = proxyConfig;
 	}
 
-	public int getBindPort() {
-		return bindPort;
+
+
+	public static ScheduledExecutorService getSchedulerservice() {
+		return schedulerService;
 	}
 
-	public void setBindPort(int bindPort) {
-		this.bindPort = bindPort;
-	}
+
 
 	public int getNioReactorThreads() {
 		return nioReactorThreads;

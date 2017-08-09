@@ -5,9 +5,13 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.beans.MySQLCharset;
+import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.Versions;
 import io.mycat.mysql.packet.HandshakePacket;
+import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BufferOptState;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.ProxyBuffer;
@@ -23,8 +27,28 @@ public class MySQLSession extends UserSession {
 	 * 当前处理中的SQL报文的信息（前端）
 	 */
 	public MySQLPackageInf curFrontMSQLPackgInf = new MySQLPackageInf();
+	/**
+	 * 当前处理中的SQL报文的信息（后端）
+	 */
 	public MySQLPackageInf curBackendMSQLPackgInf = new MySQLPackageInf();
 
+	/**
+	 * 前端字符集
+	 */
+	public MySQLCharset frontCharSet;
+	/**
+	 * 前端用户
+	 */
+	public String clientUser;
+	/**
+	 * Mycat Schema
+	 */
+	public SchemaBean schema; 
+	
+		
+	/**
+	 * 认证中的seed报文数据
+	 */
 	public byte[] seed;
 
 	protected int getServerCapabilities() {
@@ -52,6 +76,30 @@ public class MySQLSession extends UserSession {
 		return flag;
 	}
 
+	/**
+	 * 回应客户端（front或Sever）OK 报文。
+	 * 
+	 * @param pkg
+	 *            ，必须要是OK报文或者Err报文
+	 * @throws IOException
+	 */
+	public void responseOKOrError(MySQLPacket pkg, boolean front) throws IOException {
+		if (front) {
+			pkg.write(this.frontBuffer);
+			frontBuffer.flip();
+			this.writeToChannel(frontBuffer, this.frontChannel);
+		} else {
+			pkg.write(this.backendBuffer);
+			backendBuffer.flip();
+			this.writeToChannel(backendBuffer, this.backendChannel);
+		}
+	}
+
+	/**
+	 * 给客户端（front）发送认证报文
+	 * 
+	 * @throws IOException
+	 */
 	public void sendAuthPackge() throws IOException {
 		// 生成认证数据
 		byte[] rand1 = RandomUtil.randomBytes(8);
@@ -119,66 +167,72 @@ public class MySQLSession extends UserSession {
 
 	/**
 	 * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
+	 * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded=true
 	 * 
 	 * @param proxyBuf
 	 * @return
 	 * @throws IOException
 	 */
-	public boolean resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf) throws IOException {
+	public boolean resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded)
+			throws IOException {
+		boolean readWholePkg = false;
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		BufferOptState readState = proxyBuf.readState;
 		int offset = readState.optPostion;
 		int limit = readState.optLimit;
 		int totalLen = limit - offset;
+		if (totalLen == 0) {
+			return false;
+		}
 		if (curPackInf.crossBuffer) {
 			if (curPackInf.remainsBytes <= totalLen) {
-				// 跳过剩余的报文
-				offset += curPackInf.remainsBytes;
-				// 新报文开始
-				curPackInf.crossBuffer = false;
-
+				// 剩余报文结束
+				curPackInf.endPos = offset + curPackInf.remainsBytes;
+				curPackInf.remainsBytes = 0;
+				readWholePkg = true;
 			} else {// 剩余报文还没读完，等待下一次读取
 				curPackInf.remainsBytes -= totalLen;
-				return false;
+				curPackInf.endPos = limit;
+				readWholePkg = false;
 			}
-		}
-		// 读取到了包头和长度
-		// 是否讀完一個報文
-
-		if (!ParseUtil.validateHeader(offset, limit)) {
+		} else if (!ParseUtil.validateHeader(offset, limit)) {
 			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", sessionId, offset, limit);
-			return false;
+			readWholePkg = false;
 		}
 
 		int pkgLength = ParseUtil.getPacketLength(buffer, offset);
 		// 解析报文类型
 		final byte packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
 		curPackInf.pkgType = packetType;
-		curPackInf.length = pkgLength;
+		curPackInf.pkgLength = pkgLength;
 		curPackInf.startPos = offset;
+		curPackInf.crossBuffer = false;
+		curPackInf.remainsBytes = 0;
 		if ((offset + pkgLength) > limit) {
 			logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, "
 					+ "ready to handle the next read event", sessionId, buffer.hashCode(), pkgLength, limit);
 			curPackInf.crossBuffer = true;
 			curPackInf.remainsBytes = offset + pkgLength - limit;
-			readState.optPostion = readState.optLimit;
-			return false;
+			curPackInf.endPos = limit;
+			readWholePkg = false;
 		} else {
 			// 读到完整报文
-			curPackInf.crossBuffer = false;
-			curPackInf.remainsBytes = 0;
-
+			curPackInf.endPos = curPackInf.pkgLength + curPackInf.startPos;
 			if (ProxyRuntime.INSTANCE.isTraceProtocol()) {
-				final String hexs = StringUtil.dumpAsHex(buffer, curPackInf.startPos, curPackInf.length);
+				/**
+				 * @todo 跨多个报文的情况下，修正错误。
+				 */
+				final String hexs = StringUtil.dumpAsHex(buffer, curPackInf.startPos, curPackInf.pkgLength);
 				logger.info(
 						"     session {} packet: startPos={}, offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
 						sessionId, curPackInf.startPos, offset, pkgLength, packetType, limit, hexs);
 			}
-
-			offset += pkgLength;
-			readState.optPostion = offset;
-			return true;
+			readWholePkg = true;
 		}
+		if (markReaded) {
+			readState.optPostion = curPackInf.endPos;
+		}
+		return readWholePkg;
 
 	}
 
