@@ -41,7 +41,7 @@ public class DefaultDirectProxyHandler<T extends UserSession> implements FrontIO
 	 * @param normal
 	 */
 	public void onFrontSocketClosed(T userSession, boolean normal) {
-		userSession.lazyCloseSession();
+		userSession.lazyCloseSession("front closed");
 	}
 
 	/**
@@ -51,7 +51,7 @@ public class DefaultDirectProxyHandler<T extends UserSession> implements FrontIO
 	 * @param normal
 	 */
 	public void onBackendSocketClosed(T userSession, boolean normal) {
-		userSession.lazyCloseSession();
+		userSession.lazyCloseSession("backend closed");
 	}
 
 	/**

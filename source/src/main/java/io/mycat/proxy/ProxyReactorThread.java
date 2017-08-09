@@ -81,10 +81,10 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 			}
 		} else {
 			if ((readdyOps & SelectionKey.OP_READ) != 0) {
-				logger.info("readable keys " + curChannel);
+				//logger.info("readable keys " + curChannel);
 				handleREvent(curChannel, session);
 			} else {
-				logger.info("writable keys " + curChannel);
+				//logger.info("writable keys " + curChannel);
 				handleWEvent(curChannel, session);
 			}
 		}

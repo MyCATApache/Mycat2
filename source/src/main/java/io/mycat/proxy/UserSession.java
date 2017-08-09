@@ -102,14 +102,14 @@ public class UserSession {
 	}
 
 	@SuppressWarnings("rawtypes")
-	public void lazyCloseSession() {
+	public void lazyCloseSession(final String reason) {
 		if (isClosed()) {
 			return;
 		}
 
 		ProxyRuntime.INSTANCE.addDelayedNIOJob(() -> {
 			if (!isClosed()) {
-				close("front closed");
+				close(reason);
 			}
 		}, 10, (ProxyReactorThread) Thread.currentThread());
 	}

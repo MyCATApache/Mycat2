@@ -13,7 +13,6 @@ import io.mycat.mycat2.tasks.BackendAuthProcessor;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.DefaultDirectProxyHandler;
 import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.UserSession;
 
 /**
  * 负责处理通用的SQL命令，默认情况下透传
@@ -39,6 +38,7 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 		}
 		if (session.backendChannel == null) {
 
+			logger.info("hang cur sql for  backend connection ready ");
 			String serverIP = "localhost";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
@@ -54,8 +54,9 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 				if (exeSucces) {
 					optSession.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
-					// 透传前端命令给对端
-					session.writeToChannel(session.frontBuffer, session.backendChannel);
+					// 透传前端发送的命令给Server
+					session.backendBuffer.flip();
+					session.writeToChannel(session.backendBuffer, session.backendChannel);
 				} else {
 					ErrorPacket errPkg = (ErrorPacket) retVal;
 					optSession.responseOKOrError(errPkg, true);
@@ -66,10 +67,25 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 			return;
 
 		} else {
+			//直接透传报文
+			backendBuffer.flip();
 			session.writeToChannel(backendBuffer, session.backendChannel);
 			return;
 		}
 
 	}
+	
+	public void onBackendRead(MySQLSession session) throws IOException {
+		boolean readed = session.readSocket(false);
+		if (readed == false
+				|| session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false) == false) {
+			return;
+		}
+		//直接透传
+		session.frontBuffer.flip();
+		session.modifySelectKey();
+
+	}
+
 
 }

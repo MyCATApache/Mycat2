@@ -32,6 +32,7 @@ import io.mycat.util.SecurityUtil;
 public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(BackendAuthProcessor.class);
 	private ProxyBuffer prevFrontBuffer;
+	private ProxyBuffer prevBackendBuffer;
 	private NetOptMode prevNetMode;
 	private NIOHandler<MySQLSession> prevProxyHandler;
 	private final MySQLSession session;
@@ -46,7 +47,9 @@ public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 		this.session = session;
 		// 保存之前的FrontBuffer，BackendCon收到的数据会写入到session.frontBuffer中
 		this.prevFrontBuffer = session.frontBuffer;
+		this.prevBackendBuffer=session.backendBuffer;
 		session.frontBuffer = session.allocNewProxyBuffer();
+		session.backendBuffer=session.allocNewProxyBuffer();
 		prevProxyHandler = session.curProxyHandler;
 	}
 
@@ -75,7 +78,7 @@ public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 			}
 			// 发送应答报文给后端
 			String user = "root";
-			String password = "1234567";
+			String password = "123456";
 			String schema = "mysql";
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
@@ -112,8 +115,6 @@ public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 
 	@Override
 	public void onBackendWrite(MySQLSession session) throws IOException {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -134,25 +135,31 @@ public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 					userSession);
 
 		} else {
-			userSession.close("backend can't open:" + msg);
-		}
-		if (!success) {
+			errPkg = new ErrorPacket();
+			errPkg.message = logInfo;
 			finished(false);
+
 		}
 	}
 
 	private void finished(boolean success) throws IOException {
 		sessionRecover();
+		if (!success) {
+			session.backendChannel = null;
+			session.backendKey = null;
+		}
 		callBack.finished(session, this, success, this.errPkg);
 	}
 
 	public void sessionRecover() {
 		// 释放先前分配的资源
 		session.recycleAllocedBuffer(session.frontBuffer);
-		//恢复Session原来的状态
-		session.frontBuffer = this.prevFrontBuffer;
+		session.recycleAllocedBuffer(session.backendBuffer);
+		// 恢复Session原来的状态
+		session.frontBuffer = prevFrontBuffer;
+		session.backendBuffer=prevBackendBuffer;
 		session.netOptMode = prevNetMode;
-		session.curProxyHandler=prevProxyHandler;
+		session.curProxyHandler = prevProxyHandler;
 	}
 
 	private static byte[] passwd(String pass, HandshakePacket hs) throws NoSuchAlgorithmException {
@@ -170,7 +177,7 @@ public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 
 	@Override
 	public void setCallback(AsynTaskCallBack callBack) {
-	this.callBack=callBack;
+		this.callBack = callBack;
 
 	}
 

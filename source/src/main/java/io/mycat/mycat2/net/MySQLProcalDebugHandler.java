@@ -33,6 +33,7 @@ public class MySQLProcalDebugHandler extends DefaultDirectProxyHandler<MySQLSess
 
 		}
 		// 透传给对端
+		peerBuf.flip();
 		session.writeToChannel(peerBuf, peerChannel);
 		return;
 
@@ -67,6 +68,7 @@ public class MySQLProcalDebugHandler extends DefaultDirectProxyHandler<MySQLSess
 
 		}
 		// 透传给对端
+		peerBuf.flip();
 		session.writeToChannel(peerBuf, peerChannel);
 		return;
 	}
