@@ -8,9 +8,11 @@ import java.security.NoSuchAlgorithmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.AsynTaskCallBack;
-import io.mycat.mycat2.BackendIOTask;
+import io.mycat.mycat2.MySQLReplicatSet;
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.DNBean;
+import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -18,19 +20,20 @@ import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.UserSession;
 import io.mycat.proxy.UserSession.NetOptMode;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.SecurityUtil;
 
 /**
- * 处理后端MySQL认证的Processor
+ * 创建后端MySQL连接并负责完成登录认证的Processor
  * 
  * @author wuzhihui
  *
  */
-public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
-	private static Logger logger = LoggerFactory.getLogger(BackendAuthProcessor.class);
+public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
+	private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
 	private ProxyBuffer prevFrontBuffer;
 	private ProxyBuffer prevBackendBuffer;
 	private NetOptMode prevNetMode;
@@ -41,15 +44,17 @@ public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 	private AsynTaskCallBack callBack;
 	private ErrorPacket errPkg;
 
-	public BackendAuthProcessor(MySQLSession session) {
+	public BackendConCreateTask(MySQLSession session,MySQLDataSource ds) {
+		
+        
 		prevNetMode = session.netOptMode;
 		session.netOptMode = UserSession.NetOptMode.BackendRW;
 		this.session = session;
 		// 保存之前的FrontBuffer，BackendCon收到的数据会写入到session.frontBuffer中
 		this.prevFrontBuffer = session.frontBuffer;
-		this.prevBackendBuffer=session.backendBuffer;
+		this.prevBackendBuffer = session.backendBuffer;
 		session.frontBuffer = session.allocNewProxyBuffer();
-		session.backendBuffer=session.allocNewProxyBuffer();
+		session.backendBuffer = session.allocNewProxyBuffer();
 		prevProxyHandler = session.curProxyHandler;
 	}
 
@@ -157,7 +162,7 @@ public class BackendAuthProcessor implements BackendIOTask<MySQLSession> {
 		session.recycleAllocedBuffer(session.backendBuffer);
 		// 恢复Session原来的状态
 		session.frontBuffer = prevFrontBuffer;
-		session.backendBuffer=prevBackendBuffer;
+		session.backendBuffer = prevBackendBuffer;
 		session.netOptMode = prevNetMode;
 		session.curProxyHandler = prevProxyHandler;
 	}

@@ -23,7 +23,7 @@
  */
 package io.mycat.mysql.packet;
 
-import io.mycat.mycat2.MySQLPackageInf;
+import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.proxy.ProxyBuffer;
 
 /**

@@ -1,4 +1,4 @@
-package io.mycat.mycat2;
+package io.mycat.mycat2.beans;
 /**
  *表示MySQL 数据报文的信息
  * @author wuzhihui

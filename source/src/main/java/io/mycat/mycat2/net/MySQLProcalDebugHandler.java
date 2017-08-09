@@ -3,8 +3,8 @@ package io.mycat.mycat2.net;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.MySQLPackageInf;
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.proxy.DefaultDirectProxyHandler;
 import io.mycat.proxy.ProxyBuffer;
 

@@ -104,7 +104,7 @@ public class ProxyReactorThread<T extends UserSession> extends Thread {
 		long ioTimes = 0;
 		while (true) {
 			try {
-				int selected = selector.select(SELECTOR_TIMEOUT);
+				selector.select(SELECTOR_TIMEOUT);
 				final Set<SelectionKey> keys = selector.selectedKeys();
 				//logger.info("handler keys ,total " + selected);
 				if (keys.isEmpty()) {

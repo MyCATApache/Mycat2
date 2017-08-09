@@ -1,4 +1,4 @@
-package io.mycat.mycat2;
+package io.mycat.mycat2.tasks;
 
 import io.mycat.proxy.BackendIOHandler;
 import io.mycat.proxy.UserSession;

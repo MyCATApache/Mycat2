@@ -5,6 +5,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.beans.MySQLCharset;
+import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.Versions;
 import io.mycat.mysql.packet.HandshakePacket;
@@ -24,8 +27,28 @@ public class MySQLSession extends UserSession {
 	 * 当前处理中的SQL报文的信息（前端）
 	 */
 	public MySQLPackageInf curFrontMSQLPackgInf = new MySQLPackageInf();
+	/**
+	 * 当前处理中的SQL报文的信息（后端）
+	 */
 	public MySQLPackageInf curBackendMSQLPackgInf = new MySQLPackageInf();
 
+	/**
+	 * 前端字符集
+	 */
+	public MySQLCharset frontCharSet;
+	/**
+	 * 前端用户
+	 */
+	public String clientUser;
+	/**
+	 * Mycat Schema
+	 */
+	public SchemaBean schema; 
+	
+		
+	/**
+	 * 认证中的seed报文数据
+	 */
 	public byte[] seed;
 
 	protected int getServerCapabilities() {
