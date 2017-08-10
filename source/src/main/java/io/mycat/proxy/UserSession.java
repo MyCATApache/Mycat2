@@ -136,8 +136,8 @@ public class UserSession {
 	 */
 	public int readFromChannel(ProxyBuffer proxyBuf, SocketChannel channel) throws IOException {
 		ByteBuffer buffer = proxyBuf.getBuffer();
-		buffer.position(proxyBuf.writeState.optPostion);
 		buffer.limit(proxyBuf.writeState.optLimit);
+		buffer.position(proxyBuf.writeState.optPostion);
 		int readed = channel.read(buffer);
 		proxyBuf.writeState.curOptedLength = readed;
 		if (readed > 0) {

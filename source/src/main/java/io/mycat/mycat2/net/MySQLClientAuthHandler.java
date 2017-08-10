@@ -15,13 +15,13 @@ import io.mycat.util.CharsetUtil;
 
 /**
  * MySQL客户端登录认证的Handler，为第一个Handler
- * 
+ *
  * @author wuzhihui
  *
  */
 public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSession> {
 	private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0 };
-	
+
 
 	public static final  MySQLClientAuthHandler INSTANCE=new MySQLClientAuthHandler();
 	/**
@@ -40,7 +40,7 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
 		session.frontKey = socketKey;
 		session.sendAuthPackge();
-		
+
 
 
 	}
@@ -74,6 +74,7 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 			boolean succ = success(auth);
 			if (succ) {
+				session.backendBuffer.reset();
 				session.answerFront(AUTH_OK);
 				//认证通过，设置当前SQL Handler为默认Handler
 				session.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
@@ -118,6 +119,6 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 		// }
 		return true;
 	}
-	
-	
+
+
 }
