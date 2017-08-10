@@ -38,19 +38,19 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 				|| session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
 			return;
 		}
-		if (backendBuffer.readState.hasRemain()) {
+		if (session.curFrontMSQLPackgInf.endPos<backendBuffer.getReadOptState().optLimit) {
 			logger.warn("front read half package ");
 		}
 		if (session.backendChannel == null) {
             //todo ，从连接池中获取连接，获取不到后创建新连接，
-			final DNBean dnBean = session.schema.getDefaultDN();
-	        final String replica = dnBean.getMysqlReplica();
-	        MycatConfig mycatConf=(MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
-	        final MySQLReplicatSet repSet = mycatConf.getMySQLReplicatSet(replica);
-	        final MySQLDataSource datas = repSet.getCurWriteDH();
+//			final DNBean dnBean = session.schema.getDefaultDN();
+//	        final String replica = dnBean.getMysqlReplica();
+//	        MycatConfig mycatConf=(MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
+//	        final MySQLReplicatSet repSet = mycatConf.getMySQLReplicatSet(replica);
+//	        final MySQLDataSource datas = repSet.getCurWriteDH();
 	        
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "localhost";
+			String serverIP = "10.211.55.5";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
@@ -94,6 +94,8 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 		}
 		//直接透传
 		session.frontBuffer.flip();
+		session.writeToChannel(session.frontBuffer, session.frontChannel);
+
 		session.modifySelectKey();
 
 	}

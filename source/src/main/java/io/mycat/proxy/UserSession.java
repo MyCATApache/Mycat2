@@ -136,8 +136,8 @@ public class UserSession {
 	 */
 	public int readFromChannel(ProxyBuffer proxyBuf, SocketChannel channel) throws IOException {
 		ByteBuffer buffer = proxyBuf.getBuffer();
-		buffer.position(proxyBuf.writeState.optPostion);
 		buffer.limit(proxyBuf.writeState.optLimit);
+		buffer.position(proxyBuf.writeState.optPostion);
 		int readed = channel.read(buffer);
 		proxyBuf.writeState.curOptedLength = readed;
 		if (readed > 0) {
@@ -214,7 +214,7 @@ public class UserSession {
 		if (channel == frontChannel) {
 			((FrontIOHandler) curProxyHandler).onFrontSocketClosed(this, normal);
 			frontChannel = null;
-		} else if (channel == frontChannel) {
+		} else if (channel == backendChannel) {
 			((BackendIOHandler) curProxyHandler).onBackendSocketClosed(this, normal);
 			backendChannel = null;
 		}
