@@ -23,15 +23,7 @@
  */
 package io.mycat.mycat2;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
+import io.mycat.mycat2.beans.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -39,7 +31,13 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-import io.mycat.mycat2.beans.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 /**
  * Load mycat config
  * @author wuzhihui
@@ -135,13 +133,26 @@ public class ConfigLoader {
             	repBean.setSwitchType(switchType);
             	List<Node> mysqlNodes=getChildNodes(curRepNode,"mysql");
             	List<MySQLBean> allMysqls=mysqlNodes.stream().map(mysqlNode->{  
-            	NamedNodeMap attrs = mysqlNode.getAttributes();
-        		String ip=getAttribute(attrs,"ip",null);
-        		String user=getAttribute(attrs,"user",null);
-        		String password=getAttribute(attrs,"password",null);
-        		int port=getIntAttribute(attrs,"port",3306);
-        		 MySQLBean mysql=new MySQLBean(ip,port,user,password);
-        		 return mysql;}).collect(Collectors.toList()) ;
+                    NamedNodeMap attrs = mysqlNode.getAttributes();
+                    String ip=getAttribute(attrs,"ip",null);
+                    String user=getAttribute(attrs,"user",null);
+                    String password=getAttribute(attrs,"password",null);
+                    int port=getIntAttribute(attrs,"port",3306);
+                    String hostName = getAttribute(attrs, "hostname", null);
+                    String defaultSchema = getAttribute(attrs, "default-schema", null);
+                    Integer maxCon = getIntAttribute(attrs, "max-con");
+                    Integer minCon = getIntAttribute(attrs, "min-con");
+                    MySQLBean mysql=new MySQLBean(ip,port,user,password);
+                    if (hostName != null)
+                        mysql.setHostName(hostName);
+                    if (defaultSchema != null)
+                        mysql.setDefaultSchema(defaultSchema);
+                    if (maxCon != null)
+                        mysql.setMaxCon(maxCon);
+                    if (minCon != null)
+                        mysql.setMinCon(minCon);
+                    return mysql;
+                }).collect(Collectors.toList()) ;
                  repBean.setMysqls(allMysqls);
                  list.add(repBean);
             }    
@@ -160,6 +171,11 @@ public class ConfigLoader {
     private static String getAttribute(NamedNodeMap map,String attr,String defaultVal)
     {
     	return getValue(map.getNamedItem(attr),defaultVal);
+    }
+    private static Integer getIntAttribute(NamedNodeMap map,String attr)
+    {
+        Node node = map.getNamedItem(attr);
+        return node == null ? null : Integer.valueOf(node.getNodeValue());
     }
     private static int getIntAttribute(NamedNodeMap map,String attr,int defaultVal)
     {
