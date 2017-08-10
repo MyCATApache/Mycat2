@@ -65,9 +65,9 @@ public class MycatCore {
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
 		// runtime.setSessionManager(new DefaultTCPProxySessionManager());
 		// Debug观察MySQL协议用
-		runtime.setSessionManager(new MySQLStudySessionManager());
+//		runtime.setSessionManager(new MySQLStudySessionManager());
 		// Mycat 2.0 Session Manager
-		// runtime.setSessionManager(new MycatSessionManager());
+		 runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
 		ProxyReactorThread[] nioThreads = runtime.getReactorThreads();
 		for (int i = 0; i < cpus; i++) {
