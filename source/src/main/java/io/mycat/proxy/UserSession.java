@@ -214,7 +214,7 @@ public class UserSession {
 		if (channel == frontChannel) {
 			((FrontIOHandler) curProxyHandler).onFrontSocketClosed(this, normal);
 			frontChannel = null;
-		} else if (channel == frontChannel) {
+		} else if (channel == backendChannel) {
 			((BackendIOHandler) curProxyHandler).onBackendSocketClosed(this, normal);
 			backendChannel = null;
 		}
