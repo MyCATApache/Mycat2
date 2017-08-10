@@ -94,6 +94,8 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 		}
 		//直接透传
 		session.frontBuffer.flip();
+		session.writeChannel(session.frontBuffer, session.frontChannel);
+
 		session.modifySelectKey();
 
 	}
