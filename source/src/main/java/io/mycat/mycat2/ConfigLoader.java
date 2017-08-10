@@ -135,13 +135,26 @@ public class ConfigLoader {
             	repBean.setSwitchType(switchType);
             	List<Node> mysqlNodes=getChildNodes(curRepNode,"mysql");
             	List<MySQLBean> allMysqls=mysqlNodes.stream().map(mysqlNode->{  
-            	NamedNodeMap attrs = mysqlNode.getAttributes();
-        		String ip=getAttribute(attrs,"ip",null);
-        		String user=getAttribute(attrs,"user",null);
-        		String password=getAttribute(attrs,"password",null);
-        		int port=getIntAttribute(attrs,"port",3306);
-        		 MySQLBean mysql=new MySQLBean(ip,port,user,password);
-        		 return mysql;}).collect(Collectors.toList()) ;
+					NamedNodeMap attrs = mysqlNode.getAttributes();
+					String ip=getAttribute(attrs,"ip",null);
+					String user=getAttribute(attrs,"user",null);
+					String password=getAttribute(attrs,"password",null);
+					int port=getIntAttribute(attrs,"port",3306);
+					String hostName = getAttribute(attrs, "hostname", null);
+					String defaultSchema = getAttribute(attrs, "default-schema", null);
+					Integer minCon = getIntAttribute(attrs, "min-con");
+					Integer maxCon = getIntAttribute(attrs, "max-con");
+        		 	MySQLBean mysql=new MySQLBean(ip,port,user,password);
+					if (hostName != null)
+						mysql.setHostName(hostName);
+					if (defaultSchema != null)
+						mysql.setDefaultSchema(defaultSchema);
+					if (minCon != null)
+						mysql.setMinCon(minCon);
+					if (maxCon != null)
+						mysql.setMaxCon(maxCon);
+					return mysql;
+				}).collect(Collectors.toList()) ;
                  repBean.setMysqls(allMysqls);
                  list.add(repBean);
             }    
@@ -161,6 +174,11 @@ public class ConfigLoader {
     {
     	return getValue(map.getNamedItem(attr),defaultVal);
     }
+	private static Integer getIntAttribute(NamedNodeMap map,String attr)
+	{
+		Node node = map.getNamedItem(attr);
+		return node == null ? null : Integer.valueOf(node.getNodeValue());
+	}
     private static int getIntAttribute(NamedNodeMap map,String attr,int defaultVal)
     {
     	return getIntValue(map.getNamedItem(attr),defaultVal);
