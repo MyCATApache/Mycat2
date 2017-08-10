@@ -38,7 +38,7 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 				|| session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
 			return;
 		}
-		if (backendBuffer.readState.hasRemain()) {
+		if (session.curFrontMSQLPackgInf.endPos<backendBuffer.getReadOptState().optLimit) {
 			logger.warn("front read half package ");
 		}
 		if (session.backendChannel == null) {
