@@ -29,13 +29,6 @@ public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
 		logger.info("MySQL client connected  ." + frontChannel);
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
-		session.bufPool = bufPool;
-		session.nioSelector = nioSelector;
-		session.frontChannel = frontChannel;
-		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
-		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
-		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
-		session.frontKey = socketKey;
 		session.setCurProxyHandler(MySQLProcalDebugHandler.INSTANCE);
 
 		// // todo ,from config

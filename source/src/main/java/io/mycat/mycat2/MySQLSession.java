@@ -17,11 +17,13 @@ import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.StringUtil;
-import io.mycat.proxy.UserSession;
+import io.mycat.proxy.UserProxySession;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
 
-public class MySQLSession extends UserSession {
+public class MySQLSession extends UserProxySession {
+
+	public SQLCommand curSQLCommand;
 
 	/**
 	 * 当前处理中的SQL报文的信息（前端）
@@ -43,9 +45,8 @@ public class MySQLSession extends UserSession {
 	/**
 	 * Mycat Schema
 	 */
-	public SchemaBean schema; 
-	
-		
+	public SchemaBean schema;
+
 	/**
 	 * 认证中的seed报文数据
 	 */
@@ -127,7 +128,7 @@ public class MySQLSession extends UserSession {
 		this.writeToChannel(frontBuffer, this.frontChannel);
 	}
 
-	public MySQLSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) {
+	public MySQLSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
 		super(bufPool, nioSelector, frontChannel);
 
 	}
@@ -234,6 +235,13 @@ public class MySQLSession extends UserSession {
 		}
 		return readWholePkg;
 
+	}
+	public void close(String message) {
+		if(!this.isClosed())
+		{
+			super.close(message);
+			this.curSQLCommand.clearResouces(true);
+		}
 	}
 
 }

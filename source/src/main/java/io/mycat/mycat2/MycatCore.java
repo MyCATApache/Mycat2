@@ -35,6 +35,7 @@ import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.common.NamebleScheduledExecutor;
+import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOAcceptor;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
@@ -65,19 +66,19 @@ public class MycatCore {
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
 		// runtime.setSessionManager(new DefaultTCPProxySessionManager());
 		// Debug观察MySQL协议用
-//		runtime.setSessionManager(new MySQLStudySessionManager());
+		// runtime.setSessionManager(new MySQLStudySessionManager());
 		// Mycat 2.0 Session Manager
-		 runtime.setSessionManager(new MycatSessionManager());
+		runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
 		ProxyReactorThread[] nioThreads = runtime.getReactorThreads();
 		for (int i = 0; i < cpus; i++) {
-			ProxyReactorThread thread = new ProxyReactorThread();
+			ProxyReactorThread thread = new ProxyReactorThread(new BufferPool(1024 * 10));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
 		}
 		// 启动NIO Acceptor
-		new NIOAcceptor().start();
+		new NIOAcceptor(new BufferPool(1024 * 10)).start();
 
 		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
 		List<MySQLRepBean> mysqlRepBeans = ConfigLoader.loadMySQLRepBean(datasourceURL.toString());
