@@ -21,8 +21,8 @@ import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.UserSession;
-import io.mycat.proxy.UserSession.NetOptMode;
+import io.mycat.proxy.UserProxySession;
+import io.mycat.proxy.UserProxySession.NetOptMode;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.SecurityUtil;
 
@@ -48,7 +48,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		
         
 		prevNetMode = session.netOptMode;
-		session.netOptMode = UserSession.NetOptMode.BackendRW;
+		session.netOptMode = UserProxySession.NetOptMode.BackendRW;
 		this.session = session;
 		// 保存之前的FrontBuffer，BackendCon收到的数据会写入到session.frontBuffer中
 		this.prevFrontBuffer = session.frontBuffer;

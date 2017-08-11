@@ -8,16 +8,14 @@ import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLReplicatSet;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.DNBean;
-import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.proxy.DefaultDirectProxyHandler;
+import io.mycat.proxy.BackendIOHandler;
+import io.mycat.proxy.FrontIOHandler;
 import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.UserProxySession;
 
 /**
  * 负责处理通用的SQL命令，默认情况下透传
@@ -25,32 +23,37 @@ import io.mycat.proxy.ProxyRuntime;
  * @author wuzhihui
  *
  */
-public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
+public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(DefaultSQLHandler.class);
 	public static DefaultSQLHandler INSTANCE = new DefaultSQLHandler();
-	// private ArrayList<Runnable> pendingJob;
+	public static DirectPassthrouhCmd defaultSQLCmd = new DirectPassthrouhCmd();
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(true);
 		ProxyBuffer backendBuffer = session.backendBuffer;
-		if (readed == false
-				|| session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+		if (readed == false) {
 			return;
 		}
-		if (session.curFrontMSQLPackgInf.endPos<backendBuffer.getReadOptState().optLimit) {
-			logger.warn("front read half package ");
+		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+			// 没有读到完整报文
+			return;
+		}
+		if (session.curFrontMSQLPackgInf.endPos < backendBuffer.getReadOptState().optLimit) {
+			logger.warn("front contains multi package ");
 		}
 		if (session.backendChannel == null) {
-            //todo ，从连接池中获取连接，获取不到后创建新连接，
-//			final DNBean dnBean = session.schema.getDefaultDN();
-//	        final String replica = dnBean.getMysqlReplica();
-//	        MycatConfig mycatConf=(MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
-//	        final MySQLReplicatSet repSet = mycatConf.getMySQLReplicatSet(replica);
-//	        final MySQLDataSource datas = repSet.getCurWriteDH();
-	        
+			// todo ，从连接池中获取连接，获取不到后创建新连接，
+			// final DNBean dnBean = session.schema.getDefaultDN();
+			// final String replica = dnBean.getMysqlReplica();
+			// MycatConfig
+			// mycatConf=(MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
+			// final MySQLReplicatSet repSet =
+			// mycatConf.getMySQLReplicatSet(replica);
+			// final MySQLDataSource datas = repSet.getCurWriteDH();
+
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "10.211.55.5";
+			String serverIP = "localhost";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
@@ -61,13 +64,14 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 			session.backendKey = selectKey;
 			logger.info("Connecting to server " + serverIP + ":" + serverPort);
 
-			BackendConCreateTask authProcessor = new BackendConCreateTask(session,null);
+			BackendConCreateTask authProcessor = new BackendConCreateTask(session, null);
 			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 				if (exeSucces) {
 					optSession.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
-					// 透传前端发送的命令给Server
-					session.backendBuffer.flip();
-					session.writeToChannel(session.backendBuffer, session.backendChannel);
+					// 交给SQLComand去处理
+					if (session.curSQLCommand.procssSQL(session, false)) {
+						session.curSQLCommand.clearResouces(false);
+					}
 				} else {
 					ErrorPacket errPkg = (ErrorPacket) retVal;
 					optSession.responseOKOrError(errPkg, true);
@@ -78,27 +82,79 @@ public class DefaultSQLHandler extends DefaultDirectProxyHandler<MySQLSession> {
 			return;
 
 		} else {
-			//直接透传报文
-			backendBuffer.flip();
-			session.writeToChannel(backendBuffer, session.backendChannel);
-			return;
+			// 交给SQLComand去处理
+			if (session.curSQLCommand.procssSQL(session, false)) {
+				session.curSQLCommand.clearResouces(false);
+			}
 		}
 
 	}
-	
+
 	public void onBackendRead(MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(false);
-		if (readed == false
-				|| session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false) == false) {
+		if (readed == false) {
 			return;
 		}
-		//直接透传
-		session.frontBuffer.flip();
-		session.writeToChannel(session.frontBuffer, session.frontChannel);
+		// 交给SQLComand去处理
+		if (session.curSQLCommand.procssSQL(session, true)) {
+			session.curSQLCommand.clearResouces(false);
+		}
+	}
 
-		session.modifySelectKey();
+	@Override
+	public void onBackendConnect(MySQLSession userSession, boolean success, String msg) throws IOException {
+		logger.warn("not handled (expected ) onBackendConnect event " + userSession.sessionInfo());
 
 	}
 
+	/**
+	 * 前端连接关闭后，延迟关闭会话
+	 * 
+	 * @param userSession
+	 * @param normal
+	 */
+	public void onFrontSocketClosed(MySQLSession userSession, boolean normal) {
+		userSession.lazyCloseSession("front closed");
+
+	}
+
+	/**
+	 * 后端连接关闭后，延迟关闭会话
+	 * 
+	 * @param userSession
+	 * @param normal
+	 */
+	public void onBackendSocketClosed(MySQLSession userSession, boolean normal) {
+		userSession.lazyCloseSession("backend closed ");
+	}
+
+	/**
+	 * Socket IO读写过程中出现异常后的操作，通常是要关闭Session的
+	 * 
+	 * @param userSession
+	 * @param exception
+	 */
+	protected void onSocketException(UserProxySession userSession, Exception exception) {
+		if (exception instanceof IOException) {
+			logger.warn(
+					"DefaultSQLHandler handle IO error " + userSession.sessionInfo() + " " + exception.getMessage());
+
+		} else {
+			logger.warn("DefaultSQLHandler handle IO error " + userSession.sessionInfo(), exception);
+		}
+		userSession.close("exception:" + exception.getMessage());
+	}
+
+	@Override
+	public void onFrontWrite(MySQLSession session) throws IOException {
+		session.writeToChannel(session.frontBuffer, session.frontChannel);
+
+	}
+
+	@Override
+	public void onBackendWrite(MySQLSession session) throws IOException {
+		session.writeToChannel(session.backendBuffer, session.backendChannel);
+
+	}
 
 }

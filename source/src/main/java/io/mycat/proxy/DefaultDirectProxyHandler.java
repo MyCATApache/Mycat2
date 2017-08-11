@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class DefaultDirectProxyHandler<T extends UserSession> implements FrontIOHandler<T> ,BackendIOHandler<T>{
+public class DefaultDirectProxyHandler<T extends UserProxySession> implements FrontIOHandler<T> ,BackendIOHandler<T>{
 	protected static Logger logger = LoggerFactory.getLogger(DefaultDirectProxyHandler.class);
 	public void onBackendConnect(T userSession, boolean success, String msg) throws IOException {
 		String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
@@ -60,7 +60,7 @@ public class DefaultDirectProxyHandler<T extends UserSession> implements FrontIO
 	 * @param userSession
 	 * @param exception
 	 */
-	protected void onSocketException(UserSession userSession, Exception exception) {
+	protected void onSocketException(UserProxySession userSession, Exception exception) {
 		if (exception instanceof IOException) {
 			logger.warn("ProxyTransDataNIOHandler handle IO error " + userSession.sessionInfo() + " "
 					+ exception.getMessage());

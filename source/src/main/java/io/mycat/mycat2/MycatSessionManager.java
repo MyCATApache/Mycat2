@@ -1,14 +1,13 @@
 package io.mycat.mycat2;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.net.DefaultSQLHandler;
 import io.mycat.mycat2.net.MySQLClientAuthHandler;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.SessionManager;
@@ -29,16 +28,11 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 		logger.info("MySQL client connected  ." + frontChannel);
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
-		session.bufPool = bufPool;
-		session.nioSelector = nioSelector;
-		session.frontChannel = frontChannel;
-		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
-		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
-		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
-		session.frontKey = socketKey;
+		//默认为透传命令模式
+		session.curSQLCommand = DefaultSQLHandler.defaultSQLCmd;
 		// 第一个IO处理器为Client Authorware
 		session.setCurProxyHandler(MySQLClientAuthHandler.INSTANCE);
-		//向MySQL Client发送认证报文
+		// 向MySQL Client发送认证报文
 		session.sendAuthPackge();
 		return session;
 	}

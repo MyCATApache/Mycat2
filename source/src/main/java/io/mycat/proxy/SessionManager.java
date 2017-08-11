@@ -10,7 +10,7 @@ import java.nio.channels.SocketChannel;
  * @author wuzhihui
  *
  */
-public interface SessionManager<T extends UserSession> {
+public interface SessionManager<T extends Session> {
 
 	public T createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException;
 	

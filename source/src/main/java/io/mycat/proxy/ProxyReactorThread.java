@@ -19,17 +19,18 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class ProxyReactorThread<T extends UserSession> extends Thread {
+public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 	private final static long SELECTOR_TIMEOUT = 1000;
 	private final SessionManager<T> sessionMan;
 	private final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
 	private final Selector selector;
-	private final BufferPool bufPool = new BufferPool(1024 * 10);
+	private final BufferPool bufPool ;
 	private ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
 	private ArrayList<T> allSessions = new ArrayList<T>();
 
 	@SuppressWarnings("unchecked")
-	public ProxyReactorThread() throws IOException {
+	public ProxyReactorThread( BufferPool bufPool) throws IOException {
+		this.bufPool=bufPool;
 		this.selector = Selector.open();
 		sessionMan = ProxyRuntime.INSTANCE.getSessionManager();
 	}

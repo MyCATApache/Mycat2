@@ -4,6 +4,6 @@ package io.mycat.proxy;
  * @author wuzhihui
  *
  */
-public interface NIOHandler<T extends UserSession> {
+public interface NIOHandler<T extends Session> {
 
 }

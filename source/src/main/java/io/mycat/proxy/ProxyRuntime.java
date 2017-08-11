@@ -19,6 +19,8 @@ public class ProxyRuntime {
 	
 	private ProxyReactorThread[] reactorThreads;
 	private SessionManager sessionManager;
+	//用于管理端口的Session会话管理
+	private SessionManager adminSessionManager;
 	private ProxyConfig proxyConfig;
 	private static final ScheduledExecutorService schedulerService;
 	/**
@@ -149,6 +151,18 @@ public class ProxyRuntime {
 
 	public void setTraceProtocol(boolean traceProtocol) {
 		this.traceProtocol = traceProtocol;
+	}
+
+
+
+	public SessionManager getAdminSessionManager() {
+		return adminSessionManager;
+	}
+
+
+
+	public void setAdminSessionManager(SessionManager adminSessionManager) {
+		this.adminSessionManager = adminSessionManager;
 	}
 
 }

@@ -14,20 +14,13 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class DefaultTCPProxySessionManager implements SessionManager<UserSession>{
+public class DefaultTCPProxySessionManager implements SessionManager<UserProxySession>{
 	protected static Logger logger = LoggerFactory.getLogger(DefaultTCPProxySessionManager.class);
 	@Override
-	public UserSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
+	public UserProxySession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
 		
-		UserSession session = new UserSession(bufPool, nioSelector, frontChannel);
-		session.bufPool = bufPool;
-		session.nioSelector = nioSelector;
-		session.frontChannel = frontChannel;
-		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
-		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
-		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
-		session.frontKey = socketKey;
-		logger.info("front connected  ." + frontChannel+ "create session "+session);
+		UserProxySession session = new UserProxySession(bufPool, nioSelector, frontChannel);
+		
 		// todo ,from config
 		// 尝试连接Server 端口
 		String serverIP = "localhost";
@@ -36,7 +29,7 @@ public class DefaultTCPProxySessionManager implements SessionManager<UserSession
 		session.backendChannel = SocketChannel.open();
 		session.backendChannel.configureBlocking(false);
 		session.backendChannel.connect(serverAddress);
-		session.curProxyHandler=new DefaultDirectProxyHandler();
+		session.curProxyHandler=new DefaultDirectProxyHandler<UserProxySession>();
 		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
 		session.backendKey = selectKey;
 		logger.info("Connecting to backend server " + serverIP + ":" + serverPort);
