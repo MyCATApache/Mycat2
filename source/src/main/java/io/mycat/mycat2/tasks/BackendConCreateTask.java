@@ -106,7 +106,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 			welcomePkgReceived = true;
 		} else {
 			// 认证结果报文收到
-			if (session.curBackendMSQLPackgInf.pkgType == 0x00) {
+			if (session.curBackendMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
 				logger.info("backend authed suceess ");
 				this.finished(true);
 			} else if (session.curBackendMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
