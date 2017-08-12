@@ -12,7 +12,16 @@ import java.nio.channels.SocketChannel;
  */
 public interface SessionManager<T extends Session> {
 
-	public T createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException;
+	/**
+	 * 针对新创建的连接，产生对应的Session对象，
+	 * @param bufPool 用来获取Buffer的Pool
+	 * @param nioSelector 注册到对应的Selector上
+	 * @param channel Channel对象
+	 * @param isAcceptedCon 是服务端收到的请求，还是客户端发起的请求
+	 * @return
+	 * @throws IOException
+	 */
+	public T createSession(BufferPool bufPool, Selector nioSelector, SocketChannel channel,boolean isAcceptedCon) throws IOException;
 	
 	
 }

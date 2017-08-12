@@ -23,7 +23,7 @@ public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
 	protected static Logger logger = LoggerFactory.getLogger(MySQLStudySessionManager.class);
 
 	@Override
-	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
+	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,boolean isAcceptCon)
 			throws IOException {
 
 		logger.info("MySQL client connected  ." + frontChannel);

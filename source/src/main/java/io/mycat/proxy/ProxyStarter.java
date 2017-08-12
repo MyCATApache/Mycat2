@@ -3,6 +3,9 @@ package io.mycat.proxy;
 import java.io.IOException;
 
 import io.mycat.mycat2.MySQLStudySessionManager;
+import io.mycat.proxy.man.AdminCommandResovler;
+import io.mycat.proxy.man.DefaultAdminSessionHandler;
+import io.mycat.proxy.man.DefaultAdminSessionManager;
 
 public class ProxyStarter {
 
@@ -32,10 +35,14 @@ public class ProxyStarter {
 		}
 		// 启动NIO Acceptor
 		new NIOAcceptor(new BufferPool(1024 * 10)).start();
-
+		if (config.isClusterEnable()) {
+			runtime.setAdminSessionManager(new DefaultAdminSessionManager());
+			runtime.setAdminCmdResolver(new AdminCommandResovler());
+			runtime.setAdminSessionIOHandler(new DefaultAdminSessionHandler());
+		}
 		System.out.println(
 				"*** Mycat NIO Proxy Server  *** ,NIO Threads " + nioThreads.length + " listen on " + config.getBindIP()
-						+ ":" + config.getBindPort() + "Management port enabled " + config.isAdminPortEnable());
+						+ ":" + config.getBindPort() + ",Cluster mode enabled " + config.isClusterEnable());
 
 	}
 

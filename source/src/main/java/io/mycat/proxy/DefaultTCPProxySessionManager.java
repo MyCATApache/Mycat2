@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultTCPProxySessionManager implements SessionManager<UserProxySession>{
 	protected static Logger logger = LoggerFactory.getLogger(DefaultTCPProxySessionManager.class);
 	@Override
-	public UserProxySession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
+	public UserProxySession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,boolean isAcceptedCon) throws IOException {
 		
 		UserProxySession session = new UserProxySession(bufPool, nioSelector, frontChannel);
 		
