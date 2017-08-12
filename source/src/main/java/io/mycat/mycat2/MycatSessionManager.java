@@ -22,13 +22,13 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 	protected static Logger logger = LoggerFactory.getLogger(MycatSessionManager.class);
 
 	@Override
-	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
-			throws IOException {
+	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,
+			boolean isAcceptCon) throws IOException {
 
 		logger.info("MySQL client connected  ." + frontChannel);
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
-		//默认为透传命令模式
+		// 默认为透传命令模式
 		session.curSQLCommand = DefaultSQLHandler.defaultSQLCmd;
 		// 第一个IO处理器为Client Authorware
 		session.setCurProxyHandler(MySQLClientAuthHandler.INSTANCE);

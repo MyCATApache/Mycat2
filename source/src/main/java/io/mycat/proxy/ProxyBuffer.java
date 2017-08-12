@@ -73,6 +73,10 @@ public class ProxyBuffer {
 		
 	}
 
+	/**
+	 * 只能用在读状态下，跳过指定的N个字符
+	 * @param step
+	 */
 	public void skip(int step) {
 		this.readState.optPostion += step;
 	}

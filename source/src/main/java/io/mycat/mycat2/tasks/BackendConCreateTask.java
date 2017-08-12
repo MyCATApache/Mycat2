@@ -8,10 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLReplicatSet;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.DNBean;
 import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
@@ -20,7 +17,6 @@ import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.UserProxySession;
 import io.mycat.proxy.UserProxySession.NetOptMode;
 import io.mycat.util.CharsetUtil;
@@ -44,6 +40,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 	private AsynTaskCallBack callBack;
 	private ErrorPacket errPkg;
 
+	@SuppressWarnings("unchecked")
 	public BackendConCreateTask(MySQLSession session,MySQLDataSource ds) {
 		
         
@@ -55,7 +52,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		this.prevBackendBuffer = session.backendBuffer;
 		session.frontBuffer = session.allocNewProxyBuffer();
 		session.backendBuffer = session.allocNewProxyBuffer();
-		prevProxyHandler = session.curProxyHandler;
+		prevProxyHandler = (NIOHandler<MySQLSession>) session.curProxyHandler;
 	}
 
 	@Override
@@ -77,7 +74,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 			if (charset != null) {
 				// conn.setCharset(charsetIndex, charset);
 			} else {
-				String errmsg = "Unknown charsetIndex:" + charsetIndex + " of " + session.sessionId;
+				String errmsg = "Unknown charsetIndex:" + charsetIndex + " of " + session.getSessionId();
 				logger.warn(errmsg);
 				return;
 			}

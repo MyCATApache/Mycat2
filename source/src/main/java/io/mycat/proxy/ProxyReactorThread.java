@@ -24,13 +24,13 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 	private final SessionManager<T> sessionMan;
 	private final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
 	private final Selector selector;
-	private final BufferPool bufPool ;
+	private final BufferPool bufPool;
 	private ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
 	private ArrayList<T> allSessions = new ArrayList<T>();
 
 	@SuppressWarnings("unchecked")
-	public ProxyReactorThread( BufferPool bufPool) throws IOException {
-		this.bufPool=bufPool;
+	public ProxyReactorThread(BufferPool bufPool) throws IOException {
+		this.bufPool = bufPool;
 		this.selector = Selector.open();
 		sessionMan = ProxyRuntime.INSTANCE.getSessionManager();
 	}
@@ -38,7 +38,7 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 	public void acceptNewSocketChannel(final SocketChannel socketChannel) throws IOException {
 		pendingJobs.offer(() -> {
 			try {
-				T session = sessionMan.createSession(this.bufPool, selector, socketChannel);
+				T session = sessionMan.createSession(this.bufPool, selector, socketChannel, true);
 				allSessions.add(session);
 			} catch (Exception e) {
 				logger.warn("regist new connection err " + e);
@@ -82,10 +82,10 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 			}
 		} else {
 			if ((readdyOps & SelectionKey.OP_READ) != 0) {
-				//logger.info("readable keys " + curChannel);
+				// logger.info("readable keys " + curChannel);
 				handleREvent(curChannel, session);
 			} else {
-				//logger.info("writable keys " + curChannel);
+				// logger.info("writable keys " + curChannel);
 				handleWEvent(curChannel, session);
 			}
 		}
@@ -107,7 +107,7 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 			try {
 				selector.select(SELECTOR_TIMEOUT);
 				final Set<SelectionKey> keys = selector.selectedKeys();
-				//logger.info("handler keys ,total " + selected);
+				// logger.info("handler keys ,total " + selected);
 				if (keys.isEmpty()) {
 					if (!pendingJobs.isEmpty()) {
 						ioTimes = 0;
