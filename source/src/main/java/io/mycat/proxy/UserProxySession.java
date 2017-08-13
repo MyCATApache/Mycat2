@@ -14,9 +14,13 @@ import java.nio.channels.SocketChannel;
  * @author wuzhihui
  *
  */
-public class UserProxySession extends Session {
+public class UserProxySession extends AbstractSession {
+	// 保存前端收到的数据，即相当于前端的ReadingBuffer，channel.read(backendBuffer)
+	public ProxyBuffer backendBuffer;
+
 	public UserProxySession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		super(bufferPool, selector, channel);
+		backendBuffer = new ProxyBuffer(bufPool.allocByteBuffer());
 	}
 
 	public enum NetOptMode {
@@ -33,6 +37,9 @@ public class UserProxySession extends Session {
 	 * 默认是透传报文模式，联动两边的NIO事件
 	 */
 	public NetOptMode netOptMode = NetOptMode.DirectTrans;
+
+	// 当前NIO ProxyHandler
+	public NIOHandler<? extends UserProxySession> curProxyHandler;
 
 	public boolean isBackendOpen() {
 		return backendChannel != null && backendChannel.isConnected();
@@ -60,14 +67,24 @@ public class UserProxySession extends Session {
 			super.close(message);
 			// 关闭后端连接
 			closeSocket(backendChannel);
-			// backendBuffer已经被父类回收，所以这里无需回收
+			bufPool.recycleBuf(backendBuffer.getBuffer());
+			super.close(message);
 		} else {
-			logger.warn("session already closed " + this.sessionInfo());
+			super.close(message);
 		}
 
 	}
 
-	@SuppressWarnings("unchecked")
+	public void setCurProxyHandler(NIOHandler<? extends UserProxySession> proxyHandler) {
+		curProxyHandler = proxyHandler;
+	}
+
+	@SuppressWarnings("rawtypes")
+	public NIOHandler getCurProxyHandler() {
+		return curProxyHandler;
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void closeSocket(SocketChannel channel, boolean normal, String msg) {
 		if (channel == null) {
 			return;

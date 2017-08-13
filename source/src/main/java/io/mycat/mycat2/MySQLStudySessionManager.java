@@ -5,12 +5,15 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.net.MySQLProcalDebugHandler;
 import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
 
 /**
@@ -21,10 +24,11 @@ import io.mycat.proxy.SessionManager;
  */
 public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
 	protected static Logger logger = LoggerFactory.getLogger(MySQLStudySessionManager.class);
+	private ArrayList<MySQLSession> allSessions = new ArrayList<MySQLSession>();
 
 	@Override
-	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
-			throws IOException {
+	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,
+			boolean isAcceptCon) throws IOException {
 
 		logger.info("MySQL client connected  ." + frontChannel);
 
@@ -41,8 +45,19 @@ public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
 		session.backendChannel.connect(serverAddress);
 		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
 		session.backendKey = selectKey;
+		session.setSessionManager(this);
+		allSessions.add(session);
 		logger.info("Connecting to server " + serverIP + ":" + serverPort);
 		return session;
 	}
 
+	@Override
+	public Collection<MySQLSession> getAllSessions() {
+		return this.allSessions;
+	}
+
+	public void removeSession(Session session) {
+		this.allSessions.remove(session);
+
+	}
 }

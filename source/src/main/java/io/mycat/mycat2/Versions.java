@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,17 +16,17 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
- * https://code.google.com/p/opencloudb/.
+ *
+ * Any questions about this component can be directed to it's project Web address
+ * https://mycat.io/
  *
  */
-package io.mycat.mysql;
+package io.mycat.mycat2;
 
 /**
  * @author mycat
  */
-public interface Versions {
+public class Versions {
 
     /**协议版本**/
     public static final byte PROTOCOL_VERSION = 10;

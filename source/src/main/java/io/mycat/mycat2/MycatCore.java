@@ -24,6 +24,7 @@
 package io.mycat.mycat2;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
@@ -39,6 +40,11 @@ import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOAcceptor;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.man.AdminCommandResovler;
+import io.mycat.proxy.man.ClusterNode;
+import io.mycat.proxy.man.DefaultAdminSessionHandler;
+import io.mycat.proxy.man.DefaultAdminSessionManager;
+import io.mycat.proxy.man.MyCluster;
 
 /**
  * @author wuzhihui
@@ -54,9 +60,9 @@ public class MycatCore {
 		NameableExecutor businessExecutor = ExecutorUtil.create("BusinessExecutor", 10);
 		// 定时器Executor，用来执行定时任务
 		NamebleScheduledExecutor timerExecutor = ExecutorUtil.createSheduledExecute("Timer", 5);
-		MycatConfig conf = new MycatConfig();
-		conf.setBindIP("0.0.0.0");
-		conf.setBindPort(8066);
+		InputStream instream=ClassLoader.getSystemResourceAsStream("mycat.conf");
+		 instream=(instream==null)?ConfigLoader.class.getResourceAsStream("/mycat.conf"):instream;
+		MycatConfig conf = MycatConfig.loadFromProperties(instream);
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
 		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
@@ -78,7 +84,19 @@ public class MycatCore {
 			nioThreads[i] = thread;
 		}
 		// 启动NIO Acceptor
-		new NIOAcceptor(new BufferPool(1024 * 10)).start();
+		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
+		acceptor.start();
+		if (conf.isClusterEnable()) {
+			runtime.setAdminSessionManager(new DefaultAdminSessionManager());
+			runtime.setAdminCmdResolver(new AdminCommandResovler());
+			runtime.setAdminSessionIOHandler(new DefaultAdminSessionHandler());
+			ClusterNode myNode = new ClusterNode(conf.getMyNodeId(), conf.getClusterIP(), conf.getClusterPort());
+			MyCluster cluster = new MyCluster(acceptor.getSelector(), myNode,
+					ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
+			runtime.setMyCLuster(cluster);
+			cluster.initCluster();
+
+		}
 
 		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
 		List<MySQLRepBean> mysqlRepBeans = ConfigLoader.loadMySQLRepBean(datasourceURL.toString());
