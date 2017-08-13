@@ -9,6 +9,7 @@ import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
+import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BufferOptState;
@@ -45,6 +46,11 @@ public class MySQLSession extends UserProxySession {
 	 * Mycat Schema
 	 */
 	public SchemaBean schema;
+
+	/**
+	 * 事务隔离级别
+	 */
+	public Isolation isolation = Isolation.REPEATED_READ;
 
 	/**
 	 * 认证中的seed报文数据
