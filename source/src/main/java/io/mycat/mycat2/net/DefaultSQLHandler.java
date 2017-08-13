@@ -54,7 +54,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			// final MySQLDataSource datas = repSet.getCurWriteDH();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "10.211.55.5";
+			String serverIP = "localhost";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
