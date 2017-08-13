@@ -6,4 +6,5 @@ package io.mycat.proxy;
  */
 public interface Session {
 	boolean isClosed();
+	public <T extends Session> SessionManager<T> getMySessionManager();
 }

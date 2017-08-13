@@ -3,6 +3,7 @@ package io.mycat.proxy;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Collection;
 
 /**
  * 用来处理新的连接请求并创建Session
@@ -22,6 +23,10 @@ public interface SessionManager<T extends Session> {
 	 * @throws IOException
 	 */
 	public T createSession(BufferPool bufPool, Selector nioSelector, SocketChannel channel,boolean isAcceptedCon) throws IOException;
+	
+	public Collection<T> getAllSessions();
+
+	public void removeSession(Session session);
 	
 	
 }

@@ -5,6 +5,8 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultTCPProxySessionManager implements SessionManager<UserProxySession>{
 	protected static Logger logger = LoggerFactory.getLogger(DefaultTCPProxySessionManager.class);
+    private ArrayList<UserProxySession> allSessions=new  ArrayList<UserProxySession>();
 	@Override
 	public UserProxySession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,boolean isAcceptedCon) throws IOException {
 		
@@ -33,9 +36,17 @@ public class DefaultTCPProxySessionManager implements SessionManager<UserProxySe
 		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
 		session.backendKey = selectKey;
 		logger.info("Connecting to backend server " + serverIP + ":" + serverPort);
+		session.setSessionManager(this);
+		allSessions.add(session);
 		return session;
 	}
 
-	
+	@Override
+	public Collection<UserProxySession> getAllSessions() {
+		return this.allSessions;
+	}
+	public void removeSession(Session session) {
+		this.allSessions.remove(session);
 
+	}
 }

@@ -12,8 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
-import io.mycat.proxy.man.DefaultAdminSessionHandler;
-import io.mycat.proxy.man.DefaultAdminSessionManager;
 import io.mycat.proxy.man.MyCluster;
 
 @SuppressWarnings("rawtypes")
@@ -28,7 +26,7 @@ public class ProxyRuntime {
 	private ProxyReactorThread[] reactorThreads;
 	private SessionManager sessionManager;
 	// 用于管理端口的Session会话管理
-	private SessionManager adminSessionManager;
+	private SessionManager<AdminSession> adminSessionManager;
 	// 用于管理端口的Session IO Handler
 	private FrontIOHandler<AdminSession> adminSessionIOHandler;
 	private AdminCommandResovler adminCmdResolver;
@@ -165,11 +163,11 @@ public class ProxyRuntime {
 		this.traceProtocol = traceProtocol;
 	}
 
-	public SessionManager getAdminSessionManager() {
+	public SessionManager<AdminSession> getAdminSessionManager() {
 		return adminSessionManager;
 	}
 
-	public void setAdminSessionManager(SessionManager adminSessionManager) {
+	public void setAdminSessionManager(SessionManager<AdminSession> adminSessionManager) {
 		this.adminSessionManager = adminSessionManager;
 	}
 

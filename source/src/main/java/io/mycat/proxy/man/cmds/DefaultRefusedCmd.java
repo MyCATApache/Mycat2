@@ -20,9 +20,8 @@ public class DefaultRefusedCmd implements AdminCommand {
 	protected static Logger logger = LoggerFactory.getLogger(DefaultRefusedCmd.class);
 
 	@Override
-	public void handlerPkg(AdminSession session) throws IOException {
-		String errMsg = "not implemented this package ,Maybe a bug ,Leader us want you  fix it ,pkg type :"
-				+ session.frontBuffer.getByte(2);
+	public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
+		String errMsg = "not implemented this package ,Maybe a bug ,Leader us want you  fix it ,pkg type :" + cmdType;
 		logger.warn(errMsg);
 		FailedPacket failedPkg = new FailedPacket(ManErrorCode.MAYBE_BUG_ERROR, errMsg);
 		session.answerClientNow(failedPkg);

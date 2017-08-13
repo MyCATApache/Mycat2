@@ -2,6 +2,8 @@ package io.mycat.proxy.man;
 
 import java.util.ArrayList;
 
+import io.mycat.proxy.man.MyCluster.ClusterState;
+
 /**
  * 集群节点,id必须全局唯一
  * 
@@ -18,7 +20,11 @@ public class ClusterNode implements Comparable<ClusterNode> {
 	public int port;
 	private long lastStateTime;
 	private long nodeStartTime;
-	private volatile NodeState state;
+	private NodeState state;
+	private String myLeaderId;
+	private ClusterState myClusterState;
+	private long lastClusterStateTime;
+	
 
 	public ClusterNode(String id, String ip, int port) {
 		super();
@@ -41,6 +47,26 @@ public class ClusterNode implements Comparable<ClusterNode> {
 		return state;
 	}
 
+	public int getPort() {
+		return port;
+	}
+
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	public String getMyLeaderId() {
+		return myLeaderId;
+	}
+
+	public void setMyLeaderId(String myLeaderId) {
+		this.myLeaderId = myLeaderId;
+	}
+
+	public long getLastClusterStateTime() {
+		return lastClusterStateTime;
+	}
+
 	public void setState(NodeState state) {
 		lastStateTime = System.currentTimeMillis();
 		this.state = state;
@@ -50,8 +76,14 @@ public class ClusterNode implements Comparable<ClusterNode> {
 		return lastStateTime;
 	}
 
-	public void setLastStateTime(long lastStateTime) {
-		this.lastStateTime = lastStateTime;
+	
+	public ClusterState getMyClusterState() {
+		return myClusterState;
+	}
+
+	public void setMyClusterState(ClusterState myClusterState,long clusterStateTime) {
+		this.myClusterState = myClusterState;
+		this.lastClusterStateTime=clusterStateTime;
 	}
 
 	public long getNodeStartTime() {

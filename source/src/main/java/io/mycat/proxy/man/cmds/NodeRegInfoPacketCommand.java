@@ -20,12 +20,14 @@ public class NodeRegInfoPacketCommand implements AdminCommand {
 	protected static Logger logger = LoggerFactory.getLogger(NodeRegInfoPacketCommand.class);
 
 	@Override
-	public void handlerPkg(AdminSession session) throws IOException {
+	public void handlerPkg(AdminSession session,byte cmdType) throws IOException {
 		NodeRegInfoPacket pkg = new NodeRegInfoPacket();
 		pkg.resolve(session.frontBuffer);
-		session.cluster().onClusterNodeUp(pkg.getNodeId(), pkg.getStartupTime());
-		if (!pkg.isAnswer()) {// 连接到对端，对端发送的注册信息，此时应答自己的注册状态
-			pkg = new NodeRegInfoPacket(session.cluster().getMyNode().id, ProxyRuntime.INSTANCE.getStartTime());
+		session.cluster().onClusterNodeUp(pkg,session);
+		if (!pkg.isAnswer()) {// 连接到对端后收到对端发送的注册信息，此时应答自己的注册状态
+			pkg = new NodeRegInfoPacket(session.cluster().getMyNodeId(), session.cluster().getClusterState(),
+					session.cluster().getLastClusterStateTime(), session.cluster().getMyLeaderId(),
+					ProxyRuntime.INSTANCE.getStartTime());
 			pkg.setAnswer(true);
 			session.answerClientNow(pkg);
 		}

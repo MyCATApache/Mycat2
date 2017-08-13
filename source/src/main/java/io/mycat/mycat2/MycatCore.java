@@ -24,6 +24,7 @@
 package io.mycat.mycat2;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
 
@@ -59,7 +60,9 @@ public class MycatCore {
 		NameableExecutor businessExecutor = ExecutorUtil.create("BusinessExecutor", 10);
 		// 定时器Executor，用来执行定时任务
 		NamebleScheduledExecutor timerExecutor = ExecutorUtil.createSheduledExecute("Timer", 5);
-		MycatConfig conf = MycatConfig.loadFromProperties(ConfigLoader.class.getResourceAsStream("/mycat.conf"));
+		InputStream instream=ClassLoader.getSystemResourceAsStream("mycat.conf");
+		 instream=(instream==null)?ConfigLoader.class.getResourceAsStream("/mycat.conf"):instream;
+		MycatConfig conf = MycatConfig.loadFromProperties(instream);
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
 		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());

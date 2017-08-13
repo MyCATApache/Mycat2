@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.proxy.ConnectIOHandler;
 import io.mycat.proxy.FrontIOHandler;
 import io.mycat.proxy.ProxyRuntime;
 
@@ -14,7 +15,7 @@ import io.mycat.proxy.ProxyRuntime;
  * @author wuzhihui
  *
  */
-public class DefaultAdminSessionHandler implements FrontIOHandler<AdminSession> {
+public class DefaultAdminSessionHandler implements FrontIOHandler<AdminSession>, ConnectIOHandler<AdminSession> {
 	private static Logger logger = LoggerFactory.getLogger(DefaultAdminSessionHandler.class);
 
 	@Override
@@ -26,10 +27,10 @@ public class DefaultAdminSessionHandler implements FrontIOHandler<AdminSession> 
 			return;
 		}
 		if (pkgType == ManagePacket.PKG_FAILED || pkgType == ManagePacket.PKG_SUCCESS) {
-			session.curAdminCommand.handlerPkg(session);
+			session.curAdminCommand.handlerPkg(session,pkgType);
 		} else {
 			session.curAdminCommand = ProxyRuntime.INSTANCE.getAdminCmdResolver().resolveCommand(pkgType);
-			session.curAdminCommand.handlerPkg(session);
+			session.curAdminCommand.handlerPkg(session,pkgType);
 		}
 
 	}
@@ -39,10 +40,11 @@ public class DefaultAdminSessionHandler implements FrontIOHandler<AdminSession> 
 	 * 
 	 * @param userSession
 	 * @param normal
+	 * @throws IOException 
 	 */
-	public void onFrontSocketClosed(AdminSession userSession, boolean normal) {
+	public void onFrontSocketClosed(AdminSession userSession, boolean normal)  {
 		logger.info("front socket closed ");
-		userSession.cluster().onClusterNodeDown(userSession.getNodeId());
+		userSession.cluster().onClusterNodeDown(userSession.getNodeId(),userSession);
 
 	}
 
@@ -50,6 +52,12 @@ public class DefaultAdminSessionHandler implements FrontIOHandler<AdminSession> 
 	public void onFrontWrite(AdminSession session) throws IOException {
 		session.writeToChannel(session.frontBuffer, session.frontChannel);
 
+	}
+
+	@Override
+	public void onConnect(AdminSession userSession, boolean success, String msg) throws IOException {
+		logger.info(" socket connect " + ((success) ? " success " : " failed: " + msg));
+		
 	}
 
 }

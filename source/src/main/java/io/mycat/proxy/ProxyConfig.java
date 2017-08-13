@@ -26,6 +26,8 @@ public class ProxyConfig {
 	// 逗号分隔的所有集群节点的ID:IP:Port信息，如
 	// leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9068,leader-3:127.0.0.1:9069
 	private String allNodeInfs;
+	// 当前节点所用的配置文件的版本（节点自身的基础配置信息，如绑定的IP地址，端口以及其他只针对自身节点的配置变动不影响配置文件版本，设计的时候，分开两种配置文件）
+	private String myConfigFileVersion="1.0";
 
 	public static MycatConfig loadFromProperties(InputStream in) throws IOException {
 		MycatConfig conf = new MycatConfig();
@@ -95,6 +97,14 @@ public class ProxyConfig {
 
 	public void setClusterPort(int clusterPort) {
 		this.clusterPort = clusterPort;
+	}
+
+	public String getMyConfigFileVersion() {
+		return myConfigFileVersion;
+	}
+
+	public void setMyConfigFileVersion(String myConfigFileVersion) {
+		this.myConfigFileVersion = myConfigFileVersion;
 	}
 
 }

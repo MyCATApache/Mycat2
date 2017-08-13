@@ -21,8 +21,10 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class AbstractSession implements Session {
+	 
 	protected static Logger logger = LoggerFactory.getLogger(AbstractSession.class);
 	private int sessionId;
+	private SessionManager<? extends Session> sessionManager;
 	public BufferPool bufPool;
 	public Selector nioSelector;
 	// 前端连接
@@ -76,15 +78,13 @@ public class AbstractSession implements Session {
 			logger.info("close session " + this.sessionInfo() + " for reason " + message);
 			closeSocket(frontChannel);
 			bufPool.recycleBuf(frontBuffer.getBuffer());
-
+            this.sessionManager.removeSession(this);  
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}
 
 	}
 
-	
-	
 	/**
 	 * 从SocketChannel中读取数据并写入到内部Buffer中,writeState里记录了写入的位置指针
 	 * 第一次调用之前需要确保Buffer状态为Write状态，并指定要写入的位置，
@@ -199,6 +199,18 @@ public class AbstractSession implements Session {
 
 	public int getSessionId() {
 		return sessionId;
+	}
+
+
+
+	public void   setSessionManager(SessionManager<? extends Session> sessionManager) {
+		this.sessionManager = sessionManager;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T extends Session> SessionManager<T> getMySessionManager() {
+		return (SessionManager<T>) this.sessionManager;
 	}
 
 }

@@ -9,5 +9,5 @@ import java.io.IOException;
  */
 public interface AdminCommand {
 
-	void handlerPkg(AdminSession session) throws IOException;
+	void handlerPkg(AdminSession session,byte cmdType) throws IOException;
 }
