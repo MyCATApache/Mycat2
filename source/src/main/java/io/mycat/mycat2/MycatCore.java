@@ -35,9 +35,15 @@ import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.common.NamebleScheduledExecutor;
+import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOAcceptor;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.man.AdminCommandResovler;
+import io.mycat.proxy.man.ClusterNode;
+import io.mycat.proxy.man.DefaultAdminSessionHandler;
+import io.mycat.proxy.man.DefaultAdminSessionManager;
+import io.mycat.proxy.man.MyCluster;
 
 /**
  * @author wuzhihui
@@ -53,9 +59,7 @@ public class MycatCore {
 		NameableExecutor businessExecutor = ExecutorUtil.create("BusinessExecutor", 10);
 		// 定时器Executor，用来执行定时任务
 		NamebleScheduledExecutor timerExecutor = ExecutorUtil.createSheduledExecute("Timer", 5);
-		MycatConfig conf = new MycatConfig();
-		conf.setBindIP("0.0.0.0");
-		conf.setBindPort(8066);
+		MycatConfig conf = MycatConfig.loadFromProperties(ConfigLoader.class.getResourceAsStream("/mycat.conf"));
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
 		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
@@ -65,19 +69,31 @@ public class MycatCore {
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
 		// runtime.setSessionManager(new DefaultTCPProxySessionManager());
 		// Debug观察MySQL协议用
-//		runtime.setSessionManager(new MySQLStudySessionManager());
+		// runtime.setSessionManager(new MySQLStudySessionManager());
 		// Mycat 2.0 Session Manager
-		 runtime.setSessionManager(new MycatSessionManager());
+		runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
 		ProxyReactorThread[] nioThreads = runtime.getReactorThreads();
 		for (int i = 0; i < cpus; i++) {
-			ProxyReactorThread thread = new ProxyReactorThread();
+			ProxyReactorThread thread = new ProxyReactorThread(new BufferPool(1024 * 10));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
 		}
 		// 启动NIO Acceptor
-		new NIOAcceptor().start();
+		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
+		acceptor.start();
+		if (conf.isClusterEnable()) {
+			runtime.setAdminSessionManager(new DefaultAdminSessionManager());
+			runtime.setAdminCmdResolver(new AdminCommandResovler());
+			runtime.setAdminSessionIOHandler(new DefaultAdminSessionHandler());
+			ClusterNode myNode = new ClusterNode(conf.getMyNodeId(), conf.getClusterIP(), conf.getClusterPort());
+			MyCluster cluster = new MyCluster(acceptor.getSelector(), myNode,
+					ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
+			runtime.setMyCLuster(cluster);
+			cluster.initCluster();
+
+		}
 
 		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
 		List<MySQLRepBean> mysqlRepBeans = ConfigLoader.loadMySQLRepBean(datasourceURL.toString());

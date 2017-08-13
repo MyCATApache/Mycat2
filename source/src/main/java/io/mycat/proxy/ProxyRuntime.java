@@ -9,17 +9,29 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.mycat.proxy.man.AdminCommandResovler;
+import io.mycat.proxy.man.AdminSession;
+import io.mycat.proxy.man.DefaultAdminSessionHandler;
+import io.mycat.proxy.man.DefaultAdminSessionManager;
+import io.mycat.proxy.man.MyCluster;
+
 @SuppressWarnings("rawtypes")
 public class ProxyRuntime {
-
+	private ProxyConfig proxyConfig;
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
 	private int nioReactorThreads = 2;
 	private boolean traceProtocol = true;
-	
+	private final long  startTime=System.currentTimeMillis();
+
 	private ProxyReactorThread[] reactorThreads;
 	private SessionManager sessionManager;
-	private ProxyConfig proxyConfig;
+	// 用于管理端口的Session会话管理
+	private SessionManager adminSessionManager;
+	// 用于管理端口的Session IO Handler
+	private FrontIOHandler<AdminSession> adminSessionIOHandler;
+	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
@@ -33,29 +45,31 @@ public class ProxyRuntime {
 		schedulerService = Executors.newScheduledThreadPool(1);
 	}
 
+	private MyCluster myCLuster;
+
 	public void init() {
 
 	}
 
-   
+	public MyCluster getMyCLuster() {
+		return myCLuster;
+	}
+
+	public void setMyCLuster(MyCluster myCLuster) {
+		this.myCLuster = myCLuster;
+	}
 
 	public ProxyConfig getProxyConfig() {
 		return proxyConfig;
 	}
 
-
-
 	public void setProxyConfig(ProxyConfig proxyConfig) {
 		this.proxyConfig = proxyConfig;
 	}
 
-
-
 	public static ScheduledExecutorService getSchedulerservice() {
 		return schedulerService;
 	}
-
-
 
 	public int getNioReactorThreads() {
 		return nioReactorThreads;
@@ -149,6 +163,34 @@ public class ProxyRuntime {
 
 	public void setTraceProtocol(boolean traceProtocol) {
 		this.traceProtocol = traceProtocol;
+	}
+
+	public SessionManager getAdminSessionManager() {
+		return adminSessionManager;
+	}
+
+	public void setAdminSessionManager(SessionManager adminSessionManager) {
+		this.adminSessionManager = adminSessionManager;
+	}
+
+	public FrontIOHandler<AdminSession> getAdminSessionIOHandler() {
+		return adminSessionIOHandler;
+	}
+
+	public void setAdminSessionIOHandler(FrontIOHandler<AdminSession> adminSessionIOHandler) {
+		this.adminSessionIOHandler = adminSessionIOHandler;
+	}
+
+	public long getStartTime() {
+		return startTime;
+	}
+
+	public AdminCommandResovler getAdminCmdResolver() {
+		return adminCmdResolver;
+	}
+
+	public void setAdminCmdResolver(AdminCommandResovler adminCmdResolver) {
+		this.adminCmdResolver = adminCmdResolver;
 	}
 
 }

@@ -1,70 +1,100 @@
 package io.mycat.proxy;
 
 /**
- * NIO Acceptor ,只用来接受新连接的请求，并不处理任何连接的业务逻辑
+ * NIO Acceptor ,只用来接受新连接的请求，也负责处理管理端口的报文
  * @author wuzhihui
  *
  */
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import org.slf4j.*;
+import io.mycat.proxy.man.AdminSession;
 
 public class NIOAcceptor extends Thread {
 	private final static Logger logger = LoggerFactory.getLogger(NIOAcceptor.class);
+	private BufferPool bufferPool;
+	private final Selector selector;
+
+	public NIOAcceptor(BufferPool bufferPool) throws IOException {
+		this.setName("NIO-Acceptor");
+		this.bufferPool = bufferPool;
+		selector = Selector.open();
+	}
 
 	@SuppressWarnings("rawtypes")
 	public void run() {
 		int nioIndex = 0;
-		Selector selector = null;
-		ProxyRuntime env=ProxyRuntime.INSTANCE;
-		ProxyConfig conf=env.getProxyConfig();
+
+		ProxyRuntime env = ProxyRuntime.INSTANCE;
+		ProxyConfig conf = env.getProxyConfig();
 		try {
-			selector = Selector.open();
-			final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-			String bindAddr = conf.getBindIP();
-			final InetSocketAddress isa = new InetSocketAddress(bindAddr, conf.getBindPort());
-			serverChannel.bind(isa);
-			serverChannel.configureBlocking(false);
-			serverChannel.register(selector, SelectionKey.OP_ACCEPT);
+
+			openServerChannel(selector, conf.getBindIP(), conf.getBindPort(), false);
+			if (conf.isClusterEnable()) {
+				logger.info("opend cluster conmunite port on " + conf.getClusterIP() + ':' + conf.getClusterPort());
+				openServerChannel(selector, conf.getClusterIP(), conf.getClusterPort(), true);
+			}
 
 		} catch (IOException e) {
 			System.out.println(" NIOAcceptor start err " + e);
 			return;
 		}
-		logger.info("*** Mycat NIO Proxy Server  *** ,NIO Threads " + env.getNioReactorThreads()
-				+ " listen on " + conf.getBindIP() + ":" + conf.getBindPort());
+
 		while (true) {
 			try {
-				int count = selector.select(1000);
-				if (count == 0) {
+				selector.select(1000);
+				final Set<SelectionKey> keys = selector.selectedKeys();
+				if (keys.isEmpty()) {
 					continue;
 				}
-				final Set<SelectionKey> keys = selector.selectedKeys();
+
 				for (final SelectionKey key : keys) {
 					if (!key.isValid()) {
 						continue;
 					}
-					if (key.isAcceptable()) {
+					int readdyOps = key.readyOps();
+					if ((readdyOps & SelectionKey.OP_ACCEPT) != 0) {
+
 						ServerSocketChannel serverSocket = (ServerSocketChannel) key.channel();
 						final SocketChannel socketChannel = serverSocket.accept();
 						socketChannel.configureBlocking(false);
 						logger.info("new Client connected: " + socketChannel);
-						// 找到一个可用的NIO Reactor Thread，交付托管
-						if (nioIndex++ == Integer.MAX_VALUE) {
-							nioIndex = 1;
+						boolean clusterServer = (boolean) key.attachment();
+						if (clusterServer) {
+							Session session = env.getAdminSessionManager().createSession(this.bufferPool, selector,
+									socketChannel, true);
+						} else {
+							// 找到一个可用的NIO Reactor Thread，交付托管
+							if (nioIndex++ == Integer.MAX_VALUE) {
+								nioIndex = 1;
+							}
+							int index = nioIndex % env.getNioReactorThreads();
+							ProxyReactorThread nioReactor = env.getReactorThreads()[index];
+							nioReactor.acceptNewSocketChannel(socketChannel);
 						}
-						int index = nioIndex%env.getNioReactorThreads();
-						ProxyReactorThread nioReactor =env.getReactorThreads()[index];
-						nioReactor.acceptNewSocketChannel(socketChannel);
-					} else {
-						logger.warn("not accept event " + key);
+					} else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
+						// only from cluster server socket
+						SocketChannel socketChannel = (SocketChannel) key.channel();
+						if (socketChannel.finishConnect()) {
+							Session session = env.getAdminSessionManager().createSession(this.bufferPool, selector,
+									socketChannel, false);
+						}
+
+					} else if ((readdyOps & SelectionKey.OP_READ) != 0) {
+						// only from cluster server socket
+						env.getAdminSessionIOHandler().onFrontRead((AdminSession) key.attachment());
+					} else if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
+						// only from cluster server socket
+						env.getAdminSessionIOHandler().onFrontWrite((AdminSession) key.attachment());
 					}
 				}
 				keys.clear();
@@ -73,6 +103,28 @@ public class NIOAcceptor extends Thread {
 			}
 		}
 
+	}
+
+	public BufferPool getBufferPool() {
+		return bufferPool;
+	}
+
+	public void setBufferPool(BufferPool bufferPool) {
+		this.bufferPool = bufferPool;
+	}
+
+	public Selector getSelector() {
+		return selector;
+	}
+
+	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer)
+			throws IOException, ClosedChannelException {
+		final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+
+		final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
+		serverChannel.bind(isa);
+		serverChannel.configureBlocking(false);
+		serverChannel.register(selector, SelectionKey.OP_ACCEPT, clusterServer);
 	}
 
 }

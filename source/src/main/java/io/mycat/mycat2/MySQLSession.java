@@ -9,19 +9,20 @@ import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
-import io.mycat.mysql.Versions;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BufferOptState;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.StringUtil;
-import io.mycat.proxy.UserSession;
+import io.mycat.proxy.UserProxySession;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
+import io.mycat.util.StringUtil;
 
-public class MySQLSession extends UserSession {
+public class MySQLSession extends UserProxySession {
+
+	public SQLCommand curSQLCommand;
 
 	/**
 	 * 当前处理中的SQL报文的信息（前端）
@@ -43,9 +44,8 @@ public class MySQLSession extends UserSession {
 	/**
 	 * Mycat Schema
 	 */
-	public SchemaBean schema; 
-	
-		
+	public SchemaBean schema;
+
 	/**
 	 * 认证中的seed报文数据
 	 */
@@ -116,7 +116,7 @@ public class MySQLSession extends UserSession {
 		hs.packetId = 0;
 		hs.protocolVersion = Versions.PROTOCOL_VERSION;
 		hs.serverVersion = Versions.SERVER_VERSION;
-		hs.threadId = this.sessionId;
+		hs.threadId = this.getSessionId();
 		hs.seed = rand1;
 		hs.serverCapabilities = getServerCapabilities();
 		// hs.serverCharsetIndex = (byte) (charsetIndex & 0xff);
@@ -127,9 +127,21 @@ public class MySQLSession extends UserSession {
 		this.writeToChannel(frontBuffer, this.frontChannel);
 	}
 
-	public MySQLSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) {
+	public MySQLSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
 		super(bufPool, nioSelector, frontChannel);
 
+	}
+
+	/**
+	 * 向前端发送数据报文,需要先确定为Write状态并确保写入位置的正确（frontBuffer.writeState)
+	 * 
+	 * @param rawPkg
+	 * @throws IOException
+	 */
+	public void answerFront(byte[] rawPkg) throws IOException {
+		frontBuffer.writeBytes(rawPkg);
+		frontBuffer.flip();
+		writeToChannel(frontBuffer, frontChannel);
 	}
 
 	/**
@@ -154,7 +166,7 @@ public class MySQLSession extends UserSession {
 			return false;
 		} else if (readed == 0) {
 			logger.warn("read 0 bytes ,try compact buffer " + (readFront ? " front " : "backend ") + " ,session Id :"
-					+ sessionId);
+					+ this.getSessionId());
 			buffer.compact(true);
 			// todo curMSQLPackgInf
 			// 也许要对应的改变位置,如果curMSQLPackgInf是跨Package的，则可能无需改变信息
@@ -196,7 +208,7 @@ public class MySQLSession extends UserSession {
 				readWholePkg = false;
 			}
 		} else if (!ParseUtil.validateHeader(offset, limit)) {
-			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", sessionId, offset, limit);
+			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
 			readWholePkg = false;
 		}
 
@@ -209,8 +221,10 @@ public class MySQLSession extends UserSession {
 		curPackInf.crossBuffer = false;
 		curPackInf.remainsBytes = 0;
 		if ((offset + pkgLength) > limit) {
-			logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, "
-					+ "ready to handle the next read event", sessionId, buffer.hashCode(), pkgLength, limit);
+			logger.debug(
+					"Not a whole packet: required length = {} bytes, cur total length = {} bytes, "
+							+ "ready to handle the next read event",
+					getSessionId(), buffer.hashCode(), pkgLength, limit);
 			curPackInf.crossBuffer = true;
 			curPackInf.remainsBytes = offset + pkgLength - limit;
 			curPackInf.endPos = limit;
@@ -225,7 +239,7 @@ public class MySQLSession extends UserSession {
 				final String hexs = StringUtil.dumpAsHex(buffer, curPackInf.startPos, curPackInf.pkgLength);
 				logger.info(
 						"     session {} packet: startPos={}, offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
-						sessionId, curPackInf.startPos, offset, pkgLength, packetType, limit, hexs);
+						getSessionId(), curPackInf.startPos, offset, pkgLength, packetType, limit, hexs);
 			}
 			readWholePkg = true;
 		}
@@ -234,6 +248,13 @@ public class MySQLSession extends UserSession {
 		}
 		return readWholePkg;
 
+	}
+
+	public void close(String message) {
+		if (!this.isClosed()) {
+			super.close(message);
+			this.curSQLCommand.clearResouces(true);
+		}
 	}
 
 }

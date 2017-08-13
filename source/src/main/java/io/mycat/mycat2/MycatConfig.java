@@ -1,12 +1,16 @@
 package io.mycat.mycat2;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.proxy.ProxyConfig;
 
 public class MycatConfig extends ProxyConfig {
+
 	/**
 	 * 系统中所有MySQLReplicatSet的Map
 	 */
@@ -21,6 +25,8 @@ public class MycatConfig extends ProxyConfig {
 	 * 默认Schema,取配置文件种第一个Schema
 	 */
 	private SchemaBean defaultSchemaBean;
+
+
 
 	protected void addMySQLReplicatSet(final MySQLReplicatSet repSet) {
 		final String repSetName = repSet.getName();
