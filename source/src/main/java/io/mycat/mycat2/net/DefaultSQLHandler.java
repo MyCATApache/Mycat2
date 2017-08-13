@@ -9,7 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.SQLCommand;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.LoadDataCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.BackendIOHandler;
@@ -26,7 +28,21 @@ import io.mycat.proxy.UserProxySession;
 public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(DefaultSQLHandler.class);
 	public static DefaultSQLHandler INSTANCE = new DefaultSQLHandler();
+	
+	
+	public static LoadDataHandler LOADDATEHANDLE = new LoadDataHandler();
+	
 	public static DirectPassthrouhCmd defaultSQLCmd = new DirectPassthrouhCmd();
+
+	/**
+	 * 进行load data命令的透传
+	 */
+	private static LoadDataCmd LOADDATA = new LoadDataCmd();
+
+	/**
+	 * 是否解析包,默认为需要解析
+	 */
+	private boolean isAnalysisrpkg = true;
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
@@ -53,7 +69,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			// final MySQLDataSource datas = repSet.getCurWriteDH();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "localhost";
+			String serverIP = "192.168.3.22";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
@@ -65,10 +81,11 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			logger.info("Connecting to server " + serverIP + ":" + serverPort);
 
 			BackendConCreateTask authProcessor = new BackendConCreateTask(session, null);
+			// 设置回调方法，在连接建立成功之后将前端的待透传的buffer传送到后端的buffer中
 			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 				if (exeSucces) {
 					optSession.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
-					// 交给SQLComand去处理
+					// 即将前端的已经写入buffer的数据写入到后端中
 					if (session.curSQLCommand.procssSQL(session, false)) {
 						session.curSQLCommand.clearResouces(false);
 					}
@@ -85,6 +102,8 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			// 交给SQLComand去处理
 			if (session.curSQLCommand.procssSQL(session, false)) {
 				session.curSQLCommand.clearResouces(false);
+				isAnalysisrpkg = true;
+				session.curSQLCommand = defaultSQLCmd;
 			}
 		}
 
@@ -92,13 +111,34 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 
 	public void onBackendRead(MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(false);
+
+		ProxyBuffer backendBuffer = session.frontBuffer;
+
 		if (readed == false) {
 			return;
 		}
+
+		if (isAnalysisrpkg
+				&& session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+			// 没有读到完整报文
+			return;
+		}
+
 		// 交给SQLComand去处理
 		if (session.curSQLCommand.procssSQL(session, true)) {
 			session.curSQLCommand.clearResouces(false);
 		}
+
+		// 如果当前为load data的操作命令，在收到服务器的响应后，则进行从前向后传输开始
+		if (session.curFrontMSQLPackgInf.pkgType == (byte) 0xfb) {
+			// 将不再进行解析
+			isAnalysisrpkg = false;
+			// 设置lodata的透传执行
+			session.curSQLCommand = LOADDATA;
+			
+			session.curProxyHandler = LOADDATEHANDLE;
+		}
+
 	}
 
 	@Override

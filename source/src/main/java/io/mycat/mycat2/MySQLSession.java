@@ -123,6 +123,7 @@ public class MySQLSession extends UserProxySession {
 		hs.serverStatus = 2;
 		hs.restOfScrambleBuff = rand2;
 		hs.write(this.frontBuffer);
+		//进行读取状态的切换,即将写状态切换 为读取状态
 		frontBuffer.flip();
 		this.writeToChannel(frontBuffer, this.frontChannel);
 	}
@@ -153,12 +154,17 @@ public class MySQLSession extends UserProxySession {
 	 * @throws IOException
 	 */
 	public boolean readSocket(boolean readFront) throws IOException {
+		//默认获得后端的buffer和前端的channel
 		ProxyBuffer buffer = backendBuffer;
 		SocketChannel channel = frontChannel;
+		
+		//如果标识当前为false，则表示当前为读取后端通道的数据
 		if (!readFront) {
+			//则当前的为前端的buffer和后端的channel
 			buffer = frontBuffer;
 			channel = backendChannel;
 		}
+		//进行通道数据的读取
 		int readed = readFromChannel(buffer, channel);
 		logger.debug("readed {} total bytes ", readed);
 		if (readed == -1) {
@@ -167,12 +173,17 @@ public class MySQLSession extends UserProxySession {
 		} else if (readed == 0) {
 			logger.warn("read 0 bytes ,try compact buffer " + (readFront ? " front " : "backend ") + " ,session Id :"
 					+ this.getSessionId());
+			
+			
+			
 			buffer.compact(true);
 			// todo curMSQLPackgInf
 			// 也许要对应的改变位置,如果curMSQLPackgInf是跨Package的，则可能无需改变信息
 			// curPackInf.
-			return false;
+			throw new RuntimeException("curr is error");
+			//return false;
 		}
+		//更新当前数据读取到的长度信息
 		buffer.updateReadLimit();
 		return true;
 	}
@@ -190,12 +201,17 @@ public class MySQLSession extends UserProxySession {
 		boolean readWholePkg = false;
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		BufferOptState readState = proxyBuf.readState;
+		//读取的偏移位置
 		int offset = readState.optPostion;
+		//读取的总长度
 		int limit = readState.optLimit;
+		//读取当前的总长度 
 		int totalLen = limit - offset;
 		if (totalLen == 0) {
 			return false;
 		}
+		
+		//如果当前跨多个报文
 		if (curPackInf.crossBuffer) {
 			if (curPackInf.remainsBytes <= totalLen) {
 				// 剩余报文结束
@@ -207,19 +223,27 @@ public class MySQLSession extends UserProxySession {
 				curPackInf.endPos = limit;
 				readWholePkg = false;
 			}
-		} else if (!ParseUtil.validateHeader(offset, limit)) {
+		}
+		//验证当前指针位置是否
+		else if (!ParseUtil.validateHeader(offset, limit)) {
 			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
 			readWholePkg = false;
 		}
-
+		
+		//解包获取包的数据长度
 		int pkgLength = ParseUtil.getPacketLength(buffer, offset);
 		// 解析报文类型
 		final byte packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
+		//雨木林风包的类型
 		curPackInf.pkgType = packetType;
+		//设置包的长度
 		curPackInf.pkgLength = pkgLength;
+		//设置偏移位置
 		curPackInf.startPos = offset;
+		//设置跨buffer为false
 		curPackInf.crossBuffer = false;
 		curPackInf.remainsBytes = 0;
+		//如果当前需要跨buffer处理
 		if ((offset + pkgLength) > limit) {
 			logger.debug(
 					"Not a whole packet: required length = {} bytes, cur total length = {} bytes, "
@@ -232,6 +256,7 @@ public class MySQLSession extends UserProxySession {
 		} else {
 			// 读到完整报文
 			curPackInf.endPos = curPackInf.pkgLength + curPackInf.startPos;
+			
 			if (ProxyRuntime.INSTANCE.isTraceProtocol()) {
 				/**
 				 * @todo 跨多个报文的情况下，修正错误。

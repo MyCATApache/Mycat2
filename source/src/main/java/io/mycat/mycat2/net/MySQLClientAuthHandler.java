@@ -47,6 +47,7 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 	@Override
 	public void onFrontRead(MySQLSession session) throws IOException {
+		//进行通道数据的读取
 		boolean readed = session.readSocket(true);
 		ProxyBuffer backendBuffer = session.backendBuffer;
 		if (readed == false || session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf,false) == false) {
@@ -55,6 +56,7 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 		//处理用户认证请情况报文
 		try {
 			AuthPacket auth = new AuthPacket();
+			//读取用户证证的报文信息
 			auth.read(backendBuffer);
 			// Fake check user
 			logger.debug("Check user name. " + auth.user);
@@ -74,6 +76,7 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 			boolean succ = success(auth);
 			if (succ) {
+				//重置buffer信息
 				session.backendBuffer.reset();
 				session.answerFront(AUTH_OK);
 				//认证通过，设置当前SQL Handler为默认Handler

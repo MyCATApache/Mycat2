@@ -94,12 +94,17 @@ public class AbstractSession implements Session {
 	 */
 	public int readFromChannel(ProxyBuffer proxyBuf, SocketChannel channel) throws IOException {
 		ByteBuffer buffer = proxyBuf.getBuffer();
+		//首先设置buffer的长度
 		buffer.limit(proxyBuf.writeState.optLimit);
 		buffer.position(proxyBuf.writeState.optPostion);
+		//从前端的通道中读取数据
 		int readed = channel.read(buffer);
+		//记录当前读写事件传输的数据（字节）
 		proxyBuf.writeState.curOptedLength = readed;
 		if (readed > 0) {
+			//将当前的读写数据的当前起始位置加上已经读到的位置
 			proxyBuf.writeState.optPostion += readed;
+			//累加读写操作事件中总传输的数据（字节）
 			proxyBuf.writeState.optedTotalLength += readed;
 		}
 		return readed;
@@ -114,13 +119,22 @@ public class AbstractSession implements Session {
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		BufferOptState readState = proxyBuf.readState;
 		BufferOptState writeState = proxyBuf.writeState;
+		//指定当前开始读取状态读取的位置
 		buffer.position(readState.optPostion);
+		//指定最大可读取长度
 		buffer.limit(readState.optLimit);
+		//将已经读取到的数据写入到通道中
 		int writed = channel.write(buffer);
+		//在当前传输中累加当前已经传输和长度
 		readState.curOptedLength = writed;
+		//将操作读取的指针加上已经传输的指针位置
 		readState.optPostion += writed;
+		//累加总传输和长度数
 		readState.optedTotalLength += writed;
+		
+		//如果当前已经写入完毕
 		if (buffer.remaining() == 0) {
+			//如果待写入的数据长度，大于已经传输的长度,则需要多次进行传送
 			if (writeState.optPostion > buffer.position()) {
 				// 当前Buffer中写入的数据多于透传出去的数据，因此透传并未完成
 				// compact buffer to head
@@ -131,11 +145,13 @@ public class AbstractSession implements Session {
 				writeState.optPostion = buffer.position();
 				// 切换到写模式，继续从对端Socket读数据
 				proxyBuf.setInReading(false);
-			} else {
+			} 
+			//传送完毕，则切换模式
+			else {
 				// 数据彻底写完，切换为读模式
 				proxyBuf.flip();
 			}
-
+			//根据网络模式确定是否修改前端连接与后端连接的NIO感兴趣事件
 			modifySelectKey();
 		} else {
 			if (!proxyBuf.isInReading()) {

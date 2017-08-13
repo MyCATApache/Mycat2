@@ -22,7 +22,13 @@ public class ProxyRuntime {
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
 	private int nioReactorThreads = 2;
+	
+	
+	/**
+	 * 跟踪打印报文信息开关
+	 */
 	private boolean traceProtocol = true;
+	
 	private final long  startTime=System.currentTimeMillis();
 
 	private ProxyReactorThread[] reactorThreads;

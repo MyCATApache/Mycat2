@@ -3,7 +3,7 @@
 		<!-- type=0表示普通主从，当前哪个节点为读节点，在另外的文件中保存 -->
 		<mysql-replica name="test" type="0" switch-type="0">
       		<!--<mysql ip="10.211.55.5" port="3306"  user="root" password="123456" />-->
-			<mysql ip="10.211.55.5" port="3306"  user="root" password="123456" />
+			<mysql ip="192.168.3.22" port="3306"  user="root" password="liujun" />
 		</mysql-replica>
 	</mysql-ds>
 </datasources>

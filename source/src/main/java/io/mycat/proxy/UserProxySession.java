@@ -117,16 +117,19 @@ public class UserProxySession extends AbstractSession {
 		boolean frontKeyNeedUpdate = false;
 		boolean backKeyNeedUpdate = false;
 		switch (netOptMode) {
+		//检查是否为透传模式
 		case DirectTrans: {
 			frontKeyNeedUpdate = true;
 			backKeyNeedUpdate = true;
 			break;
 		}
+		//只处理前端读写
 		case FrontRW: {
 			frontKeyNeedUpdate = true;
 			backKeyNeedUpdate = false;
 			break;
 		}
+		//只处理后端读写
 		case BackendRW: {
 			frontKeyNeedUpdate = false;
 			backKeyNeedUpdate = true;
