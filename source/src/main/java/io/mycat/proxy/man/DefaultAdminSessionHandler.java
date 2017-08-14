@@ -17,7 +17,7 @@ import io.mycat.proxy.ProxyRuntime;
  */
 public class DefaultAdminSessionHandler implements FrontIOHandler<AdminSession>, ConnectIOHandler<AdminSession> {
 	private static Logger logger = LoggerFactory.getLogger(DefaultAdminSessionHandler.class);
-
+    public static final DefaultAdminSessionHandler INSTANCE=new DefaultAdminSessionHandler();
 	@Override
 	public void onFrontRead(final AdminSession session) throws IOException {
 		boolean readed = session.readSocket();

@@ -18,8 +18,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.proxy.man.AdminSession;
-
 public class NIOAcceptor extends Thread {
 	private final static Logger logger = LoggerFactory.getLogger(NIOAcceptor.class);
 	private BufferPool bufferPool;
@@ -52,7 +50,7 @@ public class NIOAcceptor extends Thread {
 
 		while (true) {
 			Set<SelectionKey> keys = null;
-			SelectionKey curKey=null;
+			SelectionKey curKey = null;
 			try {
 				selector.select(1000);
 				keys = selector.selectedKeys();
@@ -64,7 +62,7 @@ public class NIOAcceptor extends Thread {
 					if (!key.isValid()) {
 						continue;
 					}
-					curKey=key;
+					curKey = key;
 					int readdyOps = key.readyOps();
 					if ((readdyOps & SelectionKey.OP_ACCEPT) != 0) {
 
@@ -74,8 +72,8 @@ public class NIOAcceptor extends Thread {
 						logger.info("new Client connected: " + socketChannel);
 						boolean clusterServer = (boolean) key.attachment();
 						if (clusterServer) {
-							AdminSession session = env.getAdminSessionManager().createSession(this.bufferPool, selector,
-									socketChannel, true);
+							env.getAdminSessionManager().createSession(curKey, this.bufferPool, selector, socketChannel,
+									true);
 						} else {
 							// 找到一个可用的NIO Reactor Thread，交付托管
 							if (nioIndex++ == Integer.MAX_VALUE) {
@@ -83,17 +81,15 @@ public class NIOAcceptor extends Thread {
 							}
 							int index = nioIndex % env.getNioReactorThreads();
 							ProxyReactorThread nioReactor = env.getReactorThreads()[index];
-							nioReactor.acceptNewSocketChannel(socketChannel);
+							nioReactor.acceptNewSocketChannel(clusterServer, socketChannel);
 						}
 					} else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
 						// only from cluster server socket
 						SocketChannel curChannel = (SocketChannel) key.channel();
-						String clusterNodeId = (String) key.attachment();
-						AdminSession session = env.getAdminSessionManager().createSession(this.bufferPool, selector,
-								curChannel, false);
-						session.setNodeId(clusterNodeId);
-						ConnectIOHandler<AdminSession> connectIOHandler = (ConnectIOHandler<AdminSession>) env
-								.getAdminSessionIOHandler();
+						Session session = env.getAdminSessionManager().createSession(key.attachment(), this.bufferPool,
+								selector, curChannel, false);
+						ConnectIOHandler<Session> connectIOHandler = (ConnectIOHandler<Session>) session
+								.getCurNIOHandler();
 						try {
 							if (curChannel.finishConnect()) {
 								connectIOHandler.onConnect(session, true, null);
@@ -105,10 +101,12 @@ public class NIOAcceptor extends Thread {
 
 					} else if ((readdyOps & SelectionKey.OP_READ) != 0) {
 						// only from cluster server socket
-						env.getAdminSessionIOHandler().onFrontRead((AdminSession) key.attachment());
+						Session session = (Session) key.attachment();
+						((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontRead(session);
 					} else if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
 						// only from cluster server socket
-						env.getAdminSessionIOHandler().onFrontWrite((AdminSession) key.attachment());
+						Session session = (Session) key.attachment();
+						((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontWrite(session);
 					}
 				}
 			} catch (IOException e) {

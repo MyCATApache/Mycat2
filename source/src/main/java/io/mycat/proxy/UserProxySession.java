@@ -38,9 +38,6 @@ public class UserProxySession extends AbstractSession {
 	 */
 	public NetOptMode netOptMode = NetOptMode.DirectTrans;
 
-	// 当前NIO ProxyHandler
-	public NIOHandler<? extends UserProxySession> curProxyHandler;
-
 	public boolean isBackendOpen() {
 		return backendChannel != null && backendChannel.isConnected();
 	}
@@ -75,15 +72,6 @@ public class UserProxySession extends AbstractSession {
 
 	}
 
-	public void setCurProxyHandler(NIOHandler<? extends UserProxySession> proxyHandler) {
-		curProxyHandler = proxyHandler;
-	}
-
-	@SuppressWarnings("rawtypes")
-	public NIOHandler getCurProxyHandler() {
-		return curProxyHandler;
-	}
-
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void closeSocket(SocketChannel channel, boolean normal, String msg) {
 		if (channel == null) {
@@ -97,10 +85,10 @@ public class UserProxySession extends AbstractSession {
 		} catch (IOException e) {
 		}
 		if (channel == frontChannel) {
-			((FrontIOHandler) curProxyHandler).onFrontSocketClosed(this, normal);
+			((FrontIOHandler) getCurNIOHandler()).onFrontSocketClosed(this, normal);
 			frontChannel = null;
 		} else if (channel == backendChannel) {
-			((BackendIOHandler) curProxyHandler).onBackendSocketClosed(this, normal);
+			((BackendIOHandler) getCurNIOHandler()).onBackendSocketClosed(this, normal);
 			backendChannel = null;
 		}
 

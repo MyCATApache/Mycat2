@@ -5,13 +5,12 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
+import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.BackendIOHandler;
 import io.mycat.proxy.FrontIOHandler;
@@ -19,15 +18,15 @@ import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.UserProxySession;
 
 /**
- * 负责处理通用的SQL命令，默认情况下透传
+ * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
  * 
  * @author wuzhihui
  *
  */
-public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
-	private static Logger logger = LoggerFactory.getLogger(DefaultSQLHandler.class);
-	public static DefaultSQLHandler INSTANCE = new DefaultSQLHandler();
-	public static DirectPassthrouhCmd defaultSQLCmd = new DirectPassthrouhCmd();
+public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
+	public static final DefaultMycatSessionHandler INSTANCE=new DefaultMycatSessionHandler();
+	private static Logger logger = LoggerFactory.getLogger(DefaultMycatSessionHandler.class);
+	
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
@@ -68,7 +67,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			BackendConCreateTask authProcessor = new BackendConCreateTask(session, null);
 			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 				if (exeSucces) {
-					//认证成功后开始同步会话状态至后端
+					// 认证成功后开始同步会话状态至后端
 					syncSessionStateToBackend(session);
 				} else {
 					ErrorPacket errPkg = (ErrorPacket) retVal;
@@ -76,7 +75,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 
 				}
 			});
-			session.setCurProxyHandler(authProcessor);
+			session.setCurNIOHandler(authProcessor);
 			return;
 
 		} else {
@@ -88,11 +87,10 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 
 	}
 
-	private void syncSessionStateToBackend(MySQLSession mySQLSession) throws IOException{
+	private void syncSessionStateToBackend(MySQLSession mySQLSession) throws IOException {
 		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mySQLSession);
 		backendSynchronzationTask.setCallback((session, sender, exeSucces, rv) -> {
 			if (exeSucces) {
-				session.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
 				// 交给SQLComand去处理
 				if (session.curSQLCommand.procssSQL(session, false)) {
 					session.curSQLCommand.clearResouces(false);
@@ -102,7 +100,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 				session.responseOKOrError(errPkg, true);
 			}
 		});
-		mySQLSession.setCurProxyHandler(backendSynchronzationTask);
+		mySQLSession.setCurNIOHandler(backendSynchronzationTask);
 	}
 
 	public void onBackendRead(MySQLSession session) throws IOException {
@@ -119,7 +117,6 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 	@Override
 	public void onBackendConnect(MySQLSession userSession, boolean success, String msg) throws IOException {
 		logger.warn("not handled (expected ) onBackendConnect event " + userSession.sessionInfo());
-
 	}
 
 	/**

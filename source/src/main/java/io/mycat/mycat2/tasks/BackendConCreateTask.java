@@ -40,7 +40,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 	private AsynTaskCallBack callBack;
 	private ErrorPacket errPkg;
 
-	@SuppressWarnings("unchecked")
+	
 	public BackendConCreateTask(MySQLSession session,MySQLDataSource ds) {
 		
         
@@ -52,7 +52,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		this.prevBackendBuffer = session.backendBuffer;
 		session.frontBuffer = session.allocNewProxyBuffer();
 		session.backendBuffer = session.allocNewProxyBuffer();
-		prevProxyHandler = (NIOHandler<MySQLSession>) session.curProxyHandler;
+		prevProxyHandler = session.getCurNIOHandler();
 	}
 
 	@Override
@@ -161,7 +161,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		session.frontBuffer = prevFrontBuffer;
 		session.backendBuffer = prevBackendBuffer;
 		session.netOptMode = prevNetMode;
-		session.curProxyHandler = prevProxyHandler;
+		session.setCurNIOHandler(prevProxyHandler);
 	}
 
 	private static byte[] passwd(String pass, HandshakePacket hs) throws NoSuchAlgorithmException {

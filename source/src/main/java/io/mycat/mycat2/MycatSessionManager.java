@@ -9,7 +9,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.net.DefaultSQLHandler;
+import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.net.MySQLClientAuthHandler;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.Session;
@@ -26,16 +26,17 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 	private ArrayList<MySQLSession> allSessions = new ArrayList<MySQLSession>();
 
 	@Override
-	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,
-			boolean isAcceptCon) throws IOException {
+	public MySQLSession createSession(Object keyAttachment, BufferPool bufPool, Selector nioSelector,
+			SocketChannel frontChannel, boolean isAcceptCon) throws IOException {
 
 		logger.info("MySQL client connected  ." + frontChannel);
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
-		// 默认为透传命令模式
-		session.curSQLCommand = DefaultSQLHandler.defaultSQLCmd;
 		// 第一个IO处理器为Client Authorware
-		session.setCurProxyHandler(MySQLClientAuthHandler.INSTANCE);
+		session.setCurNIOHandler(MySQLClientAuthHandler.INSTANCE);
+		// 默认为透传命令模式
+		session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
+
 		// 向MySQL Client发送认证报文
 		session.sendAuthPackge();
 		session.setSessionManager(this);
@@ -48,7 +49,6 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 		return this.allSessions;
 	}
 
-	
 	public void removeSession(Session session) {
 		this.allSessions.remove(session);
 

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class ProxyReactorThread<T extends UserProxySession> extends Thread {
+public class ProxyReactorThread<T extends Session> extends Thread {
 	private final static long SELECTOR_TIMEOUT = 1000;
 	private final SessionManager<T> sessionMan;
 	private final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
@@ -32,13 +32,13 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 	public ProxyReactorThread(BufferPool bufPool) throws IOException {
 		this.bufPool = bufPool;
 		this.selector = Selector.open();
-		sessionMan = ProxyRuntime.INSTANCE.getSessionManager();
+		sessionMan = (SessionManager<T>) ProxyRuntime.INSTANCE.getSessionManager();
 	}
 
-	public void acceptNewSocketChannel(final SocketChannel socketChannel) throws IOException {
+	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) throws IOException {
 		pendingJobs.offer(() -> {
 			try {
-				T session = sessionMan.createSession(this.bufPool, selector, socketChannel, true);
+				T session = sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel, true);
 				allSessions.add(session);
 			} catch (Exception e) {
 				logger.warn("regist new connection err " + e);
@@ -65,10 +65,10 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 
 	@SuppressWarnings({ "unchecked" })
 	private void handleREvent(final SocketChannel curChannel, final T session) throws IOException {
-		if (session.frontChannel == curChannel) {
-			((FrontIOHandler<T>) session.curProxyHandler).onFrontRead(session);
+		if (session.frontChannel() == curChannel) {
+			((FrontIOHandler<T>) session.getCurNIOHandler()).onFrontRead(session);
 		} else {
-			((BackendIOHandler<T>) session.curProxyHandler).onBackendRead(session);
+			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendRead(session);
 		}
 	}
 
@@ -93,10 +93,10 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 
 	@SuppressWarnings("unchecked")
 	private void handleWEvent(final SocketChannel curChannel, final T session) throws IOException {
-		if (session.frontChannel == curChannel) {
-			((FrontIOHandler<T>) session.curProxyHandler).onFrontWrite(session);
+		if (session.frontChannel() == curChannel) {
+			((FrontIOHandler<T>) session.getCurNIOHandler()).onFrontWrite(session);
 		} else {
-			((BackendIOHandler<T>) session.curProxyHandler).onBackendWrite(session);
+			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendWrite(session);
 		}
 	}
 
@@ -128,14 +128,15 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 					int readdyOps = key.readyOps();
 					if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
 						logger.info("connectable keys " + key.channel());
-						session.backendChannel = curChannel;
+						// session.backendChannel = curChannel;
 						try {
 							if (curChannel.finishConnect()) {
-								((BackendIOHandler<T>) session.curProxyHandler).onBackendConnect(session, true, null);
+								((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, true,
+										null);
 							}
 
 						} catch (ConnectException ex) {
-							((BackendIOHandler<T>) session.curProxyHandler).onBackendConnect(session, false,
+							((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, false,
 									ex.getMessage());
 						}
 

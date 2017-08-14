@@ -8,7 +8,9 @@ import java.nio.channels.SocketChannel;
 import io.mycat.proxy.AbstractSession;
 import io.mycat.proxy.BufferOptState;
 import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.FrontIOHandler;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.Session;
 
 /**
  * Mycat各个节点发起会话,规定Node name大的节点主动向Node Name节点小的发起连接请求， 比如 mycat-server-1，
@@ -18,7 +20,7 @@ import io.mycat.proxy.ProxyRuntime;
  *
  */
 public class AdminSession extends AbstractSession {
-	
+
 	private String nodeId;
 	public AdminCommand curAdminCommand;
 
@@ -110,7 +112,7 @@ public class AdminSession extends AbstractSession {
 			channel.close();
 		} catch (IOException e) {
 		}
-		ProxyRuntime.INSTANCE.getAdminSessionIOHandler().onFrontSocketClosed(this, normal);
+		((FrontIOHandler<Session>)this.getCurNIOHandler()).onFrontSocketClosed(this, normal);
 
 	}
 
@@ -122,6 +124,9 @@ public class AdminSession extends AbstractSession {
 		this.nodeId = nodeId;
 	}
 
-
+	@Override
+	public SocketChannel frontChannel() {
+		return this.frontChannel;
+	}
 
 }
