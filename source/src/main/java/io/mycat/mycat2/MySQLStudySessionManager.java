@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.net.DefaultMySQLStudySessionHandler;
 import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
 
@@ -59,5 +60,11 @@ public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
 	public void removeSession(Session session) {
 		this.allSessions.remove(session);
 
+	}
+
+	@Override
+	public NIOHandler<MySQLSession> getDefaultSessionHandler() {
+
+		return DefaultMySQLStudySessionHandler.INSTANCE;
 	}
 }

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.proxy.*;
@@ -11,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.cmds.LoadDataCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -25,8 +26,17 @@ import io.mycat.mysql.packet.ErrorPacket;
 public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
 	public static final DefaultMycatSessionHandler INSTANCE = new DefaultMycatSessionHandler();
 	private static Logger logger = LoggerFactory.getLogger(DefaultMycatSessionHandler.class);
-	
-	
+
+	/**
+	 * 进行特殊包处理的包
+	 */
+	private static final Map<Integer, DefaultMycatSessionHandler> PKGMAP = new HashMap<>();
+
+	static {
+		// 进行load data命令处理类
+		PKGMAP.put((int) (byte) 0xfb, LoadDataHandler.INSTANCE);
+	}
+
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
 		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
@@ -114,11 +124,12 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			session.curSQLCommand.clearResouces(false);
 		}
 
-		// 如果当前为load data的操作命令，在收到服务器的响应后，则进行从前向后传输开始
-		if (session.curFrontMSQLPackgInf.pkgType == (byte) 0xfb) {
+		// 检查当前的包是否需要进行特殊的处理
+		DefaultMycatSessionHandler handler = PKGMAP.get(session.curFrontMSQLPackgInf.pkgType);
+
+		if (null != handler) {
 			// 设置lodata的透传执行
-			session.curSQLCommand = LoadDataCmd.INSTANCE;
-			session.setCurNIOHandler(LoadDataHandler.INSTANCE);
+			session.setCurNIOHandler(handler);
 		}
 
 	}

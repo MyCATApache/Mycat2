@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultDirectProxyHandler<T extends UserProxySession> implements FrontIOHandler<T>, BackendIOHandler<T> {
 	protected static Logger logger = LoggerFactory.getLogger(DefaultDirectProxyHandler.class);
-
+   public static final DefaultDirectProxyHandler<?> INSTANCE=new DefaultDirectProxyHandler<>();
 	public void onBackendConnect(T userSession, boolean success, String msg) throws IOException {
 		String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
 		logger.info(logInfo + " channel " + userSession.backendChannel);

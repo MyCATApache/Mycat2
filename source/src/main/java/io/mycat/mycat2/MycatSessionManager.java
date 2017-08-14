@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.net.MySQLClientAuthHandler;
 import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
 
@@ -52,6 +53,11 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 	public void removeSession(Session session) {
 		this.allSessions.remove(session);
 
+	}
+
+	@Override
+	public NIOHandler<MySQLSession> getDefaultSessionHandler() {
+		return MySQLClientAuthHandler.INSTANCE;
 	}
 
 }
