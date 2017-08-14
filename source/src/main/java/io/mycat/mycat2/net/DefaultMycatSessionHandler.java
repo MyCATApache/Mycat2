@@ -54,7 +54,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			// final MySQLDataSource datas = repSet.getCurWriteDH();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "172.16.18.167";
+			String serverIP = "localhost";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
