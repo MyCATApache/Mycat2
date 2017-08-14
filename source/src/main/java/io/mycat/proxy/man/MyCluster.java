@@ -85,8 +85,8 @@ public class MyCluster {
 				InetSocketAddress serverAddress = new InetSocketAddress(curNode.ip, curNode.port);
 				SocketChannel socketChannel = SocketChannel.open();
 				socketChannel.configureBlocking(false);
-				socketChannel.connect(serverAddress);
 				socketChannel.register(nioSelector, SelectionKey.OP_CONNECT, curNode.id);
+				socketChannel.connect(serverAddress);
 			} catch (Exception e) {
 				logger.warn("connect err " + e);
 			}
