@@ -125,15 +125,17 @@ public class UserProxySession extends AbstractSession {
 			break;
 		}
 		case FrontRW: {
+			//只操作前端的情况下，数据读写都用backendBuffer
 			int clientOps = SelectionKey.OP_READ;
-			if (frontBuffer.isInWriting() == false)
+			if (backendBuffer.isInWriting() == false)
 				clientOps = SelectionKey.OP_WRITE;
 			frontKey.interestOps(clientOps);
 			break;
 		}
 		case BackendRW: {
+			//只操作后端的情况下，数据读写都用frontBuffer
 			int serverOps = SelectionKey.OP_READ;
-			if (backendBuffer.isInWriting() == false)
+			if (frontBuffer.isInWriting() == false)
 				serverOps = SelectionKey.OP_WRITE;
 			backendKey.interestOps(serverOps);
 			break;
