@@ -10,8 +10,8 @@ import java.nio.channels.SocketChannel;
  * 代表用户的会话，存放用户会话数据，如前端连接，后端连接，状态等数据
  * Proxy模式模式下，通常一端的Socket会把读到的数据写入到对端的Buffer里，即前端收到的数据放入到BackendBuffer，随后被Backchannel写入并发送出去；
  * 类似的，后端收到的数据会放入到frontBuffer里，随后被frontChannel写入并发送出去。 【特别注意】
- * 如果只读写前端，那么读取到的数据应该放到前端buffer，写入的数据也放到前端Buffer 【特别注意】
- * 如果只读写后端，那么读取到的数据应该放到后端buffer，读取的数据也放到后端Buffer 否则 modifySelectKey()逻辑就错误了
+ * 如果只读写前端，那么读取到的数据应该放到后端buffer，写入的数据也放到后端Buffer 【特别注意】
+ * 如果只读写后端，那么读取到的数据应该放到前端buffer，读取的数据也放到前端Buffer 【特别注意】 否则 modifySelectKey()逻辑就错误了【特别注意】
  * 
  * @author wuzhihui
  *
