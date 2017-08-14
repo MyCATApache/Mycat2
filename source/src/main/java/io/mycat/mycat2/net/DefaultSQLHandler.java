@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,11 +68,8 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			BackendConCreateTask authProcessor = new BackendConCreateTask(session, null);
 			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 				if (exeSucces) {
-					optSession.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
-					// 交给SQLComand去处理
-					if (session.curSQLCommand.procssSQL(session, false)) {
-						session.curSQLCommand.clearResouces(false);
-					}
+					//认证成功后开始同步会话状态至后端
+					syncSessionStateToBackend(session);
 				} else {
 					ErrorPacket errPkg = (ErrorPacket) retVal;
 					optSession.responseOKOrError(errPkg, true);
@@ -88,6 +86,23 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			}
 		}
 
+	}
+
+	private void syncSessionStateToBackend(MySQLSession mySQLSession) throws IOException{
+		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mySQLSession);
+		backendSynchronzationTask.setCallback((session, sender, exeSucces, rv) -> {
+			if (exeSucces) {
+				session.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
+				// 交给SQLComand去处理
+				if (session.curSQLCommand.procssSQL(session, false)) {
+					session.curSQLCommand.clearResouces(false);
+				}
+			} else {
+				ErrorPacket errPkg = (ErrorPacket) rv;
+				session.responseOKOrError(errPkg, true);
+			}
+		});
+		mySQLSession.setCurProxyHandler(backendSynchronzationTask);
 	}
 
 	public void onBackendRead(MySQLSession session) throws IOException {
