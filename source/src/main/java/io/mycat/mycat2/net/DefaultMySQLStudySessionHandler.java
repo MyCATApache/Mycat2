@@ -19,8 +19,8 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 	public static final DefaultMySQLStudySessionHandler INSTANCE=new DefaultMySQLStudySessionHandler();
 	@Override
 	public void onFrontRead(MySQLSession session) throws IOException {
-		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
-		ProxyBuffer peerBuf = session.backendBuffer;
+		boolean readed = session.readFromChannel(session.frontBuffer, session.frontChannel);
+		ProxyBuffer peerBuf = session.frontBuffer;
 		SocketChannel peerChannel = session.backendChannel;
 		MySQLPackageInf curPkgInf = session.curFrontMSQLPackgInf;
 		if (readed == false || session.resolveMySQLPackage(peerBuf, curPkgInf,true) == false) {
@@ -33,6 +33,7 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 
 		}
 		// 透传给对端
+		peerBuf.changeOwner(false);
 		peerBuf.flip();
 		session.writeToChannel(peerBuf, peerChannel);
 		return;
@@ -68,6 +69,7 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 
 		}
 		// 透传给对端
+		peerBuf.changeOwner(true);
 		peerBuf.flip();
 		session.writeToChannel(peerBuf, peerChannel);
 		return;

@@ -41,16 +41,16 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
-		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
-		ProxyBuffer backendBuffer = session.backendBuffer;
+		boolean readed = session.readFromChannel(session.frontBuffer, session.frontChannel);
+		ProxyBuffer buffer = session.frontBuffer;
 		if (readed == false) {
 			return;
 		}
-		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+		if (session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, false) == false) {
 			// 没有读到完整报文
 			return;
 		}
-		if (session.curFrontMSQLPackgInf.endPos < backendBuffer.getReadOptState().optLimit) {
+		if (session.curFrontMSQLPackgInf.endPos < buffer.getReadOptState().optLimit) {
 			logger.warn("front contains multi package ");
 		}
 		if (session.backendChannel == null) {
@@ -193,7 +193,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 
 	@Override
 	public void onBackendWrite(MySQLSession session) throws IOException {
-		session.writeToChannel(session.backendBuffer, session.backendChannel);
+		session.writeToChannel(session.frontBuffer, session.backendChannel);
 
 	}
 

@@ -34,7 +34,7 @@ public class DefaultTCPProxySessionManager implements SessionManager<UserProxySe
 		session.backendChannel = SocketChannel.open();
 		session.backendChannel.configureBlocking(false);
 		session.backendChannel.connect(serverAddress);
-		session.setCurNIOHandler(new DefaultDirectProxyHandler<UserProxySession>());
+		session.setCurNIOHandler(DefaultDirectProxyHandler.INSTANCE);
 		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
 		session.backendKey = selectKey;
 		logger.info("Connecting to backend server " + serverIP + ":" + serverPort);
@@ -51,5 +51,11 @@ public class DefaultTCPProxySessionManager implements SessionManager<UserProxySe
 	public void removeSession(Session session) {
 		this.allSessions.remove(session);
 
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public NIOHandler<UserProxySession> getDefaultSessionHandler() {
+		return (NIOHandler<UserProxySession>) DefaultDirectProxyHandler.INSTANCE;
 	}
 }
