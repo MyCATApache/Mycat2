@@ -151,39 +151,6 @@ public class MySQLSession extends UserProxySession {
 	}
 
 	/**
-	 * 从Socket中读取数据，通常在NIO事件中调用，比如onFrontRead/onBackendRead
-	 * 
-	 * @param session
-	 * @param readFront
-	 * @return
-	 * @throws IOException
-	 */
-	public boolean readSocket(boolean readFront) throws IOException {
-		ProxyBuffer buffer = backendBuffer;
-		SocketChannel channel = frontChannel;
-		if (!readFront) {
-			buffer = frontBuffer;
-			channel = backendChannel;
-		}
-		int readed = readFromChannel(buffer, channel);
-		logger.debug("readed {} total bytes ", readed);
-		if (readed == -1) {
-			closeSocket(channel, true, "read EOF.");
-			return false;
-		} else if (readed == 0) {
-			logger.warn("read 0 bytes ,try compact buffer " + (readFront ? " front " : "backend ") + " ,session Id :"
-					+ this.getSessionId());
-			buffer.compact(true);
-			// todo curMSQLPackgInf
-			// 也许要对应的改变位置,如果curMSQLPackgInf是跨Package的，则可能无需改变信息
-			// curPackInf.
-			return false;
-		}
-		buffer.updateReadLimit();
-		return true;
-	}
-
-	/**
 	 * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
 	 * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded=true
 	 * 

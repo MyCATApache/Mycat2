@@ -49,7 +49,7 @@ public class ProxyBuffer {
 	 * 交换Read与Write状态
 	 */
 	public void flip() {
-		
+
 		if (this.inReading) {
 			// 转为可写状态
 			inReading = false;
@@ -69,12 +69,14 @@ public class ProxyBuffer {
 			readState.optLimit = writeState.optPostion;
 			readState.optedTotalLength = 0;
 		}
-		logger.debug("flip, new state {} , write state: {} ,read state {}", this.inReading?"read":"write", this.writeState,this.readState);
-		
+		logger.debug("flip, new state {} , write state: {} ,read state {}", this.inReading ? "read" : "write",
+				this.writeState, this.readState);
+
 	}
 
 	/**
 	 * 只能用在读状态下，跳过指定的N个字符
+	 * 
 	 * @param step
 	 */
 	public void skip(int step) {
@@ -87,14 +89,6 @@ public class ProxyBuffer {
 
 	public BufferOptState getWriteOptState() {
 		return this.writeState;
-	}
-
-	/**
-	 * 更新读状态，当Buffer中写入了一些数据后，延伸读的Limit值
-	 */
-	public BufferOptState updateReadLimit() {
-		this.readState.optLimit = this.writeState.optPostion;
-		return readState;
 	}
 
 	/**
@@ -429,15 +423,15 @@ public class ProxyBuffer {
 	 * Reset to write状态，清除数据
 	 */
 	public void reset() {
-		inReading=false;
-		writeState.optPostion=0;
-		writeState.optLimit=buffer.capacity();
-		writeState.curOptedLength=0;
-		writeState.optedTotalLength=0;
-		readState.optPostion=0;
-		readState.optLimit=0;
-		readState.curOptedLength=0;
-		readState.optedTotalLength=0;
+		inReading = false;
+		writeState.optPostion = 0;
+		writeState.optLimit = buffer.capacity();
+		writeState.curOptedLength = 0;
+		writeState.optedTotalLength = 0;
+		readState.optPostion = 0;
+		readState.optLimit = 0;
+		readState.curOptedLength = 0;
+		readState.optedTotalLength = 0;
 	}
 
 }

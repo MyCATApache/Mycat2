@@ -88,18 +88,7 @@ public class AdminSession extends AbstractSession {
 	 * @throws IOException
 	 */
 	public boolean readSocket() throws IOException {
-		int readed = readFromChannel(this.frontBuffer, this.frontChannel);
-		logger.debug("readed {} total bytes ", readed);
-		if (readed == -1) {
-			closeSocket(frontChannel, true, "read EOF.");
-			return false;
-		} else if (readed == 0) {
-			logger.warn("read 0 bytes ,try compact buffer  ,session Id :" + this.getSessionId());
-			frontBuffer.compact(true);
-			return false;
-		}
-		frontBuffer.updateReadLimit();
-		return true;
+		return readFromChannel(this.frontBuffer, this.frontChannel);
 	}
 
 	public void closeSocket(SocketChannel channel, boolean normal, String msg) {
@@ -112,7 +101,7 @@ public class AdminSession extends AbstractSession {
 			channel.close();
 		} catch (IOException e) {
 		}
-		((FrontIOHandler<Session>)this.getCurNIOHandler()).onFrontSocketClosed(this, normal);
+		((FrontIOHandler<Session>) this.getCurNIOHandler()).onFrontSocketClosed(this, normal);
 
 	}
 

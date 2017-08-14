@@ -40,9 +40,7 @@ import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOAcceptor;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
-import io.mycat.proxy.man.DefaultAdminSessionHandler;
 import io.mycat.proxy.man.DefaultAdminSessionManager;
 import io.mycat.proxy.man.MyCluster;
 

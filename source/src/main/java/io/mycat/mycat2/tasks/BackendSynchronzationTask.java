@@ -6,6 +6,8 @@ import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.UserProxySession.NetOptMode;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +18,10 @@ import java.io.IOException;
  * <p>
  * 同步状态至后端数据库，包括：字符集，事务，隔离级别等
  */
-public class BackendSynchronzationTask implements BackendIOTask<MySQLSession> {
-	private NIOHandler<MySQLSession> prevProxyHandler;
+public class BackendSynchronzationTask extends AbstractBackendIOTask {
 	private static Logger logger = LoggerFactory.getLogger(BackendSynchronzationTask.class);
-	private AsynTaskCallBack callBack;
-	private MySQLSession session;
 	private static QueryPacket[] CMDS = new QueryPacket[3];
 	private int processCmd = 0;
-	private ErrorPacket errPkg;
 
 	static {
 		QueryPacket isolationSynCmd = new QueryPacket();
@@ -41,9 +39,8 @@ public class BackendSynchronzationTask implements BackendIOTask<MySQLSession> {
 	}
 
 	public BackendSynchronzationTask(MySQLSession session) throws IOException {
-		prevProxyHandler = session.getCurNIOHandler();
+		super(session);
 		this.processCmd = 0;
-		this.session = session;
 		syncState(session);
 	}
 
@@ -71,14 +68,9 @@ public class BackendSynchronzationTask implements BackendIOTask<MySQLSession> {
 	}
 
 	@Override
-	public void onBackendConnect(MySQLSession userSession, boolean success, String msg) throws IOException {
-
-	}
-
-	@Override
 	public void onBackendRead(MySQLSession session) throws IOException {
 		session.frontBuffer.reset();
-		if (!session.readSocket(false)
+		if (!session.readFromChannel(session.frontBuffer, session.backendChannel)
 				|| !session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
 			return;
 		}
@@ -93,23 +85,9 @@ public class BackendSynchronzationTask implements BackendIOTask<MySQLSession> {
 		}
 	}
 
-	private void finished(boolean success) throws IOException {
-		session.setCurNIOHandler(prevProxyHandler);
-		callBack.finished(session, this, success, this.errPkg);
-	}
-
-	@Override
-	public void onBackendWrite(MySQLSession session) throws IOException {
-
-	}
-
 	@Override
 	public void onBackendSocketClosed(MySQLSession userSession, boolean normal) {
-
+		logger.warn(" socket closed not handlerd" + session.toString());
 	}
 
-	@Override
-	public void setCallback(AsynTaskCallBack callBack) {
-		this.callBack = callBack;
-	}
 }

@@ -30,7 +30,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
-		boolean readed = session.readSocket(true);
+		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
 		ProxyBuffer backendBuffer = session.backendBuffer;
 		if (readed == false) {
 			return;
@@ -104,7 +104,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	}
 
 	public void onBackendRead(MySQLSession session) throws IOException {
-		boolean readed = session.readSocket(false);
+		boolean readed = session.readFromChannel(session.frontBuffer, session.backendChannel);
 		if (readed == false) {
 			return;
 		}
