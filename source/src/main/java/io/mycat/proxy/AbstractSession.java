@@ -98,17 +98,26 @@ public abstract class AbstractSession implements Session {
 	 * @param channel
 	 * @return 读取了多少数据
 	 */
-	public int readFromChannel(ProxyBuffer proxyBuf, SocketChannel channel) throws IOException {
+	public boolean readFromChannel(ProxyBuffer proxyBuf, SocketChannel channel) throws IOException {
+		
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		buffer.limit(proxyBuf.writeState.optLimit);
 		buffer.position(proxyBuf.writeState.optPostion);
 		int readed = channel.read(buffer);
+		logger.debug(" readed {} total bytes ,channel {}", readed,channel);
 		proxyBuf.writeState.curOptedLength = readed;
 		if (readed > 0) {
 			proxyBuf.writeState.optPostion += readed;
 			proxyBuf.writeState.optedTotalLength += readed;
-		}
-		return readed;
+			proxyBuf.readState.optLimit = proxyBuf.writeState.optPostion;
+		}else  if (readed == -1) {
+			logger.warn("Read EOF ,socket closed ");
+				throw new ClosedChannelException();
+			}else if(readed==0)
+			{
+				logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
+			}
+		return readed>0;
 	}
 
 	/**
