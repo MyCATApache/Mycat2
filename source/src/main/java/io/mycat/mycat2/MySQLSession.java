@@ -5,9 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.beans.MySQLCharset;
-import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.mycat2.beans.*;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.HandshakePacket;
@@ -246,4 +244,20 @@ public class MySQLSession extends UserProxySession {
 		}
 	}
 
+	public MySQLDataSource getDatasource() {
+		SchemaBean schemaBean = this.schema;
+		MycatConfig mycatConf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+		if (schemaBean == null) {
+			schemaBean = mycatConf.getDefaultMycatSchema();
+
+			//				ErrorPacket errorPacket = new ErrorPacket();
+			//				errorPacket.message = "no schema selected";
+			//				session.responseOKOrError(errorPacket, true);
+		}
+		DNBean dnBean = schemaBean.getDefaultDN();
+		String replica = dnBean.getMysqlReplica();
+		MySQLReplicatSet repSet = mycatConf.getMySQLReplicatSet(replica);
+		MySQLDataSource datas = repSet.getCurWriteDH();
+		return datas;
+	}
 }

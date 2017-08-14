@@ -5,6 +5,12 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.MySQLReplicatSet;
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.DNBean;
+import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.proxy.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,10 +19,6 @@ import io.mycat.mycat2.cmds.LoadDataCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.proxy.BackendIOHandler;
-import io.mycat.proxy.FrontIOHandler;
-import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.UserProxySession;
 
 /**
  * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
@@ -45,17 +47,11 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		}
 		if (session.backendChannel == null) {
 			// todo ，从连接池中获取连接，获取不到后创建新连接，
-			// final DNBean dnBean = session.schema.getDefaultDN();
-			// final String replica = dnBean.getMysqlReplica();
-			// MycatConfig
-			// mycatConf=(MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
-			// final MySQLReplicatSet repSet =
-			// mycatConf.getMySQLReplicatSet(replica);
-			// final MySQLDataSource datas = repSet.getCurWriteDH();
+			final MySQLDataSource datas = session.getDatasource();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "localhost";
-			int serverPort = 3306;
+			String serverIP = datas.getConfig().getIp();
+			int serverPort = datas.getConfig().getPort();
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
 			session.backendChannel.configureBlocking(false);
