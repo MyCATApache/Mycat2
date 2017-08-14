@@ -9,8 +9,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.LoadDataCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
+import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.BackendIOHandler;
 import io.mycat.proxy.FrontIOHandler;
@@ -18,16 +19,16 @@ import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.UserProxySession;
 
 /**
- * 负责处理通用的SQL命令，默认情况下透传
+ * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
  * 
  * @author wuzhihui
  *
  */
-public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
-	private static Logger logger = LoggerFactory.getLogger(DefaultSQLHandler.class);
-	public static DefaultSQLHandler INSTANCE = new DefaultSQLHandler();
-	public static DirectPassthrouhCmd defaultSQLCmd = new DirectPassthrouhCmd();
-
+public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
+	public static final DefaultMycatSessionHandler INSTANCE = new DefaultMycatSessionHandler();
+	private static Logger logger = LoggerFactory.getLogger(DefaultMycatSessionHandler.class);
+	
+	
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(true);
@@ -53,7 +54,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			// final MySQLDataSource datas = repSet.getCurWriteDH();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "localhost";
+			String serverIP = "172.16.18.167";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
@@ -67,18 +68,15 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			BackendConCreateTask authProcessor = new BackendConCreateTask(session, null);
 			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 				if (exeSucces) {
-					optSession.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
-					// 交给SQLComand去处理
-					if (session.curSQLCommand.procssSQL(session, false)) {
-						session.curSQLCommand.clearResouces(false);
-					}
+					// 认证成功后开始同步会话状态至后端
+					syncSessionStateToBackend(session);
 				} else {
 					ErrorPacket errPkg = (ErrorPacket) retVal;
 					optSession.responseOKOrError(errPkg, true);
 
 				}
 			});
-			session.setCurProxyHandler(authProcessor);
+			session.setCurNIOHandler(authProcessor);
 			return;
 
 		} else {
@@ -90,21 +88,52 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 
 	}
 
+	private void syncSessionStateToBackend(MySQLSession mySQLSession) throws IOException {
+		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mySQLSession);
+		backendSynchronzationTask.setCallback((session, sender, exeSucces, rv) -> {
+			if (exeSucces) {
+				// 交给SQLComand去处理
+				if (session.curSQLCommand.procssSQL(session, false)) {
+					session.curSQLCommand.clearResouces(false);
+				}
+			} else {
+				ErrorPacket errPkg = (ErrorPacket) rv;
+				session.responseOKOrError(errPkg, true);
+			}
+		});
+		mySQLSession.setCurNIOHandler(backendSynchronzationTask);
+	}
+
 	public void onBackendRead(MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(false);
 		if (readed == false) {
 			return;
 		}
+
+		ProxyBuffer backendBuffer = session.frontBuffer;
+
+		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+			// 没有读到完整报文
+			return;
+		}
+
 		// 交给SQLComand去处理
 		if (session.curSQLCommand.procssSQL(session, true)) {
 			session.curSQLCommand.clearResouces(false);
 		}
+
+		// 如果当前为load data的操作命令，在收到服务器的响应后，则进行从前向后传输开始
+		if (session.curFrontMSQLPackgInf.pkgType == (byte) 0xfb) {
+			// 设置lodata的透传执行
+			session.curSQLCommand = LoadDataCmd.INSTANCE;
+			session.setCurNIOHandler(LoadDataHandler.INSTANCE);
+		}
+
 	}
 
 	@Override
 	public void onBackendConnect(MySQLSession userSession, boolean success, String msg) throws IOException {
 		logger.warn("not handled (expected ) onBackendConnect event " + userSession.sessionInfo());
-
 	}
 
 	/**

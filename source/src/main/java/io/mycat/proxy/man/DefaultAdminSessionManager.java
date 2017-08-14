@@ -26,10 +26,13 @@ public class DefaultAdminSessionManager implements SessionManager<AdminSession> 
 	private ArrayList<AdminSession> allSessions = new ArrayList<>();
 
 	@Override
-	public AdminSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,
+	public AdminSession createSession(Object keyAttachement ,BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,
 			boolean isAcceptedCon) throws IOException {
 
 		AdminSession session = new AdminSession(bufPool, nioSelector, frontChannel);
+		session.setCurNIOHandler(DefaultAdminSessionHandler.INSTANCE);
+		String clusterNodeId = (String) keyAttachement;
+		session.setNodeId(clusterNodeId);
 		// session.setCurProxyHandler(proxyHandler);
 		if (isAcceptedCon) {// 客户端连接上来，所以发送信息给客户端
 			NodeRegInfoPacket nodeRegInf = new NodeRegInfoPacket(session.cluster().getMyNodeId(),

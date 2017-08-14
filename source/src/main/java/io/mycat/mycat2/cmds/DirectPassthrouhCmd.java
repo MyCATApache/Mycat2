@@ -16,6 +16,7 @@ import io.mycat.proxy.ProxyBuffer;
  */
 public class DirectPassthrouhCmd implements SQLCommand {
 
+	public static final DirectPassthrouhCmd INSTANCE=new DirectPassthrouhCmd();
 	@Override
 	public boolean procssSQL(MySQLSession session, boolean backresReceived) throws IOException {
 

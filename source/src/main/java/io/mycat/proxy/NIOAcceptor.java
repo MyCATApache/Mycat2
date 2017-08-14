@@ -18,8 +18,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.proxy.man.AdminSession;
-
 public class NIOAcceptor extends Thread {
 	private final static Logger logger = LoggerFactory.getLogger(NIOAcceptor.class);
 	private BufferPool bufferPool;
@@ -38,10 +36,12 @@ public class NIOAcceptor extends Thread {
 		ProxyRuntime env = ProxyRuntime.INSTANCE;
 		ProxyConfig conf = env.getProxyConfig();
 		try {
-
+			//打开服务端的socket，普通单节点的mycat，集群标识为false
 			openServerChannel(selector, conf.getBindIP(), conf.getBindPort(), false);
+			//检查集群标识是否打开
 			if (conf.isClusterEnable()) {
 				logger.info("opend cluster conmunite port on " + conf.getClusterIP() + ':' + conf.getClusterPort());
+				//打开集群通信的socket
 				openServerChannel(selector, conf.getClusterIP(), conf.getClusterPort(), true);
 			}
 
@@ -52,7 +52,7 @@ public class NIOAcceptor extends Thread {
 
 		while (true) {
 			Set<SelectionKey> keys = null;
-			SelectionKey curKey=null;
+			SelectionKey curKey = null;
 			try {
 				selector.select(1000);
 				keys = selector.selectedKeys();
@@ -64,36 +64,42 @@ public class NIOAcceptor extends Thread {
 					if (!key.isValid()) {
 						continue;
 					}
-					curKey=key;
+					curKey = key;
 					int readdyOps = key.readyOps();
+					
+					//如果当前收到连接请求
 					if ((readdyOps & SelectionKey.OP_ACCEPT) != 0) {
 
 						ServerSocketChannel serverSocket = (ServerSocketChannel) key.channel();
+						//接收通道，设置为非阻塞模式
 						final SocketChannel socketChannel = serverSocket.accept();
 						socketChannel.configureBlocking(false);
 						logger.info("new Client connected: " + socketChannel);
 						boolean clusterServer = (boolean) key.attachment();
+						//获取附着的标识，即得到当前是否为集群通信端口
 						if (clusterServer) {
-							AdminSession session = env.getAdminSessionManager().createSession(this.bufferPool, selector,
-									socketChannel, true);
+							env.getAdminSessionManager().createSession(curKey, this.bufferPool, selector, socketChannel,
+									true);
 						} else {
 							// 找到一个可用的NIO Reactor Thread，交付托管
 							if (nioIndex++ == Integer.MAX_VALUE) {
 								nioIndex = 1;
 							}
 							int index = nioIndex % env.getNioReactorThreads();
+							//获取一个reactor对象
 							ProxyReactorThread nioReactor = env.getReactorThreads()[index];
-							nioReactor.acceptNewSocketChannel(socketChannel);
+							//将通道注册到reactor对象上
+							nioReactor.acceptNewSocketChannel(clusterServer, socketChannel);
 						}
-					} else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
+					} 
+					//如果当前连接事件
+					else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
 						// only from cluster server socket
 						SocketChannel curChannel = (SocketChannel) key.channel();
-						String clusterNodeId = (String) key.attachment();
-						AdminSession session = env.getAdminSessionManager().createSession(this.bufferPool, selector,
-								curChannel, false);
-						session.setNodeId(clusterNodeId);
-						ConnectIOHandler<AdminSession> connectIOHandler = (ConnectIOHandler<AdminSession>) env
-								.getAdminSessionIOHandler();
+						Session session = env.getAdminSessionManager().createSession(key.attachment(), this.bufferPool,
+								selector, curChannel, false);
+						ConnectIOHandler<Session> connectIOHandler = (ConnectIOHandler<Session>) session
+								.getCurNIOHandler();
 						try {
 							if (curChannel.finishConnect()) {
 								connectIOHandler.onConnect(session, true, null);
@@ -105,10 +111,12 @@ public class NIOAcceptor extends Thread {
 
 					} else if ((readdyOps & SelectionKey.OP_READ) != 0) {
 						// only from cluster server socket
-						env.getAdminSessionIOHandler().onFrontRead((AdminSession) key.attachment());
+						Session session = (Session) key.attachment();
+						((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontRead(session);
 					} else if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
 						// only from cluster server socket
-						env.getAdminSessionIOHandler().onFrontWrite((AdminSession) key.attachment());
+						Session session = (Session) key.attachment();
+						((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontWrite(session);
 					}
 				}
 			} catch (IOException e) {

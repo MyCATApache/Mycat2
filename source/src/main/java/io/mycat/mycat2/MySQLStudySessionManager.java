@@ -11,7 +11,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.net.MySQLProcalDebugHandler;
+import io.mycat.mycat2.net.DefaultMySQLStudySessionHandler;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
@@ -27,14 +27,13 @@ public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
 	private ArrayList<MySQLSession> allSessions = new ArrayList<MySQLSession>();
 
 	@Override
-	public MySQLSession createSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,
-			boolean isAcceptCon) throws IOException {
+	public MySQLSession createSession(Object keyAttachment, BufferPool bufPool, Selector nioSelector,
+			SocketChannel frontChannel, boolean isAcceptCon) throws IOException {
 
 		logger.info("MySQL client connected  ." + frontChannel);
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
-		session.setCurProxyHandler(MySQLProcalDebugHandler.INSTANCE);
-
+		session.setCurNIOHandler(DefaultMySQLStudySessionHandler.INSTANCE);
 		// // todo ,from config
 		// // 尝试连接Server 端口
 		String serverIP = "localhost";
@@ -45,6 +44,7 @@ public class MySQLStudySessionManager implements SessionManager<MySQLSession> {
 		session.backendChannel.connect(serverAddress);
 		SelectionKey selectKey = session.backendChannel.register(session.nioSelector, SelectionKey.OP_CONNECT, session);
 		session.backendKey = selectKey;
+
 		session.setSessionManager(this);
 		allSessions.add(session);
 		logger.info("Connecting to server " + serverIP + ":" + serverPort);

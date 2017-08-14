@@ -76,9 +76,9 @@ public class MycatCore {
 		// Mycat 2.0 Session Manager
 		runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
-		ProxyReactorThread[] nioThreads = runtime.getReactorThreads();
+		ProxyReactorThread<?>[] nioThreads = runtime.getReactorThreads();
 		for (int i = 0; i < cpus; i++) {
-			ProxyReactorThread thread = new ProxyReactorThread(new BufferPool(1024 * 10));
+			ProxyReactorThread<?> thread = new ProxyReactorThread<>(new BufferPool(1024 * 10));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
@@ -88,8 +88,6 @@ public class MycatCore {
 		acceptor.start();
 		if (conf.isClusterEnable()) {
 			runtime.setAdminSessionManager(new DefaultAdminSessionManager());
-			runtime.setAdminCmdResolver(new AdminCommandResovler());
-			runtime.setAdminSessionIOHandler(new DefaultAdminSessionHandler());
 			ClusterNode myNode = new ClusterNode(conf.getMyNodeId(), conf.getClusterIP(), conf.getClusterPort());
 			MyCluster cluster = new MyCluster(acceptor.getSelector(), myNode,
 					ClusterNode.parseNodesInf(conf.getAllNodeInfs()));

@@ -14,9 +14,9 @@ import io.mycat.proxy.ProxyBuffer;
  * @author wuzhihui
  *
  */
-public class MySQLProcalDebugHandler extends DefaultDirectProxyHandler<MySQLSession> {
-	public static final MySQLProcalDebugHandler INSTANCE = new MySQLProcalDebugHandler();
+public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<MySQLSession> {
 
+	public static final DefaultMySQLStudySessionHandler INSTANCE=new DefaultMySQLStudySessionHandler();
 	@Override
 	public void onFrontRead(MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(true);

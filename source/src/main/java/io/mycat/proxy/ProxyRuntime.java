@@ -14,21 +14,18 @@ import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
 
-@SuppressWarnings("rawtypes")
 public class ProxyRuntime {
 	private ProxyConfig proxyConfig;
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
 	private int nioReactorThreads = 2;
 	private boolean traceProtocol = true;
-	private final long  startTime=System.currentTimeMillis();
+	private final long startTime = System.currentTimeMillis();
 
-	private ProxyReactorThread[] reactorThreads;
-	private SessionManager sessionManager;
+	private ProxyReactorThread<?>[] reactorThreads;
+	private SessionManager<?> sessionManager;
 	// 用于管理端口的Session会话管理
 	private SessionManager<AdminSession> adminSessionManager;
-	// 用于管理端口的Session IO Handler
-	private FrontIOHandler<AdminSession> adminSessionIOHandler;
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
 	/**
@@ -77,7 +74,7 @@ public class ProxyRuntime {
 		this.nioReactorThreads = nioReactorThreads;
 	}
 
-	public ProxyReactorThread[] getReactorThreads() {
+	public ProxyReactorThread<?>[] getReactorThreads() {
 		return reactorThreads;
 	}
 
@@ -85,15 +82,15 @@ public class ProxyRuntime {
 		return nio_biproxyflag;
 	}
 
-	public void setReactorThreads(ProxyReactorThread[] reactorThreads) {
+	public void setReactorThreads(ProxyReactorThread<?>[] reactorThreads) {
 		this.reactorThreads = reactorThreads;
 	}
 
-	public SessionManager getSessionManager() {
+	public SessionManager<?> getSessionManager() {
 		return sessionManager;
 	}
 
-	public void setSessionManager(SessionManager sessionManager) {
+	public void setSessionManager(SessionManager<?> sessionManager) {
 		this.sessionManager = sessionManager;
 	}
 
@@ -104,13 +101,13 @@ public class ProxyRuntime {
 	 */
 	public void addNIOJob(Runnable job) {
 		if (Thread.currentThread() instanceof ProxyReactorThread) {
-			((ProxyReactorThread) Thread.currentThread()).addNIOJob(job);
+			((ProxyReactorThread<?>) Thread.currentThread()).addNIOJob(job);
 		} else {
 			throw new RuntimeException("Must  called in ProxyReactorThread ");
 		}
 	}
 
-	public void addNIOJob(Runnable job, ProxyReactorThread nioThread) {
+	public void addNIOJob(Runnable job, ProxyReactorThread<?> nioThread) {
 		nioThread.addNIOJob(job);
 	}
 
@@ -136,7 +133,7 @@ public class ProxyRuntime {
 	 * @param job
 	 * @param delayedSeconds
 	 */
-	public void addDelayedNIOJob(Runnable job, int delayedSeconds, ProxyReactorThread nioThread) {
+	public void addDelayedNIOJob(Runnable job, int delayedSeconds, ProxyReactorThread<?> nioThread) {
 		schedulerService.schedule(() -> {
 			nioThread.addNIOJob(job);
 		}, delayedSeconds, TimeUnit.SECONDS);
@@ -149,7 +146,7 @@ public class ProxyRuntime {
 	 * @param delayedSeconds
 	 * @param nioThread
 	 */
-	public void addCronNIOJob(Runnable job, int initialDelay, int period, ProxyReactorThread nioThread) {
+	public void addCronNIOJob(Runnable job, int initialDelay, int period, ProxyReactorThread<?> nioThread) {
 		schedulerService.scheduleWithFixedDelay(() -> {
 			nioThread.addNIOJob(job);
 		}, initialDelay, period, TimeUnit.SECONDS);
@@ -169,14 +166,6 @@ public class ProxyRuntime {
 
 	public void setAdminSessionManager(SessionManager<AdminSession> adminSessionManager) {
 		this.adminSessionManager = adminSessionManager;
-	}
-
-	public FrontIOHandler<AdminSession> getAdminSessionIOHandler() {
-		return adminSessionIOHandler;
-	}
-
-	public void setAdminSessionIOHandler(FrontIOHandler<AdminSession> adminSessionIOHandler) {
-		this.adminSessionIOHandler = adminSessionIOHandler;
 	}
 
 	public long getStartTime() {

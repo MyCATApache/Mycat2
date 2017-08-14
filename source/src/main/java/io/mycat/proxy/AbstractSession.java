@@ -20,11 +20,12 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class AbstractSession implements Session {
-	 
+public abstract class AbstractSession implements Session {
+
 	protected static Logger logger = LoggerFactory.getLogger(AbstractSession.class);
-	private int sessionId;
 	private SessionManager<? extends Session> sessionManager;
+	private NIOHandler<? extends Session> nioHandler;
+	private int sessionId;
 	public BufferPool bufPool;
 	public Selector nioSelector;
 	// 前端连接
@@ -55,6 +56,11 @@ public class AbstractSession implements Session {
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
 	}
 
+	@Override
+	public SocketChannel frontChannel() {
+		return this.frontChannel;
+	}
+
 	public String sessionInfo() {
 		return " [" + this.frontAddr + ']';
 	}
@@ -78,7 +84,7 @@ public class AbstractSession implements Session {
 			logger.info("close session " + this.sessionInfo() + " for reason " + message);
 			closeSocket(frontChannel);
 			bufPool.recycleBuf(frontBuffer.getBuffer());
-            this.sessionManager.removeSession(this);  
+			this.getMySessionManager().removeSession(this);
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}
@@ -201,16 +207,24 @@ public class AbstractSession implements Session {
 		return sessionId;
 	}
 
-
-
-	public void   setSessionManager(SessionManager<? extends Session> sessionManager) {
-		this.sessionManager = sessionManager;
-	}
-
 	@SuppressWarnings("unchecked")
 	@Override
 	public <T extends Session> SessionManager<T> getMySessionManager() {
 		return (SessionManager<T>) this.sessionManager;
+	}
+
+	public void setSessionManager(SessionManager<? extends Session> curSessionMan) {
+		this.sessionManager = curSessionMan;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T extends Session> NIOHandler<T> getCurNIOHandler() {
+		return (NIOHandler<T>) nioHandler;
+	}
+
+	public void setCurNIOHandler(NIOHandler<? extends Session> curNioHandler) {
+		this.nioHandler = curNioHandler;
 	}
 
 }

@@ -24,26 +24,26 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 
 	public static final  MySQLClientAuthHandler INSTANCE=new MySQLClientAuthHandler();
-	/**
-	 * 客户端连接的时候发送欢迎信息，等待用户认证
-	 */
-	public void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
-			throws IOException {
-		logger.info("MySQL client connected  ." + frontChannel);
-
-		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
-		session.bufPool = bufPool;
-		session.nioSelector = nioSelector;
-		session.frontChannel = frontChannel;
-		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
-		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
-		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
-		session.frontKey = socketKey;
-		session.sendAuthPackge();
-
-
-
-	}
+//	/**
+//	 * 客户端连接的时候发送欢迎信息，等待用户认证
+//	 */
+//	public void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
+//			throws IOException {
+//		logger.info("MySQL client connected  ." + frontChannel);
+//
+//		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
+//		session.bufPool = bufPool;
+//		session.nioSelector = nioSelector;
+//		session.frontChannel = frontChannel;
+//		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
+//		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
+//		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
+//		session.frontKey = socketKey;
+//		session.sendAuthPackge();
+//
+//
+//
+//	}
 
 	@Override
 	public void onFrontRead(MySQLSession session) throws IOException {
@@ -77,7 +77,7 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 				session.backendBuffer.reset();
 				session.answerFront(AUTH_OK);
 				//认证通过，设置当前SQL Handler为默认Handler
-				session.setCurProxyHandler(DefaultSQLHandler.INSTANCE);
+				session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 			}
 		} catch (Throwable e) {
 			logger.warn("Frontend FrontendAuthenticatingState error:", e);

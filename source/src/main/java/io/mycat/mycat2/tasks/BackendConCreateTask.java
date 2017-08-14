@@ -40,7 +40,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 	private AsynTaskCallBack callBack;
 	private ErrorPacket errPkg;
 
-	@SuppressWarnings("unchecked")
+	
 	public BackendConCreateTask(MySQLSession session,MySQLDataSource ds) {
 		
         
@@ -52,7 +52,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		this.prevBackendBuffer = session.backendBuffer;
 		session.frontBuffer = session.allocNewProxyBuffer();
 		session.backendBuffer = session.allocNewProxyBuffer();
-		prevProxyHandler = (NIOHandler<MySQLSession>) session.curProxyHandler;
+		prevProxyHandler = session.getCurNIOHandler();
 	}
 
 	@Override
@@ -80,8 +80,8 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 			}
 			// 发送应答报文给后端
 			String user = "root";
-			String password = "123456";
-			String schema = "mysql";
+			String password = "liujun";
+			String schema = "mycatdb";
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
 			packet.clientFlags = initClientFlags();
@@ -103,7 +103,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 			welcomePkgReceived = true;
 		} else {
 			// 认证结果报文收到
-			if (session.curBackendMSQLPackgInf.pkgType == 0x00) {
+			if (session.curBackendMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
 				logger.info("backend authed suceess ");
 				this.finished(true);
 			} else if (session.curBackendMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
@@ -161,7 +161,7 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		session.frontBuffer = prevFrontBuffer;
 		session.backendBuffer = prevBackendBuffer;
 		session.netOptMode = prevNetMode;
-		session.curProxyHandler = prevProxyHandler;
+		session.setCurNIOHandler(prevProxyHandler);
 	}
 
 	private static byte[] passwd(String pass, HandshakePacket hs) throws NoSuchAlgorithmException {

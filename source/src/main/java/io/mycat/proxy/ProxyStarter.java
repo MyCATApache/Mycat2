@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import io.mycat.mycat2.MySQLStudySessionManager;
 import io.mycat.proxy.man.AdminCommandResovler;
-import io.mycat.proxy.man.DefaultAdminSessionHandler;
 import io.mycat.proxy.man.DefaultAdminSessionManager;
 
 public class ProxyStarter {
@@ -26,9 +25,9 @@ public class ProxyStarter {
 		// Mycat 2.0 Session Manager
 		// runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
-		ProxyReactorThread[] nioThreads = runtime.getReactorThreads();
+		ProxyReactorThread<?>[] nioThreads = runtime.getReactorThreads();
 		for (int i = 0; i < cpus; i++) {
-			ProxyReactorThread thread = new ProxyReactorThread(new BufferPool(1024 * 10));
+			ProxyReactorThread<?> thread = new ProxyReactorThread<>(new BufferPool(1024 * 10));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
@@ -38,7 +37,7 @@ public class ProxyStarter {
 		if (config.isClusterEnable()) {
 			runtime.setAdminSessionManager(new DefaultAdminSessionManager());
 			runtime.setAdminCmdResolver(new AdminCommandResovler());
-			runtime.setAdminSessionIOHandler(new DefaultAdminSessionHandler());
+
 		}
 		System.out.println(
 				"*** Mycat NIO Proxy Server  *** ,NIO Threads " + nioThreads.length + " listen on " + config.getBindIP()
