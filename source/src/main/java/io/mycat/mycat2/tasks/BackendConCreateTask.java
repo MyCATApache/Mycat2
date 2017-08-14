@@ -80,8 +80,8 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 			}
 			// 发送应答报文给后端
 			String user = "root";
-			String password = "123456";
-			String schema = "mysql";
+			String password = "liujun";
+			String schema = "mycatdb";
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
 			packet.clientFlags = initClientFlags();
