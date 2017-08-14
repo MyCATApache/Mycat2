@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.SQLCommand;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.LoadDataCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
@@ -30,8 +29,14 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 	public static DefaultSQLHandler INSTANCE = new DefaultSQLHandler();
 	
 	
+	/**
+	 * 进行load data的IO处理 
+	 */
 	public static LoadDataHandler LOADDATEHANDLE = new LoadDataHandler();
 	
+	/**
+	 * 进行默认的SQL处理
+	 */
 	public static DirectPassthrouhCmd defaultSQLCmd = new DirectPassthrouhCmd();
 
 	/**
@@ -39,10 +44,6 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 	 */
 	private static LoadDataCmd LOADDATA = new LoadDataCmd();
 
-	/**
-	 * 是否解析包,默认为需要解析
-	 */
-	private boolean isAnalysisrpkg = true;
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
@@ -69,7 +70,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			// final MySQLDataSource datas = repSet.getCurWriteDH();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "192.168.3.22";
+			String serverIP = "172.16.18.167";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
@@ -102,7 +103,6 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			// 交给SQLComand去处理
 			if (session.curSQLCommand.procssSQL(session, false)) {
 				session.curSQLCommand.clearResouces(false);
-				isAnalysisrpkg = true;
 				session.curSQLCommand = defaultSQLCmd;
 			}
 		}
@@ -118,8 +118,7 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 			return;
 		}
 
-		if (isAnalysisrpkg
-				&& session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
 			// 没有读到完整报文
 			return;
 		}
@@ -131,8 +130,6 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 
 		// 如果当前为load data的操作命令，在收到服务器的响应后，则进行从前向后传输开始
 		if (session.curFrontMSQLPackgInf.pkgType == (byte) 0xfb) {
-			// 将不再进行解析
-			isAnalysisrpkg = false;
 			// 设置lodata的透传执行
 			session.curSQLCommand = LOADDATA;
 			
