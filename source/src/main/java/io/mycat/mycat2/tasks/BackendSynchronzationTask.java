@@ -1,17 +1,15 @@
 package io.mycat.mycat2.tasks;
 
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.QueryPacket;
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.UserProxySession.NetOptMode;
+import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.QueryPacket;
+import io.mycat.proxy.ProxyBuffer;
 
 /**
  * Created by ynfeng on 2017/8/13.

@@ -1,10 +1,7 @@
 package io.mycat.mycat2;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.proxy.ProxyConfig;
