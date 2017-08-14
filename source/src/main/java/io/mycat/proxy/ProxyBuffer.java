@@ -30,6 +30,8 @@ public class ProxyBuffer {
 	 * 通道数据写入状态的标识
 	 */
 	public BufferOptState writeState = new BufferOptState();
+	//一般都是后端连接率先给客户端发起信息，所以后端默认使用
+	private boolean frontUsing=false;
 
 	public ProxyBuffer(ByteBuffer buffer) {
 		super();
@@ -60,6 +62,10 @@ public class ProxyBuffer {
 		this.inReading = inReading;
 	}
 
+	public void changeOwner(boolean front)
+	{
+		this.frontUsing=front;
+	}
 	/**
 	 * 交换Read与Write状态
 	 */
@@ -451,6 +457,14 @@ public class ProxyBuffer {
 		readState.optLimit = 0;
 		readState.curOptedLength = 0;
 		readState.optedTotalLength = 0;
+	}
+
+	public boolean frontUsing() {
+		return this.frontUsing;
+	}
+	public boolean backendUsing()
+	{
+		return !frontUsing;
 	}
 
 }

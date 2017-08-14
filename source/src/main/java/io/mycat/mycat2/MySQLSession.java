@@ -89,13 +89,15 @@ public class MySQLSession extends UserProxySession {
 	 */
 	public void responseOKOrError(MySQLPacket pkg, boolean front) throws IOException {
 		if (front) {
+			frontBuffer.changeOwner(true);
 			pkg.write(this.frontBuffer);
 			frontBuffer.flip();
 			this.writeToChannel(frontBuffer, this.frontChannel);
 		} else {
-			pkg.write(this.backendBuffer);
-			backendBuffer.flip();
-			this.writeToChannel(backendBuffer, this.backendChannel);
+			frontBuffer.changeOwner(false);
+			pkg.write(this.frontBuffer);
+			frontBuffer.flip();
+			this.writeToChannel(frontBuffer, this.backendChannel);
 		}
 	}
 
