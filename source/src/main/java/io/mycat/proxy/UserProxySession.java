@@ -63,6 +63,7 @@ public class UserProxySession extends AbstractSession {
 
 	public void close(String message) {
 		if (!this.isClosed()) {
+			super.close(message);
 			// 关闭后端连接
 			closeSocket(backendChannel);
 			bufPool.recycleBuf(backendBuffer.getBuffer());

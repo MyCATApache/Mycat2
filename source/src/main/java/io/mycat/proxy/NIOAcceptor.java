@@ -36,10 +36,12 @@ public class NIOAcceptor extends Thread {
 		ProxyRuntime env = ProxyRuntime.INSTANCE;
 		ProxyConfig conf = env.getProxyConfig();
 		try {
-
+			//打开服务端的socket，普通单节点的mycat，集群标识为false
 			openServerChannel(selector, conf.getBindIP(), conf.getBindPort(), false);
+			//检查集群标识是否打开
 			if (conf.isClusterEnable()) {
 				logger.info("opend cluster conmunite port on " + conf.getClusterIP() + ':' + conf.getClusterPort());
+				//打开集群通信的socket
 				openServerChannel(selector, conf.getClusterIP(), conf.getClusterPort(), true);
 			}
 
@@ -64,13 +66,17 @@ public class NIOAcceptor extends Thread {
 					}
 					curKey = key;
 					int readdyOps = key.readyOps();
+					
+					//如果当前收到连接请求
 					if ((readdyOps & SelectionKey.OP_ACCEPT) != 0) {
 
 						ServerSocketChannel serverSocket = (ServerSocketChannel) key.channel();
+						//接收通道，设置为非阻塞模式
 						final SocketChannel socketChannel = serverSocket.accept();
 						socketChannel.configureBlocking(false);
 						logger.info("new Client connected: " + socketChannel);
 						boolean clusterServer = (boolean) key.attachment();
+						//获取附着的标识，即得到当前是否为集群通信端口
 						if (clusterServer) {
 							env.getAdminSessionManager().createSession(curKey, this.bufferPool, selector, socketChannel,
 									true);
@@ -80,10 +86,14 @@ public class NIOAcceptor extends Thread {
 								nioIndex = 1;
 							}
 							int index = nioIndex % env.getNioReactorThreads();
+							//获取一个reactor对象
 							ProxyReactorThread nioReactor = env.getReactorThreads()[index];
+							//将通道注册到reactor对象上
 							nioReactor.acceptNewSocketChannel(clusterServer, socketChannel);
 						}
-					} else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
+					} 
+					//如果当前连接事件
+					else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
 						// only from cluster server socket
 						SocketChannel curChannel = (SocketChannel) key.channel();
 						Session session = env.getAdminSessionManager().createSession(key.attachment(), this.bufferPool,

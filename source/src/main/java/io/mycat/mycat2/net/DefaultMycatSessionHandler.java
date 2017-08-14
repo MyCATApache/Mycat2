@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.cmds.LoadDataCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -24,10 +25,10 @@ import io.mycat.proxy.UserProxySession;
  *
  */
 public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
-	public static final DefaultMycatSessionHandler INSTANCE=new DefaultMycatSessionHandler();
+	public static final DefaultMycatSessionHandler INSTANCE = new DefaultMycatSessionHandler();
 	private static Logger logger = LoggerFactory.getLogger(DefaultMycatSessionHandler.class);
 	
-
+	
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
 		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
@@ -108,10 +109,26 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		if (readed == false) {
 			return;
 		}
+
+		ProxyBuffer backendBuffer = session.frontBuffer;
+
+		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+			// 没有读到完整报文
+			return;
+		}
+
 		// 交给SQLComand去处理
 		if (session.curSQLCommand.procssSQL(session, true)) {
 			session.curSQLCommand.clearResouces(false);
 		}
+
+		// 如果当前为load data的操作命令，在收到服务器的响应后，则进行从前向后传输开始
+		if (session.curFrontMSQLPackgInf.pkgType == (byte) 0xfb) {
+			// 设置lodata的透传执行
+			session.curSQLCommand = LoadDataCmd.INSTANCE;
+			session.setCurNIOHandler(LoadDataHandler.INSTANCE);
+		}
+
 	}
 
 	@Override
