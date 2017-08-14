@@ -12,8 +12,23 @@ import org.slf4j.LoggerFactory;
 public class ProxyBuffer {
 	protected static Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
 	private final ByteBuffer buffer;
-	private boolean inReading = false;;
+	
+	
+	/**
+	 * 通道的读写状态标标识，false为写入，true 为读取
+	 */
+	private boolean inReading = false;
+	
+	
+	/**
+	 * 通道读取的状态标识
+	 */
 	public BufferOptState readState = new BufferOptState();
+	
+	
+	/**
+	 * 通道数据写入状态的标识
+	 */
 	public BufferOptState writeState = new BufferOptState();
 
 	public ProxyBuffer(ByteBuffer buffer) {
@@ -64,9 +79,13 @@ public class ProxyBuffer {
 		} else {
 			// 转为读状态
 			inReading = true;
+			//读取状态的开始指针指定为写入状态的开始指针
 			readState.startPos = writeState.startPos;
+			//opt指针指定为状态开始的指针
 			readState.optPostion = writeState.startPos;
+			//读取的最大长度指定为现写入的长度
 			readState.optLimit = writeState.optPostion;
+			//总字节数转换为0
 			readState.optedTotalLength = 0;
 		}
 		logger.debug("flip, new state {} , write state: {} ,read state {}", this.inReading?"read":"write", this.writeState,this.readState);
