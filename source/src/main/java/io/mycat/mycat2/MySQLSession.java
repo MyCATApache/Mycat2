@@ -120,8 +120,8 @@ public class MySQLSession extends UserProxySession {
 		// 发送握手数据包
 		HandshakePacket hs = new HandshakePacket();
 		hs.packetId = 0;
-		hs.protocolVersion = Versions.PROTOCOL_VERSION;
-		hs.serverVersion = Versions.SERVER_VERSION;
+		hs.protocolVersion = Version.PROTOCOL_VERSION;
+		hs.serverVersion = Version.SERVER_VERSION;
 		hs.threadId = this.getSessionId();
 		hs.seed = rand1;
 		hs.serverCapabilities = getServerCapabilities();
@@ -151,44 +151,7 @@ public class MySQLSession extends UserProxySession {
 		writeToChannel(frontBuffer, frontChannel);
 	}
 
-	/**
-	 * 从Socket中读取数据，通常在NIO事件中调用，比如onFrontRead/onBackendRead
-	 * 
-	 * @param session
-	 * @param readFront
-	 * @return
-	 * @throws IOException
-	 */
-	public boolean readSocket(boolean readFront) throws IOException {
-		//默认获得后端的buffer和前端的channel
-		ProxyBuffer buffer = backendBuffer;
-		SocketChannel channel = frontChannel;
-		
-		//如果标识当前为false，则表示当前为读取后端通道的数据
-		if (!readFront) {
-			//则当前的为前端的buffer和后端的channel
-			buffer = frontBuffer;
-			channel = backendChannel;
-		}
-		//进行通道数据的读取
-		int readed = readFromChannel(buffer, channel);
-		logger.debug("readed {} total bytes ", readed);
-		if (readed == -1) {
-			closeSocket(channel, true, "read EOF.");
-			return false;
-		} else if (readed == 0) {
-			logger.warn("read 0 bytes ,try compact buffer " + (readFront ? " front " : "backend ") + " ,session Id :"
-					+ this.getSessionId());
-			buffer.compact(true);
-			// todo curMSQLPackgInf
-			// 也许要对应的改变位置,如果curMSQLPackgInf是跨Package的，则可能无需改变信息
-			// curPackInf.
-			return false;
-		}
-		//更新当前数据读取到的长度信息
-		buffer.updateReadLimit();
-		return true;
-	}
+
 
 	/**
 	 * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE

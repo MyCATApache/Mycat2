@@ -1,14 +1,9 @@
 package io.mycat.mycat2.net;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mysql.packet.AuthPacket;
-import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.DefaultDirectProxyHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.CharsetUtil;
@@ -24,30 +19,10 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 
 	public static final  MySQLClientAuthHandler INSTANCE=new MySQLClientAuthHandler();
-//	/**
-//	 * 客户端连接的时候发送欢迎信息，等待用户认证
-//	 */
-//	public void onFrontConnected(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel)
-//			throws IOException {
-//		logger.info("MySQL client connected  ." + frontChannel);
-//
-//		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
-//		session.bufPool = bufPool;
-//		session.nioSelector = nioSelector;
-//		session.frontChannel = frontChannel;
-//		InetSocketAddress clientAddr = (InetSocketAddress) frontChannel.getRemoteAddress();
-//		session.frontAddr = clientAddr.getHostString() + ":" + clientAddr.getPort();
-//		SelectionKey socketKey = frontChannel.register(nioSelector, SelectionKey.OP_READ, session);
-//		session.frontKey = socketKey;
-//		session.sendAuthPackge();
-//
-//
-//
-//	}
 
 	@Override
 	public void onFrontRead(MySQLSession session) throws IOException {
-		boolean readed = session.readSocket(true);
+		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
 		ProxyBuffer backendBuffer = session.backendBuffer;
 		if (readed == false || session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf,false) == false) {
 			return;

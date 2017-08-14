@@ -14,8 +14,9 @@ import org.slf4j.LoggerFactory;
  * @author wuzhihui
  *
  */
-public class DefaultDirectProxyHandler<T extends UserProxySession> implements FrontIOHandler<T> ,BackendIOHandler<T>{
+public class DefaultDirectProxyHandler<T extends UserProxySession> implements FrontIOHandler<T>, BackendIOHandler<T> {
 	protected static Logger logger = LoggerFactory.getLogger(DefaultDirectProxyHandler.class);
+
 	public void onBackendConnect(T userSession, boolean success, String msg) throws IOException {
 		String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
 		logger.info(logInfo + " channel " + userSession.backendChannel);
@@ -74,10 +75,8 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 
 	public void onFrontRead(T userSession) throws IOException {
 
-		int readed = userSession.readFromChannel(userSession.backendBuffer, userSession.frontChannel);
-		if (readed == -1) {
-			userSession.closeSocket(userSession.frontChannel, true, "read EOF.");
-		} else if (readed > 0) {
+		boolean readed = userSession.readFromChannel(userSession.backendBuffer, userSession.frontChannel);
+		if (readed) {
 			// 如果读到数据,修改NIO事件，自己不再读数据，对方则感兴趣写数据。
 			userSession.backendBuffer.flip();
 			userSession.modifySelectKey();
@@ -85,10 +84,8 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 	}
 
 	public void onBackendRead(T userSession) throws IOException {
-		int readed = userSession.readFromChannel(userSession.frontBuffer, userSession.backendChannel);
-		if (readed == -1) {
-			userSession.closeSocket(userSession.backendChannel, true, "read EOF.");
-		} else if (readed > 0) {
+		boolean readed = userSession.readFromChannel(userSession.frontBuffer, userSession.backendChannel);
+		if (readed) {
 			// 如果读到数据,修改NIO事件，自己不再读数据，对方则感兴趣写数据。
 			userSession.frontBuffer.flip();
 			userSession.modifySelectKey();

@@ -19,7 +19,7 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 	public static final DefaultMySQLStudySessionHandler INSTANCE=new DefaultMySQLStudySessionHandler();
 	@Override
 	public void onFrontRead(MySQLSession session) throws IOException {
-		boolean readed = session.readSocket(true);
+		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
 		ProxyBuffer peerBuf = session.backendBuffer;
 		SocketChannel peerChannel = session.backendChannel;
 		MySQLPackageInf curPkgInf = session.curFrontMSQLPackgInf;
@@ -54,7 +54,7 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 
 	@Override
 	public void onBackendRead(MySQLSession session) throws IOException {
-		boolean readed = session.readSocket(false);
+		boolean readed =session.readFromChannel(session.frontBuffer, session.backendChannel);
 		ProxyBuffer peerBuf = session.frontBuffer;
 		SocketChannel peerChannel = session.frontChannel;
 		MySQLPackageInf curPkgInf = session.curBackendMSQLPackgInf;

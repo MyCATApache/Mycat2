@@ -15,10 +15,6 @@ import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.UserProxySession;
-import io.mycat.proxy.UserProxySession.NetOptMode;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.SecurityUtil;
 
@@ -28,38 +24,21 @@ import io.mycat.util.SecurityUtil;
  * @author wuzhihui
  *
  */
-public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
+public class BackendConCreateTask extends AbstractBackendIOTask {
 	private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
-	private ProxyBuffer prevFrontBuffer;
-	private ProxyBuffer prevBackendBuffer;
-	private NetOptMode prevNetMode;
-	private NIOHandler<MySQLSession> prevProxyHandler;
-	private final MySQLSession session;
 	private HandshakePacket handshake;
 	private boolean welcomePkgReceived = false;
-	private AsynTaskCallBack callBack;
-	private ErrorPacket errPkg;
 
-	
-	public BackendConCreateTask(MySQLSession session,MySQLDataSource ds) {
-		
-        
-		prevNetMode = session.netOptMode;
-		session.netOptMode = UserProxySession.NetOptMode.BackendRW;
-		this.session = session;
-		// 保存之前的FrontBuffer，BackendCon收到的数据会写入到session.frontBuffer中
-		this.prevFrontBuffer = session.frontBuffer;
-		this.prevBackendBuffer = session.backendBuffer;
-		session.frontBuffer = session.allocNewProxyBuffer();
-		session.backendBuffer = session.allocNewProxyBuffer();
-		prevProxyHandler = session.getCurNIOHandler();
+	public BackendConCreateTask(MySQLSession session, MySQLDataSource ds) {
+
+		super(session);
 	}
 
 	@Override
 	public void onBackendRead(MySQLSession session) throws IOException {
 		// 不透传的状态下，需要自己控制Buffer的状态，这里每次从Socket中读取并写Buffer数据都切回初始Write状态
 		session.frontBuffer.reset();
-		if (!session.readSocket(false)
+		if (!session.readFromChannel(session.frontBuffer, session.backendChannel)
 				|| !session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
 			return;
 		}
@@ -96,10 +75,10 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 			packet.database = schema;
 
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
-			session.backendBuffer.reset();
-			packet.write(session.backendBuffer);
-			session.backendBuffer.flip();
-			session.writeToChannel(session.backendBuffer, session.backendChannel);
+			session.frontBuffer.reset();
+			packet.write(session.frontBuffer);
+			session.frontBuffer.flip();
+			session.writeToChannel(session.frontBuffer, session.backendChannel);
 			welcomePkgReceived = true;
 		} else {
 			// 认证结果报文收到
@@ -113,15 +92,6 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 				this.finished(false);
 			}
 		}
-	}
-
-	@Override
-	public void onBackendWrite(MySQLSession session) throws IOException {
-	}
-
-	@Override
-	public void onBackendSocketClosed(MySQLSession userSession, boolean normal) {
-
 	}
 
 	@Override
@@ -144,24 +114,11 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		}
 	}
 
-	private void finished(boolean success) throws IOException {
-		sessionRecover();
+	protected void onFinished(boolean success) {
 		if (!success) {
 			session.backendChannel = null;
 			session.backendKey = null;
 		}
-		callBack.finished(session, this, success, this.errPkg);
-	}
-
-	public void sessionRecover() {
-		// 释放先前分配的资源
-		session.recycleAllocedBuffer(session.frontBuffer);
-		session.recycleAllocedBuffer(session.backendBuffer);
-		// 恢复Session原来的状态
-		session.frontBuffer = prevFrontBuffer;
-		session.backendBuffer = prevBackendBuffer;
-		session.netOptMode = prevNetMode;
-		session.setCurNIOHandler(prevProxyHandler);
 	}
 
 	private static byte[] passwd(String pass, HandshakePacket hs) throws NoSuchAlgorithmException {
@@ -175,12 +132,6 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		System.arraycopy(hs.seed, 0, seed, 0, sl1);
 		System.arraycopy(hs.restOfScrambleBuff, 0, seed, sl1, sl2);
 		return SecurityUtil.scramble411(passwd, seed);
-	}
-
-	@Override
-	public void setCallback(AsynTaskCallBack callBack) {
-		this.callBack = callBack;
-
 	}
 
 	private static long initClientFlags() {
@@ -208,6 +159,11 @@ public class BackendConCreateTask implements BackendIOTask<MySQLSession> {
 		flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
 		flag |= Capabilities.CLIENT_MULTI_RESULTS;
 		return flag;
+	}
+
+	@Override
+	public void onBackendSocketClosed(MySQLSession userSession, boolean normal) {
+		logger.warn("not handlered back connection close event ,session " + userSession.getSessionId());
 	}
 
 }
