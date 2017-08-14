@@ -31,7 +31,7 @@ public interface SessionManager<T extends Session> {
 			boolean isAcceptedCon) throws IOException;
 
 	public Collection<T> getAllSessions();
-
+	public NIOHandler<T> getDefaultSessionHandler();
 	public void removeSession(Session session);
 
 }

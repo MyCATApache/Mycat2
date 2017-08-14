@@ -6,7 +6,6 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -20,13 +19,13 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ProxyReactorThread<T extends Session> extends Thread {
-	private final static long SELECTOR_TIMEOUT = 1000;
-	private final SessionManager<T> sessionMan;
-	private final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
-	private final Selector selector;
-	private final BufferPool bufPool;
-	private ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
-	private ArrayList<T> allSessions = new ArrayList<T>();
+	protected final static long SELECTOR_TIMEOUT = 100;
+	protected final SessionManager<T> sessionMan;
+	protected final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
+	protected final Selector selector;
+	protected final BufferPool bufPool;
+	protected ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
+	protected ArrayList<T> allSessions = new ArrayList<T>();
 
 	@SuppressWarnings("unchecked")
 	public ProxyReactorThread(BufferPool bufPool) throws IOException {
@@ -57,52 +56,57 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 			try {
 				nioJob.run();
 			} catch (Exception e) {
-				logger.warn("run nio job err " + e);
+				logger.warn("run nio job err " , e);
 			}
 		}
 
 	}
 
-	@SuppressWarnings({ "unchecked" })
-	private void handleREvent(final SocketChannel curChannel, final T session) throws IOException {
-		if (session.frontChannel() == curChannel) {
+	protected void processAcceptKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void processConnectKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+		T session = (T) curKey.attachment();
+		reactorEnv.curSession = session;
+		try {
+			if (((SocketChannel) curKey.channel()).finishConnect()) {
+				((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, true, null);
+			}
+
+		} catch (ConnectException ex) {
+			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, false, ex.getMessage());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	protected void processReadKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+		// only from cluster server socket
+		T session = (T) curKey.attachment();
+		reactorEnv.curSession = session;
+		if (session.frontChannel() == curKey.channel()) {
 			((FrontIOHandler<T>) session.getCurNIOHandler()).onFrontRead(session);
 		} else {
 			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendRead(session);
 		}
 	}
 
-	private void handleWREvent(final SocketChannel curChannel, final T session, int readdyOps) throws IOException {
-		if (ProxyRuntime.isNioBiproxyflag()) {
-			if ((readdyOps & SelectionKey.OP_READ) != 0) {
-				handleREvent(curChannel, session);
-			}
-			if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
-				handleWEvent(curChannel, session);
-			}
-		} else {
-			if ((readdyOps & SelectionKey.OP_READ) != 0) {
-				// logger.info("readable keys " + curChannel);
-				handleREvent(curChannel, session);
-			} else {
-				// logger.info("writable keys " + curChannel);
-				handleWEvent(curChannel, session);
-			}
-		}
-	}
-
 	@SuppressWarnings("unchecked")
-	private void handleWEvent(final SocketChannel curChannel, final T session) throws IOException {
-		if (session.frontChannel() == curChannel) {
+	protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+		// only from cluster server socket
+		T session = (T) curKey.attachment();
+		reactorEnv.curSession = session;
+		if (session.frontChannel() == curKey.channel()) {
 			((FrontIOHandler<T>) session.getCurNIOHandler()).onFrontWrite(session);
 		} else {
 			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendWrite(session);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	public void run() {
 		long ioTimes = 0;
+		ReactorEnv reactorEnv = new ReactorEnv();
 		while (true) {
 			try {
 				selector.select(SELECTOR_TIMEOUT);
@@ -119,40 +123,33 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 					this.processNIOJob();
 				}
 				ioTimes++;
-				Iterator<SelectionKey> itor = selector.selectedKeys().iterator();
-				while (itor.hasNext()) {
-					SelectionKey key = itor.next();
-					itor.remove();
-					final T session = (T) key.attachment();
-					final SocketChannel curChannel = (SocketChannel) key.channel();
-					int readdyOps = key.readyOps();
-					if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
-						logger.info("connectable keys " + key.channel());
-						// session.backendChannel = curChannel;
-						try {
-							if (curChannel.finishConnect()) {
-								((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, true,
-										null);
-							}
-
-						} catch (ConnectException ex) {
-							((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, false,
-									ex.getMessage());
+				for (final SelectionKey key : keys) {
+					try {
+						int readdyOps = key.readyOps();
+						reactorEnv.curSession = null;
+						// 如果当前收到连接请求
+						if ((readdyOps & SelectionKey.OP_ACCEPT) != 0) {
+							processAcceptKey(reactorEnv, key);
 						}
+						// 如果当前连接事件
+						else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
+							this.processConnectKey(reactorEnv, key);
+						} else if ((readdyOps & SelectionKey.OP_READ) != 0) {
+							this.processReadKey(reactorEnv, key);
 
-					} else {
-						try {
-							handleWREvent(curChannel, session, readdyOps);
-						} catch (Exception e) {
-							logger.warn("Socket IO err :", e);
-							session.close("Socket IO err:" + e);
-							this.allSessions.remove(session);
+						} else if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
+							this.processWriteKey(reactorEnv, key);
+						}
+					} catch (Exception e) {
+						logger.warn("Socket IO err :", e);
+						if (reactorEnv.curSession != null) {
+							reactorEnv.curSession.close("Socket IO err:" + e);
+							this.allSessions.remove(reactorEnv.curSession);
+							reactorEnv.curSession = null;
 						}
 					}
-
 				}
 				keys.clear();
-
 			} catch (IOException e) {
 				logger.warn("caugh error ", e);
 			}

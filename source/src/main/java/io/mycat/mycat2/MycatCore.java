@@ -85,7 +85,6 @@ public class MycatCore {
 		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
 		acceptor.start();
 		if (conf.isClusterEnable()) {
-			runtime.setAdminSessionManager(new DefaultAdminSessionManager());
 			ClusterNode myNode = new ClusterNode(conf.getMyNodeId(), conf.getClusterIP(), conf.getClusterPort());
 			MyCluster cluster = new MyCluster(acceptor.getSelector(), myNode,
 					ClusterNode.parseNodesInf(conf.getAllNodeInfs()));

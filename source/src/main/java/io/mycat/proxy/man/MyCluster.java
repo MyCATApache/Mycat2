@@ -72,11 +72,6 @@ public class MyCluster {
 		allNodes.values().toArray(nodes);
 		// 排序结果，节点最大的在数组第一个位置
 		Arrays.sort(nodes);
-		// 初始化候选节点为最小节点，然后发送连接请求
-		// ClusterNode candidate= nodes[nodes.length - 1];
-
-		// candidateLeaderId = nodes[nodes.length - 1].id;
-		// 找到比自己小的节点，尝试连接
 		for (ClusterNode curNode : nodes) {
 			if (curNode.equals(myNode))
 				continue;
