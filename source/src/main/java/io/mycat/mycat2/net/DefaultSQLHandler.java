@@ -5,13 +5,14 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.LoadDataCmd;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
+import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.BackendIOHandler;
 import io.mycat.proxy.FrontIOHandler;
@@ -27,7 +28,23 @@ import io.mycat.proxy.UserProxySession;
 public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(DefaultSQLHandler.class);
 	public static DefaultSQLHandler INSTANCE = new DefaultSQLHandler();
+	
+	
+	/**
+	 * 进行load data的IO处理 
+	 */
+	public static LoadDataHandler LOADDATEHANDLE = new LoadDataHandler();
+	
+	/**
+	 * 进行默认的SQL处理
+	 */
 	public static DirectPassthrouhCmd defaultSQLCmd = new DirectPassthrouhCmd();
+
+	/**
+	 * 进行load data命令的透传
+	 */
+	private static LoadDataCmd LOADDATA = new LoadDataCmd();
+
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
@@ -107,13 +124,31 @@ public class DefaultSQLHandler implements FrontIOHandler<MySQLSession>, BackendI
 
 	public void onBackendRead(MySQLSession session) throws IOException {
 		boolean readed = session.readSocket(false);
+
+		ProxyBuffer backendBuffer = session.frontBuffer;
+
 		if (readed == false) {
 			return;
 		}
+
+		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+			// 没有读到完整报文
+			return;
+		}
+
 		// 交给SQLComand去处理
 		if (session.curSQLCommand.procssSQL(session, true)) {
 			session.curSQLCommand.clearResouces(false);
 		}
+
+		// 如果当前为load data的操作命令，在收到服务器的响应后，则进行从前向后传输开始
+		if (session.curFrontMSQLPackgInf.pkgType == (byte) 0xfb) {
+			// 设置lodata的透传执行
+			session.curSQLCommand = LOADDATA;
+			
+			session.curProxyHandler = LOADDATEHANDLE;
+		}
+
 	}
 
 	@Override

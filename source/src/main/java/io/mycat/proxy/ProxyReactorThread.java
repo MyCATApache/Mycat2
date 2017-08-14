@@ -35,9 +35,16 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 		sessionMan = ProxyRuntime.INSTANCE.getSessionManager();
 	}
 
+	/**
+	 * 进行新的socket通道注册
+	 * @param socketChannel 通道信息
+	 * @throws IOException
+	 */
 	public void acceptNewSocketChannel(final SocketChannel socketChannel) throws IOException {
+		//将当前通道放入到注册的队列中
 		pendingJobs.offer(() -> {
 			try {
+				//创建会话对象信息,一般指定为MycatSessionManager
 				T session = sessionMan.createSession(this.bufPool, selector, socketChannel, true);
 				allSessions.add(session);
 			} catch (Exception e) {
@@ -63,16 +70,33 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 
 	}
 
+	/**
+	 * 进行事件处理
+	 * @param curChannel 当前通道信息
+	 * @param session 当前会话信息
+	 * @throws IOException 异常信息
+	 */
 	@SuppressWarnings({ "unchecked" })
 	private void handleREvent(final SocketChannel curChannel, final T session) throws IOException {
+		//进行前端通道的处理读取事件处理
 		if (session.frontChannel == curChannel) {
 			((FrontIOHandler<T>) session.curProxyHandler).onFrontRead(session);
-		} else {
+		}
+		//进行后端通道的读取事件处理
+		else {
 			((BackendIOHandler<T>) session.curProxyHandler).onBackendRead(session);
 		}
 	}
 
+	/**
+	 * 进行事件的统一调用处理方法
+	 * @param curChannel 当前通道信息
+	 * @param session 会话对象
+	 * @param readdyOps 事件集合
+	 * @throws IOException 
+	 */
 	private void handleWREvent(final SocketChannel curChannel, final T session, int readdyOps) throws IOException {
+		//检查当前是否打开了双向通信，如果为mysql则为false，		
 		if (ProxyRuntime.isNioBiproxyflag()) {
 			if ((readdyOps & SelectionKey.OP_READ) != 0) {
 				handleREvent(curChannel, session);
@@ -81,21 +105,33 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 				handleWEvent(curChannel, session);
 			}
 		} else {
+			//进行读取事件处理
 			if ((readdyOps & SelectionKey.OP_READ) != 0) {
 				// logger.info("readable keys " + curChannel);
 				handleREvent(curChannel, session);
-			} else {
+			} 
+			//其他均为写入事件处理
+			else {
 				// logger.info("writable keys " + curChannel);
 				handleWEvent(curChannel, session);
 			}
 		}
 	}
 
+	/**
+	 * 进行写入事件的处理
+	 * @param curChannel 当前通道
+	 * @param session session会话对象
+	 * @throws IOException 
+	 */
 	@SuppressWarnings("unchecked")
 	private void handleWEvent(final SocketChannel curChannel, final T session) throws IOException {
+		//前端通道的写入处理
 		if (session.frontChannel == curChannel) {
 			((FrontIOHandler<T>) session.curProxyHandler).onFrontWrite(session);
-		} else {
+		} 
+		//后端通道的写入处理
+		else {
 			((BackendIOHandler<T>) session.curProxyHandler).onBackendWrite(session);
 		}
 	}
@@ -126,11 +162,13 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 					final T session = (T) key.attachment();
 					final SocketChannel curChannel = (SocketChannel) key.channel();
 					int readdyOps = key.readyOps();
+					//处理发送的连接事件，一般为连接后端的事件
 					if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
 						logger.info("connectable keys " + key.channel());
 						session.backendChannel = curChannel;
 						try {
 							if (curChannel.finishConnect()) {
+								//当连接完成后,调用后端进行处理
 								((BackendIOHandler<T>) session.curProxyHandler).onBackendConnect(session, true, null);
 							}
 
@@ -141,6 +179,7 @@ public class ProxyReactorThread<T extends UserProxySession> extends Thread {
 
 					} else {
 						try {
+							//进行统一的事件调用处理
 							handleWREvent(curChannel, session, readdyOps);
 						} catch (Exception e) {
 							logger.warn("Socket IO err :", e);
