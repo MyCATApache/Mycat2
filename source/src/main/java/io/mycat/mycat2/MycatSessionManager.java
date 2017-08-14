@@ -34,6 +34,7 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
 		// 第一个IO处理器为Client Authorware
+		
 		session.setCurNIOHandler(MySQLClientAuthHandler.INSTANCE);
 		// 默认为透传命令模式
 		session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;

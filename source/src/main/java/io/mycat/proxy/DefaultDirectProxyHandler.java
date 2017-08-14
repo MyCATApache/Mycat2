@@ -27,8 +27,8 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 					+ serverRemoteAddr.getHostString() + ":" + serverRemoteAddr.getPort();
 			userSession.backendChannel.register(userSession.nioSelector, SelectionKey.OP_READ, userSession);
 			// 如果发现前端有数据写入到后端的Buffer，就尝试转写到后端
-			if (userSession.backendBuffer.isInReading()) {
-				userSession.writeToChannel(userSession.backendBuffer, userSession.backendChannel);
+			if (userSession.hasDataTrans2Backend()) {
+				userSession.writeToChannel(userSession.frontBuffer, userSession.backendChannel);
 			}
 		} else {
 			userSession.close("backend can't open:" + msg);
@@ -75,10 +75,11 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 
 	public void onFrontRead(T userSession) throws IOException {
 
-		boolean readed = userSession.readFromChannel(userSession.backendBuffer, userSession.frontChannel);
+		boolean readed = userSession.readFromChannel(userSession.frontBuffer, userSession.frontChannel);
 		if (readed) {
 			// 如果读到数据,修改NIO事件，自己不再读数据，对方则感兴趣写数据。
-			userSession.backendBuffer.flip();
+			userSession.frontBuffer.changeOwner(false);
+			userSession.frontBuffer.flip();
 			userSession.modifySelectKey();
 		}
 	}
@@ -87,6 +88,7 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 		boolean readed = userSession.readFromChannel(userSession.frontBuffer, userSession.backendChannel);
 		if (readed) {
 			// 如果读到数据,修改NIO事件，自己不再读数据，对方则感兴趣写数据。
+			userSession.frontBuffer.changeOwner(true);
 			userSession.frontBuffer.flip();
 			userSession.modifySelectKey();
 		}
@@ -101,7 +103,7 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 
 	@Override
 	public void onBackendWrite(T session) throws IOException {
-		session.writeToChannel(session.backendBuffer, session.backendChannel);
+		session.writeToChannel(session.frontBuffer, session.backendChannel);
 
 	}
 }

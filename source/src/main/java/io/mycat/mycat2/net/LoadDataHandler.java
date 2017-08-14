@@ -37,8 +37,8 @@ public class LoadDataHandler extends DefaultMycatSessionHandler {
 
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
-		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
-		ProxyBuffer backendBuffer = session.backendBuffer;
+		boolean readed = session.readFromChannel(session.frontBuffer, session.frontChannel);
+		ProxyBuffer backendBuffer = session.frontBuffer;
 		if (readed == false) {
 			return;
 		}
@@ -65,12 +65,16 @@ public class LoadDataHandler extends DefaultMycatSessionHandler {
 	 */
 	public boolean transLoadData(MySQLSession session, boolean backresReceived) throws IOException {
 
-		ProxyBuffer curBuffer = session.backendBuffer;
+		ProxyBuffer curBuffer = session.frontBuffer;
 		SocketChannel curChannel = session.backendChannel;
 		if (backresReceived) {// 收到后端发来的报文
 
 			curBuffer = session.frontBuffer;
 			curChannel = session.frontChannel;
+			curBuffer.changeOwner(true);
+		}else
+		{
+			curBuffer.changeOwner(false);
 		}
 
 		// 进行结束符的读取

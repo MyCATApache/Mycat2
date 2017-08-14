@@ -99,25 +99,24 @@ public abstract class AbstractSession implements Session {
 	 * @return 读取了多少数据
 	 */
 	public boolean readFromChannel(ProxyBuffer proxyBuf, SocketChannel channel) throws IOException {
-		
+
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		buffer.limit(proxyBuf.writeState.optLimit);
 		buffer.position(proxyBuf.writeState.optPostion);
 		int readed = channel.read(buffer);
-		logger.debug(" readed {} total bytes ,channel {}", readed,channel);
+		logger.debug(" readed {} total bytes ,channel {}", readed, channel);
 		proxyBuf.writeState.curOptedLength = readed;
 		if (readed > 0) {
 			proxyBuf.writeState.optPostion += readed;
 			proxyBuf.writeState.optedTotalLength += readed;
 			proxyBuf.readState.optLimit = proxyBuf.writeState.optPostion;
-		}else  if (readed == -1) {
+		} else if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
-				throw new ClosedChannelException();
-			}else if(readed==0)
-			{
-				logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
-			}
-		return readed>0;
+			throw new ClosedChannelException();
+		} else if (readed == 0) {
+			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
+		}
+		return readed > 0;
 	}
 
 	/**
@@ -144,17 +143,12 @@ public abstract class AbstractSession implements Session {
 				readState.optPostion = 0;
 				readState.optLimit = buffer.position();
 				writeState.optPostion = buffer.position();
-				// 切换到写模式，继续从对端Socket读数据
-				proxyBuf.setInReading(false);
-			} else {
-				// 数据彻底写完，切换为读模式
-				proxyBuf.flip();
-			}
+				// 继续从对端Socket读数据
 
-			modifySelectKey();
-		} else {
-			if (!proxyBuf.isInReading()) {
-				proxyBuf.setInReading(true);
+			} else {
+				// 数据彻底写完，切换为读模式，对端读取数据
+				proxyBuf.changeOwner(!proxyBuf.frontUsing());
+				proxyBuf.flip();
 				modifySelectKey();
 			}
 		}

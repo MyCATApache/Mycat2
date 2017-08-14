@@ -20,7 +20,7 @@ public class DirectPassthrouhCmd implements SQLCommand {
 	@Override
 	public boolean procssSQL(MySQLSession session, boolean backresReceived) throws IOException {
 
-		ProxyBuffer curBuffer = session.backendBuffer;
+		ProxyBuffer curBuffer = session.frontBuffer;
 		SocketChannel curChannel = session.backendChannel;
 		if (backresReceived) {// 收到后端发来的报文
 
@@ -29,6 +29,7 @@ public class DirectPassthrouhCmd implements SQLCommand {
 		}
 
 		// 直接透传报文
+		curBuffer.changeOwner(!curBuffer.frontUsing());
 		curBuffer.flip();
 		session.writeToChannel(curBuffer, curChannel);
 		session.modifySelectKey();
