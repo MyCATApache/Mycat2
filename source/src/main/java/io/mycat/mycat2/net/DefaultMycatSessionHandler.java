@@ -5,11 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.MySQLReplicatSet;
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.DNBean;
 import io.mycat.mycat2.beans.MySQLDataSource;
-import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.proxy.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
