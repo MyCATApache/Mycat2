@@ -167,7 +167,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		}
 
 		ProxyBuffer backendBuffer = session.frontBuffer;
-
+		
 		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
 			// 没有读到完整报文
 			return;

@@ -3,8 +3,6 @@ package io.mycat.mycat2.cmds;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
-import javax.xml.transform.OutputKeys;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,15 +10,11 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.SQLCommand;
 import io.mycat.mycat2.beans.SchemaBean;
-import io.mycat.mycat2.net.DefaultMycatSessionHandler;
-import io.mycat.mycat2.net.LoadDataHandler;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.INITDBPacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.UserProxySession.NetOptMode;
 
 /**
  * 负责处理Show命令
@@ -34,7 +28,7 @@ public class UseCommand implements SQLCommand{
 
 	@Override
 	public boolean procssSQL(MySQLSession session, boolean backresReceived) throws IOException  {
-	    ProxyBuffer curBuffer = session.backendBuffer;
+	    ProxyBuffer curBuffer = session.frontBuffer;
         SocketChannel curChannel = session.backendChannel;
         //处理前段的请求com_init 命令
         if(backresReceived == false) {
@@ -48,7 +42,6 @@ public class UseCommand implements SQLCommand{
                 errPkg.errno  = 1049;
                 errPkg.message = "Unknown database 123'" + schema + "'";
                 session.frontBuffer.reset();
-                session.backendBuffer.reset();
                 session.responseOKOrError(errPkg, true);
                 logger.debug(errPkg.message);
                 session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
@@ -65,6 +58,7 @@ public class UseCommand implements SQLCommand{
                 initDBPacket.sql = "use " + schemaBean.getDefaultDN().getDatabase();
                 ProxyBuffer buffer = session.frontBuffer;
                 buffer.reset();
+                buffer.changeOwner(false);
                 initDBPacket.write(buffer);
                 buffer.flip();
                 session.writeToChannel(buffer, session.backendChannel);
@@ -84,26 +78,19 @@ public class UseCommand implements SQLCommand{
                 session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
                 return true;
             } else {
-//                ErrorPacket errPkg = new ErrorPacket();
-//                errPkg.errno  = 1049;
-//                session.frontBuffer.reset();
-//                session.frontBuffer.flip();
-//                session.backendBuffer.reset();
-//                errPkg.message = "back connection set database '";
-//                session.responseOKOrError(errPkg, true);
-//                logger.debug(errPkg.message);
-//                session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
                 ErrorPacket errPkg = new ErrorPacket();
                 errPkg.packetId = 1;
                 errPkg.errno  = 1049;
                 errPkg.message = "back connection set database '";
+                curBuffer.changeOwner(true);
                 session.frontBuffer.reset();
-                session.backendBuffer.reset();
                 session.responseOKOrError(errPkg, true);
                 logger.debug(errPkg.message);
+                curBuffer.changeOwner(true);
                 session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
+                session.modifySelectKey();
+           
             }
-          //  session.modifySelectKey();
         }
 
         return true;
