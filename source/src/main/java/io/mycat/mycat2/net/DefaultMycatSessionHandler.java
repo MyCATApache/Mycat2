@@ -10,9 +10,11 @@ import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.cmds.LoadDataCmd;
+import io.mycat.mycat2.cmds.UseCommand;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BackendIOHandler;
 import io.mycat.proxy.FrontIOHandler;
 import io.mycat.proxy.ProxyBuffer;
@@ -54,7 +56,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			// final MySQLDataSource datas = repSet.getCurWriteDH();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "localhost";
+			String serverIP = "192.168.18.128";
 			int serverPort = 3306;
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
@@ -80,6 +82,11 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			return;
 
 		} else {
+		    if(session.curFrontMSQLPackgInf.pkgType == MySQLPacket.COM_INIT_DB) {
+		    //    UseCommand.INSTANCE.procssSQL(session, false);
+		        session.curSQLCommand = UseCommand.INSTANCE;
+		    } 
+		    
 			// 交给SQLComand去处理
 			if (session.curSQLCommand.procssSQL(session, false)) {
 				session.curSQLCommand.clearResouces(false);

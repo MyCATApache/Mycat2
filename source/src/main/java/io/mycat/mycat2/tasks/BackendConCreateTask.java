@@ -59,7 +59,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 			}
 			// 发送应答报文给后端
 			String user = "root";
-			String password = "123456";
+			String password = "123";
 			String schema = "mysql";
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
