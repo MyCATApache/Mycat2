@@ -66,12 +66,11 @@ public class QueryCmdProcessImpl implements SQLComandProcessInf {
 			querySqlProc = QUERY_MAP.get(sqlContext.getSQLType(i));
 
 			if (null != querySqlProc) {
-				querySqlProc.querySqlProc(session);
+				querySqlProc.querySqlProc(session, sqlContext);
 			} else {
-				DefaultQuerySqlProcessImpl.INSTANCE.querySqlProc(session);
+				DefaultQuerySqlProcessImpl.INSTANCE.querySqlProc(session, sqlContext);
 			}
 		}
 	}
-
 
 }
