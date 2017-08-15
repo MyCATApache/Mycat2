@@ -51,7 +51,7 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		boolean clusterServer = (boolean) curKey.attachment();
 		// 获取附着的标识，即得到当前是否为集群通信端口
 		if (clusterServer) {
-			adminSessionMan.createSession(curKey, this.bufPool, selector, socketChannel, true);
+			adminSessionMan.createSession(null, this.bufPool, selector, socketChannel, true);
 		} else {
 			// 找到一个可用的NIO Reactor Thread，交付托管
 			if (reactorEnv.counter++ == Integer.MAX_VALUE) {

@@ -30,6 +30,8 @@ public class ProxyConfig {
 	private String myConfigFileVersion="1.0";
 
 	public static MycatConfig loadFromProperties(InputStream in) throws IOException {
+		try
+		{
 		MycatConfig conf = new MycatConfig();
 		Properties pros = new Properties();
 		pros.load(in);
@@ -41,6 +43,13 @@ public class ProxyConfig {
 		conf.setMyNodeId(pros.getProperty("cluster.myid"));
 		conf.setAllNodeInfs(pros.getProperty("cluster.allnodes"));
 		return conf;
+		}finally
+		{
+			if(in!=null)
+			{
+				in.close();
+			}
+		}
 	}
 
 	public String getBindIP() {

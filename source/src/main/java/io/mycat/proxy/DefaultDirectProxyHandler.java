@@ -31,7 +31,7 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 				userSession.writeToChannel(userSession.frontBuffer, userSession.backendChannel);
 			}
 		} else {
-			userSession.close("backend can't open:" + msg);
+			userSession.close(true,"backend can't open:" + msg);
 		}
 
 	}
@@ -43,7 +43,7 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 	 * @param normal
 	 */
 	public void onFrontSocketClosed(T userSession, boolean normal) {
-		userSession.lazyCloseSession("front closed");
+		userSession.lazyCloseSession(normal,"front closed");
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 	 * @param normal
 	 */
 	public void onBackendSocketClosed(T userSession, boolean normal) {
-		userSession.lazyCloseSession("backend closed");
+		userSession.lazyCloseSession(normal,"backend closed");
 	}
 
 	/**
@@ -70,7 +70,7 @@ public class DefaultDirectProxyHandler<T extends UserProxySession> implements Fr
 		} else {
 			logger.warn("ProxyTransDataNIOHandler handle IO error " + userSession.sessionInfo(), exception);
 		}
-		userSession.close("exception:" + exception.getMessage());
+		userSession.close(false,"exception:" + exception.getMessage());
 	}
 
 	public void onFrontRead(T userSession) throws IOException {
