@@ -142,8 +142,9 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 						}
 					} catch (Exception e) {
 						logger.warn("Socket IO err :", e);
+						key.cancel();
 						if (reactorEnv.curSession != null) {
-							reactorEnv.curSession.close("Socket IO err:" + e);
+							reactorEnv.curSession.close(false,"Socket IO err:" + e);
 							this.allSessions.remove(reactorEnv.curSession);
 							reactorEnv.curSession = null;
 						}

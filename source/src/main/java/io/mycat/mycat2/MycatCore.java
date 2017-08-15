@@ -40,8 +40,8 @@ import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOAcceptor;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
-import io.mycat.proxy.man.DefaultAdminSessionManager;
 import io.mycat.proxy.man.MyCluster;
 
 /**
@@ -58,8 +58,17 @@ public class MycatCore {
 		NameableExecutor businessExecutor = ExecutorUtil.create("BusinessExecutor", 10);
 		// 定时器Executor，用来执行定时任务
 		NamebleScheduledExecutor timerExecutor = ExecutorUtil.createSheduledExecute("Timer", 5);
-		InputStream instream=ClassLoader.getSystemResourceAsStream("mycat.conf");
-		 instream=(instream==null)?ConfigLoader.class.getResourceAsStream("/mycat.conf"):instream;
+		InputStream instream = null;
+		String mySeq="1";
+		if (args.length > 0) {
+			mySeq=args[0];
+		}
+		String mycatConf="mycat"+mySeq+".conf";
+		System.out.println("look Java Classpath for Mycat config file "+mycatConf);
+		if (instream == null) {
+			instream = ClassLoader.getSystemResourceAsStream(mycatConf);
+		}
+		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+mycatConf) : instream;
 		MycatConfig conf = MycatConfig.loadFromProperties(instream);
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
@@ -85,6 +94,7 @@ public class MycatCore {
 		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
 		acceptor.start();
 		if (conf.isClusterEnable()) {
+			runtime.setAdminCmdResolver(new AdminCommandResovler());
 			ClusterNode myNode = new ClusterNode(conf.getMyNodeId(), conf.getClusterIP(), conf.getClusterPort());
 			MyCluster cluster = new MyCluster(acceptor.getSelector(), myNode,
 					ClusterNode.parseNodesInf(conf.getAllNodeInfs()));

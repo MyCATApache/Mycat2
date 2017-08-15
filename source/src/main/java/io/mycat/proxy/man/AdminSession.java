@@ -2,11 +2,12 @@ package io.mycat.proxy.man;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import io.mycat.proxy.AbstractSession;
-import io.mycat.proxy.BufferOptState;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.FrontIOHandler;
 import io.mycat.proxy.ProxyRuntime;
@@ -23,9 +24,15 @@ public class AdminSession extends AbstractSession {
 
 	private String nodeId;
 	public AdminCommand curAdminCommand;
+	// 全双工模式，读写用两个不同的Buffer,不会相互切换
+	public ProtocolBuffer readingBuffer;
+	public ProtocolBuffer writingBuffer;
+	public PackageInf curAdminPkgInf = new PackageInf();
 
 	public AdminSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		super(bufferPool, selector, channel);
+		this.readingBuffer = new ProtocolBuffer(bufferPool.allocByteBuffer());
+		this.writingBuffer = new ProtocolBuffer(bufferPool.allocByteBuffer());
 
 	}
 
@@ -40,11 +47,41 @@ public class AdminSession extends AbstractSession {
 	 * @throws IOException
 	 */
 	public void answerClientNow(ManagePacket packet) throws IOException {
-		frontBuffer.reset();
-		packet.writeTo(frontBuffer);
-		frontBuffer.flip();
-		this.writeToChannel(frontBuffer, frontChannel);
+		writingBuffer.getBuffer().limit(writingBuffer.getBuffer().capacity());
+		packet.writeTo(writingBuffer);
+		this.writeChannel();
+	}
 
+	public void modifySelectKey() throws ClosedChannelException {
+		if (frontKey != null && frontKey.isValid()) {
+			int clientOps = SelectionKey.OP_READ;
+			if (writingBuffer.optLimit == writingBuffer.optMark) {
+				this.writingBuffer.reset();
+				clientOps &= ~SelectionKey.OP_WRITE;
+			} else {
+				clientOps |= SelectionKey.OP_WRITE;
+			}
+			frontKey.interestOps(clientOps);
+		}
+	}
+
+	public void writeChannel() throws IOException {
+		// 尝试压缩，移除之前写过的内容
+		ByteBuffer buffer = writingBuffer.getBuffer();
+		if (writingBuffer.optMark > buffer.capacity() * 2 / 3) {
+			buffer.limit(writingBuffer.optLimit);
+			buffer.position(writingBuffer.optMark);
+			buffer.compact();
+			writingBuffer.optMark = 0;
+			writingBuffer.optLimit = buffer.position();
+		}
+		buffer.limit(writingBuffer.optLimit);
+		buffer.position(writingBuffer.optMark);
+		int writed = this.frontChannel.write(buffer);
+		if (writed > 0) {
+			writingBuffer.optMark = buffer.position();
+		}
+		modifySelectKey();
 	}
 
 	/**
@@ -54,15 +91,17 @@ public class AdminSession extends AbstractSession {
 	 * @throws IOException
 	 */
 	public byte receivedPacket() throws IOException {
-		ByteBuffer buffer = frontBuffer.getBuffer();
-		BufferOptState readState = frontBuffer.readState;
-		int offset = readState.optPostion;
-		int limit = readState.optLimit;
+		ByteBuffer buffer = this.readingBuffer.getBuffer();
+		int offset = readingBuffer.optMark;
+		int limit = readingBuffer.optLimit;
+		if(limit==offset)
+		{
+			return -1;
+		}
 		if (!ManagePacket.validateHeader(offset, limit)) {
 			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
 			return -1;
 		}
-
 		int pkgLength = ManagePacket.getPacketLength(buffer, offset);
 
 		if ((offset + pkgLength) > limit) {
@@ -73,8 +112,11 @@ public class AdminSession extends AbstractSession {
 			final byte packetType = buffer.get(offset + ManagePacket.packetHeaderSize - 1);
 			final String hexs = io.mycat.util.StringUtil.dumpAsHex(buffer, 0, pkgLength);
 			logger.info(
-					"     session {} packet: startPos={}, offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
-					getSessionId(), 0, offset, pkgLength, packetType, limit, hexs);
+					"     session {} packet:  offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
+					getSessionId(), offset, pkgLength, packetType, limit, hexs);
+			curAdminPkgInf.pkgType = packetType;
+			curAdminPkgInf.length = pkgLength;
+			curAdminPkgInf.startPos = offset;
 			return packetType;
 		}
 	}
@@ -88,19 +130,43 @@ public class AdminSession extends AbstractSession {
 	 * @throws IOException
 	 */
 	public boolean readSocket() throws IOException {
-		return readFromChannel(this.frontBuffer, this.frontChannel);
+
+		// 尝试压缩，移除之前读过的内容
+		ByteBuffer buffer = readingBuffer.getBuffer();
+		if (readingBuffer.optMark > buffer.capacity() * 1 / 3) {
+			buffer.limit(readingBuffer.optLimit);
+			buffer.position(readingBuffer.optMark);
+			buffer.compact();
+			readingBuffer.optMark = 0;
+		} else {
+			buffer.position(readingBuffer.optLimit);
+		}
+		int readed = frontChannel.read(buffer);
+		logger.debug(" readed {} total bytes ", readed);
+		if (readed == -1) {
+			logger.warn("Read EOF ,socket closed ");
+			throw new ClosedChannelException();
+		} else if (readed == 0) {
+
+			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
+		}
+		readingBuffer.optLimit = buffer.position();
+		return readed > 0;
 	}
 
-	public void closeSocket(SocketChannel channel, boolean normal, String msg) {
-		if (channel == null) {
-			return;
+	public void close(boolean normal, String hint) {
+		if (!this.isClosed()) {
+			bufPool.recycleBuf(this.readingBuffer.getBuffer());
+			bufPool.recycleBuf(this.writingBuffer.getBuffer());
+			super.close(normal, hint);
+		} else {
+			super.close(normal, hint);
 		}
-		String logInf = ((normal) ? " normal close " : "abnormal close " + " socket ");
-		logger.info(logInf + sessionInfo() + "  reason:" + msg);
-		try {
-			channel.close();
-		} catch (IOException e) {
-		}
+
+	}
+
+	protected void closeSocket(SocketChannel channel, boolean normal, String msg) {
+		super.closeSocket(channel, normal, msg);
 		((FrontIOHandler<Session>) this.getCurNIOHandler()).onFrontSocketClosed(this, normal);
 
 	}

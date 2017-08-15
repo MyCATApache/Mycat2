@@ -2,7 +2,7 @@ package io.mycat.proxy;
 
 /**
  * 可重用的Buffer，连续读或者写，当空间不够时Compact擦除之前用过的空间，
- * 处于写状态或者读状态之一，不能同时读写，change2Read或change2Write方法来切换读写状态， 只有数据被操作完成（读完或者写完）后State才能被改变
+ * 处于写状态或者读状态之一，不能同时读写， 只有数据被操作完成（读完或者写完）后State才能被改变（flip方法或手工切换状态），同时可能要改变Owner，chanageOwn
  */
 import java.nio.ByteBuffer;
 

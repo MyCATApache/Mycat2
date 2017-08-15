@@ -76,7 +76,7 @@ public class HandshakePacket extends MySQLPacket {
 
     public void write(ProxyBuffer buffer) {
     	int pkgSize=calcPacketSize();
-    	//½øĞĞ½«ÎÕÊÖ°ü£¬Ğ´ÈëÖÁProxyBufferÖĞ,½«writeµÄoptÖ¸Õë½øĞĞÏàÓ¦ÓÃĞŞ¸Ä
+    	//è¿›è¡Œå°†æ¡æ‰‹åŒ…ï¼Œå†™å…¥è‡³ProxyBufferä¸­,å°†writeçš„optæŒ‡é’ˆè¿›è¡Œç›¸åº”ç”¨ä¿®æ”¹
     	
         buffer.writeFixInt(3, pkgSize);
         buffer.writeByte(packetId);
