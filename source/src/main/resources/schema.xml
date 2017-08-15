@@ -1,6 +1,6 @@
 <schemas>
     
-	<schema name="mysql" nopartion="true" default-db="ynfeng:test">
+	<schema name="mysql" nopartion="true" default-db="test:test">
 	</schema>
 	
 	<schema name="mycat" nopartion="false" default-db="db2:mysql1">
