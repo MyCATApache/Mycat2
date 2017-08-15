@@ -1,7 +1,7 @@
 package io.mycat.proxy.man.packet;
 
-import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.man.ManagePacket;
+import io.mycat.proxy.man.ProtocolBuffer;
 
 /**
  * Leader同意加入集群后，节点发送确认报文，完成加入过程
@@ -28,13 +28,13 @@ public class JoinCLusterAckPacket extends ManagePacket {
 	}
 
 	@Override
-	public void resolveBody(ProxyBuffer buffer) {
+	public void resolveBody(ProtocolBuffer buffer) {
 		this.myConnectedNodes = buffer.readNULString();
 
 	}
 
 	@Override
-	public void writeBody(ProxyBuffer buffer) {
+	public void writeBody(ProtocolBuffer buffer) {
 		buffer.writeNULString(myConnectedNodes);
 
 	}

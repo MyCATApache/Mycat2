@@ -22,7 +22,8 @@ public class NodeRegInfoPacketCommand implements AdminCommand {
 	@Override
 	public void handlerPkg(AdminSession session,byte cmdType) throws IOException {
 		NodeRegInfoPacket pkg = new NodeRegInfoPacket();
-		pkg.resolve(session.frontBuffer);
+		pkg.resolve(session.readingBuffer);
+		session.setNodeId(pkg.getNodeId());
 		session.cluster().onClusterNodeUp(pkg,session);
 		if (!pkg.isAnswer()) {// 连接到对端后收到对端发送的注册信息，此时应答自己的注册状态
 			pkg = new NodeRegInfoPacket(session.cluster().getMyNodeId(), session.cluster().getClusterState(),

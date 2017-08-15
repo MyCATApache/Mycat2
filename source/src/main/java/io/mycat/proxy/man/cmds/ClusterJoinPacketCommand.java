@@ -47,7 +47,7 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 		} else if (cmdType == ManagePacket.PKG_JOIN_NOTIFY_ClUSTER) {
 			// leader 批准加入Cluster
 			JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket();
-			respPacket.resolve(session.frontBuffer);
+			respPacket.resolve(session.readingBuffer);
 			if (respPacket.getJoinState() == JoinCLusterNotifyPacket.JOIN_STATE_DENNIED) {
 				logger.warn("Leader denied my join cluster request ");
 			} else if (respPacket.getJoinState() == JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK) {

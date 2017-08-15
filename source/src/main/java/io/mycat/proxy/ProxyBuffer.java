@@ -2,7 +2,7 @@ package io.mycat.proxy;
 
 /**
  * 可重用的Buffer，连续读或者写，当空间不够时Compact擦除之前用过的空间，
- * 处于写状态或者读状态之一，不能同时读写，change2Read或change2Write方法来切换读写状态， 只有数据被操作完成（读完或者写完）后State才能被改变
+ * 处于写状态或者读状态之一，不能同时读写， 只有数据被操作完成（读完或者写完）后State才能被改变（flip方法或手工切换状态），同时可能要改变Owner，chanageOwn
  */
 import java.nio.ByteBuffer;
 
@@ -30,6 +30,8 @@ public class ProxyBuffer {
 	 * 通道数据写入状态的标识
 	 */
 	public BufferOptState writeState = new BufferOptState();
+	//一般都是后端连接率先给客户端发起信息，所以后端默认使用
+	private boolean frontUsing=false;
 
 	public ProxyBuffer(ByteBuffer buffer) {
 		super();
@@ -60,6 +62,10 @@ public class ProxyBuffer {
 		this.inReading = inReading;
 	}
 
+	public void changeOwner(boolean front)
+	{
+		this.frontUsing=front;
+	}
 	/**
 	 * 交换Read与Write状态
 	 */
@@ -451,6 +457,14 @@ public class ProxyBuffer {
 		readState.optLimit = 0;
 		readState.curOptedLength = 0;
 		readState.optedTotalLength = 0;
+	}
+
+	public boolean frontUsing() {
+		return this.frontUsing;
+	}
+	public boolean backendUsing()
+	{
+		return !frontUsing;
 	}
 
 }

@@ -22,8 +22,8 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 	@Override
 	public void onFrontRead(MySQLSession session) throws IOException {
-		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
-		ProxyBuffer backendBuffer = session.backendBuffer;
+		boolean readed = session.readFromChannel(session.frontBuffer, session.frontChannel);
+		ProxyBuffer backendBuffer = session.frontBuffer;
 		if (readed == false || session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf,false) == false) {
 			return;
 		}
@@ -49,7 +49,7 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 			boolean succ = success(auth);
 			if (succ) {
-				session.backendBuffer.reset();
+				session.frontBuffer.reset();
 				session.answerFront(AUTH_OK);
 				//认证通过，设置当前SQL Handler为默认Handler
 				session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);

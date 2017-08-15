@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.security.NoSuchAlgorithmException;
 
+import io.mycat.mycat2.beans.MySQLBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,9 +59,10 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 				return;
 			}
 			// 发送应答报文给后端
-			String user = "root";
-			String password = "123";
-			String schema = "mysql";
+			final MySQLBean mySQLBean = session.getDatasource().getConfig();
+			String user = mySQLBean.getUser();
+			String password = mySQLBean.getPassword();
+			String schema = mySQLBean.getDefaultSchema();
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
 			packet.clientFlags = initClientFlags();

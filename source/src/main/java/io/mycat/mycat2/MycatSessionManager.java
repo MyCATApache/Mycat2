@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.net.MySQLClientAuthHandler;
 import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
 
@@ -33,6 +34,7 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 
 		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
 		// 第一个IO处理器为Client Authorware
+		
 		session.setCurNIOHandler(MySQLClientAuthHandler.INSTANCE);
 		// 默认为透传命令模式
 		session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
@@ -52,6 +54,11 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 	public void removeSession(Session session) {
 		this.allSessions.remove(session);
 
+	}
+
+	@Override
+	public NIOHandler<MySQLSession> getDefaultSessionHandler() {
+		return MySQLClientAuthHandler.INSTANCE;
 	}
 
 }

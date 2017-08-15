@@ -4,13 +4,18 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.cmds.LoadDataCmd;
+import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mycat2.cmds.UseCommand;
+import io.mycat.mycat2.sqlparser.NewSQLContext;
+import io.mycat.mycat2.sqlparser.NewSQLParser;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -29,35 +34,41 @@ import io.mycat.proxy.UserProxySession;
 public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
 	public static final DefaultMycatSessionHandler INSTANCE = new DefaultMycatSessionHandler();
 	private static Logger logger = LoggerFactory.getLogger(DefaultMycatSessionHandler.class);
-	
-	
+	private NewSQLContext sqlContext = new NewSQLContext();
+	private NewSQLParser sqlParser = new NewSQLParser();
+
+	/**
+	 * 进行特殊包处理的包
+	 */
+	private static final Map<Integer, DefaultMycatSessionHandler> PKGMAP = new HashMap<>();
+
+	static {
+		// 进行load data命令处理类
+		PKGMAP.put((int) (byte) 0xfb, LoadDataHandler.INSTANCE);
+	}
+
 	@Override
 	public void onFrontRead(final MySQLSession session) throws IOException {
-		boolean readed = session.readFromChannel(session.backendBuffer, session.frontChannel);
-		ProxyBuffer backendBuffer = session.backendBuffer;
+		boolean readed = session.readFromChannel(session.frontBuffer, session.frontChannel);
+		ProxyBuffer buffer = session.frontBuffer;
 		if (readed == false) {
 			return;
 		}
-		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
+		if (session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, false) == false) {
 			// 没有读到完整报文
 			return;
 		}
-		if (session.curFrontMSQLPackgInf.endPos < backendBuffer.getReadOptState().optLimit) {
+		if (session.curFrontMSQLPackgInf.endPos < buffer.getReadOptState().optLimit) {
 			logger.warn("front contains multi package ");
 		}
 		if (session.backendChannel == null) {
 			// todo ，从连接池中获取连接，获取不到后创建新连接，
-			// final DNBean dnBean = session.schema.getDefaultDN();
-			// final String replica = dnBean.getMysqlReplica();
-			// MycatConfig
-			// mycatConf=(MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
-			// final MySQLReplicatSet repSet =
-			// mycatConf.getMySQLReplicatSet(replica);
-			// final MySQLDataSource datas = repSet.getCurWriteDH();
+			final MySQLDataSource datas = session.getDatasource();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = "192.168.18.128";
-			int serverPort = 3306;
+			
+			String serverIP = datas.getConfig().getIp();
+			int serverPort = datas.getConfig().getPort();
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
 			session.backendChannel.configureBlocking(false);
@@ -82,17 +93,55 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			return;
 
 		} else {
-		    if(session.curFrontMSQLPackgInf.pkgType == MySQLPacket.COM_INIT_DB) {
-		    //    UseCommand.INSTANCE.procssSQL(session, false);
-		        session.curSQLCommand = UseCommand.INSTANCE;
-		    } 
+		  
 		    
-			// 交给SQLComand去处理
-			if (session.curSQLCommand.procssSQL(session, false)) {
-				session.curSQLCommand.clearResouces(false);
+
+			if (session.curFrontMSQLPackgInf.pkgType == MySQLPacket.COM_QUERY) {
+				byte[] sql = session.frontBuffer.getBytes(session.curFrontMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize + 1, session.curFrontMSQLPackgInf.endPos - MySQLPacket.packetHeaderSize - 1);
+				sqlParser.parse(sql, sqlContext);
+				if (sqlContext.hasAnnotation()) {
+					//此处添加注解处理
+				}
+				for (int i = 0; i < sqlContext.getSQLCount(); i++) {
+					switch (sqlContext.getSQLType(i)) {
+						case NewSQLContext.SHOW_SQL:
+							logger.info("SHOW_SQL : "+(new String(sql, StandardCharsets.UTF_8)));
+							sendSqlCommand(session);
+							break;
+						case NewSQLContext.SET_SQL:
+							logger.info("SET_SQL : "+(new String(sql, StandardCharsets.UTF_8)));
+							sendSqlCommand(session);
+							break;
+						case NewSQLContext.SELECT_SQL:
+						case NewSQLContext.INSERT_SQL:
+						case NewSQLContext.UPDATE_SQL:
+						case NewSQLContext.DELETE_SQL:
+							logger.info("Parse SQL : "+(new String(sql, StandardCharsets.UTF_8)));
+							String tbls = "";
+							for (int j=0; j<sqlContext.getTableCount(); j++) {
+								tbls += sqlContext.getTableName(j)+", ";
+							}
+							logger.info("GET Tbls : "+tbls);
+						//需要单独处理的sql类型都放这里
+						default:
+							sendSqlCommand(session);//线直接透传
+					}
+				}
+			} else {
+				sendSqlCommand(session);
 			}
 		}
+	}
 
+	private void sendSqlCommand(MySQLSession session) throws IOException {
+	    if(session.curFrontMSQLPackgInf.pkgType == MySQLPacket.COM_INIT_DB) {
+            //    UseCommand.INSTANCE.procssSQL(session, false);
+                session.curSQLCommand = UseCommand.INSTANCE;
+            } 
+	    // 交给SQLComand去处理
+		if (session.curSQLCommand.procssSQL(session, false)) {
+			session.curSQLCommand.clearResouces(false);
+		}
 	}
 
 	private void syncSessionStateToBackend(MySQLSession mySQLSession) throws IOException {
@@ -129,11 +178,12 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			session.curSQLCommand.clearResouces(false);
 		}
 
-		// 如果当前为load data的操作命令，在收到服务器的响应后，则进行从前向后传输开始
-		if (session.curFrontMSQLPackgInf.pkgType == (byte) 0xfb) {
+		// 检查当前的包是否需要进行特殊的处理
+		DefaultMycatSessionHandler handler = PKGMAP.get(session.curFrontMSQLPackgInf.pkgType);
+
+		if (null != handler) {
 			// 设置lodata的透传执行
-			session.curSQLCommand = LoadDataCmd.INSTANCE;
-			session.setCurNIOHandler(LoadDataHandler.INSTANCE);
+			session.setCurNIOHandler(handler);
 		}
 
 	}
@@ -150,7 +200,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	 * @param normal
 	 */
 	public void onFrontSocketClosed(MySQLSession userSession, boolean normal) {
-		userSession.lazyCloseSession("front closed");
+		userSession.lazyCloseSession(normal,"front closed");
 
 	}
 
@@ -161,7 +211,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	 * @param normal
 	 */
 	public void onBackendSocketClosed(MySQLSession userSession, boolean normal) {
-		userSession.lazyCloseSession("backend closed ");
+		userSession.lazyCloseSession(normal,"backend closed ");
 	}
 
 	/**
@@ -178,7 +228,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		} else {
 			logger.warn("DefaultSQLHandler handle IO error " + userSession.sessionInfo(), exception);
 		}
-		userSession.close("exception:" + exception.getMessage());
+		userSession.close(false,"exception:" + exception.getMessage());
 	}
 
 	@Override
@@ -189,7 +239,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 
 	@Override
 	public void onBackendWrite(MySQLSession session) throws IOException {
-		session.writeToChannel(session.backendBuffer, session.backendChannel);
+		session.writeToChannel(session.frontBuffer, session.backendChannel);
 
 	}
 
