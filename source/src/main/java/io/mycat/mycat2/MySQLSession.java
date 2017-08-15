@@ -241,18 +241,12 @@ public class MySQLSession extends UserProxySession {
 		super.close(normal, hint);
 		this.curSQLCommand.clearResouces(true);
 	}
-<<<<<<< HEAD
-=======
 
 	public MySQLDataSource getDatasource() {
 		SchemaBean schemaBean = this.schema;
 		MycatConfig mycatConf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
 		if (schemaBean == null) {
 			schemaBean = mycatConf.getDefaultMycatSchema();
-
-			//				ErrorPacket errorPacket = new ErrorPacket();
-			//				errorPacket.message = "no schema selected";
-			//				session.responseOKOrError(errorPacket, true);
 		}
 		DNBean dnBean = schemaBean.getDefaultDN();
 		String replica = dnBean.getMysqlReplica();
@@ -260,5 +254,4 @@ public class MySQLSession extends UserProxySession {
 		MySQLDataSource datas = repSet.getCurWriteDH();
 		return datas;
 	}
->>>>>>> 7194636beee3e7d7598895419d0d26828722d2f1
 }
