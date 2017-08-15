@@ -43,6 +43,10 @@ public class QueryCmdProcessImpl implements SQLComandProcessInf {
 	static {
 		QUERY_MAP.put(NewSQLContext.SHOW_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
 		QUERY_MAP.put(NewSQLContext.SET_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
+		QUERY_MAP.put(NewSQLContext.SELECT_SQL, null);
+		QUERY_MAP.put(NewSQLContext.INSERT_SQL, null);
+		QUERY_MAP.put(NewSQLContext.UPDATE_SQL, null);
+		QUERY_MAP.put(NewSQLContext.DELETE_SQL, null);
 	}
 
 	@Override
@@ -55,37 +59,19 @@ public class QueryCmdProcessImpl implements SQLComandProcessInf {
 		if (sqlContext.hasAnnotation()) {
 			// 此处添加注解处理
 		}
+
+		QuerySQLProcessInf querySqlProc = null;
+
 		for (int i = 0; i < sqlContext.getSQLCount(); i++) {
-			switch (sqlContext.getSQLType(i)) {
-			case NewSQLContext.SHOW_SQL:
-				logger.info("SHOW_SQL : " + (new String(sql, StandardCharsets.UTF_8)));
-				sendSqlCommand(session);
-				break;
-			case NewSQLContext.SET_SQL:
-				logger.info("SET_SQL : " + (new String(sql, StandardCharsets.UTF_8)));
-				sendSqlCommand(session);
-				break;
-			case NewSQLContext.SELECT_SQL:
-			case NewSQLContext.INSERT_SQL:
-			case NewSQLContext.UPDATE_SQL:
-			case NewSQLContext.DELETE_SQL:
-				logger.info("Parse SQL : " + (new String(sql, StandardCharsets.UTF_8)));
-				String tbls = "";
-				for (int j = 0; j < sqlContext.getTableCount(); j++) {
-					tbls += sqlContext.getTableName(j) + ", ";
-				}
-				logger.info("GET Tbls : " + tbls);
-				// 需要单独处理的sql类型都放这里
-			default:
-				sendSqlCommand(session);// 线直接透传
+			querySqlProc = QUERY_MAP.get(sqlContext.getSQLType(i));
+
+			if (null != querySqlProc) {
+				querySqlProc.querySqlProc(session);
+			} else {
+				DefaultQuerySqlProcessImpl.INSTANCE.querySqlProc(session);
 			}
 		}
 	}
 
-	private void sendSqlCommand(MySQLSession session) throws IOException {
-		if (session.curSQLCommand.procssSQL(session, false)) {
-			session.curSQLCommand.clearResouces(false);
-		}
-	}
 
 }
