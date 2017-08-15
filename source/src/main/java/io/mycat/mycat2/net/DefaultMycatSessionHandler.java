@@ -154,7 +154,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	 * @param normal
 	 */
 	public void onFrontSocketClosed(MySQLSession userSession, boolean normal) {
-		userSession.lazyCloseSession("front closed");
+		userSession.lazyCloseSession(normal,"front closed");
 
 	}
 
@@ -165,7 +165,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	 * @param normal
 	 */
 	public void onBackendSocketClosed(MySQLSession userSession, boolean normal) {
-		userSession.lazyCloseSession("backend closed ");
+		userSession.lazyCloseSession(normal,"backend closed ");
 	}
 
 	/**
@@ -182,7 +182,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		} else {
 			logger.warn("DefaultSQLHandler handle IO error " + userSession.sessionInfo(), exception);
 		}
-		userSession.close("exception:" + exception.getMessage());
+		userSession.close(false,"exception:" + exception.getMessage());
 	}
 
 	@Override

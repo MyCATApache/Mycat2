@@ -1,9 +1,9 @@
 package io.mycat.proxy.man.packet;
 
-import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.man.ManagePacket;
 import io.mycat.proxy.man.MyCluster;
 import io.mycat.proxy.man.MyCluster.ClusterState;
+import io.mycat.proxy.man.ProtocolBuffer;
 
 /**
  * 节点信息的报文，用于向对方表明自己的身份信息以及自己所处的集群状态
@@ -34,7 +34,7 @@ public class NodeRegInfoPacket extends ManagePacket {
 	}
 
 	@Override
-	public void resolveBody(ProxyBuffer buffer) {
+	public void resolveBody(ProtocolBuffer buffer) {
 		nodeId = buffer.readNULString();
 		this.clusterState=ClusterState.getState(buffer.readByte());
 		this.lastClusterStateTime=buffer.readFixInt(8);
@@ -46,7 +46,7 @@ public class NodeRegInfoPacket extends ManagePacket {
 	}
 
 	@Override
-	public void writeBody(ProxyBuffer buffer) {
+	public void writeBody(ProtocolBuffer buffer) {
 		buffer.writeNULString(nodeId);
 		buffer.writeByte(clusterState.getSateCode());
 		buffer.writeFixInt(8, this.lastClusterStateTime);

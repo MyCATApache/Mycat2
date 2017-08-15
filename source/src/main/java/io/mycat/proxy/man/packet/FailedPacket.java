@@ -1,7 +1,7 @@
 package io.mycat.proxy.man.packet;
 
-import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.man.ManagePacket;
+import io.mycat.proxy.man.ProtocolBuffer;
 
 /**
  * 执行失败的Packet报文
@@ -40,16 +40,16 @@ public class FailedPacket extends ManagePacket {
 	public void setErrMsg(String errMsg) {
 		this.errMsg = errMsg;
 	}
-
+	
 	@Override
-	public void resolveBody(ProxyBuffer buffer) {
+	public void resolveBody(ProtocolBuffer buffer) {
 		this.errorCode = (int) buffer.readFixInt(4);
 		this.errMsg = buffer.readNULString();
 
 	}
 
 	@Override
-	public void writeBody(ProxyBuffer buffer) {
+	public void writeBody(ProtocolBuffer buffer) {
 		buffer.writeFixInt(4, errorCode);
 		buffer.writeNULString(errMsg);
 

@@ -131,7 +131,7 @@ public class MySQLSession extends UserProxySession {
 		hs.serverStatus = 2;
 		hs.restOfScrambleBuff = rand2;
 		hs.write(this.frontBuffer);
-		//进行读取状态的切换,即将写状态切换 为读取状态
+		// 进行读取状态的切换,即将写状态切换 为读取状态
 		frontBuffer.flip();
 		this.writeToChannel(frontBuffer, this.frontChannel);
 	}
@@ -153,8 +153,6 @@ public class MySQLSession extends UserProxySession {
 		writeToChannel(frontBuffer, frontChannel);
 	}
 
-
-
 	/**
 	 * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
 	 * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded=true
@@ -168,17 +166,17 @@ public class MySQLSession extends UserProxySession {
 		boolean readWholePkg = false;
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		BufferOptState readState = proxyBuf.readState;
-		//读取的偏移位置
+		// 读取的偏移位置
 		int offset = readState.optPostion;
-		//读取的总长度
+		// 读取的总长度
 		int limit = readState.optLimit;
-		//读取当前的总长度 
+		// 读取当前的总长度
 		int totalLen = limit - offset;
 		if (totalLen == 0) {
 			return false;
 		}
-		
-		//如果当前跨多个报文
+
+		// 如果当前跨多个报文
 		if (curPackInf.crossBuffer) {
 			if (curPackInf.remainsBytes <= totalLen) {
 				// 剩余报文结束
@@ -191,26 +189,26 @@ public class MySQLSession extends UserProxySession {
 				readWholePkg = false;
 			}
 		}
-		//验证当前指针位置是否
+		// 验证当前指针位置是否
 		else if (!ParseUtil.validateHeader(offset, limit)) {
 			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
 			readWholePkg = false;
 		}
-		
-		//解包获取包的数据长度
+
+		// 解包获取包的数据长度
 		int pkgLength = ParseUtil.getPacketLength(buffer, offset);
 		// 解析报文类型
 		final byte packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
-		//包的类型
+		// 包的类型
 		curPackInf.pkgType = packetType;
-		//设置包的长度
+		// 设置包的长度
 		curPackInf.pkgLength = pkgLength;
-		//设置偏移位置
+		// 设置偏移位置
 		curPackInf.startPos = offset;
-		//设置跨buffer为false
+		// 设置跨buffer为false
 		curPackInf.crossBuffer = false;
 		curPackInf.remainsBytes = 0;
-		//如果当前需要跨buffer处理
+		// 如果当前需要跨buffer处理
 		if ((offset + pkgLength) > limit) {
 			logger.debug(
 					"Not a whole packet: required length = {} bytes, cur total length = {} bytes, "
@@ -241,11 +239,8 @@ public class MySQLSession extends UserProxySession {
 
 	}
 
-	public void close(String message) {
-		if (!this.isClosed()) {
-			super.close(message);
-			this.curSQLCommand.clearResouces(true);
-		}
+	public void close(boolean normal, String hint) {
+		super.close(normal, hint);
+		this.curSQLCommand.clearResouces(true);
 	}
-
 }

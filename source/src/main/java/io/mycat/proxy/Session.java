@@ -25,8 +25,9 @@ public interface Session {
 	
 	/**
 	 * 会话关闭时候的的动作，需要清理释放资源
-	 * @param message
+	 * @param normal
+	 * @param hint
 	 */
-	public void close(String message);
+	 void close(boolean normal,String hint);
 
 }
