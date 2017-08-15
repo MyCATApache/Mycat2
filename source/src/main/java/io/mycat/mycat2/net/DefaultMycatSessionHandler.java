@@ -5,6 +5,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -99,7 +100,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			// 如果是 SQL 则调用 sql parser 进行处理
 
 			if (session.curFrontMSQLPackgInf.pkgType == MySQLPacket.COM_QUERY) {
-				byte[] sql = session.frontBuffer.getBytes(session.curFrontMSQLPackgInf.startPos + 5, session.curFrontMSQLPackgInf.endPos - 4);
+				byte[] sql = session.frontBuffer.getBytes(session.curFrontMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize + 1, session.curFrontMSQLPackgInf.endPos - MySQLPacket.packetHeaderSize - 1);
 				sqlParser.parse(sql, sqlContext);
 				if (sqlContext.hasAnnotation()) {
 					//此处添加注解处理
@@ -107,13 +108,23 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 				for (int i = 0; i < sqlContext.getSQLCount(); i++) {
 					switch (sqlContext.getSQLType(i)) {
 						case NewSQLContext.SHOW_SQL:
-							logger.info("SHOW_SQL : "+sql.toString());
+							logger.info("SHOW_SQL : "+(new String(sql, StandardCharsets.UTF_8)));
 							sendSqlCommand(session);
 							break;
 						case NewSQLContext.SET_SQL:
-							logger.info("SET_SQL : "+sql.toString());
+							logger.info("SET_SQL : "+(new String(sql, StandardCharsets.UTF_8)));
 							sendSqlCommand(session);
 							break;
+						case NewSQLContext.SELECT_SQL:
+						case NewSQLContext.INSERT_SQL:
+						case NewSQLContext.UPDATE_SQL:
+						case NewSQLContext.DELETE_SQL:
+							logger.info("Parse SQL : "+(new String(sql, StandardCharsets.UTF_8)));
+							String tbls = "";
+							for (int j=0; j<sqlContext.getTableCount(); j++) {
+								tbls += sqlContext.getTableName(j)+", ";
+							}
+							logger.info("GET Tbls : "+tbls);
 						//需要单独处理的sql类型都放这里
 						default:
 							sendSqlCommand(session);//线直接透传
