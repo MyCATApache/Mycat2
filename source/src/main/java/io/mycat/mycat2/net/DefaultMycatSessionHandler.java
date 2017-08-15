@@ -2,11 +2,15 @@ package io.mycat.mycat2.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.mycat.mycat2.sqlparser.NewSQLContext;
+import io.mycat.mycat2.sqlparser.NewSQLParser;
+import io.mycat.mysql.packet.MySQLPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +32,8 @@ import io.mycat.proxy.UserProxySession;
 public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>, BackendIOHandler<MySQLSession> {
 	public static final DefaultMycatSessionHandler INSTANCE = new DefaultMycatSessionHandler();
 	private static Logger logger = LoggerFactory.getLogger(DefaultMycatSessionHandler.class);
+	private NewSQLContext sqlContext = new NewSQLContext();
+	private NewSQLParser sqlParser = new NewSQLParser();
 
 	/**
 	 * 进行特殊包处理的包
@@ -90,12 +96,40 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			return;
 
 		} else {
-			// 交给SQLComand去处理
-			if (session.curSQLCommand.procssSQL(session, false)) {
-				session.curSQLCommand.clearResouces(false);
+			// 如果是 SQL 则调用 sql parser 进行处理
+
+			if (session.curFrontMSQLPackgInf.pkgType == MySQLPacket.COM_QUERY) {
+				byte[] sql = session.frontBuffer.getBytes(session.curFrontMSQLPackgInf.startPos + 5, session.curFrontMSQLPackgInf.endPos - 4);
+				sqlParser.parse(sql, sqlContext);
+				if (sqlContext.hasAnnotation()) {
+					//此处添加注解处理
+				}
+				for (int i = 0; i < sqlContext.getSQLCount(); i++) {
+					switch (sqlContext.getSQLType(i)) {
+						case NewSQLContext.SHOW_SQL:
+							logger.info("SHOW_SQL : "+sql.toString());
+							sendSqlCommand(session);
+							break;
+						case NewSQLContext.SET_SQL:
+							logger.info("SET_SQL : "+sql.toString());
+							sendSqlCommand(session);
+							break;
+						//需要单独处理的sql类型都放这里
+						default:
+							sendSqlCommand(session);//线直接透传
+					}
+				}
+			} else {
+				sendSqlCommand(session);
 			}
 		}
+	}
 
+	private void sendSqlCommand(MySQLSession session) throws IOException {
+		// 交给SQLComand去处理
+		if (session.curSQLCommand.procssSQL(session, false)) {
+			session.curSQLCommand.clearResouces(false);
+		}
 	}
 
 	private void syncSessionStateToBackend(MySQLSession mySQLSession) throws IOException {
