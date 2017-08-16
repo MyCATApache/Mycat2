@@ -6,6 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.security.NoSuchAlgorithmException;
 
 import io.mycat.mycat2.beans.MySQLBean;
+import io.mycat.mycat2.beans.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,10 +30,11 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 	private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
 	private HandshakePacket handshake;
 	private boolean welcomePkgReceived = false;
+	private MySQLDataSource ds;
 
 	public BackendConCreateTask(MySQLSession session, MySQLDataSource ds) {
-
 		super(session);
+		this.ds = ds;
 	}
 
 	@Override
@@ -59,22 +61,20 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 				return;
 			}
 			// 发送应答报文给后端
-			final MySQLBean mySQLBean = session.getDatasource().getConfig();
-			String user = mySQLBean.getUser();
-			String password = mySQLBean.getPassword();
-			String schema = mySQLBean.getDefaultSchema();
+			final MySQLBean mySQLBean = ds.getConfig();
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
 			packet.clientFlags = initClientFlags();
 			packet.maxPacketSize = 1024 * 1000;
 			packet.charsetIndex = charsetIndex;
-			packet.user = user;
+			packet.user = mySQLBean.getUser();
 			try {
-				packet.password = passwd(password, handshake);
+				packet.password = passwd(mySQLBean.getPassword(), handshake);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e.getMessage());
 			}
-			packet.database = schema;
+			SchemaBean schema = session.schema;
+			packet.database = (schema == null) ? null : schema.getName();
 
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
 			session.frontBuffer.reset();
