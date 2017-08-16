@@ -59,7 +59,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		if (readed == false) {
 			return;
 		}
-		if (session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, false) == false) {
+		if (!CurrPacketType.Full.equals(session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, true))) {
 			// 没有读到完整报文
 			return;
 		}
@@ -130,13 +130,6 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	public void onBackendRead(MySQLSession session) throws IOException {
 		boolean readed = session.readFromChannel(session.frontBuffer, session.backendChannel);
 		if (readed == false) {
-			return;
-		}
-
-		ProxyBuffer backendBuffer = session.frontBuffer;
-
-		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
-			// 没有读到完整报文
 			return;
 		}
 

@@ -3,6 +3,7 @@ package io.mycat.mycat2.cmds.query;
 import java.io.IOException;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.cmds.DefaultSqlCommand;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
 
 /**
@@ -21,6 +22,7 @@ public class DefaultQuerySqlProcessImpl implements QuerySQLProcessInf {
 
 	@Override
 	public void querySqlProc(MySQLSession session, NewSQLContext sqlContext) throws IOException {
+		session.curSQLCommand = new DefaultSqlCommand();
 		if (session.curSQLCommand.procssSQL(session, false)) {
 			session.curSQLCommand.clearResouces(false);
 		}

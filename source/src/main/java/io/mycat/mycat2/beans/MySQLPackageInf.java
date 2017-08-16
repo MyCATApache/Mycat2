@@ -5,7 +5,7 @@ package io.mycat.mycat2.beans;
  *
  */
 public class MySQLPackageInf {
-public int pkgType;
+public byte pkgType;
 public boolean crossBuffer;
 public int startPos;
 public int endPos;

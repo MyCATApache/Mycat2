@@ -129,9 +129,27 @@ public class MySQLSession extends UserProxySession {
 		hs.serverStatus = 2;
 		hs.restOfScrambleBuff = rand2;
 		hs.write(this.frontBuffer);
+		
+		preWriteToChannel(this.frontBuffer);
 		// 进行读取状态的切换,即将写状态切换 为读取状态
 		frontBuffer.flip();
 		this.writeToChannel(frontBuffer, this.frontChannel);
+	}
+	
+	/**
+	 * 准备写入socket buffer数据.
+	 * 该方法在读写共享模式下使用,即 只读写前端，或只读写后端时使用。
+	 * 前后端透传模式下，不需要使用.
+	 * @param proxyBuffer
+	 */
+	public void preWriteToChannel(ProxyBuffer proxyBuffer){
+		BufferOptState writeState = proxyBuffer.writeState;
+		BufferOptState readState = proxyBuffer.readState;
+		readState.curOptedLength = writeState.curOptedLength;
+		readState.optedTotalLength = writeState.curOptedLength;
+		readState.optLimit = writeState.optPostion;
+		readState.optPostion = writeState.optPostion;
+		readState.startPos = writeState.startPos;
 	}
 
 	public MySQLSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
@@ -147,9 +165,12 @@ public class MySQLSession extends UserProxySession {
 	 */
 	public void answerFront(byte[] rawPkg) throws IOException {
 		frontBuffer.writeBytes(rawPkg);
+		preWriteToChannel(this.frontBuffer);
 		frontBuffer.flip();
 		writeToChannel(frontBuffer, frontChannel);
 	}
+
+
 
 	/**
 	 * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
@@ -159,9 +180,8 @@ public class MySQLSession extends UserProxySession {
 	 * @return
 	 * @throws IOException
 	 */
-	public boolean resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded)
+	public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded)
 			throws IOException {
-		boolean readWholePkg = false;
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		BufferOptState readState = proxyBuf.readState;
 		// 读取的偏移位置
@@ -170,8 +190,12 @@ public class MySQLSession extends UserProxySession {
 		int limit = readState.optLimit;
 		// 读取当前的总长度
 		int totalLen = limit - offset;
-		if (totalLen == 0) {
-			return false;
+		if (totalLen == 0) {  //透传情况下. 如果最后一个报文正好在buffer 最后位置,已经透传出去了.这里可能不会为零
+			return CurrPacketType.ShortHalfPacket;
+		}
+		
+		if(curPackInf.remainsBytes==0&&curPackInf.crossBuffer){
+			curPackInf.crossBuffer = false;
 		}
 
 		// 如果当前跨多个报文
@@ -179,21 +203,24 @@ public class MySQLSession extends UserProxySession {
 			if (curPackInf.remainsBytes <= totalLen) {
 				// 剩余报文结束
 				curPackInf.endPos = offset + curPackInf.remainsBytes;
+				offset += curPackInf.remainsBytes;  //继续处理下一个报文
+				readState.optPostion = offset;
 				curPackInf.remainsBytes = 0;
-				readWholePkg = true;
 			} else {// 剩余报文还没读完，等待下一次读取
 				curPackInf.remainsBytes -= totalLen;
 				curPackInf.endPos = limit;
-				readWholePkg = false;
+				readState.optPostion = curPackInf.endPos;
+				return CurrPacketType.LongHalfPacket;
 			}
 		}
-		// 验证当前指针位置是否
-		else if (!ParseUtil.validateHeader(offset, limit)) {
+		//验证当前指针位置是否
+		if (!ParseUtil.validateHeader(offset, limit)) {
+			//收到短半包 
 			logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
-			readWholePkg = false;
+			return CurrPacketType.ShortHalfPacket;
 		}
-
-		// 解包获取包的数据长度
+		
+		//解包获取包的数据长度
 		int pkgLength = ParseUtil.getPacketLength(buffer, offset);
 		// 解析报文类型
 		final byte packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
@@ -203,8 +230,7 @@ public class MySQLSession extends UserProxySession {
 		curPackInf.pkgLength = pkgLength;
 		// 设置偏移位置
 		curPackInf.startPos = offset;
-		// 设置跨buffer为false
-		curPackInf.crossBuffer = false;
+		
 		curPackInf.remainsBytes = 0;
 		// 如果当前需要跨buffer处理
 		if ((offset + pkgLength) > limit) {
@@ -212,10 +238,12 @@ public class MySQLSession extends UserProxySession {
 					"Not a whole packet: required length = {} bytes, cur total length = {} bytes, "
 							+ "ready to handle the next read event",
 					getSessionId(), buffer.hashCode(), pkgLength, limit);
-			curPackInf.crossBuffer = true;
 			curPackInf.remainsBytes = offset + pkgLength - limit;
 			curPackInf.endPos = limit;
-			readWholePkg = false;
+			if (markReaded) {
+				readState.optPostion = curPackInf.endPos;
+			}
+			return CurrPacketType.LongHalfPacket;
 		} else {
 			// 读到完整报文
 			curPackInf.endPos = curPackInf.pkgLength + curPackInf.startPos;
@@ -228,14 +256,13 @@ public class MySQLSession extends UserProxySession {
 						"     session {} packet: startPos={}, offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
 						getSessionId(), curPackInf.startPos, offset, pkgLength, packetType, limit, hexs);
 			}
-			readWholePkg = true;
+			if (markReaded) {
+				readState.optPostion = curPackInf.endPos;
+			}
+			return CurrPacketType.Full;
 		}
-		if (markReaded) {
-			readState.optPostion = curPackInf.endPos;
-		}
-		return readWholePkg;
-
 	}
+	
 
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);

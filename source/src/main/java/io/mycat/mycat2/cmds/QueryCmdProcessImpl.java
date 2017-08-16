@@ -43,10 +43,11 @@ public class QueryCmdProcessImpl implements SQLComandProcessInf {
 	static {
 		QUERY_MAP.put(NewSQLContext.SHOW_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
 		QUERY_MAP.put(NewSQLContext.SET_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
-		QUERY_MAP.put(NewSQLContext.SELECT_SQL, null);
-		QUERY_MAP.put(NewSQLContext.INSERT_SQL, null);
-		QUERY_MAP.put(NewSQLContext.UPDATE_SQL, null);
-		QUERY_MAP.put(NewSQLContext.DELETE_SQL, null);
+		QUERY_MAP.put(NewSQLContext.USE_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
+		QUERY_MAP.put(NewSQLContext.SELECT_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
+		QUERY_MAP.put(NewSQLContext.INSERT_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
+		QUERY_MAP.put(NewSQLContext.UPDATE_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
+		QUERY_MAP.put(NewSQLContext.DELETE_SQL, DefaultQuerySqlProcessImpl.INSTANCE);
 	}
 
 	@Override
