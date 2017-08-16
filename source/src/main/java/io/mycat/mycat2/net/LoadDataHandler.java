@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.DefaultSqlCommand;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
@@ -48,7 +48,7 @@ public class LoadDataHandler extends DefaultMycatSessionHandler {
 
 		// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
 		if (transLoadData(session, false)) {
-			session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
+			session.curSQLCommand = new DefaultSqlCommand();
 			session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 		}
 	}
