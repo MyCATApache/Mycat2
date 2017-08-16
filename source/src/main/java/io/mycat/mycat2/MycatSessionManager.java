@@ -9,7 +9,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.DefaultSqlCommand;
 import io.mycat.mycat2.net.MySQLClientAuthHandler;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOHandler;
@@ -37,7 +37,7 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 		
 		session.setCurNIOHandler(MySQLClientAuthHandler.INSTANCE);
 		// 默认为透传命令模式
-		session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
+		session.curSQLCommand = new DefaultSqlCommand();
 
 		// 向MySQL Client发送认证报文
 		session.sendAuthPackge();

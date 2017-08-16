@@ -32,7 +32,7 @@ public class BufferOptState {
 	@Override
 	public String toString() {
 		return "BufferOptState [startPos=" + startPos + ", optPostion=" + optPostion
-				+ ", optLimit=" + optLimit + ", optedTotalLength=" + optedTotalLength + "]";
+				+ ", optLimit=" + optLimit + ", optedTotalLength=" + optedTotalLength + ", curOptedLength ="+curOptedLength+"]";
 	}
 
 	public boolean hasRemain() {

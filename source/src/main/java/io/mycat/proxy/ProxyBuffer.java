@@ -74,25 +74,30 @@ public class ProxyBuffer {
 		if (this.inReading) {
 			// 转为可写状态
 			inReading = false;
-			writeState.startPos = 0;
-			writeState.optPostion = 0;
-			writeState.optLimit = buffer.capacity();
+//			writeState.startPos = 0;
+//			writeState.optPostion = 0;
+//			writeState.optLimit = buffer.capacity();
 			writeState.optedTotalLength = 0;
+			writeState.curOptedLength = 0;
+			writeState.optPostion = buffer.position();
 			// 转为可写状态时恢复读状态为初始（不可读）
+			
 			readState.startPos = 0;
 			readState.optPostion = 0;
-			readState.optLimit = 0;
+			readState.optLimit   = 0;
+			readState.optedTotalLength = 0;
+			readState.curOptedLength = 0;
 		} else {
 			// 转为读状态
 			inReading = true;
 			//读取状态的开始指针指定为写入状态的开始指针
-			readState.startPos = writeState.startPos;
+//			readState.startPos = writeState.startPos;
 			//opt指针指定为状态开始的指针
-			readState.optPostion = writeState.startPos;
+//			readState.optPostion = writeState.startPos;
 			//读取的最大长度指定为现写入的长度
-			readState.optLimit = writeState.optPostion;
+//			readState.optLimit = writeState.optPostion;
 			//总字节数转换为0
-			readState.optedTotalLength = 0;
+//			readState.optedTotalLength = 0;
 		}
 		logger.debug("flip, new state {} , write state: {} ,read state {}", this.inReading ? "read" : "write",
 				this.writeState, this.readState);

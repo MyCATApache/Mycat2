@@ -85,7 +85,7 @@ public class MycatCore {
 		runtime.init();
 		ProxyReactorThread<?>[] nioThreads = runtime.getReactorThreads();
 		for (int i = 0; i < cpus; i++) {
-			ProxyReactorThread<?> thread = new ProxyReactorThread<>(new BufferPool(1024 * 10));
+			ProxyReactorThread<?> thread = new ProxyReactorThread<>(new BufferPool(100 * 4));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;

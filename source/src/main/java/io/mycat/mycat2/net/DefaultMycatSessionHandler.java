@@ -2,20 +2,18 @@ package io.mycat.mycat2.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.mycat.mycat2.sqlparser.NewSQLContext;
-import io.mycat.mycat2.sqlparser.NewSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mycat2.cmds.QueryCmdProcessImpl;
 import io.mycat.mycat2.cmds.SQLComandProcessInf;
 import io.mycat.proxy.*;
+import io.mycat.proxy.AbstractSession.CurrPacketType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +57,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		if (readed == false) {
 			return;
 		}
-		if (session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, false) == false) {
+		if (!CurrPacketType.Full.equals(session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, true))) {
 			// 没有读到完整报文
 			return;
 		}
@@ -130,13 +128,6 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	public void onBackendRead(MySQLSession session) throws IOException {
 		boolean readed = session.readFromChannel(session.frontBuffer, session.backendChannel);
 		if (readed == false) {
-			return;
-		}
-
-		ProxyBuffer backendBuffer = session.frontBuffer;
-
-		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false) {
-			// 没有读到完整报文
 			return;
 		}
 
