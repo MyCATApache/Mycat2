@@ -36,14 +36,15 @@ public class UserProxySession extends AbstractSession {
 	public boolean readFromChannel(ProxyBuffer proxyBuf, SocketChannel channel) throws IOException {
 
 		ByteBuffer buffer = proxyBuf.getBuffer();
+
 		buffer.limit(proxyBuf.writeState.optLimit);
 		buffer.position(proxyBuf.writeState.optPostion);
 		int readed = channel.read(buffer);
 		logger.debug(" readed {} total bytes ,channel {}", readed, channel);
-		proxyBuf.writeState.curOptedLength = readed;
+		proxyBuf.writeState.curOptedLength = readed+proxyBuf.writeState.optPostion;
 		if (readed > 0) {
+			proxyBuf.writeState.optedTotalLength += readed+proxyBuf.writeState.optPostion;
 			proxyBuf.writeState.optPostion += readed;
-			proxyBuf.writeState.optedTotalLength += readed;
 			proxyBuf.readState.optLimit = proxyBuf.writeState.optPostion;
 		} else if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
@@ -63,29 +64,28 @@ public class UserProxySession extends AbstractSession {
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		BufferOptState readState = proxyBuf.readState;
 		BufferOptState writeState = proxyBuf.writeState;
-		buffer.position(readState.optPostion);
-		buffer.limit(readState.optLimit);
+		buffer.position(readState.startPos);
+		buffer.limit(readState.optPostion);
 		int writed = channel.write(buffer);
 		readState.curOptedLength = writed;
-		readState.optPostion += writed;
 		readState.optedTotalLength += writed;
-		if (buffer.remaining() == 0) {
-			if (writeState.optPostion > buffer.position()) {
-				// 当前Buffer中写入的数据多于透传出去的数据，因此透传并未完成
-				// compact buffer to head
-				buffer.limit(writeState.optPostion);
-				buffer.compact();
-				readState.optPostion = 0;
-				readState.optLimit = buffer.position();
-				writeState.optPostion = buffer.position();
-				// 继续从对端Socket读数据
-
-			} else {
-				// 数据彻底写完，切换为读模式，对端读取数据
-				proxyBuf.changeOwner(!proxyBuf.frontUsing());
-				proxyBuf.flip();
-				modifySelectKey();
-			}
+		if(buffer.hasRemaining()){
+			buffer.compact();
+			readState.startPos = 0;
+			readState.optPostion = buffer.position();
+			//处理半包
+			writeState.optPostion = 0;
+			writeState.optLimit = buffer.position();
+			// 切换到写模式，继续从对端Socket读数据
+			proxyBuf.setInReading(false);
+		}else{
+			buffer.limit(readState.optLimit);
+			buffer.position(readState.optPostion);
+			buffer.compact();
+			// 数据彻底写完，切换为读模式，对端读取数据
+			proxyBuf.changeOwner(!proxyBuf.frontUsing());
+			proxyBuf.flip();
+			modifySelectKey();
 		}
 	}
 

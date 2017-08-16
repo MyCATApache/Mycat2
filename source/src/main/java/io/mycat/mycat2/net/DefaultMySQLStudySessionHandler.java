@@ -7,6 +7,7 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.proxy.DefaultDirectProxyHandler;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.AbstractSession.CurrPacketType;
 
 /**
  * 代理MySQL的ProxyHandler，可以用来研究报文流程，结构，MySQL报文发送特点， 也可以用来抓取SQL执行的性能数据，用来做智能分析
@@ -23,7 +24,8 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 		ProxyBuffer peerBuf = session.frontBuffer;
 		SocketChannel peerChannel = session.backendChannel;
 		MySQLPackageInf curPkgInf = session.curFrontMSQLPackgInf;
-		if (readed == false || session.resolveMySQLPackage(peerBuf, curPkgInf,true) == false) {
+		if (readed == false || 
+				!CurrPacketType.Full.equals(session.resolveMySQLPackage(peerBuf, session.curFrontMSQLPackgInf, true))) {
 			return;
 		}
 
@@ -43,7 +45,8 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 	private void processAllRemainPkg(MySQLSession session, ProxyBuffer theBuf, MySQLPackageInf curPkgInf)
 			throws IOException {
 		int pkgIndex = 2;
-		while (theBuf.readState.hasRemain() && session.resolveMySQLPackage(theBuf, curPkgInf,true) != false) {
+		while (theBuf.readState.hasRemain() 
+				&& CurrPacketType.Full.equals(session.resolveMySQLPackage(theBuf, session.curFrontMSQLPackgInf, true))) {
 			logger.info(" parsed No." + pkgIndex + " package ,type " + curPkgInf.pkgType + " len " + curPkgInf.pkgLength);
 			pkgIndex++;
 		}
@@ -59,7 +62,8 @@ public class DefaultMySQLStudySessionHandler extends DefaultDirectProxyHandler<M
 		ProxyBuffer peerBuf = session.frontBuffer;
 		SocketChannel peerChannel = session.frontChannel;
 		MySQLPackageInf curPkgInf = session.curBackendMSQLPackgInf;
-		if (readed == false || session.resolveMySQLPackage(peerBuf, curPkgInf,true) == false) {
+		if (readed == false || 
+				!CurrPacketType.Full.equals(session.resolveMySQLPackage(peerBuf, session.curFrontMSQLPackgInf, true))) {
 			return;
 		}
 

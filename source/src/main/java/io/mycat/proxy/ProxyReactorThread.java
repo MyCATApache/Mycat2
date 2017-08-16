@@ -25,7 +25,6 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	protected final Selector selector;
 	protected final BufferPool bufPool;
 	protected ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
-	protected ArrayList<T> allSessions = new ArrayList<T>();
 
 	@SuppressWarnings("unchecked")
 	public ProxyReactorThread(BufferPool bufPool) throws IOException {
@@ -37,8 +36,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) throws IOException {
 		pendingJobs.offer(() -> {
 			try {
-				T session = sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel, true);
-				allSessions.add(session);
+				sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel, true);
 			} catch (Exception e) {
 				logger.warn("regist new connection err " + e);
 			}
@@ -145,7 +143,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 						key.cancel();
 						if (reactorEnv.curSession != null) {
 							reactorEnv.curSession.close(false,"Socket IO err:" + e);
-							this.allSessions.remove(reactorEnv.curSession);
+							ProxyRuntime.INSTANCE.getSessionManager().getAllSessions().remove(reactorEnv.curSession);
 							reactorEnv.curSession = null;
 						}
 					}
