@@ -2,20 +2,18 @@ package io.mycat.mycat2.net;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.mycat.mycat2.sqlparser.NewSQLContext;
-import io.mycat.mycat2.sqlparser.NewSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mycat2.cmds.QueryCmdProcessImpl;
 import io.mycat.mycat2.cmds.SQLComandProcessInf;
 import io.mycat.proxy.*;
+import io.mycat.proxy.AbstractSession.CurrPacketType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
