@@ -123,6 +123,7 @@ public class ProxyBuffer {
 		if (this.inReading) {
 			throw new RuntimeException("not in writing state ,can't Compact");
 		}
+		
 		this.buffer.position(writeState.startPos);
 		this.buffer.limit(writeState.optPostion);
 		this.buffer.compact();
@@ -135,7 +136,8 @@ public class ProxyBuffer {
 			readState.optPostion -= offset;
 			readState.optLimit -= offset;
 		}
-
+		logger.debug("compact, new state {} , write state: {} ,read state {}", this.inReading ? "read" : "write",
+                this.writeState, this.readState);
 	}
 
 	public ProxyBuffer writeBytes(byte[] bytes) {

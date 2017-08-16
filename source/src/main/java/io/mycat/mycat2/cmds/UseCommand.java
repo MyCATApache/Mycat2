@@ -47,24 +47,24 @@ public class UseCommand implements SQLCommand{
                 session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
                 return true;
             } 
-            if(session.backendChannel == null) {
+//            if(session.backendChannel == null) {
                 logger.debug("back connection is null response ok to front");
                 curBuffer.reset();
                 session.answerFront(OK);
                 session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
                 return true;
-            } else {
-                INITDBPacket initDBPacket = new INITDBPacket();
-                initDBPacket.sql = "use " + schemaBean.getDefaultDN().getDatabase();
-                ProxyBuffer buffer = session.frontBuffer;
-                buffer.reset();
-                buffer.changeOwner(false);
-                initDBPacket.write(buffer);
-                buffer.flip();
-                session.writeToChannel(buffer, session.backendChannel);
-                session.modifySelectKey();
-                return false;
-            }
+//            } else {
+//                INITDBPacket initDBPacket = new INITDBPacket();
+//                initDBPacket.sql = "use " + schemaBean.getDefaultDN().getDatabase();
+//                ProxyBuffer buffer = session.frontBuffer;
+//                buffer.reset();
+//                buffer.changeOwner(false);
+//                initDBPacket.write(buffer);
+//                buffer.flip();
+//                session.writeToChannel(buffer, session.backendChannel);
+//                session.modifySelectKey();
+//                return false;
+//            }
         } 
         if (backresReceived) {// 收到后端发来的报文
             curBuffer = session.frontBuffer;
