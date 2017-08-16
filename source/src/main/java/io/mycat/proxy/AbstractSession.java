@@ -32,6 +32,11 @@ public abstract class AbstractSession implements Session {
 
 	// Session是否关闭
 	private boolean closed;
+	
+	//当前接收到的包类型
+	public enum CurrPacketType{
+		Full,LongHalfPacket,ShortHalfPacket
+	}
 
 	/**
 	 * Session会话属性，不能放置大量对象与数据

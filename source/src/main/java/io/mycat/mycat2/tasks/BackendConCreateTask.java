@@ -16,6 +16,7 @@ import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.proxy.AbstractSession.CurrPacketType;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.SecurityUtil;
 
@@ -40,7 +41,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 		// 不透传的状态下，需要自己控制Buffer的状态，这里每次从Socket中读取并写Buffer数据都切回初始Write状态
 		session.frontBuffer.reset();
 		if (!session.readFromChannel(session.frontBuffer, session.backendChannel)
-				|| !session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
+				||!CurrPacketType.Full.equals(session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false))) {// 没有读到数据或者报文不完整
 			return;
 		}
 
@@ -79,6 +80,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
 			session.frontBuffer.reset();
 			packet.write(session.frontBuffer);
+			session.preWriteToChannel(session.frontBuffer);  //不透传的情况下,准备写入到socketbuffer的数据
 			session.frontBuffer.flip();
 			session.writeToChannel(session.frontBuffer, session.backendChannel);
 			welcomePkgReceived = true;
