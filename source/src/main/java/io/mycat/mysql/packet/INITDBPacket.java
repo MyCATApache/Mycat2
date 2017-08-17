@@ -11,12 +11,12 @@ public class INITDBPacket extends MySQLPacket {
 
     @Override
     public int calcPacketSize() {
-        return sql.length() ;
+        return sql.length() + 1;
     }
 
     @Override
     protected String getPacketInfo() {
-        return "A COM_QUERY packet:" + sql;
+        return "A COM_INIT_DB packet:" + sql;
     }
 
     @Override
@@ -24,6 +24,6 @@ public class INITDBPacket extends MySQLPacket {
         buffer.writeFixInt(3, calcPacketSize());
         buffer.writeByte(packetId);
         buffer.writeByte(pkgType);
-        buffer.writeNULString(sql);
+        buffer.writeFixString(sql);
     }
 }

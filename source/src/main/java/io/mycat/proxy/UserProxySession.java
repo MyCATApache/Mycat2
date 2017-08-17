@@ -163,12 +163,15 @@ public class UserProxySession extends AbstractSession {
 	}
 
 	public void modifySelectKey() throws ClosedChannelException {
+	    //int op = backendKey.interestOps();
+	  //  boolean flag = backendKey.isConnectable();
 		if (frontKey != null && frontKey.isValid()) {
 			int clientOps = SelectionKey.OP_READ;
 			if (frontBuffer.isInWriting() == false) {
 				clientOps = SelectionKey.OP_WRITE;
 			}
 			frontKey.interestOps(clientOps);
+			backendChannel = backendChannel;
 		}
 	}
 }

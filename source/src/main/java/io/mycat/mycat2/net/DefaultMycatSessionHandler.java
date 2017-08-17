@@ -4,10 +4,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,9 +14,7 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mycat2.cmds.QueryCmdProcessImpl;
 import io.mycat.mycat2.cmds.SQLComandProcessInf;
-import io.mycat.mycat2.cmds.UseCommand;
-import io.mycat.mycat2.sqlparser.NewSQLContext;
-import io.mycat.mycat2.sqlparser.NewSQLParser;
+import io.mycat.mycat2.cmds.UseCommandProcessImpl;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -54,6 +50,9 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 
 		// 进行SQL命令容器对象信息添加
 		SQLCOMMANDMAP.put(MySQLPacket.COM_QUERY, QueryCmdProcessImpl.INSTANCE);
+	    
+		SQLCOMMANDMAP.put(MySQLPacket.COM_INIT_DB, UseCommandProcessImpl.INSTANCE);
+
 	}
 
 	@Override
@@ -103,7 +102,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 
 		} else {
 			// 如果是 SQL 则调用 sql parser 进行处理
-			SQLComandProcessInf sqlCmd = SQLCOMMANDMAP.get(session.curFrontMSQLPackgInf.pkgType);
+			SQLComandProcessInf sqlCmd = SQLCOMMANDMAP.get((byte)session.curFrontMSQLPackgInf.pkgType);
 			// 如果当前包需要处理，则交给对应方法处理，否则直接透传
 			if (null != sqlCmd) {
 				sqlCmd.commandProc(session);
@@ -120,9 +119,18 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		backendSynchronzationTask.setCallback((session, sender, exeSucces, rv) -> {
 			if (exeSucces) {
 				// 交给SQLComand去处理
-				if (session.curSQLCommand.procssSQL(session, false)) {
-					session.curSQLCommand.clearResouces(false);
-				}
+//				if (session.curSQLCommand.procssSQL(session, false)) {
+//					session.curSQLCommand.clearResouces(false);
+//				}
+			    SQLComandProcessInf sqlCmd = SQLCOMMANDMAP.get((byte)session.curFrontMSQLPackgInf.pkgType);
+	            // 如果当前包需要处理，则交给对应方法处理，否则直接透传
+	            if (null != sqlCmd) {
+	                sqlCmd.commandProc(session);
+	            } else {
+	                if (session.curSQLCommand.procssSQL(session, false)) {
+	                    session.curSQLCommand.clearResouces(false);
+	                }
+	            }
 			} else {
 				ErrorPacket errPkg = (ErrorPacket) rv;
 				session.responseOKOrError(errPkg, true);
