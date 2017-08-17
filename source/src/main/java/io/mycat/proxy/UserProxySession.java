@@ -79,14 +79,13 @@ public class UserProxySession extends AbstractSession {
 				readState.optLimit = buffer.position();
 				writeState.optPostion = buffer.position();
 				// 继续从对端Socket读数据
-
 			} else {
 				// 数据彻底写完，切换为读模式，对端读取数据
 				proxyBuf.changeOwner(!proxyBuf.frontUsing());
 				proxyBuf.flip();
-				modifySelectKey();
 			}
 		}
+		this.modifySelectKey();
 	}
 
 	/**
@@ -159,16 +158,19 @@ public class UserProxySession extends AbstractSession {
 			((BackendIOHandler) getCurNIOHandler()).onBackendSocketClosed(this, normal);
 			backendChannel = null;
 		}
-
 	}
 
 	public void modifySelectKey() throws ClosedChannelException {
-		if (frontKey != null && frontKey.isValid()) {
+		SelectionKey theKey = this.frontBuffer.frontUsing() ? frontKey : backendKey;
+		if (theKey != null && theKey.isValid()) {
 			int clientOps = SelectionKey.OP_READ;
 			if (frontBuffer.isInWriting() == false) {
 				clientOps = SelectionKey.OP_WRITE;
 			}
-			frontKey.interestOps(clientOps);
+			int oldOps = theKey.interestOps();
+			if (oldOps != clientOps) {
+				theKey.interestOps(clientOps);
+			}
 		}
 	}
 }
