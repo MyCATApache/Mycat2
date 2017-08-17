@@ -32,7 +32,6 @@ public class MySQLBean {
     private int port;
     private String user;
     private String password;
-    private String defaultSchema = "mysql";
     private int maxCon = 1000;
     private int minCon = 1;
 
@@ -89,14 +88,6 @@ public class MySQLBean {
         this.password = password;
     }
 
-    public String getDefaultSchema() {
-        return defaultSchema;
-    }
-
-    public void setDefaultSchema(String defaultSchema) {
-        this.defaultSchema = defaultSchema;
-    }
-
     public int getMaxCon() {
         return maxCon;
     }
@@ -116,7 +107,7 @@ public class MySQLBean {
     @Override
     public String toString() {
         return "MySQLBean [hostName=" + hostName + ", ip=" + ip + ", port=" + port + ", user=" + user + ", password="
-                + password + ", defaultSchema=" + defaultSchema + ", maxCon=" + maxCon + ", minCon=" + minCon + "]";
+                + password + ", maxCon=" + maxCon + ", minCon=" + minCon + "]";
     }
 
 }

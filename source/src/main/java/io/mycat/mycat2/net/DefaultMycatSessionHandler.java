@@ -68,11 +68,11 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 		}
 		if (session.backendChannel == null) {
 			// todo ，从连接池中获取连接，获取不到后创建新连接，
-			final MySQLDataSource datas = session.getDatasource();
+			final MySQLDataSource ds = session.getDatasource();
 
 			logger.info("hang cur sql for  backend connection ready ");
-			String serverIP = datas.getConfig().getIp();
-			int serverPort = datas.getConfig().getPort();
+			String serverIP = ds.getConfig().getIp();
+			int serverPort = ds.getConfig().getPort();
 			InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 			session.backendChannel = SocketChannel.open();
 			session.backendChannel.configureBlocking(false);
@@ -82,7 +82,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 			session.backendKey = selectKey;
 			logger.info("Connecting to server " + serverIP + ":" + serverPort);
 
-			BackendConCreateTask authProcessor = new BackendConCreateTask(session, null);
+			BackendConCreateTask authProcessor = new BackendConCreateTask(session, ds);
 			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 				if (exeSucces) {
 					// 认证成功后开始同步会话状态至后端
