@@ -4,6 +4,7 @@
 		<mysql-replica name="test" type="0" switch-type="0">
       		<!--<mysql ip="10.211.55.5" port="3306"  user="root" password="123456" />-->
 			<mysql ip="192.168.18.128" port="3306"  user="root" password="123" />
+
 		</mysql-replica>
 	</mysql-ds>
 </datasources>
