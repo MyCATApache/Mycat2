@@ -75,8 +75,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 			}
 			SchemaBean schema = session.schema;
 			packet.database = (schema == null) ? null : schema.getName();
-		    logger.info(packet.database);
-	      //  logger.info(schema.getDefaultDN().getDatabase());
 
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
 			session.frontBuffer.reset();
