@@ -134,7 +134,7 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 
 		ProxyBuffer backendBuffer = session.frontBuffer;
 
-		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false||!session.curFrontMSQLPackgInf.crossBuffer) {
+		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false && !session.curFrontMSQLPackgInf.crossBuffer) {
 			// 没有读到完整报文, 也不是挎包
 			return;
 		}
