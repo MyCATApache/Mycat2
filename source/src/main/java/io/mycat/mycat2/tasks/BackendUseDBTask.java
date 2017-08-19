@@ -14,9 +14,9 @@ import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
- * Created by ynfeng on 2017/8/13.
+ * Created by zhangwy on 2017/8/13.
  * <p>
- * 同步状态至后端数据库，包括：字符集，事务，隔离级别等
+ * 发送后端设置数据库命令
  */
 public class BackendUseDBTask extends AbstractBackendIOTask {
 	private static Logger logger = LoggerFactory.getLogger(BackendUseDBTask.class);
@@ -37,7 +37,6 @@ public class BackendUseDBTask extends AbstractBackendIOTask {
       initDBPacket.write(buffer);
       buffer.flip();
       session.writeToChannel(buffer, session.backendChannel);
-      //session.modifySelectKey();
 	}
 
 	@Override
@@ -47,7 +46,6 @@ public class BackendUseDBTask extends AbstractBackendIOTask {
 				|| !session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
 			return;
 		}
-		ProxyBuffer curBuffer = session.frontBuffer;
         if(session.curBackendMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
           logger.debug("success set back connnection database, response ok to front");
           //session.backendKey.interestOps(SelectionKey.OP_READ);
