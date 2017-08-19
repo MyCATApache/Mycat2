@@ -1,0 +1,10 @@
+<schemas>
+    
+	<schema name="mysql" nopartion="true" default-db="netinnet_junior:test">
+	</schema>
+	
+	<schema name="mycat" nopartion="false" default-db="db2:mysql1">
+	  	<table name="shardt1" type="1" sharding-key="id" sharding-rule="auto-sharding-1"/>
+	</schema>
+	
+</schemas>
