@@ -6,6 +6,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import io.mycat.mycat2.beans.*;
+import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.HandshakePacket;
@@ -50,6 +51,11 @@ public class MySQLSession extends UserProxySession {
 	 */
 	public Isolation isolation = Isolation.REPEATED_READ;
 
+    /**
+     * 事务提交方式
+     */
+	public AutoCommit autoCommit = AutoCommit.OFF;
+
 	/**
 	 * 认证中的seed报文数据
 	 */
@@ -82,7 +88,7 @@ public class MySQLSession extends UserProxySession {
 
 	/**
 	 * 回应客户端（front或Sever）OK 报文。
-	 * 
+	 *
 	 * @param pkg
 	 *            ，必须要是OK报文或者Err报文
 	 * @throws IOException
@@ -103,7 +109,7 @@ public class MySQLSession extends UserProxySession {
 
 	/**
 	 * 给客户端（front）发送认证报文
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	public void sendAuthPackge() throws IOException {
@@ -141,7 +147,7 @@ public class MySQLSession extends UserProxySession {
 
 	/**
 	 * 向前端发送数据报文,需要先确定为Write状态并确保写入位置的正确（frontBuffer.writeState)
-	 * 
+	 *
 	 * @param rawPkg
 	 * @throws IOException
 	 */
@@ -154,7 +160,7 @@ public class MySQLSession extends UserProxySession {
 	/**
 	 * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
 	 * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded=true
-	 * 
+	 *
 	 * @param proxyBuf
 	 * @return
 	 * @throws IOException
