@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MySQLSession.CurrPacketType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
@@ -36,6 +37,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask {
         queryPacket.sql = session.isolation.getCmd() + session.autoCommit.getCmd() + session.isolation.getCmd();
         queryPacket.write(frontBuffer);
         frontBuffer.flip();
+        frontBuffer.readIndex = frontBuffer.writeIndex;
         session.writeToChannel(frontBuffer, session.backendChannel);
     }
 
@@ -43,7 +45,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask {
     public void onBackendRead(MySQLSession session) throws IOException {
         session.frontBuffer.reset();
         if (!session.readFromChannel(session.frontBuffer, session.backendChannel)
-                || !session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
+                || CurrPacketType.Full != session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
             return;
         }
         if (session.curBackendMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
