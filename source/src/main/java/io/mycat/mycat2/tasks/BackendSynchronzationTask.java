@@ -37,6 +37,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask {
         queryPacket.sql = session.isolation.getCmd() + session.autoCommit.getCmd() + session.isolation.getCmd();
         queryPacket.write(frontBuffer);
         frontBuffer.flip();
+        frontBuffer.readIndex = frontBuffer.writeIndex;
         session.writeToChannel(frontBuffer, session.backendChannel);
     }
 
