@@ -5,13 +5,14 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.security.NoSuchAlgorithmException;
 
-import io.mycat.mycat2.beans.MySQLBean;
-import io.mycat.mycat2.beans.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MySQLSession.CurrPacketType;
+import io.mycat.mycat2.beans.MySQLBean;
 import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -42,7 +43,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 		// 不透传的状态下，需要自己控制Buffer的状态，这里每次从Socket中读取并写Buffer数据都切回初始Write状态
 		session.frontBuffer.reset();
 		if (!session.readFromChannel(session.frontBuffer, session.backendChannel)
-				|| !session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
+				|| CurrPacketType.Full!=session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
 			return;
 		}
 
@@ -80,6 +81,9 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 			session.frontBuffer.reset();
 			packet.write(session.frontBuffer);
 			session.frontBuffer.flip();
+			//不透传的状态下， 自己指定需要写入到channel中的数据范围
+			// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+			session.frontBuffer.readIndex = session.frontBuffer.writeIndex;
 			session.writeToChannel(session.frontBuffer, session.backendChannel);
 			welcomePkgReceived = true;
 		} else {

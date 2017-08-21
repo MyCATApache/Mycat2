@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MySQLSession.CurrPacketType;
 import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mycat2.cmds.QueryCmdProcessImpl;
 import io.mycat.mycat2.cmds.SQLComandProcessInf;
@@ -55,14 +56,12 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	public void onFrontRead(final MySQLSession session) throws IOException {
 		boolean readed = session.readFromChannel(session.frontBuffer, session.frontChannel);
 		ProxyBuffer buffer = session.frontBuffer;
-		if (readed == false) {
+		if (readed == false||
+				// 没有读到完整报文
+				CurrPacketType.Full != session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, false)) {
 			return;
 		}
-		if (session.resolveMySQLPackage(buffer, session.curFrontMSQLPackgInf, false) == false) {
-			// 没有读到完整报文
-			return;
-		}
-		if (session.curFrontMSQLPackgInf.endPos < buffer.getReadOptState().optLimit) {
+		if (session.curFrontMSQLPackgInf.endPos < buffer.writeIndex) {
 			logger.warn("front contains multi package ");
 		}
 		if (session.backendChannel == null) {
@@ -127,29 +126,10 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	}
 
 	public void onBackendRead(MySQLSession session) throws IOException {
-		boolean readed = session.readFromChannel(session.frontBuffer, session.backendChannel);
-		if (readed == false) {
-			return;
-		}
-
-		ProxyBuffer backendBuffer = session.frontBuffer;
-
-		if (session.resolveMySQLPackage(backendBuffer, session.curFrontMSQLPackgInf, false) == false && !session.curFrontMSQLPackgInf.crossBuffer) {
-			// 没有读到完整报文, 也不是挎包
-			return;
-		}
 
 		// 交给SQLComand去处理
 		if (session.curSQLCommand.procssSQL(session, true)) {
 			session.curSQLCommand.clearResouces(false);
-		}
-
-		// 检查当前的包是否需要进行特殊的处理
-		DefaultMycatSessionHandler handler = PKGMAP.get(session.curFrontMSQLPackgInf.pkgType);
-
-		if (null != handler) {
-			// 设置lodata的透传执行
-			session.setCurNIOHandler(handler);
 		}
 
 	}
@@ -200,7 +180,6 @@ public class DefaultMycatSessionHandler implements FrontIOHandler<MySQLSession>,
 	@Override
 	public void onFrontWrite(MySQLSession session) throws IOException {
 		session.writeToChannel(session.frontBuffer, session.frontChannel);
-
 	}
 
 	@Override
