@@ -38,7 +38,8 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 		session.setCurNIOHandler(MySQLClientAuthHandler.INSTANCE);
 		// 默认为透传命令模式
 		session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
-
+		// 设置 前端拥有
+		session.frontBuffer.changeOwner(true);
 		// 向MySQL Client发送认证报文
 		session.sendAuthPackge();
 		session.setSessionManager(this);

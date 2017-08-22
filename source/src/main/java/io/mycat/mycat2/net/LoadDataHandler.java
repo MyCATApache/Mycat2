@@ -42,7 +42,7 @@ public class LoadDataHandler extends DefaultMycatSessionHandler {
 		if (readed == false) {
 			return;
 		}
-		if (session.curFrontMSQLPackgInf.endPos < backendBuffer.getReadOptState().optLimit) {
+		if (session.curFrontMSQLPackgInf.endPos < backendBuffer.writeIndex) {
 			logger.warn("front contains multi package ");
 		}
 
@@ -91,7 +91,7 @@ public class LoadDataHandler extends DefaultMycatSessionHandler {
 			return true;
 		}
 		// 当前的buffer被写完之后，需要做清空处理
-		if (curBuffer.writeState.optPostion == curBuffer.getBuffer().position()) {
+		if (curBuffer.writeIndex == curBuffer.getBuffer().position()) {
 			curBuffer.reset();
 		}
 
@@ -110,14 +110,14 @@ public class LoadDataHandler extends DefaultMycatSessionHandler {
 
 		// 如果数据的长度超过了，结束符的长度，可直接提取结束符
 		if (buffer.position() >= FLAGLENGTH) {
-			int opts = curBuffer.readState.optLimit;
+			int opts = curBuffer.readIndex;
 			buffer.position(opts - FLAGLENGTH);
 			buffer.get(overFlag, 0, FLAGLENGTH);
 			buffer.position(opts);
 		}
 		// 如果小于结束符，说明需要进行两个byte数组的合并
 		else {
-			int opts = curBuffer.readState.optLimit;
+			int opts = curBuffer.readIndex;
 			// 计算放入的位置
 			int moveSize = FLAGLENGTH - opts;
 			int index = 0;

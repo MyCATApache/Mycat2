@@ -54,7 +54,7 @@ public class QueryCmdProcessImpl implements SQLComandProcessInf {
 
 		byte[] sql = session.frontBuffer.getBytes(
 				session.curFrontMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize + 1,
-				session.curFrontMSQLPackgInf.endPos - MySQLPacket.packetHeaderSize - 1);
+				session.curFrontMSQLPackgInf.pkgLength - MySQLPacket.packetHeaderSize - 1);
 		sqlParser.parse(sql, sqlContext);
 		if (sqlContext.hasAnnotation()) {
 			// 此处添加注解处理

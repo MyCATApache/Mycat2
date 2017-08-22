@@ -60,7 +60,7 @@ public class ErrorPacket extends MySQLPacket {
         packetId =byteBuffer.readByte();
         pkgType =byteBuffer.readByte();
         errno = (int) byteBuffer.readFixInt(2);
-        if (byteBuffer.readState.hasRemain() && (byteBuffer.getByte(byteBuffer.readState.optPostion) == SQLSTATE_MARKER)) {
+        if ((byteBuffer.writeIndex - byteBuffer.readIndex) >0 && (byteBuffer.getByte(byteBuffer.readIndex) == SQLSTATE_MARKER)) {
         	byteBuffer.skip(1);
             sqlState = byteBuffer.readBytes(5);
         }
