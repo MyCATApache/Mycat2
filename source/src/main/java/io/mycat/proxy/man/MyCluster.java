@@ -243,6 +243,10 @@ public class MyCluster {
 		return myNode;
 	}
 
+	public void setMyLeader(ClusterNode myLeader) {
+		this.myLeader = myLeader;
+	}
+
 	public ClusterState getClusterState() {
 		return clusterState;
 	}
