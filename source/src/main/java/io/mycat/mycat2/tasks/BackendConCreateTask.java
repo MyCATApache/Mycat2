@@ -5,12 +5,14 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.security.NoSuchAlgorithmException;
 
-import io.mycat.mycat2.beans.MySQLBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MySQLSession.CurrPacketType;
+import io.mycat.mycat2.beans.MySQLBean;
 import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -29,10 +31,11 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 	private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
 	private HandshakePacket handshake;
 	private boolean welcomePkgReceived = false;
+	private MySQLDataSource ds;
 
 	public BackendConCreateTask(MySQLSession session, MySQLDataSource ds) {
-
 		super(session);
+		this.ds = ds;
 	}
 
 	@Override
@@ -40,7 +43,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 		// 不透传的状态下，需要自己控制Buffer的状态，这里每次从Socket中读取并写Buffer数据都切回初始Write状态
 		session.frontBuffer.reset();
 		if (!session.readFromChannel(session.frontBuffer, session.backendChannel)
-				|| !session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
+				|| CurrPacketType.Full!=session.resolveMySQLPackage(session.frontBuffer, session.curBackendMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
 			return;
 		}
 
@@ -59,27 +62,28 @@ public class BackendConCreateTask extends AbstractBackendIOTask {
 				return;
 			}
 			// 发送应答报文给后端
-			final MySQLBean mySQLBean = session.getDatasource().getConfig();
-			String user = mySQLBean.getUser();
-			String password = mySQLBean.getPassword();
-			String schema = mySQLBean.getDefaultSchema();
+			final MySQLBean mySQLBean = ds.getConfig();
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
 			packet.clientFlags = initClientFlags();
 			packet.maxPacketSize = 1024 * 1000;
 			packet.charsetIndex = charsetIndex;
-			packet.user = user;
+			packet.user = mySQLBean.getUser();
 			try {
-				packet.password = passwd(password, handshake);
+				packet.password = passwd(mySQLBean.getPassword(), handshake);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e.getMessage());
 			}
-			packet.database = schema;
+			SchemaBean schema = session.schema;
+			packet.database = (schema == null) ? null : schema.getName();
 
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
 			session.frontBuffer.reset();
 			packet.write(session.frontBuffer);
 			session.frontBuffer.flip();
+			//不透传的状态下， 自己指定需要写入到channel中的数据范围
+			// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+			session.frontBuffer.readIndex = session.frontBuffer.writeIndex;
 			session.writeToChannel(session.frontBuffer, session.backendChannel);
 			welcomePkgReceived = true;
 		} else {
