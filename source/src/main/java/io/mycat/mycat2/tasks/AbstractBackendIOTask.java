@@ -1,12 +1,13 @@
 package io.mycat.mycat2.tasks;
 
 import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
+import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.UserProxySession;
 
 /**
  * 默认抽象类
@@ -14,56 +15,77 @@ import io.mycat.proxy.UserProxySession;
  * @author wuzhihui
  *
  */
-public abstract class AbstractBackendIOTask implements BackendIOTask {
+public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> implements NIOHandler<T> {
 
-	protected AsynTaskCallBack callBack;
-	protected final MySQLSession session;
+	protected AsynTaskCallBack<T> callBack;
+	protected T session;
 	protected ProxyBuffer prevProxyBuffer;
-	protected NIOHandler<MySQLSession> prevProxyHandler;
-	
 	protected ErrorPacket errPkg;
+	protected boolean useNewBuffer = false;
 
-	public AbstractBackendIOTask(MySQLSession session) {
-		prevProxyBuffer=session.frontBuffer;
-		session.frontBuffer=session.allocNewProxyBuffer();
-		this.session = session;
-		prevProxyHandler = session.getCurNIOHandler();
+	public AbstractBackendIOTask(T session, boolean useNewBuffer) {
+		setSession(session, useNewBuffer);
+	}
+
+	public AbstractBackendIOTask() {
+		this(null, false);
+	}
+
+	public void setSession(T session, boolean useNewBuffer) {
+		this.useNewBuffer = useNewBuffer;
+		if (useNewBuffer) {
+			prevProxyBuffer = session.proxyBuffer;
+			session.proxyBuffer = session.allocNewProxyBuffer();
+
+		}
+		if (session != null) {
+			this.session = session;
+			session.setCurNIOHandler(this);
+		}
 	}
 
 	protected void finished(boolean success) throws IOException {
-		sessionRecover();
+		if (useNewBuffer) {
+			revertPreBuffer();
+		}
 		onFinished(success);
-
 		callBack.finished(session, this, success, this.errPkg);
 	}
 
-	protected void sessionRecover() {
-		// 恢复Session原来的状态
-		session.recycleAllocedBuffer(session.frontBuffer);
-		session.frontBuffer=this.prevProxyBuffer;
-		session.setCurNIOHandler(prevProxyHandler);
+	protected void revertPreBuffer() {
+		session.recycleAllocedBuffer(session.proxyBuffer);
+		session.proxyBuffer = this.prevProxyBuffer;
 	}
 
 	protected void onFinished(boolean success) {
 
 	}
 
-	@Override
-	public void onBackendConnect(MySQLSession userSession, boolean success, String msg) throws IOException {
+	public void onConnect(SelectionKey theKey, MySQLSession userSession, boolean success, String msg)
+			throws IOException {
 
 	}
 
-	@Override
-	public void onBackendWrite(MySQLSession session) throws IOException {
-
-	}
-
-	@Override
-	public void setCallback(AsynTaskCallBack callBack) {
+	public void setCallback(AsynTaskCallBack<T> callBack) {
 		this.callBack = callBack;
 
 	}
 
-	
+	@Override
+	public void onSocketClosed(T userSession, boolean normal) {
+	}
+
+	@Override
+	public void onSocketWrite(T session) throws IOException {
+		session.writeToChannel();
+
+	}
+
+	@Override
+	public void onWriteFinished(T s) throws IOException {
+		s.proxyBuffer.reset();
+		s.change2ReadOpts();
+
+	}
 
 }

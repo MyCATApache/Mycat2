@@ -22,24 +22,19 @@ import io.mycat.proxy.SessionManager;
  * @author wuzhihui
  *
  */
-public class MycatSessionManager implements SessionManager<MySQLSession> {
+public class MycatSessionManager implements SessionManager<MycatSession> {
 	protected static Logger logger = LoggerFactory.getLogger(MycatSessionManager.class);
-	private ArrayList<MySQLSession> allSessions = new ArrayList<MySQLSession>();
+	private ArrayList<MycatSession> allSessions = new ArrayList<MycatSession>();
 
 	@Override
-	public MySQLSession createSession(Object keyAttachment, BufferPool bufPool, Selector nioSelector,
+	public MycatSession createSession(Object keyAttachment, BufferPool bufPool, Selector nioSelector,
 			SocketChannel frontChannel, boolean isAcceptCon) throws IOException {
-
 		logger.info("MySQL client connected  ." + frontChannel);
-
-		MySQLSession session = new MySQLSession(bufPool, nioSelector, frontChannel);
+		MycatSession session = new MycatSession(bufPool, nioSelector, frontChannel);
 		// 第一个IO处理器为Client Authorware
-		
 		session.setCurNIOHandler(MySQLClientAuthHandler.INSTANCE);
 		// 默认为透传命令模式
 		session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
-		// 设置 前端拥有
-		session.frontBuffer.changeOwner(true);
 		// 向MySQL Client发送认证报文
 		session.sendAuthPackge();
 		session.setSessionManager(this);
@@ -48,7 +43,7 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 	}
 
 	@Override
-	public Collection<MySQLSession> getAllSessions() {
+	public Collection<MycatSession> getAllSessions() {
 		return this.allSessions;
 	}
 
@@ -58,7 +53,7 @@ public class MycatSessionManager implements SessionManager<MySQLSession> {
 	}
 
 	@Override
-	public NIOHandler<MySQLSession> getDefaultSessionHandler() {
+	public NIOHandler getDefaultSessionHandler() {
 		return MySQLClientAuthHandler.INSTANCE;
 	}
 
