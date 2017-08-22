@@ -1,17 +1,23 @@
 package io.mycat.proxy.man;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.proxy.AbstractSession;
 import io.mycat.proxy.BufferPool;
-import io.mycat.proxy.FrontIOHandler;
+import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.Session;
+import io.mycat.proxy.SessionManager;
 
 /**
  * Mycat各个节点发起会话,规定Node name大的节点主动向Node Name节点小的发起连接请求， 比如 mycat-server-1，
@@ -20,8 +26,20 @@ import io.mycat.proxy.Session;
  * @author wuzhihui
  *
  */
-public class AdminSession extends AbstractSession {
-
+public class AdminSession implements Session {
+	
+	private SessionManager<AdminSession> sessionManager;
+	public BufferPool bufPool;
+	public Selector nioSelector;
+	// 操作的Socket连接
+	public String addr;
+	public SocketChannel channel;
+	public SelectionKey channelKey;
+	protected static Logger logger = LoggerFactory.getLogger(AbstractSession.class);
+	private NIOHandler<AdminSession> nioHandler;
+	private int sessionId;
+	// Session是否关闭
+	private boolean closed;
 	private String nodeId;
 	public AdminCommand curAdminCommand;
 	// 全双工模式，读写用两个不同的Buffer,不会相互切换
@@ -30,7 +48,14 @@ public class AdminSession extends AbstractSession {
 	public PackageInf curAdminPkgInf = new PackageInf();
 
 	public AdminSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
-		super(bufferPool, selector, channel);
+		this.bufPool = bufferPool;
+		this.nioSelector = selector;
+		this.channel = channel;
+		InetSocketAddress clientAddr = (InetSocketAddress) channel.getRemoteAddress();
+		this.addr = clientAddr.getHostString() + ":" + clientAddr.getPort();
+		SelectionKey socketKey = channel.register(nioSelector, SelectionKey.OP_READ, this);
+		this.channelKey = socketKey;
+		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
 		this.readingBuffer = new ProtocolBuffer(bufferPool.allocByteBuffer());
 		this.writingBuffer = new ProtocolBuffer(bufferPool.allocByteBuffer());
 
@@ -53,7 +78,7 @@ public class AdminSession extends AbstractSession {
 	}
 
 	public void modifySelectKey() throws ClosedChannelException {
-		if (frontKey != null && frontKey.isValid()) {
+		if (channelKey != null && channelKey.isValid()) {
 			int clientOps = SelectionKey.OP_READ;
 			if (writingBuffer.optLimit == writingBuffer.optMark) {
 				this.writingBuffer.reset();
@@ -61,7 +86,7 @@ public class AdminSession extends AbstractSession {
 			} else {
 				clientOps |= SelectionKey.OP_WRITE;
 			}
-			frontKey.interestOps(clientOps);
+			channelKey.interestOps(clientOps);
 		}
 	}
 
@@ -77,7 +102,7 @@ public class AdminSession extends AbstractSession {
 		}
 		buffer.limit(writingBuffer.optLimit);
 		buffer.position(writingBuffer.optMark);
-		int writed = this.frontChannel.write(buffer);
+		int writed = this.channel.write(buffer);
 		if (writed > 0) {
 			writingBuffer.optMark = buffer.position();
 		}
@@ -94,8 +119,7 @@ public class AdminSession extends AbstractSession {
 		ByteBuffer buffer = this.readingBuffer.getBuffer();
 		int offset = readingBuffer.optMark;
 		int limit = readingBuffer.optLimit;
-		if(limit==offset)
-		{
+		if (limit == offset) {
 			return -1;
 		}
 		if (!ManagePacket.validateHeader(offset, limit)) {
@@ -141,7 +165,7 @@ public class AdminSession extends AbstractSession {
 		} else {
 			buffer.position(readingBuffer.optLimit);
 		}
-		int readed = frontChannel.read(buffer);
+		int readed = channel.read(buffer);
 		logger.debug(" readed {} total bytes ", readed);
 		if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
@@ -156,18 +180,31 @@ public class AdminSession extends AbstractSession {
 
 	public void close(boolean normal, String hint) {
 		if (!this.isClosed()) {
+			this.closed = true;
+			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
+			closeSocket(channel, normal, hint);
 			bufPool.recycleBuf(this.readingBuffer.getBuffer());
 			bufPool.recycleBuf(this.writingBuffer.getBuffer());
-			super.close(normal, hint);
+			this.getMySessionManager().removeSession(this);
 		} else {
-			super.close(normal, hint);
+			logger.warn("session already closed " + this.sessionInfo());
 		}
-
+	}
+	public String sessionInfo() {
+		return " [" + this.addr + ']';
 	}
 
 	protected void closeSocket(SocketChannel channel, boolean normal, String msg) {
-		super.closeSocket(channel, normal, msg);
-		((FrontIOHandler<Session>) this.getCurNIOHandler()).onFrontSocketClosed(this, normal);
+		if (channel == null) {
+			return;
+		}
+		String logInf = (normal) ? " normal close " : "abnormal close " + channel;
+		logger.info(logInf + sessionInfo() + "  reason:" + msg);
+		try {
+			channel.close();
+		} catch (IOException e) {
+		}
+		this.getCurNIOHandler().onSocketClosed(this, normal);
 
 	}
 
@@ -180,8 +217,54 @@ public class AdminSession extends AbstractSession {
 	}
 
 	@Override
-	public SocketChannel frontChannel() {
-		return this.frontChannel;
+	public SocketChannel channel() {
+		return this.channel;
+	}
+	public int getSessionId() {
+		return sessionId;
+	}
+	@SuppressWarnings("rawtypes")
+	public void lazyCloseSession(final boolean normal, final String reason) {
+		if (isClosed()) {
+			return;
+		}
+
+		ProxyRuntime.INSTANCE.addDelayedNIOJob(() -> {
+			if (!isClosed()) {
+				close(normal, reason);
+			}
+		}, 10, (ProxyReactorThread) Thread.currentThread());
+	}
+
+	
+
+	@SuppressWarnings("unchecked")
+	public void setSessionManager(SessionManager<? extends Session> sessionManager) {
+		this.sessionManager = (SessionManager<AdminSession>) sessionManager;
+	}
+	public boolean isChannelOpen() {
+		return channel != null && channel.isConnected();
+	}
+	@Override
+	public boolean isClosed() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public <T extends Session> SessionManager<T> getMySessionManager() {
+		return (SessionManager<T>) sessionManager;
+	}
+
+	@Override
+	public NIOHandler<AdminSession> getCurNIOHandler() {
+	 return this.nioHandler;
+	}
+
+	public void setCurNIOHandler(NIOHandler<AdminSession> instance) {
+		this.nioHandler=instance;
+		
 	}
 
 }

@@ -94,14 +94,14 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 	protected void processReadKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
 		Session session = (Session) curKey.attachment();
-		((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontRead(session);
+		session.getCurNIOHandler().onSocketRead(session);
 	}
 
 	@SuppressWarnings("unchecked")
 	protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
 		Session session = (Session) curKey.attachment();
-		((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontWrite(session);
+		session.getCurNIOHandler().onSocketWrite(session);
 	}
 
 	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer)
