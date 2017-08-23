@@ -38,7 +38,7 @@ public class DefaultAdminSessionHandler implements NIOHandler<AdminSession> {
 				session.curAdminCommand.handlerPkg(session, pkgType);
 			}
 			// 下一个报文解析
-//			session.readingBuffer.readIndex = session.curAdminPkgInf.startPos+session.curAdminPkgInf.length;
+			session.readingBuffer.readIndex = session.curAdminPkgInf.startPos+session.curAdminPkgInf.length;
 		}
 
 //		session.readingBuffer.writeIndex = bufferLimit;
