@@ -27,10 +27,10 @@ public class DefaultAdminSessionHandler implements NIOHandler<AdminSession> {
 		if (readed == false) {
 			return;
 		}
-		int bufferLimit = session.readingBuffer.optLimit;
+//		int bufferLimit = session.readingBuffer.writeIndex;
 		byte pkgType = -1;
 		while ((pkgType = session.receivedPacket()) != -1) {
-			session.readingBuffer.optLimit = session.curAdminPkgInf.startPos;
+//			session.readingBuffer.writeIndex = session.curAdminPkgInf.startPos;
 			if (pkgType == ManagePacket.PKG_FAILED || pkgType == ManagePacket.PKG_SUCCESS) {
 				session.curAdminCommand.handlerPkg(session, pkgType);
 			} else {
@@ -38,10 +38,10 @@ public class DefaultAdminSessionHandler implements NIOHandler<AdminSession> {
 				session.curAdminCommand.handlerPkg(session, pkgType);
 			}
 			// 下一个报文解析
-			session.readingBuffer.optMark = session.readingBuffer.optLimit;
+//			session.readingBuffer.readIndex = session.curAdminPkgInf.startPos+session.curAdminPkgInf.length;
 		}
 
-		session.readingBuffer.optLimit = bufferLimit;
+//		session.readingBuffer.writeIndex = bufferLimit;
 	}
 
 	/**

@@ -1,7 +1,7 @@
 package io.mycat.proxy.man.packet;
 
+import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.man.ManagePacket;
-import io.mycat.proxy.man.ProtocolBuffer;
 
 /**
  * 应答Node加入集群的申请
@@ -36,7 +36,7 @@ public class JoinCLusterNotifyPacket extends ManagePacket {
 	}
 
 	@Override
-	public void resolveBody(ProtocolBuffer buffer) {
+	public void resolveBody(ProxyBuffer buffer) {
 		this.myConnectedNodes = buffer.readNULString();
 		this.configFileVersion = buffer.readNULString();
 		this.joinState = buffer.readByte();
@@ -44,7 +44,7 @@ public class JoinCLusterNotifyPacket extends ManagePacket {
 	}
 
 	@Override
-	public void writeBody(ProtocolBuffer buffer) {
+	public void writeBody(ProxyBuffer buffer) {
 		buffer.writeNULString(myConnectedNodes);
 		buffer.writeNULString(this.configFileVersion);
 		buffer.writeByte(joinState);
