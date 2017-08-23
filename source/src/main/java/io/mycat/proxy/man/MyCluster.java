@@ -138,7 +138,7 @@ public class MyCluster {
 	{
 		for (Session theSession : session.getMySessionManager().getAllSessions()) {
 			AdminSession nodeSession = (AdminSession) theSession;
-			if (nodeSession.isFrontOpen()) {
+			if (!nodeSession.isChannelOpen()) {
 				try
 				{
 				nodeSession.answerClientNow(packet);

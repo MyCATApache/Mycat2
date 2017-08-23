@@ -73,15 +73,15 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 			if (curChannel.finishConnect()) {
 				AdminSession session = adminSessionMan.createSession(curKey.attachment(), this.bufPool, selector,
 						curChannel, false);
-				ConnectIOHandler<AdminSession> connectIOHandler = (ConnectIOHandler<AdminSession>) session
+				NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) session
 						.getCurNIOHandler();
 				connectIOHandler.onConnect(curKey, session, true, null);
 			}
 
 		} catch (ConnectException ex) {
 			logger.warn("connect failed " + curChannel + " reason:" + ex);
-			if (adminSessionMan.getDefaultSessionHandler() instanceof ConnectIOHandler) {
-				ConnectIOHandler<AdminSession> connectIOHandler = (ConnectIOHandler<AdminSession>) adminSessionMan
+			if (adminSessionMan.getDefaultSessionHandler() instanceof NIOHandler) {
+				NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) adminSessionMan
 						.getDefaultSessionHandler();
 				connectIOHandler.onConnect(curKey, null, false, null);
 
@@ -94,14 +94,14 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 	protected void processReadKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
 		Session session = (Session) curKey.attachment();
-		((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontRead(session);
+		session.getCurNIOHandler().onSocketRead(session);
 	}
 
 	@SuppressWarnings("unchecked")
 	protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
 		Session session = (Session) curKey.attachment();
-		((FrontIOHandler<Session>) session.getCurNIOHandler()).onFrontWrite(session);
+		session.getCurNIOHandler().onSocketWrite(session);
 	}
 
 	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer)
