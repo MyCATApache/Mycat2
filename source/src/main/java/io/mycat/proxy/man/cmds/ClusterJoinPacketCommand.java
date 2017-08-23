@@ -51,6 +51,8 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 			if (respPacket.getJoinState() == JoinCLusterNotifyPacket.JOIN_STATE_DENNIED) {
 				logger.warn("Leader denied my join cluster request ");
 			} else if (respPacket.getJoinState() == JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK) {
+				ClusterNode node = session.cluster().findNode(session.getNodeId());
+				session.cluster().setMyLeader(node);
 				session.cluster().setClusterState(ClusterState.Clustered);
 				JoinCLusterAckPacket ackPacket = new JoinCLusterAckPacket(session.cluster().getMyAliveNodes());
 				session.answerClientNow(ackPacket);
