@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import io.mycat.proxy.AbstractSession;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.Session;
@@ -43,8 +44,8 @@ public class AdminSession implements Session {
 	private String nodeId;
 	public AdminCommand curAdminCommand;
 	// 全双工模式，读写用两个不同的Buffer,不会相互切换
-	public ProtocolBuffer readingBuffer;
-	public ProtocolBuffer writingBuffer;
+	public ProxyBuffer readingBuffer;
+	public ProxyBuffer writingBuffer;
 	public PackageInf curAdminPkgInf = new PackageInf();
 
 	public AdminSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
@@ -56,8 +57,8 @@ public class AdminSession implements Session {
 		SelectionKey socketKey = channel.register(nioSelector, SelectionKey.OP_READ, this);
 		this.channelKey = socketKey;
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
-		this.readingBuffer = new ProtocolBuffer(bufferPool.allocByteBuffer());
-		this.writingBuffer = new ProtocolBuffer(bufferPool.allocByteBuffer());
+		this.readingBuffer = new ProxyBuffer(bufferPool.allocByteBuffer());
+		this.writingBuffer = new ProxyBuffer(bufferPool.allocByteBuffer());
 
 	}
 
@@ -80,7 +81,7 @@ public class AdminSession implements Session {
 	public void modifySelectKey() throws ClosedChannelException {
 		if (channelKey != null && channelKey.isValid()) {
 			int clientOps = SelectionKey.OP_READ;
-			if (writingBuffer.optLimit == writingBuffer.optMark) {
+			if (writingBuffer.readMark == writingBuffer.readIndex) {
 				this.writingBuffer.reset();
 				clientOps &= ~SelectionKey.OP_WRITE;
 			} else {
@@ -93,18 +94,15 @@ public class AdminSession implements Session {
 	public void writeChannel() throws IOException {
 		// 尝试压缩，移除之前写过的内容
 		ByteBuffer buffer = writingBuffer.getBuffer();
-		if (writingBuffer.optMark > buffer.capacity() * 2 / 3) {
-			buffer.limit(writingBuffer.optLimit);
-			buffer.position(writingBuffer.optMark);
-			buffer.compact();
-			writingBuffer.optMark = 0;
-			writingBuffer.optLimit = buffer.position();
+		if (writingBuffer.readIndex > buffer.capacity() * 2 / 3) {
+			writingBuffer.compact();
+		}else{
+			buffer.limit(writingBuffer.readIndex);
+			buffer.position(writingBuffer.readMark);
 		}
-		buffer.limit(writingBuffer.optLimit);
-		buffer.position(writingBuffer.optMark);
 		int writed = this.channel.write(buffer);
 		if (writed > 0) {
-			writingBuffer.optMark = buffer.position();
+			writingBuffer.readMark += writed;
 		}
 		modifySelectKey();
 	}
@@ -117,8 +115,8 @@ public class AdminSession implements Session {
 	 */
 	public byte receivedPacket() throws IOException {
 		ByteBuffer buffer = this.readingBuffer.getBuffer();
-		int offset = readingBuffer.optMark;
-		int limit = readingBuffer.optLimit;
+		int offset = readingBuffer.readIndex;
+		int limit = readingBuffer.writeIndex;
 		if (limit == offset) {
 			return -1;
 		}
@@ -157,13 +155,13 @@ public class AdminSession implements Session {
 
 		// 尝试压缩，移除之前读过的内容
 		ByteBuffer buffer = readingBuffer.getBuffer();
-		if (readingBuffer.optMark > buffer.capacity() * 1 / 3) {
-			buffer.limit(readingBuffer.optLimit);
-			buffer.position(readingBuffer.optMark);
+		if (readingBuffer.readIndex > buffer.capacity() * 1 / 3) {
+			buffer.limit(readingBuffer.writeIndex);
+			buffer.position(readingBuffer.readIndex);
 			buffer.compact();
-			readingBuffer.optMark = 0;
+			readingBuffer.readIndex = 0;
 		} else {
-			buffer.position(readingBuffer.optLimit);
+			buffer.position(readingBuffer.writeIndex);
 		}
 		int readed = channel.read(buffer);
 		logger.debug(" readed {} total bytes ", readed);
@@ -174,7 +172,7 @@ public class AdminSession implements Session {
 
 			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
 		}
-		readingBuffer.optLimit = buffer.position();
+		readingBuffer.writeIndex = buffer.position();
 		return readed > 0;
 	}
 
