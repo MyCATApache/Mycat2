@@ -3,6 +3,8 @@ package io.mycat.proxy.man;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import io.mycat.proxy.ProxyBuffer;
+
 /**
  * 管理报文，3个字节的包头 ，其中前两个字节为包长度，第3个字节为包类型，最后为报文内容。
  * 
@@ -66,29 +68,29 @@ public abstract class ManagePacket {
 		this.pkgLength = pkgLength;
 	}
 
-	public void resolve(ProtocolBuffer buffer) {
+	public void resolve(ProxyBuffer buffer) {
 		buffer.skip(3);
 		this.resolveBody(buffer);
 	}
 
-	public abstract void resolveBody(ProtocolBuffer buffer);
+	public abstract void resolveBody(ProxyBuffer buffer);
 
 	/**
 	 * 报文内容写入到Buffer中（等待发送）
 	 * 
 	 * @param buffer
 	 */
-	public void writeTo(ProtocolBuffer buffer) {
-		int beginPos = buffer.optLimit;
-		buffer.optLimit=2;
+	public void writeTo(ProxyBuffer buffer) {
+		int beginPos = buffer.writeIndex;
+		buffer.writeIndex=2;
 		buffer.writeByte(this.pkgType);
 		this.writeBody(buffer);
 		// total length
-		int lastPos = buffer.optLimit;
-		buffer.optLimit = beginPos;
+		int lastPos = buffer.writeIndex;
+		buffer.writeIndex = beginPos;
 		buffer.writeFixInt(2, lastPos - packetHeaderSize);
-		buffer.optLimit = lastPos;
-
+		buffer.writeIndex = lastPos;
+		buffer.readIndex  = buffer.writeIndex;
 	}
 
 	/**
@@ -96,5 +98,5 @@ public abstract class ManagePacket {
 	 * 
 	 * @param buffer
 	 */
-	public abstract void writeBody(ProtocolBuffer buffer);
+	public abstract void writeBody(ProxyBuffer buffer);
 }

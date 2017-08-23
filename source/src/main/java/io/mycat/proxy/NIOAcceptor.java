@@ -73,15 +73,15 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 			if (curChannel.finishConnect()) {
 				AdminSession session = adminSessionMan.createSession(curKey.attachment(), this.bufPool, selector,
 						curChannel, false);
-				ConnectIOHandler<AdminSession> connectIOHandler = (ConnectIOHandler<AdminSession>) session
+				NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) session
 						.getCurNIOHandler();
 				connectIOHandler.onConnect(curKey, session, true, null);
 			}
 
 		} catch (ConnectException ex) {
 			logger.warn("connect failed " + curChannel + " reason:" + ex);
-			if (adminSessionMan.getDefaultSessionHandler() instanceof ConnectIOHandler) {
-				ConnectIOHandler<AdminSession> connectIOHandler = (ConnectIOHandler<AdminSession>) adminSessionMan
+			if (adminSessionMan.getDefaultSessionHandler() instanceof NIOHandler) {
+				NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) adminSessionMan
 						.getDefaultSessionHandler();
 				connectIOHandler.onConnect(curKey, null, false, null);
 
