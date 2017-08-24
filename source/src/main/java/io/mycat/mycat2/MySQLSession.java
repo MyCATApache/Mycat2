@@ -57,6 +57,14 @@ public class MySQLSession extends AbstractMySQLSession {
 		
 	}
 
+	@Override
+	protected void afterOnClose() {
+		// TODO Auto-generated method stub
+		if(mycatSession != null ) {
+			mycatSession.unBindBackend();
+		}
+	}
 
+	
 
 }
