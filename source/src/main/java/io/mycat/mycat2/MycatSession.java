@@ -114,6 +114,16 @@ public class MycatSession extends AbstractMySQLSession {
 		backend.useSharedBuffer(this.proxyBuffer);
 		backend.setCurNIOHandler(this.getCurNIOHandler());
 	}
+	
+	/**
+	 * 解绑后端的MySQL会话，后端连接如果关闭，应该是需要解除联系的
+	 * 目前前端连接在需要后短连接时，如果后端连接为空，会重新获取一个后端连接
+	 * DefaultMycatSessionHandler.syncSessionStateToBackend 目前并没有判断其拥有的后端连接是否为空，但目前该方法未使用，需要注意
+	 * 该方法建议调用的时机为：后端连接关闭
+	 */
+	public void unBindBackend() {
+		this.backend = null;
+	}
 
 	/**
 	 * 获取ProxyBuffer控制权，同时设置感兴趣的事件，如SocketRead，Write，只能其一
@@ -191,5 +201,15 @@ public class MycatSession extends AbstractMySQLSession {
 		this.takeOwner(SelectionKey.OP_READ);
 
 	}
+
+	
+	//@todo 前端连接关闭后，需要归还占有的后端连接，待连接池实现后
+	@Override
+	protected void afterOnClose() {
+		// TODO Auto-generated method stub
+		super.afterOnClose();
+	}
+	
+	
 
 }

@@ -262,17 +262,31 @@ public abstract class AbstractSession implements Session {
 	 */
 	public void close(boolean normal, String hint) {
 		if (!this.isClosed()) {
+			
+			System.out.println(this);
 			this.closed = true;
 			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
 			closeSocket(channel, normal, hint);
 			if (!referedBuffer) {
 				this.bufPool.recycleBuf(proxyBuffer.getBuffer());
 			}
-			this.getMySessionManager().removeSession(this);
+			
+			if(this.getMySessionManager() != null ) {
+				this.getMySessionManager().removeSession(this);
+			}
+			
+			afterOnClose();
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}
 
+	}
+	
+	/**
+	 * 连接关闭，子类特殊的业务逻辑实现
+	 */
+	protected void afterOnClose() {
+		
 	}
 
 	@SuppressWarnings("rawtypes")
