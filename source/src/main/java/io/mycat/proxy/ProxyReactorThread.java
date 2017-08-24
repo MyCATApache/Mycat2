@@ -56,7 +56,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 			try {
 				nioJob.run();
 			} catch (Exception e) {
-				logger.warn("run nio job err " , e);
+				logger.warn("run nio job err ", e);
 			}
 		}
 
@@ -72,11 +72,11 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		reactorEnv.curSession = session;
 		try {
 			if (((SocketChannel) curKey.channel()).finishConnect()) {
-				((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, true, null);
+				session.getCurNIOHandler().onConnect(curKey, session, true, null);
 			}
 
 		} catch (ConnectException ex) {
-			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendConnect(session, false, ex.getMessage());
+			session.getCurNIOHandler().onConnect(curKey, session, false, ex.getMessage());
 		}
 	}
 
@@ -85,11 +85,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		// only from cluster server socket
 		T session = (T) curKey.attachment();
 		reactorEnv.curSession = session;
-		if (session.frontChannel() == curKey.channel()) {
-			((FrontIOHandler<T>) session.getCurNIOHandler()).onFrontRead(session);
-		} else {
-			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendRead(session);
-		}
+		session.getCurNIOHandler().onSocketRead(session);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -97,11 +93,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		// only from cluster server socket
 		T session = (T) curKey.attachment();
 		reactorEnv.curSession = session;
-		if (session.frontChannel() == curKey.channel()) {
-			((FrontIOHandler<T>) session.getCurNIOHandler()).onFrontWrite(session);
-		} else {
-			((BackendIOHandler<T>) session.getCurNIOHandler()).onBackendWrite(session);
-		}
+		session.getCurNIOHandler().onSocketWrite(session);
 	}
 
 	public void run() {
@@ -144,7 +136,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 						logger.warn("Socket IO err :", e);
 						key.cancel();
 						if (reactorEnv.curSession != null) {
-							reactorEnv.curSession.close(false,"Socket IO err:" + e);
+							reactorEnv.curSession.close(false, "Socket IO err:" + e);
 							this.allSessions.remove(reactorEnv.curSession);
 							reactorEnv.curSession = null;
 						}

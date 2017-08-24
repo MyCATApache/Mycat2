@@ -1,7 +1,7 @@
 package io.mycat.proxy.man.packet;
 
+import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.man.ManagePacket;
-import io.mycat.proxy.man.ProtocolBuffer;
 
 /**
  * 向Leader申请加入集群的报文
@@ -28,13 +28,13 @@ public class JoinCLusterReqPacket extends ManagePacket {
 	}
 
 	@Override
-	public void resolveBody(ProtocolBuffer buffer) {
+	public void resolveBody(ProxyBuffer buffer) {
 		this.myConnectedNodes = buffer.readNULString();
 
 	}
 
 	@Override
-	public void writeBody(ProtocolBuffer buffer) {
+	public void writeBody(ProxyBuffer buffer) {
 		buffer.writeNULString(myConnectedNodes);
 
 	}

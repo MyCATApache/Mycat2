@@ -1,12 +1,18 @@
 package io.mycat.mycat2.net;
 
 import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.MySQLSession.CurrPacketType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.MycatSession;
 import io.mycat.mysql.packet.AuthPacket;
-import io.mycat.proxy.DefaultDirectProxyHandler;
+import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.CharsetUtil;
 
 /**
@@ -15,26 +21,26 @@ import io.mycat.util.CharsetUtil;
  * @author wuzhihui
  *
  */
-public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSession> {
+public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	private static final byte[] AUTH_OK = new byte[] { 7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0 };
 
-
-	public static final  MySQLClientAuthHandler INSTANCE=new MySQLClientAuthHandler();
+	public static final MySQLClientAuthHandler INSTANCE = new MySQLClientAuthHandler();
+	private static Logger logger = LoggerFactory.getLogger(MySQLClientAuthHandler.class);
 
 	@Override
-	public void onFrontRead(MySQLSession session) throws IOException {
-		ProxyBuffer frontBuffer = session.frontBuffer;
-		if(session.readFromChannel(session.frontBuffer, session.frontChannel)==false||
-				CurrPacketType.Full!=session.resolveMySQLPackage(frontBuffer, session.curFrontMSQLPackgInf, false)){
+	public void onSocketRead(MycatSession session) throws IOException {
+		ProxyBuffer frontBuffer = session.getProxyBuffer();
+		if (session.readFromChannel() == false
+				|| CurrPacketType.Full != session.resolveMySQLPackage(frontBuffer, session.curMSQLPackgInf, false)) {
 			return;
 		}
 
-		//处理用户认证请情况报文
+		// 处理用户认证请情况报文
 		try {
 			AuthPacket auth = new AuthPacket();
 			auth.read(frontBuffer);
 			// Fake check user
-			logger.debug("Check user name. " + auth.user);
+			logger.info("Check user name. " + auth.user);
 			// if (!auth.user.equals("root")) {
 			// LOGGER.debug("User name error. " + auth.user);
 			// mySQLFrontConnection.failure(ErrorCode.ER_ACCESS_DENIED_ERROR,
@@ -48,12 +54,14 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 
 			// check schema
 			logger.debug("Check database. " + auth.database);
-
+			//TODO ...set schema
+			MycatConfig mycatConf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+			session.schema=mycatConf.getDefaultMycatSchema();
 			boolean succ = success(auth);
 			if (succ) {
-				session.frontBuffer.reset();
+				session.proxyBuffer.reset();
 				session.answerFront(AUTH_OK);
-				//认证通过，设置当前SQL Handler为默认Handler
+				// 认证通过，设置当前SQL Handler为默认Handler
 				session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 			}
 		} catch (Throwable e) {
@@ -95,6 +103,32 @@ public class MySQLClientAuthHandler extends DefaultDirectProxyHandler<MySQLSessi
 		//
 		// }
 		return true;
+	}
+
+	@Override
+	public void onSocketWrite(MycatSession session) throws IOException {
+		session.writeToChannel();
+
+	}
+
+	@Override
+	public void onSocketClosed(MycatSession userSession, boolean normal) {
+		userSession.lazyCloseSession(normal, "front closed");
+
+	}
+
+	@Override
+	public void onConnect(SelectionKey curKey, MycatSession session, boolean success, String msg) throws IOException {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void onWriteFinished(MycatSession session) throws IOException {
+		// 明确开启读操作
+		session.proxyBuffer.flip();
+		session.change2ReadOpts();
+
 	}
 
 

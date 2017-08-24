@@ -14,14 +14,14 @@ public interface Session {
 	 * 
 	 * @return
 	 */
-	public SocketChannel frontChannel();
+	public SocketChannel channel();
 
 	boolean isClosed();
 
 	public <T extends Session> SessionManager<T> getMySessionManager();
 
 	// 当前NIO ProxyHandler
-	public <T extends Session> NIOHandler<?> getCurNIOHandler();
+	public NIOHandler getCurNIOHandler();
 	
 	/**
 	 * 会话关闭时候的的动作，需要清理释放资源

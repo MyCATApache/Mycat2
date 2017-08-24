@@ -138,7 +138,7 @@ public class MyCluster {
 	{
 		for (Session theSession : session.getMySessionManager().getAllSessions()) {
 			AdminSession nodeSession = (AdminSession) theSession;
-			if (nodeSession.isFrontOpen()) {
+			if (!nodeSession.isChannelOpen()) {
 				try
 				{
 				nodeSession.answerClientNow(packet);
@@ -241,6 +241,10 @@ public class MyCluster {
 
 	public ClusterNode getMyNode() {
 		return myNode;
+	}
+
+	public void setMyLeader(ClusterNode myLeader) {
+		this.myLeader = myLeader;
 	}
 
 	public ClusterState getClusterState() {

@@ -57,7 +57,7 @@ public class DefaultAdminSessionManager implements SessionManager<AdminSession> 
 	}
 
 	@Override
-	public NIOHandler<AdminSession> getDefaultSessionHandler() {
+	public NIOHandler getDefaultSessionHandler() {
 		return DefaultAdminSessionHandler.INSTANCE;
 	}
 }
