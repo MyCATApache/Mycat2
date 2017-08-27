@@ -43,28 +43,34 @@ import io.mycat.proxy.ProxyBuffer;
  * @author mycat
  */
 public class EOFPacket extends MySQLPacket {
-    public byte pkgType = MySQLPacket.EOF_PACKET;
-    public int warningCount;
-    public int status = 2;
+	public byte pkgType = MySQLPacket.EOF_PACKET;
+	public int warningCount;
+	public int status = 2;
 
+	public void write(ProxyBuffer buffer) {
+		buffer.writeFixInt(3, calcPacketSize());
+		buffer.writeByte(packetId);
+		buffer.writeLenencInt(pkgType);
+		buffer.writeFixInt(2, warningCount);
+		buffer.writeFixInt(2, status);
+	}
 
+	public void read(ProxyBuffer buffer) {
+		packetLength = (int) buffer.readFixInt(3);
+		packetId = buffer.readByte();
+		pkgType = (byte) buffer.readByte();
+		warningCount = (int) buffer.readFixInt(2);
+		status = (int) buffer.readFixInt(2);
+	}
 
-    public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3,calcPacketSize());
-        buffer.writeByte(packetId);
-        buffer.writeLenencInt(pkgType);
-        buffer.writeFixInt(2, warningCount);
-        buffer.writeFixInt(2, status);
-    }
+	@Override
+	public int calcPacketSize() {
+		return 5;// 1+2+2;
+	}
 
-    @Override
-    public int calcPacketSize() {
-        return 5;// 1+2+2;
-    }
-
-    @Override
-    protected String getPacketInfo() {
-        return "MySQL EOF Packet";
-    }
+	@Override
+	protected String getPacketInfo() {
+		return "MySQL EOF Packet";
+	}
 
 }

@@ -12,6 +12,9 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.SQLCommand;
 import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.cmds.judge.DirectTransJudge;
+import io.mycat.mycat2.cmds.judge.ErrorJudge;
+import io.mycat.mycat2.cmds.judge.OkJudge;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -27,21 +30,20 @@ public class DirectPassthrouhCmd implements SQLCommand {
 
 	public static final DirectPassthrouhCmd INSTANCE = new DirectPassthrouhCmd();
 
-	// ********** 临时处理,等待与KK 代码合并
-	private static final Map<Byte, Integer> finishPackage = new HashMap<>();
-
-	private Map<Byte, Integer> curfinishPackage = new HashMap<>();
+	/**
+	 * 指定需要处理的包类型信息
+	 */
+	private static final Map<Integer, DirectTransJudge> JUDGEMAP = new HashMap<>();
 
 	static {
-		finishPackage.put(MySQLPacket.OK_PACKET, 1);
-		finishPackage.put(MySQLPacket.ERROR_PACKET, 1);
-		finishPackage.put(MySQLPacket.EOF_PACKET, 2);
+		// 用来进行ok包的处理理
+		JUDGEMAP.put((int) MySQLPacket.OK_PACKET, OkJudge.INSTANCE);
+		// 用来进行error包的处理
+		JUDGEMAP.put((int) MySQLPacket.ERROR_PACKET, ErrorJudge.INSTANCE);
 	}
-	// ********** 临时处理,等待与KK 代码合并
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		curfinishPackage.putAll(finishPackage);
 		ProxyBuffer curBuffer = session.proxyBuffer;
 		// 切换 buffer 读写状态
 		curBuffer.flip();
@@ -53,16 +55,6 @@ public class DirectPassthrouhCmd implements SQLCommand {
 		return false;
 	}
 
-	private boolean isfinishPackage(MySQLPackageInf curMSQLPackgInf) throws IOException {
-		switch (curMSQLPackgInf.pkgType) {
-		case MySQLPacket.OK_PACKET:
-		case MySQLPacket.ERROR_PACKET:
-		case MySQLPacket.EOF_PACKET:
-			return true;
-		default:
-			return false;
-		}
-	}
 
 	@Override
 	public void clearResouces(boolean sessionCLosed) {
@@ -72,68 +64,19 @@ public class DirectPassthrouhCmd implements SQLCommand {
 
 	@Override
 	public boolean onBackendResponse(MySQLSession session) throws IOException {
-		logger.info("received backend mysql data ");
+
+		// 首先进行一次报文的读取操作
 		if (!session.readFromChannel()) {
 			return false;
 		}
 
-		ProxyBuffer curBuffer = session.proxyBuffer;
-		MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
-		boolean isallfinish = false;
-		boolean isContinue = true;
-		while (isContinue) {
-			switch (session.resolveMySQLPackage(curBuffer, curMSQLPackgInf, true)) {
-			case Full:
-				Integer count = curfinishPackage.get(curMSQLPackgInf.pkgType);
-				if (count != null) {
-					if (--count == 0) {
-						isallfinish = true;
-						curfinishPackage.clear();
-					}
-					curfinishPackage.put(curMSQLPackgInf.pkgType, count);
-				}
-				if (curBuffer.readIndex == curBuffer.writeIndex) {
-					isContinue = false;
-				} else {
-					isContinue = true;
-				}
-				break;
-			case LongHalfPacket:
-				if (curMSQLPackgInf.crossBuffer) {
-					// 发生过透传的半包,往往包的长度超过了buffer 的长度.
-					logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-				} else if (!isfinishPackage(curMSQLPackgInf)) {
-					// 不需要整包解析的长半包透传. result set .这种半包直接透传
-					curMSQLPackgInf.crossBuffer = true;
-					curBuffer.readIndex = curMSQLPackgInf.endPos;
-					curMSQLPackgInf.remainsBytes = curMSQLPackgInf.pkgLength
-							- (curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
-					logger.debug(" readed LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-					logger.debug(" curBuffer {}", curBuffer);
-				} else {
-					// 读取到了EOF/OK/ERROR 类型长半包 是需要保证是整包的.
-					logger.debug(" readed finished LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-					// TODO 保证整包的机制
-				}
-				isContinue = false;
-				break;
-			case ShortHalfPacket:
-				logger.debug(" readed ShortHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-				isContinue = false;
-				break;
-			}
-		}
-		;
+		// 进行报文处理的流程化
+		boolean nextReadFlag = false;
+		do {
+			// 进行报文的处理流程
+			nextReadFlag = session.currPkgProc.procssPkg(session);
+		} while (nextReadFlag);
 
-		// 切换buffer 读写状态
-		curBuffer.flip();
-		MycatSession mycatSession = session.getMycatSession();
-		// 直接透传报文
-		mycatSession.takeOwner(SelectionKey.OP_WRITE);
-		mycatSession.writeToChannel();
-		/**
-		 * 当前命令处理是否全部结束,全部结束时需要清理资源
-		 */
 		return false;
 	}
 
