@@ -1,0 +1,49 @@
+create table usermsg(
+userId int  not null primary key,
+name varchar(20) not null
+);
+
+
+load data local infile "/root/mysql/loaddata.txt" 
+into table usermsg
+fields terminated by ',' 
+lines terminated by '\n' 
+(userId,name)
+;
+
+
+load data local infile "/root/mysql/loaddata_big.txt" 
+into table usermsg
+fields terminated by ',' 
+lines terminated by '\n' 
+(userId,name)
+;
+
+
+load data local infile "/root/mysql/loaddata_500.txt" 
+into table usermsg
+fields terminated by ',' 
+lines terminated by '\n' 
+(userId,name)
+;
+
+
+
+
+--windows 测试
+
+load data local infile "D:/java/test/loaddata/loaddata.txt" 
+into table usermsg
+fields terminated by ',' 
+lines terminated by '\n' 
+(userId,name)
+;
+
+
+load data local infile "D:/java/test/loaddata/loaddata_big.txt" 
+into table usermsg
+fields terminated by ',' 
+lines terminated by '\n' 
+(userId,name)
+;
+

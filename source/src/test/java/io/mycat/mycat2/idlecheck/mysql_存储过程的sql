@@ -1,0 +1,68 @@
+-- 1，存储过程，进行in参数,即将输入的参数进行作为结果
+
+DELIMITER //  
+CREATE PROCEDURE demo_in_parameter(IN p_in int)  
+BEGIN   
+SELECT p_in;   
+SET p_in=2; 
+insert into usermsg (userid,name)
+values(500011,'zz5');  
+SELECT p_in;   
+END;   
+//  
+
+DELIMITER ; 
+
+-- 进行存储过程1的调用
+SET @p_in=0;  
+CALL demo_in_parameter(@p_in);
+-- 再获取SELECT @p_in;  值不会被改变，因为是in参数
+
+
+
+--2,存储过程，进行out参数
+DELIMITER //
+
+CREATE PROCEDURE demo_out_parameter(OUT p_out int)  
+BEGIN
+SELECT p_out;
+SET p_out=2;
+SELECT p_out;
+END;
+//
+
+DELIMITER ;
+
+--调用
+SET @p_out=1;  
+CALL demo_out_parameter(@p_out);  
+
+-- 再检查结果
+SELECT @p_out;
+作为out参数，结果发生了改变
+
+
+
+--3，进行inout参数的测试
+
+DELIMITER //
+
+CREATE PROCEDURE demo_inout_parameter(INOUT p_inout int)
+BEGIN
+SELECT p_inout;
+SET p_inout=2;
+SELECT p_inout;
+END;
+//
+
+DELIMITER ; 
+
+
+--进行inout的参数测试调用
+SET @p_inout=5;
+CALL demo_inout_parameter(@p_inout);
+
+-- 查看结果
+SELECT @p_inout;  
+
+
