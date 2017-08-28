@@ -41,7 +41,6 @@ public class PkgResultSetReader implements PkgProcess {
 
 		ProxyBuffer curBuffer = session.proxyBuffer;
 
-		boolean isallfinish = false;
 		boolean isContinue = true;
 
 		while (isContinue) {
@@ -62,9 +61,6 @@ public class PkgResultSetReader implements PkgProcess {
 
 						// 如果当前的eof包大于1说明已经为eof结束包,切换到解析器进行解析
 						boolean gotoRead = EofJudge.INSTANCE.judge(session);
-
-						// 标识当前验证完成
-						isallfinish = true;
 
 						// 当一个完整的查询检查结束后，切换至首包的检查
 						session.currPkgProc = PkgFirstReader.INSTANCE;
@@ -116,6 +112,10 @@ public class PkgResultSetReader implements PkgProcess {
 		// 直接透传报文
 		mycatSession.takeOwner(SelectionKey.OP_WRITE);
 		mycatSession.writeToChannel();
+
+		// 标识当前传输未结束
+		mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
+
 		/**
 		 * 当前命令处理是否全部结束,全部结束时需要清理资源
 		 */

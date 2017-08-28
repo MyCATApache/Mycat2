@@ -29,6 +29,11 @@ public enum SessionKeyEnum {
 	 * 标识当前连接的闲置状态标识 ，true，闲置，false，未闲置,即在使用中
 	 */
 	SESSION_KEY_CONN_IDLE_FLAG("session_key_conn_idle_flag"),
+	
+	/**
+	 * 标识当前后端数据透传是否结束的标识，存在此标识，标识未结束，否则即为结束
+	 */
+	SESSION_KEY_TRANSFER_OVER_FLAG("session_key_transfer_over_flag")
 
 	;
 

@@ -15,6 +15,7 @@ import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.cmds.judge.DirectTransJudge;
 import io.mycat.mycat2.cmds.judge.ErrorJudge;
 import io.mycat.mycat2.cmds.judge.OkJudge;
+import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -55,7 +56,6 @@ public class DirectPassthrouhCmd implements SQLCommand {
 		return false;
 	}
 
-
 	@Override
 	public void clearResouces(boolean sessionCLosed) {
 		// TODO Auto-generated method stub
@@ -83,10 +83,16 @@ public class DirectPassthrouhCmd implements SQLCommand {
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
 		// 判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
-		// todo
-		logger.warn("not well implemented ,please fix it ");
-		session.proxyBuffer.flip();
-		session.chnageBothReadOpts();
+		// 检查当前已经结束，进行切换
+		if (!session.getBackend().getSessionAttrMap()
+				.containsKey(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey())) {
+			logger.warn("not well implemented ,please fix it ");
+			session.proxyBuffer.flip();
+			session.chnageBothReadOpts();
+		} else {
+			// 交给后端，注册读取事件
+			session.giveupOwner(SelectionKey.OP_READ);
+		}
 		return false;
 
 	}
