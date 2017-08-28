@@ -8,9 +8,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.SQLCommand;
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -21,7 +22,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @author wuzhihui
  *
  */
-public class DirectPassthrouhCmd implements SQLCommand {
+public class DirectPassthrouhCmd implements MySQLCommand {
 
 	private static final Logger logger = LoggerFactory.getLogger(DirectPassthrouhCmd.class);
 
@@ -41,15 +42,19 @@ public class DirectPassthrouhCmd implements SQLCommand {
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		curfinishPackage.putAll(finishPackage);
-		ProxyBuffer curBuffer = session.proxyBuffer;
-		// 切换 buffer 读写状态
-		curBuffer.flip();
-		// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-		curBuffer.readIndex = curBuffer.writeIndex;
-		// 改变 owner，对端Session获取，并且感兴趣写事件
-		session.giveupOwner(SelectionKey.OP_WRITE);
-		session.getBackend().writeToChannel();
+		curfinishPackage.putAll(finishPackage);		
+		session.getBackend((mysqlsession, sender, success,result)->{
+			if(success){
+				ProxyBuffer curBuffer = session.proxyBuffer;
+				// 切换 buffer 读写状态
+				curBuffer.flip();
+				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+				curBuffer.readIndex = curBuffer.writeIndex;
+				// 改变 owner，对端Session获取，并且感兴趣写事件
+				session.giveupOwner(SelectionKey.OP_WRITE);
+				mysqlsession.writeToChannel();
+			}
+		});
 		return false;
 	}
 
@@ -109,11 +114,9 @@ public class DirectPassthrouhCmd implements SQLCommand {
 					curMSQLPackgInf.remainsBytes = curMSQLPackgInf.pkgLength
 							- (curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
 					logger.debug(" readed LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-					logger.debug(" curBuffer {}", curBuffer);
 				} else {
 					// 读取到了EOF/OK/ERROR 类型长半包 是需要保证是整包的.
 					logger.debug(" readed finished LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-					// TODO 保证整包的机制
 				}
 				isContinue = false;
 				break;
@@ -123,7 +126,6 @@ public class DirectPassthrouhCmd implements SQLCommand {
 				break;
 			}
 		}
-		;
 
 		// 切换buffer 读写状态
 		curBuffer.flip();

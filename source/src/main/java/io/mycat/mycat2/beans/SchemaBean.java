@@ -46,22 +46,23 @@ public class SchemaBean {
 	public String name;
 	public SchemaType type;
 	private DNBean defaultDN;
+	
+	/*
+	 * 事务内的查询是否也做读写分离
+	 */
+	private boolean balanceSelectIntrans;
 	/**
 	 * 是否非分片的Schema，意味著沒有任何分片表的Schema
 	 */
-	private final boolean normalSchema;
 	private List<TableDefBean> tableDefBeans;
 
-	public SchemaBean(String name, DNBean defaultDN, boolean normalSchema, List<TableDefBean> tableDefBeans) {
+	public SchemaBean(String name, DNBean defaultDN, String type,boolean balanceSelectIntrans, List<TableDefBean> tableDefBeans) {
 		super();
 		this.name = name;
 		this.defaultDN = defaultDN;
-		this.normalSchema = normalSchema;
+		this.type = SchemaType.values()[Integer.parseInt(type)];
+		this.balanceSelectIntrans = balanceSelectIntrans;
 		this.tableDefBeans = tableDefBeans;
-	}
-
-	public boolean isNormalSchema() {
-		return normalSchema;
 	}
 
 	public String getName() {
@@ -90,7 +91,7 @@ public class SchemaBean {
 
 	@Override
 	public String toString() {
-		return "SchemaBean [name=" + name + ", defaultDN=" + defaultDN + ", normalSchema=" + normalSchema
+		return "SchemaBean [name=" + name + ", defaultDN=" + defaultDN 
 				+ ", tableDefBeans=" + tableDefBeans + "]";
 	}
 

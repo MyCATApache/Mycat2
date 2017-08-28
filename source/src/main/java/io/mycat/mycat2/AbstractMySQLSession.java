@@ -48,8 +48,8 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	/**
 	 * 事务提交方式
 	 */
-	public AutoCommit autoCommit = AutoCommit.OFF;
-
+	public AutoCommit autoCommit = AutoCommit.ON;
+	
 	/**
 	 * 认证中的seed报文数据
 	 */
@@ -84,6 +84,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	 */
 	public void responseOKOrError(MySQLPacket pkg) throws IOException {
 		// proxyBuffer.changeOwner(true);
+		this.proxyBuffer.reset();
 		pkg.write(this.proxyBuffer);
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;

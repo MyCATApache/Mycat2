@@ -7,13 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.AbstractMySQLSession;
+import io.mycat.mycat2.MyCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.SQLCommand;
-import io.mycat.mycat2.beans.MySQLDataSource;
-import io.mycat.mycat2.tasks.BackendConCreateTask;
-import io.mycat.mycat2.tasks.BackendSynchronzationTask;
-import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -47,65 +43,24 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		if (session.curMSQLPackgInf.endPos < buffer.writeIndex) {
 			logger.warn("front contains multi package ");
 		}
-		if (session.getBackend() == null) {
-			// todo ，从连接池中获取连接，获取不到后创建新连接，
-			final MySQLDataSource ds = session.getDatasource();
-			logger.info("hang cur sql for  backend connection ready ");
-			BackendConCreateTask authProcessor = new BackendConCreateTask(session.bufPool, session.nioSelector, ds,
-					session.schema.name);
-			authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
-				//恢复默认的Handler
-				session.setCurNIOHandler(INSTANCE);
-				if (exeSucces) {
-					session.bindBackend(optSession);
-					if(session.curSQLCommand.procssSQL(session))
-					{
-						session.curSQLCommand.clearResouces(false);
-					}
-				} else {
-					ErrorPacket errPkg = (ErrorPacket) retVal;
-					optSession.responseOKOrError(errPkg);
-
-				}
-			});
-			session.setCurNIOHandler(authProcessor);
-			return;
-
-		} else {
-
-			// if not synchorndiz d
-			// syncSessionStateToBackend()
-			// 如果是 SQL 则调用 sql parser 进行处理
-			// SQLComandProcessInf sqlCmd =
-			// SQLCOMMANDMAP.get(session.curFrontMSQLPackgInf.pkgType);
-
+		
+		MyCommand myCommand = session.getMyCommand();
+		
+		if(myCommand!=null){
+			session.curSQLCommand = myCommand;
 			// 如果当前包需要处理，则交给对应方法处理，否则直接透传
 			if (session.curSQLCommand.procssSQL(session)) {
 				session.curSQLCommand.clearResouces(false);
 			}
+		}else{
+			logger.error(" current packageTyps is not support,please fix it!!! the packageType is {} ",session.curMSQLPackgInf);
 		}
-	}
-
-	private void syncSessionStateToBackend(MycatSession mycatSession, MySQLSession mysqlSession) throws IOException {
-		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mysqlSession);
-		backendSynchronzationTask.setCallback((session, sender, exeSucces, rv) -> {
-			if (exeSucces) {
-				// 交给SQLComand去处理
-				if (mycatSession.curSQLCommand.procssSQL(mycatSession)) {
-					mycatSession.curSQLCommand.clearResouces(false);
-				}
-			} else {
-				ErrorPacket errPkg = (ErrorPacket) rv;
-				session.responseOKOrError(errPkg);
-			}
-		});
-		mycatSession.setCurNIOHandler(backendSynchronzationTask);
 	}
 
 	private void onBackendRead(MySQLSession session) throws IOException {
 
 		// 交给SQLComand去处理
-		SQLCommand curCmd = session.getMycatSession().curSQLCommand;
+		MyCommand curCmd = session.getMycatSession().curSQLCommand;
 		if (curCmd.onBackendResponse(session)) {
 			curCmd.clearResouces(false);
 		}

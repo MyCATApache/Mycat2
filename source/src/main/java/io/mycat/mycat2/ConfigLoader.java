@@ -62,7 +62,8 @@ public class ConfigLoader {
 	            	
 	            	NamedNodeMap map=curRuleNode.getAttributes();
 	            	String name=getAttribute(map,"name",null);
-	            	String schemaType=getAttribute(map,"nopartion","true");
+	            	String schemaType=getAttribute(map,"type","0");
+	            	String balanceSelectIntrans = getAttribute(map, "balanceSelectIntrans", "false");
 	            	String defaultDB=getAttribute(map,"default-db",null);
 	            	String[] dnItems=defaultDB.split(":");
 	            	DNBean dnBean=new DNBean(dnItems[0].trim(),dnItems[1].trim());
@@ -76,7 +77,9 @@ public class ConfigLoader {
 	            		String tRule=getAttribute(attrs,"sharding-rule",null);
 	            		TableDefBean tbBean=new TableDefBean(tName,tType,tKey,tRule);
 	            		tableLst.add(tbBean);});
-	            	SchemaBean sBean=new SchemaBean(name,dnBean,("true".equalsIgnoreCase(schemaType)),tableLst);
+	            		SchemaBean sBean=new SchemaBean(name,dnBean,schemaType,
+	            			Boolean.valueOf(balanceSelectIntrans)
+	            			,tableLst);
 	            	LOGGER.debug("schema-bean: {}", sBean);
 	            	list.add(sBean);
 	            }    

@@ -100,7 +100,6 @@ public class MycatCore {
 					ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
 			runtime.setMyCLuster(cluster);
 			cluster.initCluster();
-
 		}
 
 		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
