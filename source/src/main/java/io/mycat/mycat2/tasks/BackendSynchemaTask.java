@@ -34,7 +34,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
             return;
         }
 		
-    	switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, false)) {
+    	switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, true)) {
 		case Full:
 			if(session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET){
 				this.finished(true);
