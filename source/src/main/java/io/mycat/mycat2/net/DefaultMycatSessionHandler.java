@@ -10,6 +10,14 @@ import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MyCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+
+import io.mycat.mycat2.SQLCommand;
+import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.tasks.BackendConCreateTask;
+import io.mycat.mycat2.tasks.BackendSynchronzationTask;
+import io.mycat.mysql.packet.ErrorPacket;
+
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -34,16 +42,18 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 	private void onFrontRead(final MycatSession session) throws IOException {
 		boolean readed = session.readFromChannel();
 		ProxyBuffer buffer = session.getProxyBuffer();
-		if (readed == false ||
-		// 没有读到完整报文
-				MySQLSession.CurrPacketType.Full != session.resolveMySQLPackage(buffer, session.curMSQLPackgInf,
-						false)) {
+		// 在load data的情况下，SESSION_PKG_READ_FLAG会被打开，以不让进行包的完整性检查
+		if (!session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey())
+				&& (readed == false ||
+						// 没有读到完整报文
+						MySQLSession.CurrPacketType.Full != session.resolveMySQLPackage(buffer, session.curMSQLPackgInf,
+								false))) {
 			return;
 		}
 		if (session.curMSQLPackgInf.endPos < buffer.writeIndex) {
 			logger.warn("front contains multi package ");
 		}
-		
+    
 		MyCommand myCommand = session.getMyCommand();
 		
 		if(myCommand!=null){

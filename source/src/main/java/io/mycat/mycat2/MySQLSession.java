@@ -5,6 +5,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
+import io.mycat.mycat2.cmds.pkgread.PkgProcess;
 import io.mycat.proxy.BufferPool;
 
 /**
@@ -24,6 +26,11 @@ public class MySQLSession extends AbstractMySQLSession {
 	 * 当前所从属的mycat sesssion
 	 */
 	private MycatSession mycatSession;
+
+	/**
+	 * 当前结束检查处理的状态,默认为首包检查读取
+	 */
+	public PkgProcess currPkgProc = PkgFirstReader.INSTANCE;
 
 	public MySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		super(bufferPool, selector, channel, SelectionKey.OP_CONNECT);
@@ -58,8 +65,7 @@ public class MySQLSession extends AbstractMySQLSession {
 
 	@Override
 	protected void doTakeReadOwner() {
-		this.getMycatSession().takeOwner(SelectionKey.OP_READ);
-		
+		this.getMycatSession().takeOwner(SelectionKey.OP_READ);		
 	}
 
 	public String getCurrBackendCachedName() {
@@ -69,7 +75,5 @@ public class MySQLSession extends AbstractMySQLSession {
 	public void setCurrBackendCachedName(String currBackendCachedName) {
 		this.currBackendCachedName = currBackendCachedName;
 	}
-
-
 
 }

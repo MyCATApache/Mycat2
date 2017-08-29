@@ -61,7 +61,6 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 
 	public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		this(bufferPool, selector, channel, SelectionKey.OP_READ);
-		
 
 	}
 
@@ -93,7 +92,8 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 
 	/**
 	 * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
-	 * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded=true
+	 * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded
+	 * =true
 	 *
 	 * @param proxyBuf
 	 * @return
@@ -143,7 +143,56 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 		// 解包获取包的数据长度
 		int pkgLength = ParseUtil.getPacketLength(buffer, offset);
 		// 解析报文类型
-		final byte packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
+		// final byte packetType = buffer.get(offset +
+		// ParseUtil.msyql_packetHeaderSize);
+
+		// 解析报文类型
+		int packetType = -1;
+
+		// 在包长度小于7时，作为resultSet的首包
+		if (pkgLength <= 7) {
+			int index = offset + ParseUtil.msyql_packetHeaderSize;
+
+			long len = proxyBuf.getInt(index, 1) & 0xff;
+			// 如果长度小于251,则取默认的长度
+			if (len < 251) {
+				packetType = (int) len;
+			} else if (len == 0xfc) {
+				// 进行验证是否位数足够,作为短包处理
+				if (!ParseUtil.validateResultHeader(offset, limit, 2)) {
+					// 收到短半包
+					logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset,
+							limit);
+					return CurrPacketType.ShortHalfPacket;
+				}
+				packetType = (int) proxyBuf.getInt(index + 1, 2);
+			} else if (len == 0xfd) {
+
+				// 进行验证是否位数足够,作为短包处理
+				if (!ParseUtil.validateResultHeader(offset, limit, 3)) {
+					// 收到短半包
+					logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset,
+							limit);
+					return CurrPacketType.ShortHalfPacket;
+				}
+
+				packetType = (int) proxyBuf.getInt(index + 1, 3);
+			} else {
+				// 进行验证是否位数足够,作为短包处理
+				if (!ParseUtil.validateResultHeader(offset, limit, 8)) {
+					// 收到短半包
+					logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset,
+							limit);
+					return CurrPacketType.ShortHalfPacket;
+				}
+
+				packetType = (int) proxyBuf.getInt(index + 1, 8);
+			}
+		} else {
+			// 解析报文类型
+			packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
+		}
+
 		// 包的类型
 		curPackInf.pkgType = packetType;
 		// 设置包的长度
@@ -179,6 +228,4 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 		}
 	}
 
-	
-	
 }
