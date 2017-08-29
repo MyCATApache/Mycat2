@@ -24,7 +24,21 @@
 package io.mycat.mycat2.beans;
 
 import java.io.IOException;
+import java.nio.channels.Selector;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TransferQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.tasks.BackendCharsetReadTask;
+import io.mycat.mycat2.tasks.BackendConCreateTask;
+import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.ProxyReactorThread;
+import io.mycat.proxy.ProxyRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,28 +50,54 @@ import org.slf4j.LoggerFactory;
 public class MySQLDataSource {
 	public static final Logger LOGGER = LoggerFactory.getLogger(MySQLDataSource.class);
 	private final String name;
-	private final int size;
+	private final AtomicInteger activeSize;
 	private final MySQLBean mysqlBean;
 	private final ConMap conMap = new ConMap();
 	private long heartbeatRecoveryTime;
 	private boolean slaveNode;
 
+	/** collationIndex 和 charsetName 的映射 */
+	public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
+	/** charsetName 到 默认collationIndex 的映射 */
+	public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
+
+	private TransferQueue<MySQLSession> sessionQueue = new LinkedTransferQueue<>();
+
+	public MySQLSession getSession() {
+		MySQLSession session = sessionQueue.poll();
+		if (session != null) {
+			return session;
+		}
+
+		//todo 新建连接
+		return null;
+	}
+
 	public MySQLDataSource(MySQLBean config, boolean islaveNode) {
-		this.size = config.getMaxCon();
+		this.activeSize = new AtomicInteger(0);
 		this.mysqlBean = config;
 		this.name = config.getHostName();
 		this.slaveNode = islaveNode;
-
 	}
 
-	// public MySQLBackendConnection createNewConnection(String reactor, String
-	// schema, MySQLFrontConnection mySQLFrontConnection, BackConnectionCallback
-	// userCallback) throws IOException {
-	// MySQLBackendConnection con = factory.make(this, reactor, schema,
-	// mySQLFrontConnection, userCallback);
-	// this.conMap.getSchemaConQueue(schema).getAutoCommitCons().add(con);
-	// return con;
-	// }
+	public void createMySQLSession(BufferPool bufferPool, Selector selector) {
+		try {
+			BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, null);
+			authProcessor.setCallback((optSession, sender, exeSucces, retVal) -> {
+				if (exeSucces) {
+					int curSize = activeSize.incrementAndGet();
+					if (curSize == 1) {
+						BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
+						optSession.setCurNIOHandler(backendCharsetReadTask);
+						backendCharsetReadTask.readCharset();
+					}
+					sessionQueue.add(optSession);
+				}
+			});
+		} catch (IOException e) {
+			LOGGER.warn("error to create mysqlSession for datasource: {}", this.name);
+		}
+	}
 
 	public boolean isSlaveNode() {
 		return slaveNode;
@@ -67,8 +107,8 @@ public class MySQLDataSource {
 		this.slaveNode = slaveNode;
 	}
 
-	public int getSize() {
-		return size;
+	public AtomicInteger getActiveSize() {
+		return activeSize;
 	}
 
 	public String getName() {
@@ -78,22 +118,15 @@ public class MySQLDataSource {
 	public boolean initSource() {
 		int initSize = this.mysqlBean.getMinCon();
 		LOGGER.info("init backend myqsl source ,create connections total " + initSize + " for " + mysqlBean);
-		// Set<String> reactos =
-		// SQLEngineCtx.INSTANCE().getReactorMap().keySet();
-		// Iterator<String> itor = reactos.iterator();
-		// for (int i = 0; i < initSize; i++) {
-		// try {
-		// String actorName = null;
-		// if (!itor.hasNext()) {
-		// itor = reactos.iterator();
-		// }
-		// actorName = itor.next();
-		// this.createNewConnectionOnReactor(actorName,
-		// this.mysqlBean.getDefaultSchema(), null, null);
-		// } catch (Exception e) {
-		// LOGGER.warn(" init connection error.", e);
-		// }
-		// }
+
+		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+		ProxyReactorThread[] reactorThreads = runtime.getReactorThreads();
+		int reactorSize = runtime.getNioReactorThreads();
+		for (int i = 0; i < initSize; i++) {
+			ProxyReactorThread reactorThread = reactorThreads[i % reactorSize];
+			reactorThread.addNIOJob(() -> createMySQLSession(reactorThread.getBufPool(), reactorThread.getSelector()));
+		}
+
 		LOGGER.info("init source finished");
 		return true;
 	}
@@ -156,7 +189,7 @@ public class MySQLDataSource {
 	@Override
 	public String toString() {
 		final StringBuilder sbuf = new StringBuilder("MySQLDataSource[").append("name=").append(name).append(',')
-				.append("size=").append(size).append(',').append("heartbeatRecoveryTime=").append(heartbeatRecoveryTime)
+				.append("activeSize=").append(activeSize).append(',').append("heartbeatRecoveryTime=").append(heartbeatRecoveryTime)
 				.append(',').append("slaveNode=").append(slaveNode).append(',').append("mysqlBean=").append(mysqlBean)
 				.append(']');
 		return (sbuf.toString());
