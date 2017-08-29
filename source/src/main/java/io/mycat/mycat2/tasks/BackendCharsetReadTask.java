@@ -1,6 +1,7 @@
 package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
@@ -8,9 +9,11 @@ import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 
 /**
@@ -43,6 +46,7 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     private static final String SQL = "SHOW COLLATION;";
     private MySQLSession mySQLSession;
     private int fieldCount;
+    private MySQLDataSource ds;
     private static final Map<Integer, String> FIELD_NAME_MAP = new HashMap<Integer, String>();
 
     static {
@@ -54,8 +58,9 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
         FIELD_NAME_MAP.put(5, "SortLen");
     }
 
-    public BackendCharsetReadTask(MySQLSession mySQLSession) {
+    public BackendCharsetReadTask(MySQLSession mySQLSession, MySQLDataSource ds) {
         this.mySQLSession = mySQLSession;
+        this.ds = ds;
     }
 
     public void readCharset() throws IOException {
@@ -88,18 +93,33 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
         ProxyBuffer proxyBuffer = session.proxyBuffer;
         MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
         int rowDataIndex = curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize;
+
+        String collation = null;
+        String charset = null;
+        int id = 0;
+
         //读取每行的各列数据
         for (int i = 0; i < fieldCount; i++) {
             int lenc = (int) proxyBuffer.getLenencInt(rowDataIndex);
             rowDataIndex += proxyBuffer.getLenencLength(lenc);
             String text = proxyBuffer.getFixString(rowDataIndex, lenc);
             rowDataIndex += lenc;
-            loadToDataSource(session, i, text);
-        }
-    }
 
-    private void loadToDataSource(MySQLSession session, int colNum, String text) {
-        logger.debug("{}={}", FIELD_NAME_MAP.get(colNum), text);
+            if (i == 0) {
+                collation = text;
+            } else if (i == 1) {
+                charset = text;
+            } else if (i == 2) {
+                id = Integer.parseInt(text);
+            } else {
+                ds.INDEX_TO_CHARSET.put(id, charset);
+                Integer index = ds.CHARSET_TO_INDEX.get(charset);
+                if (index == null || index > id) {
+                    ds.CHARSET_TO_INDEX.put(charset, id);
+                }
+                break;
+            }
+        }
     }
 
     @Override
