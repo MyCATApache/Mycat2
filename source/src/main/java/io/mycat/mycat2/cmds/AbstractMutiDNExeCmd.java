@@ -2,10 +2,10 @@ package io.mycat.mycat2.cmds;
 
 import java.io.IOException;
 
+
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.SQLCommand;
-
+import io.mycat.mycat2.MySQLCommand;
 /**
  * 多节点执行SQL的抽象MySQLCommand类。
  * 需要修改SQLCommand接口，
@@ -14,7 +14,7 @@ import io.mycat.mycat2.SQLCommand;
  * @author wuzhihui
  *
  */
-public class AbstractMutiDNExeCmd implements SQLCommand{
+public class AbstractMutiDNExeCmd implements MySQLCommand{
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
@@ -51,7 +51,5 @@ public class AbstractMutiDNExeCmd implements SQLCommand{
 		// TODO Auto-generated method stub
 		
 	}
-
-
 
 }
