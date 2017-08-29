@@ -93,7 +93,7 @@ public class PkgFirstReader implements PkgProcess {
 				// 当检查到为需要检查的包，则进行检查
 				if (null != judge) {
 					//当检查到完毕后，直接结束
-					session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
+					session.getMycatSession().getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
 					
 					judge.judge(session);
 				}
@@ -101,8 +101,8 @@ public class PkgFirstReader implements PkgProcess {
 				// 切换buffer 读写状态
 				curBuffer.flip();
 				MycatSession mycatSession = session.getMycatSession();
-				// 直接透传报文
-				mycatSession.takeOwner(SelectionKey.OP_WRITE);
+				//当知道操作完成后，前段的注册感兴趣事件为读取
+				mycatSession.takeOwner(SelectionKey.OP_READ);
 				mycatSession.writeToChannel();
 			}
 		} 

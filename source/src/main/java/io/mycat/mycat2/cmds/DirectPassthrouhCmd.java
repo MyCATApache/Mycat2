@@ -84,14 +84,18 @@ public class DirectPassthrouhCmd implements SQLCommand {
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
 		// 判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
 		// 检查当前已经结束，进行切换
-		if (!session.getBackend().getSessionAttrMap()
-				.containsKey(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey())) {
-			logger.warn("not well implemented ,please fix it ");
+		logger.warn("not well implemented ,please fix it ");
+
+		// 检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
+		if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey())) {
 			session.proxyBuffer.flip();
-			session.chnageBothReadOpts();
-		} else {
-			// 交给后端，注册读取事件
 			session.giveupOwner(SelectionKey.OP_READ);
+		}
+		// 当传输标识不存在，则说已经结束，则切换到前端的读取
+		else {
+			session.proxyBuffer.flip();
+			// session.chnageBothReadOpts();
+			session.takeOwner(SelectionKey.OP_READ);
 		}
 		return false;
 
@@ -100,8 +104,9 @@ public class DirectPassthrouhCmd implements SQLCommand {
 	@Override
 	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
 		// 绝大部分情况下，前端把数据写完后端发送出去后，就等待后端返回数据了，
-		// 此时Buffer改为读状态
+		// 向后端写入完成数据后，则从后端读取数据
 		session.proxyBuffer.flip();
+		// 由于单工模式，在向后端写入完成后，需要从后端进行数据读取
 		session.change2ReadOpts();
 		return false;
 
