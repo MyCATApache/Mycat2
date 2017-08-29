@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 /**
  * 可重用的Buffer，连续读或者写，当空间不够时Compact擦除之前用过的空间， 处于写状态或者读状态之一，不能同时读写，
  * 只有数据被操作完成（读完或者写完）后State才能被改变（flip方法或手工切换状态），同时可能要改变Owner，chanageOwn
- * 
+ *
  * 需要外部 关心的状态为 writeIndex 写入buffer 开始位置 readIndex 读取开始位置 inReading 当前buffer 读写状态
  * frontUsing owner 不需要外部关心的状态为 readMark 向channel 中写入数据时的开始位置, 该状态由
  * writeToChannel 自动维护,不需要外部显式指定 preUsing 上一个owner 仅在 write==0
@@ -19,10 +19,10 @@ import org.slf4j.LoggerFactory;
  * 不变. 5. 从 buffer 向 channel 写入数据时,写入 readMark--readIndex 之间的数据. 6. 写完成后 flip
  * 切换读写状态。同时 如果 readIndex > buffer.capacity() * 2 / 3 进行一次压缩 7. 从 channel
  * 向buffer 写入数据时，如果 writeIndex > buffer.capacity() * 1 / 3 进行一次压缩
- * 
+ *
  * 二、没有读取数据,向buffer中写入数据后 直接 write 到 channel的场景 1. 在写入到 channel 时 ,需要显式 指定
  * readIndex = writeIndex; 2. 其他步骤 同 （透传、只前端读写、只后端读写场景）场景
- * 
+ *
  * @author yanjunli
  *
  */
@@ -82,20 +82,20 @@ public class ProxyBuffer {
 
 	/**
 	 * 写数据到Socket中时，是否写完了预先指定的Buffer内容
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean writeFinished() {
-		
+
 		//buffer.limit(proxyBuffer.readIndex);
 		//buffer.position(proxyBuffer.readMark);
 		return readIndex==readMark;
 	}
 
-	
+
 	/**
 	 * 需要谨慎使用，调用者需要清除当前Buffer所处的状态！！
-	 * 
+	 *
 	 * @return ByteBuffer
 	 */
 	public ByteBuffer getBuffer() {
@@ -115,7 +115,7 @@ public class ProxyBuffer {
 
 	/**
 	 * 只能用在读状态下，跳过指定的N个字符
-	 * 
+	 *
 	 * @param step
 	 */
 	public void skip(int step) {
@@ -155,6 +155,10 @@ public class ProxyBuffer {
 		long val = getInt(readIndex, length);
 		readIndex += length;
 		return val;
+	}
+
+	public long getFixInt(int index,int length){
+		return getInt(index, length);
 	}
 
 	public long readLenencInt() {
@@ -408,7 +412,7 @@ public class ProxyBuffer {
 	 *            值
 	 * @return 长度
 	 */
-	private int getLenencLength(int lenenc) {
+	public int getLenencLength(int lenenc) {
 		if (lenenc < 251) {
 			return 1;
 		} else if (lenenc >= 251 && lenenc < (1 << 16)) {
