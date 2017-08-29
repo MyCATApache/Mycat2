@@ -60,7 +60,7 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
 
     public enum ResultSetState {
         /**
-         * 结果集每一个包
+         * 结果集第一个包
          */
         RS_STATUS_COL_COUNT,
         /**
