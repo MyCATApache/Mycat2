@@ -9,11 +9,7 @@ import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 
 
 /**
@@ -33,7 +29,7 @@ import java.util.Properties;
  * | dec8_swedish_ci          | dec8     |   3 | Yes     | Yes      |       1 |
  * | dec8_bin                 | dec8     |  69 |         | Yes      |       1 |
  * </pre>
- *
+ * <p>
  * 简单使用示例
  * <pre>
  *    BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession);
@@ -47,16 +43,6 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     private MySQLSession mySQLSession;
     private int fieldCount;
     private MySQLDataSource ds;
-    private static final Map<Integer, String> FIELD_NAME_MAP = new HashMap<Integer, String>();
-
-    static {
-        FIELD_NAME_MAP.put(0, "Collation");
-        FIELD_NAME_MAP.put(1, "Charset");
-        FIELD_NAME_MAP.put(2, "Id");
-        FIELD_NAME_MAP.put(3, "Default");
-        FIELD_NAME_MAP.put(4, "Compiled");
-        FIELD_NAME_MAP.put(5, "SortLen");
-    }
 
     public BackendCharsetReadTask(MySQLSession mySQLSession, MySQLDataSource ds) {
         this.mySQLSession = mySQLSession;
@@ -117,6 +103,7 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
                 if (index == null || index > id) {
                     ds.CHARSET_TO_INDEX.put(charset, id);
                 }
+
                 break;
             }
         }
@@ -125,5 +112,6 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     @Override
     void onRsFinish(MySQLSession session) {
         //结果集完成
+        logger.debug("session[{}] load charset finish",session);
     }
 }
