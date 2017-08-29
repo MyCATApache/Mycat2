@@ -117,12 +117,12 @@ public class PkgFirstReader implements PkgProcess {
 			// 切换buffer 读写状态
 			curBuffer.flip();
 			MycatSession mycatSession = session.getMycatSession();
+			// 标识当前传输未结束
+			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
 			// 直接透传报文
 			mycatSession.takeOwner(SelectionKey.OP_WRITE);
 			mycatSession.writeToChannel();
 
-			// 标识当前传输未结束
-			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
 		}
 
 		/**
