@@ -69,6 +69,7 @@ public class OKPacket extends MySQLPacket {
 	}
 
 	public void read(ProxyBuffer buffer) {
+		int index = buffer.readIndex;
 		packetLength = (int) buffer.readFixInt(3);
 		packetId = buffer.readByte();
 		fieldCount = buffer.readByte();
@@ -76,9 +77,8 @@ public class OKPacket extends MySQLPacket {
 		insertId = buffer.readLenencInt();
 		serverStatus = (int) buffer.readFixInt(2);
 		warningCount = (int) buffer.readFixInt(2);
-		if (buffer.readIndex < buffer.writeIndex) {
-
-			int msgLength = buffer.writeIndex - buffer.readIndex;
+		if (index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex > 0) {
+			int msgLength = index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
 			this.message = buffer.getBytes(buffer.writeIndex, msgLength);
 			buffer.readIndex += msgLength;
 		}

@@ -92,31 +92,37 @@ public class PkgFirstReader implements PkgProcess {
 				DirectTransJudge judge = JUDGEMAP.get(session.curMSQLPackgInf.pkgType);
 				// 当检查到为需要检查的包，则进行检查
 				if (null != judge) {
-					//当检查到完毕后，直接结束
-					session.getMycatSession().getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
-					
-					judge.judge(session);
+					// 当检查到完毕后，直接结束
+					session.getMycatSession().getSessionAttrMap()
+							.remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
+
+					boolean runFlag = judge.judge(session);
+
+					if (runFlag) {
+						return true;
+					}
+
+					// 切换buffer 读写状态
+					curBuffer.flip();
+					MycatSession mycatSession = session.getMycatSession();
+					// 当知道操作完成后，前段的注册感兴趣事件为读取
+					mycatSession.takeOwner(SelectionKey.OP_READ);
+					mycatSession.writeToChannel();
 				}
 
-				// 切换buffer 读写状态
-				curBuffer.flip();
-				MycatSession mycatSession = session.getMycatSession();
-				//当知道操作完成后，前段的注册感兴趣事件为读取
-				mycatSession.takeOwner(SelectionKey.OP_READ);
-				mycatSession.writeToChannel();
 			}
-		} 
-		//对于首包非完整的，透传已经检查完毕
+		}
+		// 对于首包非完整的，透传已经检查完毕
 		else {
 			// 切换buffer 读写状态
 			curBuffer.flip();
 			MycatSession mycatSession = session.getMycatSession();
+			// 标识当前传输未结束
+			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
 			// 直接透传报文
 			mycatSession.takeOwner(SelectionKey.OP_WRITE);
 			mycatSession.writeToChannel();
 
-			// 标识当前传输未结束
-			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
 		}
 
 		/**

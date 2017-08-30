@@ -50,6 +50,8 @@ public class MySQLReplicatSet {
 		this.name = repBean.getName();
 		this.writeIndex = curWriteIndex;
 		final List<MySQLBean> mysqlBeans = repBean.getMysqls();
+		this.repType = repBean.getType();
+		this.switchType = repBean.getSwitchType();
 		dhSources = new MySQLDataSource[mysqlBeans.size()];
 		for (int i = 0; i < dhSources.length; i++) {
 			dhSources[i] = new MySQLDataSource(mysqlBeans.get(i), writeIndex != i);
