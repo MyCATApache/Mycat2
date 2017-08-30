@@ -1,0 +1,270 @@
+[33mcommit b6d7ede3e298d1f9af7d53eab3e0e6390b68063a[m
+Merge: bbecf59 0b604f6
+Author: apachemycat <719867650@qq.com>
+Date:   Tue Aug 29 16:11:54 2017 +0800
+
+    Merge pull request #31 from ynfeng/charsetsync
+    
+    数据源的字符集映射关系加载完成
+
+[33mcommit bbecf59fb507d83883dff37d01c980788277aac4[m
+Merge: 68cfc33 8a56352
+Author: apachemycat <719867650@qq.com>
+Date:   Tue Aug 29 16:11:26 2017 +0800
+
+    Merge pull request #30 from kkzfl22/master
+    
+    最新的idle判断的代码
+
+[33mcommit 8a563528b0df140022aa7898084fb67d6f60cb98[m
+Author: kkzfl <546064298@qq.com>
+Date:   Tue Aug 29 14:07:50 2017 +0800
+
+    配制文件还原
+
+[33mcommit d73ba4b00b3b4a48c171cd0528bc1148421e40ba[m
+Author: kkzfl <546064298@qq.com>
+Date:   Tue Aug 29 14:05:27 2017 +0800
+
+    修改文件中buffer的初始化大小，将256还原为1024*10
+
+[33mcommit 00471bab99cf26f06a825508d7237580797d5625[m
+Author: kkzfl <546064298@qq.com>
+Date:   Tue Aug 29 13:59:46 2017 +0800
+
+    删除测试数据文件
+
+[33mcommit 0b604f6e854a1c0f2037188f172b8b16893761af[m
+Author: fengyannan <fynwin@gmail.com>
+Date:   Tue Aug 29 13:32:48 2017 +0800
+
+    修改注释
+
+[33mcommit 4009cec2575034738014b5b84d75f9e678de960f[m
+Author: fengyannan <fynwin@gmail.com>
+Date:   Tue Aug 29 13:29:13 2017 +0800
+
+    删除无用的代码
+
+[33mcommit d3066cad629d6a083f43ca6ced3c859d08e39cba[m
+Author: kkzfl <546064298@qq.com>
+Date:   Tue Aug 29 11:57:18 2017 +0800
+
+    添加多查询语句的测试SQL
+
+[33mcommit f725926b50b1b609371822cb31d51ec98daea192[m
+Author: gaozhiwen <bjgaozhiwen@corp.netease.com>
+Date:   Tue Aug 29 10:14:54 2017 +0800
+
+    添加后端连接初始化，并加载字符集
+
+[33mcommit 84059cfe750a59a589156679a5e22b17e3819009[m
+Author: fengyannan <fynwin@gmail.com>
+Date:   Tue Aug 29 00:09:27 2017 +0800
+
+    字符集加载任务初步完成
+
+[33mcommit c6edc8d7ecc65494eeb60b8164c2d0353f1d8e77[m
+Author: kkzfl <546064298@qq.com>
+Date:   Mon Aug 28 18:17:17 2017 +0800
+
+    修改空闲问题，进行修改
+
+[33mcommit 5a8a229c69d264bf27330888aa4e4f70054c189a[m
+Author: kkzfl22 <546064298@qq.com>
+Date:   Sun Aug 27 19:37:34 2017 +0800
+
+    添加验证的脚本信息
+
+[33mcommit f63fecf6cf3449bec041ec2ab8637fbd19e010b2[m
+Author: kkzfl22 <546064298@qq.com>
+Date:   Sun Aug 27 19:16:42 2017 +0800
+
+    进行idle状态判断，已经能够判断完成
+
+[33mcommit 7b7416d1ae9b20d0c7569734442610c293697060[m
+Merge: 8ff46e7 68cfc33
+Author: kkzfl22 <546064298@qq.com>
+Date:   Thu Aug 24 17:14:00 2017 +0800
+
+    Merge pull request #4 from MyCATApache/master
+    
+    更新最新的代码
+
+[33mcommit 68cfc336a0ab3d1060a59a035132b9c82935ee4d[m
+Merge: d960b1d ba9ba96
+Author: apachemycat <719867650@qq.com>
+Date:   Wed Aug 23 20:19:05 2017 +0800
+
+    Merge pull request #28 from Gao-Zhiwen/dev_cluster
+    
+    bugfix：3节点下第三个节点加入集群时空指针异常
+
+[33mcommit ba9ba967470b4f1f91306f69a0a7ff15ce953366[m
+Author: gaozhiwen <bjgaozhiwen@corp.netease.com>
+Date:   Wed Aug 23 18:12:32 2017 +0800
+
+    处理ProtocolBuffer改成ProxyBuffer时持续读写的问题
+
+[33mcommit 69b3135306d2d08053a01b2cf0ce5631e16c737c[m
+Merge: e4a5c1a d960b1d
+Author: gaozhiwen <bjgaozhiwen@corp.netease.com>
+Date:   Wed Aug 23 14:42:05 2017 +0800
+
+    Merge branch 'master' into dev_cluster
+
+[33mcommit d960b1d967969c413bed6c0e36ef35645e8b09c5[m
+Merge: df2b0b8 4d1bc9c
+Author: apachemycat <719867650@qq.com>
+Date:   Wed Aug 23 14:35:54 2017 +0800
+
+    Merge pull request #27 from yanjunli/master
+    
+    AdminSession buffer 由 ProtocolBuffer 改为 ProxyBuffer
+
+[33mcommit 4d1bc9cf98be396be983201376e81890871b35ec[m
+Author: yanjunli <allovertheword@163.com>
+Date:   Wed Aug 23 12:38:03 2017 +0800
+
+    AdminSession buffer 由 ProtocolBuffer 改为 ProxyBuffer
+
+[33mcommit 495dc7ad30c2b32ed4fe4b03762dc9701035b5a5[m
+Merge: 2caed35 df2b0b8
+Author: yanjunli <allovertheword@163.com>
+Date:   Tue Aug 22 18:26:45 2017 +0800
+
+    Merge pull request #3 from MyCATApache/master
+    
+    从主干合并
+
+[33mcommit 2caed35c7b58646df533aaf0c0baee3825fe821b[m
+Author: yanjunli <allovertheword@163.com>
+Date:   Tue Aug 22 18:00:14 2017 +0800
+
+    修改proxyBuffer 设计图
+
+[33mcommit 92bd9a22f86429e3b66d4aa19da170c1e29de82a[m
+Author: yanjunli <allovertheword@163.com>
+Date:   Tue Aug 22 17:50:57 2017 +0800
+
+    删除多余的proxyBuffer 设计图
+
+[33mcommit c0f4cbfb4ef47f713be9bc92da01910f4019b0a7[m
+Author: yanjunli <allovertheword@163.com>
+Date:   Tue Aug 22 17:49:25 2017 +0800
+
+    增加proxyBuffer 设计图
+
+[33mcommit df2b0b82e120f8e520b0008eb9b344719375d9b2[m
+Author: Leader us <zhihui.wu@hp.com>
+Date:   Tue Aug 22 17:32:35 2017 +0800
+
+    大幅修改框架，分离前后端并捆绑Session，明确单工模式的通讯思路
+
+[33mcommit 33ed1ac6cbf2099dfaaef9269ac0e054818a449c[m
+Author: yanjunli <allovertheword@163.com>
+Date:   Tue Aug 22 16:17:39 2017 +0800
+
+    增加proxyBuffer 设计图
+
+[33mcommit 8ff46e78b86119218c017982a419ec16364b468f[m
+Merge: 12b9147 80d7676
+Author: kkzfl22 <546064298@qq.com>
+Date:   Tue Aug 22 15:21:19 2017 +0800
+
+    Merge pull request #3 from MyCATApache/master
+    
+    更新
+
+[33mcommit e4a5c1a75f550abaa9715c963d07ddc18e7522d4[m
+Author: gaozhiwen <bjgaozhiwen@corp.netease.com>
+Date:   Tue Aug 22 11:42:40 2017 +0800
+
+    修改cluster三节点nullPointException异常
+
+[33mcommit 80d7676bc05118126598c58a82f85c2c9735fdc9[m
+Merge: a06e0cb c4078ae
+Author: apachemycat <719867650@qq.com>
+Date:   Mon Aug 21 13:52:20 2017 +0800
+
+    Merge pull request #26 from yanjunli/master
+    
+    重构proxyBuffer
+
+[33mcommit c4078ae737434a8674d240738e14c4ff2bcb23b9[m
+Author: yanjunli <allovertheword@163.com>
+Date:   Mon Aug 21 13:28:58 2017 +0800
+
+    已验证
+    同步命令
+    超多列结果集透传
+    超多行结果集透传.
+    超大列结果集透传
+
+[33mcommit 6ba0927ad43a73572f5ae9d6f59af44d05b4b5eb[m
+Author: yanjunli <allovertheword@163.com>
+Date:   Mon Aug 21 13:08:15 2017 +0800
+
+    重构proxyBuffer
+    
+    1.重构proxybuffer 外部操作指针减少到两个.
+    2.根据 buffer 的 owner 及 read/write 状态,进行事件切换。。。。
+    3.write 0 字节时, 切换owner,并注册可写事件. 写完后,自动切换回原owner.
+    4.取消 limit. compact 在buffer使用超过容量的 1/3 或2/3时 触发。。。。
+    5.修复sql解析器 偶尔报数组越界的问题.
+    6.修改变量命名，，增加注释，，删除不必要的方法
+
+[33mcommit a06e0cbd0c55677d5ad739087666dd696068057d[m
+Merge: 12b9147 0c6eb1e
+Author: apachemycat <719867650@qq.com>
+Date:   Sun Aug 20 15:55:35 2017 +0800
+
+    Merge pull request #23 from ynfeng/ynfeng
+    
+    状态同步改成一条命令
+
+[33mcommit 0c6eb1e5113ac5b98043ada36a2403e42e048520[m
+Author: fengyannan <fynwin@gmail.com>
+Date:   Sat Aug 19 14:21:22 2017 +0800
+
+    状态同步改成一条命令
+
+[33mcommit 12b9147cc55d087ca685c49f797a960b6dbf04ca[m
+Author: Leader us <zhihui.wu@hp.com>
+Date:   Thu Aug 17 23:25:49 2017 +0800
+
+    挎包也当做收到报文，进行透传
+
+[33mcommit 142cc440a1e08d49f87687b70e57bdbcedaba1bd[m
+Merge: 73aba6c 386fb88
+Author: apachemycat <719867650@qq.com>
+Date:   Thu Aug 17 22:10:46 2017 +0800
+
+    Merge pull request #21 from Gao-Zhiwen/test
+    
+    修改datasource解析，去除MySQLBean中的defaultSchema属性
+
+[33mcommit 73aba6c1c0a2f899b848a076f7df9fdf8585c8e2[m
+Merge: 688664b 97ebadf
+Author: apachemycat <719867650@qq.com>
+Date:   Thu Aug 17 22:10:35 2017 +0800
+
+    Merge pull request #22 from Gao-Zhiwen/master
+    
+    修改读取channel和switchKey的方式
+
+[33mcommit 97ebadf2a0c7a96b9346a44ce4a2ceaf434633a7[m
+Author: gaozhiwen <bjgaozhiwen@corp.netease.com>
+Date:   Thu Aug 17 13:26:28 2017 +0800
+
+    修改读取channel和switchKey的方式
+
+[33mcommit 386fb88e8c6369ab5075fcf472ab2fe5a4bc3c90[m
+Author: gaozhiwen <bjgaozhiwen@corp.netease.com>
+Date:   Wed Aug 16 22:05:41 2017 +0800
+
+    修改datasource解析，去除MySQLBean中的defaultSchema属性
+
+[33mcommit 8e4f07e757ea83aaa9b56817df0a2977f7d30e07[m
+Author: gaozhiwen <bjgaozhiwen@corp.netease.com>
+Date:   Wed Aug 16 22:02:47 2017 +080

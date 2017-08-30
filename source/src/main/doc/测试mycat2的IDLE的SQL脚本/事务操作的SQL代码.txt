@@ -1,0 +1,109 @@
+
+use mycatdb;
+
+begin;
+
+
+insert into usermsg (userid,name)
+values(500003,'zz4');
+
+update usermsg
+set name='cc3'
+where userid=5;
+
+select count(1) from usermsg;
+
+
+insert into usermsg (userid,name)
+values(503208,'zz6');
+
+commit;
+
+
+
+
+begin;
+
+
+insert into usermsg (name)
+values('zz4');
+
+update usermsg
+set name='cc6'
+where userid=5;
+
+
+rollback;
+
+
+--带loaddata的事务操作脚本
+
+begin;
+
+
+insert into usermsg (userid,name)
+values(500003,'zz4');
+
+update usermsg
+set name='cc3'
+where userid=5;
+
+select count(1) from usermsg;
+
+
+insert into usermsg (userid,name)
+values(500005,'zz6');
+
+
+load data local infile "/root/mysql/loaddata_500.txt" 
+into table usermsg
+fields terminated by ',' 
+lines terminated by '\n' 
+(userId,name)
+;
+
+
+commit;
+
+
+
+--带loaddata的事务操作脚本回滚操作
+
+--truncate table usermsg;
+
+begin;
+
+
+insert into usermsg (userid,name)
+values(500003,'zz4');
+
+update usermsg
+set name='cc3'
+where userid=5;
+
+select * from usermsg limit 5;
+
+
+insert into usermsg (userid,name)
+values(500005,'zz6');
+
+
+load data local infile "/root/mysql/loaddata_500.txt" 
+into table usermsg
+fields terminated by ',' 
+lines terminated by '\n' 
+(userId,name)
+;
+
+select count(1) from usermsg;
+
+
+rollback;
+
+
+
+
+
+tcpdump tcp -i eth0  port 3306  -w ./mysql_pkg_commit.cap
+
+tcpdump tcp -i eth0  port 3306  -w ./mysql_pkg_rollback.cap
