@@ -119,6 +119,9 @@ public class PkgResultSetReader implements PkgProcess {
 		if (!isFinish) {
 			// 标识当前传输未结束
 			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
+		} else {
+			//结束移除标识
+			mycatSession.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
 		}
 
 		mycatSession.writeToChannel();
