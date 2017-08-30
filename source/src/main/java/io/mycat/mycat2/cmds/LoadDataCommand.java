@@ -37,82 +37,54 @@ public class LoadDataCommand implements SQLCommand {
 	/**
 	 * 结束flag标识
 	 */
-	private byte[] overFlag = new byte[FLAGLENGTH];
+	//private byte[] overFlag = new byte[FLAGLENGTH];
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
+		ProxyBuffer curBuffer = session.proxyBuffer;
 
-		// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
-		if (transLoadData(session)) {
-			session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
-			// 当load data的包完成后，则又重新打开包完整性检查
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
+		// 进行结束符的读取
+		this.readOverByte(session, curBuffer);
+		//检查是否传输完成
+		if (checkOver(session)) {
+			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), true);
+		} else {
+			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), false);
 		}
+		// 切换buffer 读写状态
+		curBuffer.flip();
+		
+		curBuffer.readIndex = curBuffer.writeIndex;
+
+		MySQLSession mycatSession = session.getBackend();
+
+		// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
+		session.giveupOwner(SelectionKey.OP_READ);
+		mycatSession.writeToChannel();
+		// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
 
 		return false;
 	}
 
-	/**
-	 * 进行load data的数据传输操作
-	 * 
-	 * @param session
-	 *            会话标识
-	 * @param backresReceived
-	 *            是否为后端报文标识
-	 * @return true 当前传输结束
-	 * @throws IOException
-	 */
-	public boolean transLoadData(MycatSession session) throws IOException {
 
-		ProxyBuffer curBuffer = session.proxyBuffer;
-
-		// 进行结束符的读取
-		this.readOverByte(curBuffer);
-
-		// 切换buffer 读写状态
-		curBuffer.flip();
-		// 检查当前是否结束
-		if (checkOver()) {
-
-			// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-			curBuffer.readIndex = curBuffer.writeIndex;
-
-			MySQLSession mycatSession = session.getBackend();
-
-			// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
-			session.giveupOwner(SelectionKey.OP_READ);
-			mycatSession.writeToChannel();
-			// 完成后，需要将buffer切换为写入事件,读取后端的数据
-			curBuffer.flip();
-
-			return true;
-		} else {
-			// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-			curBuffer.readIndex = curBuffer.writeIndex;
-
-			// 将控制权交给后端
-			session.giveupOwner(SelectionKey.OP_READ);
-			MySQLSession mysqlSession = session.getBackend();
-			mysqlSession.writeToChannel();
-
-			// 然后又将后端的事件改变为前端的
-			session.takeOwner(SelectionKey.OP_READ);
-
-			// 完成后，需要将buffer切换为写入事件,读取前端的数据
-			curBuffer.flip();
-
-			return false;
+	/*获取结束flag标识的数组*/
+	private byte[] getOverFlag(MycatSession session) {
+		byte[] overFlag = (byte[])session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey());
+		if(overFlag != null) {
+			return overFlag;
 		}
-
+		overFlag = new byte[FLAGLENGTH];
+		session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey(), overFlag);
+		return overFlag; 
 	}
-
 	/**
 	 * 进行结束符的读取
 	 * 
 	 * @param curBuffer
 	 *            buffer数组信息
 	 */
-	private void readOverByte(ProxyBuffer curBuffer) {
+	private void readOverByte(MycatSession session, ProxyBuffer curBuffer) {
+		byte[] overFlag = getOverFlag(session);
 		// 获取当前buffer的最后
 		ByteBuffer buffer = curBuffer.getBuffer();
 
@@ -149,7 +121,8 @@ public class LoadDataCommand implements SQLCommand {
 	 * 
 	 * @return
 	 */
-	private boolean checkOver() {
+	private boolean checkOver(MycatSession session) {
+		byte[] overFlag = getOverFlag(session);
 		for (int i = 0; i < overFlag.length - 1; i++) {
 			if (overFlag[i] != 0) {
 				return false;
@@ -177,13 +150,33 @@ public class LoadDataCommand implements SQLCommand {
 
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
+		//向前端写完数据，前段进入读状态
+		session.proxyBuffer.flip();
+		session.change2ReadOpts();
 		return false;
 	}
 
 	@Override
 	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
-		// TODO Auto-generated method stub
+		Boolean flag =  (Boolean)session.getMycatSession().getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey());
+		//前段数据透传完成
+		if(flag) {
+			logger.debug("load data finish!!!");
+			session.getMycatSession().curSQLCommand = DirectPassthrouhCmd.INSTANCE;
+			// 当load data的包完成后，则又重新打开包完整性检查
+			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
+			//清除临时数组
+			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey());
+			//读取后端的数据，然后进行透传
+			session.getMycatSession().giveupOwner(SelectionKey.OP_READ);
+			session.proxyBuffer.flip();
+		} else {
+			logger.debug("load data from front!!!");
+			//前端改为读状态
+			session.getMycatSession().takeOwner(SelectionKey.OP_READ);
+			session.getMycatSession().proxyBuffer.flip();
+		}
 		return false;
 	}
-
+	
 }
