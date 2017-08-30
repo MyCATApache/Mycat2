@@ -23,7 +23,7 @@ public class MycatConfig extends ProxyConfig {
 	 */
 	private SchemaBean defaultSchemaBean;
 
-
+	private Map<String, Integer> repIndexMap = new HashMap<String, Integer>();
 
 	protected void addMySQLReplicatSet(final MySQLReplicatSet repSet) {
 		final String repSetName = repSet.getName();
@@ -49,4 +49,11 @@ public class MycatConfig extends ProxyConfig {
 		return this.msqlRepSetMap.get(repsetName);
 	}
 
+	public Integer getRepIndex(String repName) {
+		return repIndexMap.get(repName);
+	}
+
+	public void addRepIndex(String repName, Integer repIndex) {
+		repIndexMap.put(repName, repIndex);
+	}
 }

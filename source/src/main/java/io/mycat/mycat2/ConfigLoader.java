@@ -62,10 +62,10 @@ public class ConfigLoader {
 	            	
 	            	NamedNodeMap map=curRuleNode.getAttributes();
 	            	String name=getAttribute(map,"name",null);
-	            	String schemaType=getAttribute(map,"nopartion","true");
-	            	String defaultDB=getAttribute(map,"default-db",null);
-	            	String[] dnItems=defaultDB.split(":");
-	            	DNBean dnBean=new DNBean(dnItems[0].trim(),dnItems[1].trim());
+	            	int type=getIntAttribute(map,"type",0);
+	            	String defaultDb=getAttribute(map,"default-db",null);
+					String defaultRep=getAttribute(map,"default-rep",null);
+	            	DNBean dnBean=new DNBean(defaultDb,defaultRep);
 	            	List<Node> tableNodes=getChildNodes(curRuleNode,"table");
 	            	List<TableDefBean>  tableLst=new LinkedList<TableDefBean>(); 
 	            	tableNodes.stream().forEach(node->{
@@ -74,9 +74,23 @@ public class ConfigLoader {
 	            		int tType=getIntAttribute(attrs,"type",0);
 	            		String tKey=getAttribute(attrs,"sharding-key",null);
 	            		String tRule=getAttribute(attrs,"sharding-rule",null);
-	            		TableDefBean tbBean=new TableDefBean(tName,tType,tKey,tRule);
-	            		tableLst.add(tbBean);});
-	            	SchemaBean sBean=new SchemaBean(name,dnBean,("true".equalsIgnoreCase(schemaType)),tableLst);
+						String store=getAttribute(attrs,"store",null);
+						DNBean storeBean = null;
+						if (store != null) {
+							String[] dnItems = store.split(":");
+							int dnLen = dnItems.length;
+							if (dnLen == 2) {
+								storeBean = new DNBean(dnItems[0].trim(), dnItems[1].trim());
+							} else if (dnItems.length == 1) {
+								storeBean = new DNBean(dnItems[0].trim(), defaultRep);
+							} else {
+								storeBean = dnBean;
+							}
+						}
+	            		TableDefBean tbBean=new TableDefBean(tName,tType,storeBean,tKey,tRule);
+	            		tableLst.add(tbBean);
+					});
+	            	SchemaBean sBean=new SchemaBean(name,dnBean,type,tableLst);
 	            	LOGGER.debug("schema-bean: {}", sBean);
 	            	list.add(sBean);
 	            }    
