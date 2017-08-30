@@ -23,16 +23,6 @@
  */
 package io.mycat.mycat2.beans;
 
-import java.io.IOException;
-import java.nio.channels.Selector;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TransferQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.tasks.BackendCharsetReadTask;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
@@ -41,6 +31,14 @@ import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.Selector;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TransferQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 数据节点（数据库）的连接池

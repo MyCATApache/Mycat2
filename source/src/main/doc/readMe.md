@@ -7,6 +7,8 @@ http://www.cnblogs.com/JeffreyZhao/archive/2010/03/09/sharding-by-id-characteris
 github上fork了别人的项目后，再同步更新别人的提交 
 http://jinlong.github.io/2015/10/12/syncing-a-fork/
 http://blog.csdn.net/qq1332479771/article/details/56087333
+mysql 协议
+https://dev.mysql.com/doc/dev/mysql-server/latest/page_protocol_basic_packets.html
 
 1. 会话相关
 session : 代表一个会话
@@ -23,9 +25,16 @@ DefaultAdminSessionManager 默认的管理会话
 NIOHandler  此NIO Handler应该是单例的，能为多个Session会话服务
 MySQLClientAuthHandler MySQL客户端登录认证的Handler，为第一个Handler
 DefaultAdminSessionHandler  默认的负责处理AdminSession的命令
+AbstractBackendIOTask  默认抽象类
+BackendConCreateTask  创建后端MySQL连接并负责完成登录认证的Processor
 
 MySQLPacket mysql数据报
 AuthPacket mysql用户认证数据报
+
+管理报文，3个字节的包头 ，其中前两个字节为包长度，第3个字节为包类型，最后为报文内容。
+ManagePacket 
+节点信息的报文，用于向对方表明自己的身份信息以及自己所处的集群状态
+NodeRegInfoPacket 
 
 SQLCommand 负责处理SQL命令
 DirectPassthrouhCmd  直接透传命令报文
