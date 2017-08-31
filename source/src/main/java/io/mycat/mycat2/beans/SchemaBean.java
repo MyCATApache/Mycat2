@@ -46,22 +46,18 @@ public class SchemaBean {
 	public String name;
 	public SchemaType type;
 	private DNBean defaultDN;
-	/**
-	 * 是否非分片的Schema，意味著沒有任何分片表的Schema
-	 */
-	private final boolean normalSchema;
 	private List<TableDefBean> tableDefBeans;
 
-	public SchemaBean(String name, DNBean defaultDN, boolean normalSchema, List<TableDefBean> tableDefBeans) {
+	public SchemaBean(String name, DNBean defaultDN, int type, List<TableDefBean> tableDefBeans) {
 		super();
 		this.name = name;
 		this.defaultDN = defaultDN;
-		this.normalSchema = normalSchema;
+		this.type = SchemaType.values()[type];
 		this.tableDefBeans = tableDefBeans;
 	}
 
-	public boolean isNormalSchema() {
-		return normalSchema;
+	public SchemaType getType() {
+		return type;
 	}
 
 	public String getName() {
@@ -90,7 +86,7 @@ public class SchemaBean {
 
 	@Override
 	public String toString() {
-		return "SchemaBean [name=" + name + ", defaultDN=" + defaultDN + ", normalSchema=" + normalSchema
+		return "SchemaBean [name=" + name + ", type=" + type + ", defaultDN=" + defaultDN
 				+ ", tableDefBeans=" + tableDefBeans + "]";
 	}
 
