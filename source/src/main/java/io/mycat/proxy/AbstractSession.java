@@ -142,7 +142,7 @@ public abstract class AbstractSession implements Session {
 	/**
 	 * 从内部Buffer数据写入到SocketChannel中发送出去，readState里记录了写到Socket中的数据指针位置 方法，
 	 * 
-	 * @param channel
+	 *
 	 */
 	public void writeToChannel() throws IOException {
 		checkBufferOwner(true);

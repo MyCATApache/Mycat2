@@ -5,20 +5,19 @@ package io.mycat.proxy;
  * @author wuzhihui
  *
  */
+
+import io.mycat.proxy.man.AdminSession;
+import io.mycat.proxy.man.DefaultAdminSessionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.proxy.man.AdminSession;
-import io.mycat.proxy.man.DefaultAdminSessionManager;
 
 public class NIOAcceptor extends ProxyReactorThread<Session> {
 	private final static Logger logger = LoggerFactory.getLogger(NIOAcceptor.class);
@@ -40,6 +39,16 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 			// 打开集群通信的socket
 			openServerChannel(selector, conf.getClusterIP(), conf.getClusterPort(), true);
 		}
+	}
+
+	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer)
+			throws IOException {
+		final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+
+		final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
+		serverChannel.bind(isa);
+		serverChannel.configureBlocking(false);
+		serverChannel.register(selector, SelectionKey.OP_ACCEPT, clusterServer);
 	}
 
 	protected void processAcceptKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
@@ -102,16 +111,6 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		// only from cluster server socket
 		Session session = (Session) curKey.attachment();
 		session.getCurNIOHandler().onSocketWrite(session);
-	}
-
-	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer)
-			throws IOException, ClosedChannelException {
-		final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-
-		final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
-		serverChannel.bind(isa);
-		serverChannel.configureBlocking(false);
-		serverChannel.register(selector, SelectionKey.OP_ACCEPT, clusterServer);
 	}
 
 	public Selector getSelector() {

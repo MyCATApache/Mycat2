@@ -118,7 +118,7 @@ public class MycatSession extends AbstractMySQLSession {
 	/**
 	 * 获取ProxyBuffer控制权，同时设置感兴趣的事件，如SocketRead，Write，只能其一
 	 * 
-	 * @param intestOpt，
+	 * @param intestOpts
 	 * @return
 	 */
 	public void takeOwner(int intestOpts) {
