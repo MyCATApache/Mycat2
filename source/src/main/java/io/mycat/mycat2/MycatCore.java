@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.List;
+import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,7 @@ public class MycatCore {
 		}
 		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+mycatConf) : instream;
 		MycatConfig conf = MycatConfig.loadFromProperties(instream);
+		loadProperties(conf, "replica-index.properties");
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
 		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
@@ -105,13 +107,30 @@ public class MycatCore {
 		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
 		List<MySQLRepBean> mysqlRepBeans = ConfigLoader.loadMySQLRepBean(datasourceURL.toString());
 		for (final MySQLRepBean repBean : mysqlRepBeans) {
-			MySQLReplicatSet mysqlRepSet = new MySQLReplicatSet(repBean, 0);
+			Integer repIndex = conf.getRepIndex(repBean.getName());
+			MySQLReplicatSet mysqlRepSet = new MySQLReplicatSet(repBean, (repIndex == null) ? 0 : repIndex);
 			conf.addMySQLReplicatSet(mysqlRepSet);
 		}
 		URL schemaURL = ConfigLoader.class.getResource("/schema.xml");
 		List<SchemaBean> schemaBeans = ConfigLoader.loadSheamBeans(schemaURL.toString());
 		for (SchemaBean schemaBean : schemaBeans) {
 			conf.addSchemaBean(schemaBean);
+		}
+	}
+
+	private static void loadProperties(MycatConfig conf, String propName) throws IOException {
+		System.out.println("look Java Classpath for " + propName);
+		InputStream	instream = ClassLoader.getSystemResourceAsStream(propName);
+		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+propName) : instream;
+		try
+		{
+			Properties props = new Properties();
+			props.load(instream);
+			props.forEach((key, value) -> conf.addRepIndex((String)key, Integer.parseInt((String)value)));
+		} finally {
+			if(instream!=null) {
+				instream.close();
+			}
 		}
 	}
 }

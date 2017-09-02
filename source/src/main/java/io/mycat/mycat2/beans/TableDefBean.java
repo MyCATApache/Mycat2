@@ -33,11 +33,13 @@ public class TableDefBean {
     private int type;
     private String shardingKey;
     private String shardingRule;
+    private DNBean storeDN;
 
-    public TableDefBean(String name, int type, String shardingKey, String shardingRule) {
+    public TableDefBean(String name, int type, DNBean storeDN, String shardingKey, String shardingRule) {
         super();
         this.name = name;
         this.type = type;
+        this.storeDN = storeDN;
         this.shardingKey = shardingKey;
         this.shardingRule = shardingRule;
     }
@@ -78,10 +80,18 @@ public class TableDefBean {
         this.type = type;
     }
 
+    public DNBean getStoreDN() {
+        return storeDN;
+    }
+
+    public void setStoreDN(DNBean storeDN) {
+        this.storeDN = storeDN;
+    }
+
     @Override
     public String toString() {
-        return "TableDefBean [name=" + name + ", type=" + type + ", shardingKey=" + shardingKey + ", shardingRule="
-                + shardingRule + "]";
+        return "TableDefBean [name=" + name + ", type=" + type + ", storeDN=" + storeDN
+                + ", shardingKey=" + shardingKey + ", shardingRule=" + shardingRule + "]";
     }
 
 }
