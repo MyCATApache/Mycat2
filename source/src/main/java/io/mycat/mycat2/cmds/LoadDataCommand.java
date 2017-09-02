@@ -3,14 +3,13 @@ package io.mycat.mycat2.cmds;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.SQLCommand;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -20,7 +19,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @author wuzhihui
  *
  */
-public class LoadDataCommand implements SQLCommand {
+public class LoadDataCommand implements MySQLCommand {
 
 	private static final Logger logger = LoggerFactory.getLogger(LoadDataCommand.class);
 
@@ -74,33 +73,38 @@ public class LoadDataCommand implements SQLCommand {
 		// 检查当前是否结束
 		if (checkOver()) {
 
-			// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-			curBuffer.readIndex = curBuffer.writeIndex;
-
-			MySQLSession mycatSession = session.getBackend();
-
-			// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
-			session.giveupOwner(SelectionKey.OP_READ);
-			mycatSession.writeToChannel();
-			// 完成后，需要将buffer切换为写入事件,读取后端的数据
-			curBuffer.flip();
+			session.getBackend((mysqlsession, sender, success,result)->{
+				if(success){
+					// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+					curBuffer.readIndex = curBuffer.writeIndex;
+					// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
+					session.giveupOwner(SelectionKey.OP_READ);
+					mysqlsession.writeToChannel();
+					// 完成后，需要将buffer切换为写入事件,读取后端的数据
+					curBuffer.flip();
+				}
+			});		
 
 			return true;
 		} else {
-			// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-			curBuffer.readIndex = curBuffer.writeIndex;
+			
+			session.getBackend((mysqlsession, sender, success,result)->{
+				if(success){
+					// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+					curBuffer.readIndex = curBuffer.writeIndex;
 
-			// 将控制权交给后端
-			session.giveupOwner(SelectionKey.OP_READ);
-			MySQLSession mysqlSession = session.getBackend();
-			mysqlSession.writeToChannel();
+					// 将控制权交给后端
+					session.giveupOwner(SelectionKey.OP_READ);
+					mysqlsession.writeToChannel();
 
-			// 然后又将后端的事件改变为前端的
-			session.takeOwner(SelectionKey.OP_READ);
+					// 然后又将后端的事件改变为前端的
+					session.takeOwner(SelectionKey.OP_READ);
 
-			// 完成后，需要将buffer切换为写入事件,读取前端的数据
-			curBuffer.flip();
-
+					// 完成后，需要将buffer切换为写入事件,读取前端的数据
+					curBuffer.flip();
+				}
+			});
+			
 			return false;
 		}
 

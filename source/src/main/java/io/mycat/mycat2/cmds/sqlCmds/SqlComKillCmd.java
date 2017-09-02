@@ -17,7 +17,7 @@ public class SqlComKillCmd implements MySQLCommand{
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		// TODO Auto-generated method stub
+		// TODO  中断当前查询
 		return false;
 	}
 

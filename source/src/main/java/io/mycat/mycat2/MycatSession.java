@@ -191,11 +191,6 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 	}
 
-	public void chnageBothReadOpts()
-	{
-		this.change2ReadOpts();
-		this.curBackend.change2ReadOpts();
-	}
 	/**
 	 * 放弃控制权，同时设置对端MySQLSession感兴趣的事件，如SocketRead，Write，只能其一
 	 * 
@@ -293,27 +288,17 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @return
 	 */
 	public void getBackend(AsynTaskCallBack<MySQLSession> callback) throws IOException {
-		final boolean runOnSlave;
-		
-		if((NewSQLContext.ANNOTATION_BALANCE==sqlContext.getAnnotationType()
-				||(NewSQLContext.ANNOTATION_DB_TYPE==sqlContext.getAnnotationType()
-				   &&1==sqlContext.getAnnotationValue(NewSQLContext.ANNOTATION_DB_TYPE)))
-			||(AutoCommit.ON==autoCommit  //非事务场景下，走从节点
-			)){  // 事务场景下, 如果配置了事务内的查询也走读写分离
-			
-			if(masterSqlList.contains(sqlContext.getSQLType())){
-				runOnSlave = false;
-			}else{
-				//走从节点
-				runOnSlave = true;
-			}
-		}else{
-			runOnSlave = false;
-		}
-		
+		final boolean runOnSlave = canRunOnSlave();
+
 		String backendName = getbackendName();
+		/*
+		 * 连接复用优先级
+		 * 1. 当前正在使用的 backend
+		 * 2. 当前session 缓存的 backend
+		 * 3. 连接池中的 backend
+		 */
 		
-		//  如果当前backend 连接可用，直接使用。
+		//1. 当前正在使用的 backend
 		if(curBackend!=null&&
 				backendName.equals(curBackend.getCurrBackendCachedName())
 				&&curBackend.isDefaultChannelRead()==runOnSlave){
@@ -324,14 +309,15 @@ public class MycatSession extends AbstractMySQLSession {
 			return;
 		}
 
+		//2. 当前session 缓存的 backend
 		List<MySQLSession> backendList = backendMap.get(backendName);
-		
 		Optional<MySQLSession>  mysqlSession=null;
 		if(backendList!=null){
 			mysqlSession = backendList.stream().filter(f->((f.isDefaultChannelRead()==runOnSlave))).findFirst();
 		}
 		
 		if(mysqlSession==null||!mysqlSession.isPresent()){
+			//3. 连接池中的 backend
 			if(logger.isDebugEnabled()){
 				logger.debug("create new connection for "+(runOnSlave?"read":"write"));
 			}
@@ -342,6 +328,32 @@ public class MycatSession extends AbstractMySQLSession {
 				logger.debug("Using cached map backend connections for "+ (runOnSlave?"read":"write"));
 			}
 			callback.finished(curBackend,null,true,null);
+		}
+	}
+	
+	/*
+	 * 判断后端连接 是佛可以走从节点 
+	 * 1. TODO 通过注解走读写分离
+	 * 2. 非事务情况下，走读写分离
+	 * 3. TODO 只读事务情况下，走读写分离  
+	 * @return
+	 */
+	private boolean canRunOnSlave(){
+		
+		if((NewSQLContext.ANNOTATION_BALANCE==sqlContext.getAnnotationType()
+				||(NewSQLContext.ANNOTATION_DB_TYPE==sqlContext.getAnnotationType()
+				   &&1==sqlContext.getAnnotationValue(NewSQLContext.ANNOTATION_DB_TYPE)))
+			||(AutoCommit.ON==autoCommit  //非事务场景下，走从节点
+			)){  // 事务场景下, 如果配置了事务内的查询也走读写分离
+			
+			if(masterSqlList.contains(sqlContext.getSQLType())){
+				return false;
+			}else{
+				//走从节点
+				return true;
+			}
+		}else{
+			return false;
 		}
 	}
 	
@@ -356,7 +368,7 @@ public class MycatSession extends AbstractMySQLSession {
 		final MySQLDataSource ds = session.getDatasource();
 		//TODO 从连接池获取
 		BackendConCreateTask authProcessor = new BackendConCreateTask(session.bufPool, session.nioSelector, ds,
-				session.schema.name);
+				session.schema);
 		authProcessor.setCallback((optSession, Sender, exeSucces, retVal) -> {
 			//设置当前连接 读写分离属性
 			optSession.setDefaultChannelRead(runOnSlave);
@@ -368,7 +380,7 @@ public class MycatSession extends AbstractMySQLSession {
 				syncSessionStateToBackend(optSession,callback);
 			} else {
 				ErrorPacket errPkg = (ErrorPacket) retVal;
-				optSession.responseOKOrError(errPkg);
+				session.responseOKOrError(errPkg);
 			}
 		});
 		session.setCurNIOHandler(authProcessor);
