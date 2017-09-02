@@ -335,4 +335,12 @@ public abstract class AbstractSession implements Session {
 		this.getCurNIOHandler().onWriteFinished(this);
 
 	}
+
+	public boolean isDefaultChannelRead() {
+		return defaultChannelRead;
+	}
+
+	public void setDefaultChannelRead(boolean defaultChannelRead) {
+		this.defaultChannelRead = defaultChannelRead;
+	}
 }
