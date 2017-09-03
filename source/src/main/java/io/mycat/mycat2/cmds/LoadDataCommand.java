@@ -50,7 +50,6 @@ public class LoadDataCommand implements MyCommand {
 		} else {
 			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), false);
 		}
-<<<<<<< HEAD
 		
 		session.getBackend((mysqlsession, sender, success,result)->{
 			if(success){
@@ -62,23 +61,8 @@ public class LoadDataCommand implements MyCommand {
 				session.giveupOwner(SelectionKey.OP_READ);
 				// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
 				mysqlsession.writeToChannel();
-				// 完成后，需要将buffer切换为写入事件,读取后端的数据
-//				curBuffer.flip();
 			}
 		});
-=======
-		// 切换buffer 读写状态
-		curBuffer.flip();
-		
-		curBuffer.readIndex = curBuffer.writeIndex;
-
-		MySQLSession mycatSession = session.getBackend();
-
-		// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
-		session.giveupOwner(SelectionKey.OP_READ);
-		mycatSession.writeToChannel();
-		// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
->>>>>>> refs/remotes/MyCATApache/master
 
 		return false;
 	}
