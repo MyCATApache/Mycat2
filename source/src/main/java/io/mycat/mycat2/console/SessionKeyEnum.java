@@ -33,9 +33,18 @@ public enum SessionKeyEnum {
 	/**
 	 * 标识当前后端数据透传是否结束的标识，存在此标识，标识未结束，否则即为结束
 	 */
-	SESSION_KEY_TRANSFER_OVER_FLAG("session_key_transfer_over_flag")
+	SESSION_KEY_TRANSFER_OVER_FLAG("session_key_transfer_over_flag"),
+	/*
+	 * 用于load data中判断是否传输结束的标志的临时数组
+	 * 结束flag标识的临时数组
+	 * */
+	SESSION_KEY_LOAD_OVER_FLAG_ARRAY("session_key_load_over_flag_array"),
+	/*
+	 * 用于load data命令是否完成
+	 * 结束flag标识
+	 * */
+	SESSION_KEY_LOAD_DATA_FINISH_KEY("session_key_load_data_finish_key");
 
-	;
 
 	private String key;
 
