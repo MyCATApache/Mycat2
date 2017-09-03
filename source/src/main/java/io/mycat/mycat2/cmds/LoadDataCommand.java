@@ -3,14 +3,13 @@ package io.mycat.mycat2.cmds;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MyCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.SQLCommand;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -20,7 +19,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @author wuzhihui
  *
  */
-public class LoadDataCommand implements SQLCommand {
+public class LoadDataCommand implements MyCommand {
 
 	private static final Logger logger = LoggerFactory.getLogger(LoadDataCommand.class);
 
@@ -51,17 +50,19 @@ public class LoadDataCommand implements SQLCommand {
 		} else {
 			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), false);
 		}
-		// 切换buffer 读写状态
-		curBuffer.flip();
 		
-		curBuffer.readIndex = curBuffer.writeIndex;
-
-		MySQLSession mycatSession = session.getBackend();
-
-		// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
-		session.giveupOwner(SelectionKey.OP_READ);
-		mycatSession.writeToChannel();
-		// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
+		session.getBackend((mysqlsession, sender, success,result)->{
+			if(success){
+				// 切换buffer 读写状态
+				curBuffer.flip();
+				
+				curBuffer.readIndex = curBuffer.writeIndex;
+				// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
+				session.giveupOwner(SelectionKey.OP_READ);
+				// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
+				mysqlsession.writeToChannel();
+			}
+		});
 
 		return false;
 	}

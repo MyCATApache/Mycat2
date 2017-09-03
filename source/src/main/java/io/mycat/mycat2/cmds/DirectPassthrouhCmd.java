@@ -8,9 +8,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.SQLCommand;
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.cmds.judge.DirectTransJudge;
 import io.mycat.mycat2.cmds.judge.ErrorJudge;
@@ -25,7 +26,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @author wuzhihui
  *
  */
-public class DirectPassthrouhCmd implements SQLCommand {
+public class DirectPassthrouhCmd implements MySQLCommand {
 
 	private static final Logger logger = LoggerFactory.getLogger(DirectPassthrouhCmd.class);
 
@@ -45,14 +46,18 @@ public class DirectPassthrouhCmd implements SQLCommand {
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		ProxyBuffer curBuffer = session.proxyBuffer;
-		// 切换 buffer 读写状态
-		curBuffer.flip();
-		// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-		curBuffer.readIndex = curBuffer.writeIndex;
-		// 改变 owner，对端Session获取，并且感兴趣写事件
-		session.giveupOwner(SelectionKey.OP_WRITE);
-		session.getBackend().writeToChannel();
+		session.getBackend((mysqlsession, sender, success,result)->{
+			if(success){
+				ProxyBuffer curBuffer = session.proxyBuffer;
+				// 切换 buffer 读写状态
+				curBuffer.flip();
+				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+				curBuffer.readIndex = curBuffer.writeIndex;
+				// 改变 owner，对端Session获取，并且感兴趣写事件
+				session.giveupOwner(SelectionKey.OP_WRITE);
+				mysqlsession.writeToChannel();
+			}
+		});
 		return false;
 	}
 

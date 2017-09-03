@@ -5,8 +5,8 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mysql.packet.CommandPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
@@ -19,6 +19,8 @@ import io.mycat.proxy.ProxyBuffer;
  */
 public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSession> {
     private static Logger logger = LoggerFactory.getLogger(BackendSynchronzationTask.class);
+    
+    private int syncCmdNum = 0;
 
     public BackendSynchronzationTask(MySQLSession session) throws IOException {
         super(session,true);
@@ -33,6 +35,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         QueryPacket queryPacket = new QueryPacket();
         queryPacket.packetId = 0;
         queryPacket.sql = session.isolation.getCmd() + session.autoCommit.getCmd() + session.isolation.getCmd();
+        syncCmdNum = 3;
         queryPacket.write(proxyBuf);
         proxyBuf.flip();
         proxyBuf.readIndex = proxyBuf.writeIndex;
@@ -42,11 +45,25 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
     @Override
     public void onSocketRead(MySQLSession session) throws IOException {
         session.proxyBuffer.reset();
-        if (!session.readFromChannel()
-                || CurrPacketType.Full != session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
+        if (!session.readFromChannel()) {// 没有读到数据或者报文不完整
             return;
         }
-        if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+        boolean isAllOK = true;
+        while (syncCmdNum >0) {
+        	switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, true)) {
+			case Full:
+				if(session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET){
+					isAllOK = false;
+					syncCmdNum = 0;
+				}
+				break;
+			default:
+				return;
+        	}
+        	syncCmdNum --;
+        }
+
+        if (isAllOK) {
             this.finished(true);
         } else {
             errPkg = new ErrorPacket();
@@ -55,7 +72,4 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
             this.finished(false);
         }
     }
-
-   
-
 }

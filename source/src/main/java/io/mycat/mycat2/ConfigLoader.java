@@ -62,9 +62,10 @@ public class ConfigLoader {
 	            	
 	            	NamedNodeMap map=curRuleNode.getAttributes();
 	            	String name=getAttribute(map,"name",null);
+
 	            	int type=getIntAttribute(map,"type",0);
 	            	String defaultDb=getAttribute(map,"default-db",null);
-					String defaultRep=getAttribute(map,"default-rep",null);
+					      String defaultRep=getAttribute(map,"default-rep",null);
 	            	DNBean dnBean=new DNBean(defaultDb,defaultRep);
 	            	List<Node> tableNodes=getChildNodes(curRuleNode,"table");
 	            	List<TableDefBean>  tableLst=new LinkedList<TableDefBean>(); 
@@ -74,6 +75,7 @@ public class ConfigLoader {
 	            		int tType=getIntAttribute(attrs,"type",0);
 	            		String tKey=getAttribute(attrs,"sharding-key",null);
 	            		String tRule=getAttribute(attrs,"sharding-rule",null);
+
 						String store=getAttribute(attrs,"store",null);
 						DNBean storeBean = null;
 						if (store != null) {
