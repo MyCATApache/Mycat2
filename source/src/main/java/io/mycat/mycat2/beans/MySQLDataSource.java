@@ -63,14 +63,9 @@ public class MySQLDataSource {
 
 	private TransferQueue<MySQLSession> sessionQueue = new LinkedTransferQueue<>();
 
-	public MySQLSession getSession() {
+	public MySQLSession getExistsSession() {
 		MySQLSession session = sessionQueue.poll();
-		if (session != null) {
-			return session;
-		}
-
-		//todo 新建连接
-		return null;
+		return session;
 	}
 
 	public MySQLDataSource(MySQLBean config, boolean islaveNode) {
