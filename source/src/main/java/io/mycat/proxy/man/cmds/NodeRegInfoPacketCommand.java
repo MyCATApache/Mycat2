@@ -30,7 +30,6 @@ public class NodeRegInfoPacketCommand implements AdminCommand {
 					ProxyRuntime.INSTANCE.getStartTime());
 			pkg.setAnswer(true);
 			session.answerClientNow(pkg);
-			return;
 		}
 		session.cluster().onClusterNodeUp(pkg,session);
 	}
