@@ -1,8 +1,9 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 
 import java.util.Arrays;
+
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 
 /**
  * Created by Fanfan on 2017/3/21.
@@ -53,6 +54,8 @@ public class NewSQLContext {
     public static final byte SET_AUTOCOMMIT_SQL = 34;
     public static final byte COMMIT_SQL = 35;
 //    public static final byte COMMIT_SQL = 17;
+    public static final byte SELECT_INTO_SQL = 36;
+    public static final byte SELECT_FOR_UPDATE_SQL = 37;
 
     //ANNOTATION TYPE
     public static final byte ANNOTATION_BALANCE = 1;
@@ -192,7 +195,7 @@ public class NewSQLContext {
             int idx = curSQLIdx<<2;
             curSQLIdx++;
             sqlInfoArray[idx++] = (short)preHashArrayPos;
-            sqlInfoArray[idx++] = (short)((hashArrayRealSQLOffset<<5) | sqlType);
+            sqlInfoArray[idx++] = (short)((hashArrayRealSQLOffset<<6) | sqlType);
             sqlInfoArray[idx++] = (short)sqlSize;
             sqlInfoArray[idx] = (short)((preTableResultPos<<8) | curSQLTblCount);
             curSQLTblCount = 0;
@@ -221,7 +224,7 @@ public class NewSQLContext {
     public long getSqlHash() { return this.sqlHash; }
 
     public void setSQLType(byte sqlType) {
-        if (this.sqlType == 0)
+        if (this.sqlType == 0 || this.sqlType == SELECT_SQL)
             this.sqlType = sqlType;
     }
 
@@ -229,14 +232,19 @@ public class NewSQLContext {
         curSQLIdx = sqlIdx;
     }
 
-    public byte getSQLType() { return (byte)(this.sqlInfoArray[1] & 0x1F); }
-    public byte getSQLType(int sqlIdx) { return (byte)(this.sqlInfoArray[(sqlIdx<<2)+1] & 0x1F); }
+    public byte getSQLType() {
+    	//TODO 临时处理 等待与 赵帅代码合并
+    	byte  type = (byte)(this.sqlInfoArray[1] & 0x3F);
+    	return type==0?this.sqlType:type; 
+    }
+    public byte getSQLType(int sqlIdx) { return (byte)(this.sqlInfoArray[(sqlIdx<<2)+1] & 0x3F); }
+    public byte getCurSQLType() { return this.sqlType; }
 
     public void setRealSQLOffset(int hashArrayPos) {
         hashArrayRealSQLOffset = hashArrayPos - preHashArrayPos;
     }
     public int getRealSQLOffset(int sqlIdx) {
-        int hashArrayOffset = sqlInfoArray[(sqlIdx<<2)+1] >>> 5;
+        int hashArrayOffset = sqlInfoArray[(sqlIdx<<2)+1] >>> 6;
         return hashArray.getPos(hashArrayOffset);
     }
     public int getRealSQLSize(int sqlIdx) {

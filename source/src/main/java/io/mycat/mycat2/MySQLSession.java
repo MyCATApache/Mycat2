@@ -17,6 +17,11 @@ import io.mycat.proxy.BufferPool;
  */
 public class MySQLSession extends AbstractMySQLSession {
 	private String database;
+	
+	/**
+	 * 当前缓存的 mysqlSession 所属的mysql-replica 的名称。用于快速判断当前连接是否可以被复用
+	 */
+	private String currBackendCachedName;
 	/**
 	 * 当前所从属的mycat sesssion
 	 */
@@ -60,8 +65,15 @@ public class MySQLSession extends AbstractMySQLSession {
 
 	@Override
 	protected void doTakeReadOwner() {
-		this.getMycatSession().takeOwner(SelectionKey.OP_READ);
+		this.getMycatSession().takeOwner(SelectionKey.OP_READ);		
+	}
 
+	public String getCurrBackendCachedName() {
+		return currBackendCachedName;
+	}
+
+	public void setCurrBackendCachedName(String currBackendCachedName) {
+		this.currBackendCachedName = currBackendCachedName;
 	}
 
 }

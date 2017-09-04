@@ -85,7 +85,7 @@ public class PkgFirstReader implements PkgProcess {
 				mycatSession.writeToChannel();
 
 				// 完成后，需要将buffer切换为写入事件,读取前端的数据
-				curBuffer.flip();
+				//curBuffer.flip();
 			}
 			// 如果为ok和error则切换到error的包判断
 			else {

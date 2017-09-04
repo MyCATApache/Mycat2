@@ -46,7 +46,8 @@ public class SchemaBean {
 	public String name;
 	public SchemaType type;
 	private DNBean defaultDN;
-	private List<TableDefBean> tableDefBeans;
+
+  private List<TableDefBean> tableDefBeans;
 
 	public SchemaBean(String name, DNBean defaultDN, int type, List<TableDefBean> tableDefBeans) {
 		super();
