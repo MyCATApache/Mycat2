@@ -34,8 +34,12 @@ import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.net.DefaultMycatSessionHandler;
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mycat2.tasks.BackendCharsetReadTask;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
+import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
@@ -75,22 +79,25 @@ public class MySQLDataSource {
 		this.slaveNode = islaveNode;
 	}
 
-	public void createMySQLSession(BufferPool bufferPool, Selector selector) {
+	public boolean createMySQLSession(MycatSession mycatSession, BufferPool bufferPool, Selector selector, SchemaBean schema, AsynTaskCallBack<MySQLSession> callback) {
+		int newSize = activeSize.incrementAndGet();
+		if (newSize > mysqlBean.getMaxCon()) {
+			//超过最大连接数
+			activeSize.decrementAndGet();
+			return false;
+		}
+
 		try {
-			BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, null);
-			authProcessor.setCallback((optSession, sender, exeSucces, retVal) -> {
-				if (exeSucces) {
-					int curSize = activeSize.incrementAndGet();
-					if (curSize == 1) {
-						BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
-						optSession.setCurNIOHandler(backendCharsetReadTask);
-						backendCharsetReadTask.readCharset();
-					}
-					sessionQueue.add(optSession);
-				}
-			});
+			BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, schema);
+			authProcessor.setCallback(callback);
+			if (mycatSession != null) {
+				mycatSession.setCurNIOHandler(authProcessor);
+			}
+
+			return true;
 		} catch (IOException e) {
 			LOGGER.warn("error to create mysqlSession for datasource: {}", this.name);
+			return false;
 		}
 	}
 
@@ -119,7 +126,18 @@ public class MySQLDataSource {
 		int reactorSize = runtime.getNioReactorThreads();
 		for (int i = 0; i < initSize; i++) {
 			ProxyReactorThread reactorThread = reactorThreads[i % reactorSize];
-			reactorThread.addNIOJob(() -> createMySQLSession(reactorThread.getBufPool(), reactorThread.getSelector()));
+			reactorThread.addNIOJob(() -> createMySQLSession(null, reactorThread.getBufPool(), reactorThread.getSelector(), null,
+					(optSession, sender, exeSucces, retVal) -> {
+						if (exeSucces) {
+							int curSize = activeSize.incrementAndGet();
+							if (curSize == 1) {
+								BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
+								optSession.setCurNIOHandler(backendCharsetReadTask);
+								backendCharsetReadTask.readCharset();
+							}
+							sessionQueue.add(optSession);
+						}
+					}));
 		}
 
 		LOGGER.info("init source finished");
