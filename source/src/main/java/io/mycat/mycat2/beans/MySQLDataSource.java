@@ -79,7 +79,7 @@ public class MySQLDataSource {
 		this.slaveNode = islaveNode;
 	}
 
-	public boolean createMySQLSession(MycatSession mycatSession, BufferPool bufferPool, Selector selector, SchemaBean schema, AsynTaskCallBack<MySQLSession> callback) {
+	public boolean createMySQLSession(MycatSession mycatSession, BufferPool bufferPool, Selector selector, SchemaBean schema, AsynTaskCallBack<MySQLSession> callback) throws IOException {
 		int newSize = activeSize.incrementAndGet();
 		if (newSize > mysqlBean.getMaxCon()) {
 			//超过最大连接数
@@ -87,18 +87,12 @@ public class MySQLDataSource {
 			return false;
 		}
 
-		try {
-			BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, schema);
-			authProcessor.setCallback(callback);
-			if (mycatSession != null) {
-				mycatSession.setCurNIOHandler(authProcessor);
-			}
-
-			return true;
-		} catch (IOException e) {
-			LOGGER.warn("error to create mysqlSession for datasource: {}", this.name);
-			return false;
+		BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, schema);
+		authProcessor.setCallback(callback);
+		if (mycatSession != null) {
+			mycatSession.setCurNIOHandler(authProcessor);
 		}
+		return true;
 	}
 
 	public boolean isSlaveNode() {
@@ -126,18 +120,29 @@ public class MySQLDataSource {
 		int reactorSize = runtime.getNioReactorThreads();
 		for (int i = 0; i < initSize; i++) {
 			ProxyReactorThread reactorThread = reactorThreads[i % reactorSize];
-			reactorThread.addNIOJob(() -> createMySQLSession(null, reactorThread.getBufPool(), reactorThread.getSelector(), null,
-					(optSession, sender, exeSucces, retVal) -> {
-						if (exeSucces) {
-							int curSize = activeSize.incrementAndGet();
-							if (curSize == 1) {
-								BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
-								optSession.setCurNIOHandler(backendCharsetReadTask);
-								backendCharsetReadTask.readCharset();
-							}
-							sessionQueue.add(optSession);
-						}
-					}));
+			reactorThread.addNIOJob(() -> {
+				try {
+					createMySQLSession(null, reactorThread.getBufPool(),
+							reactorThread.getSelector(), null,
+							(optSession, sender, exeSucces, retVal) -> {
+								if (exeSucces) {
+									int curSize = activeSize.incrementAndGet();
+									//设置当前连接 读写分离属性
+									optSession.setDefaultChannelRead(this.slaveNode);
+									if (curSize == 1) {
+										BackendCharsetReadTask backendCharsetReadTask =
+												new BackendCharsetReadTask(optSession, this);
+										optSession.setCurNIOHandler(backendCharsetReadTask);
+										backendCharsetReadTask.readCharset();
+									}
+									optSession.change2ReadOpts();
+									sessionQueue.add(optSession);
+								}
+							});
+				} catch (IOException e) {
+					LOGGER.error("error to create mySQL connection", e);
+				}
+			});
 		}
 
 		LOGGER.info("init source finished");

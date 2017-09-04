@@ -302,11 +302,11 @@ public class MycatSession extends AbstractMySQLSession {
 		 */
 
 		//1. 当前正在使用的 backend
-		if (curBackend != null &&
-				backendName.equals(curBackend.getCurrBackendCachedName())
+		if (curBackend != null
+                && backendName.equals(curBackend.getCurrBackendCachedName())
 				&& curBackend.isDefaultChannelRead() == runOnSlave){
 			if (logger.isDebugEnabled()){
-				logger.debug("Using cached backend connections for " + (runOnSlave?"read":"write"));
+				logger.debug("Using cached backend connections for " + (runOnSlave ? "read" : "write"));
 			}
 			callback.finished(curBackend,null,true,null);
 			return;
@@ -334,8 +334,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 			final MySQLDataSource ds = this.getDatasource(runOnSlave);
 			//4. 从ds中获取已经建立的连接
-			MySQLSession existsSession = ds.getExistsSession();
-            mysqlSession = existsSession;
+            mysqlSession = ds.getExistsSession();
 
             // 5. 新建连接
             if (mysqlSession == null) {
@@ -357,14 +356,16 @@ public class MycatSession extends AbstractMySQLSession {
                     });
                 if (!createResult) {
                     //连接数满
+                    throw new RuntimeException("connection is full");
                 }
                 return;
             }
 		}
 
 		curBackend = mysqlSession;
-		if(logger.isDebugEnabled()){
-			logger.debug("Using cached map backend connections for "+ (runOnSlave?"read":"write"));
+        this.bindBackend(curBackend);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
 		}
 		callback.finished(curBackend,null,true,null);
 	}
@@ -377,10 +378,14 @@ public class MycatSession extends AbstractMySQLSession {
     private MySQLSession getFirstSession(MycatSession mycatSession, String backendName, boolean checkCurBackend, boolean runOnSlave, boolean isIdle) {
         if (checkCurBackend) {
             MySQLSession curBack = mycatSession.curBackend;
-            if (curBack != null &&
-                    backendName.equals(curBack.getCurrBackendCachedName())
-                    && curBack.isDefaultChannelRead() == runOnSlave){
-                return curBack;
+            if (curBack != null
+                    && backendName.equals(curBack.getCurrBackendCachedName())
+                    && curBack.isDefaultChannelRead() == runOnSlave) {
+                //判断连接是否空闲
+                Boolean idle = (Boolean) curBack.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+                if (idle != null && idle == true) {
+                    return curBack;
+                }
             }
         }
 
@@ -389,12 +394,13 @@ public class MycatSession extends AbstractMySQLSession {
             return null;
 
         return backendList.stream().filter(f -> {
-            boolean idleFlag = true;
-            if (isIdle) {
-                idleFlag = (boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-            }
-            return f.isDefaultChannelRead() == runOnSlave && idleFlag;
-        }).findFirst().orElse(null);
+                boolean idleFlag = true;
+                if (isIdle) {
+                    Boolean flag = (Boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+                    idleFlag = (flag == null) ? false : flag;
+                }
+                return f.isDefaultChannelRead() == runOnSlave && idleFlag;
+            }).findFirst().orElse(null);
     }
 
 	/*
