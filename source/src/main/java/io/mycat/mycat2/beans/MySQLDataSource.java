@@ -80,11 +80,13 @@ public class MySQLDataSource {
 	}
 
 	public boolean createMySQLSession(MycatSession mycatSession, BufferPool bufferPool, Selector selector, SchemaBean schema, AsynTaskCallBack<MySQLSession> callback) throws IOException {
-		int newSize = activeSize.incrementAndGet();
-		if (newSize > mysqlBean.getMaxCon()) {
-			//超过最大连接数
-			activeSize.decrementAndGet();
-			return false;
+		if (mycatSession != null) {
+			int newSize = activeSize.incrementAndGet();
+			if (newSize > mysqlBean.getMaxCon()) {
+				//超过最大连接数
+				activeSize.decrementAndGet();
+				return false;
+			}
 		}
 
 		BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, schema);
