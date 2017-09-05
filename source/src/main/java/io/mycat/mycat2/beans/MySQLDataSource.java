@@ -34,8 +34,12 @@ import java.util.concurrent.TransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.net.DefaultMycatSessionHandler;
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mycat2.tasks.BackendCharsetReadTask;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
+import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
@@ -63,14 +67,9 @@ public class MySQLDataSource {
 
 	private TransferQueue<MySQLSession> sessionQueue = new LinkedTransferQueue<>();
 
-	public MySQLSession getSession() {
+	public MySQLSession getExistsSession() {
 		MySQLSession session = sessionQueue.poll();
-		if (session != null) {
-			return session;
-		}
-
-		//todo 新建连接
-		return null;
+		return session;
 	}
 
 	public MySQLDataSource(MySQLBean config, boolean islaveNode) {
@@ -80,23 +79,22 @@ public class MySQLDataSource {
 		this.slaveNode = islaveNode;
 	}
 
-	public void createMySQLSession(BufferPool bufferPool, Selector selector) {
-		try {
-			BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, null);
-			authProcessor.setCallback((optSession, sender, exeSucces, retVal) -> {
-				if (exeSucces) {
-					int curSize = activeSize.incrementAndGet();
-					if (curSize == 1) {
-						BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
-						optSession.setCurNIOHandler(backendCharsetReadTask);
-						backendCharsetReadTask.readCharset();
-					}
-					sessionQueue.add(optSession);
-				}
-			});
-		} catch (IOException e) {
-			LOGGER.warn("error to create mysqlSession for datasource: {}", this.name);
+	public boolean createMySQLSession(MycatSession mycatSession, BufferPool bufferPool, Selector selector, SchemaBean schema, AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		if (mycatSession != null) {
+			int newSize = activeSize.incrementAndGet();
+			if (newSize > mysqlBean.getMaxCon()) {
+				//超过最大连接数
+				activeSize.decrementAndGet();
+				return false;
+			}
 		}
+
+		BackendConCreateTask authProcessor = new BackendConCreateTask(bufferPool, selector, this, schema);
+		authProcessor.setCallback(callback);
+		if (mycatSession != null) {
+			mycatSession.setCurNIOHandler(authProcessor);
+		}
+		return true;
 	}
 
 	public boolean isSlaveNode() {
@@ -124,7 +122,29 @@ public class MySQLDataSource {
 		int reactorSize = runtime.getNioReactorThreads();
 		for (int i = 0; i < initSize; i++) {
 			ProxyReactorThread reactorThread = reactorThreads[i % reactorSize];
-			reactorThread.addNIOJob(() -> createMySQLSession(reactorThread.getBufPool(), reactorThread.getSelector()));
+			reactorThread.addNIOJob(() -> {
+				try {
+					createMySQLSession(null, reactorThread.getBufPool(),
+							reactorThread.getSelector(), null,
+							(optSession, sender, exeSucces, retVal) -> {
+								if (exeSucces) {
+									int curSize = activeSize.incrementAndGet();
+									//设置当前连接 读写分离属性
+									optSession.setDefaultChannelRead(this.slaveNode);
+									if (curSize == 1) {
+										BackendCharsetReadTask backendCharsetReadTask =
+												new BackendCharsetReadTask(optSession, this);
+										optSession.setCurNIOHandler(backendCharsetReadTask);
+										backendCharsetReadTask.readCharset();
+									}
+									optSession.change2ReadOpts();
+									sessionQueue.add(optSession);
+								}
+							});
+				} catch (IOException e) {
+					LOGGER.error("error to create mySQL connection", e);
+				}
+			});
 		}
 
 		LOGGER.info("init source finished");
