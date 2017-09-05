@@ -35,6 +35,10 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		return bufPool;
 	}
 
+	public ArrayList<T> getAllSessions() {
+		return allSessions;
+	}
+
 	@SuppressWarnings("unchecked")
 	public ProxyReactorThread(BufferPool bufPool) throws IOException {
 		this.bufPool = bufPool;
