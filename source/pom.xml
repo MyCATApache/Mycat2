@@ -2,10 +2,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>io.mycat</groupId>
-    <artifactId>NIO-Proxy</artifactId>
+    <artifactId>mycat2</artifactId>
     <version>0.1</version>
 	<packaging>jar</packaging>
-	<name>NIO-Proxy</name>
+	<name>mycat2</name>
 	<description>The project of Mycat-server</description>
 	<url>http://io.mycat</url>
     
@@ -28,11 +28,6 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.2</version>
         </dependency>
-        <dependency>
-		    <groupId>tanukisoft</groupId>
-		    <artifactId>wrapper</artifactId>
-		    <version>3.2.3</version>
-		</dependency>
     </dependencies>
     
 	<build>
