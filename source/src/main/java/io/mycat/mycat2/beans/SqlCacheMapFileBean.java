@@ -2,6 +2,7 @@ package io.mycat.mycat2.beans;
 
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.Semaphore;
 
 /**
  * 实例内存文件映射的缓存
@@ -26,6 +27,13 @@ public class SqlCacheMapFileBean extends SqlCacheInfoBean {
 	 * 文件通道信息 channel
 	 */
 	private FileChannel channel;
+	
+	
+	/**
+	 * 栅栏，用于控制并发的访问数
+	 */
+	private Semaphore semap = new Semaphore(1);
+	
 
 	public RandomAccessFile getRandomFile() {
 		return randomFile;
@@ -50,5 +58,14 @@ public class SqlCacheMapFileBean extends SqlCacheInfoBean {
 	public void setFileName(String fileName) {
 		this.fileName = fileName;
 	}
+
+	public Semaphore getSemap() {
+		return semap;
+	}
+
+	public void setSemap(Semaphore semap) {
+		this.semap = semap;
+	}
+	
 
 }

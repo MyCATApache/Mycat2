@@ -24,7 +24,7 @@ public interface CacheInf<T extends SqlCacheInfoBean> {
 	 * @return 结果
 	 * @throws IOException
 	 */
-	public T getAndPutCacheObject(ProxyBuffer buffer, int size) throws IOException;
+	public T getAndPutCacheObject(ProxyBuffer buffer, int size) throws IOException, InterruptedException;
 
 	/**
 	 * 放入缓存数 据
@@ -35,7 +35,7 @@ public interface CacheInf<T extends SqlCacheInfoBean> {
 	 *            缓存的对象信息
 	 * @throws IOException
 	 */
-	public void putCacheData(ProxyBuffer buffer, T cacheObject) throws IOException;
+	public void putCacheData(ProxyBuffer buffer, T cacheObject) throws IOException, InterruptedException;
 
 	/**
 	 * 获取缓存的数据
@@ -49,6 +49,6 @@ public interface CacheInf<T extends SqlCacheInfoBean> {
 	 * @throws IOException
 	 *             异常信息
 	 */
-	public void getByte(ProxyBuffer buffer, T cacheResult, int offset) throws IOException;
+	public void getByte(ProxyBuffer buffer, T cacheResult, int offset) throws IOException, InterruptedException;
 
 }

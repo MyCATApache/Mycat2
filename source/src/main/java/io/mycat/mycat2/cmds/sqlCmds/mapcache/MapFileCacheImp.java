@@ -83,6 +83,8 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 	/**
 	 * 获取map影射文件信息
 	 * 
+	 * 同步方法，同一个SQL的缓存只存在一个
+	 * 
 	 * @param buffer
 	 *            需要写入缓存文件数据信息
 	 * @param size
@@ -91,7 +93,8 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 	 * @throws IOException
 	 *             可能的异常信息
 	 */
-	public SqlCacheMapFileBean getAndPutCacheObject(ProxyBuffer buffer, int size) throws IOException {
+	public synchronized SqlCacheMapFileBean getAndPutCacheObject(ProxyBuffer buffer, int size)
+			throws IOException, InterruptedException {
 
 		SqlCacheMapFileBean sqlCahce = new SqlCacheMapFileBean();
 
@@ -185,7 +188,12 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 		return cacheResult.getPutOption();
 	}
 
-	public void putCacheData(ProxyBuffer buffer, SqlCacheMapFileBean cacheResult) throws IOException {
+	public void putCacheData(ProxyBuffer buffer, SqlCacheMapFileBean cacheResult)
+			throws IOException, InterruptedException {
+
+		// 进行加锁操作
+		boolean lock = cacheResult.getSemap().tryAcquire();
+
 		// 获取文件的游标
 		long filePosition = 0;
 		try {
@@ -209,6 +217,12 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 		} catch (IOException e) {
 			logger.error("MapFileCacheImp putCacheData IOException", e);
 			e.printStackTrace();
+		} finally {
+			// 仅当加锁成功后才释放许可
+			if (lock) {
+				// 释放加锁的许可
+				cacheResult.getSemap().release();
+			}
 		}
 
 	}
@@ -274,6 +288,9 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 				logger.error("MapFileCacheImp close unmap Exception", e);
 				e.printStackTrace();
 			}
+
+			// 缓存结果完成后，需要删除文件
+			//new File(cacheInfo.getFileName()).delete();
 
 		}
 	}
