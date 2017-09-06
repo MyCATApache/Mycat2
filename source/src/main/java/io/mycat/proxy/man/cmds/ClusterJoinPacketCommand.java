@@ -2,6 +2,7 @@ package io.mycat.proxy.man.cmds;
 
 import java.io.IOException;
 
+import io.mycat.proxy.man.packet.NodeRegInfoPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +28,15 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 	public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
 		if (cmdType == ManagePacket.PKG_JOIN_REQ_ClUSTER) {
 			String nodeId = session.getNodeId();
+			// nodeId为空，说明主节点为服务端，接受从节点注册加入集群，需要从节点发送节点信息
+			if (nodeId == null) {
+				NodeRegInfoPacket pkg = new NodeRegInfoPacket(session.cluster().getMyNodeId(), session.cluster().getClusterState(),
+						session.cluster().getLastClusterStateTime(), session.cluster().getMyLeaderId(),
+						ProxyRuntime.INSTANCE.getStartTime());
+				pkg.setAnswer(false);
+				session.answerClientNow(pkg);
+				return;
+			}
 			ClusterNode theNode = session.cluster().findNode(nodeId);
 			byte jionState = JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK;
 			if (theNode.getMyClusterState() == ClusterState.Clustered) {
