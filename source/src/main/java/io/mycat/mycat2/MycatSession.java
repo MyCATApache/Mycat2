@@ -347,7 +347,6 @@ public class MycatSession extends AbstractMySQLSession {
                         optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
                         if (exeSucces) {
                             this.bindBackend(optSession);
-                            syncSessionStateToBackend(optSession,callback);
                         } else {
                             ds.getActiveSize().decrementAndGet();
                             ErrorPacket errPkg = (ErrorPacket) retVal;
@@ -367,7 +366,9 @@ public class MycatSession extends AbstractMySQLSession {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
 		}
-		callback.finished(curBackend,null,true,null);
+
+		syncSessionStateToBackend(curBackend,callback);
+//		callback.finished(curBackend,null,true,null);
 	}
 
     /**
@@ -431,14 +432,13 @@ public class MycatSession extends AbstractMySQLSession {
 
 	/**
 	 * 同步后端连接状态
-	 * @param mycatSession
 	 * @param mysqlSession
 	 * @param callback
 	 * @throws IOException
 	 */
 	public void syncSessionStateToBackend(MySQLSession mysqlSession,AsynTaskCallBack<MySQLSession> callback) throws IOException {
 		MycatSession mycatSession = mysqlSession.getMycatSession();
-		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mysqlSession);
+		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(this,mysqlSession);
 		backendSynchronzationTask.setCallback((optSession, sender, exeSucces, rv) -> {
 			//恢复默认的Handler
 			mycatSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
