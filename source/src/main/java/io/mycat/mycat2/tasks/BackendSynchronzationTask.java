@@ -76,7 +76,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         if (isAllOK) {
             session.autoCommit = mycatSession.autoCommit;
             session.isolation = mycatSession.isolation;
-            session.charSet = mycatSession.charSet;
+            session.charSet.charsetIndex = mycatSession.charSet.charsetIndex;
             this.finished(true);
         } else {
             errPkg = new ErrorPacket();
