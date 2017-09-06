@@ -28,6 +28,11 @@
             <artifactId>slf4j-log4j12</artifactId>
             <version>1.7.2</version>
         </dependency>
+        <dependency>
+		    <groupId>tanukisoft</groupId>
+		    <artifactId>wrapper</artifactId>
+		    <version>3.2.3</version>
+		</dependency>
     </dependencies>
     
 	<build>
@@ -293,15 +298,6 @@
 										<property>
 											<name>wrapper.logfile</name>
 											<value>logs/wrapper.log</value>
-										</property>
-										<property>
-											<!-- On UNIX systems, 
-												some backup programs that run as cron jobs 
-												will send out system-wide "TERM" signals that can cause the Wrapper to shutdown. 
-												These signals can be ignored by setting this property to TRUE.
-											-->
-											<name>wrapper.ignore_signals</name>
-											<value>true</value>
 										</property>
 										<!-- 内存溢出检测 -->
 										<property>
