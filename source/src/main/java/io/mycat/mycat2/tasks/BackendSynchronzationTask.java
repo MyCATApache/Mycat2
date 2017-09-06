@@ -32,11 +32,18 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         logger.info("synchronzation state to bakcend.session=" + session.toString());
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
-        String charset = CharsetUtil.getCharset(Integer.parseInt(session.charSet.charsetIndex))+" ;";
+        String charset = null;
+        System.out.println("charset.........................."+session.charSet);
+        if(session.charSet!=null) {
+            charset = CharsetUtil.getCharset(Integer.parseInt(session.charSet.charsetIndex)) + " ;";
+        }
         QueryPacket queryPacket = new QueryPacket();
         queryPacket.packetId = 0;
         queryPacket.sql = session.isolation.getCmd() + session.autoCommit.getCmd() + session.isolation.getCmd()+
                         session.charSet.getCmd()+charset;
+        if(session.charSet!=null && charset!=null){
+            queryPacket.sql +=queryPacket.sql+session.charSet.getCmd()+charset;
+        }
         syncCmdNum = 3;
         queryPacket.write(proxyBuf);
         proxyBuf.flip();
