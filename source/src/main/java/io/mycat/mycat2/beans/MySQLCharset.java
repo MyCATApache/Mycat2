@@ -9,4 +9,8 @@ package io.mycat.mycat2.beans;
 public class MySQLCharset {
 	public String charset;
 	public String charsetIndex;
+
+	public  String getCmd(){
+		return "SET names ";
+	}
 }
