@@ -207,7 +207,7 @@
 							<id>mycat</id>
 							<mainClass>io.mycat.mycat2.MycatCore</mainClass>
 							<commandLineArguments>
-								<commandLineArgument>start</commandLineArgument>
+								<commandLineArgument>1</commandLineArgument>
 							</commandLineArguments>
 							<platforms>
 								<platform>jsw</platform>

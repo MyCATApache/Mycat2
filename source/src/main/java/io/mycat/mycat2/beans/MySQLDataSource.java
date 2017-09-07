@@ -24,6 +24,8 @@
 package io.mycat.mycat2.beans;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,8 +69,14 @@ public class MySQLDataSource {
 
 	private TransferQueue<MySQLSession> sessionQueue = new LinkedTransferQueue<>();
 
-	public MySQLSession getExistsSession() {
+	public MySQLSession getExistsSession() throws ClosedChannelException {
 		MySQLSession session = sessionQueue.poll();
+		ProxyReactorThread reactorThread = (ProxyReactorThread) Thread.currentThread();
+		if(session!=null&&!session.nioSelector.equals(reactorThread.getSelector())){
+			session.channelKey.cancel();
+			session.nioSelector = reactorThread.getSelector();
+			session.channelKey = session.channel.register(session.nioSelector, SelectionKey.OP_READ, session);
+		}
 		return session;
 	}
 
