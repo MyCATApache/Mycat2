@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.mycat.proxy.ConfigKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +153,7 @@ public class MyCluster {
 	}
 	private JoinCLusterNotifyPacket createJoinNotifyPkg(AdminSession session,byte joinState) {
 		JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes(),
-				ProxyRuntime.INSTANCE.getProxyConfig().getMyConfigFileVersion());
+				ProxyRuntime.INSTANCE.getProxyConfig().getConfigVersion(ConfigKey.MYCAT_CONF));
 		respPacket.setJoinState(joinState);
 		return respPacket;
 	}

@@ -29,6 +29,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.Properties;
 
+import io.mycat.proxy.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +38,6 @@ import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.common.NamebleScheduledExecutor;
-import io.mycat.proxy.BufferPool;
-import io.mycat.proxy.NIOAcceptor;
-import io.mycat.proxy.ProxyReactorThread;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.MyCluster;
@@ -71,6 +68,7 @@ public class MycatCore {
 		}
 		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+mycatConf) : instream;
 		MycatConfig conf = MycatConfig.loadFromProperties(instream);
+
 		loadProperties(conf, "replica-index.properties");
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
@@ -111,11 +109,14 @@ public class MycatCore {
 			MySQLReplicatSet mysqlRepSet = new MySQLReplicatSet(repBean, (repIndex == null) ? 0 : repIndex);
 			conf.addMySQLReplicatSet(mysqlRepSet);
 		}
+		conf.putConfigVersion(ConfigKey.DATASOURCE, ConfigKey.INIT_VERSION);
+
 		URL schemaURL = ConfigLoader.class.getResource("/schema.xml");
 		List<SchemaBean> schemaBeans = ConfigLoader.loadSheamBeans(schemaURL.toString());
 		for (SchemaBean schemaBean : schemaBeans) {
 			conf.addSchemaBean(schemaBean);
 		}
+		conf.putConfigVersion(ConfigKey.SCHEMA, ConfigKey.INIT_VERSION);
 	}
 
 	private static void loadProperties(MycatConfig conf, String propName) throws IOException {
@@ -127,6 +128,8 @@ public class MycatCore {
 			Properties props = new Properties();
 			props.load(instream);
 			props.forEach((key, value) -> conf.addRepIndex((String)key, Integer.parseInt((String)value)));
+			//加载完毕设置配置文件版本，默认为1
+			conf.putConfigVersion(ConfigKey.REPLICA_INDEX, ConfigKey.INIT_VERSION);
 		} finally {
 			if(instream!=null) {
 				instream.close();

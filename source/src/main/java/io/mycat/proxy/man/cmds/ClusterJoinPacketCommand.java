@@ -2,6 +2,7 @@ package io.mycat.proxy.man.cmds;
 
 import java.io.IOException;
 
+import io.mycat.proxy.ConfigKey;
 import io.mycat.proxy.man.packet.NodeRegInfoPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 				jionState = JoinCLusterNotifyPacket.JOIN_STATE_ACKED;
 			}
 			JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes(),
-					ProxyRuntime.INSTANCE.getProxyConfig().getMyConfigFileVersion());
+					ProxyRuntime.INSTANCE.getProxyConfig().getConfigVersion(ConfigKey.MYCAT_CONF));
 			respPacket.setJoinState(jionState);
 			session.answerClientNow(respPacket);
 
@@ -56,7 +57,8 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 
 		} else if (cmdType == ManagePacket.PKG_JOIN_NOTIFY_ClUSTER) {
 			// leader 批准加入Cluster
-			JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket();
+			int configVersion = ProxyRuntime.INSTANCE.getProxyConfig().getConfigVersion(ConfigKey.MYCAT_CONF);
+			JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(null, configVersion);
 			respPacket.resolve(session.readingBuffer);
 			if (respPacket.getJoinState() == JoinCLusterNotifyPacket.JOIN_STATE_DENNIED) {
 				logger.warn("Leader denied my join cluster request ");
