@@ -77,9 +77,10 @@ public abstract class AbstractSession implements Session {
 		if (this.proxyBuffer != null && referedBuffer == false) {
 			this.bufPool.recycleBuf(proxyBuffer.getBuffer());
 			proxyBuffer = sharedBuffer;
+			this.referedBuffer = true;
+		}else if(sharedBuffer==null){
+			this.referedBuffer = false;
 		}
-		this.referedBuffer = true;
-
 	}
 
 	public boolean isCurBufOwner() {
