@@ -77,9 +77,10 @@ public abstract class AbstractSession implements Session {
 		if (this.proxyBuffer != null && referedBuffer == false) {
 			this.bufPool.recycleBuf(proxyBuffer.getBuffer());
 			proxyBuffer = sharedBuffer;
+			this.referedBuffer = true;
+		}else if(sharedBuffer==null){
+			this.referedBuffer = false;
 		}
-		this.referedBuffer = true;
-
 	}
 
 	public boolean isCurBufOwner() {
@@ -135,7 +136,7 @@ public abstract class AbstractSession implements Session {
 			throw new java.lang.IllegalArgumentException("buffer not changed to me ");
 		} else if (this.proxyBuffer.isInReading() != bufferReadstate) {
 			throw new java.lang.IllegalArgumentException(
-					"buffer not in correcte state ,expected state  " + (bufferReadstate ? " readable " : "writable "));
+					"buffer not in correcte state ,expected state  " + (bufferReadstate ? " readable " : "writable ") + this.channel);
 		}
 	}
 
@@ -210,8 +211,10 @@ public abstract class AbstractSession implements Session {
 	protected void checkWriteFinished() throws IOException {
 		checkBufferOwner(true);
 		if (!this.proxyBuffer.writeFinished()) {
+			logger.debug("curr proxyBuffer has not writeFinished! change2WriteOpts" + this);
 			this.change2WriteOpts();
 		} else {
+			logger.debug("curr proxyBuffer has writeFinished! " + this);
 			writeFinished();
 			// clearReadWriteOpts();
 		}
@@ -220,10 +223,11 @@ public abstract class AbstractSession implements Session {
 	
 	public void change2ReadOpts() {
 		//不做检查，因为两个chanel不确定哪个会对读事件感兴趣，因此通常会都设置为读感兴趣
-		int intesOpts = this.channelKey.interestOps();
+		
 		// 事件转换时,只注册一个事件,存在可写事件没有取消注册的情况。这里把判断取消
 //		if ((intesOpts & SelectionKey.OP_READ) != SelectionKey.OP_READ) {
-			channelKey.interestOps(SelectionKey.OP_READ);
+		logger.debug(channel+" interestOps OP_READ ");
+		channelKey.interestOps(SelectionKey.OP_READ);
 //		}
 	}
 
@@ -236,7 +240,8 @@ public abstract class AbstractSession implements Session {
 		int intesOpts = this.channelKey.interestOps();
 		// 事件转换时,只注册一个事件,存在可读事件没有取消注册的情况。这里把判断取消
 //		if ((intesOpts & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
-			channelKey.interestOps(SelectionKey.OP_WRITE);
+		logger.debug(channel+" interestOps OP_WRITE ");
+		channelKey.interestOps(SelectionKey.OP_WRITE);
 //		}
 	}
 

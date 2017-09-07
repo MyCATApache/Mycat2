@@ -51,6 +51,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 				ProxyBuffer curBuffer = session.proxyBuffer;
 				// 切换 buffer 读写状态
 				curBuffer.flip();
+
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
 				// 改变 owner，对端Session获取，并且感兴趣写事件
@@ -89,8 +90,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
 		// 判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
 		// 检查当前已经结束，进行切换
-		logger.warn("not well implemented ,please fix it ");
-
 		// 检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
 		if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey())) {
 			session.proxyBuffer.flip();

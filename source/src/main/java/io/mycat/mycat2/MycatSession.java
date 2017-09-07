@@ -204,9 +204,10 @@ public class MycatSession extends AbstractMySQLSession {
 		curBackend.setCurBufOwner(true);
 		if (intestOpts == SelectionKey.OP_READ) {
 			curBackend.change2ReadOpts();
-		} else {
-			curBackend.change2WriteOpts();
-		}
+		} 
+//		else {
+//			curBackend.change2WriteOpts();
+//		}
 	}
 
 	/**
@@ -323,21 +324,30 @@ public class MycatSession extends AbstractMySQLSession {
                     .map(mycatSession -> getFirstSession(mycatSession, backendName, true, runOnSlave, true))
                     .filter(session -> session != null).findFirst().orElse(null);
             if (mysqlSession != null) {
+            	if (logger.isDebugEnabled()) {
+        			logger.debug("Use reactor cached backend connections for "+ (runOnSlave ? "read" : "write"));
+        		}
                 mysqlSession.unbindMycatSession();
             }
+		}else{
+			if (logger.isDebugEnabled()) {
+				logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
+			}
 		}
 
 		if (mysqlSession == null){
-			if(logger.isDebugEnabled()){
-				logger.debug("create new connection for "+(runOnSlave?"read":"write"));
-			}
-
+			
 			final MySQLDataSource ds = this.getDatasource(runOnSlave);
 			//4. 从ds中获取已经建立的连接
             mysqlSession = ds.getExistsSession();
 
             // 5. 新建连接
             if (mysqlSession == null) {
+            	
+            	if(logger.isDebugEnabled()){
+    				logger.debug("create new connection for "+(runOnSlave?"read":"write"));
+    			}
+            	
                 boolean createResult = ds.createMySQLSession(this, this.bufPool, this.nioSelector, this.schema,
                     (optSession, Sender, exeSucces, retVal) -> {
                         //设置当前连接 读写分离属性
@@ -359,14 +369,15 @@ public class MycatSession extends AbstractMySQLSession {
                     throw new RuntimeException("connection is full");
                 }
                 return;
+            }else{
+            	if(logger.isDebugEnabled()){
+    				logger.debug("Using the existing session in the datasource  for "+ (runOnSlave ? "read" : "write"));
+    			}
             }
 		}
 
 		curBackend = mysqlSession;
         this.bindBackend(curBackend);
-		if (logger.isDebugEnabled()) {
-			logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
-		}
 		callback.finished(curBackend,null,true,null);
 	}
 
