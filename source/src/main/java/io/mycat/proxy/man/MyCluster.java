@@ -57,13 +57,17 @@ public class MyCluster {
 	private long lastClusterStateTime;
 	private final Selector nioSelector;
 
-	public MyCluster(Selector nioSelector, ClusterNode myNode, ArrayList<ClusterNode> allClusterNodes) {
-		this.myNode = myNode;
+	public MyCluster(Selector nioSelector, String myNodeId, ArrayList<ClusterNode> allClusterNodes) {
 		this.nioSelector = nioSelector;
+		ClusterNode myNode = null;
 		for (ClusterNode node : allClusterNodes) {
+			if (myNodeId.equals(node.id)) {
+				myNode = node;
+			}
 			allNodes.put(node.id, node);
 		}
-
+		myNode.setState(NodeState.Online);
+		this.myNode = myNode;
 	}
 
 	/**
@@ -187,7 +191,7 @@ public class MyCluster {
 	}
 
 	private int getMyAliveNodesCount() {
-		int aliveCount = 1;
+		int aliveCount = 0;
 		for (ClusterNode curNode : this.allNodes.values()) {
 			if (curNode.getState() == NodeState.Online) {
 				aliveCount++;
@@ -218,8 +222,7 @@ public class MyCluster {
 			ProxyStarter.INSTANCE.stopProxy();
 		} else if (myLeader == myNode) {
 			//如果集群数量小于1/2就通知集群解散
-			if (this.getMyAliveNodesCount() * 2 < this.allNodes.size())
-			{
+			if (this.getMyAliveNodesCount() <= this.allNodes.size() >> 1) {
 				logger.warn("Less then 1/2 mumbers  in my Kingdom ,so I quit ");
 				this.setClusterState(ClusterState.LeaderElection);
 				this.myLeader=null;

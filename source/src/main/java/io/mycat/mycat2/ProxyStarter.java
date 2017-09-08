@@ -33,8 +33,7 @@ public class ProxyStarter {
 			startProxyReactorThread();
 
 			runtime.setAdminCmdResolver(new AdminCommandResovler());
-			ClusterNode myNode = new ClusterNode(conf.getMyNodeId(), conf.getClusterIP(), conf.getClusterPort());
-			MyCluster cluster = new MyCluster(acceptor.getSelector(), myNode, ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
+			MyCluster cluster = new MyCluster(acceptor.getSelector(), conf.getMyNodeId(), ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
 			runtime.setMyCLuster(cluster);
 			cluster.initCluster();
 		} else {
