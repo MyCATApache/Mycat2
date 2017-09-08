@@ -93,7 +93,7 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 	 * @throws IOException
 	 *             可能的异常信息
 	 */
-	public synchronized SqlCacheMapFileBean getAndPutCacheObject(ProxyBuffer buffer, int size)
+	public  SqlCacheMapFileBean getAndPutCacheObject(ProxyBuffer buffer, int size)
 			throws IOException, InterruptedException {
 
 		SqlCacheMapFileBean sqlCahce = new SqlCacheMapFileBean();
@@ -197,21 +197,24 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 		// 获取文件的游标
 		long filePosition = 0;
 		try {
-			filePosition = (long) cacheResult.getChannel().position();
+			if (lock) {
+				filePosition = (long) cacheResult.getChannel().position();
 
-			// 进行文件的扩容
-			cacheResult.getRandomFile().setLength(filePosition + buffer.writeIndex - buffer.readMark);
-			// 重新标识出通道的大小
-			cacheResult.getChannel().position(filePosition + buffer.writeIndex - buffer.readMark);
+				// 进行文件的扩容
+				cacheResult.getRandomFile().setLength(filePosition + buffer.writeIndex - buffer.readMark);
+				// 重新标识出通道的大小
+				cacheResult.getChannel().position(filePosition + buffer.writeIndex - buffer.readMark);
 
-			long currPostision = 0;
+				long currPostision = 0;
 
-			// 将数据写入到内存的映射中
-			for (int i = buffer.readMark; i < buffer.writeIndex; i++) {
-				currPostision = getPutPos(cacheResult);
-				// 进行内存数据写入
-				unsafe.putByte(cacheResult.getMemoryAddress() + currPostision, buffer.getBuffer().get(i));
-				currPostision = addPutPos(cacheResult);
+				// 将数据写入到内存的映射中
+				for (int i = buffer.readMark; i < buffer.writeIndex; i++) {
+					currPostision = getPutPos(cacheResult);
+					// 进行内存数据写入
+					unsafe.putByte(cacheResult.getMemoryAddress() + currPostision, buffer.getBuffer().get(i));
+					//进行指针的位移操作
+					currPostision = addPutPos(cacheResult);
+				}
 			}
 
 		} catch (IOException e) {
@@ -290,7 +293,7 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 			}
 
 			// 缓存结果完成后，需要删除文件
-			//new File(cacheInfo.getFileName()).delete();
+			new File(cacheInfo.getFileName()).delete();
 
 		}
 	}
