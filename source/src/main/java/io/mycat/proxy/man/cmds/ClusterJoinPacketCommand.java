@@ -2,6 +2,7 @@ package io.mycat.proxy.man.cmds;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.ProxyStarter;
 import io.mycat.proxy.ConfigKey;
 import io.mycat.proxy.man.packet.NodeRegInfoPacket;
 import org.slf4j.Logger;
@@ -68,6 +69,9 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 				session.cluster().setClusterState(ClusterState.Clustered);
 				JoinCLusterAckPacket ackPacket = new JoinCLusterAckPacket(session.cluster().getMyAliveNodes());
 				session.answerClientNow(ackPacket);
+
+				// 已加入集群，加载配置
+				ProxyStarter.INSTANCE.startProxy(false);
 			}
 
 		} else {

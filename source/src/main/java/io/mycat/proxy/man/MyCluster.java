@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.mycat.mycat2.ProxyStarter;
 import io.mycat.proxy.ConfigKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,6 +127,8 @@ public class MyCluster {
 				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK);
 				notifyAllNodes(session,joinReps);
 
+				// 集群主已产生，继续加载配置，提供服务
+				ProxyStarter.INSTANCE.startProxy(true);
 			} else if (theNode.getMyClusterState() == ClusterState.LeaderElection) {
 				setClusterState(ClusterState.LeaderElection);
 			}
@@ -210,18 +213,23 @@ public class MyCluster {
 		if (theNode == myLeader) {
 			logger.warn("Leader crashed " + myLeader.id + ' ' + this.getMyNodeId() + ",enter Leader election state ");
 			this.setClusterState(ClusterState.LeaderElection);
-		} else if (myLeader == myNode) {
-               //如果集群数量小于1/2就通知集群解散
-			   if(this.getMyAliveNodesCount()<this.allNodes.size()/2)
-			   {
-				   logger.warn("Less then 1/2 mumbers  in my Kingdom ,so I quit ");
-				   this.setClusterState(ClusterState.LeaderElection);
-				   this.myLeader=null;
-				   JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_DENNIED);
-					notifyAllNodes(session,joinReps);
-			   }
-		}
 
+			// 当前集群失去主节点，关闭proxy服务
+			ProxyStarter.INSTANCE.stopProxy();
+		} else if (myLeader == myNode) {
+			//如果集群数量小于1/2就通知集群解散
+			if (this.getMyAliveNodesCount() * 2 < this.allNodes.size())
+			{
+				logger.warn("Less then 1/2 mumbers  in my Kingdom ,so I quit ");
+				this.setClusterState(ClusterState.LeaderElection);
+				this.myLeader=null;
+				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_DENNIED);
+				notifyAllNodes(session,joinReps);
+
+				// 当前集群失去主节点，关闭proxy服务
+				ProxyStarter.INSTANCE.stopProxy();
+			}
+		}
 	}
 
 	public String getMyNodeId() {

@@ -25,22 +25,14 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Properties;
 
 import io.mycat.proxy.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.common.NamebleScheduledExecutor;
-import io.mycat.proxy.man.AdminCommandResovler;
-import io.mycat.proxy.man.ClusterNode;
-import io.mycat.proxy.man.MyCluster;
 
 /**
  * @author wuzhihui
@@ -56,6 +48,7 @@ public class MycatCore {
 		NameableExecutor businessExecutor = ExecutorUtil.create("BusinessExecutor", 10);
 		// 定时器Executor，用来执行定时任务
 		NamebleScheduledExecutor timerExecutor = ExecutorUtil.createSheduledExecute("Timer", 5);
+
 		InputStream instream = null;
 		String mySeq="1";
 		if (args.length > 0) {
@@ -67,73 +60,24 @@ public class MycatCore {
 			instream = ClassLoader.getSystemResourceAsStream(mycatConf);
 		}
 		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+mycatConf) : instream;
+		// mycat.conf的加载不需要在集群内
 		MycatConfig conf = MycatConfig.loadFromProperties(instream);
 
-		loadProperties(conf, "replica-index.properties");
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
-		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
-		// runtime.setNioProxyHandler(new DefaultDirectProxyHandler());
+
 		int cpus = Runtime.getRuntime().availableProcessors();
 		runtime.setNioReactorThreads(cpus);
 		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
+
+		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
+		// runtime.setNioProxyHandler(new DefaultDirectProxyHandler());
 		// runtime.setSessionManager(new DefaultTCPProxySessionManager());
 		// Debug观察MySQL协议用
 		// runtime.setSessionManager(new MySQLStudySessionManager());
-		// Mycat 2.0 Session Manager
 		runtime.setSessionManager(new MycatSessionManager());
 		runtime.init();
-		ProxyReactorThread<?>[] nioThreads = runtime.getReactorThreads();
-		for (int i = 0; i < cpus; i++) {
-			ProxyReactorThread<?> thread = new ProxyReactorThread<>(new BufferPool(1024 * 10));
-			thread.setName("NIO_Thread " + (i + 1));
-			thread.start();
-			nioThreads[i] = thread;
-		}
-		// 启动NIO Acceptor
-		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
-		acceptor.start();
-		if (conf.isClusterEnable()) {
-			runtime.setAdminCmdResolver(new AdminCommandResovler());
-			ClusterNode myNode = new ClusterNode(conf.getMyNodeId(), conf.getClusterIP(), conf.getClusterPort());
-			MyCluster cluster = new MyCluster(acceptor.getSelector(), myNode,
-					ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
-			runtime.setMyCLuster(cluster);
-			cluster.initCluster();
-		}
 
-		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
-		List<MySQLRepBean> mysqlRepBeans = ConfigLoader.loadMySQLRepBean(datasourceURL.toString());
-		for (final MySQLRepBean repBean : mysqlRepBeans) {
-			Integer repIndex = conf.getRepIndex(repBean.getName());
-			MySQLReplicatSet mysqlRepSet = new MySQLReplicatSet(repBean, (repIndex == null) ? 0 : repIndex);
-			conf.addMySQLReplicatSet(mysqlRepSet);
-		}
-		conf.putConfigVersion(ConfigKey.DATASOURCE, ConfigKey.INIT_VERSION);
-
-		URL schemaURL = ConfigLoader.class.getResource("/schema.xml");
-		List<SchemaBean> schemaBeans = ConfigLoader.loadSheamBeans(schemaURL.toString());
-		for (SchemaBean schemaBean : schemaBeans) {
-			conf.addSchemaBean(schemaBean);
-		}
-		conf.putConfigVersion(ConfigKey.SCHEMA, ConfigKey.INIT_VERSION);
-	}
-
-	private static void loadProperties(MycatConfig conf, String propName) throws IOException {
-		System.out.println("look Java Classpath for " + propName);
-		InputStream	instream = ClassLoader.getSystemResourceAsStream(propName);
-		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+propName) : instream;
-		try
-		{
-			Properties props = new Properties();
-			props.load(instream);
-			props.forEach((key, value) -> conf.addRepIndex((String)key, Integer.parseInt((String)value)));
-			//加载完毕设置配置文件版本，默认为1
-			conf.putConfigVersion(ConfigKey.REPLICA_INDEX, ConfigKey.INIT_VERSION);
-		} finally {
-			if(instream!=null) {
-				instream.close();
-			}
-		}
+		ProxyStarter.INSTANCE.start();
 	}
 }
