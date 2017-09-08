@@ -56,7 +56,7 @@ public class MySQLDataSource {
 	private final String name;
 	private final AtomicInteger activeSize;
 	private final MySQLBean mysqlBean;
-	private final ConMap conMap = new ConMap();
+	private final SessionMap sessionMap = new SessionMap();
 	private long heartbeatRecoveryTime;
 	private boolean slaveNode;
 
@@ -64,13 +64,6 @@ public class MySQLDataSource {
 	public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
 	/** charsetName 到 默认collationIndex 的映射 */
 	public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
-
-	private TransferQueue<MySQLSession> sessionQueue = new LinkedTransferQueue<>();
-
-	public MySQLSession getExistsSession() {
-		MySQLSession session = sessionQueue.poll();
-		return session;
-	}
 
 	public MySQLDataSource(MySQLBean config, boolean islaveNode) {
 		this.activeSize = new AtomicInteger(0);
@@ -132,13 +125,12 @@ public class MySQLDataSource {
 									//设置当前连接 读写分离属性
 									optSession.setDefaultChannelRead(this.slaveNode);
 									if (curSize == 1) {
-										BackendCharsetReadTask backendCharsetReadTask =
-												new BackendCharsetReadTask(optSession, this);
+										BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
 										optSession.setCurNIOHandler(backendCharsetReadTask);
 										backendCharsetReadTask.readCharset();
 									}
 									optSession.change2ReadOpts();
-									sessionQueue.add(optSession);
+									sessionMap.getReactorConnections(reactorThread.getName()).add(optSession);
 								}
 							});
 				} catch (IOException e) {
@@ -151,47 +143,21 @@ public class MySQLDataSource {
 		return true;
 	}
 
-	public BackConnection getConnection(String schema) throws IOException {
-		return this.conMap.tryTakeCon(schema);
-		// if (con != null) {
-		// takeCon(con, // handler,
-		// mySQLFrontConnection, schema);
-		// return con;
-		// }
-		// else
-		// {
-		// int activeCons = this.getActiveCount();// 当前最大活动连接
-		// if (activeCons + 1 > size) {// 下一个连接大于最大连接数
-		// LOGGER.error("the max activeConnnections size can not be max than
-		// maxconnections");
-		// throw new IOException("the max activeConnnections size can not be max
-		// than maxconnections");
-		// } else { // create connection
-		// LOGGER.info(
-		// "no ilde connection in pool,create new connection for " + this.name +
-		// " of schema " + schema);
-		// MySQLBackendConnection mySQLBackendConnection =
-		// createNewConnectionOnReactor(reactor, schema,
-		// mySQLFrontConnection, userCallback);
-		// mySQLFrontConnection.setBackendConnection(mySQLBackendConnection);
-		// return mySQLBackendConnection;
-		// }
-		// }
-
+	public MySQLSession getExistsSession(String reactor) throws IOException {
+		return this.sessionMap.tryTakeCon(reactor);
 	}
 
-	public void releaseChannel(BackConnection c) {
+	public void releaseSession(String reactor, MySQLSession session) {
 		// c.setLastTime(TimeUtil.currentTimeMillis());
-		this.conMap.returnCon(c);
+		this.sessionMap.returnCon(reactor, session);
 
 		if (LOGGER.isDebugEnabled()) {
-			LOGGER.debug("release channel " + c);
+			LOGGER.debug("release session " + session);
 		}
 	}
 
-	public void connectionClosed(BackConnection conn) {
-		conMap.getSchemaConnections(conn.schema).remove(conn);
-
+	public void sessionClosed(String reactor, MySQLSession session) {
+		sessionMap.getReactorConnections(reactor).remove(session);
 	}
 
 	public long getHeartbeatRecoveryTime() {

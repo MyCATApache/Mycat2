@@ -79,7 +79,6 @@ public class MycatSession extends AbstractMySQLSession {
 
 	/**
 	 * 获取sql 类型
-	 * @param session
 	 * @return
 	 */
 	public MyCommand getMyCommand(){
@@ -177,7 +176,7 @@ public class MycatSession extends AbstractMySQLSession {
 	/**
 	 * 获取ProxyBuffer控制权，同时设置感兴趣的事件，如SocketRead，Write，只能其一
 	 *
-	 * @param intestOpt，
+	 * @param intestOpts
 	 * @return
 	 */
 	public void takeOwner(int intestOpts) {
@@ -316,8 +315,9 @@ public class MycatSession extends AbstractMySQLSession {
 		MySQLSession mysqlSession = getFirstSession(this, backendName, false, runOnSlave, false);
 
 		//3. 从reactor的其他MycatSession中获取空闲连接
+		ProxyReactorThread reactorThread = null;
 		if (mysqlSession == null) {
-			ProxyReactorThread reactorThread = (ProxyReactorThread) Thread.currentThread();
+			reactorThread = (ProxyReactorThread) Thread.currentThread();
 			ArrayList<MycatSession> mycatSessions = reactorThread.getAllSessions();
             mysqlSession = mycatSessions.stream()
                     .map(mycatSession -> getFirstSession(mycatSession, backendName, true, runOnSlave, true))
@@ -334,7 +334,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 			final MySQLDataSource ds = this.getDatasource(runOnSlave);
 			//4. 从ds中获取已经建立的连接
-            mysqlSession = ds.getExistsSession();
+            mysqlSession = ds.getExistsSession(reactorThread.getName());
 
             // 5. 新建连接
             if (mysqlSession == null) {
@@ -431,7 +431,6 @@ public class MycatSession extends AbstractMySQLSession {
 
 	/**
 	 * 同步后端连接状态
-	 * @param mycatSession
 	 * @param mysqlSession
 	 * @param callback
 	 * @throws IOException
