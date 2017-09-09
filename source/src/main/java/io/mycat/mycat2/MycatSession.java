@@ -346,11 +346,13 @@ public class MycatSession extends AbstractMySQLSession {
                         this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
                         optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
                         if (exeSucces) {
-                            this.bindBackend(optSession);
+							syncSessionStateToBackend(optSession,(synMysqlSession,sender,succes,val)->{
+								bindBackend(optSession);
+							});
                         } else {
                             ds.getActiveSize().decrementAndGet();
                             ErrorPacket errPkg = (ErrorPacket) retVal;
-                            this.responseOKOrError(errPkg);
+                            responseOKOrError(errPkg);
                         }
                     });
                 if (!createResult) {
@@ -362,13 +364,15 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 
 		curBackend = mysqlSession;
-        this.bindBackend(curBackend);
+        bindBackend(curBackend);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
 		}
-
-		syncSessionStateToBackend(curBackend,callback);
-//		callback.finished(curBackend,null,true,null);
+		if(mysqlSession != null){
+			syncSessionStateToBackend(mysqlSession,callback);
+		} else {
+			callback.finished(curBackend,null,true,null);
+		}
 	}
 
     /**
