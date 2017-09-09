@@ -48,6 +48,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		backendChannel.configureBlocking(false);
 		backendChannel.connect(serverAddress);
 		session = new MySQLSession(bufPool, nioSelector, backendChannel);
+		session.setMySQLDataSource(ds);
 		this.setSession(session, false);
 		this.ds = ds;
 		this.schema = schema;

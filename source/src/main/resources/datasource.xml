@@ -1,7 +1,7 @@
 <datasources>
 	<mysql-ds>
 		<mysql-replica name="test" type="0" switch-type="0">
-			<mysql hostname="rep0_0" ip="127.0.0.1" port="3306" user="root" password="123456" min-con="1" max-con="20"/>
+			<mysql hostname="rep0_0" ip="127.0.0.1" port="3306" user="root" password="123456" min-con="8" max-con="8"/>
 		</mysql-replica>
 
 		<!--<mysql-replica name="replica_1" type="0" switch-type="0">-->

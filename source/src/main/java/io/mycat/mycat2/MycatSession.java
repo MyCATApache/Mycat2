@@ -174,6 +174,21 @@ public class MycatSession extends AbstractMySQLSession {
 	}
 
 	/**
+	 * 将所有后端连接归还到ds中
+	 */
+	public void unbindAllBackend() {
+		final String reactor = Thread.currentThread().getName();
+		backendMap.forEach((key, value) -> {
+			if (value != null) {
+				value.forEach(mySQLSession -> {
+					mySQLSession.unbindMycatSession();
+					mySQLSession.getMySQLDataSource().releaseSession(reactor, mySQLSession);
+				});
+			}
+		});
+	}
+
+	/**
 	 * 获取ProxyBuffer控制权，同时设置感兴趣的事件，如SocketRead，Write，只能其一
 	 *
 	 * @param intestOpts
