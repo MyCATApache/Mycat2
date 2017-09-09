@@ -5,27 +5,20 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
+import io.mycat.mycat2.beans.*;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.ProxyReactorThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.beans.DNBean;
-import io.mycat.mycat2.beans.MySQLDataSource;
-import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
-import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchemaTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.AutoCommit;
@@ -177,12 +170,12 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 将所有后端连接归还到ds中
 	 */
 	public void unbindAllBackend() {
-		final String reactor = Thread.currentThread().getName();
+		final ProxyReactorThread reactor = (ProxyReactorThread) Thread.currentThread();
 		backendMap.forEach((key, value) -> {
 			if (value != null) {
 				value.forEach(mySQLSession -> {
 					mySQLSession.unbindMycatSession();
-					mySQLSession.getMySQLDataSource().releaseSession(reactor, mySQLSession);
+					reactor.addMySQLSession(mySQLSession.getMySQLMetaBean(), mySQLSession);
 				});
 			}
 		});
@@ -242,7 +235,7 @@ public class MycatSession extends AbstractMySQLSession {
 		this.curSQLCommand.clearResouces(true);
 	}
 
-	public MySQLDataSource getDatasource(boolean runOnSlave) {
+	public MySQLMetaBean getDatasource(boolean runOnSlave) {
 		SchemaBean schemaBean = this.schema;
 		MycatConfig mycatConf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
 		if (schemaBean == null) {
@@ -250,8 +243,8 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 		DNBean dnBean = schemaBean.getDefaultDN();
 		String replica = dnBean.getMysqlReplica();
-		MySQLReplicatSet repSet = mycatConf.getMySQLReplicatSet(replica);
-		MySQLDataSource datas = runOnSlave ? repSet.getLBReadDH() : repSet.getCurWriteDH();
+		MySQLRepBean repSet = mycatConf.getMySQLReplicat(replica);
+		MySQLMetaBean datas = runOnSlave ? repSet.getLBReadMetaBean() : repSet.getCurWriteMetaBean();
 		return datas;
 	}
 
@@ -330,10 +323,9 @@ public class MycatSession extends AbstractMySQLSession {
 		MySQLSession mysqlSession = getFirstSession(this, backendName, false, runOnSlave, false);
 
 		//3. 从reactor的其他MycatSession中获取空闲连接
-		ProxyReactorThread reactorThread = null;
+		final ProxyReactorThread reactorThread = (ProxyReactorThread) Thread.currentThread();
 		if (mysqlSession == null) {
-			reactorThread = (ProxyReactorThread) Thread.currentThread();
-			ArrayList<MycatSession> mycatSessions = reactorThread.getAllSessions();
+			LinkedList<MycatSession> mycatSessions = reactorThread.getAllSessions();
             mysqlSession = mycatSessions.stream()
                     .map(mycatSession -> getFirstSession(mycatSession, backendName, true, runOnSlave, true))
                     .filter(session -> session != null).findFirst().orElse(null);
@@ -347,32 +339,27 @@ public class MycatSession extends AbstractMySQLSession {
 				logger.debug("create new connection for "+(runOnSlave?"read":"write"));
 			}
 
-			final MySQLDataSource ds = this.getDatasource(runOnSlave);
+			final MySQLMetaBean mySQLMetaBean = this.getDatasource(runOnSlave);
 			//4. 从ds中获取已经建立的连接
-            mysqlSession = ds.getExistsSession(reactorThread.getName());
+            mysqlSession = reactorThread.getExistsSession(mySQLMetaBean);
 
             // 5. 新建连接
             if (mysqlSession == null) {
-                boolean createResult = ds.createMySQLSession(this, this.bufPool, this.nioSelector, this.schema,
-                    (optSession, Sender, exeSucces, retVal) -> {
-                        //设置当前连接 读写分离属性
-                        optSession.setDefaultChannelRead(runOnSlave);
-                        //恢复默认的Handler
-                        this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-                        optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-                        if (exeSucces) {
-                            this.bindBackend(optSession);
-                            syncSessionStateToBackend(optSession,callback);
-                        } else {
-                            ds.getActiveSize().decrementAndGet();
-                            ErrorPacket errPkg = (ErrorPacket) retVal;
-                            this.responseOKOrError(errPkg);
-                        }
-                    });
-                if (!createResult) {
-                    //连接数满
-                    throw new RuntimeException("connection is full");
-                }
+				reactorThread.createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
+					MySQLSession mySQLSession = (MySQLSession) optSession;
+					//设置当前连接 读写分离属性
+					optSession.setDefaultChannelRead(runOnSlave);
+					//恢复默认的Handler
+					this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					mySQLSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					if (exeSucces) {
+						this.bindBackend(mySQLSession);
+						syncSessionStateToBackend(mySQLSession,callback);
+					} else {
+						ErrorPacket errPkg = (ErrorPacket) retVal;
+						this.responseOKOrError(errPkg);
+					}
+				});
                 return;
             }
 		}

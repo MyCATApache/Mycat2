@@ -78,7 +78,9 @@ public abstract class AbstractSession implements Session {
 			this.bufPool.recycleBuf(proxyBuffer.getBuffer());
 			proxyBuffer = sharedBuffer;
 			this.referedBuffer = true;
-		} else if (sharedBuffer == null){
+		} else if (proxyBuffer == null) {
+			proxyBuffer = sharedBuffer;
+		} else if (sharedBuffer == null) {
 			this.referedBuffer = false;
 		}
 	}

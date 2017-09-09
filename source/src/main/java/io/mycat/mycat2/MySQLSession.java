@@ -5,7 +5,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
 import io.mycat.mycat2.cmds.pkgread.PkgProcess;
 import io.mycat.proxy.BufferPool;
@@ -28,8 +28,8 @@ public class MySQLSession extends AbstractMySQLSession {
 	 */
 	private MycatSession mycatSession;
 
-	// 记录当前后端连接所属的后端连接池，用于后端连接归还使用
-	private MySQLDataSource mySQLDataSource;
+	// 记录当前后端连接所属的MetaBean，用于后端连接归还使用
+	private MySQLMetaBean mysqlMetaBean;
 
 	/**
 	 * 当前结束检查处理的状态,默认为首包检查读取
@@ -80,11 +80,11 @@ public class MySQLSession extends AbstractMySQLSession {
 		this.currBackendCachedName = currBackendCachedName;
 	}
 
-	public MySQLDataSource getMySQLDataSource() {
-		return mySQLDataSource;
+	public MySQLMetaBean getMySQLMetaBean() {
+		return mysqlMetaBean;
 	}
 
-	public void setMySQLDataSource(MySQLDataSource mySQLDataSource) {
-		this.mySQLDataSource = mySQLDataSource;
+	public void setMySQLMetaBean(MySQLMetaBean metaBean) {
+		this.mysqlMetaBean = metaBean;
 	}
 }

@@ -150,7 +150,7 @@ public class ConfigLoader {
             	MySQLRepBean repBean=new MySQLRepBean(name,type);
             	repBean.setSwitchType(switchType);
             	List<Node> mysqlNodes=getChildNodes(curRepNode,"mysql");
-            	List<MySQLBean> allMysqls=mysqlNodes.stream().map(mysqlNode->{  
+            	List<MySQLMetaBean> allMysqls=mysqlNodes.stream().map(mysqlNode->{
 					NamedNodeMap attrs = mysqlNode.getAttributes();
 					String hostName = getAttribute(attrs, "hostname", null);
 					String ip=getAttribute(attrs,"ip",null);
@@ -160,7 +160,7 @@ public class ConfigLoader {
 					Integer minCon = getIntAttribute(attrs, "min-con", null);
 					Integer maxCon = getIntAttribute(attrs, "max-con", null);
 
-					MySQLBean mysql=new MySQLBean(ip,port,user,password);
+					MySQLMetaBean mysql=new MySQLMetaBean(ip,port,user,password);
 					if (hostName != null)
 						mysql.setHostName(hostName);
 					if (minCon != null)
@@ -169,8 +169,8 @@ public class ConfigLoader {
 						mysql.setMaxCon(maxCon);
 					return mysql;
 				}).collect(Collectors.toList()) ;
-                 repBean.setMysqls(allMysqls);
-                 list.add(repBean);
+				repBean.setMysqls(allMysqls);
+				list.add(repBean);
             }    
         }catch(Exception e){    
         	LOGGER.warn("loadMySQLRepBean err "+e );

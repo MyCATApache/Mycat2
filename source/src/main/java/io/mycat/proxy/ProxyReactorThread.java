@@ -5,10 +5,16 @@ import java.net.ConnectException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
 
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
+import io.mycat.mycat2.tasks.BackendCharsetReadTask;
+import io.mycat.mycat2.tasks.BackendConCreateTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +31,10 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	protected final Selector selector;
 	protected final BufferPool bufPool;
 	protected ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
-	protected ArrayList<T> allSessions = new ArrayList<T>();
+	protected LinkedList<T> allSessions = new LinkedList<T>();
+
+	// 存放后端连接的map
+	protected Map<MySQLMetaBean, LinkedList<MySQLSession>> mySQLSessionMap = new HashMap<>();
 
 	public Selector getSelector() {
 		return selector;
@@ -35,8 +44,36 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		return bufPool;
 	}
 
-	public ArrayList<T> getAllSessions() {
+	public LinkedList<T> getAllSessions() {
 		return allSessions;
+	}
+
+	public void createSession(MySQLMetaBean mySQLMetaBean, SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack) throws IOException {
+		int count = Stream.of(ProxyRuntime.INSTANCE.getReactorThreads()).map(session -> session.mySQLSessionMap.get(mySQLMetaBean))
+				.filter(list -> list != null).reduce(0, (sum, list) -> sum += list.size(), (sum1, sum2) -> sum1 + sum2);
+		if (count + 1 > mySQLMetaBean.getMaxCon()) {
+			throw new RuntimeException("connection full for " + mySQLMetaBean.getHostName());
+		}
+
+		BackendConCreateTask authProcessor = new BackendConCreateTask(bufPool, selector, mySQLMetaBean, schema);
+		authProcessor.setCallback(callBack);
+	}
+
+	public void addMySQLSession(MySQLMetaBean mySQLMetaBean, MySQLSession mySQLSession) {
+		LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLMetaBean);
+		if (mySQLSessionList == null) {
+			mySQLSessionList = new LinkedList<>();
+			mySQLSessionMap.put(mySQLMetaBean, mySQLSessionList);
+		}
+		mySQLSessionList.add(mySQLSession);
+	}
+
+	public MySQLSession getExistsSession(MySQLMetaBean mySQLMetaBean) {
+		LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLMetaBean);
+		if (mySQLSessionList != null && !mySQLSessionList.isEmpty()) {
+			return mySQLSessionList.removeLast();
+		}
+		return null;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -55,7 +92,6 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 				logger.warn("regist new connection err " + e);
 			}
 		});
-
 	}
 
 	public void addNIOJob(Runnable job) {
