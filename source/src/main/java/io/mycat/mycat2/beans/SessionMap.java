@@ -29,14 +29,17 @@ public class SessionMap {
 
 	public MySQLSession tryTakeCon(final String reactor) {
 		final LinkedList<MySQLSession> conList = items.get(reactor);
+		if (conList == null) {
+			items.put(reactor, new LinkedList<>());
+		}
 		if (!conList.isEmpty()) {
 			return conList.removeLast();
 		}
-		for (LinkedList<MySQLSession> curConList : items.values()) {
-			if (!curConList.isEmpty()) {
-				return curConList.removeLast();
-			}
-		}
+//		for (LinkedList<MySQLSession> curConList : items.values()) {
+//			if (!curConList.isEmpty()) {
+//				return curConList.removeLast();
+//			}
+//		}
 		return null;
 	}
 
