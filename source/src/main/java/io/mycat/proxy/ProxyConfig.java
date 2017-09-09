@@ -2,13 +2,15 @@ package io.mycat.proxy;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import io.mycat.mycat2.MycatConfig;
 
 /**
  * 代理的配置信息
- * 
+ *
  * @author wuzhihui
  *
  */
@@ -26,26 +28,27 @@ public class ProxyConfig {
 	// 逗号分隔的所有集群节点的ID:IP:Port信息，如
 	// leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9068,leader-3:127.0.0.1:9069
 	private String allNodeInfs;
-	// 当前节点所用的配置文件的版本（节点自身的基础配置信息，如绑定的IP地址，端口以及其他只针对自身节点的配置变动不影响配置文件版本，设计的时候，分开两种配置文件）
-	private String myConfigFileVersion="1.0";
+	// 当前节点所用的配置文件的版本
+	private Map<String, Integer> configVersionMap = new HashMap<>();
 
 	public static MycatConfig loadFromProperties(InputStream in) throws IOException {
 		try
 		{
-		MycatConfig conf = new MycatConfig();
-		Properties pros = new Properties();
-		pros.load(in);
-		conf.setBindIP(pros.getProperty("bindip", "0.0.0.0"));
-		conf.setBindPort(Integer.valueOf(pros.getProperty("bindport", "8066")));
-		conf.setClusterIP(pros.getProperty("cluster.ip"));
-		conf.setClusterPort(Integer.valueOf(pros.getProperty("cluster.port", "9066")));
-		conf.setClusterEnable(Boolean.valueOf(pros.getProperty("cluster.enabled", "false")));
-		conf.setMyNodeId(pros.getProperty("cluster.myid"));
-		conf.setAllNodeInfs(pros.getProperty("cluster.allnodes"));
-		return conf;
-		}finally
-		{
-			if(in!=null)
+			MycatConfig conf = new MycatConfig();
+			Properties pros = new Properties();
+			pros.load(in);
+			conf.setBindIP(pros.getProperty("bindip", "0.0.0.0"));
+			conf.setBindPort(Integer.valueOf(pros.getProperty("bindport", "8066")));
+			conf.setClusterIP(pros.getProperty("cluster.ip"));
+			conf.setClusterPort(Integer.valueOf(pros.getProperty("cluster.port", "9066")));
+			conf.setClusterEnable(Boolean.valueOf(pros.getProperty("cluster.enabled", "false")));
+			conf.setMyNodeId(pros.getProperty("cluster.myid"));
+			conf.setAllNodeInfs(pros.getProperty("cluster.allnodes"));
+			//加载mycat.conf配置完毕设置版本号
+			conf.putConfigVersion(ConfigKey.MYCAT_CONF, ConfigKey.INIT_VERSION);
+			return conf;
+		} finally {
+			if (in!=null)
 			{
 				in.close();
 			}
@@ -108,12 +111,21 @@ public class ProxyConfig {
 		this.clusterPort = clusterPort;
 	}
 
-	public String getMyConfigFileVersion() {
-		return myConfigFileVersion;
+	public Map<String, Integer> getConfigVersionMap() {
+		return configVersionMap;
 	}
 
-	public void setMyConfigFileVersion(String myConfigFileVersion) {
-		this.myConfigFileVersion = myConfigFileVersion;
+	public void putConfigVersion(String configKey, Integer configValue) {
+		configVersionMap.put(configKey, configValue);
 	}
 
+	public int getConfigVersion(String configKey) {
+		return configVersionMap.get(configKey);
+	}
+
+	public int configVersionGetAndIncrease(String configKey) {
+		int oldVersion = configVersionMap.get(configKey);
+		configVersionMap.put(configKey, oldVersion + 1);
+		return oldVersion;
+	}
 }

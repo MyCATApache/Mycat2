@@ -1,2 +1,30 @@
 在这里提交需求，
 格式，需求编号，需求内容，需求目的，提出人的QQ
+
+
+Mycat 2.0 HBT技术解决 多表关联案例
+
+select a.id,a.price,b.username where a.id in (111,222,333,444) and b.id=a.id
+
+解析步骤 :
+
+select a.id,a.price where a.id in  (111,222,333,444)——> fetchIntoMapStream(sql,new MapMeta(id,row))
+
+join(b.id=a.id)  ——>select b.id,b.username from b where id  matchs mapA.key
+                join("select b.id,b.username from b", mapA);
+                
+Mycat 2.0 HBT 代码:
+//fetchIntoMapStream(sql,new MapMeta(id,row)).forBatch(100,mapBachRec->{ });
+
+String sql="select a.id,a.price where a.id in (111,222,333,444)";
+String sql2="select b.id,b.username from b",     
+engine.streamOf(new FetchIntoRowStream(new SqlMeta(sql,"a"),new RowMeta("tableA")))
+.joinAndOut(new SqlMeta(sql2,"b"),new RowMeta("tableB"),new JoinMeta("tableA.id","tableB.id",Engnine.MEM,100), new ResultSetMeta({"tableA.id,tableA.price,tableB.username"}),(arow,brow)->{out.write(arow,brow[1]});
+
+实际上还有一些细节考虑：
+String cond=sql.lastIndexOf("where");
+RouteConditionList routeList=new RouteConditionList();
+routeList.add(engine.createRouteCondition(Engine.AND,Engine.IN,"aa,bb,cc"));
+routeList.add(engine.createRouteCondition(Engine.OR,Engine.GREATE,"aa,bb,cc"));
+String[] partions=engine.calcSQLRoute("tableA",routeList);
+上述了路由信息可能需要人工指定，放入 SqlMeta， new(sql,"a"，routeList)
