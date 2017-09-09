@@ -167,6 +167,7 @@ public class AdminSession implements Session {
 		logger.debug(" readed {} total bytes ", readed);
 		if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
+			this.cluster().onClusterNodeDown(nodeId, this);
 			throw new ClosedChannelException();
 		} else if (readed == 0) {
 

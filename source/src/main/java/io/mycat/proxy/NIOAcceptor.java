@@ -24,21 +24,37 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 	private final static Logger logger = LoggerFactory.getLogger(NIOAcceptor.class);
 	protected SessionManager<AdminSession> adminSessionMan;
 
+	private ServerSocketChannel proxyServerSocketChannel;
+	private ServerSocketChannel clusterServerSocketChannel;
+
 	public NIOAcceptor(BufferPool bufferPool) throws IOException {
 		super(bufferPool);
 		this.setName("NIO-Acceptor");
+	}
 
-		ProxyRuntime env = ProxyRuntime.INSTANCE;
-		ProxyConfig conf = env.getProxyConfig();
-		// 打开服务端的socket，普通单节点的mycat，集群标识为false
-		openServerChannel(selector, conf.getBindIP(), conf.getBindPort(), false);
-		// 检查集群标识是否打开
-		if (conf.isClusterEnable()) {
+	public void startServerChannel(String ip, int port, boolean clusterServer) throws IOException {
+		final ServerSocketChannel serverChannel = clusterServer ? clusterServerSocketChannel : proxyServerSocketChannel;
+		if (serverChannel != null && serverChannel.isOpen())
+			return;
+
+		if (clusterServer) {
 			adminSessionMan = new DefaultAdminSessionManager();
-			env.setAdminSessionManager(adminSessionMan);
-			logger.info("opend cluster conmunite port on " + conf.getClusterIP() + ':' + conf.getClusterPort());
-			// 打开集群通信的socket
-			openServerChannel(selector, conf.getClusterIP(), conf.getClusterPort(), true);
+			ProxyRuntime.INSTANCE.setAdminSessionManager(adminSessionMan);
+			logger.info("opend cluster conmunite port on {}:{}", ip, port);
+		}
+
+		openServerChannel(selector, ip, port, clusterServer);
+	}
+
+	public void stopServerChannel(boolean clusterServer) {
+		ServerSocketChannel socketChannel = clusterServer ? clusterServerSocketChannel : proxyServerSocketChannel;
+		if (socketChannel != null && socketChannel.isOpen()) {
+			logger.warn("ServerSocketChannel close, {}", socketChannel);
+			try {
+				socketChannel.close();
+			} catch (IOException e) {
+				logger.warn("ServerSocketChannel close error, {}", socketChannel);
+			}
 		}
 	}
 
@@ -105,13 +121,19 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 	}
 
 	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer)
-			throws IOException, ClosedChannelException {
+			throws IOException {
 		final ServerSocketChannel serverChannel = ServerSocketChannel.open();
 
 		final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
 		serverChannel.bind(isa);
 		serverChannel.configureBlocking(false);
 		serverChannel.register(selector, SelectionKey.OP_ACCEPT, clusterServer);
+
+		if (clusterServer) {
+			clusterServerSocketChannel = serverChannel;
+		} else {
+			proxyServerSocketChannel = serverChannel;
+		}
 	}
 
 	public Selector getSelector() {

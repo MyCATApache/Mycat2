@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.mycat.mycat2.ProxyStarter;
+import io.mycat.proxy.ConfigKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,13 +57,17 @@ public class MyCluster {
 	private long lastClusterStateTime;
 	private final Selector nioSelector;
 
-	public MyCluster(Selector nioSelector, ClusterNode myNode, ArrayList<ClusterNode> allClusterNodes) {
-		this.myNode = myNode;
+	public MyCluster(Selector nioSelector, String myNodeId, ArrayList<ClusterNode> allClusterNodes) {
 		this.nioSelector = nioSelector;
+		ClusterNode myNode = null;
 		for (ClusterNode node : allClusterNodes) {
+			if (myNodeId.equals(node.id)) {
+				myNode = node;
+			}
 			allNodes.put(node.id, node);
 		}
-
+		myNode.setState(NodeState.Online);
+		this.myNode = myNode;
 	}
 
 	/**
@@ -125,6 +131,8 @@ public class MyCluster {
 				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK);
 				notifyAllNodes(session,joinReps);
 
+				// 集群主已产生，继续加载配置，提供服务
+				ProxyStarter.INSTANCE.startProxy(true);
 			} else if (theNode.getMyClusterState() == ClusterState.LeaderElection) {
 				setClusterState(ClusterState.LeaderElection);
 			}
@@ -152,7 +160,7 @@ public class MyCluster {
 	}
 	private JoinCLusterNotifyPacket createJoinNotifyPkg(AdminSession session,byte joinState) {
 		JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes(),
-				ProxyRuntime.INSTANCE.getProxyConfig().getMyConfigFileVersion());
+				ProxyRuntime.INSTANCE.getProxyConfig().getConfigVersion(ConfigKey.MYCAT_CONF));
 		respPacket.setJoinState(joinState);
 		return respPacket;
 	}
@@ -183,7 +191,7 @@ public class MyCluster {
 	}
 
 	private int getMyAliveNodesCount() {
-		int aliveCount = 1;
+		int aliveCount = 0;
 		for (ClusterNode curNode : this.allNodes.values()) {
 			if (curNode.getState() == NodeState.Online) {
 				aliveCount++;
@@ -209,18 +217,22 @@ public class MyCluster {
 		if (theNode == myLeader) {
 			logger.warn("Leader crashed " + myLeader.id + ' ' + this.getMyNodeId() + ",enter Leader election state ");
 			this.setClusterState(ClusterState.LeaderElection);
-		} else if (myLeader == myNode) {
-               //如果集群数量小于1/2就通知集群解散
-			   if(this.getMyAliveNodesCount()<this.allNodes.size()/2)
-			   {
-				   logger.warn("Less then 1/2 mumbers  in my Kingdom ,so I quit ");
-				   this.setClusterState(ClusterState.LeaderElection);
-				   this.myLeader=null;
-				   JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_DENNIED);
-					notifyAllNodes(session,joinReps);
-			   }
-		}
 
+			// 当前集群失去主节点，关闭proxy服务
+			ProxyStarter.INSTANCE.stopProxy();
+		} else if (myLeader == myNode) {
+			//如果集群数量小于1/2就通知集群解散
+			if (this.getMyAliveNodesCount() <= this.allNodes.size() >> 1) {
+				logger.warn("Less then 1/2 mumbers  in my Kingdom ,so I quit ");
+				this.setClusterState(ClusterState.LeaderElection);
+				this.myLeader=null;
+				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_DENNIED);
+				notifyAllNodes(session,joinReps);
+
+				// 当前集群失去主节点，关闭proxy服务
+				ProxyStarter.INSTANCE.stopProxy();
+			}
+		}
 	}
 
 	public String getMyNodeId() {

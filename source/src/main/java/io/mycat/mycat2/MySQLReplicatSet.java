@@ -93,7 +93,7 @@ public class MySQLReplicatSet {
 	 * @return DHSource
 	 */
 	public MySQLDataSource getLBReadDH() {
-		return dhSources[ThreadLocalRandom.current().nextInt() % dhSources.length];
+		return dhSources[ThreadLocalRandom.current().nextInt(dhSources.length)];
 	}
 
 	@Override
