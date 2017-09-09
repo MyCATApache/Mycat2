@@ -13,7 +13,8 @@ public class HashArray {
         }
         pos = 0;
     }
-    public void set(int type, int start, int size) { hashArray[pos++] = (long)type << 32 | size << 16 | start; pos++; }
+    public void set(int type, int start, int size) {
+        hashArray[pos++] = (long)type << 32 | size << 16 | start; pos++; }
     public void set(int type, int start, int size, long hash) { hashArray[pos++] = (long)type << 32 | size << 16 | start; hashArray[pos++] = hash; }
     public int getPos(int idx) { return (((int)hashArray[idx<<1]) & 0xFFFF); }
     public int getSize(int idx) { return (((int)hashArray[idx<<1]&0xFFFF0000) >>> 16); }

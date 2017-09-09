@@ -8,6 +8,7 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mycat2.sqlparser.NewSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -23,6 +24,11 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * 进行SQL命令的处理的容器
 	 */
 	protected Map<Byte, MySQLCommand> MYSQLCOMMANDMAP = new HashMap<>();
+
+	/**
+	 * sqlparser
+	 */
+	protected BufferSQLParser parser = new BufferSQLParser();
 	
 	public AbstractCmdStrategy(){
 		initMyCmdHandler();
@@ -59,9 +65,8 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * @return
 	 */
 	protected MyCommand doGetMySQLCommand(MycatSession session){
-		NewSQLParser parser = new NewSQLParser();
-		parser.parse(session.proxyBuffer.getBytes(session.curMSQLPackgInf.startPos+MySQLPacket.packetHeaderSize+1,
-				session.curMSQLPackgInf.pkgLength - MySQLPacket.packetHeaderSize - 1), session.sqlContext);
+		parser.parse(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos+MySQLPacket.packetHeaderSize+1,
+				session.curMSQLPackgInf.pkgLength - MySQLPacket.packetHeaderSize - 1, session.sqlContext);
 		return MYSQLCOMMANDMAP.get(session.sqlContext.getSQLType());
 	}
 }
