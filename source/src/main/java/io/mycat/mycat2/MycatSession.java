@@ -50,7 +50,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	public SchemaBean schema;
 
-	private Map<String,List<MySQLSession>> backendMap = new HashMap<>();
+	private Map<MySQLMetaBean, List<MySQLSession>> backendMap = new HashMap<>();
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
 
@@ -153,6 +153,11 @@ public class MycatSession extends AbstractMySQLSession {
 		this.writeToChannel();
 	}
 
+	public int getBackendConCounts(MySQLMetaBean metaBean) {
+		List<MySQLSession> mySQLSessionList = backendMap.get(metaBean);
+		return mySQLSessionList == null ? 0 : mySQLSessionList.size();
+	}
+
 	/**
 	 * 绑定后端MySQL会话
 	 *
@@ -175,7 +180,7 @@ public class MycatSession extends AbstractMySQLSession {
 			if (value != null) {
 				value.forEach(mySQLSession -> {
 					mySQLSession.unbindMycatSession();
-					reactor.addMySQLSession(mySQLSession.getMySQLMetaBean(), mySQLSession);
+					reactor.addMySQLSession(key, mySQLSession);
 				});
 			}
 		});
@@ -282,10 +287,10 @@ public class MycatSession extends AbstractMySQLSession {
 	private void putbackendMap(MySQLSession mysqlSession){
 		String backendName = getbackendName();
 		mysqlSession.setCurrBackendCachedName(backendName);
-		List<MySQLSession> list = backendMap.get(backendName);
-		if(list==null){
+		List<MySQLSession> list = backendMap.get(mysqlSession.getMySQLMetaBean());
+		if (list == null){
 			list = new ArrayList<>();
-			backendMap.putIfAbsent(backendName, list);
+			backendMap.putIfAbsent(mysqlSession.getMySQLMetaBean(), list);
 		}
 		list.add(mysqlSession);
 	}
@@ -378,32 +383,45 @@ public class MycatSession extends AbstractMySQLSession {
      * 2. 空闲节点
      */
     private MySQLSession getFirstSession(MycatSession mycatSession, String backendName, boolean checkCurBackend, boolean runOnSlave, boolean isIdle) {
+		MySQLSession result = null;
         if (checkCurBackend) {
-            MySQLSession curBack = mycatSession.curBackend;
-            if (curBack != null
-                    && backendName.equals(curBack.getCurrBackendCachedName())
-                    && curBack.isDefaultChannelRead() == runOnSlave) {
+			result = mycatSession.curBackend;
+            if (result != null
+                    && backendName.equals(result.getCurrBackendCachedName())
+                    && result.isDefaultChannelRead() == runOnSlave) {
                 //判断连接是否空闲
-                Boolean idle = (Boolean) curBack.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+                Boolean idle = (Boolean) result.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
                 if (idle != null && idle == true) {
-                    return curBack;
+                    return result;
                 }
             }
         }
 
-        List<MySQLSession> backendList = mycatSession.backendMap.get(backendName);
-        if (backendList == null)
-            return null;
+		for (MySQLMetaBean metaBean : getMetaBean(backendName)) {
+			List<MySQLSession> backendList = backendMap.get(metaBean);
+			if (backendList == null || backendList.isEmpty()) {
+				continue;
+			}
+			result = backendList.stream().filter(f -> {
+					boolean idleFlag = true;
+					if (isIdle) {
+						Boolean flag = (Boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+						idleFlag = (flag == null) ? false : flag;
+					}
+					return f.isDefaultChannelRead() == runOnSlave && idleFlag;
+				}).findFirst().orElse(null);
 
-        return backendList.stream().filter(f -> {
-                boolean idleFlag = true;
-                if (isIdle) {
-                    Boolean flag = (Boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-                    idleFlag = (flag == null) ? false : flag;
-                }
-                return f.isDefaultChannelRead() == runOnSlave && idleFlag;
-            }).findFirst().orElse(null);
+			if (result != null) {
+				return result;
+			}
+		}
+		return result;
     }
+
+	private List<MySQLMetaBean> getMetaBean(String replicaName) {
+		MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+		return conf.getMySQLReplicat(replicaName).getMysqls();
+	}
 
 	/*
 	 * 判断后端连接 是否可以走从节点

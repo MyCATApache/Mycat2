@@ -10,10 +10,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Stream;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
-import io.mycat.mycat2.tasks.BackendCharsetReadTask;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,17 +40,16 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		return selector;
 	}
 
-	public BufferPool getBufPool() {
-		return bufPool;
-	}
-
 	public LinkedList<T> getAllSessions() {
 		return allSessions;
 	}
 
 	public void createSession(MySQLMetaBean mySQLMetaBean, SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack) throws IOException {
-		int count = Stream.of(ProxyRuntime.INSTANCE.getReactorThreads()).map(session -> session.mySQLSessionMap.get(mySQLMetaBean))
-				.filter(list -> list != null).reduce(0, (sum, list) -> sum += list.size(), (sum1, sum2) -> sum1 + sum2);
+		int count = Stream.of(ProxyRuntime.INSTANCE.getReactorThreads())
+						.map(session -> session.mySQLSessionMap.get(mySQLMetaBean))
+						.filter(list -> list != null)
+						.reduce(0, (sum, list) -> sum += list.size(), (sum1, sum2) -> sum1 + sum2)
+				+ getUsingBackendConCounts(mySQLMetaBean);
 		if (count + 1 > mySQLMetaBean.getMaxCon()) {
 			throw new RuntimeException("connection full for " + mySQLMetaBean.getHostName());
 		}
@@ -74,6 +73,19 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 			return mySQLSessionList.removeLast();
 		}
 		return null;
+	}
+
+	/**
+	 * 统计后端正在使用的连接数
+     */
+	private int getUsingBackendConCounts(MySQLMetaBean mySQLMetaBean) {
+		return allSessions.stream()
+//				.filter(session -> session instanceof MycatSession)
+				.map(session -> {
+					MycatSession mycatSession = (MycatSession) session;
+					return mycatSession.getBackendConCounts(mySQLMetaBean);
+				})
+				.reduce(0, (sum, count) -> sum += count, (sum1, sum2) -> sum1 + sum2);
 	}
 
 	@SuppressWarnings("unchecked")
