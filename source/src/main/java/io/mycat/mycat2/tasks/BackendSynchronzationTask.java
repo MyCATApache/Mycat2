@@ -32,7 +32,6 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
 
     private void syncState(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
         logger.info("synchronzation state to bakcend.session=" + mySQLSession.toString());
-        boolean needSync = false;
         ProxyBuffer proxyBuf = mySQLSession.proxyBuffer;
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
@@ -42,13 +41,11 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         if(mycatSession.isolation != mySQLSession.isolation){
             queryPacket.sql += mycatSession.isolation.getCmd();
             syncCmdNum++;
-            needSync = true;
         }
         //提交方式同步
         if(mycatSession.autoCommit != mySQLSession.autoCommit){
             queryPacket.sql += mycatSession.autoCommit.getCmd();
             syncCmdNum++;
-            needSync = true;
         }
         //字符集同步
         if (mycatSession.charSet.charsetIndex != mySQLSession.charSet.charsetIndex) {
@@ -60,9 +57,8 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
                     mycatSession.getDatasource(false).INDEX_TO_CHARSET.get(mycatSession.charSet.charsetIndex);
             queryPacket.sql += "SET names " + charsetName + ";";
             syncCmdNum++;
-            needSync = true;
         }
-        if (needSync) {
+        if (syncCmdNum > 0) {
             queryPacket.write(proxyBuf);
             proxyBuf.flip();
             proxyBuf.readIndex = proxyBuf.writeIndex;
