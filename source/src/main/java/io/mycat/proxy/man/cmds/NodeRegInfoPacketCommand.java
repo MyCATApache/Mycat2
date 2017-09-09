@@ -24,6 +24,7 @@ public class NodeRegInfoPacketCommand implements AdminCommand {
 		NodeRegInfoPacket pkg = new NodeRegInfoPacket();
 		pkg.resolve(session.readingBuffer);
 		session.setNodeId(pkg.getNodeId());
+		session.cluster().onClusterNodeUp(pkg,session);
 		if (!pkg.isAnswer()) {// 连接到对端后收到对端发送的注册信息，此时应答自己的注册状态
 			pkg = new NodeRegInfoPacket(session.cluster().getMyNodeId(), session.cluster().getClusterState(),
 					session.cluster().getLastClusterStateTime(), session.cluster().getMyLeaderId(),
@@ -31,7 +32,6 @@ public class NodeRegInfoPacketCommand implements AdminCommand {
 			pkg.setAnswer(true);
 			session.answerClientNow(pkg);
 		}
-		session.cluster().onClusterNodeUp(pkg,session);
 	}
 
 }
