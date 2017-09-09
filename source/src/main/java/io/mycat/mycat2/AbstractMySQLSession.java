@@ -34,7 +34,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	/**
 	 * 字符集
 	 */
-	public MySQLCharset charSet;
+	public MySQLCharset charSet = new MySQLCharset();
 	/**
 	 * 用户
 	 */

@@ -346,12 +346,13 @@ public class MycatSession extends AbstractMySQLSession {
                         this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
                         optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
                         if (exeSucces) {
-                            this.bindBackend(optSession);
-                            syncSessionStateToBackend(optSession,callback);
+							syncSessionStateToBackend(optSession,(synMysqlSession,sender,succes,val)->{
+								bindBackend(optSession);
+							});
                         } else {
                             ds.getActiveSize().decrementAndGet();
                             ErrorPacket errPkg = (ErrorPacket) retVal;
-                            this.responseOKOrError(errPkg);
+                            responseOKOrError(errPkg);
                         }
                     });
                 if (!createResult) {
@@ -363,11 +364,15 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 
 		curBackend = mysqlSession;
-        this.bindBackend(curBackend);
+        bindBackend(curBackend);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
 		}
-		callback.finished(curBackend,null,true,null);
+		if(mysqlSession != null){
+			syncSessionStateToBackend(mysqlSession,callback);
+		} else {
+			callback.finished(curBackend,null,true,null);
+		}
 	}
 
     /**
@@ -431,14 +436,13 @@ public class MycatSession extends AbstractMySQLSession {
 
 	/**
 	 * 同步后端连接状态
-	 * @param mycatSession
 	 * @param mysqlSession
 	 * @param callback
 	 * @throws IOException
 	 */
 	public void syncSessionStateToBackend(MySQLSession mysqlSession,AsynTaskCallBack<MySQLSession> callback) throws IOException {
 		MycatSession mycatSession = mysqlSession.getMycatSession();
-		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mysqlSession);
+		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(this,mysqlSession);
 		backendSynchronzationTask.setCallback((optSession, sender, exeSucces, rv) -> {
 			//恢复默认的Handler
 			mycatSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);

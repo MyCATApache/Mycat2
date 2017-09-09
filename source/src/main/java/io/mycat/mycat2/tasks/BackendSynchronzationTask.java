@@ -2,6 +2,7 @@ package io.mycat.mycat2.tasks;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.MycatSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,27 +20,50 @@ import io.mycat.proxy.ProxyBuffer;
  */
 public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSession> {
     private static Logger logger = LoggerFactory.getLogger(BackendSynchronzationTask.class);
-    
-    private int syncCmdNum = 0;
 
-    public BackendSynchronzationTask(MySQLSession session) throws IOException {
-        super(session,true);
-        syncState(session);
+    private int syncCmdNum = 0;
+    private MycatSession mycatSession;
+
+    public BackendSynchronzationTask(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
+        super(mySQLSession,true);
+        this.mycatSession = mycatSession;
+        syncState(mycatSession,mySQLSession);
     }
 
-    private void syncState(MySQLSession session) throws IOException {
-        logger.info("synchronzation state to bakcend.session=" + session.toString());
-        ProxyBuffer proxyBuf = session.proxyBuffer;
+    private void syncState(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
+        logger.info("synchronzation state to bakcend.session=" + mySQLSession.toString());
+        ProxyBuffer proxyBuf = mySQLSession.proxyBuffer;
         proxyBuf.reset();
-        // TODO 字符集映射未完成
         QueryPacket queryPacket = new QueryPacket();
         queryPacket.packetId = 0;
-        queryPacket.sql = session.isolation.getCmd() + session.autoCommit.getCmd() + session.isolation.getCmd();
-        syncCmdNum = 3;
-        queryPacket.write(proxyBuf);
-        proxyBuf.flip();
-        proxyBuf.readIndex = proxyBuf.writeIndex;
-        session.writeToChannel();
+        //隔离级别同步
+        queryPacket.sql = "";
+        if(mycatSession.isolation != mySQLSession.isolation){
+            queryPacket.sql += mycatSession.isolation.getCmd();
+            syncCmdNum++;
+        }
+        //提交方式同步
+        if(mycatSession.autoCommit != mySQLSession.autoCommit){
+            queryPacket.sql += mycatSession.autoCommit.getCmd();
+            syncCmdNum++;
+        }
+        //字符集同步
+        if (mycatSession.charSet.charsetIndex != mySQLSession.charSet.charsetIndex) {
+            //字符集同步,直接取主节点的字符集映射
+            //1.因为主节点必定存在
+            //2.从节点和主节点的mysql版本号必定一致
+            //3.所以直接取主节点
+            String charsetName =
+                    mycatSession.getDatasource(false).INDEX_TO_CHARSET.get(mycatSession.charSet.charsetIndex);
+            queryPacket.sql += "SET names " + charsetName + ";";
+            syncCmdNum++;
+        }
+        if (syncCmdNum > 0) {
+            queryPacket.write(proxyBuf);
+            proxyBuf.flip();
+            proxyBuf.readIndex = proxyBuf.writeIndex;
+            session.writeToChannel();
+        }
     }
 
     @Override
@@ -64,12 +88,15 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         }
 
         if (isAllOK) {
-            this.finished(true);
+            session.autoCommit = mycatSession.autoCommit;
+            session.isolation = mycatSession.isolation;
+            session.charSet.charsetIndex = mycatSession.charSet.charsetIndex;
+            finished(true);
         } else {
             errPkg = new ErrorPacket();
             errPkg.read(session.proxyBuffer);
             logger.warn("backend state sync Error.Err No. " + errPkg.errno + "," + errPkg.message);
-            this.finished(false);
+            finished(false);
         }
     }
 }
