@@ -32,24 +32,42 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
 
     private void syncState(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
         logger.info("synchronzation state to bakcend.session=" + mySQLSession.toString());
+        boolean needSync = false;
         ProxyBuffer proxyBuf = mySQLSession.proxyBuffer;
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
         queryPacket.packetId = 0;
-        //隔离级别和事务提交方式同步
-        queryPacket.sql = mycatSession.isolation.getCmd() + mycatSession.autoCommit.getCmd();
-        //字符集同步,直接取主节点的字符集映射
-        //1.因为主节点必定存在
-        //2.从节点和主节点的mysql版本号必定一致
-        //3.所以直接取主节点
-        String charsetName = mycatSession.getDatasource(false).INDEX_TO_CHARSET.get(mycatSession.charSet.charsetIndex);
-        queryPacket.sql += "SET names " + charsetName + ";";
-        syncCmdNum = 3;
-
-        queryPacket.write(proxyBuf);
-        proxyBuf.flip();
-        proxyBuf.readIndex = proxyBuf.writeIndex;
-        session.writeToChannel();
+        //隔离级别同步
+        queryPacket.sql = "";
+        if(mycatSession.isolation != mySQLSession.isolation){
+            queryPacket.sql += mycatSession.isolation.getCmd();
+            syncCmdNum++;
+            needSync = true;
+        }
+        //提交方式同步
+        if(mycatSession.autoCommit != mySQLSession.autoCommit){
+            queryPacket.sql += mycatSession.autoCommit.getCmd();
+            syncCmdNum++;
+            needSync = true;
+        }
+        //字符集同步
+        if (mycatSession.charSet.charsetIndex != mySQLSession.charSet.charsetIndex) {
+            //字符集同步,直接取主节点的字符集映射
+            //1.因为主节点必定存在
+            //2.从节点和主节点的mysql版本号必定一致
+            //3.所以直接取主节点
+            String charsetName =
+                    mycatSession.getDatasource(false).INDEX_TO_CHARSET.get(mycatSession.charSet.charsetIndex);
+            queryPacket.sql += "SET names " + charsetName + ";";
+            syncCmdNum++;
+            needSync = true;
+        }
+        if (needSync) {
+            queryPacket.write(proxyBuf);
+            proxyBuf.flip();
+            proxyBuf.readIndex = proxyBuf.writeIndex;
+            session.writeToChannel();
+        }
     }
 
     @Override
@@ -77,12 +95,12 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
             session.autoCommit = mycatSession.autoCommit;
             session.isolation = mycatSession.isolation;
             session.charSet.charsetIndex = mycatSession.charSet.charsetIndex;
-            this.finished(true);
+            finished(true);
         } else {
             errPkg = new ErrorPacket();
             errPkg.read(session.proxyBuffer);
             logger.warn("backend state sync Error.Err No. " + errPkg.errno + "," + errPkg.message);
-            this.finished(false);
+            finished(false);
         }
     }
 }
