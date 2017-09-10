@@ -53,36 +53,29 @@ public class MySQLMetaBean {
     /** charsetName 到 默认collationIndex 的映射 */
     public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
-    public MySQLMetaBean(String ip, int port, String user, String password) {
-        super();
-        this.hostName = ip;
-        this.ip = ip;
-        this.port = port;
-        this.user = user;
-        this.password = password;
-    }
-
-    public MySQLMetaBean() {}
-
     public void init() throws IOException {
         ProxyRuntime runtime = ProxyRuntime.INSTANCE;
         ProxyReactorThread[] reactorThreads = runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
         for (int i = 0; i < minCon; i++) {
-            ProxyReactorThread reactorThread = reactorThreads[i % reactorSize];
-            reactorThread.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
-                MySQLSession session = (MySQLSession) optSession;
-                if (exeSucces) {
-                    //设置当前连接 读写分离属性
-                    session.setDefaultChannelRead(this.isSlaveNode());
-                    if (this.charsetLoaded == false) {
-                        this.charsetLoaded = true;
-                        BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(session, this);
-                        optSession.setCurNIOHandler(backendCharsetReadTask);
-                        backendCharsetReadTask.readCharset();
-                    }
-                    optSession.change2ReadOpts();
-                    reactorThread.addMySQLSession(this, session);
+            ProxyReactorThread<MySQLSession> reactorThread = reactorThreads[i % reactorSize];
+            reactorThread.addNIOJob(() -> {
+                try {
+                    reactorThread.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
+                        if (exeSucces) {
+                            //设置当前连接 读写分离属性
+                            optSession.setDefaultChannelRead(this.isSlaveNode());
+                            if (this.charsetLoaded == false) {
+                                this.charsetLoaded = true;
+                                BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
+                                optSession.setCurNIOHandler(backendCharsetReadTask);
+                                backendCharsetReadTask.readCharset();
+                            }
+                            optSession.change2ReadOpts();
+                            reactorThread.addMySQLSession(this, optSession);
+                        }
+                    });
+                } catch (IOException ignore) {
                 }
             });
         }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import io.mycat.proxy.*;
+import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,19 +50,15 @@ public class MycatCore {
 		// 定时器Executor，用来执行定时任务
 		NamebleScheduledExecutor timerExecutor = ExecutorUtil.createSheduledExecute("Timer", 5);
 
-		InputStream instream = null;
-		String mySeq="1";
+		String mySeq = "1";
 		if (args.length > 0) {
-			mySeq=args[0];
+			mySeq = args[0];
 		}
-		String mycatConf="mycat"+mySeq+".conf";
-		System.out.println("look Java Classpath for Mycat config file "+mycatConf);
-		if (instream == null) {
-			instream = ClassLoader.getSystemResourceAsStream(mycatConf);
-		}
-		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+mycatConf) : instream;
+		String mycatConf = "mycat" + mySeq + ".yml";
+		logger.debug("load config for {}", mycatConf);
 		// mycat.conf的加载不需要在集群内
-		MycatConfig conf = MycatConfig.loadFromProperties(instream);
+		MycatConfig conf = YamlUtil.load(mycatConf, MycatConfig.class);
+		conf.putConfigVersion(ConfigKey.MYCAT_CONF, ConfigKey.INIT_VERSION);
 
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);

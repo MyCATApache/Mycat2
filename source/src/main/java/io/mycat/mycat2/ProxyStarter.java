@@ -1,18 +1,15 @@
 package io.mycat.mycat2;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.List;
-import java.util.Properties;
 
-import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.mycat2.beans.ReplicaConfBean;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.mycat2.beans.SchemaConfBean;
 import io.mycat.proxy.*;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
-import io.mycat.proxy.man.DefaultAdminSessionManager;
 import io.mycat.proxy.man.MyCluster;
+import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,44 +78,32 @@ public class ProxyStarter {
 		MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
 
 		// 加载replica-index
-		loadProperties(conf, "replica-index.properties");
+		LOGGER.debug("load config for {}", "replica-index.yml");
+		ReplicaIndexBean replicaIndexBean = YamlUtil.load("replica-index.yml", ReplicaIndexBean.class);
+		conf.addRepIndex(replicaIndexBean);
 
 		// 加载datasource.xml
-		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
-		List<MySQLRepBean> mysqlRepBeans = ConfigLoader.loadMySQLRepBean(datasourceURL.toString());
-		mysqlRepBeans.forEach(mySQLRepBean -> mySQLRepBean.getMysqls().forEach(mySQLMetaBean -> {
-			try {
-				LOGGER.debug("begin to init mySQLMetaBean: {}", mySQLMetaBean);
-				mySQLMetaBean.init();
-			} catch (IOException e) {
-				LOGGER.error("error to init mySQLMetaBean: {}", mySQLMetaBean);
-			}
-		}));
-		conf.addMySQLRepBeanList(mysqlRepBeans);
+		LOGGER.debug("load config for {}", "datasource.yml");
+		ReplicaConfBean replicaConfBean = YamlUtil.load("datasource.yml", ReplicaConfBean.class);
+		replicaConfBean.getMysqlReplicas().forEach(replicaBean -> {
+			replicaBean.initMaster();
+			conf.addMySQLRepBean(replicaBean);
+			replicaBean.getMysqls().forEach(metaBean -> {
+				try {
+					metaBean.init();
+				} catch (IOException e) {
+					LOGGER.error("error to init metaBean: {}", metaBean.getHostName());
+				}
+			});
+		});
 		conf.putConfigVersion(ConfigKey.DATASOURCE, ConfigKey.INIT_VERSION);
 
 		// 加载schema.xml
-		URL schemaURL = ConfigLoader.class.getResource("/schema.xml");
-		List<SchemaBean> schemaBeans = ConfigLoader.loadSheamBeans(schemaURL.toString());
-		conf.addSchemaBeanList(schemaBeans);
+		LOGGER.debug("load config for {}", "schema.yml");
+		SchemaConfBean schemaConfBean = YamlUtil.load("schema.yml", SchemaConfBean.class);
+		schemaConfBean.getSchemas().forEach(schemaBean -> {
+			conf.addSchemaBean(schemaBean);
+		});
 		conf.putConfigVersion(ConfigKey.SCHEMA, ConfigKey.INIT_VERSION);
-	}
-
-	private void loadProperties(MycatConfig conf, String propName) throws IOException {
-		System.out.println("look Java Classpath for " + propName);
-		InputStream instream = ClassLoader.getSystemResourceAsStream(propName);
-		instream = (instream == null) ? ConfigLoader.class.getResourceAsStream("/"+propName) : instream;
-		try
-		{
-			Properties props = new Properties();
-			props.load(instream);
-			props.forEach((key, value) -> conf.addRepIndex((String)key, Integer.parseInt((String)value)));
-			//加载完毕设置配置文件版本，默认为1
-			conf.putConfigVersion(ConfigKey.REPLICA_INDEX, ConfigKey.INIT_VERSION);
-		} finally {
-			if(instream!=null) {
-				instream.close();
-			}
-		}
 	}
 }

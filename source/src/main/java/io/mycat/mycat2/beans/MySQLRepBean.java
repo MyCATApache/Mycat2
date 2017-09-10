@@ -26,7 +26,6 @@ package io.mycat.mycat2.beans;
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.proxy.ProxyRuntime;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -36,43 +35,45 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author wuzhihui
  */
 public class MySQLRepBean {
-    public static final int M_S_REP = 0;
-    public static final int M_M_REP = 1;
+    public enum RepTypeEnum {
+        MASTER_SLAVE, MASTER_MASTER;
+        RepTypeEnum() {}
+    }
 
-    private final String name;
-    private final int type;
-    private int switchType;
-    private List<MySQLMetaBean> mysqls = Collections.emptyList();
+    public enum RepSwitchTypeEnum {
+        SLAVE_ONLY, MASTER_ONLY;
+        RepSwitchTypeEnum() {}
+    }
+
+    private String name;
+    private RepTypeEnum type;
+    private RepSwitchTypeEnum switchType;
+    private List<MySQLMetaBean> mysqls;
 
     private int writeIndex = 0; //主节点默认为0
-
-    public MySQLRepBean(String name, int type) {
-        super();
-        this.name = name;
-        this.type = type;
-
-        // 根据配置replica-index的配置文件修改主节点
-        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-        Integer repIndex = conf.getRepIndex(name);
-        if (repIndex != null) {
-            writeIndex = repIndex;
-        }
-    }
-
-    public int getSwitchType() {
-        return switchType;
-    }
-
-    public void setSwitchType(int switchType) {
-        this.switchType = switchType;
-    }
 
     public String getName() {
         return name;
     }
 
-    public int getType() {
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public RepTypeEnum getType() {
         return type;
+    }
+
+    public void setType(RepTypeEnum type) {
+        this.type = type;
+    }
+
+    public RepSwitchTypeEnum getSwitchType() {
+        return switchType;
+    }
+
+    public void setSwitchType(RepSwitchTypeEnum switchType) {
+        this.switchType = switchType;
     }
 
     public List<MySQLMetaBean> getMysqls() {
@@ -81,7 +82,15 @@ public class MySQLRepBean {
 
     public void setMysqls(List<MySQLMetaBean> mysqls) {
         this.mysqls = mysqls;
-        // 设置主节点的slaveNode状态
+    }
+
+    public void initMaster() {
+        // 根据配置replica-index的配置文件修改主节点
+        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+        Integer repIndex = conf.getRepIndex(name);
+        if (repIndex != null) {
+            writeIndex = repIndex;
+        }
         mysqls.get(writeIndex).setSlaveNode(false);
     }
 
