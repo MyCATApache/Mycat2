@@ -33,12 +33,6 @@ public class DNBean {
     private String database;
     private String mysqlReplica;
 
-    public DNBean(String database, String mysqlReplica) {
-        super();
-        this.database = database;
-        this.mysqlReplica = mysqlReplica;
-    }
-
     public String getDatabase() {
         return database;
     }
@@ -90,6 +84,4 @@ public class DNBean {
     public String toString() {
         return "DNBean [database=" + database + ", mysqlReplica=" + mysqlReplica + "]";
     }
-
-
 }
