@@ -350,16 +350,15 @@ public class MycatSession extends AbstractMySQLSession {
 
             // 5. 新建连接
             if (mysqlSession == null) {
-				reactorThread.createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
-					MySQLSession mySQLSession = (MySQLSession) optSession;
+				((ProxyReactorThread<MySQLSession>) reactorThread).createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
 					//设置当前连接 读写分离属性
 					optSession.setDefaultChannelRead(runOnSlave);
 					//恢复默认的Handler
 					this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-					mySQLSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 					if (exeSucces) {
-						this.bindBackend(mySQLSession);
-						syncSessionStateToBackend(mySQLSession,callback);
+						this.bindBackend(optSession);
+						syncSessionStateToBackend(optSession,callback);
 					} else {
 						ErrorPacket errPkg = (ErrorPacket) retVal;
 						this.responseOKOrError(errPkg);
