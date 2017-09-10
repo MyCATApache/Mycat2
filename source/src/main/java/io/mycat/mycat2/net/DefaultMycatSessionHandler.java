@@ -11,12 +11,7 @@ import io.mycat.mycat2.MyCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 
-import io.mycat.mycat2.SQLCommand;
-import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.mycat2.tasks.BackendConCreateTask;
-import io.mycat.mycat2.tasks.BackendSynchronzationTask;
-import io.mycat.mysql.packet.ErrorPacket;
 
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;

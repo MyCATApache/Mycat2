@@ -1,7 +1,7 @@
 package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
@@ -42,11 +42,11 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     private static final String SQL = "SHOW COLLATION;";
     private MySQLSession mySQLSession;
     private int fieldCount;
-    private MySQLDataSource ds;
+    private MySQLMetaBean mySQLMetaBean;
 
-    public BackendCharsetReadTask(MySQLSession mySQLSession, MySQLDataSource ds) {
+    public BackendCharsetReadTask(MySQLSession mySQLSession, MySQLMetaBean mySQLMetaBean) {
         this.mySQLSession = mySQLSession;
-        this.ds = ds;
+        this.mySQLMetaBean = mySQLMetaBean;
     }
 
     public void readCharset() throws IOException {
@@ -98,10 +98,10 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
             } else if (i == 2) {
                 id = Integer.parseInt(text);
             } else {
-                ds.INDEX_TO_CHARSET.put(id, charset);
-                Integer index = ds.CHARSET_TO_INDEX.get(charset);
+                mySQLMetaBean.INDEX_TO_CHARSET.put(id, charset);
+                Integer index = mySQLMetaBean.CHARSET_TO_INDEX.get(charset);
                 if (index == null || index > id) {
-                    ds.CHARSET_TO_INDEX.put(charset, id);
+                    mySQLMetaBean.CHARSET_TO_INDEX.put(charset, id);
                 }
 
                 break;
