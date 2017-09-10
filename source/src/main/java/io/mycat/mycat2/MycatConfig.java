@@ -1,17 +1,20 @@
 package io.mycat.mycat2;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.proxy.ProxyConfig;
 
 public class MycatConfig extends ProxyConfig {
 
 	/**
-	 * 系统中所有MySQLReplicatSet的Map
+	 * 系统中所有MySQLRepBean的Map
 	 */
-	private Map<String, MySQLReplicatSet> msqlRepSetMap = new HashMap<String, MySQLReplicatSet>();
+	private Map<String, MySQLRepBean> msqlRepMap = new HashMap<String, MySQLRepBean>();
 
 	/**
 	 * 系统中所有SchemaBean的Map
@@ -23,15 +26,14 @@ public class MycatConfig extends ProxyConfig {
 	 */
 	private SchemaBean defaultSchemaBean;
 
+	private Map<String, Integer> repIndexMap = new HashMap<String, Integer>();
 
-
-	protected void addMySQLReplicatSet(final MySQLReplicatSet repSet) {
-		final String repSetName = repSet.getName();
-		this.msqlRepSetMap.put(repSetName, repSet);
+	protected void addMySQLRepBean(final MySQLRepBean mySQLRepBean) {
+		this.msqlRepMap.put(mySQLRepBean.getName(), mySQLRepBean);
 	}
 
 	protected void addSchemaBean(SchemaBean schemaBean) {
-		if (defaultSchemaBean == null) { // call by MycatCore,在配置文件加载时初始化
+		if (defaultSchemaBean == null) {
 			defaultSchemaBean = schemaBean;
 		}
 		this.mycatSchemaMap.put(schemaBean.getName(), schemaBean);
@@ -45,8 +47,17 @@ public class MycatConfig extends ProxyConfig {
 		return this.defaultSchemaBean;
 	}
 
-	public MySQLReplicatSet getMySQLReplicatSet(String repsetName) {
-		return this.msqlRepSetMap.get(repsetName);
+	public MySQLRepBean getMySQLRepBean(String repName) {
+		return this.msqlRepMap.get(repName);
 	}
 
+	public Integer getRepIndex(String repName) {
+		return repIndexMap.get(repName);
+	}
+
+	public void addRepIndex(ReplicaIndexBean replicaIndexBean) {
+		if (replicaIndexBean != null && replicaIndexBean.getReplicaIndexes() != null) {
+			replicaIndexBean.getReplicaIndexes().forEach((key, value) -> repIndexMap.put(key, value));
+		}
+	}
 }

@@ -233,6 +233,7 @@ public class NewSQLContext {
     }
 
     public byte getSQLType() {
+    	//TODO 临时处理 等待与 赵帅代码合并
     	byte  type = (byte)(this.sqlInfoArray[1] & 0x3F);
     	return type==0?this.sqlType:type; 
     }

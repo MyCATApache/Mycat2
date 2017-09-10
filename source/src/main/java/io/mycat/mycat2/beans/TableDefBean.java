@@ -29,22 +29,15 @@ package io.mycat.mycat2.beans;
  * @author wuzhihui
  */
 public class TableDefBean {
+    public enum TableTypeEnum {
+        MASTER, SLAVE;
+    }
+
     private String name;
-    private int type;
+    private TableTypeEnum type;
     private String shardingKey;
     private String shardingRule;
-
-    public TableDefBean(String name, int type, String shardingKey, String shardingRule) {
-        super();
-        this.name = name;
-        this.type = type;
-        this.shardingKey = shardingKey;
-        this.shardingRule = shardingRule;
-    }
-
-    public TableDefBean() {
-
-    }
+    private String store;
 
     public String getName() {
         return name;
@@ -52,6 +45,14 @@ public class TableDefBean {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public TableTypeEnum getType() {
+        return type;
+    }
+
+    public void setType(TableTypeEnum type) {
+        this.type = type;
     }
 
     public String getShardingKey() {
@@ -70,18 +71,17 @@ public class TableDefBean {
         this.shardingRule = shardingRule;
     }
 
-    public int getType() {
-        return type;
+    public String getStore() {
+        return store;
     }
 
-    public void setType(int type) {
-        this.type = type;
+    public void setStore(String store) {
+        this.store = store;
     }
 
     @Override
     public String toString() {
-        return "TableDefBean [name=" + name + ", type=" + type + ", shardingKey=" + shardingKey + ", shardingRule="
-                + shardingRule + "]";
+        return "TableDefBean [name=" + name + ", type=" + type + ", store=" + store
+                + ", shardingKey=" + shardingKey + ", shardingRule=" + shardingRule + "]";
     }
-
 }

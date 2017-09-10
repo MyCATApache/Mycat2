@@ -36,7 +36,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	@Override
 	public MyCommand getMyCommand(MycatSession session) {
 		MyCommand command = null;
-		if(MySQLPacket.COM_QUERY==session.curMSQLPackgInf.pkgType){
+		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
 			command = doGetMySQLCommand(session);
 		}else{
 			command = doGetMyCommand(session);
@@ -50,7 +50,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * @return
 	 */
 	protected MyCommand doGetMyCommand(MycatSession session){
-		return MYCOMMANDMAP.get(session.curMSQLPackgInf.pkgType);
+		return MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
 	}
 	
 	/**

@@ -77,9 +77,12 @@ public abstract class AbstractSession implements Session {
 		if (this.proxyBuffer != null && referedBuffer == false) {
 			this.bufPool.recycleBuf(proxyBuffer.getBuffer());
 			proxyBuffer = sharedBuffer;
+			this.referedBuffer = true;
+		} else if (proxyBuffer == null) {
+			proxyBuffer = sharedBuffer;
+		} else if (sharedBuffer == null) {
+			this.referedBuffer = false;
 		}
-		this.referedBuffer = true;
-
 	}
 
 	public boolean isCurBufOwner() {
@@ -117,7 +120,7 @@ public abstract class AbstractSession implements Session {
 		}
 
 		int readed = channel.read(buffer);
-		logger.debug(" readed {} total bytes ", readed);
+		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
 			throw new ClosedChannelException();
@@ -152,7 +155,7 @@ public abstract class AbstractSession implements Session {
 		int writed = channel.write(buffer);
 		proxyBuffer.readMark += writed; // 记录本次磁轭如到 Channel 中的数据
 		if (!buffer.hasRemaining()) {
-			logger.debug("writeToChannel write  {} bytes ", writed);
+			logger.debug("writeToChannel write  {} bytes ,curChannel is {}", writed,this);
 			// buffer 中需要透传的数据全部写入到 channel中后,会进入到当前分支.这时 readIndex == readLimit
 			if (proxyBuffer.readMark != proxyBuffer.readIndex) {
 				logger.error("writeToChannel has finished but readIndex != readLimit, please fix it !!!");
@@ -221,9 +224,10 @@ public abstract class AbstractSession implements Session {
 	public void change2ReadOpts() {
 		//不做检查，因为两个chanel不确定哪个会对读事件感兴趣，因此通常会都设置为读感兴趣
 		int intesOpts = this.channelKey.interestOps();
-		if ((intesOpts & SelectionKey.OP_READ) != SelectionKey.OP_READ) {
+		// 事件转换时,只注册一个事件,存在可写事件没有取消注册的情况。这里把判断取消
+//		if ((intesOpts & SelectionKey.OP_READ) != SelectionKey.OP_READ) {
 			channelKey.interestOps(SelectionKey.OP_READ);
-		}
+//		}
 	}
 
 	public void clearReadWriteOpts() {
@@ -233,9 +237,10 @@ public abstract class AbstractSession implements Session {
 	public void change2WriteOpts() {
 		checkBufferOwner(true);
 		int intesOpts = this.channelKey.interestOps();
-		if ((intesOpts & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
+		// 事件转换时,只注册一个事件,存在可读事件没有取消注册的情况。这里把判断取消
+//		if ((intesOpts & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
 			channelKey.interestOps(SelectionKey.OP_WRITE);
-		}
+//		}
 	}
 
 	@Override

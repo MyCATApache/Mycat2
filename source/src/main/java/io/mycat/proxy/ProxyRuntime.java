@@ -19,9 +19,10 @@ public class ProxyRuntime {
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
 	private int nioReactorThreads = 2;
-	private boolean traceProtocol = true;
+	private boolean traceProtocol = false;
 	private final long startTime = System.currentTimeMillis();
 
+	private NIOAcceptor acceptor;
 	private ProxyReactorThread<?>[] reactorThreads;
 	private SessionManager<?> sessionManager;
 	// 用于管理端口的Session会话管理
@@ -180,4 +181,11 @@ public class ProxyRuntime {
 		this.adminCmdResolver = adminCmdResolver;
 	}
 
+	public NIOAcceptor getAcceptor() {
+		return acceptor;
+	}
+
+	public void setAcceptor(NIOAcceptor acceptor) {
+		this.acceptor = acceptor;
+	}
 }

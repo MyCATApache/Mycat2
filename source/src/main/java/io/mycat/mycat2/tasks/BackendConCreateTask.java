@@ -7,13 +7,13 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
 
+import io.mycat.mycat2.beans.MySQLMetaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLBean;
-import io.mycat.mycat2.beans.MySQLDataSource;
+import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -33,22 +33,23 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
 	private HandshakePacket handshake;
 	private boolean welcomePkgReceived = false;
-	private MySQLDataSource ds;
-	private String schema;
+	private MySQLMetaBean mySQLMetaBean;
+	private SchemaBean schema;
 	private MySQLSession session;
 
-	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLDataSource ds, String schema)
+	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLMetaBean mySQLMetaBean, SchemaBean schema)
 			throws IOException {
-		String serverIP = ds.getConfig().getIp();
-		int serverPort = ds.getConfig().getPort();
+		String serverIP = mySQLMetaBean.getIp();
+		int serverPort = mySQLMetaBean.getPort();
 		logger.info("Connecting to backend MySQL Server " + serverIP + ":" + serverPort);
 		InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 		SocketChannel backendChannel = SocketChannel.open();
 		backendChannel.configureBlocking(false);
 		backendChannel.connect(serverAddress);
 		session = new MySQLSession(bufPool, nioSelector, backendChannel);
+		session.setMySQLMetaBean(mySQLMetaBean);
 		this.setSession(session, false);
-		this.ds = ds;
+		this.mySQLMetaBean = mySQLMetaBean;
 		this.schema = schema;
 
 	}
@@ -76,20 +77,21 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 				return;
 			}
 			// 发送应答报文给后端
-			final MySQLBean mySQLBean = ds.getConfig();
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
 			packet.clientFlags = initClientFlags();
 			packet.maxPacketSize = 1024 * 1000;
 			packet.charsetIndex = charsetIndex;
-			packet.user = mySQLBean.getUser();
+			packet.user = mySQLMetaBean.getUser();
 			try {
-				packet.password = passwd(mySQLBean.getPassword(), handshake);
+				packet.password = passwd(mySQLMetaBean.getPassword(), handshake);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e.getMessage());
 			}
 			// SchemaBean schema = session.schema;
-			packet.database = schema;
+			if(schema!=null&&schema.getDefaultDN()!=null){
+				packet.database = schema.getDefaultDN().getDatabase();
+			}
 
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
 			session.proxyBuffer.reset();

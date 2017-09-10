@@ -46,7 +46,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		curfinishPackage.putAll(finishPackage);		
 		session.getBackend((mysqlsession, sender, success,result)->{
 			if(success){
 				ProxyBuffer curBuffer = session.proxyBuffer;
