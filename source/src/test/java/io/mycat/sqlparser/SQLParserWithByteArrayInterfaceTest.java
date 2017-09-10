@@ -122,7 +122,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalDelete() throws Exception {
         String sql = "DELETE FROM tbl_A WHERE name='nobody';";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.DELETE_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.DELETE_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -130,7 +130,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalInsert() throws Exception {
         String sql = "INSERT INTO tbl_A (`name`) VALUES ('kaiz');";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.INSERT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -138,7 +138,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalInsert2() throws Exception {
         String sql = "INSERT `schema`.`tbl_A` (`name`) VALUES ('kaiz');";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.INSERT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -146,7 +146,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testIgnoreInsert() throws Exception {
         String sql = "INSERT IGNORE tbl_A (`name`) VALUES ('kaiz');";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.INSERT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -154,7 +154,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalReplace() throws Exception {
         String sql = "Replace into tbl_A (`name`) VALUES ('kaiz');";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.REPLACE_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.REPLACE_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -162,7 +162,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalAlter() throws Exception {
         String sql = "ALTER TABLE tbl_A ADD name VARCHAR(15) NULL;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.ALTER_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.ALTER_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -170,7 +170,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testDropAlter() throws Exception {
         String sql = "ALTER TABLE tbl_A DROP name VARCHAR(15) NULL;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.ALTER_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.ALTER_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -178,7 +178,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalDrop() throws Exception {
         String sql = "DROP TABLE IF EXISTS tbl_A;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.DROP_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.DROP_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -186,7 +186,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalCreate() throws Exception {
         String sql = "CREATE TABLE IF NOT EXISTS tbl_A ( Id INT NOT NULL UNIQUE PRIMARY KEY, name VARCHAR(20) NOT NULL;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.CREATE_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.CREATE_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -194,7 +194,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testNormalTruncate() throws Exception {
         String sql = "Truncate TABLE IF EXISTS tbl_A;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.TRUNCATE_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.TRUNCATE_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -317,60 +317,60 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
 
     @Test
     public void testAnnotationBalance() throws Exception {
-        String sql = "/*balance*/select * from tbl_A where id=1;";
+        String sql = "/* mycat:balance*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_BALANCE, context.getAnnotationType());
+        assertEquals(BufferSQLContext.ANNOTATION_BALANCE, context.getAnnotationType());
     }
 
     @Test
     public void testAnnotationDBType() throws Exception {
-        String sql = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:DB_Type=Master*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_DB_TYPE, context.getAnnotationType());
-        assertEquals(TokenHash.MASTER, context.getAnnotationValue(SQLContext.ANNOTATION_DB_TYPE));
+        assertEquals(BufferSQLContext.ANNOTATION_DB_TYPE, context.getAnnotationType());
+        assertEquals(TokenHash.MASTER, context.getAnnotationValue(BufferSQLContext.ANNOTATION_DB_TYPE));
     }
 
     @Test
     public void testAnnotationSchema() throws Exception {
-        String sql = "/*!MyCAT:schema=testDB*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:schema=testDB*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_SCHEMA, context.getAnnotationType());
-        assertEquals(MatchMethodGenerator.genHash("testDB".toCharArray()), context.getAnnotationValue(SQLContext.ANNOTATION_SCHEMA));
+        assertEquals(BufferSQLContext.ANNOTATION_SCHEMA, context.getAnnotationType());
+        assertEquals(MatchMethodGenerator.genHash("testDB".toCharArray()), context.getAnnotationValue(BufferSQLContext.ANNOTATION_SCHEMA));
     }
 
     @Test
     public void testAnnotationDataNode() throws Exception {
-        String sql = "/*!MyCAT:DataNode=dn1*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:DataNode=dn1*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_DATANODE, context.getAnnotationType());
-        assertEquals(MatchMethodGenerator.genHash("dn1".toCharArray()), context.getAnnotationValue(SQLContext.ANNOTATION_DATANODE));
+        assertEquals(BufferSQLContext.ANNOTATION_DATANODE, context.getAnnotationType());
+        assertEquals(MatchMethodGenerator.genHash("dn1".toCharArray()), context.getAnnotationValue(BufferSQLContext.ANNOTATION_DATANODE));
     }
 
     @Test
     public void testAnnotationCatlet() throws Exception {
-        String sql = "/*!MyCAT:catlet=demo.catlets.ShareJoin*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:catlet=demo.catlets.ShareJoin*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_CATLET, context.getAnnotationType());
+        assertEquals(BufferSQLContext.ANNOTATION_CATLET, context.getAnnotationType());
         //TODO 还需要完善提取catlet的类型
     }
 
     @Test
     public void testAnnotationSQL() throws Exception {
-        String sql = "/*!MyCAT:sql=select id from tbl_B where id = 101*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:sql=select id from tbl_B where id = 101*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_SQL, context.getAnnotationType());
+        assertEquals(BufferSQLContext.ANNOTATION_SQL, context.getAnnotationType());
         //TODO 还需要完善提取SQL的内容和where条件
     }
 
@@ -401,8 +401,8 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         context.setSQLIdx(19);
         assertEquals("tbl_A", context.getSQLTableName(0, 0));
         assertEquals("tbl_T", context.getSQLTableName(19, 0));
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType(18));
-        assertEquals(NewSQLContext.INSERT_SQL, context.getSQLType(19));
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType(18));
+        assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType(19));
 
     }
 
@@ -410,38 +410,38 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testUseSchemaSQL() throws Exception {
         String sql = "USE `mycat`;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.USE_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.USE_SQL, context.getSQLType());
         assertEquals("mycat", context.getSchemaName(0));
     }
 
     @Test
     public void testGetRealSQL() throws Exception {
-        String sql = "/*!MyCAT:sql=select id from tbl_B where id = 101*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:sql=select id from tbl_B where id = 101*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_SQL, context.getAnnotationType());
+        assertEquals(BufferSQLContext.ANNOTATION_SQL, context.getAnnotationType());
         assertEquals(50, context.getRealSQLOffset(0));
         assertEquals("select * from tbl_A where id=1;", context.getRealSQL(0));
     }
 
     @Test
     public void testAnnotationCacheSQL() throws Exception {
-        String sql = "/*!MyCAT:cache_time=1000 auto_refresh=true access_count=100*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:cache_time=1000 auto_refresh=true access_count=100*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(NewSQLContext.ANNOTATION_SQL_CACHE, context.getAnnotationType());
-        assertEquals(1000, context.getAnnotationValue(NewSQLContext.ANNOTATION_CACHE_TIME));
-        assertEquals(100, context.getAnnotationValue(NewSQLContext.ANNOTATION_ACCESS_COUNT));
-        assertEquals(TokenHash.TRUE, context.getAnnotationValue(NewSQLContext.ANNOTATION_AUTO_REFRESH));
+        assertEquals(BufferSQLContext.ANNOTATION_SQL_CACHE, context.getAnnotationType());
+        assertEquals(1000, context.getAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME));
+        assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT));
+        assertEquals(TokenHash.TRUE, context.getAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH));
     }
 
     @Test
     public void testLoadDataSQL() throws Exception {
         String sql = "load data  low_priority infile \"/home/mark/data.sql\" replace into table tbl_A;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.LOAD_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.LOAD_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 
@@ -449,7 +449,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testSelectGlobalVarSQL() throws Exception {
         String sql = "select @@version limit 1;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals(sql, context.getRealSQL(0));
     }
 
@@ -457,7 +457,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testShowDatabasesSQL() throws Exception {
         String sql = "show databases";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SHOW_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SHOW_SQL, context.getSQLType());
         assertEquals(sql, context.getRealSQL(0));
     }
 
@@ -465,7 +465,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testShowVariables() throws Exception {
         String sql = "show variables like 'profiling'";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SHOW_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SHOW_SQL, context.getSQLType());
         assertEquals(sql, context.getRealSQL(0));
     }
 
@@ -473,7 +473,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testSelectIntoSQL() throws Exception {
         String sql = "select * into tbl_B from tbl_A;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_INTO_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_INTO_SQL, context.getSQLType());
         assertEquals("tbl_B", context.getTableName(0));
         assertEquals("tbl_A", context.getTableName(1));
     }
@@ -482,7 +482,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testSelectForUpdateSQL() throws Exception {
         String sql = "select * from tbl_A for update;";
         parser.parse(sql.getBytes(), context);
-        assertEquals(NewSQLContext.SELECT_FOR_UPDATE_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SELECT_FOR_UPDATE_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
     }
 

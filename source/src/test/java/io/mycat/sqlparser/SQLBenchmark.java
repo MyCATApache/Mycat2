@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 //度量:iterations进行测试的轮次，time每轮进行的时长，timeUnit时长单位,batchSize批次数量
 @Measurement(iterations = 10, time = -1, timeUnit = TimeUnit.SECONDS, batchSize = -1)
 public class SQLBenchmark {
-    SQLParser parser;
-    SQLContext context;
+//    SQLParser parser;
+//    SQLContext context;
     NewSQLParser newSQLParser;
     NewSQLContext newSQLContext;
     BufferSQLParser newSQLParser2;
@@ -52,8 +52,8 @@ public class SQLBenchmark {
         src = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));";
         srcBytes = src.getBytes(StandardCharsets.UTF_8);//20794
         byteArrayInterface=new DefaultByteArray(srcBytes);
-        parser = new SQLParser();
-        context = new SQLContext();
+//        parser = new SQLParser();
+//        context = new SQLContext();
         newSQLParser = new NewSQLParser();
         newSQLContext = new NewSQLContext();
         newSQLParser2 = new BufferSQLParser();
@@ -78,9 +78,9 @@ public class SQLBenchmark {
 //    public void UnsafeSqQLParserTest() { unsafeSQLParser.tokenize(srcBytes);}
 
 //    @Benchmark
-    public void SQLParserTest() {
-        parser.parse(srcBytes, context);
-    }
+//    public void SQLParserTest() {
+//        parser.parse(srcBytes, context);
+//    }
 
 //    @Benchmark
 //    public void DruidTest() {

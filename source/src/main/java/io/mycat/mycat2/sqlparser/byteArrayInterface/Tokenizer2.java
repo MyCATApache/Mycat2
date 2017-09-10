@@ -233,21 +233,23 @@ public class Tokenizer2 {
                     next = sql.get(++pos);
                     if (next == '*') {
                         next = sql.get(++pos);
-                        if (next == '!'||next == '#') {
-                            //处理mycat注解
+                        if (next == ' ') {
+                            //处理新版mycat注解
                             if ((sql.get(++pos)&0xDF) == 'M' && (sql.get(++pos)&0xDF) == 'Y' &&(sql.get(++pos)&0xDF) == 'C' &&(sql.get(++pos)&0xDF) == 'A' &&(sql.get(++pos)&0xDF) == 'T'
                                     && sql.get(++pos) == ':') {
                                 pos = parseAnnotation(sql, pos, sqlLength);
                             } else {
                                 pos = skipMultiLineComment(sql, ++pos, sqlLength, next);
                             }
-                        } else if ((next&0xDF) == 'B' && (sql.get(++pos)&0xDF) == 'A' && (sql.get(++pos)&0xDF) == 'L' && (sql.get(++pos)&0xDF) == 'A'
-                                && (sql.get(++pos)&0xDF) == 'N' && (sql.get(++pos)&0xDF) == 'C' && (sql.get(++pos)&0xDF) == 'E'
-                                && sql.get(++pos) == '*' && sql.get(++pos) == '/' ) { //还有 /*balance*/ 注解
-                            hashArray.set(ANNOTATION_BALANCE, pos-1, 1);
-                            hashArray.set(ANNOTATION_END, pos, 1);
-                            pos++;
-                        } else
+                        }
+//                        else if ((next&0xDF) == 'B' && (sql.get(++pos)&0xDF) == 'A' && (sql.get(++pos)&0xDF) == 'L' && (sql.get(++pos)&0xDF) == 'A'
+//                                && (sql.get(++pos)&0xDF) == 'N' && (sql.get(++pos)&0xDF) == 'C' && (sql.get(++pos)&0xDF) == 'E'
+//                                && sql.get(++pos) == '*' && sql.get(++pos) == '/' ) { //还有 /*balance*/ 注解
+//                            hashArray.set(ANNOTATION_BALANCE, pos-1, 1);
+//                            hashArray.set(ANNOTATION_END, pos, 1);
+//                            pos++;
+//                        }
+                        else
                             pos = skipMultiLineComment(sql, ++pos, sqlLength, next);
                     } else if (next == '/') {
                         pos = skipSingleLineComment(sql, pos, sqlLength);
