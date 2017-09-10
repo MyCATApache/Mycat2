@@ -26,13 +26,12 @@ public class ProxyStarter {
 
 		// 启动NIO Acceptor
 		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
+		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
 		if (conf.isClusterEnable()) {
 			// 集群开启状态，需要等集群启动，主节点确认完配置才能提供服务
 			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), true);
-			startProxyReactorThread();
-
 			runtime.setAdminCmdResolver(new AdminCommandResovler());
 			MyCluster cluster = new MyCluster(acceptor.getSelector(), conf.getMyNodeId(), ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
 			runtime.setMyCLuster(cluster);
@@ -41,7 +40,6 @@ public class ProxyStarter {
 			// 未配置集群，直接启动
 			startProxy(true);
 		}
-		acceptor.start();
 	}
 
 	public void startProxy(boolean isMaster) throws IOException {
@@ -49,10 +47,12 @@ public class ProxyStarter {
 		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
 //		if (isMaster) {
 			// 开启mycat服务
-			NIOAcceptor acceptor = runtime.getAcceptor();
-			acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), false);
-			startProxyReactorThread();
-			loadConfig();
+		loadConfig(conf);
+		NIOAcceptor acceptor = runtime.getAcceptor();
+		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), false);
+		startReactor();
+		// 初始化
+		init(conf);
 //		}
 	}
 
@@ -62,7 +62,7 @@ public class ProxyStarter {
 		acceptor.stopServerChannel(false);
 	}
 
-	private void startProxyReactorThread() throws IOException {
+	private void startReactor() throws IOException {
 		// Mycat 2.0 Session Manager
 		ProxyReactorThread<?>[] nioThreads = ProxyRuntime.INSTANCE.getReactorThreads();
 		int cpus = nioThreads.length;
@@ -74,21 +74,35 @@ public class ProxyStarter {
 		}
 	}
 
-	private void loadConfig() throws IOException {
-		MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-
+	private void loadConfig(MycatConfig conf) throws IOException {
 		// 加载replica-index
 		LOGGER.debug("load config for {}", "replica-index.yml");
 		ReplicaIndexBean replicaIndexBean = YamlUtil.load("replica-index.yml", ReplicaIndexBean.class);
 		conf.addRepIndex(replicaIndexBean);
+		conf.putConfigVersion(ConfigKey.REPLICA_INDEX, ConfigKey.INIT_VERSION);
 
-		// 加载datasource.xml
+		// 加载datasource
 		LOGGER.debug("load config for {}", "datasource.yml");
 		ReplicaConfBean replicaConfBean = YamlUtil.load("datasource.yml", ReplicaConfBean.class);
 		replicaConfBean.getMysqlReplicas().forEach(replicaBean -> {
-			replicaBean.initMaster();
 			conf.addMySQLRepBean(replicaBean);
-			replicaBean.getMysqls().forEach(metaBean -> {
+		});
+		conf.putConfigVersion(ConfigKey.DATASOURCE, ConfigKey.INIT_VERSION);
+
+		// 加载schema
+		LOGGER.debug("load config for {}", "schema.yml");
+		SchemaConfBean schemaConfBean = YamlUtil.load("schema.yml", SchemaConfBean.class);
+		schemaConfBean.getSchemas().forEach(schemaBean -> {
+			conf.addSchemaBean(schemaBean);
+		});
+		conf.putConfigVersion(ConfigKey.SCHEMA, ConfigKey.INIT_VERSION);
+	}
+
+	private void init(MycatConfig conf) {
+		// 初始化连接
+		conf.getMysqlRepMap().forEach((key, value) -> {
+			value.initMaster();
+			value.getMysqls().forEach(metaBean -> {
 				try {
 					metaBean.init();
 				} catch (IOException e) {
@@ -96,14 +110,5 @@ public class ProxyStarter {
 				}
 			});
 		});
-		conf.putConfigVersion(ConfigKey.DATASOURCE, ConfigKey.INIT_VERSION);
-
-		// 加载schema.xml
-		LOGGER.debug("load config for {}", "schema.yml");
-		SchemaConfBean schemaConfBean = YamlUtil.load("schema.yml", SchemaConfBean.class);
-		schemaConfBean.getSchemas().forEach(schemaBean -> {
-			conf.addSchemaBean(schemaBean);
-		});
-		conf.putConfigVersion(ConfigKey.SCHEMA, ConfigKey.INIT_VERSION);
 	}
 }

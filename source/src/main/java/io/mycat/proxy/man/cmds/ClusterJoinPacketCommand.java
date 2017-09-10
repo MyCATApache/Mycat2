@@ -40,13 +40,13 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 				return;
 			}
 			ClusterNode theNode = session.cluster().findNode(nodeId);
-			byte jionState = JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK;
+			byte joinState = JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK;
 			if (theNode.getMyClusterState() == ClusterState.Clustered) {
-				jionState = JoinCLusterNotifyPacket.JOIN_STATE_ACKED;
+				joinState = JoinCLusterNotifyPacket.JOIN_STATE_ACKED;
 			}
 			JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes(),
 					ProxyRuntime.INSTANCE.getProxyConfig().getConfigVersion(ConfigKey.MYCAT_CONF));
-			respPacket.setJoinState(jionState);
+			respPacket.setJoinState(joinState);
 			session.answerClientNow(respPacket);
 
 		} else if (cmdType == ManagePacket.PKG_JOIN_ACK_ClUSTER) {

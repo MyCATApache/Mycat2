@@ -14,7 +14,7 @@ public class MycatConfig extends ProxyConfig {
 	/**
 	 * 系统中所有MySQLRepBean的Map
 	 */
-	private Map<String, MySQLRepBean> msqlRepMap = new HashMap<String, MySQLRepBean>();
+	private Map<String, MySQLRepBean> mysqlRepMap = new HashMap<String, MySQLRepBean>();
 
 	/**
 	 * 系统中所有SchemaBean的Map
@@ -28,8 +28,12 @@ public class MycatConfig extends ProxyConfig {
 
 	private Map<String, Integer> repIndexMap = new HashMap<String, Integer>();
 
+	public Map<String, MySQLRepBean> getMysqlRepMap() {
+		return this.mysqlRepMap;
+	}
+
 	protected void addMySQLRepBean(final MySQLRepBean mySQLRepBean) {
-		this.msqlRepMap.put(mySQLRepBean.getName(), mySQLRepBean);
+		this.mysqlRepMap.put(mySQLRepBean.getName(), mySQLRepBean);
 	}
 
 	protected void addSchemaBean(SchemaBean schemaBean) {
@@ -48,7 +52,7 @@ public class MycatConfig extends ProxyConfig {
 	}
 
 	public MySQLRepBean getMySQLRepBean(String repName) {
-		return this.msqlRepMap.get(repName);
+		return this.mysqlRepMap.get(repName);
 	}
 
 	public Integer getRepIndex(String repName) {

@@ -350,15 +350,16 @@ public class MycatSession extends AbstractMySQLSession {
 
             // 5. 新建连接
             if (mysqlSession == null) {
-				((ProxyReactorThread<MySQLSession>) reactorThread).createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
+				reactorThread.createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
+					MySQLSession mySQLSession = (MySQLSession) optSession;
 					//设置当前连接 读写分离属性
-					optSession.setDefaultChannelRead(runOnSlave);
+					mySQLSession.setDefaultChannelRead(runOnSlave);
 					//恢复默认的Handler
 					this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-					optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					mySQLSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 					if (exeSucces) {
-						bindBackend(optSession);
-                        syncSessionStateToBackend(optSession,callback);
+						bindBackend(mySQLSession);
+                        syncSessionStateToBackend(mySQLSession,callback);
 					} else {
 						ErrorPacket errPkg = (ErrorPacket) retVal;
 						this.responseOKOrError(errPkg);
@@ -374,7 +375,7 @@ public class MycatSession extends AbstractMySQLSession {
 			logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
 		}
 		if(mysqlSession != null){
-			syncSessionStateToBackend(mysqlSession,callback);
+			syncSessionStateToBackend(curBackend,callback);
 		} else {
 			callback.finished(curBackend,null,true,null);
 		}

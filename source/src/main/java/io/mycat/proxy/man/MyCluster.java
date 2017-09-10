@@ -123,7 +123,7 @@ public class MyCluster {
 					return;
 				}
 
-			} else if (getMyAliveNodesCount() >= allNodes.size() / 2 && imSmallestAliveNode()) {
+			} else if (getMyAliveNodesCount() > (allNodes.size() >> 1) && imSmallestAliveNode()) {
 				// 是连接中当前编号最小的节点，当选为Leader
 				logger.info("I'm smallest alive node ,and exceeded 1/2 nodes alive ,so I'm the King now !");
 				this.setClusterState(ClusterState.Clustered);

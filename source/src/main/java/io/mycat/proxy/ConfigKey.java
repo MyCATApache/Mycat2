@@ -7,20 +7,20 @@ package io.mycat.proxy;
  * @author: gaozhiwen
  */
 public class ConfigKey {
-    // 对应mycat.conf
+    // 对应mycat.yml
     public static final String MYCAT_CONF = "mycatConf";
 
-    // 对应datasource.xml
+    // 对应datasource.yml
     public static final String DATASOURCE= "datasource";
 
-    // 对应replica-index.properties
+    // 对应replica-index.yml
     public static final String REPLICA_INDEX = "replicaIndex";
 
-    // 对应scheschema.xmls
+    // 对应scheschema.yml
     public static final String SCHEMA = "schema";
 
-    // 对应sharding-rule.xml
+    // 对应sharding-rule.yml
     public static final String SHARDING_RULE = "shardingRule";
 
-    public static int INIT_VERSION = 1;
+    public static final int INIT_VERSION = 1;
 }

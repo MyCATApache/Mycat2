@@ -58,7 +58,7 @@ public class MySQLMetaBean {
         ProxyReactorThread[] reactorThreads = runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
         for (int i = 0; i < minCon; i++) {
-            ProxyReactorThread<MySQLSession> reactorThread = reactorThreads[i % reactorSize];
+            ProxyReactorThread<?> reactorThread = reactorThreads[i % reactorSize];
             reactorThread.addNIOJob(() -> {
                 try {
                     reactorThread.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
