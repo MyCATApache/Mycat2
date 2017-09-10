@@ -13,8 +13,12 @@ import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.DefaultAdminSessionManager;
 import io.mycat.proxy.man.MyCluster;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProxyStarter {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ProxyStarter.class);
+
 	public static final ProxyStarter INSTANCE = new ProxyStarter();
 
 	private ProxyStarter(){}
@@ -82,19 +86,21 @@ public class ProxyStarter {
 		// 加载datasource.xml
 		URL datasourceURL = ConfigLoader.class.getResource("/datasource.xml");
 		List<MySQLRepBean> mysqlRepBeans = ConfigLoader.loadMySQLRepBean(datasourceURL.toString());
-		for (final MySQLRepBean repBean : mysqlRepBeans) {
-			Integer repIndex = conf.getRepIndex(repBean.getName());
-			MySQLReplicatSet mysqlRepSet = new MySQLReplicatSet(repBean, (repIndex == null) ? 0 : repIndex);
-			conf.addMySQLReplicatSet(mysqlRepSet);
-		}
+		mysqlRepBeans.forEach(mySQLRepBean -> mySQLRepBean.getMysqls().forEach(mySQLMetaBean -> {
+			try {
+				LOGGER.debug("begin to init mySQLMetaBean: {}", mySQLMetaBean);
+				mySQLMetaBean.init();
+			} catch (IOException e) {
+				LOGGER.error("error to init mySQLMetaBean: {}", mySQLMetaBean);
+			}
+		}));
+		conf.addMySQLRepBeanList(mysqlRepBeans);
 		conf.putConfigVersion(ConfigKey.DATASOURCE, ConfigKey.INIT_VERSION);
 
 		// 加载schema.xml
 		URL schemaURL = ConfigLoader.class.getResource("/schema.xml");
 		List<SchemaBean> schemaBeans = ConfigLoader.loadSheamBeans(schemaURL.toString());
-		for (SchemaBean schemaBean : schemaBeans) {
-			conf.addSchemaBean(schemaBean);
-		}
+		conf.addSchemaBeanList(schemaBeans);
 		conf.putConfigVersion(ConfigKey.SCHEMA, ConfigKey.INIT_VERSION);
 	}
 

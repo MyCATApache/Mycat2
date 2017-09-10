@@ -1,8 +1,10 @@
 package io.mycat.mycat2;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.proxy.ProxyConfig;
 
@@ -11,7 +13,7 @@ public class MycatConfig extends ProxyConfig {
 	/**
 	 * 系统中所有MySQLReplicatSet的Map
 	 */
-	private Map<String, MySQLReplicatSet> msqlRepSetMap = new HashMap<String, MySQLReplicatSet>();
+	private Map<String, MySQLRepBean> msqlRepMap = new HashMap<String, MySQLRepBean>();
 
 	/**
 	 * 系统中所有SchemaBean的Map
@@ -25,16 +27,17 @@ public class MycatConfig extends ProxyConfig {
 
 	private Map<String, Integer> repIndexMap = new HashMap<String, Integer>();
 
-	protected void addMySQLReplicatSet(final MySQLReplicatSet repSet) {
-		final String repSetName = repSet.getName();
-		this.msqlRepSetMap.put(repSetName, repSet);
+	protected void addMySQLRepBeanList(final List<MySQLRepBean> mySQLRepBeanList) {
+		mySQLRepBeanList.forEach(repBean -> this.msqlRepMap.put(repBean.getName(), repBean));
 	}
 
-	protected void addSchemaBean(SchemaBean schemaBean) {
-		if (defaultSchemaBean == null) { // call by MycatCore,在配置文件加载时初始化
-			defaultSchemaBean = schemaBean;
-		}
-		this.mycatSchemaMap.put(schemaBean.getName(), schemaBean);
+	protected void addSchemaBeanList(List<SchemaBean> schemaBeans) {
+		schemaBeans.forEach(schemaBean -> {
+			if (defaultSchemaBean == null) {
+				defaultSchemaBean = schemaBean;
+			}
+			this.mycatSchemaMap.put(schemaBean.getName(), schemaBean);
+		});
 	}
 
 	public SchemaBean getMycatSchema(String schema) {
@@ -45,8 +48,8 @@ public class MycatConfig extends ProxyConfig {
 		return this.defaultSchemaBean;
 	}
 
-	public MySQLReplicatSet getMySQLReplicatSet(String repsetName) {
-		return this.msqlRepSetMap.get(repsetName);
+	public MySQLRepBean getMySQLReplicat(String repName) {
+		return this.msqlRepMap.get(repName);
 	}
 
 	public Integer getRepIndex(String repName) {
