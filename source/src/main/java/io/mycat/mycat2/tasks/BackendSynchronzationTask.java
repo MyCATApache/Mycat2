@@ -2,6 +2,7 @@ package io.mycat.mycat2.tasks;
 
 import java.io.IOException;
 
+import io.mycat.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,10 +32,18 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         logger.info("synchronzation state to bakcend.session=" + session.toString());
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
-        // TODO 字符集映射未完成
+        String charset = null;
+        System.out.println("charset.........................."+session.charSet);
+        if(session.charSet!=null) {
+            charset = CharsetUtil.getCharset(Integer.parseInt(session.charSet.charsetIndex)) + " ;";
+        }
         QueryPacket queryPacket = new QueryPacket();
         queryPacket.packetId = 0;
-        queryPacket.sql = session.isolation.getCmd() + session.autoCommit.getCmd() + session.isolation.getCmd();
+        queryPacket.sql = session.isolation.getCmd() + session.autoCommit.getCmd() + session.isolation.getCmd()+
+                        session.charSet.getCmd()+charset;
+        if(session.charSet!=null && charset!=null){
+            queryPacket.sql +=queryPacket.sql+session.charSet.getCmd()+charset;
+        }
         syncCmdNum = 3;
         queryPacket.write(proxyBuf);
         proxyBuf.flip();
