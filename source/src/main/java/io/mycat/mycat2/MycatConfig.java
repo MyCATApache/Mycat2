@@ -5,13 +5,14 @@ import java.util.List;
 import java.util.Map;
 
 import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
 import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.proxy.ProxyConfig;
 
 public class MycatConfig extends ProxyConfig {
 
 	/**
-	 * 系统中所有MySQLReplicatSet的Map
+	 * 系统中所有MySQLRepBean的Map
 	 */
 	private Map<String, MySQLRepBean> msqlRepMap = new HashMap<String, MySQLRepBean>();
 
@@ -27,17 +28,15 @@ public class MycatConfig extends ProxyConfig {
 
 	private Map<String, Integer> repIndexMap = new HashMap<String, Integer>();
 
-	protected void addMySQLRepBeanList(final List<MySQLRepBean> mySQLRepBeanList) {
-		mySQLRepBeanList.forEach(repBean -> this.msqlRepMap.put(repBean.getName(), repBean));
+	protected void addMySQLRepBean(final MySQLRepBean mySQLRepBean) {
+		this.msqlRepMap.put(mySQLRepBean.getName(), mySQLRepBean);
 	}
 
-	protected void addSchemaBeanList(List<SchemaBean> schemaBeans) {
-		schemaBeans.forEach(schemaBean -> {
-			if (defaultSchemaBean == null) {
-				defaultSchemaBean = schemaBean;
-			}
-			this.mycatSchemaMap.put(schemaBean.getName(), schemaBean);
-		});
+	protected void addSchemaBean(SchemaBean schemaBean) {
+		if (defaultSchemaBean == null) {
+			defaultSchemaBean = schemaBean;
+		}
+		this.mycatSchemaMap.put(schemaBean.getName(), schemaBean);
 	}
 
 	public SchemaBean getMycatSchema(String schema) {
@@ -48,7 +47,7 @@ public class MycatConfig extends ProxyConfig {
 		return this.defaultSchemaBean;
 	}
 
-	public MySQLRepBean getMySQLReplicat(String repName) {
+	public MySQLRepBean getMySQLRepBean(String repName) {
 		return this.msqlRepMap.get(repName);
 	}
 
@@ -56,7 +55,9 @@ public class MycatConfig extends ProxyConfig {
 		return repIndexMap.get(repName);
 	}
 
-	public void addRepIndex(String repName, Integer repIndex) {
-		repIndexMap.put(repName, repIndex);
+	public void addRepIndex(ReplicaIndexBean replicaIndexBean) {
+		if (replicaIndexBean != null && replicaIndexBean.getReplicaIndexes() != null) {
+			replicaIndexBean.getReplicaIndexes().forEach((key, value) -> repIndexMap.put(key, value));
+		}
 	}
 }

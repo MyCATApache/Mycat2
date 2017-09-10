@@ -76,16 +76,16 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	public MyCommand getMyCommand(){
 		switch(schema.type){
-		case DBInOneServer:
-			return DBInOneServerCmdStrategy.INSTANCE.getMyCommand(this);
-		case DBINMultiServer:
-			return DBINMultiServerCmdStrategy.INSTANCE.getMyCommand(this);
-		case AnnotateRoute:
-			return AnnotateRouteCmdStrategy.INSTANCE.getMyCommand(this);
-		case SQLParseRoute:
-			return AnnotateRouteCmdStrategy.INSTANCE.getMyCommand(this);
-		default:
-			throw new InvalidParameterException("schema type is invalid ");
+			case DB_IN_ONE_SERVER:
+				return DBInOneServerCmdStrategy.INSTANCE.getMyCommand(this);
+			case DB_IN_MULTI_SERVER:
+				return DBINMultiServerCmdStrategy.INSTANCE.getMyCommand(this);
+			case ANNOTATION_ROUTE:
+				return AnnotateRouteCmdStrategy.INSTANCE.getMyCommand(this);
+			case SQL_PARSE_ROUTE:
+				return AnnotateRouteCmdStrategy.INSTANCE.getMyCommand(this);
+			default:
+				throw new InvalidParameterException("schema type is invalid ");
 		}
 	}
 
@@ -248,7 +248,7 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 		DNBean dnBean = schemaBean.getDefaultDN();
 		String replica = dnBean.getMysqlReplica();
-		MySQLRepBean repSet = mycatConf.getMySQLReplicat(replica);
+		MySQLRepBean repSet = mycatConf.getMySQLRepBean(replica);
 		MySQLMetaBean datas = runOnSlave ? repSet.getLBReadMetaBean() : repSet.getCurWriteMetaBean();
 		return datas;
 	}
@@ -262,17 +262,17 @@ public class MycatSession extends AbstractMySQLSession {
 	private String getbackendName(){
 		String backendName = null;
 		switch(schema.type){
-		case DBInOneServer:
-			backendName = schema.getDefaultDN().getMysqlReplica();
-			break;
-		case AnnotateRoute:
-			break;
-		case DBINMultiServer:
-			break;
-		case SQLParseRoute:
-			break;
-		default:
-			break;
+			case DB_IN_ONE_SERVER:
+				backendName = schema.getDefaultDN().getMysqlReplica();
+				break;
+			case ANNOTATION_ROUTE:
+				break;
+			case DB_IN_MULTI_SERVER:
+				break;
+			case SQL_PARSE_ROUTE:
+				break;
+			default:
+				break;
 		}
 		if(backendName==null){
 			throw new InvalidParameterException("the backendName must not be null");
@@ -350,16 +350,15 @@ public class MycatSession extends AbstractMySQLSession {
 
             // 5. 新建连接
             if (mysqlSession == null) {
-				reactorThread.createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
-					MySQLSession mySQLSession = (MySQLSession) optSession;
+				((ProxyReactorThread<MySQLSession>) reactorThread).createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
 					//设置当前连接 读写分离属性
 					optSession.setDefaultChannelRead(runOnSlave);
 					//恢复默认的Handler
 					this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-					mySQLSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 					if (exeSucces) {
-						this.bindBackend(mySQLSession);
-						syncSessionStateToBackend(mySQLSession,callback);
+						this.bindBackend(optSession);
+						syncSessionStateToBackend(optSession,callback);
 					} else {
 						ErrorPacket errPkg = (ErrorPacket) retVal;
 						this.responseOKOrError(errPkg);
@@ -420,7 +419,11 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private List<MySQLMetaBean> getMetaBean(String replicaName) {
 		MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-		return conf.getMySQLReplicat(replicaName).getMysqls();
+		MySQLRepBean repBean = conf.getMySQLRepBean(replicaName);
+		if (repBean == null) {
+			throw new RuntimeException("no such MySQLRepBean " + replicaName);
+		}
+		return repBean.getMysqls();
 	}
 
 	/*
