@@ -10,7 +10,7 @@ import io.mycat.proxy.man.AdminSession;
 public class LocalLoadChecker implements LoadChecker {
     @Override
     public boolean isOverLoad(AdminSession adminSession) {
-        return true;
+        return false;
     }
 
     @Override
