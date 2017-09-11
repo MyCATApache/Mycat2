@@ -57,7 +57,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 			//TODO ...set schema
 			MycatConfig mycatConf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
 			session.schema=mycatConf.getDefaultMycatSchema();
-			boolean succ = success(auth);
+			boolean succ = success(session,auth);
 			if (succ) {
 				session.proxyBuffer.reset();
 				session.answerFront(AUTH_OK);
@@ -70,19 +70,13 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
 	}
 
-	private boolean success(AuthPacket auth) throws IOException {
+	private boolean success(MycatSession session, AuthPacket auth) throws IOException {
 		logger.debug("Login success");
 		// 设置字符集编码
 		int charsetIndex = (auth.charsetIndex & 0xff);
-		final String charset = CharsetUtil.getCharset(charsetIndex);
-		if (charset == null) {
-			final String errmsg = "Unknown charsetIndex:" + charsetIndex;
-			logger.warn(errmsg);
-			// con.writeErrMessage(ErrorCode.ER_UNKNOWN_CHARACTER_SET, errmsg);
-			// con.getProtocolStateMachine().setNextState(BackendCloseState.INSTANCE);
-			return true;
-		}
-		logger.debug("charset = {}, charsetIndex = {}", charset, charsetIndex);
+		logger.debug("charsetIndex = {}", charsetIndex);
+		//保存字符集索引
+		session.charSet.charsetIndex = charsetIndex;
 
 		// con.setCharset(charsetIndex, charset);
 

@@ -1,13 +1,14 @@
 package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 
 import java.util.Arrays;
 
 /**
  * Created by Fanfan on 2017/3/21.
  */
-public class NewSQLContext {
+public class BufferSQLContext {
     //DDL
     public static final byte CREATE_SQL = 1;
     public static final byte ALTER_SQL = 2;
@@ -52,9 +53,14 @@ public class NewSQLContext {
     public static final byte XA_SQL = 33;
     public static final byte SET_AUTOCOMMIT_SQL = 34;
     public static final byte COMMIT_SQL = 35;
-//    public static final byte COMMIT_SQL = 17;
+    //    public static final byte COMMIT_SQL = 17;
     public static final byte SELECT_INTO_SQL = 36;
     public static final byte SELECT_FOR_UPDATE_SQL = 37;
+    public static final byte START_TRANSACTION_SQL = 38;
+    public static final byte START_SLAVE_SQL = 39;
+    public static final byte XA_START = 40;
+    public static final byte XA_BEGIN = 41;
+    public static final byte XA_END = 42;
 
     //ANNOTATION TYPE
     public static final byte ANNOTATION_BALANCE = 1;
@@ -74,7 +80,7 @@ public class NewSQLContext {
     private int tblResultPos;
     private byte schemaCount;
     private int schemaResultPos;
-    private byte[] buffer;
+    private ByteArrayInterface buffer;
     private long sqlHash;
     private byte sqlType;
     private int tblResultArraySize = 256;//todo : 测试期先写死，后期考虑从设置参数中读取
@@ -91,21 +97,21 @@ public class NewSQLContext {
     private int preTableResultPos = 0;
     private int hashArrayRealSQLOffset = 0;//记录真实sql开始偏移
 
-    public NewSQLContext() {
+    public BufferSQLContext() {
         tblResult = new short[tblResultArraySize];
         sqlInfoArray = new short[512];
         annotationValue = new long[16];
     }
 
-    public void setCurBuffer(byte[] curBuffer, HashArray hashArray) {
+    public void setCurBuffer(ByteArrayInterface curBuffer, HashArray hashArray) {
         buffer = curBuffer;
         this.hashArray = hashArray;
         totalTblCount = 0;
         schemaCount = 0;
         tblResultPos = 0;
         schemaResultPos = 2;
-        Arrays.fill(tblResult, (short)0);
-        Arrays.fill(sqlInfoArray, (short)0);
+        Arrays.fill(tblResult, (short) 0);
+        Arrays.fill(sqlInfoArray, (short) 0);
         sqlHash = 0;
         sqlType = 0;
         annotationType = 0;
@@ -125,31 +131,33 @@ public class NewSQLContext {
         totalTblCount++;
         curSQLTblCount++;
         tblResultPos++; //by kaiz : 跳过第一个schema，因为有可能之前已经设置过了
-        tblResult[tblResultPos++] = (short)hashArrayPos;
+        tblResult[tblResultPos++] = (short) hashArrayPos;
     }
 
     public void pushSchemaName(int hashArrayPos) {
         schemaCount++;
-        int prePos = tblResultPos-1;
-        tblResult[prePos-1] = tblResult[prePos];
-        tblResult[prePos] = (short)hashArrayPos;
+        int prePos = tblResultPos - 1;
+        tblResult[prePos - 1] = tblResult[prePos];
+        tblResult[prePos] = (short) hashArrayPos;
     }
 
-    public int getTableCount() { return totalTblCount; }
+    public int getTableCount() {
+        return totalTblCount;
+    }
 
     public String getSchemaName(int idx) {
-        int hashArrayIdx = tblResult[idx<<1];
+        int hashArrayIdx = tblResult[idx << 1];
         if (hashArrayIdx == 0)
             return "default";
         else {
             int pos = hashArray.getPos(hashArrayIdx);
             int size = hashArray.getSize(hashArrayIdx);
-            return new String(buffer, pos, size);
+            return buffer.getString(pos, size);
         }
     }
 
     public long getSchemaHash(int idx) {
-        int hashArrayIdx = tblResult[idx<<1];
+        int hashArrayIdx = tblResult[idx << 1];
         if (hashArrayIdx == 0)
             return 0L;
         else {
@@ -159,23 +167,23 @@ public class NewSQLContext {
 
     //todo : 测试期返回String，将来应该要返回hashcode
     public String getTableName(int idx) {
-        int hashArrayIdx = tblResult[(idx<<1)+1];
+        int hashArrayIdx = tblResult[(idx << 1) + 1];
         int pos = hashArray.getPos(hashArrayIdx);
         int size = hashArray.getSize(hashArrayIdx);
-        return new String(buffer, pos, size);
+        return buffer.getString(pos, size);
     }
 
     public String getSQLTableName(int sqlIdx, int tblIdx) {
         //int tblResultIdx = sqlInfoArray[(sqlIdx<<2)+2];
         if (sqlIdx < totalSQLCount) {
-            int sqlInfoOffset = (sqlIdx<<2)+3;
+            int sqlInfoOffset = (sqlIdx << 2) + 3;
             int tblResultOffset = sqlInfoArray[sqlInfoOffset] >>> 8;
             int tblResultCount = sqlInfoArray[sqlInfoOffset] & 0xFF;
             if (tblIdx < tblResultCount) {
-                int hashArrayIdx = tblResult[tblResultOffset+(tblIdx<<1)+1];
+                int hashArrayIdx = tblResult[tblResultOffset + (tblIdx << 1) + 1];
                 int pos = hashArray.getPos(hashArrayIdx);
                 int size = hashArray.getSize(hashArrayIdx);
-                return new String(buffer, pos, size);
+                return buffer.getString(pos, size);
             } else {
                 return null;
             }
@@ -186,17 +194,17 @@ public class NewSQLContext {
     }
 
     public void setSQLFinished(int curHashPos) {
-        if (preHashArrayPos < curHashPos-1) {
+        if (preHashArrayPos < curHashPos - 1) {
             int sqlSize = curHashPos - preHashArrayPos;
 
             totalSQLCount++;
 
-            int idx = curSQLIdx<<2;
+            int idx = curSQLIdx << 2;
             curSQLIdx++;
-            sqlInfoArray[idx++] = (short)preHashArrayPos;
-            sqlInfoArray[idx++] = (short)((hashArrayRealSQLOffset<<6) | sqlType);
-            sqlInfoArray[idx++] = (short)sqlSize;
-            sqlInfoArray[idx] = (short)((preTableResultPos<<8) | curSQLTblCount);
+            sqlInfoArray[idx++] = (short) preHashArrayPos;
+            sqlInfoArray[idx++] = (short) ((hashArrayRealSQLOffset << 6) | sqlType);
+            sqlInfoArray[idx++] = (short) sqlSize;
+            sqlInfoArray[idx] = (short) ((preTableResultPos << 8) | curSQLTblCount);
             curSQLTblCount = 0;
             preTableResultPos = tblResultPos;
             preHashArrayPos = curHashPos;
@@ -212,15 +220,19 @@ public class NewSQLContext {
     }
 
     public int getSQLTblCount(int sqlIdx) {
-        if (sqlIdx< totalSQLCount) {
-            return sqlInfoArray[(sqlIdx<<2)+3] & 0xFF;
+        if (sqlIdx < totalSQLCount) {
+            return sqlInfoArray[(sqlIdx << 2) + 3] & 0xFF;
         }
         return 0;
     }
 
-    public void setSQLHash(long sqlHash) { this.sqlHash = sqlHash; }
+    public void setSQLHash(long sqlHash) {
+        this.sqlHash = sqlHash;
+    }
 
-    public long getSqlHash() { return this.sqlHash; }
+    public long getSqlHash() {
+        return this.sqlHash;
+    }
 
     public void setSQLType(byte sqlType) {
         if (this.sqlType == 0 || this.sqlType == SELECT_SQL)
@@ -231,56 +243,102 @@ public class NewSQLContext {
         curSQLIdx = sqlIdx;
     }
 
-    public byte getSQLType() { return (byte)(this.sqlInfoArray[1] & 0x3F); }
-    public byte getSQLType(int sqlIdx) { return (byte)(this.sqlInfoArray[(sqlIdx<<2)+1] & 0x3F); }
-    public byte getCurSQLType() { return this.sqlType; }
+    public byte getSQLType() {
+        return (byte) (this.sqlInfoArray[1] & 0x3F);
+    }
+
+    public byte getSQLType(int sqlIdx) {
+        return (byte) (this.sqlInfoArray[(sqlIdx << 2) + 1] & 0x3F);
+    }
+
+    public byte getCurSQLType() {
+        return this.sqlType;
+    }
 
     public void setRealSQLOffset(int hashArrayPos) {
         hashArrayRealSQLOffset = hashArrayPos - preHashArrayPos;
     }
+
     public int getRealSQLOffset(int sqlIdx) {
-        int hashArrayOffset = sqlInfoArray[(sqlIdx<<2)+1] >>> 6;
+        int hashArrayOffset = sqlInfoArray[(sqlIdx << 2) + 1] >>> 6;
         return hashArray.getPos(hashArrayOffset);
     }
+
     public int getRealSQLSize(int sqlIdx) {
-        int hashArrayEndPos = sqlInfoArray[(sqlIdx<<2)+2]-1;
-        return hashArray.getPos(hashArrayEndPos)+hashArray.getSize(hashArrayEndPos);
+        int hashArrayEndPos = sqlInfoArray[(sqlIdx << 2) + 2] - 1;
+        return hashArray.getPos(hashArrayEndPos) + hashArray.getSize(hashArrayEndPos);
     }
+
     public String getRealSQL(int sqlIdx) {
         int sqlStartPos = getRealSQLOffset(sqlIdx);
-        int sqlSize =getRealSQLSize(sqlIdx) - sqlStartPos;
-        return new String(buffer, sqlStartPos, sqlSize);
+        int sqlSize = getRealSQLSize(sqlIdx) - sqlStartPos;
+        return buffer.getString( sqlStartPos, sqlSize);
     }
 
 
-    public void setLimit() { hasLimit = true; }
-    public boolean hasLimit() { return this.hasLimit; }
-    public void setLimitCount(int count) { limitCount = count; }
+    public void setLimit() {
+        hasLimit = true;
+    }
+
+    public boolean hasLimit() {
+        return this.hasLimit;
+    }
+
+    public void setLimitCount(int count) {
+        limitCount = count;
+    }
+
     public void pushLimitStart() {
         limitStart = limitCount;
     }
+
     public void setLimitStart(int start) {
         limitStart = start;
     }
+
     public int getLimitStart() {
         return limitStart;
     }
+
     public int getLimitCount() {
         return limitCount;
     }
 
     public boolean hasAnnotation() { //by kaiz : 是否包含注解，此处还需要完善
-        return this.annotationType!=0;
+        return this.annotationType != 0;
     }
 
     public void setAnnotationType(byte type) {
         this.annotationType = type;
     }
-    public void setAnnotationValue(byte typeKey, long value) { this.annotationValue[typeKey] = value; }
-    public void setAnnotationStart(int pos) {}
-    public void setAnnotationSize(int size) {}
-    public byte getAnnotationType() { return this.annotationType; }
-    public long getAnnotationValue(byte typeKey) { return this.annotationValue[typeKey]; }
-    public String getAnnotationContent() { return null; } //by kaiz : 返回注解等号后面的内容
 
+    public void setAnnotationValue(byte typeKey, long value) {
+        this.annotationValue[typeKey] = value;
+    }
+
+    public void setAnnotationStart(int pos) {
+    }
+
+    public void setAnnotationSize(int size) {
+    }
+
+    public byte getAnnotationType() {
+        return this.annotationType;
+    }
+
+    public long getAnnotationValue(byte typeKey) {
+        return this.annotationValue[typeKey];
+    }
+
+    public String getAnnotationContent() {
+        return null;
+    } //by kaiz : 返回注解等号后面的内容
+
+    public ByteArrayInterface getBuffer() {
+        return buffer;
+    }
+
+    public HashArray getHashArray() {
+        return hashArray;
+    }
 }
