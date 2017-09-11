@@ -24,7 +24,7 @@ public class ProxyConfig {
 	// leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9068,leader-3:127.0.0.1:9069
 	private String allNodeInfs;
 	// 当前节点所用的配置文件的版本
-	private Map<String, Integer> configVersionMap = new HashMap<>();
+	private Map<Byte, Integer> configVersionMap = new HashMap<>();
 
 	public ProxyConfig() {}
 
@@ -84,19 +84,20 @@ public class ProxyConfig {
 		this.clusterPort = clusterPort;
 	}
 
-	public Map<String, Integer> getConfigVersionMap() {
+	public Map<Byte, Integer> getConfigVersionMap() {
 		return configVersionMap;
 	}
 
-	public void putConfigVersion(String configKey, Integer configValue) {
+	public void putConfigVersion(byte configKey, Integer configValue) {
 		configVersionMap.put(configKey, configValue);
 	}
 
-	public int getConfigVersion(String configKey) {
-		return configVersionMap.get(configKey);
+	public int getConfigVersion(byte configKey) {
+		Integer version = configVersionMap.get(configKey);
+		return version == null ? ConfigEnum.INIT_VERSION : version;
 	}
 
-	public int configVersionGetAndIncrease(String configKey) {
+	public int configVersionGetAndIncrease(byte configKey) {
 		int oldVersion = configVersionMap.get(configKey);
 		configVersionMap.put(configKey, oldVersion + 1);
 		return oldVersion;

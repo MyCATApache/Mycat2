@@ -76,26 +76,22 @@ public class ProxyStarter {
 
 	private void loadConfig(MycatConfig conf) throws IOException {
 		// 加载replica-index
-		LOGGER.debug("load config for {}", "replica-index.yml");
-		ReplicaIndexBean replicaIndexBean = YamlUtil.load("replica-index.yml", ReplicaIndexBean.class);
+		LOGGER.debug("load config for {}", ConfigEnum.REPLICA_INDEX.getFileName());
+		ReplicaIndexBean replicaIndexBean = YamlUtil.load(ConfigEnum.REPLICA_INDEX.getFileName(), ReplicaIndexBean.class);
 		conf.addRepIndex(replicaIndexBean);
-		conf.putConfigVersion(ConfigKey.REPLICA_INDEX, ConfigKey.INIT_VERSION);
+		conf.putConfigVersion(ConfigEnum.REPLICA_INDEX.getCode(), ConfigEnum.INIT_VERSION);
 
 		// 加载datasource
-		LOGGER.debug("load config for {}", "datasource.yml");
-		ReplicaConfBean replicaConfBean = YamlUtil.load("datasource.yml", ReplicaConfBean.class);
-		replicaConfBean.getMysqlReplicas().forEach(replicaBean -> {
-			conf.addMySQLRepBean(replicaBean);
-		});
-		conf.putConfigVersion(ConfigKey.DATASOURCE, ConfigKey.INIT_VERSION);
+		LOGGER.debug("load config for {}", ConfigEnum.DATASOURCE.getFileName());
+		ReplicaConfBean replicaConfBean = YamlUtil.load(ConfigEnum.DATASOURCE.getFileName(), ReplicaConfBean.class);
+		replicaConfBean.getMysqlReplicas().forEach(replicaBean -> conf.addMySQLRepBean(replicaBean));
+		conf.putConfigVersion(ConfigEnum.DATASOURCE.getCode(), ConfigEnum.INIT_VERSION);
 
 		// 加载schema
-		LOGGER.debug("load config for {}", "schema.yml");
-		SchemaConfBean schemaConfBean = YamlUtil.load("schema.yml", SchemaConfBean.class);
-		schemaConfBean.getSchemas().forEach(schemaBean -> {
-			conf.addSchemaBean(schemaBean);
-		});
-		conf.putConfigVersion(ConfigKey.SCHEMA, ConfigKey.INIT_VERSION);
+		LOGGER.debug("load config for {}", ConfigEnum.SCHEMA.getFileName());
+		SchemaConfBean schemaConfBean = YamlUtil.load(ConfigEnum.SCHEMA.getFileName(), SchemaConfBean.class);
+		schemaConfBean.getSchemas().forEach(schemaBean -> conf.addSchemaBean(schemaBean));
+		conf.putConfigVersion(ConfigEnum.SCHEMA.getCode(), ConfigEnum.INIT_VERSION);
 	}
 
 	private void init(MycatConfig conf) {

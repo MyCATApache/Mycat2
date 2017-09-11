@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.mycat.mycat2.ProxyStarter;
-import io.mycat.proxy.ConfigKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,13 +125,13 @@ public class MyCluster {
 			} else if (getMyAliveNodesCount() > (allNodes.size() >> 1) && imSmallestAliveNode()) {
 				// 是连接中当前编号最小的节点，当选为Leader
 				logger.info("I'm smallest alive node ,and exceeded 1/2 nodes alive ,so I'm the King now !");
+				// 集群主已产生，继续加载配置，提供服务
+				ProxyStarter.INSTANCE.startProxy(true);
+
 				this.setClusterState(ClusterState.Clustered);
 				this.myLeader = this.myNode;
 				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK);
 				notifyAllNodes(session,joinReps);
-
-				// 集群主已产生，继续加载配置，提供服务
-				ProxyStarter.INSTANCE.startProxy(true);
 			} else if (theNode.getMyClusterState() == ClusterState.LeaderElection) {
 				setClusterState(ClusterState.LeaderElection);
 			}
@@ -146,21 +145,18 @@ public class MyCluster {
 	{
 		for (Session theSession : session.getMySessionManager().getAllSessions()) {
 			AdminSession nodeSession = (AdminSession) theSession;
-			if (!nodeSession.isChannelOpen()) {
-				try
-				{
-				nodeSession.answerClientNow(packet);
-				}catch(Exception e)
-				{
-					logger.warn("notify node err "+nodeSession.getNodeId(),e);
+			if (nodeSession.isChannelOpen()) {
+				try {
+					nodeSession.answerClientNow(packet);
+				} catch (Exception e) {
+					logger.warn("notify node err " + nodeSession.getNodeId(),e);
 				}
 			}
 
 		}
 	}
 	private JoinCLusterNotifyPacket createJoinNotifyPkg(AdminSession session,byte joinState) {
-		JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes(),
-				ProxyRuntime.INSTANCE.getProxyConfig().getConfigVersion(ConfigKey.MYCAT_CONF));
+		JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes());
 		respPacket.setJoinState(joinState);
 		return respPacket;
 	}
