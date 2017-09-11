@@ -17,7 +17,11 @@ Mycat 2.0 HBT 代码:
 //fetchIntoMapStream(sql,new MapMeta(id,row)).forBatch(100,mapBachRec->{ });
 
 String sql="select a.id,a.price where a.id in (111,222,333,444)";
+
 String sql2="select b.id,b.username from b",
+
+String sql2="select b.id,b.username from b",     
+
 engine.streamOf(new FetchIntoRowStream(new SqlMeta(sql,"a"),new RowMeta("tableA")))
 .joinAndOut(new SqlMeta(sql2,"b"),new RowMeta("tableB"),new JoinMeta("tableA.id","tableB.id",Engnine.MEM,100), new ResultSetMeta({"tableA.id,tableA.price,tableB.username"}),(arow,brow)->{out.write(arow,brow[1]});
 

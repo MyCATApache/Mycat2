@@ -5,10 +5,16 @@ import java.net.ConnectException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
 
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
+import io.mycat.mycat2.tasks.BackendConCreateTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,18 +31,61 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	protected final Selector selector;
 	protected final BufferPool bufPool;
 	protected ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
-	protected ArrayList<T> allSessions = new ArrayList<T>();
+	protected LinkedList<T> allSessions = new LinkedList<T>();
+
+	// 存放后端连接的map
+	protected Map<MySQLMetaBean, LinkedList<MySQLSession>> mySQLSessionMap = new HashMap<>();
 
 	public Selector getSelector() {
 		return selector;
 	}
 
-	public BufferPool getBufPool() {
-		return bufPool;
+	public LinkedList<T> getAllSessions() {
+		return allSessions;
 	}
 
-	public ArrayList<T> getAllSessions() {
-		return allSessions;
+	public void createSession(MySQLMetaBean mySQLMetaBean, SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack) throws IOException {
+		int count = Stream.of(ProxyRuntime.INSTANCE.getReactorThreads())
+						.map(session -> session.mySQLSessionMap.get(mySQLMetaBean))
+						.filter(list -> list != null)
+						.reduce(0, (sum, list) -> sum += list.size(), (sum1, sum2) -> sum1 + sum2)
+				+ getUsingBackendConCounts(mySQLMetaBean);
+		if (count + 1 > mySQLMetaBean.getMaxCon()) {
+			throw new RuntimeException("connection full for " + mySQLMetaBean.getHostName());
+		}
+
+		BackendConCreateTask authProcessor = new BackendConCreateTask(bufPool, selector, mySQLMetaBean, schema);
+		authProcessor.setCallback(callBack);
+	}
+
+	public void addMySQLSession(MySQLMetaBean mySQLMetaBean, MySQLSession mySQLSession) {
+		LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLMetaBean);
+		if (mySQLSessionList == null) {
+			mySQLSessionList = new LinkedList<>();
+			mySQLSessionMap.put(mySQLMetaBean, mySQLSessionList);
+		}
+		mySQLSessionList.add(mySQLSession);
+	}
+
+	public MySQLSession getExistsSession(MySQLMetaBean mySQLMetaBean) {
+		LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLMetaBean);
+		if (mySQLSessionList != null && !mySQLSessionList.isEmpty()) {
+			return mySQLSessionList.removeLast();
+		}
+		return null;
+	}
+
+	/**
+	 * 统计后端正在使用的连接数
+     */
+	private int getUsingBackendConCounts(MySQLMetaBean mySQLMetaBean) {
+		return allSessions.stream()
+//				.filter(session -> session instanceof MycatSession)
+				.map(session -> {
+					MycatSession mycatSession = (MycatSession) session;
+					return mycatSession.getBackendConCounts(mySQLMetaBean);
+				})
+				.reduce(0, (sum, count) -> sum += count, (sum1, sum2) -> sum1 + sum2);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -55,7 +104,6 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 				logger.warn("regist new connection err " + e);
 			}
 		});
-
 	}
 
 	public void addNIOJob(Runnable job) {

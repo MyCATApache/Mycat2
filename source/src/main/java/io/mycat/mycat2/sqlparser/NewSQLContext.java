@@ -1,9 +1,8 @@
 package io.mycat.mycat2.sqlparser;
 
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 
 import java.util.Arrays;
-
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 
 /**
  * Created by Fanfan on 2017/3/21.
@@ -232,11 +231,7 @@ public class NewSQLContext {
         curSQLIdx = sqlIdx;
     }
 
-    public byte getSQLType() {
-    	//TODO 临时处理 等待与 赵帅代码合并
-    	byte  type = (byte)(this.sqlInfoArray[1] & 0x3F);
-    	return type==0?this.sqlType:type; 
-    }
+    public byte getSQLType() { return (byte)(this.sqlInfoArray[1] & 0x3F); }
     public byte getSQLType(int sqlIdx) { return (byte)(this.sqlInfoArray[(sqlIdx<<2)+1] & 0x3F); }
     public byte getCurSQLType() { return this.sqlType; }
 

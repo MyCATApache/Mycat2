@@ -698,5 +698,11 @@ public class TokenHash {
     public static final long SQL_TSI_MONTH = 0x8c3f094f1b906a03L;
     public static final long SQL_TSI_QUARTER = 0xe9ec207893081b87L;
     public static final long SQL_TSI_YEAR = 0xea71ed7ecec4f35bL;
+    public static final long AUTOCOMMIT = 4190263402411880L;
+    //todo 后期生成
+    public static final long   IFNULL=4190263402411880L;
+    public static final long  NULLIF=4190263402411880L;
+
+
 
 }

@@ -34,32 +34,19 @@ import java.util.List;
 public class SchemaBean {
 	public enum SchemaType {
 		// 所有表在一个MySQL Server上（但不分片），
-		DBInOneServer,
+		DB_IN_ONE_SERVER,
 		// 所有表在不同的MySQL Server上（但不分片），
-		DBINMultiServer,
+		DB_IN_MULTI_SERVER,
 		// 只使用基于SQL注解的路由模式（高性能但手工指定）
-		AnnotateRoute,
+		ANNOTATION_ROUTE,
 		// 使用SQL解析的方式去判断路由
-		SQLParseRoute
+		SQL_PARSE_ROUTE
 	}
 
 	public String name;
 	public SchemaType type;
 	private DNBean defaultDN;
-
-  private List<TableDefBean> tableDefBeans;
-
-	public SchemaBean(String name, DNBean defaultDN, int type, List<TableDefBean> tableDefBeans) {
-		super();
-		this.name = name;
-		this.defaultDN = defaultDN;
-		this.type = SchemaType.values()[type];
-		this.tableDefBeans = tableDefBeans;
-	}
-
-	public SchemaType getType() {
-		return type;
-	}
+	private List<TableDefBean> tables;
 
 	public String getName() {
 		return name;
@@ -67,6 +54,14 @@ public class SchemaBean {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public SchemaType getType() {
+		return type;
+	}
+
+	public void setType(SchemaType type) {
+		this.type = type;
 	}
 
 	public DNBean getDefaultDN() {
@@ -77,18 +72,18 @@ public class SchemaBean {
 		this.defaultDN = defaultDN;
 	}
 
-	public void setTableDefBeans(List<TableDefBean> tableDefBeans) {
-		this.tableDefBeans = tableDefBeans;
+	public List<TableDefBean> getTables() {
+		return tables;
 	}
 
-	public List<TableDefBean> getTableDefBeans() {
-		return tableDefBeans;
+	public void setTables(List<TableDefBean> tables) {
+		this.tables = tables;
 	}
 
 	@Override
 	public String toString() {
 		return "SchemaBean [name=" + name + ", type=" + type + ", defaultDN=" + defaultDN
-				+ ", tableDefBeans=" + tableDefBeans + "]";
+				+ ", tables=" + tables + "]";
 	}
 
 }

@@ -1,10 +1,9 @@
 package io.mycat.mycat2.sqlparser;
 
-
-import java.util.stream.IntStream;
-
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
+
+import java.util.stream.IntStream;
 
 /**
  * Created by Kaiz on 2017/2/6.
@@ -104,7 +103,7 @@ public class NewSQLParser {
         }
     }
 
-    int pickTableNames(int pos, final int arrayCount, NewSQLContext context) {
+    public int pickTableNames(int pos, final int arrayCount, NewSQLContext context) {
         int type;
         long hash = hashArray.getHash(pos);
         if (hash != 0) {
@@ -572,6 +571,7 @@ public class NewSQLParser {
         tokenizer.tokenize(src);
         firstParse(context);
     }
+
 
 //    static long RunBench(byte[] src, NewSQLParser parser) {
 //        int count = 0;
