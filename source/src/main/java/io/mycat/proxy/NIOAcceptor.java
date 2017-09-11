@@ -14,6 +14,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.loadbalance.LoadChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,22 +34,35 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		this.setName("NIO-Acceptor");
 	}
 
-	public void startServerChannel(String ip, int port, boolean clusterServer,boolean loadBalanceServer) throws IOException {
-		final ServerSocketChannel serverChannel = clusterServer ? clusterServerSocketChannel : (loadBalanceServer ? loadBalanceServerSocketChannel : proxyServerSocketChannel);
+	public void startServerChannel(String ip, int port,ServerType serverType)throws IOException {
+		final ServerSocketChannel serverChannel = getServerSocketChannel(serverType);
 		if (serverChannel != null && serverChannel.isOpen())
 			return;
 
-		if (clusterServer) {
+		if (serverType == ServerType.CLUSTER) {
 			adminSessionMan = new DefaultAdminSessionManager();
 			ProxyRuntime.INSTANCE.setAdminSessionManager(adminSessionMan);
 			logger.info("opend cluster conmunite port on {}:{}", ip, port);
 		}
 
-		if(loadBalanceServer){
+		if(serverType == ServerType.LOAD_BALANCER){
 			logger.info("opend load balance conmunite port on {}:{}", ip, port);
 		}
 
-		openServerChannel(selector, ip, port, clusterServer,loadBalanceServer);
+		openServerChannel(selector, ip, port, serverType);
+	}
+
+	private ServerSocketChannel getServerSocketChannel(ServerType serverType){
+		switch (serverType) {
+		case MYCAT:
+			return proxyServerSocketChannel;
+		case CLUSTER:
+			return clusterServerSocketChannel;
+		case LOAD_BALANCER:
+			return loadBalanceServerSocketChannel;
+		default:
+			throw new IllegalArgumentException("wrong server type.");
+		}
 	}
 
 	public void stopServerChannel(boolean clusterServer) {
@@ -69,21 +83,37 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		final SocketChannel socketChannel = serverSocket.accept();
 		socketChannel.configureBlocking(false);
 		logger.info("new Client connected: " + socketChannel);
-		boolean clusterServer = (boolean) curKey.attachment();
+		ServerType serverType = (ServerType) curKey.attachment();
+		ProxyRuntime proxyRuntime = ProxyRuntime.INSTANCE;
 		// 获取附着的标识，即得到当前是否为集群通信端口
-		if (clusterServer) {
+		if (serverType == ServerType.CLUSTER) {
 			adminSessionMan.createSession(null, this.bufPool, selector, socketChannel, true);
-		} else {
-			// 找到一个可用的NIO Reactor Thread，交付托管
-			if (reactorEnv.counter++ == Integer.MAX_VALUE) {
-				reactorEnv.counter = 1;
+		} else if(serverType == ServerType.LOAD_BALANCER){
+			LoadChecker localLoadChecker = proxyRuntime.getLocalLoadChecker();
+			//本地未超载,派发到本地
+			if(!localLoadChecker.isOverLoad(null)){
+				logger.debug("load balancer accepted. Dispatch to local");
+				accept(reactorEnv,socketChannel,serverType);
+			} else {
+				logger.debug("load balancer accepted. Dispatch to remote");
+				//TODO 派发至远程
 			}
-			int index = reactorEnv.counter % ProxyRuntime.INSTANCE.getNioReactorThreads();
-			// 获取一个reactor对象
-			ProxyReactorThread<?> nioReactor = ProxyRuntime.INSTANCE.getReactorThreads()[index];
-			// 将通道注册到reactor对象上
-			nioReactor.acceptNewSocketChannel(clusterServer, socketChannel);
 		}
+		else {
+			accept(reactorEnv,socketChannel,serverType);
+		}
+	}
+
+	public void accept(ReactorEnv reactorEnv,SocketChannel socketChannel,ServerType serverType) throws IOException {
+		// 找到一个可用的NIO Reactor Thread，交付托管
+		if (reactorEnv.counter++ == Integer.MAX_VALUE) {
+			reactorEnv.counter = 1;
+		}
+		int index = reactorEnv.counter % ProxyRuntime.INSTANCE.getNioReactorThreads();
+		// 获取一个reactor对象
+		ProxyReactorThread<?> nioReactor = ProxyRuntime.INSTANCE.getReactorThreads()[index];
+		// 将通道注册到reactor对象上
+		nioReactor.acceptNewSocketChannel(serverType, socketChannel);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -125,18 +155,16 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		session.getCurNIOHandler().onSocketWrite(session);
 	}
 
-	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer,boolean loadBalanceServer)
+	private void openServerChannel(Selector selector, String bindIp, int bindPort, ServerType serverType)
 			throws IOException {
 		final ServerSocketChannel serverChannel = ServerSocketChannel.open();
-
 		final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
 		serverChannel.bind(isa);
 		serverChannel.configureBlocking(false);
-		serverChannel.register(selector, SelectionKey.OP_ACCEPT, clusterServer);
-
-		if (clusterServer) {
+		serverChannel.register(selector, SelectionKey.OP_ACCEPT, serverType);
+		if (serverType == ServerType.CLUSTER) {
 			clusterServerSocketChannel = serverChannel;
-		} else if (loadBalanceServer) {
+		} else if (serverType == ServerType.LOAD_BALANCER) {
 			loadBalanceServerSocketChannel = serverChannel;
 		} else {
 			proxyServerSocketChannel = serverChannel;
@@ -147,4 +175,7 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		return this.selector;
 	}
 
+	public enum ServerType {
+		CLUSTER, LOAD_BALANCER, MYCAT;
+	}
 }

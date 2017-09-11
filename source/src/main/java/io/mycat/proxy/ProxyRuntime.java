@@ -10,6 +10,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.loadbalance.LoadChecker;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
@@ -29,6 +30,7 @@ public class ProxyRuntime {
 	private SessionManager<AdminSession> adminSessionManager;
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
+	private LoadChecker localLoadChecker;
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -187,5 +189,13 @@ public class ProxyRuntime {
 
 	public void setAcceptor(NIOAcceptor acceptor) {
 		this.acceptor = acceptor;
+	}
+
+	public LoadChecker getLocalLoadChecker() {
+		return localLoadChecker;
+	}
+
+	public void setLocalLoadChecker(LoadChecker localLoadChecker) {
+		this.localLoadChecker = localLoadChecker;
 	}
 }
