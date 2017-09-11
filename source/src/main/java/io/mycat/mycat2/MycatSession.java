@@ -9,6 +9,7 @@ import java.util.*;
 
 import io.mycat.mycat2.beans.*;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.proxy.ProxyReactorThread;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	public MyCommand curSQLCommand;
 
-	public NewSQLContext sqlContext = new NewSQLContext();
+	public BufferSQLContext sqlContext = new BufferSQLContext();
 
 	/**
 	 * Mycat Schema
