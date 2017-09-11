@@ -68,14 +68,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 
 			// 设置字符集编码
 			int charsetIndex = (handshake.serverCharsetIndex & 0xff);
-			String charset = CharsetUtil.getCharset(charsetIndex);
-			if (charset != null) {
-				// conn.setCharset(charsetIndex, charset);
-			} else {
-				String errmsg = "Unknown charsetIndex:" + charsetIndex + " of " + session.getSessionId();
-				logger.warn(errmsg);
-				return;
-			}
 			// 发送应答报文给后端
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
