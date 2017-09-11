@@ -30,7 +30,7 @@ public class ProxyStarter {
 
 		if (conf.isClusterEnable()) {
 			// 集群开启状态，需要等集群启动，主节点确认完配置才能提供服务
-			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), true);
+			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), true,false);
 			startProxyReactorThread();
 
 			runtime.setAdminCmdResolver(new AdminCommandResovler());
@@ -50,10 +50,14 @@ public class ProxyStarter {
 //		if (isMaster) {
 			// 开启mycat服务
 			NIOAcceptor acceptor = runtime.getAcceptor();
-			acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), false);
+			acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), false,false);
 			startProxyReactorThread();
 			loadConfig();
 //		}
+		if(conf.isLoadBalanceEnable()){
+			//开启负载均衡服务
+			acceptor.startServerChannel(conf.getLoadBalanceIp(),conf.getLoadBalancePort(),false,true);
+		}
 	}
 
 	public void stopProxy() {

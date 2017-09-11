@@ -26,14 +26,15 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 
 	private ServerSocketChannel proxyServerSocketChannel;
 	private ServerSocketChannel clusterServerSocketChannel;
+	private ServerSocketChannel loadBalanceServerSocketChannel;
 
 	public NIOAcceptor(BufferPool bufferPool) throws IOException {
 		super(bufferPool);
 		this.setName("NIO-Acceptor");
 	}
 
-	public void startServerChannel(String ip, int port, boolean clusterServer) throws IOException {
-		final ServerSocketChannel serverChannel = clusterServer ? clusterServerSocketChannel : proxyServerSocketChannel;
+	public void startServerChannel(String ip, int port, boolean clusterServer,boolean loadBalanceServer) throws IOException {
+		final ServerSocketChannel serverChannel = clusterServer ? clusterServerSocketChannel : (loadBalanceServer ? loadBalanceServerSocketChannel : proxyServerSocketChannel);
 		if (serverChannel != null && serverChannel.isOpen())
 			return;
 
@@ -43,7 +44,11 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 			logger.info("opend cluster conmunite port on {}:{}", ip, port);
 		}
 
-		openServerChannel(selector, ip, port, clusterServer);
+		if(loadBalanceServer){
+			logger.info("opend load balance conmunite port on {}:{}", ip, port);
+		}
+
+		openServerChannel(selector, ip, port, clusterServer,loadBalanceServer);
 	}
 
 	public void stopServerChannel(boolean clusterServer) {
@@ -120,7 +125,7 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		session.getCurNIOHandler().onSocketWrite(session);
 	}
 
-	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer)
+	private void openServerChannel(Selector selector, String bindIp, int bindPort, boolean clusterServer,boolean loadBalanceServer)
 			throws IOException {
 		final ServerSocketChannel serverChannel = ServerSocketChannel.open();
 
@@ -131,6 +136,8 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 
 		if (clusterServer) {
 			clusterServerSocketChannel = serverChannel;
+		} else if (loadBalanceServer) {
+			loadBalanceServerSocketChannel = serverChannel;
 		} else {
 			proxyServerSocketChannel = serverChannel;
 		}
