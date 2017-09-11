@@ -40,6 +40,7 @@
 			<artifactId>jmh-generator-annprocess</artifactId>
 			<version>1.19</version>
 			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>

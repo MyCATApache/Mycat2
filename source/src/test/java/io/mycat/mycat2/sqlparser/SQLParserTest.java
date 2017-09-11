@@ -1,6 +1,5 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.sqlparser.*;
 import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
@@ -332,7 +331,7 @@ public class SQLParserTest extends TestCase {
         assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(NewSQLContext.ANNOTATION_DB_TYPE, context.getAnnotationType());
-        assertEquals(TokenHash.MASTER, context.getAnnotationValue(SQLContext.ANNOTATION_DB_TYPE));
+        assertEquals(TokenHash.MASTER, context.getAnnotationValue(NewSQLContext.ANNOTATION_DB_TYPE));
     }
 
     @Test
@@ -342,7 +341,7 @@ public class SQLParserTest extends TestCase {
         assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(NewSQLContext.ANNOTATION_SCHEMA, context.getAnnotationType());
-        assertEquals(MatchMethodGenerator.genHash("testDB".toCharArray()), context.getAnnotationValue(SQLContext.ANNOTATION_SCHEMA));
+        assertEquals(MatchMethodGenerator.genHash("testDB".toCharArray()), context.getAnnotationValue(NewSQLContext.ANNOTATION_SCHEMA));
     }
 
     @Test
@@ -352,7 +351,7 @@ public class SQLParserTest extends TestCase {
         assertEquals(NewSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(NewSQLContext.ANNOTATION_DATANODE, context.getAnnotationType());
-        assertEquals(MatchMethodGenerator.genHash("dn1".toCharArray()), context.getAnnotationValue(SQLContext.ANNOTATION_DATANODE));
+        assertEquals(MatchMethodGenerator.genHash("dn1".toCharArray()), context.getAnnotationValue(NewSQLContext.ANNOTATION_DATANODE));
     }
 
     @Test
