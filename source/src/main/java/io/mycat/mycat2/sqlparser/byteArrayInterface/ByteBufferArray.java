@@ -33,6 +33,8 @@ public class ByteBufferArray implements ByteArrayInterface {
     }
     public ByteBufferArray(byte[] arg) {
         src = ByteBuffer.wrap(arg);
+        offset=0;
+        length=arg.length;
     }
     public ByteBufferArray(ByteBuffer arg) {
         src = arg;

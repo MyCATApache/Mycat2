@@ -12,36 +12,47 @@ import java.util.stream.IntStream;
  */
 public class Tokenizer2 {
 
-    public static final int DIGITS = 1;
-    public static final int CHARS = 2;
-    public static final int STRINGS = 3;
-    public static final int MINUS = 4;
-    public static final int SHARP = 5;
-    public static final int DIVISION = 6;
-    public static final byte AT = 7;
-    public static final byte COMMA = 8;
-    public static final byte BACK_SLASH = 9;
-    public static final byte LEFT_PARENTHESES = 10;
-    public static final byte RIGHT_PARENTHESES = 11;
-    public static final byte SEMICOLON = 12;
-    public static final byte STAR = 13;
-    public static final byte EQUAL = 14;
-    public static final byte PLUS = 15;
-    public static final byte LESS = 16;
-    public static final byte GREATER = 17;
-    public static final byte DOT = 18;
+    public static final int DIGITS = 1;// [0-9]
+    public static final int CHARS = 2;//   charType['_'<<1] = CHARS,charType['$'<<1] = CHARS;
+    public static final int STRINGS = 3;// "
+    public static final int MINUS = 4;// -
+    public static final int SHARP = 5;// #
+    public static final int DIVISION = 6;// /
+    public static final byte AT = 7;// @
+    public static final byte COMMA = 8;// ,
+    public static final byte BACK_SLASH = 9;// \ 反斜杠
+    public static final byte LEFT_PARENTHESES = 10;// (
+    public static final byte RIGHT_PARENTHESES = 11;// )
+    public static final byte SEMICOLON = 12;// ;
+    public static final byte STAR = 13;// *
+    public static final byte EQUAL = 14;// =
+    public static final byte PLUS = 15;// +
+    public static final byte LESS = 16;// <
+    public static final byte GREATER = 17;// >
+    public static final byte DOT = 18;// .
     public static final byte ANNOTATION_BALANCE = 20;
     public static final byte ANNOTATION_START = 21;
     public static final byte ANNOTATION_END = 22;
-    public static final byte COLON = 23;
+    public static final byte COLON = 23;// !
     public static final byte TOBER =24;//~
     public static final byte QUESTION_MARK =25;//?
-    public static final byte OR =26;
+    public static final byte OR = 26;// |
     public static final byte LEFT_CURLY_BRACKET =27;//{
     public static final byte RIGHT_CURLY_BRACKET =28;//}
-    public static final byte AND =29;
-    public static final byte PERCENT =30;
-    public static final byte CARET =31;
+    public static final byte AND = 29;// &
+    public static final byte PERCENT = 30;//%
+    public static final byte CARET = 31;//^
+
+    public static final byte LESS_EQUAL_GREATER = 32;// <=>
+    public static final byte LESS_EQUAL = 33;// <=
+    public static final byte GREATER_EQUAL = 34;// >=
+    public static final byte LESS_GREATER = 35;// <>
+    public static final byte COLON_EQUAL = 36;// !=
+
+    public static final byte OR_OR = 37;// ||
+    public static final byte AND_AND = 38;// &&
+    public static final byte LESS_LESS = 39;// <<
+    public static final byte GREATER_GREATER = 40;// >>
     ByteArrayInterface sql;
     final byte[] charType = new byte[512];
     HashArray hashArray;
@@ -229,13 +240,14 @@ public class Tokenizer2 {
                 case SHARP:
                     pos = skipSingleLineComment(sql, pos, sqlLength);
                     break;
-                case DIVISION:
+                case DIVISION: {// /
+                    final int start = pos;
                     next = sql.get(++pos);
-                    if (next == '*') {
+                    if (next == '*') {//  /*
                         next = sql.get(++pos);
                         if (next == ' ') {
                             //处理新版mycat注解
-                            if ((sql.get(++pos)&0xDF) == 'M' && (sql.get(++pos)&0xDF) == 'Y' &&(sql.get(++pos)&0xDF) == 'C' &&(sql.get(++pos)&0xDF) == 'A' &&(sql.get(++pos)&0xDF) == 'T'
+                            if ((sql.get(++pos) & 0xDF) == 'M' && (sql.get(++pos) & 0xDF) == 'Y' && (sql.get(++pos) & 0xDF) == 'C' && (sql.get(++pos) & 0xDF) == 'A' && (sql.get(++pos) & 0xDF) == 'T'
                                     && sql.get(++pos) == ':') {
                                 pos = parseAnnotation(sql, pos, sqlLength);
                             } else {
@@ -251,12 +263,89 @@ public class Tokenizer2 {
 //                        }
                         else
                             pos = skipMultiLineComment(sql, ++pos, sqlLength, next);
-                    } else if (next == '/') {
+                    } else if (next == '/') {// //
                         pos = skipSingleLineComment(sql, pos, sqlLength);
                     } else {
-                        hashArray.set(cType, pos++, 1);
+                        hashArray.set(cType, start, 1);
                     }
                     break;
+                }
+                case LESS:// <
+                {
+                    final int start = pos;
+                    next = sql.get(++pos);
+                    if (next == '=') {// <=
+                        next = sql.get(++pos);
+                        if (next == '>') {// <=>
+                            ++pos;
+                            hashArray.set(Tokenizer2.LESS_EQUAL_GREATER, start, 3);
+                            break;
+                        } else {//<=
+                            hashArray.set(Tokenizer2.LESS_EQUAL, start, 2);
+                            break;
+                        }
+                    } else if (next == '<') {// <<
+                        ++pos;
+                        hashArray.set(Tokenizer2.LESS_LESS, start, 2);
+                        break;
+                    } else if (next == '>') {// <>
+                        ++pos;
+                        hashArray.set(Tokenizer2.LESS_GREATER, start, 2);
+                        break;
+                    } else {
+                        hashArray.set(cType, start, 1);
+                    }
+                    break;
+                }
+                case GREATER:// >
+                {
+                    final int start = pos;
+                    next = sql.get(++pos);
+                    if (next == '=') {// >=
+                        ++pos;
+                        hashArray.set(Tokenizer2.GREATER_EQUAL, start, 2);
+                        break;
+                    } else if (next == '>') {// >>
+                        ++pos;
+                        hashArray.set(Tokenizer2.GREATER_GREATER, start, 2);
+                        break;
+                    } else {
+                        hashArray.set(cType, start, 1);
+                    }
+                    break;
+                }
+                case OR: {
+                    final int start = pos;
+                    next = sql.get(++pos);
+                    if (next == '|') {
+                        ++pos;
+                        hashArray.set(OR_OR, start, 2);
+                    } else {
+                        hashArray.set(cType, start, 1);
+                    }
+                    break;
+                }
+                case AND: {
+                    int start = pos;
+                    next = sql.get(++pos);
+                    if (next == '&') {
+                        ++pos;
+                        hashArray.set(AND_AND, start, 2);
+                    } else {
+                        hashArray.set(cType, start, 1);
+                    }
+                    break;
+                }
+                case COLON: {
+                    final int start = pos;
+                    next = sql.get(++pos);
+                    if (next == '=') {
+                        hashArray.set(COLON_EQUAL, start, 2);
+                    } else {
+                        hashArray.set(cType, start, 1);
+                    }
+                    break;
+                }
                 case AT:
                     next = sql.get(++pos);
                     if (next == '@') {
@@ -269,8 +358,8 @@ public class Tokenizer2 {
     }
 
     public static void main(String[] args) {
-      BufferSQLParser sqlParser2=new BufferSQLParser();
-      BufferSQLContext context2=new BufferSQLContext();
-      sqlParser2.parse("AUTOCOMMIT".getBytes(StandardCharsets.UTF_8),context2);
+        BufferSQLParser sqlParser2 = new BufferSQLParser();
+        BufferSQLContext context2 = new BufferSQLContext();
+        sqlParser2.parse("AUTOCOMMIT".getBytes(StandardCharsets.UTF_8), context2);
     }
 }
