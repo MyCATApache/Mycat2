@@ -180,9 +180,11 @@ public class MycatSession extends AbstractMySQLSession {
 		backendMap.forEach((key, value) -> {
 			if (value != null) {
 				value.forEach(mySQLSession -> {
-					mySQLSession.unbindMycatSession();
 					reactor.addMySQLSession(key, mySQLSession);
 				});
+				for (int i = value.size() - 1; i >= 0; i--) {
+					value.get(i).unbindMycatSession();
+				}
 			}
 		});
 	}
