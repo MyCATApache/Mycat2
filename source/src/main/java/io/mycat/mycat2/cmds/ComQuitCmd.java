@@ -18,7 +18,7 @@ public class ComQuitCmd implements MySQLCommand{
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
 		session.close(true, "client closed");
-		session.unbindAllBackend();
+		//session.unbindAllBackend();
 		return true;
 	}
 
