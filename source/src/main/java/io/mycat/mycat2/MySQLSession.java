@@ -51,10 +51,22 @@ public class MySQLSession extends AbstractMySQLSession {
 
 	public void unbindMycatSession() {
 		this.useSharedBuffer(null);
-		this.mycatSession = null;
+		if(this.mycatSession != null) {
+			if(logger.isDebugEnabled()){
+				logger.debug("mycatSession {} release back connetion {}",this.mycatSession, this);
+			}
+			this.mycatSession.removebackendMap(this);
+			this.mycatSession.curBackend = null;
+			this.mycatSession = null;
+			
+		}
 
+	}	
+	@Override
+	public void close(boolean normal, String hint) {
+		super.close(normal, hint);
+		this.mycatSession.removebackendMap(this);
 	}
-
 	public String getDatabase() {
 		return database;
 	}
