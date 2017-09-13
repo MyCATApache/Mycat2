@@ -1,5 +1,6 @@
 package io.mycat.util;
 
+import io.mycat.mycat2.ConfigLoader;
 import io.mycat.mycat2.beans.ReplicaConfBean;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -56,8 +57,7 @@ public class YamlUtil {
     }
 
     public static void dumpToFile(String path, String content) throws IOException {
-        String dirPath = createDirectoryIfNotExists("prepare/");
-        Path file = Paths.get(dirPath + path);
+        Path file = Paths.get(ROOT_PATH + ConfigLoader.DIR_PREPARE + path);
         try (FileWriter writer = new FileWriter(file.toString())) {
             writer.write(content);
         }
@@ -68,14 +68,14 @@ public class YamlUtil {
      */
     public static Integer archive(String configName, int curVersion) throws IOException {
         //检查是否有新需要生成的文件
-        String preparePath = createDirectoryIfNotExists("prepare/");
+        String preparePath = ROOT_PATH + ConfigLoader.DIR_PREPARE;
         File prepareFile = new File(preparePath);
         File[] files = prepareFile.listFiles((dir, name) -> name.startsWith(configName));
         if (files == null || files.length == 0) {
             return curVersion;
         }
         //将旧的配置归档
-        String archivePath = createDirectoryIfNotExists("archive/");
+        String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
         Files.move(Paths.get(ROOT_PATH + configName), Paths.get(archivePath + configName + "-" + curVersion), StandardCopyOption.REPLACE_EXISTING);
         //将新的配置生效
         File confFile = Stream.of(files).sorted((file1, file2) -> {
@@ -86,8 +86,7 @@ public class YamlUtil {
                 return version2.compareTo(version1);
             }).findFirst().orElse(null);
         Files.copy(confFile.toPath(), Paths.get(ROOT_PATH + configName), StandardCopyOption.REPLACE_EXISTING);
-        //删除配置
-        Files.delete(confFile.toPath());
+
         String name = confFile.toPath().toString();
         Integer newVersion = Integer.valueOf(name.substring(name.lastIndexOf("-") + 1));
         return newVersion;
@@ -98,12 +97,23 @@ public class YamlUtil {
      * @param directoryName
      * @return 返回创建的文件夹路径
      */
-    private static String createDirectoryIfNotExists(String directoryName) throws IOException {
+    public static String createDirectoryIfNotExists(String directoryName) throws IOException {
         String dirPath = ROOT_PATH + directoryName;
         Path directory = Paths.get(dirPath);
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
         return dirPath;
+    }
+
+    /**
+     * 清空文件夹
+     * @param directoryName
+     * @throws IOException
+     */
+    public static void clearDirectory(String directoryName) throws IOException {
+        String dirPath = ROOT_PATH + directoryName;
+        File dirFile = new File(dirPath);
+        Stream.of(dirFile.listFiles()).forEach(file -> file.delete());
     }
 }

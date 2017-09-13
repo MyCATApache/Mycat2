@@ -21,12 +21,22 @@ public class ConfigLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigLoader.class);
     public static final ConfigLoader INSTANCE = new ConfigLoader();
 
+    public static final String DIR_PREPARE = "prepare/";
+    public static final String DIR_ARCHIVE = "archive/";
+
     private ConfigLoader() {}
 
     public void loadAll(MycatConfig conf) throws IOException {
+        //保证文件夹存在
+        YamlUtil.createDirectoryIfNotExists(DIR_PREPARE);
+        YamlUtil.createDirectoryIfNotExists(DIR_ARCHIVE);
+
         loadReplicaIndex(conf);
         loadDatasource(conf);
         loadSchema(conf);
+
+        //清空prepare文件夹
+        YamlUtil.clearDirectory(DIR_PREPARE);
     }
 
     /**
