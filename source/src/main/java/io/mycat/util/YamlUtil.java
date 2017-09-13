@@ -61,13 +61,13 @@ public class YamlUtil {
     /**
      * 将配置文件归档，新的配置文件生效
      */
-    public static void archive(String configName, int curVersion) throws IOException {
+    public static Integer archive(String configName, int curVersion) throws IOException {
         //检查是否有新需要生成的文件
         String preparePath = createDirectoryIfNotExists("prepare/");
         File prepareFile = new File(preparePath);
         File[] files = prepareFile.listFiles((dir, name) -> name.startsWith(configName));
         if (files == null || files.length == 0) {
-            return;
+            return curVersion;
         }
         //将旧的配置归档
         String archivePath = createDirectoryIfNotExists("archive/");
@@ -83,6 +83,9 @@ public class YamlUtil {
         Files.copy(confFile.toPath(), Paths.get(ROOT_PATH + configName), StandardCopyOption.REPLACE_EXISTING);
         //删除配置
         Files.delete(confFile.toPath());
+        String name = confFile.toPath().toString();
+        Integer newVersion = Integer.valueOf(name.substring(name.lastIndexOf("-") + 1));
+        return newVersion;
     }
 
     /**

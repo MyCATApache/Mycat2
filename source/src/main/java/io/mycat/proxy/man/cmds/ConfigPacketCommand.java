@@ -79,7 +79,7 @@ public class ConfigPacketCommand implements AdminCommand {
         }
         if (confTypeList.isEmpty()) {
             LOGGER.debug("config version is same as leader, no need to load");
-            ProxyStarter.INSTANCE.startProxy(false);
+            ProxyStarter.INSTANCE.startProxy();
             return;
         }
         int count = confTypeList.size();
@@ -129,7 +129,7 @@ public class ConfigPacketCommand implements AdminCommand {
         YamlUtil.dumpToFile(configEnum.getFileName() + "-" + resPacket.getConfVersion(), resPacket.getConfMessage());
         if (--session.confCount == 0) {
             LOGGER.debug("receive config from leader over, start to load");
-            ProxyStarter.INSTANCE.startProxy(false);
+            ProxyStarter.INSTANCE.startProxy();
         }
     }
 }

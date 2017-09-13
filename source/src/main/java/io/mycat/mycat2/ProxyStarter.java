@@ -38,22 +38,21 @@ public class ProxyStarter {
 			cluster.initCluster();
 		} else {
 			// 未配置集群，直接启动
-			startProxy(true);
+			startProxy();
 		}
 	}
 
-	public void startProxy(boolean isMaster) throws IOException {
+	public void startProxy() throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
-//		if (isMaster) {
-			// 开启mycat服务
-		loadConfig(conf);
+
+		// 开启mycat服务
+		ConfigLoader.INSTANCE.loadAll(conf);
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), false);
 		startReactor();
 		// 初始化
 		init(conf);
-//		}
 	}
 
 	public void stopProxy() {
@@ -72,29 +71,6 @@ public class ProxyStarter {
 			thread.start();
 			nioThreads[i] = thread;
 		}
-	}
-
-	private void loadConfig(MycatConfig conf) throws IOException {
-		// 加载replica-index
-		YamlUtil.archive(ConfigEnum.REPLICA_INDEX.getFileName(), conf.getConfigVersion(ConfigEnum.REPLICA_INDEX.getCode()));
-		LOGGER.debug("load config for {}", ConfigEnum.REPLICA_INDEX.getFileName());
-		ReplicaIndexBean replicaIndexBean = YamlUtil.load(ConfigEnum.REPLICA_INDEX.getFileName(), ReplicaIndexBean.class);
-		conf.addRepIndex(replicaIndexBean);
-		conf.putConfig(ConfigEnum.REPLICA_INDEX.getCode(), replicaIndexBean);
-
-		// 加载datasource
-		YamlUtil.archive(ConfigEnum.DATASOURCE.getFileName(), conf.getConfigVersion(ConfigEnum.DATASOURCE.getCode()));
-		LOGGER.debug("load config for {}", ConfigEnum.DATASOURCE.getFileName());
-		ReplicaConfBean replicaConfBean = YamlUtil.load(ConfigEnum.DATASOURCE.getFileName(), ReplicaConfBean.class);
-		replicaConfBean.getMysqlReplicas().forEach(replicaBean -> conf.addMySQLRepBean(replicaBean));
-		conf.putConfig(ConfigEnum.DATASOURCE.getCode(), replicaConfBean);
-
-		// 加载schema
-		YamlUtil.archive(ConfigEnum.SCHEMA.getFileName(), conf.getConfigVersion(ConfigEnum.SCHEMA.getCode()));
-		LOGGER.debug("load config for {}", ConfigEnum.SCHEMA.getFileName());
-		SchemaConfBean schemaConfBean = YamlUtil.load(ConfigEnum.SCHEMA.getFileName(), SchemaConfBean.class);
-		schemaConfBean.getSchemas().forEach(schemaBean -> conf.addSchemaBean(schemaBean));
-		conf.putConfig(ConfigEnum.SCHEMA.getCode(), schemaConfBean);
 	}
 
 	private void init(MycatConfig conf) {

@@ -98,10 +98,9 @@ public class ProxyConfig {
 		return configMap.get(configKey);
 	}
 
-	public void putConfig(byte configKey, Object config) {
+	public void putConfig(byte configKey, Object config, Integer version) {
 		configMap.put(configKey, config);
-		Integer oldVersion = configVersionMap.get(configKey);
-//		configVersionMap.put(configKey, oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion + 1);
-		configVersionMap.put(configKey, 3);
+		version = version == null ? ConfigEnum.INIT_VERSION : version;
+		configVersionMap.put(configKey, version);
 	}
 }
