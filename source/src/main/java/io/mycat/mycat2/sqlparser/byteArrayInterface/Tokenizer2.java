@@ -207,7 +207,7 @@ public class Tokenizer2 {
 
     public void tokenize(ByteArrayInterface sql) {
         int pos = sql.getOffset();
-        final int sqlLength = sql.length();
+        final int sqlLength = sql.length()+pos;
         this.sql = sql;
         hashArray.init();
         byte c;
