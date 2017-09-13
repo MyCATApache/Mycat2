@@ -10,7 +10,10 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.loadbalance.LBSession;
+import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
 import io.mycat.mycat2.loadbalance.LoadChecker;
+import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
@@ -28,9 +31,15 @@ public class ProxyRuntime {
 	private SessionManager<?> sessionManager;
 	// 用于管理端口的Session会话管理
 	private SessionManager<AdminSession> adminSessionManager;
+	private SessionManager<ProxySession> proxySessionSessionManager;
+	private SessionManager<LBSession> lbSessionSessionManager;
+
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
+	//本地负载状态检查
 	private LoadChecker localLoadChecker;
+	private LoadBalanceStrategy loadBalanceStrategy;
+
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -197,5 +206,29 @@ public class ProxyRuntime {
 
 	public void setLocalLoadChecker(LoadChecker localLoadChecker) {
 		this.localLoadChecker = localLoadChecker;
+	}
+
+	public LoadBalanceStrategy getLoadBalanceStrategy() {
+		return loadBalanceStrategy;
+	}
+
+	public void setLoadBalanceStrategy(LoadBalanceStrategy loadBalanceStrategy) {
+		this.loadBalanceStrategy = loadBalanceStrategy;
+	}
+
+	public SessionManager<ProxySession> getProxySessionSessionManager() {
+		return proxySessionSessionManager;
+	}
+
+	public void setProxySessionSessionManager(SessionManager<ProxySession> proxySessionSessionManager) {
+		this.proxySessionSessionManager = proxySessionSessionManager;
+	}
+
+	public SessionManager<LBSession> getLbSessionSessionManager() {
+		return lbSessionSessionManager;
+	}
+
+	public void setLbSessionSessionManager(SessionManager<LBSession> lbSessionSessionManager) {
+		this.lbSessionSessionManager = lbSessionSessionManager;
 	}
 }

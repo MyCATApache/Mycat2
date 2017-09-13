@@ -1,6 +1,8 @@
 package io.mycat.mycat2.loadbalance;
 
-import io.mycat.proxy.man.AdminSession;
+import io.mycat.proxy.man.ClusterNode;
+
+import java.util.Collection;
 
 /**
  * 随机轮询
@@ -9,7 +11,7 @@ import io.mycat.proxy.man.AdminSession;
  */
 public class RandomStrategy implements LoadBalanceStrategy{
     @Override
-    public AdminSession get(Object attachement) {
+    public ClusterNode getNode(Collection<ClusterNode> allNode, Object attachement) {
         return null;
     }
 }

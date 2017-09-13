@@ -8,13 +8,16 @@ package io.mycat.proxy;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.loadbalance.LBSession;
+import io.mycat.mycat2.loadbalance.LBSessionManager;
 import io.mycat.mycat2.loadbalance.LoadChecker;
+import io.mycat.mycat2.loadbalance.ProxySession;
+import io.mycat.mycat2.loadbalance.ProxySessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +50,8 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 
 		if(serverType == ServerType.LOAD_BALANCER){
 			logger.info("opend load balance conmunite port on {}:{}", ip, port);
+			ProxyRuntime.INSTANCE.setProxySessionSessionManager(new ProxySessionManager());
+			ProxyRuntime.INSTANCE.setLbSessionSessionManager(new LBSessionManager());
 		}
 
 		openServerChannel(selector, ip, port, serverType);
@@ -89,6 +94,7 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		if (serverType == ServerType.CLUSTER) {
 			adminSessionMan.createSession(null, this.bufPool, selector, socketChannel, true);
 		} else if(serverType == ServerType.LOAD_BALANCER){
+			//TODO 还需要检查集群的状态，只有集群状态下才能做负载均衡
 			LoadChecker localLoadChecker = proxyRuntime.getLocalLoadChecker();
 			//本地未超载,派发到本地
 			if(!localLoadChecker.isOverLoad(null)){
@@ -96,37 +102,70 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 				accept(reactorEnv,socketChannel,serverType);
 			} else {
 				logger.debug("load balancer accepted. Dispatch to remote");
-				//TODO 派发至远程
+				ProxyReactorThread<?> proxyReactor = getProxyReactor(reactorEnv);
+				proxyReactor.addNIOJob(() -> {
+					try {
+						LBSession lbSession = ProxyRuntime.INSTANCE.getLbSessionSessionManager()
+																   .createSession(null, proxyReactor.bufPool, proxyReactor.getSelector(),
+																				  socketChannel, false);
+						lbSession.getCurNIOHandler().onConnect(curKey, lbSession, true, null);
+					} catch (IOException e) {
+						logger.warn("load balancer accepted error:", e);
+					}
+				});
 			}
-		}
-		else {
+		} else {
 			accept(reactorEnv,socketChannel,serverType);
 		}
 	}
 
-	public void accept(ReactorEnv reactorEnv,SocketChannel socketChannel,ServerType serverType) throws IOException {
+	private void accept(ReactorEnv reactorEnv,SocketChannel socketChannel,ServerType serverType) throws IOException {
 		// 找到一个可用的NIO Reactor Thread，交付托管
+		ProxyReactorThread<?> nioReactor = getProxyReactor(reactorEnv);
+		// 将通道注册到reactor对象上
+		nioReactor.acceptNewSocketChannel(serverType, socketChannel);
+	}
+
+	private ProxyReactorThread<?> getProxyReactor(ReactorEnv reactorEnv){
 		if (reactorEnv.counter++ == Integer.MAX_VALUE) {
 			reactorEnv.counter = 1;
 		}
 		int index = reactorEnv.counter % ProxyRuntime.INSTANCE.getNioReactorThreads();
 		// 获取一个reactor对象
-		ProxyReactorThread<?> nioReactor = ProxyRuntime.INSTANCE.getReactorThreads()[index];
-		// 将通道注册到reactor对象上
-		nioReactor.acceptNewSocketChannel(serverType, socketChannel);
+		return ProxyRuntime.INSTANCE.getReactorThreads()[index];
 	}
 
 	@SuppressWarnings("unchecked")
 	protected void processConnectKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
 		SocketChannel curChannel = (SocketChannel) curKey.channel();
+		Object obj = curKey.attachment();
 		try {
 			if (curChannel.finishConnect()) {
-				AdminSession session = adminSessionMan.createSession(curKey.attachment(), this.bufPool, selector,
-						curChannel, false);
-				NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) session
-						.getCurNIOHandler();
-				connectIOHandler.onConnect(curKey, session, true, null);
+				if (obj != null && obj instanceof LBSession) {
+					//负载均衡器连接远程mycat
+					ProxyReactorThread<?> proxyReactor = getProxyReactor(reactorEnv);
+					proxyReactor.addNIOJob(() -> {
+						try {
+							ProxySession proxySession = ProxyRuntime.INSTANCE.getProxySessionSessionManager()
+																			 .createSession(null, proxyReactor.bufPool,
+																							proxyReactor.getSelector(),
+																							curChannel, false);
+							LBSession lbSession = (LBSession) obj;
+							proxySession.setLbSession(lbSession);
+							lbSession.setProxySession(proxySession);
+							proxySession.getCurNIOHandler().onConnect(curKey, proxySession, true, null);
+						} catch (Exception e) {
+							logger.warn("Load balancer connect remote mycat error:",e);
+						}
+					});
+				} else {
+					AdminSession session = adminSessionMan.createSession(curKey.attachment(), this.bufPool, selector,
+																		 curChannel, false);
+					NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) session
+							.getCurNIOHandler();
+					connectIOHandler.onConnect(curKey, session, true, null);
+				}
 			}
 
 		} catch (ConnectException ex) {
@@ -137,7 +176,6 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 				connectIOHandler.onConnect(curKey, null, false, null);
 
 			}
-
 		}
 	}
 
