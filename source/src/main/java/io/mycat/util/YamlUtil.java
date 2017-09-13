@@ -1,7 +1,10 @@
 package io.mycat.util;
 
+import io.mycat.mycat2.beans.ReplicaConfBean;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.nodes.Tag;
+import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.*;
 import java.net.URL;
@@ -45,7 +48,9 @@ public class YamlUtil {
     public static String dump(Object obj) {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-        Yaml yaml = new Yaml(options);
+        Representer representer = new Representer();
+        representer.addClassTag(obj.getClass(), Tag.MAP);
+        Yaml yaml = new Yaml(representer, options);
         String str = yaml.dump(obj);
         return str;
     }
