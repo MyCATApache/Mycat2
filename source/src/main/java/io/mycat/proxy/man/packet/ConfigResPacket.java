@@ -10,55 +10,56 @@ import io.mycat.proxy.man.ManagePacket;
  * @author: gaozhiwen
  */
 public class ConfigResPacket extends ManagePacket {
-    private int confCount;
-    private byte[] confTypes;
-    private String[] confMessages;
+    private byte confType;
+    private int confVersion;
+    private String confMessage;
 
     public ConfigResPacket() {
         super(ManagePacket.PKG_CONFIG_RES);
     }
 
+    public ConfigResPacket(byte confType, int confVersion, String confMessage) {
+        super(ManagePacket.PKG_CONFIG_RES);
+        this.confType = confType;
+        this.confVersion = confVersion;
+        this.confMessage = confMessage;
+    }
+
     @Override
     public void resolveBody(ProxyBuffer buffer) {
-        confCount = (int) buffer.readFixInt(4);
-        confTypes = new byte[confCount];
-        confMessages = new String[confCount];
-        for (int i = 0; i < confCount; i++) {
-            confTypes[i] = buffer.readByte();
-            confMessages[i] = buffer.readNULString();
-        }
+        this.confType = buffer.readByte();
+        this.confVersion = (int) buffer.readFixInt(4);
+        this.confMessage = buffer.readNULString();
     }
 
     @Override
     public void writeBody(ProxyBuffer buffer) {
-        buffer.writeFixInt(4, confCount);
-        for (int i = 0; i < confCount; i++) {
-            buffer.writeByte(confTypes[i]);
-            buffer.writeNULString(confMessages[i]);
-        }
+        buffer.writeByte(confType);
+        buffer.writeFixInt(4, confVersion);
+        buffer.writeNULString(confMessage);
     }
 
-    public int getConfCount() {
-        return confCount;
+    public byte getConfType() {
+        return confType;
     }
 
-    public void setConfCount(int confCount) {
-        this.confCount = confCount;
+    public void setConfType(byte confType) {
+        this.confType = confType;
     }
 
-    public byte[] getConfTypes() {
-        return confTypes;
+    public int getConfVersion() {
+        return confVersion;
     }
 
-    public void setConfTypes(byte[] confTypes) {
-        this.confTypes = confTypes;
+    public void setConfVersion(int confVersion) {
+        this.confVersion = confVersion;
     }
 
-    public String[] getConfMessages() {
-        return confMessages;
+    public String getConfMessage() {
+        return confMessage;
     }
 
-    public void setConfMessages(String[] confMessages) {
-        this.confMessages = confMessages;
+    public void setConfMessage(String confMessage) {
+        this.confMessage = confMessage;
     }
 }

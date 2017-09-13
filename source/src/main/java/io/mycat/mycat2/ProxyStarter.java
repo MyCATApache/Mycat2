@@ -76,22 +76,25 @@ public class ProxyStarter {
 
 	private void loadConfig(MycatConfig conf) throws IOException {
 		// 加载replica-index
+		YamlUtil.archive(ConfigEnum.REPLICA_INDEX.getFileName(), conf.getConfigVersion(ConfigEnum.REPLICA_INDEX.getCode()));
 		LOGGER.debug("load config for {}", ConfigEnum.REPLICA_INDEX.getFileName());
 		ReplicaIndexBean replicaIndexBean = YamlUtil.load(ConfigEnum.REPLICA_INDEX.getFileName(), ReplicaIndexBean.class);
 		conf.addRepIndex(replicaIndexBean);
-		conf.putConfigVersion(ConfigEnum.REPLICA_INDEX.getCode(), ConfigEnum.INIT_VERSION);
+		conf.putConfig(ConfigEnum.REPLICA_INDEX.getCode(), replicaIndexBean);
 
 		// 加载datasource
+		YamlUtil.archive(ConfigEnum.DATASOURCE.getFileName(), conf.getConfigVersion(ConfigEnum.DATASOURCE.getCode()));
 		LOGGER.debug("load config for {}", ConfigEnum.DATASOURCE.getFileName());
 		ReplicaConfBean replicaConfBean = YamlUtil.load(ConfigEnum.DATASOURCE.getFileName(), ReplicaConfBean.class);
 		replicaConfBean.getMysqlReplicas().forEach(replicaBean -> conf.addMySQLRepBean(replicaBean));
-		conf.putConfigVersion(ConfigEnum.DATASOURCE.getCode(), ConfigEnum.INIT_VERSION);
+		conf.putConfig(ConfigEnum.DATASOURCE.getCode(), replicaConfBean);
 
 		// 加载schema
+		YamlUtil.archive(ConfigEnum.SCHEMA.getFileName(), conf.getConfigVersion(ConfigEnum.SCHEMA.getCode()));
 		LOGGER.debug("load config for {}", ConfigEnum.SCHEMA.getFileName());
 		SchemaConfBean schemaConfBean = YamlUtil.load(ConfigEnum.SCHEMA.getFileName(), SchemaConfBean.class);
 		schemaConfBean.getSchemas().forEach(schemaBean -> conf.addSchemaBean(schemaBean));
-		conf.putConfigVersion(ConfigEnum.SCHEMA.getCode(), ConfigEnum.INIT_VERSION);
+		conf.putConfig(ConfigEnum.SCHEMA.getCode(), schemaConfBean);
 	}
 
 	private void init(MycatConfig conf) {

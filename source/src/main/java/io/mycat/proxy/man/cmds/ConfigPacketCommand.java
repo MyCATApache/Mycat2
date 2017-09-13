@@ -2,6 +2,9 @@ package io.mycat.proxy.man.cmds;
 
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.ProxyStarter;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.ProxyConfig;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.AdminCommand;
 import io.mycat.proxy.man.AdminSession;
@@ -9,13 +12,12 @@ import io.mycat.proxy.man.ManagePacket;
 import io.mycat.proxy.man.packet.ConfigReqPacket;
 import io.mycat.proxy.man.packet.ConfigResPacket;
 import io.mycat.proxy.man.packet.ConfigVersionResPacket;
+import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Desc: 用来处理配置相关报文
@@ -89,29 +91,45 @@ public class ConfigPacketCommand implements AdminCommand {
         reqPacket.setConfCount(count);
         reqPacket.setConfTypes(types);
         session.answerClientNow(reqPacket);
+        session.confCount = count;
     }
 
     private void handleConfigReq(AdminSession session) throws IOException {
         LOGGER.debug("receive config request packet from {}", session.getNodeId());
+        ProxyConfig conf = ProxyRuntime.INSTANCE.getProxyConfig();
         ConfigReqPacket reqPacket = new ConfigReqPacket();
         reqPacket.resolve(session.readingBuffer);
         int count = reqPacket.getConfCount();
         byte[] types = reqPacket.getConfTypes();
-        String[] messages = new String[count];
         for (int i = 0; i < count; i++) {
             byte type = types[i];
-            messages[i] = "test" + i;
+            ConfigEnum configEnum = ConfigEnum.getConfigEnum(type);
+            if (configEnum == null) {
+                LOGGER.warn("config type is error: {}", type);
+                continue;
+            }
+            byte confType = configEnum.getCode();
+            int confVersion = conf.getConfigVersion(confType);
+            String confMsg = YamlUtil.dump(conf.getConfig(confType));
+            ConfigResPacket resPacket = new ConfigResPacket(confType, confVersion, confMsg);
+            session.answerClientNow(resPacket);
         }
-        ConfigResPacket resPacket = new ConfigResPacket();
-        resPacket.setConfCount(count);
-        resPacket.setConfTypes(types);
-        resPacket.setConfMessages(messages);
-        session.answerClientNow(resPacket);
     }
 
-    private void handleConfigRes(AdminSession session) {
+    private void handleConfigRes(AdminSession session) throws IOException {
         LOGGER.debug("receive config response packet from {}", session.getNodeId());
         ConfigResPacket resPacket = new ConfigResPacket();
         resPacket.resolve(session.readingBuffer);
+
+        ConfigEnum configEnum = ConfigEnum.getConfigEnum(resPacket.getConfType());
+        if (configEnum == null) {
+            LOGGER.warn("config type is error: {}", resPacket.getConfType());
+            return;
+        }
+        YamlUtil.dumpToFile(configEnum.getFileName() + "-" + resPacket.getConfVersion(), resPacket.getConfMessage());
+        if (--session.confCount == 0) {
+            LOGGER.debug("receive config from leader over, start to load");
+            ProxyStarter.INSTANCE.startProxy(false);
+        }
     }
 }

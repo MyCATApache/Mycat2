@@ -1,5 +1,10 @@
 package io.mycat.proxy;
 
+import io.mycat.mycat2.beans.ReplicaConfBean;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.mycat2.beans.SchemaConfBean;
+import io.mycat.mycat2.beans.ShardingRuleBean;
+
 import java.util.stream.Stream;
 
 /**
@@ -9,17 +14,19 @@ import java.util.stream.Stream;
  * @author: gaozhiwen
  */
 public enum ConfigEnum {
-    DATASOURCE((byte) 1, "datasource.yml"),
-    REPLICA_INDEX((byte) 2, "replica-index.yml"),
-    SCHEMA((byte) 3, "schema.yml"),
-    SHARDING_RULE((byte) 4, "sharding-rule.yml");
+    DATASOURCE((byte) 1, "datasource.yml", ReplicaConfBean.class),
+    REPLICA_INDEX((byte) 2, "replica-index.yml", ReplicaIndexBean.class),
+    SCHEMA((byte) 3, "schema.yml", SchemaConfBean.class),
+    SHARDING_RULE((byte) 4, "sharding-rule.yml", ShardingRuleBean.class);
 
     private byte code;
     private String fileName;
+    private Class clazz;
 
-    ConfigEnum(byte code, String fileName) {
+    ConfigEnum(byte code, String fileName, Class clazz) {
         this.code = code;
         this.fileName = fileName;
+        this.clazz = clazz;
     }
 
     public byte getCode() {
@@ -28,6 +35,10 @@ public enum ConfigEnum {
 
     public String getFileName() {
         return this.fileName;
+    }
+
+    public Class getClazz() {
+        return clazz;
     }
 
     public static ConfigEnum getConfigEnum(byte code) {

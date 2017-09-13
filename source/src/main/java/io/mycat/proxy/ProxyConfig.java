@@ -11,9 +11,9 @@ import java.util.Map;
  */
 public class ProxyConfig {
 	// 绑定的数据传输IP地址
-	private String bindIP;
+	private String bindIP = "0.0.0.0";
 	// 绑定的数据传输端口
-	private int bindPort;
+	private int bindPort = 8066;
 	private boolean clusterEnable = false;
 	// 集群通信绑定的IP地址
 	private String clusterIP = "0.0.0.0";
@@ -25,6 +25,7 @@ public class ProxyConfig {
 	private String allNodeInfs;
 	// 当前节点所用的配置文件的版本
 	private Map<Byte, Integer> configVersionMap = new HashMap<>();
+	private Map<Byte, Object> configMap = new HashMap<>();
 
 	public ProxyConfig() {}
 
@@ -88,18 +89,19 @@ public class ProxyConfig {
 		return configVersionMap;
 	}
 
-	public void putConfigVersion(byte configKey, Integer configValue) {
-		configVersionMap.put(configKey, configValue);
-	}
-
 	public int getConfigVersion(byte configKey) {
-		Integer version = configVersionMap.get(configKey);
-		return version == null ? ConfigEnum.INIT_VERSION : version;
+		Integer oldVersion = configVersionMap.get(configKey);
+		return oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion;
 	}
 
-	public int configVersionGetAndIncrease(byte configKey) {
-		int oldVersion = configVersionMap.get(configKey);
-		configVersionMap.put(configKey, oldVersion + 1);
-		return oldVersion;
+	public Object getConfig(byte configKey) {
+		return configMap.get(configKey);
+	}
+
+	public void putConfig(byte configKey, Object config) {
+		configMap.put(configKey, config);
+		Integer oldVersion = configVersionMap.get(configKey);
+//		configVersionMap.put(configKey, oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion + 1);
+		configVersionMap.put(configKey, 3);
 	}
 }
