@@ -187,7 +187,8 @@ public class MatchMethodGenerator {
         long hash = 0;
         for (char c: str) {
             //BKDRHash
-            hash = hash * seed + shrinkCharTbl[c-'$'];
+            byte b=shrinkCharTbl[c-'$'];
+            hash = hash * seed + b;
         }
         return hash;
     }
