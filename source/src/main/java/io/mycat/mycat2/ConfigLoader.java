@@ -1,15 +1,16 @@
 package io.mycat.mycat2;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.mycat2.beans.ReplicaConfBean;
 import io.mycat.mycat2.beans.ReplicaIndexBean;
 import io.mycat.mycat2.beans.SchemaConfBean;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.util.YamlUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 /**
  * Desc:
@@ -21,8 +22,8 @@ public class ConfigLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigLoader.class);
     public static final ConfigLoader INSTANCE = new ConfigLoader();
 
-    public static final String DIR_PREPARE = "prepare/";
-    public static final String DIR_ARCHIVE = "archive/";
+    public static final String DIR_PREPARE = "prepare"+File.separator;
+    public static final String DIR_ARCHIVE = "archive"+File.separator;
 
     private ConfigLoader() {}
 

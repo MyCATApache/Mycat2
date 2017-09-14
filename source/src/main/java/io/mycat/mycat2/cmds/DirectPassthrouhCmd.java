@@ -8,11 +8,9 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.MySQLCommand;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.cmds.judge.DirectTransJudge;
 import io.mycat.mycat2.cmds.judge.ErrorJudge;
 import io.mycat.mycat2.cmds.judge.OkJudge;
@@ -46,25 +44,28 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
+		logger.debug("current buffer is "+session.proxyBuffer);
+		/*
+		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
+		 */
+		session.clearReadWriteOpts();
+		
 		session.getBackend((mysqlsession, sender, success,result)->{
 			if(success){
 				ProxyBuffer curBuffer = session.proxyBuffer;
 				// 切换 buffer 读写状态
 				curBuffer.flip();
+				logger.debug("current buffer is "+curBuffer);
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
 				// 改变 owner，对端Session获取，并且感兴趣写事件
 				session.giveupOwner(SelectionKey.OP_WRITE);
 				mysqlsession.writeToChannel();
+			}else{
+				System.out.println("1111");
 			}
 		});
 		return false;
-	}
-
-	@Override
-	public void clearResouces(boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-
 	}
 
 	@Override
@@ -89,21 +90,19 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
 		// 判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
 		// 检查当前已经结束，进行切换
-		logger.warn("not well implemented ,please fix it ");
-
 		// 检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
 		if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey())) {
 			session.proxyBuffer.flip();
 			session.giveupOwner(SelectionKey.OP_READ);
+			return false;
 		}
 		// 当传输标识不存在，则说已经结束，则切换到前端的读取
 		else {
 			session.proxyBuffer.flip();
 			// session.chnageBothReadOpts();
 			session.takeOwner(SelectionKey.OP_READ);
+			return true;
 		}
-		return false;
-
 	}
 
 	@Override
@@ -123,4 +122,19 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		return true;
 	}
 
+	@Override
+	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+		if(sessionCLosed){
+			session.bufPool.recycleBuf(session.getProxyBuffer().getBuffer());
+			session.unbindAllBackend();
+		}
+	}
+
+	@Override
+	public void clearBackendResouces(MySQLSession mysqlSession, boolean sessionCLosed) {
+		if(sessionCLosed){
+			mysqlSession.bufPool.recycleBuf(mysqlSession.getProxyBuffer().getBuffer());
+			mysqlSession.unbindMycatSession();
+		}
+	}
 }

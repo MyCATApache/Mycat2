@@ -1,17 +1,18 @@
 package io.mycat.mycat2.tasks;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 
-import io.mycat.mycat2.MycatSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mysql.packet.CommandPacket;
+import io.mycat.mycat2.MycatSession;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
 
 /**
  * Created by ynfeng on 2017/8/13.
@@ -27,11 +28,10 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
     public BackendSynchronzationTask(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
         super(mySQLSession,true);
         this.mycatSession = mycatSession;
-        syncState(mycatSession,mySQLSession);
     }
 
-    private void syncState(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
-        logger.info("synchronzation state to bakcend.session=" + mySQLSession.toString());
+    public void syncState(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
+    	logger.debug("synchronzation state task begin ");
         ProxyBuffer proxyBuf = mySQLSession.proxyBuffer;
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
@@ -58,19 +58,58 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
             syncCmdNum++;
         }
         if (syncCmdNum > 0) {
+        	logger.debug("synchronzation state [{}]to bakcend.session={}",queryPacket.sql,mySQLSession.toString());
             queryPacket.write(proxyBuf);
             proxyBuf.flip();
             proxyBuf.readIndex = proxyBuf.writeIndex;
-            session.writeToChannel();
+            try {
+            	session.writeToChannel();
+			}catch(ClosedChannelException e){
+				logger.debug("synchronzation state task end ");
+				if(session.getMycatSession()!=null){
+					session.close(false, "backend connection is closed!");
+				}
+				session.close(false, e.getMessage());
+				return;
+			} catch (Exception e) {
+				logger.debug("synchronzation state task end ");
+				String errmsg = "backend state sync Error. " + e.getMessage();
+				errPkg = new ErrorPacket();
+				errPkg.packetId = 1;
+				errPkg.errno = ErrorCode.ER_UNKNOWN_ERROR;
+				errPkg.message = errmsg;
+				logger.error(errmsg);
+				e.printStackTrace();
+				this.finished(false);
+				
+			}
+        }else{
+        	logger.debug("synchronzation state task end ");
+        	finished(true);
         }
+    }
+    
+    public int getSyncCmdNum(){
+    	return syncCmdNum;
     }
 
     @Override
     public void onSocketRead(MySQLSession session) throws IOException {
-        session.proxyBuffer.reset();
-        if (!session.readFromChannel()) {// 没有读到数据或者报文不完整
-            return;
-        }
+        session.proxyBuffer.reset();        
+		try {
+    		if (!session.readFromChannel()){
+    			return;
+    		}
+		}catch(ClosedChannelException e){
+			session.close(false, e.getMessage());
+			return;
+		}catch (IOException e) {
+			logger.error("the backend synchronzation task Error. {}",e.getMessage());
+			e.printStackTrace();
+			this.finished(false);
+			return;
+		}
+        
         boolean isAllOK = true;
         while (syncCmdNum >0) {
         	switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, true)) {
@@ -90,11 +129,12 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
             session.autoCommit = mycatSession.autoCommit;
             session.isolation = mycatSession.isolation;
             session.charSet.charsetIndex = mycatSession.charSet.charsetIndex;
+            logger.debug("synchronzation state task end ");
             finished(true);
         } else {
             errPkg = new ErrorPacket();
             errPkg.read(session.proxyBuffer);
-            logger.warn("backend state sync Error.Err No. " + errPkg.errno + "," + errPkg.message);
+            logger.error("backend state sync Error.Err No. " + errPkg.errno + "," + errPkg.message);
             finished(false);
         }
     }
