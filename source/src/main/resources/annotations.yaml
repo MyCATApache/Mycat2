@@ -1,0 +1,22 @@
+annotations:
+     - schema:
+              name: schemA
+              matches:
+                      - match:
+                             name: aaa
+                             state: open
+                             sqltype: insert
+                             where:
+                                    - and: id between 1 and 100
+                                    - or: name = "haha"
+                             tables:
+                                    - x1
+                                    - x2
+                                    - x3
+                             actions:
+                                    - monitorSQL:
+                                            - param1: 1
+                                    - cacheResult:
+                                    - sqlCach:
+                                            - param1: 1
+                                            - param2: 2

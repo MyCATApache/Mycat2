@@ -228,7 +228,7 @@ public class MatchMethodGenerator {
                 sqlKeys.forEach(x -> {
                     if (x.getKey() == hash && !cmp(x.getValue(), str)) {
                         collideCount++;
-                        System.out.println("Key '"+String.valueOf(x.getValue())+"' collides with '"+String.valueOf(str)+"' with hash : "+hash);
+                        System.out.println("TrieKey '"+String.valueOf(x.getValue())+"' collides with '"+String.valueOf(str)+"' with hash : "+hash);
                     }
                 });
                 newCount++;
