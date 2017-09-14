@@ -23,7 +23,15 @@ import java.util.stream.Stream;
  * @author: gaozhiwen
  */
 public class YamlUtil {
-    private static final String ROOT_PATH = YamlUtil.class.getClassLoader().getResource("").getPath();
+    private static final String ROOT_PATH;
+
+    static {
+        String root = YamlUtil.class.getClassLoader().getResource("").getPath();
+        if ("\\".equals(File.separator)) {
+            root = root.replaceFirst("/", "");
+        }
+        ROOT_PATH = root;
+    }
 
     public static <T> T load(String fileName, Class<T> clazz) throws FileNotFoundException {
         FileInputStream fis = null;

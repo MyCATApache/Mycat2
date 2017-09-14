@@ -1,7 +1,7 @@
 bindIP: 0.0.0.0
-bindPort: 8069
+bindPort: 8068
 clusterEnable: true
 clusterIP: 0.0.0.0
-clusterPort: 9069
+clusterPort: 9068
 myNodeId: leader-3
-allNodeInfs: leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9068,leader-3:127.0.0.1:9069
+allNodeInfs: leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9067,leader-3:127.0.0.1:9068
