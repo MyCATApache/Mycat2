@@ -9,6 +9,9 @@ annotations:
                              where:
                                     - and: id between 1 and 100
                                     - or: name = "haha"
+                                    - and: id between 1 and 11
+                                    - and: id between 1 and 12
+                                    - or: name = "ha"
                              tables:
                                     - x1
                                     - x2

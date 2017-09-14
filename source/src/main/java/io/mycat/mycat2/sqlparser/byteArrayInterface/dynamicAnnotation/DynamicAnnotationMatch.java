@@ -9,4 +9,6 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
  */
 public interface DynamicAnnotationMatch {
     public void pick(int i, final int arrayCount, BufferSQLContext context, HashArray array, ByteArrayInterface sql);
+
+    boolean isComplete();
 }

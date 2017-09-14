@@ -174,14 +174,16 @@ public class DynamicAnnotationUtil {
             str2Int.put(key, i);
         }
         TrieCompiler trieCompiler = new TrieCompiler();
+
         for (Map.Entry<String, Integer> i : str2Int.entrySet()) {
             insert(i.getKey(), trieCompiler, i.getValue().toString(), backtrackingTable.get(i.getKey()));
         }
         TrieContext context = new TrieContext();
-        String res = trieCompiler.toCode1(runtime.matchName, context);
         runtime.setInt2str(int2str);
         runtime.setMap(relationTable);
         runtime.setStr2Int(str2Int);
+        String res = trieCompiler.toCode1(runtime.matchName,runtime, context);
+
         return res;
     }
 

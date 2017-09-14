@@ -2,7 +2,9 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by jamie on 2017/9/5.

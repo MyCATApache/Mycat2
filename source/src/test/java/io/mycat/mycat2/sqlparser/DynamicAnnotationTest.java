@@ -93,6 +93,12 @@ public class DynamicAnnotationTest extends TestCase {
                 "d = s and d = x and f = 1"),
                 "b = 1 and c = 1 and d = s and d = x and f = 1");
     }
+    @Test
+    public void test8() throws Exception {
+        test(ListOf("b = ? and c = ? and d = s and d = x",
+                "d = s and d = x and f = 1","?  = ?"),
+                "b = 1 and c = 1 and d = s and d = x and f = 1");
+    }
     private void test(List<String> conList, String target) throws Exception {
         conList.stream().forEach(LOGGER::info);
         byte[] bytes = target.getBytes(StandardCharsets.UTF_8);

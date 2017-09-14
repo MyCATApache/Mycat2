@@ -4,10 +4,10 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 import java.util.Arrays;
 
 public class DynamicAnnotationKey{
-    String schemaName;
-    SQLType sqlType;
-    String [] tables;
-    String matchName;
+    final String schemaName;
+    final SQLType sqlType;
+    final String[] tables;
+    final String matchName;
 
     public DynamicAnnotationKey(String schemaName, SQLType sqlType, String[] tables, String matchName) {
         this.schemaName = schemaName;
