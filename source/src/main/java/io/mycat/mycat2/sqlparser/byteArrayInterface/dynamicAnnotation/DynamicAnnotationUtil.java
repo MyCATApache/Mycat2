@@ -2,6 +2,8 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
@@ -105,8 +107,8 @@ public class DynamicAnnotationUtil {
                 int pos = 0;//偏移量
                 //查找共有后缀
                 if (!one.equals(two) || list.size() == 1) {
-                    String[] oneTokenList = one.split(" ");
-                    String[] twoTokenList = two.split(" ");
+                    String[] oneTokenList = tokenize(one);
+                    String[] twoTokenList = tokenize(two);
                     int k = 0;
                     int l = 0;
                     int markPosOne = 0;
@@ -143,7 +145,7 @@ public class DynamicAnnotationUtil {
                         if (b.equals("") || a.equals("")) {
                         } else {
                             if (isIn(a, b)) {
-                                pos = oneTokenList.length - markPosOne - 1;
+                                pos = oneTokenList.length - markPosOne ;
                             } else {
 //                               System.out.println("可能不支持这个条件:"+one);
 //                               System.out.println("可能不支持这个条件:"+two);
@@ -211,5 +213,19 @@ public class DynamicAnnotationUtil {
         TrieCompiler.insertNode(context, trieCompiler, mark, backPos);
     }
 
+    public static String[] tokenize(String str) {
+        byte[] bytes = str.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        BufferSQLContext context = new BufferSQLContext();
+        BufferSQLParser sqlParser = new BufferSQLParser();
+        sqlParser.parse(bytes, context);
+        HashArray array = context.getHashArray();
+        ByteArrayInterface bi = context.getBuffer();
+        int count = array.getCount();
+        String[] res = new String[count];
+        for (int i = 0; i < count; i++) {
+            res[i] = bi.getStringByHashArray(i, array);
+        }
+        return res;
+    }
 
 }
