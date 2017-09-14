@@ -40,7 +40,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private static Logger logger = LoggerFactory.getLogger(MycatSession.class);
 
-	private MySQLSession curBackend;
+	public MySQLSession curBackend;
 
 	public MyCommand curSQLCommand;
 
@@ -180,9 +180,11 @@ public class MycatSession extends AbstractMySQLSession {
 		backendMap.forEach((key, value) -> {
 			if (value != null) {
 				value.forEach(mySQLSession -> {
-					mySQLSession.unbindMycatSession();
 					reactor.addMySQLSession(key, mySQLSession);
 				});
+				for (int i = value.size() - 1; i >= 0; i--) {
+					value.get(i).unbindMycatSession();
+				}
 			}
 		});
 	}
@@ -238,6 +240,7 @@ public class MycatSession extends AbstractMySQLSession {
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);
 		//TODO 清理前后端资源
+		this.unbindAllBackend();
 		this.curSQLCommand.clearResouces(true);
 	}
 
@@ -335,9 +338,6 @@ public class MycatSession extends AbstractMySQLSession {
             mysqlSession = mycatSessions.stream()
                     .map(mycatSession -> getFirstSession(mycatSession, backendName, true, runOnSlave, true))
                     .filter(session -> session != null).findFirst().orElse(null);
-            if (mysqlSession != null) {
-                mysqlSession.unbindMycatSession();
-            }
 		}
 
 		if (mysqlSession == null){
@@ -351,15 +351,16 @@ public class MycatSession extends AbstractMySQLSession {
 
             // 5. 新建连接
             if (mysqlSession == null) {
-				((ProxyReactorThread<MySQLSession>) reactorThread).createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
+				reactorThread.createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
+					MySQLSession mySQLSession = (MySQLSession) optSession;
 					//设置当前连接 读写分离属性
-					optSession.setDefaultChannelRead(runOnSlave);
+					mySQLSession.setDefaultChannelRead(runOnSlave);
 					//恢复默认的Handler
 					this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-					optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					mySQLSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 					if (exeSucces) {
-						bindBackend(optSession);
-                        syncSessionStateToBackend(optSession,callback);
+						bindBackend(mySQLSession);
+                        syncSessionStateToBackend(mySQLSession,callback);
 					} else {
 						ErrorPacket errPkg = (ErrorPacket) retVal;
 						this.responseOKOrError(errPkg);
@@ -369,16 +370,32 @@ public class MycatSession extends AbstractMySQLSession {
             }
 		}
 
+
+        mysqlSession.unbindMycatSession();
+
 		curBackend = mysqlSession;
         bindBackend(curBackend);
 		if (logger.isDebugEnabled()) {
 			logger.debug("Using cached map backend connections for "+ (runOnSlave ? "read" : "write"));
 		}
-		if(mysqlSession != null){
-			syncSessionStateToBackend(mysqlSession,callback);
+		if(shouldSyncSessionState(mysqlSession)){
+			syncSessionStateToBackend(mysqlSession, callback);
 		} else {
-			callback.finished(curBackend,null,true,null);
+			syncSchemaToBackend(mysqlSession,callback);
+			//callback.finished(curBackend,null,true,null);
 		}
+	}
+	/**
+     * 判断是状态是否需要同步
+     *
+     */
+    private boolean shouldSyncSessionState(MySQLSession mySQLSession) {
+    	if(this.isolation != mySQLSession.isolation
+    			|| this.autoCommit != mySQLSession.autoCommit
+    			|| this.charSet.charsetIndex != mySQLSession.charSet.charsetIndex) {
+    		return true;
+    	}
+		return false;
 	}
 
     /**
@@ -509,6 +526,17 @@ public class MycatSession extends AbstractMySQLSession {
 			if(callback!=null){
 				callback.finished(mysqlSession, null, true, null);
 			}
+		}
+	}
+
+    /*
+     * 将后端连接从后端连接缓存中移除
+     * @param mysqlSession
+     * */
+	public void removebackendMap(MySQLSession mysqlSession){
+		List<MySQLSession> list = backendMap.get(mysqlSession.getMySQLMetaBean());
+		if (list != null){
+			list.remove(mysqlSession);
 		}
 	}
 

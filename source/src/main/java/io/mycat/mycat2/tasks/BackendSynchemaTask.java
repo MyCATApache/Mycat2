@@ -37,6 +37,8 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
     	switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, true)) {
 		case Full:
 			if(session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET){
+				String database = session.getMycatSession().schema.getDefaultDN().getDatabase();
+				session.setDatabase(database );
 				this.finished(true);
 			}else if(session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET){
 				 errPkg = new ErrorPacket();
