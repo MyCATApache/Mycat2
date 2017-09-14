@@ -2,16 +2,16 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.beans.ReplicaConfBean;
-import io.mycat.mycat2.beans.ReplicaIndexBean;
-import io.mycat.mycat2.beans.SchemaConfBean;
-import io.mycat.proxy.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.NIOAcceptor;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.MyCluster;
-import io.mycat.util.YamlUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ProxyStarter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProxyStarter.class);
@@ -63,10 +63,10 @@ public class ProxyStarter {
 
 	private void startReactor() throws IOException {
 		// Mycat 2.0 Session Manager
-		ProxyReactorThread<?>[] nioThreads = ProxyRuntime.INSTANCE.getReactorThreads();
+		MycatReactorThread[] nioThreads = (MycatReactorThread[]) MycatRuntime.INSTANCE.getReactorThreads();
 		int cpus = nioThreads.length;
 		for (int i = 0; i < cpus; i++) {
-			ProxyReactorThread<?> thread = new ProxyReactorThread<>(new BufferPool(1024 * 10));
+			MycatReactorThread thread = new MycatReactorThread(new BufferPool(1024 * 10));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
@@ -79,7 +79,7 @@ public class ProxyStarter {
 			value.initMaster();
 			value.getMysqls().forEach(metaBean -> {
 				try {
-					metaBean.init();
+					metaBean.init(value);
 				} catch (IOException e) {
 					LOGGER.error("error to init metaBean: {}", metaBean.getHostName());
 				}

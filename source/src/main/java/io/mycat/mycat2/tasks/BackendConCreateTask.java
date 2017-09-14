@@ -51,7 +51,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		this.setSession(session, false);
 		this.mySQLMetaBean = mySQLMetaBean;
 		this.schema = schema;
-
 	}
 
 	@Override

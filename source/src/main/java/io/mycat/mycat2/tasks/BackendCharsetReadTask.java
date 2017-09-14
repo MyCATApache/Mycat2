@@ -110,8 +110,9 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     }
 
     @Override
-    void onRsFinish(MySQLSession session) {
+    void onRsFinish(MySQLSession session,boolean success) {
         //结果集完成
         logger.debug("session[{}] load charset finish",session);
     }
+
 }
