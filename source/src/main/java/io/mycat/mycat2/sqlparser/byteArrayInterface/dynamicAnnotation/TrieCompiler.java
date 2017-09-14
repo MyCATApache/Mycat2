@@ -77,19 +77,21 @@ public class TrieCompiler {
                 '}';
     }
 
-    public String toCode1(String className, DynamicAnnotationRuntime runtime, TrieContext context) {
+    public String toCode1(String className, DynamicAnnotationRuntime runtime, TrieContext context,Map<Boolean, List<String>> map) {
         String body = toCode2(true, context);
         String fields = runtime.int2str.entrySet().stream().map((i -> String.format("public boolean _%s=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
         String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("_%s=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
-        String tmpl = String.format("\n" +
+        String fieldsArrayTag = String.format("final static int[] tags={%s};\n",runtime.int2str.entrySet().stream().map((i -> String.valueOf(i.getKey()))).collect(Collectors.joining(",")));
+        String tmpl = "\n" +
                 "package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;\n" +
                 "\n" +
                 "import io.mycat.mycat2.sqlparser.BufferSQLContext;\n" +
                 "import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;\n" +
                 "import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;" +
-                "public class %s implements DynamicAnnotationMatch {\n" +
+                "public class " +className+
+                " implements DynamicAnnotationMatch {\n" +
                 "    public final void pick(int i, final int arrayCount, BufferSQLContext context, HashArray array, ByteArrayInterface sql) {\n" +
-                "%s;" +//fieldsInit
+                "" +fieldsInit+
                 "int res;" +
                 "        while (i < arrayCount) {\n" +
                 "            res = pick0(i, arrayCount, context, array, sql);\n" +
@@ -102,9 +104,15 @@ public class TrieCompiler {
                 "    }\n" +
                 "\n" +
                 "    public final int pick0(int i, final int arrayCount, BufferSQLContext context, HashArray array, ByteArrayInterface sql) {\n" +
-                "  %s" +
+                " " +body+
                 "        return i;\n" +
-                "    }%s %s}", className, fieldsInit, body, context.funList.stream().collect(Collectors.joining(" ")), fields);
+                "    }" +
+                "" +fields+fieldsArrayTag+
+                "" +context.funList.stream().collect(Collectors.joining(" "))+
+                "public String getName(){return \"" +className+"\";}\n"+
+                "public int[] getCompleteTags(){return tags;}"+
+                "public boolean isComplete(){"+ConditionUtil.codeIsComplete(map,runtime)+"}"+
+                "}";
         return tmpl;
     }
 
@@ -174,7 +182,7 @@ public class TrieCompiler {
                     w += "\n_" + iterator.next() + "=true;";
                 }
                 if (context.isBacktracking&&type==QUESTION_MARK){
-                    w+="\npick(start-" +
+                    w+="\npick0(start-" +
                             +i.getValue().backPos+", arrayCount, context, array, sql);\n";
                 } else
 

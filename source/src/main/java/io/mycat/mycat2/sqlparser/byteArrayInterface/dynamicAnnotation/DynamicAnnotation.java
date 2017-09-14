@@ -6,10 +6,7 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.pojo.RootB
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.pojo.Schema;
 import io.mycat.util.YamlUtil;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -66,86 +63,24 @@ public class DynamicAnnotation {
 
         Map<Boolean, List<Map<String, String>>> map =
                 conditionList.stream().collect(Collectors.partitioningBy((p) -> {
-                  String string = mappingKey(p).toUpperCase().trim();
+                  String string = ConditionUtil.mappingKey(p).toUpperCase().trim();
                   return "AND".equals(string);
                 }));
         Map<Boolean, List<String>> resMap = new HashMap<>();
-        resMap.put(Boolean.TRUE, map.get(Boolean.TRUE).stream().map((m) -> mappingValue(m)).distinct().collect(Collectors.toList()));
-        resMap.put(Boolean.FALSE, map.get(Boolean.FALSE).stream().map((m) -> mappingValue(m)).distinct().collect(Collectors.toList()));
-
-        code(resMap);
+        resMap.put(Boolean.TRUE, map.get(Boolean.TRUE).stream().map((m) -> ConditionUtil.mappingValue(m)).distinct().collect(Collectors.toList()));
+        resMap.put(Boolean.FALSE, map.get(Boolean.FALSE).stream().map((m) -> ConditionUtil.mappingValue(m)).distinct().collect(Collectors.toList()));
+        DynamicAnnotationRuntime runtime = DynamicAnnotationUtil.compile(resMap);
+        DynamicAnnotationMatch matc = runtime.getMatch();
+        String cc = matc.getName();
+        System.out.println(Arrays.toString(matc.getCompleteTags()));
+        System.out.println(matc.isComplete());
         table.put(key, new String[]{key.toString()});//todo
       }
     }
     System.out.println(table);
   }
 
-  private static String code(Map<Boolean, List<String>> map) {
-    List<String> andList = map.get(Boolean.TRUE);
-    String andString = "";
-    String orString = "";
-    if (andList != null && andList.size() != 0) {
-      andString = codeAnd(andList.iterator());
-    }
-    List<String> orList = map.get(Boolean.FALSE);
-    if (orList != null && orList.size() != 0) {
-    orString=  codeOr(orList.iterator());
-    }
-    System.out.println(andString);
-    System.out.println(orString);
-    return andString+orString;
-  }
 
-  private static String codeAnd(Iterator<String> iterator) {
-    if (iterator.hasNext()) {
-      return genIfElse(iterator.next(), codeAnd(iterator));
-    } else {
-      return "\nreturn ture;";
-    }
-  }
-
-  private static String codeOr(Iterator<String> iterator) {
-    StringBuilder stringBuilder = new StringBuilder();
-    while (iterator.hasNext()) {
-      stringBuilder.append(genIfElse(iterator.next(), "\nreturn ture;"));
-      stringBuilder.append("\nreturn ture;");
-    }
-    return stringBuilder.toString();
-  }
-
-  private static String genIfElse(String condition, String body) {
-    return "\nif(" + condition + "){\n" + body + "\n}\n";
-  }
-
-  private final static String mappingKey(Map<String, String> i) {
-    String res = i.get("and");
-    if (res != null) {
-      return "and";
-    }
-    res = i.get("AND");
-    if (res != null) {
-      return "AND";
-    }
-    res = i.get("or");
-    if (res != null) {
-      return  "or";
-    }
-    res = i.get("OR");
-    if (res != null) {
-     return  "OR";
-    }
-
-    return "";
-  }
-
-  private final static String mappingValue(Map<String, String> i) {
-    if (i.size() != 1) {
-      //todo 日志
-      return "";
-    } else {
-      return i.values().iterator().next();
-    }
-  }
 
 
 

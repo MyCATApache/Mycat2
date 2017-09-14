@@ -29,18 +29,23 @@ public class DynamicAnnotationUtil {
         classLoader = new DynamicClassLoader("", Thread.currentThread().getContextClassLoader());
     }
 
-    public static DynamicAnnotationRuntime compile(List<String> lines) throws Exception {
+    public static DynamicAnnotationRuntime compile(Map<Boolean, List< String>> lines) throws Exception {
         String filename = "_" + name++;
         DynamicAnnotationRuntime runtime = genJavacode(filename, filename + ".java", lines);
         compileJavaCodeToClass(runtime);
         loadClass(runtime);
         return runtime;
     }
+    public static DynamicAnnotationRuntime compile( List< String> lines) throws Exception {
+        HashMap<Boolean,List< String> > map=new HashMap<>();
+        map.put(Boolean.TRUE,lines);
+        return compile(map);
+    }
 
-    public static DynamicAnnotationRuntime genJavacode(String className, String path, List<String> lines) throws IOException {
+    public static DynamicAnnotationRuntime genJavacode(String className, String path, Map<Boolean, List< String>> lines) throws IOException {
         DynamicAnnotationRuntime runtime = new DynamicAnnotationRuntime();
         runtime.setMatchName(className);
-        String code = preProcess(lines, runtime);
+        String code = assemble(lines, runtime);
         Path p = Paths.get(path);
         System.out.println(p.toAbsolutePath());
         try (FileWriter fileWriter = new FileWriter(path)) {
@@ -70,7 +75,20 @@ public class DynamicAnnotationUtil {
         }
     }
 
-    private static String preProcess(List<String> list, DynamicAnnotationRuntime runtime) {
+    private static String assemble(Map<Boolean, List<String>> map, DynamicAnnotationRuntime runtime) {
+        List<String> list = map.values().stream().flatMap(maps -> maps.stream()).collect(Collectors.toList());
+        preProcess(list, runtime);
+        TrieCompiler trieCompiler = new TrieCompiler();
+        TrieContext context = new TrieContext();
+        Map<String, Integer> str2Int = runtime.str2Int;
+        Map<String,Integer>backtrackingTable=runtime.backtrackingTable;
+        for (Map.Entry<String, Integer> i : str2Int.entrySet()) {
+            insert(i.getKey(), trieCompiler, i.getValue().toString(), backtrackingTable.get(i.getKey()));
+        }
+        return  trieCompiler.toCode1(runtime.matchName, runtime, context,map);
+    }
+
+    private static DynamicAnnotationRuntime preProcess(List<String> list, DynamicAnnotationRuntime runtime) {
         Map<String, Set<String>> relationTable = new HashMap<>();
         Map<String, Integer> backtrackingTable = new HashMap<>();
         BiFunction<String, String, Boolean> equal = (l, r) -> {
@@ -173,18 +191,11 @@ public class DynamicAnnotationUtil {
             int2str.put(i, key);
             str2Int.put(key, i);
         }
-        TrieCompiler trieCompiler = new TrieCompiler();
-
-        for (Map.Entry<String, Integer> i : str2Int.entrySet()) {
-            insert(i.getKey(), trieCompiler, i.getValue().toString(), backtrackingTable.get(i.getKey()));
-        }
-        TrieContext context = new TrieContext();
         runtime.setInt2str(int2str);
         runtime.setMap(relationTable);
         runtime.setStr2Int(str2Int);
-        String res = trieCompiler.toCode1(runtime.matchName,runtime, context);
-
-        return res;
+        runtime.setBacktrackingTable(backtrackingTable);
+        return runtime;
     }
 
     public static boolean isIn(String f, String s) {
