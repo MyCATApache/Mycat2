@@ -182,8 +182,8 @@ public class MycatSession extends AbstractMySQLSession {
 				value.forEach(mySQLSession -> {
 					reactor.addMySQLSession(key, mySQLSession);
 				});
-				for(int index = value.size() -1; index >=0;index--) {
-					value.get(index).unbindMycatSession();
+				for (int i = value.size() - 1; i >= 0; i--) {
+					value.get(i).unbindMycatSession();
 				}
 			}
 		});
@@ -351,15 +351,16 @@ public class MycatSession extends AbstractMySQLSession {
 
             // 5. 新建连接
             if (mysqlSession == null) {
-				((ProxyReactorThread<MySQLSession>) reactorThread).createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
+				reactorThread.createSession(mySQLMetaBean, schema, (optSession, Sender, exeSucces, retVal) -> {
+					MySQLSession mySQLSession = (MySQLSession) optSession;
 					//设置当前连接 读写分离属性
-					optSession.setDefaultChannelRead(runOnSlave);
+					mySQLSession.setDefaultChannelRead(runOnSlave);
 					//恢复默认的Handler
 					this.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-					optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					mySQLSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 					if (exeSucces) {
-						bindBackend(optSession);
-                        syncSessionStateToBackend(optSession,callback);
+						bindBackend(mySQLSession);
+                        syncSessionStateToBackend(mySQLSession,callback);
 					} else {
 						ErrorPacket errPkg = (ErrorPacket) retVal;
 						this.responseOKOrError(errPkg);
@@ -368,10 +369,10 @@ public class MycatSession extends AbstractMySQLSession {
                 return;
             }
 		}
-		
-		
+
+
         mysqlSession.unbindMycatSession();
-      
+
 		curBackend = mysqlSession;
         bindBackend(curBackend);
 		if (logger.isDebugEnabled()) {
@@ -386,18 +387,18 @@ public class MycatSession extends AbstractMySQLSession {
 	}
 	/**
      * 判断是状态是否需要同步
-     * 
+     *
      */
     private boolean shouldSyncSessionState(MySQLSession mySQLSession) {
-    	if(this.isolation != mySQLSession.isolation 
-    			|| this.autoCommit != mySQLSession.autoCommit 
+    	if(this.isolation != mySQLSession.isolation
+    			|| this.autoCommit != mySQLSession.autoCommit
     			|| this.charSet.charsetIndex != mySQLSession.charSet.charsetIndex) {
     		return true;
     	}
 		return false;
 	}
 
-	/**
+    /**
      * 从后端连接中获取满足条件的连接
      * 1. 主从节点
      * 2. 空闲节点

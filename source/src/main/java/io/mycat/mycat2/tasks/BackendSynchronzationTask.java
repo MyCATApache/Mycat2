@@ -53,8 +53,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
             //1.因为主节点必定存在
             //2.从节点和主节点的mysql版本号必定一致
             //3.所以直接取主节点
-            String charsetName =
-                    mycatSession.getDatasource(false).INDEX_TO_CHARSET.get(mycatSession.charSet.charsetIndex);
+            String charsetName = mySQLSession.getMySQLMetaBean().INDEX_TO_CHARSET.get(mycatSession.charSet.charsetIndex);
             queryPacket.sql += "SET names " + charsetName + ";";
             syncCmdNum++;
         }

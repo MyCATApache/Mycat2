@@ -58,7 +58,6 @@ public class MycatCore {
 		logger.debug("load config for {}", mycatConf);
 		// mycat.conf的加载不需要在集群内
 		MycatConfig conf = YamlUtil.load(mycatConf, MycatConfig.class);
-		conf.putConfigVersion(ConfigKey.MYCAT_CONF, ConfigKey.INIT_VERSION);
 
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setProxyConfig(conf);
