@@ -5,7 +5,6 @@ import io.mycat.mycat2.sqlparser.IntTokenHash;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.TokenHash;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
-
 import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 
@@ -26,13 +25,18 @@ public class ExprSQLParserHelper {
      */
     public static boolean isComparisonOperatorByType(int c) {
         switch (c) {
-            case Tokenizer2.EQUAL:
+            case Tokenizer2.EQUAL:// =
+            case Tokenizer2.GREATER_EQUAL:
             case Tokenizer2.GREATER:
             case Tokenizer2.LESS:
-            case Tokenizer2.COLON://!
+            case Tokenizer2.LESS_EQUAL:
+            case Tokenizer2.LESS_GREATER:
+            case Tokenizer2.COLON_EQUAL:
                 return true;
-            default:
+            default: {
                 return false;
+                //语法错误
+            }
         }
     }
 
@@ -46,41 +50,34 @@ public class ExprSQLParserHelper {
      * | !=
      */
     public static int pickComparisonOperator(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
-        int next;
         switch (hashArray.getType(pos++)) {
             case Tokenizer2.EQUAL:// =
                 TokenizerUtil.debug(()->"comparisonOperator:=");
                 return pos;
-            case Tokenizer2.GREATER: {// >
-                next = hashArray.getType(pos);
-                if (next == Tokenizer2.EQUAL) { // =
+            case Tokenizer2.GREATER_EQUAL: {// >=
                     TokenizerUtil.debug(()->"comparisonOperator:>=");
-                    pos++;
-                } else {
+                return pos;
+            }
+            case Tokenizer2.GREATER: {// >
                     TokenizerUtil.debug(()->"comparisonOperator:>");
-                }
                 return pos;
             }
+
             case Tokenizer2.LESS: {// <
-                next = hashArray.getType(pos);
-                if (next == Tokenizer2.EQUAL) { // =
-                    TokenizerUtil.debug(()->"comparisonOperator:<=");
-                    pos++;
-                } else if (next == Tokenizer2.GREATER) {// >
-                    TokenizerUtil.debug(()->"comparisonOperator:<>");
-                    pos++;
-                } else {
                     TokenizerUtil.debug(()->"comparisonOperator:<");
-                }
                 return pos;
             }
-            case Tokenizer2.COLON: {//!
-                next = hashArray.getType(pos);
-                if (next == Tokenizer2.EQUAL) { // =
-                    TokenizerUtil.debug(()->"comparisonOperator:!=");
-                    pos++;
-                    return pos;
-                }
+            case Tokenizer2.LESS_EQUAL: {// <=
+                TokenizerUtil.debug(() -> "comparisonOperator:<=");
+                return pos;
+            }
+            case Tokenizer2.LESS_GREATER: {// <>
+                TokenizerUtil.debug(() -> "comparisonOperator:<>");
+                return pos;
+            }
+            case Tokenizer2.COLON_EQUAL: {//!=
+                TokenizerUtil.debug(() -> "comparisonOperator:!=");
+                return pos;
             }
             default: {
                 //语法错误
