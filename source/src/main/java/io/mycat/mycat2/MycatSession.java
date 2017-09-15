@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -211,6 +212,24 @@ public class MycatSession extends AbstractMySQLSession {
 			curBackend = null;
 		}
 	}
+	
+	/**
+	 * 解除绑定当前 metaBean 所有的后端连接
+	 * @param mySQLMetaBean
+	 */
+	public void unbindBackend(MySQLMetaBean mySQLMetaBean,String reason){
+		List<MySQLSession> list = backendMap.get(mySQLMetaBean.getRepBean());
+		
+		if(list!=null&&!list.isEmpty()){
+			list.stream().forEach(f->{
+				f.setMycatSession(null);
+				f.close(true, reason);
+			});
+		}
+		if(curBackend!=null&&curBackend.getMySQLMetaBean().equals(mySQLMetaBean)){
+			curBackend = null;
+		}
+	}
 
 	/**
 	 * 获取ProxyBuffer控制权，同时设置感兴趣的事件，如SocketRead，Write，只能其一
@@ -351,7 +370,10 @@ public class MycatSession extends AbstractMySQLSession {
 		if (curBackend != null
 				&& canUseforCurrent(curBackend,targetMetaBean,runOnSlave)){
 			if (logger.isDebugEnabled()){
-				logger.debug("Using cached backend connections for {}。{}:{}",(runOnSlave ? "read" : "write"),curBackend.getMySQLMetaBean().getIp(),curBackend.getMySQLMetaBean().getPort());
+				logger.debug("Using cached backend connections for {}。{}:{}"
+							,(runOnSlave ? "read" : "write"),
+							curBackend.getMySQLMetaBean().getIp(),
+							curBackend.getMySQLMetaBean().getPort());
 			}
 			reactorThread.syncAndExecute(curBackend,callback);
 			return;
@@ -438,14 +460,9 @@ public class MycatSession extends AbstractMySQLSession {
 		if (backendList == null || backendList.isEmpty()) {
 			return null;
 		}
-		System.out.println(" backendList size is  "+backendList.size());
 		//TODO 暂时不考虑分片情况下,分布式事务的问题。
 		result = backendList.stream().filter(f -> {
-//				if(isExcludeCurBackend && f.equals(curBackend)){
-//					return false;
-//				}
-				System.out.println("targetMetaBean is "+targetMetaBean.getIp()+":"+targetMetaBean.getPort());
-				System.out.println("sourcLMetaBean is "+f.getMySQLMetaBean().getIp()+":"+f.getMySQLMetaBean().getPort());
+
 				if(!targetMetaBean.equals(f.getMySQLMetaBean())){
 					return false;
 				}
@@ -467,7 +484,10 @@ public class MycatSession extends AbstractMySQLSession {
 			}
 			backendList.remove(result);
 			if (logger.isDebugEnabled()){
-				logger.debug("Using SessionMap backend connections for {}.{}:{}",(runOnSlave ? "read" : "write"),result.getMySQLMetaBean().getIp(),result.getMySQLMetaBean().getPort());
+				logger.debug("Using SessionMap backend connections for {}.{}:{}",
+							(runOnSlave ? "read" : "write"),
+							result.getMySQLMetaBean().getIp(),
+							result.getMySQLMetaBean().getPort());
 			}
 			return result;
 		}

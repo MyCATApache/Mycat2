@@ -47,13 +47,15 @@ public class MySQLSession extends AbstractMySQLSession{
 	}
 
 	/**
-	 * 该方法 仅限 mycatsession 调用。心跳时，请从mycatSession 解除绑定
+	 * 该方法 仅限 mycatsession 调用。
+	 * 心跳时，请从mycatSession 解除绑定
 	 */
 	public void unbindMycatSession() {
 		this.useSharedBuffer(null);
 		this.setCurBufOwner(true); //设置后端连接 获取buffer 控制权
 		this.mycatSession = null;
-	}	
+	}
+	
 	@Override
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);
