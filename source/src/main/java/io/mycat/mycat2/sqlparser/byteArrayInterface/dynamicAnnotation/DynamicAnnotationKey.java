@@ -3,7 +3,6 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class DynamicAnnotationKey{
     final String schemaName;

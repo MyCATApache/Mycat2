@@ -3,7 +3,6 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
