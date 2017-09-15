@@ -201,7 +201,7 @@ public class DynamicAnnotationUtil {
     }
 
     public static boolean isIn(String f, String s) {
-        f = f.replace("?", "([a-z0-9A-Z_$]|\\?|\"*\")");
+        f = f.replace("?", "([a-z0-9A-Z_$]+|\\?|\"*\")");
         Matcher matcher = Pattern.compile(f).matcher(s);
         return matcher.find();
     }
