@@ -61,6 +61,5 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 		MYSQLCOMMANDMAP.put(NewSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(NewSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(NewSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
-
 	}
 }

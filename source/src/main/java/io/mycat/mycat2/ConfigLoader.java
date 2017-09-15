@@ -24,11 +24,10 @@ public class ConfigLoader {
     public static final String DIR_PREPARE = "prepare" + File.separator;
     public static final String DIR_ARCHIVE = "archive" + File.separator;
 
-    private ConfigLoader() {
-    }
+    private ConfigLoader() {}
 
     public void loadAll(MycatConfig conf) throws IOException {
-        // 保证文件夹存在
+        //保证文件夹存在
         YamlUtil.createDirectoryIfNotExists(DIR_PREPARE);
         YamlUtil.createDirectoryIfNotExists(DIR_ARCHIVE);
 
@@ -36,7 +35,7 @@ public class ConfigLoader {
         loadDatasource(conf);
         loadSchema(conf);
 
-        // 清空prepare文件夹
+        //清空prepare文件夹
         YamlUtil.clearDirectory(DIR_PREPARE);
     }
 

@@ -24,16 +24,13 @@
 package io.mycat.mycat2;
 
 import java.io.IOException;
-import java.io.InputStream;
 
-import io.mycat.proxy.*;
-import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.common.ExecutorUtil;
-import io.mycat.mycat2.common.NameableExecutor;
-import io.mycat.mycat2.common.NamebleScheduledExecutor;
+import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.ProxyRuntime;
+import io.mycat.util.YamlUtil;
 
 /**
  * @author wuzhihui
@@ -45,10 +42,6 @@ public class MycatCore {
 	public static final String MOCK_SCHEMA = "mysql";
 
 	public static void main(String[] args) throws IOException {
-		// Business Executor ，用来执行那些耗时的任务
-		NameableExecutor businessExecutor = ExecutorUtil.create("BusinessExecutor", 10);
-		// 定时器Executor，用来执行定时任务
-		NamebleScheduledExecutor timerExecutor = ExecutorUtil.createSheduledExecute("Timer", 5);
 
 		String mySeq = "1";
 		if (args.length > 0) {
@@ -64,7 +57,7 @@ public class MycatCore {
 
 		int cpus = Runtime.getRuntime().availableProcessors();
 		runtime.setNioReactorThreads(cpus);
-		runtime.setReactorThreads(new ProxyReactorThread[cpus]);
+		runtime.setReactorThreads(new MycatReactorThread[cpus]);
 
 		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
 		// runtime.setNioProxyHandler(new DefaultDirectProxyHandler());
@@ -72,8 +65,9 @@ public class MycatCore {
 		// Debug观察MySQL协议用
 		// runtime.setSessionManager(new MySQLStudySessionManager());
 		runtime.setSessionManager(new MycatSessionManager());
-		runtime.init();
 
 		ProxyStarter.INSTANCE.start();
+		
+		runtime.init();
 	}
 }

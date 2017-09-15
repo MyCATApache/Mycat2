@@ -11,6 +11,7 @@ import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.AbstractSession;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.ProxyBuffer;
@@ -85,6 +86,22 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 		// proxyBuffer.changeOwner(true);
 		this.proxyBuffer.reset();
 		pkg.write(this.proxyBuffer);
+		proxyBuffer.flip();
+		proxyBuffer.readIndex = proxyBuffer.writeIndex;
+		this.writeToChannel();
+	}
+	
+	/**
+	 * 回应客户端（front或Sever）OK 报文。
+	 *
+	 * @param pkg
+	 *            ，必须要是OK报文或者Err报文
+	 * @throws IOException
+	 */
+	public void responseOKOrError(byte[] pkg) throws IOException {
+		// proxyBuffer.changeOwner(true);
+		this.proxyBuffer.reset();
+		proxyBuffer.writeBytes(OKPacket.OK);
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
 		this.writeToChannel();
