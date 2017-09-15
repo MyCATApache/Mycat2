@@ -5,11 +5,25 @@ package io.mycat.proxy;
  *
  */
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.common.ExecutorUtil;
+import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.loadbalance.LBSession;
 import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
 import io.mycat.mycat2.loadbalance.LoadChecker;
@@ -17,8 +31,21 @@ import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
+import io.mycat.util.TimeUtil;
 
 public class ProxyRuntime {
+
+	private static final Logger logger = LoggerFactory.getLogger(ProxyRuntime.class);
+
+	/*
+	 * 时间更新周期
+	 */
+	private static final long TIME_UPDATE_PERIOD   = 20L;
+	private static final String TIME_UPDATE_TASK   = "TIME_UPDATE_TASK";
+	private static final String PROCESSOR_CHECK    = "PROCESSOR_CHECK";
+	private static final String REPLICA_ILDE_CHECK = "REPLICA_ILDE_CHECK";
+	private static final String REPLICA_HEARTBEAT  = "REPLICA_HEARTBEAT";
+
 	private ProxyConfig proxyConfig;
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
@@ -40,6 +67,18 @@ public class ProxyRuntime {
 	private LoadChecker localLoadChecker;
 	private LoadBalanceStrategy loadBalanceStrategy;
 
+	private NameableExecutor businessExecutor;
+	private ListeningExecutorService listeningExecutorService;
+
+
+
+	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
+	private NameableExecutor timerExecutor;
+	private ScheduledExecutorService heartbeatScheduler;
+
+	public  long maxdataSourceInitTime = 60 * 1000L;
+
+
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -55,7 +94,108 @@ public class ProxyRuntime {
 	private MyCluster myCLuster;
 
 	public void init() {
+		//心跳调度独立出来，避免被其他任务影响
+		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
+		timerExecutor = ExecutorUtil.create("Timer", ((MycatConfig)getProxyConfig()).getTimerExecutor());
+		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
+		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
+		startUpdateTimeTask();
+		startHeartBeatScheduler();
+	}
 
+	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
+		// 找到一个可用的NIO Reactor Thread，交付托管
+		if (reactorEnv.counter++ == Integer.MAX_VALUE) {
+			reactorEnv.counter = 1;
+		}
+		int index = reactorEnv.counter % ProxyRuntime.INSTANCE.getNioReactorThreads();
+		// 获取一个reactor对象
+		return ProxyRuntime.INSTANCE.getReactorThreads()[index];
+	}
+
+	public void startUpdateTimeTask(){
+		heartbeatScheduler.scheduleAtFixedRate(updateTime(),
+											   0L,
+											   TIME_UPDATE_PERIOD,
+											   TimeUnit.MILLISECONDS);
+	}
+
+	/**
+	 * 启动心跳检测任务
+	 */
+	public void startHeartBeatScheduler(){
+		if(heartBeatTasks.get(REPLICA_HEARTBEAT)==null){
+			long replicaHeartbeat = ((MycatConfig)getProxyConfig()).getReplicaHeartbeatPeriod();
+			heartBeatTasks.put(REPLICA_HEARTBEAT,
+					heartbeatScheduler.scheduleAtFixedRate(replicaHeartbeat(),
+														  0,
+														  replicaHeartbeat,
+														  TimeUnit.MILLISECONDS));
+		}
+	}
+
+	/**
+	 * 切换 metaBean 名称
+	 * @param metaBean
+	 */
+	public void startSwitchDataSource(String replBean,Integer writeIndex){
+
+		System.err.println("TODO 收到集群切换 请求，开始切换");
+
+		MycatConfig config = (MycatConfig) getProxyConfig();
+		MySQLRepBean repBean = config.getMySQLReplicaSet()
+		  .stream().filter(f->f.getName().equals(replBean))
+		  .findFirst().orElse(null);
+
+		if(repBean!=null){
+			businessExecutor.execute(()->{
+
+				repBean.setSwitchResult(false);
+				repBean.switchSource(writeIndex,maxdataSourceInitTime);
+
+				if(repBean.getSwitchResult().get()){
+					//TODO 切换成功. 通知集群
+					logger.info("switch datasource success");
+					System.err.println("switch datasource success");
+					startHeartBeatScheduler();
+				}else{
+					System.err.println("switch datasource error");
+					logger.error("switch datasource error");
+					//TODO 切换失败. 通知集群
+				}
+			});
+		}
+	}
+
+	/**
+	 * 停止
+	 */
+	public void stopHeartBeatScheduler(){
+		heartBeatTasks.values().stream().forEach(f->f.cancel(false));
+		heartBeatTasks.clear();
+	}
+
+	// 系统时间定时更新任务
+	private Runnable updateTime() {
+		return new Runnable() {
+			@Override
+			public void run() {
+				TimeUtil.update();
+			}
+		};
+	}
+
+	// 数据节点定时心跳任务
+	private Runnable replicaHeartbeat() {
+		return ()->{
+			ProxyReactorThread<?> reactor  = getReactorThreads()[ThreadLocalRandom.current().nextInt(getReactorThreads().length)];
+			reactor.addNIOJob(()->{
+				MycatConfig config = (MycatConfig) getProxyConfig();
+				config.getMySQLReplicaSet()
+					  .stream()
+					  .forEach(f->f.doHeartbeat());
+			});
+		};
 	}
 
 	public MyCluster getMyCLuster() {

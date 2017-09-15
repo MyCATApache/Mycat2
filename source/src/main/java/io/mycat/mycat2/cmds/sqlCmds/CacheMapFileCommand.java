@@ -32,8 +32,11 @@ public class CacheMapFileCommand implements MyCommand {
 	public boolean procssSQL(MycatSession session) throws IOException {
 		ProxyBuffer curBuffer = session.proxyBuffer;
 
+		/*
+		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
+		 */
+		session.clearReadWriteOpts();
 		// 1,解析当前的内容，检查是否为缓存的标识
-
 		session.getBackend((mysqlsession, sender, success, result) -> {
 			if (success) {
 				// 切换buffer 读写状态
@@ -49,10 +52,17 @@ public class CacheMapFileCommand implements MyCommand {
 
 		return false;
 	}
+	
+	@Override
+	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+		// TODO Auto-generated method stub
+		
+	}
 
 	@Override
-	public void clearResouces(boolean sessionCLosed) {
-
+	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override

@@ -24,19 +24,23 @@ public class ExprSQLParser {
      * | boolean_primary
      */
     public static int pickExpr(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
-        pos = pickBooleanPrimary(pos, arrayCount, context, hashArray, sql);
         int type = hashArray.getType(pos);
-        long longHash = hashArray.getHash(pos);
-        if (Tokenizer2.OR == type) {
-            //todo 如果词法分析改变了,|| 变为一个关键词,这里得改
+        ;
+        if (type == Tokenizer2.COLON) {
+            TokenizerUtil.debug(() -> "! expr");
             ++pos;
-            type = hashArray.getType(pos);
-            if (TokenHash.OR == type) {
-                TokenizerUtil.debug(()->"expr || expr");
-                //todo 如果词法分析改变了,|| 变为一个关键词,这里得改
-                ++pos;
-                return pickExpr(pos, arrayCount, context, hashArray, sql);
-            }
+        }
+        long longHash = hashArray.getHash(pos);
+        if (longHash == TokenHash.NOT) {
+            TokenizerUtil.debug(() -> "NOT expr");
+            ++pos;
+        }
+        pos = pickBooleanPrimary(pos, arrayCount, context, hashArray, sql);
+        longHash = hashArray.getHash(pos);
+        if (TokenHash.OR == longHash) {
+            TokenizerUtil.debug(() -> "expr OR expr");
+            ++pos;
+            return pickExpr(pos, arrayCount, context, hashArray, sql);
         } else if (TokenHash.XOR == longHash) {
             TokenizerUtil.debug(()->"expr XOR expr");
             ++pos;
@@ -51,8 +55,16 @@ public class ExprSQLParser {
             return pickExpr(pos, arrayCount, context, hashArray, sql);
         } else {
             type = hashArray.getType(pos);
-            if (Tokenizer2.COLON == type) {//!
-                TokenizerUtil.debug(()->"! expr");
+            /**
+             *  | expr || expr
+             * | expr && expr
+             */
+            if (Tokenizer2.OR_OR== type) {////
+                TokenizerUtil.debug(()->"expr || expr");
+                ++pos;
+                return pickExpr(pos, arrayCount, context, hashArray, sql);
+            }else  if (Tokenizer2.AND_AND== type) {////
+                TokenizerUtil.debug(()->"expr &&  expr");
                 ++pos;
                 return pickExpr(pos, arrayCount, context, hashArray, sql);
             }
@@ -111,14 +123,9 @@ public class ExprSQLParser {
             }
         }else {
             int type = hashArray.getType(pos);
-            TokenizerUtil.debug(pos, context);
-            int t2 = hashArray.getType(pos + 1);
-            TokenizerUtil.debug(pos+1, context);
-            int t3 = hashArray.getType(pos + 2);
-            TokenizerUtil.debug(pos+2, context);
-            if (type == Tokenizer2.LESS && t2 == Tokenizer2.EQUAL && t3 == Tokenizer2.GREATER) {
+            if (type == Tokenizer2.LESS_EQUAL_GREATER) {
                 TokenizerUtil.debug(()->"boolean_primary <=> predicate");
-                return pickPredicate(pos + 3, arrayCount, context, hashArray, sql);
+                return pickPredicate(++pos , arrayCount, context, hashArray, sql);
             }
             if (ExprSQLParserHelper.isComparisonOperatorByType(type)) {
                 pos = ExprSQLParserHelper.pickComparisonOperator(pos, arrayCount, context, hashArray, sql);
@@ -273,26 +280,15 @@ public class ExprSQLParser {
                 //todo  bit_expr | bit_expr
                 return pickBitExpr(pos, arrayCount, context, hashArray, sql);
             }
-            case Tokenizer2.LESS: {
-                type = hashArray.getType(pos+1);
-                if (Tokenizer2.LESS == type) {
-                    pos+=2;
+            case Tokenizer2.LESS_LESS: {
                     TokenizerUtil.debug(() -> "bit_expr << bit_expr");
                     //todo  bit_expr << bit_expr
                     return pickBitExpr(++pos, arrayCount, context, hashArray, sql);
-                }else {
-                    //todo maybe <=> boolean_primary <=> predicate
-                    return pos;
-                }
             }
-            case Tokenizer2.GREATER: {
-                ++pos;
-                type = hashArray.getType(pos);
-                if (Tokenizer2.GREATER == type) {
+            case Tokenizer2.GREATER_GREATER: {
                     TokenizerUtil.debug(() -> "bit_expr >> bit_expr");
                     //todo  bit_expr >> bit_expr
                     return pickBitExpr(++pos, arrayCount, context, hashArray, sql);
-                }
             }
             case Tokenizer2.PLUS: {
                 ++pos;
@@ -309,7 +305,7 @@ public class ExprSQLParser {
             case Tokenizer2.MINUS: {
                 ++pos;
                 if (TokenHash.INTERVAL == hashArray.getHash(pos)) {
-                    TokenizerUtil.debug(() -> "bit_expr +- interval_expr");
+                    TokenizerUtil.debug(() -> "bit_expr + interval_expr");
                     return pickIntervalExpr(++pos, arrayCount, context, hashArray, sql);
                 } else {
                     TokenizerUtil.debug(() -> "bit_expr - bit_expr");

@@ -10,8 +10,12 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.openjdk.jmh.runner.RunnerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatSession;
 
 /**
  * 会话，代表一个前端连接
@@ -78,9 +82,15 @@ public abstract class AbstractSession implements Session {
 			this.bufPool.recycleBuf(proxyBuffer.getBuffer());
 			proxyBuffer = sharedBuffer;
 			this.referedBuffer = true;
+			logger.debug("use sharedBuffer. ");
 		} else if (proxyBuffer == null) {
-			proxyBuffer = sharedBuffer;
+			logger.debug("proxyBuffer is null.");
+			throw new RuntimeException("proxyBuffer is null."+this);
+//			proxyBuffer = sharedBuffer;
 		} else if (sharedBuffer == null) {
+			logger.debug("referedBuffer is false.");
+			proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
+			proxyBuffer.reset();
 			this.referedBuffer = false;
 		}
 	}
@@ -273,7 +283,9 @@ public abstract class AbstractSession implements Session {
 			if (!referedBuffer) {
 				this.bufPool.recycleBuf(proxyBuffer.getBuffer());
 			}
-			this.getMySessionManager().removeSession(this);
+			if(this instanceof MycatSession){
+				this.getMySessionManager().removeSession(this);
+			}
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}
@@ -347,5 +359,9 @@ public abstract class AbstractSession implements Session {
 
 	public void setDefaultChannelRead(boolean defaultChannelRead) {
 		this.defaultChannelRead = defaultChannelRead;
+	}
+
+	public boolean isReferedBuffer() {
+		return referedBuffer;
 	}
 }

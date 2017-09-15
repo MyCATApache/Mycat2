@@ -2,6 +2,7 @@ package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 
 import java.util.Arrays;
 
@@ -340,5 +341,35 @@ public class BufferSQLContext {
 
     public HashArray getHashArray() {
         return hashArray;
+    }
+
+    public boolean matchDigit(int pos1, int data) {
+        return TokenizerUtil.pickNumber(pos1,this.hashArray,buffer)==data;
+    }
+    public int matchPlaceholders(int pos1) {
+        ++pos1;
+//        if (hashArray.getType(pos1)== Tokenizer2.DOT){
+//            ++pos1;
+//            ++pos1;
+//        }
+        return pos1;
+    }
+    int[] dynamicAnnotationResultList=new int[128];
+    int dynamicAnnotationResultIndex=0;
+    int longestPos=0;
+    public void setDynamicAnnotationResult(int value) {
+        dynamicAnnotationResultList[dynamicAnnotationResultIndex]=value;
+        ++dynamicAnnotationResultIndex;
+    }
+
+    public int[] getDynamicAnnotationResultList() {
+        return dynamicAnnotationResultList;
+    }
+    public void clearDynamicAnnotationResultList() {
+        dynamicAnnotationResultIndex=0;
+    }
+
+    public int getDynamicAnnotationResultIndex() {
+        return dynamicAnnotationResultIndex;
     }
 }

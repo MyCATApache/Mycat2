@@ -51,6 +51,11 @@ public class LoadDataCommand implements MyCommand {
 			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), false);
 		}
 		
+		/*
+		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
+		 */
+		session.clearReadWriteOpts();
+		
 		session.getBackend((mysqlsession, sender, success,result)->{
 			if(success){
 				// 切换buffer 读写状态
@@ -133,8 +138,16 @@ public class LoadDataCommand implements MyCommand {
 	}
 
 	@Override
-	public void clearResouces(boolean sessionCLosed) {
+	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+		// TODO Auto-generated method stub
+		
+	}
 
+
+	@Override
+	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override
@@ -178,6 +191,5 @@ public class LoadDataCommand implements MyCommand {
 			session.getMycatSession().proxyBuffer.flip();
 		}
 		return false;
-	}
-	
+	}	
 }

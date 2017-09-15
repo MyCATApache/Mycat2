@@ -37,7 +37,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	private SchemaBean schema;
 	private MySQLSession session;
 
-	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLMetaBean mySQLMetaBean, SchemaBean schema)
+	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLMetaBean mySQLMetaBean, SchemaBean schema,AsynTaskCallBack<MySQLSession> callBack)
 			throws IOException {
 		String serverIP = mySQLMetaBean.getIp();
 		int serverPort = mySQLMetaBean.getPort();
@@ -51,7 +51,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		this.setSession(session, false);
 		this.mySQLMetaBean = mySQLMetaBean;
 		this.schema = schema;
-
+		this.callBack = callBack;
 	}
 
 	@Override

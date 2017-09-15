@@ -11,9 +11,9 @@ import java.util.Map;
  */
 public class ProxyConfig {
 	// 绑定的数据传输IP地址
-	private String bindIP;
+	private String bindIP = "0.0.0.0";
 	// 绑定的数据传输端口
-	private int bindPort;
+	private int bindPort = 8066;
 	private boolean clusterEnable = false;
 	// 是否开启负载均衡
 	private boolean loadBalanceEnable = true;
@@ -30,7 +30,8 @@ public class ProxyConfig {
 	// leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9068,leader-3:127.0.0.1:9069
 	private String allNodeInfs;
 	// 当前节点所用的配置文件的版本
-	private Map<String, Integer> configVersionMap = new HashMap<>();
+	private Map<Byte, Integer> configVersionMap = new HashMap<>();
+	private Map<Byte, Object> configMap = new HashMap<>();
 
 	public ProxyConfig() {}
 
@@ -90,22 +91,23 @@ public class ProxyConfig {
 		this.clusterPort = clusterPort;
 	}
 
-	public Map<String, Integer> getConfigVersionMap() {
+	public Map<Byte, Integer> getConfigVersionMap() {
 		return configVersionMap;
 	}
 
-	public void putConfigVersion(String configKey, Integer configValue) {
-		configVersionMap.put(configKey, configValue);
+	public int getConfigVersion(byte configKey) {
+		Integer oldVersion = configVersionMap.get(configKey);
+		return oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion;
 	}
 
-	public int getConfigVersion(String configKey) {
-		return configVersionMap.get(configKey);
+	public Object getConfig(byte configKey) {
+		return configMap.get(configKey);
 	}
 
-	public int configVersionGetAndIncrease(String configKey) {
-		int oldVersion = configVersionMap.get(configKey);
-		configVersionMap.put(configKey, oldVersion + 1);
-		return oldVersion;
+	public void putConfig(byte configKey, Object config, Integer version) {
+		configMap.put(configKey, config);
+		version = version == null ? ConfigEnum.INIT_VERSION : version;
+		configVersionMap.put(configKey, version);
 	}
 
 	public boolean isLoadBalanceEnable() {

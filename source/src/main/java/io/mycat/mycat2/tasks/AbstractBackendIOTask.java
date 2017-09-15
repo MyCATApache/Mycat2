@@ -36,7 +36,7 @@ public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> impl
 		if (useNewBuffer) {
 			prevProxyBuffer = session.proxyBuffer;
 			session.proxyBuffer = session.allocNewProxyBuffer();
-
+			session.setCurBufOwner(true);
 		}
 		if (session != null) {
 			this.session = session;
