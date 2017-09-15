@@ -16,7 +16,7 @@ public class ProxyConfig {
 	private int bindPort = 8066;
 	private boolean clusterEnable = false;
 	// 是否开启负载均衡
-	private boolean loadBalanceEnable = true;
+	private boolean loadBalanceEnable = false;
 	// 负载均衡绑定的ip
 	private String loadBalanceIp = "0.0.0.0";
 	// 负载均衡缓定的端口
