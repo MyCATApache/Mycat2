@@ -81,20 +81,25 @@ public class ConditionUtil {
         return "";
     }
 
-    public final static<T> String mappingValue(Map<String, String> i) {
-        if (i.size() != 1) {
-            //todo 日志
-            return "";
-        } else {
-            return i.values().iterator().next();
+    public final static<T>  String mappingValue(Map<String, T> i) {
+        try {
+            if (i.size() != 1) {
+                //todo 日志
+                return "";
+            } else {
+                return i.values().iterator().next().toString();
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+            return null;
         }
     }
-    public final static String mappingKey(Map<String, String> i) {
+    public final static<T> String mappingKey(Map<String, T> i) {
         if (i.size() != 1) {
             //todo 日志
             return "";
         } else {
-            return i.keySet().iterator().next();
+            return i.keySet().iterator().next().toString();
         }
     }
 }

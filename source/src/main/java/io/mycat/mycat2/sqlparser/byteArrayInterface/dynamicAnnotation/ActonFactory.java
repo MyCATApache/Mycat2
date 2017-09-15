@@ -19,17 +19,23 @@ public class ActonFactory<T> {
     HashMap<String, Class<SQLAnnotation<T>>> resMap;
 
 
-    public Function<T,T> get(List<Map<String, Map<String, String>>> need) throws Exception {
-        Iterator<Map<String, Map<String, String>>> iterator = need.iterator();
+    public Function<T,T> get(List<Map<String, List<Map<String, String>>>> need) throws Exception {
+        Iterator<Map<String,  List<Map<String, String>>>> iterator = need.iterator();
         Function<T,T> res = null;
         do {
-            Map<String, Map<String, String>> action = iterator.next();
-            Map.Entry<String, Map<String, String>> entry = action.entrySet().iterator().next();
+            Map<String,  List<Map<String, String>>> action = iterator.next();
+            Map.Entry<String,  List<Map<String, String>>> entry = action.entrySet().iterator().next();
             String actionName = entry.getKey();
-            Map<String, String> args = entry.getValue();
+           System.out.println( entry.toString());
             Class<SQLAnnotation<T>> annotationClass = resMap.get(actionName);
             SQLAnnotation<T> annotation = annotationClass.newInstance();
-            annotation.init(args);
+            Optional.ofNullable(entry.getValue()).map(s->s.stream().collect(Collectors.toMap(ConditionUtil::mappingKey,(v)->{
+                if (v==null){
+                    return null;
+                }else {
+                    return ConditionUtil.mappingValue(v);
+                }
+            }))).ifPresent((args->  annotation.init(args)));
             if (res == null) {
                 res = annotation;
             } else {
@@ -41,20 +47,17 @@ public class ActonFactory<T> {
 
     public static void main(String[] args) throws Throwable {
         ActonFactory<BufferSQLContext> actonFactory = new ActonFactory<>("actions.yaml");
-        List<Map<String, Map<String, String>>> list = new ArrayList<>();
+        List<Map<String,List< Map<String, String>>>> list = new ArrayList<>();
         Map<String,String> monitorSQL=new HashMap<>();
         monitorSQL.put("param1","1");
-
-        list.add(Collections.singletonMap("monitorSQL",monitorSQL));
+        list.add(Collections.singletonMap("monitorSQL",Collections.singletonList(monitorSQL)));
         list.add(Collections.singletonMap("cacheResult",null));
         Map<String,String> sqlCach=new HashMap<>();
         sqlCach.put("param1","1");
         sqlCach.put("param2","2");
-        list.add(Collections.singletonMap("sqlCach",sqlCach));
+        list.add(Collections.singletonMap("sqlCach",Arrays.asList(sqlCach)));
        Function<BufferSQLContext,BufferSQLContext> annotations= actonFactory.get(list);
        annotations.apply(null);
-
-
     }
 
     public ActonFactory(String config) throws Exception {

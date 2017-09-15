@@ -557,7 +557,7 @@ public class BufferSQLParser {
                     break;
                 }
                 default:
-                    debugError(pos, context);
+                  //  debugError(pos, context);
                     pos++;
                     break;
             }
