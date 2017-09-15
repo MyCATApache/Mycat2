@@ -1,5 +1,6 @@
 package io.mycat.proxy;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ProxyBuffer {
+	
 	protected static Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
 	private final ByteBuffer buffer;
 
@@ -235,7 +237,7 @@ public class ProxyBuffer {
 	public String readVarString(int length) {
 		return readFixString(length);
 	}
-
+	
 	public String getNULString(int index) {
 		int strLength = 0;
 		int scanIndex = index;
@@ -433,7 +435,7 @@ public class ProxyBuffer {
 		} else if (len == 0xfe) {
 			return getInt(index + 1, 8);
 		} else {
-			return getInt(index, 1);
+			return len;
 		}
 	}
 

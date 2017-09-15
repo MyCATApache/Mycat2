@@ -44,9 +44,10 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     private int fieldCount;
     private MySQLMetaBean mySQLMetaBean;
 
-    public BackendCharsetReadTask(MySQLSession mySQLSession, MySQLMetaBean mySQLMetaBean) {
+    public BackendCharsetReadTask(MySQLSession mySQLSession, MySQLMetaBean mySQLMetaBean,AsynTaskCallBack<MySQLSession> callBack) {
         this.mySQLSession = mySQLSession;
         this.mySQLMetaBean = mySQLMetaBean;
+        this.callBack = callBack;
     }
 
     public void readCharset() throws IOException {
@@ -110,8 +111,12 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     }
 
     @Override
-    void onRsFinish(MySQLSession session) {
+    void onRsFinish(MySQLSession session,boolean success) throws IOException {
+    	if(callBack!=null){
+    		callBack.finished(session, null, success, null);
+    	}
         //结果集完成
         logger.debug("session[{}] load charset finish",session);
     }
+
 }
