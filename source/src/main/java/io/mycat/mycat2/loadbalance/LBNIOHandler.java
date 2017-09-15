@@ -19,9 +19,9 @@ public class LBNIOHandler implements NIOHandler<LBSession> {
     @Override
     public void onConnect(SelectionKey curKey, LBSession session, boolean success, String msg) throws IOException {
         ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-//        MyCluster cluster = runtime.getMyCLuster();
-//        ClusterNode clusterNode = runtime.getLoadBalanceStrategy().getNode(cluster.allNodes.values(), null);
-        connectToRemoteMycat("127.0.0.1", 8066, runtime.getAcceptor().getSelector(), session);
+        MyCluster cluster = runtime.getMyCLuster();
+        ClusterNode clusterNode = runtime.getLoadBalanceStrategy().getNode(cluster.allNodes.values(), null);
+        connectToRemoteMycat(clusterNode.ip, 8066, runtime.getAcceptor().getSelector(), session);
     }
 
     private void connectToRemoteMycat(String ip, int port, Selector selector, LBSession lbSession) throws IOException {
