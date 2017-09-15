@@ -13,7 +13,6 @@ import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.util.CharsetUtil;
 
 /**
  * MySQL客户端登录认证的Handler，为第一个Handler

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.List;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
@@ -16,13 +17,9 @@ import io.mycat.proxy.BufferPool;
  * @author wuzhihui
  *
  */
-public class MySQLSession extends AbstractMySQLSession {
+public class MySQLSession extends AbstractMySQLSession{
+
 	private String database;
-	
-	/**
-	 * 当前缓存的 mysqlSession 所属的mysql-replica 的名称。用于快速判断当前连接是否可以被复用
-	 */
-	private String currBackendCachedName;
 	/**
 	 * 当前所从属的mycat sesssion
 	 */
@@ -49,23 +46,22 @@ public class MySQLSession extends AbstractMySQLSession {
 		this.mycatSession = mycatSession;
 	}
 
+	/**
+	 * 该方法 仅限 mycatsession 调用。
+	 * 心跳时，请从mycatSession 解除绑定
+	 */
 	public void unbindMycatSession() {
 		this.useSharedBuffer(null);
-		if(this.mycatSession != null) {
-			if(logger.isDebugEnabled()){
-				logger.debug("mycatSession {} release back connetion {}",this.mycatSession, this);
-			}
-			this.mycatSession.removebackendMap(this);
-			this.mycatSession.curBackend = null;
-			this.mycatSession = null;
-			
-		}
-
-	}	
+		this.setCurBufOwner(true); //设置后端连接 获取buffer 控制权
+		this.mycatSession = null;
+	}
+	
 	@Override
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);
-		this.mycatSession.removebackendMap(this);
+		if(this.mycatSession!=null){
+			this.mycatSession.unbindBeckend(this);
+		}
 	}
 	public String getDatabase() {
 		return database;
@@ -84,14 +80,6 @@ public class MySQLSession extends AbstractMySQLSession {
 		this.getMycatSession().takeOwner(SelectionKey.OP_READ);		
 	}
 
-	public String getCurrBackendCachedName() {
-		return currBackendCachedName;
-	}
-
-	public void setCurrBackendCachedName(String currBackendCachedName) {
-		this.currBackendCachedName = currBackendCachedName;
-	}
-
 	public MySQLMetaBean getMySQLMetaBean() {
 		return mysqlMetaBean;
 	}
@@ -99,4 +87,10 @@ public class MySQLSession extends AbstractMySQLSession {
 	public void setMySQLMetaBean(MySQLMetaBean metaBean) {
 		this.mysqlMetaBean = metaBean;
 	}
+
+	@Override
+	public String toString() {
+		return "MySQLSession [database=" + database + ", ip=" + mysqlMetaBean.getIp() + ",port="+mysqlMetaBean.getPort()+"]";
+	}
+
 }

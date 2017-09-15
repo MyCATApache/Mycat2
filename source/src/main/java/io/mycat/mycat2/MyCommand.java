@@ -26,19 +26,27 @@ public interface MyCommand {
 	public boolean onBackendWriteFinished(MySQLSession session) throws IOException;
 	
 	/**
-	 * 直接应答请求报文，如果是直接应答的，则此方法调用一次就完成了，如果是靠后端响应后才应答，则至少会调用两次，
+	 * 清理资源，只清理自己产生的资源（如创建了Buffer，以及Session中放入了某些对象）
 	 * 
-	 * @param session
-	 * @return 是否完成了应答
+	 * @param socketClosed
+	 *            是否因为Session关闭而清理资源，此时应该彻底清理
 	 */
-	public boolean procssSQL(MycatSession session) throws IOException;
-	
+	public void clearFrontResouces(MycatSession session,boolean sessionCLosed);
+
 	/**
 	 * 清理资源，只清理自己产生的资源（如创建了Buffer，以及Session中放入了某些对象）
 	 * 
 	 * @param socketClosed
 	 *            是否因为Session关闭而清理资源，此时应该彻底清理
 	 */
-	public void clearResouces(boolean sessionCLosed);
+	public void clearBackendResouces(MySQLSession session,boolean sessionCLosed);
+	
+	/**
+	 * 直接应答请求报文，如果是直接应答的，则此方法调用一次就完成了，如果是靠后端响应后才应答，则至少会调用两次，
+	 * 
+	 * @param session
+	 * @return 是否完成了应答
+	 */
+	public boolean procssSQL(MycatSession session) throws IOException;
 
 }

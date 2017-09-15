@@ -24,11 +24,6 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * 进行SQL命令的处理的容器
 	 */
 	protected Map<Byte, MySQLCommand> MYSQLCOMMANDMAP = new HashMap<>();
-
-	/**
-	 * sqlparser
-	 */
-	protected BufferSQLParser parser = new BufferSQLParser();
 	
 	public AbstractCmdStrategy(){
 		initMyCmdHandler();
@@ -65,8 +60,15 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * @return
 	 */
 	protected MyCommand doGetMySQLCommand(MycatSession session){
-		parser.parse(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos+MySQLPacket.packetHeaderSize+1,
-				session.curMSQLPackgInf.pkgLength - MySQLPacket.packetHeaderSize - 1, session.sqlContext);
+		
+		/**
+		 * sqlparser
+		 */
+		BufferSQLParser parser = new BufferSQLParser();
+		int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
+		int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
+		parser.parse(session.proxyBuffer.getBytes(rowDataIndex, length),session.sqlContext);
+
 		return MYSQLCOMMANDMAP.get(session.sqlContext.getSQLType());
 	}
 }
