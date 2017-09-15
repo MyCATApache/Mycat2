@@ -29,13 +29,13 @@ public class AdminCommandResovler {
 		adminCommandMap.put(ManagePacket.PKG_JOIN_NOTIFY_ClUSTER, joinCommand);
 		adminCommandMap.put(ManagePacket.PKG_JOIN_ACK_ClUSTER, joinCommand);
 
-		ConfigPacketCommand configCommand = new ConfigPacketCommand();
+		ConfigPacketCommand configCommand = ConfigPacketCommand.INSTANCE;
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_VERSION_REQ, configCommand);
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_VERSION_RES, configCommand);
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_REQ, configCommand);
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_RES, configCommand);
 
-		ConfigUpdatePacketCommand updateCommand = new ConfigUpdatePacketCommand();
+		ConfigUpdatePacketCommand updateCommand = ConfigUpdatePacketCommand.INSTANCE;
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_PREPARE, updateCommand);
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_CONFIRM, updateCommand);
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_COMMIT, updateCommand);

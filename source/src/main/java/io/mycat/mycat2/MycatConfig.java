@@ -46,7 +46,7 @@ public class MycatConfig extends ProxyConfig {
 	 */
 	private SchemaBean defaultSchemaBean;
 
-	private Map<String, Integer> repIndexMap = new HashMap<String, Integer>();
+	private Map<String, Integer> repIndexMap;
 
 	public Map<String, MySQLRepBean> getMysqlRepMap() {
 		return this.mysqlRepMap;
@@ -83,9 +83,13 @@ public class MycatConfig extends ProxyConfig {
 		return repIndexMap.get(repName);
 	}
 
+	public Map<String, Integer> getRepIndexMap() {
+		return this.repIndexMap;
+	}
+
 	public void addRepIndex(ReplicaIndexBean replicaIndexBean) {
 		if (replicaIndexBean != null && replicaIndexBean.getReplicaIndexes() != null) {
-			replicaIndexBean.getReplicaIndexes().forEach((key, value) -> repIndexMap.put(key, value));
+			repIndexMap = replicaIndexBean.getReplicaIndexes();
 		}
 	}
 
