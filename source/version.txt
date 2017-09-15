@@ -1,4 +1,4 @@
-BuildTime  2017-09-14 12:17:29
+BuildTime  2017-09-15 01:53:59
 GitVersion   null
 MavenVersion 0.1
 GitUrl https://github.com/MyCATApache/tcp-proxy

@@ -76,7 +76,7 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
 
     abstract void onRsRow(T session);
 
-    abstract void onRsFinish(T session,boolean success);
+    abstract void onRsFinish(T session,boolean success) throws IOException;
 
     public enum ResultSetState {
         /**

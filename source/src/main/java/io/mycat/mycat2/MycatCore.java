@@ -56,6 +56,7 @@ public class MycatCore {
 		runtime.setProxyConfig(conf);
 
 		int cpus = Runtime.getRuntime().availableProcessors();
+//	    int cpus = 1;
 		runtime.setNioReactorThreads(cpus);
 		runtime.setReactorThreads(new MycatReactorThread[cpus]);
 

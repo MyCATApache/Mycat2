@@ -12,7 +12,7 @@ mysqlReplicas:
         minCon: 1
         maxCon: 10
         maxRetryCount: 3
-      - hostName: test
+      - hostName: test1
         ip: 192.168.18.136
         port: 3308
         user: root

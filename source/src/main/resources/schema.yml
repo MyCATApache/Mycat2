@@ -2,7 +2,7 @@ schemas:
   - name: test
     type: DB_IN_ONE_SERVER
     defaultDN:
-      database: test
+      database: db1
       mysqlReplica: test
   - name: test2
     type: DB_IN_MULTI_SERVER
