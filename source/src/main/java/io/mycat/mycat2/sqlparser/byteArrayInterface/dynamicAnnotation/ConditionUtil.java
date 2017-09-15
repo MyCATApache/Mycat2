@@ -60,7 +60,7 @@ public class ConditionUtil {
         return "\nif(" + condition + "){\n" + body + "\n}\n";
     }
 
-    public final static String mappingKey(Map<String, String> i) {
+    public final static String mappingKeyInAndOr(Map<String, String> i) {
         String res = i.get("and");
         if (res != null) {
             return "and";
@@ -81,12 +81,20 @@ public class ConditionUtil {
         return "";
     }
 
-    public final static String mappingValue(Map<String, String> i) {
+    public final static<T> String mappingValue(Map<String, String> i) {
         if (i.size() != 1) {
             //todo 日志
             return "";
         } else {
             return i.values().iterator().next();
+        }
+    }
+    public final static String mappingKey(Map<String, String> i) {
+        if (i.size() != 1) {
+            //todo 日志
+            return "";
+        } else {
+            return i.keySet().iterator().next();
         }
     }
 }

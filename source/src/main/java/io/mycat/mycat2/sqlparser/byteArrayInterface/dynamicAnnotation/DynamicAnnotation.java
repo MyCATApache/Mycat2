@@ -63,7 +63,7 @@ public class DynamicAnnotation {
 
         Map<Boolean, List<Map<String, String>>> map =
                 conditionList.stream().collect(Collectors.partitioningBy((p) -> {
-                  String string = ConditionUtil.mappingKey(p).toUpperCase().trim();
+                  String string = ConditionUtil.mappingKeyInAndOr(p).toUpperCase().trim();
                   return "AND".equals(string);
                 }));
         Map<Boolean, List<String>> resMap = new HashMap<>();

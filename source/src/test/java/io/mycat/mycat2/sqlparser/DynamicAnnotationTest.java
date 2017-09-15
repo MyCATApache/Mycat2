@@ -3,13 +3,11 @@ package io.mycat.mycat2.sqlparser;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationRuntime;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationUtil;
 import junit.framework.TestCase;
-import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -28,7 +26,7 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test1() throws Exception {
-        test(ListOf("b = ? and c = ? and d = ? . ? and c = ?"),
+        test(listOf("b = ? and c = ? and d = ? . ? and c = ?"),
                 "b = 1 and c = 1 and d = a.b and c = 1");
     }
 
@@ -38,7 +36,7 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test2() throws Exception {
-        test(ListOf("b = ? and c = ? and d = ? . ? and c = ?","c = ?","d = ? . ?","b = 1"),
+        test(listOf("b = ? and c = ? and d = ? . ? and c = ?","c = ?","d = ? . ?","b = 1"),
                 "b = 1 and c = 1 and d = a.b and c = 1");
     }
 
@@ -48,7 +46,7 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test3() throws Exception {
-        test(ListOf("b = ? and c = ? and d = ? . ? and e = ?",
+        test(listOf("b = ? and c = ? and d = ? . ? and e = ?",
                 "d = ? . ? and e = ? and f = 1"),
                 "b = 1 and c = 1 and d = a.b and e = 1 and f = 1");
     }
@@ -58,7 +56,7 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test4() throws Exception {
-        test(ListOf("b = ? and c = ? and d = 4 and e = ?",
+        test(listOf("b = ? and c = ? and d = 4 and e = ?",
                 "d = ? and e = 1 and f = 1"),
                 "b = 1 and c = 1 and d = 4 and e = 1 and f = 1");
     }
@@ -68,7 +66,7 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test5() throws Exception {
-        test(ListOf("b = ? and c = ? and d = ? and e = 2",
+        test(listOf("b = ? and c = ? and d = ? and e = 2",
                 "d = 4 and e = ? and f = 1"),
                 "b = 1 and c = 1 and d = 4 and e = 2 and f = 1");
     }
@@ -79,7 +77,7 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test6() throws Exception {
-        test(ListOf("b = ? and c = ? and d = 4 and e = a . ?",
+        test(listOf("b = ? and c = ? and d = 4 and e = a . ?",
                 "d = ? and e = ? . ccc and f = 1"),
                 "b = 1 and c = 1 and d = 4 and e = a.ccc and f = 1");
     }
@@ -89,15 +87,26 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test7() throws Exception {
-        test(ListOf("b = ? and c = ? and d = s and d = x",
+        test(listOf("b = ? and c = ? and d = s and d = x",
                 "d = s and d = x and f = 1"),
                 "b = 1 and c = 1 and d = s and d = x and f = 1");
     }
     @Test
     public void test8() throws Exception {
-        test(ListOf("b = ? and c = ? and d = s and d = x",
+        test(listOf("b = ? and c = ? and d = s and d = x",
                 "d = s and d = x and f = 1","?  = ?"),
                 "b = 1 and c = 1 and d = s and d = x and f = 1");
+    }
+
+    /**
+     * 字符串测试
+     * @throws Exception
+     */
+    @Test
+    public void test9() throws Exception {
+        test(listOf("b = ? and c = \"haha\" and d = ? and d = x",
+                "d = \"ahah\" and d = x and f = 1","?  = ?"),
+                "b = 1 and c = \"haha\" and d = \"ahah\" and d = x and f = 1");
     }
     private void test(List<String> conList, String target) throws Exception {
         conList.stream().forEach(LOGGER::info);
@@ -113,7 +122,7 @@ public class DynamicAnnotationTest extends TestCase {
         runtime.testCallBackInfo(context);
     }
 
-    static List<String> ListOf(String... c) {
+    static List<String> listOf(String... c) {
         return Arrays.asList(c);
     }
 
