@@ -36,17 +36,20 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
         queryPacket.packetId = 0;
-        //隔离级别同步
+        
         queryPacket.sql = "";
-        if(mycatSession.isolation != mySQLSession.isolation){
-            queryPacket.sql += mycatSession.isolation.getCmd();
-            syncCmdNum++;
-        }
-        //提交方式同步
-        if(mycatSession.autoCommit != mySQLSession.autoCommit){
-            queryPacket.sql += mycatSession.autoCommit.getCmd();
-            syncCmdNum++;
-        }
+        if(!mySQLSession.getMySQLMetaBean().isSlaveNode()){
+        	//隔离级别同步
+        	if(mycatSession.isolation != mySQLSession.isolation){
+                queryPacket.sql += mycatSession.isolation.getCmd();
+                syncCmdNum++;
+            }
+            //提交方式同步
+            if(mycatSession.autoCommit != mySQLSession.autoCommit){
+                queryPacket.sql += mycatSession.autoCommit.getCmd();
+                syncCmdNum++;
+            }
+		}
         //字符集同步
         if (mycatSession.charSet.charsetIndex != mySQLSession.charSet.charsetIndex) {
             //字符集同步,直接取主节点的字符集映射
