@@ -24,16 +24,19 @@
 package io.mycat.mycat2.beans;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.beans.MySQLRepBean.RepSwitchTypeEnum;
+import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mycat2.beans.heartbeat.MySQLHeartbeat;
 import io.mycat.mycat2.tasks.BackendCharsetReadTask;
+import io.mycat.mycat2.tasks.BackendGetConnectionTask;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.TimeUtil;
@@ -44,7 +47,8 @@ import io.mycat.util.TimeUtil;
  */
 public class MySQLMetaBean {
 	
-	private static final int MAX_RETRY_COUNT = 5;
+	//默认的重试次数
+	private static final int MAX_RETRY_COUNT = 5;  
 	
 	private static final Logger logger = LoggerFactory.getLogger(MySQLMetaBean.class);
     private String hostName; 
@@ -60,7 +64,6 @@ public class MySQLMetaBean {
     private MySQLRepBean repBean;
     
 	private int maxRetryCount = MAX_RETRY_COUNT;  //重试次数
-
     
     private int slaveThreshold = -1;
 
@@ -71,12 +74,17 @@ public class MySQLMetaBean {
     /** charsetName 到 默认collationIndex 的映射 */
     public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
-    public void init(MySQLRepBean repBean) throws IOException {
+    public boolean init(MySQLRepBean repBean,long maxwaitTime) throws IOException {
+  	
+    	logger.info("init backend myqsl source ,create connections total " + minCon + " for " + hostName + " index :" + repBean.getWriteIndex());
+
     	this.repBean = repBean;
     	heartbeat = new MySQLHeartbeat(this,DBHeartbeat.OK_STATUS);
     	ProxyRuntime runtime = ProxyRuntime.INSTANCE;
         MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
+        CopyOnWriteArrayList<MySQLSession > list = new CopyOnWriteArrayList<MySQLSession >();
+        BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, minCon);
         for (int i = 0; i < minCon; i++) {
         	MycatReactorThread reactorThread = reactorThreads[i % reactorSize];
             reactorThread.addNIOJob(() -> {
@@ -87,18 +95,35 @@ public class MySQLMetaBean {
                             optSession.setDefaultChannelRead(this.isSlaveNode());
                             if (this.charsetLoaded == false) {
                                 this.charsetLoaded = true;
-                                BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this);
+                                BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this,getConTask);
                                 optSession.setCurNIOHandler(backendCharsetReadTask);
                                 backendCharsetReadTask.readCharset();
+                            }else{
+                            	getConTask.finished(optSession,sender,exeSucces,retVal);
                             }
                             optSession.change2ReadOpts();
                             reactorThread.addMySQLSession(this, optSession);
+                        }else{
+                        	getConTask.finished(optSession,sender,exeSucces,retVal);
                         }
                     });
                 } catch (IOException ignore) {
                 }
             });
         }
+        
+        long timeOut = System.currentTimeMillis() + maxwaitTime;
+
+		// waiting for finish
+		while (!getConTask.finished() && (System.currentTimeMillis() < timeOut)) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				logger.error("initError", e);
+			}
+		}
+		logger.info("init result : {}",getConTask.getStatusInfo());
+		return !list.isEmpty();
     }
     
 	public void doHeartbeat() {
@@ -114,59 +139,15 @@ public class MySQLMetaBean {
 		}
 	}
 	
-    public void switchMysqlRepIfNeed(){
-		if (repBean.getSwitchType() == RepSwitchTypeEnum.NOT_SWITCH) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("not switch datasource ,for switchType is {}",RepSwitchTypeEnum.NOT_SWITCH.name());
-			}
-			return;
-		}
-		
-//		int curDatasourceHB = heartbeat.getStatus();
-//		// read node can't switch ,only write node can switch
-//		if (pool.getWriteType() == PhysicalDBPool.WRITE_ONLYONE_NODE
-//				&& !source.isReadNode()
-//				&& curDatasourceHB != DBHeartbeat.OK_STATUS
-//				&& pool.getSources().length > 1) {
-//			synchronized (pool) {
-//				// try to see if need switch datasource
-//				curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
-//				if (curDatasourceHB != DBHeartbeat.INIT_STATUS && curDatasourceHB != DBHeartbeat.OK_STATUS) {
-//					int curIndex = pool.getActivedIndex();
-//					int nextId = pool.next(curIndex);
-//					PhysicalDatasource[] allWriteNodes = pool.getSources();
-//					while (true) {
-//						if (nextId == curIndex) {
-//							break;
-//						}
-//						PhysicalDatasource theSource = allWriteNodes[nextId];
-//						DBHeartbeat theSourceHB = theSource.getHeartbeat();
-//						int theSourceHBStatus = theSourceHB.getStatus();
-//						if (theSourceHBStatus == DBHeartbeat.OK_STATUS) {
-//							if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
-//								if (Integer.valueOf(0).equals( theSourceHB.getSlaveBehindMaster())) {
-//									LOGGER.info("try to switch datasource ,slave is synchronized to master " + theSource.getConfig());
-//									pool.switchSource(nextId, true, reason);
-//									break;
-//								} else {
-//									LOGGER.warn("ignored  datasource ,slave is not  synchronized to master , slave behind master :"
-//											+ theSourceHB.getSlaveBehindMaster()
-//											+ " " + theSource.getConfig());
-//								}
-//							} else {
-//								// normal switch
-//								LOGGER.info("try to switch datasource ,not checked slave synchronize status " + theSource.getConfig());
-//								pool.switchSource(nextId, true, reason);
-//                                break;
-//							}
-//
-//						}
-//						nextId = pool.next(nextId);
-//					}
-//				}
-//			}
-//		}
-    }
+	/**
+	 * 清理旧
+	 * @param reason
+	 */
+	public void clearCons(String reason) {
+		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
+		Arrays.stream(reactorThreads).forEach(f->f.clearMySQLMetaBeanSession(this,reason));
+	}
 	
 	/**
 	 * 检查当前是否可用

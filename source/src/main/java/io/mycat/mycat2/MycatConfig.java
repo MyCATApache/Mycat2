@@ -30,6 +30,8 @@ public class MycatConfig extends ProxyConfig {
 	// sql execute timeout (second)
 	private long sqlExecuteTimeout = 300;
 	private long processorCheckPeriod;
+	
+	private long minSwitchtimeInterval = 30 * 60 * 1000L;  //默认三十分钟
 
 	/**
 	 * 系统中所有MySQLRepBean的Map
@@ -135,5 +137,13 @@ public class MycatConfig extends ProxyConfig {
 
 	public void setReplicaHeartbeatPeriod(long replicaHeartbeatPeriod) {
 		this.replicaHeartbeatPeriod = replicaHeartbeatPeriod;
+	}
+
+	public long getMinSwitchtimeInterval() {
+		return minSwitchtimeInterval;
+	}
+
+	public void setMinSwitchtimeInterval(long minSwitchtimeInterval) {
+		this.minSwitchtimeInterval = minSwitchtimeInterval;
 	}
 }

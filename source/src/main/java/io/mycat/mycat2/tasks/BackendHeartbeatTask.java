@@ -172,6 +172,12 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 			return;
 		}
 		
+		//配置双主时, 主一挂掉,主二 承接过来时,复制状态有可能还没有调整.这里暂时不检查切换过来的主的状态.
+		if(!metaBean.isSlaveNode()){
+			detector.getHeartbeat().setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
+			detector.getHeartbeat().setResult(DBHeartbeat.OK_STATUS, detector,  null);
+		}
+		
 		byte[] slave_io = result.get(Slave_IO_Running_str);
 		if(slave_io!=null
 				&& Arrays.equals(YES,slave_io)

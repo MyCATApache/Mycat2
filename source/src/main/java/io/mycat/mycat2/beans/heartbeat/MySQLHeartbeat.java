@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.proxy.ProxyRuntime;
 
 /**
  * @author mycat
@@ -201,6 +202,14 @@ public class MySQLHeartbeat extends DBHeartbeat {
 			if(!source.isSlaveNode()){
 				//TODO  写节点 尝试多次次失败后, 需要通知集群
 				System.err.println("TODO 主节点尝试多次失败后，通知集群");
+				int next = source.getRepBean().getNextIndex();
+				if(next==-1){
+					System.err.println(" 所有的 节点都不可用,无法进行切换  ");
+					logger.error("all metaBean in replica is invalid !!!");
+				}else{
+					ProxyRuntime.INSTANCE.stopHeartBeatScheduler();
+					ProxyRuntime.INSTANCE.startSwitchDataSource(source.getRepBean().getName(), next);
+				}
 			}else{
 				logger.error(msg);
 			}

@@ -37,6 +37,13 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 		super(bufPool);
 	}
 	
+	public void clearMySQLMetaBeanSession(MySQLMetaBean mySQLMetaBean,String reason){
+		LinkedList<MycatSession> sessions = getAllSessions();
+		if(sessions!=null){
+			sessions.stream().forEach(f->f.unbindBackend(mySQLMetaBean, reason));
+		}
+	}
+	
 	public void addMySQLSession(MySQLMetaBean mySQLMetaBean, MySQLSession mySQLSession) {
 		LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLMetaBean);
 		if (mySQLSessionList == null) {
@@ -73,8 +80,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 			return;
 		}
 		try {
-			BackendConCreateTask authProcessor = new BackendConCreateTask(bufPool, selector, mySQLMetaBean, schema);
-			authProcessor.setCallback(callBack);
+			new BackendConCreateTask(bufPool, selector, mySQLMetaBean, schema,callBack);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -102,9 +108,12 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
                 .filter(session -> session != null).findFirst().orElse(null);
         if (mysqlSession != null) {
         	if (logger.isDebugEnabled()) {
-    			logger.debug("Use reactor cached backend connections for {}.{}:{}",(runOnSlave ? "read" : "write"),mysqlSession.getMySQLMetaBean().getIp(),mysqlSession.getMySQLMetaBean().getPort());
+    			logger.debug("Use reactor cached backend connections for {}.{}:{}",
+    					(runOnSlave ? "read" : "write"),
+    					mysqlSession.getMySQLMetaBean().getIp(),
+    					mysqlSession.getMySQLMetaBean().getPort());
     		}
-            mysqlSession.unbindMycatSession();
+            mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
             currMycatSession.bindBackend(mysqlSession);
             syncAndExecute(mysqlSession,callback);
             return;
@@ -117,7 +126,10 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 			mysqlSession = mySQLSessionList.removeLast();
 			if(mysqlSession!=null){
 				if(logger.isDebugEnabled()){
-					logger.debug("Using the existing session in the datasource  for {}. {}:{}",(runOnSlave ? "read" : "write"),mysqlSession.getMySQLMetaBean().getIp(),mysqlSession.getMySQLMetaBean().getPort());
+					logger.debug("Using the existing session in the datasource  for {}. {}:{}",
+							(runOnSlave ? "read" : "write"),
+							mysqlSession.getMySQLMetaBean().getIp(),
+							mysqlSession.getMySQLMetaBean().getPort());
 				}
 				currMycatSession.bindBackend(mysqlSession);
 				syncAndExecute(mysqlSession,callback);
@@ -140,6 +152,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 				optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 				currMycatSession.bindBackend(optSession);
 				syncAndExecute(optSession,callback);
+				addMySQLSession(targetMetaBean, optSession); //新创建的连接加入到当前reactor 中
 			} else {
 				ErrorPacket error = new ErrorPacket();
 	            error.errno = ErrorCode.ER_UNKNOWN_ERROR;
@@ -259,16 +272,4 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 			}
 		}
 	}
-		
-//	public MySQLMetaBean getDatasource(boolean runOnSlave,SchemaBean schemaBean) {
-//		MycatConfig mycatConf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-//		if (schemaBean == null) {
-//			schemaBean = mycatConf.getDefaultMycatSchema();
-//		}
-//		DNBean dnBean = schemaBean.getDefaultDN();
-//		String replica = dnBean.getMysqlReplica();
-//		MySQLRepBean repSet = mycatConf.getMySQLRepBean(replica);
-//		
-//		return repSet.getBalanceMetaBean(runOnSlave);
-//	}
 }

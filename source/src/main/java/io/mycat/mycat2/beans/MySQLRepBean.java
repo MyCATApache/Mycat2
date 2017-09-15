@@ -23,16 +23,19 @@
  */
 package io.mycat.mycat2.beans;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.MySQLRepBean.BalanceTypeEnum;
+import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mysql.Alarms;
 import io.mycat.proxy.ProxyRuntime;
 
@@ -47,7 +50,6 @@ public class MySQLRepBean {
 	
 	private final static String SINGLENODE_hearbeatSQL = "select 1";
 	private final static String MASTER_SLAVE_hearbeatSQL = "show slave status";
-	private final static String MASTER_SLAVE_GTID_hearbeatSQL = "show slave status";
 	private final static String GARELA_CLUSTER_hearbeatSQL = "show status like 'wsrep%'";
 	private final static String GROUP_REPLICATION_hearbeatSQL = "show slave status";
 	
@@ -116,15 +118,22 @@ public class MySQLRepBean {
     
     private MySQLMetaBean writeMetaBean;
     private List<MySQLMetaBean> readMetaBeans = new ArrayList<>();
+    protected final ReentrantLock switchLock = new ReentrantLock();
+    public AtomicBoolean switchResult = new AtomicBoolean();
 
-    private int writeIndex = 0; //主节点默认为0
+    private volatile int writeIndex = 0; //主节点默认为0
+    private long lastSwitchTime;
 	
     public void initMaster() {
         // 根据配置replica-index的配置文件修改主节点
         MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+        lastSwitchTime = System.currentTimeMillis() - conf.getMinSwitchtimeInterval();
+        
         Integer repIndex = conf.getRepIndex(name);
-        if (repIndex != null) {
+        if (repIndex != null&&checkIndex(repIndex)) {
             writeIndex = repIndex;
+        }else{
+        	writeIndex = 0;
         }
         writeMetaBean = mysqls.get(writeIndex);
         writeMetaBean.setSlaveNode(false);
@@ -183,6 +192,101 @@ public class MySQLRepBean {
     public void setMysqls(List<MySQLMetaBean> mysqls) {
         this.mysqls = mysqls;
     }
+    
+    private boolean checkIndex(int newIndex){
+    	return newIndex >= 0 && newIndex < mysqls.size();
+    }
+    
+    public int getNextIndex(){    	
+    	MySQLMetaBean metaBean = mysqls.stream().skip(writeIndex+1).findFirst().orElse(null);
+    	if(metaBean!=null){
+    		return mysqls.indexOf(metaBean);
+    	}else{
+    		metaBean = mysqls.stream().limit(writeIndex).findFirst().orElse(null);
+    		if(metaBean!=null){
+    			return mysqls.indexOf(metaBean);
+    		}
+    	}
+    	return -1;
+    }
+    
+	public void switchSource(int newIndex,long maxwaittime) {
+		
+		MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+		
+		if((System.currentTimeMillis() - lastSwitchTime) < conf.getMinSwitchtimeInterval()){
+			if (logger.isDebugEnabled()) {
+				logger.warn("the Minimum time interval for switchSource is {} seconds.",conf.getMinSwitchtimeInterval()/1000L);
+			}
+			
+			switchResult.set(false);
+			return;
+		}
+		
+		if (getSwitchType() == RepSwitchTypeEnum.NOT_SWITCH) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("not switch datasource ,for switchType is {}",RepSwitchTypeEnum.NOT_SWITCH.name());
+			}
+			
+			switchResult.set(false);
+			return;
+		}
+		
+		if(!checkIndex(newIndex)){
+			if (logger.isDebugEnabled()) {
+				logger.debug("not switch datasource ,writeIndex > mysqls.size () ");
+			}
+			switchResult.set(false);
+			return;
+		}
+		
+		
+		final ReentrantLock lock = this.switchLock;
+		lock.lock();
+		
+		try {
+			switchResult.set(false);
+
+			int current = writeIndex;
+			if (current != newIndex) {
+				
+				String reason = "switch datasource";
+
+				// init again
+				MySQLMetaBean newWriteBean = mysqls.get(newIndex);
+				
+				newWriteBean.init(this,maxwaittime);
+				
+				// clear all connections
+				MySQLMetaBean oldMetaBean = mysqls.get(current);
+				
+				oldMetaBean.clearCons(reason);
+				// write log
+				logger.warn(switchMessage(current, newIndex, reason));
+				
+				switchResult.set(true);
+				
+				// switch index
+				writeIndex = newIndex;
+				oldMetaBean.setSlaveNode(true);
+				newWriteBean.setSlaveNode(false);
+				
+				lastSwitchTime = System.currentTimeMillis();
+			}
+		}catch (IOException e) {
+			e.printStackTrace();
+			switchResult.set(false);
+		}finally {
+			lock.unlock();
+		}
+	}
+	
+	private String switchMessage(int current, int newIndex, String reason) {
+		StringBuilder s = new StringBuilder();
+		s.append("[Host=").append(name).append(",result=[").append(current).append("->");
+		s.append(newIndex).append("],reason=").append(reason).append(']');
+		return s.toString();
+	}
 
     /**
      * 得到当前用于写的MySQLMetaBean
@@ -269,10 +373,6 @@ public class MySQLRepBean {
 		this.writeMetaBean = writeMetaBean;
 	}
 
-	public void setReadMetaBeans(List<MySQLMetaBean> readMetaBeans) {
-		this.readMetaBeans = readMetaBeans;
-	}
-
 
 	public BalanceTypeEnum getBalance() {
 		return balance;
@@ -281,5 +381,17 @@ public class MySQLRepBean {
 
 	public void setBalance(BalanceTypeEnum balance) {
 		this.balance = balance;
+	}
+
+	public int getWriteIndex() {
+		return writeIndex;
+	}
+
+	public AtomicBoolean getSwitchResult() {
+		return switchResult;
+	}
+
+	public void setSwitchResult(boolean flag) {
+		this.switchResult.set(flag);
 	}
 }

@@ -7,7 +7,6 @@ package io.mycat.proxy;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.StringJoiner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -15,7 +14,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.proxy.man.AdminCommandResovler;
@@ -24,6 +30,8 @@ import io.mycat.proxy.man.MyCluster;
 import io.mycat.util.TimeUtil;
 
 public class ProxyRuntime {
+	
+	private static final Logger logger = LoggerFactory.getLogger(ProxyRuntime.class);
 	
 	/*
 	 * 时间更新周期
@@ -49,12 +57,15 @@ public class ProxyRuntime {
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
 	private NameableExecutor businessExecutor;
+	private ListeningExecutorService listeningExecutorService;
 	
 
 
 	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
 	private ScheduledExecutorService heartbeatScheduler;
+	
+	public  long maxdataSourceInitTime = 60 * 1000L;
 	
 	
 	/**
@@ -76,6 +87,7 @@ public class ProxyRuntime {
 		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
 		timerExecutor = ExecutorUtil.create("Timer", ((MycatConfig)getProxyConfig()).getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
+		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 		startUpdateTimeTask();
 		startHeartBeatScheduler();
 	}
@@ -91,13 +103,10 @@ public class ProxyRuntime {
 	}
 	
 	public void startUpdateTimeTask(){
-		if(heartBeatTasks.get(TIME_UPDATE_TASK)==null){
-			heartBeatTasks.put(TIME_UPDATE_TASK,
-					heartbeatScheduler.scheduleAtFixedRate(updateTime(),
-														   0L, 
-														   TIME_UPDATE_PERIOD,
-														   TimeUnit.MILLISECONDS));
-		}
+		heartbeatScheduler.scheduleAtFixedRate(updateTime(),
+											   0L, 
+											   TIME_UPDATE_PERIOD,
+											   TimeUnit.MILLISECONDS);
 	}
 	
 	/**
@@ -118,20 +127,33 @@ public class ProxyRuntime {
 	 * 切换 metaBean 名称
 	 * @param metaBean
 	 */
-	public void startSwitchDataSource(String metaBean){
-		businessExecutor.execute(()->{
-			MycatConfig config = (MycatConfig) getProxyConfig();
-			ProxyReactorThread<?> reactor  = getReactorThreads()[ThreadLocalRandom.current().nextInt(getReactorThreads().length)];
-			reactor.addNIOJob(()->{
-				config.getMySQLReplicaSet()
-					  .stream()
-					  .flatMap(f->f.getMysqls().stream())
-					  .filter(f->new StringJoiner("-").add(f.getHostName()).add(f.getIp()).add(f.getPort()+"").equals(metaBean))
-					  .findFirst()
-					  .orElse(null)
-					  .switchMysqlRepIfNeed();
+	public void startSwitchDataSource(String replBean,Integer writeIndex){
+		
+		System.err.println("TODO 收到集群切换 请求，开始切换");
+		
+		MycatConfig config = (MycatConfig) getProxyConfig();
+		MySQLRepBean repBean = config.getMySQLReplicaSet()
+		  .stream().filter(f->f.getName().equals(replBean))
+		  .findFirst().orElse(null);
+		
+		if(repBean!=null){
+			businessExecutor.execute(()->{
+				
+				repBean.setSwitchResult(false);
+				repBean.switchSource(writeIndex,maxdataSourceInitTime);
+				
+				if(repBean.getSwitchResult().get()){
+					//TODO 切换成功. 通知集群
+					logger.info("switch datasource success");
+					System.err.println("switch datasource success");
+					startHeartBeatScheduler();
+				}else{
+					System.err.println("switch datasource error");
+					logger.error("switch datasource error");
+					//TODO 切换失败. 通知集群
+				}
 			});
-		});
+		}	
 	}
 	
 	/**
@@ -139,6 +161,7 @@ public class ProxyRuntime {
 	 */
 	public void stopHeartBeatScheduler(){
 		heartBeatTasks.values().stream().forEach(f->f.cancel(false));
+		heartBeatTasks.clear();
 	}
 	
 	// 系统时间定时更新任务
