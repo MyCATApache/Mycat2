@@ -94,6 +94,10 @@ public class ProxyConfig {
 		return oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion;
 	}
 
+	public int getNextConfigVersion(byte configKey) {
+		return getConfigVersion(configKey) + 1;
+	}
+
 	public Object getConfig(byte configKey) {
 		return configMap.get(configKey);
 	}

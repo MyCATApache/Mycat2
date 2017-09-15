@@ -4,22 +4,22 @@ import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.man.ManagePacket;
 
 /**
- * Desc: 主节点向从节点发送配置详情信息
+ * Desc: 当主从切换和配置更新时，主节点向从节点发送prepare报文
  *
  * @date: 11/09/2017
  * @author: gaozhiwen
  */
-public class ConfigResPacket extends ManagePacket {
+public class ConfigPreparePacket extends ManagePacket {
     private byte confType;
     private int confVersion;
     private String confContent;
 
-    public ConfigResPacket() {
-        super(ManagePacket.PKG_CONFIG_RES);
+    public ConfigPreparePacket() {
+        super(ManagePacket.PKG_CONFIG_PREPARE);
     }
 
-    public ConfigResPacket(byte confType, int confVersion, String confContent) {
-        super(ManagePacket.PKG_CONFIG_RES);
+    public ConfigPreparePacket(byte confType, int confVersion, String confContent) {
+        super(ManagePacket.PKG_CONFIG_PREPARE);
         this.confType = confType;
         this.confVersion = confVersion;
         this.confContent = confContent;

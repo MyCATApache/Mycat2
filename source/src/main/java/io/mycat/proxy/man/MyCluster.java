@@ -56,6 +56,7 @@ public class MyCluster {
 	private ClusterState clusterState = ClusterState.Joining;
 	private long lastClusterStateTime;
 	private final Selector nioSelector;
+	public int needCommitCount;
 
 	public MyCluster(Selector nioSelector, String myNodeId, ArrayList<ClusterNode> allClusterNodes) {
 		this.nioSelector = nioSelector;
@@ -164,7 +165,6 @@ public class MyCluster {
 					logger.warn("notify node err " + nodeSession.getNodeId(),e);
 				}
 			}
-
 		}
 	}
 
@@ -311,5 +311,4 @@ public class MyCluster {
 		this.clusterState = clusterState;
 		this.lastClusterStateTime = System.currentTimeMillis();
 	}
-
 }

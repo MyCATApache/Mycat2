@@ -45,11 +45,11 @@ public class ConfigLoader {
      */
     public void loadReplicaIndex(MycatConfig conf) throws IOException {
         // 加载replica-index
-        Integer repVersion = YamlUtil.archive(ConfigEnum.REPLICA_INDEX.getFileName(), conf.getConfigVersion(ConfigEnum.REPLICA_INDEX.getCode()));
+        Integer repVersion = YamlUtil.archive(ConfigEnum.REPLICA_INDEX.getFileName(), conf.getConfigVersion(ConfigEnum.REPLICA_INDEX.getType()));
         LOGGER.debug("load config for {}", ConfigEnum.REPLICA_INDEX.getFileName());
         ReplicaIndexBean replicaIndexBean = YamlUtil.load(ConfigEnum.REPLICA_INDEX.getFileName(), ReplicaIndexBean.class);
         conf.addRepIndex(replicaIndexBean);
-        conf.putConfig(ConfigEnum.REPLICA_INDEX.getCode(), replicaIndexBean, repVersion);
+        conf.putConfig(ConfigEnum.REPLICA_INDEX.getType(), replicaIndexBean, repVersion);
     }
 
     /**
@@ -57,11 +57,11 @@ public class ConfigLoader {
      */
     public void loadDatasource(MycatConfig conf) throws IOException {
         // 加载datasource
-        Integer dsVersion = YamlUtil.archive(ConfigEnum.DATASOURCE.getFileName(), conf.getConfigVersion(ConfigEnum.DATASOURCE.getCode()));
+        Integer dsVersion = YamlUtil.archive(ConfigEnum.DATASOURCE.getFileName(), conf.getConfigVersion(ConfigEnum.DATASOURCE.getType()));
         LOGGER.debug("load config for {}", ConfigEnum.DATASOURCE.getFileName());
         ReplicaConfBean replicaConfBean = YamlUtil.load(ConfigEnum.DATASOURCE.getFileName(), ReplicaConfBean.class);
         replicaConfBean.getMysqlReplicas().forEach(replicaBean -> conf.addMySQLRepBean(replicaBean));
-        conf.putConfig(ConfigEnum.DATASOURCE.getCode(), replicaConfBean, dsVersion);
+        conf.putConfig(ConfigEnum.DATASOURCE.getType(), replicaConfBean, dsVersion);
     }
 
     /**
@@ -69,10 +69,10 @@ public class ConfigLoader {
      */
     public void loadSchema(MycatConfig conf) throws IOException {
         // 加载schema
-        Integer schemaVersion = YamlUtil.archive(ConfigEnum.SCHEMA.getFileName(), conf.getConfigVersion(ConfigEnum.SCHEMA.getCode()));
+        Integer schemaVersion = YamlUtil.archive(ConfigEnum.SCHEMA.getFileName(), conf.getConfigVersion(ConfigEnum.SCHEMA.getType()));
         LOGGER.debug("load config for {}", ConfigEnum.SCHEMA.getFileName());
         SchemaConfBean schemaConfBean = YamlUtil.load(ConfigEnum.SCHEMA.getFileName(), SchemaConfBean.class);
         schemaConfBean.getSchemas().forEach(schemaBean -> conf.addSchemaBean(schemaBean));
-        conf.putConfig(ConfigEnum.SCHEMA.getCode(), schemaConfBean, schemaVersion);
+        conf.putConfig(ConfigEnum.SCHEMA.getType(), schemaConfBean, schemaVersion);
     }
 }

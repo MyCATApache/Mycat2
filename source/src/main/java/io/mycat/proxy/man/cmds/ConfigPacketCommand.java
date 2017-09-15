@@ -2,7 +2,6 @@ package io.mycat.proxy.man.cmds;
 
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.ProxyStarter;
-import io.mycat.mycat2.beans.ReplicaIndexBean;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyConfig;
 import io.mycat.proxy.ProxyRuntime;
@@ -31,22 +30,23 @@ public class ConfigPacketCommand implements AdminCommand {
     @Override
     public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
         if (cmdType == ManagePacket.PKG_CONFIG_VERSION_REQ) {
-            // 主节点处理从节点发送来的配置文件版本报文
             handleConfigVersionReq(session);
         } else if (cmdType == ManagePacket.PKG_CONFIG_VERSION_RES) {
-            // 从节点处理主节点发送来的配置文件版本报文
             handleConfigVersionRes(session);
         } else if (cmdType == ManagePacket.PKG_CONFIG_REQ) {
-            // 主节点处理从节点的配置获取报文
             handleConfigReq(session);
         } else if (cmdType == ManagePacket.PKG_CONFIG_RES) {
-            // 从节点处理主节点发送的配置报文
             handleConfigRes(session);
         } else {
             LOGGER.warn("Maybe Bug, Leader us want you to fix it ");
         }
     }
 
+    /**
+     * 主节点处理从节点发送来的配置文件版本报文
+     * @param session
+     * @throws IOException
+     */
     private void handleConfigVersionReq(AdminSession session) throws IOException {
         LOGGER.debug("receive config version request package from {}", session.getNodeId());
         MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
@@ -62,6 +62,11 @@ public class ConfigPacketCommand implements AdminCommand {
         session.answerClientNow(versionResPacket);
     }
 
+    /**
+     * 从节点处理主节点发送来的配置文件版本报文
+     * @param session
+     * @throws IOException
+     */
     private void handleConfigVersionRes(AdminSession session) throws IOException {
         LOGGER.debug("receive config version response package from {}", session.getNodeId());
         ConfigVersionResPacket respPacket = new ConfigVersionResPacket();
@@ -94,6 +99,11 @@ public class ConfigPacketCommand implements AdminCommand {
         session.confCount = count;
     }
 
+    /**
+     * 主节点处理从节点的配置获取报文
+     * @param session
+     * @throws IOException
+     */
     private void handleConfigReq(AdminSession session) throws IOException {
         LOGGER.debug("receive config request packet from {}", session.getNodeId());
         ProxyConfig conf = ProxyRuntime.INSTANCE.getProxyConfig();
@@ -108,7 +118,7 @@ public class ConfigPacketCommand implements AdminCommand {
                 LOGGER.warn("config type is error: {}", type);
                 continue;
             }
-            byte confType = configEnum.getCode();
+            byte confType = configEnum.getType();
             int confVersion = conf.getConfigVersion(confType);
             String confMsg = YamlUtil.dump(conf.getConfig(confType));
             ConfigResPacket resPacket = new ConfigResPacket(confType, confVersion, confMsg);
@@ -116,6 +126,11 @@ public class ConfigPacketCommand implements AdminCommand {
         }
     }
 
+    /**
+     * 从节点处理主节点发送的配置报文
+     * @param session
+     * @throws IOException
+     */
     private void handleConfigRes(AdminSession session) throws IOException {
         LOGGER.debug("receive config response packet from {}", session.getNodeId());
         ConfigResPacket resPacket = new ConfigResPacket();
@@ -126,7 +141,7 @@ public class ConfigPacketCommand implements AdminCommand {
             LOGGER.warn("config type is error: {}", resPacket.getConfType());
             return;
         }
-        YamlUtil.dumpToFile(configEnum.getFileName() + "-" + resPacket.getConfVersion(), resPacket.getConfMessage());
+        YamlUtil.dumpToFile(configEnum.getFileName() + "-" + resPacket.getConfVersion(), resPacket.getConfContent());
         if (--session.confCount == 0) {
             LOGGER.debug("receive config from leader over, start to load");
             ProxyStarter.INSTANCE.startProxy();
