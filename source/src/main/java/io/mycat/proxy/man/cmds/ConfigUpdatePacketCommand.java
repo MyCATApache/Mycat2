@@ -42,16 +42,9 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         }
     }
 
-    public void sendPreparePacket(String repName, int newIndex) throws IOException {
-        ConfigEnum configEnum = ConfigEnum.REPLICA_INDEX;
-        byte type = configEnum.getType();
-
-        // 更新replica-index信息
+    public void sendPreparePacket(ConfigEnum configEnum, Object bean) {
         MycatConfig config = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-        ReplicaIndexBean bean = new ReplicaIndexBean();
-        Map<String, Integer> map = new HashMap<>(config.getRepIndexMap());
-        map.put(repName, newIndex);
-        bean.setReplicaIndexes(map);
+        byte type = configEnum.getType();
 
         // 获取新版本
         int nextRepIndexVersion = config.getNextConfigVersion(type);

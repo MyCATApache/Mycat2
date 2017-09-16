@@ -2,6 +2,9 @@ package io.mycat.util;
 
 import io.mycat.mycat2.ConfigLoader;
 import io.mycat.mycat2.beans.ReplicaConfBean;
+import io.mycat.proxy.ProxyRuntime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.nodes.Tag;
@@ -23,6 +26,7 @@ import java.util.stream.Stream;
  * @author: gaozhiwen
  */
 public class YamlUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(YamlUtil.class);
     private static String ROOT_PATH;
 
     static {
@@ -61,11 +65,15 @@ public class YamlUtil {
         return str;
     }
 
-    public static void dumpToFile(String path, String content) throws IOException {
-        Path file = Paths.get(ROOT_PATH + ConfigLoader.DIR_PREPARE + path);
-        try (FileWriter writer = new FileWriter(file.toString())) {
-            writer.write(content);
-        }
+    public static void dumpToFile(String path, String content) {
+        ProxyRuntime.INSTANCE.addBusinessJob(() -> {
+            Path file = Paths.get(ROOT_PATH + ConfigLoader.DIR_PREPARE + path);
+            try (FileWriter writer = new FileWriter(file.toString())) {
+                writer.write(content);
+            } catch (IOException e) {
+                LOGGER.error("error to write content: {} to path: {}", content, path, e);
+            }
+        });
     }
 
     /**

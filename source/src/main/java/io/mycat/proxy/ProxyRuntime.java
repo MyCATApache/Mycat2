@@ -1,10 +1,10 @@
 package io.mycat.proxy;
+
 /**
  * 运行时环境，单例方式访问
  * @author wuzhihui
  *
  */
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -14,6 +14,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,16 +60,13 @@ public class ProxyRuntime {
 	private static final ScheduledExecutorService schedulerService;
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
-	
-
 
 	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
 	private ScheduledExecutorService heartbeatScheduler;
 	
 	public  long maxdataSourceInitTime = 60 * 1000L;
-	
-	
+
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -122,22 +121,23 @@ public class ProxyRuntime {
 														  TimeUnit.MILLISECONDS));
 		}
 	}
+
+	public void addBusinessJob(Runnable runnable) {
+		businessExecutor.execute(runnable);
+	}
 	
 	/**
 	 * 切换 metaBean 名称
-	 * @param metaBean
 	 */
 	public void startSwitchDataSource(String replBean,Integer writeIndex){
 		
 		System.err.println("TODO 收到集群切换 请求，开始切换");
 		
 		MycatConfig config = (MycatConfig) getProxyConfig();
-		MySQLRepBean repBean = config.getMySQLReplicaSet()
-		  .stream().filter(f->f.getName().equals(replBean))
-		  .findFirst().orElse(null);
+		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
 		
 		if(repBean!=null){
-			businessExecutor.execute(()->{
+			addBusinessJob(()->{
 				
 				repBean.setSwitchResult(false);
 				repBean.switchSource(writeIndex,maxdataSourceInitTime);
@@ -147,6 +147,17 @@ public class ProxyRuntime {
 					logger.info("switch datasource success");
 					System.err.println("switch datasource success");
 					startHeartBeatScheduler();
+
+					if (ProxyRuntime.INSTANCE.getProxyConfig().isClusterEnable()) {
+						ReplicaIndexBean bean = new ReplicaIndexBean();
+						Map<String, Integer> map = new HashMap<>(config.getRepIndexMap());
+						map.put(replBean, writeIndex);
+						bean.setReplicaIndexes(map);
+						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean);
+					} else {
+						// 非集群下直接更新replica-index信息
+						config.getRepIndexMap().put(replBean, writeIndex);
+					}
 				}else{
 					System.err.println("switch datasource error");
 					logger.error("switch datasource error");
