@@ -505,6 +505,14 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals("tbl_A", context.getTableName(0));
     }
 
+    @Test
+    public void testCustomSQL() throws Exception {
+        String sql = "SELECT DATABASE()";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+        // assertEquals("sbtest1", context.getTableName(0));
+    }
+
     private static final String sql1 = "select t3.*,ztd3.TypeDetailName as UseStateName\n" +
             "from\n" +
             "( \n" +
