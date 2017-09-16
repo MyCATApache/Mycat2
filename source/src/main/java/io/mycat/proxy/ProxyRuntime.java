@@ -24,15 +24,19 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
+import io.mycat.mycat2.loadbalance.LBSession;
+import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
+import io.mycat.mycat2.loadbalance.LoadChecker;
+import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
 import io.mycat.util.TimeUtil;
 
 public class ProxyRuntime {
-	
+
 	private static final Logger logger = LoggerFactory.getLogger(ProxyRuntime.class);
-	
+
 	/*
 	 * 时间更新周期
 	 */
@@ -41,7 +45,7 @@ public class ProxyRuntime {
 	private static final String PROCESSOR_CHECK    = "PROCESSOR_CHECK";
 	private static final String REPLICA_ILDE_CHECK = "REPLICA_ILDE_CHECK";
 	private static final String REPLICA_HEARTBEAT  = "REPLICA_HEARTBEAT";
-	
+
 	private ProxyConfig proxyConfig;
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
@@ -54,20 +58,27 @@ public class ProxyRuntime {
 	private SessionManager<?> sessionManager;
 	// 用于管理端口的Session会话管理
 	private SessionManager<AdminSession> adminSessionManager;
+	private SessionManager<ProxySession> proxySessionSessionManager;
+	private SessionManager<LBSession> lbSessionSessionManager;
+
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
+	//本地负载状态检查
+	private LoadChecker localLoadChecker;
+	private LoadBalanceStrategy loadBalanceStrategy;
+
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
-	
+
 
 
 	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
 	private ScheduledExecutorService heartbeatScheduler;
-	
+
 	public  long maxdataSourceInitTime = 60 * 1000L;
-	
-	
+
+
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -91,7 +102,7 @@ public class ProxyRuntime {
 		startUpdateTimeTask();
 		startHeartBeatScheduler();
 	}
-	
+
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
 		// 找到一个可用的NIO Reactor Thread，交付托管
 		if (reactorEnv.counter++ == Integer.MAX_VALUE) {
@@ -101,14 +112,14 @@ public class ProxyRuntime {
 		// 获取一个reactor对象
 		return ProxyRuntime.INSTANCE.getReactorThreads()[index];
 	}
-	
+
 	public void startUpdateTimeTask(){
 		heartbeatScheduler.scheduleAtFixedRate(updateTime(),
-											   0L, 
+											   0L,
 											   TIME_UPDATE_PERIOD,
 											   TimeUnit.MILLISECONDS);
 	}
-	
+
 	/**
 	 * 启动心跳检测任务
 	 */
@@ -122,26 +133,26 @@ public class ProxyRuntime {
 														  TimeUnit.MILLISECONDS));
 		}
 	}
-	
+
 	/**
 	 * 切换 metaBean 名称
 	 * @param metaBean
 	 */
 	public void startSwitchDataSource(String replBean,Integer writeIndex){
-		
+
 		System.err.println("TODO 收到集群切换 请求，开始切换");
-		
+
 		MycatConfig config = (MycatConfig) getProxyConfig();
 		MySQLRepBean repBean = config.getMySQLReplicaSet()
 		  .stream().filter(f->f.getName().equals(replBean))
 		  .findFirst().orElse(null);
-		
+
 		if(repBean!=null){
 			businessExecutor.execute(()->{
-				
+
 				repBean.setSwitchResult(false);
 				repBean.switchSource(writeIndex,maxdataSourceInitTime);
-				
+
 				if(repBean.getSwitchResult().get()){
 					//TODO 切换成功. 通知集群
 					logger.info("switch datasource success");
@@ -153,9 +164,9 @@ public class ProxyRuntime {
 					//TODO 切换失败. 通知集群
 				}
 			});
-		}	
+		}
 	}
-	
+
 	/**
 	 * 停止
 	 */
@@ -163,7 +174,7 @@ public class ProxyRuntime {
 		heartBeatTasks.values().stream().forEach(f->f.cancel(false));
 		heartBeatTasks.clear();
 	}
-	
+
 	// 系统时间定时更新任务
 	private Runnable updateTime() {
 		return new Runnable() {
@@ -173,7 +184,7 @@ public class ProxyRuntime {
 			}
 		};
 	}
-		
+
 	// 数据节点定时心跳任务
 	private Runnable replicaHeartbeat() {
 		return ()->{
@@ -327,5 +338,37 @@ public class ProxyRuntime {
 
 	public void setAcceptor(NIOAcceptor acceptor) {
 		this.acceptor = acceptor;
+	}
+
+	public LoadChecker getLocalLoadChecker() {
+		return localLoadChecker;
+	}
+
+	public void setLocalLoadChecker(LoadChecker localLoadChecker) {
+		this.localLoadChecker = localLoadChecker;
+	}
+
+	public LoadBalanceStrategy getLoadBalanceStrategy() {
+		return loadBalanceStrategy;
+	}
+
+	public void setLoadBalanceStrategy(LoadBalanceStrategy loadBalanceStrategy) {
+		this.loadBalanceStrategy = loadBalanceStrategy;
+	}
+
+	public SessionManager<ProxySession> getProxySessionSessionManager() {
+		return proxySessionSessionManager;
+	}
+
+	public void setProxySessionSessionManager(SessionManager<ProxySession> proxySessionSessionManager) {
+		this.proxySessionSessionManager = proxySessionSessionManager;
+	}
+
+	public SessionManager<LBSession> getLbSessionSessionManager() {
+		return lbSessionSessionManager;
+	}
+
+	public void setLbSessionSessionManager(SessionManager<LBSession> lbSessionSessionManager) {
+		this.lbSessionSessionManager = lbSessionSessionManager;
 	}
 }

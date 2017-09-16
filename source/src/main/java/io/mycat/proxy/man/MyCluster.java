@@ -49,7 +49,7 @@ public class MyCluster {
 
 	};
 
-	private ConcurrentHashMap<String, ClusterNode> allNodes = new ConcurrentHashMap<>();
+	public ConcurrentHashMap<String, ClusterNode> allNodes = new ConcurrentHashMap<>();
 	private final ClusterNode myNode;
 	private ClusterNode myLeader;
 	private ClusterState clusterState = ClusterState.Joining;

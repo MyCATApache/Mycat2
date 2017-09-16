@@ -2,6 +2,13 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.beans.ReplicaConfBean;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.mycat2.beans.SchemaConfBean;
+import io.mycat.mycat2.loadbalance.LocalLoadChecker;
+import io.mycat.mycat2.loadbalance.RandomStrategy;
+import io.mycat.proxy.*;
+import io.mycat.proxy.NIOAcceptor.ServerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +38,7 @@ public class ProxyStarter {
 
 		if (conf.isClusterEnable()) {
 			// 集群开启状态，需要等集群启动，主节点确认完配置才能提供服务
-			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), true);
+			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), ServerType.CLUSTER);
 			runtime.setAdminCmdResolver(new AdminCommandResovler());
 			MyCluster cluster = new MyCluster(acceptor.getSelector(), conf.getMyNodeId(), ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
 			runtime.setMyCLuster(cluster);
@@ -49,10 +56,16 @@ public class ProxyStarter {
 		// 开启mycat服务
 		ConfigLoader.INSTANCE.loadAll(conf);
 		NIOAcceptor acceptor = runtime.getAcceptor();
-		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), false);
+		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), ServerType.MYCAT);
 		startReactor();
 		// 初始化
 		init(conf);
+        if(conf.isLoadBalanceEnable()){
+            //开启负载均衡服务
+            runtime.setLocalLoadChecker(new LocalLoadChecker());
+            runtime.setLoadBalanceStrategy(new RandomStrategy());
+            acceptor.startServerChannel(conf.getLoadBalanceIp(), conf.getLoadBalancePort(), ServerType.LOAD_BALANCER);
+        }
 	}
 
 	public void stopProxy() {

@@ -15,6 +15,12 @@ public class ProxyConfig {
 	// 绑定的数据传输端口
 	private int bindPort = 8066;
 	private boolean clusterEnable = false;
+	// 是否开启负载均衡
+	private boolean loadBalanceEnable = false;
+	// 负载均衡绑定的ip
+	private String loadBalanceIp = "0.0.0.0";
+	// 负载均衡缓定的端口
+	private int loadBalancePort = 9088;
 	// 集群通信绑定的IP地址
 	private String clusterIP = "0.0.0.0";
 	// 集群通信绑定的端口
@@ -102,5 +108,29 @@ public class ProxyConfig {
 		configMap.put(configKey, config);
 		version = version == null ? ConfigEnum.INIT_VERSION : version;
 		configVersionMap.put(configKey, version);
+	}
+
+	public boolean isLoadBalanceEnable() {
+		return loadBalanceEnable;
+	}
+
+	public void setLoadBalanceEnable(boolean loadBalanceEnable) {
+		this.loadBalanceEnable = loadBalanceEnable;
+	}
+
+	public String getLoadBalanceIp() {
+		return loadBalanceIp;
+	}
+
+	public void setLoadBalanceIp(String loadBalanceIp) {
+		this.loadBalanceIp = loadBalanceIp;
+	}
+
+	public int getLoadBalancePort() {
+		return loadBalancePort;
+	}
+
+	public void setLoadBalancePort(int loadBalancePort) {
+		this.loadBalancePort = loadBalancePort;
 	}
 }
