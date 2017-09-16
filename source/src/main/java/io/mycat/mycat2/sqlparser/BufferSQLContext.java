@@ -354,22 +354,4 @@ public class BufferSQLContext {
 //        }
         return pos1;
     }
-    int[] dynamicAnnotationResultList=new int[128];
-    int dynamicAnnotationResultIndex=0;
-    int longestPos=0;
-    public void setDynamicAnnotationResult(int value) {
-        dynamicAnnotationResultList[dynamicAnnotationResultIndex]=value;
-        ++dynamicAnnotationResultIndex;
-    }
-
-    public int[] getDynamicAnnotationResultList() {
-        return dynamicAnnotationResultList;
-    }
-    public void clearDynamicAnnotationResultList() {
-        dynamicAnnotationResultIndex=0;
-    }
-
-    public int getDynamicAnnotationResultIndex() {
-        return dynamicAnnotationResultIndex;
-    }
 }

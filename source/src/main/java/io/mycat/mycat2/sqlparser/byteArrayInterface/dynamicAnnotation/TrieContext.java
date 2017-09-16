@@ -17,7 +17,7 @@ public class TrieContext {
 
     // public boolean isQuesMark=false;
     public String genFun(String str) {
-        return String.format("_%s_%d_%d", str, x, y);
+        return String.format("_%s_%d_%d", str.replace("\"",""), x, y);
     }
 
 

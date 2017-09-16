@@ -77,16 +77,21 @@ public class TrieCompiler {
                 '}';
     }
 
-    public String toCode1(String className, TrieContext context) {
+    public String toCode1(String className, DynamicAnnotationRuntime runtime, TrieContext context,Map<Boolean, List<String>> map) {
         String body = toCode2(true, context);
-        String tmpl = String.format("\n" +
+        String fields = runtime.int2str.entrySet().stream().map((i -> String.format("public boolean _%s=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
+        String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("_%s=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
+        String fieldsArrayTag = String.format("final static int[] tags={%s};\n",runtime.int2str.entrySet().stream().map((i -> String.valueOf(i.getKey()))).collect(Collectors.joining(",")));
+        String tmpl = "\n" +
                 "package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;\n" +
                 "\n" +
                 "import io.mycat.mycat2.sqlparser.BufferSQLContext;\n" +
                 "import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;\n" +
                 "import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;" +
-                "public class %s implements DynamicAnnotationMatch {\n" +
+                "public class " +className+
+                " implements DynamicAnnotationMatch {\n" +
                 "    public final void pick(int i, final int arrayCount, BufferSQLContext context, HashArray array, ByteArrayInterface sql) {\n" +
+                "" +fieldsInit+
                 "int res;" +
                 "        while (i < arrayCount) {\n" +
                 "            res = pick0(i, arrayCount, context, array, sql);\n" +
@@ -99,9 +104,15 @@ public class TrieCompiler {
                 "    }\n" +
                 "\n" +
                 "    public final int pick0(int i, final int arrayCount, BufferSQLContext context, HashArray array, ByteArrayInterface sql) {\n" +
-                "  %s" +
+                " " +body+
                 "        return i;\n" +
-                "    }%s}", className, body, context.funList.stream().collect(Collectors.joining(" ")));
+                "    }" +
+                "" +fields+fieldsArrayTag+
+                "" +context.funList.stream().collect(Collectors.joining(" "))+
+                "public String getName(){return \"" +className+"\";}\n"+
+                "public int[] getCompleteTags(){return tags;}"+
+                "public boolean isComplete(){"+ConditionUtil.codeIsComplete(map,runtime)+"}"+
+                "}";
         return tmpl;
     }
 
@@ -116,7 +127,7 @@ public class TrieCompiler {
 
     public String toCode3(boolean isRoot, List<Map.Entry<TrieKey, TrieCompiler>> entrySet, TrieContext context) {
 
-        if (context.x > 3  || context.y > 5  ) {
+        if (context.x % 3 == 0 || context.y % 5 == 0) {
             String res = toCode4(isRoot, entrySet, context);
             if (!"".equals(res.trim())) {
                 String funName = context.genFun(entrySet.stream().map((s) -> AscllUtil.shiftAscll(s.getKey().getText(), false)).collect(Collectors.joining("_"))) + "_" + context.index;
@@ -168,10 +179,10 @@ public class TrieCompiler {
             if (callback != null && callback.size() != 0) {
                 Iterator<String> iterator = callback.iterator();
                 while (iterator.hasNext()) {
-                    w += "\ncontext.setDynamicAnnotationResult(" + iterator.next() + ");";
+                    w += "\n_" + iterator.next() + "=true;";
                 }
                 if (context.isBacktracking&&type==QUESTION_MARK){
-                    w+="\npick(start-" +
+                    w+="\npick0(start-" +
                             +i.getValue().backPos+", arrayCount, context, array, sql);\n";
                 } else
 
