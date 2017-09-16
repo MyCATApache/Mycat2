@@ -134,21 +134,23 @@ public class YamlUtil {
     }
 
     public static void archiveAndDump(String configName, int curVersion, Configurable configBean) {
-        String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
-        try {
-            Files.move(Paths.get(ROOT_PATH + configName),
-                    Paths.get(archivePath + getFileName(configName, curVersion)),
-                    StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            LOGGER.error("error to move file for config {}, version {}", configName, curVersion);
-        }
+        ProxyRuntime.INSTANCE.addBusinessJob(() -> {
+            String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
+            try {
+                Files.move(Paths.get(ROOT_PATH + configName),
+                        Paths.get(archivePath + getFileName(configName, curVersion)),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                LOGGER.error("error to move file for config {}, version {}", configName, curVersion);
+            }
 
-        Path file = Paths.get(ROOT_PATH + configName);
-        try (FileWriter writer = new FileWriter(file.toString())) {
-            writer.write(dump(configBean));
-        } catch (IOException e) {
-            LOGGER.error("error to dump config to file, config name {}, version {}", configName, curVersion);
-        }
+            Path file = Paths.get(ROOT_PATH + configName);
+            try (FileWriter writer = new FileWriter(file.toString())) {
+                writer.write(dump(configBean));
+            } catch (IOException e) {
+                LOGGER.error("error to dump config to file, config name {}, version {}", configName, curVersion);
+            }
+        });
     }
 
     public static String getFileName(String configName, int version) {
