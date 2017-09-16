@@ -45,11 +45,11 @@ public class ProxyStarter {
 			cluster.initCluster();
 		} else {
 			// 未配置集群，直接启动
-			startProxy();
+			startProxy(true);
 		}
 	}
 
-	public void startProxy() throws IOException {
+	public void startProxy(boolean isLeader) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
 
@@ -67,7 +67,10 @@ public class ProxyStarter {
             acceptor.startServerChannel(conf.getLoadBalanceIp(), conf.getLoadBalancePort(), ServerType.LOAD_BALANCER);
         }
 
-		runtime.startHeartBeatScheduler();
+		// 主节点才启动心跳，非集群下也启动心跳
+		if (isLeader) {
+			runtime.startHeartBeatScheduler();
+		}
 	}
 
 	public void stopProxy() {

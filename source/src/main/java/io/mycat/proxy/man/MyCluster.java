@@ -131,7 +131,7 @@ public class MyCluster {
 				// 是连接中当前编号最小的节点，当选为Leader
 				logger.info("I'm smallest alive node, and exceeded 1/2 nodes alive, so I'm the King now!");
 				// 集群主已产生，继续加载配置，提供服务
-				ProxyStarter.INSTANCE.startProxy();
+				ProxyStarter.INSTANCE.startProxy(true);
 
 				this.setClusterState(ClusterState.Clustered);
 				this.myLeader = this.myNode;

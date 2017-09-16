@@ -117,6 +117,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
             configAnswerAllAliveNodes(commitPacket, false);
 
             ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
+            ProxyRuntime.INSTANCE.startHeartBeatScheduler();
         }
     }
 
