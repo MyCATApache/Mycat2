@@ -5,3 +5,9 @@ clusterIP: 0.0.0.0
 clusterPort: 9068
 myNodeId: leader-2
 allNodeInfs: leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9068,leader-3:127.0.0.1:9069
+timerExecutor: 2
+replicaHeartbeatPeriod: 10000
+replicaIdleCheckPeriod: 2000
+idleTimeout: 2000
+processorCheckPeriod: 2000
+minSwitchtimeInterval: 120000
