@@ -99,7 +99,6 @@ public class ProxyRuntime {
 		timerExecutor = ExecutorUtil.create("Timer", getProxyConfig().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
-		startUpdateTimeTask();
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
@@ -110,13 +109,6 @@ public class ProxyRuntime {
 		int index = reactorEnv.counter % ProxyRuntime.INSTANCE.getNioReactorThreads();
 		// 获取一个reactor对象
 		return ProxyRuntime.INSTANCE.getReactorThreads()[index];
-	}
-	
-	public void startUpdateTimeTask(){
-		heartbeatScheduler.scheduleAtFixedRate(updateTime(),
-											   0L, 
-											   TIME_UPDATE_PERIOD,
-											   TimeUnit.MILLISECONDS);
 	}
 	
 	/**

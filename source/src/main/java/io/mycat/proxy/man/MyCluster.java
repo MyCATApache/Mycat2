@@ -56,6 +56,7 @@ public class MyCluster {
 	private ClusterState clusterState = ClusterState.Joining;
 	private long lastClusterStateTime;
 	private final Selector nioSelector;
+
 	public int needCommitVersion;
 	public int needCommitCount;
 

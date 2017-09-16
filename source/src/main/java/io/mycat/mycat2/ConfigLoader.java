@@ -33,9 +33,9 @@ public class ConfigLoader {
         YamlUtil.createDirectoryIfNotExists(DIR_PREPARE);
         YamlUtil.createDirectoryIfNotExists(DIR_ARCHIVE);
 
-        loadReplicaIndex(conf, ConfigEnum.REPLICA_INDEX, null);
-        loadDatasource(conf, ConfigEnum.DATASOURCE, null);
-        loadSchema(conf, ConfigEnum.SCHEMA, null);
+        loadReplicaIndex(false, conf, ConfigEnum.REPLICA_INDEX, null);
+        loadDatasource(false, conf, ConfigEnum.DATASOURCE, null);
+        loadSchema(false, conf, ConfigEnum.SCHEMA, null);
 
         // 清空prepare文件夹
         YamlUtil.clearDirectory(DIR_PREPARE, null);
@@ -45,15 +45,15 @@ public class ConfigLoader {
         MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
         switch (configEnum) {
             case REPLICA_INDEX:
-                loadReplicaIndex(conf, ConfigEnum.REPLICA_INDEX, targetVersion);
+                loadReplicaIndex(true, conf, ConfigEnum.REPLICA_INDEX, targetVersion);
                 YamlUtil.clearDirectory(DIR_PREPARE, ConfigEnum.REPLICA_INDEX.getFileName());
                 break;
             case DATASOURCE:
-                loadDatasource(conf, ConfigEnum.DATASOURCE, targetVersion);
+                loadDatasource(true, conf, ConfigEnum.DATASOURCE, targetVersion);
                 YamlUtil.clearDirectory(DIR_PREPARE, ConfigEnum.DATASOURCE.getFileName());
                 break;
             case SCHEMA:
-                loadSchema(conf, ConfigEnum.SCHEMA, targetVersion);
+                loadSchema(true, conf, ConfigEnum.SCHEMA, targetVersion);
                 YamlUtil.clearDirectory(DIR_PREPARE, ConfigEnum.SCHEMA.getFileName());
                 break;
             case SHARDING_RULE:
@@ -66,54 +66,66 @@ public class ConfigLoader {
     /**
      * replica-index.yml
      */
-    private void loadReplicaIndex(MycatConfig conf, ConfigEnum configEnum, Integer targetVersion) throws IOException {
+    private void loadReplicaIndex(boolean needAchive, MycatConfig conf, ConfigEnum configEnum, Integer targetVersion) throws IOException {
         // 加载replica-index
         String fileName = configEnum.getFileName();
         byte configType = configEnum.getType();
 
-        Integer repVersion = YamlUtil.archive(fileName, conf.getConfigVersion(configType), targetVersion);
-        if (repVersion == null) {
-            return;
+        Integer curVersion = conf.getConfigVersion(configType);
+        if (needAchive) {
+            Integer repVersion = YamlUtil.archive(fileName, curVersion, targetVersion);
+            if (repVersion == null) {
+                return;
+            }
+            curVersion = repVersion;
         }
         LOGGER.debug("load config for {}", configEnum);
         ReplicaIndexBean replicaIndexBean = YamlUtil.load(fileName, ReplicaIndexBean.class);
         conf.addRepIndex(replicaIndexBean);
-        conf.putConfig(configType, replicaIndexBean, repVersion);
+        conf.putConfig(configType, replicaIndexBean, curVersion);
     }
 
     /**
      * datasource.yml
      */
-    private void loadDatasource(MycatConfig conf, ConfigEnum configEnum, Integer targetVersion) throws IOException {
+    private void loadDatasource(boolean needAchive, MycatConfig conf, ConfigEnum configEnum, Integer targetVersion) throws IOException {
         // 加载datasource
         String fileName = configEnum.getFileName();
         byte configType = configEnum.getType();
 
-        Integer dsVersion = YamlUtil.archive(fileName, conf.getConfigVersion(configType), targetVersion);
-        if (dsVersion == null) {
-            return;
+        Integer curVersion = conf.getConfigVersion(configType);
+        if (needAchive) {
+            Integer dsVersion = YamlUtil.archive(fileName, curVersion, targetVersion);
+            if (dsVersion == null) {
+                return;
+            }
+            curVersion = dsVersion;
         }
         LOGGER.debug("load config for {}", configEnum);
         ReplicaConfBean replicaConfBean = YamlUtil.load(fileName, ReplicaConfBean.class);
         replicaConfBean.getMysqlReplicas().forEach(replicaBean -> conf.addMySQLRepBean(replicaBean));
-        conf.putConfig(configType, replicaConfBean, dsVersion);
+        conf.putConfig(configType, replicaConfBean, curVersion);
     }
 
     /**
      * schema.yml
      */
-    private void loadSchema(MycatConfig conf, ConfigEnum configEnum, Integer targetVersion) throws IOException {
+    private void loadSchema(boolean needAchive, MycatConfig conf, ConfigEnum configEnum, Integer targetVersion) throws IOException {
         // 加载schema
         String fileName = configEnum.getFileName();
         byte configType = configEnum.getType();
 
-        Integer schemaVersion = YamlUtil.archive(fileName, conf.getConfigVersion(configType), targetVersion);
-        if (schemaVersion == null) {
-            return;
+        Integer curVersion = conf.getConfigVersion(configType);
+        if (needAchive) {
+            Integer schemaVersion = YamlUtil.archive(fileName, curVersion, targetVersion);
+            if (schemaVersion == null) {
+                return;
+            }
+            curVersion = schemaVersion;
         }
         LOGGER.debug("load config for {}", configEnum);
         SchemaConfBean schemaConfBean = YamlUtil.load(fileName, SchemaConfBean.class);
         schemaConfBean.getSchemas().forEach(schemaBean -> conf.addSchemaBean(schemaBean));
-        conf.putConfig(configType, schemaConfBean, schemaVersion);
+        conf.putConfig(configType, schemaConfBean, curVersion);
     }
 }

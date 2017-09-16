@@ -30,8 +30,13 @@ public class YamlUtil {
     private static String ROOT_PATH;
 
     static {
-    	File directory = new File("");
-    	ROOT_PATH = directory.getAbsolutePath();
+    	ROOT_PATH = System.getProperty("MYCAT_CONF");
+        if (ROOT_PATH == null) {
+            throw new RuntimeException("no MYCAT_CONF in environment");
+        }
+        if (!ROOT_PATH.endsWith(File.separator)) {
+            ROOT_PATH = ROOT_PATH + File.separator;
+        }
     }
 
     public static <T> T load(String fileName, Class<T> clazz) throws FileNotFoundException {
