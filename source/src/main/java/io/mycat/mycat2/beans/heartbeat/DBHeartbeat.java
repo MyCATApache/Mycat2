@@ -44,7 +44,7 @@ public abstract class DBHeartbeat {
 	protected final AtomicBoolean isChecking = new AtomicBoolean(false);
 	protected int errorCount;
 	// 心跳初始值为 error . 防止 连接刚启动，就有客户端连接进来时，客户端报错的问题。
-	protected volatile int status = OK_STATUS;  
+	protected volatile int status = INIT_STATUS;  
 //	protected final HeartbeatRecorder recorder = new HeartbeatRecorder();
 //	protected final DataSourceSyncRecorder asynRecorder = new DataSourceSyncRecorder();
 

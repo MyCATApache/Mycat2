@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	public SchemaBean schema;
 
-	private Map<MySQLRepBean, List<MySQLSession>> backendMap = new HashMap<>();
+	private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
 

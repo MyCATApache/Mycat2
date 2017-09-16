@@ -35,7 +35,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mysql.Alarms;
 import io.mycat.proxy.ProxyRuntime;
 
@@ -123,12 +122,11 @@ public class MySQLRepBean {
 
     private volatile int writeIndex = 0; //主节点默认为0
     private long lastSwitchTime;
+    private long lastInitTime;  //最后一次初始化时间
 	
     public void initMaster() {
         // 根据配置replica-index的配置文件修改主节点
-        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-        lastSwitchTime = System.currentTimeMillis() - conf.getMinSwitchtimeInterval();
-        
+        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();        
         Integer repIndex = conf.getRepIndex(name);
         if (repIndex != null&&checkIndex(repIndex)) {
             writeIndex = repIndex;
@@ -212,17 +210,6 @@ public class MySQLRepBean {
     
 	public void switchSource(int newIndex,long maxwaittime) {
 		
-		MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-		
-		if((System.currentTimeMillis() - lastSwitchTime) < conf.getMinSwitchtimeInterval()){
-			if (logger.isDebugEnabled()) {
-				logger.warn("the Minimum time interval for switchSource is {} seconds.",conf.getMinSwitchtimeInterval()/1000L);
-			}
-			
-			switchResult.set(false);
-			return;
-		}
-		
 		if (getSwitchType() == RepSwitchTypeEnum.NOT_SWITCH) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("not switch datasource ,for switchType is {}",RepSwitchTypeEnum.NOT_SWITCH.name());
@@ -245,6 +232,7 @@ public class MySQLRepBean {
 		lock.lock();
 		
 		try {
+			
 			switchResult.set(false);
 
 			int current = writeIndex;
@@ -254,12 +242,11 @@ public class MySQLRepBean {
 
 				// init again
 				MySQLMetaBean newWriteBean = mysqls.get(newIndex);
-				
+				newWriteBean.clearCons(reason);
 				newWriteBean.init(this,maxwaittime);
 				
 				// clear all connections
 				MySQLMetaBean oldMetaBean = mysqls.get(current);
-				
 				oldMetaBean.clearCons(reason);
 				// write log
 				logger.warn(switchMessage(current, newIndex, reason));
@@ -271,7 +258,7 @@ public class MySQLRepBean {
 				oldMetaBean.setSlaveNode(true);
 				newWriteBean.setSlaveNode(false);
 				
-				lastSwitchTime = System.currentTimeMillis();
+				lastInitTime = System.currentTimeMillis();
 			}
 		}catch (IOException e) {
 			e.printStackTrace();
@@ -393,5 +380,17 @@ public class MySQLRepBean {
 
 	public void setSwitchResult(boolean flag) {
 		this.switchResult.set(flag);
+	}
+
+	public long getLastSwitchTime() {
+		return lastSwitchTime;
+	}
+
+	public void setLastSwitchTime(long lastSwitchTime) {
+		this.lastSwitchTime = lastSwitchTime;
+	}
+
+	public long getLastInitTime() {
+		return lastInitTime;
 	}
 }

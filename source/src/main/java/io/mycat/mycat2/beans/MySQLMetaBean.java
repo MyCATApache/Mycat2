@@ -79,7 +79,7 @@ public class MySQLMetaBean {
     	logger.info("init backend myqsl source ,create connections total " + minCon + " for " + hostName + " index :" + repBean.getWriteIndex());
 
     	this.repBean = repBean;
-    	heartbeat = new MySQLHeartbeat(this,DBHeartbeat.OK_STATUS);
+    	heartbeat = new MySQLHeartbeat(this,DBHeartbeat.INIT_STATUS);
     	ProxyRuntime runtime = ProxyRuntime.INSTANCE;
         MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
