@@ -1,5 +1,7 @@
 package io.mycat.mycat2.beans;
 
+import io.mycat.proxy.Configurable;
+
 import java.util.Map;
 
 /**
@@ -8,7 +10,7 @@ import java.util.Map;
  * @date: 10/09/2017
  * @author: gaozhiwen
  */
-public class ReplicaIndexBean {
+public class ReplicaIndexBean implements Configurable {
     private Map<String, Integer> replicaIndexes;
 
     public Map<String, Integer> getReplicaIndexes() {

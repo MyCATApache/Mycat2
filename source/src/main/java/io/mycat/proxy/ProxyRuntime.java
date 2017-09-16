@@ -71,8 +71,6 @@ public class ProxyRuntime {
 
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
-	
-
 
 	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
@@ -98,11 +96,10 @@ public class ProxyRuntime {
 	public void init() {
 		//心跳调度独立出来，避免被其他任务影响
 		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-		timerExecutor = ExecutorUtil.create("Timer", ((MycatConfig)getProxyConfig()).getTimerExecutor());
+		timerExecutor = ExecutorUtil.create("Timer", getProxyConfig().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 		startUpdateTimeTask();
-		startHeartBeatScheduler();
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
@@ -136,8 +133,12 @@ public class ProxyRuntime {
 		}
 	}
 
-	public void addBusinessJob(Runnable runnable) {
-		businessExecutor.execute(runnable);
+	public void addBusinessJob(Runnable job) {
+		businessExecutor.execute(job);
+	}
+
+	public void addDelayedJob(Runnable job, int delayedSeconds) {
+		schedulerService.schedule(job, delayedSeconds, TimeUnit.SECONDS);
 	}
 
 	/**

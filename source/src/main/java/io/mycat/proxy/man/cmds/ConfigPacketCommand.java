@@ -109,7 +109,7 @@ public class ConfigPacketCommand implements AdminCommand {
      */
     private void handleConfigReq(AdminSession session) throws IOException {
         LOGGER.debug("receive config request packet from {}", session.getNodeId());
-        ProxyConfig conf = ProxyRuntime.INSTANCE.getProxyConfig();
+        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
         ConfigReqPacket reqPacket = new ConfigReqPacket();
         reqPacket.resolve(session.readingBuffer);
         int count = reqPacket.getConfCount();

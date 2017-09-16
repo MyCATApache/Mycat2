@@ -79,30 +79,48 @@ public class YamlUtil {
     /**
      * 将配置文件归档，新的配置文件生效
      */
-    public static Integer archive(String configName, int curVersion) throws IOException {
-        //检查是否有新需要生成的文件
+    public static Integer archive(String configName, int curVersion, Integer targetVersion) throws IOException {
+        // 检查是否有新需要加载的文件
         String preparePath = ROOT_PATH + ConfigLoader.DIR_PREPARE;
         File prepareFile = new File(preparePath);
-        File[] files = prepareFile.listFiles((dir, name) -> name.startsWith(configName));
+
+        String filePrefix = (targetVersion == null) ? configName : getFileName(configName, targetVersion.intValue());
+        File[] files = prepareFile.listFiles((dir, name) -> name.startsWith(filePrefix));
+
         if (files == null || files.length == 0) {
-            return curVersion;
+            LOGGER.warn("no prepare file for config {}", configName);
+            return null;
         }
-        //将旧的配置归档
+
+        // 将现有的配置归档
         String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
-        Files.move(Paths.get(ROOT_PATH + configName), Paths.get(archivePath + configName + "-" + curVersion), StandardCopyOption.REPLACE_EXISTING);
-        //将新的配置生效
-        File confFile = Stream.of(files).sorted((file1, file2) -> {
-                String name1 = file1.getName();
-                Integer version1 = Integer.valueOf(name1.substring(name1.lastIndexOf("-") + 1));
-                String name2 = file2.getName();
-                Integer version2 = Integer.valueOf(name2.substring(name2.lastIndexOf("-") + 1));
-                return version2.compareTo(version1);
-            }).findFirst().orElse(null);
+        Files.move(Paths.get(ROOT_PATH + configName),
+                Paths.get(archivePath + getFileName(configName, curVersion)),
+                StandardCopyOption.REPLACE_EXISTING);
+
+        // 将新的配置生效
+        File confFile = Stream.of(files)
+                .sorted((file1, file2) -> {
+                    String name1 = file1.getName();
+                    Integer version1 = parseConfigVersion(name1);
+                    String name2 = file2.getName();
+                    Integer version2 = parseConfigVersion(name2);
+                    return version2.compareTo(version1);
+                })
+                .findFirst().get();
+
         Files.copy(confFile.toPath(), Paths.get(ROOT_PATH + configName), StandardCopyOption.REPLACE_EXISTING);
 
         String name = confFile.toPath().toString();
-        Integer newVersion = Integer.valueOf(name.substring(name.lastIndexOf("-") + 1));
-        return newVersion;
+        return parseConfigVersion(name);
+    }
+
+    public static String getFileName(String configName, int version) {
+        return configName + "-" + version;
+    }
+
+    private static Integer parseConfigVersion(String fileName) {
+        return Integer.valueOf(fileName.substring(fileName.lastIndexOf("-") + 1));
     }
 
     /**
@@ -122,11 +140,14 @@ public class YamlUtil {
     /**
      * 清空文件夹
      * @param directoryName
+     * @param filePrefix
      * @throws IOException
      */
-    public static void clearDirectory(String directoryName) throws IOException {
+    public static void clearDirectory(String directoryName, String filePrefix) throws IOException {
         String dirPath = ROOT_PATH + directoryName;
         File dirFile = new File(dirPath);
-        Stream.of(dirFile.listFiles()).forEach(file -> file.delete());
+        Stream.of(dirFile.listFiles())
+                .filter(fileName -> fileName.getName().startsWith(filePrefix))
+                .forEach(file -> file.delete());
     }
 }

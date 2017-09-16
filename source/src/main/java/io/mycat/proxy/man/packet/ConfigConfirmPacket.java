@@ -17,7 +17,7 @@ public class ConfigConfirmPacket extends ManagePacket {
         super(ManagePacket.PKG_CONFIG_CONFIRM);
     }
 
-    public ConfigConfirmPacket(byte confType, int confVersion, String confContent) {
+    public ConfigConfirmPacket(byte confType, int confVersion) {
         super(ManagePacket.PKG_CONFIG_CONFIRM);
         this.confType = confType;
         this.confVersion = confVersion;

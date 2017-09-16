@@ -17,7 +17,7 @@ public class ConfigCommitPacket extends ManagePacket {
         super(ManagePacket.PKG_CONFIG_COMMIT);
     }
 
-    public ConfigCommitPacket(byte confType, int confVersion, String confContent) {
+    public ConfigCommitPacket(byte confType, int confVersion) {
         super(ManagePacket.PKG_CONFIG_COMMIT);
         this.confType = confType;
         this.confVersion = confVersion;

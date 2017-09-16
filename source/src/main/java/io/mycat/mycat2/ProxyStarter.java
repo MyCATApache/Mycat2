@@ -53,8 +53,8 @@ public class ProxyStarter {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
 
-		// 开启mycat服务
-		ConfigLoader.INSTANCE.loadAll(conf);
+		// 加载配置文件信息
+		ConfigLoader.INSTANCE.loadAll();
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), ServerType.MYCAT);
 		startReactor();
@@ -66,12 +66,16 @@ public class ProxyStarter {
             runtime.setLoadBalanceStrategy(new RandomStrategy());
             acceptor.startServerChannel(conf.getLoadBalanceIp(), conf.getLoadBalancePort(), ServerType.LOAD_BALANCER);
         }
+
+		runtime.startHeartBeatScheduler();
 	}
 
 	public void stopProxy() {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.stopServerChannel(false);
+
+		runtime.stopHeartBeatScheduler();
 	}
 
 	private void startReactor() throws IOException {

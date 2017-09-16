@@ -7,4 +7,5 @@ package io.mycat.proxy;
  * @author: gaozhiwen
  */
 public interface Configurable {
+
 }
