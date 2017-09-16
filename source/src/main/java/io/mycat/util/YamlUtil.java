@@ -30,12 +30,24 @@ public class YamlUtil {
     private static String ROOT_PATH;
 
     static {
-    	ROOT_PATH = System.getProperty("MYCAT_CONF");
-        if (ROOT_PATH == null) {
-            throw new RuntimeException("no MYCAT_CONF in environment");
-        }
-        if (!ROOT_PATH.endsWith(File.separator)) {
-            ROOT_PATH = ROOT_PATH + File.separator;
+    	String mycatHome = System.getProperty("MYCAT_HOME");
+        if (mycatHome == null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(System.getProperty("user.dir"))
+                .append(File.separator)
+                .append("source")
+                .append(File.separator)
+                .append("target")
+                .append(File.separator)
+                .append("classes")
+                .append(File.separator);
+            ROOT_PATH = sb.toString();
+            LOGGER.debug("MYCAT_HOME is not set, set the default path: {}", ROOT_PATH);
+        } else {
+            ROOT_PATH = mycatHome.endsWith(File.separator) ?
+                    mycatHome + ConfigLoader.DIR_CONF :
+                    mycatHome + File.separator + ConfigLoader.DIR_CONF;
+            LOGGER.debug("mycat home: {}, root path: {}", mycatHome, ROOT_PATH);
         }
     }
 

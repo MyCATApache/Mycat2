@@ -22,6 +22,7 @@ public class ConfigLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigLoader.class);
     public static final ConfigLoader INSTANCE = new ConfigLoader();
 
+    public static final String DIR_CONF = "conf" + File.separator;
     public static final String DIR_PREPARE = "prepare" + File.separator;
     public static final String DIR_ARCHIVE = "archive" + File.separator;
 
