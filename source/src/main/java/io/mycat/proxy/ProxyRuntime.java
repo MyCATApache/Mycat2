@@ -1,10 +1,10 @@
 package io.mycat.proxy;
-
 /**
  * 运行时环境，单例方式访问
  * @author wuzhihui
  *
  */
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -26,6 +26,10 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
+import io.mycat.mycat2.loadbalance.LBSession;
+import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
+import io.mycat.mycat2.loadbalance.LoadChecker;
+import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
@@ -56,17 +60,27 @@ public class ProxyRuntime {
 	private SessionManager<?> sessionManager;
 	// 用于管理端口的Session会话管理
 	private SessionManager<AdminSession> adminSessionManager;
+	private SessionManager<ProxySession> proxySessionSessionManager;
+	private SessionManager<LBSession> lbSessionSessionManager;
+
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
+	//本地负载状态检查
+	private LoadChecker localLoadChecker;
+	private LoadBalanceStrategy loadBalanceStrategy;
+
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
+	
+
 
 	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
 	private ScheduledExecutorService heartbeatScheduler;
 	
 	public  long maxdataSourceInitTime = 60 * 1000L;
-
+	
+	
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -125,7 +139,7 @@ public class ProxyRuntime {
 	public void addBusinessJob(Runnable runnable) {
 		businessExecutor.execute(runnable);
 	}
-	
+
 	/**
 	 * 切换 metaBean 名称
 	 */
@@ -338,5 +352,37 @@ public class ProxyRuntime {
 
 	public void setAcceptor(NIOAcceptor acceptor) {
 		this.acceptor = acceptor;
+	}
+
+	public LoadChecker getLocalLoadChecker() {
+		return localLoadChecker;
+	}
+
+	public void setLocalLoadChecker(LoadChecker localLoadChecker) {
+		this.localLoadChecker = localLoadChecker;
+	}
+
+	public LoadBalanceStrategy getLoadBalanceStrategy() {
+		return loadBalanceStrategy;
+	}
+
+	public void setLoadBalanceStrategy(LoadBalanceStrategy loadBalanceStrategy) {
+		this.loadBalanceStrategy = loadBalanceStrategy;
+	}
+
+	public SessionManager<ProxySession> getProxySessionSessionManager() {
+		return proxySessionSessionManager;
+	}
+
+	public void setProxySessionSessionManager(SessionManager<ProxySession> proxySessionSessionManager) {
+		this.proxySessionSessionManager = proxySessionSessionManager;
+	}
+
+	public SessionManager<LBSession> getLbSessionSessionManager() {
+		return lbSessionSessionManager;
+	}
+
+	public void setLbSessionSessionManager(SessionManager<LBSession> lbSessionSessionManager) {
+		this.lbSessionSessionManager = lbSessionSessionManager;
 	}
 }

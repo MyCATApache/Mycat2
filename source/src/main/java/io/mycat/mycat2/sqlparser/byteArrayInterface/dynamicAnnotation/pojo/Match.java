@@ -16,7 +16,7 @@ public class Match {
     private String sqltype;
     private List<Map<String,String>> where;
     private String name;
-    private List<Map<String,Map<String,String>>> actions;
+    private List<Map<String,List<Map<String,String>>>> actions;
     public void setTables(List<String> tables) {
         this.tables = tables;
     }
@@ -51,11 +51,11 @@ public class Match {
         return name;
     }
 
-    public List<Map<String, Map<String, String>>> getActions() {
+    public List<Map<String,List<Map<String,String>>>> getActions() {
         return actions;
     }
 
-    public void setActions(List<Map<String, Map<String, String>>> actions) {
+    public void setActions(List<Map<String,List<Map<String,String>>>> actions) {
         this.actions = actions;
     }
 
