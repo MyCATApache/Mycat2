@@ -11,6 +11,6 @@ public interface DynamicAnnotationMatch {
     public void pick(int i, final int arrayCount, BufferSQLContext context, HashArray array, ByteArrayInterface sql);
 
     boolean isComplete();
-    int[] getCompleteTags();
+    boolean[] getCompleteTags();
     String getName();
 }

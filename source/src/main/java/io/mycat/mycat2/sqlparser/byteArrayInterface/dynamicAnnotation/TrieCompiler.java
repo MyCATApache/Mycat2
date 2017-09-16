@@ -79,9 +79,9 @@ public class TrieCompiler {
 
     public String toCode1(String className, DynamicAnnotationRuntime runtime, TrieContext context,Map<Boolean, List<String>> map) {
         String body = toCode2(true, context);
-        String fields = runtime.int2str.entrySet().stream().map((i -> String.format("public boolean _%s=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
-        String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("_%s=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
-        String fieldsArrayTag = String.format("final static int[] tags={%s};\n",runtime.int2str.entrySet().stream().map((i -> String.valueOf(i.getKey()))).collect(Collectors.joining(",")));
+       // String fields = runtime.int2str.entrySet().stream().map((i -> String.format("public boolean _%s=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
+       String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("tags[%d]=false;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
+        String fieldsArrayTag = String.format("final static boolean[] tags={%s};\n",runtime.int2str.entrySet().stream().map((i -> "false")).collect(Collectors.joining(",")));
         String tmpl = "\n" +
                 "package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;\n" +
                 "\n" +
@@ -107,10 +107,10 @@ public class TrieCompiler {
                 " " +body+
                 "        return i;\n" +
                 "    }" +
-                "" +fields+fieldsArrayTag+
+                "" +fieldsArrayTag+
                 "" +context.funList.stream().collect(Collectors.joining(" "))+
                 "public String getName(){return \"" +className+"\";}\n"+
-                "public int[] getCompleteTags(){return tags;}"+
+                "public boolean[] getCompleteTags(){return tags;}"+
                 "public boolean isComplete(){"+ConditionUtil.codeIsComplete(map,runtime)+"}"+
                 "}";
         return tmpl;
@@ -179,7 +179,7 @@ public class TrieCompiler {
             if (callback != null && callback.size() != 0) {
                 Iterator<String> iterator = callback.iterator();
                 while (iterator.hasNext()) {
-                    w += "\n_" + iterator.next() + "=true;";
+                    w += "\ntags[" + iterator.next() + "]=true;";
                 }
                 if (context.isBacktracking&&type==QUESTION_MARK){
                     w+="\npick0(start-" +

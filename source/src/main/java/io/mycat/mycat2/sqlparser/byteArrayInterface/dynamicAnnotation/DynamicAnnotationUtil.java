@@ -188,7 +188,7 @@ public class DynamicAnnotationUtil {
         Map<Integer, String> int2str = new HashMap<>();
         Map<String, Integer> str2Int = new HashMap<>();
         Iterator<String> it = relationTable.keySet().iterator();
-        for (int i = 1; it.hasNext(); i++) {
+        for (int i = 0; it.hasNext(); i++) {
             String key = it.next();
             int2str.put(i, key);
             str2Int.put(key, i);
