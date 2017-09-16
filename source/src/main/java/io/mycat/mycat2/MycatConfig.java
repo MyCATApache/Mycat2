@@ -78,6 +78,10 @@ public class MycatConfig extends ProxyConfig {
 		}
 	}
 
+	public void setConfigVersion(byte configKey, int version) {
+		configVersionMap.put(configKey, version);
+	}
+
 	public int getConfigVersion(byte configKey) {
 		Integer oldVersion = configVersionMap.get(configKey);
 		return oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion;

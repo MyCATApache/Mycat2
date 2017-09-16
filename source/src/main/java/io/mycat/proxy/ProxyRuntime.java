@@ -14,8 +14,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.ConfigLoader;
 import io.mycat.mycat2.beans.ReplicaIndexBean;
 import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
+import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -163,7 +165,11 @@ public class ProxyRuntime {
 						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean);
 					} else {
 						// 非集群下直接更新replica-index信息
+						byte configType = ConfigEnum.REPLICA_INDEX.getType();
 						config.getRepIndexMap().put(replBean, writeIndex);
+						int curVersion = config.getConfigVersion(configType);
+						config.setConfigVersion(configType, curVersion + 1);
+						YamlUtil.archiveAndDump(ConfigEnum.REPLICA_INDEX.getFileName(), curVersion, config.getConfig(configType));
 					}
 				}else{
 					System.err.println("switch datasource error");

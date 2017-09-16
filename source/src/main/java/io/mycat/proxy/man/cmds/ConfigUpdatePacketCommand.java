@@ -48,7 +48,6 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
     public void sendPreparePacket(ConfigEnum configEnum, Object bean) {
         MycatConfig config = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
         byte type = configEnum.getType();
-
         // 获取新版本
         int nextRepIndexVersion = config.getNextConfigVersion(type);
 
@@ -59,10 +58,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), nextRepIndexVersion), content);
 
         // 构造prepare报文
-        final ConfigPreparePacket preparePacket = new ConfigPreparePacket();
-        preparePacket.setConfType(type);
-        preparePacket.setConfVersion(config.getNextConfigVersion(type));
-        preparePacket.setConfContent(content);
+        final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, nextRepIndexVersion, content);
 
         // 向从节点发送报文
         MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
@@ -73,7 +69,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
 
     private void handlePrepare(AdminSession session) throws IOException {
         ConfigPreparePacket preparePacket = new ConfigPreparePacket();
-        preparePacket.resolveBody(session.readingBuffer);
+        preparePacket.resolve(session.readingBuffer);
         byte configType = preparePacket.getConfType();
         int version = preparePacket.getConfVersion();
 
@@ -98,7 +94,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
 
     private void handleConfirm(AdminSession session) throws IOException {
         ConfigConfirmPacket confirmPacket = new ConfigConfirmPacket();
-        confirmPacket.resolveBody(session.readingBuffer);
+        confirmPacket.resolve(session.readingBuffer);
         byte configType = confirmPacket.getConfType();
         int version = confirmPacket.getConfVersion();
 
@@ -123,7 +119,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
 
     private void handleCommit(AdminSession session) throws IOException {
         ConfigCommitPacket commitPacket = new ConfigCommitPacket();
-        commitPacket.resolveBody(session.readingBuffer);
+        commitPacket.resolve(session.readingBuffer);
         byte configType = commitPacket.getConfType();
 
         ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);

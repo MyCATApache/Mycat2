@@ -2,6 +2,7 @@ package io.mycat.util;
 
 import io.mycat.mycat2.ConfigLoader;
 import io.mycat.mycat2.beans.ReplicaConfBean;
+import io.mycat.proxy.Configurable;
 import io.mycat.proxy.ProxyRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,6 +133,24 @@ public class YamlUtil {
         return parseConfigVersion(name);
     }
 
+    public static void archiveAndDump(String configName, int curVersion, Configurable configBean) {
+        String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
+        try {
+            Files.move(Paths.get(ROOT_PATH + configName),
+                    Paths.get(archivePath + getFileName(configName, curVersion)),
+                    StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            LOGGER.error("error to move file for config {}, version {}", configName, curVersion);
+        }
+
+        Path file = Paths.get(ROOT_PATH + configName);
+        try (FileWriter writer = new FileWriter(file.toString())) {
+            writer.write(dump(configBean));
+        } catch (IOException e) {
+            LOGGER.error("error to dump config to file, config name {}, version {}", configName, curVersion);
+        }
+    }
+
     public static String getFileName(String configName, int version) {
         return configName + "-" + version;
     }
@@ -164,7 +183,13 @@ public class YamlUtil {
         String dirPath = ROOT_PATH + directoryName;
         File dirFile = new File(dirPath);
         Stream.of(dirFile.listFiles())
-                .filter(fileName -> fileName.getName().startsWith(filePrefix))
+                .filter(file -> {
+                    if (filePrefix == null) {
+                        return file != null;
+                    } else {
+                        return file != null && file.getName().startsWith(filePrefix);
+                    }
+                })
                 .forEach(file -> file.delete());
     }
 }
