@@ -33,5 +33,4 @@ public class NodeRegInfoPacketCommand implements AdminCommand {
 			session.answerClientNow(pkg);
 		}
 	}
-
 }

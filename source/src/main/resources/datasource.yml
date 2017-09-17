@@ -5,16 +5,16 @@ mysqlReplicas:
     balance: BALANCE_ALL
     mysqls:
       - hostName: test
-        ip: 192.168.18.136
-        port: 3307
+        ip: 127.0.0.1
+        port: 3306
         user: root
         password: 123456
         minCon: 1
         maxCon: 10
         maxRetryCount: 3
-      - hostName: test1
-        ip: 192.168.18.136
-        port: 3308
+      - hostName: test
+        ip: 127.0.0.1
+        port: 3306
         user: root
         password: 123456
         minCon: 1

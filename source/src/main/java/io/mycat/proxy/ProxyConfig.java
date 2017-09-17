@@ -9,7 +9,7 @@ import java.util.Map;
  * @author wuzhihui
  *
  */
-public class ProxyConfig {
+public class ProxyConfig implements Configurable {
 	// 绑定的数据传输IP地址
 	private String bindIP = "0.0.0.0";
 	// 绑定的数据传输端口
@@ -29,9 +29,23 @@ public class ProxyConfig {
 	// 逗号分隔的所有集群节点的ID:IP:Port信息，如
 	// leader-1:127.0.0.1:9066,leader-2:127.0.0.1:9068,leader-3:127.0.0.1:9069
 	private String allNodeInfs;
-	// 当前节点所用的配置文件的版本
-	private Map<Byte, Integer> configVersionMap = new HashMap<>();
-	private Map<Byte, Object> configMap = new HashMap<>();
+
+	// 默认空闲超时时间
+	private long idleTimeout = 30 * 60 * 1000L;
+	// 默认复制组 空闲检查周期
+	private long replicaIdleCheckPeriod = 5 * 60 * 1000L;
+	// 默认复制组心跳周期
+	private long replicaHeartbeatPeriod = 10 * 1000L;
+
+	private int timerExecutor = 2;
+
+	// sql execute timeout (second)
+	private long sqlExecuteTimeout = 300;
+	private long processorCheckPeriod = 1 * 1000L;
+
+	private long minSwitchtimeInterval = 30 * 60 * 1000L;  //默认三十分钟
+	// 用于集群中发送prepare报文等待确认的时间，超时则认为失败，默认30s
+	private int prepareDelaySeconds = 30;
 
 	public ProxyConfig() {}
 
@@ -91,23 +105,60 @@ public class ProxyConfig {
 		this.clusterPort = clusterPort;
 	}
 
-	public Map<Byte, Integer> getConfigVersionMap() {
-		return configVersionMap;
+	public long getIdleTimeout() {
+		return idleTimeout;
 	}
 
-	public int getConfigVersion(byte configKey) {
-		Integer oldVersion = configVersionMap.get(configKey);
-		return oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion;
+	public void setIdleTimeout(long idleTimeout) {
+		this.idleTimeout = idleTimeout;
 	}
 
-	public Object getConfig(byte configKey) {
-		return configMap.get(configKey);
+	public int getTimerExecutor() {
+		return timerExecutor;
 	}
 
-	public void putConfig(byte configKey, Object config, Integer version) {
-		configMap.put(configKey, config);
-		version = version == null ? ConfigEnum.INIT_VERSION : version;
-		configVersionMap.put(configKey, version);
+	public void setTimerExecutor(int timerExecutor) {
+		this.timerExecutor = timerExecutor;
+	}
+
+	public long getSqlExecuteTimeout() {
+		return sqlExecuteTimeout;
+	}
+
+	public void setSqlExecuteTimeout(long sqlExecuteTimeout) {
+		this.sqlExecuteTimeout = sqlExecuteTimeout;
+	}
+
+	public long getProcessorCheckPeriod() {
+		return processorCheckPeriod;
+	}
+
+	public void setProcessorCheckPeriod(long processorCheckPeriod) {
+		this.processorCheckPeriod = processorCheckPeriod;
+	}
+
+	public long getReplicaIdleCheckPeriod() {
+		return replicaIdleCheckPeriod;
+	}
+
+	public void setReplicaIdleCheckPeriod(long replicaIdleCheckPeriod) {
+		this.replicaIdleCheckPeriod = replicaIdleCheckPeriod;
+	}
+
+	public long getReplicaHeartbeatPeriod() {
+		return replicaHeartbeatPeriod;
+	}
+
+	public void setReplicaHeartbeatPeriod(long replicaHeartbeatPeriod) {
+		this.replicaHeartbeatPeriod = replicaHeartbeatPeriod;
+	}
+
+	public long getMinSwitchtimeInterval() {
+		return minSwitchtimeInterval;
+	}
+
+	public void setMinSwitchtimeInterval(long minSwitchtimeInterval) {
+		this.minSwitchtimeInterval = minSwitchtimeInterval;
 	}
 
 	public boolean isLoadBalanceEnable() {
@@ -132,5 +183,13 @@ public class ProxyConfig {
 
 	public void setLoadBalancePort(int loadBalancePort) {
 		this.loadBalancePort = loadBalancePort;
+	}
+
+	public int getPrepareDelaySeconds() {
+		return prepareDelaySeconds;
+	}
+
+	public void setPrepareDelaySeconds(int prepareDelaySeconds) {
+		this.prepareDelaySeconds = prepareDelaySeconds;
 	}
 }

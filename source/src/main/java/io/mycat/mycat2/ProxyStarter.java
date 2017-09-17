@@ -45,16 +45,16 @@ public class ProxyStarter {
 			cluster.initCluster();
 		} else {
 			// 未配置集群，直接启动
-			startProxy();
+			startProxy(true);
 		}
 	}
 
-	public void startProxy() throws IOException {
+	public void startProxy(boolean isLeader) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
 
-		// 开启mycat服务
-		ConfigLoader.INSTANCE.loadAll(conf);
+		// 加载配置文件信息
+		ConfigLoader.INSTANCE.loadAll();
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), ServerType.MYCAT);
 		startReactor();
@@ -66,12 +66,19 @@ public class ProxyStarter {
             runtime.setLoadBalanceStrategy(new RandomStrategy());
             acceptor.startServerChannel(conf.getLoadBalanceIp(), conf.getLoadBalancePort(), ServerType.LOAD_BALANCER);
         }
+
+		// 主节点才启动心跳，非集群下也启动心跳
+		if (isLeader) {
+			runtime.startHeartBeatScheduler();
+		}
 	}
 
 	public void stopProxy() {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.stopServerChannel(false);
+
+		runtime.stopHeartBeatScheduler();
 	}
 
 	private void startReactor() throws IOException {

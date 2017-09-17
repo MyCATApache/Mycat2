@@ -1,5 +1,7 @@
 package io.mycat.mycat2.beans;
 
+import io.mycat.proxy.Configurable;
+
 import java.util.List;
 
 /**
@@ -8,7 +10,7 @@ import java.util.List;
  * @date: 10/09/2017
  * @author: gaozhiwen
  */
-public class SchemaConfBean {
+public class SchemaConfBean implements Configurable {
     private List<SchemaBean> schemas;
 
     public List<SchemaBean> getSchemas() {

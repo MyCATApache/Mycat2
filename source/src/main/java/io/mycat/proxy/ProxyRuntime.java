@@ -14,6 +14,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.ConfigLoader;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
+import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,9 +38,9 @@ import io.mycat.proxy.man.MyCluster;
 import io.mycat.util.TimeUtil;
 
 public class ProxyRuntime {
-
+	
 	private static final Logger logger = LoggerFactory.getLogger(ProxyRuntime.class);
-
+	
 	/*
 	 * 时间更新周期
 	 */
@@ -45,7 +49,7 @@ public class ProxyRuntime {
 	private static final String PROCESSOR_CHECK    = "PROCESSOR_CHECK";
 	private static final String REPLICA_ILDE_CHECK = "REPLICA_ILDE_CHECK";
 	private static final String REPLICA_HEARTBEAT  = "REPLICA_HEARTBEAT";
-
+	
 	private ProxyConfig proxyConfig;
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
 	private AtomicInteger sessionId = new AtomicInteger(1);
@@ -70,15 +74,13 @@ public class ProxyRuntime {
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
 
-
-
 	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
 	private ScheduledExecutorService heartbeatScheduler;
-
+	
 	public  long maxdataSourceInitTime = 60 * 1000L;
-
-
+	
+	
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -96,13 +98,11 @@ public class ProxyRuntime {
 	public void init() {
 		//心跳调度独立出来，避免被其他任务影响
 		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-		timerExecutor = ExecutorUtil.create("Timer", ((MycatConfig)getProxyConfig()).getTimerExecutor());
+		timerExecutor = ExecutorUtil.create("Timer", getProxyConfig().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
-		startUpdateTimeTask();
-		startHeartBeatScheduler();
 	}
-
+	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
 		// 找到一个可用的NIO Reactor Thread，交付托管
 		if (reactorEnv.counter++ == Integer.MAX_VALUE) {
@@ -112,14 +112,7 @@ public class ProxyRuntime {
 		// 获取一个reactor对象
 		return ProxyRuntime.INSTANCE.getReactorThreads()[index];
 	}
-
-	public void startUpdateTimeTask(){
-		heartbeatScheduler.scheduleAtFixedRate(updateTime(),
-											   0L,
-											   TIME_UPDATE_PERIOD,
-											   TimeUnit.MILLISECONDS);
-	}
-
+	
 	/**
 	 * 启动心跳检测任务
 	 */
@@ -134,39 +127,59 @@ public class ProxyRuntime {
 		}
 	}
 
+	public void addBusinessJob(Runnable job) {
+		businessExecutor.execute(job);
+	}
+
+	public void addDelayedJob(Runnable job, int delayedSeconds) {
+		schedulerService.schedule(job, delayedSeconds, TimeUnit.SECONDS);
+	}
+
 	/**
 	 * 切换 metaBean 名称
-	 * @param metaBean
 	 */
 	public void startSwitchDataSource(String replBean,Integer writeIndex){
-
+		
 		System.err.println("TODO 收到集群切换 请求，开始切换");
-
+		
 		MycatConfig config = (MycatConfig) getProxyConfig();
-		MySQLRepBean repBean = config.getMySQLReplicaSet()
-		  .stream().filter(f->f.getName().equals(replBean))
-		  .findFirst().orElse(null);
-
+		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
+		
 		if(repBean!=null){
-			businessExecutor.execute(()->{
-
+			addBusinessJob(()->{
+				
 				repBean.setSwitchResult(false);
 				repBean.switchSource(writeIndex,maxdataSourceInitTime);
-
+				
 				if(repBean.getSwitchResult().get()){
 					//TODO 切换成功. 通知集群
 					logger.info("switch datasource success");
 					System.err.println("switch datasource success");
 					startHeartBeatScheduler();
+
+					if (ProxyRuntime.INSTANCE.getProxyConfig().isClusterEnable()) {
+						ReplicaIndexBean bean = new ReplicaIndexBean();
+						Map<String, Integer> map = new HashMap<>(config.getRepIndexMap());
+						map.put(replBean, writeIndex);
+						bean.setReplicaIndexes(map);
+						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean, replBean);
+					} else {
+						// 非集群下直接更新replica-index信息
+						byte configType = ConfigEnum.REPLICA_INDEX.getType();
+						config.getRepIndexMap().put(replBean, writeIndex);
+						int curVersion = config.getConfigVersion(configType);
+						config.setConfigVersion(configType, curVersion + 1);
+						YamlUtil.archiveAndDump(ConfigEnum.REPLICA_INDEX.getFileName(), curVersion, config.getConfig(configType));
+					}
 				}else{
 					System.err.println("switch datasource error");
 					logger.error("switch datasource error");
 					//TODO 切换失败. 通知集群
 				}
 			});
-		}
+		}	
 	}
-
+	
 	/**
 	 * 停止
 	 */
@@ -174,7 +187,7 @@ public class ProxyRuntime {
 		heartBeatTasks.values().stream().forEach(f->f.cancel(false));
 		heartBeatTasks.clear();
 	}
-
+	
 	// 系统时间定时更新任务
 	private Runnable updateTime() {
 		return new Runnable() {
@@ -184,7 +197,7 @@ public class ProxyRuntime {
 			}
 		};
 	}
-
+		
 	// 数据节点定时心跳任务
 	private Runnable replicaHeartbeat() {
 		return ()->{
