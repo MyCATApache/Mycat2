@@ -31,6 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.proxy.ProxyRuntime;
 
@@ -182,10 +183,15 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				heartbeat();// timeout, heart beat again
 			}
 			break;
+		case DBHeartbeat.INIT_STATUS:
+			logger.info("current repl status [INIT_STATUS ---> OK_STATUS ]. update lastSwitchTime .{}:{}",source.getIp(),source.getPort());
+			MycatConfig conf = (MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
+			source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - conf.getMinSwitchtimeInterval());
 		case DBHeartbeat.OK_STATUS:
 		default:
 			this.status = OK_STATUS;
 			this.errorCount = 0;
+			
 		}
 	}
 
@@ -202,6 +208,17 @@ public class MySQLHeartbeat extends DBHeartbeat {
 			if(!source.isSlaveNode()){
 				//TODO  写节点 尝试多次次失败后, 需要通知集群
 				System.err.println("TODO 主节点尝试多次失败后，通知集群");
+				
+				MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+				
+				if(((System.currentTimeMillis() - source.getRepBean().getLastSwitchTime()) < conf.getMinSwitchtimeInterval())||
+						(System.currentTimeMillis() - source.getRepBean().getLastInitTime()) < conf.getMinSwitchtimeInterval()){
+					if (logger.isDebugEnabled()) {
+						logger.warn("the Minimum time interval for switchSource is {} seconds.",conf.getMinSwitchtimeInterval()/1000L);
+					}
+					return;
+				}
+				
 				int next = source.getRepBean().getNextIndex();
 				if(next==-1){
 					System.err.println(" 所有的 节点都不可用,无法进行切换  ");
