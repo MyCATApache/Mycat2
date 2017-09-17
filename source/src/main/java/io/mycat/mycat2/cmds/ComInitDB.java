@@ -15,6 +15,7 @@ import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
+import io.mycat.util.ParseUtil;
 
 public class ComInitDB extends DirectPassthrouhCmd{
 	
@@ -39,7 +40,8 @@ public class ComInitDB extends DirectPassthrouhCmd{
 		if (schemaBean == null && SchemaType.DB_IN_ONE_SERVER!=session.schema.getType()) {
             ErrorPacket error = new ErrorPacket();
             error.errno = ErrorCode.ER_BAD_DB_ERROR;
-            error.packetId = 1;
+            error.packetId = session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
+					+ ParseUtil.mysql_packetHeader_length);
             error.message = "Unknown database '" + schema + "'";
             session.responseOKOrError(error);
             return false;

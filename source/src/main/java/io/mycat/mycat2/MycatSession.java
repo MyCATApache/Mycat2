@@ -58,7 +58,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	public SchemaBean schema;
 
-	private Map<MySQLRepBean, List<MySQLSession>> backendMap = new HashMap<>();
+	private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
 

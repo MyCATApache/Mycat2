@@ -11,3 +11,5 @@ replicaIdleCheckPeriod: 2000
 idleTimeout: 2000
 processorCheckPeriod: 2000
 prepareDelaySeconds: 30
+minSwitchtimeInterval: 120000
+
