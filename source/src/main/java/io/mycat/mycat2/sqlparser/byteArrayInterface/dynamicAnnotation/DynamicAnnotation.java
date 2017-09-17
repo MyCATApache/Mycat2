@@ -26,9 +26,13 @@ public class DynamicAnnotation {
 
   public void match(BufferSQLContext context) {
     HashArray array = context.getHashArray();
-    match.pick(0, array.getCount(), context, array, context.getBuffer());
-    if (match.isComplete()) {
-      actions.apply(context);
-    }
+    match.pick(0, array.getCount(), context,array);
+//    if (match.isComplete()) {
+//      actions.apply(context);
+//    }
+  }
+
+  public DynamicAnnotationMatch getMatch() {
+    return match;
   }
 }

@@ -11,7 +11,7 @@ public class TrieContext {
     public List<String> funList = new ArrayList<>();
     public int x = 0;
     public int y = 0;
-    public boolean isBacktracking=true;
+    public boolean isBacktracking=false;
     public int index=0;
     Map<String, Integer> posMap;
 

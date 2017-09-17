@@ -118,7 +118,7 @@ public class DynamicAnnotationTest extends TestCase {
         context = new BufferSQLContext();
         parser.parse(bytes, context);
         runtime = DynamicAnnotationUtil.compile(conList);
-        runtime.getMatch().pick(0, context.getHashArray().getCount(), context, context.getHashArray(), context.getBuffer());
+        runtime.getMatch().pick(0, context.getHashArray().getCount(), context,context.getHashArray());
         runtime.testCallBackInfo(context);
     }
 

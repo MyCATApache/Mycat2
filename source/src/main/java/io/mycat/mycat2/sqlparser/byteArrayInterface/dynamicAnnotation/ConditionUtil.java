@@ -13,12 +13,12 @@ public class ConditionUtil {
         Map<String, Integer> str2int = runtime.str2Int;
         List<String> andList = map.get(Boolean.TRUE);
         if (andList != null && andList.size() != 0) {
-            andList = andList.stream().map((i) -> "tags[" + String.valueOf(str2int.get(i))+"]").collect(Collectors.toList());
+            andList = andList.stream().map((i) -> "tags[" + String.valueOf(str2int.get(i))+"]==1").collect(Collectors.toList());
             map.put(Boolean.TRUE, andList);
         }
         List<String> orList = map.get(Boolean.FALSE);
         if (orList != null && orList.size() != 0) {
-            orList = orList.stream().map((i) -> "tags[" + String.valueOf(str2int.get(i))+"]").collect(Collectors.toList());
+            orList = orList.stream().map((i) -> "tags[" + String.valueOf(str2int.get(i))+"]==1").collect(Collectors.toList());
             map.put(Boolean.FALSE, orList);
         }
         return codeByString(map);

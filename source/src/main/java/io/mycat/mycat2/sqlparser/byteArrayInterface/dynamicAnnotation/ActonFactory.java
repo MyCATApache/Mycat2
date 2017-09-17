@@ -82,6 +82,7 @@ public class ActonFactory<T> {
         return config;
     }
     final  SQLAnnotation<T> EMPTY=new SQLAnnotation<T>() {
+
         @Override
         public void init(Map<String, String> atgs) {
 

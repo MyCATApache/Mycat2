@@ -36,9 +36,9 @@ public class DynamicAnnotationRuntime {
         if (isDebug) {
             System.out.println(Arrays.toString(match.getCompleteTags()));
             int2str.entrySet().stream().forEach(e -> System.out.println(e.getKey() + ":" + e.getValue()));
-            if (!match.isComplete()) {
-                throw new Exception("没有匹配完全");
-            }
+//            if (!match.isComplete()) {
+//                throw new Exception("没有匹配完全");
+//            }
         }
     }
 
