@@ -12,31 +12,31 @@ import io.mycat.proxy.man.ManagePacket;
 public class ConfigResPacket extends ManagePacket {
     private byte confType;
     private int confVersion;
-    private String confMessage;
+    private String confContent;
 
     public ConfigResPacket() {
         super(ManagePacket.PKG_CONFIG_RES);
     }
 
-    public ConfigResPacket(byte confType, int confVersion, String confMessage) {
+    public ConfigResPacket(byte confType, int confVersion, String confContent) {
         super(ManagePacket.PKG_CONFIG_RES);
         this.confType = confType;
         this.confVersion = confVersion;
-        this.confMessage = confMessage;
+        this.confContent = confContent;
     }
 
     @Override
     public void resolveBody(ProxyBuffer buffer) {
         this.confType = buffer.readByte();
         this.confVersion = (int) buffer.readFixInt(4);
-        this.confMessage = buffer.readNULString();
+        this.confContent = buffer.readNULString();
     }
 
     @Override
     public void writeBody(ProxyBuffer buffer) {
         buffer.writeByte(confType);
         buffer.writeFixInt(4, confVersion);
-        buffer.writeNULString(confMessage);
+        buffer.writeNULString(confContent);
     }
 
     public byte getConfType() {
@@ -55,11 +55,11 @@ public class ConfigResPacket extends ManagePacket {
         this.confVersion = confVersion;
     }
 
-    public String getConfMessage() {
-        return confMessage;
+    public String getConfContent() {
+        return confContent;
     }
 
-    public void setConfMessage(String confMessage) {
-        this.confMessage = confMessage;
+    public void setConfContent(String confContent) {
+        this.confContent = confContent;
     }
 }

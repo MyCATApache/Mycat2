@@ -8,6 +8,7 @@ import java.nio.channels.SocketChannel;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.mycat.mycat2.ProxyStarter;
@@ -49,12 +50,15 @@ public class MyCluster {
 
 	};
 
-	private ConcurrentHashMap<String, ClusterNode> allNodes = new ConcurrentHashMap<>();
+	public ConcurrentHashMap<String, ClusterNode> allNodes = new ConcurrentHashMap<>();
 	private final ClusterNode myNode;
 	private ClusterNode myLeader;
 	private ClusterState clusterState = ClusterState.Joining;
 	private long lastClusterStateTime;
 	private final Selector nioSelector;
+
+	public int needCommitVersion;
+	public int needCommitCount;
 
 	public MyCluster(Selector nioSelector, String myNodeId, ArrayList<ClusterNode> allClusterNodes) {
 		this.nioSelector = nioSelector;
@@ -67,6 +71,7 @@ public class MyCluster {
 		}
 		myNode.setState(NodeState.Online);
 		this.myNode = myNode;
+		this.myNode.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getBindPort();
 	}
 
 	/**
@@ -103,6 +108,7 @@ public class MyCluster {
 	public void onClusterNodeUp(NodeRegInfoPacket pkg, AdminSession session) throws IOException {
 		String theNodeId = pkg.getNodeId();
 		ClusterNode theNode = allNodes.get(theNodeId);
+		theNode.proxyPort = pkg.getProxyPort();
 		theNode.setNodeStartTime(pkg.getStartupTime());
 		theNode.setState(NodeState.Online);
 		theNode.setMyLeaderId(pkg.getMyLeader());
@@ -110,7 +116,7 @@ public class MyCluster {
 		logger.info("Node online " + theNode.id + " at " + theNode.ip + ":" + theNode.port + " started at "
 				+ new Timestamp(theNode.getNodeStartTime()) + " cluster leader " + theNode.getMyLeaderId()
 				+ " cluster state " + theNode.getMyClusterState() + " cluster time:"
-				+ theNode.getLastClusterStateTime());
+				+ theNode.getLastClusterStateTime() + " proxy port:" + theNode.proxyPort);
 		if (clusterState == ClusterState.Joining || clusterState == ClusterState.LeaderElection) {
 			if (theNode.getMyClusterState() == ClusterState.Clustered) {
 				myLeader = this.findNode(theNode.getMyLeaderId());
@@ -121,12 +127,11 @@ public class MyCluster {
 					findSession(myLeader.id).answerClientNow(joinPkg);
 					return;
 				}
-
-			} else if (getMyAliveNodesCount() > (allNodes.size() >> 1) && imSmallestAliveNode()) {
+			} else if (checkIfLeader()) {
 				// 是连接中当前编号最小的节点，当选为Leader
-				logger.info("I'm smallest alive node ,and exceeded 1/2 nodes alive ,so I'm the King now !");
+				logger.info("I'm smallest alive node, and exceeded 1/2 nodes alive, so I'm the King now!");
 				// 集群主已产生，继续加载配置，提供服务
-				ProxyStarter.INSTANCE.startProxy();
+				ProxyStarter.INSTANCE.startProxy(true);
 
 				this.setClusterState(ClusterState.Clustered);
 				this.myLeader = this.myNode;
@@ -138,11 +143,21 @@ public class MyCluster {
 		} else if (myLeader == myNode) {// 当前是集群状态，并且自己是Leader，就回话，可以加入集群
 			session.answerClientNow(createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK));
 		}
-
 	}
 
-	private void notifyAllNodes(AdminSession session,ManagePacket packet) 
-	{
+	private boolean checkIfLeader() {
+		int halfAllCount = allNodes.size() >> 1;
+		int myAliveCount = getMyAliveNodesCount();
+		if (nodesIsOdd()) {
+			//奇数个节点，判断是否>一半
+			return (myAliveCount > halfAllCount && imSmallestAliveNode());
+		} else {
+			//偶数个节点，判断是否>一半 或者 =一半时主节点是集群中最小的节点
+			return (myAliveCount > halfAllCount && imSmallestAliveNode()) || (myAliveCount == halfAllCount && imSmallestInNodes());
+		}
+	}
+
+	private void notifyAllNodes(AdminSession session,ManagePacket packet) {
 		for (Session theSession : session.getMySessionManager().getAllSessions()) {
 			AdminSession nodeSession = (AdminSession) theSession;
 			if (nodeSession.isChannelOpen()) {
@@ -152,15 +167,18 @@ public class MyCluster {
 					logger.warn("notify node err " + nodeSession.getNodeId(),e);
 				}
 			}
-
 		}
 	}
+
 	private JoinCLusterNotifyPacket createJoinNotifyPkg(AdminSession session,byte joinState) {
 		JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes());
 		respPacket.setJoinState(joinState);
 		return respPacket;
 	}
 
+	/**
+	 * 判断当前节点是否是在online状态下最小的节点
+     */
 	private boolean imSmallestAliveNode() {
 		String myId = this.getMyNodeId();
 		for (ClusterNode curNode : this.allNodes.values()) {
@@ -168,6 +186,19 @@ public class MyCluster {
 				if (myId.compareTo(curNode.id) > 0) {
 					return false;
 				}
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * 判断当前节点是否是在所有配置中最小的节点
+     */
+	private boolean imSmallestInNodes() {
+		String myId = this.getMyNodeId();
+		for (ClusterNode curNode : this.allNodes.values()) {
+			if (myId.compareTo(curNode.id) > 0) {
+				return false;
 			}
 		}
 		return true;
@@ -217,9 +248,8 @@ public class MyCluster {
 			// 当前集群失去主节点，关闭proxy服务
 			ProxyStarter.INSTANCE.stopProxy();
 		} else if (myLeader == myNode) {
-			//如果集群数量小于1/2就通知集群解散
-			if (this.getMyAliveNodesCount() <= this.allNodes.size() >> 1) {
-				logger.warn("Less then 1/2 mumbers  in my Kingdom ,so I quit ");
+			if (checkIfNeedDismissCluster()) {
+				logger.warn("Less than 1/2 mumbers in my Kingdom ,so I quit");
 				this.setClusterState(ClusterState.LeaderElection);
 				this.myLeader=null;
 				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_DENNIED);
@@ -229,6 +259,22 @@ public class MyCluster {
 				ProxyStarter.INSTANCE.stopProxy();
 			}
 		}
+	}
+
+	private boolean checkIfNeedDismissCluster() {
+		int halfAllCount = allNodes.size() >> 1;
+		int myAliveCount = getMyAliveNodesCount();
+		if (nodesIsOdd()) {
+			//奇数个节点，判断是否>一半
+			return myAliveCount <= halfAllCount;
+		} else {
+			//偶数个节点，判断是否>一半 或者 =一半时主节点是集群中最小的节点
+			return (myAliveCount < halfAllCount) || (myAliveCount == halfAllCount && !imSmallestInNodes());
+		}
+	}
+
+	public boolean nodesIsOdd() {
+		return (allNodes.size() & 1) == 1;
 	}
 
 	public String getMyNodeId() {
@@ -267,5 +313,4 @@ public class MyCluster {
 		this.clusterState = clusterState;
 		this.lastClusterStateTime = System.currentTimeMillis();
 	}
-
 }

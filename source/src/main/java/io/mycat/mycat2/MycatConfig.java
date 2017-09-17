@@ -7,31 +7,14 @@ import java.util.Map;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.ReplicaIndexBean;
 import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.Configurable;
 import io.mycat.proxy.ProxyConfig;
 
 public class MycatConfig extends ProxyConfig {
-	
-	public static final long DEFAULT_IDLE_TIMEOUT 				= 30 * 60 * 1000L;
-	public static final long DEFAULT_REPLICA_IDLE_CHECK_PERIOD  = 5 * 60 * 1000L;
-	public static final long DEFAULT_REPLICA_HEARTBEAT_PERIOD   = 10 * 1000L;
-	public static final int  DEFAULT_TIMEREXECTOR               = 2;
-	public static final long DEFAULT_PROCESSOR_CHECK_PERIOD     = 1 * 1000L;
-	
-	
-	// 默认空闲超时时间
-	private long idleTimeout;
-	// 默认复制组 空闲检查周期
-	private long replicaIdleCheckPeriod;
-	// 默认复制组心跳周期 
-	private long replicaHeartbeatPeriod;
-	
-	private int timerExecutor = 0;
-	
-	// sql execute timeout (second)
-	private long sqlExecuteTimeout = 300;
-	private long processorCheckPeriod;
-	
-	private long minSwitchtimeInterval = 30 * 60 * 1000L;  //默认三十分钟
+	// 当前节点所用的配置文件的版本
+	private Map<Byte, Integer> configVersionMap = new HashMap<>();
+	private Map<Byte, Configurable> configMap = new HashMap<>();
 
 	/**
 	 * 系统中所有MySQLRepBean的Map
@@ -48,7 +31,7 @@ public class MycatConfig extends ProxyConfig {
 	 */
 	private SchemaBean defaultSchemaBean;
 
-	private Map<String, Integer> repIndexMap = new HashMap<String, Integer>();
+	private Map<String, Integer> repIndexMap;
 
 	public Map<String, MySQLRepBean> getMysqlRepMap() {
 		return this.mysqlRepMap;
@@ -85,65 +68,40 @@ public class MycatConfig extends ProxyConfig {
 		return repIndexMap.get(repName);
 	}
 
+	public Map<String, Integer> getRepIndexMap() {
+		return this.repIndexMap;
+	}
+
 	public void addRepIndex(ReplicaIndexBean replicaIndexBean) {
 		if (replicaIndexBean != null && replicaIndexBean.getReplicaIndexes() != null) {
-			replicaIndexBean.getReplicaIndexes().forEach((key, value) -> repIndexMap.put(key, value));
+			repIndexMap = replicaIndexBean.getReplicaIndexes();
 		}
 	}
 
-	public long getIdleTimeout() {
-		return idleTimeout;
+	public void setConfigVersion(byte configKey, int version) {
+		configVersionMap.put(configKey, version);
 	}
 
-	public void setIdleTimeout(long idleTimeout) {
-		this.idleTimeout = idleTimeout;
+	public int getConfigVersion(byte configKey) {
+		Integer oldVersion = configVersionMap.get(configKey);
+		return oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion;
 	}
 
-	public int getTimerExecutor() {
-		return timerExecutor;
+	public int getNextConfigVersion(byte configKey) {
+		return getConfigVersion(configKey) + 1;
 	}
 
-	public void setTimerExecutor(int timerExecutor) {
-		this.timerExecutor = timerExecutor;
+	public Configurable getConfig(byte configKey) {
+		return configMap.get(configKey);
 	}
 
-	public long getSqlExecuteTimeout() {
-		return sqlExecuteTimeout;
+	public void putConfig(byte configKey, Configurable config, Integer version) {
+		configMap.put(configKey, config);
+		version = version == null ? ConfigEnum.INIT_VERSION : version;
+		configVersionMap.put(configKey, version);
 	}
 
-	public void setSqlExecuteTimeout(long sqlExecuteTimeout) {
-		this.sqlExecuteTimeout = sqlExecuteTimeout;
-	}
-
-	public long getProcessorCheckPeriod() {
-		return processorCheckPeriod;
-	}
-
-	public void setProcessorCheckPeriod(long processorCheckPeriod) {
-		this.processorCheckPeriod = processorCheckPeriod;
-	}
-
-	public long getReplicaIdleCheckPeriod() {
-		return replicaIdleCheckPeriod;
-	}
-
-	public void setReplicaIdleCheckPeriod(long replicaIdleCheckPeriod) {
-		this.replicaIdleCheckPeriod = replicaIdleCheckPeriod;
-	}
-
-	public long getReplicaHeartbeatPeriod() {
-		return replicaHeartbeatPeriod;
-	}
-
-	public void setReplicaHeartbeatPeriod(long replicaHeartbeatPeriod) {
-		this.replicaHeartbeatPeriod = replicaHeartbeatPeriod;
-	}
-
-	public long getMinSwitchtimeInterval() {
-		return minSwitchtimeInterval;
-	}
-
-	public void setMinSwitchtimeInterval(long minSwitchtimeInterval) {
-		this.minSwitchtimeInterval = minSwitchtimeInterval;
+	public Map<Byte, Integer> getConfigVersionMap() {
+		return configVersionMap;
 	}
 }

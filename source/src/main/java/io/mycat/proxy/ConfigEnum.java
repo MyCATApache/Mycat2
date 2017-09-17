@@ -19,18 +19,18 @@ public enum ConfigEnum {
     SCHEMA((byte) 3, "schema.yml", SchemaConfBean.class),
     SHARDING_RULE((byte) 4, "sharding-rule.yml", ShardingRuleBean.class);
 
-    private byte code;
+    private byte type;
     private String fileName;
     private Class clazz;
 
-    ConfigEnum(byte code, String fileName, Class clazz) {
-        this.code = code;
+    ConfigEnum(byte type, String fileName, Class clazz) {
+        this.type = type;
         this.fileName = fileName;
         this.clazz = clazz;
     }
 
-    public byte getCode() {
-        return this.code;
+    public byte getType() {
+        return this.type;
     }
 
     public String getFileName() {
@@ -41,8 +41,8 @@ public enum ConfigEnum {
         return clazz;
     }
 
-    public static ConfigEnum getConfigEnum(byte code) {
-        return Stream.of(ConfigEnum.values()).filter(configEnum -> configEnum.code == code)
+    public static ConfigEnum getConfigEnum(byte type) {
+        return Stream.of(ConfigEnum.values()).filter(configEnum -> configEnum.type == type)
                 .findFirst().orElse(null);
     }
 

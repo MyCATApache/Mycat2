@@ -8,7 +8,8 @@ annotations:
                              sqltype: insert
                              where:
                                     - and: id between 1 and 100
-                                    - or: name = "haha"
+                                    - and: name = "haha" and a=?
+                                    - or: name2 = "ha"
                              tables:
                                     - x1
                                     - x2

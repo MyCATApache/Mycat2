@@ -42,7 +42,6 @@ public class MycatCore {
 	public static final String MOCK_SCHEMA = "mysql";
 
 	public static void main(String[] args) throws IOException {
-
 		String mySeq = "1";
 		if (args.length > 0) {
 			mySeq = args[0];
@@ -66,9 +65,8 @@ public class MycatCore {
 		// Debug观察MySQL协议用
 		// runtime.setSessionManager(new MySQLStudySessionManager());
 		runtime.setSessionManager(new MycatSessionManager());
+		runtime.init();
 
 		ProxyStarter.INSTANCE.start();
-		
-		runtime.init();
 	}
 }

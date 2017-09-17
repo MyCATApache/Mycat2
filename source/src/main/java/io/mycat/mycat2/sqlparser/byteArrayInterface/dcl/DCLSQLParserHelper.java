@@ -5,7 +5,10 @@ import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mycat2.sqlparser.IntTokenHash;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.TokenHash;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.*;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.DefaultByteArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;

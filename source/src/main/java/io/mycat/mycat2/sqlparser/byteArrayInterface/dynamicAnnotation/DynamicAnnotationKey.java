@@ -1,19 +1,21 @@
 package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class DynamicAnnotationKey{
-    String schemaName;
-    SQLType sqlType;
-    String [] tables;
-    String matchName;
+    final String schemaName;
+    final SQLType sqlType;
+    final String[] tables;
+    final String matchName;
 
     public DynamicAnnotationKey(String schemaName, SQLType sqlType, String[] tables, String matchName) {
         this.schemaName = schemaName;
         this.sqlType = sqlType;
         this.tables = tables;
         this.matchName = matchName;
+        ArrayList<String> a=new ArrayList<>();
     }
 
     @Override

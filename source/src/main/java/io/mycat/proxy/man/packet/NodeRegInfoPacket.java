@@ -1,6 +1,7 @@
 package io.mycat.proxy.man.packet;
 
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.ManagePacket;
 import io.mycat.proxy.man.MyCluster;
 import io.mycat.proxy.man.MyCluster.ClusterState;
@@ -16,6 +17,7 @@ public class NodeRegInfoPacket extends ManagePacket {
 	private ClusterState clusterState;
 	private long lastClusterStateTime;
 	private String myLeader;
+	private int proxyPort;
 	private long startupTime;
 	//是否应答之前的NodeRegInfo报文
 	private boolean isAnswer;
@@ -27,6 +29,7 @@ public class NodeRegInfoPacket extends ManagePacket {
 		this.lastClusterStateTime=lastClusterStateTime;
 		setMyLeader(myLeader);
 		this.startupTime = startupTime;
+		this.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getBindPort();
 	}
 
 	public NodeRegInfoPacket() {
@@ -40,6 +43,7 @@ public class NodeRegInfoPacket extends ManagePacket {
 		this.lastClusterStateTime=buffer.readFixInt(8);
 		this.myLeader=buffer.readNULString();
 		myLeader=myLeader.equals("")?null:myLeader;
+		proxyPort = (int) buffer.readFixInt(4);
 		startupTime = buffer.readFixInt(8);
 		isAnswer=buffer.readByte()==0x01;
 
@@ -51,6 +55,7 @@ public class NodeRegInfoPacket extends ManagePacket {
 		buffer.writeByte(clusterState.getSateCode());
 		buffer.writeFixInt(8, this.lastClusterStateTime);
 		buffer.writeNULString(myLeader);
+		buffer.writeFixInt(4, proxyPort);
 		buffer.writeFixInt(8, startupTime);
 		buffer.writeByte((byte) (isAnswer?0x01:0x00));
 
@@ -104,4 +109,11 @@ public class NodeRegInfoPacket extends ManagePacket {
 		this.myLeader = myLeader==null?"":myLeader;
 	}
 
+	public int getProxyPort() {
+		return proxyPort;
+	}
+
+	public void setProxyPort(int proxyPort) {
+		this.proxyPort = proxyPort;
+	}
 }

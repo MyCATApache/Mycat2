@@ -2,6 +2,10 @@ package io.mycat.util;
 
 import io.mycat.mycat2.ConfigLoader;
 import io.mycat.mycat2.beans.ReplicaConfBean;
+import io.mycat.proxy.Configurable;
+import io.mycat.proxy.ProxyRuntime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.nodes.Tag;
@@ -23,11 +27,29 @@ import java.util.stream.Stream;
  * @author: gaozhiwen
  */
 public class YamlUtil {
+    private static final Logger LOGGER = LoggerFactory.getLogger(YamlUtil.class);
     private static String ROOT_PATH;
-    
+
     static {
-    	File directory = new File("");
-    	ROOT_PATH = directory.getAbsolutePath();
+    	String mycatHome = System.getProperty("MYCAT_HOME");
+        if (mycatHome == null) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(System.getProperty("user.dir"))
+                .append(File.separator)
+                .append("source")
+                .append(File.separator)
+                .append("target")
+                .append(File.separator)
+                .append("classes")
+                .append(File.separator);
+            ROOT_PATH = sb.toString();
+            LOGGER.debug("MYCAT_HOME is not set, set the default path: {}", ROOT_PATH);
+        } else {
+            ROOT_PATH = mycatHome.endsWith(File.separator) ?
+                    mycatHome + ConfigLoader.DIR_CONF :
+                    mycatHome + File.separator + ConfigLoader.DIR_CONF;
+            LOGGER.debug("mycat home: {}, root path: {}", mycatHome, ROOT_PATH);
+        }
     }
 
     public static <T> T load(String fileName, Class<T> clazz) throws FileNotFoundException {
@@ -61,40 +83,82 @@ public class YamlUtil {
         return str;
     }
 
-    public static void dumpToFile(String path, String content) throws IOException {
-        Path file = Paths.get(ROOT_PATH + ConfigLoader.DIR_PREPARE + path);
-        try (FileWriter writer = new FileWriter(file.toString())) {
-            writer.write(content);
-        }
+    public static void dumpToFile(String path, String content) {
+        ProxyRuntime.INSTANCE.addBusinessJob(() -> {
+            Path file = Paths.get(ROOT_PATH + ConfigLoader.DIR_PREPARE + path);
+            try (FileWriter writer = new FileWriter(file.toString())) {
+                writer.write(content);
+            } catch (IOException e) {
+                LOGGER.error("error to write content: {} to path: {}", content, path, e);
+            }
+        });
     }
 
     /**
      * 将配置文件归档，新的配置文件生效
      */
-    public static Integer archive(String configName, int curVersion) throws IOException {
-        //检查是否有新需要生成的文件
+    public static Integer archive(String configName, int curVersion, Integer targetVersion) throws IOException {
+        // 检查是否有新需要加载的文件
         String preparePath = ROOT_PATH + ConfigLoader.DIR_PREPARE;
         File prepareFile = new File(preparePath);
-        File[] files = prepareFile.listFiles((dir, name) -> name.startsWith(configName));
+
+        String filePrefix = (targetVersion == null) ? configName : getFileName(configName, targetVersion.intValue());
+        File[] files = prepareFile.listFiles((dir, name) -> name.startsWith(filePrefix));
+
         if (files == null || files.length == 0) {
-            return curVersion;
+            LOGGER.warn("no prepare file for config {}", configName);
+            return null;
         }
-        //将旧的配置归档
+
+        // 将现有的配置归档
         String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
-        Files.move(Paths.get(ROOT_PATH + configName), Paths.get(archivePath + configName + "-" + curVersion), StandardCopyOption.REPLACE_EXISTING);
-        //将新的配置生效
-        File confFile = Stream.of(files).sorted((file1, file2) -> {
-                String name1 = file1.getName();
-                Integer version1 = Integer.valueOf(name1.substring(name1.lastIndexOf("-") + 1));
-                String name2 = file2.getName();
-                Integer version2 = Integer.valueOf(name2.substring(name2.lastIndexOf("-") + 1));
-                return version2.compareTo(version1);
-            }).findFirst().orElse(null);
+        Files.move(Paths.get(ROOT_PATH + configName),
+                Paths.get(archivePath + getFileName(configName, curVersion)),
+                StandardCopyOption.REPLACE_EXISTING);
+
+        // 将新的配置生效
+        File confFile = Stream.of(files)
+                .sorted((file1, file2) -> {
+                    String name1 = file1.getName();
+                    Integer version1 = parseConfigVersion(name1);
+                    String name2 = file2.getName();
+                    Integer version2 = parseConfigVersion(name2);
+                    return version2.compareTo(version1);
+                })
+                .findFirst().get();
+
         Files.copy(confFile.toPath(), Paths.get(ROOT_PATH + configName), StandardCopyOption.REPLACE_EXISTING);
 
         String name = confFile.toPath().toString();
-        Integer newVersion = Integer.valueOf(name.substring(name.lastIndexOf("-") + 1));
-        return newVersion;
+        return parseConfigVersion(name);
+    }
+
+    public static void archiveAndDump(String configName, int curVersion, Configurable configBean) {
+        ProxyRuntime.INSTANCE.addBusinessJob(() -> {
+            String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
+            try {
+                Files.move(Paths.get(ROOT_PATH + configName),
+                        Paths.get(archivePath + getFileName(configName, curVersion)),
+                        StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException e) {
+                LOGGER.error("error to move file for config {}, version {}", configName, curVersion);
+            }
+
+            Path file = Paths.get(ROOT_PATH + configName);
+            try (FileWriter writer = new FileWriter(file.toString())) {
+                writer.write(dump(configBean));
+            } catch (IOException e) {
+                LOGGER.error("error to dump config to file, config name {}, version {}", configName, curVersion);
+            }
+        });
+    }
+
+    public static String getFileName(String configName, int version) {
+        return configName + "-" + version;
+    }
+
+    private static Integer parseConfigVersion(String fileName) {
+        return Integer.valueOf(fileName.substring(fileName.lastIndexOf("-") + 1));
     }
 
     /**
@@ -114,11 +178,20 @@ public class YamlUtil {
     /**
      * 清空文件夹
      * @param directoryName
+     * @param filePrefix
      * @throws IOException
      */
-    public static void clearDirectory(String directoryName) throws IOException {
+    public static void clearDirectory(String directoryName, String filePrefix) throws IOException {
         String dirPath = ROOT_PATH + directoryName;
         File dirFile = new File(dirPath);
-        Stream.of(dirFile.listFiles()).forEach(file -> file.delete());
+        Stream.of(dirFile.listFiles())
+                .filter(file -> {
+                    if (filePrefix == null) {
+                        return file != null;
+                    } else {
+                        return file != null && file.getName().startsWith(filePrefix);
+                    }
+                })
+                .forEach(file -> file.delete());
     }
 }
