@@ -8,6 +8,7 @@ import java.util.Map;
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.Interceptor.impl.DefaultIntercepor;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.cmds.LoadDataCommand;
 import io.mycat.mycat2.cmds.judge.DirectTransJudge;
@@ -74,6 +75,7 @@ public class PkgFirstReader implements PkgProcess {
 			// 如果当前为特殊的load data包，则直接进行切换至load data的逻辑处理
 			else if (session.curMSQLPackgInf.pkgType == MySQLPacket.LOAD_DATA_PACKET) {
 				session.getMycatSession().curSQLCommand = LoadDataCommand.INSTANCE;
+				session.getMycatSession().putSQLCmd(DefaultIntercepor.INSTANCE, LoadDataCommand.INSTANCE);
 				// 将前端的包检查关闭
 				session.getMycatSession().getSessionAttrMap().put(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey(), true);
 

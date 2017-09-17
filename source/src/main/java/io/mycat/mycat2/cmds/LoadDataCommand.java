@@ -176,7 +176,7 @@ public class LoadDataCommand implements MyCommand {
 		//前段数据透传完成
 		if(flag) {
 			logger.debug("load data finish!!!");
-			session.getMycatSession().curSQLCommand = DirectPassthrouhCmd.INSTANCE;
+			//session.getMycatSession().curSQLCommand = DirectPassthrouhCmd.INSTANCE;
 			// 当load data的包完成后，则又重新打开包完整性检查
 			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
 			//清除临时数组
