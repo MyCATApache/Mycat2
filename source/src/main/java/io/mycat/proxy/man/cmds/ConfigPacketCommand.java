@@ -8,6 +8,7 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.AdminCommand;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.ManagePacket;
+import io.mycat.proxy.man.MyCluster;
 import io.mycat.proxy.man.packet.ConfigReqPacket;
 import io.mycat.proxy.man.packet.ConfigResPacket;
 import io.mycat.proxy.man.packet.ConfigVersionResPacket;
@@ -32,6 +33,11 @@ public class ConfigPacketCommand implements AdminCommand {
 
     @Override
     public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
+        if (ProxyRuntime.INSTANCE.getMyCLuster().getClusterState() != MyCluster.ClusterState.Clustered) {
+            LOGGER.warn("node is not clustered state, cluster may crashed, received older pkg, throw it");
+            return;
+        }
+
         if (cmdType == ManagePacket.PKG_CONFIG_VERSION_REQ) {
             handleConfigVersionReq(session);
         } else if (cmdType == ManagePacket.PKG_CONFIG_VERSION_RES) {

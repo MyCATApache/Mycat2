@@ -34,6 +34,11 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
 
     @Override
     public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
+        if (ProxyRuntime.INSTANCE.getMyCLuster().getClusterState() != MyCluster.ClusterState.Clustered) {
+            LOGGER.warn("node is not clustered state, cluster may crashed, received older pkg, throw it");
+            return;
+        }
+
         if (cmdType == ManagePacket.PKG_CONFIG_PREPARE) {
             handlePrepare(session);
         } else if (cmdType == ManagePacket.PKG_CONFIG_CONFIRM) {
