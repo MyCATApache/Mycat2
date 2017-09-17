@@ -285,7 +285,7 @@ public class MySQLRepBean {
     
     public MySQLMetaBean getBalanceMetaBean(boolean runOnSlave){
     	
-    	if(!runOnSlave){
+    	if(RepTypeEnum.SINGLENODE == type||!runOnSlave){
     		return getCurWriteMetaBean();
     	}
     	

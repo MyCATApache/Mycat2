@@ -21,6 +21,7 @@ import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BufferPool;
 import io.mycat.util.CharsetUtil;
+import io.mycat.util.ParseUtil;
 import io.mycat.util.SecurityUtil;
 
 /**
@@ -81,9 +82,10 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 				throw new RuntimeException(e.getMessage());
 			}
 			// SchemaBean schema = session.schema;
-			if(schema!=null&&schema.getDefaultDN()!=null){
-				packet.database = schema.getDefaultDN().getDatabase();
-			}
+			// 创建连接时，默认不主动同步数据库
+//			if(schema!=null&&schema.getDefaultDN()!=null){
+//				packet.database = schema.getDefaultDN().getDatabase();
+//			}
 
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
 			session.proxyBuffer.reset();
@@ -101,6 +103,8 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 				this.finished(true);
 			} else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
 				errPkg = new ErrorPacket();
+				errPkg.packetId = session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
+																+ ParseUtil.mysql_packetHeader_length);
 				errPkg.read(session.proxyBuffer);
 				logger.warn("backend authed failed. Err No. " + errPkg.errno + "," + errPkg.message);
 				this.finished(false);
