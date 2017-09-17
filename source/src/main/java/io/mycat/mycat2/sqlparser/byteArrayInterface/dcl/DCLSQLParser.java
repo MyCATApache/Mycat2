@@ -1,9 +1,9 @@
 package io.mycat.mycat2.sqlparser.byteArrayInterface.dcl;
 
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.TokenHash;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 

@@ -2,6 +2,8 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
@@ -29,18 +31,23 @@ public class DynamicAnnotationUtil {
         classLoader = new DynamicClassLoader("", Thread.currentThread().getContextClassLoader());
     }
 
-    public static DynamicAnnotationRuntime compile(List<String> lines) throws Exception {
+    public static DynamicAnnotationRuntime compile(Map<Boolean, List< String>> lines) throws Exception {
         String filename = "_" + name++;
         DynamicAnnotationRuntime runtime = genJavacode(filename, filename + ".java", lines);
         compileJavaCodeToClass(runtime);
         loadClass(runtime);
         return runtime;
     }
+    public static DynamicAnnotationRuntime compile( List< String> lines) throws Exception {
+        HashMap<Boolean,List< String> > map=new HashMap<>();
+        map.put(Boolean.TRUE,lines);
+        return compile(map);
+    }
 
-    public static DynamicAnnotationRuntime genJavacode(String className, String path, List<String> lines) throws IOException {
+    public static DynamicAnnotationRuntime genJavacode(String className, String path, Map<Boolean, List< String>> lines) throws IOException {
         DynamicAnnotationRuntime runtime = new DynamicAnnotationRuntime();
         runtime.setMatchName(className);
-        String code = preProcess(lines, runtime);
+        String code = assemble(lines, runtime);
         Path p = Paths.get(path);
         System.out.println(p.toAbsolutePath());
         try (FileWriter fileWriter = new FileWriter(path)) {
@@ -70,7 +77,20 @@ public class DynamicAnnotationUtil {
         }
     }
 
-    private static String preProcess(List<String> list, DynamicAnnotationRuntime runtime) {
+    private static String assemble(Map<Boolean, List<String>> map, DynamicAnnotationRuntime runtime) {
+        List<String> list = map.values().stream().flatMap(maps -> maps.stream()).collect(Collectors.toList());
+        preProcess(list, runtime);
+        TrieCompiler trieCompiler = new TrieCompiler();
+        TrieContext context = new TrieContext();
+        Map<String, Integer> str2Int = runtime.str2Int;
+        Map<String,Integer>backtrackingTable=runtime.backtrackingTable;
+        for (Map.Entry<String, Integer> i : str2Int.entrySet()) {
+            insert(i.getKey(), trieCompiler, i.getValue().toString(), backtrackingTable.get(i.getKey()));
+        }
+        return  trieCompiler.toCode1(runtime.matchName, runtime, context,map);
+    }
+
+    private static DynamicAnnotationRuntime preProcess(List<String> list, DynamicAnnotationRuntime runtime) {
         Map<String, Set<String>> relationTable = new HashMap<>();
         Map<String, Integer> backtrackingTable = new HashMap<>();
         BiFunction<String, String, Boolean> equal = (l, r) -> {
@@ -87,8 +107,8 @@ public class DynamicAnnotationUtil {
                 int pos = 0;//偏移量
                 //查找共有后缀
                 if (!one.equals(two) || list.size() == 1) {
-                    String[] oneTokenList = one.split(" ");
-                    String[] twoTokenList = two.split(" ");
+                    String[] oneTokenList = tokenize(one);
+                    String[] twoTokenList = tokenize(two);
                     int k = 0;
                     int l = 0;
                     int markPosOne = 0;
@@ -125,7 +145,7 @@ public class DynamicAnnotationUtil {
                         if (b.equals("") || a.equals("")) {
                         } else {
                             if (isIn(a, b)) {
-                                pos = oneTokenList.length - markPosOne - 1;
+                                pos = oneTokenList.length - markPosOne ;
                             } else {
 //                               System.out.println("可能不支持这个条件:"+one);
 //                               System.out.println("可能不支持这个条件:"+two);
@@ -173,16 +193,11 @@ public class DynamicAnnotationUtil {
             int2str.put(i, key);
             str2Int.put(key, i);
         }
-        TrieCompiler trieCompiler = new TrieCompiler();
-        for (Map.Entry<String, Integer> i : str2Int.entrySet()) {
-            insert(i.getKey(), trieCompiler, i.getValue().toString(), backtrackingTable.get(i.getKey()));
-        }
-        TrieContext context = new TrieContext();
-        String res = trieCompiler.toCode1(runtime.matchName, context);
         runtime.setInt2str(int2str);
         runtime.setMap(relationTable);
         runtime.setStr2Int(str2Int);
-        return res;
+        runtime.setBacktrackingTable(backtrackingTable);
+        return runtime;
     }
 
     public static boolean isIn(String f, String s) {
@@ -198,5 +213,19 @@ public class DynamicAnnotationUtil {
         TrieCompiler.insertNode(context, trieCompiler, mark, backPos);
     }
 
+    public static String[] tokenize(String str) {
+        byte[] bytes = str.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        BufferSQLContext context = new BufferSQLContext();
+        BufferSQLParser sqlParser = new BufferSQLParser();
+        sqlParser.parse(bytes, context);
+        HashArray array = context.getHashArray();
+        ByteArrayInterface bi = context.getBuffer();
+        int count = array.getCount();
+        String[] res = new String[count];
+        for (int i = 0; i < count; i++) {
+            res[i] = bi.getStringByHashArray(i, array);
+        }
+        return res;
+    }
 
 }
