@@ -162,7 +162,7 @@ public class ProxyRuntime {
 						Map<String, Integer> map = new HashMap<>(config.getRepIndexMap());
 						map.put(replBean, writeIndex);
 						bean.setReplicaIndexes(map);
-						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean);
+						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean, replBean);
 					} else {
 						// 非集群下直接更新replica-index信息
 						byte configType = ConfigEnum.REPLICA_INDEX.getType();

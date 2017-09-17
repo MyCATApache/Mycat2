@@ -12,27 +12,31 @@ import io.mycat.proxy.man.ManagePacket;
 public class ConfigConfirmPacket extends ManagePacket {
     private byte confType;
     private int confVersion;
+    private String attach;
 
     public ConfigConfirmPacket() {
         super(ManagePacket.PKG_CONFIG_CONFIRM);
     }
 
-    public ConfigConfirmPacket(byte confType, int confVersion) {
+    public ConfigConfirmPacket(byte confType, int confVersion, String attach) {
         super(ManagePacket.PKG_CONFIG_CONFIRM);
         this.confType = confType;
         this.confVersion = confVersion;
+        this.attach = attach;
     }
 
     @Override
     public void resolveBody(ProxyBuffer buffer) {
         this.confType = buffer.readByte();
         this.confVersion = (int) buffer.readFixInt(4);
+        this.attach = buffer.readNULString();
     }
 
     @Override
     public void writeBody(ProxyBuffer buffer) {
         buffer.writeByte(confType);
         buffer.writeFixInt(4, confVersion);
+        buffer.writeNULString(attach);
     }
 
     public byte getConfType() {
@@ -49,5 +53,13 @@ public class ConfigConfirmPacket extends ManagePacket {
 
     public void setConfVersion(int confVersion) {
         this.confVersion = confVersion;
+    }
+
+    public String getAttach() {
+        return attach;
+    }
+
+    public void setAttach(String attach) {
+        this.attach = attach;
     }
 }

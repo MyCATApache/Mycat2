@@ -12,16 +12,18 @@ import io.mycat.proxy.man.ManagePacket;
 public class ConfigPreparePacket extends ManagePacket {
     private byte confType;
     private int confVersion;
+    private String attach;
     private String confContent;
 
     public ConfigPreparePacket() {
         super(ManagePacket.PKG_CONFIG_PREPARE);
     }
 
-    public ConfigPreparePacket(byte confType, int confVersion, String confContent) {
+    public ConfigPreparePacket(byte confType, int confVersion, String attach, String confContent) {
         super(ManagePacket.PKG_CONFIG_PREPARE);
         this.confType = confType;
         this.confVersion = confVersion;
+        this.attach = attach;
         this.confContent = confContent;
     }
 
@@ -29,6 +31,7 @@ public class ConfigPreparePacket extends ManagePacket {
     public void resolveBody(ProxyBuffer buffer) {
         this.confType = buffer.readByte();
         this.confVersion = (int) buffer.readFixInt(4);
+        this.attach = buffer.readNULString();
         this.confContent = buffer.readNULString();
     }
 
@@ -36,6 +39,7 @@ public class ConfigPreparePacket extends ManagePacket {
     public void writeBody(ProxyBuffer buffer) {
         buffer.writeByte(confType);
         buffer.writeFixInt(4, confVersion);
+        buffer.writeNULString(attach);
         buffer.writeNULString(confContent);
     }
 
@@ -53,6 +57,14 @@ public class ConfigPreparePacket extends ManagePacket {
 
     public void setConfVersion(int confVersion) {
         this.confVersion = confVersion;
+    }
+
+    public String getAttach() {
+        return attach;
+    }
+
+    public void setAttach(String attach) {
+        this.attach = attach;
     }
 
     public String getConfContent() {

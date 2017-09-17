@@ -50,7 +50,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         }
     }
 
-    public void sendPreparePacket(ConfigEnum configEnum, Object bean) {
+    public void sendPreparePacket(ConfigEnum configEnum, Object bean, String replName) {
         MycatConfig config = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
         byte type = configEnum.getType();
         // 获取新版本
@@ -63,7 +63,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), nextRepIndexVersion), content);
 
         // 构造prepare报文
-        final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, nextRepIndexVersion, content);
+        final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, nextRepIndexVersion, replName, content);
 
         // 向从节点发送报文
         MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
@@ -83,7 +83,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), version), preparePacket.getConfContent());
 
         // 从节点处理完成之后向主节点发送确认报文
-        ConfigConfirmPacket confirmPacket = new ConfigConfirmPacket(configType, version);
+        ConfigConfirmPacket confirmPacket = new ConfigConfirmPacket(configType, version, preparePacket.getAttach());
         session.answerClientNow(confirmPacket);
 
         ProxyRuntime runtime = ProxyRuntime.INSTANCE;
@@ -114,10 +114,13 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
 
         if (cluster.needCommitCount == 0) {
             // 收到所有从节点的响应后给从节点发送确认报文
-            ConfigCommitPacket commitPacket = new ConfigCommitPacket(configType, version);
+            String repName = confirmPacket.getAttach();
+            ConfigCommitPacket commitPacket = new ConfigCommitPacket(configType, version, repName);
             configAnswerAllAliveNodes(commitPacket, false);
 
             ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
+            MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+            ProxyRuntime.INSTANCE.startSwitchDataSource(repName, conf.getRepIndex(repName));
             ProxyRuntime.INSTANCE.startHeartBeatScheduler();
         }
     }
@@ -126,10 +129,13 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         ConfigCommitPacket commitPacket = new ConfigCommitPacket();
         commitPacket.resolve(session.readingBuffer);
         byte configType = commitPacket.getConfType();
+        String repName = commitPacket.getAttach();
 
         ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-
         ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
+
+        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+        ProxyRuntime.INSTANCE.startSwitchDataSource(repName, conf.getRepIndex(repName));
     }
 
     private void configAnswerAllAliveNodes(ManagePacket packet, boolean needCommit) {
