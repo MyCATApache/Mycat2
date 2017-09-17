@@ -9,8 +9,14 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MyCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-/*
- * */
+/**
+ * session中有一系列的处理的intercepter 用来设置某个sqlcmd是否需要进行处理
+ * 如果需要应答需要设置MycatSession.curSQLCommand 表示为应答前段或者请求后端
+ *    设置完intercepter,此时 之后的incepter就不会在进行处理
+ * 
+ * @author zwy
+ *
+ */
 public  class InterceptorSystem {
 	
 	private static Logger logger = LoggerFactory.getLogger(InterceptorSystem.class);
@@ -41,7 +47,8 @@ public  class InterceptorSystem {
 		}
 		return true;
 	}
-
+/*
+ * */
 	public  boolean onBackendReadIntercept(MySQLSession session) throws IOException {
 		boolean responseResult = true;
 		MycatSession mycatSession = session.getMycatSession();
@@ -70,21 +77,6 @@ public  class InterceptorSystem {
 		return true;
 	}
 	public boolean clearBackendResoucesIntercept(MySQLSession mysqlSession) throws IOException{
-//		boolean interceptorResult = true;
-//		boolean result = true;
-//		MycatSession mycatSession = mysqlSession.getMycatSession();
-//		final List<Interceptor> interceptorList = MycatSession.interceptorList;
-//		for(int i = 0; interceptorResult  && i < interceptorList.size(); i++) {
-//			MyCommand sqlCmd = mycatSession.getSQLCmd(interceptorList.get(i));
-//			if(sqlCmd != null) {
-//				boolean tmpResult = sqlCmd.onBackendWriteFinished(mysqlSession);
-//				if(!tmpResult){
-//					result = false;
-//					logger.debug("{} prcess back {} not write finish", sqlCmd, mysqlSession);;
-//					//sqlCmd.clearFrontResouces(session, false);
-//				}
-//			}
-//		}
 		MycatSession mycatSession = mysqlSession.getMycatSession();
 		if(mycatSession.curSQLCommand.onBackendWriteFinished(mysqlSession)) {
 			mycatSession.clearSQLCmdsBackendResouces(mysqlSession, false);

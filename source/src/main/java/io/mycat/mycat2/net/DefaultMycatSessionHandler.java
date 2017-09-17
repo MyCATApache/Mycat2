@@ -56,41 +56,13 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		}
 		session.curSQLCommand = null;
 		session.clearSQLCmdMap();
-		InterceptorSystem.INSTANCE.onFrontReadIntercept(session);
-		//session.getMyCommand();
-//		boolean result = true;
-//		final List<Interceptor> interceptorList = MycatSession.interceptorList;
-//		for(int i = 0; result  && i < interceptorList.size(); i++) {
-//			result = interceptorList.get(i).onFrontReadIntercept(session);
-//		}
 		
-//		MyCommand myCommand = session.getMyCommand();
-//		
-//		if(myCommand!=null){
-//			session.curSQLCommand = myCommand;
-//			// 如果当前包需要处理，则交给对应方法处理，否则直接透传
-//			if(session.curSQLCommand.procssSQL(session)){
-//				session.curSQLCommand.clearFrontResouces(session, false);
-//			}
-//		}else{
-//			logger.error(" current packageTyps is not support,please fix it!!! the packageType is {} ",session.curMSQLPackgInf);
-//		}
+		InterceptorSystem.INSTANCE.onFrontReadIntercept(session);
+
 	}
 
 	private void onBackendRead(MySQLSession session) throws IOException {
 		InterceptorSystem.INSTANCE.onBackendReadIntercept(session);
-
-//		boolean result = true;
-//		final List<Interceptor> interceptorList = MycatSession.interceptorList;
-//		for(int i = interceptorList.size() -1; result  && i >= 0; i--) {
-//			result = interceptorList.get(i).onFrontReadIntercept(session);
-//		}
-////		// 交给SQLComand去处理
-//		MyCommand curCmd = session.getMycatSession().curSQLCommand;
-//		if (curCmd.onBackendResponse(session)) {
-//			curCmd.clearBackendResouces((MySQLSession) session,false);
-//		}
-
 	}
 
 	/**
@@ -107,9 +79,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 			MySQLSession mysqlSession = (MySQLSession) session;
 			try {
 				InterceptorSystem.INSTANCE.onBackendClosedIntercept(mysqlSession, normal);
-				//MyCommand curSQLCommand = (MyCommand)mysqlSession.getMycatSession().getSQLCmd(DefaultIntercepor.INSTANCE);
-				//mysqlSession.getMycatSession().curSQLCommand.onBackendClosed(mysqlSession, normal);
-				//curSQLCommand.onBackendClosed(mysqlSession, normal);
+			
 			} catch (IOException e) {
 				logger.warn("caught err ", e);
 			}
@@ -133,16 +103,8 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		// 交给SQLComand去处理
 		if (session instanceof MycatSession) {
 			InterceptorSystem.INSTANCE.clearFrontWriteFinishedIntercept((MycatSession) session);
-//			MycatSession mycatSs = (MycatSession) session;
-//			if (mycatSs.curSQLCommand.onFrontWriteFinished(mycatSs)) {
-//				mycatSs.curSQLCommand.clearFrontResouces(mycatSs,false);
-//			}
 		} else {
-//			MycatSession mycatSs = ((MySQLSession) session).getMycatSession();
 			InterceptorSystem.INSTANCE.clearBackendResoucesIntercept((MySQLSession) session);
-//			if (mycatSs.curSQLCommand.onBackendWriteFinished((MySQLSession) session)) {
-//				mycatSs.curSQLCommand.clearBackendResouces((MySQLSession) session,false);
-//			}
 		}
 	}
 

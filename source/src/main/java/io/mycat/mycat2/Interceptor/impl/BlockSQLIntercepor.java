@@ -1,6 +1,5 @@
 package io.mycat.mycat2.Interceptor.impl;
 
-import io.mycat.mycat2.MyCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.Interceptor.Interceptor;
 import io.mycat.mycat2.cmds.BlockSqlCmd;
