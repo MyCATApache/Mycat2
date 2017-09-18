@@ -58,16 +58,32 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         }
 
         // 获取新版本
-        int nextRepIndexVersion = config.getNextConfigVersion(type);
+        int newVersion = config.getNextConfigVersion(type);
         // 生成yml文件内容
         String content = YamlUtil.dump(bean);
         // 存储在本地prepare文件夹下
-        YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), nextRepIndexVersion), content);
+        YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), newVersion), content);
         // 构造prepare报文
-        final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, nextRepIndexVersion, attach, content);
+        final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, newVersion, attach, content);
         // 向从节点发送报文
-        cluster.configConfirmMap.put(type, new ConfigConfirmBean(0, nextRepIndexVersion));
+        cluster.configConfirmMap.put(type, new ConfigConfirmBean(0, newVersion));
         configAnswerAllAliveNodes(preparePacket, type, true);
+
+        // 设置延迟任务，确认是否超时回复
+        ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+        runtime.addDelayedJob(() -> {
+            ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(type);
+            if (confirmBean == null || confirmBean.confirmVersion != newVersion) {
+                LOGGER.debug("config update for version {} is over, no need to check", newVersion);
+                return;
+            }
+            if (confirmBean.confirmCount != 0) {
+                // prepare报文超过指定时间，集群没有全部响应
+                LOGGER.error("cluster not send confirm packet in time for config type {}, version {}", type, newVersion);
+                //todo config update 命令处理需要给前端返回
+            }
+            cluster.configConfirmMap.remove(type);
+        }, runtime.getProxyConfig().getPrepareDelaySeconds());
         return true;
     }
 
@@ -83,22 +99,6 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         // 从节点处理完成之后向主节点发送确认报文
         ConfigConfirmPacket confirmPacket = new ConfigConfirmPacket(configType, version, preparePacket.getAttach());
         session.answerClientNow(confirmPacket);
-
-        ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-        runtime.addDelayedJob(() -> {
-            MyCluster cluster = runtime.getMyCLuster();
-            ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(configType);
-            if (confirmBean == null || confirmBean.confirmVersion != version) {
-                LOGGER.debug("config update for version: {} is over, no need to check", version);
-                return;
-            }
-            if (confirmBean.confirmCount != 0) {
-                // prepare报文超过指定时间，集群没有全部响应
-                LOGGER.error("cluster not send confirm packet in time for config type: {}, version: {}", configType, version);
-                //todo config update 命令处理需要给前端返回
-            }
-            cluster.configConfirmMap.remove(configType);
-        }, runtime.getProxyConfig().getPrepareDelaySeconds());
     }
 
     private void handleConfirm(AdminSession session) throws IOException {
@@ -110,16 +110,14 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
         ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(configType);
         if (confirmBean == null) {
-            LOGGER.warn("may overtime to confirm for config type: {}, version: {}", configType, version);
+            LOGGER.warn("may overtime to confirm for config type {}, version {}", configType, version);
             return;
         }
         if (version != confirmBean.confirmVersion) {
             LOGGER.warn("received packet contains old version {}, current version {}", version, confirmBean.confirmVersion);
             return;
         }
-
         if (--confirmBean.confirmCount == 0) {
-            cluster.configConfirmMap.remove(configType);
             // 收到所有从节点的响应后给从节点发送确认报文
             String attach = confirmPacket.getAttach();
             ConfigCommitPacket commitPacket = new ConfigCommitPacket(configType, version, attach);
@@ -127,6 +125,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
 
             ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
             ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
+            cluster.configConfirmMap.remove(configType);
 
             if (configEnum == ConfigEnum.REPLICA_INDEX) {
                 MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
