@@ -6,9 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.mycat.mycat2.ProxyStarter;
@@ -57,8 +55,7 @@ public class MyCluster {
 	private long lastClusterStateTime;
 	private final Selector nioSelector;
 
-	public int needCommitVersion;
-	public int needCommitCount;
+	public Map<Byte, ConfigConfirmBean> configConfirmMap = new LinkedHashMap<>();
 
 	public MyCluster(Selector nioSelector, String myNodeId, ArrayList<ClusterNode> allClusterNodes) {
 		this.nioSelector = nioSelector;
