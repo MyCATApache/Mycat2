@@ -1,6 +1,7 @@
 package io.mycat.mycat2.cmds.strategy;
 
 import io.mycat.mycat2.cmds.ComChangeUserCmd;
+import io.mycat.mycat2.cmds.ComFieldListCmd;
 import io.mycat.mycat2.cmds.ComInitDB;
 import io.mycat.mycat2.cmds.ComQuitCmd;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
@@ -21,7 +22,7 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 		MYCOMMANDMAP.put(MySQLPacket.COM_QUIT,         			   ComQuitCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_INIT_DB,      			   ComInitDB.INSTANCE);
 //		MYCOMMANDMAP.put(MySQLPacket.COM_QUERY,        			   DirectPassthrouhCmd.INSTANCE);
-		MYCOMMANDMAP.put(MySQLPacket.COM_FIELD_LIST,   			   DirectPassthrouhCmd.INSTANCE);
+		MYCOMMANDMAP.put(MySQLPacket.COM_FIELD_LIST,   			   ComFieldListCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_CREATE_DB,    			   NotSupportCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_DROP_DB,      			   NotSupportCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_REFRESH,      			   DirectPassthrouhCmd.INSTANCE);
