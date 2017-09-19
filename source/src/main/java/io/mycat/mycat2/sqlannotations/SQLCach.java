@@ -17,6 +17,7 @@ public class SQLCach implements SQLAnnotation<BufferSQLContext>{
 
     @Override
     public BufferSQLContext apply(BufferSQLContext context) {
+        if (isDebug)
         System.out.println("=>SQLCach 动态注解被调用");
         return context;
     }

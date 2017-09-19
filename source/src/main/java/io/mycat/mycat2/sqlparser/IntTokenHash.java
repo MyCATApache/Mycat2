@@ -126,5 +126,7 @@ public class IntTokenHash {
     public static final int END = 1259470851;
     public static final int PREPARE = -815464441;
     public static final int RECOVER = -405012473;
+    public static final int  REPLICA  =-879493113;
+    public static final int CACHE_RESULT = 2073690123;
 
 }

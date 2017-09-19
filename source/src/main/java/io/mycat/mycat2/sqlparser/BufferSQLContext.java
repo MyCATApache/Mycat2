@@ -74,6 +74,7 @@ public class BufferSQLContext {
     public static final byte ANNOTATION_ACCESS_COUNT = 7;
     public static final byte ANNOTATION_AUTO_REFRESH = 8;
     public static final byte ANNOTATION_CACHE_TIME = 9;
+    public static final byte ANNOTATION_REPLICA_NAME = 10;
 
     private short[] tblResult;  //记录格式：[{schema hash array index(defaults 0), tbl hash array index}]
     private short[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]

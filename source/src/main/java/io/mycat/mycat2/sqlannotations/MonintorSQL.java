@@ -19,6 +19,7 @@ public class MonintorSQL implements SQLAnnotation<BufferSQLContext>{
 
     @Override
     public BufferSQLContext apply(BufferSQLContext context) {
+        if (isDebug)
         System.out.println("=>MonintorSQL 动态注解被调用");
         return context;
     }
