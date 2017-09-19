@@ -238,10 +238,28 @@ public class BufferSQLParser {
                         ++pos;
                     }
                     break;
+                case IntTokenHash.CACHE_RESULT:
+                    context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
+                    ++pos;
+                    break;
                 case IntTokenHash.BALANCE:
                     if (hashArray.getHash(pos) == TokenHash.BALANCE) {
                         context.setAnnotationType(BufferSQLContext.ANNOTATION_BALANCE);
-                        ++pos;
+                        if (hashArray.getHash(++pos)==TokenHash.TYPE)  {
+                            if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                                context.setAnnotationValue(BufferSQLContext.ANNOTATION_BALANCE, hashArray.getHash(++pos));
+                                ++pos;
+                            }
+                        }
+                    }
+                    break;
+                case IntTokenHash.REPLICA:
+                    context.setAnnotationType(BufferSQLContext.ANNOTATION_REPLICA_NAME);
+                    if (hashArray.getHash(++pos)==TokenHash.NAME)  {
+                        if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                            context.setAnnotationValue(BufferSQLContext.ANNOTATION_REPLICA_NAME, hashArray.getHash(++pos));
+                            ++pos;
+                        }
                     }
                     break;
                 default:
