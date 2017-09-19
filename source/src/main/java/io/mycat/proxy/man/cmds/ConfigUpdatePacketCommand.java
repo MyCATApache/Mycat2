@@ -5,10 +5,7 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.beans.ReplicaIndexBean;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.man.AdminCommand;
-import io.mycat.proxy.man.AdminSession;
-import io.mycat.proxy.man.ManagePacket;
-import io.mycat.proxy.man.MyCluster;
+import io.mycat.proxy.man.*;
 import io.mycat.proxy.man.packet.ConfigCommitPacket;
 import io.mycat.proxy.man.packet.ConfigConfirmPacket;
 import io.mycat.proxy.man.packet.ConfigPreparePacket;
@@ -50,26 +47,44 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         }
     }
 
-    public void sendPreparePacket(ConfigEnum configEnum, Object bean, String replName) {
+    public boolean sendPreparePacket(ConfigEnum configEnum, Object bean, String attach) {
         MycatConfig config = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+        MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
         byte type = configEnum.getType();
-        // 获取新版本
-        int nextRepIndexVersion = config.getNextConfigVersion(type);
 
+        if (cluster.configConfirmMap.get(type) != null) {
+            LOGGER.warn("config is in config updating ...");
+            return false;
+        }
+
+        // 获取新版本
+        int newVersion = config.getNextConfigVersion(type);
         // 生成yml文件内容
         String content = YamlUtil.dump(bean);
-
         // 存储在本地prepare文件夹下
-        YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), nextRepIndexVersion), content);
-
+        YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), newVersion), content);
         // 构造prepare报文
-        final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, nextRepIndexVersion, replName, content);
-
+        final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, newVersion, attach, content);
         // 向从节点发送报文
-        MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
-        cluster.needCommitVersion = nextRepIndexVersion;
-        cluster.needCommitCount = 0;
-        configAnswerAllAliveNodes(preparePacket, true);
+        cluster.configConfirmMap.put(type, new ConfigConfirmBean(0, newVersion));
+        configAnswerAllAliveNodes(preparePacket, type, true);
+
+        // 设置延迟任务，确认是否超时回复
+        ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+        runtime.addDelayedJob(() -> {
+            ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(type);
+            if (confirmBean == null || confirmBean.confirmVersion != newVersion) {
+                LOGGER.debug("config update for version {} is over, no need to check", newVersion);
+                return;
+            }
+            if (confirmBean.confirmCount != 0) {
+                // prepare报文超过指定时间，集群没有全部响应
+                LOGGER.error("cluster not send confirm packet in time for config type {}, version {}", type, newVersion);
+                //todo config update 命令处理需要给前端返回
+            }
+            cluster.configConfirmMap.remove(type);
+        }, runtime.getProxyConfig().getPrepareDelaySeconds());
+        return true;
     }
 
     private void handlePrepare(AdminSession session) throws IOException {
@@ -79,22 +94,11 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         int version = preparePacket.getConfVersion();
 
         ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-
         YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), version), preparePacket.getConfContent());
 
         // 从节点处理完成之后向主节点发送确认报文
         ConfigConfirmPacket confirmPacket = new ConfigConfirmPacket(configType, version, preparePacket.getAttach());
         session.answerClientNow(confirmPacket);
-
-        ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-        runtime.addDelayedJob(() -> {
-            MyCluster cluster = runtime.getMyCLuster();
-            if (cluster.needCommitCount != 0) {
-                // prepare报文超过指定时间，集群没有全部响应
-                cluster.needCommitVersion = -1;
-                //todo config update 命令处理需要给前端返回
-            }
-        }, runtime.getProxyConfig().getPrepareDelaySeconds());
     }
 
     private void handleConfirm(AdminSession session) throws IOException {
@@ -104,24 +108,29 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         int version = confirmPacket.getConfVersion();
 
         MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
-        if (version != cluster.needCommitVersion) {
-            LOGGER.warn("received packet contains old version {}, current version {}", version, cluster.needCommitVersion);
+        ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(configType);
+        if (confirmBean == null) {
+            LOGGER.warn("may overtime to confirm for config type {}, version {}", configType, version);
             return;
         }
-
-        ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-        cluster.needCommitCount--;
-
-        if (cluster.needCommitCount == 0) {
+        if (version != confirmBean.confirmVersion) {
+            LOGGER.warn("received packet contains old version {}, current version {}", version, confirmBean.confirmVersion);
+            return;
+        }
+        if (--confirmBean.confirmCount == 0) {
             // 收到所有从节点的响应后给从节点发送确认报文
-            String repName = confirmPacket.getAttach();
-            ConfigCommitPacket commitPacket = new ConfigCommitPacket(configType, version, repName);
-            configAnswerAllAliveNodes(commitPacket, false);
+            String attach = confirmPacket.getAttach();
+            ConfigCommitPacket commitPacket = new ConfigCommitPacket(configType, version, attach);
+            configAnswerAllAliveNodes(commitPacket, configType, false);
 
+            ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
             ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
-            MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-            ProxyRuntime.INSTANCE.startSwitchDataSource(repName, conf.getRepIndex(repName));
-            ProxyRuntime.INSTANCE.startHeartBeatScheduler();
+            cluster.configConfirmMap.remove(configType);
+
+            if (configEnum == ConfigEnum.REPLICA_INDEX) {
+                MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+                ProxyRuntime.INSTANCE.startSwitchDataSource(attach, conf.getRepIndex(attach));
+            }
         }
     }
 
@@ -129,16 +138,18 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         ConfigCommitPacket commitPacket = new ConfigCommitPacket();
         commitPacket.resolve(session.readingBuffer);
         byte configType = commitPacket.getConfType();
-        String repName = commitPacket.getAttach();
 
         ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
         ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
 
-        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-        ProxyRuntime.INSTANCE.startSwitchDataSource(repName, conf.getRepIndex(repName));
+        if (configEnum == ConfigEnum.REPLICA_INDEX) {
+            MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+            String attach = commitPacket.getAttach();
+            ProxyRuntime.INSTANCE.startSwitchDataSource(attach, conf.getRepIndex(attach));
+        }
     }
 
-    private void configAnswerAllAliveNodes(ManagePacket packet, boolean needCommit) {
+    private void configAnswerAllAliveNodes(ManagePacket packet, byte type, boolean needCommit) {
         MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
         ProxyRuntime.INSTANCE.getAdminSessionManager().getAllSessions().forEach(adminSession -> {
             AdminSession nodeSession = (AdminSession) adminSession;
@@ -146,10 +157,13 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
                 try {
                     nodeSession.answerClientNow(packet);
                     if (needCommit) {
-                        cluster.needCommitCount++;
+                        ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(type);
+                        if (confirmBean != null) {
+                            confirmBean.confirmCount++;
+                        }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("notify node err " + nodeSession.getNodeId(),e);
+                    LOGGER.warn("notify node err " + nodeSession.getNodeId(), e);
                 }
             }
         });

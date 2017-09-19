@@ -26,8 +26,14 @@ package io.mycat.mycat2.beans.heartbeat;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
+import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,7 +190,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 			}
 			break;
 		case DBHeartbeat.INIT_STATUS:
-			logger.info("current repl status [INIT_STATUS ---> OK_STATUS ]. update lastSwitchTime .{}:{}",source.getIp(),source.getPort());
+			logger.info("current repl status [INIT_STATUS ---> OK_STATUS ]. update lastSwitchTime .{}:{}", source.getIp(), source.getPort());
 			MycatConfig conf = (MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
 			source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - conf.getMinSwitchtimeInterval());
 		case DBHeartbeat.OK_STATUS:
@@ -195,40 +201,51 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		}
 	}
 
-	private void setError(MySQLDetector detector,String msg) {
+	private void setError(MySQLDetector detector, String msg) {
 		// should continues check error status
 		if (++errorCount < source.getMaxRetryCount()) {
-
             if (detector != null && !detector.isQuit()) {
                 heartbeat(); // error count not enough, heart beat again
             }
+		} else {
+			if (source.isSlaveNode()) {
+				logger.error(msg);
+			} else {
+				//写节点 尝试多次次失败后, 需要通知集群
+				logger.debug("heartbeat to backend session error, notify the cluster if needed");
 
-		}else
-        {
-			if(!source.isSlaveNode()){
-				//TODO  写节点 尝试多次次失败后, 需要通知集群
-				System.err.println("TODO 主节点尝试多次失败后，通知集群");
-				
 				MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-				
-				if(((System.currentTimeMillis() - source.getRepBean().getLastSwitchTime()) < conf.getMinSwitchtimeInterval())||
-						(System.currentTimeMillis() - source.getRepBean().getLastInitTime()) < conf.getMinSwitchtimeInterval()){
+				long curTime = System.currentTimeMillis();
+				if (((curTime - source.getRepBean().getLastSwitchTime()) < conf.getMinSwitchtimeInterval())
+						|| (curTime - source.getRepBean().getLastInitTime()) < conf.getMinSwitchtimeInterval()) {
 					if (logger.isDebugEnabled()) {
-						logger.warn("the Minimum time interval for switchSource is {} seconds.",conf.getMinSwitchtimeInterval()/1000L);
+						logger.warn("the Minimum time interval for switchSource is {} seconds.",
+								conf.getMinSwitchtimeInterval() / 1000L);
 					}
 					return;
 				}
-				
+
 				int next = source.getRepBean().getNextIndex();
-				if(next==-1){
-					System.err.println(" 所有的 节点都不可用,无法进行切换  ");
+				if (next == -1) {
 					logger.error("all metaBean in replica is invalid !!!");
-				}else{
-					ProxyRuntime.INSTANCE.stopHeartBeatScheduler();
-					ProxyRuntime.INSTANCE.startSwitchDataSource(source.getRepBean().getName(), next);
+				} else {
+					String repName = source.getRepBean().getName();
+					if (ProxyRuntime.INSTANCE.getProxyConfig().isClusterEnable()) {
+						ReplicaIndexBean bean = new ReplicaIndexBean();
+						Map<String, Integer> map = new HashMap(conf.getRepIndexMap());
+						map.put(repName, next);
+						bean.setReplicaIndexes(map);
+						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean, repName);
+					} else {
+						// 非集群下直接更新replica-index信息
+						byte configType = ConfigEnum.REPLICA_INDEX.getType();
+						conf.getRepIndexMap().put(repName, next);
+						int curVersion = conf.getConfigVersion(configType);
+						conf.setConfigVersion(configType, curVersion + 1);
+						YamlUtil.archiveAndDump(ConfigEnum.REPLICA_INDEX.getFileName(), curVersion, conf.getConfig(configType));
+						ProxyRuntime.INSTANCE.startSwitchDataSource(source.getRepBean().getName(), next);
+					}
 				}
-			}else{
-				logger.error(msg);
 			}
             this.status = ERROR_STATUS;
             this.errorCount = 0;
