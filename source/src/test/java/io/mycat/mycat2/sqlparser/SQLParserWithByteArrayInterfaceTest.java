@@ -316,7 +316,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     }
 
     /**
-     * todo
+     *
      * @throws Exception
      */
     @Test
@@ -326,10 +326,11 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_BALANCE, context.getAnnotationType());
+        assertEquals(TokenHash.MASTER, context.getAnnotationValue(BufferSQLContext.ANNOTATION_BALANCE));
     }
 
     /**
-     * todo
+     *
      * @throws Exception
      */
     @Test
