@@ -244,6 +244,15 @@ public class BufferSQLParser {
                         ++pos;
                     }
                     break;
+                case IntTokenHash.REPLICA:
+                    context.setAnnotationType(BufferSQLContext.ANNOTATION_REPLICA_NAME);
+                    if (hashArray.getHash(++pos)==TokenHash.NAME)  {
+                        if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                            context.setAnnotationValue(BufferSQLContext.ANNOTATION_REPLICA_NAME, hashArray.getHash(++pos));
+                            ++pos;
+                        }
+                    }
+                    break;
                 default:
                     ++pos;
             }

@@ -315,13 +315,31 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals("tbl_A", context.getTableName(0));
     }
 
+    /**
+     * todo
+     * @throws Exception
+     */
     @Test
     public void testAnnotationBalance() throws Exception {
-        String sql = "/* mycat:balance*/select * from tbl_A where id=1;";
+        String sql = "/* mycat:balance type=master*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_BALANCE, context.getAnnotationType());
+    }
+
+    /**
+     * todo
+     * @throws Exception
+     */
+    @Test
+    public void testReplica () throws Exception {
+        String sql = "/* mycat:replica name=dn1*/select * from tbl_A where id=1;";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+        assertEquals("tbl_A", context.getTableName(0));
+        assertEquals(BufferSQLContext.ANNOTATION_REPLICA_NAME, context.getAnnotationType());
+        assertEquals(MatchMethodGenerator.genHash("dn1".toCharArray()), context.getAnnotationValue(BufferSQLContext.ANNOTATION_REPLICA_NAME));
     }
 
     @Test
