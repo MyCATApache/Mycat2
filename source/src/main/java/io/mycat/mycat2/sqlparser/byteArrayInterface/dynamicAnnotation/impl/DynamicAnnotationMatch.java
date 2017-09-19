@@ -1,13 +1,12 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 
 /**
  * Created by jamie on 2017/9/13.
  */
-public interface DynamicAnnotationMatch {
+public interface DynamicAnnotationMatch extends Cloneable {
     public void pick(int i, final int arrayCount, BufferSQLContext context,HashArray array);
 
     //boolean isComplete();
@@ -19,7 +18,5 @@ public interface DynamicAnnotationMatch {
         pick(i, array.getCount(), context, array);
     }
 
-    default DynamicAnnotationMatch newInstance() throws Exception {
-        return this.getClass().newInstance();
-    }
+    DynamicAnnotationMatch newInstance() throws Exception;
 }

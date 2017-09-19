@@ -21,3 +21,20 @@ annotations:
                                     - sqlCach:
                                             - param1: 1
                                             - param2: 2
+                      - match:
+                              name: bbb
+                              state: open
+                              sqltype: insert
+                              where:
+                                    - and: id between 2 and 50
+                                    - or: name2 = ?
+                              tables:
+                                    - x1
+                                    - x2
+                              actions:
+                                    - monitorSQL:
+                                          - param1: 3
+                                    - cacheResult:
+                                    - sqlCach:
+                                          - param1: 2
+                                          - param2: 1

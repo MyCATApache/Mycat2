@@ -1,4 +1,4 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
@@ -83,14 +83,14 @@ public class TrieCompiler {
        String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("tags[%d]=0;//%backRoute\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
         String fieldsArrayTag = String.format("final  int[] tags={%s};\n",runtime.int2str.entrySet().stream().map((i -> "0")).collect(Collectors.joining(",")));
         String tmpl = "\n" +
-                "package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;\n" +
+                "package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;\n" +
                 "\n" +
                 "import io.mycat.mycat2.sqlparser.BufferSQLContext;\n" +
                 "import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;\n" +
                 "import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;" +
                 "public class " +className+
                 " implements DynamicAnnotationMatch {\n" +
-                "    public final void pick(int i, final int arrayCount, BufferSQLContext context,HashArray array) {\n" +
+                "    public final void pick(int i, final int arrayCount, BufferSQLContext context, HashArray array) {\n" +
                 "" +fieldsInit+
                 "int res;" +
                 "        while (i < arrayCount) {\n" +
@@ -103,7 +103,7 @@ public class TrieCompiler {
                 "        }\n" +
                 "    }\n" +
                 "\n" +
-                "    public final int pick0(int i, final int arrayCount, BufferSQLContext context,HashArray array) {\n" +
+                "    public final int pick0(int i, final int arrayCount, BufferSQLContext context, HashArray array) {\n" +
                 " " +body+
                 "        return i;\n" +
                 "    }" +
@@ -112,6 +112,7 @@ public class TrieCompiler {
                 "public String getName(){return \"" +className+"\";}\n"+
                 "public int[] getCompleteTags(){return tags;}"+
                 "public boolean isComplete(){"+ConditionUtil.codeIsComplete(map,runtime)+"}"+
+                "public "+className+ " newInstance() throws Exception{return ("+className+")this.clone();}"+
                 "}";
         return tmpl;
     }
@@ -119,19 +120,19 @@ public class TrieCompiler {
     public String toCode2(boolean isRoot, TrieContext context) {
         context.x += 1;
         Map<Boolean, List<Map.Entry<TrieKey, TrieCompiler>>> map = this.children.entrySet().stream().collect(Collectors.partitioningBy((k) -> k.getKey().getType() == QUESTION_MARK));
-        String l = toCode3(isRoot, map.get(Boolean.FALSE), context);
-        String r = toCode3(isRoot, map.get(Boolean.TRUE), context);
+        String l = toCode3(isRoot, map.get(Boolean.TRUE), context);
+        String r = toCode3(isRoot, map.get(Boolean.FALSE), context);
         context.x -= 1;
         return l + r;
     }
 
     public String toCode3(boolean isRoot, List<Map.Entry<TrieKey, TrieCompiler>> entrySet, TrieContext context) {
 
-        if (context.x % 3 == 0 || context.y % 6 == 0) {
+        if (context.x % 3 == 0 || context.y % 5 == 0) {
             String res = toCode4(isRoot, entrySet, context);
             if (!"".equals(res.trim())) {
                 String funName = context.genFun(entrySet.stream().map((s) -> AscllUtil.shiftAscll(s.getKey().getText(), false)).collect(Collectors.joining("_"))) + "_" + context.index;
-                context.funList.add("\npublic  final int " + funName + "(int i, final int arrayCount, BufferSQLContext context,HashArray array){\n" + res + "\nreturn i;}");
+                context.funList.add("\npublic  final int " + funName + "(int i, final int arrayCount, BufferSQLContext context, HashArray array){\n" + res + "\nreturn i;}");
                 if(context.isBacktracking&& funName.contains("QUESTIONMARK")){
                     return "\n" + funName + "(i" +
                             "\n, arrayCount, context, array);\n";
@@ -160,7 +161,7 @@ public class TrieCompiler {
                     break;
                 }
                 case QUESTION_MARK: {
-                    q += "\n{i=context.matchPlaceholders(i);\n";
+                    q += "\n{int start=i;i=context.matchPlaceholders(i);\n";
                     break;
                 }
                 default: {
@@ -183,12 +184,12 @@ public class TrieCompiler {
                 }
                 if (context.isBacktracking&&type==QUESTION_MARK){
                     w+="\npick0(start-" +
-                            +i.getValue().backPos+", arrayCount, context,array);\n";
+                            +i.getValue().backPos+", arrayCount, context, array);\n";
                 } else
 
                 if (i.getValue().backPos != 0) {
                     w += "\ni=pick0(i-" + i.getValue().backPos +
-                            ", arrayCount, context,array);\n";
+                            ", arrayCount, context, array);\n";
                 }
 
             }
@@ -198,7 +199,7 @@ public class TrieCompiler {
             if (type == QUESTION_MARK) {
                 String funName = context.genFun(entrySet.stream().map((s) -> AscllUtil.shiftAscll(s.getKey().getText(), false)).collect(Collectors.joining("_"))) + "_" + context.index;
                 funName += "_quest";
-                context.funList.add("\npublic  final int " + funName + "(int i, final int arrayCount, BufferSQLContext context,HashArray array){\n" + stringBuilder.toString() + "\nreturn i;}\n");
+                context.funList.add("\npublic  final int " + funName + "(int i, final int arrayCount, BufferSQLContext context, HashArray array){\n" + stringBuilder.toString() + "\nreturn i;}\n");
                 stringBuilder.setLength(0);
                 stringBuilder.append((context.isBacktracking?"":"i=" )+ funName + "(i, arrayCount, context, array);\n");
             }

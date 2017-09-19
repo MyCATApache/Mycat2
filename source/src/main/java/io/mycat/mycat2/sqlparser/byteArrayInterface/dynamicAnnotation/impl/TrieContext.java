@@ -1,4 +1,4 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +11,7 @@ public class TrieContext {
     public List<String> funList = new ArrayList<>();
     public int x = 0;
     public int y = 0;
-    public boolean isBacktracking=false;
+    public boolean isBacktracking=true;
     public int index=0;
     Map<String, Integer> posMap;
 

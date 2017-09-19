@@ -1,7 +1,6 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 
 import java.util.function.Function;
 
@@ -10,10 +9,10 @@ import java.util.function.Function;
  */
 
 public class DynamicAnnotation {
-  final DynamicAnnotationKey key;
-  final DynamicAnnotationMatch match;
-  final Function<BufferSQLContext, BufferSQLContext> actions;
-  final DynamicAnnotationRuntime runtime;
+ public final DynamicAnnotationKey key;
+ public final DynamicAnnotationMatch match;
+ public final Function<BufferSQLContext, BufferSQLContext> actions;
+ public final DynamicAnnotationRuntime runtime;
 
   public DynamicAnnotation(DynamicAnnotationKey key, DynamicAnnotationMatch match, Function<BufferSQLContext, BufferSQLContext> actions,  DynamicAnnotationRuntime runtime) {
     this.key = key;

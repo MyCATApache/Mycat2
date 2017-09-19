@@ -1,4 +1,4 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,14 +26,14 @@ import java.util.stream.Stream;
  */
 public class DynamicAnnotationUtil {
     static final DynamicClassLoader classLoader;
-    static int name = 1;
+    static AtomicInteger name = new AtomicInteger();
 
     static {
         classLoader = new DynamicClassLoader("", Thread.currentThread().getContextClassLoader());
     }
 
     public static DynamicAnnotationRuntime compile(Map<Boolean, List< String>> lines) throws Exception {
-        String filename = "_" + name++;
+        String filename = "_" + name.getAndIncrement();
         DynamicAnnotationRuntime runtime = genJavacode(filename, filename + ".java", lines);
         compileJavaCodeToClass(runtime);
         loadClass(runtime);

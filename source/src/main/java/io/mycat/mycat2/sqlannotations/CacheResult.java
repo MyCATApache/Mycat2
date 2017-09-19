@@ -9,6 +9,7 @@ import java.util.Map;
  */
 public class CacheResult implements SQLAnnotation<BufferSQLContext>{
     public CacheResult() {
+        if (isDebug)
         System.out.println("=>CacheResult 对象本身的构造 初始化");
     }
 
@@ -23,6 +24,7 @@ public class CacheResult implements SQLAnnotation<BufferSQLContext>{
 
     @Override
     public BufferSQLContext apply(BufferSQLContext context) {
+        if (isDebug)
         System.out.println("=>CacheResult 动态注解被调用");
         return context;
     }
