@@ -80,7 +80,7 @@ public class TrieCompiler {
     public String toCode1(String className, DynamicAnnotationRuntime runtime, TrieContext context,Map<Boolean, List<String>> map) {
         String body = toCode2(true, context);
        // String fields = runtime.int2str.entrySet().stream().map((i -> String.format("public boolean _%backRoute=false;//%backRoute\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
-       String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("tags[%d]=0;//%backRoute\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
+       String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("tags[%d]=0;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
         String fieldsArrayTag = String.format("final  int[] tags={%s};\n",runtime.int2str.entrySet().stream().map((i -> "0")).collect(Collectors.joining(",")));
         String tmpl = "\n" +
                 "package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;\n" +
