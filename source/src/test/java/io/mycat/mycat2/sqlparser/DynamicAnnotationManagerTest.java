@@ -71,6 +71,7 @@ public class DynamicAnnotationManagerTest extends TestCase {
     }
 
 
+
     private void test(String schema, SQLType type, String[] tables,String sql) throws Exception {
         sqlParser.parse(sql.getBytes(),context);
         int[] intsTables = DynamicAnnotationKeyRoute.stringArray2HashArray(tables);

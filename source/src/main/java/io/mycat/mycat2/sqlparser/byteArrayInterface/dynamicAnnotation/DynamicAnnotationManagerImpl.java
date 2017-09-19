@@ -87,9 +87,14 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         int size = res.length;
         for (int i = 0; i < size; i++) {
             DynamicAnnotation annotation = res[i];
-            annotation.match.pick(0, context);
-            if (annotation.match.isComplete()) {
-                annotation.actions.apply(context);
+            try {
+                annotation.match.pick(0, context);
+                if (annotation.match.isComplete()) {
+                    annotation.actions.apply(context);
+                }
+            }catch (Exception e){
+                System.out.println(annotation.toString());
+                e.printStackTrace();
             }
         }
     }

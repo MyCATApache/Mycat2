@@ -21,5 +21,13 @@ public class DynamicAnnotation {
     this.runtime = runtime;
   }
 
-
+    @Override
+    public String toString() {
+        return "DynamicAnnotation{" +
+                "key=" + key +
+                ", match=" + match +
+                ", actions=" + actions +
+                ", runtime=" + runtime +
+                '}';
+    }
 }
