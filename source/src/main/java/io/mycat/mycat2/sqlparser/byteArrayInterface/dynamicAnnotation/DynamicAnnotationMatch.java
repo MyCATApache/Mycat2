@@ -18,4 +18,8 @@ public interface DynamicAnnotationMatch {
         HashArray array = context.getHashArray();
         pick(i, array.getCount(), context, array);
     }
+
+    default DynamicAnnotationMatch newInstance() throws Exception {
+        return this.getClass().newInstance();
+    }
 }
