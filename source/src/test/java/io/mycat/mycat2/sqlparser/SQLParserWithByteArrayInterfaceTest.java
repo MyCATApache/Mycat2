@@ -446,7 +446,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
 
     @Test
     public void testAnnotationCacheSQL() throws Exception {
-        String sql = "/* MyCAT:cache_time=1000 auto_refresh=true access_count=100*/select * from tbl_A where id=1;";
+        String sql = "/* MyCAT:cacheresult  cache_time=1000 auto_refresh=true access_count=100*/select * from tbl_A where id=1;";
         parser.parse(sql.getBytes(), context);
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));

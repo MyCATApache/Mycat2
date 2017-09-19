@@ -238,6 +238,10 @@ public class BufferSQLParser {
                         ++pos;
                     }
                     break;
+                case IntTokenHash.CACHE_RESULT:
+                    context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
+                    ++pos;
+                    break;
                 case IntTokenHash.BALANCE:
                     if (hashArray.getHash(pos) == TokenHash.BALANCE) {
                         context.setAnnotationType(BufferSQLContext.ANNOTATION_BALANCE);
