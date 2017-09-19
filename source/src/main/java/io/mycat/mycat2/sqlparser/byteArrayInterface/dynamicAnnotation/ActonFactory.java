@@ -28,7 +28,7 @@ public class ActonFactory<T> {
             String actionName = entry.getKey();
            System.out.println( entry.toString());
             Class<SQLAnnotation<T>> annotationClass = resMap.get(actionName);
-            SQLAnnotation<T> annotation = annotationClass.newInstance();
+            SQLAnnotation<T> annotation = annotationClass.getConstructor().newInstance();
             Optional.ofNullable(entry.getValue()).map(s->s.stream().collect(Collectors.toMap(ConditionUtil::mappingKey,(v)->{
                 if (v==null){
                     return null;

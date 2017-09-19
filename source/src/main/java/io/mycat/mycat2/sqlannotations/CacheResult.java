@@ -8,6 +8,10 @@ import java.util.Map;
  * Created by jamie on 2017/9/15.
  */
 public class CacheResult implements SQLAnnotation<BufferSQLContext>{
+    public CacheResult() {
+        System.out.println("=>CacheResult 对象本身的构造 初始化");
+    }
+
     @Override
     public void init(Map<String,String> args) {
         System.out.println("=>CacheResult 动态注解初始化");
