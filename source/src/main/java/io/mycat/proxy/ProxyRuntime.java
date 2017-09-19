@@ -14,6 +14,10 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.ConfigLoader;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
+import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +28,10 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
+import io.mycat.mycat2.loadbalance.LBSession;
+import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
+import io.mycat.mycat2.loadbalance.LoadChecker;
+import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
@@ -54,12 +62,17 @@ public class ProxyRuntime {
 	private SessionManager<?> sessionManager;
 	// 用于管理端口的Session会话管理
 	private SessionManager<AdminSession> adminSessionManager;
+	private SessionManager<ProxySession> proxySessionSessionManager;
+	private SessionManager<LBSession> lbSessionSessionManager;
+
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
+	//本地负载状态检查
+	private LoadChecker localLoadChecker;
+	private LoadBalanceStrategy loadBalanceStrategy;
+
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
-	
-
 
 	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
@@ -85,11 +98,9 @@ public class ProxyRuntime {
 	public void init() {
 		//心跳调度独立出来，避免被其他任务影响
 		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-		timerExecutor = ExecutorUtil.create("Timer", ((MycatConfig)getProxyConfig()).getTimerExecutor());
+		timerExecutor = ExecutorUtil.create("Timer", getProxyConfig().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
-		startUpdateTimeTask();
-		startHeartBeatScheduler();
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
@@ -100,13 +111,6 @@ public class ProxyRuntime {
 		int index = reactorEnv.counter % ProxyRuntime.INSTANCE.getNioReactorThreads();
 		// 获取一个reactor对象
 		return ProxyRuntime.INSTANCE.getReactorThreads()[index];
-	}
-	
-	public void startUpdateTimeTask(){
-		heartbeatScheduler.scheduleAtFixedRate(updateTime(),
-											   0L, 
-											   TIME_UPDATE_PERIOD,
-											   TimeUnit.MILLISECONDS);
 	}
 	
 	/**
@@ -122,35 +126,31 @@ public class ProxyRuntime {
 														  TimeUnit.MILLISECONDS));
 		}
 	}
-	
+
+	public void addBusinessJob(Runnable job) {
+		businessExecutor.execute(job);
+	}
+
+	public void addDelayedJob(Runnable job, int delayedSeconds) {
+		schedulerService.schedule(job, delayedSeconds, TimeUnit.SECONDS);
+	}
+
 	/**
 	 * 切换 metaBean 名称
-	 * @param metaBean
 	 */
 	public void startSwitchDataSource(String replBean,Integer writeIndex){
-		
-		System.err.println("TODO 收到集群切换 请求，开始切换");
-		
 		MycatConfig config = (MycatConfig) getProxyConfig();
-		MySQLRepBean repBean = config.getMySQLReplicaSet()
-		  .stream().filter(f->f.getName().equals(replBean))
-		  .findFirst().orElse(null);
+		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
 		
-		if(repBean!=null){
-			businessExecutor.execute(()->{
-				
+		if (repBean != null){
+			addBusinessJob(() -> {
 				repBean.setSwitchResult(false);
 				repBean.switchSource(writeIndex,maxdataSourceInitTime);
-				
-				if(repBean.getSwitchResult().get()){
-					//TODO 切换成功. 通知集群
-					logger.info("switch datasource success");
-					System.err.println("switch datasource success");
-					startHeartBeatScheduler();
-				}else{
-					System.err.println("switch datasource error");
-					logger.error("switch datasource error");
-					//TODO 切换失败. 通知集群
+
+				if (repBean.getSwitchResult().get()){
+					logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+				} else {
+					logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
 				}
 			});
 		}	
@@ -327,5 +327,37 @@ public class ProxyRuntime {
 
 	public void setAcceptor(NIOAcceptor acceptor) {
 		this.acceptor = acceptor;
+	}
+
+	public LoadChecker getLocalLoadChecker() {
+		return localLoadChecker;
+	}
+
+	public void setLocalLoadChecker(LoadChecker localLoadChecker) {
+		this.localLoadChecker = localLoadChecker;
+	}
+
+	public LoadBalanceStrategy getLoadBalanceStrategy() {
+		return loadBalanceStrategy;
+	}
+
+	public void setLoadBalanceStrategy(LoadBalanceStrategy loadBalanceStrategy) {
+		this.loadBalanceStrategy = loadBalanceStrategy;
+	}
+
+	public SessionManager<ProxySession> getProxySessionSessionManager() {
+		return proxySessionSessionManager;
+	}
+
+	public void setProxySessionSessionManager(SessionManager<ProxySession> proxySessionSessionManager) {
+		this.proxySessionSessionManager = proxySessionSessionManager;
+	}
+
+	public SessionManager<LBSession> getLbSessionSessionManager() {
+		return lbSessionSessionManager;
+	}
+
+	public void setLbSessionSessionManager(SessionManager<LBSession> lbSessionSessionManager) {
+		this.lbSessionSessionManager = lbSessionSessionManager;
 	}
 }

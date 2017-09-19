@@ -22,10 +22,15 @@ public abstract class ManagePacket {
 	public static final byte PKG_JOIN_REQ_ClUSTER = 3;
 	public static final byte PKG_JOIN_NOTIFY_ClUSTER = 4;
 	public static final byte PKG_JOIN_ACK_ClUSTER = 5;
+
 	public static final byte PKG_CONFIG_VERSION_REQ = 6;
 	public static final byte PKG_CONFIG_VERSION_RES = 7;
 	public static final byte PKG_CONFIG_REQ = 8;
 	public static final byte PKG_CONFIG_RES = 9;
+
+	public static final byte PKG_CONFIG_PREPARE = 10;
+	public static final byte PKG_CONFIG_CONFIRM = 11;
+	public static final byte PKG_CONFIG_COMMIT = 12;
 
 	protected byte pkgType;
 	// 长度最长为2字节的short，即65535，长度包括包头3个字节在内

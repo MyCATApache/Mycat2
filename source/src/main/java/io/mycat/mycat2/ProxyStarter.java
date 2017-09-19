@@ -2,6 +2,13 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.beans.ReplicaConfBean;
+import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.mycat2.beans.SchemaConfBean;
+import io.mycat.mycat2.loadbalance.LocalLoadChecker;
+import io.mycat.mycat2.loadbalance.RandomStrategy;
+import io.mycat.proxy.*;
+import io.mycat.proxy.NIOAcceptor.ServerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,34 +38,47 @@ public class ProxyStarter {
 
 		if (conf.isClusterEnable()) {
 			// 集群开启状态，需要等集群启动，主节点确认完配置才能提供服务
-			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), true);
+			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), ServerType.CLUSTER);
 			runtime.setAdminCmdResolver(new AdminCommandResovler());
 			MyCluster cluster = new MyCluster(acceptor.getSelector(), conf.getMyNodeId(), ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
 			runtime.setMyCLuster(cluster);
 			cluster.initCluster();
 		} else {
 			// 未配置集群，直接启动
-			startProxy();
+			startProxy(true);
 		}
 	}
 
-	public void startProxy() throws IOException {
+	public void startProxy(boolean isLeader) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
 
-		// 开启mycat服务
-		ConfigLoader.INSTANCE.loadAll(conf);
+		// 加载配置文件信息
+		ConfigLoader.INSTANCE.loadAll();
 		NIOAcceptor acceptor = runtime.getAcceptor();
-		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), false);
+		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), ServerType.MYCAT);
 		startReactor();
 		// 初始化
 		init(conf);
+        if(conf.isLoadBalanceEnable()){
+            //开启负载均衡服务
+            runtime.setLocalLoadChecker(new LocalLoadChecker());
+            runtime.setLoadBalanceStrategy(new RandomStrategy());
+            acceptor.startServerChannel(conf.getLoadBalanceIp(), conf.getLoadBalancePort(), ServerType.LOAD_BALANCER);
+        }
+
+		// 主节点才启动心跳，非集群下也启动心跳
+		if (isLeader) {
+			runtime.startHeartBeatScheduler();
+		}
 	}
 
 	public void stopProxy() {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.stopServerChannel(false);
+
+		runtime.stopHeartBeatScheduler();
 	}
 
 	private void startReactor() throws IOException {

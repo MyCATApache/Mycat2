@@ -15,8 +15,11 @@ public class ClusterNode implements Comparable<ClusterNode> {
 		Online, Offline;
 	}
 
+	//myNodeId，集群中的唯一标识
 	public String id;
+	//集群的ip，clusterIP
 	public String ip;
+	//集群的port，clusterPort
 	public int port;
 	private long lastStateTime;
 	private long nodeStartTime;
@@ -24,7 +27,8 @@ public class ClusterNode implements Comparable<ClusterNode> {
 	private String myLeaderId;
 	private ClusterState myClusterState;
 	private long lastClusterStateTime;
-	
+	//mycat的port
+	public int proxyPort;
 
 	public ClusterNode(String id, String ip, int port) {
 		super();

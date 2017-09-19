@@ -32,6 +32,10 @@ import java.nio.ByteBuffer;
 public final class ParseUtil {
 	public final static int msyql_packetHeaderSize = 4;
 	public final static int mysql_packetTypeSize = 1;
+	
+	public final static int mysql_packetHeader_length = 3;
+	public final static int mysql_packetHeader_type   = 1;
+	
 
 	public static final boolean validateHeader(final long offset, final long position) {
 		return offset + msyql_packetHeaderSize + mysql_packetTypeSize <= position;

@@ -154,11 +154,16 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 				syncAndExecute(optSession,callback);
 				addMySQLSession(targetMetaBean, optSession); //新创建的连接加入到当前reactor 中
 			} else {
-				ErrorPacket error = new ErrorPacket();
-	            error.errno = ErrorCode.ER_UNKNOWN_ERROR;
-	            error.packetId = 1;
-	            error.message = retVal.toString();
-				currMycatSession.responseOKOrError(error);
+				if(retVal instanceof ErrorPacket){
+					currMycatSession.responseOKOrError((ErrorPacket)retVal);
+				}else{
+					System.err.println(" retVal is not ErrorPacket, please check it !!!");
+					ErrorPacket error = new ErrorPacket();
+		            error.errno = ErrorCode.ER_UNKNOWN_ERROR;
+		            error.packetId = 1;
+		            error.message = retVal.toString();
+		            currMycatSession.responseOKOrError(error);
+				}
 			}
 		});
 	}
