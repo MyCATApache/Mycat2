@@ -139,42 +139,18 @@ public class ProxyRuntime {
 	 * 切换 metaBean 名称
 	 */
 	public void startSwitchDataSource(String replBean,Integer writeIndex){
-		
-		System.err.println("TODO 收到集群切换 请求，开始切换");
-		
 		MycatConfig config = (MycatConfig) getProxyConfig();
 		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
 		
-		if(repBean!=null){
-			addBusinessJob(()->{
-				
+		if (repBean != null){
+			addBusinessJob(() -> {
 				repBean.setSwitchResult(false);
 				repBean.switchSource(writeIndex,maxdataSourceInitTime);
-				
-				if(repBean.getSwitchResult().get()){
-					//TODO 切换成功. 通知集群
-					logger.info("switch datasource success");
-					System.err.println("switch datasource success");
-					startHeartBeatScheduler();
 
-					if (ProxyRuntime.INSTANCE.getProxyConfig().isClusterEnable()) {
-						ReplicaIndexBean bean = new ReplicaIndexBean();
-						Map<String, Integer> map = new HashMap<>(config.getRepIndexMap());
-						map.put(replBean, writeIndex);
-						bean.setReplicaIndexes(map);
-						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean, replBean);
-					} else {
-						// 非集群下直接更新replica-index信息
-						byte configType = ConfigEnum.REPLICA_INDEX.getType();
-						config.getRepIndexMap().put(replBean, writeIndex);
-						int curVersion = config.getConfigVersion(configType);
-						config.setConfigVersion(configType, curVersion + 1);
-						YamlUtil.archiveAndDump(ConfigEnum.REPLICA_INDEX.getFileName(), curVersion, config.getConfig(configType));
-					}
-				}else{
-					System.err.println("switch datasource error");
-					logger.error("switch datasource error");
-					//TODO 切换失败. 通知集群
+				if (repBean.getSwitchResult().get()){
+					logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+				} else {
+					logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
 				}
 			});
 		}	
