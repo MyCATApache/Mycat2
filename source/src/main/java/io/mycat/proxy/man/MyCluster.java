@@ -68,7 +68,7 @@ public class MyCluster {
 		}
 		myNode.setState(NodeState.Online);
 		this.myNode = myNode;
-		this.myNode.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getBindPort();
+		this.myNode.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getProxy().getPort();
 	}
 
 	/**

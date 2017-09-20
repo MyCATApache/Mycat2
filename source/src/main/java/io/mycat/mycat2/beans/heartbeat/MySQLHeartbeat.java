@@ -192,7 +192,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		case DBHeartbeat.INIT_STATUS:
 			logger.info("current repl status [INIT_STATUS ---> OK_STATUS ]. update lastSwitchTime .{}:{}", source.getIp(), source.getPort());
 			MycatConfig conf = (MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
-			source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - conf.getMinSwitchtimeInterval());
+			source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - conf.getHeartbeat().getMinSwitchtimeInterval());
 		case DBHeartbeat.OK_STATUS:
 		default:
 			this.status = OK_STATUS;
@@ -216,11 +216,11 @@ public class MySQLHeartbeat extends DBHeartbeat {
 
 				MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
 				long curTime = System.currentTimeMillis();
-				if (((curTime - source.getRepBean().getLastSwitchTime()) < conf.getMinSwitchtimeInterval())
-						|| (curTime - source.getRepBean().getLastInitTime()) < conf.getMinSwitchtimeInterval()) {
+				long minSwitchTimeInterval = conf.getHeartbeat().getMinSwitchtimeInterval();
+				if (((curTime - source.getRepBean().getLastSwitchTime()) < minSwitchTimeInterval)
+						|| (curTime - source.getRepBean().getLastInitTime()) < minSwitchTimeInterval) {
 					if (logger.isDebugEnabled()) {
-						logger.warn("the Minimum time interval for switchSource is {} seconds.",
-								conf.getMinSwitchtimeInterval() / 1000L);
+						logger.warn("the Minimum time interval for switchSource is {} seconds.", minSwitchTimeInterval / 1000L);
 					}
 					return;
 				}
@@ -230,7 +230,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 					logger.error("all metaBean in replica is invalid !!!");
 				} else {
 					String repName = source.getRepBean().getName();
-					if (ProxyRuntime.INSTANCE.getProxyConfig().isClusterEnable()) {
+					if (ProxyRuntime.INSTANCE.getProxyConfig().getCluster().isEnable()) {
 						ReplicaIndexBean bean = new ReplicaIndexBean();
 						Map<String, Integer> map = new HashMap(conf.getRepIndexMap());
 						map.put(repName, next);

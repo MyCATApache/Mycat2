@@ -98,7 +98,7 @@ public class ProxyRuntime {
 	public void init() {
 		//心跳调度独立出来，避免被其他任务影响
 		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-		timerExecutor = ExecutorUtil.create("Timer", getProxyConfig().getTimerExecutor());
+		timerExecutor = ExecutorUtil.create("Timer", getProxyConfig().getHeartbeat().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 	}
@@ -118,7 +118,7 @@ public class ProxyRuntime {
 	 */
 	public void startHeartBeatScheduler(){
 		if(heartBeatTasks.get(REPLICA_HEARTBEAT)==null){
-			long replicaHeartbeat = ((MycatConfig)getProxyConfig()).getReplicaHeartbeatPeriod();
+			long replicaHeartbeat = getProxyConfig().getHeartbeat().getReplicaHeartbeatPeriod();
 			heartBeatTasks.put(REPLICA_HEARTBEAT,
 					heartbeatScheduler.scheduleAtFixedRate(replicaHeartbeat(),
 														  0,
@@ -284,7 +284,8 @@ public class ProxyRuntime {
 	 * 在NIO主线程中调度的延迟任务，重复执行
 	 * 
 	 * @param job
-	 * @param delayedSeconds
+	 * @param initialDelay
+	 * @param period
 	 * @param nioThread
 	 */
 	public void addCronNIOJob(Runnable job, int initialDelay, int period, ProxyReactorThread<?> nioThread) {

@@ -83,7 +83,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
                 //todo config update 命令处理需要给前端返回
             }
             cluster.configConfirmMap.remove(type);
-        }, runtime.getProxyConfig().getPrepareDelaySeconds());
+        }, runtime.getProxyConfig().getCluster().getPrepareDelaySeconds());
         return true;
     }
 

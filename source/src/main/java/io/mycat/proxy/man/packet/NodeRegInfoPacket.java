@@ -29,7 +29,7 @@ public class NodeRegInfoPacket extends ManagePacket {
 		this.lastClusterStateTime=lastClusterStateTime;
 		setMyLeader(myLeader);
 		this.startupTime = startupTime;
-		this.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getBindPort();
+		this.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getProxy().getPort();
 	}
 
 	public NodeRegInfoPacket() {
