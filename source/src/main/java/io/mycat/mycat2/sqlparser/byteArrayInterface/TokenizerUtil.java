@@ -78,6 +78,11 @@ public class TokenizerUtil {
                     return false;
                 else
                     return true;
+            case IntTokenHash.OFF:
+                if (hashArray.getHash(pos) == TokenHash.OFF)
+                    return false;
+                else
+                    return true;
             case IntTokenHash.FROM:
                 if (hashArray.getHash(pos) == TokenHash.FROM)
                     return false;

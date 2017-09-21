@@ -4,8 +4,16 @@ package io.mycat.mycat2.sqlparser.SQLParseUtils;
  * Created by Fanfan on 2017/3/21.
  */
 public class HashArray {
-    long[] hashArray = new long[4096];
+    long[] hashArray;
     int pos = 0;
+    
+    public HashArray(){
+    	hashArray = new long[4096];
+    }
+    
+    public HashArray(int size){
+    	hashArray = new long[size];
+    }
 
     public void init() {
         while(pos>=0) {

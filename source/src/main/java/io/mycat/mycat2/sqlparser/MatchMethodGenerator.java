@@ -182,7 +182,7 @@ public class MatchMethodGenerator {
 
         });}
 
-    static long genHash(char[] str) {
+    public static long genHash(char[] str) {
         int seed = 41;
         long hash = 0;
         for (char c: str) {

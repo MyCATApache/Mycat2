@@ -77,6 +77,7 @@ public class TCLSQLParser {
 
     public static int pickSetAutocommit(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
         debug(() -> "AUTOCOMMIT");
+        context.setSQLType(BufferSQLContext.SET_AUTOCOMMIT_SQL);
         if (hashArray.getType(pos) == Tokenizer2.EQUAL) {
             debug(() -> "=");
             pos++;
@@ -84,11 +85,16 @@ public class TCLSQLParser {
                 int n = TokenizerUtil.pickNumber(pos, hashArray, sql);
                 if (n == 1) {
                     debug(() -> "1");
+                    context.getMyCmdValue().set(IntTokenHash.ON, pos, 8, TokenHash.ON);
                 } else {
                     debug(() -> "0");
+                    context.getMyCmdValue().set(IntTokenHash.OFF, pos, 8, TokenHash.OFF);
                 }
-                //todo 设置
                 pos++;
+            }else if(hashArray.getHash(pos) == TokenHash.ON){
+            	context.getMyCmdValue().set(IntTokenHash.ON, pos, 8, TokenHash.ON);
+            }else if(hashArray.getHash(pos) == TokenHash.OFF){
+            	context.getMyCmdValue().set(IntTokenHash.OFF, pos, 8, TokenHash.OFF);
             }
         }
         return pos;

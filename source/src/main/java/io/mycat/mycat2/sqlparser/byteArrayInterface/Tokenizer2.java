@@ -245,11 +245,21 @@ public class Tokenizer2 {
                     next = sql.get(++pos);
                     if (next == '*') {//  /*
                         next = sql.get(++pos);
+                        //处理新版 mycat 注解
                         if (next == ' ') {
-                            //处理新版mycat注解
                             if ((sql.get(++pos) & 0xDF) == 'M' && (sql.get(++pos) & 0xDF) == 'Y' && (sql.get(++pos) & 0xDF) == 'C' && (sql.get(++pos) & 0xDF) == 'A' && (sql.get(++pos) & 0xDF) == 'T'
                                     && sql.get(++pos) == ':') {
                                 pos = parseAnnotation(sql, pos, sqlLength);
+                                
+                            } else {
+                                pos = skipMultiLineComment(sql, ++pos, sqlLength, next);
+                            }
+                        }else if((next == '!' && (next = sql.get(++pos)) == ' ')){
+                        	int tmppos = pos - 1;
+                        	if ((sql.get(++pos) & 0xDF) == 'M' && (sql.get(++pos) & 0xDF) == 'Y' && (sql.get(++pos) & 0xDF) == 'C' && (sql.get(++pos) & 0xDF) == 'A' && (sql.get(++pos) & 0xDF) == 'T'
+                                    && sql.get(++pos) == ':') {
+                                pos = parseAnnotation(sql, pos, sqlLength);
+                                sql.set(tmppos, (byte)' ');
                             } else {
                                 pos = skipMultiLineComment(sql, ++pos, sqlLength, next);
                             }
