@@ -204,7 +204,6 @@ public class TCLSQLParser {
     }
 
     public static int pickSetAutocommitAndSetTransaction(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
-        context.setSQLType(BufferSQLContext.SET_SQL);
         TokenizerUtil.debug(() -> "SET");
         long hash = hashArray.getHash(pos);
         if (hash == TokenHash.AUTOCOMMIT) {
@@ -282,6 +281,9 @@ public class TCLSQLParser {
                     }
                 }
             }
+        }else{
+        	//TODO 其他SET 命令支持
+        	context.setSQLType(BufferSQLContext.SET_SQL);
         }
         return pos;
     }
