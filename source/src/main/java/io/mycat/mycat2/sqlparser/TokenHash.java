@@ -401,6 +401,7 @@ public class TokenHash {
     public static final long NVARCHAR     = 0x4927586d095L;
     public static final long OFFLINE      = 0x1d39b08d88L;
     public static final long OFFSET       = 0xb67b1e11L;
+    public static final long OFF          = 0xad84L;
     public static final long OLD_PASSWORD = 0xcaed8a26ad23f3f9L;
     public static final long ON           = 0x443L;
     public static final long ONE_SHOT     = 0x4b711f6af83L;
@@ -704,7 +705,6 @@ public class TokenHash {
 
     public static void main(String[] args) {
         MatchMethodGenerator.initShrinkCharTbl();
-        System.out.println(MatchMethodGenerator.genHash("NULLIF".toCharArray()));
     }
 
 

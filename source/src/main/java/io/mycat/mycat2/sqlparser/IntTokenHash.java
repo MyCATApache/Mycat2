@@ -29,6 +29,7 @@ public class IntTokenHash {
     public static final int ID = 0x47670002;
     public static final int IF = 0x47650002;
     public static final int ON = 0x409e0002;
+    public static final int OFF = 0xca9a6260;
     public static final int FOR = 0x576e0003;
     public static final int NOT = 0x68b00003;
     public static final int SET = 0x52330003;

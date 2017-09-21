@@ -98,11 +98,13 @@ public class BufferSQLContext {
     private int preHashArrayPos = 0;
     private int preTableResultPos = 0;
     private int hashArrayRealSQLOffset = 0;//记录真实sql开始偏移
+    private HashArray myCmdValue;
 
     public BufferSQLContext() {
         tblResult = new short[tblResultArraySize];
         sqlInfoArray = new short[512];
         annotationValue = new long[16];
+        myCmdValue    = new HashArray(10);
     }
 
     public void setCurBuffer(ByteArrayInterface curBuffer, HashArray hashArray) {
@@ -330,6 +332,10 @@ public class BufferSQLContext {
 
     public long getAnnotationValue(byte typeKey) {
         return this.annotationValue[typeKey];
+    }
+    
+    public HashArray getMyCmdValue(){
+    	return this.myCmdValue;
     }
 
     public String getAnnotationContent() {
