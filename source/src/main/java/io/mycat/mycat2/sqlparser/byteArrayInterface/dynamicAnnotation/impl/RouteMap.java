@@ -13,6 +13,7 @@ public class RouteMap<T> {
         List<T> c = new ArrayList<>();
         for (int i = 0; i < size; i++) {
             List<T> res = map.get(targets[i]);
+            if (res==null)continue;
             int s = res.size();
             for (int j = 0; j < s; j++) {
                 T v = res.get(j);

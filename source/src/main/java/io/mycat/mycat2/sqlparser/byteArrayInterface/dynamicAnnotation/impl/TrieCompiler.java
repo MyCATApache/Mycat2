@@ -81,7 +81,7 @@ public class TrieCompiler {
         String body = toCode2(true, context);
        // String fields = runtime.int2str.entrySet().stream().map((i -> String.format("public boolean _%backRoute=false;//%backRoute\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
        String fieldsInit = runtime.int2str.entrySet().stream().map((i -> String.format("tags[%d]=0;//%s\n", i.getKey(), i.getValue()))).collect(Collectors.joining(" "));
-        String fieldsArrayTag = String.format("final  int[] tags={%s};\n",runtime.int2str.entrySet().stream().map((i -> "0")).collect(Collectors.joining(",")));
+        String fieldsArrayTag = "int[] tags;";
         String tmpl = "\n" +
                 "package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;\n" +
                 "\n" +
@@ -91,6 +91,7 @@ public class TrieCompiler {
                 "public class " +className+
                 " implements DynamicAnnotationMatch {\n" +
                 "    public final void pick(int i, final int arrayCount, BufferSQLContext context, HashArray array) {\n" +
+                "tags=context.getAnnotationCondition();"+
                 "" +fieldsInit+
                 "int res;" +
                 "        while (i < arrayCount) {\n" +
@@ -101,7 +102,7 @@ public class TrieCompiler {
                 "                i = res;\n" +
                 "            }\n" +
                 "        }\n" +
-                "    }\n" +
+                "   }\n" +
                 "\n" +
                 "    public final int pick0(int i, final int arrayCount, BufferSQLContext context, HashArray array) {\n" +
                 " " +body+

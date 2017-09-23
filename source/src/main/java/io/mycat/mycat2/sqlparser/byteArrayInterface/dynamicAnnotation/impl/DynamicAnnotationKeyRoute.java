@@ -12,11 +12,10 @@ import java.util.stream.Stream;
  * Created by jamie on 2017/9/15.
  */
 public class DynamicAnnotationKeyRoute {
-    Map<Integer, RouteMap<List<DynamicAnnotation>>> frontRoute = new HashMap<>();
-   Map<Integer, DynamicAnnotation[]> cache = new LinkedHashMap<>(128, 0.75f, true);
-
+    Map<Integer, RouteMap<List<DynamicAnnotation>>> tablesRoute = new HashMap<>();
+    Map<Integer, List<DynamicAnnotation>> notablesRoute = new HashMap<>();
     private static int hash(String schema, SQLType sqltype) {
-        return hash(schema.hashCode(), sqltype.ordinal());
+        return hash(schema.hashCode(), sqltype.getValue());
     }
 
     private static int hash(int schema, int sqltype) {
@@ -44,13 +43,24 @@ public class DynamicAnnotationKeyRoute {
         HashMap<Integer, List<DynamicAnnotation>> mapList = new HashMap<>();
         for (Map.Entry<DynamicAnnotationKey, DynamicAnnotation> it : map.entrySet()) {
             int hash = hash(it.getKey().schemaName, it.getKey().sqlType);
-            mapList.compute(hash, (k, v) -> {
-                if (v == null) {
-                    v = new ArrayList<>();
-                }
-                v.add(it.getValue());
-                return v;
-            });
+            String[] tables = it.getKey().tables;
+            if (tables == null || tables.length == 0) {//处理无tables的路由
+                notablesRoute.compute(hash, (k, v) -> {
+                    if (v == null) {
+                        v = new ArrayList<>();
+                    }
+                    v.add(it.getValue());
+                    return v;
+                });
+            } else {
+                mapList.compute(hash, (k, v) -> {//处理有tables的路由
+                    if (v == null) {
+                        v = new ArrayList<>();
+                    }
+                    v.add(it.getValue());
+                    return v;
+                });
+            }
         }
         for (Map.Entry<Integer, List<DynamicAnnotation>> it : mapList.entrySet()) {
             HashMap<int[], List<DynamicAnnotation>> m = new HashMap<>();
@@ -64,19 +74,21 @@ public class DynamicAnnotationKeyRoute {
                 });
             }
             RouteMap<List<DynamicAnnotation>> routeMap = new RouteMap<List<DynamicAnnotation>>(m);
-            frontRoute.put(it.getKey(), routeMap);
+            tablesRoute.put(it.getKey(), routeMap);
         }
     }
 
     public DynamicAnnotation[] front(int schema, int sqltype, int[] tables) {
         DynamicAnnotation[] res;
-        int hash=schema << 3 + sqltype << 2 +Arrays.hashCode(tables);
-        res = cache.get(hash);
-        if (res != null) return res;
-        RouteMap<List<DynamicAnnotation>> routeMap = frontRoute.get(hash(schema, sqltype));
+        int hash = hash(schema, sqltype);
+        RouteMap<List<DynamicAnnotation>> routeMap = tablesRoute.get(hash(schema, sqltype));
+        List<DynamicAnnotation> notablesActions = notablesRoute.get(hash);
+        if (notablesActions == null) notablesActions = Collections.emptyList();
         if (routeMap != null) {
-            res= routeMap.get(tables).stream().flatMap((v) -> v.stream()).distinct().toArray(DynamicAnnotation[]::new);
-            cache.put(hash,res);
+            List<List<DynamicAnnotation>> list = routeMap.get(tables);
+            if (list == null) list = new ArrayList<>();
+            list.add(notablesActions);
+            res = list.stream().flatMap((v) -> v.stream()).distinct().toArray(DynamicAnnotation[]::new);
             return res;
         } else {
             //todo 错误
@@ -85,7 +97,7 @@ public class DynamicAnnotationKeyRoute {
     }
 
     public DynamicAnnotation[] front(String schema, SQLType sqltype, int[] tables) {
-        return front(schema.hashCode(), sqltype.ordinal(), tables);
+        return front(schema.hashCode(), sqltype.getValue(), tables);
     }
 
 

@@ -1,20 +1,24 @@
 package io.mycat.mycat2.net;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.AbstractMySQLSession;
+import io.mycat.mycat2.Interceptor.InterceptorSystem;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.Interceptor.InterceptorSystem;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManager;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 /**
  * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
@@ -53,6 +57,9 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 			int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
 			int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
 			parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
+			BufferSQLContext context = session.sqlContext;
+			AnnotationProcessor.getInstance().parse(context,session);
+
 		}
 		session.curSQLCommand = null;
 		session.clearSQLCmdMap();

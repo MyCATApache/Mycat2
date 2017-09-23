@@ -15,6 +15,7 @@ import java.io.*;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.EnumSet;
 import java.util.Map;
@@ -53,12 +54,12 @@ public class YamlUtil {
     }
 
     public static <T> T load(String fileName, Class<T> clazz) throws FileNotFoundException {
-        FileInputStream fis = null;
+        InputStreamReader fis = null;
         try {
             URL url = YamlUtil.class.getClassLoader().getResource(fileName);
             if (url != null) {
                 Yaml yaml = new Yaml();
-                fis = new FileInputStream(url.getFile());
+                fis =new InputStreamReader(new FileInputStream(url.getFile()), StandardCharsets.UTF_8);
                 T obj = yaml.loadAs(fis, clazz);
                 return obj;
             }

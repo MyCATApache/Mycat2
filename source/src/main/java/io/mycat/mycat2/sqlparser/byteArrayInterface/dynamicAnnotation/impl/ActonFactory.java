@@ -42,12 +42,14 @@ public class ActonFactory<T> {
     }
 
 
-    public Function<T,T> get(List<Map<String, List<Map<String, String>>>> need) throws Exception {
+    public Function<T,T> get(String name,List<Map<String, List<Map<String, String>>>> need) throws Exception {
         Iterator<Map.Entry<String, Map<String, String>>> iterator = pretreatmentArgs(need).entrySet().iterator();
         Function<T,T> res = null;
         do {
             Map.Entry<String, Map<String, String>> action = iterator.next();
             Map<String, String> args=action.getValue();
+            if (args==null)args=new HashMap<>();
+            args.put("matchName",name);
             String actionName = action.getKey();
             System.out.println(action.toString());
             Class<SQLAnnotation<T>> annotationClass = resMap.get(actionName);
@@ -59,7 +61,10 @@ public class ActonFactory<T> {
                 res = res.andThen(annotation);
             }
         } while (iterator.hasNext());
-        return res==null?EMPTY:res;
+        if (res==null){
+            return EMPTY;
+        }
+        return res;
     }
 
     public static void main(String[] args) throws Throwable {
@@ -73,7 +78,7 @@ public class ActonFactory<T> {
         sqlCach.put("param1","1");
         sqlCach.put("param2","2");
         list.add(Collections.singletonMap("sqlCach",Arrays.asList(sqlCach)));
-       Function<BufferSQLContext,BufferSQLContext> annotations= actonFactory.get(list);
+       Function<BufferSQLContext,BufferSQLContext> annotations= actonFactory.get("default",list);
        annotations.apply(null);
     }
 
