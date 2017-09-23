@@ -274,7 +274,7 @@ public class MySQLRepBean {
 		int initstatus = DBHeartbeat.OK_STATUS;
 		MyCluster myCluster = ProxyRuntime.INSTANCE.getMyCLuster();
 		
-		if(myCluster.getMyLeader()==myCluster.getMyNode()){
+		if(myCluster==null||myCluster.getMyLeader()==myCluster.getMyNode()){
 			initstatus = DBHeartbeat.INIT_STATUS;
 		}
 		return initstatus;
