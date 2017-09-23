@@ -3,14 +3,10 @@ package io.mycat.mycat2.cmds.strategy;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.mycat.mycat2.MyCommand;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
-import io.mycat.mycat2.sqlparser.BufferSQLParser;
-import io.mycat.mycat2.sqlparser.NewSQLContext;
-import io.mycat.mycat2.sqlparser.NewSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
 
 public abstract class AbstractCmdStrategy implements CmdStrategy {
@@ -35,8 +31,8 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	protected abstract void initMySqlCmdHandler();
 	
 	@Override
-	public MyCommand getMyCommand(MycatSession session) {
-		MyCommand command = null;
+	public MySQLCommand getMyCommand(MycatSession session) {
+		MySQLCommand command = null;
 		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
 			command = doGetMySQLCommand(session);
 		}else{
@@ -50,7 +46,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * @param session
 	 * @return
 	 */
-	protected MyCommand doGetMyCommand(MycatSession session){
+	protected MySQLCommand doGetMyCommand(MycatSession session){
 		return MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
 	}
 	
@@ -59,7 +55,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * @param session
 	 * @return
 	 */
-	protected MyCommand doGetMySQLCommand(MycatSession session){
+	protected MySQLCommand doGetMySQLCommand(MycatSession session){
 		
 		/**
 		 * sqlparser
