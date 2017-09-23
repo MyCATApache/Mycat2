@@ -121,10 +121,11 @@ public class Tokenizer2 {
         return pos;
     }
 
-    int parseString(ByteArrayInterface sql, int pos, final int sqlLength, int startSign) {
+    int parseString(ByteArrayInterface sql, int pos, final int sqlLength, byte startSign) {
         int size = 1;
         int start = pos;
-        int c;
+        long hash = 1315423911;
+        byte c = 0;
         while (++pos < sqlLength ) {
             c = sql.get(pos);
             if (c == '\\') {
@@ -136,17 +137,19 @@ public class Tokenizer2 {
                 size++;
             }
         }
-        hashArray.set(STRINGS, start, size, 0L);
+        hashArray.set(STRINGS, start, size, hash);
         return ++pos;
     }
 
-    int parseDigits(ByteArrayInterface sql, int pos, final int sqlLength) {
+    int parseDigits(ByteArrayInterface sql, int pos, final int sqlLength, byte c) {  // TODO: 需要增加小数类型处理吗？
         int start = pos;
         int size = 1;
-        while (++pos<sqlLength && charType[sql.get(pos)<<1] == DIGITS) {
+        long longValue = (long)(c-'0');
+        while (++pos<sqlLength && charType[(c=sql.get(pos))<<1] == DIGITS) {
+            longValue = longValue*10L + (long)(c-'0');
             size++;
         }
-        hashArray.set(DIGITS, start, size);
+        hashArray.set(DIGITS, start, size, longValue);
         return pos;
     }
 
@@ -161,7 +164,7 @@ public class Tokenizer2 {
             cType = charType[c<<1];
             switch (cType) {
                 case DIGITS:
-                    pos = parseDigits(sql, pos, sqlLength);
+                    pos = parseDigits(sql, pos, sqlLength, c);
                     break;
                 case CHARS:
                     pos = parseToken(sql, pos, sqlLength, c);
@@ -225,7 +228,7 @@ public class Tokenizer2 {
                     pos = parseToken(sql, pos, sqlLength, c);
                     break;
                 case DIGITS:
-                    pos = parseDigits(sql, pos, sqlLength);
+                    pos = parseDigits(sql, pos, sqlLength, c);
                     break;
                 case STRINGS:
                     pos = parseString(sql, pos, sqlLength, c);

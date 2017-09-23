@@ -647,7 +647,8 @@ public class BufferSQLParser {
 //        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
 //        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
 
-        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+//        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+        ByteArrayInterface src = new DefaultByteArray("select 121345678;".getBytes());
 //        ByteArrayInterface src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
 //        long min = 0;
 //        for (int i = 0; i < 50; i++) {
