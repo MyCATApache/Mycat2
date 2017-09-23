@@ -65,7 +65,9 @@ public class BufferSQLParser {
                     //context.setTblNameStart(hashArray.getPos(pos));// TODO: 2017/3/10 可以优化成一个接口
                     //context.setTblNameSize(hashArray.getSize(pos));
                     ++pos;
-                } else if (type == Tokenizer.SEMICOLON || type == Tokenizer.RIGHT_PARENTHESES || type == Tokenizer.LEFT_PARENTHESES) {
+                } else if (type == Tokenizer.SEMICOLON) {
+                    return pos;
+                } else if (type == Tokenizer.RIGHT_PARENTHESES || type == Tokenizer.LEFT_PARENTHESES) {
                     return ++pos;
                 } else if (type == Tokenizer.COMMA) {
                     return pickTableNames(++pos, arrayCount, context);
