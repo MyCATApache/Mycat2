@@ -93,7 +93,7 @@ public class BufferSQLContext {
     private boolean hasLimit = false;
     private int limitStart = 0;
     private int limitCount = 0;
-    private HashArray hashArray;
+    private HashArray hashArray = new HashArray();
     private int curSQLIdx;
     private int curSQLTblCount = 0;
     private int preHashArrayPos = 0;
@@ -109,9 +109,8 @@ public class BufferSQLContext {
         myCmdValue = new HashArray(10);
     }
 
-    public void setCurBuffer(ByteArrayInterface curBuffer, HashArray hashArray) {
+    public void setCurBuffer(ByteArrayInterface curBuffer) {
         buffer = curBuffer;
-        this.hashArray = hashArray;
         totalTblCount = 0;
         schemaCount = 0;
         tblResultPos = 0;

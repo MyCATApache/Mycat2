@@ -59,8 +59,7 @@ public class Tokenizer2 {
 
 
 
-    public Tokenizer2(HashArray hashArray) {
-        this.hashArray = hashArray;
+    public Tokenizer2() {
         //// TODO: 2017/2/21 可能需要调整顺序进行优化
         IntStream.rangeClosed('0', '9').forEach(c -> charType[c<<1] = DIGITS);
         IntStream.rangeClosed('A', 'Z').forEach(c -> charType[c<<1] = CHARS);
@@ -142,7 +141,7 @@ public class Tokenizer2 {
         return ++pos;
     }
 
-    int parseDigits(ByteArrayInterface sql, int pos, final int sqlLength, byte c) {  // TODO: 需要增加小数类型处理吗？
+    int parseDigits(ByteArrayInterface sql, int pos, final int sqlLength, byte c) {  // TODO: 需要增加小数和hex类型处理吗？
         int start = pos;
         int size = 1;
         long longValue = (long)(c-'0');
@@ -209,11 +208,11 @@ public class Tokenizer2 {
         return pos;
     }
 
-    public void tokenize(ByteArrayInterface sql) {
+    public void tokenize(ByteArrayInterface sql, HashArray hashArray) {
         int pos = sql.getOffset();
         final int sqlLength = sql.length()+pos;
         this.sql = sql;
-        hashArray.init();
+        this.hashArray = hashArray;
         byte c;
         byte cType;
         byte next;

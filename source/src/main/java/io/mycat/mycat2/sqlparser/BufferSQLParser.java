@@ -44,8 +44,8 @@ import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debugEr
 
 public class BufferSQLParser {
     ByteArrayInterface sql;
-    HashArray hashArray = new HashArray();
-    Tokenizer2 tokenizer = new Tokenizer2(hashArray);
+    HashArray hashArray;// = new HashArray();
+    Tokenizer2 tokenizer = new Tokenizer2();
     DefaultByteArray defaultByteArray = new DefaultByteArray();
     ByteBufferArray byteBufferArray = new ByteBufferArray();
 
@@ -600,24 +600,30 @@ public class BufferSQLParser {
         this.byteBufferArray.setLength(length);
         System.out.println("kaiz : "+this.byteBufferArray.getString(offset, length));
         sql = this.byteBufferArray;
-        context.setCurBuffer(sql, hashArray);
-        tokenizer.tokenize(sql);
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(sql);
+        tokenizer.tokenize(sql, hashArray);
         firstParse(context);
     }
 
 
     public void parse(ByteArrayInterface src, BufferSQLContext context) {
         sql = src;
-        context.setCurBuffer(src, hashArray);
-        tokenizer.tokenize(src);
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(src);
+        tokenizer.tokenize(src, hashArray);
         firstParse(context);
     }
 
     public void parse(byte[] src, BufferSQLContext context) {
         this.defaultByteArray.setSrc(src);
         sql = this.defaultByteArray;
-        context.setCurBuffer(sql, hashArray);
-        tokenizer.tokenize(sql);
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(sql);
+        tokenizer.tokenize(sql, hashArray);
         firstParse(context);
     }
 
