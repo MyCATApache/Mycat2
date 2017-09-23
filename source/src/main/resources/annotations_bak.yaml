@@ -1,0 +1,54 @@
+annotations:
+     - schema:
+              name: schemA
+              matches:
+                      - match:
+                             name: aaa
+                             state: open
+                             sqltype: insert
+                             where:
+                                    - and: id between 1 and 100
+                                    - and: name = "haha" and a=?
+                                    - or: name2 = "ha"
+                             tables:
+                                    - x1
+                                    - x2
+                                    - x3
+                             actions:
+                                    - monitorSQL:
+                                            - param1: 1
+                                    - cacheResult:
+                                    - sqlCach:
+                                            - param1: 1
+                                            - param2: 2
+                      - match:
+                              name: bbb
+                              state: open
+                              sqltype: insert
+                              where:
+                                    - and: id between 2 and 50
+                                    - or: name2 = ?
+                              tables:
+                                    - x1
+                                    - x2
+                              actions:
+                                    - monitorSQL:
+                                          - param1: 3
+                                    - cacheResult:
+                                    - sqlCach:
+                                          - param1: 2
+                                          - param2: 1
+                      - match:
+                               name: ccc
+                               state: open
+                               sqltype: insert
+                               tables:
+                                     - x1
+                                     - x2
+                               actions:
+                                     - monitorSQL:
+                                                - param1: 4
+                                     - cacheResult:
+                                     - sqlCach:
+                                                - param1: 5
+                                                - param2: 6

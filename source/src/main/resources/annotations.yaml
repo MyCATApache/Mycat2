@@ -1,40 +1,53 @@
 annotations:
      - schema:
-              name: schemA
+              name: test
               matches:
                       - match:
-                             name: aaa
+                             name: select有条件and or有tables
                              state: open
-                             sqltype: insert
+                             sqltype: select
                              where:
-                                    - and: id between 1 and 100
-                                    - and: name = "haha" and a=?
-                                    - or: name2 = "ha"
+                                  - and: WHERE
+                                  - or:  id = ?
                              tables:
-                                    - x1
-                                    - x2
-                                    - x3
+                                  - test1
+                             actions:
+                                  - cacheResult:
+                                          - param1: 111
+                      - match:
+                             name: select有条件多个tables
+                             state: open
+                             sqltype: select
+                             where:
+                                  - and: FROM
+                             tables:
+                                  - test1
+                                  - test2
+                             actions:
+                                    - cacheResult:
+                                          - param1: 222
+                      - match:
+                             name: select有条件无tables
+                             state: open
+                             sqltype: select
+                             where:
+                                  - and: FROM test1
                              actions:
                                     - monitorSQL:
-                                            - param1: 1
-                                    - cacheResult:
-                                    - sqlCach:
-                                            - param1: 1
-                                            - param2: 2
+                                          - param1: 555
                       - match:
-                              name: bbb
+                              name: select无条件有tables
                               state: open
-                              sqltype: insert
-                              where:
-                                    - and: id between 2 and 50
-                                    - or: name2 = ?
+                              sqltype: select
                               tables:
-                                    - x1
-                                    - x2
+                                    - test1
                               actions:
                                     - monitorSQL:
-                                          - param1: 3
-                                    - cacheResult:
-                                    - sqlCach:
-                                          - param1: 2
-                                          - param2: 1
+                                          - param1: 666
+                      - match:
+                              name: insert无tables无条件
+                              state: open
+                              sqltype: insert
+                              actions:
+                                    - monitorSQL:
+                                          - param1: 777
