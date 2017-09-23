@@ -51,7 +51,7 @@ public class MycatSession extends AbstractMySQLSession {
 	private MySQLSession curBackend;
 
 	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
-	public MyCommand curSQLCommand;
+	public MySQLCommand curSQLCommand;
 
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 
@@ -64,7 +64,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
 
-	private Map<Interceptor,MyCommand> SQLCommands = new HashMap<>();
+	private Map<Interceptor,MySQLCommand> SQLCommands = new HashMap<>();
 	
 	/*拦截器列表 用来判断某个cmd是否需要加入的SQLCommands 进行系列的处理*/
 	public static List<Interceptor> interceptorList = new ArrayList<>();
@@ -98,7 +98,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 获取sql 类型
 	 * @return
 	 */
-	public MyCommand getMyCommand(){
+	public MySQLCommand getMyCommand(){
 		switch(schema.type){
 			case DB_IN_ONE_SERVER:
 				return DBInOneServerCmdStrategy.INSTANCE.getMyCommand(this);
@@ -550,7 +550,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 获取inceptor对应的SQLCommand 
 	 *
 	 */
-	public MyCommand getSQLCmd(Interceptor inteceptor) {
+	public MySQLCommand getSQLCmd(Interceptor inteceptor) {
 		
 		return SQLCommands.get(inteceptor);
 	}
@@ -558,13 +558,13 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 放置inceptor对应的SQLCommand 
 	 *
 	 */
-	public void putSQLCmd(Interceptor inteceptor, MyCommand command) {
+	public void putSQLCmd(Interceptor inteceptor, MySQLCommand command) {
 		SQLCommands.put(inteceptor, command);
 	}
 	
 	public void clearSQLCmdsFrontResouces(boolean sessionCLosed) {
 		interceptorList.forEach(interceptor -> {
-			MyCommand command = getSQLCmd(interceptor);
+			MySQLCommand command = getSQLCmd(interceptor);
 			if(null != command) {
 				command.clearFrontResouces(this, sessionCLosed);
 			}
@@ -573,7 +573,7 @@ public class MycatSession extends AbstractMySQLSession {
 	
 	public void clearSQLCmdsBackendResouces(MySQLSession  mysqlSession, boolean sessionCLosed) {
 		interceptorList.forEach(interceptor -> {
-			MyCommand command = getSQLCmd(interceptor);
+			MySQLCommand command = getSQLCmd(interceptor);
 			if(null != command) {
 				command.clearBackendResouces(mysqlSession, sessionCLosed);
 			}
