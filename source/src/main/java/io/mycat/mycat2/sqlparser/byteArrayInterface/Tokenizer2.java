@@ -134,6 +134,7 @@ public class Tokenizer2 {
                 size++;
                 break;
             } else {
+                hash ^= (hash<<5) + c + (hash>>2);//使用JSHash对字符串进行哈希
                 size++;
             }
         }
