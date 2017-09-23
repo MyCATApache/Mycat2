@@ -69,7 +69,15 @@ public class DynamicAnnotationManagerTest extends TestCase {
         test("schemA", SQLType.INSERT, new String[]{"x3"},"SELECT * FROM Person WHERE name2 = \"ha\" ");
         //运行action
     }
-
+    /**
+     * 测试不写where的情况
+     * @throws Exception
+     */
+    @Test
+    public void test6() throws Exception {
+        test("schemA", SQLType.INSERT, new String[]{"x3"},"SELECT * FROM Person WHERE name2 = \"ha\" ");
+        //运行action
+    }
 
 
     private void test(String schema, SQLType type, String[] tables,String sql) throws Exception {
@@ -77,7 +85,7 @@ public class DynamicAnnotationManagerTest extends TestCase {
         int[] intsTables = DynamicAnnotationKeyRoute.stringArray2HashArray(tables);
         int schemaHash = schema.hashCode();
         int sqlType = type.ordinal();
-        manager.processNow(schemaHash, sqlType, intsTables, context);
+        manager.process(schemaHash, sqlType, intsTables, context).run();
     }
 
     DynamicAnnotationManagerImpl manager;
@@ -87,7 +95,7 @@ public class DynamicAnnotationManagerTest extends TestCase {
 
     @Before
     protected void setUp() throws Exception {
-        manager = new DynamicAnnotationManagerImpl("actions.yaml", "annotations.yaml");
+        manager = new DynamicAnnotationManagerImpl("actions_bak.yaml", "annotations_bak.yaml");
         context = new BufferSQLContext();
         sqlParser = new BufferSQLParser();
     }

@@ -12,15 +12,7 @@ import java.util.Map;
  * Created by jamie on 2017/9/19.
  */
 public interface DynamicAnnotationManager {
-    public DynamicAnnotationManager prototype(Map<Integer, DynamicAnnotation[]> cache);
-    /**
-     * 不同线程复制一个
-     * @param
-     * @return
-     */
-   default public DynamicAnnotationManager prototype() {
-        return prototype( new LinkedHashMap<>(128, 0.75f, true));
-    }
+
 
     public Runnable process(int schema, int sqltype, int[] tables,BufferSQLContext context) throws Exception ;
     /**
@@ -29,12 +21,13 @@ public interface DynamicAnnotationManager {
      * @param
      * @return
      */
-    public void processNow(int schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception ;
+    //public void processNow(int schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception ;
 
     public default Runnable process(String schema, SQLType sqltype, int[] tables, BufferSQLContext context) throws Exception {
-        return process(schema.hashCode(), sqltype.ordinal(), tables, context);
+
+        return process(schema.hashCode(), sqltype.getValue(), tables, context);
     }
     public default Runnable process(String schema, SQLType sqltype, String[] tables, BufferSQLContext context) throws Exception {
-        return process(schema.hashCode(), sqltype.ordinal(), DynamicAnnotationKeyRoute.stringArray2HashArray(tables), context);
+        return process(schema.hashCode(), sqltype.getValue(), DynamicAnnotationKeyRoute.stringArray2HashArray(tables), context);
     }
 }

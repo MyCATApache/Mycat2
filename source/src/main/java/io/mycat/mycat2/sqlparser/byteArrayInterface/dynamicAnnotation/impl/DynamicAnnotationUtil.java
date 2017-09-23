@@ -11,6 +11,7 @@ import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -26,35 +27,38 @@ import java.util.stream.Stream;
  */
 public class DynamicAnnotationUtil {
     static final DynamicClassLoader classLoader;
-    static AtomicInteger name = new AtomicInteger();
+   public static final AtomicInteger count=new AtomicInteger();
 
     static {
         classLoader = new DynamicClassLoader("", Thread.currentThread().getContextClassLoader());
     }
 
-    public static DynamicAnnotationRuntime compile(Map<Boolean, List< String>> lines) throws Exception {
-        String filename = "_" + name.getAndIncrement();
+    public static DynamicAnnotationRuntime compile(String matchName,Map<Boolean, List< String>> lines) throws Exception {
+        String filename ="_" +count.getAndIncrement();
         DynamicAnnotationRuntime runtime = genJavacode(filename, filename + ".java", lines);
         compileJavaCodeToClass(runtime);
         loadClass(runtime);
         return runtime;
     }
-    public static DynamicAnnotationRuntime compile( List< String> lines) throws Exception {
+    public static DynamicAnnotationRuntime compile(String matchName, List< String> lines) throws Exception {
         HashMap<Boolean,List< String> > map=new HashMap<>();
         map.put(Boolean.TRUE,lines);
-        return compile(map);
+        return compile(matchName,map);
     }
 
-    public static DynamicAnnotationRuntime genJavacode(String className, String path, Map<Boolean, List< String>> lines) throws IOException {
+    public static DynamicAnnotationRuntime genJavacode(String className, String path, Map<Boolean, List< String>> lines) throws Exception {
         DynamicAnnotationRuntime runtime = new DynamicAnnotationRuntime();
         runtime.setMatchName(className);
         String code = assemble(lines, runtime);
-        Path p = Paths.get(path);
+        Path p = Paths.get(DynamicAnnotationUtil.classLoader.getResources("cachefile").nextElement().toURI()).resolve(path);
+
+        if(!Files.exists(p))p.toFile().createNewFile();
+
         System.out.println(p.toAbsolutePath());
-        try (FileWriter fileWriter = new FileWriter(path)) {
+        try (FileWriter fileWriter = new FileWriter(p.toFile())) {
             fileWriter.write(code);
         }
-        runtime.setCodePath(path);
+        runtime.setCodePath(p.toAbsolutePath().toString());
         return runtime;
     }
 

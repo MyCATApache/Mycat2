@@ -50,11 +50,11 @@ public class DynamicAnnotationManagerBenchmark extends TestCase {
     @Benchmark
     public void stateOneAndDynamicAnnotation() throws Exception{
         sqlParser.parse(bytes,context);
-       manager.processNow(schemaHash,sqlType,intsTables,context);
+       manager.process(schemaHash,sqlType,intsTables,context);
     }
     @Benchmark
     public void dynamicAnnotation() throws Exception{
-        manager.processNow(schemaHash,sqlType,intsTables,context);
+        manager.process(schemaHash,sqlType,intsTables,context);
     }
     DynamicAnnotationManagerImpl manager;
     BufferSQLContext context;
@@ -66,7 +66,7 @@ public class DynamicAnnotationManagerBenchmark extends TestCase {
     byte[] bytes="b = 1 and c = 1 and d = a.b and c = 1".getBytes();
     @Setup
     public void init() throws Exception {
-        manager=new DynamicAnnotationManagerImpl("actions.yaml","annotations.yaml");
+        manager=new DynamicAnnotationManagerImpl("actions_bak.yaml","annotations_bak.yaml");
         context=new BufferSQLContext();
         sqlParser=new BufferSQLParser();
         sqlParser.parse(bytes,context);
