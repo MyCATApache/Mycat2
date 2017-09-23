@@ -8,6 +8,8 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLTy
 import io.mycat.proxy.ProxyRuntime;
 
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -51,7 +53,11 @@ public class AnnotationProcessor {
                     intHashTables[j] = context.getTableIntHash(j);
                 }
                 try {
-                    dynamicAnnotationManager.get().process(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context).run();
+                    List<SQLAnnotationList> collect = new ArrayList<>();
+                    dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
+                    System.out.println(collect.toString());
+                    collect.forEach((c) -> c.apply(context));
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

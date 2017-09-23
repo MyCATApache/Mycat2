@@ -7,8 +7,7 @@ import java.util.Map;
 /**
  * Created by jamie on 2017/9/15.
  */
-public class CacheResult implements SQLAnnotation<BufferSQLContext>{
-    Map<String,String> args;
+public class CacheResult extends SQLAnnotation{
     public CacheResult() {
         if (isDebug)
         System.out.println("=>CacheResult 对象本身的构造 初始化");

@@ -1,11 +1,13 @@
 package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
+import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotation;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationKeyRoute;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,7 +16,8 @@ import java.util.Map;
 public interface DynamicAnnotationManager {
 
 
-    public Runnable process(int schema, int sqltype, int[] tables,BufferSQLContext context) throws Exception ;
+    public Runnable process(int schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception;
+
     /**
      * 动态注解先匹配chema的名字,再sql类型，在匹配表名，在匹配条件
      *
@@ -22,12 +25,18 @@ public interface DynamicAnnotationManager {
      * @return
      */
     //public void processNow(int schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception ;
-
     public default Runnable process(String schema, SQLType sqltype, int[] tables, BufferSQLContext context) throws Exception {
 
         return process(schema.hashCode(), sqltype.getValue(), tables, context);
     }
+
     public default Runnable process(String schema, SQLType sqltype, String[] tables, BufferSQLContext context) throws Exception {
         return process(schema.hashCode(), sqltype.getValue(), DynamicAnnotationKeyRoute.stringArray2HashArray(tables), context);
     }
+
+    public void collect(int schema, int sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotationList> collect)throws Exception;
+    public default void collect(String schema, SQLType sqltype, int[] tables, BufferSQLContext context,List<SQLAnnotationList> collect) throws Exception {
+         collect(schema.hashCode(), sqltype.getValue(), tables, context,collect);
+    }
+
 }
