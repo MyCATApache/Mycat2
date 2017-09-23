@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MyCommand;
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.Interceptor.Interceptor;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
@@ -19,9 +19,9 @@ public class DefaultIntercepor  implements Interceptor {
 	
 	public static final Interceptor INSTANCE = new DefaultIntercepor();
 	public boolean intercept(MycatSession mycatSession) throws IOException {
-		MyCommand myCommand = mycatSession.getMyCommand();
+		MySQLCommand myCommand = mycatSession.getMyCommand();
 		if(myCommand!=null){
-			mycatSession.putSQLCmd(this, (MyCommand) myCommand);
+			mycatSession.putSQLCmd(this,  myCommand);
 			mycatSession.curSQLCommand = myCommand;
 		}else{
 			logger.error(" current packageTyps is not support,please fix it!!! the packageType is {} ",mycatSession.curMSQLPackgInf);
