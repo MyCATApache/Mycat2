@@ -161,6 +161,14 @@ public class BufferSQLContext {
         }
     }
 
+    public long getTokenType(int sqlIdx, int sqlPos) {
+        return hashArray.getType(sqlInfoArray[sqlIdx << 2] + sqlPos);
+    }
+
+    public long getTokenHash(int sqlIdx, int sqlPos) {
+        return hashArray.getHash(sqlInfoArray[sqlIdx << 2] + sqlPos);
+    }
+
     public long getSchemaHash(int idx) {
         int hashArrayIdx = tblResult[idx << 1];
         if (hashArrayIdx == 0)
