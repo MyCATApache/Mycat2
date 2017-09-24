@@ -74,10 +74,12 @@ public class BufferSQLContext {
     public static final byte ANNOTATION_ACCESS_COUNT = 7;
     public static final byte ANNOTATION_AUTO_REFRESH = 8;
     public static final byte ANNOTATION_CACHE_TIME = 9;
+    public static final byte ANNOTATION_REPLICA_NAME = 10;
 
     private short[] tblResult;  //记录格式：[{schema hash array index(defaults 0), tbl hash array index}]
     private short[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]
     private byte totalTblCount;
+    private int[] annotationCondition;
     private int tblResultPos;
     private byte schemaCount;
     private int schemaResultPos;
@@ -91,22 +93,24 @@ public class BufferSQLContext {
     private boolean hasLimit = false;
     private int limitStart = 0;
     private int limitCount = 0;
-    private HashArray hashArray;
+    private HashArray hashArray = new HashArray();
     private int curSQLIdx;
     private int curSQLTblCount = 0;
     private int preHashArrayPos = 0;
     private int preTableResultPos = 0;
     private int hashArrayRealSQLOffset = 0;//记录真实sql开始偏移
+    private HashArray myCmdValue;
 
     public BufferSQLContext() {
         tblResult = new short[tblResultArraySize];
         sqlInfoArray = new short[512];
         annotationValue = new long[16];
+        annotationCondition=new int[64];
+        myCmdValue = new HashArray(10);
     }
 
-    public void setCurBuffer(ByteArrayInterface curBuffer, HashArray hashArray) {
+    public void setCurBuffer(ByteArrayInterface curBuffer) {
         buffer = curBuffer;
-        this.hashArray = hashArray;
         totalTblCount = 0;
         schemaCount = 0;
         tblResultPos = 0;
@@ -155,6 +159,14 @@ public class BufferSQLContext {
             int size = hashArray.getSize(hashArrayIdx);
             return buffer.getString(pos, size);
         }
+    }
+
+    public long getTokenType(int sqlIdx, int sqlPos) {
+        return hashArray.getType(sqlInfoArray[sqlIdx << 2] + sqlPos);
+    }
+
+    public long getTokenHash(int sqlIdx, int sqlPos) {
+        return hashArray.getHash(sqlInfoArray[sqlIdx << 2] + sqlPos);
     }
 
     public long getSchemaHash(int idx) {
@@ -331,6 +343,9 @@ public class BufferSQLContext {
         return this.annotationValue[typeKey];
     }
 
+    public HashArray getMyCmdValue() {
+        return this.myCmdValue;
+    }
     public String getAnnotationContent() {
         return null;
     } //by kaiz : 返回注解等号后面的内容
@@ -353,5 +368,18 @@ public class BufferSQLContext {
 //            ++pos1;
 //        }
         return pos1;
+    }
+    public int getTableIntHash(int idx) {
+        int hashArrayIdx = tblResult[(idx << 1) + 1];
+        int intHash = hashArray.getIntHash(hashArrayIdx);
+        return intHash;
+    }
+
+    public int[] getAnnotationCondition() {
+        return annotationCondition;
+    }
+
+    public byte getSchemaCount() {
+        return schemaCount;
     }
 }

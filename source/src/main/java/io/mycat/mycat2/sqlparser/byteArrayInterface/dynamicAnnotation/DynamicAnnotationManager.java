@@ -1,35 +1,33 @@
 package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
-/**
- * Created by jamie on 2017/9/15.
- */
-public class DynamicAnnotationManager {
-    //  AnnotationSchemaList annotations;
-    public static final String annotation_list = "annotations";
-    public static final String schema_tag = "schema_tag";
-    public static final String schema_name = "name";
-    public static final String match_list = "matches";
-    public static final String match_tag = "match";
-    public static final String match_name = "name";
-    public static final String match_state = "state";
-    public static final String match_sqltype = "sqltype";
-    public static final String match_where = "where";
-    public static final String match_tables = "tables";
-    public static final String match_actions = "actions";
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotation;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationKeyRoute;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Created by jamie on 2017/9/19.
+ */
+public interface DynamicAnnotationManager {
+
+
+    public Runnable process(int schema, int sqltype, int[] tables,BufferSQLContext context) throws Exception ;
     /**
      * 动态注解先匹配chema的名字,再sql类型，在匹配表名，在匹配条件
      *
-     * @param sqlType
+     * @param
      * @return
      */
-    public Object get(int sqlType, String tableName) {
-        return new Object();
+    //public void processNow(int schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception ;
+
+    public default Runnable process(String schema, SQLType sqltype, int[] tables, BufferSQLContext context) throws Exception {
+
+        return process(schema.hashCode(), sqltype.getValue(), tables, context);
     }
-
-
-
-
-
-
+    public default Runnable process(String schema, SQLType sqltype, String[] tables, BufferSQLContext context) throws Exception {
+        return process(schema.hashCode(), sqltype.getValue(), DynamicAnnotationKeyRoute.stringArray2HashArray(tables), context);
+    }
 }

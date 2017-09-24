@@ -8,8 +8,11 @@ import java.util.Map;
  * Created by jamie on 2017/9/15.
  */
 public class SQLCach implements SQLAnnotation<BufferSQLContext>{
+
+    Map<String,String> args;
     @Override
     public void init(Map<String,String> args) {
+        this.args=args;
         System.out.println("=>SQLCach 动态注解初始化");
         if (args != null)
         args.entrySet().stream().forEach((c)->System.out.format("param:%s,value:%s\n",c.getKey(),c.getValue()));
@@ -17,7 +20,8 @@ public class SQLCach implements SQLAnnotation<BufferSQLContext>{
 
     @Override
     public BufferSQLContext apply(BufferSQLContext context) {
-        System.out.println("=>SQLCach 动态注解被调用");
+        if (isDebug)
+        System.out.println("=>SQLCach 动态注解被调用"+args.toString());
         return context;
     }
 }

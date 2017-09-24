@@ -1,4 +1,4 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 /**
  * Created by troshin@foxmail.com on 2017/8/17.
@@ -129,8 +129,8 @@ public class AscllUtil {
                 return "q";
             case "r":
                 return "r";
-            case "s":
-                return "s";
+            case "backRoute":
+                return "backRoute";
             case "t":
                 return "t";
             case "u":

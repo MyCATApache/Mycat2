@@ -6,7 +6,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MyCommand;
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 /**
@@ -27,7 +27,7 @@ public  class InterceptorSystem {
 		final List<Interceptor> interceptorList = MycatSession.interceptorList;
 		for(int i = 0; interceptorResult  && i < interceptorList.size(); i++) {
 			interceptorResult = interceptorList.get(i).intercept(session);
-			MyCommand sqlCmd = (MyCommand) session.getSQLCmd(interceptorList.get(i));
+			MySQLCommand sqlCmd = session.getSQLCmd(interceptorList.get(i));
 			if(sqlCmd != null) {
 				boolean tmpResult = sqlCmd.procssSQL(session);
 				if(!tmpResult){
@@ -55,7 +55,7 @@ public  class InterceptorSystem {
 		final List<Interceptor> interceptorList = MycatSession.interceptorList;
 		for(int i = interceptorList.size() -1; i >= 0; i--) {
 			Interceptor inteceptor = interceptorList.get(i);
-			MyCommand sqlCmd = mycatSession.getSQLCmd(inteceptor );
+			MySQLCommand sqlCmd = mycatSession.getSQLCmd(inteceptor );
 			if(sqlCmd != null) {
 				boolean tmpResponseResult = sqlCmd.onBackendResponse(session);
 				if(!tmpResponseResult) {
@@ -88,7 +88,7 @@ public  class InterceptorSystem {
 		MycatSession mycatSession = mysqlSession.getMycatSession();
 		final List<Interceptor> interceptorList = MycatSession.interceptorList;
 		for(int i = 0;  i < interceptorList.size(); i++) {
-			MyCommand sqlCmd = mycatSession.getSQLCmd(interceptorList.get(i));
+			MySQLCommand sqlCmd = mycatSession.getSQLCmd(interceptorList.get(i));
 			sqlCmd.onBackendClosed(mysqlSession, normal);
 		}
 		return true;

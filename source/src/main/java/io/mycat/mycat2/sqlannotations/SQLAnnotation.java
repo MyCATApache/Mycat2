@@ -8,7 +8,6 @@ import java.util.function.Function;
  * Created by jamie on 2017/9/15.
  */
 public interface SQLAnnotation<T> extends Function<T, T> {
-    void init(Map<String,String> atgs);
-
-
+    boolean isDebug=true;
+    void init(Map<String,String> args);
 }

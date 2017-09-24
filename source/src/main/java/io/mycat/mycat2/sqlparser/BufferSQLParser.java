@@ -44,8 +44,8 @@ import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debugEr
 
 public class BufferSQLParser {
     ByteArrayInterface sql;
-    HashArray hashArray = new HashArray();
-    Tokenizer2 tokenizer = new Tokenizer2(hashArray);
+    HashArray hashArray;// = new HashArray();
+    Tokenizer2 tokenizer = new Tokenizer2();
     DefaultByteArray defaultByteArray = new DefaultByteArray();
     ByteBufferArray byteBufferArray = new ByteBufferArray();
 
@@ -65,7 +65,9 @@ public class BufferSQLParser {
                     //context.setTblNameStart(hashArray.getPos(pos));// TODO: 2017/3/10 可以优化成一个接口
                     //context.setTblNameSize(hashArray.getSize(pos));
                     ++pos;
-                } else if (type == Tokenizer.SEMICOLON || type == Tokenizer.RIGHT_PARENTHESES || type == Tokenizer.LEFT_PARENTHESES) {
+                } else if (type == Tokenizer.SEMICOLON) {
+                    return pos;
+                } else if (type == Tokenizer.RIGHT_PARENTHESES || type == Tokenizer.LEFT_PARENTHESES) {
                     return ++pos;
                 } else if (type == Tokenizer.COMMA) {
                     return pickTableNames(++pos, arrayCount, context);
@@ -238,10 +240,28 @@ public class BufferSQLParser {
                         ++pos;
                     }
                     break;
+                case IntTokenHash.CACHE_RESULT:
+                    context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
+                    ++pos;
+                    break;
                 case IntTokenHash.BALANCE:
                     if (hashArray.getHash(pos) == TokenHash.BALANCE) {
                         context.setAnnotationType(BufferSQLContext.ANNOTATION_BALANCE);
-                        ++pos;
+                        if (hashArray.getHash(++pos)==TokenHash.TYPE)  {
+                            if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                                context.setAnnotationValue(BufferSQLContext.ANNOTATION_BALANCE, hashArray.getHash(++pos));
+                                ++pos;
+                            }
+                        }
+                    }
+                    break;
+                case IntTokenHash.REPLICA:
+                    context.setAnnotationType(BufferSQLContext.ANNOTATION_REPLICA_NAME);
+                    if (hashArray.getHash(++pos)==TokenHash.NAME)  {
+                        if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                            context.setAnnotationValue(BufferSQLContext.ANNOTATION_REPLICA_NAME, hashArray.getHash(++pos));
+                            ++pos;
+                        }
                     }
                     break;
                 default:
@@ -582,24 +602,30 @@ public class BufferSQLParser {
         this.byteBufferArray.setLength(length);
         System.out.println("kaiz : "+this.byteBufferArray.getString(offset, length));
         sql = this.byteBufferArray;
-        context.setCurBuffer(sql, hashArray);
-        tokenizer.tokenize(sql);
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(sql);
+        tokenizer.tokenize(sql, hashArray);
         firstParse(context);
     }
 
 
     public void parse(ByteArrayInterface src, BufferSQLContext context) {
         sql = src;
-        context.setCurBuffer(src, hashArray);
-        tokenizer.tokenize(src);
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(src);
+        tokenizer.tokenize(src, hashArray);
         firstParse(context);
     }
 
     public void parse(byte[] src, BufferSQLContext context) {
         this.defaultByteArray.setSrc(src);
         sql = this.defaultByteArray;
-        context.setCurBuffer(sql, hashArray);
-        tokenizer.tokenize(sql);
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(sql);
+        tokenizer.tokenize(sql, hashArray);
         firstParse(context);
     }
 
@@ -629,7 +655,8 @@ public class BufferSQLParser {
 //        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
 //        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
 
-        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+//        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+        ByteArrayInterface src = new DefaultByteArray("select 121345678;".getBytes());
 //        ByteArrayInterface src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
 //        long min = 0;
 //        for (int i = 0; i < 50; i++) {

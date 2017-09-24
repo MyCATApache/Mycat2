@@ -7,7 +7,7 @@ import java.nio.channels.SelectionKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MyCommand;
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKeyEnum;
@@ -19,7 +19,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @author wuzhihui
  *
  */
-public class LoadDataCommand implements MyCommand {
+public class LoadDataCommand implements MySQLCommand {
 
 	private static final Logger logger = LoggerFactory.getLogger(LoadDataCommand.class);
 

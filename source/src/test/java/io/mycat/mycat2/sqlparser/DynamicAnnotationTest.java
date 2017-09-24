@@ -1,7 +1,7 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationRuntime;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationUtil;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationRuntime;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationUtil;
 import junit.framework.TestCase;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -36,7 +36,10 @@ public class DynamicAnnotationTest extends TestCase {
      */
     @Test
     public void test2() throws Exception {
-        test(listOf("b = ? and c = ? and d = ? . ? and c = ?","c = ?","d = ? . ?","b = 1"),
+        test(listOf("b = ? and c = ? and d = ? . ? and c = ?",
+                "c = ?",
+                "d = ? . ?",
+                "b = 1"),
                 "b = 1 and c = 1 and d = a.b and c = 1");
     }
 
@@ -117,8 +120,8 @@ public class DynamicAnnotationTest extends TestCase {
         parser = new BufferSQLParser();
         context = new BufferSQLContext();
         parser.parse(bytes, context);
-        runtime = DynamicAnnotationUtil.compile(conList);
-        runtime.getMatch().pick(0, context.getHashArray().getCount(), context, context.getHashArray(), context.getBuffer());
+        runtime = DynamicAnnotationUtil.compile("default",conList);
+        runtime.getMatch().pick(0, context.getHashArray().getCount(), context,context.getHashArray());
         runtime.testCallBackInfo(context);
     }
 

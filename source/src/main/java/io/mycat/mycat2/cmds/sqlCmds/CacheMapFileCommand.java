@@ -6,7 +6,7 @@ import java.nio.channels.SelectionKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MyCommand;
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKeyEnum;
@@ -19,7 +19,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @version 0.0.1
  * @author liujun
  */
-public class CacheMapFileCommand implements MyCommand {
+public class CacheMapFileCommand implements MySQLCommand {
 
 	private static final Logger logger = LoggerFactory.getLogger(CacheMapFileCommand.class);
 

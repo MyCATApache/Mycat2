@@ -1,4 +1,4 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
@@ -18,31 +18,53 @@ public class ActonFactory<T> {
     String config = null;
     HashMap<String, Class<SQLAnnotation<T>>> resMap;
 
+    public static Map<String, Map<String, String>> pretreatmentArgs(List<Map<String, List<Map<String, String>>>> need) throws Exception {
+        Iterator<Map<String, List<Map<String, String>>>> iterator = need.iterator();
+        final Map<String, Map<String, String>> res = new HashMap<>();
+        do {
+            Map<String, List<Map<String, String>>> action = iterator.next();
+            Map.Entry<String, List<Map<String, String>>> entry = action.entrySet().iterator().next();
+            String actionName = entry.getKey();
+            List<Map<String, String>> value;
+            if ((value = entry.getValue()) != null) {
+                res.put(actionName, value.stream().collect(Collectors.toMap(ConditionUtil::mappingKey, (v) -> {
+                    if (v == null) {
+                        return null;
+                    } else {
+                        return ConditionUtil.mappingValue(v);
+                    }
+                })));
+            } else {
+                res.put(actionName, null);
+            }
+        } while (iterator.hasNext());
+        return res;
+    }
 
-    public Function<T,T> get(List<Map<String, List<Map<String, String>>>> need) throws Exception {
-        Iterator<Map<String,  List<Map<String, String>>>> iterator = need.iterator();
+
+    public Function<T,T> get(String name,List<Map<String, List<Map<String, String>>>> need) throws Exception {
+        Iterator<Map.Entry<String, Map<String, String>>> iterator = pretreatmentArgs(need).entrySet().iterator();
         Function<T,T> res = null;
         do {
-            Map<String,  List<Map<String, String>>> action = iterator.next();
-            Map.Entry<String,  List<Map<String, String>>> entry = action.entrySet().iterator().next();
-            String actionName = entry.getKey();
-           System.out.println( entry.toString());
+            Map.Entry<String, Map<String, String>> action = iterator.next();
+            Map<String, String> args=action.getValue();
+            if (args==null)args=new HashMap<>();
+            args.put("matchName",name);
+            String actionName = action.getKey();
+            System.out.println(action.toString());
             Class<SQLAnnotation<T>> annotationClass = resMap.get(actionName);
-            SQLAnnotation<T> annotation = annotationClass.newInstance();
-            Optional.ofNullable(entry.getValue()).map(s->s.stream().collect(Collectors.toMap(ConditionUtil::mappingKey,(v)->{
-                if (v==null){
-                    return null;
-                }else {
-                    return ConditionUtil.mappingValue(v);
-                }
-            }))).ifPresent((args->  annotation.init(args)));
+            SQLAnnotation<T> annotation = annotationClass.getConstructor().newInstance();
+            annotation.init(args);
             if (res == null) {
                 res = annotation;
             } else {
                 res = res.andThen(annotation);
             }
         } while (iterator.hasNext());
-        return res==null?EMPTY:res;
+        if (res==null){
+            return EMPTY;
+        }
+        return res;
     }
 
     public static void main(String[] args) throws Throwable {
@@ -56,7 +78,7 @@ public class ActonFactory<T> {
         sqlCach.put("param1","1");
         sqlCach.put("param2","2");
         list.add(Collections.singletonMap("sqlCach",Arrays.asList(sqlCach)));
-       Function<BufferSQLContext,BufferSQLContext> annotations= actonFactory.get(list);
+       Function<BufferSQLContext,BufferSQLContext> annotations= actonFactory.get("default",list);
        annotations.apply(null);
     }
 
@@ -82,6 +104,7 @@ public class ActonFactory<T> {
         return config;
     }
     final  SQLAnnotation<T> EMPTY=new SQLAnnotation<T>() {
+
         @Override
         public void init(Map<String, String> atgs) {
 

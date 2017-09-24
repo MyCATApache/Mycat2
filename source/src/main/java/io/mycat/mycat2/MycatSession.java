@@ -26,6 +26,7 @@ import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
+import io.mycat.mycat2.sqlparser.TokenHash;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
@@ -50,7 +51,7 @@ public class MycatSession extends AbstractMySQLSession {
 	private MySQLSession curBackend;
 
 	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
-	public MyCommand curSQLCommand;
+	public MySQLCommand curSQLCommand;
 
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 
@@ -63,7 +64,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
 
-	private Map<Interceptor,MyCommand> SQLCommands = new HashMap<>();
+	private Map<Interceptor,MySQLCommand> SQLCommands = new HashMap<>();
 	
 	/*拦截器列表 用来判断某个cmd是否需要加入的SQLCommands 进行系列的处理*/
 	public static List<Interceptor> interceptorList = new ArrayList<>();
@@ -73,15 +74,16 @@ public class MycatSession extends AbstractMySQLSession {
 		masterSqlList.add(NewSQLContext.UPDATE_SQL);
 		masterSqlList.add(NewSQLContext.DELETE_SQL);
 		masterSqlList.add(NewSQLContext.REPLACE_SQL);
-//		masterSqlList.add(NewSQLContext.SELECT_INTO_SQL);
-//		masterSqlList.add(NewSQLContext.SELECT_FOR_UPDATE_SQL);
+		masterSqlList.add(NewSQLContext.SELECT_INTO_SQL);
+		masterSqlList.add(NewSQLContext.SELECT_FOR_UPDATE_SQL);
+		//TODO select lock in share mode 。 也需要走主节点    需要完善sql 解析器。
 		masterSqlList.add(NewSQLContext.LOAD_SQL);
 		masterSqlList.add(NewSQLContext.CALL_SQL);
 		masterSqlList.add(NewSQLContext.TRUNCATE_SQL);
 
-//		masterSqlList.add(NewSQLContext.BEGIN_SQL);
-//		masterSqlList.add(NewSQLContext.START_SQL);
-//		masterSqlList.add(NewSQLContext.SET_AUTOCOMMIT_SQL);
+		masterSqlList.add(NewSQLContext.BEGIN_SQL);
+		masterSqlList.add(NewSQLContext.START_SQL);  //TODO 需要完善sql 解析器。 将 start transaction 分离出来。
+		masterSqlList.add(NewSQLContext.SET_AUTOCOMMIT_SQL);
 		
 		interceptorList.add(BlockSQLIntercepor.INSTANCE);
 		interceptorList.add(DefaultIntercepor.INSTANCE);
@@ -95,7 +97,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 获取sql 类型
 	 * @return
 	 */
-	public MyCommand getMyCommand(){
+	public MySQLCommand getMyCommand(){
 		switch(schema.getSchemaType()){
 			case DB_IN_ONE_SERVER:
 				return DBInOneServerCmdStrategy.INSTANCE.getMyCommand(this);
@@ -510,19 +512,24 @@ public class MycatSession extends AbstractMySQLSession {
 
 	/*
 	 * 判断后端连接 是否可以走从节点
-	 * 1. TODO 通过注解走读写分离
-	 * 2. 非事务情况下，走读写分离
-	 * 3. TODO 只读事务情况下，走读写分离
 	 * @return
 	 */
 	private boolean canRunOnSlave(){
+		 //静态注解情况下 走读写分离
+		if(NewSQLContext.ANNOTATION_BALANCE==sqlContext.getAnnotationType()){
+			final long balancevalue = sqlContext.getAnnotationValue(NewSQLContext.ANNOTATION_BALANCE);
+			if(TokenHash.MASTER == balancevalue){
+				return false;
+			}else if(TokenHash.SLAVE == balancevalue){
+				return true;
+			}else{
+				logger.error("sql balance type is invalid, run on slave [{}]",sqlContext.getRealSQL(0));
+			}
+			return true;
+		}
 
-		if((NewSQLContext.ANNOTATION_BALANCE==sqlContext.getAnnotationType()
-				||(NewSQLContext.ANNOTATION_DB_TYPE==sqlContext.getAnnotationType()
-				   &&1==sqlContext.getAnnotationValue(NewSQLContext.ANNOTATION_DB_TYPE)))
-			||(AutoCommit.ON==autoCommit  //非事务场景下，走从节点
-			)){  // 事务场景下, 如果配置了事务内的查询也走读写分离
-
+		 //非事务场景下，走从节点
+		if(AutoCommit.ON ==autoCommit){
 			if(masterSqlList.contains(sqlContext.getSQLType())){
 				return false;
 			}else{
@@ -538,7 +545,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 获取inceptor对应的SQLCommand 
 	 *
 	 */
-	public MyCommand getSQLCmd(Interceptor inteceptor) {
+	public MySQLCommand getSQLCmd(Interceptor inteceptor) {
 		
 		return SQLCommands.get(inteceptor);
 	}
@@ -546,13 +553,13 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 放置inceptor对应的SQLCommand 
 	 *
 	 */
-	public void putSQLCmd(Interceptor inteceptor, MyCommand command) {
+	public void putSQLCmd(Interceptor inteceptor, MySQLCommand command) {
 		SQLCommands.put(inteceptor, command);
 	}
 	
 	public void clearSQLCmdsFrontResouces(boolean sessionCLosed) {
 		interceptorList.forEach(interceptor -> {
-			MyCommand command = getSQLCmd(interceptor);
+			MySQLCommand command = getSQLCmd(interceptor);
 			if(null != command) {
 				command.clearFrontResouces(this, sessionCLosed);
 			}
@@ -561,7 +568,7 @@ public class MycatSession extends AbstractMySQLSession {
 	
 	public void clearSQLCmdsBackendResouces(MySQLSession  mysqlSession, boolean sessionCLosed) {
 		interceptorList.forEach(interceptor -> {
-			MyCommand command = getSQLCmd(interceptor);
+			MySQLCommand command = getSQLCmd(interceptor);
 			if(null != command) {
 				command.clearBackendResouces(mysqlSession, sessionCLosed);
 			}

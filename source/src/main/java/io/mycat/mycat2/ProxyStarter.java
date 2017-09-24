@@ -102,7 +102,7 @@ public class ProxyStarter {
 			repBean.initMaster();
 			repBean.getMetaBeans().forEach(metaBean -> {
 				try {
-					metaBean.init(repBean,ProxyRuntime.INSTANCE.maxdataSourceInitTime);
+					metaBean.init(repBean,ProxyRuntime.INSTANCE.maxdataSourceInitTime,repBean.getDataSourceInitStatus());
 				} catch (IOException e) {
 					LOGGER.error("error to init metaBean: {}", metaBean.getDsMetaBean().getHostName());
 				}

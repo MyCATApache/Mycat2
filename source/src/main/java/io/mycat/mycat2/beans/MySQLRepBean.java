@@ -39,8 +39,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mysql.Alarms;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.man.MyCluster;
 
 /**
  * 表示一組MySQL Server复制集群，如主从或者多主
@@ -138,11 +140,11 @@ public class MySQLRepBean {
 			if (current != newIndex) {
 				
 				String reason = "switch datasource";
-
+				
 				// init again
 				MySQLMetaBean newWriteBean = metaBeans.get(newIndex);
 				newWriteBean.clearCons(reason);
-				newWriteBean.init(this,maxwaittime);
+				newWriteBean.init(this,maxwaittime,getDataSourceInitStatus());
 				
 				// clear all connections
 				MySQLMetaBean oldMetaBean = metaBeans.get(current);
@@ -165,6 +167,16 @@ public class MySQLRepBean {
 		}finally {
 			lock.unlock();
 		}
+	}
+	
+	public int getDataSourceInitStatus(){
+		int initstatus = DBHeartbeat.OK_STATUS;
+		MyCluster myCluster = ProxyRuntime.INSTANCE.getMyCLuster();
+		
+		if(myCluster==null||myCluster.getMyLeader()==myCluster.getMyNode()){
+			initstatus = DBHeartbeat.INIT_STATUS;
+		}
+		return initstatus;
 	}
 	
 	private String switchMessage(int current, int newIndex, String reason) {

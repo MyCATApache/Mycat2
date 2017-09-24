@@ -1,4 +1,4 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
@@ -11,9 +11,11 @@ import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,35 +27,38 @@ import java.util.stream.Stream;
  */
 public class DynamicAnnotationUtil {
     static final DynamicClassLoader classLoader;
-    static int name = 1;
+   public static final AtomicInteger count=new AtomicInteger();
 
     static {
         classLoader = new DynamicClassLoader("", Thread.currentThread().getContextClassLoader());
     }
 
-    public static DynamicAnnotationRuntime compile(Map<Boolean, List< String>> lines) throws Exception {
-        String filename = "_" + name++;
+    public static DynamicAnnotationRuntime compile(String matchName,Map<Boolean, List< String>> lines) throws Exception {
+        String filename ="_" +count.getAndIncrement();
         DynamicAnnotationRuntime runtime = genJavacode(filename, filename + ".java", lines);
         compileJavaCodeToClass(runtime);
         loadClass(runtime);
         return runtime;
     }
-    public static DynamicAnnotationRuntime compile( List< String> lines) throws Exception {
+    public static DynamicAnnotationRuntime compile(String matchName, List< String> lines) throws Exception {
         HashMap<Boolean,List< String> > map=new HashMap<>();
         map.put(Boolean.TRUE,lines);
-        return compile(map);
+        return compile(matchName,map);
     }
 
-    public static DynamicAnnotationRuntime genJavacode(String className, String path, Map<Boolean, List< String>> lines) throws IOException {
+    public static DynamicAnnotationRuntime genJavacode(String className, String path, Map<Boolean, List< String>> lines) throws Exception {
         DynamicAnnotationRuntime runtime = new DynamicAnnotationRuntime();
         runtime.setMatchName(className);
         String code = assemble(lines, runtime);
-        Path p = Paths.get(path);
+        Path p = Paths.get(DynamicAnnotationUtil.classLoader.getResources("cachefile").nextElement().toURI()).resolve(path);
+
+        if(!Files.exists(p))p.toFile().createNewFile();
+
         System.out.println(p.toAbsolutePath());
-        try (FileWriter fileWriter = new FileWriter(path)) {
+        try (FileWriter fileWriter = new FileWriter(p.toFile())) {
             fileWriter.write(code);
         }
-        runtime.setCodePath(path);
+        runtime.setCodePath(p.toAbsolutePath().toString());
         return runtime;
     }
 
@@ -188,7 +193,7 @@ public class DynamicAnnotationUtil {
         Map<Integer, String> int2str = new HashMap<>();
         Map<String, Integer> str2Int = new HashMap<>();
         Iterator<String> it = relationTable.keySet().iterator();
-        for (int i = 1; it.hasNext(); i++) {
+        for (int i = 0; it.hasNext(); i++) {
             String key = it.next();
             int2str.put(i, key);
             str2Int.put(key, i);
@@ -201,7 +206,7 @@ public class DynamicAnnotationUtil {
     }
 
     public static boolean isIn(String f, String s) {
-        f = f.replace("?", "([a-z0-9A-Z_$]|\\?|\"*\")");
+        f = f.replace("?", "([a-z0-9A-Z_$]+|\\?|\"*\")");
         Matcher matcher = Pattern.compile(f).matcher(s);
         return matcher.find();
     }

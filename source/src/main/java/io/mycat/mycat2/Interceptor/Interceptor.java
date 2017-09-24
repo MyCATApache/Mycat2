@@ -2,9 +2,7 @@ package io.mycat.mycat2.Interceptor;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.proxy.AbstractSession;
 
 /**
  * 

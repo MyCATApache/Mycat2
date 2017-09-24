@@ -1,4 +1,4 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
@@ -100,5 +100,19 @@ public class DynamicAnnotationRuntime {
 
     public void setBacktrackingTable(Map<String, Integer> backtrackingTable) {
         this.backtrackingTable = backtrackingTable;
+    }
+
+    @Override
+    public String toString() {
+        return "DynamicAnnotationRuntime{" +
+                "map=" + map +
+                ", int2str=" + int2str +
+                ", str2Int=" + str2Int +
+                ", backtrackingTable=" + backtrackingTable +
+                ", match=" + match +
+                ", codePath='" + codePath + '\'' +
+                ", matchName='" + matchName + '\'' +
+                ", isDebug=" + isDebug +
+                '}';
     }
 }

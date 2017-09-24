@@ -59,8 +59,7 @@ public class Tokenizer2 {
 
 
 
-    public Tokenizer2(HashArray hashArray) {
-        this.hashArray = hashArray;
+    public Tokenizer2() {
         //// TODO: 2017/2/21 可能需要调整顺序进行优化
         IntStream.rangeClosed('0', '9').forEach(c -> charType[c<<1] = DIGITS);
         IntStream.rangeClosed('A', 'Z').forEach(c -> charType[c<<1] = CHARS);
@@ -121,10 +120,11 @@ public class Tokenizer2 {
         return pos;
     }
 
-    int parseString(ByteArrayInterface sql, int pos, final int sqlLength, int startSign) {
+    int parseString(ByteArrayInterface sql, int pos, final int sqlLength, byte startSign) {
         int size = 1;
         int start = pos;
-        int c;
+        long hash = 1315423911;
+        byte c = 0;
         while (++pos < sqlLength ) {
             c = sql.get(pos);
             if (c == '\\') {
@@ -133,20 +133,23 @@ public class Tokenizer2 {
                 size++;
                 break;
             } else {
+                hash ^= (hash<<5) + c + (hash>>2);//使用JSHash对字符串进行哈希
                 size++;
             }
         }
-        hashArray.set(STRINGS, start, size, 0L);
+        hashArray.set(STRINGS, start, size, hash);
         return ++pos;
     }
 
-    int parseDigits(ByteArrayInterface sql, int pos, final int sqlLength) {
+    int parseDigits(ByteArrayInterface sql, int pos, final int sqlLength, byte c) {  // TODO: 需要增加小数和hex类型处理吗？
         int start = pos;
         int size = 1;
-        while (++pos<sqlLength && charType[sql.get(pos)<<1] == DIGITS) {
+        long longValue = (long)(c-'0');
+        while (++pos<sqlLength && charType[(c=sql.get(pos))<<1] == DIGITS) {
+            longValue = longValue*10L + (long)(c-'0');
             size++;
         }
-        hashArray.set(DIGITS, start, size);
+        hashArray.set(DIGITS, start, size, longValue);
         return pos;
     }
 
@@ -161,7 +164,7 @@ public class Tokenizer2 {
             cType = charType[c<<1];
             switch (cType) {
                 case DIGITS:
-                    pos = parseDigits(sql, pos, sqlLength);
+                    pos = parseDigits(sql, pos, sqlLength, c);
                     break;
                 case CHARS:
                     pos = parseToken(sql, pos, sqlLength, c);
@@ -205,11 +208,11 @@ public class Tokenizer2 {
         return pos;
     }
 
-    public void tokenize(ByteArrayInterface sql) {
+    public void tokenize(ByteArrayInterface sql, HashArray hashArray) {
         int pos = sql.getOffset();
         final int sqlLength = sql.length()+pos;
         this.sql = sql;
-        hashArray.init();
+        this.hashArray = hashArray;
         byte c;
         byte cType;
         byte next;
@@ -225,7 +228,7 @@ public class Tokenizer2 {
                     pos = parseToken(sql, pos, sqlLength, c);
                     break;
                 case DIGITS:
-                    pos = parseDigits(sql, pos, sqlLength);
+                    pos = parseDigits(sql, pos, sqlLength, c);
                     break;
                 case STRINGS:
                     pos = parseString(sql, pos, sqlLength, c);
@@ -245,11 +248,21 @@ public class Tokenizer2 {
                     next = sql.get(++pos);
                     if (next == '*') {//  /*
                         next = sql.get(++pos);
+                        //处理新版 mycat 注解
                         if (next == ' ') {
-                            //处理新版mycat注解
                             if ((sql.get(++pos) & 0xDF) == 'M' && (sql.get(++pos) & 0xDF) == 'Y' && (sql.get(++pos) & 0xDF) == 'C' && (sql.get(++pos) & 0xDF) == 'A' && (sql.get(++pos) & 0xDF) == 'T'
                                     && sql.get(++pos) == ':') {
                                 pos = parseAnnotation(sql, pos, sqlLength);
+                                
+                            } else {
+                                pos = skipMultiLineComment(sql, ++pos, sqlLength, next);
+                            }
+                        }else if((next == '!' && (next = sql.get(++pos)) == ' ')){
+                        	int tmppos = pos - 1;
+                        	if ((sql.get(++pos) & 0xDF) == 'M' && (sql.get(++pos) & 0xDF) == 'Y' && (sql.get(++pos) & 0xDF) == 'C' && (sql.get(++pos) & 0xDF) == 'A' && (sql.get(++pos) & 0xDF) == 'T'
+                                    && sql.get(++pos) == ':') {
+                                pos = parseAnnotation(sql, pos, sqlLength);
+                                sql.set(tmppos, (byte)' ');
                             } else {
                                 pos = skipMultiLineComment(sql, ++pos, sqlLength, next);
                             }

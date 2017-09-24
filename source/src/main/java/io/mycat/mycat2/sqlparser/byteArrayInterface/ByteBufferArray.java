@@ -18,6 +18,7 @@ public class ByteBufferArray implements ByteArrayInterface {
 
     @Override
     public void set(int index, byte value) {
+    	src.put(index, value);
         return;
     }
 

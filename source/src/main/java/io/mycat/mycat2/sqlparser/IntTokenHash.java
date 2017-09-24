@@ -29,6 +29,7 @@ public class IntTokenHash {
     public static final int ID = 0x47670002;
     public static final int IF = 0x47650002;
     public static final int ON = 0x409e0002;
+    public static final int OFF = 0xca9a6260;
     public static final int FOR = 0x576e0003;
     public static final int NOT = 0x68b00003;
     public static final int SET = 0x52330003;
@@ -126,5 +127,7 @@ public class IntTokenHash {
     public static final int END = 1259470851;
     public static final int PREPARE = -815464441;
     public static final int RECOVER = -405012473;
+    public static final int  REPLICA  =-879493113;
+    public static final int CACHE_RESULT = 2073690123;
 
 }

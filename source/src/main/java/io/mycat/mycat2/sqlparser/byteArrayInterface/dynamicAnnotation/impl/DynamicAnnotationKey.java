@@ -1,7 +1,6 @@
-package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
+package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 public class DynamicAnnotationKey{
@@ -15,7 +14,6 @@ public class DynamicAnnotationKey{
         this.sqlType = sqlType;
         this.tables = tables;
         this.matchName = matchName;
-        ArrayList<String> a=new ArrayList<>();
     }
 
     @Override
