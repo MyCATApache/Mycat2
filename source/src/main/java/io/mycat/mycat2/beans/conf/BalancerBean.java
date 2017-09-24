@@ -1,5 +1,7 @@
 package io.mycat.mycat2.beans.conf;
 
+import java.util.stream.Stream;
+
 /**
  * Desc: 负载均衡配置类
  *
@@ -9,6 +11,10 @@ package io.mycat.mycat2.beans.conf;
 public class BalancerBean {
     public enum BalancerStrategyEnum {
         RANDOM, ROUND_ROBIN, WEIGHT_RANDOM, WEIGHT_ROUND_ROBIN, RESPONSE_TIME, LEAST_CONNECTION, CAPACITY;
+
+        public static BalancerStrategyEnum getEnum(String enumName) {
+            return Stream.of(BalancerStrategyEnum.values()).filter(strategy -> strategy.name().equalsIgnoreCase(enumName)).findFirst().orElse(null);
+        }
     }
 
     private boolean enable = false;

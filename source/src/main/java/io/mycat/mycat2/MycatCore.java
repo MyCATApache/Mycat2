@@ -25,6 +25,10 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.beans.ArgsBean;
+import io.mycat.mycat2.beans.conf.BalancerBean;
+import io.mycat.mycat2.beans.conf.BalancerConfig;
+import io.mycat.mycat2.beans.conf.ClusterConfig;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
 import io.mycat.proxy.ConfigEnum;
 import org.slf4j.Logger;
@@ -40,13 +44,12 @@ import io.mycat.util.YamlUtil;
 public class MycatCore {
 	public static void main(String[] args) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-		MycatConfig conf = new MycatConfig();
-		runtime.setConfig(conf);
+		runtime.setConfig(new MycatConfig());
 
 		ConfigLoader.INSTANCE.loadCore();
+		solveArgs(args);
 
 		int cpus = Runtime.getRuntime().availableProcessors();
-//	    int cpus = 1;
 		runtime.setNioReactorThreads(cpus);
 		runtime.setReactorThreads(new MycatReactorThread[cpus]);
 
@@ -59,5 +62,46 @@ public class MycatCore {
 		runtime.init();
 
 		ProxyStarter.INSTANCE.start();
+	}
+
+	private static void solveArgs(String[] args) {
+		int lenght = args.length;
+
+		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
+		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
+		BalancerConfig balancerConfig= conf.getConfig(ConfigEnum.BALANCER);
+
+		for (int i = 0; i < lenght; i++) {
+			switch(args[i]) {
+				case ArgsBean.PROXY_PORT:
+					proxyConfig.getProxy().setPort(Integer.parseInt(args[++i]));
+					break;
+				case ArgsBean.CLUSTER_ENABLE:
+					clusterConfig.getCluster().setEnable(Boolean.parseBoolean(args[++i]));
+					break;
+				case ArgsBean.CLUSTER_PORT:
+					clusterConfig.getCluster().setPort(Integer.parseInt(args[++i]));
+					break;
+				case ArgsBean.CLUSTER_MY_NODE_ID:
+					clusterConfig.getCluster().setMyNodeId(args[++i]);
+					break;
+				case ArgsBean.BALANCER_ENABLE:
+					balancerConfig.getBalancer().setEnable(Boolean.parseBoolean(args[++i]));
+					break;
+				case ArgsBean.BALANCER_PORT:
+					balancerConfig.getBalancer().setPort(Integer.parseInt(args[++i]));
+					break;
+				case ArgsBean.BALANCER_STRATEGY:
+					BalancerBean.BalancerStrategyEnum strategy = BalancerBean.BalancerStrategyEnum.getEnum(args[++i]);
+					if (strategy == null) {
+						throw new IllegalArgumentException("no such balancer strategy");
+					}
+					balancerConfig.getBalancer().setStrategy(strategy);
+					break;
+				default:
+					break;
+			}
+		}
 	}
 }
