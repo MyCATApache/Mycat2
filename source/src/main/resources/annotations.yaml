@@ -1,6 +1,17 @@
 annotations:
+     - global:
+          - monitorSQL: true        # 全局sql 监控 开关。 sql 监控属于环绕类 监控，需要获取到sql 执行时间等信息。
+          - blacklist:
+             - selelctAllow: true         # sql 拦截     属于前置处理类
+             - tableCheck: true
+          - whitehost:
+               user: root
+               host: 127.0.0.1
      - schema:
               name: test
+              blacklist:   # 覆盖全局配置
+                     - selelctAllow: true         # sql 拦截     属于前置处理类
+                     - tableCheck  : true
               matches:
                       - match:
                              name: select有条件and or有tables
@@ -46,6 +57,13 @@ annotations:
                                           - param1: 666
                       - match:
                               name: insert无tables无条件
+                              state: open
+                              sqltype: insert
+                              actions:
+                                    - monitorSQL:
+                                          - param1: 777
+                      - match:
+                              name: insert无tables无条件2
                               state: open
                               sqltype: insert
                               actions:

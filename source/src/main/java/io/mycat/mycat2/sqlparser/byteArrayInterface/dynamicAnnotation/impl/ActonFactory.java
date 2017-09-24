@@ -19,7 +19,7 @@ public class ActonFactory {
     String config = null;
     HashMap<String, Class<SQLAnnotation>> resMap;
 
-    public static Map<String, Map<String, String>> pretreatmentArgs(List<Map<String, List<Map<String, String>>>> need) throws Exception {
+    public static Map<String, Map<String, String>> pretreatmentArgs0(List<Map<String, List<Map<String, String>>>> need) throws Exception {
         Iterator<Map<String, List<Map<String, String>>>> iterator = need.iterator();
         final Map<String, Map<String, String>> res = new HashMap<>();
         do {
@@ -41,27 +41,61 @@ public class ActonFactory {
         } while (iterator.hasNext());
         return res;
     }
+    public static Map<String, Object> pretreatmentArgs(List<Map<String,Object>> need) throws Exception {
+        Iterator<Map<String,Object>> iterator = need.iterator();
+        final Map<String, Object> res = new HashMap<>();
+        do {
+            Map<String, Object> action = iterator.next();
+            Map.Entry<String, Object> entry = action.entrySet().iterator().next();
+            String actionName = entry.getKey();
+            res.put(actionName,entry.getValue());
+        } while (iterator.hasNext());
+        return res;
+    }
 
-
-    public SQLAnnotationList get(String name,List<Map<String, List<Map<String, String>>>> need) throws Exception {
-        Iterator<Map.Entry<String, Map<String, String>>> iterator = pretreatmentArgs(need).entrySet().iterator();
+    public SQLAnnotationList get0(String name,List<Map<String, List<Map<String, String>>>> need) throws Exception {
+        Iterator<Map.Entry<String, Map<String, String>>> iterator = pretreatmentArgs0(need).entrySet().iterator();
         SQLAnnotationList annotationList=new SQLAnnotationList();
         do {
             Map.Entry<String, Map<String, String>> action = iterator.next();
             Map<String, String> args=action.getValue();
-            if (args==null)args=new HashMap<>();
-            args.put("matchName",name);
             String actionName = action.getKey();
             System.out.println(action.toString());
             Class<SQLAnnotation> annotationClass = resMap.get(actionName);
             SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
             annotation.init(args);
-            annotation.setArgs(args);
             annotation.setMethod(actionName);
             annotationList.getSqlAnnotations().add(annotation);
         } while (iterator.hasNext());
         return annotationList;
     }
+    public SQLAnnotationList get(String name,List<Map<String, Object>> need) throws Exception {
+        Iterator<Map.Entry<String, Object>> iterator = pretreatmentArgs(need).entrySet().iterator();
+        SQLAnnotationList annotationList=new SQLAnnotationList();
+        do {
+            Map.Entry<String, Object> action = iterator.next();
+            Object args=action.getValue();
+            String actionName = action.getKey();
+            System.out.println(action.toString());
+            Class<SQLAnnotation> annotationClass = resMap.get(actionName);
+            SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
+            annotation.init(args);
+            annotation.setMethod(actionName);
+            annotationList.getSqlAnnotations().add(annotation);
+        } while (iterator.hasNext());
+        return annotationList;
+    }
+    public SQLAnnotation getActionByActionName(String name, Object args,String matchName) throws Exception {
+            if (args==null)args=new HashMap<>();
+            String actionName = name;
+            System.out.println(actionName.toString());
+            Class<SQLAnnotation> annotationClass = resMap.get(actionName);
+            SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
+            annotation.init(args);
+            annotation.setMethod(actionName);
+            return annotation;
+    }
+
 
 
     public static void main(String[] args) throws Throwable {
@@ -75,8 +109,7 @@ public class ActonFactory {
         sqlCach.put("param1","1");
         sqlCach.put("param2","2");
         list.add(Collections.singletonMap("sqlCach",Arrays.asList(sqlCach)));
-        SQLAnnotationList annotations= actonFactory.get("default",list);
-       annotations.apply(null);
+        SQLAnnotationList annotations= actonFactory.get0("default",list);
     }
 
     public ActonFactory(String config) throws Exception {

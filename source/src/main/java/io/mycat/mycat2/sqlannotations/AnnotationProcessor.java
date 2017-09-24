@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * Created by jamie on 2017/9/22.
@@ -41,7 +42,14 @@ public class AnnotationProcessor {
         ProxyRuntime.INSTANCE.addBusinessJob(AnnotationProcessor::listen);//todo 检查这个线程池是否妥当
     }
 
-    public void parse(BufferSQLContext context, MycatSession session) {
+    /**
+     * 返回false代表没有匹配的action
+     * @param context
+     * @param session
+     * @param collect
+     * @return
+     */
+    public boolean parse(BufferSQLContext context, MycatSession session, List collect) {
         if (context.getTableCount() != 0) {
             int sqltype = context.getSQLType();
             if (sqltype < 15 && sqltype > 10) {
@@ -53,16 +61,14 @@ public class AnnotationProcessor {
                     intHashTables[j] = context.getTableIntHash(j);
                 }
                 try {
-                    List<SQLAnnotation> collect = new ArrayList<>();
                     dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
-                    System.out.println(collect.toString());
-                    collect.forEach((c) -> c.apply(context));
-
+                return true;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
+        return false;
     }
 
     private static void init() {
