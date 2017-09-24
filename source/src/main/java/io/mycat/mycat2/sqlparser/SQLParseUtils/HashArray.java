@@ -26,7 +26,7 @@ public class HashArray {
     public void set(int type, int start, int size, long hash) { hashArray[pos++] = (long)type << 32 | size << 16 | start; hashArray[pos++] = hash; }
     public int getPos(int idx) { return (((int)hashArray[idx<<1]) & 0xFFFF); }
     public int getSize(int idx) { return (((int)hashArray[idx<<1]&0xFFFF0000) >>> 16); }
-    public int getType(int idx) { return (int)((hashArray[idx<<1]&0xFFFFFFFF00000000L)>>>32); }
+    public int getType(int idx) { return (int)((hashArray[idx<<1]&0xFFFFFFFF00000000L) >>> 32); }
     public void setType(int idx, int type) { hashArray[idx<<1] = (hashArray[idx<<1] & 0xFFFFFFFFL) | ((long)type << 32); }
     public long getHash(int idx) { return hashArray[(idx<<1)+1]; }
     public int getIntHash(int idx) {

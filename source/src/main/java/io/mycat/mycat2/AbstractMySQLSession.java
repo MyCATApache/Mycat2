@@ -25,7 +25,7 @@ import io.mycat.util.StringUtil;
  * @author wuzhihui
  *
  */
-public abstract class AbstractMySQLSession extends AbstractSession {
+public abstract class AbstractMySQLSession  extends AbstractSession {
 
 	// 当前接收到的包类型
 	public enum CurrPacketType {
