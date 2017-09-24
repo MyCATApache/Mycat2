@@ -1,20 +1,22 @@
 package io.mycat.mycat2.cmds.strategy;
 
+import io.mycat.mycat2.MySQLCommand;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.advice.impl.intercept.SelelctAllow;
+import io.mycat.mycat2.cmds.CmdStrategy;
+import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
+import io.mycat.mycat2.sqlannotations.MonintorSQL;
+import io.mycat.mycat2.sqlannotations.SQLAnnotation;
+import io.mycat.mycat2.sqlannotations.SQLCach;
+import io.mycat.mycat2.sqlparser.BufferSQLParser;
+import io.mycat.mysql.packet.MySQLPacket;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import io.mycat.mycat2.MySQLCommand;
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.advice.impl.MonintorSQL;
-import io.mycat.mycat2.advice.impl.SQLCach;
-import io.mycat.mycat2.advice.impl.intercept.SelelctAllow;
-import io.mycat.mycat2.cmds.CmdStrategy;
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
-import io.mycat.mycat2.sqlparser.BufferSQLParser;
-import io.mycat.mysql.packet.MySQLPacket;
 
 public abstract class AbstractCmdStrategy implements CmdStrategy {
 	
@@ -79,14 +81,21 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			command = DirectPassthrouhCmd.INSTANCE;
 		}
 		session.curSQLCommand.setCommand(command);
-		
-//		AnnotationProcessor.getInstance().parse(session.sqlContext,session);
-		//测试 模拟 动态注解获取到的 actions 
-		List<Function<MycatSession,Boolean>> actions = new ArrayList<>();
-		actions.add(MonintorSQL.INSTANCE);
-		actions.add(SQLCach.INSTANCE);
-		actions.add(SelelctAllow.INSTANCE);
-		//模拟命令组装过程
-		actions.stream().forEach(f->{f.apply(session);});
+		List<Function<MycatSession, Boolean>> actions = new ArrayList<>();
+		if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
+			//测试 模拟 动态注解获取到的 actions
+//		actions.add(MonintorSQL.INSTANCE);
+//		actions.add(SQLCach.INSTANCE);
+//		actions.add(SelelctAllow.INSTANCE);
+			//模拟命令组装过程
+			System.out.println(actions.size());
+			actions.forEach((i)->{
+			SQLAnnotation annotation=	(SQLAnnotation)i;
+				System.out.println(annotation.toString());
+
+			});
+			actions.stream().forEach(f->{f.apply(session);});
+		}
+
 	}
 }

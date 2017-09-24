@@ -22,13 +22,7 @@ public class SQLAnnotationList {
         this.sqlAnnotations = sqlAnnotations;
     }
 
-    public BufferSQLContext apply(BufferSQLContext context){
-        int size=sqlAnnotations.size();
-        for (int i = 0; i <size ; i++) {
-            sqlAnnotations.get(i).apply(context);
-        }
-        return context;
-    }
+
 
     @Override
     public String toString() {
