@@ -6,20 +6,18 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.Interceptor.Interceptor;
-import io.mycat.mycat2.Interceptor.impl.BlockSQLIntercepor;
-import io.mycat.mycat2.Interceptor.impl.DefaultIntercepor;
+import io.mycat.mycat2.advice.Invocation;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.mycat2.cmds.DefaultInvocation;
+import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
@@ -51,7 +49,7 @@ public class MycatSession extends AbstractMySQLSession {
 	private MySQLSession curBackend;
 
 	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
-	public MySQLCommand curSQLCommand;
+	public Invocation curSQLCommand;
 
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 
@@ -63,11 +61,11 @@ public class MycatSession extends AbstractMySQLSession {
 	private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
-
-	private Map<Interceptor,MySQLCommand> SQLCommands = new HashMap<>();
 	
-	/*拦截器列表 用来判断某个cmd是否需要加入的SQLCommands 进行系列的处理*/
-	public static List<Interceptor> interceptorList = new ArrayList<>();
+	{
+		curSQLCommand =  new DefaultInvocation();
+		curSQLCommand.setCommand(DirectPassthrouhCmd.INSTANCE);
+	}
 	
 	static{
 		masterSqlList.add(NewSQLContext.INSERT_SQL);
@@ -85,29 +83,26 @@ public class MycatSession extends AbstractMySQLSession {
 		masterSqlList.add(NewSQLContext.START_SQL);  //TODO 需要完善sql 解析器。 将 start transaction 分离出来。
 		masterSqlList.add(NewSQLContext.SET_AUTOCOMMIT_SQL);
 		
-		interceptorList.add(BlockSQLIntercepor.INSTANCE);
-		interceptorList.add(DefaultIntercepor.INSTANCE);
+//		interceptorList.add(BlockSQLIntercepor.INSTANCE);
+//		interceptorList.add(DefaultIntercepor.INSTANCE);
 		
 	}
 	
-	
-	public void clearSQLCmdMap() {
-		SQLCommands.clear();
-	}
 	/**
 	 * 获取sql 类型
 	 * @return
 	 */
-	public MySQLCommand getMyCommand(){
+	public void matchMySqlCommand(){
 		switch(schema.type){
 			case DB_IN_ONE_SERVER:
-				return DBInOneServerCmdStrategy.INSTANCE.getMyCommand(this);
+				DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
+				break;
 			case DB_IN_MULTI_SERVER:
-				return DBINMultiServerCmdStrategy.INSTANCE.getMyCommand(this);
+				DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case ANNOTATION_ROUTE:
-				return AnnotateRouteCmdStrategy.INSTANCE.getMyCommand(this);
+				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case SQL_PARSE_ROUTE:
-				return AnnotateRouteCmdStrategy.INSTANCE.getMyCommand(this);
+				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			default:
 				throw new InvalidParameterException("schema type is invalid ");
 		}
@@ -303,9 +298,6 @@ public class MycatSession extends AbstractMySQLSession {
 		super.close(normal, hint);
 		//TODO 清理前后端资源
 		this.unbindAllBackend();
-		//((MyCommand)this.getSQLCmd(DefaultIntercepor.INSTANCE)).clearFrontResouces(this, true);
-		clearSQLCmdsFrontResouces(true);
-		//this.curSQLCommand.clearFrontResouces(this, true);
 	}
 
 	@Override
@@ -545,41 +537,4 @@ public class MycatSession extends AbstractMySQLSession {
 			return false;
 		}
 	}	
-	
-	/*
-	 * 获取inceptor对应的SQLCommand 
-	 *
-	 */
-	public MySQLCommand getSQLCmd(Interceptor inteceptor) {
-		
-		return SQLCommands.get(inteceptor);
-	}
-	/*
-	 * 放置inceptor对应的SQLCommand 
-	 *
-	 */
-	public void putSQLCmd(Interceptor inteceptor, MySQLCommand command) {
-		SQLCommands.put(inteceptor, command);
-	}
-	
-	public void clearSQLCmdsFrontResouces(boolean sessionCLosed) {
-		interceptorList.forEach(interceptor -> {
-			MySQLCommand command = getSQLCmd(interceptor);
-			if(null != command) {
-				command.clearFrontResouces(this, sessionCLosed);
-			}
-		});
-	}
-	
-	public void clearSQLCmdsBackendResouces(MySQLSession  mysqlSession, boolean sessionCLosed) {
-		interceptorList.forEach(interceptor -> {
-			MySQLCommand command = getSQLCmd(interceptor);
-			if(null != command) {
-				command.clearBackendResouces(mysqlSession, sessionCLosed);
-			}
-		});
-			
-	}
-	
-	
 }

@@ -40,7 +40,7 @@ public class BlockSqlCmd implements MySQLCommand {
 			errPkg.errno  = ErrorCode.ERR_NOT_SUPPORTED;
 			errPkg.message = "not support sql show";
 			session.proxyBuffer.reset();
-			session.curSQLCommand = this;
+			session.curSQLCommand.setCommand(this);
 			session.responseOKOrError(errPkg);
 			logger.debug(errPkg.message);
 			return true;

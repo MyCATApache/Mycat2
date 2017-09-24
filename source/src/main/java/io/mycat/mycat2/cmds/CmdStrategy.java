@@ -1,6 +1,5 @@
 package io.mycat.mycat2.cmds;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 
 /**
@@ -10,6 +9,6 @@ import io.mycat.mycat2.MycatSession;
  */
 public interface CmdStrategy {
 	
-	MySQLCommand getMyCommand(MycatSession session);
+	void matchMySqlCommand(MycatSession session);
 
 }

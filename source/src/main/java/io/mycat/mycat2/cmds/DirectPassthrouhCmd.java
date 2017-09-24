@@ -15,6 +15,7 @@ import io.mycat.mycat2.cmds.judge.DirectTransJudge;
 import io.mycat.mycat2.cmds.judge.ErrorJudge;
 import io.mycat.mycat2.cmds.judge.OkJudge;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -62,7 +63,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 				session.giveupOwner(SelectionKey.OP_WRITE);
 				mysqlsession.writeToChannel();
 			}else{
-				System.out.println("1111");
+				session.responseOKOrError((ErrorPacket)result);
 			}
 		});
 		return false;
