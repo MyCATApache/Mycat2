@@ -47,9 +47,6 @@ import io.mycat.util.TimeUtil;
  * @author wuzhihui
  */
 public class MySQLMetaBean {
-	//默认的重试次数
-	private static final int MAX_RETRY_COUNT = 5;  
-	
 	private static final Logger logger = LoggerFactory.getLogger(MySQLMetaBean.class);
 
 	private DatasourceMetaBean dsMetaBean;
@@ -57,9 +54,7 @@ public class MySQLMetaBean {
     private volatile long heartbeatRecoveryTime;  // 心跳暂停时间
     private DBHeartbeat heartbeat;
     private MySQLRepBean repBean;
-    
-	private int maxRetryCount = MAX_RETRY_COUNT;  //重试次数
-    
+
     private int slaveThreshold = -1;
 
     public boolean charsetLoaded = false;
@@ -193,14 +188,6 @@ public class MySQLMetaBean {
 
 	public void setSlaveThreshold(int slaveThreshold) {
 		this.slaveThreshold = slaveThreshold;
-	}
-
-	public int getMaxRetryCount() {
-		return maxRetryCount;
-	}
-
-	public void setMaxRetryCount(int maxRetryCount) {
-		this.maxRetryCount = maxRetryCount;
 	}
 
 	public DBHeartbeat getHeartbeat() {

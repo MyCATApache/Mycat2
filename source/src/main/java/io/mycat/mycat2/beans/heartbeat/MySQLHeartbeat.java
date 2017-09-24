@@ -207,7 +207,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 
 	private void setError(MySQLDetector detector, String msg) {
 		// should continues check error status
-		if (++errorCount < source.getMaxRetryCount()) {
+		if (++errorCount < source.getDsMetaBean().getMaxRetryCount()) {
             if (detector != null && !detector.isQuit()) {
                 heartbeat(); // error count not enough, heart beat again
             }

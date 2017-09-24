@@ -1,5 +1,7 @@
 package io.mycat.mycat2.beans.conf;
 
+import io.mycat.mycat2.beans.GlobalBean;
+
 /**
  * Desc:
  *
@@ -14,6 +16,7 @@ public class DatasourceMetaBean {
     private String password;
     private int maxCon = 1000;
     private int minCon = 1;
+    private int maxRetryCount = GlobalBean.MAX_RETRY_COUNT;
 
     public String getHostName() {
         return hostName;
@@ -71,9 +74,17 @@ public class DatasourceMetaBean {
         this.minCon = minCon;
     }
 
+    public int getMaxRetryCount() {
+        return maxRetryCount;
+    }
+
+    public void setMaxRetryCount(int maxRetryCount) {
+        this.maxRetryCount = maxRetryCount;
+    }
+
     @Override
     public String toString() {
         return "DatasourceMetaBean{" + "hostName='" + hostName + '\'' + ", ip='" + ip + '\'' + ", port=" + port + ", user='" + user + '\''
-                + ", password='" + password + '\'' + ", maxCon=" + maxCon + ", minCon=" + minCon + '}';
+                + ", password='" + password + '\'' + ", maxCon=" + maxCon + ", minCon=" + minCon + ", maxRetryCount=" + maxRetryCount + '}';
     }
 }

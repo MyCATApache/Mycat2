@@ -1,6 +1,5 @@
 package io.mycat.mycat2.beans.conf;
 
-import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.proxy.Configurable;
 
 import java.util.List;

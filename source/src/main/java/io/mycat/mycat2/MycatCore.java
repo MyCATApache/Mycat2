@@ -38,16 +38,12 @@ import io.mycat.util.YamlUtil;
  * @author wuzhihui
  */
 public class MycatCore {
-	private static final Logger logger = LoggerFactory.getLogger(MycatCore.class);
-
 	public static void main(String[] args) throws IOException {
-		// mycat.conf的加载不需要在集群内
-		ProxyConfig proxy = YamlUtil.load(ConfigEnum.PROXY.getFileName(), ProxyConfig.class);
-		logger.debug("load config for {}", ConfigEnum.PROXY);
-		MycatConfig conf = new MycatConfig();
-
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+		MycatConfig conf = new MycatConfig();
 		runtime.setConfig(conf);
+
+		ConfigLoader.INSTANCE.loadCore();
 
 		int cpus = Runtime.getRuntime().availableProcessors();
 //	    int cpus = 1;

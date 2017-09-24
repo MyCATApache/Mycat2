@@ -26,4 +26,6 @@ public class GlobalBean {
     public static final String[] MYSQL_CLUSTER_STAUTS_COLMS = {"Variable_name", "Value"};
 
     public static final int INIT_VERSION = 1;
+    // 默认的重试次数
+    public static final int MAX_RETRY_COUNT = 5;
 }

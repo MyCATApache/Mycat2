@@ -24,7 +24,12 @@ public class ConfigLoader {
     public static final String DIR_PREPARE = "prepare" + File.separator;
     public static final String DIR_ARCHIVE = "archive" + File.separator;
 
-    private ConfigLoader() {}
+    public void loadCore() throws IOException {
+        ConfigLoader.INSTANCE.load(ConfigEnum.PROXY, null);
+        ConfigLoader.INSTANCE.load(ConfigEnum.HEARTBEAT, null);
+        ConfigLoader.INSTANCE.load(ConfigEnum.CLUSTER, null);
+        ConfigLoader.INSTANCE.load(ConfigEnum.BALANCER, null);
+    }
 
     public void loadAll() throws IOException {
         // 保证文件夹存在
@@ -43,8 +48,12 @@ public class ConfigLoader {
     }
 
     public void load(ConfigEnum configEnum, Integer targetVersion) throws IOException {
-        loadConfig(true, configEnum, targetVersion);
-        YamlUtil.clearDirectory(DIR_PREPARE, configEnum.getFileName());
+        if (targetVersion != null) {
+            loadConfig(true, configEnum, targetVersion);
+            YamlUtil.clearDirectory(DIR_PREPARE, configEnum.getFileName());
+        } else {
+            loadConfig(false, configEnum, targetVersion);
+        }
 
         if (configEnum == ConfigEnum.SCHEMA) {
             ProxyRuntime.INSTANCE.getConfig().initSchemaMap();
