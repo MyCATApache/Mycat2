@@ -53,7 +53,7 @@ public class AnnotationProcessor {
                     intHashTables[j] = context.getTableIntHash(j);
                 }
                 try {
-                    List<SQLAnnotationList> collect = new ArrayList<>();
+                    List<SQLAnnotation> collect = new ArrayList<>();
                     dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
                     System.out.println(collect.toString());
                     collect.forEach((c) -> c.apply(context));
@@ -81,10 +81,18 @@ public class AnnotationProcessor {
         try {
             while (true) {
                 WatchKey key = watcher.take();//todo 线程复用,用 poll比较好?
+                boolean flag = false;
                 for (WatchEvent<?> event: key.pollEvents()) {
+                    String str = event.context().toString();
+                    if ("actions.yaml".equals(str)|| "annotations.yaml".equals(str)) {
+                        flag=true;
+                        break;
+                    }
                 }
-                System.out.println("动态注解更新次数" + count.incrementAndGet());
-                init();
+                if (flag){
+                    System.out.println("动态注解更新次数" + count.incrementAndGet());
+                    init();
+                }
                 boolean valid = key.reset();
                 if (!valid) {
                     break;
