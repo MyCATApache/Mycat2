@@ -99,7 +99,7 @@ public class ProxyStarter {
 			value.initMaster();
 			value.getMysqls().forEach(metaBean -> {
 				try {
-					metaBean.init(value,ProxyRuntime.INSTANCE.maxdataSourceInitTime);
+					metaBean.init(value,ProxyRuntime.INSTANCE.maxdataSourceInitTime,value.getDataSourceInitStatus());
 				} catch (IOException e) {
 					LOGGER.error("error to init metaBean: {}", metaBean.getHostName());
 				}
