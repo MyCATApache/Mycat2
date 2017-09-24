@@ -74,12 +74,12 @@ public class MySQLMetaBean {
     /** charsetName 到 默认collationIndex 的映射 */
     public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
-    public boolean init(MySQLRepBean repBean,long maxwaitTime) throws IOException {
+    public boolean init(MySQLRepBean repBean,long maxwaitTime,int status) throws IOException {
   	
     	logger.info("init backend myqsl source ,create connections total " + minCon + " for " + hostName + " index :" + repBean.getWriteIndex());
 
     	this.repBean = repBean;
-    	heartbeat = new MySQLHeartbeat(this,DBHeartbeat.INIT_STATUS);
+    	heartbeat = new MySQLHeartbeat(this,status);
     	ProxyRuntime runtime = ProxyRuntime.INSTANCE;
         MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
