@@ -1,7 +1,6 @@
 package io.mycat.util;
 
 import io.mycat.mycat2.ConfigLoader;
-import io.mycat.mycat2.beans.ReplicaConfBean;
 import io.mycat.proxy.Configurable;
 import io.mycat.proxy.ProxyRuntime;
 import org.slf4j.Logger;
@@ -13,12 +12,8 @@ import org.yaml.snakeyaml.representer.Representer;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.EnumSet;
-import java.util.Map;
 import java.util.stream.Stream;
 
 /**

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +20,6 @@ import io.mycat.mycat2.Interceptor.impl.BlockSQLIntercepor;
 import io.mycat.mycat2.Interceptor.impl.DefaultIntercepor;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
@@ -87,7 +87,6 @@ public class MycatSession extends AbstractMySQLSession {
 		
 		interceptorList.add(BlockSQLIntercepor.INSTANCE);
 		interceptorList.add(DefaultIntercepor.INSTANCE);
-		
 	}
 	
 	
@@ -99,7 +98,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @return
 	 */
 	public MySQLCommand getMyCommand(){
-		switch(schema.type){
+		switch(schema.getSchemaType()){
 			case DB_IN_ONE_SERVER:
 				return DBInOneServerCmdStrategy.INSTANCE.getMyCommand(this);
 			case DB_IN_MULTI_SERVER:
@@ -316,7 +315,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private String getbackendName(){
 		String backendName = null;
-		switch(schema.type){
+		switch(schema.getSchemaType()){
 			case DB_IN_ONE_SERVER:
 				backendName = schema.getDefaultDN().getMysqlReplica();
 				break;
@@ -346,7 +345,7 @@ public class MycatSession extends AbstractMySQLSession {
 			list = new ArrayList<>();
 			backendMap.putIfAbsent(mysqlSession.getMySQLMetaBean().getRepBean(), list);
 		}
-		logger.debug("add backend connection in mycatSession .{}:{}",mysqlSession.getMySQLMetaBean().getIp(),mysqlSession.getMySQLMetaBean().getPort());
+		logger.debug("add backend connection in mycatSession .{}:{}",mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),mysqlSession.getMySQLMetaBean().getDsMetaBean().getPort());
 		list.add(mysqlSession);
 	}
 
@@ -390,12 +389,10 @@ public class MycatSession extends AbstractMySQLSession {
 		// 当前连接如果本次不被使用,会被自动放入 currSessionMap 中
 		if (curBackend != null
 				&& canUseforCurrent(curBackend,targetMetaBean,runOnSlave)){
-			if (logger.isDebugEnabled()){
-				logger.debug("Using cached backend connections for {}。{}:{}"
-							,(runOnSlave ? "read" : "write"),
-							curBackend.getMySQLMetaBean().getIp(),
-							curBackend.getMySQLMetaBean().getPort());
-			}
+			logger.debug("Using cached backend connections for {}。{}:{}"
+						,(runOnSlave ? "read" : "write"),
+						curBackend.getMySQLMetaBean().getDsMetaBean().getIp(),
+						curBackend.getMySQLMetaBean().getDsMetaBean().getPort());
 			reactorThread.syncAndExecute(curBackend,callback);
 			return;
 		}
@@ -414,8 +411,8 @@ public class MycatSession extends AbstractMySQLSession {
 	
 	/**
 	 * 判断连接是否可以被 当前操作使用
-	 * @param balanceType
 	 * @param backend
+	 * @param targetMetaBean
 	 * @param runOnSlave
 	 * @return
 	 */
@@ -440,7 +437,7 @@ public class MycatSession extends AbstractMySQLSession {
      * @return
      */
     private MySQLRepBean getMySQLRepBean(String replicaName){
-       	MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+       	MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 		MySQLRepBean repBean = conf.getMySQLRepBean(replicaName);
 		if (repBean == null) {
 			throw new RuntimeException("no such MySQLRepBean " + replicaName);
@@ -504,12 +501,10 @@ public class MycatSession extends AbstractMySQLSession {
 				curBackend = null;
 			}
 			backendList.remove(result);
-			if (logger.isDebugEnabled()){
-				logger.debug("Using SessionMap backend connections for {}.{}:{}",
-							(runOnSlave ? "read" : "write"),
-							result.getMySQLMetaBean().getIp(),
-							result.getMySQLMetaBean().getPort());
-			}
+			logger.debug("Using SessionMap backend connections for {}.{}:{}",
+						(runOnSlave ? "read" : "write"),
+						result.getMySQLMetaBean().getDsMetaBean().getIp(),
+						result.getMySQLMetaBean().getDsMetaBean().getPort());
 			return result;
 		}
 		return result;
@@ -532,7 +527,7 @@ public class MycatSession extends AbstractMySQLSession {
 			}
 			return true;
 		}
-		
+
 		 //非事务场景下，走从节点
 		if(AutoCommit.ON ==autoCommit){
 			if(masterSqlList.contains(sqlContext.getSQLType())){

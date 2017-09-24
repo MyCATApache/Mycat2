@@ -10,6 +10,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.mycat.mycat2.ProxyStarter;
+import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.proxy.ConfigEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +70,8 @@ public class MyCluster {
 		}
 		myNode.setState(NodeState.Online);
 		this.myNode = myNode;
-		this.myNode.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getBindPort();
+		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
+		this.myNode.proxyPort = proxyConfig.getProxy().getPort();
 	}
 
 	/**
@@ -233,7 +236,7 @@ public class MyCluster {
 		return null;
 	}
 
-	public void onClusterNodeDown(String nodeId, AdminSession session)  {
+	public void onClusterNodeDown(String nodeId, AdminSession session) throws IOException {
 		ClusterNode theNode = allNodes.get(nodeId);
 		theNode.setState(NodeState.Offline);
 		logger.info("Node offline " + theNode.id + " at " + theNode.ip + ":" + theNode.port + " started at "
@@ -244,6 +247,17 @@ public class MyCluster {
 
 			// 当前集群失去主节点，关闭proxy服务
 			ProxyStarter.INSTANCE.stopProxy();
+
+			if (checkIfLeader()) {
+				logger.info("My Leader crashed, I'm smallest alive node, and exceeded 1/2 nodes alive, so I'm the King now!");
+				// 集群主已产生，继续加载配置，提供服务
+				ProxyStarter.INSTANCE.startProxy(true);
+
+				this.setClusterState(ClusterState.Clustered);
+				this.myLeader = this.myNode;
+				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK);
+				notifyAllNodes(session,joinReps);
+			}
 		} else if (myLeader == myNode) {
 			if (checkIfNeedDismissCluster()) {
 				logger.warn("Less than 1/2 mumbers in my Kingdom ,so I quit");

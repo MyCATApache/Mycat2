@@ -3,7 +3,6 @@ package io.mycat.proxy.man.cmds;
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.ProxyStarter;
 import io.mycat.proxy.ConfigEnum;
-import io.mycat.proxy.ProxyConfig;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.AdminCommand;
 import io.mycat.proxy.man.AdminSession;
@@ -58,13 +57,12 @@ public class ConfigPacketCommand implements AdminCommand {
      */
     private void handleConfigVersionReq(AdminSession session) throws IOException {
         LOGGER.debug("receive config version request package from {}", session.getNodeId());
-        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-        Map<Byte, Integer> configVersionMap = conf.getConfigVersionMap();
-        ConfigVersionResPacket versionResPacket =
-                new ConfigVersionResPacket(configVersionMap.size());
+        MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+        Map<ConfigEnum, Integer> configVersionMap = conf.getConfigVersionMap();
+        ConfigVersionResPacket versionResPacket = new ConfigVersionResPacket(configVersionMap.size());
         int i = 0;
-        for (Map.Entry<Byte, Integer> entry : configVersionMap.entrySet()) {
-            versionResPacket.getConfTypes()[i] = entry.getKey();
+        for (Map.Entry<ConfigEnum, Integer> entry : configVersionMap.entrySet()) {
+            versionResPacket.getConfTypes()[i] = entry.getKey().getType();
             versionResPacket.getConfVersions()[i] = entry.getValue();
             i++;
         }
@@ -83,10 +81,11 @@ public class ConfigPacketCommand implements AdminCommand {
         int confCount = respPacket.getConfCount();
         byte[] confTypes = respPacket.getConfTypes();
         int[] confVersions = respPacket.getConfVersions();
-        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+        MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
         List<Byte> confTypeList = new ArrayList<>();
         for (int i = 0; i < confCount; i++) {
-            if (conf.getConfigVersion(confTypes[i]) != confVersions[i]) {
+            ConfigEnum configEnum = ConfigEnum.getConfigEnum(confTypes[i]);
+            if (conf.getConfigVersion(configEnum) != confVersions[i]) {
                 // 配置文件版本不相同，需要加载
                 confTypeList.add(confTypes[i]);
             }
@@ -115,7 +114,7 @@ public class ConfigPacketCommand implements AdminCommand {
      */
     private void handleConfigReq(AdminSession session) throws IOException {
         LOGGER.debug("receive config request packet from {}", session.getNodeId());
-        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+        MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
         ConfigReqPacket reqPacket = new ConfigReqPacket();
         reqPacket.resolve(session.readingBuffer);
         int count = reqPacket.getConfCount();
@@ -127,10 +126,9 @@ public class ConfigPacketCommand implements AdminCommand {
                 LOGGER.warn("config type is error: {}", type);
                 continue;
             }
-            byte confType = configEnum.getType();
-            int confVersion = conf.getConfigVersion(confType);
-            String confMsg = YamlUtil.dump(conf.getConfig(confType));
-            ConfigResPacket resPacket = new ConfigResPacket(confType, confVersion, confMsg);
+            int confVersion = conf.getConfigVersion(configEnum);
+            String confMsg = YamlUtil.dump(conf.getConfig(configEnum));
+            ConfigResPacket resPacket = new ConfigResPacket(configEnum.getType(), confVersion, confMsg);
             session.answerClientNow(resPacket);
         }
     }

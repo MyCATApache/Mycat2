@@ -2,13 +2,12 @@ package io.mycat.mycat2.cmds;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.beans.SchemaBean;
-import io.mycat.mycat2.beans.SchemaBean.SchemaType;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -34,10 +33,10 @@ public class ComInitDB extends DirectPassthrouhCmd{
 		
 		String schema = session.sqlContext.getBuffer().getString(offset, len);
 		
-		MycatConfig config = (MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
-		SchemaBean schemaBean = config.getMycatSchema(schema);
+		MycatConfig config = ProxyRuntime.INSTANCE.getConfig();
+		SchemaBean schemaBean = config.getSchemaBean(schema);
 		
-		if (schemaBean == null && SchemaType.DB_IN_ONE_SERVER!=session.schema.getType()) {
+		if (schemaBean == null && SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER != session.schema.getSchemaType()) {
             ErrorPacket error = new ErrorPacket();
             error.errno = ErrorCode.ER_BAD_DB_ERROR;
             error.packetId = session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
@@ -49,7 +48,7 @@ public class ComInitDB extends DirectPassthrouhCmd{
 			session.schema = schemaBean;
             session.responseOKOrError(OKPacket.OK);
             return false;
-		}else if(SchemaType.DB_IN_ONE_SERVER==session.schema.getType()){
+		}else if(SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER==session.schema.getSchemaType()){
 			session.schema.getDefaultDN().setDatabase(schema);
 			return super.procssSQL(session);
 		}else{

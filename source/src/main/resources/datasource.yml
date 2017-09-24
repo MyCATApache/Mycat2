@@ -1,8 +1,8 @@
-mysqlReplicas:
+replicas:
   - name: test
-    type: MASTER_SLAVE
+    repType: MASTER_SLAVE
     switchType: DEFAULT_SWITCH
-    balance: BALANCE_ALL
+    balanceType: BALANCE_ALL
     mysqls:
       - hostName: test
         ip: 127.0.0.1

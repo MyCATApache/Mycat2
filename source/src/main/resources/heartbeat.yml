@@ -1,0 +1,7 @@
+heartbeat:
+  timerExecutor: 2
+  replicaHeartbeatPeriod: 10000
+  replicaIdleCheckPeriod: 2000
+  idleTimeout: 2000
+  processorCheckPeriod: 2000
+  minSwitchtimeInterval: 120000
