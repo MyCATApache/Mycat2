@@ -31,6 +31,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import io.mycat.mycat2.beans.conf.DatasourceConfig;
+import io.mycat.mycat2.beans.conf.ReplicaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,80 +45,13 @@ import io.mycat.proxy.ProxyRuntime;
  *
  * @author wuzhihui
  */
-public class MySQLRepBean {
-	
+public class MySQLRepBean extends ReplicaBean {
 	private static Logger logger = LoggerFactory.getLogger(MySQLRepBean.class);
-	
-	private final static String SINGLENODE_hearbeatSQL = "select 1";
-	private final static String MASTER_SLAVE_hearbeatSQL = "show slave status";
-	private final static String GARELA_CLUSTER_hearbeatSQL = "show status like 'wsrep%'";
-	private final static String GROUP_REPLICATION_hearbeatSQL = "show slave status";
-	
-	private static final String[] MYSQL_SLAVE_STAUTS_COLMS = new String[] {
-			"Seconds_Behind_Master", 
-			"Slave_IO_Running", 
-			"Slave_SQL_Running",
-			"Slave_IO_State",
-			"Master_Host",
-			"Master_User",
-			"Master_Port", 
-			"Connect_Retry",
-			"Last_IO_Error"};
 
-	private static final String[] MYSQL_CLUSTER_STAUTS_COLMS = new String[] {
-			"Variable_name",
-			"Value"};
-	
-    public enum RepTypeEnum {
-    	
-    	SINGLENODE(SINGLENODE_hearbeatSQL,MYSQL_SLAVE_STAUTS_COLMS),                //单一节点 
-        MASTER_SLAVE(MASTER_SLAVE_hearbeatSQL,MYSQL_SLAVE_STAUTS_COLMS),            //普通主从
-        GARELA_CLUSTER(GARELA_CLUSTER_hearbeatSQL,MYSQL_CLUSTER_STAUTS_COLMS),        //普通基于garela cluster 集群
-        GROUP_REPLICATION(GROUP_REPLICATION_hearbeatSQL,MYSQL_SLAVE_STAUTS_COLMS);  //基于 MGR  集群
-    	
-    	private String hearbeatSQL;
-    	
-    	String[] fetchColms;
-    	
-        RepTypeEnum(String hearbeatSQL,String[] fetchColms) {
-        	this.hearbeatSQL = hearbeatSQL;
-        	this.fetchColms  = fetchColms;
-        }
-
-        public String getHearbeatSQL() {
-			return hearbeatSQL;
-		}
-        
-        public String[] getFetchColms() {
-			return fetchColms;
-		}
-    }
-
-    public enum RepSwitchTypeEnum {
-    	NOT_SWITCH, 
-    	DEFAULT_SWITCH,
-    	SYN_STATUS_SWITCH,
-    	CLUSTER_STATUS_SWITCH;
-        RepSwitchTypeEnum() {}
-    }
-
-    public enum BalanceTypeEnum{
-    	BALANCE_ALL,
-    	BALANCE_ALL_READ,
-    	BALANCE_NONE;
-    	BalanceTypeEnum() {}
-    }
-
-    private String name;
-    private RepTypeEnum type;
-    private RepSwitchTypeEnum switchType = RepSwitchTypeEnum.DEFAULT_SWITCH;
-    private BalanceTypeEnum balance = BalanceTypeEnum.BALANCE_NONE;
-    private List<MySQLMetaBean> mysqls;
     private String slaveIDs;   // 在线数据迁移 虚拟从节点
     private boolean tempReadHostAvailable = false;  //如果写服务挂掉, 临时读服务是否继续可用
-    
-    private MySQLMetaBean writeMetaBean;
-    private List<MySQLMetaBean> readMetaBeans = new ArrayList<>();
+
+    private List<MySQLMetaBean> metaBeans = new ArrayList<>();
     protected final ReentrantLock switchLock = new ReentrantLock();
     public AtomicBoolean switchResult = new AtomicBoolean();
 
@@ -126,70 +61,36 @@ public class MySQLRepBean {
 	
     public void initMaster() {
         // 根据配置replica-index的配置文件修改主节点
-        MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();        
-        Integer repIndex = conf.getRepIndex(name);
-        if (repIndex != null&&checkIndex(repIndex)) {
+        MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+        Integer repIndex = conf.getRepIndex(getName());
+        if (repIndex != null && checkIndex(repIndex)) {
             writeIndex = repIndex;
-        }else{
+        } else {
         	writeIndex = 0;
         }
-        writeMetaBean = mysqls.get(writeIndex);
+		metaBeans.add(new MySQLMetaBean());
+        writeMetaBean = getMysqls().get(writeIndex);
         writeMetaBean.setSlaveNode(false);
         readMetaBeans.addAll(mysqls);
         readMetaBeans.remove(writeIndex);
     }
     
 	public void doHeartbeat() {
-
 		if (writeMetaBean == null) {
 			return;
 		}
 
 		for (MySQLMetaBean source : this.mysqls) {
-
 			if (source != null) {
 				source.doHeartbeat();
 			} else {
 				StringBuilder s = new StringBuilder();
-				s.append(Alarms.DEFAULT).append(name).append(" current dataSource is null!");
+				s.append(Alarms.DEFAULT).append(getName()).append(" current dataSource is null!");
 				logger.error(s.toString());
 			}
 		}
 
 	}
-    
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public RepTypeEnum getType() {
-        return type;
-    }
-
-    public void setType(RepTypeEnum type) {
-        this.type = type;
-    }
-
-    public RepSwitchTypeEnum getSwitchType() {
-        return switchType;
-    }
-
-    public void setSwitchType(RepSwitchTypeEnum switchType) {
-        this.switchType = switchType;
-    }
-
-    public List<MySQLMetaBean> getMysqls() {
-        return mysqls;
-    }
-
-    public void setMysqls(List<MySQLMetaBean> mysqls) {
-        this.mysqls = mysqls;
-    }
     
     private boolean checkIndex(int newIndex){
     	return newIndex >= 0 && newIndex < mysqls.size();
@@ -209,20 +110,16 @@ public class MySQLRepBean {
     }
     
 	public void switchSource(int newIndex,long maxwaittime) {
-		
-		if (getSwitchType() == RepSwitchTypeEnum.NOT_SWITCH) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("not switch datasource ,for switchType is {}",RepSwitchTypeEnum.NOT_SWITCH.name());
-			}
-			
+		if (getSwitchType() == DatasourceConfig.RepSwitchTypeEnum.NOT_SWITCH) {
+			logger.debug("not switch datasource ,for switchType is {}",
+					DatasourceConfig.RepSwitchTypeEnum.NOT_SWITCH);
+
 			switchResult.set(false);
 			return;
 		}
 		
 		if(!checkIndex(newIndex)){
-			if (logger.isDebugEnabled()) {
-				logger.debug("not switch datasource ,writeIndex > mysqls.size () ");
-			}
+			logger.debug("not switch datasource ,writeIndex > mysqls.size () ");
 			switchResult.set(false);
 			return;
 		}
@@ -270,7 +167,7 @@ public class MySQLRepBean {
 	
 	private String switchMessage(int current, int newIndex, String reason) {
 		StringBuilder s = new StringBuilder();
-		s.append("[Host=").append(name).append(",result=[").append(current).append("->");
+		s.append("[Host=").append(getName()).append(",result=[").append(current).append("->");
 		s.append(newIndex).append("],reason=").append(reason).append(']');
 		return s.toString();
 	}
@@ -281,17 +178,15 @@ public class MySQLRepBean {
     private MySQLMetaBean getCurWriteMetaBean() {
         return writeMetaBean.isAlive()?writeMetaBean:null;
     }
-    
-    
+
     public MySQLMetaBean getBalanceMetaBean(boolean runOnSlave){
-    	
-    	if(RepTypeEnum.SINGLENODE == type||!runOnSlave){
+    	if(DatasourceConfig.RepTypeEnum.SINGLE_NODE == getRepType()||!runOnSlave){
     		return getCurWriteMetaBean();
     	}
     	
     	MySQLMetaBean datas = null;
     	
-		switch(balance){
+		switch(getBalanceType()){
 			case BALANCE_ALL:
 				datas = getLBReadWriteMetaBean();
 				break;
@@ -299,7 +194,7 @@ public class MySQLRepBean {
 				datas = getLBReadMetaBean();
 				//如果从节点不可用,从主节点获取连接
 				if(datas==null){
-					logger.debug("all slaveNode is Unavailable. use master node for read . balance type is {}",balance);
+					logger.debug("all slaveNode is Unavailable. use master node for read . balance type is {}",getBalanceType());
 					datas = getCurWriteMetaBean();
 				}
 				break;
@@ -307,7 +202,7 @@ public class MySQLRepBean {
 				datas = getCurWriteMetaBean();
 				break;
 			default:
-				logger.debug("current balancetype is not supported!! [{}], use writenode connection .",balance);
+				logger.debug("current balancetype is not supported!! [{}], use writenode connection .",getBalanceType());
 				datas = getCurWriteMetaBean();
 				break;
 		}
@@ -334,11 +229,6 @@ public class MySQLRepBean {
     			.collect(Collectors.toList());
     	return result.isEmpty()?null:result.get(ThreadLocalRandom.current().nextInt(result.size()));
     }
-
-    @Override
-    public String toString() {
-        return "MySQLRepBean [name=" + name + ", type=" + type + ", switchType=" + switchType + ", mysqls=" + mysqls + "]";
-    }
     
 	public String getSlaveIDs() {
 		return slaveIDs;
@@ -358,16 +248,6 @@ public class MySQLRepBean {
 
 	public void setWriteMetaBean(MySQLMetaBean writeMetaBean) {
 		this.writeMetaBean = writeMetaBean;
-	}
-
-
-	public BalanceTypeEnum getBalance() {
-		return balance;
-	}
-
-
-	public void setBalance(BalanceTypeEnum balance) {
-		this.balance = balance;
 	}
 
 	public int getWriteIndex() {

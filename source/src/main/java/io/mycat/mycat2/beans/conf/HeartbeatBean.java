@@ -1,9 +1,9 @@
-package io.mycat.mycat2.beans;
+package io.mycat.mycat2.beans.conf;
 
 /**
- * Desc: 对应mycat.yml文件中的heartbeat
+ * Desc: 心跳配置类
  *
- * @date: 19/09/2017
+ * @date: 24/09/2017
  * @author: gaozhiwen
  */
 public class HeartbeatBean {
@@ -69,5 +69,12 @@ public class HeartbeatBean {
 
     public void setMinSwitchtimeInterval(long minSwitchtimeInterval) {
         this.minSwitchtimeInterval = minSwitchtimeInterval;
+    }
+
+    @Override
+    public String toString() {
+        return "HeartbeatBean{" + "timerExecutor=" + timerExecutor + ", replicaHeartbeatPeriod=" + replicaHeartbeatPeriod
+                + ", replicaIdleCheckPeriod=" + replicaIdleCheckPeriod + ", idleTimeout=" + idleTimeout + ", processorCheckPeriod="
+                + processorCheckPeriod + ", minSwitchtimeInterval=" + minSwitchtimeInterval + '}';
     }
 }

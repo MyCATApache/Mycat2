@@ -1,29 +1,20 @@
-package io.mycat.mycat2.beans;
+package io.mycat.mycat2.beans.conf;
 
 /**
- * Desc: 对应mycat.yml文件中的balancer
+ * Desc: 负载均衡配置类
  *
- * @date: 19/09/2017
+ * @date: 24/09/2017
  * @author: gaozhiwen
  */
 public class BalancerBean {
-    private boolean enable = false;
-    /**
-     * 负载均衡绑定的ip
-     */
-    private String ip = "0.0.0.0";
-    /**
-     * 负载均衡缓定的端口
-     */
-    private int port = 9066;
-    /**
-     * 负载均衡策略
-     */
-    private BalancerStrategy strategy;
-
-    public enum BalancerStrategy {
+    public enum BalancerStrategyEnum {
         RANDOM, ROUND_ROBIN, WEIGHT_RANDOM, WEIGHT_ROUND_ROBIN, RESPONSE_TIME, LEAST_CONNECTION, CAPACITY;
     }
+
+    private boolean enable = false;
+    private String ip = "0.0.0.0";
+    private int port = 9066;
+    private BalancerStrategyEnum strategy = BalancerStrategyEnum.RANDOM;
 
     public boolean isEnable() {
         return enable;
@@ -49,11 +40,16 @@ public class BalancerBean {
         this.port = port;
     }
 
-    public BalancerStrategy getStrategy() {
+    public BalancerStrategyEnum getStrategy() {
         return strategy;
     }
 
-    public void setStrategy(BalancerStrategy strategy) {
+    public void setStrategy(BalancerStrategyEnum strategy) {
         this.strategy = strategy;
+    }
+
+    @Override
+    public String toString() {
+        return "BalancerBean{" + "enable=" + enable + ", ip='" + ip + '\'' + ", port=" + port + ", strategy=" + strategy + '}';
     }
 }

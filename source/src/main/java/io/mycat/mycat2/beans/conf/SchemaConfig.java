@@ -1,16 +1,16 @@
-package io.mycat.mycat2.beans;
+package io.mycat.mycat2.beans.conf;
 
 import io.mycat.proxy.Configurable;
 
 import java.util.List;
 
 /**
- * Desc: 用于加载schema.yml的类
+ * Desc: 对应schema.yml文件
  *
  * @date: 10/09/2017
  * @author: gaozhiwen
  */
-public class SchemaConfBean implements Configurable {
+public class SchemaConfig implements Configurable {
     private List<SchemaBean> schemas;
 
     public List<SchemaBean> getSchemas() {

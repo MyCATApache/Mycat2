@@ -2,10 +2,7 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.beans.ClusterBean;
-import io.mycat.mycat2.beans.ReplicaConfBean;
-import io.mycat.mycat2.beans.ReplicaIndexBean;
-import io.mycat.mycat2.beans.SchemaConfBean;
+import io.mycat.mycat2.beans.conf.ClusterBean;
 import io.mycat.mycat2.loadbalance.LocalLoadChecker;
 import io.mycat.mycat2.loadbalance.RandomStrategy;
 import io.mycat.proxy.*;
@@ -30,7 +27,7 @@ public class ProxyStarter {
 
 	public void start() throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
+		MycatConfig conf = runtime.getConfig();
 
 		// 启动NIO Acceptor
 		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));

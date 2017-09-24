@@ -4,48 +4,39 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.ReplicaIndexBean;
-import io.mycat.mycat2.beans.SchemaBean;
+import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.Configurable;
-import io.mycat.proxy.ProxyConfig;
 
-public class MycatConfig extends ProxyConfig {
+public class MycatConfig {
+	private ProxyConfig proxyConfig;
+
 	// 当前节点所用的配置文件的版本
-	private Map<Byte, Integer> configVersionMap = new HashMap<>();
-	private Map<Byte, Configurable> configMap = new HashMap<>();
+	private Map<ConfigEnum, Integer> configVersionMap = new HashMap<>();
+	private Map<ConfigEnum, Configurable> configMap = new HashMap<>();
 
 	/**
 	 * 系统中所有MySQLRepBean的Map
 	 */
 	private Map<String, MySQLRepBean> mysqlRepMap = new HashMap<String, MySQLRepBean>();
-
 	/**
 	 * 系统中所有SchemaBean的Map
 	 */
 	private Map<String, SchemaBean> mycatSchemaMap = new HashMap<String, SchemaBean>();
-
 	/**
 	 * 默认Schema,取配置文件种第一个Schema
 	 */
 	private SchemaBean defaultSchemaBean;
 
-	private Map<String, Integer> repIndexMap;
+	public MycatConfig(ProxyConfig proxyConfig) {
+		this.proxyConfig = proxyConfig;
+	}
 
 	public Map<String, MySQLRepBean> getMysqlRepMap() {
 		return this.mysqlRepMap;
-	}
-
-	protected void addMySQLRepBean(final MySQLRepBean mySQLRepBean) {
-		this.mysqlRepMap.put(mySQLRepBean.getName(), mySQLRepBean);
-	}
-
-	protected void addSchemaBean(SchemaBean schemaBean) {
-		if (defaultSchemaBean == null) {
-			defaultSchemaBean = schemaBean;
-		}
-		this.mycatSchemaMap.put(schemaBean.getName(), schemaBean);
 	}
 
 	public SchemaBean getMycatSchema(String schema) {
@@ -64,44 +55,30 @@ public class MycatConfig extends ProxyConfig {
 		return this.mysqlRepMap.values();
 	}
 
-	public Integer getRepIndex(String repName) {
-		return repIndexMap.get(repName);
+	public void setConfigVersion(ConfigEnum configEnum, int version) {
+		configVersionMap.put(configEnum, version);
 	}
 
-	public Map<String, Integer> getRepIndexMap() {
-		return this.repIndexMap;
+	public int getConfigVersion(ConfigEnum configEnum) {
+		Integer oldVersion = configVersionMap.get(configEnum);
+		return oldVersion == null ? GlobalBean.INIT_VERSION : oldVersion;
 	}
 
-	public void addRepIndex(ReplicaIndexBean replicaIndexBean) {
-		if (replicaIndexBean != null && replicaIndexBean.getReplicaIndexes() != null) {
-			repIndexMap = replicaIndexBean.getReplicaIndexes();
-		}
+	public int getNextConfigVersion(ConfigEnum configEnum) {
+		return getConfigVersion(configEnum) + 1;
 	}
 
-	public void setConfigVersion(byte configKey, int version) {
-		configVersionMap.put(configKey, version);
+	public Configurable getConfig(ConfigEnum configEnum) {
+		return configMap.get(configEnum);
 	}
 
-	public int getConfigVersion(byte configKey) {
-		Integer oldVersion = configVersionMap.get(configKey);
-		return oldVersion == null ? ConfigEnum.INIT_VERSION : oldVersion;
+	public void putConfig(ConfigEnum configEnum, Configurable config, Integer version) {
+		configMap.put(configEnum, config);
+		version = version == null ? GlobalBean.INIT_VERSION : version;
+		configVersionMap.put(configEnum, version);
 	}
 
-	public int getNextConfigVersion(byte configKey) {
-		return getConfigVersion(configKey) + 1;
-	}
-
-	public Configurable getConfig(byte configKey) {
-		return configMap.get(configKey);
-	}
-
-	public void putConfig(byte configKey, Configurable config, Integer version) {
-		configMap.put(configKey, config);
-		version = version == null ? ConfigEnum.INIT_VERSION : version;
-		configVersionMap.put(configKey, version);
-	}
-
-	public Map<Byte, Integer> getConfigVersionMap() {
+	public Map<ConfigEnum, Integer> getConfigVersionMap() {
 		return configVersionMap;
 	}
 }
