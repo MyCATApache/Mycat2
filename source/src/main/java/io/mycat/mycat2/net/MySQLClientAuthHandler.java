@@ -54,8 +54,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 			// check schema
 			logger.debug("Check database. " + auth.database);
 			//TODO ...set schema
-			MycatConfig mycatConf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-			session.schema=mycatConf.getDefaultMycatSchema();
+			MycatConfig mycatConf = ProxyRuntime.INSTANCE.getConfig();
+			session.schema = mycatConf.getDefaultSchemaBean();
 			boolean succ = success(session,auth);
 			if (succ) {
 				session.proxyBuffer.reset();

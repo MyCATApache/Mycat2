@@ -1,5 +1,7 @@
 package io.mycat.proxy.man.packet;
 
+import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.ManagePacket;
@@ -29,7 +31,8 @@ public class NodeRegInfoPacket extends ManagePacket {
 		this.lastClusterStateTime=lastClusterStateTime;
 		setMyLeader(myLeader);
 		this.startupTime = startupTime;
-		this.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getProxy().getPort();
+		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
+		this.proxyPort = proxyConfig.getProxy().getPort();
 	}
 
 	public NodeRegInfoPacket() {

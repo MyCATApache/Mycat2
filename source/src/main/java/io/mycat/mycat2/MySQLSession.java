@@ -90,7 +90,7 @@ public class MySQLSession extends AbstractMySQLSession{
 
 	@Override
 	public String toString() {
-		return "MySQLSession [database=" + database + ", ip=" + mysqlMetaBean.getIp() + ",port="+mysqlMetaBean.getPort()+"]";
+		return "MySQLSession [database=" + database + ", ip=" + mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort() + "]";
 	}
 
 }

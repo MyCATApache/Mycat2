@@ -1,10 +1,10 @@
 package io.mycat.proxy;
+
 /**
  * 运行时环境，单例方式访问
  * @author wuzhihui
  *
  */
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -14,11 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.mycat.mycat2.ConfigLoader;
-import io.mycat.mycat2.beans.ReplicaIndexBean;
-import io.mycat.mycat2.beans.conf.ProxyConfig;
-import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
-import io.mycat.util.YamlUtil;
+import io.mycat.mycat2.beans.conf.HeartbeatConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,7 +94,8 @@ public class ProxyRuntime {
 	public void init() {
 		//心跳调度独立出来，避免被其他任务影响
 		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-		timerExecutor = ExecutorUtil.create("Timer", getConfig().getHeartbeat().getTimerExecutor());
+		HeartbeatConfig heartbeatConfig = config.getConfig(ConfigEnum.HEARTBEAT);
+		timerExecutor = ExecutorUtil.create("Timer", heartbeatConfig.getHeartbeat().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 	}
@@ -118,7 +115,8 @@ public class ProxyRuntime {
 	 */
 	public void startHeartBeatScheduler(){
 		if(heartBeatTasks.get(REPLICA_HEARTBEAT)==null){
-			long replicaHeartbeat = getProxyConfig().getHeartbeat().getReplicaHeartbeatPeriod();
+			HeartbeatConfig heartbeatConfig = config.getConfig(ConfigEnum.HEARTBEAT);
+			long replicaHeartbeat = heartbeatConfig.getHeartbeat().getReplicaHeartbeatPeriod();
 			heartBeatTasks.put(REPLICA_HEARTBEAT,
 					heartbeatScheduler.scheduleAtFixedRate(replicaHeartbeat(),
 														  0,
@@ -139,7 +137,6 @@ public class ProxyRuntime {
 	 * 切换 metaBean 名称
 	 */
 	public void startSwitchDataSource(String replBean,Integer writeIndex){
-		MycatConfig config = (MycatConfig) getProxyConfig();
 		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
 		
 		if (repBean != null){
@@ -178,12 +175,7 @@ public class ProxyRuntime {
 	private Runnable replicaHeartbeat() {
 		return ()->{
 			ProxyReactorThread<?> reactor  = getReactorThreads()[ThreadLocalRandom.current().nextInt(getReactorThreads().length)];
-			reactor.addNIOJob(()->{
-				MycatConfig config = (MycatConfig) getProxyConfig();
-				config.getMySQLReplicaSet()
-					  .stream()
-					  .forEach(f->f.doHeartbeat());
-			});
+			reactor.addNIOJob(()-> config.getMysqlRepMap().values().stream().forEach(f -> f.doHeartbeat()));
 		};
 	}
 

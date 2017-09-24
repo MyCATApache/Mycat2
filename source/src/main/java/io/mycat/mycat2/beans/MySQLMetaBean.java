@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import io.mycat.mycat2.beans.conf.DatasourceConfig;
 import io.mycat.mycat2.beans.conf.DatasourceMetaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,12 +46,13 @@ import io.mycat.util.TimeUtil;
  * 后端mysql连接元数据类，对应datasource.xml配置中的mysql元数据信息
  * @author wuzhihui
  */
-public class MySQLMetaBean extends DatasourceMetaBean {
+public class MySQLMetaBean {
 	//默认的重试次数
 	private static final int MAX_RETRY_COUNT = 5;  
 	
 	private static final Logger logger = LoggerFactory.getLogger(MySQLMetaBean.class);
 
+	private DatasourceMetaBean dsMetaBean;
     private volatile boolean slaveNode = true; // 默认为slave节点
     private volatile long heartbeatRecoveryTime;  // 心跳暂停时间
     private DBHeartbeat heartbeat;
@@ -70,8 +70,7 @@ public class MySQLMetaBean extends DatasourceMetaBean {
     public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
     public boolean init(MySQLRepBean repBean,long maxwaitTime) throws IOException {
-  	
-    	logger.info("init backend myqsl source ,create connections total " + getMinCon() + " for " + getHostName() + " index :" + repBean.getWriteIndex());
+    	logger.info("init backend myqsl source ,create connections total " + dsMetaBean.getMinCon() + " for " + dsMetaBean.getHostName() + " index :" + repBean.getWriteIndex());
 
     	this.repBean = repBean;
     	heartbeat = new MySQLHeartbeat(this,DBHeartbeat.INIT_STATUS);
@@ -79,8 +78,8 @@ public class MySQLMetaBean extends DatasourceMetaBean {
         MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
         CopyOnWriteArrayList<MySQLSession > list = new CopyOnWriteArrayList<MySQLSession >();
-        BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, getMinCon());
-        for (int i = 0; i < getMinCon(); i++) {
+        BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, dsMetaBean.getMinCon());
+        for (int i = 0; i < dsMetaBean.getMinCon(); i++) {
         	MycatReactorThread reactorThread = reactorThreads[i % reactorSize];
             reactorThread.addNIOJob(() -> {
                 try {
@@ -130,7 +129,7 @@ public class MySQLMetaBean extends DatasourceMetaBean {
 		try {
 			heartbeat.heartbeat();
 		} catch (Exception e) {
-			logger.error(getHostName() + " heartbeat error.", e);
+			logger.error(dsMetaBean.getHostName() + " heartbeat error.", e);
 		}
 	}
 	
@@ -141,7 +140,7 @@ public class MySQLMetaBean extends DatasourceMetaBean {
 	public void clearCons(String reason) {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
-		Arrays.stream(reactorThreads).forEach(f->f.clearMySQLMetaBeanSession(this,reason));
+		Arrays.stream(reactorThreads).forEach(f -> f.clearMySQLMetaBeanSession(this,reason));
 	}
 	
 	/**
@@ -149,11 +148,10 @@ public class MySQLMetaBean extends DatasourceMetaBean {
 	 * @return
 	 */	
 	public boolean canSelectAsReadNode() {
-		
 		int slaveBehindMaster = heartbeat.getSlaveBehindMaster();
 		int dbSynStatus = heartbeat.getDbSynStatus();
 		
-		if(!isAlive()){
+		if (!isAlive()){
 			return false;
 		}
 		
@@ -161,11 +159,19 @@ public class MySQLMetaBean extends DatasourceMetaBean {
 			return false;
 		}
 		boolean isSync = dbSynStatus == DBHeartbeat.DB_SYN_NORMAL;
-		boolean isNotDelay = (slaveThreshold >=0)?(slaveBehindMaster < slaveThreshold):true;		
+		boolean isNotDelay = (slaveThreshold >= 0) ? (slaveBehindMaster < slaveThreshold) : true;
 		return isSync && isNotDelay;
 	}
 
-    public boolean isSlaveNode() {
+	public DatasourceMetaBean getDsMetaBean() {
+		return dsMetaBean;
+	}
+
+	public void setDsMetaBean(DatasourceMetaBean dsMetaBean) {
+		this.dsMetaBean = dsMetaBean;
+	}
+
+	public boolean isSlaveNode() {
         return slaveNode;
     }
 
@@ -211,7 +217,7 @@ public class MySQLMetaBean extends DatasourceMetaBean {
 
     @Override
     public String toString() {
-        return "MySQLMetaBean [hostName=" + getHostName() + ", ip=" + getIp() + ", port=" + getPort() + ", user=" + getUser() + ", password="
-                + getPassword() + ", maxCon=" + getMaxCon() + ", minCon=" + getMinCon() + ", slaveNode=" + slaveNode + "]";
+        return "MySQLMetaBean [hostName=" + dsMetaBean.getHostName() + ", ip=" + dsMetaBean.getIp() + ", port=" + dsMetaBean.getPort() + ", user=" + dsMetaBean.getUser() + ", password="
+                + dsMetaBean.getPassword() + ", maxCon=" + dsMetaBean.getMaxCon() + ", minCon=" + dsMetaBean.getMinCon() + ", slaveNode=" + slaveNode + "]";
     }
 }

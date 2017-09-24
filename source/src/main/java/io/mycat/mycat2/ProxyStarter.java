@@ -2,7 +2,7 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.beans.conf.ClusterBean;
+import io.mycat.mycat2.beans.conf.*;
 import io.mycat.mycat2.loadbalance.LocalLoadChecker;
 import io.mycat.mycat2.loadbalance.RandomStrategy;
 import io.mycat.proxy.*;
@@ -20,10 +20,7 @@ import io.mycat.proxy.man.MyCluster;
 
 public class ProxyStarter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProxyStarter.class);
-
 	public static final ProxyStarter INSTANCE = new ProxyStarter();
-
-	private ProxyStarter(){}
 
 	public void start() throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
@@ -34,7 +31,8 @@ public class ProxyStarter {
 		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
-		ClusterBean clusterBean = conf.getCluster();
+		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
+		ClusterBean clusterBean = clusterConfig.getCluster();
 		if (clusterBean.isEnable()) {
 			// 集群开启状态，需要等集群启动，主节点确认完配置才能提供服务
 			acceptor.startServerChannel(clusterBean.getIp(), clusterBean.getPort(), ServerType.CLUSTER);
@@ -50,20 +48,26 @@ public class ProxyStarter {
 
 	public void startProxy(boolean isLeader) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
+		MycatConfig conf = runtime.getConfig();
 
 		// 加载配置文件信息
 		ConfigLoader.INSTANCE.loadAll();
 		NIOAcceptor acceptor = runtime.getAcceptor();
-		acceptor.startServerChannel(conf.getProxy().getIp(), conf.getProxy().getPort(), ServerType.MYCAT);
+
+		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
+		ProxyBean proxyBean = proxyConfig.getProxy();
+		acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT);
 		startReactor();
 		// 初始化
 		init(conf);
-        if(conf.getBalancer().isEnable()){
+
+		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
+		BalancerBean balancerBean = balancerConfig.getBalancer();
+        if (balancerBean.isEnable()){
             //开启负载均衡服务
             runtime.setLocalLoadChecker(new LocalLoadChecker());
             runtime.setLoadBalanceStrategy(new RandomStrategy());
-            acceptor.startServerChannel(conf.getBalancer().getIp(), conf.getBalancer().getPort(), ServerType.LOAD_BALANCER);
+            acceptor.startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
         }
 
 		// 主节点才启动心跳，非集群下也启动心跳
@@ -94,13 +98,13 @@ public class ProxyStarter {
 
 	private void init(MycatConfig conf) {
 		// 初始化连接
-		conf.getMysqlRepMap().forEach((key, value) -> {
-			value.initMaster();
-			value.getMysqls().forEach(metaBean -> {
+		conf.getMysqlRepMap().forEach((repName, repBean) -> {
+			repBean.initMaster();
+			repBean.getMetaBeans().forEach(metaBean -> {
 				try {
-					metaBean.init(value,ProxyRuntime.INSTANCE.maxdataSourceInitTime);
+					metaBean.init(repBean,ProxyRuntime.INSTANCE.maxdataSourceInitTime);
 				} catch (IOException e) {
-					LOGGER.error("error to init metaBean: {}", metaBean.getHostName());
+					LOGGER.error("error to init metaBean: {}", metaBean.getDsMetaBean().getHostName());
 				}
 			});
 		});

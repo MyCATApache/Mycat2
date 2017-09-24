@@ -95,7 +95,7 @@ public class MySQLDetector {
 				}else{
 					heartbeat.setResult(DBHeartbeat.ERROR_STATUS, 
 										this, 
-										heartbeat.getSource().getIp()+":"+heartbeat.getSource().getPort()
+										heartbeat.getSource().getDsMetaBean().getIp()+":"+heartbeat.getSource().getDsMetaBean().getPort()
 										+" connection timeout!!");
 				}
 			}

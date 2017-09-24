@@ -10,6 +10,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.mycat.mycat2.ProxyStarter;
+import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.proxy.ConfigEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +70,8 @@ public class MyCluster {
 		}
 		myNode.setState(NodeState.Online);
 		this.myNode = myNode;
-		this.myNode.proxyPort = ProxyRuntime.INSTANCE.getProxyConfig().getProxy().getPort();
+		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
+		this.myNode.proxyPort = proxyConfig.getProxy().getPort();
 	}
 
 	/**

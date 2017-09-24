@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 
 import io.mycat.mycat2.beans.conf.DatasourceConfig;
 import io.mycat.mycat2.beans.conf.ReplicaBean;
+import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
+import io.mycat.proxy.ConfigEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,9 +47,10 @@ import io.mycat.proxy.ProxyRuntime;
  *
  * @author wuzhihui
  */
-public class MySQLRepBean extends ReplicaBean {
+public class MySQLRepBean {
 	private static Logger logger = LoggerFactory.getLogger(MySQLRepBean.class);
 
+	private ReplicaBean replicaBean;
     private String slaveIDs;   // 在线数据迁移 虚拟从节点
     private boolean tempReadHostAvailable = false;  //如果写服务挂掉, 临时读服务是否继续可用
 
@@ -62,58 +65,57 @@ public class MySQLRepBean extends ReplicaBean {
     public void initMaster() {
         // 根据配置replica-index的配置文件修改主节点
         MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
-        Integer repIndex = conf.getRepIndex(getName());
+		ReplicaIndexConfig repIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
+        Integer repIndex = repIndexConfig.getReplicaIndexes().get(replicaBean.getName());
         if (repIndex != null && checkIndex(repIndex)) {
             writeIndex = repIndex;
         } else {
         	writeIndex = 0;
         }
-		metaBeans.add(new MySQLMetaBean());
-        writeMetaBean = getMysqls().get(writeIndex);
-        writeMetaBean.setSlaveNode(false);
-        readMetaBeans.addAll(mysqls);
-        readMetaBeans.remove(writeIndex);
+		replicaBean.getMysqls().forEach(dsMetaBean -> {
+			MySQLMetaBean metaBean = new MySQLMetaBean();
+			metaBean.setDsMetaBean(dsMetaBean);
+			metaBeans.add(metaBean);
+		});
+		metaBeans.get(writeIndex).setSlaveNode(false);
     }
     
 	public void doHeartbeat() {
-		if (writeMetaBean == null) {
+		if (metaBeans.get(writeIndex) == null) {
 			return;
 		}
 
-		for (MySQLMetaBean source : this.mysqls) {
+		for (MySQLMetaBean source : metaBeans) {
 			if (source != null) {
 				source.doHeartbeat();
 			} else {
 				StringBuilder s = new StringBuilder();
-				s.append(Alarms.DEFAULT).append(getName()).append(" current dataSource is null!");
+				s.append(Alarms.DEFAULT).append(replicaBean.getName()).append(" current dataSource is null!");
 				logger.error(s.toString());
 			}
 		}
-
 	}
     
     private boolean checkIndex(int newIndex){
-    	return newIndex >= 0 && newIndex < mysqls.size();
+    	return newIndex >= 0 && newIndex < metaBeans.size();
     }
     
     public int getNextIndex(){    	
-    	MySQLMetaBean metaBean = mysqls.stream().skip(writeIndex+1).findFirst().orElse(null);
-    	if(metaBean!=null){
-    		return mysqls.indexOf(metaBean);
-    	}else{
-    		metaBean = mysqls.stream().limit(writeIndex).findFirst().orElse(null);
+    	MySQLMetaBean metaBean = metaBeans.stream().skip(writeIndex + 1).findFirst().orElse(null);
+    	if (metaBean!=null){
+    		return metaBeans.indexOf(metaBean);
+    	} else {
+    		metaBean = metaBeans.stream().limit(writeIndex).findFirst().orElse(null);
     		if(metaBean!=null){
-    			return mysqls.indexOf(metaBean);
+    			return metaBeans.indexOf(metaBean);
     		}
     	}
     	return -1;
     }
     
 	public void switchSource(int newIndex,long maxwaittime) {
-		if (getSwitchType() == DatasourceConfig.RepSwitchTypeEnum.NOT_SWITCH) {
-			logger.debug("not switch datasource ,for switchType is {}",
-					DatasourceConfig.RepSwitchTypeEnum.NOT_SWITCH);
-
+		if (replicaBean.getSwitchType() == ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH) {
+			logger.debug("not switch datasource ,for switchType is {}", ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH);
 			switchResult.set(false);
 			return;
 		}
@@ -138,12 +140,12 @@ public class MySQLRepBean extends ReplicaBean {
 				String reason = "switch datasource";
 
 				// init again
-				MySQLMetaBean newWriteBean = mysqls.get(newIndex);
+				MySQLMetaBean newWriteBean = metaBeans.get(newIndex);
 				newWriteBean.clearCons(reason);
 				newWriteBean.init(this,maxwaittime);
 				
 				// clear all connections
-				MySQLMetaBean oldMetaBean = mysqls.get(current);
+				MySQLMetaBean oldMetaBean = metaBeans.get(current);
 				oldMetaBean.clearCons(reason);
 				// write log
 				logger.warn(switchMessage(current, newIndex, reason));
@@ -167,7 +169,7 @@ public class MySQLRepBean extends ReplicaBean {
 	
 	private String switchMessage(int current, int newIndex, String reason) {
 		StringBuilder s = new StringBuilder();
-		s.append("[Host=").append(getName()).append(",result=[").append(current).append("->");
+		s.append("[Host=").append(replicaBean.getName()).append(",result=[").append(current).append("->");
 		s.append(newIndex).append("],reason=").append(reason).append(']');
 		return s.toString();
 	}
@@ -176,17 +178,17 @@ public class MySQLRepBean extends ReplicaBean {
      * 得到当前用于写的MySQLMetaBean
      */
     private MySQLMetaBean getCurWriteMetaBean() {
-        return writeMetaBean.isAlive()?writeMetaBean:null;
+        return metaBeans.get(writeIndex).isAlive() ? metaBeans.get(writeIndex) : null;
     }
 
     public MySQLMetaBean getBalanceMetaBean(boolean runOnSlave){
-    	if(DatasourceConfig.RepTypeEnum.SINGLE_NODE == getRepType()||!runOnSlave){
+    	if(ReplicaBean.RepTypeEnum.SINGLE_NODE == replicaBean.getRepType()||!runOnSlave){
     		return getCurWriteMetaBean();
     	}
     	
     	MySQLMetaBean datas = null;
     	
-		switch(getBalanceType()){
+		switch(replicaBean.getBalanceType()){
 			case BALANCE_ALL:
 				datas = getLBReadWriteMetaBean();
 				break;
@@ -194,7 +196,7 @@ public class MySQLRepBean extends ReplicaBean {
 				datas = getLBReadMetaBean();
 				//如果从节点不可用,从主节点获取连接
 				if(datas==null){
-					logger.debug("all slaveNode is Unavailable. use master node for read . balance type is {}",getBalanceType());
+					logger.debug("all slaveNode is Unavailable. use master node for read . balance type is {}", replicaBean.getBalanceType());
 					datas = getCurWriteMetaBean();
 				}
 				break;
@@ -202,19 +204,20 @@ public class MySQLRepBean extends ReplicaBean {
 				datas = getCurWriteMetaBean();
 				break;
 			default:
-				logger.debug("current balancetype is not supported!! [{}], use writenode connection .",getBalanceType());
+				logger.debug("current balancetype is not supported!! [{}], use writenode connection .", replicaBean.getBalanceType());
 				datas = getCurWriteMetaBean();
 				break;
 		}
 		return datas;
     }
+
     /**
      * 得到当前用于读的MySQLMetaBean（负载均衡模式，如果支持）
      * 当前读写节点都承担负载
      */
     private MySQLMetaBean getLBReadWriteMetaBean() {
-    	List<MySQLMetaBean> result = mysqls.stream()
-    			.filter(f->f.canSelectAsReadNode())
+    	List<MySQLMetaBean> result = metaBeans.stream()
+    			.filter(f -> f.canSelectAsReadNode())
     			.collect(Collectors.toList());
         return result.isEmpty()?null:result.get(ThreadLocalRandom.current().nextInt(result.size()));
     }
@@ -224,12 +227,28 @@ public class MySQLRepBean extends ReplicaBean {
      * @return
      */
     private MySQLMetaBean getLBReadMetaBean(){
-    	List<MySQLMetaBean> result = readMetaBeans.stream()
-    			.filter(f->f.canSelectAsReadNode())
+    	List<MySQLMetaBean> result = metaBeans.stream()
+    			.filter(f -> f.isSlaveNode() && f.canSelectAsReadNode())
     			.collect(Collectors.toList());
-    	return result.isEmpty()?null:result.get(ThreadLocalRandom.current().nextInt(result.size()));
+    	return result.isEmpty() ? null : result.get(ThreadLocalRandom.current().nextInt(result.size()));
     }
-    
+
+	public ReplicaBean getReplicaBean() {
+		return replicaBean;
+	}
+
+	public void setReplicaBean(ReplicaBean replicaBean) {
+		this.replicaBean = replicaBean;
+	}
+
+	public List<MySQLMetaBean> getMetaBeans() {
+		return metaBeans;
+	}
+
+	public void setMetaBeans(List<MySQLMetaBean> metaBeans) {
+		this.metaBeans = metaBeans;
+	}
+
 	public String getSlaveIDs() {
 		return slaveIDs;
 	}
@@ -244,10 +263,6 @@ public class MySQLRepBean extends ReplicaBean {
 
 	public void setTempReadHostAvailable(boolean tempReadHostAvailable) {
 		this.tempReadHostAvailable = tempReadHostAvailable;
-	}
-
-	public void setWriteMetaBean(MySQLMetaBean writeMetaBean) {
-		this.writeMetaBean = writeMetaBean;
 	}
 
 	public int getWriteIndex() {

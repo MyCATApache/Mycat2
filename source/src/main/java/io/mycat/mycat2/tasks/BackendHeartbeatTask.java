@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.mycat.mycat2.beans.conf.ReplicaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +15,6 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.MySQLRepBean.RepTypeEnum;
 import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mycat2.beans.heartbeat.MySQLDetector;
 import io.mycat.mycat2.beans.heartbeat.MySQLHeartbeat;
@@ -24,7 +24,6 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyBuffer;
 
 public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSession> {
-	
 	private static Logger logger = LoggerFactory.getLogger(BackendHeartbeatTask.class);
 	
     private int fieldCount;
@@ -39,7 +38,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
     private static final String Slave_SQL_Running_str = "Slave_SQL_Running";
     private static final String Seconds_Behind_Master_str = "Seconds_Behind_Master";
     private static final byte[] YES = "Yes".getBytes();
-    private static final byte[] NO  = "ON".getBytes();
+    private static final byte[] ON = "ON".getBytes();
     private static final byte[] Primary = "Primary".getBytes();
     private static final String wsrep_cluster_status_str = "wsrep_cluster_status";
     private static final String wsrep_connected_str      = "wsrep_connected";
@@ -58,7 +57,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 		packet.packetId = 0;
 		packet.command = MySQLPacket.COM_QUERY;
 //		try {
-			packet.arg = repBean.getType().getHearbeatSQL().getBytes();
+			packet.arg = repBean.getReplicaBean().getRepType().getHearbeatSQL().getBytes();
 //		} catch (UnsupportedEncodingException e) {
 //			throw new RuntimeException(e);
 //		}
@@ -108,7 +107,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
         MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
         int rowDataIndex = curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize;
         
-        if(RepTypeEnum.GARELA_CLUSTER==repBean.getType()){
+        if(ReplicaBean.RepTypeEnum.GARELA_CLUSTER==repBean.getReplicaBean().getRepType()){
         	int lenc = (int) proxyBuffer.getLenencInt(rowDataIndex);
             rowDataIndex += proxyBuffer.getLenencLength(lenc);
             String key = proxyBuffer.getFixString(rowDataIndex, lenc);
@@ -134,7 +133,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 			session.proxyBuffer.reset();
 			reactor.addMySQLSession(metaBean, session);
 
-			switch(repBean.getType()){
+			switch(repBean.getReplicaBean().getRepType()){
 			case GROUP_REPLICATION:
 			case MASTER_SLAVE:
 				masterSlaveHeartbeat();
@@ -142,7 +141,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 			case GARELA_CLUSTER:
 				clusterHeartbeat();
 				break;
-			case SINGLENODE:
+			case SINGLE_NODE:
 				detector.getHeartbeat().setResult(MySQLHeartbeat.OK_STATUS, detector,  null);
 				break;
 			default:
@@ -151,7 +150,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 			detector.setLasstReveivedQryTime(System.currentTimeMillis());
 //			detector.getHeartbeat().getRecorder().set((detector.getLasstReveivedQryTime() - detector.getLastSendQryTime()));
 		}else{
-			logger.error("found MySQL master/slave Replication err !!! {}:{}" , metaBean.getIp(),metaBean.getPort());
+			logger.error("found MySQL master/slave Replication err !!! {}:{}" , metaBean.getDsMetaBean().getIp(),metaBean.getDsMetaBean().getPort());
 			detector.getHeartbeat().setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
 			detector.getHeartbeat().setResult(DBHeartbeat.ERROR_STATUS, detector,  null);
 		}
@@ -162,7 +161,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 		if((result==null||result.isEmpty())){
 			if(metaBean.isSlaveNode()){
 				logger.warn(" MySQL master/slave Replication has not found! " );
-				logger.warn(" the current replica is in MASTER_SLAVE or GROUP_REPLICATION mode ?.{}:{}" ,metaBean.getIp(),metaBean.getPort());
+				logger.warn(" the current replica is in MASTER_SLAVE or GROUP_REPLICATION mode ?.{}:{}" ,metaBean.getDsMetaBean().getIp(),metaBean.getDsMetaBean().getPort());
 				detector.getHeartbeat().setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
 				detector.getHeartbeat().setResult(DBHeartbeat.ERROR_CONF, detector,  null);
 			}else{
@@ -197,7 +196,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 //				detector.getHeartbeat().getAsynRecorder().set(resultResult, switchType);
 		}else if(metaBean.isSlaveNode()){
 			//String Last_IO_Error = resultResult != null ? resultResult.get("Last_IO_Error") : null;
-			logger.warn("found MySQL master/slave Replication err !!! {}:{}" , metaBean.getIp(),metaBean.getPort());
+			logger.warn("found MySQL master/slave Replication err !!! {}:{}" , metaBean.getDsMetaBean().getIp(),metaBean.getDsMetaBean().getPort());
 			detector.getHeartbeat().setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
 			detector.getHeartbeat().setResult(DBHeartbeat.ERROR_STATUS, detector,null);
 			return;
@@ -225,14 +224,14 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 		byte[] wsrep_ready = result.get(wsrep_ready_str);// ON
 		
 		if(wsrep_connected!=null
-				&& Arrays.equals(NO,wsrep_connected)
-				&& Arrays.equals(NO,wsrep_ready)
+				&& Arrays.equals(ON,wsrep_connected)
+				&& Arrays.equals(ON,wsrep_ready)
 				&& Arrays.equals(Primary,wsrep_cluster_status)){
 			detector.getHeartbeat().setDbSynStatus(DBHeartbeat.DB_SYN_NORMAL);
 			detector.getHeartbeat().setResult(DBHeartbeat.OK_STATUS, detector, null);
 		}else{
 			logger.warn("found MySQL  cluster status err !!! " 
-					+  metaBean.getIp() + ":" + metaBean.getPort() 
+					+  metaBean.getDsMetaBean().getIp() + ":" + metaBean.getDsMetaBean().getPort()
 					+ " wsrep_cluster_status: "+ new String(wsrep_cluster_status)  
 					+ " wsrep_connected: "+ new String(wsrep_connected)
 					+ " wsrep_ready: "+ new String(wsrep_ready)

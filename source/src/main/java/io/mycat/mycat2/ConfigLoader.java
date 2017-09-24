@@ -1,8 +1,5 @@
 package io.mycat.mycat2;
 
-import io.mycat.mycat2.beans.conf.DatasourceConfig;
-import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
-import io.mycat.mycat2.beans.conf.SchemaConfig;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.Configurable;
 import io.mycat.proxy.ProxyRuntime;
@@ -38,6 +35,9 @@ public class ConfigLoader {
         loadConfig(false, ConfigEnum.DATASOURCE, null);
         loadConfig(false, ConfigEnum.SCHEMA, null);
 
+        ProxyRuntime.INSTANCE.getConfig().initRepMap();
+        ProxyRuntime.INSTANCE.getConfig().initSchemaMap();
+
         // 清空prepare文件夹
         YamlUtil.clearDirectory(DIR_PREPARE, null);
     }
@@ -45,6 +45,12 @@ public class ConfigLoader {
     public void load(ConfigEnum configEnum, Integer targetVersion) throws IOException {
         loadConfig(true, configEnum, targetVersion);
         YamlUtil.clearDirectory(DIR_PREPARE, configEnum.getFileName());
+
+        if (configEnum == ConfigEnum.SCHEMA) {
+            ProxyRuntime.INSTANCE.getConfig().initSchemaMap();
+        } else if (configEnum == ConfigEnum.DATASOURCE) {
+            ProxyRuntime.INSTANCE.getConfig().initRepMap();
+        }
     }
 
     /**

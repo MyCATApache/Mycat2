@@ -43,8 +43,8 @@ public class MycatCore {
 	public static void main(String[] args) throws IOException {
 		// mycat.conf的加载不需要在集群内
 		ProxyConfig proxy = YamlUtil.load(ConfigEnum.PROXY.getFileName(), ProxyConfig.class);
-		logger.debug("load config for {}", ConfigEnum.PROXY.getFileName());
-		MycatConfig conf = new MycatConfig(proxy);
+		logger.debug("load config for {}", ConfigEnum.PROXY);
+		MycatConfig conf = new MycatConfig();
 
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setConfig(conf);
