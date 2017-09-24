@@ -1,5 +1,7 @@
 package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation;
 
+import io.mycat.mycat2.sqlannotations.SQLAnnotation;
+import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.*;
@@ -13,7 +15,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -34,11 +35,11 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
     public static final String match_actions = "actions";
     final DynamicAnnotationKeyRoute route;
     final Map<Integer, DynamicAnnotation[]> cache;
-    final Map<Integer, List<Function<BufferSQLContext, BufferSQLContext>>> globalFunction = new HashMap<>();
+    final Map<Integer, List<SQLAnnotationList>> globalFunction = new HashMap<>();
     private static final Logger logger = LoggerFactory.getLogger(DynamicAnnotationManagerImpl.class);
     public DynamicAnnotationManagerImpl(String actionsPath, String annotationsPath, Map<Integer, DynamicAnnotation[]> cache) throws Exception {
        try {
-           ActonFactory<BufferSQLContext> actonFactory = new ActonFactory<>(actionsPath);
+           ActonFactory actonFactory = new ActonFactory(actionsPath);
            RootBean object = YamlUtil.load(annotationsPath, RootBean.class);
            HashMap<DynamicAnnotationKey, DynamicAnnotation> table = new HashMap<>();
            Iterator<Schema> iterator = object.getAnnotations().stream().map((s) -> s.getSchema()).iterator();
@@ -134,9 +135,40 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         }
     }
 
-    public List<Function<BufferSQLContext, BufferSQLContext>> getGlobalFunctionAnnotations(int schema, int sqltype) {
+    public static void collectAnnotationsListSQLAnnotationList(DynamicAnnotation[] res, BufferSQLContext context, List<SQLAnnotationList> list) {
+        int size = res.length;
+        for (int i = 0; i < size; i++) {
+            DynamicAnnotation annotation = res[i];
+            try {
+                annotation.match.pick(0, context);
+                if (annotation.match.isComplete()) {
+                    list.add(annotation.actions);
+                }
+            } catch (Exception e) {
+                System.out.println(annotation.toString());
+                e.printStackTrace();
+            }
+        }
+    }
+    public static void collectAnnotationsListSQLAnnotation(DynamicAnnotation[] res, BufferSQLContext context, List<SQLAnnotation> list) {
+        int size = res.length;
+        for (int i = 0; i < size; i++) {
+            DynamicAnnotation annotation = res[i];
+            try {
+                annotation.match.pick(0, context);
+                if (annotation.match.isComplete()) {
+                    list.addAll(annotation.actions.getSqlAnnotations());
+                }
+            } catch (Exception e) {
+                System.out.println(annotation.toString());
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public List<SQLAnnotationList> getGlobalFunctionAnnotations(int schema, int sqltype) {
         int hash = globalFunctionHash(schema, sqltype);
-        List<Function<BufferSQLContext, BufferSQLContext>> list = this.globalFunction.get(hash);
+        List<SQLAnnotationList> list = this.globalFunction.get(hash);
         return list;
     }
 
@@ -156,7 +188,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
 
         }
         DynamicAnnotation[] res = annotations;
-        List<Function<BufferSQLContext, BufferSQLContext>> globalFunction = getGlobalFunctionAnnotations(schema, sqltype);
+        List<SQLAnnotationList> globalFunction = getGlobalFunctionAnnotations(schema, sqltype);
         if (res == null && globalFunction == null) {
             return () -> {
                 logger.debug("没有匹配的action");
@@ -176,7 +208,75 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         };
     }
 
-    private static void doList(List<Function<BufferSQLContext, BufferSQLContext>> globalFunction, BufferSQLContext args) {
+    public void collectInSQLAnnotationList(int schema, int sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotationList> collect) throws Exception {
+        Arrays.sort(tables);
+        DynamicAnnotation[] annotations;
+        int hash = hash(schema, sqltype, tables);
+        annotations = cache.get(hash);
+        if (annotations == null) {
+            annotations = getAnnotations(schema, sqltype, tables);
+            if (annotations == null) {
+
+            } else {
+                cache.put(hash, annotations);
+            }
+
+        }
+        DynamicAnnotation[] res = annotations;
+        List<SQLAnnotationList> globalFunction = getGlobalFunctionAnnotations(schema, sqltype);
+        if (res == null && globalFunction == null) {
+
+        } else if (res != null && globalFunction == null) {
+            collectAnnotationsListSQLAnnotationList(res, context, collect);
+        } else if (res == null && globalFunction != null) {
+            int size = globalFunction.size();
+            for (int i = 0; i < size; i++) {
+                collect.add(globalFunction.get(i));
+            }
+        }else {
+            int size = globalFunction.size();
+            for (int i = 0; i < size; i++) {
+                collect.add(globalFunction.get(i));
+            }
+            collectAnnotationsListSQLAnnotationList(res, context, collect);
+        }
+
+    }
+    public void collect(int schema, int sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotation> collect) throws Exception {
+        Arrays.sort(tables);
+        DynamicAnnotation[] annotations;
+        int hash = hash(schema, sqltype, tables);
+        annotations = cache.get(hash);
+        if (annotations == null) {
+            annotations = getAnnotations(schema, sqltype, tables);
+            if (annotations == null) {
+
+            } else {
+                cache.put(hash, annotations);
+            }
+
+        }
+        DynamicAnnotation[] res = annotations;
+        List<SQLAnnotationList> globalFunction = getGlobalFunctionAnnotations(schema, sqltype);
+        if (res == null && globalFunction == null) {
+
+        } else if (res != null && globalFunction == null) {
+            collectAnnotationsListSQLAnnotation(res, context, collect);
+        } else if (res == null && globalFunction != null) {
+            int size = globalFunction.size();
+            for (int i = 0; i < size; i++) {
+                collect.addAll(globalFunction.get(i).getSqlAnnotations());
+            }
+        }else {
+            int size = globalFunction.size();
+            for (int i = 0; i < size; i++) {
+                collect.addAll(globalFunction.get(i).getSqlAnnotations());
+            }
+            collectAnnotationsListSQLAnnotation(res, context, collect);
+        }
+
+    }
+    private static void doList(List<SQLAnnotationList> globalFunction, BufferSQLContext args) {
         int size = globalFunction.size();
         for (int i = 0; i < size; i++) {
             globalFunction.get(i).apply(args);

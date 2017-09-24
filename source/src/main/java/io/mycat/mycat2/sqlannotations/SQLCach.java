@@ -7,9 +7,7 @@ import java.util.Map;
 /**
  * Created by jamie on 2017/9/15.
  */
-public class SQLCach implements SQLAnnotation<BufferSQLContext>{
-
-    Map<String,String> args;
+public class SQLCach extends SQLAnnotation{
     @Override
     public void init(Map<String,String> args) {
         this.args=args;

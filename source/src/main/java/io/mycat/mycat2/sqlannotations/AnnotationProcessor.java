@@ -8,6 +8,8 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLTy
 import io.mycat.proxy.ProxyRuntime;
 
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -51,7 +53,11 @@ public class AnnotationProcessor {
                     intHashTables[j] = context.getTableIntHash(j);
                 }
                 try {
-                    dynamicAnnotationManager.get().process(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context).run();
+                    List<SQLAnnotation> collect = new ArrayList<>();
+                    dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
+                    System.out.println(collect.toString());
+                    collect.forEach((c) -> c.apply(context));
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -75,10 +81,18 @@ public class AnnotationProcessor {
         try {
             while (true) {
                 WatchKey key = watcher.take();//todo 线程复用,用 poll比较好?
+                boolean flag = false;
                 for (WatchEvent<?> event: key.pollEvents()) {
+                    String str = event.context().toString();
+                    if ("actions.yaml".equals(str)|| "annotations.yaml".equals(str)) {
+                        flag=true;
+                        break;
+                    }
                 }
-                System.out.println("动态注解更新次数" + count.incrementAndGet());
-                init();
+                if (flag){
+                    System.out.println("动态注解更新次数" + count.incrementAndGet());
+                    init();
+                }
                 boolean valid = key.reset();
                 if (!valid) {
                     break;
