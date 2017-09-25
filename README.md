@@ -24,12 +24,13 @@ Genel TCP Proxy using Java NIO ,simple and fast
 ### 集群配置说明
 
 - 非集群模式
-  - 修改`mycat.yml`中的`clusterEnable: false`
+  - 指定`mycat.yml`中的ip和port
+  - 修改`cluster.yml`中的`enable: false`，设置cluster的port
 
 
 - 集群模式
-  - 修改`mycat.yml`中的`clusterEnable: true`
-  - `myNodeId`需要在集群中唯一
+  - 开启集群：`cluster.yml`中的`enable: true`，设置cluster的port，`myNodeId`需要在集群中唯一
+  - 负载均衡：`balancer.yml`中的`enable: true`，设置balancer的port及strategy
   - 集群模式下，只有在集群状态下才提供代理服务，在脱离集群状态下将暂时无法提供代理服务
 
 
@@ -57,12 +58,15 @@ Genel TCP Proxy using Java NIO ,simple and fast
 #### 四 启动第二个mycat，并自动加入集群。
 
    4.1  集群相关配置文件
-        `conf` 目录下, mycat1.yml,mycat2.yml,mycat3.yml 三个配置文件，分别为集群中三个节点的配置文件。<br>
-        配置文件名称格式为: `mycat[unique id]. conf`<br>
+        `conf` 目录下, 修改mycat.yml,cluster.yml,balancer.yml 三个配置文件。<br>
         配置文件中 `cluster.allnodes` 属性 需要将集群中，所有节点的信息配置上。<br>
-    
-        `conf` 目录下, 设置 `wrapper.conf` 配置文件中,<br>
-        `wrapper.app.parameter.2` 参数的值 为  mycat[`unique id`]. yml 中的  `unique id` 。<br>
-        确定从哪个mycat[unique id]. conf 配置文件中 读取配置。<br>
    4.2  需要注意的是，每个节点一套mycat程序。<br>
    4.3  配置完成后 按照第三步 启动mycat. 新启动的mycat 将自动加入集群中。<br>
+
+### 五 在IDEA中调试集群
+
+    IDEA中调试可以设置启动参数，支持的启动参数：
+        -mycat.proxy.port 8067
+        -mycat.cluster.enable true
+        -mycat.cluster.port 9067
+        -mycat.cluster.myNodeId leader-2

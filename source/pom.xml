@@ -235,9 +235,9 @@
 						<daemon>
 							<id>mycat</id>
 							<mainClass>io.mycat.mycat2.MycatCore</mainClass>
-							<commandLineArguments>
-								<commandLineArgument>1</commandLineArgument>
-							</commandLineArguments>
+							<!--<commandLineArguments>-->
+								<!--<commandLineArgument>1</commandLineArgument>-->
+							<!--</commandLineArguments>-->
 							<platforms>
 								<platform>jsw</platform>
 							</platforms>

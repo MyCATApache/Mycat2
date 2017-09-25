@@ -1,5 +1,6 @@
 package io.mycat.mycat2.sqlparser;
 
+import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
 import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
@@ -503,6 +504,35 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         parser.parse(sql.getBytes(), context);
         assertEquals(BufferSQLContext.SELECT_FOR_UPDATE_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
+    }
+
+    @Test
+    public void testCustomSQL() throws Exception {
+        String sql = "SELECT DATABASE()";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+        // assertEquals("sbtest1", context.getTableName(0));
+    }
+
+    @Test
+    public void testTokenHash1() throws Exception {
+        String sql = "select * from tbl_A;";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(TokenHash.FROM, context.getTokenHash(0, 2));
+    }
+
+    @Test
+    public void testTokenHash2() throws Exception {
+        String sql = "select * from tbl_A; select * from tbl_B where id > 100;";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(TokenHash.WHERE, context.getTokenHash(1, 4));
+    }
+
+    @Test
+    public void testTokenType() throws Exception {
+        String sql = "SELECT * FROM tbl_A where id = 1234;";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(Tokenizer.DIGITS, context.getTokenType(0, 7));
     }
 
     private static final String sql1 = "select t3.*,ztd3.TypeDetailName as UseStateName\n" +

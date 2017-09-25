@@ -5,10 +5,7 @@ import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.advice.impl.intercept.SelelctAllow;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
-import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
-import io.mycat.mycat2.sqlannotations.MonintorSQL;
-import io.mycat.mycat2.sqlannotations.SQLAnnotation;
-import io.mycat.mycat2.sqlannotations.SQLCach;
+
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
 
@@ -29,7 +26,12 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * 进行SQL命令的处理的容器
 	 */
 	protected Map<Byte, MySQLCommand> MYSQLCOMMANDMAP = new HashMap<>();
-		
+
+	/**
+	 * sqlparser
+	 */
+	protected BufferSQLParser parser = new BufferSQLParser();
+
 	public AbstractCmdStrategy(){
 		initMyCmdHandler();
 		initMySqlCmdHandler();
@@ -68,10 +70,6 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 */
 	protected void preMySQLCommand(MycatSession session){
 		
-		/**
-		 * sqlparser
-		 */
-		BufferSQLParser parser = new BufferSQLParser();
 		int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
 		int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
 		parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
@@ -96,6 +94,5 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			});
 			actions.stream().forEach(f->{f.apply(session);});
 		}
-
 	}
 }

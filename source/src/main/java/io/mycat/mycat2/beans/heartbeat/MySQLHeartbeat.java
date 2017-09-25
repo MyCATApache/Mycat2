@@ -30,7 +30,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
-import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.mycat2.beans.conf.ClusterConfig;
+import io.mycat.mycat2.beans.conf.HeartbeatConfig;
+import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
 import io.mycat.util.YamlUtil;
@@ -125,7 +128,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		lock.lock();
 		try {
 			if (isChecking.compareAndSet(false, true)) {
-				logger.debug("backend mysql heartbeat begin.{}:{}",source.getIp(),source.getPort());
+				logger.debug("backend mysql heartbeat begin.{}:{}", source.getDsMetaBean().getIp(), source.getDsMetaBean().getPort());
 				MySQLDetector detector = this.detector;
 				if (detector == null || detector.isQuit()) {
 					try {
@@ -190,9 +193,10 @@ public class MySQLHeartbeat extends DBHeartbeat {
 			}
 			break;
 		case DBHeartbeat.INIT_STATUS:
-			logger.info("current repl status [INIT_STATUS ---> OK_STATUS ]. update lastSwitchTime .{}:{}", source.getIp(), source.getPort());
-			MycatConfig conf = (MycatConfig)ProxyRuntime.INSTANCE.getProxyConfig();
-			source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - conf.getMinSwitchtimeInterval());
+			logger.info("current repl status [INIT_STATUS ---> OK_STATUS ]. update lastSwitchTime .{}:{}", source.getDsMetaBean().getIp(), source.getDsMetaBean().getPort());
+			MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+			HeartbeatConfig heartbeatConfig = conf.getConfig(ConfigEnum.HEARTBEAT);
+			source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - heartbeatConfig.getHeartbeat().getMinSwitchtimeInterval());
 		case DBHeartbeat.OK_STATUS:
 		default:
 			this.status = OK_STATUS;
@@ -203,7 +207,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 
 	private void setError(MySQLDetector detector, String msg) {
 		// should continues check error status
-		if (++errorCount < source.getMaxRetryCount()) {
+		if (++errorCount < source.getDsMetaBean().getMaxRetryCount()) {
             if (detector != null && !detector.isQuit()) {
                 heartbeat(); // error count not enough, heart beat again
             }
@@ -214,13 +218,14 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				//写节点 尝试多次次失败后, 需要通知集群
 				logger.debug("heartbeat to backend session error, notify the cluster if needed");
 
-				MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+				MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+				HeartbeatConfig heartbeatConfig = conf.getConfig(ConfigEnum.HEARTBEAT);
 				long curTime = System.currentTimeMillis();
-				if (((curTime - source.getRepBean().getLastSwitchTime()) < conf.getMinSwitchtimeInterval())
-						|| (curTime - source.getRepBean().getLastInitTime()) < conf.getMinSwitchtimeInterval()) {
+				long minSwitchTimeInterval = heartbeatConfig.getHeartbeat().getMinSwitchtimeInterval();
+				if (((curTime - source.getRepBean().getLastSwitchTime()) < minSwitchTimeInterval)
+						|| (curTime - source.getRepBean().getLastInitTime()) < minSwitchTimeInterval) {
 					if (logger.isDebugEnabled()) {
-						logger.warn("the Minimum time interval for switchSource is {} seconds.",
-								conf.getMinSwitchtimeInterval() / 1000L);
+						logger.warn("the Minimum time interval for switchSource is {} seconds.", minSwitchTimeInterval / 1000L);
 					}
 					return;
 				}
@@ -229,21 +234,23 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				if (next == -1) {
 					logger.error("all metaBean in replica is invalid !!!");
 				} else {
-					String repName = source.getRepBean().getName();
-					if (ProxyRuntime.INSTANCE.getProxyConfig().isClusterEnable()) {
-						ReplicaIndexBean bean = new ReplicaIndexBean();
-						Map<String, Integer> map = new HashMap(conf.getRepIndexMap());
+					String repName = source.getRepBean().getReplicaBean().getName();
+					ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
+					ReplicaIndexConfig curRepIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
+					if (clusterConfig.getCluster().isEnable()) {
+						ReplicaIndexConfig newRepIndexConfig = new ReplicaIndexConfig();
+						Map<String, Integer> map = new HashMap(curRepIndexConfig.getReplicaIndexes());
 						map.put(repName, next);
-						bean.setReplicaIndexes(map);
-						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, bean, repName);
+						newRepIndexConfig.setReplicaIndexes(map);
+						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, newRepIndexConfig, repName);
 					} else {
 						// 非集群下直接更新replica-index信息
-						byte configType = ConfigEnum.REPLICA_INDEX.getType();
-						conf.getRepIndexMap().put(repName, next);
-						int curVersion = conf.getConfigVersion(configType);
-						conf.setConfigVersion(configType, curVersion + 1);
-						YamlUtil.archiveAndDump(ConfigEnum.REPLICA_INDEX.getFileName(), curVersion, conf.getConfig(configType));
-						ProxyRuntime.INSTANCE.startSwitchDataSource(source.getRepBean().getName(), next);
+						ConfigEnum configEnum = ConfigEnum.REPLICA_INDEX;
+						curRepIndexConfig.getReplicaIndexes().put(repName, next);
+						int curVersion = conf.getConfigVersion(configEnum);
+						conf.setConfigVersion(configEnum, curVersion + 1);
+						YamlUtil.archiveAndDump(configEnum.getFileName(), curVersion, conf.getConfig(configEnum));
+						ProxyRuntime.INSTANCE.startSwitchDataSource(source.getRepBean().getReplicaBean().getName(), next);
 					}
 				}
 			}
