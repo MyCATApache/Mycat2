@@ -17,7 +17,7 @@ public class LBStrategyConfig {
         strategyMap.put(BalancerStrategyEnum.LEAST_CONNECTION, new LeastConnectionStrategy());
         strategyMap.put(BalancerStrategyEnum.RESPONSE_TIME, new ResponseTimeStrategy());
         strategyMap.put(BalancerStrategyEnum.ROUND_ROBIN, new RoundRobinStrategy());
-        strategyMap.put(BalancerStrategyEnum.WEIGHT_RANDOM, new WeightedRoundRobinStrategy());
+        strategyMap.put(BalancerStrategyEnum.WEIGHT_RANDOM, new WeightedRandomStrategy());
         strategyMap.put(BalancerStrategyEnum.WEIGHT_ROUND_ROBIN, new WeightedRoundRobinStrategy());
     }
 
