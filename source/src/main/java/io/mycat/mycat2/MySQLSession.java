@@ -54,7 +54,6 @@ public class MySQLSession extends AbstractMySQLSession{
 		this.useSharedBuffer(null);
 		this.setCurBufOwner(true); //设置后端连接 获取buffer 控制权
 		this.mycatSession = null;
-		this.setCmdChain(null);
 	}
 	
 	@Override
