@@ -1,24 +1,18 @@
 package io.mycat.mycat2.net;
 
-import io.mycat.mycat2.AbstractMySQLSession;
-import io.mycat.mycat2.Interceptor.InterceptorSystem;
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
-import io.mycat.mycat2.sqlparser.BufferSQLParser;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManager;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
-import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.ProxyBuffer;
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
+import io.mycat.mycat2.AbstractMySQLSession;
+import io.mycat.mycat2.MySQLCommand;
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.ProxyBuffer;
 
 /**
  * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
@@ -52,24 +46,21 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		if (session.curMSQLPackgInf.endPos < buffer.writeIndex) {
 			logger.warn("front contains multi package ");
 		}
-		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType) {
-			BufferSQLParser parser = new BufferSQLParser();
-			int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
-			int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
-			parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
-			BufferSQLContext context = session.sqlContext;
-			AnnotationProcessor.getInstance().parse(context,session);
+	    
+		session.matchMySqlCommand();
 
+		// 如果当前包需要处理，则交给对应方法处理，否则直接透传
+		if(session.getCmdChain().getCurrentSQLCommand().procssSQL(session)){
+			session.getCmdChain().getCurrentSQLCommand().clearFrontResouces(session, false);
 		}
-		session.curSQLCommand = null;
-		session.clearSQLCmdMap();
-		
-		InterceptorSystem.INSTANCE.onFrontReadIntercept(session);
-
 	}
 
 	private void onBackendRead(MySQLSession session) throws IOException {
-		InterceptorSystem.INSTANCE.onBackendReadIntercept(session);
+		// 交给SQLComand去处理
+		MySQLCommand curCmd = session.getCmdChain().getCurrentSQLCommand();
+		if (curCmd.onBackendResponse(session)) {
+			curCmd.clearBackendResouces((MySQLSession) session,false);
+		}
 	}
 
 	/**
@@ -85,8 +76,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		} else {
 			MySQLSession mysqlSession = (MySQLSession) session;
 			try {
-				InterceptorSystem.INSTANCE.onBackendClosedIntercept(mysqlSession, normal);
-			
+				mysqlSession.getMycatSession().getCmdChain().getCurrentSQLCommand().onBackendClosed(mysqlSession, normal);
 			} catch (IOException e) {
 				logger.warn("caught err ", e);
 			}
@@ -109,9 +99,15 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 	public void onWriteFinished(AbstractMySQLSession session) throws IOException {
 		// 交给SQLComand去处理
 		if (session instanceof MycatSession) {
-			InterceptorSystem.INSTANCE.clearFrontWriteFinishedIntercept((MycatSession) session);
+			MycatSession mycatSs = (MycatSession) session;
+			if (mycatSs.getCmdChain().getCurrentSQLCommand().onFrontWriteFinished(mycatSs)) {
+				mycatSs.getCmdChain().getCurrentSQLCommand().clearFrontResouces(mycatSs,false);
+			}
 		} else {
-			InterceptorSystem.INSTANCE.clearBackendResoucesIntercept((MySQLSession) session);
+			MycatSession mycatSs = ((MySQLSession) session).getMycatSession();
+			if (mycatSs.getCmdChain().getCurrentSQLCommand().onBackendWriteFinished((MySQLSession) session)) {
+				mycatSs.getCmdChain().getCurrentSQLCommand().clearBackendResouces((MySQLSession) session,false);
+			}
 		}
 	}
 

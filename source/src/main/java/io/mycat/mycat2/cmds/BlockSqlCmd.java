@@ -26,25 +26,18 @@ public class BlockSqlCmd implements MySQLCommand {
 
 	public static final BlockSqlCmd INSTANCE = new BlockSqlCmd();
 
+	private BlockSqlCmd(){}
 	
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		logger.debug("current buffer is "+session.proxyBuffer);
-		/*
-		 * 
-		 */
-		if(session.sqlContext.getSQLType() == NewSQLContext.ALTER_SQL) {
 			ErrorPacket errPkg = new ErrorPacket();
 			errPkg.packetId = 1;
-			errPkg.errno  = ErrorCode.ERR_NOT_SUPPORTED;
-			errPkg.message = "not support sql show";
+			errPkg.errno  = ErrorCode.ERR_WRONG_USED;
+			errPkg.message = session.getCmdChain().getErrMsg();
 			session.proxyBuffer.reset();
-			session.curSQLCommand = this;
 			session.responseOKOrError(errPkg);
 			logger.debug(errPkg.message);
-			return true;
-		}
 		return false;
 	}
 

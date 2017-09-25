@@ -1,15 +1,22 @@
 package io.mycat.mycat2.sqlannotations;
 
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManager;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
 import io.mycat.proxy.ProxyRuntime;
-
-import java.nio.file.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by jamie on 2017/9/22.
@@ -39,24 +46,35 @@ public class AnnotationProcessor {
         ProxyRuntime.INSTANCE.addBusinessJob(AnnotationProcessor::listen);//todo 检查这个线程池是否妥当
     }
 
-    public void parse(BufferSQLContext context, MycatSession session) {
+    /**
+     * 返回false代表没有匹配的action
+     * @param context
+     * @param session
+     * @param collect
+     * @return
+     */
+    public boolean parse(BufferSQLContext context, MycatSession session, List collect) {
         if (context.getTableCount() != 0) {
             int sqltype = context.getSQLType();
-            if (sqltype < 15 && sqltype > 10) {
-                String schemaName = session.schema.getName();
+            String schemaName = session.schema.getName();
+            int[] intHashTables;
+            if (sqltype < 15 && sqltype > 10) {   //TODO  这里可能有更多的类型
                 int size = context.getTableCount();
-                int[] intHashTables = new int[size];
+                intHashTables = new int[size];
                 for (int j = 0; j < size; j++) {
-                    System.out.println(context.getTableName(j));
                     intHashTables[j] = context.getTableIntHash(j);
                 }
-                try {
-                    dynamicAnnotationManager.get().process(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context).run();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            }else{
+            	intHashTables = new int[0];
+            }
+            try {
+                dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
+            return true;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
+        return false;
     }
 
     private static void init() {
@@ -75,10 +93,18 @@ public class AnnotationProcessor {
         try {
             while (true) {
                 WatchKey key = watcher.take();//todo 线程复用,用 poll比较好?
+                boolean flag = false;
                 for (WatchEvent<?> event: key.pollEvents()) {
+                    String str = event.context().toString();
+                    if ("actions.yaml".equals(str)|| "annotations.yaml".equals(str)) {
+                        flag=true;
+                        break;
+                    }
                 }
-                System.out.println("动态注解更新次数" + count.incrementAndGet());
-                init();
+                if (flag){
+                    System.out.println("动态注解更新次数" + count.incrementAndGet());
+                    init();
+                }
                 boolean valid = key.reset();
                 if (!valid) {
                     break;

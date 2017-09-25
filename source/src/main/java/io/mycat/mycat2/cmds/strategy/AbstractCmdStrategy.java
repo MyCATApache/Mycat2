@@ -1,12 +1,15 @@
 package io.mycat.mycat2.cmds.strategy;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
 
@@ -37,34 +40,42 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	protected abstract void initMySqlCmdHandler();
 	
 	@Override
-	public MySQLCommand getMyCommand(MycatSession session) {
-		MySQLCommand command = null;
+	final public void matchMySqlCommand(MycatSession session) {
+		//初始化命令处理链
+		session.getCmdChain().clear();
+		
+		MySQLCommand  command = null;
 		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
-			command = doGetMySQLCommand(session);
+			/**
+			 * sqlparser
+			 */
+			BufferSQLParser parser = new BufferSQLParser();
+			int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
+			int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
+			parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
+			command = MYSQLCOMMANDMAP.get(session.sqlContext.getSQLType());
 		}else{
-			command = doGetMyCommand(session);
+			command = MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
 		}
-		return command!=null?command:DirectPassthrouhCmd.INSTANCE;
-	}
-	
-	/**
-	 * 模板方法,默认的获取  my 命令处理器的方法，子类可以覆盖
-	 * @param session
-	 * @return
-	 */
-	protected MySQLCommand doGetMyCommand(MycatSession session){
-		return MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
-	}
-	
-	/**
-	 * 模板方法,默认的获取 sql 命令处理器的方法，子类可以覆盖
-	 * @param session
-	 * @return
-	 */
-	protected MySQLCommand doGetMySQLCommand(MycatSession session){
-		parser.parse(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos+MySQLPacket.packetHeaderSize+1,
-				session.curMSQLPackgInf.pkgLength - MySQLPacket.packetHeaderSize - 1, session.sqlContext);
-		System.out.println("getSQLType(0) : "+session.sqlContext.getSQLType(0)+" getSQLType() : "+session.sqlContext.getSQLType());
-		return MYSQLCOMMANDMAP.get(session.sqlContext.getSQLType(0));
+		if(command==null){
+			command = DirectPassthrouhCmd.INSTANCE;
+		}
+
+		/**
+		 * 设置原始处理命令
+		 */
+		session.getCmdChain().setTarget(command);
+		
+		/**
+		 * 处理动态注解
+		 */
+		List<Function<MycatSession, Boolean>> actions = session.getCmdChain().getSqlAnnotations();
+		if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
+			for(Function<MycatSession, Boolean> f:actions){
+				if(!f.apply(session)){
+					break;
+				}
+			}
+		}
 	}
 }

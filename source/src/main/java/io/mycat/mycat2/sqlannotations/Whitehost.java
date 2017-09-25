@@ -6,27 +6,26 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MycatSession;
 
 /**
- * Created by jamie on 2017/9/15.
+ * Created by jamie on 2017/9/24.
  */
-public class CacheResult implements SQLAnnotation {
+public class Whitehost  implements SQLAnnotation{
 	
-	private static final Logger logger = LoggerFactory.getLogger(CacheResult.class);
+	private static final Logger logger = LoggerFactory.getLogger(Whitehost.class);
 
-    public CacheResult() {
-        logger.debug("=>CacheResult 对象本身的构造 初始化");
+    public Whitehost() {
+    	logger.debug("=>Whitehost 对象本身的构造 初始化");
     }
 
     @Override
     public void init(Object args) {
-        logger.debug("=>CacheResult 动态注解初始化");
+    	logger.debug("=>Whitehost 动态注解初始化");
     }
 
     @Override
     public Boolean apply(MycatSession context) {
-    	logger.debug("=>CacheResult");
+    	logger.debug("========================> Whitehost ");
         return Boolean.TRUE;
     }
-
     @Override
     public String getMethod() {
         return null;

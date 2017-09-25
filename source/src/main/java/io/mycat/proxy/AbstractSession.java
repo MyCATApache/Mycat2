@@ -130,7 +130,7 @@ public abstract class AbstractSession implements Session {
 		}
 
 		int readed = channel.read(buffer);
-		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
+//		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
 			throw new ClosedChannelException();
@@ -165,7 +165,7 @@ public abstract class AbstractSession implements Session {
 		int writed = channel.write(buffer);
 		proxyBuffer.readMark += writed; // 记录本次磁轭如到 Channel 中的数据
 		if (!buffer.hasRemaining()) {
-			logger.debug("writeToChannel write  {} bytes ,curChannel is {}", writed,this);
+//			logger.debug("writeToChannel write  {} bytes ,curChannel is {}", writed,this);
 			// buffer 中需要透传的数据全部写入到 channel中后,会进入到当前分支.这时 readIndex == readLimit
 			if (proxyBuffer.readMark != proxyBuffer.readIndex) {
 				logger.error("writeToChannel has finished but readIndex != readLimit, please fix it !!!");
@@ -203,7 +203,6 @@ public abstract class AbstractSession implements Session {
 	 * @return ProxyBuffer
 	 */
 	public ProxyBuffer allocNewProxyBuffer() {
-		logger.info("alloc new ProxyBuffer ");
 		return new ProxyBuffer(bufPool.allocByteBuffer());
 	}
 
@@ -213,8 +212,6 @@ public abstract class AbstractSession implements Session {
 	 * @param curFrontBuffer
 	 */
 	public void recycleAllocedBuffer(ProxyBuffer curFrontBuffer) {
-		logger.info("recycle alloced ProxyBuffer ");
-
 		if (curFrontBuffer != null) {
 			this.bufPool.recycleBuf(curFrontBuffer.getBuffer());
 		}

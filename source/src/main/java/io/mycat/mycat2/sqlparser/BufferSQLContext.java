@@ -11,15 +11,15 @@ import java.util.Arrays;
  */
 public class BufferSQLContext {
     //DDL
-    public static final byte CREATE_SQL = 1;
-    public static final byte ALTER_SQL = 2;
-    public static final byte DROP_SQL = 3;
+    public static final byte CREATE_SQL = 1;  //TODO 进一步细化。 区分 
+    public static final byte ALTER_SQL = 2;   //TODO 进一步细化，区分
+    public static final byte DROP_SQL = 3;    //TODO 进一步细化，区分
     public static final byte TRUNCATE_SQL = 4;
     //    public static final byte COMMENT_SQL = 5;
     public static final byte RENAME_SQL = 6;
     public static final byte USE_SQL = 7;
-    public static final byte SHOW_SQL = 8;
-    public static final byte SET_SQL = 9;
+    public static final byte SHOW_SQL = 8;    //TODO 进一步细化。区分
+    public static final byte SET_SQL = 9;     //TODO 进一步细化。区分
     public static final byte PARTITION_SQL = 10;
 
     //DML

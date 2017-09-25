@@ -1,27 +1,39 @@
 package io.mycat.mycat2.sqlannotations;
 
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Map;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.interceptor.SQLCachCmd;
 
-/**
- * Created by jamie on 2017/9/15.
- */
-public class SQLCach implements SQLAnnotation<BufferSQLContext>{
+public class SQLCach implements SQLAnnotation {
 
-    Map<String,String> args;
-    @Override
-    public void init(Map<String,String> args) {
-        this.args=args;
-        System.out.println("=>SQLCach 动态注解初始化");
-        if (args != null)
-        args.entrySet().stream().forEach((c)->System.out.format("param:%s,value:%s\n",c.getKey(),c.getValue()));
-    }
+	public static final SQLCach INSTANCE = new SQLCach();
+	
+	private static final Logger logger = LoggerFactory.getLogger(SQLCach.class);
+	
+	/**
+	 * 组装 mysqlCommand
+	 */
+	@Override
+	public Boolean apply(MycatSession session) {
+		session.getCmdChain().addCmdChain(this,SQLCachCmd.INSTANCE);
+		return Boolean.TRUE;
+	}
 
-    @Override
-    public BufferSQLContext apply(BufferSQLContext context) {
-        if (isDebug)
-        System.out.println("=>SQLCach 动态注解被调用"+args.toString());
-        return context;
-    }
+	@Override
+	public void init(Object args) {
+
+	}
+
+	@Override
+	public String getMethod() {
+		return null;
+	}
+
+	@Override
+	public void setMethod(String method) {
+
+	}
+
 }
