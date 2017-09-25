@@ -13,10 +13,8 @@ import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.advice.Invocation;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
-
 import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
@@ -47,9 +45,6 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private MySQLSession curBackend;
 
-	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
-	public Invocation curSQLCommand;
-
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 
 	/**
@@ -60,11 +55,6 @@ public class MycatSession extends AbstractMySQLSession {
 	private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
-	
-	{
-		curSQLCommand =  new DefaultInvocation();
-		curSQLCommand.setCommand(DirectPassthrouhCmd.INSTANCE);
-	}
 	
 	static{
 		masterSqlList.add(NewSQLContext.INSERT_SQL);
@@ -88,8 +78,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @return
 	 */
 	public void matchMySqlCommand(){
-		switch(schema.type){
-
+		switch(schema.schemaType){
 			case DB_IN_ONE_SERVER:
 				DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 				break;
@@ -192,6 +181,7 @@ public class MycatSession extends AbstractMySQLSession {
 //		backend.proxyBuffer.reset();
 		putbackendMap(backend);
 		backend.setMycatSession(this);
+		backend.setCmdChain(getCmdChain());
 		backend.useSharedBuffer(this.proxyBuffer);
 		backend.setCurNIOHandler(this.getCurNIOHandler());
 	}
@@ -528,5 +518,5 @@ public class MycatSession extends AbstractMySQLSession {
 		}else{
 			return false;
 		}
-	}	
+	}
 }

@@ -179,7 +179,9 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         	if (logger.isDebugEnabled()) {
     			logger.debug("Use front sessionMap cached backend connections.{}",mysqlSession);
     		}
-            mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
+        	if(mysqlSession.getMycatSession()!=null){
+        		mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
+        	}
             callback.finished(mysqlSession, null, true, null);
             return;
         }

@@ -1,18 +1,22 @@
 package io.mycat.mycat2.sqlannotations;
 
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManager;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
 import io.mycat.proxy.ProxyRuntime;
-
-import java.nio.file.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 
 /**
  * Created by jamie on 2017/9/22.
@@ -52,20 +56,22 @@ public class AnnotationProcessor {
     public boolean parse(BufferSQLContext context, MycatSession session, List collect) {
         if (context.getTableCount() != 0) {
             int sqltype = context.getSQLType();
-            if (sqltype < 15 && sqltype > 10) {
-                String schemaName = session.schema.getName();
+            String schemaName = session.schema.getName();
+            int[] intHashTables;
+            if (sqltype < 15 && sqltype > 10) {   //TODO  这里可能有更多的类型
                 int size = context.getTableCount();
-                int[] intHashTables = new int[size];
+                intHashTables = new int[size];
                 for (int j = 0; j < size; j++) {
-                    System.out.println(context.getTableName(j));
                     intHashTables[j] = context.getTableIntHash(j);
                 }
-                try {
-                    dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
-                return true;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+            }else{
+            	intHashTables = new int[0];
+            }
+            try {
+                dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
+            return true;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
         return false;

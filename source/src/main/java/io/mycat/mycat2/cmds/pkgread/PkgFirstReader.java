@@ -73,7 +73,7 @@ public class PkgFirstReader implements PkgProcess {
 			}
 			// 如果当前为特殊的load data包，则直接进行切换至load data的逻辑处理
 			else if (session.curMSQLPackgInf.pkgType == MySQLPacket.LOAD_DATA_PACKET) {
-				session.getMycatSession().curSQLCommand.setCommand(LoadDataCommand.INSTANCE);
+				session.getMycatSession().getCmdChain().setTarget(LoadDataCommand.INSTANCE);
 				// 将前端的包检查关闭
 				session.getMycatSession().getSessionAttrMap().put(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey(), true);
 

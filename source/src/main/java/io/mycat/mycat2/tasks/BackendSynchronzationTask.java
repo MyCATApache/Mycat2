@@ -31,7 +31,6 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
     }
 
     public void syncState(MycatSession mycatSession,MySQLSession mySQLSession) throws IOException {
-    	logger.debug("synchronzation state task begin ");
         ProxyBuffer proxyBuf = mySQLSession.proxyBuffer;
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
@@ -75,7 +74,6 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
 				session.close(false, e.getMessage());
 				return;
 			} catch (Exception e) {
-				logger.debug("synchronzation state task end ");
 				String errmsg = "backend state sync Error. " + e.getMessage();
 				errPkg = new ErrorPacket();
 				errPkg.packetId = 1;
@@ -87,7 +85,6 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
 				
 			}
         }else{
-        	logger.debug("synchronzation state task end ");
         	finished(true);
         }
     }
