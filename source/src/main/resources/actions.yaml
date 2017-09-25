@@ -12,5 +12,5 @@ actions:
       - truncateAllow: io.mycat.mycat2.sqlannotations.blackList.TruncateAllow
       - insertAllow: io.mycat.mycat2.sqlannotations.blackList.InsertAllow
       - updateAllow: io.mycat.mycat2.sqlannotations.blackList.UpdateAllow
-      - replaceAllow: io.mycat.mycat2.sqlannotations.blackList.PeplaceAllow
+      - replaceAllow: io.mycat.mycat2.sqlannotations.blackList.ReplaceAllow
       - createTableAllow: io.mycat.mycat2.sqlannotations.blackList.CreateTableAllow
