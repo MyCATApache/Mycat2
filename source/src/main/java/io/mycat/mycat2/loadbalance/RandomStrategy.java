@@ -22,7 +22,6 @@ public class RandomStrategy implements LoadBalanceStrategy {
         String myNodeId = proxyRuntime.getMyCLuster().getMyNodeId();
         List<ClusterNode> nodeList = allNode.stream().filter(clusterNode ->
                                                                      clusterNode.getState() != null &&
-                                                                     !myNodeId.equals(clusterNode.id) &&
                                                                      NodeState.Online == clusterNode.getState()
         ).collect(Collectors.toList());
         if (nodeList.size() == 1) {

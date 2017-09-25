@@ -27,7 +27,6 @@ import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.loadbalance.LBSession;
 import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
-import io.mycat.mycat2.loadbalance.LoadChecker;
 import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
@@ -63,9 +62,6 @@ public class ProxyRuntime {
 
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
-	//本地负载状态检查
-	private LoadChecker localLoadChecker;
-	private LoadBalanceStrategy loadBalanceStrategy;
 
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
@@ -322,21 +318,6 @@ public class ProxyRuntime {
 		this.acceptor = acceptor;
 	}
 
-	public LoadChecker getLocalLoadChecker() {
-		return localLoadChecker;
-	}
-
-	public void setLocalLoadChecker(LoadChecker localLoadChecker) {
-		this.localLoadChecker = localLoadChecker;
-	}
-
-	public LoadBalanceStrategy getLoadBalanceStrategy() {
-		return loadBalanceStrategy;
-	}
-
-	public void setLoadBalanceStrategy(LoadBalanceStrategy loadBalanceStrategy) {
-		this.loadBalanceStrategy = loadBalanceStrategy;
-	}
 
 	public SessionManager<ProxySession> getProxySessionSessionManager() {
 		return proxySessionSessionManager;
