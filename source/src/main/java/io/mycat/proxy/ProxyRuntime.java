@@ -29,6 +29,7 @@ import io.mycat.mycat2.loadbalance.LBSession;
 import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
 import io.mycat.mycat2.loadbalance.LoadChecker;
 import io.mycat.mycat2.loadbalance.ProxySession;
+import io.mycat.mycat2.sqlparser.MatchMethodGenerator;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
@@ -98,6 +99,7 @@ public class ProxyRuntime {
 		timerExecutor = ExecutorUtil.create("Timer", heartbeatConfig.getHeartbeat().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
+		MatchMethodGenerator.initShrinkCharTbl();
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){

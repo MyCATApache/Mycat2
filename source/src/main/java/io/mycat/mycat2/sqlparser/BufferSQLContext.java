@@ -62,6 +62,8 @@ public class BufferSQLContext {
     public static final byte XA_START = 40;
     public static final byte XA_BEGIN = 41;
     public static final byte XA_END = 42;
+    
+    public static final byte MYCAT_SWITCH_REPL = 43;
 
     //ANNOTATION TYPE
     public static final byte ANNOTATION_BALANCE = 1;
@@ -106,7 +108,7 @@ public class BufferSQLContext {
         sqlInfoArray = new short[512];
         annotationValue = new long[16];
         annotationCondition=new int[64];
-        myCmdValue = new HashArray(10);
+        myCmdValue = new HashArray(256);
     }
 
     public void setCurBuffer(ByteArrayInterface curBuffer) {
@@ -130,6 +132,7 @@ public class BufferSQLContext {
         preHashArrayPos = 0;
         preTableResultPos = 0;
         hashArrayRealSQLOffset = 0;
+        myCmdValue.init();
     }
 
     public void setTblName(int hashArrayPos) {

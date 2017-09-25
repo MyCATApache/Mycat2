@@ -89,7 +89,7 @@ public class IntTokenHash {
     public static final int SELECT = 0x02a10006;
     public static final int SERVER = 0x31fa0006;
     public static final int SCHEMA = 0x0c490006;
-    public static final int SWITCH = 0xe0500006;
+    public static final int SWITCH = 0x85dfe050;
     public static final int UPDATE = 0x62840006;
     public static final int BACKEND = 0x9c0b0007;
     public static final int BALANCE = 0x8d070007;
@@ -129,5 +129,9 @@ public class IntTokenHash {
     public static final int RECOVER = -405012473;
     public static final int  REPLICA  =-879493113;
     public static final int CACHE_RESULT = 2073690123;
+    public static final int REPL = 0x8f6b3202;
+    
+    public static final int REPL_NAME = 0x3ee4615d;
+    public static final int REPL_METABEAN_INDEX = 0xf079a7b4;
 
 }

@@ -1,13 +1,15 @@
 package io.mycat.mycat2.sqlparser.byteArrayInterface;
 
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
-import io.mycat.mycat2.sqlparser.IntTokenHash;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.TokenHash;
+import java.util.function.Supplier;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Supplier;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import io.mycat.mycat2.sqlparser.IntTokenHash;
+import io.mycat.mycat2.sqlparser.TokenHash;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.proxy.ProxyBuffer;
 
 /**
  * Created by jamie on 2017/8/31.
@@ -26,6 +28,39 @@ public class TokenizerUtil {
         }
         return value;
     }
+    
+    /**
+     * 获取数字
+     * @param pos
+     * @param hashArray
+     * @param buffer
+     * @return
+     */
+    public static int pickNumber(int pos, HashArray hashArray, ProxyBuffer buffer) {
+        int value = 0;
+        int start = hashArray.getPos(pos);
+        int end = start + hashArray.getSize(pos);
+        for (int i = start; i < end; i++) {
+            int l = buffer.getByte(i);
+            int r = (l - '0');
+            value = (value * 10) + (r);
+        }
+        return value;
+    }
+    
+    /**
+     * 获取bytes 数组
+     * @param pos
+     * @param hashArray
+     * @param buffer
+     * @return
+     */
+    public static byte[] pickBytes(int pos,HashArray hashArray,ProxyBuffer buffer){
+    	int start = hashArray.getPos(pos);
+    	int length = hashArray.getSize(pos);
+        return buffer.getBytes(start, length);
+    }
+    
     public static   boolean isAlias(int pos, int type, HashArray hashArray) { //需要优化成数组判断
         switch (type) {
             case IntTokenHash.WHERE:

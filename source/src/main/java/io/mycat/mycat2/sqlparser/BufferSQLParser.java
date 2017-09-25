@@ -4,6 +4,7 @@ import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.*;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.mycat.MYCATSQLParser;
 
 import java.nio.ByteBuffer;
 import java.util.stream.IntStream;
@@ -575,6 +576,11 @@ public class BufferSQLParser {
                     TokenizerUtil.debug(pos,context);
                     pos = DCLSQLParser.pickRevoke(++pos, arrayCount, context, hashArray,sql);
                     break;
+                }
+                case IntTokenHash.MYCAT:{
+                	TokenizerUtil.debug(pos,context);
+                	pos = MYCATSQLParser.pickMycat(++pos, arrayCount, context, hashArray, sql);
+                	break;
                 }
                 default:
                   //  debugError(pos, context);
