@@ -31,7 +31,7 @@ public class LBNIOHandler implements NIOHandler<LBSession> {
         LoadBalanceStrategy loadBalanceStrategy =
                 LBStrategyConfig.getStrategy(balancerConfig.getBalancer().getStrategy());
         ClusterNode clusterNode = loadBalanceStrategy.getNode(cluster.allNodes.values(), null);
-        connectToRemoteMycat(clusterNode.ip, 8066, runtime.getAcceptor().getSelector(), session);
+        connectToRemoteMycat(clusterNode.ip, clusterNode.proxyPort, runtime.getAcceptor().getSelector(), session);
     }
 
     private void connectToRemoteMycat(String ip, int port, Selector selector, LBSession lbSession) throws IOException {
