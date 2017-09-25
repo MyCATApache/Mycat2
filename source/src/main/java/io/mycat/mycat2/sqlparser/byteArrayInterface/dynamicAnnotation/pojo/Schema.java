@@ -3,6 +3,7 @@
   */
 package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.pojo;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jamie on 2017/9/10.
@@ -18,6 +19,7 @@ public class Schema {
          return matches;
      }
 
+    public List<Map<String, Map<String,String>>> blacklist;
     public void setName(String name) {
          this.name = name;
      }
@@ -25,4 +27,11 @@ public class Schema {
          return name;
      }
 
+    public List<Map<String, Map<String,String>>> getBlacklist() {
+        return blacklist;
+    }
+
+    public void setBlacklist(List<Map<String, Map<String,String>>> blacklist) {
+        this.blacklist = blacklist;
+    }
 }

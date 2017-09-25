@@ -13,7 +13,7 @@ import io.mycat.mycat2.cmds.sqlCmds.SqlComStartCmd;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mysql.packet.MySQLPacket;
 
-public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
+public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{	
 	
 	public static final DBInOneServerCmdStrategy INSTANCE = new DBInOneServerCmdStrategy();
 

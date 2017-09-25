@@ -1,28 +1,61 @@
 package io.mycat.mycat2.sqlannotations;
 
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
-
+import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.DefaultInvocation;
 
 /**
- * Created by jamie on 2017/9/15.
+ * SQL 监控需要做成异步
+ * @author yanjunli
+ *
  */
-public class MonintorSQL implements SQLAnnotation<BufferSQLContext>{
-    Map<String,String> args;
-    @Override
-    public void init(Map<String,String> args) {
-        this.args=args;
-        System.out.println("=>MonintorSQL 动态注解初始化");
-        if (args != null)
-        args.entrySet().stream().forEach((c)->System.out.format("param:%s,value:%s\n",c.getKey(),c.getValue()));
+public class MonintorSQL extends DefaultInvocation implements SQLAnnotation {
+	
+	public static final MonintorSQL INSTANCE = new MonintorSQL();
+	
+	private static final Logger logger = LoggerFactory.getLogger(MonintorSQL.class);
 
+	/**
+	 * 组装 mysqlCommand
+	 */
+	@Override
+	public Boolean apply(MycatSession session) {
+//		setCommand(session.curSQLCommand);
+//		session.curSQLCommand = this;
+		return Boolean.TRUE;
+	}
+	
+	@Override
+	public boolean procssSQL(MycatSession session) throws IOException {
+		logger.debug("========================> MonintorSQL {}",session.sqlContext.getRealSQL(0));
+		return super.procssSQL(session);
+	}
+	
+	@Override
+	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
+		logger.debug("========================> MonintorSQL onFrontWriteFinished ");
+		return super.onFrontWriteFinished(session);
+	}
 
-    }
+	@Override
+	public void init(Object args) {
 
-    @Override
-    public BufferSQLContext apply(BufferSQLContext context) {
-        if (isDebug)
-        System.out.println("=>MonintorSQL 动态注解被调用"+args.toString());
-        return context;
-    }
+	}
+
+	@Override
+	public String getMethod() {
+		return null;
+	}
+
+	@Override
+	public void setMethod(String method) {
+
+	}
+
 }

@@ -1,26 +1,28 @@
 package io.mycat.mycat2.sqlannotations;
 
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
+
+import java.util.Map;
 
 /**
- * Created by jamie on 2017/9/15.
+ * Created by jamie on 2017/9/24.
  */
-public class CacheResult implements SQLAnnotation {
+public class TableCheck implements SQLAnnotation{
 
-    public CacheResult() {
+    public TableCheck() {
         if (isDebug)
-        System.out.println("=>CacheResult 对象本身的构造 初始化");
+            System.out.println("=>TableCheck 对象本身的构造 初始化");
     }
 
     @Override
     public void init(Object args) {
-        System.out.println("=>CacheResult 动态注解初始化");
-
+        System.out.println("=>TableCheck 动态注解初始化");
     }
 
     @Override
     public Boolean apply(MycatSession context) {
-        System.out.println("=>CacheResult");
+       System.out.println("========================> TableCheck ");
         return false;
     }
 

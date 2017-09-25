@@ -1,27 +1,57 @@
 package io.mycat.mycat2.sqlannotations;
 
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
-
+import java.io.IOException;
 import java.util.Map;
+import java.util.function.Function;
 
-/**
- * Created by jamie on 2017/9/15.
- */
-public class SQLCach implements SQLAnnotation<BufferSQLContext>{
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-    Map<String,String> args;
-    @Override
-    public void init(Map<String,String> args) {
-        this.args=args;
-        System.out.println("=>SQLCach 动态注解初始化");
-        if (args != null)
-        args.entrySet().stream().forEach((c)->System.out.format("param:%s,value:%s\n",c.getKey(),c.getValue()));
-    }
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.DefaultInvocation;
 
-    @Override
-    public BufferSQLContext apply(BufferSQLContext context) {
-        if (isDebug)
-        System.out.println("=>SQLCach 动态注解被调用"+args.toString());
-        return context;
-    }
+public class SQLCach extends DefaultInvocation implements SQLAnnotation {
+
+	public static final SQLCach INSTANCE = new SQLCach();
+	
+	private static final Logger logger = LoggerFactory.getLogger(SQLCach.class);
+	
+	/**
+	 * 组装 mysqlCommand
+	 */
+	@Override
+	public Boolean apply(MycatSession session) {
+		setCommand(session.curSQLCommand);
+		session.curSQLCommand = this;
+		logger.debug("========================> SQLCach ");
+		return Boolean.TRUE;
+	}
+	
+	@Override
+	public boolean procssSQL(MycatSession session) throws IOException {
+		logger.debug("========================> SQLCach {}",session.sqlContext.getRealSQL(0));
+		return super.procssSQL(session);
+	}
+	
+	@Override
+	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
+		logger.debug("========================> SQLCach onFrontWriteFinished ");
+		return super.onFrontWriteFinished(session);
+	}
+
+	@Override
+	public void init(Object args) {
+
+	}
+
+	@Override
+	public String getMethod() {
+		return null;
+	}
+
+	@Override
+	public void setMethod(String method) {
+
+	}
+
 }

@@ -8,8 +8,11 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLTy
 import io.mycat.proxy.ProxyRuntime;
 
 import java.nio.file.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * Created by jamie on 2017/9/22.
@@ -39,7 +42,14 @@ public class AnnotationProcessor {
         ProxyRuntime.INSTANCE.addBusinessJob(AnnotationProcessor::listen);//todo 检查这个线程池是否妥当
     }
 
-    public void parse(BufferSQLContext context, MycatSession session) {
+    /**
+     * 返回false代表没有匹配的action
+     * @param context
+     * @param session
+     * @param collect
+     * @return
+     */
+    public boolean parse(BufferSQLContext context, MycatSession session, List collect) {
         if (context.getTableCount() != 0) {
             int sqltype = context.getSQLType();
             if (sqltype < 15 && sqltype > 10) {
@@ -51,12 +61,14 @@ public class AnnotationProcessor {
                     intHashTables[j] = context.getTableIntHash(j);
                 }
                 try {
-                    dynamicAnnotationManager.get().process(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context).run();
+                    dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
+                return true;
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }
+        return false;
     }
 
     private static void init() {
@@ -75,10 +87,18 @@ public class AnnotationProcessor {
         try {
             while (true) {
                 WatchKey key = watcher.take();//todo 线程复用,用 poll比较好?
+                boolean flag = false;
                 for (WatchEvent<?> event: key.pollEvents()) {
+                    String str = event.context().toString();
+                    if ("actions.yaml".equals(str)|| "annotations.yaml".equals(str)) {
+                        flag=true;
+                        break;
+                    }
                 }
-                System.out.println("动态注解更新次数" + count.incrementAndGet());
-                init();
+                if (flag){
+                    System.out.println("动态注解更新次数" + count.incrementAndGet());
+                    init();
+                }
                 boolean valid = key.reset();
                 if (!valid) {
                     break;

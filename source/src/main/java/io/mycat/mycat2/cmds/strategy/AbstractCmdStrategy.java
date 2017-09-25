@@ -1,14 +1,19 @@
 package io.mycat.mycat2.cmds.strategy;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.advice.impl.intercept.SelelctAllow;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 public abstract class AbstractCmdStrategy implements CmdStrategy {
 	
@@ -37,14 +42,12 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	protected abstract void initMySqlCmdHandler();
 	
 	@Override
-	public MySQLCommand getMyCommand(MycatSession session) {
-		MySQLCommand command = null;
+	public void matchMySqlCommand(MycatSession session) {
 		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
-			command = doGetMySQLCommand(session);
+			preMySQLCommand(session);
 		}else{
-			command = doGetMyCommand(session);
+			preMyCommand(session);
 		}
-		return command!=null?command:DirectPassthrouhCmd.INSTANCE;
 	}
 	
 	/**
@@ -52,8 +55,12 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * @param session
 	 * @return
 	 */
-	protected MySQLCommand doGetMyCommand(MycatSession session){
-		return MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
+	protected void preMyCommand(MycatSession session){
+		MySQLCommand  command = MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
+		if(command==null){
+			command = DirectPassthrouhCmd.INSTANCE;
+		}
+		session.curSQLCommand.setCommand(command);
 	}
 	
 	/**
@@ -61,10 +68,31 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * @param session
 	 * @return
 	 */
-	protected MySQLCommand doGetMySQLCommand(MycatSession session){
-		parser.parse(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos+MySQLPacket.packetHeaderSize+1,
-				session.curMSQLPackgInf.pkgLength - MySQLPacket.packetHeaderSize - 1, session.sqlContext);
-		System.out.println("getSQLType(0) : "+session.sqlContext.getSQLType(0)+" getSQLType() : "+session.sqlContext.getSQLType());
-		return MYSQLCOMMANDMAP.get(session.sqlContext.getSQLType(0));
+	protected void preMySQLCommand(MycatSession session){
+		
+		int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
+		int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
+		parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
+		
+		MySQLCommand  command = MYSQLCOMMANDMAP.get(session.sqlContext.getSQLType());
+		if(command==null){
+			command = DirectPassthrouhCmd.INSTANCE;
+		}
+		session.curSQLCommand.setCommand(command);
+		List<Function<MycatSession, Boolean>> actions = new ArrayList<>();
+		if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
+			//测试 模拟 动态注解获取到的 actions
+//		actions.add(MonintorSQL.INSTANCE);
+//		actions.add(SQLCach.INSTANCE);
+//		actions.add(SelelctAllow.INSTANCE);
+			//模拟命令组装过程
+			System.out.println(actions.size());
+			actions.forEach((i)->{
+			SQLAnnotation annotation=	(SQLAnnotation)i;
+				System.out.println(annotation.toString());
+
+			});
+			actions.stream().forEach(f->{f.apply(session);});
+		}
 	}
 }
