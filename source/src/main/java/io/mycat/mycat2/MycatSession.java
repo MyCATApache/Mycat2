@@ -202,6 +202,7 @@ public class MycatSession extends AbstractMySQLSession {
 		backend.setMycatSession(this);
 		backend.useSharedBuffer(this.proxyBuffer);
 		backend.setCurNIOHandler(this.getCurNIOHandler());
+		backend.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
 	}
 
 	/**
@@ -212,6 +213,11 @@ public class MycatSession extends AbstractMySQLSession {
 		backendMap.forEach((key, value) -> {
 			if (value != null) {
 				value.forEach(mySQLSession -> {
+					/*需要将前端的mycatSession设置为空 不然还会被使用*/
+					MycatSession mycatSession = mySQLSession.getMycatSession();
+					if(null != mycatSession) {
+						mycatSession.curBackend = null;
+					}
 					mySQLSession.unbindMycatSession();
 					reactor.addMySQLSession(mySQLSession.getMySQLMetaBean(), mySQLSession);
 				});
@@ -226,11 +232,14 @@ public class MycatSession extends AbstractMySQLSession {
 			mysqlSession.unbindMycatSession();
 			list.remove(mysqlSession);
 		}
+		clearBeckend(mysqlSession);
+	}
+	
+	public void clearBeckend(MySQLSession mysqlSession){
 		if(curBackend!=null&&curBackend.equals(mysqlSession)){
 			curBackend = null;
 		}
 	}
-	
 	/**
 	 * 解除绑定当前 metaBean 所有的后端连接
 	 * @param mySQLMetaBean

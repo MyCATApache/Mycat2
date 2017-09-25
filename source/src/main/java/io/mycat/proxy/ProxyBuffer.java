@@ -1,6 +1,5 @@
 package io.mycat.proxy;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 
 import org.slf4j.Logger;
@@ -414,7 +413,7 @@ public class ProxyBuffer {
 	 *            值
 	 * @return 长度
 	 */
-	public int getLenencLength(int lenenc) {
+	public static int getLenencLength(int lenenc) {
 		if (lenenc < 251) {
 			return 1;
 		} else if (lenenc >= 251 && lenenc < (1 << 16)) {
@@ -426,6 +425,7 @@ public class ProxyBuffer {
 		}
 	}
 
+	
 	public long getLenencInt(int index) {
 		long len = getInt(index, 1) & 0xff;
 		if (len == 0xfc) {

@@ -9,6 +9,7 @@ import java.util.List;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
 import io.mycat.mycat2.cmds.pkgread.PkgProcess;
+import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.BufferPool;
 
 /**
@@ -53,7 +54,12 @@ public class MySQLSession extends AbstractMySQLSession{
 	public void unbindMycatSession() {
 		this.useSharedBuffer(null);
 		this.setCurBufOwner(true); //设置后端连接 获取buffer 控制权
+		if(this.mycatSession != null) {
+			this.mycatSession.clearBeckend(this);
+		}
 		this.mycatSession = null;
+
+		this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
 	}
 	
 	@Override
@@ -90,7 +96,7 @@ public class MySQLSession extends AbstractMySQLSession{
 
 	@Override
 	public String toString() {
-		return "MySQLSession [database=" + database + ", ip=" + mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort() + "]";
+		return "MySQLSession [database=" + database + ", ip=" + mysqlMetaBean.getDsMetaBean().getIp()  + ",port="+ mysqlMetaBean.getDsMetaBean().getPort()+ ",hashCode="+hashCode()+"]";
 	}
 
 }
