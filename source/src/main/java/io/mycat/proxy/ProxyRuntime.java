@@ -13,8 +13,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
-import io.mycat.mycat2.beans.conf.HeartbeatConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,15 +23,22 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.conf.ClusterConfig;
+import io.mycat.mycat2.beans.conf.HeartbeatConfig;
+import io.mycat.mycat2.beans.conf.ReplicaBean.RepTypeEnum;
+import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.loadbalance.LBSession;
 import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
 import io.mycat.mycat2.loadbalance.ProxySession;
+import io.mycat.mycat2.sqlparser.MatchMethodGenerator;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
+import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
 import io.mycat.util.TimeUtil;
+import io.mycat.util.YamlUtil;
 
 public class ProxyRuntime {
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
@@ -94,6 +101,7 @@ public class ProxyRuntime {
 		timerExecutor = ExecutorUtil.create("Timer", heartbeatConfig.getHeartbeat().getTimerExecutor());
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
+		MatchMethodGenerator.initShrinkCharTbl();
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
@@ -128,24 +136,59 @@ public class ProxyRuntime {
 	public void addDelayedJob(Runnable job, int delayedSeconds) {
 		schedulerService.schedule(job, delayedSeconds, TimeUnit.SECONDS);
 	}
+	
+	/**
+	 * 准备切换
+	 * @param <T>
+	 * @param <R>
+	 * @param replBean
+	 * @param writeIndex
+	 */
+	public void prepareSwitchDataSource(String replBean,Integer writeIndex,boolean sync){
+		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
+		ReplicaIndexConfig curRepIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
+		if (clusterConfig.getCluster().isEnable()) {
+			ReplicaIndexConfig newRepIndexConfig = new ReplicaIndexConfig();
+			Map<String, Integer> map = new HashMap(curRepIndexConfig.getReplicaIndexes());
+			map.put(replBean, writeIndex);
+			newRepIndexConfig.setReplicaIndexes(map);
+			ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, newRepIndexConfig, replBean);
+		} else {
+			// 非集群下直接更新replica-index信息
+			ConfigEnum configEnum = ConfigEnum.REPLICA_INDEX;
+			curRepIndexConfig.getReplicaIndexes().put(replBean, writeIndex);
+			int curVersion = conf.getConfigVersion(configEnum);
+			conf.setConfigVersion(configEnum, curVersion + 1);
+			YamlUtil.archiveAndDump(configEnum.getFileName(), curVersion, conf.getConfig(configEnum));
+			startSwitchDataSource(replBean, writeIndex,sync);
+		}
+	}
 
 	/**
 	 * 切换 metaBean 名称
 	 */
-	public void startSwitchDataSource(String replBean,Integer writeIndex){
+	public void startSwitchDataSource(String replBean,Integer writeIndex,boolean sync){
+
 		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
 		
-		if (repBean != null){
-			addBusinessJob(() -> {
-				repBean.setSwitchResult(false);
-				repBean.switchSource(writeIndex,maxdataSourceInitTime);
+		Runnable runnable = () -> {
+			repBean.setSwitchResult(false);
+			repBean.switchSource(writeIndex,maxdataSourceInitTime);
 
-				if (repBean.getSwitchResult().get()){
-					logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
-				} else {
-					logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
-				}
-			});
+			if (repBean.getSwitchResult().get()){
+				logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+			} else {
+				logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+			}
+		};
+		
+		if (repBean != null){
+			if(sync){
+				addBusinessJob(runnable);
+			}else{
+				runnable.run();
+			}
 		}	
 	}
 	
