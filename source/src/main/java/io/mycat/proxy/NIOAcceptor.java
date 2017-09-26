@@ -13,11 +13,14 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import io.mycat.mycat2.beans.conf.BalancerConfig;
 import io.mycat.mycat2.loadbalance.LBSession;
 import io.mycat.mycat2.loadbalance.LBSessionManager;
-import io.mycat.mycat2.loadbalance.LoadChecker;
+import io.mycat.mycat2.loadbalance.LBStrategyConfig;
+import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
 import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.mycat2.loadbalance.ProxySessionManager;
+import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.MyCluster.ClusterState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,27 +100,30 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		} else if (serverType == ServerType.LOAD_BALANCER &&
 				   proxyRuntime.getMyCLuster() != null &&
                    proxyRuntime.getMyCLuster().getClusterState() == ClusterState.Clustered) {
-            LoadChecker localLoadChecker = proxyRuntime.getLocalLoadChecker();
-            //本地未超载,派发到本地
-            if (!localLoadChecker.isOverLoad(null)) {
-                logger.debug("load balancer accepted. Dispatch to local");
-                accept(reactorEnv, socketChannel, serverType);
-            } else {
-                logger.debug("load balancer accepted. Dispatch to remote");
-                ProxyReactorThread<?> proxyReactor = getProxyReactor(reactorEnv);
-                proxyReactor.addNIOJob(() -> {
-                    try {
-                        LBSession lbSession = ProxyRuntime.INSTANCE.getLbSessionSessionManager()
-                                                                   .createSession(null, proxyReactor.bufPool,
-                                                                                  proxyReactor.getSelector(),
-                                                                                  socketChannel, false);
-                        lbSession.getCurNIOHandler().onConnect(curKey, lbSession, true, null);
-                    } catch (IOException e) {
-                        logger.warn("load balancer accepted error:", e);
-                    }
-                });
-            }
-        } else {
+			BalancerConfig balancerConfig = proxyRuntime.getConfig().getConfig(ConfigEnum.BALANCER);
+			LoadBalanceStrategy loadBalanceStrategy =
+					LBStrategyConfig.getStrategy(balancerConfig.getBalancer().getStrategy());
+			ClusterNode theNode = loadBalanceStrategy.getNode(proxyRuntime.getMyCLuster().allNodes.values(), null);
+			String myId = proxyRuntime.getMyCLuster().getMyNodeId();
+			if (theNode.id.equals(myId)) {
+				logger.debug("load balancer accepted. Dispatch to local");
+				accept(reactorEnv, socketChannel, serverType);
+			} else {
+				logger.debug("load balancer accepted. Dispatch to remote");
+				ProxyReactorThread<?> proxyReactor = getProxyReactor(reactorEnv);
+				proxyReactor.addNIOJob(() -> {
+					try {
+						LBSession lbSession = ProxyRuntime.INSTANCE.getLbSessionSessionManager()
+																   .createSession(null, proxyReactor.bufPool,
+																				  proxyReactor.getSelector(),
+																				  socketChannel, false);
+						lbSession.getCurNIOHandler().onConnect(curKey, lbSession, true, null);
+					} catch (IOException e) {
+						logger.warn("load balancer accepted error:", e);
+					}
+				});
+			}
+		} else {
 			accept(reactorEnv,socketChannel,serverType);
 		}
 	}
