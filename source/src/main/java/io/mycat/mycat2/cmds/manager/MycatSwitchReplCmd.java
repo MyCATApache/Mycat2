@@ -9,10 +9,15 @@ import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.beans.CheckResult;
+import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.OKPacket;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
 /**
  * 主从复制组切换命令
@@ -33,16 +38,25 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 		HashArray hashArray = session.sqlContext.getMyCmdValue();
 		String replName = new String(TokenizerUtil.pickBytes(0, hashArray, session.proxyBuffer),charset);
 		int index = TokenizerUtil.pickNumber(1, hashArray, session.proxyBuffer);
-		/*
-		 * TODO 暂时打印 错误 报文, 等待与 智文 整合。整合时 需要删除 下面返回的错误报文逻辑
-		 */
-		ErrorPacket errPkg = new ErrorPacket();
-		errPkg.packetId = 1;
-		errPkg.errno  = ErrorCode.ERR_WRONG_USED;
-		errPkg.message = " the command is mycat switch repl "+replName+" " + index;
-		session.proxyBuffer.reset();
-		session.responseOKOrError(errPkg);
 		
+		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+		MySQLRepBean repBean = conf.getMySQLRepBean(replName);
+		CheckResult result = repBean.switchDataSourcecheck(index);
+
+		if(!result.isSuccess()){
+			ErrorPacket errPkg = new ErrorPacket();
+			errPkg.packetId = 1;
+			errPkg.errno  = ErrorCode.ERR_WRONG_USED;
+			errPkg.message = result.getMsg();
+			session.responseOKOrError(errPkg);
+		}else{
+			ProxyRuntime.INSTANCE.prepareSwitchDataSource(replName, index,false);
+			OKPacket packet = new OKPacket();
+	        packet.packetId = 1;
+	        packet.affectedRows = 1;
+	        packet.serverStatus = 2;
+	        session.responseOKOrError(packet);
+		}
 		return false;
 	}
 

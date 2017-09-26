@@ -129,9 +129,9 @@ public class IntTokenHash {
     public static final int RECOVER = -405012473;
     public static final int  REPLICA  =-879493113;
     public static final int CACHE_RESULT = 2073690123;
-    public static final int REPL = 0x8f6b3202;
-    
-    public static final int REPL_NAME = 0x3ee4615d;
-    public static final int REPL_METABEAN_INDEX = 0xf079a7b4;
+
+    public static final int REPL = 0x32020004;
+    public static final int REPL_NAME = 0x615d0009;
+    public static final int REPL_METABEAN_INDEX = 0xa7b40013;
 
 }
