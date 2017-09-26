@@ -5,12 +5,20 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Queue;
+import java.util.function.Function;
 
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.AbstractSession;
 import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.ProxyBuffer;
@@ -24,7 +32,7 @@ import io.mycat.util.StringUtil;
  * @author wuzhihui
  *
  */
-public abstract class AbstractMySQLSession extends AbstractSession {
+public abstract class AbstractMySQLSession  extends AbstractSession {
 
 	// 当前接收到的包类型
 	public enum CurrPacketType {
@@ -34,7 +42,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	/**
 	 * 字符集
 	 */
-	public MySQLCharset charSet;
+	public MySQLCharset charSet = new MySQLCharset();
 	/**
 	 * 用户
 	 */
@@ -48,12 +56,28 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	/**
 	 * 事务提交方式
 	 */
-	public AutoCommit autoCommit = AutoCommit.OFF;
-
+	public AutoCommit autoCommit = AutoCommit.ON;
+	
 	/**
 	 * 认证中的seed报文数据
 	 */
 	public byte[] seed;
+	
+	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
+	private CommandChain cmdChain = new CommandChain();
+	
+	public CommandChain getCmdChain(){
+		if(cmdChain==null){
+			cmdChain = new CommandChain();
+			logger.warn(" curr session cmdChain is null.{}", this);
+		}
+		return cmdChain;
+	}
+	
+	public void setCmdChain(CommandChain cmdChain){
+		this.cmdChain = cmdChain;
+	}
+	
 	/**
 	 * 当前处理中的SQL报文的信息
 	 */
@@ -83,7 +107,24 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	 */
 	public void responseOKOrError(MySQLPacket pkg) throws IOException {
 		// proxyBuffer.changeOwner(true);
+		this.proxyBuffer.reset();
 		pkg.write(this.proxyBuffer);
+		proxyBuffer.flip();
+		proxyBuffer.readIndex = proxyBuffer.writeIndex;
+		this.writeToChannel();
+	}
+	
+	/**
+	 * 回应客户端（front或Sever）OK 报文。
+	 *
+	 * @param pkg
+	 *            ，必须要是OK报文或者Err报文
+	 * @throws IOException
+	 */
+	public void responseOKOrError(byte[] pkg) throws IOException {
+		// proxyBuffer.changeOwner(true);
+		this.proxyBuffer.reset();
+		proxyBuffer.writeBytes(OKPacket.OK);
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
 		this.writeToChannel();
@@ -224,6 +265,104 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 				proxyBuf.readIndex = curPackInf.endPos;
 			}
 			return CurrPacketType.Full;
+		}
+	}
+	
+	/**
+	 * 命令处理链
+	 * @author yanjunli
+	 *
+	 */
+	public class CommandChain{
+						
+		/**
+		 * 目标命令
+		 */
+		private MySQLCommand target;
+		
+		/**
+		 * 所有的sqlAnno
+		 */
+		private List<Function<MycatSession, Boolean>> sqlAnnotations = new ArrayList<>(30);
+		
+		/**
+		 * 动态注解 命令映射关系表
+		 */
+		private Map<Function<MycatSession, Boolean>,MySQLCommand> sqlAnnoMapper = new HashMap<>();
+		
+		
+		/**
+		 * 前置类，后置类，around 类  动态注解  顺序，继承了SQLCommand 的动态注解会出现在此列表中
+		 */
+		private List<Function<MycatSession, Boolean>> queue = new ArrayList<>(20);
+		
+		/**
+		 * queue 列表当前索引值
+		 */
+		private int cmdIndex = 0;
+		
+		private String errMsg;
+				
+		public List<Function<MycatSession, Boolean>> getSqlAnnotations(){
+			return sqlAnnotations;
+		}
+		
+		/**
+		 * 查找当前命令的下一个处理命令
+		 * @param pre
+		 * @return
+		 * @throws Exception
+		 */
+		public MySQLCommand getNextSQLCommand(){
+			//sqlAnnotations 是  ArrayList .
+			if(sqlAnnotations.isEmpty()|| ++cmdIndex >= queue.size()){
+				/**
+				 *  动态注解处理完成后，调用目标命令，同时重置 cmdIndex.
+				 *  重置 cmdIndex  可以实现 对  around 类 动态注解的支持
+				 */
+				cmdIndex = 0;
+				return target;
+			}else{
+				return sqlAnnoMapper.get(queue.get(cmdIndex));
+			}
+		}
+		
+		/**
+		 * 初始化设置  原始 命令
+		 * @param target
+		 */
+		public void setTarget(MySQLCommand target){
+			this.target = target;
+		}
+		
+		public MySQLCommand getCurrentSQLCommand(){
+			//sqlAnnotations 是  ArrayList .
+			if(sqlAnnotations.isEmpty()||cmdIndex >= queue.size()){
+				return target;
+			}else{
+				return sqlAnnoMapper.get(queue.get(cmdIndex));
+			}
+		}
+		
+		public void addCmdChain(Function<MycatSession, Boolean> sqlanno,MySQLCommand curr){
+			sqlAnnoMapper.put(sqlanno, curr);
+			queue.add(sqlanno);
+		}
+		
+		public void clear(){
+			sqlAnnoMapper.clear();
+			target = null;
+			sqlAnnotations.clear();
+			queue.clear();
+			cmdIndex = 0;
+		}
+
+		public String getErrMsg() {
+			return errMsg;
+		}
+
+		public void setErrMsg(String errMsg) {
+			this.errMsg = errMsg;
 		}
 	}
 

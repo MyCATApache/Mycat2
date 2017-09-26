@@ -1,0 +1,22 @@
+replicas:
+  - name: test
+    repType: MASTER_SLAVE
+    switchType: DEFAULT_SWITCH
+    balanceType: BALANCE_ALL
+    mysqls:
+      - hostName: test
+        ip: 127.0.0.1
+        port: 3306
+        user: root
+        password: 123456
+        minCon: 1
+        maxCon: 10
+        maxRetryCount: 3
+      - hostName: test
+        ip: 127.0.0.1
+        port: 3307
+        user: root
+        password: 123456
+        minCon: 1
+        maxCon: 10
+        maxRetryCount: 3 #心跳重试次数

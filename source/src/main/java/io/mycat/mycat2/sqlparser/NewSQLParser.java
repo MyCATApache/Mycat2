@@ -2,10 +2,7 @@ package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
-import io.mycat.mycat2.sqlparser.IntTokenHash;
 
-
-import java.nio.charset.StandardCharsets;
 import java.util.stream.IntStream;
 
 /**
@@ -96,12 +93,17 @@ public class NewSQLParser {
                     return false;
                 else
                     return true;
+            case IntTokenHash.FROM:
+                if (hashArray.getHash(pos) == TokenHash.FROM)
+                    return false;
+                else
+                    return true;
             default:
                 return true;
         }
     }
 
-    int pickTableNames(int pos, final int arrayCount, NewSQLContext context) {
+    public int pickTableNames(int pos, final int arrayCount, NewSQLContext context) {
         int type;
         long hash = hashArray.getHash(pos);
         if (hash != 0) {
@@ -370,6 +372,10 @@ public class NewSQLParser {
                     }
                     break;
                 case IntTokenHash.INTO:
+                    byte type = context.getSQLType();
+                    if (context.getCurSQLType() == NewSQLContext.SELECT_SQL) {
+                        context.setSQLType(NewSQLContext.SELECT_INTO_SQL);
+                    }
                     if (hashArray.getHash(pos) == TokenHash.INTO) {
                         pos = pickTableNames(++pos, arrayCount, context);
                     }
@@ -537,6 +543,13 @@ public class NewSQLParser {
                 case IntTokenHash.SQL_DELIMETER:
                     context.setSQLFinished(++pos);
                     break;
+                case IntTokenHash.FOR:
+                    int next = pos+1;
+                    if (context.getCurSQLType() == NewSQLContext.SELECT_SQL) {
+                        if (hashArray.getIntHash(next) == IntTokenHash.UPDATE && hashArray.getHash(next) == TokenHash.UPDATE) {
+                            context.setSQLType(NewSQLContext.SELECT_FOR_UPDATE_SQL);
+                        }
+                    }
                 default:
                     pos++;
                     break;
@@ -558,6 +571,7 @@ public class NewSQLParser {
         tokenizer.tokenize(src);
         firstParse(context);
     }
+
 
 //    static long RunBench(byte[] src, NewSQLParser parser) {
 //        int count = 0;
@@ -583,8 +597,8 @@ public class NewSQLParser {
 //        byte[] src = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
 //        byte[] src = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
 //        byte[] src = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-        byte[] src = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
-
+//        byte[] src = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
+        byte[] src = "select * into tbl_B from tbl_A;".getBytes();
 //        long min = 0;
 //        for (int i = 0; i < 50; i++) {
 //            System.out.print("Loop " + i + " : ");

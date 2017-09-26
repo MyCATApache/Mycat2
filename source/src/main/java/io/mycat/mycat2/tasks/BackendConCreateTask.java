@@ -7,20 +7,20 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
 
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLBean;
-import io.mycat.mycat2.beans.MySQLDataSource;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BufferPool;
-import io.mycat.util.CharsetUtil;
+import io.mycat.util.ParseUtil;
 import io.mycat.util.SecurityUtil;
 
 /**
@@ -33,24 +33,25 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
 	private HandshakePacket handshake;
 	private boolean welcomePkgReceived = false;
-	private MySQLDataSource ds;
-	private String schema;
+	private MySQLMetaBean mySQLMetaBean;
+	private SchemaBean schema;
 	private MySQLSession session;
 
-	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLDataSource ds, String schema)
+	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLMetaBean mySQLMetaBean, SchemaBean schema,AsynTaskCallBack<MySQLSession> callBack)
 			throws IOException {
-		String serverIP = ds.getConfig().getIp();
-		int serverPort = ds.getConfig().getPort();
+		String serverIP = mySQLMetaBean.getDsMetaBean().getIp();
+		int serverPort = mySQLMetaBean.getDsMetaBean().getPort();
 		logger.info("Connecting to backend MySQL Server " + serverIP + ":" + serverPort);
 		InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 		SocketChannel backendChannel = SocketChannel.open();
 		backendChannel.configureBlocking(false);
 		backendChannel.connect(serverAddress);
 		session = new MySQLSession(bufPool, nioSelector, backendChannel);
+		session.setMySQLMetaBean(mySQLMetaBean);
 		this.setSession(session, false);
-		this.ds = ds;
+		this.mySQLMetaBean = mySQLMetaBean;
 		this.schema = schema;
-
+		this.callBack = callBack;
 	}
 
 	@Override
@@ -67,29 +68,23 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 
 			// 设置字符集编码
 			int charsetIndex = (handshake.serverCharsetIndex & 0xff);
-			String charset = CharsetUtil.getCharset(charsetIndex);
-			if (charset != null) {
-				// conn.setCharset(charsetIndex, charset);
-			} else {
-				String errmsg = "Unknown charsetIndex:" + charsetIndex + " of " + session.getSessionId();
-				logger.warn(errmsg);
-				return;
-			}
 			// 发送应答报文给后端
-			final MySQLBean mySQLBean = ds.getConfig();
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
 			packet.clientFlags = initClientFlags();
 			packet.maxPacketSize = 1024 * 1000;
 			packet.charsetIndex = charsetIndex;
-			packet.user = mySQLBean.getUser();
+			packet.user = mySQLMetaBean.getDsMetaBean().getUser();
 			try {
-				packet.password = passwd(mySQLBean.getPassword(), handshake);
+				packet.password = passwd(mySQLMetaBean.getDsMetaBean().getPassword(), handshake);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e.getMessage());
 			}
 			// SchemaBean schema = session.schema;
-			packet.database = schema;
+			// 创建连接时，默认不主动同步数据库
+//			if(schema!=null&&schema.getDefaultDN()!=null){
+//				packet.database = schema.getDefaultDN().getDatabase();
+//			}
 
 			// 不透传的状态下，需要自己控制Buffer的状态，这里每次写数据都切回初始Write状态
 			session.proxyBuffer.reset();
@@ -107,6 +102,8 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 				this.finished(true);
 			} else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
 				errPkg = new ErrorPacket();
+				errPkg.packetId = session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
+																+ ParseUtil.mysql_packetHeader_length);
 				errPkg.read(session.proxyBuffer);
 				logger.warn("backend authed failed. Err No. " + errPkg.errno + "," + errPkg.message);
 				this.finished(false);

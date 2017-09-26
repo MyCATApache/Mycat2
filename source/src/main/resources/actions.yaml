@@ -1,0 +1,16 @@
+actions:
+      - monitorSQL: io.mycat.mycat2.sqlannotations.MonintorSQL
+      - cacheResult: io.mycat.mycat2.sqlannotations.CacheResult
+      - sqlCach: io.mycat.mycat2.sqlannotations.SQLCach
+      - blacklist: io.mycat.mycat2.sqlannotations.Blacklist
+      - whitehost: io.mycat.mycat2.sqlannotations.Whitehost
+      - tableCheck: io.mycat.mycat2.sqlannotations.TableCheck
+      - selelctAllow: io.mycat.mycat2.sqlannotations.blackList.SelelctAllow
+      - deleteAllow: io.mycat.mycat2.sqlannotations.blackList.DeleteAllow
+      - dropAllow: io.mycat.mycat2.sqlannotations.blackList.DropAllow
+      - alterAllow: io.mycat.mycat2.sqlannotations.blackList.AlterAllow
+      - truncateAllow: io.mycat.mycat2.sqlannotations.blackList.TruncateAllow
+      - insertAllow: io.mycat.mycat2.sqlannotations.blackList.InsertAllow
+      - updateAllow: io.mycat.mycat2.sqlannotations.blackList.UpdateAllow
+      - replaceAllow: io.mycat.mycat2.sqlannotations.blackList.ReplaceAllow
+      - createTableAllow: io.mycat.mycat2.sqlannotations.blackList.CreateTableAllow

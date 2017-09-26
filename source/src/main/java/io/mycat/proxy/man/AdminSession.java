@@ -48,6 +48,8 @@ public class AdminSession implements Session {
 	public ProxyBuffer writingBuffer;
 	public PackageInf curAdminPkgInf = new PackageInf();
 
+	public int confCount;
+
 	public AdminSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		this.bufPool = bufferPool;
 		this.nioSelector = selector;
@@ -167,6 +169,7 @@ public class AdminSession implements Session {
 		logger.debug(" readed {} total bytes ", readed);
 		if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
+			this.cluster().onClusterNodeDown(nodeId, this);
 			throw new ClosedChannelException();
 		} else if (readed == 0) {
 

@@ -8,5 +8,5 @@ package io.mycat.mycat2.beans;
  */
 public class MySQLCharset {
 	public String charset;
-	public String charsetIndex;
+	public int charsetIndex;
 }

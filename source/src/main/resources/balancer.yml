@@ -1,0 +1,5 @@
+balancer:
+  enable: false
+  ip: 0.0.0.0
+  port: 7066
+  strategy: RANDOM

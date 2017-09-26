@@ -1,0 +1,6 @@
+BuildTime  2017-09-15 01:53:59
+GitVersion   null
+MavenVersion 0.1
+GitUrl https://github.com/MyCATApache/tcp-proxy
+MyCatSite http://http://www.mycat.io/
+QQGroup 106088787

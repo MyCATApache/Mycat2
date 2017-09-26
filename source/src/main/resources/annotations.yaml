@@ -1,0 +1,72 @@
+annotations:
+     - global:
+          - monitorSQL: false        # 全局sql 监控 开关。 sql 监控属于环绕类 监控，需要获取到sql 执行时间等信息。
+          - blacklist:
+             - selelctAllow: true         # sql 拦截     属于前置处理类
+             - tableCheck: true
+          - whitehost:
+               user: root
+               host: 127.0.0.1
+     - schema:
+              name: test
+              blacklist:   # 覆盖全局配置
+                     - deleteAllow : false
+              matches:
+                      - match:
+                             name: select有条件and or有tables
+                             state: open
+                             sqltype: select
+                             where:
+                                  - and: WHERE
+                                  - or:  id = ?
+                             tables:
+                                  - test1
+                             actions:
+                                  - sqlCach:
+                                          - param1: 111
+                      - match:
+                             name: select有条件多个tables
+                             state: open
+                             sqltype: select
+                             where:
+                                  - and: FROM
+                             tables:
+                                  - test1
+                                  - test2
+                             actions:
+                                    - sqlCach:
+                                          - param1: 222
+                                    - monitorSQL:
+                                          - param1: 777
+                      - match:
+                             name: select有条件无tables
+                             state: open
+                             sqltype: select
+                             where:
+                                  - and: FROM test1
+                             actions:
+                                    - sqlCach:
+                                          - param1: 555
+                      - match:
+                              name: select无条件有tables
+                              state: open
+                              sqltype: select
+                              tables:
+                                    - sbtest1
+                              actions:
+                                    - cacheResult:
+                                          - param1: 222     
+                      - match:
+                              name: insert无tables无条件
+                              state: open
+                              sqltype: insert
+                              actions:
+                                    - monitorSQL:
+                                          - param1: 777
+                      - match:
+                              name: insert无tables无条件2
+                              state: open
+                              sqltype: insert
+                              actions:
+                                    - monitorSQL:
+                                          - param1: 777

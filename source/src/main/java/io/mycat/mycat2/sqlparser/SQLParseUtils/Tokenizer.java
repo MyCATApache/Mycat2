@@ -1,8 +1,5 @@
 package io.mycat.mycat2.sqlparser.SQLParseUtils;
 
-import io.mycat.mycat2.sqlparser.NewSQLParser;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-
 import java.util.stream.IntStream;
 
 /**
@@ -35,6 +32,8 @@ public class Tokenizer {
     byte[] sql;
     final byte[] charType = new byte[512];
     HashArray hashArray;
+
+
 
     public Tokenizer(HashArray hashArray) {
         this.hashArray = hashArray;
@@ -99,6 +98,7 @@ public class Tokenizer {
             if (c == '\\') {
                 pos+=2;
             } else if (c == startSign ) {
+                size++;
                 break;
             } else {
                 size++;

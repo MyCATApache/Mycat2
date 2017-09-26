@@ -5,7 +5,7 @@ import java.net.ConnectException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -25,14 +25,15 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	protected final Selector selector;
 	protected final BufferPool bufPool;
 	protected ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
-	protected ArrayList<T> allSessions = new ArrayList<T>();
+	protected LinkedList<T> allSessions = new LinkedList<T>();
+
 
 	public Selector getSelector() {
 		return selector;
 	}
 
-	public BufferPool getBufPool() {
-		return bufPool;
+	public LinkedList<T> getAllSessions() {
+		return allSessions;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -51,7 +52,6 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 				logger.warn("regist new connection err " + e);
 			}
 		});
-
 	}
 
 	public void addNIOJob(Runnable job) {
@@ -158,5 +158,4 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		}
 
 	}
-
 }

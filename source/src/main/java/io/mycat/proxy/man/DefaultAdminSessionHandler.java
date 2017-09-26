@@ -53,8 +53,11 @@ public class DefaultAdminSessionHandler implements NIOHandler<AdminSession> {
 	 */
 	public void onSocketClosed(AdminSession userSession, boolean normal) {
 		logger.info("front socket closed ");
-		userSession.cluster().onClusterNodeDown(userSession.getNodeId(), userSession);
-
+		try {
+			userSession.cluster().onClusterNodeDown(userSession.getNodeId(), userSession);
+		} catch (IOException e) {
+			logger.error("error to handle cluster node down", e);
+		}
 	}
 
 	@Override

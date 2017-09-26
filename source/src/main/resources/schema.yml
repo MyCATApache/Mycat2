@@ -1,0 +1,28 @@
+schemas:
+  - name: test
+    schemaType: DB_IN_ONE_SERVER
+    defaultDN:
+      database: test
+      mysqlReplica: test
+#  - name: test2
+#    schemaType: DB_IN_MULTI_SERVER
+#    defaultDN:
+#      database: mysql
+#      mysqlReplica: mysql
+#    tables:
+#      - name: t1
+#        tableType: MASTER
+#        store: test1:test #db:rep
+#      - name: t2
+#        tableType: SLAVE
+#        store: test1
+#  - name: test3
+#    schemaType: SQL_PARSE_ROUTE
+#    defaultDN:
+#      database: test
+#      mysqlReplica: test
+#    tables:
+#      - name: shard1
+#        tableType: SLAVE
+#        shardingKey: id
+#        shardingRule: auto-sharding-1

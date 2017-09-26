@@ -1,0 +1,6 @@
+shardingRules:
+  - name: auto-sharding-1
+    algorithm: org.opencloudb.route.function.PartitionByFileMap
+    params:
+      - key: mapFile
+        value: sharding-by-enum.txt

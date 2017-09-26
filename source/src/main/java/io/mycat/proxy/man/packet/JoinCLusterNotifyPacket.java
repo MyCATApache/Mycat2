@@ -15,20 +15,12 @@ public class JoinCLusterNotifyPacket extends ManagePacket {
 	public static final byte JOIN_STATE_ACKED = 1;
 	// 与我直连的所有Node的ID，逗号分隔
 	private String myConnectedNodes;
-	// 当前配置文件版本号
-	private String configFileVersion;
 
 	private byte joinState = JOIN_STATE_NEED_ACK;
 
-	public JoinCLusterNotifyPacket(String myConnectedNodes, String configFileVersion) {
+	public JoinCLusterNotifyPacket(String myConnectedNodes) {
 		super(ManagePacket.PKG_JOIN_NOTIFY_ClUSTER);
 		this.myConnectedNodes = myConnectedNodes;
-		this.configFileVersion = configFileVersion;
-
-	}
-
-	public JoinCLusterNotifyPacket() {
-		this(null, null);
 	}
 
 	public String[] getMyJoinedNodeIds() {
@@ -38,7 +30,6 @@ public class JoinCLusterNotifyPacket extends ManagePacket {
 	@Override
 	public void resolveBody(ProxyBuffer buffer) {
 		this.myConnectedNodes = buffer.readNULString();
-		this.configFileVersion = buffer.readNULString();
 		this.joinState = buffer.readByte();
 
 	}
@@ -46,9 +37,7 @@ public class JoinCLusterNotifyPacket extends ManagePacket {
 	@Override
 	public void writeBody(ProxyBuffer buffer) {
 		buffer.writeNULString(myConnectedNodes);
-		buffer.writeNULString(this.configFileVersion);
 		buffer.writeByte(joinState);
-
 	}
 
 	public String getMyConnectedNodes() {
@@ -57,14 +46,6 @@ public class JoinCLusterNotifyPacket extends ManagePacket {
 
 	public void setMyConnectedNodes(String myConnectedNodes) {
 		this.myConnectedNodes = myConnectedNodes;
-	}
-
-	public String getConfigFileVersion() {
-		return configFileVersion;
-	}
-
-	public void setConfigFileVersion(String configFileVersion) {
-		this.configFileVersion = configFileVersion;
 	}
 
 	public byte getJoinState() {

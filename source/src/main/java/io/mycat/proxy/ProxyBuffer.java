@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ProxyBuffer {
+	
 	protected static Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
 	private final ByteBuffer buffer;
 
@@ -235,7 +236,7 @@ public class ProxyBuffer {
 	public String readVarString(int length) {
 		return readFixString(length);
 	}
-
+	
 	public String getNULString(int index) {
 		int strLength = 0;
 		int scanIndex = index;
@@ -412,7 +413,7 @@ public class ProxyBuffer {
 	 *            值
 	 * @return 长度
 	 */
-	public int getLenencLength(int lenenc) {
+	public static int getLenencLength(int lenenc) {
 		if (lenenc < 251) {
 			return 1;
 		} else if (lenenc >= 251 && lenenc < (1 << 16)) {
@@ -424,6 +425,7 @@ public class ProxyBuffer {
 		}
 	}
 
+	
 	public long getLenencInt(int index) {
 		long len = getInt(index, 1) & 0xff;
 		if (len == 0xfc) {
@@ -433,7 +435,7 @@ public class ProxyBuffer {
 		} else if (len == 0xfe) {
 			return getInt(index + 1, 8);
 		} else {
-			return getInt(index, 1);
+			return len;
 		}
 	}
 

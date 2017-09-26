@@ -14,6 +14,7 @@ import io.mycat.proxy.ProxyBuffer;
 public abstract class ManagePacket {
 	// 两字节的报文长度+1字节的类型
 	public final static int packetHeaderSize = 3;
+
 	// 所有的报文类型都需要在这里统一声明
 	public static final byte PKG_FAILED = 0;
 	public static final byte PKG_SUCCESS = 1;
@@ -21,6 +22,16 @@ public abstract class ManagePacket {
 	public static final byte PKG_JOIN_REQ_ClUSTER = 3;
 	public static final byte PKG_JOIN_NOTIFY_ClUSTER = 4;
 	public static final byte PKG_JOIN_ACK_ClUSTER = 5;
+
+	public static final byte PKG_CONFIG_VERSION_REQ = 6;
+	public static final byte PKG_CONFIG_VERSION_RES = 7;
+	public static final byte PKG_CONFIG_REQ = 8;
+	public static final byte PKG_CONFIG_RES = 9;
+
+	public static final byte PKG_CONFIG_PREPARE = 10;
+	public static final byte PKG_CONFIG_CONFIRM = 11;
+	public static final byte PKG_CONFIG_COMMIT = 12;
+
 	protected byte pkgType;
 	// 长度最长为2字节的short，即65535，长度包括包头3个字节在内
 	protected int pkgLength;
@@ -41,8 +52,6 @@ public abstract class ManagePacket {
 	 *            报文buffer
 	 * @param offset
 	 *            buffer解析位置偏移量
-	 * @param position
-	 *            buffer已读位置偏移量
 	 * @return 报文长度(Header长度+内容长度)
 	 * @throws IOException
 	 */
