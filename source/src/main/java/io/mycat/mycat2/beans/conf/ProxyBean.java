@@ -15,6 +15,10 @@ public class ProxyBean {
      * 绑定的数据传输端口
      */
     private int port = 8066;
+    /**
+     * 是否使用动态配置的开关
+     */
+    private boolean annotationEnable;
 
     public String getIp() {
         return ip;
@@ -32,8 +36,16 @@ public class ProxyBean {
         this.port = port;
     }
 
+	public boolean isAnnotationEnable() {
+		return annotationEnable;
+	}
+
+	public void setAnnotationEnable(boolean annotationEnable) {
+		this.annotationEnable = annotationEnable;
+	}
+	
     @Override
     public String toString() {
-        return "ProxyBean{" + "ip='" + ip + '\'' + ", port=" + port + '}';
+        return "ProxyBean{" + "ip='" + ip + '\'' + ", port=" + port + ",annotationEnable="+annotationEnable+"}";
     }
 }

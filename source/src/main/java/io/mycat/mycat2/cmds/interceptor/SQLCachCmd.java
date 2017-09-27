@@ -18,7 +18,6 @@ public class SQLCachCmd extends DefaultMySQLCommand {
 	
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		logger.debug("========================> SQLCachCmd {}",session.sqlContext.getRealSQL(0));
 		return super.procssSQL(session);
 	}
 	

@@ -355,7 +355,7 @@ public class MycatSession extends AbstractMySQLSession {
 		MySQLMetaBean targetMetaBean = repBean.getBalanceMetaBean(runOnSlave);
 		
 		if(targetMetaBean==null){
-			String errmsg = " the metaBean is not found,please check datasource.yaml!!! [balance] and [type]  propertie or view debug log or check heartbeat task!!";
+			String errmsg = " the metaBean is not found,please check datasource.yaml!!! [balance] and [type]  propertie or see debug log or check heartbeat task!!";
 			if(logger.isDebugEnabled()){
 				logger.error(errmsg);
 			}

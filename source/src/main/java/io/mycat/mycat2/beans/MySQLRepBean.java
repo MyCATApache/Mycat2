@@ -147,13 +147,13 @@ public class MySQLRepBean {
     
 	public void switchSource(int newIndex,long maxwaittime) {
 		if (replicaBean.getSwitchType() == ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH) {
-			logger.debug("not switch datasource ,for switchType is {}", ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH);
+			logger.warn("not switch datasource ,for switchType is {}", ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH);
 			switchResult.set(false);
 			return;
 		}
 		
 		if(!checkIndex(newIndex)){
-			logger.debug("not switch datasource ,writeIndex  out of range. writeIndex is {}",newIndex);
+			logger.warn("not switch datasource ,writeIndex  out of range. writeIndex is {}",newIndex);
 			switchResult.set(false);
 			return;
 		}
@@ -191,7 +191,7 @@ public class MySQLRepBean {
 				
 				lastInitTime = System.currentTimeMillis();
 			}else{
-				logger.debug("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
+				logger.warn("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
 			}
 		}catch (IOException e) {
 			e.printStackTrace();
@@ -240,7 +240,7 @@ public class MySQLRepBean {
 				datas = getLBReadMetaBean();
 				//如果从节点不可用,从主节点获取连接
 				if(datas==null){
-					logger.debug("all slaveNode is Unavailable. use master node for read . balance type is {}", replicaBean.getBalanceType());
+					logger.warn("all slaveNode is Unavailable. use master node for read . balance type is {}", replicaBean.getBalanceType());
 					datas = getCurWriteMetaBean();
 				}
 				break;
@@ -248,7 +248,7 @@ public class MySQLRepBean {
 				datas = getCurWriteMetaBean();
 				break;
 			default:
-				logger.debug("current balancetype is not supported!! [{}], use writenode connection .", replicaBean.getBalanceType());
+				logger.warn("current balancetype is not supported!! [{}], use writenode connection .", replicaBean.getBalanceType());
 				datas = getCurWriteMetaBean();
 				break;
 		}
