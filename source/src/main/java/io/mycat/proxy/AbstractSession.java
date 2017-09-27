@@ -128,17 +128,26 @@ public abstract class AbstractSession implements Session {
 			// 大部分情况下 position == writeIndex
 			buffer.position(proxyBuffer.writeIndex);
 		}
-
-		int readed = channel.read(buffer);
+		
+		int readed = 0;
+		try{
+			readed = channel.read(buffer);
+		} catch(IOException e){
+			closeSocket(false,"Read EOF ,socket closed ");
+		}
 //		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
-			logger.warn("Read EOF ,socket closed ");
-			throw new ClosedChannelException();
+			closeSocket(false,"Read EOF ,socket closed ");
 		} else if (readed == 0) {
 			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
 		}
 		proxyBuffer.writeIndex = buffer.position();
 		return readed > 0;
+	}
+	
+	private void closeSocket(boolean normal,String msg) throws IOException{
+		close(false,msg);
+		throw new ClosedChannelException();
 	}
 
 	protected abstract void doTakeReadOwner();
@@ -162,7 +171,12 @@ public abstract class AbstractSession implements Session {
 		ByteBuffer buffer = proxyBuffer.getBuffer();
 		buffer.limit(proxyBuffer.readIndex);
 		buffer.position(proxyBuffer.readMark);
-		int writed = channel.write(buffer);
+		int writed = 0;
+		try{
+			writed = channel.write(buffer);
+		} catch(IOException e){
+			closeSocket(false,"write error ,socket closed ");
+		}
 		proxyBuffer.readMark += writed; // 记录本次磁轭如到 Channel 中的数据
 		if (!buffer.hasRemaining()) {
 //			logger.debug("writeToChannel write  {} bytes ,curChannel is {}", writed,this);
