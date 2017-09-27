@@ -124,14 +124,9 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
             configAnswerAllAliveNodes(commitPacket, configType, false);
 
             ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-            ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
+            ConfigLoader.INSTANCE.loadConfig(true, configEnum, commitPacket.getConfVersion());
             cluster.configConfirmMap.remove(configType);
-
-            if (configEnum == ConfigEnum.REPLICA_INDEX) {
-                MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
-                ReplicaIndexConfig repIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
-                ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach),true);
-            }
+            postLoadConfig(configEnum, attach);
         }
     }
 
@@ -141,14 +136,8 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         byte configType = commitPacket.getConfType();
 
         ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-        ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
-
-        if (configEnum == ConfigEnum.REPLICA_INDEX) {
-            MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
-            ReplicaIndexConfig repIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
-            String attach = commitPacket.getAttach();
-            ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach),true);
-        }
+        ConfigLoader.INSTANCE.loadConfig(true, configEnum, commitPacket.getConfVersion());
+        postLoadConfig(configEnum, commitPacket.getAttach());
     }
 
     private void configAnswerAllAliveNodes(ManagePacket packet, byte type, boolean needCommit) {
@@ -169,5 +158,13 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
                 }
             }
         });
+    }
+
+    private void postLoadConfig(ConfigEnum configEnum, String attach) {
+        MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+        if (configEnum == ConfigEnum.REPLICA_INDEX) {
+            ReplicaIndexConfig repIndexConfig = conf.getConfig(configEnum);
+            ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach),true);
+        }
     }
 }

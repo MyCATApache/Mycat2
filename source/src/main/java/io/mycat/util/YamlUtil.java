@@ -113,15 +113,13 @@ public class YamlUtil {
                 StandardCopyOption.REPLACE_EXISTING);
 
         // 将新的配置生效
-        File confFile = Stream.of(files)
-                .sorted((file1, file2) -> {
+        File confFile = Stream.of(files).sorted((file1, file2) -> {
                     String name1 = file1.getName();
                     Integer version1 = parseConfigVersion(name1);
                     String name2 = file2.getName();
                     Integer version2 = parseConfigVersion(name2);
                     return version2.compareTo(version1);
-                })
-                .findFirst().get();
+                }).findFirst().get();
 
         Files.copy(confFile.toPath(), Paths.get(ROOT_PATH + configName), StandardCopyOption.REPLACE_EXISTING);
 
@@ -144,7 +142,7 @@ public class YamlUtil {
             try (FileWriter writer = new FileWriter(file.toString())) {
                 writer.write(dump(configBean));
             } catch (IOException e) {
-                LOGGER.error("error to dump config to file, config name {}, version {}", configName, curVersion);
+                LOGGER.error("error to dump config to file, config name {}, version {}", configName, curVersion + 1);
             }
         });
     }
@@ -162,32 +160,30 @@ public class YamlUtil {
      * @param directoryName
      * @return 返回创建的文件夹路径
      */
-    public static String createDirectoryIfNotExists(String directoryName) throws IOException {
+    public static void createDirectoryIfNotExists(String directoryName) throws IOException {
         String dirPath = ROOT_PATH + directoryName;
         Path directory = Paths.get(dirPath);
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
-        return dirPath;
     }
 
     /**
      * 清空文件夹
-     * @param directoryName
-     * @param filePrefix
+     * @param directoryName 对应conf目录下的指定文件夹
+     * @param filePrefix 删除指定前缀的文件，null 删除所有文件
      * @throws IOException
      */
     public static void clearDirectory(String directoryName, String filePrefix) throws IOException {
-        String dirPath = ROOT_PATH + directoryName;
-        File dirFile = new File(dirPath);
-        Stream.of(dirFile.listFiles())
-                .filter(file -> {
+        File dirFile = new File(ROOT_PATH + directoryName);
+        Stream.of(dirFile.listFiles()).filter(file -> {
                     if (filePrefix == null) {
+                        // 删除所有文件
                         return file != null;
                     } else {
+                        // 删除指定前缀的文件
                         return file != null && file.getName().startsWith(filePrefix);
                     }
-                })
-                .forEach(file -> file.delete());
+                }).forEach(file -> file.delete());
     }
 }
