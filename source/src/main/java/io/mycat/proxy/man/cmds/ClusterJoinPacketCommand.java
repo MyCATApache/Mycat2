@@ -29,6 +29,7 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 	@Override
 	public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
 		if (cmdType == ManagePacket.PKG_JOIN_REQ_ClUSTER) {
+			logger.debug(" handler PKG_JOIN_REQ_ClUSTER package. from {} ",session.getNodeId());
 			String nodeId = session.getNodeId();
 			// nodeId为空，说明主节点为服务端，接受从节点注册加入集群，需要从节点发送节点信息
 			if (nodeId == null) {
@@ -38,13 +39,17 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 			ClusterNode theNode = session.cluster().findNode(nodeId);
 			byte joinState = JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK;
 			if (theNode.getMyClusterState() == ClusterState.Clustered) {
+				logger.debug(" send JOIN_STATE_ACKED package. to {} ",session.getNodeId());
 				joinState = JoinCLusterNotifyPacket.JOIN_STATE_ACKED;
+			}else{
+				logger.debug(" send JOIN_STATE_NEED_ACK package. to {} ",session.getNodeId());
 			}
 			JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(session.cluster().getMyAliveNodes());
 			respPacket.setJoinState(joinState);
 			session.answerClientNow(respPacket);
 
 		} else if (cmdType == ManagePacket.PKG_JOIN_ACK_ClUSTER) {
+			logger.debug(" handler PKG_JOIN_ACK_ClUSTER package. from {} ",session.getNodeId());
 			String nodeId = session.getNodeId();
 			ClusterNode theNode = session.cluster().findNode(nodeId);
 			if (theNode.getMyClusterState() != ClusterState.Clustered) {
@@ -52,12 +57,14 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 			}
 
 		} else if (cmdType == ManagePacket.PKG_JOIN_NOTIFY_ClUSTER) {
+			logger.debug(" handler PKG_JOIN_NOTIFY_ClUSTER package. from {} ",session.getNodeId());
 			// leader 批准加入Cluster
 			JoinCLusterNotifyPacket respPacket = new JoinCLusterNotifyPacket(null);
 			respPacket.resolve(session.readingBuffer);
 			if (respPacket.getJoinState() == JoinCLusterNotifyPacket.JOIN_STATE_DENNIED) {
-				logger.warn("Leader denied my join cluster request ");
+				logger.warn("Leader denied my join cluster request from {} ",session.getNodeId());
 			} else if (respPacket.getJoinState() == JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK) {
+				logger.debug(" handler JOIN_STATE_NEED_ACK package. from {} ",session.getNodeId());
 				String nodeId = session.getNodeId();
 				if (nodeId == null) {
 					sendRegInfo(session);
@@ -66,9 +73,11 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 				ClusterNode node = session.cluster().findNode(nodeId);
 				session.cluster().setMyLeader(node);
 				session.cluster().setClusterState(ClusterState.Clustered);
+				logger.debug(" send join cluster ack package. to {} ",session.getNodeId());
 				JoinCLusterAckPacket ackPacket = new JoinCLusterAckPacket(session.cluster().getMyAliveNodes());
 				session.answerClientNow(ackPacket);
 
+				logger.debug(" send config version req package. to ",session.getNodeId());
 				// 已加入集群，加载配置
 				ConfigVersionReqPacket versionReqPacket = new ConfigVersionReqPacket();
 				session.answerClientNow(versionReqPacket);
@@ -80,6 +89,7 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 	}
 
 	private void sendRegInfo(AdminSession session) throws IOException {
+		logger.debug(" send nodeRegInfo package. to {} ",session.getNodeId());
 		NodeRegInfoPacket pkg = new NodeRegInfoPacket(session.cluster().getMyNodeId(), session.cluster().getClusterState(),
 				session.cluster().getLastClusterStateTime(), session.cluster().getMyLeaderId(),
 				ProxyRuntime.INSTANCE.getStartTime());

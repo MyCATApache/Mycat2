@@ -66,6 +66,7 @@ public class ConfigPacketCommand implements AdminCommand {
             versionResPacket.getConfVersions()[i] = entry.getValue();
             i++;
         }
+        LOGGER.debug("send  version response package to {}", session.getNodeId());
         session.answerClientNow(versionResPacket);
     }
 
@@ -103,6 +104,7 @@ public class ConfigPacketCommand implements AdminCommand {
         ConfigReqPacket reqPacket = new ConfigReqPacket();
         reqPacket.setConfCount(count);
         reqPacket.setConfTypes(types);
+        LOGGER.debug("send  config request package to {}", session.getNodeId());
         session.answerClientNow(reqPacket);
         session.confCount = count;
     }

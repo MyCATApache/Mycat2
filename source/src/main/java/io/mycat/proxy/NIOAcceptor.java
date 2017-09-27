@@ -8,6 +8,7 @@ package io.mycat.proxy;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -41,10 +42,10 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		this.setName("NIO-Acceptor");
 	}
 
-	public void startServerChannel(String ip, int port,ServerType serverType)throws IOException {
+	public boolean startServerChannel(String ip, int port,ServerType serverType)throws IOException {
 		final ServerSocketChannel serverChannel = getServerSocketChannel(serverType);
 		if (serverChannel != null && serverChannel.isOpen())
-			return;
+			return false;
 
 		if (serverType == ServerType.CLUSTER) {
 			adminSessionMan = new DefaultAdminSessionManager();
@@ -59,6 +60,7 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		}
 
 		openServerChannel(selector, ip, port, serverType);
+		return true;
 	}
 
 	private ServerSocketChannel getServerSocketChannel(ServerType serverType){
@@ -208,12 +210,16 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
 		serverChannel.bind(isa);
 		serverChannel.configureBlocking(false);
+		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverChannel.register(selector, SelectionKey.OP_ACCEPT, serverType);
 		if (serverType == ServerType.CLUSTER) {
+			logger.debug("opend cluster server port on {}:{}", bindIp, bindPort);
 			clusterServerSocketChannel = serverChannel;
 		} else if (serverType == ServerType.LOAD_BALANCER) {
+			logger.debug("opend loadbalance server port on {}:{}", bindIp, bindPort);
 			loadBalanceServerSocketChannel = serverChannel;
 		} else {
+			logger.debug("opend proxy server port on {}:{}", bindIp, bindPort);
 			proxyServerSocketChannel = serverChannel;
 		}
 	}
