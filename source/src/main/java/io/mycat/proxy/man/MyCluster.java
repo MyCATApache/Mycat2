@@ -125,15 +125,15 @@ public class MyCluster {
 					// 向Leader发送请求加入集群的报文
 					JoinCLusterReqPacket joinPkg = new JoinCLusterReqPacket(getMyAliveNodes());
 					findSession(myLeader.id).answerClientNow(joinPkg);
-					return;
 				}
 			} else if (checkIfLeader()) {
 				// 是连接中当前编号最小的节点，当选为Leader
 				logger.info("I'm smallest alive node, and exceeded 1/2 nodes alive, so I'm the King now!");
 				// 集群主已产生，继续加载配置，提供服务
-				ProxyStarter.INSTANCE.startProxy(Boolean.TRUE);
+				ProxyStarter.INSTANCE.startProxy(true);
 
 				this.setClusterState(ClusterState.Clustered);
+				this.myNode.setMyLeaderId(getMyNodeId());
 				this.myLeader = this.myNode;
 				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK);
 				notifyAllNodes(session,joinReps);

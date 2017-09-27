@@ -42,18 +42,17 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		this.setName("NIO-Acceptor");
 	}
 
-	public boolean startServerChannel(String ip, int port,ServerType serverType)throws IOException {
+	public boolean startServerChannel(String ip, int port,ServerType serverType) throws IOException {
 		final ServerSocketChannel serverChannel = getServerSocketChannel(serverType);
-		if (serverChannel != null && serverChannel.isOpen())
+		if (serverChannel != null && serverChannel.isOpen()) {
 			return false;
+		}
 
 		if (serverType == ServerType.CLUSTER) {
 			adminSessionMan = new DefaultAdminSessionManager();
 			ProxyRuntime.INSTANCE.setAdminSessionManager(adminSessionMan);
 			logger.info("opend cluster conmunite port on {}:{}", ip, port);
-		}
-
-		if(serverType == ServerType.LOAD_BALANCER){
+		} else if (serverType == ServerType.LOAD_BALANCER){
 			logger.info("opend load balance conmunite port on {}:{}", ip, port);
 			ProxyRuntime.INSTANCE.setProxySessionSessionManager(new ProxySessionManager());
 			ProxyRuntime.INSTANCE.setLbSessionSessionManager(new LBSessionManager());
