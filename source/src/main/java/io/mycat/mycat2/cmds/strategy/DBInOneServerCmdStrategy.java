@@ -6,11 +6,12 @@ import io.mycat.mycat2.cmds.ComInitDB;
 import io.mycat.mycat2.cmds.ComQuitCmd;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.NotSupportCmd;
+import io.mycat.mycat2.cmds.manager.MycatSwitchReplCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComBeginCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComCommitCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComRollBackCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComStartCmd;
-import io.mycat.mycat2.sqlparser.NewSQLContext;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mysql.packet.MySQLPacket;
 
 public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{	
@@ -54,13 +55,15 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 
 	@Override
 	protected void initMySqlCmdHandler() {
-		MYSQLCOMMANDMAP.put(NewSQLContext.INSERT_SQL, DirectPassthrouhCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(NewSQLContext.UPDATE_SQL, DirectPassthrouhCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(NewSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(NewSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(NewSQLContext.SELECT_SQL, DirectPassthrouhCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(NewSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(NewSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(NewSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.INSERT_SQL, DirectPassthrouhCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.UPDATE_SQL, DirectPassthrouhCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DirectPassthrouhCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SWITCH_REPL, MycatSwitchReplCmd.INSTANCE);
+		
 	}
 }

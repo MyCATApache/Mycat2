@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import io.mycat.mycat2.beans.conf.DatasourceConfig;
 import io.mycat.mycat2.beans.conf.ReplicaBean;
 import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
+import io.mycat.mycat2.beans.conf.ReplicaBean.RepTypeEnum;
 import io.mycat.proxy.ConfigEnum;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +116,35 @@ public class MySQLRepBean {
     	return -1;
     }
     
+	/**
+	 * 准备 主从切换前的检查
+	 * @param replBean
+	 * @param writeIndex
+	 * @return
+	 */
+	public CheckResult switchDataSourcecheck(int newIndex){
+		String errmsg = null;
+		CheckResult result = new CheckResult(true);
+		
+		if(RepTypeEnum.SINGLE_NODE.equals(getReplicaBean().getRepType())){
+			errmsg = " repl type is "+RepTypeEnum.SINGLE_NODE.name() + ", switchDatasource is not supported";
+			logger.warn(errmsg);
+			result.setSuccess(false);
+			result.setMsg(errmsg);
+		}else if(!checkIndex(newIndex)){
+			errmsg = "not switch datasource ,writeIndex  out of range. writeIndex is " + newIndex;
+			logger.warn(errmsg);
+			result.setSuccess(false);
+			result.setMsg(errmsg);
+		}else if(newIndex==writeIndex){
+			errmsg = "not switch datasource ,writeIndex == newIndex .newIndex is " + newIndex;
+			logger.warn(errmsg);
+			result.setSuccess(false);
+			result.setMsg(errmsg);
+		}
+		return result;
+	}
+    
 	public void switchSource(int newIndex,long maxwaittime) {
 		if (replicaBean.getSwitchType() == ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH) {
 			logger.debug("not switch datasource ,for switchType is {}", ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH);
@@ -123,7 +153,7 @@ public class MySQLRepBean {
 		}
 		
 		if(!checkIndex(newIndex)){
-			logger.debug("not switch datasource ,writeIndex > mysqls.size () ");
+			logger.debug("not switch datasource ,writeIndex  out of range. writeIndex is {}",newIndex);
 			switchResult.set(false);
 			return;
 		}
@@ -160,6 +190,8 @@ public class MySQLRepBean {
 				newWriteBean.setSlaveNode(false);
 				
 				lastInitTime = System.currentTimeMillis();
+			}else{
+				logger.debug("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
 			}
 		}catch (IOException e) {
 			e.printStackTrace();

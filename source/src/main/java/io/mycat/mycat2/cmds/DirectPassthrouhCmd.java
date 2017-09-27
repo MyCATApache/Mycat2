@@ -133,7 +133,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	public void clearBackendResouces(MySQLSession mysqlSession, boolean sessionCLosed) {
 		if(sessionCLosed){
 			mysqlSession.bufPool.recycleBuf(mysqlSession.getProxyBuffer().getBuffer());
-			mysqlSession.unbindMycatSession();
 		}
 	}
 }

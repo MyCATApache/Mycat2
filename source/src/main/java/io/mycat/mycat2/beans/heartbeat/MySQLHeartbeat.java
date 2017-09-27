@@ -26,22 +26,16 @@ package io.mycat.mycat2.beans.heartbeat;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
-import io.mycat.mycat2.beans.conf.ClusterConfig;
-import io.mycat.mycat2.beans.conf.HeartbeatConfig;
-import io.mycat.mycat2.beans.conf.ProxyConfig;
-import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
-import io.mycat.proxy.ConfigEnum;
-import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
-import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.CheckResult;
 import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.conf.HeartbeatConfig;
+import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyRuntime;
 
 /**
@@ -229,29 +223,20 @@ public class MySQLHeartbeat extends DBHeartbeat {
 					}
 					return;
 				}
-
+				
 				int next = source.getRepBean().getNextIndex();
-				if (next == -1) {
-					logger.error("all metaBean in replica is invalid !!!");
-				} else {
-					String repName = source.getRepBean().getReplicaBean().getName();
-					ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
-					ReplicaIndexConfig curRepIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
-					if (clusterConfig.getCluster().isEnable()) {
-						ReplicaIndexConfig newRepIndexConfig = new ReplicaIndexConfig();
-						Map<String, Integer> map = new HashMap(curRepIndexConfig.getReplicaIndexes());
-						map.put(repName, next);
-						newRepIndexConfig.setReplicaIndexes(map);
-						ConfigUpdatePacketCommand.INSTANCE.sendPreparePacket(ConfigEnum.REPLICA_INDEX, newRepIndexConfig, repName);
+				CheckResult result = source.getRepBean().switchDataSourcecheck(next);
+				
+				if(result.isSuccess()){
+					
+					if (next == -1) {
+						logger.error("all metaBean in replica is invalid !!!");
 					} else {
-						// 非集群下直接更新replica-index信息
-						ConfigEnum configEnum = ConfigEnum.REPLICA_INDEX;
-						curRepIndexConfig.getReplicaIndexes().put(repName, next);
-						int curVersion = conf.getConfigVersion(configEnum);
-						conf.setConfigVersion(configEnum, curVersion + 1);
-						YamlUtil.archiveAndDump(configEnum.getFileName(), curVersion, conf.getConfig(configEnum));
-						ProxyRuntime.INSTANCE.startSwitchDataSource(source.getRepBean().getReplicaBean().getName(), next);
+						String repName = source.getRepBean().getReplicaBean().getName();
+						ProxyRuntime.INSTANCE.prepareSwitchDataSource(repName, next,true);
 					}
+				}else{
+					logger.error(result.getMsg());
 				}
 			}
             this.status = ERROR_STATUS;

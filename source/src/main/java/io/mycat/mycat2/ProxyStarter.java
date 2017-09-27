@@ -3,7 +3,6 @@ package io.mycat.mycat2;
 import java.io.IOException;
 
 import io.mycat.mycat2.beans.conf.*;
-import io.mycat.mycat2.loadbalance.LocalLoadChecker;
 import io.mycat.mycat2.loadbalance.RandomStrategy;
 import io.mycat.proxy.*;
 import io.mycat.proxy.NIOAcceptor.ServerType;
@@ -65,8 +64,6 @@ public class ProxyStarter {
 		BalancerBean balancerBean = balancerConfig.getBalancer();
         if (balancerBean.isEnable()){
             //开启负载均衡服务
-            runtime.setLocalLoadChecker(new LocalLoadChecker());
-            runtime.setLoadBalanceStrategy(new RandomStrategy());
             acceptor.startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
         }
 

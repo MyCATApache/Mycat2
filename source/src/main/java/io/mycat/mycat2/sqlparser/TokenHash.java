@@ -593,6 +593,7 @@ public class TokenHash {
     public static final long SUSPEND      = 0x220ffdebdfL;
     public static final long SWAPS        = 0x5319cadL;
     public static final long SWITCHES     = 0x57681886a32L;
+    public static final long SWITCH       = 0xd4fa9944L;
     public static final long SYSDATE      = 0x222b90810aL;
     public static final long SYSTEM_USER  = 0x5c159a1fd978d40L;
     public static final long TABLES       = 0xd82644fdL;
@@ -702,6 +703,7 @@ public class TokenHash {
     public static final long AUTOCOMMIT = 4190263402411880L;
     public static final long   IFNULL=2366939740L;
     public static final long  NULLIF=2988454060L;
+    public static final long REPL = 0x1eecefL;
 
     public static void main(String[] args) {
         MatchMethodGenerator.initShrinkCharTbl();

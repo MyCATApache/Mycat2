@@ -130,7 +130,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
             if (configEnum == ConfigEnum.REPLICA_INDEX) {
                 MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
                 ReplicaIndexConfig repIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
-                ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach));
+                ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach),true);
             }
         }
     }
@@ -147,7 +147,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
             MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
             ReplicaIndexConfig repIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
             String attach = commitPacket.getAttach();
-            ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach));
+            ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach),true);
         }
     }
 

@@ -127,7 +127,7 @@ public class MatchMethodGenerator {
 //    }
 
     static final byte[] shrinkCharTbl = new byte[96];//为了压缩hash字符映射空间，再次进行转义
-    static void initShrinkCharTbl () {
+    public static void initShrinkCharTbl () {
         shrinkCharTbl[0] = 1;//从 $ 开始计算
         IntStream.rangeClosed('0', '9').forEach(c -> shrinkCharTbl[c-'$'] = (byte)(c-'0'+2));
         IntStream.rangeClosed('A', 'Z').forEach(c -> shrinkCharTbl[c-'$'] = (byte)(c-'A'+12));
