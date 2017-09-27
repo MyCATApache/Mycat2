@@ -28,8 +28,6 @@ public class ConfigPacketCommand implements AdminCommand {
     public static final ConfigPacketCommand INSTANCE = new ConfigPacketCommand();
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigPacketCommand.class);
 
-    private ConfigPacketCommand() {}
-
     @Override
     public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
         if (ProxyRuntime.INSTANCE.getMyCLuster().getClusterState() != MyCluster.ClusterState.Clustered) {
