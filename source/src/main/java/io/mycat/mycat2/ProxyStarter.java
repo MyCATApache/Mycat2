@@ -49,18 +49,10 @@ public class ProxyStarter {
 	public void startProxy(boolean isLeader) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = runtime.getConfig();
-
-		// 加载配置文件信息
-		ConfigLoader.INSTANCE.loadAll();
 		NIOAcceptor acceptor = runtime.getAcceptor();
-
-		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
-		ProxyBean proxyBean = proxyConfig.getProxy();
-		acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT);
-		startReactor();
-		// 初始化
-		init(conf);
-
+		
+		startMycatServer(runtime,conf,acceptor,isLeader);
+		
 		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
 		BalancerBean balancerBean = balancerConfig.getBalancer();
         if (balancerBean.isEnable()){
@@ -69,7 +61,19 @@ public class ProxyStarter {
             runtime.setLoadBalanceStrategy(new RandomStrategy());
             acceptor.startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
         }
-
+	}
+	
+	public void startMycatServer(ProxyRuntime runtime,MycatConfig conf,NIOAcceptor acceptor,boolean isLeader) throws IOException{
+		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
+		ProxyBean proxyBean = proxyConfig.getProxy();
+		if(acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT)){
+			startReactor();
+			// 加载配置文件信息
+			ConfigLoader.INSTANCE.loadAll();
+			// 初始化
+			init(conf);
+		}
+		
 		// 主节点才启动心跳，非集群下也启动心跳
 		if (isLeader) {
 			runtime.startHeartBeatScheduler();

@@ -84,8 +84,8 @@ public abstract class AbstractSession implements Session {
 			this.referedBuffer = true;
 			logger.debug("use sharedBuffer. ");
 		} else if (proxyBuffer == null) {
-			logger.debug("proxyBuffer is null.");
-			throw new RuntimeException("proxyBuffer is null."+this);
+			logger.debug("proxyBuffer is null.{}",this);
+			throw new RuntimeException("proxyBuffer is null.");
 //			proxyBuffer = sharedBuffer;
 		} else if (sharedBuffer == null) {
 			logger.debug("referedBuffer is false.");
