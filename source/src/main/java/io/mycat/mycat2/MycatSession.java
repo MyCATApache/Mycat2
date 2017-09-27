@@ -43,7 +43,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private static Logger logger = LoggerFactory.getLogger(MycatSession.class);
 
-	private MySQLSession curBackend;
+	public MySQLSession curBackend;
 
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 
