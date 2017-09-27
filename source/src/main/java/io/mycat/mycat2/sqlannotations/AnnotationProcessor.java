@@ -25,8 +25,8 @@ public class AnnotationProcessor {
     private static final AtomicReference<DynamicAnnotationManager> dynamicAnnotationManager = new AtomicReference<>();
     private static final AtomicInteger count = new AtomicInteger(0);
     private static final AnnotationProcessor ourInstance = new AnnotationProcessor();
-    private static final String ACTIONS_PATH = "actions.yaml";
-    private static final String ANNOTATIONS_PATH = "annotations.yaml";
+    private static final String ACTIONS_PATH = "actions.yml";
+    private static final String ANNOTATIONS_PATH = "annotations.yml";
     private static WatchService watcher;
 
     public static AnnotationProcessor getInstance() {
@@ -96,7 +96,7 @@ public class AnnotationProcessor {
                 boolean flag = false;
                 for (WatchEvent<?> event: key.pollEvents()) {
                     String str = event.context().toString();
-                    if ("actions.yaml".equals(str)|| "annotations.yaml".equals(str)) {
+                    if ("actions.yml".equals(str)|| "annotations.yml".equals(str)) {
                         flag=true;
                         break;
                     }

@@ -259,7 +259,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
     }
 
     public static void main(String[] args) throws Exception {
-        DynamicAnnotationManagerImpl manager = new DynamicAnnotationManagerImpl("actions.yaml", "annotations.yaml");
+        DynamicAnnotationManagerImpl manager = new DynamicAnnotationManagerImpl("actions.yml", "annotations.yml");
         BufferSQLContext context = new BufferSQLContext();
         BufferSQLParser sqlParser = new BufferSQLParser();
         String str = "select * where id between 1 and 100 and name = \"haha\" and a=1 and name2 = \"ha\"";
