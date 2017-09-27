@@ -60,9 +60,9 @@ public class MySQLMetaBean {
     public boolean charsetLoaded = false;
 
     /** collationIndex 和 charsetName 的映射 */
-    public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
+    public static final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
     /** charsetName 到 默认collationIndex 的映射 */
-    public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
+    public static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
     public boolean init(MySQLRepBean repBean,long maxwaitTime,int status) throws IOException {
     	logger.info("init backend myqsl source ,create connections total " + dsMetaBean.getMinCon() + " for " + dsMetaBean.getHostName() + " index :" + repBean.getWriteIndex());
