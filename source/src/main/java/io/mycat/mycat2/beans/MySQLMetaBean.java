@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import io.mycat.mycat2.beans.conf.DatasourceMetaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,37 +47,25 @@ import io.mycat.util.TimeUtil;
  * @author wuzhihui
  */
 public class MySQLMetaBean {
-	
-	//默认的重试次数
-	private static final int MAX_RETRY_COUNT = 5;  
-	
 	private static final Logger logger = LoggerFactory.getLogger(MySQLMetaBean.class);
-    private String hostName; 
-    private String ip;
-    private int port;
-    private String user;
-    private String password;
-    private int maxCon = 1000;
-    private int minCon = 1;
+
+	private DatasourceMetaBean dsMetaBean;
     private volatile boolean slaveNode = true; // 默认为slave节点
     private volatile long heartbeatRecoveryTime;  // 心跳暂停时间
     private DBHeartbeat heartbeat;
     private MySQLRepBean repBean;
-    
-	private int maxRetryCount = MAX_RETRY_COUNT;  //重试次数
-    
+
     private int slaveThreshold = -1;
 
     public boolean charsetLoaded = false;
 
     /** collationIndex 和 charsetName 的映射 */
-    public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
+    public static final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
     /** charsetName 到 默认collationIndex 的映射 */
-    public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
+    public static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
     public boolean init(MySQLRepBean repBean,long maxwaitTime,int status) throws IOException {
-  	
-    	logger.info("init backend myqsl source ,create connections total " + minCon + " for " + hostName + " index :" + repBean.getWriteIndex());
+    	logger.info("init backend myqsl source ,create connections total " + dsMetaBean.getMinCon() + " for " + dsMetaBean.getHostName() + " index :" + repBean.getWriteIndex());
 
     	this.repBean = repBean;
     	heartbeat = new MySQLHeartbeat(this,status);
@@ -84,8 +73,8 @@ public class MySQLMetaBean {
         MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
         CopyOnWriteArrayList<MySQLSession > list = new CopyOnWriteArrayList<MySQLSession >();
-        BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, minCon);
-        for (int i = 0; i < minCon; i++) {
+        BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, dsMetaBean.getMinCon());
+        for (int i = 0; i < dsMetaBean.getMinCon(); i++) {
         	MycatReactorThread reactorThread = reactorThreads[i % reactorSize];
             reactorThread.addNIOJob(() -> {
                 try {
@@ -135,7 +124,7 @@ public class MySQLMetaBean {
 		try {
 			heartbeat.heartbeat();
 		} catch (Exception e) {
-			logger.error(hostName + " heartbeat error.", e);
+			logger.error(dsMetaBean.getHostName() + " heartbeat error.", e);
 		}
 	}
 	
@@ -146,7 +135,7 @@ public class MySQLMetaBean {
 	public void clearCons(String reason) {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
-		Arrays.stream(reactorThreads).forEach(f->f.clearMySQLMetaBeanSession(this,reason));
+		Arrays.stream(reactorThreads).forEach(f -> f.clearMySQLMetaBeanSession(this,reason));
 	}
 	
 	/**
@@ -154,11 +143,10 @@ public class MySQLMetaBean {
 	 * @return
 	 */	
 	public boolean canSelectAsReadNode() {
-		
 		int slaveBehindMaster = heartbeat.getSlaveBehindMaster();
 		int dbSynStatus = heartbeat.getDbSynStatus();
 		
-		if(!isAlive()){
+		if (!isAlive()){
 			return false;
 		}
 		
@@ -166,78 +154,24 @@ public class MySQLMetaBean {
 			return false;
 		}
 		boolean isSync = dbSynStatus == DBHeartbeat.DB_SYN_NORMAL;
-		boolean isNotDelay = (slaveThreshold >=0)?(slaveBehindMaster < slaveThreshold):true;		
+		boolean isNotDelay = (slaveThreshold >= 0) ? (slaveBehindMaster < slaveThreshold) : true;
 		return isSync && isNotDelay;
 	}
 
-    public String getHostName() {
-        return hostName;
-    }
+	public DatasourceMetaBean getDsMetaBean() {
+		return dsMetaBean;
+	}
 
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
-    }
+	public void setDsMetaBean(DatasourceMetaBean dsMetaBean) {
+		this.dsMetaBean = dsMetaBean;
+	}
 
-    public String getIp() {
-        return ip;
-    }
-
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public int getMaxCon() {
-        return maxCon;
-    }
-
-    public void setMaxCon(int maxCon) {
-        this.maxCon = maxCon;
-    }
-
-    public int getMinCon() {
-        return minCon;
-    }
-
-    public void setMinCon(int minCon) {
-        this.minCon = minCon;
-    }
-
-    public boolean isSlaveNode() {
+	public boolean isSlaveNode() {
         return slaveNode;
     }
 
     public void setSlaveNode(boolean slaveNode) {
         this.slaveNode = slaveNode;
-    }
-
-    @Override
-    public String toString() {
-        return "MySQLMetaBean [hostName=" + hostName + ", ip=" + ip + ", port=" + port + ", user=" + user + ", password="
-                + password + ", maxCon=" + maxCon + ", minCon=" + minCon + ", slaveNode=" + slaveNode + "]";
     }
 
 	public MySQLRepBean getRepBean() {
@@ -247,7 +181,7 @@ public class MySQLMetaBean {
 	public void setRepBean(MySQLRepBean repBean) {
 		this.repBean = repBean;
 	}
-	
+
 	public int getSlaveThreshold() {
 		return slaveThreshold;
 	}
@@ -256,18 +190,10 @@ public class MySQLMetaBean {
 		this.slaveThreshold = slaveThreshold;
 	}
 
-	public int getMaxRetryCount() {
-		return maxRetryCount;
-	}
-
-	public void setMaxRetryCount(int maxRetryCount) {
-		this.maxRetryCount = maxRetryCount;
-	}
-
 	public DBHeartbeat getHeartbeat() {
 		return heartbeat;
 	}
-	
+
 	/**
 	 * 当前节点是否存活
 	 * @return
@@ -275,4 +201,10 @@ public class MySQLMetaBean {
 	public boolean isAlive() {
 		return heartbeat.getStatus() == DBHeartbeat.OK_STATUS;
 	}
+
+    @Override
+    public String toString() {
+        return "MySQLMetaBean [hostName=" + dsMetaBean.getHostName() + ", ip=" + dsMetaBean.getIp() + ", port=" + dsMetaBean.getPort() + ", user=" + dsMetaBean.getUser() + ", password="
+                + dsMetaBean.getPassword() + ", maxCon=" + dsMetaBean.getMaxCon() + ", minCon=" + dsMetaBean.getMinCon() + ", slaveNode=" + slaveNode + "]";
+    }
 }

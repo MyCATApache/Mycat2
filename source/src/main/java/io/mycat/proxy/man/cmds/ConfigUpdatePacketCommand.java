@@ -2,7 +2,8 @@ package io.mycat.proxy.man.cmds;
 
 import io.mycat.mycat2.ConfigLoader;
 import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.ReplicaIndexBean;
+import io.mycat.mycat2.beans.conf.ClusterConfig;
+import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.*;
@@ -14,8 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Desc: 用来处理配置更新相关报文
@@ -48,7 +47,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
     }
 
     public boolean sendPreparePacket(ConfigEnum configEnum, Object bean, String attach) {
-        MycatConfig config = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+        MycatConfig config = ProxyRuntime.INSTANCE.getConfig();
         MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
         byte type = configEnum.getType();
 
@@ -58,7 +57,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         }
 
         // 获取新版本
-        int newVersion = config.getNextConfigVersion(type);
+        int newVersion = config.getConfigVersion(configEnum) + 1;
         // 生成yml文件内容
         String content = YamlUtil.dump(bean);
         // 存储在本地prepare文件夹下
@@ -71,6 +70,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
 
         // 设置延迟任务，确认是否超时回复
         ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+        ClusterConfig clusterConfig = config.getConfig(ConfigEnum.CLUSTER);
         runtime.addDelayedJob(() -> {
             ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(type);
             if (confirmBean == null || confirmBean.confirmVersion != newVersion) {
@@ -83,7 +83,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
                 //todo config update 命令处理需要给前端返回
             }
             cluster.configConfirmMap.remove(type);
-        }, runtime.getProxyConfig().getPrepareDelaySeconds());
+        }, clusterConfig.getCluster().getPrepareDelaySeconds());
         return true;
     }
 
@@ -128,8 +128,9 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
             cluster.configConfirmMap.remove(configType);
 
             if (configEnum == ConfigEnum.REPLICA_INDEX) {
-                MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
-                ProxyRuntime.INSTANCE.startSwitchDataSource(attach, conf.getRepIndex(attach));
+                MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+                ReplicaIndexConfig repIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
+                ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach),true);
             }
         }
     }
@@ -143,9 +144,10 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         ConfigLoader.INSTANCE.load(configEnum, commitPacket.getConfVersion());
 
         if (configEnum == ConfigEnum.REPLICA_INDEX) {
-            MycatConfig conf = (MycatConfig) ProxyRuntime.INSTANCE.getProxyConfig();
+            MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+            ReplicaIndexConfig repIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
             String attach = commitPacket.getAttach();
-            ProxyRuntime.INSTANCE.startSwitchDataSource(attach, conf.getRepIndex(attach));
+            ProxyRuntime.INSTANCE.startSwitchDataSource(attach, repIndexConfig.getReplicaIndexes().get(attach),true);
         }
     }
 

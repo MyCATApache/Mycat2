@@ -8,19 +8,18 @@ import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BufferPool;
-import io.mycat.util.CharsetUtil;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.SecurityUtil;
 
@@ -40,8 +39,8 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 
 	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLMetaBean mySQLMetaBean, SchemaBean schema,AsynTaskCallBack<MySQLSession> callBack)
 			throws IOException {
-		String serverIP = mySQLMetaBean.getIp();
-		int serverPort = mySQLMetaBean.getPort();
+		String serverIP = mySQLMetaBean.getDsMetaBean().getIp();
+		int serverPort = mySQLMetaBean.getDsMetaBean().getPort();
 		logger.info("Connecting to backend MySQL Server " + serverIP + ":" + serverPort);
 		InetSocketAddress serverAddress = new InetSocketAddress(serverIP, serverPort);
 		SocketChannel backendChannel = SocketChannel.open();
@@ -75,9 +74,9 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			packet.clientFlags = initClientFlags();
 			packet.maxPacketSize = 1024 * 1000;
 			packet.charsetIndex = charsetIndex;
-			packet.user = mySQLMetaBean.getUser();
+			packet.user = mySQLMetaBean.getDsMetaBean().getUser();
 			try {
-				packet.password = passwd(mySQLMetaBean.getPassword(), handshake);
+				packet.password = passwd(mySQLMetaBean.getDsMetaBean().getPassword(), handshake);
 			} catch (NoSuchAlgorithmException e) {
 				throw new RuntimeException(e.getMessage());
 			}

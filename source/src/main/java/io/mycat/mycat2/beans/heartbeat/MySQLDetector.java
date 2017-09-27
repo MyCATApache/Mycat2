@@ -90,12 +90,12 @@ public class MySQLDetector {
 				heartbeatTask.doHeartbeat();
 			}else{
 				//连接创建 失败. 如果是主节点，需要重试.并在达到重试次数后,通知集群
-				if(heartbeat.incrErrorCount() < heartbeat.getSource().getMaxRetryCount()){
+				if(heartbeat.incrErrorCount() < heartbeat.getSource().getDsMetaBean().getMaxRetryCount()){
 					heartbeat();
 				}else{
 					heartbeat.setResult(DBHeartbeat.ERROR_STATUS, 
 										this, 
-										heartbeat.getSource().getIp()+":"+heartbeat.getSource().getPort()
+										heartbeat.getSource().getDsMetaBean().getIp()+":"+heartbeat.getSource().getDsMetaBean().getPort()
 										+" connection timeout!!");
 				}
 			}

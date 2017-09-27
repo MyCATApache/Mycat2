@@ -2,10 +2,7 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.beans.ReplicaConfBean;
-import io.mycat.mycat2.beans.ReplicaIndexBean;
-import io.mycat.mycat2.beans.SchemaConfBean;
-import io.mycat.mycat2.loadbalance.LocalLoadChecker;
+import io.mycat.mycat2.beans.conf.*;
 import io.mycat.mycat2.loadbalance.RandomStrategy;
 import io.mycat.proxy.*;
 import io.mycat.proxy.NIOAcceptor.ServerType;
@@ -22,25 +19,24 @@ import io.mycat.proxy.man.MyCluster;
 
 public class ProxyStarter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProxyStarter.class);
-
 	public static final ProxyStarter INSTANCE = new ProxyStarter();
-
-	private ProxyStarter(){}
 
 	public void start() throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
+		MycatConfig conf = runtime.getConfig();
 
 		// 启动NIO Acceptor
 		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
 		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
-		if (conf.isClusterEnable()) {
+		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
+		ClusterBean clusterBean = clusterConfig.getCluster();
+		if (clusterBean.isEnable()) {
 			// 集群开启状态，需要等集群启动，主节点确认完配置才能提供服务
-			acceptor.startServerChannel(conf.getClusterIP(), conf.getClusterPort(), ServerType.CLUSTER);
+			acceptor.startServerChannel(clusterBean.getIp(), clusterBean.getPort(), ServerType.CLUSTER);
 			runtime.setAdminCmdResolver(new AdminCommandResovler());
-			MyCluster cluster = new MyCluster(acceptor.getSelector(), conf.getMyNodeId(), ClusterNode.parseNodesInf(conf.getAllNodeInfs()));
+			MyCluster cluster = new MyCluster(acceptor.getSelector(), clusterBean.getMyNodeId(), ClusterNode.parseNodesInf(clusterBean.getAllNodes()));
 			runtime.setMyCLuster(cluster);
 			cluster.initCluster();
 		} else {
@@ -51,22 +47,30 @@ public class ProxyStarter {
 
 	public void startProxy(boolean isLeader) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-		MycatConfig conf = (MycatConfig) runtime.getProxyConfig();
-
-		// 加载配置文件信息
-		ConfigLoader.INSTANCE.loadAll();
+		MycatConfig conf = runtime.getConfig();
 		NIOAcceptor acceptor = runtime.getAcceptor();
-		acceptor.startServerChannel(conf.getBindIP(), conf.getBindPort(), ServerType.MYCAT);
-		startReactor();
-		// 初始化
-		init(conf);
-        if(conf.isLoadBalanceEnable()){
+		
+		startMycatServer(runtime,conf,acceptor,isLeader);
+		
+		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
+		BalancerBean balancerBean = balancerConfig.getBalancer();
+        if (balancerBean.isEnable()){
             //开启负载均衡服务
-            runtime.setLocalLoadChecker(new LocalLoadChecker());
-            runtime.setLoadBalanceStrategy(new RandomStrategy());
-            acceptor.startServerChannel(conf.getLoadBalanceIp(), conf.getLoadBalancePort(), ServerType.LOAD_BALANCER);
+            acceptor.startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
         }
-
+	}
+	
+	public void startMycatServer(ProxyRuntime runtime,MycatConfig conf,NIOAcceptor acceptor,boolean isLeader) throws IOException{
+		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
+		ProxyBean proxyBean = proxyConfig.getProxy();
+		if(acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT)){
+			startReactor();
+			// 加载配置文件信息
+			ConfigLoader.INSTANCE.loadAll();
+			// 初始化
+			init(conf);
+		}
+		
 		// 主节点才启动心跳，非集群下也启动心跳
 		if (isLeader) {
 			runtime.startHeartBeatScheduler();
@@ -95,13 +99,13 @@ public class ProxyStarter {
 
 	private void init(MycatConfig conf) {
 		// 初始化连接
-		conf.getMysqlRepMap().forEach((key, value) -> {
-			value.initMaster();
-			value.getMysqls().forEach(metaBean -> {
+		conf.getMysqlRepMap().forEach((repName, repBean) -> {
+			repBean.initMaster();
+			repBean.getMetaBeans().forEach(metaBean -> {
 				try {
-					metaBean.init(value,ProxyRuntime.INSTANCE.maxdataSourceInitTime,value.getDataSourceInitStatus());
+					metaBean.init(repBean,ProxyRuntime.INSTANCE.maxdataSourceInitTime,repBean.getDataSourceInitStatus());
 				} catch (IOException e) {
-					LOGGER.error("error to init metaBean: {}", metaBean.getHostName());
+					LOGGER.error("error to init metaBean: {}", metaBean.getDsMetaBean().getHostName());
 				}
 			});
 		});

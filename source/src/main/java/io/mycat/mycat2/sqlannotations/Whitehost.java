@@ -1,29 +1,30 @@
 package io.mycat.mycat2.sqlannotations;
 
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Map;
+import io.mycat.mycat2.MycatSession;
 
 /**
  * Created by jamie on 2017/9/24.
  */
 public class Whitehost  implements SQLAnnotation{
+	
+	private static final Logger logger = LoggerFactory.getLogger(Whitehost.class);
 
     public Whitehost() {
-        if (isDebug)
-            System.out.println("=>Whitehost 对象本身的构造 初始化");
+    	logger.debug("=>Whitehost 对象本身的构造 初始化");
     }
 
     @Override
     public void init(Object args) {
-        System.out.println("=>Whitehost 动态注解初始化");
+    	logger.debug("=>Whitehost 动态注解初始化");
     }
 
     @Override
     public Boolean apply(MycatSession context) {
-        System.out.println("========================> Whitehost ");
-        return false;
+    	logger.debug("========================> Whitehost ");
+        return Boolean.TRUE;
     }
     @Override
     public String getMethod() {

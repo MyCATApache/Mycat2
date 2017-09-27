@@ -36,7 +36,7 @@ public class AdminSession implements Session {
 	public String addr;
 	public SocketChannel channel;
 	public SelectionKey channelKey;
-	protected static Logger logger = LoggerFactory.getLogger(AbstractSession.class);
+	protected static Logger logger = LoggerFactory.getLogger(AdminSession.class);
 	private NIOHandler<AdminSession> nioHandler;
 	private int sessionId;
 	// Session是否关闭
@@ -102,7 +102,12 @@ public class AdminSession implements Session {
 			buffer.limit(writingBuffer.readIndex);
 			buffer.position(writingBuffer.readMark);
 		}
-		int writed = this.channel.write(buffer);
+		int writed = 0;
+		try {
+			writed = this.channel.write(buffer);
+		} catch(IOException e){
+			closeSocket(false,"Read EOF ,socket closed ");
+		}
 		if (writed > 0) {
 			writingBuffer.readMark += writed;
 		}
@@ -165,28 +170,37 @@ public class AdminSession implements Session {
 		} else {
 			buffer.position(readingBuffer.writeIndex);
 		}
-		int readed = channel.read(buffer);
-		logger.debug(" readed {} total bytes ", readed);
+		int readed =0;
+		try {
+			readed = channel.read(buffer);
+			logger.debug(" readed {} total bytes ", readed);
+		} catch(IOException e){
+			closeSocket(false,"Read EOF ,socket closed ");
+		}
 		if (readed == -1) {
-			logger.warn("Read EOF ,socket closed ");
-			this.cluster().onClusterNodeDown(nodeId, this);
-			throw new ClosedChannelException();
+			closeSocket(false,"Read EOF ,socket closed ");
 		} else if (readed == 0) {
 
 			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
 		}
 		readingBuffer.writeIndex = buffer.position();
+		
 		return readed > 0;
+	}
+	
+	private void closeSocket(boolean normal,String msg) throws IOException{
+		close(false,msg);
+		throw new ClosedChannelException();
 	}
 
 	public void close(boolean normal, String hint) {
 		if (!this.isClosed()) {
 			this.closed = true;
 			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
+			this.getMySessionManager().removeSession(this);
 			closeSocket(channel, normal, hint);
 			bufPool.recycleBuf(this.readingBuffer.getBuffer());
 			bufPool.recycleBuf(this.writingBuffer.getBuffer());
-			this.getMySessionManager().removeSession(this);
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}

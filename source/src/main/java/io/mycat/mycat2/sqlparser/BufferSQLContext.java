@@ -11,15 +11,15 @@ import java.util.Arrays;
  */
 public class BufferSQLContext {
     //DDL
-    public static final byte CREATE_SQL = 1;
-    public static final byte ALTER_SQL = 2;
-    public static final byte DROP_SQL = 3;
+    public static final byte CREATE_SQL = 1;  //TODO 进一步细化。 区分 
+    public static final byte ALTER_SQL = 2;   //TODO 进一步细化，区分
+    public static final byte DROP_SQL = 3;    //TODO 进一步细化，区分
     public static final byte TRUNCATE_SQL = 4;
     //    public static final byte COMMENT_SQL = 5;
     public static final byte RENAME_SQL = 6;
     public static final byte USE_SQL = 7;
-    public static final byte SHOW_SQL = 8;
-    public static final byte SET_SQL = 9;
+    public static final byte SHOW_SQL = 8;    //TODO 进一步细化。区分
+    public static final byte SET_SQL = 9;     //TODO 进一步细化。区分
     public static final byte PARTITION_SQL = 10;
 
     //DML
@@ -62,6 +62,8 @@ public class BufferSQLContext {
     public static final byte XA_START = 40;
     public static final byte XA_BEGIN = 41;
     public static final byte XA_END = 42;
+    
+    public static final byte MYCAT_SWITCH_REPL = 43;
 
     //ANNOTATION TYPE
     public static final byte ANNOTATION_BALANCE = 1;
@@ -93,7 +95,7 @@ public class BufferSQLContext {
     private boolean hasLimit = false;
     private int limitStart = 0;
     private int limitCount = 0;
-    private HashArray hashArray;
+    private HashArray hashArray = new HashArray();
     private int curSQLIdx;
     private int curSQLTblCount = 0;
     private int preHashArrayPos = 0;
@@ -106,12 +108,11 @@ public class BufferSQLContext {
         sqlInfoArray = new short[512];
         annotationValue = new long[16];
         annotationCondition=new int[64];
-        myCmdValue = new HashArray(10);
+        myCmdValue = new HashArray(256);
     }
 
-    public void setCurBuffer(ByteArrayInterface curBuffer, HashArray hashArray) {
+    public void setCurBuffer(ByteArrayInterface curBuffer) {
         buffer = curBuffer;
-        this.hashArray = hashArray;
         totalTblCount = 0;
         schemaCount = 0;
         tblResultPos = 0;
@@ -131,6 +132,7 @@ public class BufferSQLContext {
         preHashArrayPos = 0;
         preTableResultPos = 0;
         hashArrayRealSQLOffset = 0;
+        myCmdValue.init();
     }
 
     public void setTblName(int hashArrayPos) {
@@ -160,6 +162,14 @@ public class BufferSQLContext {
             int size = hashArray.getSize(hashArrayIdx);
             return buffer.getString(pos, size);
         }
+    }
+
+    public long getTokenType(int sqlIdx, int sqlPos) {
+        return hashArray.getType(sqlInfoArray[sqlIdx << 2] + sqlPos);
+    }
+
+    public long getTokenHash(int sqlIdx, int sqlPos) {
+        return hashArray.getHash(sqlInfoArray[sqlIdx << 2] + sqlPos);
     }
 
     public long getSchemaHash(int idx) {

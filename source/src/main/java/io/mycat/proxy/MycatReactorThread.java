@@ -6,13 +6,13 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.SchemaBean;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
@@ -74,9 +74,9 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 						.filter(list -> list != null)
 						.reduce(0, (sum, list) -> sum += list.size(), (sum1, sum2) -> sum1 + sum2);
 		int backendCounts = getUsingBackendConCounts(mySQLMetaBean);
-		logger.debug("all session backend count is {},reactor backend count is {},metabean max con is {}",backendCounts,count,mySQLMetaBean.getMaxCon());
-		if (count + backendCounts + 1 > mySQLMetaBean.getMaxCon()) {
-			callBack.finished(null, null, false, "backend connection is full for " + mySQLMetaBean.getIp() + ":"+mySQLMetaBean.getPort());
+		logger.debug("all session backend count is {},reactor backend count is {},metabean max con is {}",backendCounts,count,mySQLMetaBean.getDsMetaBean().getMaxCon());
+		if (count + backendCounts + 1 > mySQLMetaBean.getDsMetaBean().getMaxCon()) {
+			callBack.finished(null, null, false, "backend connection is full for " + mySQLMetaBean.getDsMetaBean().getIp() + ":" + mySQLMetaBean.getDsMetaBean().getPort());
 			return;
 		}
 		try {
@@ -92,8 +92,6 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
      * 3. reactor thread中空闲的backend
 	 * 4. 连接池中的 backend
 	 * 5. 是否可以新建连接
-	 * @param runOnSlave
-	 * @param backendName
 	 * @return
 	 * @throws IOException 
 	 */
@@ -107,12 +105,10 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
                 .map(mycatSession->mycatSession.getCurrCachedSession(targetMetaBean, runOnSlave,true))
                 .filter(session -> session != null).findFirst().orElse(null);
         if (mysqlSession != null) {
-        	if (logger.isDebugEnabled()) {
-    			logger.debug("Use reactor cached backend connections for {}.{}:{}",
-    					(runOnSlave ? "read" : "write"),
-    					mysqlSession.getMySQLMetaBean().getIp(),
-    					mysqlSession.getMySQLMetaBean().getPort());
-    		}
+			logger.debug("Use reactor cached backend connections for {}.{}:{}",
+					(runOnSlave ? "read" : "write"),
+					mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),
+					mysqlSession.getMySQLMetaBean().getDsMetaBean().getPort());
             mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
             currMycatSession.bindBackend(mysqlSession);
             syncAndExecute(mysqlSession,callback);
@@ -125,12 +121,10 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 		if (mySQLSessionList != null && !mySQLSessionList.isEmpty()) {
 			mysqlSession = mySQLSessionList.removeLast();
 			if(mysqlSession!=null){
-				if(logger.isDebugEnabled()){
-					logger.debug("Using the existing session in the datasource  for {}. {}:{}",
-							(runOnSlave ? "read" : "write"),
-							mysqlSession.getMySQLMetaBean().getIp(),
-							mysqlSession.getMySQLMetaBean().getPort());
-				}
+				logger.debug("Using the existing session in the datasource  for {}. {}:{}",
+						(runOnSlave ? "read" : "write"),
+						mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),
+						mysqlSession.getMySQLMetaBean().getDsMetaBean().getPort());
 				currMycatSession.bindBackend(mysqlSession);
 				syncAndExecute(mysqlSession,callback);
 				return;
@@ -185,7 +179,8 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         	if (logger.isDebugEnabled()) {
     			logger.debug("Use front sessionMap cached backend connections.{}",mysqlSession);
     		}
-            mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
+        	
+        	mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
             callback.finished(mysqlSession, null, true, null);
             return;
         }
