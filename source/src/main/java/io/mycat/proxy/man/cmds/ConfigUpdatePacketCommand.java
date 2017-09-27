@@ -61,7 +61,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         // 生成yml文件内容
         String content = YamlUtil.dump(bean);
         // 存储在本地prepare文件夹下
-        YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), newVersion), content);
+        YamlUtil.dumpToFile(configEnum.getFileName(), newVersion, content);
         // 构造prepare报文
         final ConfigPreparePacket preparePacket = new ConfigPreparePacket(type, newVersion, attach, content);
         // 向从节点发送报文
@@ -94,7 +94,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         int version = preparePacket.getConfVersion();
 
         ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-        YamlUtil.dumpToFile(YamlUtil.getFileName(configEnum.getFileName(), version), preparePacket.getConfContent());
+        YamlUtil.dumpToFile(configEnum.getFileName(), version, preparePacket.getConfContent());
 
         // 从节点处理完成之后向主节点发送确认报文
         ConfigConfirmPacket confirmPacket = new ConfigConfirmPacket(configType, version, preparePacket.getAttach());
@@ -124,7 +124,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
             configAnswerAllAliveNodes(commitPacket, configType, false);
 
             ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-            ConfigLoader.INSTANCE.loadConfig(true, configEnum, commitPacket.getConfVersion());
+            ConfigLoader.INSTANCE.archiveAndLoadConfig(configEnum, commitPacket.getConfVersion());
             cluster.configConfirmMap.remove(configType);
             postLoadConfig(configEnum, attach);
         }
@@ -136,17 +136,16 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
         byte configType = commitPacket.getConfType();
 
         ConfigEnum configEnum = ConfigEnum.getConfigEnum(configType);
-        ConfigLoader.INSTANCE.loadConfig(true, configEnum, commitPacket.getConfVersion());
+        ConfigLoader.INSTANCE.archiveAndLoadConfig(configEnum, commitPacket.getConfVersion());
         postLoadConfig(configEnum, commitPacket.getAttach());
     }
 
     private void configAnswerAllAliveNodes(ManagePacket packet, byte type, boolean needCommit) {
         MyCluster cluster = ProxyRuntime.INSTANCE.getMyCLuster();
         ProxyRuntime.INSTANCE.getAdminSessionManager().getAllSessions().forEach(adminSession -> {
-            AdminSession nodeSession = (AdminSession) adminSession;
-            if (nodeSession.isChannelOpen()) {
+            if (adminSession.isChannelOpen()) {
                 try {
-                    nodeSession.answerClientNow(packet);
+                    adminSession.answerClientNow(packet);
                     if (needCommit) {
                         ConfigConfirmBean confirmBean = cluster.configConfirmMap.get(type);
                         if (confirmBean != null) {
@@ -154,7 +153,7 @@ public class ConfigUpdatePacketCommand implements AdminCommand {
                         }
                     }
                 } catch (Exception e) {
-                    LOGGER.warn("notify node err " + nodeSession.getNodeId(), e);
+                    LOGGER.warn("notify node err " + adminSession.getNodeId(), e);
                 }
             }
         });

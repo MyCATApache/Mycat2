@@ -1,5 +1,6 @@
 package io.mycat.mycat2;
 
+import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.Configurable;
@@ -26,10 +27,10 @@ public class ConfigLoader {
     public static final String DIR_ARCHIVE = "archive" + File.separator;
 
     public void loadCore() throws IOException {
-        loadConfig(false, ConfigEnum.PROXY, null);
-        loadConfig(false, ConfigEnum.HEARTBEAT, null);
-        loadConfig(false, ConfigEnum.CLUSTER, null);
-        loadConfig(false, ConfigEnum.BALANCER, null);
+        loadConfig(ConfigEnum.PROXY, GlobalBean.INIT_VERSION);
+        loadConfig(ConfigEnum.HEARTBEAT, GlobalBean.INIT_VERSION);
+        loadConfig(ConfigEnum.CLUSTER, GlobalBean.INIT_VERSION);
+        loadConfig(ConfigEnum.BALANCER, GlobalBean.INIT_VERSION);
     }
 
     public void loadAll() throws IOException {
@@ -37,9 +38,9 @@ public class ConfigLoader {
         YamlUtil.createDirectoryIfNotExists(DIR_PREPARE);
         YamlUtil.createDirectoryIfNotExists(DIR_ARCHIVE);
 
-        loadConfig(false, ConfigEnum.REPLICA_INDEX, null);
-        loadConfig(false, ConfigEnum.DATASOURCE, null);
-        loadConfig(false, ConfigEnum.SCHEMA, null);
+        loadConfig(ConfigEnum.REPLICA_INDEX, GlobalBean.INIT_VERSION);
+        loadConfig(ConfigEnum.DATASOURCE, GlobalBean.INIT_VERSION);
+        loadConfig(ConfigEnum.SCHEMA, GlobalBean.INIT_VERSION);
 
         // 清空prepare文件夹
         YamlUtil.clearDirectory(DIR_PREPARE, null);
@@ -47,32 +48,33 @@ public class ConfigLoader {
     }
 
     /**
-     * 加载指定配置文件
-     * @param needAchive 是否需要归档
-     * @param configEnum 配置文件的枚举
-     * @param targetVersion 指定的版本号
+     * 加载指定的配置文件
+     * @param configEnum 加载的配置枚举值
+     * @param version 当前加载的文件版本
+     */
+    public void loadConfig(ConfigEnum configEnum, int version) throws IOException {
+        String fileName = configEnum.getFileName();
+        MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+        LOGGER.info("load config for {}", configEnum);
+        conf.putConfig(configEnum, (Configurable) YamlUtil.load(fileName, configEnum.getClazz()), version);
+    }
+
+    /**
+     * 将当前的配置文件归档，并从prepare中获取指定版本的配置文件作为当前的配置文件，同时清空prepare文件夹
+     * @param configEnum
+     * @param version
      * @throws IOException
      */
-    public void loadConfig(boolean needAchive, ConfigEnum configEnum, Integer targetVersion) throws IOException {
-        // 加载replica-index
+    public void archiveAndLoadConfig(ConfigEnum configEnum, int version) throws IOException {
         String fileName = configEnum.getFileName();
         MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 
-        if (needAchive) {
-            Integer curVersion = conf.getConfigVersion(configEnum);
-            Integer repVersion = YamlUtil.archive(fileName, curVersion, targetVersion);
-            if (repVersion == null) {
-                return;
-            }
-            targetVersion = repVersion;
+        int curVersion = conf.getConfigVersion(configEnum);
+        if (YamlUtil.archive(fileName, curVersion, version)) {
+            loadConfig(configEnum, version);
         }
 
-        LOGGER.debug("load config for {}", configEnum);
-        conf.putConfig(configEnum, (Configurable) YamlUtil.load(fileName, configEnum.getClazz()), targetVersion);
-
-        if (needAchive) {
-            // 清空prepare下的文件
-            YamlUtil.clearDirectory(DIR_PREPARE, fileName);
-        }
+        // 清空prepare下的文件
+        YamlUtil.clearDirectory(DIR_PREPARE, fileName);
     }
 }

@@ -69,9 +69,8 @@ public class MycatConfig {
      * @param config
      * @param version
      */
-	public void putConfig(ConfigEnum configEnum, Configurable config, Integer version) {
+	public void putConfig(ConfigEnum configEnum, Configurable config, int version) {
 		configMap.put(configEnum, config);
-		version = version == null ? GlobalBean.INIT_VERSION : version;
 		configVersionMap.put(configEnum, version);
 	}
 
@@ -84,8 +83,7 @@ public class MycatConfig {
 	}
 
 	public int getConfigVersion(ConfigEnum configEnum) {
-		Integer oldVersion = configVersionMap.get(configEnum);
-		return oldVersion == null ? GlobalBean.INIT_VERSION : oldVersion;
+		return configVersionMap.get(configEnum);
 	}
 
     public Map<String, MySQLRepBean> getMysqlRepMap() {

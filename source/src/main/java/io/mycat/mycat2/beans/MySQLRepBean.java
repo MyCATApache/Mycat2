@@ -143,7 +143,7 @@ public class MySQLRepBean {
 		return result;
 	}
 
-	public void switchSource(int newIndex,long maxwaittime) {
+	public void switchSource(int newIndex, long maxWaitTime) {
 		if (replicaBean.getSwitchType() == ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH) {
 			logger.debug("not switch datasource ,for switchType is {}", ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH);
 			switchResult.set(false);
@@ -161,18 +161,16 @@ public class MySQLRepBean {
 		lock.lock();
 
 		try {
-
 			switchResult.set(false);
 
 			int current = writeIndex;
 			if (current != newIndex) {
-
 				String reason = "switch datasource";
 
 				// init again
 				MySQLMetaBean newWriteBean = metaBeans.get(newIndex);
 				newWriteBean.clearCons(reason);
-				newWriteBean.init(this,maxwaittime,getDataSourceInitStatus());
+				newWriteBean.init(this, maxWaitTime, getDataSourceInitStatus());
 
 				// clear all connections
 				MySQLMetaBean oldMetaBean = metaBeans.get(current);
@@ -188,25 +186,25 @@ public class MySQLRepBean {
 				newWriteBean.setSlaveNode(false);
 
 				lastInitTime = System.currentTimeMillis();
-			}else{
+			} else {
 				logger.debug("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
 			}
-		}catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException e) {
+			logger.error("error to switch datasource", e);
 			switchResult.set(false);
-		}finally {
+		} finally {
 			lock.unlock();
 		}
 	}
 
 	public int getDataSourceInitStatus(){
-		int initstatus = DBHeartbeat.OK_STATUS;
+		int initStatus = DBHeartbeat.OK_STATUS;
 		MyCluster myCluster = ProxyRuntime.INSTANCE.getMyCLuster();
 
-		if(myCluster==null||myCluster.getMyLeader()==myCluster.getMyNode()){
-			initstatus = DBHeartbeat.INIT_STATUS;
+		if (myCluster == null || myCluster.getMyLeader() == myCluster.getMyNode()){
+			initStatus = DBHeartbeat.INIT_STATUS;
 		}
-		return initstatus;
+		return initStatus;
 	}
 
 	private String switchMessage(int current, int newIndex, String reason) {

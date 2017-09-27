@@ -31,30 +31,33 @@ public class YamlUtil {
         if (mycatHome == null) {
             StringBuilder sb = new StringBuilder();
             sb.append(System.getProperty("user.dir"))
-                .append(File.separator)
-                .append("source")
-                .append(File.separator)
-                .append("target")
-                .append(File.separator)
-                .append("classes")
+                .append(File.separator).append("source")
+                .append(File.separator).append("target")
+                .append(File.separator).append("classes")
                 .append(File.separator);
             ROOT_PATH = sb.toString();
             LOGGER.debug("MYCAT_HOME is not set, set the default path: {}", ROOT_PATH);
         } else {
-            ROOT_PATH = mycatHome.endsWith(File.separator) ?
-                    mycatHome + ConfigLoader.DIR_CONF :
+            ROOT_PATH = mycatHome.endsWith(File.separator) ? mycatHome + ConfigLoader.DIR_CONF :
                     mycatHome + File.separator + ConfigLoader.DIR_CONF;
             LOGGER.debug("mycat home: {}, root path: {}", mycatHome, ROOT_PATH);
         }
     }
 
+    /**
+     * 从指定的文件中加载配置
+     * @param fileName 需要加载的文件名
+     * @param clazz 加载后需要转换成的类对象
+     * @return
+     * @throws FileNotFoundException
+     */
     public static <T> T load(String fileName, Class<T> clazz) throws FileNotFoundException {
         InputStreamReader fis = null;
         try {
             URL url = YamlUtil.class.getClassLoader().getResource(fileName);
             if (url != null) {
                 Yaml yaml = new Yaml();
-                fis =new InputStreamReader(new FileInputStream(url.getFile()), StandardCharsets.UTF_8);
+                fis = new InputStreamReader(new FileInputStream(url.getFile()), StandardCharsets.UTF_8);
                 T obj = yaml.loadAs(fis, clazz);
                 return obj;
             }
@@ -69,23 +72,35 @@ public class YamlUtil {
         }
     }
 
+    /**
+     * 将对象dump成yaml格式的字符串
+     * @param obj
+     * @return
+     */
     public static String dump(Object obj) {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         Representer representer = new Representer();
         representer.addClassTag(obj.getClass(), Tag.MAP);
         Yaml yaml = new Yaml(representer, options);
-        String str = yaml.dump(obj);
-        return str;
+        return yaml.dump(obj);
     }
 
-    public static void dumpToFile(String path, String content) {
+    /**
+     * 将对象dump成yaml格式并保存成指定文件，文件名格式：confName + "-" + version，如mycat.yml-1
+     * @param confName
+     * @param version
+     * @param content
+     */
+    public static void dumpToFile(String confName, int version, String content) {
         ProxyRuntime.INSTANCE.addBusinessJob(() -> {
-            Path file = Paths.get(ROOT_PATH + ConfigLoader.DIR_PREPARE + path);
+            StringBuilder sb = new StringBuilder();
+            sb.append(ROOT_PATH).append(ConfigLoader.DIR_PREPARE).append(confName).append("-").append(version);
+            Path file = Paths.get(sb.toString());
             try (FileWriter writer = new FileWriter(file.toString())) {
                 writer.write(content);
             } catch (IOException e) {
-                LOGGER.error("error to write content: {} to path: {}", content, path, e);
+                LOGGER.error("error to write content: {} to path: {}", content, sb.toString(), e);
             }
         });
     }
@@ -93,53 +108,42 @@ public class YamlUtil {
     /**
      * 将配置文件归档，新的配置文件生效
      */
-    public static Integer archive(String configName, int curVersion, Integer targetVersion) throws IOException {
+    public static boolean archive(String configName, int curVersion, int targetVersion) throws IOException {
         // 检查是否有新需要加载的文件
-        String preparePath = ROOT_PATH + ConfigLoader.DIR_PREPARE;
-        File prepareFile = new File(preparePath);
-
-        String filePrefix = (targetVersion == null) ? configName : getFileName(configName, targetVersion.intValue());
-        File[] files = prepareFile.listFiles((dir, name) -> name.startsWith(filePrefix));
+        File prepareDir = new File(ROOT_PATH + ConfigLoader.DIR_PREPARE);
+        String fileName = getFileName(configName, targetVersion);
+        File[] files = prepareDir.listFiles((dir, name) -> name.equals(fileName));
 
         if (files == null || files.length == 0) {
             LOGGER.warn("no prepare file for config {}", configName);
-            return null;
+            return false;
         }
 
         // 将现有的配置归档
         String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
-        Files.move(Paths.get(ROOT_PATH + configName),
-                Paths.get(archivePath + getFileName(configName, curVersion)),
-                StandardCopyOption.REPLACE_EXISTING);
+        Files.move(Paths.get(ROOT_PATH + configName), Paths.get(archivePath + getFileName(configName, curVersion)), StandardCopyOption.REPLACE_EXISTING);
 
         // 将新的配置生效
-        File confFile = Stream.of(files).sorted((file1, file2) -> {
-                    String name1 = file1.getName();
-                    Integer version1 = parseConfigVersion(name1);
-                    String name2 = file2.getName();
-                    Integer version2 = parseConfigVersion(name2);
-                    return version2.compareTo(version1);
-                }).findFirst().get();
-
-        Files.copy(confFile.toPath(), Paths.get(ROOT_PATH + configName), StandardCopyOption.REPLACE_EXISTING);
-
-        String name = confFile.toPath().toString();
-        return parseConfigVersion(name);
+        Files.copy(files[0].toPath(), Paths.get(ROOT_PATH + configName), StandardCopyOption.REPLACE_EXISTING);
+        return true;
     }
 
-    public static void archiveAndDump(String configName, int curVersion, Configurable configBean) {
+    /**
+     * 将配置文件归档，内存中的对象dump到文件中
+     * @param configBean
+     * @param configName
+     * @param curVersion
+     */
+    public static void archiveAndDumpToFile(Configurable configBean, String configName, int curVersion) {
         ProxyRuntime.INSTANCE.addBusinessJob(() -> {
             String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
             try {
-                Files.move(Paths.get(ROOT_PATH + configName),
-                        Paths.get(archivePath + getFileName(configName, curVersion)),
-                        StandardCopyOption.REPLACE_EXISTING);
+                Files.move(Paths.get(ROOT_PATH + configName), Paths.get(archivePath + getFileName(configName, curVersion)), StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 LOGGER.error("error to move file for config {}, version {}", configName, curVersion);
             }
 
-            Path file = Paths.get(ROOT_PATH + configName);
-            try (FileWriter writer = new FileWriter(file.toString())) {
+            try (FileWriter writer = new FileWriter(Paths.get(ROOT_PATH + configName).toString())) {
                 writer.write(dump(configBean));
             } catch (IOException e) {
                 LOGGER.error("error to dump config to file, config name {}, version {}", configName, curVersion + 1);
@@ -147,12 +151,8 @@ public class YamlUtil {
         });
     }
 
-    public static String getFileName(String configName, int version) {
+    private static String getFileName(String configName, int version) {
         return configName + "-" + version;
-    }
-
-    private static Integer parseConfigVersion(String fileName) {
-        return Integer.valueOf(fileName.substring(fileName.lastIndexOf("-") + 1));
     }
 
     /**

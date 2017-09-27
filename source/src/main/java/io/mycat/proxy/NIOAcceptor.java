@@ -42,7 +42,7 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		this.setName("NIO-Acceptor");
 	}
 
-	public boolean startServerChannel(String ip, int port,ServerType serverType) throws IOException {
+	public boolean startServerChannel(String ip, int port, ServerType serverType) throws IOException {
 		final ServerSocketChannel serverChannel = getServerSocketChannel(serverType);
 		if (serverChannel != null && serverChannel.isOpen()) {
 			return false;
@@ -196,7 +196,6 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		session.getCurNIOHandler().onSocketRead(session);
 	}
 
-	@SuppressWarnings("unchecked")
 	protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
 		Session session = (Session) curKey.attachment();
@@ -212,13 +211,13 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverChannel.register(selector, SelectionKey.OP_ACCEPT, serverType);
 		if (serverType == ServerType.CLUSTER) {
-			logger.debug("opend cluster server port on {}:{}", bindIp, bindPort);
+			logger.info("open cluster server port on {}:{}", bindIp, bindPort);
 			clusterServerSocketChannel = serverChannel;
 		} else if (serverType == ServerType.LOAD_BALANCER) {
-			logger.debug("opend loadbalance server port on {}:{}", bindIp, bindPort);
+			logger.info("open load balance server port on {}:{}", bindIp, bindPort);
 			loadBalanceServerSocketChannel = serverChannel;
 		} else {
-			logger.debug("opend proxy server port on {}:{}", bindIp, bindPort);
+			logger.info("open proxy server port on {}:{}", bindIp, bindPort);
 			proxyServerSocketChannel = serverChannel;
 		}
 	}

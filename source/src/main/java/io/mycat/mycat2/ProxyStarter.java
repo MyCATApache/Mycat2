@@ -2,6 +2,7 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.mycat2.beans.conf.*;
 import io.mycat.proxy.*;
 import io.mycat.proxy.NIOAcceptor.ServerType;
@@ -29,7 +30,7 @@ public class ProxyStarter {
 		MycatConfig conf = runtime.getConfig();
 
 		// 启动NIO Acceptor
-		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
+		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(GlobalBean.BUFFER_POOL_SIZE));
 		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
@@ -124,7 +125,7 @@ public class ProxyStarter {
 		MycatReactorThread[] nioThreads = (MycatReactorThread[]) MycatRuntime.INSTANCE.getReactorThreads();
 		int cpus = nioThreads.length;
 		for (int i = 0; i < cpus; i++) {
-			MycatReactorThread thread = new MycatReactorThread(new BufferPool(1024 * 10));
+			MycatReactorThread thread = new MycatReactorThread(new BufferPool(GlobalBean.BUFFER_POOL_SIZE));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
