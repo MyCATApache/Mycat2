@@ -38,6 +38,7 @@ public class DataEventProc implements ChainExecInf {
 			// 获取当前是否结束标识
 			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_READY_OVER.getKey(), true);
 		}
+
 		// 完成之后将再次注册写入事件
 		session.takeOwner(SelectionKey.OP_WRITE);
 

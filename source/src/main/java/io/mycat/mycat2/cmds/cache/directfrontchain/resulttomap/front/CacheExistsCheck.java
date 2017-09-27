@@ -9,6 +9,8 @@ import io.mycat.mycat2.cmds.sqlCmds.CacheMapFileCommand;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mysql.packet.QueryPacket;
+import io.mycat.proxy.ProxyBuffer;
 
 /**
  * 用于缓存的逻辑检查操作
@@ -40,7 +42,7 @@ public class CacheExistsCheck implements ChainExecInf {
 			long cacheTime = (long) mycatSession.getSessionAttrMap()
 					.get(SessionKeyEnum.SESSION_KEY_CACHE_TIMEOUT.getKey());
 			// 添加缓存操作
-			addCache(mycatSession, sql, true, (int)cacheTime);
+			addCache(mycatSession, sql, true, (int) cacheTime);
 
 			return true;
 		}
@@ -138,6 +140,9 @@ public class CacheExistsCheck implements ChainExecInf {
 		// 调用进行前段的数据请求操作
 		// mycatSession.curSQLCommand.procssSQL(mycatSession);
 
+		// 设置查询请求的SQL
+		queryBufferPkg(mycatSession);
+
 		// // 将查询的数据写入至mysql
 		// ProxyBuffer curBuffer = mycatSession.proxyBuffer;
 		// // 切换 buffer 读写状态
@@ -170,6 +175,8 @@ public class CacheExistsCheck implements ChainExecInf {
 		mycatSession.getCmdChain().setTarget(CacheMapFileCommand.INSTANCE);
 		// 调用进行前段的数据请求操作
 		// mycatSession.curSQLCommand.procssSQL(mycatSession);
+		// 设置查询请求的SQL
+		queryBufferPkg(mycatSession);
 
 		// // 将查询的数据写入至mysql
 		// ProxyBuffer curBuffer = mycatSession.proxyBuffer;
@@ -181,6 +188,27 @@ public class CacheExistsCheck implements ChainExecInf {
 		// mycatSession.giveupOwner(SelectionKey.OP_WRITE);
 		// // 后数进行写入
 		// mycatSession.curBackend.writeToChannel();
+	}
+
+	private void queryBufferPkg(MycatSession mycatSession) {
+		// 将当前的SQL信息放入到session中
+		String selectSql = (String) mycatSession.getSessionAttrMap()
+				.get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
+
+		// buffer查询
+		ProxyBuffer proxyBuf = mycatSession.proxyBuffer;
+
+		// 清理buffer，重新组装查询的报文
+		proxyBuf.reset();
+
+		QueryPacket queryPkg = new QueryPacket();
+
+		queryPkg.packetId = 0;
+		queryPkg.packetLength = selectSql.getBytes().length;
+		queryPkg.sql = selectSql;
+
+		// 查询数据的sql
+		queryPkg.write(proxyBuf);
 	}
 
 }

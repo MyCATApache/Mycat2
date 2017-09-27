@@ -32,12 +32,13 @@ public class ResultOverFlag implements ChainExecInf {
 
 		// 首先检查读取是否完成
 		if (null != readOver && readOver) {
-			session.proxyBuffer.flip();
+			session.proxyBuffer.reset();
+			// session.proxyBuffer.flip();
 			// 完成后，切换为读取
-			session.takeOwner(SelectionKey.OP_READ);
+			// session.takeOwner(SelectionKey.OP_READ);
+			session.change2ReadOpts();
 			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
 			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CACHE_GET_FLAG.getKey());
-
 			// 移除数据缓存的偏移信息
 			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
 
@@ -74,11 +75,26 @@ public class ResultOverFlag implements ChainExecInf {
 				return seqList.nextExec();
 
 			} else {
+
+				Boolean check = (Boolean) session.curBackend.getSessionAttrMap()
+						.get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+
+				// 检查到当前已经完成,执行添加操作
+				if (null != check && check) {
+					session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
+					session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CACHE_GET_FLAG.getKey());
+					// 移除数据缓存的偏移信息
+					session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
+					// 清理结束标识
+					session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CACHE_READY_OVER.getKey());
+
+				}
+
 				// 获取当前是否结束标识
 				session.proxyBuffer.flip();
 				// 当写入完成，前段需要交出控制权，以让后端继续
 				session.giveupOwner(SelectionKey.OP_READ);
-				// session.change2ReadOpts();
+
 			}
 
 		}

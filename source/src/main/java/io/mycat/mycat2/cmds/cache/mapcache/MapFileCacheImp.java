@@ -275,15 +275,15 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 		ByteBuffer valueBuff = proBuffer.getBuffer();
 
 		// 计算空间
-		int limit = proBuffer.writeIndex - proBuffer.readMark;
+		int limit = 0;
 
 		// 标识出上一次写入的位置
 		proBuffer.readMark = proBuffer.writeIndex;
 
-		if (limit == 0) {
+		if (limit == proBuffer.readMark) {
 			limit = valueBuff.limit();
 		} else {
-			limit = valueBuff.limit() - limit;
+			limit = valueBuff.limit() - proBuffer.readMark;
 		}
 
 		int endPosition = 0;
@@ -293,6 +293,7 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 			for (int i = 0; i < length; i++) {
 				proBuffer.writeByte(unsafe.getByte(getIndex(cacheResult, i)));
 			}
+			endPosition = offset + length;
 		} else {
 			int startPosition = offset;
 			endPosition = offset;
@@ -305,8 +306,15 @@ public class MapFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 				endPosition = offset + limit;
 			}
 
+			System.out.println("错误的写入位置index:" + startPosition + "buffer信息为:" + proBuffer);
+
 			// 进行数据填充
 			for (int i = startPosition; i < endPosition; i++) {
+				if (proBuffer.writeIndex >= proBuffer.getBuffer().limit()) {
+					System.out.println("当前写入index:" + proBuffer.writeIndex + ",limit:" + proBuffer.getBuffer().limit()
+							+ ",当前i:" + i + "，结束位置:<" + endPosition);
+				}
+
 				proBuffer.writeByte(unsafe.getByte(getIndex(cacheResult, i)));
 			}
 		}

@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.DefaultMySQLCommand;
 import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.front.CacheExistsCheck;
-import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.front.CacheReadBufferToSql;
 import io.mycat.mycat2.common.SeqContextList;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
@@ -58,8 +57,8 @@ public class SQLCachCmd extends DefaultMySQLCommand {
 			seqcontext.clear();
 
 			seqcontext.setSession(session);
-			// 首先添加缓存转换为sql
-			seqcontext.addExec(CacheReadBufferToSql.INSTANCE);
+			// // 首先添加缓存转换为sql
+			// seqcontext.addExec(CacheReadBufferToSql.INSTANCE);
 			// 然后为缓存是否存
 			seqcontext.addExec(CacheExistsCheck.INSTANCE);
 
@@ -67,6 +66,8 @@ public class SQLCachCmd extends DefaultMySQLCommand {
 				seqcontext.nextExec();
 			} catch (Exception e) {
 				e.printStackTrace();
+			} finally {
+				seqcontext.clear();
 			}
 		}
 

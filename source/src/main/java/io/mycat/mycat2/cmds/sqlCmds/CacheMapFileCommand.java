@@ -102,6 +102,8 @@ public class CacheMapFileCommand implements MySQLCommand {
 			seqcontext.nextExec();
 		} catch (Exception e) {
 			e.printStackTrace();
+		} finally {
+			seqcontext.clear();
 		}
 		return false;
 	}
@@ -140,6 +142,8 @@ public class CacheMapFileCommand implements MySQLCommand {
 			seqcontext.nextExec();
 		} catch (Exception e) {
 			e.printStackTrace();
+		} finally {
+			seqcontext.clear();
 		}
 
 		return false;
