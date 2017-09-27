@@ -243,9 +243,10 @@ public class MyCluster {
 				+ new Timestamp(theNode.getNodeStartTime()));
 		if (theNode == myLeader) {
 			if (checkIfLeader()) {
-				logger.warn("My Leader {} crashed, I'm smallest alive node, and exceeded 1/2 nodes alive, so I'm the King now!", myLeader.id);
-//				// 集群主已产生，继续加载配置，提供服务
+				logger.info("My Leader crashed, I'm smallest alive node, and exceeded 1/2 nodes alive, so I'm the King now!");
+				// 集群主已产生，继续加载配置，提供服务
 //				ProxyStarter.INSTANCE.startProxy(true);
+				ProxyRuntime.INSTANCE.startHeartBeatScheduler();
 
 				this.setClusterState(ClusterState.Clustered);
 				this.myNode.setMyLeaderId(getMyNodeId());
@@ -253,7 +254,7 @@ public class MyCluster {
 				JoinCLusterNotifyPacket joinReps = createJoinNotifyPkg(session,JoinCLusterNotifyPacket.JOIN_STATE_NEED_ACK);
 				notifyAllNodes(session,joinReps);
 			} else {
-				logger.warn("Leader {} crashed, my node id {}, enter Leader election state ", myLeader.id, getMyNodeId());
+				logger.warn("Leader crashed {} {},enter Leader election state ", myLeader.id,this.getMyNodeId());
 				this.setClusterState(ClusterState.LeaderElection);
 
 				// 当前集群失去主节点，关闭proxy服务

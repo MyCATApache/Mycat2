@@ -33,7 +33,6 @@ public class ProxyStarter {
 		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
-		// 根据是否开启集群，处理配置的加载和启动
 		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
 		ClusterBean clusterBean = clusterConfig.getCluster();
 		if (clusterBean.isEnable()) {
@@ -70,39 +69,38 @@ public class ProxyStarter {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = runtime.getConfig();
 		NIOAcceptor acceptor = runtime.getAcceptor();
+
+		startMycatServer(runtime,conf,acceptor,isLeader);
+
+		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
+		BalancerBean balancerBean = balancerConfig.getBalancer();
+        if (balancerBean.isEnable() || isLeader.booleanValue() == true){
+            //开启负载均衡服务
+            acceptor.startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
+        }
+	}
+
+	public void startMycatServer(ProxyRuntime runtime,MycatConfig conf,NIOAcceptor acceptor,Boolean isLeader) throws IOException{
 		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
 		ProxyBean proxyBean = proxyConfig.getProxy();
-		acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT);
-		startReactor();
+		if(acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT)){
+			startReactor();
 
-		// 加载配置文件信息
-		ConfigLoader.INSTANCE.loadAll();
+			// 加载配置文件信息
+			ConfigLoader.INSTANCE.loadAll();
 
-		ProxyRuntime.INSTANCE.getConfig().initRepMap();
-		ProxyRuntime.INSTANCE.getConfig().initSchemaMap();
-
-		// 初始化连接
-		conf.getMysqlRepMap().forEach((repName, repBean) -> {
-			repBean.initMaster();
-			repBean.getMetaBeans().forEach(metaBean -> {
-				try {
-					metaBean.init(repBean,ProxyRuntime.INSTANCE.maxdataSourceInitTime,repBean.getDataSourceInitStatus());
-				} catch (IOException e) {
-					LOGGER.error("error to init metaBean: {}", metaBean.getDsMetaBean().getHostName());
-				}
+			// 初始化连接
+			conf.getMysqlRepMap().forEach((repName, repBean) -> {
+				repBean.initMaster();
+				repBean.getMetaBeans().forEach(metaBean -> {
+					try {
+						metaBean.init(repBean,ProxyRuntime.INSTANCE.maxdataSourceInitTime,repBean.getDataSourceInitStatus());
+					} catch (IOException e) {
+						LOGGER.error("error to init metaBean: {}", metaBean.getDsMetaBean().getHostName());
+					}
+				});
 			});
-		});
-
-		// 开启集群的时候处理负载均衡
-		if (isLeader != null) {
-			BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
-			BalancerBean balancerBean = balancerConfig.getBalancer();
-			if (balancerBean.isEnable()) {
-				//开启负载均衡服务
-				acceptor.startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
-			}
 		}
-
 		// 主节点才启动心跳，非集群下也启动心跳
 		if (isLeader == null || isLeader.booleanValue() == true) {
 			runtime.startHeartBeatScheduler();
