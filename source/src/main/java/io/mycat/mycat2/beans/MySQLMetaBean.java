@@ -87,13 +87,14 @@ public class MySQLMetaBean {
                                 BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this,getConTask);
                                 optSession.setCurNIOHandler(backendCharsetReadTask);
                                 backendCharsetReadTask.readCharset();
-                            }else{
+                            } else {
                             	getConTask.finished(optSession,sender,exeSucces,retVal);
-                            }
-                            optSession.change2ReadOpts();
-                            reactorThread.addMySQLSession(this, optSession);
-                        }else{
-                        	getConTask.finished(optSession,sender,exeSucces,retVal);
+							}
+							optSession.change2ReadOpts();
+							reactorThread.addMySQLSession(this, optSession);
+						} else {
+							this.charsetLoaded = false;
+							getConTask.finished(optSession,sender,exeSucces,retVal);
                         }
                     });
                 } catch (IOException ignore) {

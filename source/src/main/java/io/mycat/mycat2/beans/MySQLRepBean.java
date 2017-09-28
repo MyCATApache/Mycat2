@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import io.mycat.mycat2.beans.conf.DatasourceConfig;
 import io.mycat.mycat2.beans.conf.ReplicaBean;
 import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
 import io.mycat.mycat2.beans.conf.ReplicaBean.RepTypeEnum;
@@ -64,7 +63,7 @@ public class MySQLRepBean {
     private volatile int writeIndex = 0; //主节点默认为0
     private long lastSwitchTime;
     private long lastInitTime;  //最后一次初始化时间
-	
+
     public void initMaster() {
         // 根据配置replica-index的配置文件修改主节点
         MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
@@ -82,7 +81,7 @@ public class MySQLRepBean {
 		});
 		metaBeans.get(writeIndex).setSlaveNode(false);
     }
-    
+
 	public void doHeartbeat() {
 		if (metaBeans.get(writeIndex) == null) {
 			return;
@@ -98,12 +97,12 @@ public class MySQLRepBean {
 			}
 		}
 	}
-    
+
     private boolean checkIndex(int newIndex){
     	return newIndex >= 0 && newIndex < metaBeans.size();
     }
-    
-    public int getNextIndex(){    	
+
+    public int getNextIndex(){
     	MySQLMetaBean metaBean = metaBeans.stream().skip(writeIndex + 1).findFirst().orElse(null);
     	if (metaBean!=null){
     		return metaBeans.indexOf(metaBean);
@@ -115,17 +114,16 @@ public class MySQLRepBean {
     	}
     	return -1;
     }
-    
+
 	/**
 	 * 准备 主从切换前的检查
-	 * @param replBean
-	 * @param writeIndex
+	 * @param newIndex
 	 * @return
 	 */
 	public CheckResult switchDataSourcecheck(int newIndex){
 		String errmsg = null;
 		CheckResult result = new CheckResult(true);
-		
+
 		if(RepTypeEnum.SINGLE_NODE.equals(getReplicaBean().getRepType())){
 			errmsg = " repl type is "+RepTypeEnum.SINGLE_NODE.name() + ", switchDatasource is not supported";
 			logger.warn(errmsg);
@@ -144,73 +142,71 @@ public class MySQLRepBean {
 		}
 		return result;
 	}
-    
-	public void switchSource(int newIndex,long maxwaittime) {
+
+	public void switchSource(int newIndex, long maxWaitTime) {
 		if (replicaBean.getSwitchType() == ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH) {
 			logger.warn("not switch datasource ,for switchType is {}", ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH);
 			switchResult.set(false);
 			return;
 		}
-		
+
 		if(!checkIndex(newIndex)){
 			logger.warn("not switch datasource ,writeIndex  out of range. writeIndex is {}",newIndex);
 			switchResult.set(false);
 			return;
 		}
-		
-		
+
+
 		final ReentrantLock lock = this.switchLock;
 		lock.lock();
-		
+
 		try {
-			
 			switchResult.set(false);
 
 			int current = writeIndex;
 			if (current != newIndex) {
-				
 				String reason = "switch datasource";
-				
+
 				// init again
 				MySQLMetaBean newWriteBean = metaBeans.get(newIndex);
 				newWriteBean.clearCons(reason);
-				newWriteBean.init(this,maxwaittime,getDataSourceInitStatus());
-				
+				newWriteBean.init(this, maxWaitTime, getDataSourceInitStatus());
+
 				// clear all connections
 				MySQLMetaBean oldMetaBean = metaBeans.get(current);
 				oldMetaBean.clearCons(reason);
 				// write log
 				logger.warn(switchMessage(current, newIndex, reason));
-				
+
 				switchResult.set(true);
-				
+
 				// switch index
 				writeIndex = newIndex;
 				oldMetaBean.setSlaveNode(true);
 				newWriteBean.setSlaveNode(false);
-				
+
 				lastInitTime = System.currentTimeMillis();
-			}else{
+			} else {
 				logger.debug("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
 			}
-		}catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException e) {
+			logger.error("error to switch datasource", e);
 			switchResult.set(false);
-		}finally {
+		} finally {
 			lock.unlock();
 		}
 	}
-	
+
 	public int getDataSourceInitStatus(){
-		int initstatus = DBHeartbeat.OK_STATUS;
+		int initStatus = DBHeartbeat.OK_STATUS;
 		MyCluster myCluster = ProxyRuntime.INSTANCE.getMyCLuster();
-		
-		if(myCluster==null||myCluster.getMyLeader()==myCluster.getMyNode()){
-			initstatus = DBHeartbeat.INIT_STATUS;
+
+		if (myCluster == null || myCluster.getMyLeader() == myCluster.getMyNode()){
+			initStatus = DBHeartbeat.INIT_STATUS;
 		}
-		return initstatus;
+		return initStatus;
 	}
-	
+
 	private String switchMessage(int current, int newIndex, String reason) {
 		StringBuilder s = new StringBuilder();
 		s.append("[Host=").append(replicaBean.getName()).append(",result=[").append(current).append("->");
@@ -229,9 +225,9 @@ public class MySQLRepBean {
     	if(ReplicaBean.RepTypeEnum.SINGLE_NODE == replicaBean.getRepType()||!runOnSlave){
     		return getCurWriteMetaBean();
     	}
-    	
+
     	MySQLMetaBean datas = null;
-    	
+
 		switch(replicaBean.getBalanceType()){
 			case BALANCE_ALL:
 				datas = getLBReadWriteMetaBean();
@@ -331,5 +327,12 @@ public class MySQLRepBean {
 
 	public long getLastInitTime() {
 		return lastInitTime;
+	}
+
+	@Override
+	public String toString() {
+		return "MySQLRepBean{" + "replicaBean=" + replicaBean + ", slaveIDs='" + slaveIDs + '\'' + ", tempReadHostAvailable=" + tempReadHostAvailable +
+				", metaBeans=" + metaBeans + ", switchLock=" + switchLock + ", switchResult=" + switchResult + ", writeIndex=" + writeIndex +
+				", lastSwitchTime=" + lastSwitchTime + ", lastInitTime=" + lastInitTime + '}';
 	}
 }

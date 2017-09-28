@@ -106,7 +106,7 @@ public class ActonFactory {
 
 
     public static void main(String[] args) throws Throwable {
-        ActonFactory actonFactory = new ActonFactory("actions.yaml");
+        ActonFactory actonFactory = new ActonFactory("actions.yml");
         List<Map<String,List< Map<String, String>>>> list = new ArrayList<>();
         Map<String,String> monitorSQL=new HashMap<>();
         monitorSQL.put("param1","1");

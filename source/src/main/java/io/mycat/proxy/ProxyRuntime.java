@@ -31,7 +31,6 @@ import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.loadbalance.LBSession;
 import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
-import io.mycat.mycat2.loadbalance.LoadChecker;
 import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.mycat2.sqlparser.MatchMethodGenerator;
 import io.mycat.proxy.man.AdminCommandResovler;
@@ -70,9 +69,6 @@ public class ProxyRuntime {
 
 	private AdminCommandResovler adminCmdResolver;
 	private static final ScheduledExecutorService schedulerService;
-	//本地负载状态检查
-	private LoadChecker localLoadChecker;
-	private LoadBalanceStrategy loadBalanceStrategy;
 
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
@@ -164,7 +160,7 @@ public class ProxyRuntime {
 			curRepIndexConfig.getReplicaIndexes().put(replBean, writeIndex);
 			int curVersion = conf.getConfigVersion(configEnum);
 			conf.setConfigVersion(configEnum, curVersion + 1);
-			YamlUtil.archiveAndDump(configEnum.getFileName(), curVersion, conf.getConfig(configEnum));
+			YamlUtil.archiveAndDumpToFile(conf.getConfig(configEnum), configEnum.getFileName(), curVersion);
 			startSwitchDataSource(replBean, writeIndex,sync);
 		}
 	}
@@ -172,7 +168,7 @@ public class ProxyRuntime {
 	/**
 	 * 切换 metaBean 名称
 	 */
-	public void startSwitchDataSource(String replBean,Integer writeIndex,boolean sync){
+	public void startSwitchDataSource(String replBean, Integer writeIndex, boolean sync){
 
 		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
 		
@@ -181,16 +177,16 @@ public class ProxyRuntime {
 			repBean.switchSource(writeIndex,maxdataSourceInitTime);
 
 			if (repBean.getSwitchResult().get()){
-				logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+				logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean.getReplicaBean().getName(), writeIndex);
 			} else {
-				logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+				logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean.getReplicaBean().getName(), writeIndex);
 			}
 		};
 		
 		if (repBean != null){
-			if(sync){
+			if (sync){
 				addBusinessJob(runnable);
-			}else{
+			} else {
 				runnable.run();
 			}
 		}	
@@ -365,21 +361,6 @@ public class ProxyRuntime {
 		this.acceptor = acceptor;
 	}
 
-	public LoadChecker getLocalLoadChecker() {
-		return localLoadChecker;
-	}
-
-	public void setLocalLoadChecker(LoadChecker localLoadChecker) {
-		this.localLoadChecker = localLoadChecker;
-	}
-
-	public LoadBalanceStrategy getLoadBalanceStrategy() {
-		return loadBalanceStrategy;
-	}
-
-	public void setLoadBalanceStrategy(LoadBalanceStrategy loadBalanceStrategy) {
-		this.loadBalanceStrategy = loadBalanceStrategy;
-	}
 
 	public SessionManager<ProxySession> getProxySessionSessionManager() {
 		return proxySessionSessionManager;
