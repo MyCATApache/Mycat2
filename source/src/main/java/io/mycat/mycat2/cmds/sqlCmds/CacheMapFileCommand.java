@@ -1,7 +1,6 @@
 package io.mycat.mycat2.cmds.sqlCmds;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,8 +8,19 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front.CacheGetProcess;
+import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front.CacheQueryResultSetProc;
+import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front.CacheResultProc;
+import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front.FrontDataOverCheck;
+import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.largeresult.DataEventProc;
+import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.largeresult.ResultOverFlag;
+import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.BackEventProc;
+import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.CacheFlowCheck;
+import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.DataOverCheck;
+import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.FrontEventProc;
+import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.ResultSetDatatoMapFile;
+import io.mycat.mycat2.common.SeqContextList;
 import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.proxy.ProxyBuffer;
 
 /**
  * 进行缓存的文件处理
@@ -30,44 +40,71 @@ public class CacheMapFileCommand implements MySQLCommand {
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		ProxyBuffer curBuffer = session.proxyBuffer;
 
-		/*
-		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
-		 */
-		session.clearReadWriteOpts();
-		// 1,解析当前的内容，检查是否为缓存的标识
-		session.getBackend((mysqlsession, sender, success, result) -> {
-			if (success) {
-				// 切换buffer 读写状态
-				curBuffer.flip();
+		SeqContextList seqcontext = (SeqContextList) session.getSessionAttrMap()
+				.get(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey());
 
-				curBuffer.readIndex = curBuffer.writeIndex;
-				// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
-				session.giveupOwner(SelectionKey.OP_READ);
-				// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
-				mysqlsession.writeToChannel();
-			}
-		});
+		if (null == seqcontext) {
+			seqcontext = new SeqContextList();
+			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey(), seqcontext);
+		}
+
+		seqcontext.clear();
+
+		seqcontext.setSession(session);
+		// 检查当前的缓存标识
+		seqcontext.addExec(CacheGetProcess.INSTANCE);
+		// 如果需要走缓存，则先进行当前数据集是否结束的检查
+		seqcontext.addExec(FrontDataOverCheck.INSTANCE);
+		// 进发当前buffer读取完成后的事件处理
+		seqcontext.addExec(CacheResultProc.INSTANCE);
+
+		try {
+			seqcontext.nextExec();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		return false;
-	}
-	
-	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public boolean onBackendResponse(MySQLSession session) throws IOException {
-		// TODO Auto-generated method stub
+
+		// 首先进行一次报文的读取操作
+		if (!session.readFromChannel()) {
+			return false;
+		}
+
+		SeqContextList seqcontext = (SeqContextList) session.getSessionAttrMap()
+				.get(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey());
+
+		if (null == seqcontext) {
+			seqcontext = new SeqContextList();
+			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey(), seqcontext);
+		}
+
+		seqcontext.clear();
+
+		seqcontext.setSession(session);
+		// 首先检查是否需要缓存
+		seqcontext.addExec(CacheFlowCheck.INSTANCE);
+		// 如果需要走缓存，则先进行当前数据集是否结束的检查
+		seqcontext.addExec(DataOverCheck.INSTANCE);
+		// 检查检查文件是否为结果集，如果为结果集，则将数据写入缓存
+		seqcontext.addExec(ResultSetDatatoMapFile.INSTANCE);
+		// 后端事件处理
+		seqcontext.addExec(BackEventProc.INSTANCE);
+		// 前段事件处理
+		seqcontext.addExec(FrontEventProc.INSTANCE);
+
+		try {
+			seqcontext.nextExec();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			seqcontext.clear();
+		}
 		return false;
 	}
 
@@ -78,35 +115,60 @@ public class CacheMapFileCommand implements MySQLCommand {
 
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-		// 向前端写完数据，前段进入读状态
-		session.proxyBuffer.flip();
-		session.change2ReadOpts();
+
+		SeqContextList seqcontext = (SeqContextList) session.getSessionAttrMap()
+				.get(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey());
+
+		if (null == seqcontext) {
+			seqcontext = new SeqContextList();
+			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey(), seqcontext);
+		}
+
+		seqcontext.clear();
+
+		seqcontext.setSession(session);
+		// 检查当前是否结束
+		seqcontext.addExec(ResultOverFlag.INSTANCE);
+		// 检查是否需要更新缓存 的结果集操作
+		seqcontext.addExec(CacheQueryResultSetProc.INSTANCE);
+		// 读取缓存中的数据
+		seqcontext.addExec(CacheGetProcess.INSTANCE);
+		// 检查当前数据是否结束
+		seqcontext.addExec(FrontDataOverCheck.INSTANCE);
+		// 进行数据的结束 处理
+		seqcontext.addExec(DataEventProc.INSTANCE);
+
+		try {
+			seqcontext.nextExec();
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			seqcontext.clear();
+		}
+
 		return false;
 	}
 
 	@Override
 	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
-		Boolean flag = (Boolean) session.getMycatSession().getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey());
-		// 前段数据透传完成
-		if (flag) {
-			logger.debug("load data finish!!!");
-			// session.getMycatSession().curSQLCommand =
-			// DirectPassthrouhCmd.INSTANCE;
-			// 当load data的包完成后，则又重新打开包完整性检查
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
-			// 清除临时数组
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey());
-			// 读取后端的数据，然后进行透传
-			session.getMycatSession().giveupOwner(SelectionKey.OP_READ);
-			session.proxyBuffer.flip();
-		} else {
-			logger.debug("load data from front!!!");
-			// 前端改为读状态
-			session.getMycatSession().takeOwner(SelectionKey.OP_READ);
-			session.getMycatSession().proxyBuffer.flip();
-		}
+		// 绝大部分情况下，前端把数据写完后端发送出去后，就等待后端返回数据了，
+		// 向后端写入完成数据后，则从后端读取数据
+		session.proxyBuffer.flip();
+		// 由于单工模式，在向后端写入完成后，需要从后端进行数据读取
+		session.change2ReadOpts();
 		return false;
+	}
+
+	@Override
+	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
+		// TODO Auto-generated method stub
+
 	}
 
 }

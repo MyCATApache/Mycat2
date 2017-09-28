@@ -1,7 +1,6 @@
 package io.mycat.mycat2.cmds.pkgread;
 
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +48,7 @@ public class PkgResultSetReader implements PkgProcess {
 			switch (session.resolveMySQLPackage(curBuffer, curMSQLPackgInf, true)) {
 			// 如果当前为整包
 			case Full:
+				//System.out.println("整个包:" + curMSQLPackgInf.seq);
 				// 检查当前是否为eof包,并且为整包 ,解析eof包
 				if (session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
 					// 首先检查当前列标识结果
@@ -83,6 +83,7 @@ public class PkgResultSetReader implements PkgProcess {
 				break;
 
 			case LongHalfPacket:
+				//System.out.println("长半包:" + curMSQLPackgInf.seq);
 				if (curMSQLPackgInf.crossBuffer) {
 					// 发生过透传的半包,往往包的长度超过了buffer 的长度.
 					logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
@@ -103,6 +104,7 @@ public class PkgResultSetReader implements PkgProcess {
 				break;
 			case ShortHalfPacket:
 				logger.debug(" readed ShortHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
+
 				isContinue = false;
 				break;
 			}
@@ -111,20 +113,20 @@ public class PkgResultSetReader implements PkgProcess {
 		// 标识当前传输未结束
 
 		// 切换buffer 读写状态
-		curBuffer.flip();
+		// curBuffer.flip();
 		MycatSession mycatSession = session.getMycatSession();
 		// 直接透传报文
-		mycatSession.takeOwner(SelectionKey.OP_WRITE);
+		// mycatSession.takeOwner(SelectionKey.OP_WRITE);
 
 		if (!isFinish) {
 			// 标识当前传输未结束
 			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
 		} else {
-			//结束移除标识
+			// 结束移除标识
 			mycatSession.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
 		}
 
-		mycatSession.writeToChannel();
+		// mycatSession.writeToChannel();
 
 		/**
 		 * 当前命令处理是否全部结束,全部结束时需要清理资源

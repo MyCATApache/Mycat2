@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import io.mycat.mycat2.AbstractMySQLSession;
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.MycatSession;
 
 /**
  * 序列存放流程执行信息
@@ -43,6 +41,14 @@ public class SeqContextList {
 		this.linkedServ.add(serviceExec);
 	}
 
+	public void clear() {
+		// 清空参数
+		param.clear();
+		// 清空流程容器
+		linkedServ.clear();
+
+	}
+
 	/**
 	 * 添加流程代码
 	 * 
@@ -68,8 +74,6 @@ public class SeqContextList {
 	public Map<String, Object> getParam() {
 		return param;
 	}
-	
-
 
 	public AbstractMySQLSession getSession() {
 		return session;
