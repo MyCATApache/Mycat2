@@ -37,7 +37,7 @@ public class BlockSqlCmd implements MySQLCommand {
 			errPkg.message = session.getCmdChain().getErrMsg();
 			session.proxyBuffer.reset();
 			session.responseOKOrError(errPkg);
-			logger.debug(errPkg.message);
+			logger.error(errPkg.message);
 		return false;
 	}
 

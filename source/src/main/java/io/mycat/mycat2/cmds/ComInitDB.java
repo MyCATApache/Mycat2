@@ -52,7 +52,7 @@ public class ComInitDB extends DirectPassthrouhCmd{
 			session.schema.getDefaultDN().setDatabase(schema);
 			return super.procssSQL(session);
 		}else{
-			logger.debug("Unknown database '" + schema + "'");
+			logger.warn("Unknown database '" + schema + "'");
 		}		
 		return false;
 	}

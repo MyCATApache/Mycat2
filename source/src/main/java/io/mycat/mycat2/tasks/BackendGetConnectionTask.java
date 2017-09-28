@@ -29,7 +29,7 @@ public class BackendGetConnectionTask implements AsynTaskCallBack<MySQLSession>{
 			logger.info("connected successfuly " + session);
 			successCons.add(session);
 		}else{
-			logger.info("connected error " + session);
+			logger.warn("connected error " + session);
 		}
 	}
 	

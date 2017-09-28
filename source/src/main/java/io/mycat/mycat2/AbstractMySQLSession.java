@@ -257,7 +257,7 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 				 * @todo 跨多个报文的情况下，修正错误。
 				 */
 				final String hexs = StringUtil.dumpAsHex(buffer, curPackInf.startPos, curPackInf.pkgLength);
-				logger.info(
+				logger.debug(
 						"     session {} packet: startPos={}, offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
 						getSessionId(), curPackInf.startPos, offset, pkgLength, packetType, limit, hexs);
 			}

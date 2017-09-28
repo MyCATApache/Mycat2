@@ -23,7 +23,6 @@ public class TableCheck implements SQLAnnotation{
 
     @Override
     public Boolean apply(MycatSession context) {
-    	logger.debug("========================> TableCheck ");
         return Boolean.TRUE;
     }
 

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * Created by jamie on 2017/9/24.
  */
 public class AnnotationsYamlParser {
-    private static final Logger logger = LoggerFactory.getLogger(DynamicAnnotationManagerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnnotationsYamlParser.class);
 
     public static void main(String[] args) {
 
@@ -99,7 +99,7 @@ public class AnnotationsYamlParser {
                     resMap.put(Boolean.FALSE, map.get(Boolean.FALSE).stream().map((m) -> ConditionUtil.mappingValue(m)).distinct().collect(Collectors.toList()));
                     DynamicAnnotationRuntime runtime = DynamicAnnotationUtil.compile(match.getName(), resMap);
                     DynamicAnnotationMatch matc = runtime.getMatch();
-                    System.out.println(Arrays.toString(matc.getCompleteTags()));
+                    logger.debug(Arrays.toString(matc.getCompleteTags()));
 
                     DynamicAnnotation annotation = new DynamicAnnotation(key,
                             runtime.getMatch(),

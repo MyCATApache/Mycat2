@@ -8,6 +8,10 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,6 +32,8 @@ import java.util.stream.Stream;
 public class DynamicAnnotationUtil {
     static final DynamicClassLoader classLoader;
    public static final AtomicInteger count=new AtomicInteger();
+   
+   private static final Logger logger = LoggerFactory.getLogger(DynamicAnnotationUtil.class);
 
     static {
         classLoader = new DynamicClassLoader("", Thread.currentThread().getContextClassLoader());
@@ -54,7 +60,7 @@ public class DynamicAnnotationUtil {
 
         if(!Files.exists(p))p.toFile().createNewFile();
 
-        System.out.println(p.toAbsolutePath());
+        logger.debug(p.toAbsolutePath().toString());
         try (FileWriter fileWriter = new FileWriter(p.toFile())) {
             fileWriter.write(code);
         }
