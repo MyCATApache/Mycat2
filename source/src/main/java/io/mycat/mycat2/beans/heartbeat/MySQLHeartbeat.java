@@ -28,6 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.mycat.mycat2.beans.conf.ClusterConfig;
 import io.mycat.proxy.man.cmds.LeaderNotifyPacketCommand;
 import io.mycat.proxy.man.packet.LeaderNotifyPacket;
 import org.slf4j.Logger;
@@ -198,11 +199,15 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				this.status = OK_STATUS;
 				this.errorCount = 0;
 		}
-		//todo 当心跳成功，同时字符集未加载过，则加载字符集，如果是集群模式，需要通知集群加载字符集
+		//当心跳成功，同时字符集未加载过，则加载字符集，如果是集群模式，需要通知集群加载字符集
 		if (this.status == OK_STATUS && !source.charsetLoaded) {
 			try {
-				LeaderNotifyPacket pkg = new LeaderNotifyPacket(LeaderNotifyPacket.LOAD_CHARACTER, source.getRepBean().getReplicaBean().getName(), Integer.toString(source.getIndex()));
-				LeaderNotifyPacketCommand.INSTANCE.sendNotifyCmd(pkg);
+			    ClusterConfig clusterConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.CLUSTER);
+			    if (clusterConfig.getCluster().isEnable()) {
+                    LeaderNotifyPacket pkg = new LeaderNotifyPacket(LeaderNotifyPacket.LOAD_CHARACTER,
+                            source.getRepBean().getReplicaBean().getName(), Integer.toString(source.getIndex()));
+                    LeaderNotifyPacketCommand.INSTANCE.sendNotifyCmd(pkg);
+                }
 				source.init();
 			} catch (IOException e) {
 				logger.error("error to init datasource for MySQLMetaBean {}", source);
