@@ -210,7 +210,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				logger.error(msg);
 			} else {
 				//写节点 尝试多次次失败后, 需要通知集群
-				logger.debug("heartbeat to backend session error, notify the cluster if needed");
+				logger.warn("heartbeat to backend session error, notify the cluster if needed");
 
 				MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 				HeartbeatConfig heartbeatConfig = conf.getConfig(ConfigEnum.HEARTBEAT);
@@ -218,9 +218,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				long minSwitchTimeInterval = heartbeatConfig.getHeartbeat().getMinSwitchtimeInterval();
 				if (((curTime - source.getRepBean().getLastSwitchTime()) < minSwitchTimeInterval)
 						|| (curTime - source.getRepBean().getLastInitTime()) < minSwitchTimeInterval) {
-					if (logger.isDebugEnabled()) {
-						logger.warn("the Minimum time interval for switchSource is {} seconds.", minSwitchTimeInterval / 1000L);
-					}
+					logger.warn("the Minimum time interval for switchSource is {} seconds.", minSwitchTimeInterval / 1000L);
 					return;
 				}
 				
