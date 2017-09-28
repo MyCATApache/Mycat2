@@ -187,7 +187,7 @@ public class MySQLRepBean {
 
 				lastInitTime = System.currentTimeMillis();
 			} else {
-				logger.debug("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
+				logger.warn("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
 			}
 		} catch (IOException e) {
 			logger.error("error to switch datasource", e);
