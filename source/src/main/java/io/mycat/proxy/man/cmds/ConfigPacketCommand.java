@@ -28,8 +28,6 @@ public class ConfigPacketCommand implements AdminCommand {
     public static final ConfigPacketCommand INSTANCE = new ConfigPacketCommand();
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigPacketCommand.class);
 
-    private ConfigPacketCommand() {}
-
     @Override
     public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
         if (ProxyRuntime.INSTANCE.getMyCLuster().getClusterState() != MyCluster.ClusterState.Clustered) {
@@ -96,6 +94,7 @@ public class ConfigPacketCommand implements AdminCommand {
             ProxyStarter.INSTANCE.startProxy(false);
             return;
         }
+
         int count = confTypeList.size();
         byte[] types = new byte[count];
         for (int i = 0; i < count; i++) {
@@ -150,7 +149,7 @@ public class ConfigPacketCommand implements AdminCommand {
             LOGGER.warn("config type is error: {}", resPacket.getConfType());
             return;
         }
-        YamlUtil.dumpToFile(configEnum.getFileName() + "-" + resPacket.getConfVersion(), resPacket.getConfContent());
+        YamlUtil.dumpToFile(configEnum.getFileName(), resPacket.getConfVersion(), resPacket.getConfContent());
         if (--session.confCount == 0) {
             LOGGER.debug("receive config from leader over, start to load");
             ProxyStarter.INSTANCE.startProxy(false);

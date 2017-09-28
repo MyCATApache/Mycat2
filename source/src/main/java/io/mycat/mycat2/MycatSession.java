@@ -303,9 +303,9 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private String getbackendName(){
 		String backendName = null;
-		switch(schema.getSchemaType()){
+		switch (schema.getSchemaType()) {
 			case DB_IN_ONE_SERVER:
-				backendName = schema.getDefaultDN().getMysqlReplica();
+				backendName = schema.getDefaultDN().getReplica();
 				break;
 			case ANNOTATION_ROUTE:
 				break;
@@ -316,7 +316,7 @@ public class MycatSession extends AbstractMySQLSession {
 			default:
 				break;
 		}
-		if(backendName==null){
+		if (backendName == null){
 			throw new InvalidParameterException("the backendName must not be null");
 		}
 		return backendName;

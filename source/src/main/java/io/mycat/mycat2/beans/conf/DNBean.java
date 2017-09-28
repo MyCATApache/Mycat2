@@ -8,7 +8,7 @@ package io.mycat.mycat2.beans.conf;
  */
 public class DNBean {
     private String database;
-    private String mysqlReplica;
+    private String replica;
 
     public String getDatabase() {
         return database;
@@ -18,12 +18,12 @@ public class DNBean {
         this.database = database;
     }
 
-    public String getMysqlReplica() {
-        return mysqlReplica;
+    public String getReplica() {
+        return replica;
     }
 
-    public void setMysqlReplica(String mysqlReplica) {
-        this.mysqlReplica = mysqlReplica;
+    public void setReplica(String replica) {
+        this.replica = replica;
     }
 
     @Override
@@ -31,7 +31,7 @@ public class DNBean {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((database == null) ? 0 : database.hashCode());
-        result = prime * result + ((mysqlReplica == null) ? 0 : mysqlReplica.hashCode());
+        result = prime * result + ((replica == null) ? 0 : replica.hashCode());
         return result;
     }
 
@@ -49,16 +49,16 @@ public class DNBean {
                 return false;
         } else if (!database.equals(other.database))
             return false;
-        if (mysqlReplica == null) {
-            if (other.mysqlReplica != null)
+        if (replica == null) {
+            if (other.replica != null)
                 return false;
-        } else if (!mysqlReplica.equals(other.mysqlReplica))
+        } else if (!replica.equals(other.replica))
             return false;
         return true;
     }
 
     @Override
     public String toString() {
-        return "DNBean [database=" + database + ", mysqlReplica=" + mysqlReplica + "]";
+        return "DNBean [database=" + database + ", mysqlReplica=" + replica + "]";
     }
 }

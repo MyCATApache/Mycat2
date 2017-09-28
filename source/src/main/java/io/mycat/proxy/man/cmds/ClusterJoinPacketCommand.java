@@ -70,8 +70,15 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 					sendRegInfo(session);
 					return;
 				}
+
+				if (session.cluster().getClusterState() == ClusterState.Clustered) {
+					// 节点已经收到主节点的JOIN_STATE_NEED_ACK报文，直接返回
+					logger.debug("node already in clustered state, this package may duplicate, ignore");
+					return;
+				}
 				ClusterNode node = session.cluster().findNode(nodeId);
 				session.cluster().setMyLeader(node);
+
 				session.cluster().setClusterState(ClusterState.Clustered);
 				logger.debug(" send join cluster ack package. to {} ",session.getNodeId());
 				JoinCLusterAckPacket ackPacket = new JoinCLusterAckPacket(session.cluster().getMyAliveNodes());
