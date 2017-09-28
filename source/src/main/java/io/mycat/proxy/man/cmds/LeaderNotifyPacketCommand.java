@@ -21,16 +21,19 @@ public class LeaderNotifyPacketCommand implements AdminCommand {
     public static final LeaderNotifyPacketCommand INSTANCE = new LeaderNotifyPacketCommand();
     private static final Logger LOGGER = LoggerFactory.getLogger(LeaderNotifyPacketCommand.class);
 
-    public void sendNotifyCmd(LeaderNotifyPacket pkg) {
-        ProxyRuntime.INSTANCE.getAdminSessionManager().getAllSessions().forEach(adminSession -> {
-            if (adminSession.isChannelOpen()) {
-                try {
-                    adminSession.answerClientNow(pkg);
-                } catch (Exception e) {
-                    LOGGER.warn("notify node err " + adminSession.getNodeId(), e);
-                }
+    public void sendNotifyCmd(LeaderNotifyPacket pkg, AdminSession adminSession) {
+        if (adminSession.isChannelOpen()) {
+            try {
+                adminSession.answerClientNow(pkg);
+            } catch (Exception e) {
+                LOGGER.warn("notify node err " + adminSession.getNodeId(), e);
             }
-        });
+        }
+    }
+
+    public void sendNotifyCmd(LeaderNotifyPacket pkg) {
+        ProxyRuntime.INSTANCE.getAdminSessionManager().getAllSessions()
+                .forEach(adminSession -> sendNotifyCmd(pkg, adminSession));
     }
 
     @Override

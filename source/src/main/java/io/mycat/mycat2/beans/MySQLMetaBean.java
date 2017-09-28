@@ -58,12 +58,12 @@ public class MySQLMetaBean {
 
     private int slaveThreshold = -1;
 
-    public static boolean charsetLoaded = false;
+    public boolean charsetLoaded = false;
 
     /** collationIndex 和 charsetName 的映射 */
-    public static final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
+    public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
     /** charsetName 到 默认collationIndex 的映射 */
-    public static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
+    public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
     public void prepareHeartBeat(MySQLRepBean repBean, int status) {
 		logger.info("prepare heart beat for MySQLMetaBean {} ", this);
@@ -86,8 +86,8 @@ public class MySQLMetaBean {
                         if (exeSucces) {
                             //设置当前连接 读写分离属性
                             optSession.setDefaultChannelRead(this.isSlaveNode());
-                            if (MySQLMetaBean.charsetLoaded == false) {
-								MySQLMetaBean.charsetLoaded = true;
+                            if (this.charsetLoaded == false) {
+								this.charsetLoaded = true;
                                 logger.info("load charset for MySQLMetaBean {}:{}", this.dsMetaBean.getIp(), this.dsMetaBean.getPort());
                                 BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this,getConTask);
                                 optSession.setCurNIOHandler(backendCharsetReadTask);
@@ -98,7 +98,7 @@ public class MySQLMetaBean {
 							optSession.change2ReadOpts();
 							reactorThread.addMySQLSession(this, optSession);
 						} else {
-							MySQLMetaBean.charsetLoaded = false;
+							this.charsetLoaded = false;
 							getConTask.finished(optSession,sender,exeSucces,retVal);
                         }
                     });

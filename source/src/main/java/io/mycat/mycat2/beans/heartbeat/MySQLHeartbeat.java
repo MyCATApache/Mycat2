@@ -200,7 +200,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				this.errorCount = 0;
 		}
 		//当心跳成功，同时字符集未加载过，则加载字符集，如果是集群模式，需要通知集群加载字符集
-		if (this.status == OK_STATUS && MySQLMetaBean.charsetLoaded == false) {
+		if (this.status == OK_STATUS && source.charsetLoaded == false) {
 			try {
 			    ClusterConfig clusterConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.CLUSTER);
 			    if (clusterConfig.getCluster().isEnable()) {
