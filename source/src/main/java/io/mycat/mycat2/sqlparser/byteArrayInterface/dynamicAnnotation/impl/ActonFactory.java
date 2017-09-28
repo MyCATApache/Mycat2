@@ -1,15 +1,13 @@
 package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 
+import io.mycat.mycat2.sqlannotations.SQLAnnotation;
+import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
+import org.yaml.snakeyaml.Yaml;
+
 import java.io.FileInputStream;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
