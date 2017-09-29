@@ -8,9 +8,14 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2.QUESTION_MARK;
 
 public class TrieCompiler {
+	
+	private static final Logger logger = LoggerFactory.getLogger(TrieCompiler.class);
 
     boolean isTrie;
     HashMap<TrieKey, TrieCompiler> children = new HashMap<>();
@@ -38,7 +43,7 @@ public class TrieCompiler {
             if (cur.isTrie) {
                 cur.backPos = backPos;
                 doCallback(cur, runnable);
-                System.out.println(" trie tree");
+                logger.debug(" trie tree");
                 return true;
                 //判断前缀树中是否有字符串为当前字符串的前缀。
             }
@@ -48,7 +53,7 @@ public class TrieCompiler {
         if (cur.children.size() > 0) {
             cur.backPos = backPos;
             doCallback(cur, runnable);
-            System.out.println(" trie tree");
+            logger.debug(" trie tree");
             return true;
             //判断当前字符串是否是前缀树中某个字符的前缀。
         }

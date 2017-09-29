@@ -11,21 +11,22 @@ import java.util.stream.Stream;
  * @author: gaozhiwen
  */
 public enum ConfigEnum {
-    PROXY((byte) 1, "mycat.yml", ProxyConfig.class),
-    CLUSTER((byte) 2, "cluster.yml", ClusterConfig.class),
-    BALANCER((byte) 3, "balancer.yml", BalancerConfig.class),
-    HEARTBEAT((byte) 4, "heartbeat.yml", HeartbeatConfig.class),
-    DATASOURCE((byte) 5, "datasource.yml", DatasourceConfig.class),
-    REPLICA_INDEX((byte) 6, "replica-index.yml", ReplicaIndexConfig.class),
-    SCHEMA((byte) 7, "schema.yml", SchemaConfig.class),
-    SHARDING_RULE((byte) 8, "sharding-rule.yml", ShardingRuleConfig.class);
+    PROXY(1, "mycat.yml", ProxyConfig.class),
+    CLUSTER(2, "cluster.yml", ClusterConfig.class),
+    BALANCER(3, "balancer.yml", BalancerConfig.class),
+    HEARTBEAT(4, "heartbeat.yml", HeartbeatConfig.class),
+    USER(5, "user.yml", UserConfig.class),
+    DATASOURCE(6, "datasource.yml", DatasourceConfig.class),
+    REPLICA_INDEX(7, "replica-index.yml", ReplicaIndexConfig.class),
+    SCHEMA(8, "schema.yml", SchemaConfig.class),
+    SHARDING_RULE(9, "sharding-rule.yml", ShardingRuleConfig.class);
 
     private byte type;
     private String fileName;
     private Class clazz;
 
-    ConfigEnum(byte type, String fileName, Class clazz) {
-        this.type = type;
+    ConfigEnum(int type, String fileName, Class clazz) {
+        this.type = (byte) type;
         this.fileName = fileName;
         this.clazz = clazz;
     }

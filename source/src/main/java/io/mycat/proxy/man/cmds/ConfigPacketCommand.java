@@ -2,6 +2,7 @@ package io.mycat.proxy.man.cmds;
 
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.ProxyStarter;
+import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.AdminCommand;
@@ -11,6 +12,7 @@ import io.mycat.proxy.man.MyCluster;
 import io.mycat.proxy.man.packet.ConfigReqPacket;
 import io.mycat.proxy.man.packet.ConfigResPacket;
 import io.mycat.proxy.man.packet.ConfigVersionResPacket;
+import io.mycat.proxy.man.packet.LeaderNotifyPacket;
 import io.mycat.util.YamlUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +29,6 @@ import java.util.*;
 public class ConfigPacketCommand implements AdminCommand {
     public static final ConfigPacketCommand INSTANCE = new ConfigPacketCommand();
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigPacketCommand.class);
-
-    private ConfigPacketCommand() {}
 
     @Override
     public void handlerPkg(AdminSession session, byte cmdType) throws IOException {
@@ -93,9 +93,13 @@ public class ConfigPacketCommand implements AdminCommand {
         }
         if (confTypeList.isEmpty()) {
             LOGGER.debug("config version is same as leader, no need to load");
+            ConfigReqPacket reqPacket = new ConfigReqPacket(0, null);
+            LOGGER.debug("send  config request package to {}", session.getNodeId());
+            session.answerClientNow(reqPacket);
             ProxyStarter.INSTANCE.startProxy(false);
             return;
         }
+
         int count = confTypeList.size();
         byte[] types = new byte[count];
         for (int i = 0; i < count; i++) {
@@ -133,6 +137,18 @@ public class ConfigPacketCommand implements AdminCommand {
             ConfigResPacket resPacket = new ConfigResPacket(configEnum.getType(), confVersion, confMsg);
             session.answerClientNow(resPacket);
         }
+
+        // 通知节点当前状态
+        // 心跳正常的metaBean
+        ProxyRuntime.INSTANCE.getConfig().getMysqlRepMap().forEach((repName, repBean) -> {
+            LOGGER.debug("send repBean heart beat ok status datasource index, repName: {}", repName);
+            repBean.getMetaBeans().forEach(metaBean -> {
+                if (metaBean.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) {
+                    LeaderNotifyPacket pkg = new LeaderNotifyPacket(LeaderNotifyPacket.LOAD_CHARACTER, repName, Integer.toString(metaBean.getIndex()));
+                    LeaderNotifyPacketCommand.INSTANCE.sendNotifyCmd(pkg);
+                }
+            });
+        });
     }
 
     /**
@@ -150,7 +166,7 @@ public class ConfigPacketCommand implements AdminCommand {
             LOGGER.warn("config type is error: {}", resPacket.getConfType());
             return;
         }
-        YamlUtil.dumpToFile(configEnum.getFileName() + "-" + resPacket.getConfVersion(), resPacket.getConfContent());
+        YamlUtil.dumpToFile(configEnum.getFileName(), resPacket.getConfVersion(), resPacket.getConfContent());
         if (--session.confCount == 0) {
             LOGGER.debug("receive config from leader over, start to load");
             ProxyStarter.INSTANCE.startProxy(false);

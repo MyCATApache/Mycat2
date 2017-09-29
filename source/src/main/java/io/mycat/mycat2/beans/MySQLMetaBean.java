@@ -54,21 +54,25 @@ public class MySQLMetaBean {
     private volatile long heartbeatRecoveryTime;  // 心跳暂停时间
     private DBHeartbeat heartbeat;
     private MySQLRepBean repBean;
+    private int index;
 
     private int slaveThreshold = -1;
 
     public boolean charsetLoaded = false;
 
     /** collationIndex 和 charsetName 的映射 */
-    public static final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
+    public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
     /** charsetName 到 默认collationIndex 的映射 */
-    public static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
+    public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
-    public boolean init(MySQLRepBean repBean,long maxwaitTime,int status) throws IOException {
-    	logger.info("init backend myqsl source ,create connections total " + dsMetaBean.getMinCon() + " for " + dsMetaBean.getHostName() + " index :" + repBean.getWriteIndex());
+    public void prepareHeartBeat(MySQLRepBean repBean, int status) {
+		logger.info("prepare heart beat for MySQLMetaBean {} ", this);
+		this.repBean = repBean;
+		this.heartbeat = new MySQLHeartbeat(this,status);
+	}
 
-    	this.repBean = repBean;
-    	heartbeat = new MySQLHeartbeat(this,status);
+    public void init() throws IOException {
+		logger.info("init backend connection for MySQLMetaBean {} ", this);
     	ProxyRuntime runtime = ProxyRuntime.INSTANCE;
         MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
         int reactorSize = runtime.getNioReactorThreads();
@@ -83,36 +87,26 @@ public class MySQLMetaBean {
                             //设置当前连接 读写分离属性
                             optSession.setDefaultChannelRead(this.isSlaveNode());
                             if (this.charsetLoaded == false) {
-                                this.charsetLoaded = true;
+								this.charsetLoaded = true;
+                                logger.info("load charset for MySQLMetaBean {}:{}", this.dsMetaBean.getIp(), this.dsMetaBean.getPort());
                                 BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this,getConTask);
                                 optSession.setCurNIOHandler(backendCharsetReadTask);
                                 backendCharsetReadTask.readCharset();
-                            }else{
+                            } else {
                             	getConTask.finished(optSession,sender,exeSucces,retVal);
-                            }
-                            optSession.change2ReadOpts();
-                            reactorThread.addMySQLSession(this, optSession);
-                        }else{
-                        	getConTask.finished(optSession,sender,exeSucces,retVal);
+							}
+							optSession.change2ReadOpts();
+							reactorThread.addMySQLSession(this, optSession);
+						} else {
+							this.charsetLoaded = false;
+							getConTask.finished(optSession,sender,exeSucces,retVal);
                         }
                     });
-                } catch (IOException ignore) {
+                } catch (IOException e) {
+                	logger.error("error to load charset for metaBean {}", this, e);
                 }
             });
         }
-        
-        long timeOut = System.currentTimeMillis() + maxwaitTime;
-
-		// waiting for finish
-		while (!getConTask.finished() && (System.currentTimeMillis() < timeOut)) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				logger.error("initError", e);
-			}
-		}
-		logger.info("init result : {}",getConTask.getStatusInfo());
-		return !list.isEmpty();
     }
     
 	public void doHeartbeat() {
@@ -192,6 +186,14 @@ public class MySQLMetaBean {
 
 	public DBHeartbeat getHeartbeat() {
 		return heartbeat;
+	}
+
+	public int getIndex() {
+		return index;
+	}
+
+	public void setIndex(int index) {
+		this.index = index;
 	}
 
 	/**

@@ -66,7 +66,7 @@ public class DynamicAnnotationManagerBenchmark extends TestCase {
     byte[] bytes="b = 1 and c = 1 and d = a.b and c = 1".getBytes();
     @Setup
     public void init() throws Exception {
-        manager=new DynamicAnnotationManagerImpl("actions_bak.yaml","annotations_bak.yaml");
+        manager=new DynamicAnnotationManagerImpl("actions_bak.yml", "annotations_bak.yml");
         context=new BufferSQLContext();
         sqlParser=new BufferSQLParser();
         sqlParser.parse(bytes,context);

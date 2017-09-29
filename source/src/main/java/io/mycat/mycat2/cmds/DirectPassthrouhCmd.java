@@ -49,9 +49,9 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
 		 */
 		session.clearReadWriteOpts();
-		
-		session.getBackend((mysqlsession, sender, success,result)->{
-			if(success){
+
+		session.getBackend((mysqlsession, sender, success, result) -> {
+			if (success) {
 				ProxyBuffer curBuffer = session.proxyBuffer;
 				// 切换 buffer 读写状态
 				curBuffer.flip();
@@ -60,8 +60,8 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 				// 改变 owner，对端Session获取，并且感兴趣写事件
 				session.giveupOwner(SelectionKey.OP_WRITE);
 				mysqlsession.writeToChannel();
-			}else{
-				session.responseOKOrError((ErrorPacket)result);
+			} else {
+				session.responseOKOrError((ErrorPacket) result);
 			}
 		});
 		return false;
@@ -81,6 +81,26 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 			// 进行报文的处理流程
 			nextReadFlag = session.currPkgProc.procssPkg(session);
 		} while (nextReadFlag);
+
+		// 获取当前是否结束标识
+		Boolean check = (Boolean) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+
+		MycatSession mycatSession = session.getMycatSession();
+		ProxyBuffer buffer = session.getProxyBuffer();
+
+		buffer.flip();
+		// 检查到当前已经完成,执行添加操作
+		if (null != check && check) {
+			// 当知道操作完成后，前段的注册感兴趣事件为读取
+			mycatSession.takeOwner(SelectionKey.OP_READ);
+		}
+		// 未完成执行继续读取操作
+		else {
+			// 直接透传报文
+			mycatSession.takeOwner(SelectionKey.OP_WRITE);
+		}
+
+		mycatSession.writeToChannel();
 
 		return false;
 	}
@@ -123,7 +143,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 
 	@Override
 	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
-		if(sessionCLosed){
+		if (sessionCLosed) {
 			session.bufPool.recycleBuf(session.getProxyBuffer().getBuffer());
 			session.unbindAllBackend();
 		}
@@ -131,7 +151,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 
 	@Override
 	public void clearBackendResouces(MySQLSession mysqlSession, boolean sessionCLosed) {
-		if(sessionCLosed){
+		if (sessionCLosed) {
 			mysqlSession.bufPool.recycleBuf(mysqlSession.getProxyBuffer().getBuffer());
 		}
 	}

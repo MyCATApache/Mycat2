@@ -39,6 +39,9 @@ public class AdminCommandResovler {
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_PREPARE, updateCommand);
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_CONFIRM, updateCommand);
 		adminCommandMap.put(ManagePacket.PKG_CONFIG_COMMIT, updateCommand);
+
+		LeaderNotifyPacketCommand notifyCommand = LeaderNotifyPacketCommand.INSTANCE;
+		adminCommandMap.put(ManagePacket.PKG_LEADER_NOTIFY, notifyCommand);
 	}
 
 	public AdminCommand resolveCommand(byte pkgType) {

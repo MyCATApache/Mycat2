@@ -217,6 +217,11 @@ public abstract class MySQLPacket {
 	 */
 	public static final byte COM_HEARTBEAT = 64;
 
+	/**
+	 * 此用来标识当前为查询的响应包，mysql本身无此定义，但由于查询结果集无法统一标识，在程序中做出此标识
+	 */
+	public static final int RESULTSET_PACKET = 12032;
+
 	public int packetLength;
 	public byte packetId;
 

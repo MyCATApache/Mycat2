@@ -43,7 +43,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private static Logger logger = LoggerFactory.getLogger(MycatSession.class);
 
-	private MySQLSession curBackend;
+	public MySQLSession curBackend;
 
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 
@@ -303,9 +303,9 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private String getbackendName(){
 		String backendName = null;
-		switch(schema.getSchemaType()){
+		switch (schema.getSchemaType()) {
 			case DB_IN_ONE_SERVER:
-				backendName = schema.getDefaultDN().getMysqlReplica();
+				backendName = schema.getDefaultDN().getReplica();
 				break;
 			case ANNOTATION_ROUTE:
 				break;
@@ -316,7 +316,7 @@ public class MycatSession extends AbstractMySQLSession {
 			default:
 				break;
 		}
-		if(backendName==null){
+		if (backendName == null){
 			throw new InvalidParameterException("the backendName must not be null");
 		}
 		return backendName;
@@ -355,7 +355,7 @@ public class MycatSession extends AbstractMySQLSession {
 		MySQLMetaBean targetMetaBean = repBean.getBalanceMetaBean(runOnSlave);
 		
 		if(targetMetaBean==null){
-			String errmsg = " the metaBean is not found,please check datasource.yaml!!! [balance] and [type]  propertie or view debug log or check heartbeat task!!";
+			String errmsg = " the metaBean is not found,please check datasource.yml!!! [balance] and [type]  propertie or see debug log or check heartbeat task!!";
 			if(logger.isDebugEnabled()){
 				logger.error(errmsg);
 			}
