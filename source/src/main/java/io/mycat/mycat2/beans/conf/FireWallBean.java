@@ -11,7 +11,7 @@ import java.util.List;
 public class FireWallBean {
     private boolean enable;
     private List<WhiteBean> white;
-    private BlackBean black;
+//    private BlackBean black;
 
     public boolean isEnable() {
         return enable;
@@ -29,13 +29,13 @@ public class FireWallBean {
         this.white = white;
     }
 
-    public BlackBean getBlack() {
-        return black;
-    }
-
-    public void setBlack(BlackBean black) {
-        this.black = black;
-    }
+//    public BlackBean getBlack() {
+//        return black;
+//    }
+//
+//    public void setBlack(BlackBean black) {
+//        this.black = black;
+//    }
 
     public static class WhiteBean {
         private String host;
@@ -58,15 +58,15 @@ public class FireWallBean {
         }
     }
 
-    public static class BlackBean {
-        private boolean check;
-
-        public boolean isCheck() {
-            return check;
-        }
-
-        public void setCheck(boolean check) {
-            this.check = check;
-        }
-    }
+//    public static class BlackBean {
+//        private boolean check;
+//
+//        public boolean isCheck() {
+//            return check;
+//        }
+//
+//        public void setCheck(boolean check) {
+//            this.check = check;
+//        }
+//    }
 }

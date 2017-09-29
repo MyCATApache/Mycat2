@@ -9,5 +9,3 @@ firewall:
   white:
     - host: 172.16.*.*
       user: root
-  black:
-    check: false
