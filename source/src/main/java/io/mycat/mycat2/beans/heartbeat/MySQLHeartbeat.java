@@ -28,6 +28,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.locks.ReentrantLock;
 
+import io.mycat.mycat2.beans.conf.ClusterConfig;
+import io.mycat.proxy.man.cmds.LeaderNotifyPacketCommand;
+import io.mycat.proxy.man.packet.LeaderNotifyPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -161,41 +164,54 @@ public class MySQLHeartbeat extends DBHeartbeat {
 	public void setResult(int result, MySQLDetector detector, String msg) {
 		this.isChecking.set(false);
 		switch (result) {
-		case OK_STATUS:
-			setOk(detector);
-			break;
-		case ERROR_STATUS:
-			setError(detector,msg);
-			break;
-		case TIMEOUT_STATUS:
-			setTimeout(detector);
-			break;
-		case ERROR_CONF: //配置错误时,停止心跳。
-			//TODO 配置错误,是否通知集群
-//			System.exit(0);
-			break;
+			case OK_STATUS:
+				setOk(detector);
+				break;
+			case ERROR_STATUS:
+				setError(detector,msg);
+				break;
+			case TIMEOUT_STATUS:
+				setTimeout(detector);
+				break;
+			case ERROR_CONF: //配置错误时,停止心跳。
+				//TODO 配置错误,是否通知集群
+	//			System.exit(0);
+				break;
 		}
 	}
 
 	private void setOk(MySQLDetector detector) {
 		switch (status) {
-		case DBHeartbeat.TIMEOUT_STATUS:
-			this.status = DBHeartbeat.INIT_STATUS;
-			this.errorCount = 0;
-			if (!isStop.get()) {
-				heartbeat();// timeout, heart beat again
+			case DBHeartbeat.TIMEOUT_STATUS:
+				this.status = DBHeartbeat.INIT_STATUS;
+				this.errorCount = 0;
+				if (!isStop.get()) {
+					heartbeat();// timeout, heart beat again
+				}
+				break;
+			case DBHeartbeat.INIT_STATUS:
+				logger.info("current repl status [INIT_STATUS ---> OK_STATUS]. update lastSwitchTime .{}:{}", source.getDsMetaBean().getIp(), source.getDsMetaBean().getPort());
+				MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
+				HeartbeatConfig heartbeatConfig = conf.getConfig(ConfigEnum.HEARTBEAT);
+				source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - heartbeatConfig.getHeartbeat().getMinSwitchtimeInterval());
+			case DBHeartbeat.OK_STATUS:
+			default:
+				this.status = OK_STATUS;
+				this.errorCount = 0;
+		}
+		//当心跳成功，同时字符集未加载过，则加载字符集，如果是集群模式，需要通知集群加载字符集
+		if (this.status == OK_STATUS && source.charsetLoaded == false) {
+			try {
+			    ClusterConfig clusterConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.CLUSTER);
+			    if (clusterConfig.getCluster().isEnable()) {
+                    LeaderNotifyPacket pkg = new LeaderNotifyPacket(LeaderNotifyPacket.LOAD_CHARACTER,
+                            source.getRepBean().getReplicaBean().getName(), Integer.toString(source.getIndex()));
+                    LeaderNotifyPacketCommand.INSTANCE.sendNotifyCmd(pkg);
+                }
+				source.init();
+			} catch (IOException e) {
+				logger.error("error to init datasource for MySQLMetaBean {}", source);
 			}
-			break;
-		case DBHeartbeat.INIT_STATUS:
-			logger.info("current repl status [INIT_STATUS ---> OK_STATUS ]. update lastSwitchTime .{}:{}", source.getDsMetaBean().getIp(), source.getDsMetaBean().getPort());
-			MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
-			HeartbeatConfig heartbeatConfig = conf.getConfig(ConfigEnum.HEARTBEAT);
-			source.getRepBean().setLastSwitchTime(System.currentTimeMillis() - heartbeatConfig.getHeartbeat().getMinSwitchtimeInterval());
-		case DBHeartbeat.OK_STATUS:
-		default:
-			this.status = OK_STATUS;
-			this.errorCount = 0;
-			
 		}
 	}
 

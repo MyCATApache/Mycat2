@@ -2,9 +2,7 @@ package io.mycat.proxy.man.cmds;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.ProxyStarter;
-import io.mycat.proxy.man.packet.ConfigVersionReqPacket;
-import io.mycat.proxy.man.packet.NodeRegInfoPacket;
+import io.mycat.proxy.man.packet.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,8 +12,6 @@ import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.ManagePacket;
 import io.mycat.proxy.man.MyCluster.ClusterState;
-import io.mycat.proxy.man.packet.JoinCLusterAckPacket;
-import io.mycat.proxy.man.packet.JoinCLusterNotifyPacket;
 
 /**
  * 用来处理集群Jion报文的命令，
@@ -55,7 +51,6 @@ public class ClusterJoinPacketCommand implements AdminCommand {
 			if (theNode.getMyClusterState() != ClusterState.Clustered) {
 				theNode.setMyClusterState(ClusterState.Clustered, System.currentTimeMillis());
 			}
-
 		} else if (cmdType == ManagePacket.PKG_JOIN_NOTIFY_ClUSTER) {
 			logger.debug(" handler PKG_JOIN_NOTIFY_ClUSTER package. from {} ",session.getNodeId());
 			// leader 批准加入Cluster
