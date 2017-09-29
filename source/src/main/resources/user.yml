@@ -1,0 +1,11 @@
+users:
+  - name: root
+    password: 123456
+    schemas:
+      - test
+
+firewall:
+  enable: false
+  white:
+    - host: 172.16.*.*
+      user: root
