@@ -44,6 +44,7 @@ public abstract class AbstractSession implements Session {
 	public Selector nioSelector;
 	// 操作的Socket连接
 	public String addr;
+	public String host;
 	public SocketChannel channel;
 	public SelectionKey channelKey;
 
@@ -66,6 +67,7 @@ public abstract class AbstractSession implements Session {
 		this.channel = channel;
 		InetSocketAddress clientAddr = (InetSocketAddress) channel.getRemoteAddress();
 		this.addr = clientAddr.getHostString() + ":" + clientAddr.getPort();
+		this.host = clientAddr.getHostString();
 		SelectionKey socketKey = channel.register(nioSelector, socketOpt, this);
 		this.channelKey = socketKey;
 		this.proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
