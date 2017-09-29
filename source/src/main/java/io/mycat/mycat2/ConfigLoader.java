@@ -31,6 +31,7 @@ public class ConfigLoader {
         loadConfig(ConfigEnum.HEARTBEAT, GlobalBean.INIT_VERSION);
         loadConfig(ConfigEnum.CLUSTER, GlobalBean.INIT_VERSION);
         loadConfig(ConfigEnum.BALANCER, GlobalBean.INIT_VERSION);
+        loadConfig(ConfigEnum.USER, GlobalBean.INIT_VERSION);
     }
 
     public void loadAll() throws IOException {
