@@ -83,16 +83,9 @@ public class ProxyStarter {
 			ProxyRuntime.INSTANCE.getConfig().initRepMap();
 			ProxyRuntime.INSTANCE.getConfig().initSchemaMap();
 
-			// 初始化连接
 			conf.getMysqlRepMap().forEach((repName, repBean) -> {
 				repBean.initMaster();
-				repBean.getMetaBeans().forEach(metaBean -> {
-					try {
-						metaBean.init(repBean, runtime.maxdataSourceInitTime, repBean.getDataSourceInitStatus());
-					} catch (IOException e) {
-						LOGGER.error("error to init metaBean: {}", metaBean.getDsMetaBean().getHostName());
-					}
-				});
+				repBean.getMetaBeans().forEach(metaBean -> metaBean.prepareHeartBeat(repBean, repBean.getDataSourceInitStatus()));
 			});
 		}
 

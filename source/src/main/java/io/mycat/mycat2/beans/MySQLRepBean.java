@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
+import io.mycat.mycat2.beans.conf.DatasourceMetaBean;
 import io.mycat.mycat2.beans.conf.ReplicaBean;
 import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
 import io.mycat.mycat2.beans.conf.ReplicaBean.RepTypeEnum;
@@ -74,12 +75,16 @@ public class MySQLRepBean {
         } else {
         	writeIndex = 0;
         }
-		replicaBean.getMysqls().forEach(dsMetaBean -> {
+		List<DatasourceMetaBean> list = replicaBean.getMysqls();
+        for (int i = 0; i < list.size(); i++) {
 			MySQLMetaBean metaBean = new MySQLMetaBean();
-			metaBean.setDsMetaBean(dsMetaBean);
+			metaBean.setDsMetaBean(list.get(i));
+			metaBean.setIndex(i);
+			if (i == writeIndex) {
+				metaBean.setSlaveNode(false);
+			}
 			metaBeans.add(metaBean);
-		});
-		metaBeans.get(writeIndex).setSlaveNode(false);
+		}
     }
 
 	public void doHeartbeat() {
@@ -170,7 +175,7 @@ public class MySQLRepBean {
 				// init again
 				MySQLMetaBean newWriteBean = metaBeans.get(newIndex);
 				newWriteBean.clearCons(reason);
-				newWriteBean.init(this, maxWaitTime, getDataSourceInitStatus());
+				newWriteBean.prepareHeartBeat(this, getDataSourceInitStatus());
 
 				// clear all connections
 				MySQLMetaBean oldMetaBean = metaBeans.get(current);
@@ -189,22 +194,19 @@ public class MySQLRepBean {
 			} else {
 				logger.warn("not switch datasource ,writeIndex == newIndex .newIndex is {}",newIndex);
 			}
-		} catch (IOException e) {
-			logger.error("error to switch datasource", e);
-			switchResult.set(false);
 		} finally {
 			lock.unlock();
 		}
 	}
 
 	public int getDataSourceInitStatus(){
-		int initStatus = DBHeartbeat.OK_STATUS;
-		MyCluster myCluster = ProxyRuntime.INSTANCE.getMyCLuster();
-
-		if (myCluster == null || myCluster.getMyLeader() == myCluster.getMyNode()){
-			initStatus = DBHeartbeat.INIT_STATUS;
-		}
-		return initStatus;
+//		int initStatus = DBHeartbeat.OK_STATUS;
+//		MyCluster myCluster = ProxyRuntime.INSTANCE.getMyCLuster();
+//
+//		if (myCluster == null || myCluster.getMyLeader() == myCluster.getMyNode()){
+//			initStatus = DBHeartbeat.INIT_STATUS;
+//		}
+		return DBHeartbeat.INIT_STATUS;
 	}
 
 	private String switchMessage(int current, int newIndex, String reason) {

@@ -32,6 +32,8 @@ public abstract class ManagePacket {
 	public static final byte PKG_CONFIG_CONFIRM = 11;
 	public static final byte PKG_CONFIG_COMMIT = 12;
 
+	public static final byte PKG_LEADER_NOTIFY = 13;
+
 	protected byte pkgType;
 	// 长度最长为2字节的short，即65535，长度包括包头3个字节在内
 	protected int pkgLength;

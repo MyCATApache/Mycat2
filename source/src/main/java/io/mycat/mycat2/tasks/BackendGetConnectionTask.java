@@ -10,14 +10,12 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MySQLSession;
 
 public class BackendGetConnectionTask implements AsynTaskCallBack<MySQLSession>{
-	
 	private final CopyOnWriteArrayList<MySQLSession> successCons;
 	private static final Logger logger = LoggerFactory.getLogger(BackendGetConnectionTask.class);
 	private final AtomicInteger finishedCount = new AtomicInteger(0);
 	private final int total;
 	
-	public BackendGetConnectionTask(CopyOnWriteArrayList<MySQLSession> connsToStore,
-			int totalNumber) {
+	public BackendGetConnectionTask(CopyOnWriteArrayList<MySQLSession> connsToStore, int totalNumber) {
 		this.successCons = connsToStore;
 		this.total = totalNumber;
 	}

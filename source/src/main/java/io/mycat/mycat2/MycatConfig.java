@@ -83,7 +83,8 @@ public class MycatConfig {
 	}
 
 	public int getConfigVersion(ConfigEnum configEnum) {
-		return configVersionMap.get(configEnum);
+        Integer oldVersion = configVersionMap.get(configEnum);
+        return oldVersion == null ? GlobalBean.INIT_VERSION : oldVersion;
 	}
 
     public Map<String, MySQLRepBean> getMysqlRepMap() {
