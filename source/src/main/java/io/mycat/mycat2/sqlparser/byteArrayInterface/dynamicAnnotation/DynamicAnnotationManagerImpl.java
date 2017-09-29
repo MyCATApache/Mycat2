@@ -55,10 +55,10 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
             try {
                 annotation.match.pick(0, context);
                 if (annotation.match.isComplete()) {
-                 System.out.println(annotation.actions.getSqlAnnotations().toString());
+                	logger.debug(annotation.actions.getSqlAnnotations().toString());
                 }
             }catch (Exception e){
-                System.out.println(annotation.toString());
+            	logger.error(annotation.toString());
                 e.printStackTrace();
             }
         }
@@ -74,7 +74,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
                     list.add(annotation.actions);
                 }
             } catch (Exception e) {
-                System.out.println(annotation.toString());
+            	logger.error(annotation.toString());
                 e.printStackTrace();
             }
         }
@@ -89,7 +89,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
                     list.addAll(annotation.actions.getSqlAnnotations());
                 }
             } catch (Exception e) {
-                System.out.println(annotation.toString());
+            	logger.error(annotation.toString());
                 e.printStackTrace();
             }
         }
@@ -208,7 +208,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
     private static void doList(List<SQLAnnotationList> globalFunction, BufferSQLContext args) {
         int size = globalFunction.size();
         for (int i = 0; i < size; i++) {
-           System.out.println(globalFunction.get(i).getSqlAnnotations().toString());
+        	logger.debug(globalFunction.get(i).getSqlAnnotations().toString());
         }
     }
 
@@ -246,10 +246,8 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
 
     public static int getGlobalFunctionHash(int schema, int sqltype) {
         int hash = schema;
-        System.out.println(schema);
         hash = hash * 31 + sqltype;
-        System.out.println(sqltype);
-        System.out.println("getGlobalFunctionHash:" + hash);
+        logger.debug("schema is {},sqltype is {},hash is {}",schema,sqltype,hash);
         return hash;
     }
 
@@ -259,7 +257,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
     }
 
     public static void main(String[] args) throws Exception {
-        DynamicAnnotationManagerImpl manager = new DynamicAnnotationManagerImpl("actions.yaml", "annotations.yaml");
+        DynamicAnnotationManagerImpl manager = new DynamicAnnotationManagerImpl("actions.yml", "annotations.yml");
         BufferSQLContext context = new BufferSQLContext();
         BufferSQLParser sqlParser = new BufferSQLParser();
         String str = "select * where id between 1 and 100 and name = \"haha\" and a=1 and name2 = \"ha\"";

@@ -18,13 +18,11 @@ public class MonitorSQLCmd extends DefaultMySQLCommand {
 	
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		logger.debug("========================> MonitorSQLCmd {}",session.sqlContext.getRealSQL(0));
 		return super.procssSQL(session);
 	}
 	
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-		logger.debug("========================> MonitorSQLCmd onFrontWriteFinished ");
 		return super.onFrontWriteFinished(session);
 	}
 }

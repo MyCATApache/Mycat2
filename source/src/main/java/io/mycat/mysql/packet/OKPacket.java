@@ -24,6 +24,7 @@
 package io.mycat.mysql.packet;
 
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.BufferUtil;
 
 /**
  * From Server To Client, at the end of a series of Field Packets, and at the
@@ -86,12 +87,19 @@ public class OKPacket extends MySQLPacket {
 
 	@Override
 	public int calcPacketSize() {
-		return 5;// 1+2+2;
+		int i = 1;
+		i += BufferUtil.getLength(affectedRows);
+		i += BufferUtil.getLength(insertId);
+		i += 4;
+		if (message != null) {
+			i += BufferUtil.getLength(message);
+		}
+		return i;
 	}
 
 	@Override
 	protected String getPacketInfo() {
-		return "MySQL EOF Packet";
+		return "MySQL OK Packet";
 	}
 
 }

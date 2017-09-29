@@ -17,6 +17,12 @@ public class ConfigReqPacket extends ManagePacket {
         super(ManagePacket.PKG_CONFIG_REQ);
     }
 
+    public ConfigReqPacket(int confCount, byte[] confTypes) {
+        this();
+        this.confCount = confCount;
+        this.confTypes = confTypes;
+    }
+
     @Override
     public void resolveBody(ProxyBuffer buffer) {
         confCount = (int) buffer.readFixInt(4);

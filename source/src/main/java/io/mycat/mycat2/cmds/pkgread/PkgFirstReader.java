@@ -67,12 +67,21 @@ public class PkgFirstReader implements PkgProcess {
 			// 如果当前为查询包，则切换到查询的逻辑命令处理
 			if (QUERY_PKG_START <= pkgType) {
 
+				// 标识当前为查询
+				session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey(),
+						MySQLPacket.RESULTSET_PACKET);
+
 				// 当前确认查询包，则切换至查询的读取操作
 				session.currPkgProc = PkgResultSetReader.INSTANCE;
 				return true;
 			}
 			// 如果当前为特殊的load data包，则直接进行切换至load data的逻辑处理
 			else if (session.curMSQLPackgInf.pkgType == MySQLPacket.LOAD_DATA_PACKET) {
+
+				// 标识当前为loaddata操作
+				session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey(),
+						MySQLPacket.LOAD_DATA_PACKET);
+
 				session.getMycatSession().getCmdChain().setTarget(LoadDataCommand.INSTANCE);
 				// 将前端的包检查关闭
 				session.getMycatSession().getSessionAttrMap().put(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey(), true);
@@ -83,15 +92,17 @@ public class PkgFirstReader implements PkgProcess {
 				// 直接透传报文
 				mycatSession.takeOwner(SelectionKey.OP_READ);
 				mycatSession.writeToChannel();
-
-				// 完成后，需要将buffer切换为写入事件,读取前端的数据
-				//curBuffer.flip();
 			}
 			// 如果为ok和error则切换到error的包判断
 			else {
 				DirectTransJudge judge = JUDGEMAP.get(session.curMSQLPackgInf.pkgType);
 				// 当检查到为需要检查的包，则进行检查
 				if (null != judge) {
+
+					// 标识当前为成功或者失败的类型
+					session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey(),
+							session.curMSQLPackgInf.pkgType);
+
 					// 当检查到完毕后，直接结束
 					session.getMycatSession().getSessionAttrMap()
 							.remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
@@ -101,27 +112,15 @@ public class PkgFirstReader implements PkgProcess {
 					if (runFlag) {
 						return true;
 					}
-
-					// 切换buffer 读写状态
-					curBuffer.flip();
-					MycatSession mycatSession = session.getMycatSession();
-					// 当知道操作完成后，前段的注册感兴趣事件为读取
-					mycatSession.takeOwner(SelectionKey.OP_READ);
-					mycatSession.writeToChannel();
 				}
 
 			}
 		}
 		// 对于首包非完整的，透传已经检查完毕
 		else {
-			// 切换buffer 读写状态
-			curBuffer.flip();
 			MycatSession mycatSession = session.getMycatSession();
 			// 标识当前传输未结束
 			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
-			// 直接透传报文
-			mycatSession.takeOwner(SelectionKey.OP_WRITE);
-			mycatSession.writeToChannel();
 
 		}
 

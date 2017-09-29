@@ -23,7 +23,6 @@ public class Whitehost  implements SQLAnnotation{
 
     @Override
     public Boolean apply(MycatSession context) {
-    	logger.debug("========================> Whitehost ");
         return Boolean.TRUE;
     }
     @Override

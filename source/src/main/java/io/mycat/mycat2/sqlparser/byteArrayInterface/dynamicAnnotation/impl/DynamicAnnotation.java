@@ -5,6 +5,9 @@ import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
 
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Created by jamie on 2017/9/5.
  */
@@ -16,6 +19,8 @@ public class DynamicAnnotation {
  public final DynamicAnnotationRuntime runtime;
     public final List<Map<String, Map<String, String>>> globalActions;
     public final List<Map<String, Map<String, String>>> schemaActions;
+    
+    private static final Logger logger = LoggerFactory.getLogger(DynamicAnnotation.class);
 
     public DynamicAnnotation(DynamicAnnotationKey key, DynamicAnnotationMatch match, SQLAnnotationList actions, DynamicAnnotationRuntime runtime, List<Map<String, Map<String, String>>> globalActions, List<Map<String, Map<String, String>>> schemaActions) {
         this.key = key;
@@ -34,7 +39,7 @@ public class DynamicAnnotation {
             if (!set.contains(method)) {
                 set.add(method);
             } else {
-                System.out.println("=> action名字重复了"+method);
+            	logger.warn("=> action名字重复了.{}",method);
             }
         }
         actions.getSqlAnnotations().addAll(0,reduceHelper(set, schemaActions,  schemaActionsMap));

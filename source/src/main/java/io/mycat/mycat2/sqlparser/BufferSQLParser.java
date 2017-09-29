@@ -4,9 +4,14 @@ import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.*;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.mycat.MYCATSQLParser;
 
 import java.nio.ByteBuffer;
 import java.util.stream.IntStream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
 import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debugError;
@@ -48,6 +53,8 @@ public class BufferSQLParser {
     Tokenizer2 tokenizer = new Tokenizer2();
     DefaultByteArray defaultByteArray = new DefaultByteArray();
     ByteBufferArray byteBufferArray = new ByteBufferArray();
+    
+    private static final Logger logger = LoggerFactory.getLogger(BufferSQLParser.class);
 
     int pickTableNames(int pos, final int arrayCount, BufferSQLContext context) {
         int type;
@@ -576,6 +583,11 @@ public class BufferSQLParser {
                     pos = DCLSQLParser.pickRevoke(++pos, arrayCount, context, hashArray,sql);
                     break;
                 }
+                case IntTokenHash.MYCAT:{
+                	TokenizerUtil.debug(pos,context);
+                	pos = MYCATSQLParser.pickMycat(++pos, arrayCount, context, hashArray, sql);
+                	break;
+                }
                 default:
                   //  debugError(pos, context);
                     pos++;
@@ -600,7 +612,7 @@ public class BufferSQLParser {
         this.byteBufferArray.setSrc(src);
         this.byteBufferArray.setOffset(offset);
         this.byteBufferArray.setLength(length);
-        System.out.println("kaiz : "+this.byteBufferArray.getString(offset, length));
+        logger.debug("kaiz : "+this.byteBufferArray.getString(offset, length));
         sql = this.byteBufferArray;
         hashArray = context.getHashArray();
         hashArray.init();

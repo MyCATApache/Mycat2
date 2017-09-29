@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.List;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
@@ -96,7 +95,7 @@ public class MySQLSession extends AbstractMySQLSession{
 
 	@Override
 	public String toString() {
-		return "MySQLSession [database=" + database + ", ip=" + mysqlMetaBean.getDsMetaBean().getIp()  + ",port="+ mysqlMetaBean.getDsMetaBean().getPort()+ ",hashCode="+hashCode()+"]";
+		return "MySQLSession [sessionId = "+getSessionId()+" , database=" + database + ", ip=" + mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort() + "]";
 	}
 
 }
