@@ -11,6 +11,8 @@ import io.mycat.proxy.man.ManagePacket;
  */
 public class LeaderNotifyPacket extends ManagePacket {
     public static final byte LOAD_CHARACTER = 1;
+    public static final byte SLAVE_NODE_HEARTBEAT_ERROR = 2;
+    public static final byte SLAVE_NODE_HEARTBEAT_SUCCESS = 3;
 
     private byte type;
     private String detail;
