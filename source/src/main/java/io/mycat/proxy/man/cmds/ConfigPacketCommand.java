@@ -144,8 +144,8 @@ public class ConfigPacketCommand implements AdminCommand {
             LOGGER.debug("send repBean heart beat ok status datasource index, repName: {}", repName);
             repBean.getMetaBeans().forEach(metaBean -> {
                 if (metaBean.getHeartbeat().getStatus() == DBHeartbeat.OK_STATUS) {
-                    LeaderNotifyPacket pkg = new LeaderNotifyPacket(LeaderNotifyPacket.LOAD_CHARACTER, repName, Integer.toString(metaBean.getIndex()));
-                    LeaderNotifyPacketCommand.INSTANCE.sendNotifyCmd(pkg);
+                    LeaderNotifyPacketCommand.INSTANCE.sendNotifyCmd(LeaderNotifyPacket.LOAD_CHARACTER,
+                            repName, Integer.toString(metaBean.getIndex()), session);
                 }
             });
         });
