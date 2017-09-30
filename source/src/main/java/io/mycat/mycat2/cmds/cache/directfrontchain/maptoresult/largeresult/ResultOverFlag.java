@@ -4,6 +4,7 @@ import java.nio.channels.SelectionKey;
 
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.cache.mapcache.CacheManager;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
 import io.mycat.mycat2.console.SessionKeyEnum;
@@ -33,6 +34,13 @@ public class ResultOverFlag implements ChainExecInf {
 		// 首先检查读取是否完成
 		if (null != readOver && readOver) {
 			session.proxyBuffer.reset();
+
+			// 获取SQL
+			String selectSql = (String) session.getSessionAttrMap()
+					.get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
+			
+			//提交缓存修改操作
+			CacheManager.INSTANCE.commit(selectSql);
 			// session.proxyBuffer.flip();
 			// 完成后，切换为读取
 			// session.takeOwner(SelectionKey.OP_READ);
@@ -53,6 +61,7 @@ public class ResultOverFlag implements ChainExecInf {
 			}
 			// 如果不需要响应则切换回透传流程处理
 			else {
+
 				// 清理结束标识
 				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CACHE_READY_OVER.getKey());
 				// 当完成之后，切换回透传流程处理
@@ -63,9 +72,9 @@ public class ResultOverFlag implements ChainExecInf {
 		} else {
 
 			// 未完成，则检查偏移
-			int offset = 0;
+			long offset = 0;
 			if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey())) {
-				offset = (int) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
+				offset = (long) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
 			}
 
 			if (offset > 0) {

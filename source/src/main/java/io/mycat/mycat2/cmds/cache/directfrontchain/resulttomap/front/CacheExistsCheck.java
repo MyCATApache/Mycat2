@@ -41,8 +41,14 @@ public class CacheExistsCheck implements ChainExecInf {
 
 			long cacheTime = (long) mycatSession.getSessionAttrMap()
 					.get(SessionKeyEnum.SESSION_KEY_CACHE_TIMEOUT.getKey());
-			// 添加缓存操作
-			addCache(mycatSession, sql, true, (int) cacheTime);
+
+			// 标识当前缓存放入开始
+			boolean upd = CacheManager.INSTANCE.begin(sql);
+
+			if (upd) {
+				// 添加缓存操作
+				addCache(mycatSession, sql, true, (int) cacheTime);
+			}
 
 			return true;
 		}
@@ -60,10 +66,15 @@ public class CacheExistsCheck implements ChainExecInf {
 
 				// 如果当前缓存已经过期,重新加载数据，返回前段
 				if (currTime >= sqlBean.getTimeOut()) {
-					// 先将数据进行清理，再进行将缓存更新
-					CacheManager.INSTANCE.cleanCacheData(sql);
-					// 再添加缓存据据,返回响应给前段
-					timeOueryCache(mycatSession);
+					// 标识当前缓存放入开始
+					boolean upd = CacheManager.INSTANCE.begin(sql);
+
+					if (upd) {
+						// 先将数据进行清理，再进行将缓存更新
+						CacheManager.INSTANCE.cleanCacheData(sql);
+						// 再添加缓存据据,返回响应给前段
+						timeOueryCache(mycatSession);
+					}
 				}
 				// 检查是否临近过期时间,如果是先响应前段，然后响应完成后
 				else if (currTime + cacheTimeOut >= sqlBean.getTimeOut()) {
@@ -123,6 +134,7 @@ public class CacheExistsCheck implements ChainExecInf {
 		// int timeOut = 2 * 60;
 		// 内存映射为16K
 		int mapMemory = mycatSession.getProxyBuffer().getBuffer().capacity();
+
 		// 创建一个SQL缓存,当这个缓存不存在时
 		CacheManager.INSTANCE.createCache(sql, timeOut, mapMemory);
 
