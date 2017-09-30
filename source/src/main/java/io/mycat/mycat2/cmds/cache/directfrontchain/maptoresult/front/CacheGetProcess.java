@@ -33,9 +33,9 @@ public class CacheGetProcess implements ChainExecInf {
 		if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_CACHE_GET_FLAG.getKey())) {
 
 			ProxyBuffer curBuffer = session.proxyBuffer;
-			int offset = 0;
+			long offset = 0;
 			if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey())) {
-				offset = (int) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
+				offset = (long) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
 			}
 
 			String sql = (String) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
