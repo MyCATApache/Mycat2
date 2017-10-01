@@ -12,7 +12,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 /**
  * Created by yanjunli on 2017/9/24.
  */
-public class InsertAllow implements SQLAnnotation{
+public class InsertAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(InsertAllow.class);
 	
@@ -39,15 +39,7 @@ public class InsertAllow implements SQLAnnotation{
     	}
         return Boolean.TRUE;
     }
-    @Override
-    public String getMethod() {
-        return null;
-    }
 
-    @Override
-    public void setMethod(String method) {
-
-    }
 
 	@Override
 	public MySQLCommand getMySQLCommand() {

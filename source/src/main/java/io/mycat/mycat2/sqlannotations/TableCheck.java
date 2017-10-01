@@ -9,7 +9,7 @@ import io.mycat.mycat2.MycatSession;
 /**
  * Created by jamie on 2017/9/24.
  */
-public class TableCheck implements SQLAnnotation{
+public class TableCheck extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(TableCheck.class);
 	
@@ -27,15 +27,7 @@ public class TableCheck implements SQLAnnotation{
         return Boolean.TRUE;
     }
 
-    @Override
-    public String getMethod() {
-        return null;
-    }
 
-    @Override
-    public void setMethod(String method) {
-
-    }
 
 	@Override
 	public MySQLCommand getMySQLCommand() {

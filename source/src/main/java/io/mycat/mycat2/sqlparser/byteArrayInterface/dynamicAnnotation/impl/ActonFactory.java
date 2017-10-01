@@ -3,19 +3,14 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.FileInputStream;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.yaml.snakeyaml.Yaml;
-
-import io.mycat.mycat2.sqlannotations.SQLAnnotation;
-import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
 
 /**
  * Created by jamie on 2017/9/10.
@@ -70,8 +65,8 @@ public class ActonFactory {
             logger.debug(action.toString());
             Class<SQLAnnotation> annotationClass = resMap.get(actionName);
             SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
+            annotation.setActionName(actionName);
             annotation.init(args);
-            annotation.setMethod(actionName);
             annotationList.getSqlAnnotations().add(annotation);
         } while (iterator.hasNext());
         return annotationList;
@@ -86,8 +81,8 @@ public class ActonFactory {
             logger.debug(action.toString());
             Class<SQLAnnotation> annotationClass = resMap.get(actionName);
             SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
+            annotation.setActionName(actionName);
             annotation.init(args);
-            annotation.setMethod(actionName);
             annotationList.getSqlAnnotations().add(annotation);
         } while (iterator.hasNext());
         return annotationList;
@@ -98,8 +93,8 @@ public class ActonFactory {
             logger.debug(actionName);
             Class<SQLAnnotation> annotationClass = resMap.get(actionName);
             SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
+            annotation.setActionName(actionName);
             annotation.init(args);
-            annotation.setMethod(actionName);
             return annotation;
     }
 

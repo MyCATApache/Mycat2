@@ -15,7 +15,6 @@ import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManager;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
 import io.mycat.proxy.ProxyRuntime;
 
 /**
@@ -68,7 +67,7 @@ public class AnnotationProcessor {
             	intHashTables = new int[0];
             }
             try {
-                dynamicAnnotationManager.get().collect(schemaName, SQLType.getSQLTypeByValue(sqltype), intHashTables, context, collect);
+                dynamicAnnotationManager.get().collect(schemaName,sqltype, intHashTables, context, collect);
             return true;
             } catch (Exception e) {
                 e.printStackTrace();

@@ -263,6 +263,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         String str = "select * where id between 1 and 100 and name = \"haha\" and a=1 and name2 = \"ha\"";
         System.out.println(str);
         sqlParser.parse(str.getBytes(), context);
-        manager.process("schemA", SQLType.INSERT, new String[]{"x1"}, context).run();
+        //  INSERT(14), DELETE(13), REPLACE(15), SELECT(11), UPDATE(12);
+        manager.process("schemA",12 , new String[]{"x1"}, context).run();
     }
 }
