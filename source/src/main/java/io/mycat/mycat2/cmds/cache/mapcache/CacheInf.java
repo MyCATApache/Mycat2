@@ -50,6 +50,6 @@ public interface CacheInf<T extends SqlCacheInfoBean> {
 	 * @throws IOException
 	 *             异常信息
 	 */
-	public int getByte(ProxyBuffer buffer, T cacheResult, int offset) throws IOException, InterruptedException;
+	public long getByte(ProxyBuffer buffer, T cacheResult, long offset) throws IOException, InterruptedException;
 
 }

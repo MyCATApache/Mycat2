@@ -1,6 +1,7 @@
 package io.mycat.mycat2.beans;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 用于进行缓存的实体信息
@@ -10,6 +11,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author liujun
  */
 public class SqlCacheBean {
+
+	/**
+	 * 缓存操作的线程id
+	 */
+	private AtomicLong cacheThreadId = new AtomicLong(0);
 
 	/**
 	 * sql信息
@@ -96,6 +102,10 @@ public class SqlCacheBean {
 
 	public AtomicBoolean getWriteCacheMapLock() {
 		return writeCacheMapLock;
+	}
+
+	public AtomicLong getCacheThreadId() {
+		return cacheThreadId;
 	}
 
 }
