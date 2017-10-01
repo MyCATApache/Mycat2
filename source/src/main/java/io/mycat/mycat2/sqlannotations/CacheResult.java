@@ -13,7 +13,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 /**
  * Created by jamie on 2017/9/15.
  */
-public class CacheResult implements SQLAnnotation {
+public class CacheResult extends SQLAnnotation {
 
 	private static final Logger logger = LoggerFactory.getLogger(CacheResult.class);
 	
@@ -63,15 +63,7 @@ public class CacheResult implements SQLAnnotation {
 		return this;
 	}
 
-	@Override
-	public String getMethod() {
-		return null;
-	}
 
-	@Override
-	public void setMethod(String method) {
-
-	}
 
 	@Override
 	public MySQLCommand getMySQLCommand() {

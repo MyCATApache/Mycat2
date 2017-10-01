@@ -7,7 +7,7 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.interceptor.SQLCachCmd;
 
-public class SQLCach implements SQLAnnotation {
+public class SQLCach extends SQLAnnotation {
 
 	public static final SQLCach INSTANCE = new SQLCach();
 	
@@ -29,15 +29,7 @@ public class SQLCach implements SQLAnnotation {
 
 	}
 
-	@Override
-	public String getMethod() {
-		return null;
-	}
 
-	@Override
-	public void setMethod(String method) {
-
-	}
 
 	@Override
 	public MySQLCommand getMySQLCommand() {

@@ -12,7 +12,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 /**
  * Created by yanjunli on 2017/9/24.
  */
-public class DropAllow implements SQLAnnotation{
+public class DropAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(DropAllow.class);
 	
@@ -41,15 +41,7 @@ public class DropAllow implements SQLAnnotation{
         return Boolean.TRUE;
     }
     
-    @Override
-    public String getMethod() {
-        return null;
-    }
 
-    @Override
-    public void setMethod(String method) {
-
-    }
 
 	@Override
 	public MySQLCommand getMySQLCommand() {

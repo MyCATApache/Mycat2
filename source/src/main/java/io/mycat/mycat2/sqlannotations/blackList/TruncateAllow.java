@@ -12,7 +12,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 /**
  * Created by yanjunli on 2017/9/24.
  */
-public class TruncateAllow implements SQLAnnotation{
+public class TruncateAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(TruncateAllow.class);
 	
@@ -40,15 +40,7 @@ public class TruncateAllow implements SQLAnnotation{
     	}
         return Boolean.TRUE;
     }
-    @Override
-    public String getMethod() {
-        return null;
-    }
 
-    @Override
-    public void setMethod(String method) {
-
-    }
 
 	@Override
 	public MySQLCommand getMySQLCommand() {

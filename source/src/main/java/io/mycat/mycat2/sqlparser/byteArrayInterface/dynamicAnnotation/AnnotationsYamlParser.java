@@ -66,7 +66,7 @@ public class AnnotationsYamlParser {
                 }
                 DynamicAnnotationKey key = new DynamicAnnotationKey(
                         schemaName,
-                        type,
+                        type.getValue(),
                         match.getTables().toArray(new String[match.getTables().size()]),
                         match.getName());
                 List<Map<String, String>> conditionList = match.getWhere();
@@ -114,6 +114,7 @@ public class AnnotationsYamlParser {
     }
 
     private static Map<String, SQLAnnotation> scopeActionHelper(String matchName, List<Map<String, Map<String, String>>> list, ActonFactory actonFactory) {
+        if(list==null){return Collections.EMPTY_MAP;}
         return list.stream().collect(Collectors.toMap((g) -> ConditionUtil.mappingKey(g), (g) -> {
             try {
                 String name = ConditionUtil.mappingKey(g);

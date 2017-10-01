@@ -12,7 +12,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 /**
  * Created by yanjunli on 2017/9/24.
  */
-public class DeleteAllow implements SQLAnnotation{
+public class DeleteAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(DeleteAllow.class);
 	
@@ -39,15 +39,6 @@ public class DeleteAllow implements SQLAnnotation{
     		return Boolean.FALSE;
     	}
         return Boolean.TRUE;
-    }
-    @Override
-    public String getMethod() {
-        return null;
-    }
-
-    @Override
-    public void setMethod(String method) {
-
     }
 
 	@Override

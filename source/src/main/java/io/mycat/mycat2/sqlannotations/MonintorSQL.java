@@ -13,7 +13,7 @@ import io.mycat.mycat2.cmds.interceptor.MonitorSQLCmd;
  * @author yanjunli
  *
  */
-public class MonintorSQL implements SQLAnnotation {
+public class MonintorSQL extends SQLAnnotation {
 	
 	public static final MonintorSQL INSTANCE = new MonintorSQL();
 	
@@ -35,15 +35,7 @@ public class MonintorSQL implements SQLAnnotation {
 
 	}
 
-	@Override
-	public String getMethod() {
-		return null;
-	}
 
-	@Override
-	public void setMethod(String method) {
-
-	}
 
 	@Override
 	public MySQLCommand getMySQLCommand() {
