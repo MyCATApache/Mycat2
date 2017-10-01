@@ -20,8 +20,8 @@ public class HeartbeatBean {
      * 默认空闲超时时间
      */
     private long idleTimeout = 30 * 60 * 1000L;
-    private long processorCheckPeriod = 1 * 1000L;;
-    private long minSwitchtimeInterval = 30 * 60 * 1000L;;
+    private long processorCheckPeriod = 1 * 1000L;
+    private long minSwitchtimeInterval = 30 * 60 * 1000L;
 
     public int getTimerExecutor() {
         return timerExecutor;
