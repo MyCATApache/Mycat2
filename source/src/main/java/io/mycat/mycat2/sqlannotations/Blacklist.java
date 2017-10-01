@@ -3,6 +3,7 @@ package io.mycat.mycat2.sqlannotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 
 /**
@@ -36,5 +37,8 @@ public class Blacklist implements SQLAnnotation{
 
     }
 
-
+	@Override
+	public MySQLCommand getMySQLCommand() {
+		return null;
+	}
 }

@@ -3,6 +3,7 @@ package io.mycat.mycat2.sqlannotations.blackList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.BlockSqlCmd;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
@@ -15,6 +16,8 @@ public class DropAllow implements SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(DropAllow.class);
 	
+	private static final MySQLCommand command = BlockSqlCmd.INSTANCE;
+		
     Object args;
     public DropAllow() {
     	logger.debug("=>DropAllow 对象本身的构造 初始化");
@@ -32,11 +35,12 @@ public class DropAllow implements SQLAnnotation{
     			(BufferSQLContext.DROP_SQL == context.sqlContext.getSQLType())){
     		
     		context.getCmdChain().setErrMsg("drop  not allow ");
-    		context.getCmdChain().addCmdChain(this,BlockSqlCmd.INSTANCE);
+    		context.getCmdChain().addCmdChain(this);
     		return Boolean.FALSE;
     	}
         return Boolean.TRUE;
     }
+    
     @Override
     public String getMethod() {
         return null;
@@ -46,5 +50,10 @@ public class DropAllow implements SQLAnnotation{
     public void setMethod(String method) {
 
     }
+
+	@Override
+	public MySQLCommand getMySQLCommand() {
+		return command;
+	}
 
 }
