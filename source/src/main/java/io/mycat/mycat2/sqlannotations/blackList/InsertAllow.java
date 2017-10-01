@@ -3,6 +3,7 @@ package io.mycat.mycat2.sqlannotations.blackList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.BlockSqlCmd;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
@@ -15,6 +16,8 @@ public class InsertAllow implements SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(InsertAllow.class);
 	
+	private static final MySQLCommand command = BlockSqlCmd.INSTANCE;
+		
     Object args;
     public InsertAllow() {
     	logger.debug("=>InsertAllow 对象本身的构造 初始化");
@@ -31,7 +34,7 @@ public class InsertAllow implements SQLAnnotation{
     	if(!(boolean)args&&
     			(BufferSQLContext.INSERT_SQL == context.sqlContext.getSQLType())){
     		context.getCmdChain().setErrMsg("insert not allow ");
-    		context.getCmdChain().addCmdChain(this,BlockSqlCmd.INSTANCE);
+    		context.getCmdChain().addCmdChain(this);
     		return Boolean.FALSE;
     	}
         return Boolean.TRUE;
@@ -46,4 +49,8 @@ public class InsertAllow implements SQLAnnotation{
 
     }
 
+	@Override
+	public MySQLCommand getMySQLCommand() {
+		return command;
+	}
 }

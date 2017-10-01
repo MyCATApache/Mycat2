@@ -3,6 +3,7 @@ package io.mycat.mycat2.sqlannotations.blackList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.BlockSqlCmd;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
@@ -15,6 +16,8 @@ public class ReplaceAllow implements SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(ReplaceAllow.class);
 	
+	private static final MySQLCommand command = BlockSqlCmd.INSTANCE;
+		
     Object args;
     public ReplaceAllow() {
     	logger.debug("=>ReplaceAllow 对象本身的构造 初始化");
@@ -31,7 +34,7 @@ public class ReplaceAllow implements SQLAnnotation{
     	if(!(boolean)args&&
     			(BufferSQLContext.REPLACE_SQL == context.sqlContext.getSQLType())){
     		context.getCmdChain().setErrMsg("replace not allow ");
-    		context.getCmdChain().addCmdChain(this,BlockSqlCmd.INSTANCE);
+    		context.getCmdChain().addCmdChain(this);
     		return Boolean.FALSE;
     	}
         return Boolean.TRUE;
@@ -45,5 +48,10 @@ public class ReplaceAllow implements SQLAnnotation{
     public void setMethod(String method) {
 
     }
+
+	@Override
+	public MySQLCommand getMySQLCommand() {
+		return command;
+	}
 
 }

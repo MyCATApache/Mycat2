@@ -86,8 +86,8 @@ public class MycatSession extends AbstractMySQLSession {
 				DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case ANNOTATION_ROUTE:
 				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
-			case SQL_PARSE_ROUTE:
-				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
+//			case SQL_PARSE_ROUTE:
+//				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			default:
 				throw new InvalidParameterException("schema type is invalid ");
 		}
@@ -311,8 +311,8 @@ public class MycatSession extends AbstractMySQLSession {
 				break;
 			case DB_IN_MULTI_SERVER:
 				break;
-			case SQL_PARSE_ROUTE:
-				break;
+//			case SQL_PARSE_ROUTE:
+//				break;
 			default:
 				break;
 		}
