@@ -131,15 +131,11 @@ public abstract class AbstractSession implements Session {
 			buffer.position(proxyBuffer.writeIndex);
 		}
 		
-		int readed = 0;
-		try{
-			readed = channel.read(buffer);
-		} catch(IOException e){
-			closeSocket(false,"Read EOF ,socket closed ");
-		}
+		int readed = channel.read(buffer);
 //		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
-			closeSocket(false,"Read EOF ,socket closed ");
+			logger.warn("Read EOF ,socket closed ");
+			throw new ClosedChannelException();
 		} else if (readed == 0) {
 			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
 		}
@@ -173,12 +169,7 @@ public abstract class AbstractSession implements Session {
 		ByteBuffer buffer = proxyBuffer.getBuffer();
 		buffer.limit(proxyBuffer.readIndex);
 		buffer.position(proxyBuffer.readMark);
-		int writed = 0;
-		try{
-			writed = channel.write(buffer);
-		} catch(IOException e){
-			closeSocket(false,"write error ,socket closed ");
-		}
+		int writed = channel.write(buffer);
 		proxyBuffer.readMark += writed; // 记录本次磁轭如到 Channel 中的数据
 		if (!buffer.hasRemaining()) {
 //			logger.debug("writeToChannel write  {} bytes ,curChannel is {}", writed,this);
@@ -272,7 +263,7 @@ public abstract class AbstractSession implements Session {
 	}
 
 	public String sessionInfo() {
-		return " [" + this.addr + ']';
+		return " [ sessionId = "+ sessionId+" ," + this.addr + ']';
 	}
 
 	public boolean isChannelOpen() {
@@ -291,7 +282,6 @@ public abstract class AbstractSession implements Session {
 	public void close(boolean normal, String hint) {
 		if (!this.isClosed()) {
 			this.closed = true;
-			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
 			closeSocket(channel, normal, hint);
 			if (!referedBuffer) {
 				this.bufPool.recycleBuf(proxyBuffer.getBuffer());
@@ -322,7 +312,7 @@ public abstract class AbstractSession implements Session {
 		if (channel == null) {
 			return;
 		}
-		String logInf = (normal) ? " normal close " : "abnormal close " + channel;
+		String logInf = (normal) ? " normal close " : "abnormal close " ;
 		logger.info(logInf + sessionInfo() + "  reason:" + msg);
 		try {
 			channel.close();

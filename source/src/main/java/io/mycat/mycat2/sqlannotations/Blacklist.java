@@ -3,12 +3,13 @@ package io.mycat.mycat2.sqlannotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 
 /**
  * Created by jamie on 2017/9/24.
  */
-public class Blacklist implements SQLAnnotation{
+public class Blacklist extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(Blacklist.class);
 
@@ -26,15 +27,10 @@ public class Blacklist implements SQLAnnotation{
         logger.debug("=>Blacklist");
         return Boolean.TRUE;
     }
-    @Override
-    public String getMethod() {
-        return null;
-    }
-
-    @Override
-    public void setMethod(String method) {
-
-    }
 
 
+	@Override
+	public MySQLCommand getMySQLCommand() {
+		return null;
+	}
 }

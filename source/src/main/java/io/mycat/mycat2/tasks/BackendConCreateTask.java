@@ -98,7 +98,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		} else {
 			// 认证结果报文收到
 			if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
-				logger.info("backend authed suceess ");
+				logger.debug("backend authed suceess ");
 				this.finished(true);
 			} else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
 				errPkg = new ErrorPacket();
@@ -115,7 +115,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	public void onConnect(SelectionKey theKey, MySQLSession userSession, boolean success, String msg)
 			throws IOException {
 		String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
-		logger.info(logInfo + " channel " + userSession.channel);
+		logger.debug("{}  sessionId = {}, {}:{}",logInfo, userSession.getSessionId(),userSession.getMySQLMetaBean().getDsMetaBean().getIp(), userSession.getMySQLMetaBean().getDsMetaBean().getPort());
 		if (success) {
 			InetSocketAddress serverRemoteAddr = (InetSocketAddress) userSession.channel.getRemoteAddress();
 			InetSocketAddress serverLocalAddr = (InetSocketAddress) userSession.channel.getLocalAddress();

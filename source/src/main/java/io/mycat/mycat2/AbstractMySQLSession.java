@@ -6,15 +6,17 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
-import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
+import io.mycat.mycat2.sqlannotations.SQLAnnotation;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -281,20 +283,21 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 		private MySQLCommand target;
 		
 		/**
-		 * 所有的sqlAnno
+		 * 本次匹配到的所有的动态注解，里面可能有重复的anno。但是是不同实例。可以根据自己的需要，选择去重复，或者不去重复。
 		 */
-		private List<Function<MycatSession, Boolean>> sqlAnnotations = new ArrayList<>(30);
+		private List<SQLAnnotation> annontations = new ArrayList<>(30);
 		
 		/**
-		 * 动态注解 命令映射关系表
+		 * queueMap 用于去重复
 		 */
-		private Map<Function<MycatSession, Boolean>,MySQLCommand> sqlAnnoMapper = new HashMap<>();
-		
+		private LinkedHashMap<Long,SQLAnnotation> queueMap = new LinkedHashMap<>(20);
 		
 		/**
-		 * 前置类，后置类，around 类  动态注解  顺序，继承了SQLCommand 的动态注解会出现在此列表中
-		 */
-		private List<Function<MycatSession, Boolean>> queue = new ArrayList<>(20);
+		 * 前置类，后置类，around 类  动态注解  顺序，实现了SQLCommand 的动态注解会出现在此列表中
+		 *  如果没有实现  SQLCommand 的 annotations 不会出现在此列表中
+		 *  最终的构建结果
+		 */		
+		private List<SQLAnnotation> queue = new ArrayList<>(20);
 		
 		/**
 		 * queue 列表当前索引值
@@ -303,8 +306,8 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 		
 		private String errMsg;
 				
-		public List<Function<MycatSession, Boolean>> getSqlAnnotations(){
-			return sqlAnnotations;
+		public List<SQLAnnotation> getSqlAnnotations(){
+			return annontations;
 		}
 		
 		/**
@@ -315,7 +318,7 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 		 */
 		public MySQLCommand getNextSQLCommand(){
 			//sqlAnnotations 是  ArrayList .
-			if(sqlAnnotations.isEmpty()|| ++cmdIndex >= queue.size()){
+			if(queue.isEmpty()|| ++cmdIndex >= queue.size()){
 				/**
 				 *  动态注解处理完成后，调用目标命令，同时重置 cmdIndex.
 				 *  重置 cmdIndex  可以实现 对  around 类 动态注解的支持
@@ -323,38 +326,85 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 				cmdIndex = 0;
 				return target;
 			}else{
-				return sqlAnnoMapper.get(queue.get(cmdIndex));
+				return queue.get(cmdIndex).getMySQLCommand();
 			}
+		}
+		
+		public Collection<SQLAnnotation> getSQLCommandsChain(){
+			return queue;
+		}
+		
+		public void build(){
+			queue = queueMap.values().stream().collect(Collectors.toList());
 		}
 		
 		/**
 		 * 初始化设置  原始 命令
 		 * @param target
 		 */
-		public void setTarget(MySQLCommand target){
+		public CommandChain setTarget(MySQLCommand target){
 			this.target = target;
+			return this;
+		}
+		
+		/**
+		 * 处理动态注解和静态注解
+		 * 动态注解 会覆盖静态注解
+		 * @param session
+		 */
+		public CommandChain processAnnotation(MycatSession session,Map<Byte,SQLAnnotation> staticAnnontationMap){
+			
+			BufferSQLContext context = session.sqlContext;
+			
+			SQLAnnotation staticAnno = staticAnnontationMap.get(context.getAnnotationType());
+			
+			/**
+			 * 处理动态注解
+			 */
+			List<SQLAnnotation> actions = session.getCmdChain().getSqlAnnotations();
+			if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
+				for(SQLAnnotation f:actions){
+					if(!f.apply(session)){
+						break;
+					}
+				}
+			}
+			
+			if(staticAnno!=null){
+				if(staticAnno.getMySQLCommand()!=null){
+					/**
+					 * 处理静态注解, 只有没有相应的动态注解时,才处理静态注解
+					 */
+					if(!session.getCmdChain().getSQLCommandsChain().contains(staticAnno)){
+						session.getCmdChain().addCmdChain(staticAnno);
+					}
+				}else{
+					staticAnno.apply(session);
+				}
+			}
+			
+			return this;
 		}
 		
 		public MySQLCommand getCurrentSQLCommand(){
 			//sqlAnnotations 是  ArrayList .
-			if(sqlAnnotations.isEmpty()||cmdIndex >= queue.size()){
+			if(queue.isEmpty()||cmdIndex >= queue.size()){
 				return target;
 			}else{
-				return sqlAnnoMapper.get(queue.get(cmdIndex));
+				return queue.get(cmdIndex).getMySQLCommand();
 			}
 		}
 		
-		public void addCmdChain(Function<MycatSession, Boolean> sqlanno,MySQLCommand curr){
-			sqlAnnoMapper.put(sqlanno, curr);
-			queue.add(sqlanno);
+		public void addCmdChain(SQLAnnotation sqlanno){
+			queueMap.put(sqlanno.currentKey(), sqlanno);
 		}
 		
 		public void clear(){
-			sqlAnnoMapper.clear();
 			target = null;
-			sqlAnnotations.clear();
 			queue.clear();
 			cmdIndex = 0;
+			annontations.clear();
+			queueMap.clear();
 		}
 
 		public String getErrMsg() {

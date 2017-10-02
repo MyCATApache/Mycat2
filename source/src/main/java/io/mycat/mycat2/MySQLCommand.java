@@ -2,6 +2,9 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.util.ParseUtil;
+
 /**
  * 负责处理SQL命令
  * 
@@ -49,4 +52,19 @@ public interface MySQLCommand  {
 	 * @return 是否完成了应答
 	 */
 	public boolean procssSQL(MycatSession session) throws IOException;
+	
+	/**
+	 * 向客户端响应 错误信息
+	 * @param session
+	 * @throws IOException
+	 */
+	public default void sendErrorMsg(MycatSession session,int errno,String errMsg) throws IOException{
+		ErrorPacket errPkg = new ErrorPacket();
+		errPkg.packetId =  (byte) (session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
+							+ ParseUtil.mysql_packetHeader_length) + 1);
+		errPkg.errno  = errno;
+		errPkg.message = errMsg;
+		session.proxyBuffer.reset();
+		session.responseOKOrError(errPkg);
+	}
 }

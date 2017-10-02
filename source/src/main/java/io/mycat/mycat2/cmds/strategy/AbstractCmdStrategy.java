@@ -1,15 +1,15 @@
 package io.mycat.mycat2.cmds.strategy;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
-import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
+import io.mycat.mycat2.sqlannotations.CacheResult;
+import io.mycat.mycat2.sqlannotations.SQLAnnotation;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
 
@@ -24,6 +24,8 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	 * 进行SQL命令的处理的容器
 	 */
 	protected Map<Byte, MySQLCommand> MYSQLCOMMANDMAP = new HashMap<>();
+	
+	private Map<Byte,SQLAnnotation> staticAnnontationMap = new HashMap<>();
 
 	/**
 	 * sqlparser
@@ -33,6 +35,11 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	public AbstractCmdStrategy(){
 		initMyCmdHandler();
 		initMySqlCmdHandler();
+		initStaticAnnotation();
+	}
+	
+	private void initStaticAnnotation(){
+		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_SQL_CACHE,new CacheResult());
 	}
 	
 	protected abstract void initMyCmdHandler();
@@ -64,18 +71,9 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		/**
 		 * 设置原始处理命令
 		 */
-		session.getCmdChain().setTarget(command);
-		
-		/**
-		 * 处理动态注解
-		 */
-		List<Function<MycatSession, Boolean>> actions = session.getCmdChain().getSqlAnnotations();
-		if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
-			for(Function<MycatSession, Boolean> f:actions){
-				if(!f.apply(session)){
-					break;
-				}
-			}
-		}
+		session.getCmdChain()
+			   .setTarget(command)
+			   .processAnnotation(session, staticAnnontationMap)
+			   .build();
 	}
 }
