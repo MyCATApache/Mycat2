@@ -108,11 +108,19 @@ public class MySQLRepBean {
     }
 
     public int getNextIndex(){
-    	MySQLMetaBean metaBean = metaBeans.stream().skip(writeIndex + 1).findFirst().orElse(null);
+    	MySQLMetaBean metaBean = metaBeans.stream()
+    			.skip(writeIndex + 1)
+    			.filter(f->f.getHeartbeat().getStatus()==DBHeartbeat.OK_STATUS)
+    			.findFirst()
+    			.orElse(null);
     	if (metaBean!=null){
     		return metaBeans.indexOf(metaBean);
     	} else {
-    		metaBean = metaBeans.stream().limit(writeIndex).findFirst().orElse(null);
+    		metaBean = metaBeans.stream()
+    				.limit(writeIndex)
+    				.filter(f->f.getHeartbeat().getStatus()==DBHeartbeat.OK_STATUS)
+    				.findFirst()
+    				.orElse(null);
     		if(metaBean!=null){
     			return metaBeans.indexOf(metaBean);
     		}
@@ -128,20 +136,20 @@ public class MySQLRepBean {
 	public CheckResult switchDataSourcecheck(int newIndex){
 		String errmsg = null;
 		CheckResult result = new CheckResult(true);
-
-		if(RepTypeEnum.SINGLE_NODE.equals(getReplicaBean().getRepType())){
-			errmsg = " repl type is "+RepTypeEnum.SINGLE_NODE.name() + ", switchDatasource is not supported";
-			logger.warn(errmsg);
+		if (replicaBean.getSwitchType() == ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH) {
+			errmsg = "not switch datasource ,for switchType is "+ReplicaBean.RepSwitchTypeEnum.NOT_SWITCH+",repl name is "+ replicaBean.getName();
+			result.setSuccess(false);
+			result.setMsg(errmsg);
+		}else if(RepTypeEnum.SINGLE_NODE.equals(getReplicaBean().getRepType())){
+			errmsg = " repl ["+replicaBean.getName()+"] type is "+RepTypeEnum.SINGLE_NODE.name() + ", switchDatasource is not supported";
 			result.setSuccess(false);
 			result.setMsg(errmsg);
 		}else if(!checkIndex(newIndex)){
-			errmsg = "not switch datasource ,writeIndex  out of range. writeIndex is " + newIndex;
-			logger.warn(errmsg);
+			errmsg = "not switch datasource ,there is no datasource available in the  "+replicaBean.getName()+" Replication group. ";
 			result.setSuccess(false);
 			result.setMsg(errmsg);
 		}else if(newIndex==writeIndex){
-			errmsg = "not switch datasource ,writeIndex == newIndex .newIndex is " + newIndex;
-			logger.warn(errmsg);
+			errmsg = "not switch datasource ,writeIndex == newIndex .newIndex is " + newIndex +" in the  "+replicaBean.getName()+" Replication group. ";
 			result.setSuccess(false);
 			result.setMsg(errmsg);
 		}

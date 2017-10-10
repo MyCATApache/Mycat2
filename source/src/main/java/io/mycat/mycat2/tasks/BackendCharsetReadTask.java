@@ -59,7 +59,11 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
         queryPacket.write(proxyBuf);
         proxyBuf.flip();
         proxyBuf.readIndex = proxyBuf.writeIndex;
-        this.mySQLSession.writeToChannel();
+        try {
+        	this.mySQLSession.writeToChannel();
+		} catch (IOException e) {
+			onRsFinish(this.mySQLSession,false,e.getMessage());
+		}
     }
 
     @Override
@@ -111,12 +115,19 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     }
 
     @Override
-    void onRsFinish(MySQLSession session,boolean success) throws IOException {
-    	if(callBack!=null){
-    		callBack.finished(session, null, success, null);
+    void onRsFinish(MySQLSession session,boolean success,String msg) throws IOException {
+    	if(success){
+    		if(callBack!=null){
+        		callBack.finished(session, null, success, null);
+        	}
+            //结果集完成
+            logger.debug("session[{}] load charset finish",session);
+    	}else{
+    		if(ResultSetState.RS_STATUS_READ_ERROR == curRSState||
+    				ResultSetState.RS_STATUS_WRITE_ERROR == curRSState){
+    			session.close(false, msg);
+    		}
     	}
-        //结果集完成
-        logger.debug("session[{}] load charset finish",session);
     }
 
 }

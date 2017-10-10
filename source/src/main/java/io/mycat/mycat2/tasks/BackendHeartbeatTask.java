@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.mycat.mycat2.beans.conf.ReplicaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +14,7 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.conf.ReplicaBean;
 import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mycat2.beans.heartbeat.MySQLDetector;
 import io.mycat.mycat2.beans.heartbeat.MySQLHeartbeat;
@@ -126,7 +126,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 	}
 
 	@Override
-	void onRsFinish(MySQLSession session,boolean success) {
+	void onRsFinish(MySQLSession session,boolean success,String msg) {
 		if(success){
 			//归还连接
 			MycatReactorThread reactor = (MycatReactorThread)Thread.currentThread();
@@ -148,11 +148,13 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 				break;
 			}
 			detector.setLasstReveivedQryTime(System.currentTimeMillis());
-//			detector.getHeartbeat().getRecorder().set((detector.getLasstReveivedQryTime() - detector.getLastSendQryTime()));
 		}else{
-			logger.error("found MySQL master/slave Replication err !!! {}:{}" , metaBean.getDsMetaBean().getIp(),metaBean.getDsMetaBean().getPort());
-			detector.getHeartbeat().setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
-			detector.getHeartbeat().setResult(DBHeartbeat.ERROR_STATUS, detector,  null);
+			if(ResultSetState.RS_STATUS_READ_ERROR == curRSState||
+    				ResultSetState.RS_STATUS_WRITE_ERROR == curRSState){
+				detector.getHeartbeat().setDbSynStatus(DBHeartbeat.DB_SYN_ERROR);
+				detector.getHeartbeat().setResult(DBHeartbeat.ERROR_STATUS, detector,  null);
+    		}
+			session.close(false, msg);
 		}
 	}
 	

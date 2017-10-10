@@ -233,8 +233,6 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		} else {
 			MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 			if (source.isSlaveNode()) {
-				logger.error(msg);
-
 				// 集群模式下通知从节点更新状态
 				ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
 				if (clusterConfig.getCluster().isEnable()) {
@@ -245,7 +243,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 				}
 			} else {
 				// 写节点 尝试多次次失败后, 需要通知集群
-				logger.warn("heartbeat to backend session error, notify the cluster if needed");
+				logger.warn("heartbeat to backend session error, notify the cluster");
 
 				HeartbeatConfig heartbeatConfig = conf.getConfig(ConfigEnum.HEARTBEAT);
 				long curTime = System.currentTimeMillis();
@@ -280,65 +278,4 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		this.isChecking.set(false);
 		status = DBHeartbeat.TIMEOUT_STATUS;
 	}
-
-//	/**
-//	 * switch data source
-//	 */
-//	private void switchSourceIfNeed(String reason) {
-//		int switchType = source.getHostConfig().getSwitchType();
-//		if (switchType == DataHostConfig.NOT_SWITCH_DS) {
-//			if (LOGGER.isDebugEnabled()) {
-//				LOGGER.debug("not switch datasource ,for switchType is "
-//						+ DataHostConfig.NOT_SWITCH_DS);
-//				return;
-//			}
-//			return;
-//		}
-//		PhysicalDBPool pool = this.source.getDbPool();
-//		int curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
-//		// read node can't switch ,only write node can switch
-//		if (pool.getWriteType() == PhysicalDBPool.WRITE_ONLYONE_NODE
-//				&& !source.isReadNode()
-//				&& curDatasourceHB != DBHeartbeat.OK_STATUS
-//				&& pool.getSources().length > 1) {
-//			synchronized (pool) {
-//				// try to see if need switch datasource
-//				curDatasourceHB = pool.getSource().getHeartbeat().getStatus();
-//				if (curDatasourceHB != DBHeartbeat.INIT_STATUS && curDatasourceHB != DBHeartbeat.OK_STATUS) {
-//					int curIndex = pool.getActivedIndex();
-//					int nextId = pool.next(curIndex);
-//					PhysicalDatasource[] allWriteNodes = pool.getSources();
-//					while (true) {
-//						if (nextId == curIndex) {
-//							break;
-//						}
-//						PhysicalDatasource theSource = allWriteNodes[nextId];
-//						DBHeartbeat theSourceHB = theSource.getHeartbeat();
-//						int theSourceHBStatus = theSourceHB.getStatus();
-//						if (theSourceHBStatus == DBHeartbeat.OK_STATUS) {
-//							if (switchType == DataHostConfig.SYN_STATUS_SWITCH_DS) {
-//								if (Integer.valueOf(0).equals( theSourceHB.getSlaveBehindMaster())) {
-//									LOGGER.info("try to switch datasource ,slave is synchronized to master " + theSource.getConfig());
-//									pool.switchSource(nextId, true, reason);
-//									break;
-//								} else {
-//									LOGGER.warn("ignored  datasource ,slave is not  synchronized to master , slave behind master :"
-//											+ theSourceHB.getSlaveBehindMaster()
-//											+ " " + theSource.getConfig());
-//								}
-//							} else {
-//								// normal switch
-//								LOGGER.info("try to switch datasource ,not checked slave synchronize status " + theSource.getConfig());
-//								pool.switchSource(nextId, true, reason);
-//                                break;
-//							}
-//
-//						}
-//						nextId = pool.next(nextId);
-//					}
-//
-//				}
-//			}
-//		}
-//	}
 }
