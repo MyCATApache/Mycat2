@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.BlockSqlCmd;
 import io.mycat.mycat2.cmds.interceptor.MonitorSQLCmd;
 
 /**

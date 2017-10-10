@@ -388,7 +388,14 @@ public class ProxyBuffer {
 		writeIndex += offset + bytes.length;
 		return this;
 	}
-
+	
+	public ProxyBuffer writeLenencBytes(byte[] bytes, byte[] nullValue) {
+        if (bytes == null) {
+        	return writeLenencBytes(nullValue);
+        } else {
+        	return writeLenencBytes(bytes);
+        }
+    }
 	public ProxyBuffer writeByte(byte val) {
 		this.putByte(writeIndex, val);
 		writeIndex++;
@@ -423,6 +430,11 @@ public class ProxyBuffer {
 		} else {
 			return 9;
 		}
+	}
+	
+	public static int getLenencLength(byte[] bytes) {
+		int size = bytes.length;
+		return size + getLenencLength(size);
 	}
 
 	
