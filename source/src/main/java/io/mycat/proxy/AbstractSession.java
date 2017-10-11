@@ -142,11 +142,6 @@ public abstract class AbstractSession implements Session {
 		proxyBuffer.writeIndex = buffer.position();
 		return readed > 0;
 	}
-	
-	private void closeSocket(boolean normal,String msg) throws IOException{
-		close(false,msg);
-		throw new ClosedChannelException();
-	}
 
 	protected abstract void doTakeReadOwner();
 

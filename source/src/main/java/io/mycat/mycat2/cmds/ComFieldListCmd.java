@@ -48,21 +48,25 @@ public class ComFieldListCmd extends DirectPassthrouhCmd{
 		session.clearReadWriteOpts();
 		
 		session.getBackend((mysqlsession, sender, success,result)->{
+			ProxyBuffer curBuffer = session.proxyBuffer;
+			// 切换 buffer 读写状态
+			curBuffer.flip();
+			
 			if(success){
 				
 				mysqlsession.currPkgProc = PkgResultSetReader.INSTANCE;
 				mysqlsession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey(), true);
-				
-				ProxyBuffer curBuffer = session.proxyBuffer;
-				// 切换 buffer 读写状态
-				curBuffer.flip();
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
 				// 改变 owner，对端Session获取，并且感兴趣写事件
 				session.giveupOwner(SelectionKey.OP_WRITE);
-				mysqlsession.writeToChannel();
+				try {
+					mysqlsession.writeToChannel();
+				} catch (IOException e) {
+					session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+				}
 			}else{
-				session.responseOKOrError((ErrorPacket)result);
+				session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
 			}
 		});
 		return false;

@@ -10,6 +10,7 @@ import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
 import io.mycat.mycat2.cmds.pkgread.PkgProcess;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.BufferPool;
+import io.mycat.util.ErrorCode;
 
 /**
  * 后端MySQL连接
@@ -64,9 +65,6 @@ public class MySQLSession extends AbstractMySQLSession{
 	@Override
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);
-		if(this.mycatSession!=null){
-			this.mycatSession.unbindBeckend(this);
-		}
 	}
 	public String getDatabase() {
 		return database;

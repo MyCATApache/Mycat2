@@ -20,6 +20,7 @@ import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.BufferPool;
+import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.SecurityUtil;
 
@@ -61,6 +62,16 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 				session.curMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
 			return;
 		}
+		
+		if(MySQLPacket.ERROR_PACKET == session.curMSQLPackgInf.pkgType){
+			errPkg = new ErrorPacket();
+			errPkg.packetId = session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
+															+ ParseUtil.mysql_packetHeader_length);
+			errPkg.read(session.proxyBuffer);
+			logger.warn("backend authed failed. Err No. " + errPkg.errno + "," + errPkg.message);
+			this.finished(false);
+			return;
+		}
 
 		if (!welcomePkgReceived) {
 			handshake = new HandshakePacket();
@@ -100,13 +111,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
 				logger.debug("backend authed suceess ");
 				this.finished(true);
-			} else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
-				errPkg = new ErrorPacket();
-				errPkg.packetId = session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
-																+ ParseUtil.mysql_packetHeader_length);
-				errPkg.read(session.proxyBuffer);
-				logger.warn("backend authed failed. Err No. " + errPkg.errno + "," + errPkg.message);
-				this.finished(false);
 			}
 		}
 	}
@@ -125,9 +129,10 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 
 		} else {
 			errPkg = new ErrorPacket();
+			errPkg.packetId = 1;
+			errPkg.errno = ErrorCode.ERR_CONNECT_SOCKET;
 			errPkg.message = logInfo;
 			finished(false);
-
 		}
 	}
 
