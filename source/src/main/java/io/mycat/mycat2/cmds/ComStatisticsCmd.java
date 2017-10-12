@@ -44,9 +44,6 @@ public class ComStatisticsCmd extends DirectPassthrouhCmd{
 			curBuffer.flip();
 			
 			if(success){
-				
-				mysqlsession.currPkgProc = PkgResultSetReader.INSTANCE;
-				mysqlsession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey(), true);
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
 				// 改变 owner，对端Session获取，并且感兴趣写事件
