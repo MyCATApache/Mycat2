@@ -60,7 +60,8 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
 			int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
 			parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
-			command = MYSQLCOMMANDMAP.get(session.sqlContext.getSQLType());
+			byte sqltype = session.sqlContext.getSQLType()!=0?session.sqlContext.getSQLType():session.sqlContext.getCurSQLType();
+			command = MYSQLCOMMANDMAP.get(sqltype);
 		}else{
 			command = MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
 		}

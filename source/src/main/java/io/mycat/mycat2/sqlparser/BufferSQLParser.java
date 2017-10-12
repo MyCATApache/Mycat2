@@ -588,6 +588,12 @@ public class BufferSQLParser {
                 	pos = MYCATSQLParser.pickMycat(++pos, arrayCount, context, hashArray, sql);
                 	break;
                 }
+                case IntTokenHash.SHUTDOWN:
+                    if (hashArray.getHash(pos) == TokenHash.SHUTDOWN) {
+                        context.setSQLType(BufferSQLContext.SHUTDOWN_SQL);
+                        pos++;
+                    }
+                    break;
                 default:
                   //  debugError(pos, context);
                     pos++;
