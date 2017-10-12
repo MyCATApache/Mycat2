@@ -1,6 +1,7 @@
 package io.mycat.mycat2.net;
 
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
 
 /**
  * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
@@ -51,15 +53,24 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 
 		// 如果当前包需要处理，则交给对应方法处理，否则直接透传
 		if(session.getCmdChain().getCurrentSQLCommand().procssSQL(session)){
-			session.getCmdChain().getCurrentSQLCommand().clearFrontResouces(session, false);
+			session.getCmdChain().getCurrentSQLCommand().clearFrontResouces(session, session.isClosed());
 		}
 	}
 
 	private void onBackendRead(MySQLSession session) throws IOException {
 		// 交给SQLComand去处理
 		MySQLCommand curCmd = session.getCmdChain().getCurrentSQLCommand();
-		if (curCmd.onBackendResponse(session)) {
-			curCmd.clearBackendResouces((MySQLSession) session,false);
+		try{
+			if (curCmd.onBackendResponse(session)) {
+				curCmd.clearBackendResouces(session,session.isClosed());
+			}
+		}catch(ClosedChannelException  ex){
+			String errmsg =  " read backend response error ,backend conn has closed.";
+			logger.error(errmsg);
+			session.getMycatSession().closeBackendAndResponseError(session,false,ErrorCode.ERR_CONNECT_SOCKET,errmsg);
+		} catch (IOException e) {
+			logger.error(" read backend response error.",e);
+			session.getMycatSession().closeBackendAndResponseError(session,false,ErrorCode.ERR_CONNECT_SOCKET, e.getMessage());
 		}
 	}
 

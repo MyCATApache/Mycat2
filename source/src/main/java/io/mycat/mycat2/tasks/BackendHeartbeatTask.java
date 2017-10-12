@@ -134,7 +134,6 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 			reactor.addMySQLSession(metaBean, session);
 
 			switch(repBean.getReplicaBean().getRepType()){
-			case GROUP_REPLICATION:
 			case MASTER_SLAVE:
 				masterSlaveHeartbeat();
 				break;
