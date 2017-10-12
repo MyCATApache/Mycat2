@@ -25,12 +25,12 @@ public abstract class SQLAnnotation implements Function<MycatSession, Boolean> {
     abstract public MySQLCommand getMySQLCommand();
     
     /**
-     * Ä¬ÈÏµÄÖØ¸´¼ì²é, ÃüÁîÁ´»á¸ù¾İ¸Ã·½·¨£¬½øĞĞÈ¥ÖØ¸´²Ù×÷¡£
-     * Èç¹û ĞèÒªÓĞ¶à¸öÊµÀı,¿ÉÒÔ·µ»Ø²»Í¬µÄÖµ¡£
+     * é»˜è®¤çš„é‡å¤æ£€æŸ¥, å‘½ä»¤é“¾ä¼šæ ¹æ®è¯¥æ–¹æ³•ï¼Œè¿›è¡Œå»é‡å¤æ“ä½œã€‚
+     * å¦‚æœ éœ€è¦æœ‰å¤šä¸ªå®ä¾‹,å¯ä»¥è¿”å›ä¸åŒçš„å€¼ã€‚
      * @return
      */    
     public  long currentKey() {
-		// ½á¹û¼¯»º´æ. ÔÚÔğÈÎÁ´ÖĞ Ö»ÔÊĞí³öÏÖÒ»´Î£¬ÕâÀï·µ»ØÏàÍ¬µÄÖµ
+		// ç»“æœé›†ç¼“å­˜. åœ¨è´£ä»»é“¾ä¸­ åªå…è®¸å‡ºç°ä¸€æ¬¡ï¼Œè¿™é‡Œè¿”å›ç›¸åŒçš„å€¼
 		return this.getClass().getSimpleName().hashCode();
 	}
 
