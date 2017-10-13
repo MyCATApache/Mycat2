@@ -62,8 +62,10 @@ public class BufferSQLContext {
     public static final byte XA_START = 40;
     public static final byte XA_BEGIN = 41;
     public static final byte XA_END = 42;
-    
+
+    //admin command
     public static final byte MYCAT_SWITCH_REPL = 43;
+    public static final byte MYCAT_SHOW_CONFIGS = 44;
 
     //ANNOTATION TYPE
     public static final byte ANNOTATION_BALANCE = 1;
