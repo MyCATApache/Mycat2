@@ -67,6 +67,8 @@ public class BufferSQLContext {
     public static final byte MYCAT_SWITCH_REPL = 43;
     public static final byte MYCAT_SHOW_CONFIGS = 44;
 
+    public static final byte SHUTDOWN_SQL = 45;
+
     //ANNOTATION TYPE
     public static final byte ANNOTATION_BALANCE = 1;
     public static final byte ANNOTATION_SQL = 2;
