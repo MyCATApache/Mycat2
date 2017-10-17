@@ -535,6 +535,15 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(Tokenizer.DIGITS, context.getTokenType(0, 7));
     }
 
+    @Test
+    public void testSelectItemList1() throws Exception {
+        String sql = "SELECT VERSION(), USER(), DATABASE()";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(FunctionHash.VERSION, context.getSelectItem(0));
+        assertEquals(FunctionHash.USER, context.getSelectItem(1));
+        assertEquals(FunctionHash.DATABASE, context.getSelectItem(2));
+    }
+
     private static final String sql1 = "select t3.*,ztd3.TypeDetailName as UseStateName\n" +
             "from\n" +
             "( \n" +
