@@ -99,6 +99,7 @@ public class TokenHash {
     public static final long CONCURRENT   = 0x1109d7275db039L;
     public static final long CONDITION    = 0x6a62ece0553aL;
     public static final long CONFIG       = 0x65295ad0L;
+    public static final long CONFIGS = 0x10339f8b6eL;
     public static final long CONNECTION   = 0x1109e2e0c5262eL;
     public static final long CONNECTION_ID = 0xeb2e99b33504d307L;
     public static final long CONSISTENT   = 0x1109e886ba6c70L;
