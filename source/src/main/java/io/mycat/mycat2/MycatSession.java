@@ -31,6 +31,7 @@ import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
+import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
 
 /**
@@ -86,8 +87,8 @@ public class MycatSession extends AbstractMySQLSession {
 				DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case ANNOTATION_ROUTE:
 				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
-			case SQL_PARSE_ROUTE:
-				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
+//			case SQL_PARSE_ROUTE:
+//				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			default:
 				throw new InvalidParameterException("schema type is invalid ");
 		}
@@ -164,6 +165,50 @@ public class MycatSession extends AbstractMySQLSession {
 			.filter(f->f.getMySQLMetaBean().equals(metaBean))
 			.count();
 	}
+	
+	/**
+	 * 关闭后端连接,同时向前端返回错误信息
+	 * @param mysqlsession
+	 * @param normal
+	 * @param hint
+	 */
+	public void closeBackendAndResponseError(MySQLSession mysqlsession,boolean normal, ErrorPacket error)throws IOException{
+		unbindBeckend(mysqlsession);
+		mysqlsession.close(normal, error.message);
+		takeBufferOwnerOnly();
+		responseOKOrError(error);
+	}
+	
+	/**
+	 * 关闭后端连接,同时向前端返回错误信息
+	 * @param session
+	 * @param mysqlsession
+	 * @param normal
+	 * @param errno
+	 * @param error
+	 * @throws IOException
+	 */
+	public void closeBackendAndResponseError(MySQLSession mysqlsession,boolean normal,int errno, String error)throws IOException{
+		unbindBeckend(mysqlsession);
+		mysqlsession.close(normal, error);
+		takeBufferOwnerOnly();
+		sendErrorMsg(errno,error);
+	}
+	
+	/**
+	 * 向客户端响应 错误信息
+	 * @param session
+	 * @throws IOException
+	 */
+	public void sendErrorMsg(int errno,String errMsg) throws IOException{
+		ErrorPacket errPkg = new ErrorPacket();
+		errPkg.packetId =  (byte) (proxyBuffer.getByte(curMSQLPackgInf.startPos 
+							+ ParseUtil.mysql_packetHeader_length) + 1);
+		errPkg.errno  = errno;
+		errPkg.message = errMsg;
+		proxyBuffer.reset();
+		responseOKOrError(errPkg);
+	}
 
 	/**
 	 * 绑定后端MySQL会话
@@ -239,6 +284,13 @@ public class MycatSession extends AbstractMySQLSession {
 			curBackend = null;
 		}
 	}
+	
+	public void takeBufferOwnerOnly(){
+		this.curBufOwner = true;
+		if (this.curBackend != null) {
+			curBackend.setCurBufOwner(false);
+		}
+	}
 
 	/**
 	 * 获取ProxyBuffer控制权，同时设置感兴趣的事件，如SocketRead，Write，只能其一
@@ -303,20 +355,20 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private String getbackendName(){
 		String backendName = null;
-		switch(schema.getSchemaType()){
+		switch (schema.getSchemaType()) {
 			case DB_IN_ONE_SERVER:
-				backendName = schema.getDefaultDN().getMysqlReplica();
+				backendName = schema.getDefaultDN().getReplica();
 				break;
 			case ANNOTATION_ROUTE:
 				break;
 			case DB_IN_MULTI_SERVER:
 				break;
-			case SQL_PARSE_ROUTE:
-				break;
+//			case SQL_PARSE_ROUTE:
+//				break;
 			default:
 				break;
 		}
-		if(backendName==null){
+		if (backendName == null){
 			throw new InvalidParameterException("the backendName must not be null");
 		}
 		return backendName;
@@ -355,7 +407,7 @@ public class MycatSession extends AbstractMySQLSession {
 		MySQLMetaBean targetMetaBean = repBean.getBalanceMetaBean(runOnSlave);
 		
 		if(targetMetaBean==null){
-			String errmsg = " the metaBean is not found,please check datasource.yaml!!! [balance] and [type]  propertie or view debug log or check heartbeat task!!";
+			String errmsg = " the metaBean is not found,please check datasource.yml!!! [balance] and [type]  propertie or see debug log or check heartbeat task!!";
 			if(logger.isDebugEnabled()){
 				logger.error(errmsg);
 			}

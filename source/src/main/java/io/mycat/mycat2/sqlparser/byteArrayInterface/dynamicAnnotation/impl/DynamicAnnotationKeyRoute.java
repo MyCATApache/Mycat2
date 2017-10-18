@@ -14,8 +14,8 @@ import java.util.stream.Stream;
 public class DynamicAnnotationKeyRoute {
     Map<Integer, RouteMap<List<DynamicAnnotation>>> tablesRoute = new HashMap<>();
     Map<Integer, List<DynamicAnnotation>> notablesRoute = new HashMap<>();
-    private static int hash(String schema, SQLType sqltype) {
-        return hash(schema.hashCode(), sqltype.getValue());
+    private static int hash(String schema, int sqltype) {
+        return hash(schema.hashCode(), sqltype);
     }
 
     private static int hash(int schema, int sqltype) {
@@ -96,8 +96,8 @@ public class DynamicAnnotationKeyRoute {
         }
     }
 
-    public DynamicAnnotation[] front(String schema, SQLType sqltype, int[] tables) {
-        return front(schema.hashCode(), sqltype.getValue(), tables);
+    public DynamicAnnotation[] front(String schema, int sqltype, int[] tables) {
+        return front(schema.hashCode(), sqltype, tables);
     }
 
 

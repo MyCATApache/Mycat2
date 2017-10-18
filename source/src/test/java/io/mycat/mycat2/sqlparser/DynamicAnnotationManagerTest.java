@@ -2,19 +2,12 @@ package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationKeyRoute;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationRuntime;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationUtil;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
 import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.java2d.pipe.BufferedContext;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by jamie on 2017/9/19.
@@ -95,7 +88,7 @@ public class DynamicAnnotationManagerTest extends TestCase {
 
     @Before
     protected void setUp() throws Exception {
-        manager = new DynamicAnnotationManagerImpl("actions_bak.yaml", "annotations_bak.yaml");
+        manager = new DynamicAnnotationManagerImpl("actions_bak.yml", "annotations_bak.yml");
         context = new BufferSQLContext();
         sqlParser = new BufferSQLParser();
     }

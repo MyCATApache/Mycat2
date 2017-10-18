@@ -2,6 +2,9 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.util.ParseUtil;
+
 /**
  * 负责处理SQL命令
  * 

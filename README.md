@@ -25,7 +25,7 @@ Mycat 2.0 预览版。
 
 - [x] 支持动态注解。
 
-- [ ] 结果集缓存。
+- [x] 结果集缓存。
 
 
 
@@ -34,6 +34,8 @@ Mycat 2.0 预览版。
 # 配置说明
 
 - mycat.yml：mycat代理的配置，指定开启的端口号提供代理服务
+
+- user.yml: 配置mycat的用户名密码和白名单
 
 - cluster.yml：集群配置，可以开启关闭集群功能，指定集群端口和id号，id在集群内必须唯一
 
@@ -94,17 +96,19 @@ Mycat 2.0 预览版。
 
 1. mycat.yml，指定ip和端口号
 
-2. cluster.yml，指定是否开启集群模式以及集群节点的基本信息，默认集群关闭
+2. user.yml，配置user信息，包括name和password，登录的时候需要按照指定的用户名密码登录，schemas对应为schema.yml中的schema，白名单功能默认关闭
 
-3. balancer.yml，指定是否开启负载均衡模式以及负载均衡的基本信息，默认负载均衡关闭
+3. cluster.yml，指定是否开启集群模式以及集群节点的基本信息，默认集群关闭
 
-4. heartbeat.yml，配置心跳相关信息，可以使用默认值
+4. balancer.yml，指定是否开启负载均衡模式以及负载均衡的基本信息，默认负载均衡关闭
 
-5. schema.yml，设置相关的schema
+5. heartbeat.yml，配置心跳相关信息，可以使用默认值
 
-6. datasource.yml，设置后端连接的复制组信息
+6. schema.yml，设置相关的schema
 
-7. replica-index.yml，设置复制组写节点配置，默认为0
+7. datasource.yml，设置后端连接的复制组信息
+
+8. replica-index.yml，设置复制组写节点配置，默认为0
 
 
 

@@ -2,8 +2,8 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.mycat2.beans.conf.*;
-import io.mycat.mycat2.loadbalance.RandomStrategy;
 import io.mycat.proxy.*;
 import io.mycat.proxy.NIOAcceptor.ServerType;
 import org.slf4j.Logger;
@@ -21,62 +21,94 @@ public class ProxyStarter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProxyStarter.class);
 	public static final ProxyStarter INSTANCE = new ProxyStarter();
 
+	/**
+	 * 用于初始化启动
+	 * @throws IOException
+	 */
 	public void start() throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = runtime.getConfig();
 
 		// 启动NIO Acceptor
-		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(1024 * 10));
+		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(GlobalBean.BUFFER_POOL_SIZE));
 		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
 		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
 		ClusterBean clusterBean = clusterConfig.getCluster();
 		if (clusterBean.isEnable()) {
-			// 集群开启状态，需要等集群启动，主节点确认完配置才能提供服务
-			acceptor.startServerChannel(clusterBean.getIp(), clusterBean.getPort(), ServerType.CLUSTER);
-			runtime.setAdminCmdResolver(new AdminCommandResovler());
-			MyCluster cluster = new MyCluster(acceptor.getSelector(), clusterBean.getMyNodeId(), ClusterNode.parseNodesInf(clusterBean.getAllNodes()));
-			runtime.setMyCLuster(cluster);
-			cluster.initCluster();
+			// 启动集群
+			startCluster(runtime, clusterBean, acceptor);
 		} else {
 			// 未配置集群，直接启动
 			startProxy(true);
 		}
 	}
 
+	/**
+	 * 集群模式下启动先启动admin对应的端口，等集群建立成功后才加载配置启动proxy
+	 * @param runtime
+	 * @param clusterBean
+	 * @param acceptor
+	 * @throws IOException
+	 */
+	private void startCluster(ProxyRuntime runtime, ClusterBean clusterBean, NIOAcceptor acceptor) throws IOException {
+		// 集群模式下，需要等集群启动，主节点确认完配置才能提供服务
+		acceptor.startServerChannel(clusterBean.getIp(), clusterBean.getPort(), ServerType.CLUSTER);
+
+		MyCluster cluster = new MyCluster(acceptor.getSelector(), clusterBean.getMyNodeId(), ClusterNode.parseNodesInf(clusterBean.getAllNodes()));
+		runtime.setAdminCmdResolver(new AdminCommandResovler());
+		runtime.setMyCLuster(cluster);
+		cluster.initCluster();
+	}
+
+	/**
+	 * 启动代理
+	 * @param isLeader true 主节点，false 从节点
+	 * @throws IOException
+	 */
 	public void startProxy(boolean isLeader) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = runtime.getConfig();
-
-		// 加载配置文件信息
-		ConfigLoader.INSTANCE.loadAll();
 		NIOAcceptor acceptor = runtime.getAcceptor();
 
 		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
 		ProxyBean proxyBean = proxyConfig.getProxy();
-		acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT);
-		startReactor();
-		// 初始化
-		init(conf);
+		if (acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT)){
+			startReactor();
 
-		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
-		BalancerBean balancerBean = balancerConfig.getBalancer();
-        if (balancerBean.isEnable()){
-            //开启负载均衡服务
-            acceptor.startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
-        }
+			// 加载配置文件信息
+			ConfigLoader.INSTANCE.loadAll();
 
-		// 主节点才启动心跳，非集群下也启动心跳
+			ProxyRuntime.INSTANCE.getConfig().initRepMap();
+			ProxyRuntime.INSTANCE.getConfig().initSchemaMap();
+
+			conf.getMysqlRepMap().forEach((repName, repBean) -> {
+				repBean.initMaster();
+				repBean.getMetaBeans().forEach(metaBean -> metaBean.prepareHeartBeat(repBean, repBean.getDataSourceInitStatus()));
+			});
+		}
+
+		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
+		ClusterBean clusterBean = clusterConfig.getCluster();
+		// 主节点才启动心跳，非集群按主节点处理
 		if (isLeader) {
 			runtime.startHeartBeatScheduler();
 		}
+
+		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
+		BalancerBean balancerBean = balancerConfig.getBalancer();
+		// 集群模式下才开启负载均衡服务
+        if (clusterBean.isEnable() && balancerBean.isEnable()) {
+			runtime.getAcceptor().startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
+        }
 	}
 
 	public void stopProxy() {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.stopServerChannel(false);
+		//todo 关闭所有前后端连接？
 
 		runtime.stopHeartBeatScheduler();
 	}
@@ -86,24 +118,10 @@ public class ProxyStarter {
 		MycatReactorThread[] nioThreads = (MycatReactorThread[]) MycatRuntime.INSTANCE.getReactorThreads();
 		int cpus = nioThreads.length;
 		for (int i = 0; i < cpus; i++) {
-			MycatReactorThread thread = new MycatReactorThread(new BufferPool(1024 * 10));
+			MycatReactorThread thread = new MycatReactorThread(new BufferPool(GlobalBean.BUFFER_POOL_SIZE));
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
 		}
-	}
-
-	private void init(MycatConfig conf) {
-		// 初始化连接
-		conf.getMysqlRepMap().forEach((repName, repBean) -> {
-			repBean.initMaster();
-			repBean.getMetaBeans().forEach(metaBean -> {
-				try {
-					metaBean.init(repBean,ProxyRuntime.INSTANCE.maxdataSourceInitTime,repBean.getDataSourceInitStatus());
-				} catch (IOException e) {
-					LOGGER.error("error to init metaBean: {}", metaBean.getDsMetaBean().getHostName());
-				}
-			});
-		});
 	}
 }

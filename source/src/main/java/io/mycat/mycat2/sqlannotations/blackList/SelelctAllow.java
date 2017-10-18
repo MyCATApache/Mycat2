@@ -3,6 +3,7 @@ package io.mycat.mycat2.sqlannotations.blackList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.BlockSqlCmd;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
@@ -11,10 +12,12 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 /**
  * Created by yanjunli on 2017/9/24.
  */
-public class SelelctAllow implements SQLAnnotation{
+public class SelelctAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(SelelctAllow.class);
 	
+	private static final MySQLCommand command = BlockSqlCmd.INSTANCE;
+		
     Object args;
     public SelelctAllow() {
     	logger.debug("=>SelelctAllow 对象本身的构造 初始化");
@@ -34,19 +37,16 @@ public class SelelctAllow implements SQLAnnotation{
     			||(BufferSQLContext.SELECT_FOR_UPDATE_SQL == context.sqlContext.getSQLType())){
     		
     		context.getCmdChain().setErrMsg("select  not allow ");
-    		context.getCmdChain().addCmdChain(this,BlockSqlCmd.INSTANCE);
+    		context.getCmdChain().addCmdChain(this);
     		return Boolean.FALSE;
     	}
         return Boolean.TRUE;
     }
-    @Override
-    public String getMethod() {
-        return null;
-    }
 
-    @Override
-    public void setMethod(String method) {
 
-    }
+	@Override
+	public MySQLCommand getMySQLCommand() {
+		return command;
+	}
 
 }

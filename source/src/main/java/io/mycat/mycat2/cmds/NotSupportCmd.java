@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.util.ErrorCode;
+import io.mycat.util.ParseUtil;
 
 public class NotSupportCmd implements MySQLCommand{
 	
@@ -17,8 +20,13 @@ public class NotSupportCmd implements MySQLCommand{
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		// TODO Auto-generated method stub
-		return false;
+		ErrorPacket error = new ErrorPacket();
+        error.errno = ErrorCode.ER_BAD_DB_ERROR;
+        error.packetId = session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
+				+ ParseUtil.mysql_packetHeader_length);
+        error.message = " command  is not supported";
+        session.responseOKOrError(error);
+        return false;
 	}
 
 	@Override

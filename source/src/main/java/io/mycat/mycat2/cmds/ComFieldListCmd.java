@@ -42,29 +42,31 @@ public class ComFieldListCmd extends DirectPassthrouhCmd{
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		logger.debug("current buffer is "+session.proxyBuffer);
 		/*
 		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
 		 */
 		session.clearReadWriteOpts();
 		
 		session.getBackend((mysqlsession, sender, success,result)->{
+			ProxyBuffer curBuffer = session.proxyBuffer;
+			// 切换 buffer 读写状态
+			curBuffer.flip();
+			
 			if(success){
 				
 				mysqlsession.currPkgProc = PkgResultSetReader.INSTANCE;
 				mysqlsession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey(), true);
-				
-				ProxyBuffer curBuffer = session.proxyBuffer;
-				// 切换 buffer 读写状态
-				curBuffer.flip();
-				logger.debug("current buffer is "+curBuffer);
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
 				// 改变 owner，对端Session获取，并且感兴趣写事件
 				session.giveupOwner(SelectionKey.OP_WRITE);
-				mysqlsession.writeToChannel();
+				try {
+					mysqlsession.writeToChannel();
+				} catch (IOException e) {
+					session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+				}
 			}else{
-				session.responseOKOrError((ErrorPacket)result);
+				session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
 			}
 		});
 		return false;

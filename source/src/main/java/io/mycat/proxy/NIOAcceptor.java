@@ -8,6 +8,7 @@ package io.mycat.proxy;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -41,24 +42,24 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		this.setName("NIO-Acceptor");
 	}
 
-	public void startServerChannel(String ip, int port,ServerType serverType)throws IOException {
+	public boolean startServerChannel(String ip, int port, ServerType serverType) throws IOException {
 		final ServerSocketChannel serverChannel = getServerSocketChannel(serverType);
-		if (serverChannel != null && serverChannel.isOpen())
-			return;
+		if (serverChannel != null && serverChannel.isOpen()) {
+			return false;
+		}
 
 		if (serverType == ServerType.CLUSTER) {
 			adminSessionMan = new DefaultAdminSessionManager();
 			ProxyRuntime.INSTANCE.setAdminSessionManager(adminSessionMan);
 			logger.info("opend cluster conmunite port on {}:{}", ip, port);
-		}
-
-		if(serverType == ServerType.LOAD_BALANCER){
+		} else if (serverType == ServerType.LOAD_BALANCER){
 			logger.info("opend load balance conmunite port on {}:{}", ip, port);
 			ProxyRuntime.INSTANCE.setProxySessionSessionManager(new ProxySessionManager());
 			ProxyRuntime.INSTANCE.setLbSessionSessionManager(new LBSessionManager());
 		}
 
 		openServerChannel(selector, ip, port, serverType);
+		return true;
 	}
 
 	private ServerSocketChannel getServerSocketChannel(ServerType serverType){
@@ -195,7 +196,6 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		session.getCurNIOHandler().onSocketRead(session);
 	}
 
-	@SuppressWarnings("unchecked")
 	protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
 		Session session = (Session) curKey.attachment();
@@ -208,12 +208,16 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
 		final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
 		serverChannel.bind(isa);
 		serverChannel.configureBlocking(false);
+		serverChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverChannel.register(selector, SelectionKey.OP_ACCEPT, serverType);
 		if (serverType == ServerType.CLUSTER) {
+			logger.info("open cluster server port on {}:{}", bindIp, bindPort);
 			clusterServerSocketChannel = serverChannel;
 		} else if (serverType == ServerType.LOAD_BALANCER) {
+			logger.info("open load balance server port on {}:{}", bindIp, bindPort);
 			loadBalanceServerSocketChannel = serverChannel;
 		} else {
+			logger.info("open proxy server port on {}:{}", bindIp, bindPort);
 			proxyServerSocketChannel = serverChannel;
 		}
 	}

@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * Created by jamie on 2017/9/24.
  */
 public class AnnotationsYamlParser {
-    private static final Logger logger = LoggerFactory.getLogger(DynamicAnnotationManagerImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnnotationsYamlParser.class);
 
     public static void main(String[] args) {
 
@@ -66,7 +66,7 @@ public class AnnotationsYamlParser {
                 }
                 DynamicAnnotationKey key = new DynamicAnnotationKey(
                         schemaName,
-                        type,
+                        type.getValue(),
                         match.getTables().toArray(new String[match.getTables().size()]),
                         match.getName());
                 List<Map<String, String>> conditionList = match.getWhere();
@@ -99,7 +99,7 @@ public class AnnotationsYamlParser {
                     resMap.put(Boolean.FALSE, map.get(Boolean.FALSE).stream().map((m) -> ConditionUtil.mappingValue(m)).distinct().collect(Collectors.toList()));
                     DynamicAnnotationRuntime runtime = DynamicAnnotationUtil.compile(match.getName(), resMap);
                     DynamicAnnotationMatch matc = runtime.getMatch();
-                    System.out.println(Arrays.toString(matc.getCompleteTags()));
+                    logger.debug(Arrays.toString(matc.getCompleteTags()));
 
                     DynamicAnnotation annotation = new DynamicAnnotation(key,
                             runtime.getMatch(),
@@ -114,6 +114,7 @@ public class AnnotationsYamlParser {
     }
 
     private static Map<String, SQLAnnotation> scopeActionHelper(String matchName, List<Map<String, Map<String, String>>> list, ActonFactory actonFactory) {
+        if(list==null){return Collections.EMPTY_MAP;}
         return list.stream().collect(Collectors.toMap((g) -> ConditionUtil.mappingKey(g), (g) -> {
             try {
                 String name = ConditionUtil.mappingKey(g);

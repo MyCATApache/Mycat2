@@ -1,0 +1,4 @@
+actions:
+      - monitorSQL: io.mycat.mycat2.sqlparser.TestAction
+      - cacheResult: io.mycat.mycat2.sqlparser.TestAction
+      - sqlCach: io.mycat.mycat2.sqlparser.TestAction

@@ -31,12 +31,9 @@ import io.mycat.mycat2.beans.conf.BalancerConfig;
 import io.mycat.mycat2.beans.conf.ClusterConfig;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
 import io.mycat.proxy.ConfigEnum;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.util.YamlUtil;
 
 /**
  * @author wuzhihui

@@ -44,6 +44,7 @@ public abstract class AbstractSession implements Session {
 	public Selector nioSelector;
 	// 操作的Socket连接
 	public String addr;
+	public String host;
 	public SocketChannel channel;
 	public SelectionKey channelKey;
 
@@ -66,6 +67,7 @@ public abstract class AbstractSession implements Session {
 		this.channel = channel;
 		InetSocketAddress clientAddr = (InetSocketAddress) channel.getRemoteAddress();
 		this.addr = clientAddr.getHostString() + ":" + clientAddr.getPort();
+		this.host = clientAddr.getHostString();
 		SelectionKey socketKey = channel.register(nioSelector, socketOpt, this);
 		this.channelKey = socketKey;
 		this.proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
@@ -84,8 +86,8 @@ public abstract class AbstractSession implements Session {
 			this.referedBuffer = true;
 			logger.debug("use sharedBuffer. ");
 		} else if (proxyBuffer == null) {
-			logger.debug("proxyBuffer is null.");
-			throw new RuntimeException("proxyBuffer is null."+this);
+			logger.debug("proxyBuffer is null.{}",this);
+			throw new RuntimeException("proxyBuffer is null.");
 //			proxyBuffer = sharedBuffer;
 		} else if (sharedBuffer == null) {
 			logger.debug("referedBuffer is false.");
@@ -128,7 +130,7 @@ public abstract class AbstractSession implements Session {
 			// 大部分情况下 position == writeIndex
 			buffer.position(proxyBuffer.writeIndex);
 		}
-
+		
 		int readed = channel.read(buffer);
 //		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
@@ -256,7 +258,7 @@ public abstract class AbstractSession implements Session {
 	}
 
 	public String sessionInfo() {
-		return " [" + this.addr + ']';
+		return " [ sessionId = "+ sessionId+" ," + this.addr + ']';
 	}
 
 	public boolean isChannelOpen() {
@@ -275,7 +277,6 @@ public abstract class AbstractSession implements Session {
 	public void close(boolean normal, String hint) {
 		if (!this.isClosed()) {
 			this.closed = true;
-			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
 			closeSocket(channel, normal, hint);
 			if (!referedBuffer) {
 				this.bufPool.recycleBuf(proxyBuffer.getBuffer());
@@ -306,7 +307,7 @@ public abstract class AbstractSession implements Session {
 		if (channel == null) {
 			return;
 		}
-		String logInf = (normal) ? " normal close " : "abnormal close " + channel;
+		String logInf = (normal) ? " normal close " : "abnormal close " ;
 		logger.info(logInf + sessionInfo() + "  reason:" + msg);
 		try {
 			channel.close();

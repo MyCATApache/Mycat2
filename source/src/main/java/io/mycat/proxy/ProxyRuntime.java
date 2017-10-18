@@ -160,7 +160,7 @@ public class ProxyRuntime {
 			curRepIndexConfig.getReplicaIndexes().put(replBean, writeIndex);
 			int curVersion = conf.getConfigVersion(configEnum);
 			conf.setConfigVersion(configEnum, curVersion + 1);
-			YamlUtil.archiveAndDump(configEnum.getFileName(), curVersion, conf.getConfig(configEnum));
+			YamlUtil.archiveAndDumpToFile(conf.getConfig(configEnum), configEnum.getFileName(), curVersion);
 			startSwitchDataSource(replBean, writeIndex,sync);
 		}
 	}
@@ -168,7 +168,7 @@ public class ProxyRuntime {
 	/**
 	 * 切换 metaBean 名称
 	 */
-	public void startSwitchDataSource(String replBean,Integer writeIndex,boolean sync){
+	public void startSwitchDataSource(String replBean, Integer writeIndex, boolean sync){
 
 		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
 		
@@ -177,16 +177,16 @@ public class ProxyRuntime {
 			repBean.switchSource(writeIndex,maxdataSourceInitTime);
 
 			if (repBean.getSwitchResult().get()){
-				logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+				logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean.getReplicaBean().getName(), writeIndex);
 			} else {
-				logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean, writeIndex);
+				logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean.getReplicaBean().getName(), writeIndex);
 			}
 		};
 		
 		if (repBean != null){
-			if(sync){
+			if (sync){
 				addBusinessJob(runnable);
-			}else{
+			} else {
 				runnable.run();
 			}
 		}	

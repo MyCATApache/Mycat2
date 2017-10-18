@@ -2,13 +2,17 @@ package io.mycat.mycat2.cmds.pkgread;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.cmds.ComStatisticsCmd;
 import io.mycat.mycat2.cmds.LoadDataCommand;
 import io.mycat.mycat2.cmds.judge.DirectTransJudge;
 import io.mycat.mycat2.cmds.judge.ErrorJudge;
@@ -41,13 +45,21 @@ public class PkgFirstReader implements PkgProcess {
 	 * 指定需要处理的包类型信息
 	 */
 	private static final Map<Integer, DirectTransJudge> JUDGEMAP = new HashMap<>();
+	
+	/**
+	 * 特殊命令报文,不需要判断首包，直接返回。 例如
+	 */
+	private static final List<MySQLCommand> extendCmdPkg = new ArrayList<>();
 
 	static {
 		// 用来进行ok包的处理理
 		JUDGEMAP.put((int) MySQLPacket.OK_PACKET, OkJudge.INSTANCE);
 		// 用来进行error包的处理
 		JUDGEMAP.put((int) MySQLPacket.ERROR_PACKET, ErrorJudge.INSTANCE);
+		
+		extendCmdPkg.add(ComStatisticsCmd.INSTANCE);
 	}
+	
 
 	@Override
 	public boolean procssPkg(MySQLSession session) throws IOException {
@@ -63,6 +75,10 @@ public class PkgFirstReader implements PkgProcess {
 		if (null != pkgTypeEnum && CurrPacketType.Full == pkgTypeEnum) {
 
 			int pkgType = curMSQLPackgInf.pkgType;
+			
+			if(extendCmdPkg.contains(session.getMycatSession().getCmdChain().getCurrentSQLCommand())){
+				return false;
+			}
 
 			// 如果当前为查询包，则切换到查询的逻辑命令处理
 			if (QUERY_PKG_START <= pkgType) {

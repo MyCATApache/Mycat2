@@ -3,7 +3,9 @@ package io.mycat.mycat2.sqlannotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.BlockSqlCmd;
 import io.mycat.mycat2.cmds.interceptor.MonitorSQLCmd;
 
 /**
@@ -11,18 +13,20 @@ import io.mycat.mycat2.cmds.interceptor.MonitorSQLCmd;
  * @author yanjunli
  *
  */
-public class MonintorSQL implements SQLAnnotation {
+public class MonintorSQL extends SQLAnnotation {
 	
 	public static final MonintorSQL INSTANCE = new MonintorSQL();
 	
 	private static final Logger logger = LoggerFactory.getLogger(MonintorSQL.class);
+	
+	final private MySQLCommand command = MonitorSQLCmd.INSTANCE;
 
 	/**
 	 * 组装 mysqlCommand
 	 */
 	@Override
 	public Boolean apply(MycatSession session) {
-		session.getCmdChain().addCmdChain(this,MonitorSQLCmd.INSTANCE);
+		session.getCmdChain().addCmdChain(this);
 		return Boolean.TRUE;
 	}
 
@@ -31,14 +35,11 @@ public class MonintorSQL implements SQLAnnotation {
 
 	}
 
-	@Override
-	public String getMethod() {
-		return null;
-	}
+
 
 	@Override
-	public void setMethod(String method) {
-
+	public MySQLCommand getMySQLCommand() {
+		return command;
 	}
 
 }

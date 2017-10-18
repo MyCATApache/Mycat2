@@ -18,6 +18,7 @@ import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
 
 /**
  * 直接透传命令报文
@@ -51,17 +52,21 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		session.clearReadWriteOpts();
 
 		session.getBackend((mysqlsession, sender, success, result) -> {
+			ProxyBuffer curBuffer = session.proxyBuffer;
+			// 切换 buffer 读写状态
+			curBuffer.flip();
 			if (success) {
-				ProxyBuffer curBuffer = session.proxyBuffer;
-				// 切换 buffer 读写状态
-				curBuffer.flip();
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
 				// 改变 owner，对端Session获取，并且感兴趣写事件
 				session.giveupOwner(SelectionKey.OP_WRITE);
-				mysqlsession.writeToChannel();
+				try {
+					mysqlsession.writeToChannel();
+				} catch (IOException e) {
+					session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+				}
 			} else {
-				session.responseOKOrError((ErrorPacket) result);
+				session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
 			}
 		});
 		return false;

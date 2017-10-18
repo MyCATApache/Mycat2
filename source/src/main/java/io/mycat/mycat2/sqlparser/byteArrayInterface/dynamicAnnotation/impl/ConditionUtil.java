@@ -5,10 +5,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Created by jamie on 2017/9/14.
  */
 public class ConditionUtil {
+	
+	private static final Logger logger = LoggerFactory.getLogger(ConditionUtil.class);
+	
     public static String codeIsComplete(Map<Boolean, List<String>> map, DynamicAnnotationRuntime runtime) {
         Map<String, Integer> str2int = runtime.str2Int;
         List<String> andList = map.get(Boolean.TRUE);
@@ -35,8 +41,7 @@ public class ConditionUtil {
         if (orList != null && orList.size() != 0) {
             orString = codeOr(orList.iterator());
         }
-        System.out.println(andString);
-        System.out.println(orString);
+        logger.debug("andString is [{}] and orString is  [{}]",andString,orString);
         return andString + orString + "\nreturn false;";
     }
 

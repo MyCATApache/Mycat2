@@ -2,7 +2,7 @@
 格式，需求编号，需求内容，需求目的，提出人的QQ
 
 
-Mycat 2.0 HBT技术解决 多表关联案例
+1.Mycat 2.0 HBT技术解决 多表关联案例
 
 select a.id,a.price,b.username where a.id in (111,222,333,444) and b.id=a.id
 
@@ -28,3 +28,26 @@ routeList.add(engine.createRouteCondition(Engine.AND,Engine.IN,"aa,bb,cc"));
 routeList.add(engine.createRouteCondition(Engine.OR,Engine.GREATE,"aa,bb,cc"));
 String[] partions=engine.calcSQLRoute("tableA",routeList);
 上述了路由信息可能需要人工指定，放入 SqlMeta， new(sql,"a"，routeList)
+
+
+
+
+
+2.Mycat Exchanger
+
+负责把实现JDBC方式连接Oracle，SQL Server，以及Redis。MongoDB等后端存储的，模拟成标准的MySQL Server，对接Mycat。这样 Mycat就统一支持各种数据库，并且核心还稳定简单。
+
+
+
+
+
+
+3.管理命令
+
+增加管理命令，mycat fetch config，返回三列？的表格，文件名称，修改时间，内容（文本），为了Web管理界面调用，展现配置文件内容
+
+以及对应的 mycat update config xxx.conf <文件内容> ，即上传和更新生效某个配置文件，返回一行的Table，optcode ?错误码，以及说明。。。
+
+包括返回集群状态的表格，哪几个节点，谁是Leader。以及是否有Proxy，Proxy的状态，节点上下线，这些都以后要命令行实现，同时给Web使用
+
+所有管理命令都可以被Web调用

@@ -28,13 +28,9 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
     		if (!session.readFromChannel()){
     			return;
     		}
-		}catch(ClosedChannelException e){
-			e.printStackTrace();
-			session.close(false, e.getMessage());
-			return;
-		}catch (IOException e) {
-			e.printStackTrace();
-			onRsFinish(session,false);
+		}catch(IOException e){
+			curRSState = ResultSetState.RS_STATUS_READ_ERROR;
+			onRsFinish(session,false,e.getMessage());
 			return;
 		}
     	
@@ -58,7 +54,7 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
                     case RS_STATUS_ROW:
                         if (curMQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
                             curRSState = ResultSetState.RS_STATUS_FINISH;
-                            onRsFinish(session,true);
+                            onRsFinish(session,true,null);
                         } else {
                             onRsRow(session);
                         }
@@ -76,7 +72,7 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
 
     abstract void onRsRow(T session);
 
-    abstract void onRsFinish(T session,boolean success) throws IOException;
+    abstract void onRsFinish(T session,boolean success,String msg) throws IOException;
 
     public enum ResultSetState {
         /**
@@ -94,6 +90,16 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
         /**
          * 结果集完成
          */
-        RS_STATUS_FINISH;
+        RS_STATUS_FINISH,
+        
+        /**
+         * 结果集网络读取错误
+         */
+        RS_STATUS_READ_ERROR,
+        
+        /**
+         * 结果集网络写入错误
+         */
+        RS_STATUS_WRITE_ERROR;
     }
 }
