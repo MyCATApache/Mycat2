@@ -13,35 +13,26 @@ import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
- * As of MySQL 5.7.11, COM_FIELD_LIST is deprecated and will be removed in a
-	future version of MySQL. Instead, use mysql_query() to execute a SHOW
-	COLUMNS statement.
+ * Get a human readable string of internal statistics.
+	COM_STATISTICS:
+	get a list of active threads
+	Returns
+	string.EOF
  * @author yanjunli
- * 
- * COM_FIELD_LIST:
-		get the column definitions of a table
-		Payload
-			1 			  [04] COM_FIELD_LIST
-			string[NUL]   table
-			string[EOF]   field wildcard
-			
-   COM_FIELD_LIST Response
-     The response to a COM_FIELD_LIST can either be a
-     
-      a ERR_Packet or one or 
-      
-      more Column Definition packets and a closing EOF_Packet
-      
- * @author yanjunli
+ *
  */
-public class ComFieldListCmd extends DirectPassthrouhCmd{
+public class ComStatisticsCmd extends DirectPassthrouhCmd{
 	
-	private static final Logger logger = LoggerFactory.getLogger(ComFieldListCmd.class);
+	private static final Logger logger = LoggerFactory.getLogger(ComStatisticsCmd.class);
 
-	public static final ComFieldListCmd INSTANCE = new ComFieldListCmd();
-
+	public static final ComStatisticsCmd INSTANCE = new ComStatisticsCmd();
+	
+	private ComStatisticsCmd(){}
+	
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
+
+		logger.error("com_statistics  command is not implement!!!! please  fix it");
 		/*
 		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
 		 */
@@ -53,9 +44,6 @@ public class ComFieldListCmd extends DirectPassthrouhCmd{
 			curBuffer.flip();
 			
 			if(success){
-				
-				mysqlsession.currPkgProc = PkgResultSetReader.INSTANCE;
-				mysqlsession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey(), true);
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
 				// 改变 owner，对端Session获取，并且感兴趣写事件

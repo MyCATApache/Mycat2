@@ -15,6 +15,7 @@ public class MycatConfig {
 	// 当前节点所用的配置文件的版本
 	private Map<ConfigEnum, Integer> configVersionMap = new HashMap<>();
 	private Map<ConfigEnum, Configurable> configMap = new HashMap<>();
+	private Map<ConfigEnum, Long> configUpdateTimeMap = new HashMap<>();
 
     /**
      * 系统中所有MySQLRepBean的Map
@@ -72,6 +73,7 @@ public class MycatConfig {
 	public void putConfig(ConfigEnum configEnum, Configurable config, int version) {
 		configMap.put(configEnum, config);
 		configVersionMap.put(configEnum, version);
+        configUpdateTimeMap.put(configEnum, System.currentTimeMillis());
 	}
 
 	public Map<ConfigEnum, Integer> getConfigVersionMap() {
@@ -80,12 +82,17 @@ public class MycatConfig {
 
 	public void setConfigVersion(ConfigEnum configEnum, int version) {
 		configVersionMap.put(configEnum, version);
+        configUpdateTimeMap.put(configEnum, System.currentTimeMillis());
 	}
 
 	public int getConfigVersion(ConfigEnum configEnum) {
         Integer oldVersion = configVersionMap.get(configEnum);
         return oldVersion == null ? GlobalBean.INIT_VERSION : oldVersion;
 	}
+
+	public long getConfigUpdateTime(ConfigEnum configEnum) {
+	    return configUpdateTimeMap.get(configEnum);
+    }
 
     public Map<String, MySQLRepBean> getMysqlRepMap() {
         return mysqlRepMap;
