@@ -25,12 +25,12 @@ public abstract class SQLAnnotation implements Function<MycatSession, Boolean> {
     abstract public MySQLCommand getMySQLCommand();
     
     /**
-     * Ĭ�ϵ��ظ����, ����������ݸ÷���������ȥ�ظ�������
-     * ��� ��Ҫ�ж��ʵ��,���Է��ز�ͬ��ֵ��
+     * 默认的重复检查, 命令链会根据该方法，进行去重复操作。
+     * 如果 需要有多个实例,可以返回不同的值。
      * @return
      */    
     public  long currentKey() {
-		// ���������. ���������� ֻ�������һ�Σ����ﷵ����ͬ��ֵ
+		// 结果集缓存. 在责任链中 只允许出现一次，这里返回相同的值
 		return this.getClass().getSimpleName().hashCode();
 	}
 

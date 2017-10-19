@@ -212,7 +212,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
   	  			optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
   				callback.finished(optSession, null, true, null);
   			} else {
-  				callback.finished(optSession, null, false, null);
+  				callback.finished(optSession, null, false, retVal);
   			}
   		});
 	}

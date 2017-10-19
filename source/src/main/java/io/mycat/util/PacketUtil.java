@@ -23,19 +23,18 @@
  */
 package io.mycat.util;
 
-import java.io.UnsupportedEncodingException;
-
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.FieldPacket;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
 
-
+import java.io.UnsupportedEncodingException;
 
 /**
  * @author mycat
  */
 public class PacketUtil {
-    private static final String CODE_PAGE_1252 = "Cp1252";
+    private static final String CODE_PAGE_LATIN1 = "latin1";
+    private static final int CHARSET_LATIN1 = 8;
 
     public static final ResultSetHeaderPacket getHeader(int fieldCount) {
         ResultSetHeaderPacket packet = new ResultSetHeaderPacket();
@@ -57,18 +56,17 @@ public class PacketUtil {
 
     public static final FieldPacket getField(String name, String orgName, int type) {
         FieldPacket packet = new FieldPacket();
-        packet.charsetIndex = CharsetUtil.getIndex(CODE_PAGE_1252);
-        packet.name = encode(name, CODE_PAGE_1252);
-        packet.orgName = encode(orgName, CODE_PAGE_1252);
+        packet.charsetIndex = CHARSET_LATIN1; //CharsetUtil.getIndex(CODE_PAGE_LATIN1);
+        packet.name = encode(name, CODE_PAGE_LATIN1);
+        packet.orgName = encode(orgName, CODE_PAGE_LATIN1);
         packet.type = (byte) type;
         return packet;
     }
 
     public static final FieldPacket getField(String name, int type) {
         FieldPacket packet = new FieldPacket();
-        //packet.charsetIndex = CharsetUtil.getIndex(CODE_PAGE_1252);
-        packet.charsetIndex = 14;
-        packet.name = encode(name, CODE_PAGE_1252);
+        packet.charsetIndex = CHARSET_LATIN1; //CharsetUtil.getIndex(CODE_PAGE_LATIN1);
+        packet.name = encode(name, CODE_PAGE_LATIN1);
         packet.type = (byte) type;
         return packet;
     }
@@ -81,5 +79,11 @@ public class PacketUtil {
         return error;
     }
 
-
+//    public static final FieldPacket getField(BinaryPacket src, String fieldName) {
+//        FieldPacket field = new FieldPacket();
+//        field.read(src);
+//        field.name = encode(fieldName, CODE_PAGE_LATIN1);
+//        field.packetLength = field.calcPacketSize();
+//        return field;
+//    }
 }

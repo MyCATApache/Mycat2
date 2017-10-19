@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.DefaultMySQLCommand;
 import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.front.CacheExistsCheck;
@@ -32,7 +31,7 @@ public class SQLCachCmd extends DefaultMySQLCommand {
 		
 		if(BufferSQLContext.SELECT_SQL != context.getSQLType()){
 			String errmsg = " sqlType is invalid . sqlcache  type must be select !";
-			sendErrorMsg(session,ErrorCode.ER_INVALID_DEFAULT,errmsg);
+			session.sendErrorMsg(ErrorCode.ER_INVALID_DEFAULT,errmsg);
 			logger.error(errmsg);
 			return true;
 		}
@@ -40,7 +39,7 @@ public class SQLCachCmd extends DefaultMySQLCommand {
 		if(BufferSQLContext.ANNOTATION_SQL_CACHE != context.getAnnotationType()){
 			
 			String errmsg = " annotationType is invalid . annotationType must be ANNOTATION_SQL_CACHE !";
-			sendErrorMsg(session,ErrorCode.ER_INVALID_DEFAULT,errmsg);
+			session.sendErrorMsg(ErrorCode.ER_INVALID_DEFAULT,errmsg);
 			logger.error(errmsg);
 			return true;
 		}

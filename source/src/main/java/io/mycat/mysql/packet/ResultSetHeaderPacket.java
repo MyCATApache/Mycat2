@@ -23,8 +23,6 @@
  */
 package io.mycat.mysql.packet;
 
-import java.nio.ByteBuffer;
-
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.BufferUtil;
 
@@ -52,25 +50,27 @@ import io.mycat.util.BufferUtil;
  * @author mycat
  */
 public class ResultSetHeaderPacket extends MySQLPacket {
-
     public int fieldCount;
     public long extra;
 
-    public void read(ProxyBuffer buffer) {
-//        MySQLMessage mm = new MySQLMessage(data);
-//        this.packetLength = mm.readUB3();
-//        this.packetId = mm.read();
-//        this.fieldCount = (int) mm.readLength();
-//        if (mm.hasRemaining()) {
-//            this.extra = mm.readLength();
-//        }
-	      this.packetLength = (int)buffer.readFixInt(3);
-	      this.packetId = buffer.readByte();
-	      this.fieldCount = (int) buffer.readLenencInt();
-	      if (buffer.readIndex < buffer.writeIndex) {
-	          this.extra = buffer.readLenencInt();
-	      }
-    
+    public void read(byte[] data) {
+        MySQLMessage mm = new MySQLMessage(data);
+        this.packetLength = mm.readUB3();
+        this.packetId = mm.read();
+        this.fieldCount = (int) mm.readLength();
+        if (mm.hasRemaining()) {
+            this.extra = mm.readLength();
+        }
+    }
+
+    @Override
+    public void write(ProxyBuffer buffer) {
+        buffer.writeFixInt(3, calcPacketSize());
+        buffer.writeByte(packetId);
+        buffer.writeFixInt(1, fieldCount);
+        if (extra > 0) {
+            buffer.writeLenencInt(extra);
+        }
     }
 
     @Override
@@ -86,15 +86,4 @@ public class ResultSetHeaderPacket extends MySQLPacket {
     protected String getPacketInfo() {
         return "MySQL ResultSetHeader Packet";
     }
-
-	@Override
-	public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPacketSize());
-		buffer.writeByte(packetId);
-		buffer.writeLenencInt(fieldCount);
-		if (extra > 0) {
-			//BufferUtil.writeLength(buffer, extra);
-			buffer.writeLenencInt(extra);
-		}
-	}
 }

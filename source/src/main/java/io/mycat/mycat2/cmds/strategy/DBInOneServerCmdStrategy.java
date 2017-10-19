@@ -3,14 +3,18 @@ package io.mycat.mycat2.cmds.strategy;
 import io.mycat.mycat2.cmds.ComChangeUserCmd;
 import io.mycat.mycat2.cmds.ComFieldListCmd;
 import io.mycat.mycat2.cmds.ComInitDB;
+import io.mycat.mycat2.cmds.ComPingCmd;
 import io.mycat.mycat2.cmds.ComQuitCmd;
+import io.mycat.mycat2.cmds.ComStatisticsCmd;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.HBTDemoCmd2;
 import io.mycat.mycat2.cmds.NotSupportCmd;
+import io.mycat.mycat2.cmds.manager.MycatShowConfigsCmd;
 import io.mycat.mycat2.cmds.manager.MycatSwitchReplCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComBeginCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComCommitCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComRollBackCmd;
+import io.mycat.mycat2.cmds.sqlCmds.SqlComShutdownCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComStartCmd;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -29,12 +33,12 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 		MYCOMMANDMAP.put(MySQLPacket.COM_DROP_DB,      			   NotSupportCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_REFRESH,      			   DirectPassthrouhCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_SHUTDOWN,     			   NotSupportCmd.INSTANCE);
-		MYCOMMANDMAP.put(MySQLPacket.COM_STATISTICS,   			   DirectPassthrouhCmd.INSTANCE);
+		MYCOMMANDMAP.put(MySQLPacket.COM_STATISTICS,   			   ComStatisticsCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_PROCESS_INFO, 			   DirectPassthrouhCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_CONNECT,      			   NotSupportCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_PROCESS_KILL, 			   DirectPassthrouhCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_DEBUG,        			   NotSupportCmd.INSTANCE);
-		MYCOMMANDMAP.put(MySQLPacket.COM_PING,         			   DirectPassthrouhCmd.INSTANCE);
+		MYCOMMANDMAP.put(MySQLPacket.COM_PING,         			   ComPingCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_TIME,         			   NotSupportCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_DELAYED_INSERT,           NotSupportCmd.INSTANCE);
 		MYCOMMANDMAP.put(MySQLPacket.COM_CHANGE_USER,              ComChangeUserCmd.INSTANCE);
@@ -64,10 +68,11 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 		MYSQLCOMMANDMAP.put(BufferSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.SHUTDOWN_SQL, SqlComShutdownCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SWITCH_REPL, MycatSwitchReplCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SHOW_CONFIGS, MycatShowConfigsCmd.INSTANCE);
+		
 		//测试
 		MYSQLCOMMANDMAP.put(BufferSQLContext.SHOW_SQL, HBTDemoCmd2.INSTANCE);
-
-		
 	}
 }

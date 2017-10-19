@@ -40,7 +40,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 			session.clearReadWriteOpts();
 			//session.curSQLCommand = this;
 					String sql="select topic_id, question_type from e_topic where topic_id in "
-							+ "('DFC22D8DC0A80B5B00039456439196','22663C93C0A80B2F00000016178188', '22663C96C0A80B2F00000022567312');";
+							+ "('1DDA8E99C0A82CB200000543452550','1DDA8E9EC0A82CB200000549901449', '1DDA8EB3C0A82CB200000573846014');";
 					String sql2="select title,seq, topic_id, question_id from e_question ";
 					//FetchIntoRowStream fetchIntoRowStream = new FetchIntoRowStream(new SqlMeta(sql,"a"),new RowMeta("tableA"));
 					HBTEngine engine = new HBTEngine();

@@ -24,8 +24,7 @@
 package io.mycat.mysql.packet;
 
 import io.mycat.proxy.ProxyBuffer;
-
-
+import io.mycat.util.BufferUtil;
 
 /**
  * From Server To Client, part of Result Set Packets. One for each column in the
@@ -75,33 +74,31 @@ public class FieldPacket extends MySQLPacket {
 	/**
 	 * 把字节数组转变成FieldPacket
 	 */
-	public void read(ProxyBuffer buffer) {
-		this.packetLength = (int) buffer.readFixInt(3);
-		this.packetId = buffer.readByte();
-		readBody(buffer);
+	public void read(byte[] data) {
+		MySQLMessage mm = new MySQLMessage(data);
+		this.packetLength = mm.readUB3();
+		this.packetId = mm.read();
+		readBody(mm);
 	}
 
-
-
 	@Override
-	public  void write(ProxyBuffer buffer) {
-		int size = calcPacketSize();
-//		buffer.writeFixInt(3, size);
-//		buffer.writeByte(packetId);
+	public void write(ProxyBuffer buffer) {
+		buffer.writeFixInt(3, calcPacketSize());
+		buffer.writeByte(packetId);
 		writeBody(buffer);
 	}
 
 	@Override
 	public int calcPacketSize() {
-		int size = (catalog == null ? 1 : ProxyBuffer.getLenencLength(catalog));
-		size += (db == null ? 1 : ProxyBuffer.getLenencLength(db));
-		size += (table == null ? 1 : ProxyBuffer.getLenencLength(table));
-		size += (orgTable == null ? 1 : ProxyBuffer.getLenencLength(orgTable));
-		size += (name == null ? 1 : ProxyBuffer.getLenencLength(name));
-		size += (orgName == null ? 1 : ProxyBuffer.getLenencLength(orgName));
+		int size = (catalog == null ? 1 : BufferUtil.getLength(catalog));
+		size += (db == null ? 1 : BufferUtil.getLength(db));
+		size += (table == null ? 1 : BufferUtil.getLength(table));
+		size += (orgTable == null ? 1 : BufferUtil.getLength(orgTable));
+		size += (name == null ? 1 : BufferUtil.getLength(name));
+		size += (orgName == null ? 1 : BufferUtil.getLength(orgName));
 		size += 13;// 1+2+4+1+2+1+2
 		if (definition != null) {
-			size += ProxyBuffer.getLenencLength(definition.length);
+			size += BufferUtil.getLength(definition);
 		}
 		return size;
 	}
@@ -111,55 +108,52 @@ public class FieldPacket extends MySQLPacket {
 		return "MySQL Field Packet";
 	}
 
-	private void readBody(ProxyBuffer buffer) {
-		int startPos = buffer.readIndex;
-		this.catalog = buffer.readLenencBytes();
-		this.db = buffer.readLenencBytes();
-		this.table = buffer.readLenencBytes();
-		this.orgTable = buffer.readLenencBytes();
-		this.name = buffer.readLenencBytes();
-		this.orgName = buffer.readLenencBytes();
-		buffer.skip(1);
-		this.charsetIndex = (int) buffer.readFixInt(2);
-		this.length = (int) buffer.readFixInt(4);
-		this.type = buffer.readByte() & 0xff;
-		this.flags =(int) buffer.readFixInt(2);
-		this.decimals =buffer.readByte();
-		buffer.skip(FILLER.length);
-		
-		if ( buffer.readIndex - startPos < this.packetLength) {
-			this.definition = buffer.readBytes(packetLength - buffer.readIndex);
+	private void readBody(MySQLMessage mm) {
+		this.catalog = mm.readBytesWithLength();
+		this.db = mm.readBytesWithLength();
+		this.table = mm.readBytesWithLength();
+		this.orgTable = mm.readBytesWithLength();
+		this.name = mm.readBytesWithLength();
+		this.orgName = mm.readBytesWithLength();
+		mm.move(1);
+		this.charsetIndex = mm.readUB2();
+		this.length = mm.readUB4();
+		this.type = mm.read() & 0xff;
+		this.flags = mm.readUB2();
+		this.decimals = mm.read();
+		mm.move(FILLER.length);
+		if (mm.hasRemaining()) {
+			this.definition = mm.readBytesWithLength();
 		}
 	}
 
 	private void writeBody(ProxyBuffer buffer) {
-		byte[] nullVal = {0};
-		
-		buffer.writeFixInt(3, 0);
-		buffer.writeByte(packetId);
-		
-		int writeIndexPos = buffer.writeIndex;
-		buffer.writeLenencBytes(catalog, nullVal);
-		buffer.writeLenencBytes(db, nullVal);
-		buffer.writeLenencBytes(table, nullVal);
-		buffer.writeLenencBytes(orgTable, nullVal);
-		buffer.writeLenencBytes(name, nullVal);
-		buffer.writeLenencBytes(orgName, nullVal);
+		writeBytesWithNullable(buffer, catalog);
+		writeBytesWithNullable(buffer, db);
+		writeBytesWithNullable(buffer, table);
+		writeBytesWithNullable(buffer, orgTable);
+		writeBytesWithNullable(buffer, name);
+		writeBytesWithNullable(buffer, orgName);
 		buffer.writeByte((byte) 0x0C);
 		buffer.writeFixInt(2, charsetIndex);
 		buffer.writeFixInt(4, length);
 		buffer.writeByte((byte) (type & 0xff));
 		buffer.writeFixInt(2, flags);
-		
 		buffer.writeByte(decimals);
         buffer.writeByte((byte)0x00);
         buffer.writeByte((byte)0x00);
+		//buffer.position(buffer.position() + FILLER.length);
 		if (definition != null) {
-			buffer.writeBytes(definition);
+			writeBytesWithNullable(buffer, definition);
 		}
-		buffer.putFixInt(writeIndexPos - 4, 3, (buffer.writeIndex - writeIndexPos));
-		System.out.println("length " + (buffer.writeIndex - writeIndexPos));
 	}
 
-
+	private void writeBytesWithNullable(ProxyBuffer buffer, byte[] bytes) {
+		byte nullVal = 0;
+		if (bytes == null) {
+			buffer.writeByte(nullVal);
+		} else {
+			buffer.writeLenencBytes(bytes);
+		}
+	}
 }
