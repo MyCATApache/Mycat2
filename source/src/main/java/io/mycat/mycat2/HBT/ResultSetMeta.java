@@ -28,7 +28,7 @@ public class ResultSetMeta extends Meta {
 	}
 	
 	
-	public void addFiled(String fieldName, byte fieldType) {
+	public void addFiled(String fieldName, int fieldType) {
 		int pos = fieldNameList.size(); 
 		fieldNameList.add(fieldName);
 		fieldPosMap.put(fieldName, pos);
@@ -37,14 +37,18 @@ public class ResultSetMeta extends Meta {
 	
 
 	
-	public ResultSetMeta(int fileCount) {
+	public ResultSetMeta(int filedCount) {
 		this.fieldNameList = new ArrayList<String>();
-		this.filedCount = fieldNameList.size();
-		this.fieldTypeList = new int[fileCount];
+		this.filedCount = filedCount;
+		this.fieldTypeList = new int[filedCount];
 		fieldPosMap = new HashMap<String,Integer>();
 
 	}
 
+	public int getRealFieldNameListSize() {
+	    return this.fieldNameList.size();
+	}
+	
 	public List<String> getFieldNameList() {
 		return fieldNameList;
 	}
@@ -57,6 +61,9 @@ public class ResultSetMeta extends Meta {
 		return fieldPosMap.get(key);
 	}
 
+	public int getFiledType(int pos) {
+	    return fieldTypeList[pos];
+	}
 	public int getFiledCount() {
 		return filedCount;
 	}

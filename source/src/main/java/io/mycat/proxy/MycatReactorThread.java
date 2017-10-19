@@ -120,7 +120,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 		LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(targetMetaBean);
 		if (mySQLSessionList != null && !mySQLSessionList.isEmpty()) {
 			mysqlSession = mySQLSessionList.removeLast();
-			if(mysqlSession!=null){
+			if(mysqlSession!=null && mysqlSession.isIDLE()){
 				logger.debug("Using the existing session in the datasource  for {}. {}:{}",
 						(runOnSlave ? "read" : "write"),
 						mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),
@@ -191,7 +191,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 ;  			mysqlSession = mySQLSessionList.removeLast();
   			if(mysqlSession!=null){
   				if(logger.isDebugEnabled()){
-  					logger.debug("Using the existing session in the datasource .{}",mysqlSession.getMySQLMetaBean());
+  					logger.debug("Using the existing session in the datasource .{} \n {}",mysqlSession.getMySQLMetaBean(),mysqlSession);
   				}
   				callback.finished(mysqlSession, null, true, null);
   				return;

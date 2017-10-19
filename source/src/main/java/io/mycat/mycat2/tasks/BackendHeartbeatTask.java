@@ -18,6 +18,7 @@ import io.mycat.mycat2.beans.conf.ReplicaBean;
 import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mycat2.beans.heartbeat.MySQLDetector;
 import io.mycat.mycat2.beans.heartbeat.MySQLHeartbeat;
+import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.CommandPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.MycatReactorThread;
@@ -56,6 +57,8 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 		CommandPacket packet = new CommandPacket();
 		packet.packetId = 0;
 		packet.command = MySQLPacket.COM_QUERY;
+		optSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+
 //		try {
 			packet.arg = repBean.getReplicaBean().getRepType().getHearbeatSQL().getBytes();
 //		} catch (UnsupportedEncodingException e) {
@@ -131,6 +134,8 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
 			//归还连接
 			MycatReactorThread reactor = (MycatReactorThread)Thread.currentThread();
 			session.proxyBuffer.reset();
+			
+			optSession.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
 			reactor.addMySQLSession(metaBean, session);
 
 			switch(repBean.getReplicaBean().getRepType()){

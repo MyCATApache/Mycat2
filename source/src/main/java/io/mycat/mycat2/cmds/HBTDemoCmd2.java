@@ -11,7 +11,10 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.HBT.HBTEngine;
+import io.mycat.mycat2.HBT.JoinMeta;
 import io.mycat.mycat2.HBT.ResultSetMeta;
+import io.mycat.mycat2.HBT.RowMeta;
+import io.mycat.mycat2.HBT.SqlMeta;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mysql.Fields;
 
@@ -21,11 +24,11 @@ import io.mycat.mysql.Fields;
  * @author wuzhihui
  *
  */
-public class HBTDemoCmd implements MySQLCommand {
+public class HBTDemoCmd2 implements MySQLCommand {
 
-	private static final Logger logger = LoggerFactory.getLogger(HBTDemoCmd.class);
+	private static final Logger logger = LoggerFactory.getLogger(HBTDemoCmd2.class);
 
-	public static final HBTDemoCmd INSTANCE = new HBTDemoCmd();
+	public static final HBTDemoCmd2 INSTANCE = new HBTDemoCmd2();
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
@@ -36,8 +39,6 @@ public class HBTDemoCmd implements MySQLCommand {
 		if(session.sqlContext.getSQLType() == NewSQLContext.SHOW_SQL) {
 			session.clearReadWriteOpts();
 			//session.curSQLCommand = this;
-			session.getBackend((mysqlsession, sender, success,result) -> {
-				if(success){
 					String sql="select topic_id, question_type from e_topic where topic_id in "
 							+ "('DFC22D8DC0A80B5B00039456439196','22663C93C0A80B2F00000016178188', '22663C96C0A80B2F00000022567312');";
 					String sql2="select title,seq, topic_id, question_id from e_question ";
@@ -56,42 +57,17 @@ public class HBTDemoCmd implements MySQLCommand {
 					String sql3 = "select item_id, question_id from e_item";
 					ResultSetMeta resultSetMeta2 = new ResultSetMeta(Arrays.asList(fieldNameList3),
 							fieldTypeList3);
-			        session.giveupOwner(SelectionKey.OP_READ);
+					
 
-//					engine.streamOf(mysqlsession, new SqlMeta(sql,"et"), new RowMeta("e_topic", "et"))
-//					.joinAndOut(mysqlsession, new SqlMeta(sql2,"eq"),new RowMeta("e_question", "eq"),
-//							new JoinMeta("e_topic.topic_id", "e_question.topic_id",HBTEngine.MEM,100), 
-//							resultSetMeta, (aRow, bRow, resultRowMeta) -> {
-//								List<byte[]> row = new ArrayList<byte[]>();
-//								row.addAll(aRow);
-//								row.add(bRow.get(0));
-//								row.add(bRow.get(2));
-//								resultRowMeta.addFieldValues(row);
-//							}).joinAndOut(mysqlsession, new SqlMeta(sql3,"ei"),new RowMeta("e_item", "e_item"),
-//									new JoinMeta("e_question.question_id", "e_item.question_id",HBTEngine.MEM,100), 
-//									resultSetMeta2, (aRow, bRow, resultRowMeta) -> {
-//										List<byte[]> row = new ArrayList<byte[]>();
-//										row.addAll(aRow);
-//										row.add(bRow.get(0));
-//										resultRowMeta.addFieldValues(row);
-//								}).print();	
-			        
-			        
-			        
-//					engine.streamOf(mysqlsession, new SqlMeta(sql,"et"), new RowMeta("e_topic", "et"))
-//					.joinAndOut(mysqlsession, new SqlMeta(sql2,"eq"),new RowMeta("e_question", "eq"),
-//							new JoinMeta("e_topic.topic_id", "e_question.topic_id",HBTEngine.MEM,100), 
-//							resultSetMeta, (aRow, bRow, resultRowMeta) -> {
-//								List<byte[]> row = new ArrayList<byte[]>();
-//								row.addAll(aRow);
-//								row.add(bRow.get(0));
-//								row.add(bRow.get(2));
-//								resultRowMeta.addFieldValues(row);
-//							}).print();			
-				}else{
-					System.out.println("1111");
-				}
-			});
+					engine.streamOf(session, new SqlMeta(sql,"et"), new RowMeta("e_topic", "et"))
+					.join(session, new SqlMeta(sql2,"eq"), new RowMeta("e_question", "eq"), 
+					        new JoinMeta("e_topic.topic_id", "e_question.topic_id",HBTEngine.MEM,1), 
+					        	resultSetMeta, (aRow, bRow , result)-> {
+						        	result.addAll(aRow);
+						        	result.add(bRow.get(0));
+						        	result.add(bRow.get(2));
+					        })
+					.out(session);
 			return true;
 		}
 		return false;

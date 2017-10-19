@@ -2,12 +2,17 @@ package io.mycat.mycat2.HBT;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
+import io.mycat.mysql.Fields;
 
 public class JoinMeta extends Meta {
 	public String lJoinKey;
 	public String rJoinKey;
 	public String lTable;
 	public String rTable;
+    private int limit;
 	
 	public JoinMeta(String lJoinKey, String rJoinKey, 
 			String mem, int limit) {
@@ -15,6 +20,11 @@ public class JoinMeta extends Meta {
 		this.lTable = parseTable(lJoinKey);
 		this.rTable = parseTable(rJoinKey);
 		this.rJoinKey = parseField(rJoinKey);
+		this.limit = limit;
+	}
+	
+	public int getLimit() {
+	    return limit;
 	}
 	
 	private String parseTable(String joinKey) {
@@ -33,11 +43,16 @@ public class JoinMeta extends Meta {
 		return joinKey.substring(pos + 1); 
 	}
 
-	public String getSql(RowMeta aRowMeta, SqlMeta sqlMeta) {
+	public String getSql(List<String> joinKeyList, int fieldType, SqlMeta sqlMeta) {
 		StringBuilder sb = new StringBuilder(sqlMeta.sql) ;
-		String values = aRowMeta.getFileds(lJoinKey);
+	    String values ;
+		if(fieldType == Fields.FIELD_TYPE_STRING) {
+		    values = joinKeyList.stream().collect(Collectors.joining("','","'","'"));
+		} else {
+	        values = joinKeyList.stream().collect(Collectors.joining(","));
+		} 
 		if(sb.indexOf("where") > 0) {
-			sb.append(String.format(" and %s in (%s) 1", rJoinKey, values));
+			sb.append(String.format(" and %s in (%s) ", rJoinKey, values));
 		} else {
 			sb.append(String.format(" where %s in (%s) " , rJoinKey, values));
 		}
@@ -45,25 +60,25 @@ public class JoinMeta extends Meta {
 	}
 
 
-	public RowMeta join(RowMeta aRowMeta, RowMeta bRowMeta, 
-			ResultSetMeta resultSetMeta,
-			MatchCallback<List<byte[]>> matchCallBack) {
+//	public RowMeta join(RowMeta aRowMeta, RowMeta bRowMeta, 
+//			ResultSetMeta resultSetMeta,
+//			MatchCallback<List<byte[]>> matchCallBack) {
 		
-		RowMeta resultRowMeta = new RowMeta();
-		resultRowMeta.init(resultSetMeta);
-
-		Map<String, List<List<byte[]>>> keyMap = aRowMeta.getKeyMap(lJoinKey);
-		List<List<byte[]>> fieldValues = bRowMeta.getFieldValues();
-		Integer rjoinKeyPos = bRowMeta.getHeaderResultSet().getFieldPos(rJoinKey);
-		fieldValues.forEach(bRow -> {
-			String joinValue = new String(bRow.get(rjoinKeyPos));
-			List<List<byte[]>> lJoinList = keyMap.get(joinValue);
-			lJoinList.forEach(aRow -> {
-				matchCallBack.call(aRow, bRow, resultRowMeta);
-			});
-		});
-		return resultRowMeta;
-	}
+//		RowMeta resultRowMeta = new RowMeta();
+//		resultRowMeta.init(resultSetMeta);
+//
+//		Map<String, List<List<byte[]>>> keyMap = aRowMeta.getKeyMap(lJoinKey);
+//		List<List<byte[]>> fieldValues = bRowMeta.getFieldValues();
+//		Integer rjoinKeyPos = bRowMeta.getHeaderResultSet().getFieldPos(rJoinKey);
+//		fieldValues.forEach(bRow -> {
+//			String joinValue = new String(bRow.get(rjoinKeyPos));
+//			List<List<byte[]>> lJoinList = keyMap.get(joinValue);
+//			lJoinList.forEach(aRow -> {
+//				matchCallBack.call(aRow, bRow, resultRowMeta);
+//			});
+//		});
+//		return null;
+//	}
 
 //	public RowMeta joinResult(RowMeta aRowMeta, 
 //		RowMeta bRowMeta, ResultSetMeta resutlSetMeta) {
