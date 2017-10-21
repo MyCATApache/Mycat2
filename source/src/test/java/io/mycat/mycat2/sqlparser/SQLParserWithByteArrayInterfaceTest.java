@@ -458,6 +458,37 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     }
 
     @Test
+    public void testAnnotationCacheLimitSQL() throws Exception {
+        for(int i=0; i<1000; i++) {
+            System.out.println("testAnnotationCacheLimitSQL "+i);
+            if (i%2==1) {
+                String sql = "/* MyCAT:cacheresult  cache_time=1000 auto_refresh=true access_count=100*/select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 100;";
+                parser.parse(sql.getBytes(), context);
+                assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+                assertEquals("tbl_A", context.getTableName(0));
+                assertEquals(BufferSQLContext.ANNOTATION_SQL_CACHE, context.getAnnotationType());
+                assertEquals(1000, context.getAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME));
+                assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT));
+                assertEquals(TokenHash.TRUE, context.getAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH));
+                assertEquals(100, context.getLimitCount());
+                assertEquals("select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 100;", context.getRealSQL(0));
+            } else {
+                String sql = "/* MyCAT:cacheresult  cache_time=100 auto_refresh=true access_count=100*/select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 10;";
+                parser.parse(sql.getBytes(), context);
+                assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+                assertEquals("tbl_A", context.getTableName(0));
+                assertEquals(BufferSQLContext.ANNOTATION_SQL_CACHE, context.getAnnotationType());
+                assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME));
+                assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT));
+                assertEquals(TokenHash.TRUE, context.getAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH));
+                assertEquals(10, context.getLimitCount());
+                assertEquals("select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 10;", context.getRealSQL(0));
+            }
+        }
+
+    }
+
+    @Test
     public void testLoadDataSQL() throws Exception {
         String sql = "load data  low_priority infile \"/home/mark/data.sql\" replace into table tbl_A;";
         parser.parse(sql.getBytes(), context);
