@@ -1,34 +1,33 @@
 package io.mycat.mycat2.cmds.interceptor;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import io.mycat.mycat2.MySQLCommand;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.SQLAnnotationCmd;
+import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
 public class SQLAnnotationChain {
 	
 	private MySQLCommand target;
 	
 	/**
-	 * 本次匹配到的所有的动态注解，里面可能有重复的anno。但是是不同实例。可以根据自己的需要，选择去重复，或者不去重复。
-	 */
-	private List<SQLAnnotation> annontations = new ArrayList<>(30);
-	
-	/**
 	 * queueMap 用于去重复
 	 */
-	private LinkedHashMap<Long,MySQLCommand> queueMap = new LinkedHashMap<>(20);
+	private LinkedHashMap<Long,SQLAnnotationCmd> queueMap = new LinkedHashMap<>(20);
 	
 	/**
 	 * 前置类，后置类，around 类  动态注解  顺序，实现了SQLCommand 的动态注解会出现在此列表中
 	 *  如果没有实现  SQLCommand 的 annotations 不会出现在此列表中
 	 *  最终的构建结果
 	 */		
-	private List<MySQLCommand> queue = new ArrayList<>(20);
+	private List<SQLAnnotationCmd> queue = new ArrayList<>(20);
 	
 	/**
 	 * queue 列表当前索引值
@@ -37,19 +36,66 @@ public class SQLAnnotationChain {
 	
 	private String errMsg;
 	
-	public void setTarget(MySQLCommand target){
+	/**
+	 * 1. 设置原始命令
+	 * @param target
+	 */
+	public SQLAnnotationChain setTarget(MySQLCommand target){
 		this.target = target;
+		return this;
 	}
 	
-	public void build(){
+	/**
+	 * 2. 处理动态注解
+	 */
+	public SQLAnnotationChain processDynamicAnno(MycatSession session){
+		List<SQLAnnotation> actions = new ArrayList<>(30);
+		if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
+			if(!actions.isEmpty()){
+				for(SQLAnnotation f:actions){
+					if(!f.apply(session,this)){
+						break;
+					}
+				}
+			}
+		}
+		return this;
+	}
+	
+	/**
+	 * 3. 处理静态注解, 如果已经有相同的动态注解，则组装静态注解。构建步骤放在动态注解之后，可以保持动态注解的顺序
+	 * @param session
+	 * @param staticAnnontationMap
+	 * @return
+	 */
+	public SQLAnnotationChain processStaticAnno(MycatSession session,Map<Byte,SQLAnnotation> staticAnnontationMap){
+		BufferSQLContext context = session.sqlContext;
+		SQLAnnotation staticAnno = staticAnnontationMap.get(context.getAnnotationType());
+		/**
+		 * 处理静态注解
+		 */
+		if(staticAnno!=null&&!queueMap.containsKey(staticAnno.currentKey())){
+			SQLAnnotationCmd  annoCmd = staticAnno.getSqlAnnoMeta().getSQLAnnotationCmd();
+			annoCmd.setSqlAnnotationChain(this);
+			addCmdChain(staticAnno, annoCmd);
+		}
+		return this;
+	}
+	
+	/**
+	 * 4. 构建 命令 或者命令链
+	 * @return
+	 */
+	public MySQLCommand build(){
+		
+		if(queueMap.isEmpty()){
+			return target;
+		}
+		
 		queue = queueMap.values().stream().collect(Collectors.toList());
-	}
-	
-	public void clear(){
-		queue.clear();
-		cmdIndex = 0;
-		annontations.clear();
-		queueMap.clear();
+		SQLAnnotationCmd annoCmd = new SQLAnnotationCmd();
+		annoCmd.setSqlAnnotationChain(this);
+		return annoCmd;
 	}
 
 	public String getErrMsg() {
@@ -60,7 +106,7 @@ public class SQLAnnotationChain {
 		this.errMsg = errMsg;
 	}
 	
-	public void addCmdChain(SQLAnnotation sqlanno,MySQLCommand command){
+	public void addCmdChain(SQLAnnotation sqlanno,SQLAnnotationCmd command){
 		queueMap.put(sqlanno.currentKey(), command);
 	}
 
