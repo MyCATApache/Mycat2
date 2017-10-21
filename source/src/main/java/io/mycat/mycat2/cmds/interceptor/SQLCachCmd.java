@@ -6,21 +6,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.DefaultMySQLCommand;
+import io.mycat.mycat2.cmds.SQLAnnotationCmd;
 import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.front.CacheExistsCheck;
 import io.mycat.mycat2.common.SeqContextList;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.util.ErrorCode;
 
-public class SQLCachCmd extends DefaultMySQLCommand {
-
-	public static final SQLCachCmd INSTANCE = new SQLCachCmd();
+public class SQLCachCmd extends SQLAnnotationCmd {
 
 	private static final Logger logger = LoggerFactory.getLogger(SQLCachCmd.class);
-
-	private SQLCachCmd() {
-	}
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
@@ -88,11 +83,10 @@ public class SQLCachCmd extends DefaultMySQLCommand {
 
 		return super.procssSQL(session);
 	}
-	// @Override
-	// public boolean onFrontWriteFinished(MycatSession session) throws
-	// IOException {
-	// logger.debug("========================> SQLCachCmd onFrontWriteFinished
-	// ");
-	// return super.onFrontWriteFinished(session);
-	// }
+	 @Override
+	 public boolean onFrontWriteFinished(MycatSession session) throws
+	 IOException {
+	 logger.debug("========================> SQLCachCmd onFrontWriteFinished");
+	 return super.onFrontWriteFinished(session);
+	 }
 }

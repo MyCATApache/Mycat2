@@ -3,9 +3,9 @@ package io.mycat.mycat2.sqlannotations.blackList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.BlockSqlCmd;
+import io.mycat.mycat2.cmds.interceptor.BlockSqlCmd;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
@@ -15,9 +15,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 public class InsertAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(InsertAllow.class);
-	
-	private static final MySQLCommand command = BlockSqlCmd.INSTANCE;
-		
+			
     Object args;
     public InsertAllow() {
     	logger.debug("=>InsertAllow 对象本身的构造 初始化");
@@ -30,19 +28,13 @@ public class InsertAllow extends SQLAnnotation{
     }
 
     @Override
-    public Boolean apply(MycatSession context) {
+    public boolean apply(MycatSession context,SQLAnnotationChain chain) {
     	if(!(boolean)args&&
     			(BufferSQLContext.INSERT_SQL == context.sqlContext.getSQLType())){
-    		context.getCmdChain().setErrMsg("insert not allow ");
-    		context.getCmdChain().addCmdChain(this);
-    		return Boolean.FALSE;
+    		chain.setErrMsg("insert not allow ");
+    		chain.addCmdChain(this,BlockSqlCmd.INSTANCE);
+    		return false;
     	}
-        return Boolean.TRUE;
+        return true;
     }
-
-
-	@Override
-	public MySQLCommand getMySQLCommand() {
-		return command;
-	}
 }

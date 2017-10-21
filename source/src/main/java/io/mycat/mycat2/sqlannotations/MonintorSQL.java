@@ -3,10 +3,9 @@ package io.mycat.mycat2.sqlannotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.BlockSqlCmd;
-import io.mycat.mycat2.cmds.interceptor.MonitorSQLCmd;
+import io.mycat.mycat2.cmds.SQLAnnotationCmd;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 
 /**
  * SQL 监控需要做成异步
@@ -19,27 +18,21 @@ public class MonintorSQL extends SQLAnnotation {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MonintorSQL.class);
 	
-	final private MySQLCommand command = MonitorSQLCmd.INSTANCE;
-
 	/**
 	 * 组装 mysqlCommand
 	 */
 	@Override
-	public Boolean apply(MycatSession session) {
-		session.getCmdChain().addCmdChain(this);
-		return Boolean.TRUE;
+	public boolean apply(MycatSession session,SQLAnnotationChain chain) {
+		MonintorSQLMeta meta = (MonintorSQLMeta) getSqlAnnoMeta();
+		SQLAnnotationCmd cmd = meta.getSQLAnnotationCmd();
+		cmd.setSqlAnnotationChain(chain);
+		chain.addCmdChain(this,cmd);
+		return true;
 	}
 
 	@Override
 	public void init(Object args) {
-
+		MonintorSQLMeta meta = new MonintorSQLMeta();
+		setSqlAnnoMeta(meta);
 	}
-
-
-
-	@Override
-	public MySQLCommand getMySQLCommand() {
-		return command;
-	}
-
 }
