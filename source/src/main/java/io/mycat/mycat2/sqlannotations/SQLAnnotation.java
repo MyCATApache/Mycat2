@@ -4,12 +4,13 @@ import java.util.function.Function;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.ActonFactory;
 
 /**
  * Created by jamie on 2017/9/15.
  */
 public abstract class SQLAnnotation implements Function<MycatSession, Boolean> {
-
+    ActonFactory actonFactory;
     String actionName;
    abstract public void init(Object args);
 
@@ -34,4 +35,11 @@ public abstract class SQLAnnotation implements Function<MycatSession, Boolean> {
 		return this.getClass().getSimpleName().hashCode();
 	}
 
+    public ActonFactory getActonFactory() {
+        return actonFactory;
+    }
+
+    public void setActonFactory(ActonFactory actonFactory) {
+        this.actonFactory = actonFactory;
+    }
 }

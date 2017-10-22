@@ -30,7 +30,7 @@ public class DynamicAnnotation {
         this.schemaActions = schemaActions;
     }
 
-    public void reduce(Map<String, SQLAnnotation> schemaActionsMap, Map<String, SQLAnnotation> globalActionsMap) throws Exception {
+    public void reduce(Map<String, SQLAnnotation> schemaActionsMap) throws Exception {
         HashSet<String> set = new HashSet<>();
         List<SQLAnnotation> list=actions.getSqlAnnotations();
  //       int size=list.size();
@@ -50,7 +50,6 @@ public class DynamicAnnotation {
 //        }
 
         actions.getSqlAnnotations().addAll(0,reduceHelper(set, schemaActions,  schemaActionsMap));
-        actions.getSqlAnnotations().addAll(0,reduceHelper(set, globalActions,  globalActionsMap));
     }
 
     private static List<SQLAnnotation> reduceHelper(HashSet<String> set, List<Map<String, Map<String, String>>> list, Map<String, SQLAnnotation> provider) throws Exception {
