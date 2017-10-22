@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,13 +29,37 @@ import java.util.stream.Stream;
  * Created by jamie on 2017/9/13.
  */
 public class DynamicAnnotationUtil {
-    static final DynamicClassLoader classLoader;
-   public static final AtomicInteger count=new AtomicInteger();
+   private static final DynamicClassLoader classLoader;
+   private static final JavaCompiler javac;
    
+   public static final AtomicInteger count = new AtomicInteger();
    private static final Logger logger = LoggerFactory.getLogger(DynamicAnnotationUtil.class);
 
     static {
         classLoader = new DynamicClassLoader("", Thread.currentThread().getContextClassLoader());
+        // Issue: the tools.jar exists in ${JAVA_HOME}/lib, but ToolProvider finds it in ${java.home}/lib.
+        //When ${java.home} isn't same as ${JAVA_HOME} such as eclipse default, no JavaCompiler found!
+    	// Solution: changing ${java.home} to ${JAVA_HOME} temporally.
+    	// @since 2017-10-14 little-pan
+        final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        if(compiler == null) {
+        	final String envJavaHome = System.getenv("JAVA_HOME");
+        	if(envJavaHome == null) {
+        		throw new ExceptionInInitializerError("The JAVA_HOME environment variable not configured");
+        	}
+        	final String propJavaHome= System.getProperty("java.home");
+        	try {
+        		System.setProperty("java.home", envJavaHome);
+        		javac = ToolProvider.getSystemJavaCompiler();
+        	}finally {
+        		System.setProperty("java.home", propJavaHome);
+        	}
+        	if(javac == null) {
+            	throw new ExceptionInInitializerError("The tools.jar not found in ${JAVA_HOME}/lib or ${java.home}/lib");
+            }
+        }else {
+        	javac = compiler;
+        }
     }
 
     public static DynamicAnnotationRuntime compile(String matchName,Map<Boolean, List< String>> lines) throws Exception {
@@ -79,7 +102,7 @@ public class DynamicAnnotationUtil {
     }
 
     public static void compileTheJavaSrcFile(File... srcFiles) {
-        JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+        final JavaCompiler compiler = javac;
         try (StandardJavaFileManager fileMgr = compiler.getStandardFileManager(null, null, null)) {
             JavaCompiler.CompilationTask t = compiler.getTask(null, fileMgr, null, null, null, fileMgr.getJavaFileObjects(srcFiles));
             t.call();

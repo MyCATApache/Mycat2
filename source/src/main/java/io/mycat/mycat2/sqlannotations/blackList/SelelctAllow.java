@@ -1,5 +1,6 @@
 package io.mycat.mycat2.sqlannotations.blackList;
 
+import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +23,9 @@ public class SelelctAllow extends SQLAnnotation{
 
     @Override
     public void init(Object args) {
+    	if (args instanceof String) {
+    		args =Boolean.valueOf((String) args);
+		}
         logger.debug("=>SelelctAllow 动态注解初始化。 "+args);
         BlackListMeta meta = new BlackListMeta();
         meta.setAllow((boolean)args);

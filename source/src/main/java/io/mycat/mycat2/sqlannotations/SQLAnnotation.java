@@ -1,12 +1,16 @@
 package io.mycat.mycat2.sqlannotations;
 
 import io.mycat.mycat2.MycatSession;
+
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.ActonFactory;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 
 /**
  * Created by jamie on 2017/9/15.
  */
 public abstract class SQLAnnotation {
+
+    ActonFactory actonFactory;
 
     String actionName;
     
@@ -35,14 +39,21 @@ public abstract class SQLAnnotation {
 		return this.getClass().getSimpleName().hashCode();
 	}
 
+  public ActonFactory getActonFactory() {
+      return actonFactory;
+  }
+
+  public void setActonFactory(ActonFactory actonFactory) {
+      this.actonFactory = actonFactory;
+  }
 
 	public SQLAnnotationMeta getSqlAnnoMeta() {
-		return sqlAnnoMeta;
+		  return sqlAnnoMeta;
 	}
 
 
 	public void setSqlAnnoMeta(SQLAnnotationMeta sqlAnnoMeta) {
-		this.sqlAnnoMeta = sqlAnnoMeta;
+		  this.sqlAnnoMeta = sqlAnnoMeta;
 	}
 
 }
