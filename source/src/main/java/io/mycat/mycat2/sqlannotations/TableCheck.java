@@ -3,8 +3,8 @@ package io.mycat.mycat2.sqlannotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 
 /**
  * Created by jamie on 2017/9/24.
@@ -23,15 +23,7 @@ public class TableCheck extends SQLAnnotation{
     }
 
     @Override
-    public Boolean apply(MycatSession context) {
-        return Boolean.TRUE;
+    public boolean apply(MycatSession context,SQLAnnotationChain chain) {
+        return true;
     }
-
-
-
-	@Override
-	public MySQLCommand getMySQLCommand() {
-		return null;
-	}
-
 }

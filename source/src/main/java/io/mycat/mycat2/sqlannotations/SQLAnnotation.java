@@ -1,17 +1,21 @@
 package io.mycat.mycat2.sqlannotations;
 
-import java.util.function.Function;
-
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.ActonFactory;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 
 /**
  * Created by jamie on 2017/9/15.
  */
-public abstract class SQLAnnotation implements Function<MycatSession, Boolean> {
+public abstract class SQLAnnotation {
+
     ActonFactory actonFactory;
+
     String actionName;
+    
+   private SQLAnnotationMeta sqlAnnoMeta;
+       
    abstract public void init(Object args);
 
 
@@ -22,8 +26,8 @@ public abstract class SQLAnnotation implements Function<MycatSession, Boolean> {
     public void setActionName(String actionName){
         this.actionName=actionName;
     }
-
-    abstract public MySQLCommand getMySQLCommand();
+    
+    abstract public boolean  apply(MycatSession session,SQLAnnotationChain chain);
     
     /**
      * 默认的重复检查, 命令链会根据该方法，进行去重复操作。
@@ -35,11 +39,21 @@ public abstract class SQLAnnotation implements Function<MycatSession, Boolean> {
 		return this.getClass().getSimpleName().hashCode();
 	}
 
-    public ActonFactory getActonFactory() {
-        return actonFactory;
-    }
+  public ActonFactory getActonFactory() {
+      return actonFactory;
+  }
 
-    public void setActonFactory(ActonFactory actonFactory) {
-        this.actonFactory = actonFactory;
-    }
+  public void setActonFactory(ActonFactory actonFactory) {
+      this.actonFactory = actonFactory;
+  }
+
+	public SQLAnnotationMeta getSqlAnnoMeta() {
+		  return sqlAnnoMeta;
+	}
+
+
+	public void setSqlAnnoMeta(SQLAnnotationMeta sqlAnnoMeta) {
+		  this.sqlAnnoMeta = sqlAnnoMeta;
+	}
+
 }

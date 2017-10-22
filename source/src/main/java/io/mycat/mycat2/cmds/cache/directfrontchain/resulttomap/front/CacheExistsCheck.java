@@ -91,7 +91,7 @@ public class CacheExistsCheck implements ChainExecInf {
 							.put(SessionKeyEnum.SESSION_KEY_CACHE_DELETE_QUERY_FLAG_KEY.getKey(), true);
 
 					// 进行数据的读取流程
-					mycatSession.getCmdChain().setTarget(CacheMapFileCommand.INSTANCE);
+					mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
 					// 调用进行前段的数据请求操作
 					// mycatSession.curSQLCommand.procssSQL(mycatSession);
 
@@ -106,7 +106,7 @@ public class CacheExistsCheck implements ChainExecInf {
 					mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_GET_FLAG.getKey(), true);
 
 					// 进行数据的读取流程
-					mycatSession.getCmdChain().setTarget(CacheMapFileCommand.INSTANCE);
+					mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
 					// 调用后端的数据处理
 					// mycatSession.curSQLCommand.procssSQL(mycatSession);
 				}
@@ -147,7 +147,7 @@ public class CacheExistsCheck implements ChainExecInf {
 		// // 将当前的SQLcommand切换到缓存数据响应的写入
 		// mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
 		// 进行数据的读取流程
-		mycatSession.getCmdChain().setTarget(CacheMapFileCommand.INSTANCE);
+		mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
 
 		// 调用进行前段的数据请求操作
 		// mycatSession.curSQLCommand.procssSQL(mycatSession);
@@ -184,7 +184,7 @@ public class CacheExistsCheck implements ChainExecInf {
 		// 将当前的SQLcommand切换到缓存数据响应的写入
 		// mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
 		// 进行数据的读取流程
-		mycatSession.getCmdChain().setTarget(CacheMapFileCommand.INSTANCE);
+		mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
 		// 调用进行前段的数据请求操作
 		// mycatSession.curSQLCommand.procssSQL(mycatSession);
 		// 设置查询请求的SQL
