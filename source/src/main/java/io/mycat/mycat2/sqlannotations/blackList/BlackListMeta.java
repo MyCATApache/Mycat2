@@ -1,7 +1,7 @@
 package io.mycat.mycat2.sqlannotations.blackList;
 
-import io.mycat.mycat2.cmds.SQLAnnotationCmd;
 import io.mycat.mycat2.cmds.interceptor.BlockSqlCmd;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationCmd;
 import io.mycat.mycat2.sqlannotations.SQLAnnotationMeta;
 
 public class BlackListMeta implements SQLAnnotationMeta {

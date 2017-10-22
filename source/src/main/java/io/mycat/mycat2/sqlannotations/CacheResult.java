@@ -6,8 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.SQLAnnotationCmd;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationCmd;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
 /**

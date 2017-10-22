@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.SQLAnnotationCmd;
 import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;

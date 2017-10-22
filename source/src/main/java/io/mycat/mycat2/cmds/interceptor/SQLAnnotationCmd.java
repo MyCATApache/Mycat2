@@ -1,4 +1,4 @@
-package io.mycat.mycat2.cmds;
+package io.mycat.mycat2.cmds.interceptor;
 
 import java.io.IOException;
 

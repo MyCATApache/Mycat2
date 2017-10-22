@@ -1,6 +1,6 @@
 package io.mycat.mycat2.sqlannotations;
 
-import io.mycat.mycat2.cmds.SQLAnnotationCmd;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationCmd;
 
 /**
  * sql 注解元数据
