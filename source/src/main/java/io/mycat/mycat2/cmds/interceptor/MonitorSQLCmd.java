@@ -14,12 +14,14 @@ public class MonitorSQLCmd extends SQLAnnotationCmd {
 	
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
+
 		logger.debug("=====>   MonitorSQLCmd   processSQL");
 		return super.procssSQL(session);
 	}
 	
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
+
 		logger.debug("=====>   MonitorSQLCmd   onFrontWriteFinished");
 		return super.onFrontWriteFinished(session);
 	}
