@@ -40,7 +40,7 @@ public class CacheResult extends SQLAnnotation {
 		Map argMap = (Map)args;
 		CacheResultMeta meta = new CacheResultMeta();
 		meta.setAccessCount((int)argMap.get("access_count"));
-		meta.setAccessCount((int)argMap.get("cache_time"));
+		meta.setCacheTime((int)argMap.get("cache_time"));
 		setSqlAnnoMeta(meta);
 	}
 }
