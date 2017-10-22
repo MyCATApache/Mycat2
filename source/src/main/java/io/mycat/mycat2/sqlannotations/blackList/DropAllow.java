@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.interceptor.BlockSqlCmd;
+import io.mycat.mycat2.cmds.SQLAnnotationCmd;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
@@ -16,7 +16,6 @@ public class DropAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(DropAllow.class);
 			
-    Object args;
     public DropAllow() {
     	logger.debug("=>DropAllow 对象本身的构造 初始化");
     }
@@ -24,16 +23,22 @@ public class DropAllow extends SQLAnnotation{
     @Override
     public void init(Object args) {
         logger.debug("=>DropAllow 动态注解初始化。 "+args);
-        this.args=args;
+        BlackListMeta meta = new BlackListMeta();
+        meta.setAllow((boolean)args);
+        setSqlAnnoMeta(meta);
     }
 
     @Override
     public boolean apply(MycatSession context,SQLAnnotationChain chain) {
-    	if(!(boolean)args&&
+    	BlackListMeta meta = (BlackListMeta) getSqlAnnoMeta();
+    	if(!meta.isAllow()&&
     			(BufferSQLContext.DROP_SQL == context.sqlContext.getSQLType())){
     		
-    		chain.setErrMsg("drop  not allow ");
-    		chain.addCmdChain(this,BlockSqlCmd.INSTANCE);
+    		SQLAnnotationCmd blockSqlCmd =  getSqlAnnoMeta().getSQLAnnotationCmd();
+    		blockSqlCmd.setSqlAnnotationChain(chain);
+    		blockSqlCmd.setErrMsg("drop not allow ");
+    		chain.addCmdChain(this,blockSqlCmd);
+    		
     		return false;
     	}
         return true;

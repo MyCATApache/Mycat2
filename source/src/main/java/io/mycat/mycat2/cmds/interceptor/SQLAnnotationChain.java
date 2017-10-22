@@ -33,9 +33,7 @@ public class SQLAnnotationChain {
 	 * queue 列表当前索引值
 	 */
 	private int cmdIndex = 0;
-	
-	private String errMsg;
-	
+		
 	/**
 	 * 1. 设置原始命令
 	 * @param target
@@ -96,14 +94,6 @@ public class SQLAnnotationChain {
 		SQLAnnotationCmd annoCmd = new SQLAnnotationCmd();
 		annoCmd.setSqlAnnotationChain(this);
 		return annoCmd;
-	}
-
-	public String getErrMsg() {
-		return errMsg;
-	}
-
-	public void setErrMsg(String errMsg) {
-		this.errMsg = errMsg;
 	}
 	
 	public void addCmdChain(SQLAnnotation sqlanno,SQLAnnotationCmd command){

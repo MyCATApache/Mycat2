@@ -21,16 +21,12 @@ public class BlockSqlCmd extends SQLAnnotationCmd {
 
 	private static final Logger logger = LoggerFactory.getLogger(BlockSqlCmd.class);
 
-	public static final BlockSqlCmd INSTANCE = new BlockSqlCmd();
-
-	private BlockSqlCmd(){}
-
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
 			ErrorPacket errPkg = new ErrorPacket();
 			errPkg.packetId = 1;
 			errPkg.errno  = ErrorCode.ERR_WRONG_USED;
-			errPkg.message = getSQLAnnotationChain().getErrMsg();
+			errPkg.message = getErrMsg();
 			session.proxyBuffer.reset();
 			session.responseOKOrError(errPkg);
 			logger.error(errPkg.message);

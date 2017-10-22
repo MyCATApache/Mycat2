@@ -16,6 +16,8 @@ public class SQLAnnotationCmd implements MySQLCommand {
 		
 	private SQLAnnotationChain sqlAnnoChain;
 	
+	private String errMsg;
+	
 	public void setSqlAnnotationChain(SQLAnnotationChain sqlAnnoChain){
 		this.sqlAnnoChain = sqlAnnoChain;
 	}
@@ -57,6 +59,14 @@ public class SQLAnnotationCmd implements MySQLCommand {
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {		
 		return sqlAnnoChain.next().procssSQL(session);
+	}
+
+	public String getErrMsg() {
+		return errMsg;
+	}
+
+	public void setErrMsg(String errMsg) {
+		this.errMsg = errMsg;
 	}
 
 }
