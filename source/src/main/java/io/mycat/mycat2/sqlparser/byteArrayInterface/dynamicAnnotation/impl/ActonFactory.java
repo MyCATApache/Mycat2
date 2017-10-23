@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class ActonFactory {
     String config = null;
     HashMap<String, Class<SQLAnnotation>> resMap;
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ActonFactory.class);
 
     public static Map<String, Map<String, String>> pretreatmentArgs0(List<Map<String, List<Map<String, String>>>> need) throws Exception {
@@ -43,59 +43,70 @@ public class ActonFactory {
         } while (iterator.hasNext());
         return res;
     }
-    public static Map<String, Object> pretreatmentArgs(List<Map<String,Object>> need) throws Exception {
-        Iterator<Map<String,Object>> iterator = need.iterator();
+
+    public static Map<String, Object> pretreatmentArgs(List<Map<String, Object>> need) throws Exception {
+        Iterator<Map<String, Object>> iterator = need.iterator();
         final Map<String, Object> res = new HashMap<>();
         do {
             Map<String, Object> action = iterator.next();
             Map.Entry<String, Object> entry = action.entrySet().iterator().next();
             String actionName = entry.getKey();
-            res.put(actionName,entry.getValue());
+            res.put(actionName, entry.getValue());
         } while (iterator.hasNext());
         return res;
     }
 
-    public SQLAnnotationList get0(String name,List<Map<String, List<Map<String, String>>>> need) throws Exception {
+    public SQLAnnotationList get0(String name, List<Map<String, List<Map<String, String>>>> need) throws Exception {
         Iterator<Map.Entry<String, Map<String, String>>> iterator = pretreatmentArgs0(need).entrySet().iterator();
-        SQLAnnotationList annotationList=new SQLAnnotationList();
+        SQLAnnotationList annotationList = new SQLAnnotationList();
         do {
             Map.Entry<String, Map<String, String>> action = iterator.next();
-            Map<String, String> args=action.getValue();
+            Map<String, String> args = action.getValue();
             String actionName = action.getKey();
             logger.debug(action.toString());
             Class<SQLAnnotation> annotationClass = resMap.get(actionName);
             SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
             annotation.setActionName(actionName);
+            annotation.setActonFactory(this);
             annotation.init(args);
             annotationList.getSqlAnnotations().add(annotation);
         } while (iterator.hasNext());
         return annotationList;
     }
-    public SQLAnnotationList get(String name,List<Map<String, Object>> need) throws Exception {
+
+    public SQLAnnotationList get(String name, List<Map<String, Object>> need) throws Exception {
         Iterator<Map.Entry<String, Object>> iterator = pretreatmentArgs(need).entrySet().iterator();
-        SQLAnnotationList annotationList=new SQLAnnotationList();
+        SQLAnnotationList annotationList = new SQLAnnotationList();
         do {
             Map.Entry<String, Object> action = iterator.next();
-            Object args=action.getValue();
+            Object args = action.getValue();
             String actionName = action.getKey();
             logger.debug(action.toString());
             Class<SQLAnnotation> annotationClass = resMap.get(actionName);
             SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
             annotation.setActionName(actionName);
+            annotation.setActonFactory(this);
             annotation.init(args);
             annotationList.getSqlAnnotations().add(annotation);
         } while (iterator.hasNext());
         return annotationList;
     }
-    public SQLAnnotation getActionByActionName(String name, Object args,String matchName) throws Exception {
-            if (args==null)args=new HashMap<>();
-            String actionName = name;
-            logger.debug(actionName);
-            Class<SQLAnnotation> annotationClass = resMap.get(actionName);
+
+    public SQLAnnotation getActionByActionName(String name, Object args)  {
+        if (args == null) args = new HashMap<>();
+        String actionName = name;
+        logger.debug(actionName);
+        Class<SQLAnnotation> annotationClass = resMap.get(actionName);
+        try {
             SQLAnnotation annotation = annotationClass.getConstructor().newInstance();
             annotation.setActionName(actionName);
+            annotation.setActonFactory(this);
             annotation.init(args);
             return annotation;
+        }catch (Exception e){
+           e.printStackTrace();
+        }
+        return null;
     }
 
 

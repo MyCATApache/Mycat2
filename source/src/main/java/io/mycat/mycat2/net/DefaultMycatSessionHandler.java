@@ -52,14 +52,14 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		session.matchMySqlCommand();
 
 		// 如果当前包需要处理，则交给对应方法处理，否则直接透传
-		if(session.getCmdChain().getCurrentSQLCommand().procssSQL(session)){
-			session.getCmdChain().getCurrentSQLCommand().clearFrontResouces(session, session.isClosed());
+		if(session.curSQLCommand.procssSQL(session)){
+			session.curSQLCommand.clearFrontResouces(session, session.isClosed());
 		}
 	}
 
 	private void onBackendRead(MySQLSession session) throws IOException {
 		// 交给SQLComand去处理
-		MySQLCommand curCmd = session.getCmdChain().getCurrentSQLCommand();
+		MySQLCommand curCmd = session.getMycatSession().curSQLCommand;
 		try{
 			if (curCmd.onBackendResponse(session)) {
 				curCmd.clearBackendResouces(session,session.isClosed());
@@ -87,7 +87,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		} else {
 			MySQLSession mysqlSession = (MySQLSession) session;
 			try {
-				mysqlSession.getMycatSession().getCmdChain().getCurrentSQLCommand().onBackendClosed(mysqlSession, normal);
+				mysqlSession.getMycatSession().curSQLCommand.onBackendClosed(mysqlSession, normal);
 			} catch (IOException e) {
 				logger.warn("caught err ", e);
 			}
@@ -111,13 +111,13 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		// 交给SQLComand去处理
 		if (session instanceof MycatSession) {
 			MycatSession mycatSs = (MycatSession) session;
-			if (mycatSs.getCmdChain().getCurrentSQLCommand().onFrontWriteFinished(mycatSs)) {
-				mycatSs.getCmdChain().getCurrentSQLCommand().clearFrontResouces(mycatSs,false);
+			if (mycatSs.curSQLCommand.onFrontWriteFinished(mycatSs)) {
+				mycatSs.curSQLCommand.clearFrontResouces(mycatSs,false);
 			}
 		} else {
 			MycatSession mycatSs = ((MySQLSession) session).getMycatSession();
-			if (mycatSs.getCmdChain().getCurrentSQLCommand().onBackendWriteFinished((MySQLSession) session)) {
-				mycatSs.getCmdChain().getCurrentSQLCommand().clearBackendResouces((MySQLSession) session,false);
+			if (mycatSs.curSQLCommand.onBackendWriteFinished((MySQLSession) session)) {
+				mycatSs.curSQLCommand.clearBackendResouces((MySQLSession) session,false);
 			}
 		}
 	}

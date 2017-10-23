@@ -65,7 +65,7 @@ public class ResultOverFlag implements ChainExecInf {
 				// 清理结束标识
 				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CACHE_READY_OVER.getKey());
 				// 当完成之后，切换回透传流程处理
-				session.getCmdChain().setTarget(DirectPassthrouhCmd.INSTANCE);
+				session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
 				return true;
 			}
 

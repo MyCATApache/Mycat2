@@ -23,7 +23,7 @@ public class AnnotationsYamlParser {
 
     public static Map<DynamicAnnotationKey, DynamicAnnotation> parse(String annotationsPath,
                                                                      ActonFactory actonFactory,
-                                                                     Map<Integer, List<SQLAnnotationList>> schemaWithSQLtypeFunction) throws Exception {
+                                                                     Map<Integer, List<SQLAnnotationList>> schemaWithSQLtypeFunction, Map<String, SQLAnnotation> globalActionList) throws Exception {
         RootBean object = YamlUtil.load(annotationsPath, RootBean.class);
         HashMap<DynamicAnnotationKey, DynamicAnnotation> table = new HashMap<>();
 
@@ -35,7 +35,7 @@ public class AnnotationsYamlParser {
         } else {
             globalFun = Collections.EMPTY_LIST;
         }
-        Map<String, SQLAnnotation> globalActionList = scopeActionHelper("global", globalFun, actonFactory);
+        globalActionList.putAll(scopeActionHelper("global", globalFun, actonFactory));
         Iterator<Schema> iterator = annotations.stream().map((s) -> s.getSchema()).iterator();
         while (iterator.hasNext()) {
             Schema schema = iterator.next();
@@ -80,7 +80,6 @@ public class AnnotationsYamlParser {
                             //注意顺序
                             SQLAnnotationList list = actonFactory.get(match.getName(), match.getActions());//最后
                             list.getSqlAnnotations().addAll(0, schemaActionsList.values());//中间
-                            list.getSqlAnnotations().addAll(0, globalActionList.values());//最前
                             v.add(list);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -105,7 +104,7 @@ public class AnnotationsYamlParser {
                             runtime.getMatch(),
                             actonFactory.get(match.getName(), match.getActions())
                             , runtime, globalFun, schema.blacklist);
-                    annotation.reduce(schemaActionsList, globalActionList);
+                    annotation.reduce(schemaActionsList);
                     table.put(key, annotation);
                 }
             }
@@ -118,7 +117,7 @@ public class AnnotationsYamlParser {
         return list.stream().collect(Collectors.toMap((g) -> ConditionUtil.mappingKey(g), (g) -> {
             try {
                 String name = ConditionUtil.mappingKey(g);
-                return actonFactory.getActionByActionName(name, g.get(name), matchName);
+                return actonFactory.getActionByActionName(name, g.get(name));
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -7,7 +7,9 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.sqlannotations.CacheResult;
+import io.mycat.mycat2.sqlannotations.CacheResultMeta;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
@@ -39,7 +41,10 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	}
 	
 	private void initStaticAnnotation(){
-		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_SQL_CACHE,new CacheResult());
+		CacheResultMeta cacheResultMeta = new CacheResultMeta();
+		SQLAnnotation cacheResult = new CacheResult();
+		cacheResult.setSqlAnnoMeta(cacheResultMeta);
+		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_SQL_CACHE,cacheResult);
 	}
 	
 	protected abstract void initMyCmdHandler();
@@ -48,8 +53,6 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	
 	@Override
 	final public void matchMySqlCommand(MycatSession session) {
-		//初始化命令处理链
-		session.getCmdChain().clear();
 		
 		MySQLCommand  command = null;
 		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
@@ -71,10 +74,15 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 
 		/**
 		 * 设置原始处理命令
+		 * 1. 设置目标命令
+		 * 2. 处理动态注解
+		 * 3. 处理静态注解
+		 * 4. 构建命令或者注解链。    如果没有注解链，直接返回目标命令
 		 */
-		session.getCmdChain()
-			   .setTarget(command)
-			   .processAnnotation(session, staticAnnontationMap)
-			   .build();
+		SQLAnnotationChain chain = new SQLAnnotationChain();
+		session.curSQLCommand = chain.setTarget(command) 
+			 .processDynamicAnno(session)
+			 .processStaticAnno(session, staticAnnontationMap)
+			 .build();
 	}
 }
