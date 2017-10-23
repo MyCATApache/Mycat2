@@ -1,7 +1,7 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 
 /**
@@ -23,14 +23,8 @@ public class TestAction extends SQLAnnotation {
     }
 
     @Override
-    public Boolean apply(MycatSession context) {
+    public boolean apply(MycatSession context,SQLAnnotationChain chain) {
         System.out.println(String.format("%s:%s:%s 被调用", this.getClass().getName(), getActionName(), this.args));
-        return Boolean.TRUE;
-    }
-
-
-    @Override
-    public MySQLCommand getMySQLCommand() {
-        return null;
+        return true;
     }
 }

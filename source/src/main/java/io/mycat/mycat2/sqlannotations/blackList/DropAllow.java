@@ -3,9 +3,9 @@ package io.mycat.mycat2.sqlannotations.blackList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.BlockSqlCmd;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationCmd;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
@@ -15,10 +15,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLContext;
 public class DropAllow extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(DropAllow.class);
-	
-	private static final MySQLCommand command = BlockSqlCmd.INSTANCE;
-		
-    Object args;
+			
     public DropAllow() {
     	logger.debug("=>DropAllow 对象本身的构造 初始化");
     }
@@ -26,26 +23,24 @@ public class DropAllow extends SQLAnnotation{
     @Override
     public void init(Object args) {
         logger.debug("=>DropAllow 动态注解初始化。 "+args);
-        this.args=args;
+        BlackListMeta meta = new BlackListMeta();
+        meta.setAllow((boolean)args);
+        setSqlAnnoMeta(meta);
     }
 
     @Override
-    public Boolean apply(MycatSession context) {
-    	if(!(boolean)args&&
+    public boolean apply(MycatSession context,SQLAnnotationChain chain) {
+    	BlackListMeta meta = (BlackListMeta) getSqlAnnoMeta();
+    	if(!meta.isAllow()&&
     			(BufferSQLContext.DROP_SQL == context.sqlContext.getSQLType())){
     		
-    		context.getCmdChain().setErrMsg("drop  not allow ");
-    		context.getCmdChain().addCmdChain(this);
-    		return Boolean.FALSE;
+    		SQLAnnotationCmd blockSqlCmd =  getSqlAnnoMeta().getSQLAnnotationCmd();
+    		blockSqlCmd.setSqlAnnotationChain(chain);
+    		blockSqlCmd.setErrMsg("drop not allow ");
+    		chain.addCmdChain(this,blockSqlCmd);
+    		
+    		return false;
     	}
-        return Boolean.TRUE;
+        return true;
     }
-    
-
-
-	@Override
-	public MySQLCommand getMySQLCommand() {
-		return command;
-	}
-
 }

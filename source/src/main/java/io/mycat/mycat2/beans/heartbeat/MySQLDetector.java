@@ -90,7 +90,9 @@ public class MySQLDetector {
 				optSession.setCurNIOHandler(heartbeatTask);
 				heartbeatTask.doHeartbeat();
 			}else{
-				optSession.close(false, ((ErrorPacket)rv).message);
+				if(optSession!=null){
+					optSession.close(false, ((ErrorPacket)rv).message);
+				}
 				//连接创建 失败. 如果是主节点，需要重试.并在达到重试次数后,通知集群
 				if(heartbeat.incrErrorCount() < heartbeat.getSource().getDsMetaBean().getMaxRetryCount()){
 					heartbeat();

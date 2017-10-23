@@ -14,8 +14,9 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
  */
 public class MYCATSQLParser {
 	public static int pickMycat(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql){
+		int intTokenHash = hashArray.getIntHash(pos);
 		long longHash = hashArray.getHash(pos);
-        if (TokenHash.SWITCH == longHash) {
+        if (IntTokenHash.SWITCH == intTokenHash && TokenHash.SWITCH == longHash) {
             TokenizerUtil.debug(pos, context);
             return pickSwitch(++pos, arrayCount, context, hashArray, sql);
         } else if (TokenHash.SHOW == longHash) {
@@ -25,10 +26,11 @@ public class MYCATSQLParser {
         	throw new InvalidParameterException(" the current mycat command is not support!!");
         }
 	}
-	
+
 	private static int pickSwitch(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql){
+		int intTokenHash = hashArray.getIntHash(pos);
 		long longHash = hashArray.getHash(pos);
-		if (TokenHash.REPL == longHash){
+		if(IntTokenHash.REPL == intTokenHash && TokenHash.REPL == longHash){
 			context.setSQLType(BufferSQLContext.MYCAT_SWITCH_REPL);
 			TokenizerUtil.debug(pos, context);
 			return pickSwitchRepl(pos, arrayCount, context, hashArray, sql);

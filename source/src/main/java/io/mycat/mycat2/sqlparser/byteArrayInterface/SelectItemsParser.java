@@ -3,11 +3,8 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.FunctionHash;
 import io.mycat.mycat2.sqlparser.IntTokenHash;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.TokenHash;
-import sun.tools.jstat.Token;
-
-import static io.mycat.mycat2.sqlparser.IntTokenHash.SQL_DELIMETER;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 
 public class SelectItemsParser {
 
@@ -18,7 +15,9 @@ public class SelectItemsParser {
     private static boolean isListFinish(int intHash, long hash) {
         switch (intHash) {
             case IntTokenHash.SQL_DELIMETER:
-                return true;
+                if (hash == 0)
+                    return true;
+                break;
             case IntTokenHash.FROM:
                 if (hash == TokenHash.FROM)
                     return true;
