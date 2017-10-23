@@ -529,7 +529,11 @@ public class BufferSQLParser {
                     pos = pickAnnotation(++pos, arrayCount, context);
                     break;
                 case IntTokenHash.SQL_DELIMETER:
-                    context.setSQLFinished(++pos);
+                    if (hashArray.getHash(pos) == 0) {
+                        context.setSQLFinished(++pos);
+                    } else {
+                        pos++;
+                    }
                     break;
                 case IntTokenHash.FOR:
                     int next = pos + 1;

@@ -15,7 +15,9 @@ public class SelectItemsParser {
     private static boolean isListFinish(int intHash, long hash) {
         switch (intHash) {
             case IntTokenHash.SQL_DELIMETER:
-                return true;
+                if (hash == 0)
+                    return true;
+                break;
             case IntTokenHash.FROM:
                 if (hash == TokenHash.FROM)
                     return true;
