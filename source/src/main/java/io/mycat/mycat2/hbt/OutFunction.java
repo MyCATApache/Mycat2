@@ -3,7 +3,10 @@ package io.mycat.mycat2.hbt;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-
+/**
+ * group by的時候需要獲取哪些字段進行輸出到下一個管道
+ * 
+ * */
 public class OutFunction implements Function<List<List<byte[]>>, List<byte[]>>{
 	private int[] indexList;
 	

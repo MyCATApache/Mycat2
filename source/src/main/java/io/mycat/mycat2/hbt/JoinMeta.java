@@ -1,19 +1,29 @@
 package io.mycat.mycat2.hbt;
 
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import io.mycat.mysql.Fields;
 
+/**
+ * ltable表的  lJoinKey 與 b表 的 rJoinKey進行關聯
+ *
+ * */
 public class JoinMeta extends Meta {
 	public String lJoinKey;
 	public String rJoinKey;
 	public String lTable;
+
+	/*  rTable b表*/
 	public String rTable;
-    private int limit;
-	
+	/*  limit 多少個id發起一個後端請求*/
+    private int limit; 
+	/**
+	 * @param lJoinKey a表關聯所對應的字段
+	 * @param rJoinKey b表關聯所對應的字段
+	 * @param mem 
+	 * @param limit 多少個id發起一個後端請求
+	 * */
 	public JoinMeta(String lJoinKey, String rJoinKey, 
 			String mem, int limit) {
 		this.lJoinKey = parseField(lJoinKey);
@@ -42,7 +52,13 @@ public class JoinMeta extends Meta {
 		}
 		return joinKey.substring(pos + 1); 
 	}
-
+	
+	/**
+	 *  joinKeyList 一系列的ljoinKey的值
+	 *  
+	 *  @return 組成sql進行返回 
+	 *   	    e.g select key1,key2 from table where xx = 'xx' and rJoinKey in ('id1','id2') 
+	 * */
 	public String getSql(List<String> joinKeyList, int fieldType, SqlMeta sqlMeta) {
 		StringBuilder sb = new StringBuilder(sqlMeta.sql) ;
 	    String values ;

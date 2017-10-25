@@ -4,10 +4,17 @@ import java.util.List;
 
 import javax.swing.SortOrder;
 
-public class OrderKey implements Comparable<OrderKey>{
+/**
+ *  排序的字段的
+ * */
+public class OrderKey implements Comparable<OrderKey> {
+	/*排序的字段的值*/
 	List<String> fieldNameList = null;
-	private List<SortOrder> sortOrderList = null; 
+	/*某個字段是升序 還是降序*/
+	private List<SortOrder> sortOrderList = null;
+	/*index 表示的是在原始的位置的索引(標記) */
 	int index  = 0;
+	
 	public OrderKey(List<String> list, 
 			List<SortOrder> sortOrderList, 
 			int index) {
@@ -25,7 +32,7 @@ public class OrderKey implements Comparable<OrderKey>{
 		System.out.println("==========" + index);
 	}
 
-
+	
 	@Override
 	public int compareTo(OrderKey o) {
 		int result = 0;

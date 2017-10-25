@@ -5,11 +5,14 @@ import java.util.List;
 import javax.swing.SortOrder;
 
 public class OrderMeta {
-
+	/**
+	 * 記錄某個字段是升序還是降序
+	 * */
 	private List<SortOrder> sortOrderList; 
 	/**
 	 * 一系列的key order by key1 asc, key2 desc
-	 * */
+	 * 字段名稱
+	 */
 	private List<String> fieldNameList;
 
 	public OrderMeta(List<String> fieldNameList, List<SortOrder> sortOrderList) {

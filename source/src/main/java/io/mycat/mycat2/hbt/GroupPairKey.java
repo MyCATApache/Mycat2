@@ -3,6 +3,7 @@ package io.mycat.mycat2.hbt;
 import java.util.List;
 /**
  * group by的 key1,key2
+ * 使用hashMap的key 來進行分組
  * */
 public class GroupPairKey {
 	private int hash  = 0;

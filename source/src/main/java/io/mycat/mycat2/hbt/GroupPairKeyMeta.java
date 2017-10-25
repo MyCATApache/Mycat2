@@ -12,14 +12,15 @@ import io.mycat.util.StringUtil;
 
 
 public class GroupPairKeyMeta implements Function<List<byte[]>,GroupPairKey>{
+	/*所有需要group的字段的名稱,从零开始*/
+	private String[] fieldNameList;
 	/*所有需要group的字段的序号,从零开始*/
-	private String[] columnsList;
 	private int[] indexList;
-	public  GroupPairKeyMeta(String... columnsList) {
-		this.columnsList = columnsList;
+	public  GroupPairKeyMeta(String... fieldNameList) {
+		this.fieldNameList = fieldNameList;
 	}
-	public String[] getColumnsList() {
-		return columnsList;
+	public String[] getFieldNameList() {
+		return fieldNameList;
 	}
 	public int[] getIndexList() {
 		return indexList;
@@ -46,13 +47,13 @@ public class GroupPairKeyMeta implements Function<List<byte[]>,GroupPairKey>{
 		return pariKey;
 	}
 	/**
-	 * 通过column 的名称找到对应的列的名字 
+	 * 通过column 的名称找到对应的列的名字所對應的位置 
 	 * */
 	public  void init(ResultSetMeta header) {
-		indexList = new int[columnsList.length];
-		for(int index = 0 ; index < columnsList.length; index ++) {
-			System.out.println(columnsList[index]);
-			indexList[index] = header.getFieldPos(columnsList[index]);
+		indexList = new int[fieldNameList.length];
+		for(int index = 0 ; index < fieldNameList.length; index ++) {
+			System.out.println(fieldNameList[index]);
+			indexList[index] = header.getFieldPos(fieldNameList[index]);
 		}
 	}
 }
