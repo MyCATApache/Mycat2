@@ -12,5 +12,5 @@ public interface AbstractHBTPipeline {
 	public ResultSetMeta onHeader (ResultSetMeta header) ;
 	public List<byte[]> onRowData(List<byte[]> row) ;
 	public void onEnd() ;
-	default public void onError(String msg) { };
+	default public void onError(Throwable throwable) { };
 }

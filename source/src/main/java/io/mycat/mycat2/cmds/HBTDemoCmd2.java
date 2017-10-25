@@ -2,7 +2,12 @@ package io.mycat.mycat2.cmds;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+
+import javax.swing.SortOrder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +15,13 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.HBT.CountFunction;
 import io.mycat.mycat2.HBT.HBTEngine;
 import io.mycat.mycat2.HBT.JoinMeta;
+import io.mycat.mycat2.HBT.OrderMeta;
+import io.mycat.mycat2.HBT.OutFunction;
+import io.mycat.mycat2.HBT.PairKey;
+import io.mycat.mycat2.HBT.PairKeyFunction;
 import io.mycat.mycat2.HBT.ResultSetMeta;
 import io.mycat.mycat2.HBT.RowMeta;
 import io.mycat.mycat2.HBT.SqlMeta;
@@ -39,8 +49,9 @@ public class HBTDemoCmd2 implements MySQLCommand {
 		if(session.sqlContext.getSQLType() == NewSQLContext.SHOW_SQL) {
 			session.clearReadWriteOpts();
 			//session.curSQLCommand = this;
+//			String sql="select topic_id, question_type from e_topic ";
 					String sql="select topic_id, question_type from e_topic where topic_id in "
-							+ "('1DDA8E99C0A82CB200000543452550','1DDA8E9EC0A82CB200000549901449', '1DDA8EB3C0A82CB200000573846014');";
+							+ "('1DDA8F5EC0A82CB200000817177360','1DDA8E99C0A82CB200000543452550','1DDA8E9EC0A82CB200000549901449', '1DDA8EB3C0A82CB200000573846014');";
 					String sql2="select title,seq, topic_id, question_id from e_question ";
 					//FetchIntoRowStream fetchIntoRowStream = new FetchIntoRowStream(new SqlMeta(sql,"a"),new RowMeta("tableA"));
 					HBTEngine engine = new HBTEngine();
@@ -59,14 +70,24 @@ public class HBTDemoCmd2 implements MySQLCommand {
 							fieldTypeList3);
 					
 
+					
+					String[] groupSetMetaList = {"count","topic_id","e_question.seq","question_id"};
+					int[] groupSetMetaTypeList = {Fields.FIELD_TYPE_INT24,Fields.FIELD_TYPE_STRING,Fields.FIELD_TYPE_STRING,Fields.FIELD_TYPE_STRING,};
+					
+			    	ResultSetMeta groupResultSetMeta = new ResultSetMeta(Arrays.asList(groupSetMetaList),
+			    			groupSetMetaTypeList);
+			    	Function<List<byte[]>,PairKey> keyFunction = 
+			    			(Function<List<byte[]>,PairKey>)new PairKeyFunction(new int[]{0});
+			    	
 					engine.streamOf(session, new SqlMeta(sql,"et"), new RowMeta("e_topic", "et"))
 					.join(session, new SqlMeta(sql2,"eq"), new RowMeta("e_question", "eq"), 
-					        new JoinMeta("e_topic.topic_id", "e_question.topic_id",HBTEngine.MEM,1), 
-					        	resultSetMeta, (aRow, bRow , result)-> {
+					        new JoinMeta("e_topic.topic_id", "e_question.topic_id", HBTEngine.MEM, 999), 
+					        	resultSetMeta, (aRow, bRow, result) -> {
 						        	result.addAll(aRow);
 						        	result.add(bRow.get(0));
 						        	result.add(bRow.get(2));
-					        })
+					        }).group( keyFunction, groupResultSetMeta, Arrays.asList(new CountFunction(), new OutFunction(0,1,2)))
+					.order(new OrderMeta(Arrays.asList( "count" ,"topic_id"), Arrays.asList(SortOrder.ASCENDING, SortOrder.ASCENDING)))
 					.out(session);
 			return true;
 		}

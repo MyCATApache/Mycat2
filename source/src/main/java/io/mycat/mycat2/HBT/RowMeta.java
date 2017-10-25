@@ -15,6 +15,7 @@ public class RowMeta {
 		this.alias = alias;
 	}
 	public RowMeta() {
+		
 	}
 	/**/
 	public void init(int fieldCount) {

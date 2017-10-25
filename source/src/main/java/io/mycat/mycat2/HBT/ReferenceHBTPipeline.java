@@ -1,10 +1,11 @@
 package io.mycat.mycat2.HBT;
 
 import java.util.List;
+import java.util.function.Function;
 
 import io.mycat.mycat2.MycatSession;
 
-public   class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
+public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
 	
 	public static enum Status {
 		RUNNING, SUCCESS, ERROR
@@ -55,17 +56,20 @@ public   class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
 		}
 	}
 	@Override
-	public void onError(String msg) {
+	public void onError(Throwable throwable) {
 		this.status = Status.ERROR;
-		this.nextStream.onError(msg);
+		this.nextStream.onError(throwable);
 	}
 
     /* 
      * 
      */
     @Override
-    public  OpPipeline group() {
-        return null;
+    public  OpPipeline group(
+    		Function<List<byte[]>,PairKey> keyFunction,  ResultSetMeta resultSetMeta,
+    		List<Function<List<List<byte[]>>,List<byte[]>>> opFunction) {
+    	 return new GroupByPipeline(this, keyFunction, resultSetMeta
+    			 ,opFunction);
     }
 
     /* 
@@ -101,6 +105,12 @@ public   class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
           }
           header.begin(0);
     }
+
+	@Override
+	public OpPipeline order(OrderMeta orderMeta) {
+		
+		 return new OrderPipeline(this, orderMeta);
+	}
 
 
 }

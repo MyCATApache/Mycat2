@@ -12,7 +12,7 @@ import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.tasks.RowStream;
 import io.mycat.mysql.packet.ErrorPacket;
 
-public class JoinPipeline extends ReferenceHBTPipeline {
+public class JoinPipeline2 extends ReferenceHBTPipeline {
 	
 
 	private MycatSession mycatSession;
@@ -28,7 +28,7 @@ public class JoinPipeline extends ReferenceHBTPipeline {
     private int nextFetchFinishCount = 0;
 
     private Map<String,List<List<byte[]>>> batchRow ;
-    public JoinPipeline(ReferenceHBTPipeline upstream, MycatSession mycatSession, SqlMeta sqlMeta,
+    public JoinPipeline2(ReferenceHBTPipeline upstream, MycatSession mycatSession, SqlMeta sqlMeta,
 	        RowMeta rowMeta, JoinMeta joinMeta, ResultSetMeta resultSetMeta, MatchCallback callback) {
 		super(upstream);
 		this.mycatSession = mycatSession;
@@ -77,8 +77,8 @@ public class JoinPipeline extends ReferenceHBTPipeline {
 
         if(joinKeyList.size() == joinMeta.getLimit()) {
             fetchRequest();
-            joinKeyList.clear();
         }
+        joinKeyList.clear();
     }
 	
 	
@@ -92,7 +92,7 @@ public class JoinPipeline extends ReferenceHBTPipeline {
         final Map<String, List<List<byte[]>>> tmpBatchRow = batchRow;
         batchRow = new HashMap<>();
         
-        Function<ResultSetMeta, ResultSetMeta> onHeader = (ResultSetMeta) ->{
+        Function<ResultSetMeta, ResultSetMeta> onHeader = (ResultSetMeta) -> {
             this.bResultSetMeta = ResultSetMeta;
             return null;
         } ;
@@ -103,7 +103,7 @@ public class JoinPipeline extends ReferenceHBTPipeline {
             List<List<byte[]>> rows = tmpBatchRow.get(value);
             for(List<byte[]> aRow : rows) {
                 List<byte[]> out = new ArrayList<>();
-                this.matchCallback.call(aRow, bRow, out );
+                this.matchCallback.call(aRow, bRow, out);
                 super.onRowData(out);
             }
             return null;
@@ -152,7 +152,7 @@ public class JoinPipeline extends ReferenceHBTPipeline {
     }
     
     private void onFinish() {
-        if(nextFetchCount == nextFetchFinishCount ) {
+        if(nextFetchCount == nextFetchFinishCount && this.status == Status.SUCCESS) {
         	super.onEnd();
            // this.nextStream.onEnd();
         }
@@ -168,5 +168,8 @@ public class JoinPipeline extends ReferenceHBTPipeline {
             onFinish();
         }
 	}
-
+  
 }
+
+
+
