@@ -1,4 +1,4 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt.pipeline;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -6,6 +6,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import javax.swing.SortOrder;
+
+import io.mycat.mycat2.hbt.OrderKey;
+import io.mycat.mycat2.hbt.OrderMeta;
+import io.mycat.mycat2.hbt.ResultSetMeta;
+import io.mycat.util.StringUtil;
 
 public class OrderPipeline extends ReferenceHBTPipeline {
 
@@ -41,7 +46,7 @@ public class OrderPipeline extends ReferenceHBTPipeline {
 			List<String> list = new ArrayList<>();
 			List<byte[]> row = rowList.get(i);
 			for(int pos : posList) {
-				String val = new String(row.get(pos));
+				String val = StringUtil.parseString(row.get(pos));
 				list.add(val);
 			}
 			orderKeyList.add(new OrderKey(list, sortOrderList, i));

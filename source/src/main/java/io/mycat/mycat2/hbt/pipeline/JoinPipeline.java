@@ -1,4 +1,4 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt.pipeline;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -9,9 +9,18 @@ import java.util.Map;
 import java.util.function.Function;
 
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.hbt.JoinMeta;
+import io.mycat.mycat2.hbt.MatchCallback;
+import io.mycat.mycat2.hbt.MyFunction;
+import io.mycat.mycat2.hbt.ResultSetMeta;
+import io.mycat.mycat2.hbt.RowMeta;
+import io.mycat.mycat2.hbt.SqlMeta;
 import io.mycat.mycat2.tasks.RowStream;
 import io.mycat.mysql.packet.ErrorPacket;
 
+/**
+ * 
+ * */
 public class JoinPipeline extends ReferenceHBTPipeline {
 	
 
@@ -58,7 +67,13 @@ public class JoinPipeline extends ReferenceHBTPipeline {
 		addRow(row);
 		
 		row.stream().forEach(value -> {
-	        System.out.print(String.format("             %s", new String(value)));
+			if(null != value) {
+				System.out.print(String.format("             %s", new String(value)));
+			} else {
+				System.out.print(String.format("             null"));
+			}
+				
+	        
 	    });
 	    System.out.println("        ");
 		return null;
@@ -84,7 +99,8 @@ public class JoinPipeline extends ReferenceHBTPipeline {
 	
 	/**
     *@desc
-    *@auth zhangwy @date 2017年10月17日 下午11:13:24
+    *@auth zhangwy 
+    *@date 2017年10月17日 下午11:13:24
     **/
     private void fetchRequest() {
         System.out.println("开始fetchRequest执行 请求");

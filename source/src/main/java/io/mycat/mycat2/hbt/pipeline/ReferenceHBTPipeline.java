@@ -1,9 +1,17 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt.pipeline;
 
 import java.util.List;
 import java.util.function.Function;
 
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.hbt.JoinMeta;
+import io.mycat.mycat2.hbt.MatchCallback;
+import io.mycat.mycat2.hbt.OrderMeta;
+import io.mycat.mycat2.hbt.GroupPairKey;
+import io.mycat.mycat2.hbt.GroupPairKeyMeta;
+import io.mycat.mycat2.hbt.ResultSetMeta;
+import io.mycat.mycat2.hbt.RowMeta;
+import io.mycat.mycat2.hbt.SqlMeta;
 
 public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
 	
@@ -36,7 +44,12 @@ public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
 	@Override
 	public ResultSetMeta onHeader(ResultSetMeta header) {
 		if(canHandle()) {
-			return this.nextStream.onHeader(header);
+			try{
+				return this.nextStream.onHeader(header);
+			} catch (Exception e) {
+				onError(e);
+			}
+
 		}
 		return null;
 	}
@@ -44,7 +57,11 @@ public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
 	@Override
 	public List<byte[]> onRowData(List<byte[]> row) {
 		if(canHandle()) {
-			return this.nextStream.onRowData(row);
+			try{
+				return this.nextStream.onRowData(row);
+			} catch (Exception e) {
+				onError(e);
+			}
 		}
 		return null;
 	}
@@ -52,7 +69,11 @@ public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
 	@Override
 	public void onEnd() {
 		if(canHandle()) {
-			this.nextStream.onEnd();
+			try{
+				this.nextStream.onEnd();
+			} catch (Exception e) {
+				onError(e);
+			}
 		}
 	}
 	@Override
@@ -66,7 +87,7 @@ public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
      */
     @Override
     public  OpPipeline group(
-    		Function<List<byte[]>,PairKey> keyFunction,  ResultSetMeta resultSetMeta,
+    		GroupPairKeyMeta keyFunction,  ResultSetMeta resultSetMeta,
     		List<Function<List<List<byte[]>>,List<byte[]>>> opFunction) {
     	 return new GroupByPipeline(this, keyFunction, resultSetMeta
     			 ,opFunction);

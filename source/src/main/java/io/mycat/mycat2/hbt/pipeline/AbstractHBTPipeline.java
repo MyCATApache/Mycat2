@@ -1,6 +1,8 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt.pipeline;
 
 import java.util.List;
+
+import io.mycat.mycat2.hbt.ResultSetMeta;
 
 /*sql返回的处理  
  * begin 初始化

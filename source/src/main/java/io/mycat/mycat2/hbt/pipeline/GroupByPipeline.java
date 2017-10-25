@@ -1,4 +1,4 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt.pipeline;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,15 +6,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import io.mycat.mycat2.hbt.GroupPairKey;
+import io.mycat.mycat2.hbt.GroupPairKeyMeta;
+import io.mycat.mycat2.hbt.ResultSetMeta;
 
 public class GroupByPipeline extends ReferenceHBTPipeline {
 	
 	List<Function< List<List<byte[]>>, List<byte[]> >> opFunction = new ArrayList<>();
-	Function<List<byte[]>,PairKey> keyFunction;
-	Map<PairKey, List<List<byte[]>>> groupMap;
+	GroupPairKeyMeta keyFunction;
+	Map<GroupPairKey, List<List<byte[]>>> groupMap;
 	private ResultSetMeta resultSetMeta;
 	public GroupByPipeline(ReferenceHBTPipeline upStream, 
-			Function<List<byte[]>,PairKey> keyFunction , ResultSetMeta resultSetMeta , List<Function<List<List<byte[]>>,List<byte[]>>> opFunction) {
+			GroupPairKeyMeta keyFunction , ResultSetMeta resultSetMeta , List<Function<List<List<byte[]>>,List<byte[]>>> opFunction) {
 		super(upStream);
 		this.opFunction = opFunction;
 		this.keyFunction = keyFunction;
@@ -25,12 +30,15 @@ public class GroupByPipeline extends ReferenceHBTPipeline {
 	@Override
 	public ResultSetMeta onHeader(ResultSetMeta header) {
 		
+		keyFunction.init(header);
+		
+		
 		return super.onHeader(resultSetMeta);
 	}
 	@Override
 	public List<byte[]> onRowData(List<byte[]> row) {
 		/* 获取key */
-		PairKey pairKey = keyFunction.apply(row);
+		GroupPairKey pairKey = keyFunction.apply(row);
 		/*整理list*/
 		List<List<byte[]>> rowList = groupMap.get(pairKey);
 		if(rowList == null) {

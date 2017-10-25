@@ -1,4 +1,4 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -58,7 +58,9 @@ public class ResultSetMeta extends Meta {
 	}
 
 	public Integer getFieldPos(String key) {
-		return fieldPosMap.get(key);
+		Integer pos = fieldPosMap.get(key);
+		if(null == pos) throw new IllegalArgumentException("can't find column " + key);
+		return pos;
 	}
 
 	public int getFiledType(int pos) {

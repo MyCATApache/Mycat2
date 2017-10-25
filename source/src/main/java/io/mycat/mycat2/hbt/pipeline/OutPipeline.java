@@ -1,4 +1,4 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt.pipeline;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -6,7 +6,11 @@ import java.util.List;
 
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.hbt.ResultSetMeta;
+import io.mycat.mycat2.hbt.TableMeta;
+import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
 
 public class OutPipeline extends ReferenceHBTPipeline {
 	
@@ -29,7 +33,11 @@ public class OutPipeline extends ReferenceHBTPipeline {
 	@Override
 	public  List<byte[]> onRowData(List<byte[]> row) {
 	    row.stream().forEach(value -> {
-	        System.out.print(String.format("             %s", new String(value)));
+	    	if(null != value) {
+				System.out.print(String.format("             %s", new String(value)));
+			} else {
+				System.out.print(String.format("             null"));
+			}
 	    });
 	    System.out.println("        ");
 	    tableMeta.addFieldValues(row);
@@ -57,5 +65,15 @@ public class OutPipeline extends ReferenceHBTPipeline {
 		
 		System.out.println("outPipeline onEnd");
 	}
-
+	
+	@Override
+	public void onError(Throwable throwable) {
+		String msg = throwable.getMessage();
+		try {
+			mycatSession.takeBufferOwnerOnly();
+			mycatSession.sendErrorMsg(ErrorCode.ERR_FOUND_EXCEPION, msg);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

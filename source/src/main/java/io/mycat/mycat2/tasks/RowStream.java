@@ -9,11 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.HBT.MyFunction;
-import io.mycat.mycat2.HBT.ResultSetMeta;
-import io.mycat.mycat2.HBT.SqlMeta;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.hbt.MyFunction;
+import io.mycat.mycat2.hbt.ResultSetMeta;
+import io.mycat.mycat2.hbt.SqlMeta;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;

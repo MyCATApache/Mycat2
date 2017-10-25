@@ -1,4 +1,4 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt;
 
 import java.util.List;
 
@@ -10,10 +10,10 @@ public class OrderMeta {
 	/**
 	 * 一系列的key order by key1 asc, key2 desc
 	 * */
-	private List<String> columnsList;
+	private List<String> fieldNameList;
 
-	public OrderMeta(List<String> columnsList, List<SortOrder> sortOrderList) {
-		this.columnsList = columnsList;
+	public OrderMeta(List<String> fieldNameList, List<SortOrder> sortOrderList) {
+		this.fieldNameList = fieldNameList;
 		this.sortOrderList = sortOrderList;
 	}
 	
@@ -26,11 +26,11 @@ public class OrderMeta {
 	}
 
 	public List<String> getColumnsList() {
-		return columnsList;
+		return fieldNameList;
 	}
 
 	public void setColumnsList(List<String> columnsList) {
-		this.columnsList = columnsList;
+		this.fieldNameList = columnsList;
 	}
 	
 }

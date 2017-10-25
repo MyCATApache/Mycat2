@@ -1,10 +1,11 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-
+/**
+ *  group 的时候进行count 某个字段
+ * */
 public class CountFunction  implements Function<List<List<byte[]>>, List<byte[]>>{
 	
 	public List<byte[]> apply(List<List<byte[]>> list) {

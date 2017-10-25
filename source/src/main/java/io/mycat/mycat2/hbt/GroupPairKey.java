@@ -1,24 +1,30 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt;
 
 import java.util.List;
 /**
  * group by的 key1,key2
  * */
-public class PairKey {
+public class GroupPairKey {
 	private int hash  = 0;
 	private List<String> keyList;
-	public PairKey(List<String> keyList) {
+	public GroupPairKey(List<String> keyList) {
 		this.keyList = keyList;
 	}
 	
 	@Override
 	public boolean equals(Object obj) {
 		
-		if(obj instanceof PairKey) {
-			PairKey another = (PairKey)obj;
+		if(obj instanceof GroupPairKey) {
+			GroupPairKey another = (GroupPairKey)obj;
 			if(another.keyList.size() == keyList.size()) {
 				for(int i = 0 ; i < keyList.size(); i++) {
-					if(!keyList.get(i).equals(another.keyList.get(i))) {
+					String val1 = keyList.get(i);
+					String val2 = another.keyList.get(i);
+					
+					if(val1 == null && val2 == null) {
+						continue;
+					}
+					if(val1 != null && !val1.equals(val2)) {
 						return false;
 					}
 				}

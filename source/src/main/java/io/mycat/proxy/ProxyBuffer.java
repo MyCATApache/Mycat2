@@ -446,14 +446,21 @@ public class ProxyBuffer {
 			return getInt(index + 1, 3);
 		} else if (len == 0xfe) {
 			return getInt(index + 1, 8);
+		} else if (len == 0xfb) {
+			return len;
 		} else {
 			return len;
-		}
+		} 
 	}
 
 	public byte[] readLenencBytes() {
 		int len = (int) getLenencInt(readIndex);
-		byte[] bytes = getBytes(readIndex + getLenencLength(len), len);
+		byte[] bytes = null;
+		if( (len & 0xff) == 0xfb) {
+			bytes = null;
+		} else {
+			bytes = getBytes(readIndex + getLenencLength(len), len);
+		}
 		readIndex += getLenencLength(len) + len;
 		return bytes;
 	}

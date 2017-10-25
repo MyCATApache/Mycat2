@@ -1,24 +1,24 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt;
 
 import java.util.List;
 
 import javax.swing.SortOrder;
 
 public class OrderKey implements Comparable<OrderKey>{
-	List<String> valueList = null;
+	List<String> fieldNameList = null;
 	private List<SortOrder> sortOrderList = null; 
 	int index  = 0;
 	public OrderKey(List<String> list, 
 			List<SortOrder> sortOrderList, 
 			int index) {
-		this.valueList = list;
+		this.fieldNameList = list;
 		this.sortOrderList = sortOrderList;
 		this.index = index;
 	}
 	
 
 	public void print() {
-		valueList.stream().forEach(val -> {
+		fieldNameList.stream().forEach(val -> {
 			System.out.print(val + "  ");
 		});
 
@@ -29,9 +29,9 @@ public class OrderKey implements Comparable<OrderKey>{
 	@Override
 	public int compareTo(OrderKey o) {
 		int result = 0;
-		for(int i = 0 ; i < valueList.size(); i++) {
-			String val1 = valueList.get(i);
-			String val2 = o.valueList.get(i);
+		for(int i = 0 ; i < fieldNameList.size(); i++) {
+			String val1 = fieldNameList.get(i);
+			String val2 = o.fieldNameList.get(i);
 			if(null != val1 && val2 != null) {
 				result = val1.compareTo(val2);
 			} else if(val1 == null && val2 != null) {

@@ -1,4 +1,4 @@
-package io.mycat.mycat2.HBT;
+package io.mycat.mycat2.hbt.pipeline;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.function.Function;
 
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.hbt.MyFunction;
+import io.mycat.mycat2.hbt.ResultSetMeta;
+import io.mycat.mycat2.hbt.RowMeta;
+import io.mycat.mycat2.hbt.SqlMeta;
 import io.mycat.mycat2.tasks.RowStream;
 import io.mycat.mysql.packet.ErrorPacket;
 
