@@ -97,6 +97,11 @@ public enum SessionKeyEnum {
 	 * 存在mycat的session中的责任链的名称 
 	 */
 	SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ("session_key_cache_mycat_chain_seq"),
+	
+	/**
+	 * 前端输出的对象table
+	 */
+	SESSION_KEY_HBT_TABLE_META("session_key_hbt_table_meta"),
 
 	;
 

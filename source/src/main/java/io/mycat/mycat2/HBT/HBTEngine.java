@@ -7,7 +7,6 @@ public class HBTEngine {
     public static final String MEM = null;
     
     public OpPipeline streamOf(MycatSession mycatSession, SqlMeta sqlMeta, RowMeta rowMeta) {
-        
         return new HeaderHBTPipeline(mycatSession, sqlMeta, rowMeta);
     }
     

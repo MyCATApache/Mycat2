@@ -2,7 +2,6 @@ package io.mycat.mycat2.cmds;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
@@ -25,8 +24,11 @@ import io.mycat.mycat2.HBT.PairKeyFunction;
 import io.mycat.mycat2.HBT.ResultSetMeta;
 import io.mycat.mycat2.HBT.RowMeta;
 import io.mycat.mycat2.HBT.SqlMeta;
+import io.mycat.mycat2.HBT.TableMeta;
+import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mysql.Fields;
+import io.mycat.proxy.ProxyBuffer;
 
 /**
  * 直接透传命令报文
@@ -49,9 +51,9 @@ public class HBTDemoCmd2 implements MySQLCommand {
 		if(session.sqlContext.getSQLType() == NewSQLContext.SHOW_SQL) {
 			session.clearReadWriteOpts();
 			//session.curSQLCommand = this;
-//			String sql="select topic_id, question_type from e_topic ";
-					String sql="select topic_id, question_type from e_topic where topic_id in "
-							+ "('1DDA8F5EC0A82CB200000817177360','1DDA8E99C0A82CB200000543452550','1DDA8E9EC0A82CB200000549901449', '1DDA8EB3C0A82CB200000573846014');";
+			String sql="select topic_id, question_type from e_topic ";
+//					String sql="select topic_id, question_type from e_topic where topic_id in "
+//							+ "('1DDA8F5EC0A82CB200000817177360','1DDA8E99C0A82CB200000543452550','1DDA8E9EC0A82CB200000549901449', '1DDA8EB3C0A82CB200000573846014');";
 					String sql2="select title,seq, topic_id, question_id from e_question ";
 					//FetchIntoRowStream fetchIntoRowStream = new FetchIntoRowStream(new SqlMeta(sql,"a"),new RowMeta("tableA"));
 					HBTEngine engine = new HBTEngine();
@@ -81,13 +83,14 @@ public class HBTDemoCmd2 implements MySQLCommand {
 			    	
 					engine.streamOf(session, new SqlMeta(sql,"et"), new RowMeta("e_topic", "et"))
 					.join(session, new SqlMeta(sql2,"eq"), new RowMeta("e_question", "eq"), 
-					        new JoinMeta("e_topic.topic_id", "e_question.topic_id", HBTEngine.MEM, 999), 
+					        new JoinMeta("e_topic.topic_id", "e_question.topic_id", HBTEngine.MEM, 100), 
 					        	resultSetMeta, (aRow, bRow, result) -> {
 						        	result.addAll(aRow);
 						        	result.add(bRow.get(0));
 						        	result.add(bRow.get(2));
 					        }).group( keyFunction, groupResultSetMeta, Arrays.asList(new CountFunction(), new OutFunction(0,1,2)))
-					.order(new OrderMeta(Arrays.asList( "count" ,"topic_id"), Arrays.asList(SortOrder.ASCENDING, SortOrder.ASCENDING)))
+					.order(new OrderMeta(Arrays.asList( "count" ,"topic_id"), Arrays.asList(SortOrder.DESCENDING, SortOrder.ASCENDING)))
+					.skip(100)
 					.out(session);
 			return true;
 		}
@@ -104,9 +107,28 @@ public class HBTDemoCmd2 implements MySQLCommand {
 
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-		session.proxyBuffer.flip();
-		session.takeOwner(SelectionKey.OP_READ);
-		return true;
+		TableMeta tableMeta = (TableMeta)session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_HBT_TABLE_META.getKey());
+		
+		if(null != tableMeta && !tableMeta.isWriteFinish()) {
+			ProxyBuffer buffer = session.proxyBuffer;
+			buffer.reset();
+			tableMeta.writeRowData(buffer);
+			buffer.flip();
+			buffer.readIndex = buffer.writeIndex; 
+			session.takeOwner(SelectionKey.OP_WRITE);
+			try {
+				session.writeToChannel();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} 
+			return false;
+		} else {
+			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_HBT_TABLE_META.getKey());
+			session.proxyBuffer.flip();
+			session.takeOwner(SelectionKey.OP_READ);
+			return true;
+		}
+		
 	}
 
 	@Override

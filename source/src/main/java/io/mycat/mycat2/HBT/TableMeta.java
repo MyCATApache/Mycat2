@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.mycat.mysql.packet.EOFPacket;
+import io.mycat.mysql.packet.RowDataPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ParseUtil;
 
@@ -20,6 +21,8 @@ public class TableMeta {
 	public List<List<byte[]>> fieldValues; 
 	public int fieldCount;
 	public ResultSetMeta headerResultSetMeta;
+	private byte packetId;
+	private int writeRowDataIndex;
 	public TableMeta(String table, String alias) {
 		this.table = table;
 		this.alias = alias;
@@ -49,14 +52,51 @@ public class TableMeta {
 		return headerResultSetMeta;
 	}
 
-	public void write(ProxyBuffer buffer) {
-		byte packetId = 1;
+	public void writeBegin(ProxyBuffer buffer) {
+		this.packetId = 1;
 		packetId = writeResultSetHeaderPacket(packetId, buffer);
 		packetId = headerResultSetMeta.write(packetId, buffer);
 		packetId = writeEofPacket(packetId, buffer);
-		packetId = writeRowData(packetId, buffer);
-		packetId = writeEofPacket(packetId, buffer);
+		this.writeRowDataIndex = 0;
 	}
+	
+	public void writeRowData(ProxyBuffer buffer) {
+		
+		for(int index = this.writeRowDataIndex; index < fieldValues.size(); index++) {
+			
+			RowDataPacket dataPacket = new RowDataPacket(fieldCount);
+			List<byte[]> fieldValue = fieldValues.get(index);
+			for(byte[] value : fieldValue) {
+				dataPacket.add(value);
+			}
+			
+			if(dataPacket.calcPacketSize() + ParseUtil.msyql_packetHeaderSize <= buffer.getBuffer().remaining()) {
+				dataPacket.packetId = packetId ++;
+				dataPacket.write(buffer);
+				this.writeRowDataIndex ++;
+			} else {
+				break;
+			}
+		}
+		//是否可以写入Eof包
+		if(5 <= buffer.getBuffer().remaining() && this.writeRowDataIndex == fieldValues.size())  {
+			packetId = writeEofPacket(packetId, buffer);
+			this.writeRowDataIndex ++;
+		}
+	}
+	public boolean isWriteFinish() {
+		return this.writeRowDataIndex > fieldValues.size();
+	}
+	
+	
+//	public void write(ProxyBuffer buffer) {
+//		byte packetId = 1;
+//		packetId = writeResultSetHeaderPacket(packetId, buffer);
+//		packetId = headerResultSetMeta.write(packetId, buffer);
+//		packetId = writeEofPacket(packetId, buffer);
+//		packetId = writeRowData(packetId, buffer);
+//		packetId = writeEofPacket(packetId, buffer);
+//	}
 //	
 	private byte writeEofPacket(byte packetId, ProxyBuffer buffer) {
 		EOFPacket eofPacket = new EOFPacket();
@@ -76,15 +116,23 @@ public class TableMeta {
 //	
 	private byte writeRowData(byte packetId, ProxyBuffer buffer) {
 		for(List<byte[]> fieldValue : fieldValues) {
-//			buffer.writeFixInt(3, field.length);
-			int tmpWriteIndex = buffer.writeIndex;
-			buffer.writeIndex +=3;
-			buffer.writeByte(packetId ++);
+//			int tmpWriteIndex = buffer.writeIndex;
+//			buffer.writeIndex +=3;
+//			buffer.writeByte(packetId ++);
+//			for(byte[] value : fieldValue) {
+//				buffer.writeLenencBytes(value);
+//			}
+//			//写入长度
+//			buffer.putFixInt(tmpWriteIndex, 3, buffer.writeIndex - tmpWriteIndex - ParseUtil.msyql_packetHeaderSize);
+//			
+			RowDataPacket dataPacket = new RowDataPacket(fieldCount);
 			for(byte[] value : fieldValue) {
-				buffer.writeLenencBytes(value);
+				dataPacket.add(value);
 			}
-			//写入长度
-			buffer.putFixInt(tmpWriteIndex, 3, buffer.writeIndex - tmpWriteIndex - ParseUtil.msyql_packetHeaderSize);
+			dataPacket.packetId = packetId ++;
+			if(dataPacket.calcPacketSize() + ParseUtil.msyql_packetHeaderSize > buffer.getBuffer().remaining()) {
+				dataPacket.write(buffer);
+			}
 		}
 		return packetId;
 	}

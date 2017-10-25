@@ -15,9 +15,9 @@ public interface OpPipeline {
     		List<Function<List<List<byte[]>>,List<byte[]>>> opFunction
     		) ;
     
-    public OpPipeline limit() ;
+    public OpPipeline limit(int limit) ;
+    public OpPipeline skip(int n) ;
     public OpPipeline filter() ;
-    
     public OpPipeline join(MycatSession session, SqlMeta sqlMeta,
             RowMeta rowMeta, JoinMeta joinMeta, ResultSetMeta resultSetMeta, MatchCallback callback);
     

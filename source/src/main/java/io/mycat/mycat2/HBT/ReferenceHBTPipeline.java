@@ -76,10 +76,13 @@ public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
      * 
      */
     @Override
-    public  OpPipeline limit() {
-        return null;
+    public  OpPipeline limit(int limit) {
+        return new LimitPipeline(this, limit);
     };
-    
+	@Override
+	public OpPipeline skip(int n) {
+        return new SkipPipeline(this, n);
+	}
     public OpPipeline join(MycatSession session, SqlMeta sqlMeta,
             RowMeta rowMeta, JoinMeta joinMeta, ResultSetMeta resultSetMeta, MatchCallback callback)  {
         return new JoinPipeline(this,  session,  sqlMeta,
@@ -111,6 +114,8 @@ public class ReferenceHBTPipeline implements AbstractHBTPipeline,OpPipeline{
 		
 		 return new OrderPipeline(this, orderMeta);
 	}
+
+
 
 
 }

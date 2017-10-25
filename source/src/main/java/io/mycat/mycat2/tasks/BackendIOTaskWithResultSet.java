@@ -68,6 +68,8 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
                 break;
             }
         }
+        //设置读取过的指针
+        session.proxyBuffer.readMark = session.proxyBuffer.readIndex;
     }
     
     abstract void onRsColCount(T session);

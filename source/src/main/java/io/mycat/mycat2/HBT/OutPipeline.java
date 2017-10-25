@@ -5,6 +5,7 @@ import java.nio.channels.SelectionKey;
 import java.util.List;
 
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.ProxyBuffer;
 
 public class OutPipeline extends ReferenceHBTPipeline {
@@ -40,15 +41,20 @@ public class OutPipeline extends ReferenceHBTPipeline {
 		
 		ProxyBuffer buffer = mycatSession.proxyBuffer;
 		buffer.reset();
-		tableMeta.write(buffer);
+		tableMeta.writeBegin(buffer);
+		tableMeta.writeRowData(buffer);
 		buffer.flip();
 		buffer.readIndex = buffer.writeIndex; 
 		mycatSession.takeOwner(SelectionKey.OP_WRITE);
+		if(!tableMeta.isWriteFinish()) {
+			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_HBT_TABLE_META.getKey(), tableMeta);
+		}
 		try {
 			mycatSession.writeToChannel();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
+		
 		System.out.println("outPipeline onEnd");
 	}
 
