@@ -58,7 +58,6 @@ public class MySQLSession extends AbstractMySQLSession{
 			this.mycatSession.clearBeckend(this);
 		}
 		this.mycatSession = null;
-		this.setCmdChain(null);
 		this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
 	}
 	/**

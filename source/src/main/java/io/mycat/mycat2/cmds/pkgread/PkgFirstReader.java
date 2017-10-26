@@ -76,7 +76,7 @@ public class PkgFirstReader implements PkgProcess {
 
 			int pkgType = curMSQLPackgInf.pkgType;
 			
-			if(extendCmdPkg.contains(session.getMycatSession().getCmdChain().getCurrentSQLCommand())){
+			if(extendCmdPkg.contains(session.getMycatSession().curSQLCommand)){
 				return false;
 			}
 
@@ -98,7 +98,7 @@ public class PkgFirstReader implements PkgProcess {
 				session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey(),
 						MySQLPacket.LOAD_DATA_PACKET);
 
-				session.getMycatSession().getCmdChain().setTarget(LoadDataCommand.INSTANCE);
+				session.getMycatSession().curSQLCommand = LoadDataCommand.INSTANCE;
 				// 将前端的包检查关闭
 				session.getMycatSession().getSessionAttrMap().put(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey(), true);
 

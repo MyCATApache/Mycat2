@@ -45,6 +45,9 @@ public class MycatSession extends AbstractMySQLSession {
 	private static Logger logger = LoggerFactory.getLogger(MycatSession.class);
 
 	public MySQLSession curBackend;
+	
+	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
+	public MySQLCommand curSQLCommand;
 
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 
@@ -226,7 +229,6 @@ public class MycatSession extends AbstractMySQLSession {
 //		backend.proxyBuffer.reset();
 		putbackendMap(backend);
 		backend.setMycatSession(this);
-		backend.setCmdChain(getCmdChain());
 		backend.useSharedBuffer(this.proxyBuffer);
 		backend.setCurNIOHandler(this.getCurNIOHandler());
 		backend.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
@@ -388,7 +390,7 @@ public class MycatSession extends AbstractMySQLSession {
 			list = new ArrayList<>();
 			backendMap.putIfAbsent(mysqlSession.getMySQLMetaBean().getRepBean(), list);
 		}
-		logger.debug("add backend connection in mycatSession .{}:{}",mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),mysqlSession.getMySQLMetaBean().getDsMetaBean().getPort());
+		logger.debug("add backend connection in mycatSession . {}",mysqlSession);
 		list.add(mysqlSession);
 	}
 
@@ -432,11 +434,9 @@ public class MycatSession extends AbstractMySQLSession {
 		// 当前连接如果本次不被使用,会被自动放入 currSessionMap 中
 		if (curBackend != null
 				&& canUseforCurrent(curBackend,targetMetaBean,runOnSlave) && curBackend.isIDLE()){
-			logger.debug("Using cached backend connections for {}。{}:{} {}"
+			logger.debug("Using cached backend connections for {}。{}"
 						,(runOnSlave ? "read" : "write"),
-						curBackend.getMySQLMetaBean().getDsMetaBean().getIp(),
-						curBackend.getMySQLMetaBean().getDsMetaBean().getPort(), 
-						curBackend.toString());
+						curBackend);
 			reactorThread.syncAndExecute(curBackend,callback);
 			return;
 		}

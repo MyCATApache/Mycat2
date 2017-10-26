@@ -76,7 +76,11 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 		int backendCounts = getUsingBackendConCounts(mySQLMetaBean);
 		logger.debug("all session backend count is {},reactor backend count is {},metabean max con is {}",backendCounts,count,mySQLMetaBean.getDsMetaBean().getMaxCon());
 		if (count + backendCounts + 1 > mySQLMetaBean.getDsMetaBean().getMaxCon()) {
-			callBack.finished(null, null, false, "backend connection is full for " + mySQLMetaBean.getDsMetaBean().getIp() + ":" + mySQLMetaBean.getDsMetaBean().getPort());
+			ErrorPacket errPkg = new ErrorPacket();
+			errPkg.packetId = 1;
+			errPkg.errno  = ErrorCode.ER_UNKNOWN_ERROR;
+			errPkg.message = "backend connection is full for " + mySQLMetaBean.getDsMetaBean().getIp() + ":" + mySQLMetaBean.getDsMetaBean().getPort();
+			callBack.finished(null, null, false, errPkg);
 			return;
 		}
 		try {
@@ -146,7 +150,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 				optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
 				currMycatSession.bindBackend(optSession);
 				syncAndExecute(optSession,callback);
-				addMySQLSession(targetMetaBean, optSession); //新创建的连接加入到当前reactor 中
+//				addMySQLSession(targetMetaBean, optSession); //新创建的连接加入到当前reactor 中
 			} else {
 				if(retVal instanceof ErrorPacket){
 					currMycatSession.responseOKOrError((ErrorPacket)retVal);
@@ -188,7 +192,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         //4. 从ds中获取已经建立的连接
         LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLMetaBean);
   		if (mySQLSessionList != null && !mySQLSessionList.isEmpty()) {
-;  			mysqlSession = mySQLSessionList.removeLast();
+  			mysqlSession = mySQLSessionList.removeLast();
   			if(mysqlSession!=null){
   				if(logger.isDebugEnabled()){
   					logger.debug("Using the existing session in the datasource .{} \n {}",mysqlSession.getMySQLMetaBean(),mysqlSession);
