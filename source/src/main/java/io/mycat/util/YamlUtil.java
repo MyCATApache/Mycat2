@@ -186,4 +186,8 @@ public class YamlUtil {
                     }
                 }).forEach(file -> file.delete());
     }
+
+	public static String getRootHomePath() {
+		return ROOT_PATH;
+	}
 }
