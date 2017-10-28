@@ -108,6 +108,8 @@ public class BufferSQLContext {
     private int preTableResultPos = 0;
     private int hashArrayRealSQLOffset = 0;//记录真实sql开始偏移
     private HashArray myCmdValue;
+    private int catletNameStart = 0;
+    private int catletNameLength = 0;
 
     public BufferSQLContext() {
         tblResult = new short[tblResultArraySize];
@@ -142,6 +144,8 @@ public class BufferSQLContext {
         preTableResultPos = 0;
         hashArrayRealSQLOffset = 0;
         myCmdValue.init();
+        catletNameStart = 0;
+        catletNameLength = 0;
     }
 
     public void setTblName(int hashArrayPos) {
@@ -404,5 +408,14 @@ public class BufferSQLContext {
             return 0;
         }
         return selectItemArray[pos];
+    }
+
+    public void setCatletName(int start, int length) {
+        catletNameStart = start;
+        catletNameLength = length;
+    }
+
+    public String getCatletName() {
+        return buffer.getString(catletNameStart, catletNameLength);
     }
 }

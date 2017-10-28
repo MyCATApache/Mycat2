@@ -214,7 +214,14 @@ public class BufferSQLParser {
                 case IntTokenHash.CATLET:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_CATLET);
                     if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-
+                        int start = hashArray.getPos(++pos);
+                        int length = hashArray.getSize(pos);
+                        intHash = hashArray.getIntHash(++pos);
+                        while ( pos < arrayCount && intHash != IntTokenHash.ANNOTATION_END) {
+                            length += hashArray.getSize(pos)+1;//+1是因为前面的 . 没有被收入HashArray
+                            intHash = hashArray.getIntHash(++pos);
+                        }
+                        context.setCatletName(start, length);
                     }
                     break;
                 case IntTokenHash.DB_TYPE:
@@ -621,13 +628,14 @@ public class BufferSQLParser {
         this.byteBufferArray.setSrc(src);
         this.byteBufferArray.setOffset(offset);
         this.byteBufferArray.setLength(length);
-        logger.debug("kaiz : "+this.byteBufferArray.getString(offset, length));
+        System.out.println("Recieved SQL : "+this.byteBufferArray.getString(offset, length));
         sql = this.byteBufferArray;
         hashArray = context.getHashArray();
         hashArray.init();
         context.setCurBuffer(sql);
         tokenizer.tokenize(sql, hashArray);
         firstParse(context);
+        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
     }
 
 
