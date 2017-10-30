@@ -381,7 +381,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_CATLET, context.getAnnotationType());
-        //TODO 还需要完善提取catlet的类型
+        assertEquals("demo.catlets.ShareJoin", context.getCatletName());
     }
 
     @Test
@@ -460,7 +460,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     @Test
     public void testAnnotationCacheLimitSQL() throws Exception {
         for(int i=0; i<1000; i++) {
-            System.out.println("testAnnotationCacheLimitSQL "+i);
+//            System.out.println("testAnnotationCacheLimitSQL "+i);
             if (i%2==1) {
                 String sql = "/* MyCAT:cacheresult  cache_time=1000 auto_refresh=true access_count=100*/select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 100;";
                 parser.parse(sql.getBytes(), context);
