@@ -28,13 +28,13 @@ public class CatletCmd extends SQLAnnotationCmd {
 			return true;
 		}
 		
-		if(BufferSQLContext.ANNOTATION_CATLET != context.getAnnotationType()){
-			
-			String errmsg = " annotationType is invalid . annotationType must be ANNOTATION_CATLET !";
-			session.sendErrorMsg(ErrorCode.ER_INVALID_DEFAULT,errmsg);
-			logger.error(errmsg);
-			return true;
-		}
+//		if(BufferSQLContext.ANNOTATION_CATLET != context.getAnnotationType()){
+//			
+//			String errmsg = " annotationType is invalid . annotationType must be ANNOTATION_CATLET !";
+//			session.sendErrorMsg(ErrorCode.ER_INVALID_DEFAULT,errmsg);
+//			logger.error(errmsg);
+//			return true;
+//		}
 		String clazz = "HBTDemoCmd";
 		try {
 			MySQLCommand target = (MySQLCommand) ProxyRuntime.INSTANCE.getCatletLoader().getInstanceofClass(clazz);
