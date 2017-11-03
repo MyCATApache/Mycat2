@@ -45,7 +45,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 		/*
 		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
 		 */
-		if(session.sqlContext.getSQLType() == NewSQLContext.SHOW_SQL) {
+		//if(session.sqlContext.getSQLType() == NewSQLContext.SHOW_SQL) {
 			session.clearReadWriteOpts();
 			//session.curSQLCommand = this;
 			String sql="select topic_id, question_type, update_time from e_topic ";
@@ -89,8 +89,8 @@ public class HBTDemoCmd2 implements MySQLCommand {
 					.limit(11)
 					.out(session);
 			return true;
-		}
-		return false;
+		//}
+		//return false;
 	}
 
 	@Override

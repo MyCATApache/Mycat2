@@ -141,8 +141,8 @@ public class AdminSession implements Session {
 			final byte packetType = buffer.get(offset + ManagePacket.packetHeaderSize - 1);
 			final String hexs = io.mycat.util.StringUtil.dumpAsHex(buffer, 0, pkgLength);
 			logger.info(
-					"     session {} packet:  offset = {}, length = {}, type = {}, cur total length = {},pkg HEX\r\n {}",
-					getSessionId(), offset, pkgLength, packetType, limit, hexs);
+					"     session {} packet:  offset = {}, length = {}, type = {}, {} cur total length = {},pkg HEX\r\n {}",
+					getSessionId(), offset, pkgLength, packetType, ManagePacket.getTypeString(packetType), limit, hexs);
 			curAdminPkgInf.pkgType = packetType;
 			curAdminPkgInf.length = pkgLength;
 			curAdminPkgInf.startPos = offset;

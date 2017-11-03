@@ -30,7 +30,7 @@ public class CatletResult extends SQLAnnotation {
 		
 		BufferSQLContext context = session.sqlContext;
 		context.setAnnotationType(BufferSQLContext.ANNOTATION_CATLET);
-//		context.setAnnotationValue(BufferSQLContext.ANNOTATION_CATLET,meta.getClazz());
+		context.setAnnotationStringValue(BufferSQLContext.ANNOTATION_CATLET, meta.getClazz());
 //		context.getAnnotationValue(meta.getClazz());
 		return true;
 	}
@@ -39,8 +39,8 @@ public class CatletResult extends SQLAnnotation {
 	public void init(Object args) {
 		Map argMap = (Map)args;
 		CatletMeta meta = new CatletMeta();
-		long clazz = 123;
-//		meta.setClazz(clazz);
+		String clazz = (String) argMap.get("clazz");
+		meta.setClazz(clazz);
 		setSqlAnnoMeta(meta);
 	}
 }

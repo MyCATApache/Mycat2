@@ -35,8 +35,11 @@ public class CatletCmd extends SQLAnnotationCmd {
 //			logger.error(errmsg);
 //			return true;
 //		}
-		String clazz = "HBTDemoCmd";
+		String clazz =  context.getAnnotationStringValue(BufferSQLContext.ANNOTATION_CATLET);
+		//System.out.println(context.getCatletName());
+		//String clazz = "io.mycat.mycat2.cmds.HBTDemoCmd2";
 		try {
+
 			MySQLCommand target = (MySQLCommand) ProxyRuntime.INSTANCE.getCatletLoader().getInstanceofClass(clazz);
 			super.getSQLAnnotationChain().setTarget(target);
 			return super.procssSQL(session);

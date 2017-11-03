@@ -222,6 +222,8 @@ public class BufferSQLParser {
                             intHash = hashArray.getIntHash(++pos);
                         }
                         context.setCatletName(start, length);
+                        context.setAnnotationStringValue(BufferSQLContext.ANNOTATION_CATLET, context.getCatletName());
+
                     }
                     break;
                 case IntTokenHash.DB_TYPE:

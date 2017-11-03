@@ -8,15 +8,15 @@ public class CatletMeta implements SQLAnnotationMeta {
 	/**
 	 * 执行的hbt的类名称
 	 * */
-	private long clazz ;
+	private String clazz ;
 	
 
-	public long getClazz() {
+	public String getClazz() {
 		return clazz;
 	}
 
 
-	public void setClazz(long clazz) {
+	public void setClazz(String clazz) {
 		this.clazz = clazz;
 	}
 
