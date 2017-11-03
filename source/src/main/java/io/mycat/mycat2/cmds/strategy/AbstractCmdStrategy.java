@@ -10,6 +10,8 @@ import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.sqlannotations.CacheResult;
 import io.mycat.mycat2.sqlannotations.CacheResultMeta;
+import io.mycat.mycat2.sqlannotations.CatletMeta;
+import io.mycat.mycat2.sqlannotations.CatletResult;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
@@ -45,6 +47,11 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		SQLAnnotation cacheResult = new CacheResult();
 		cacheResult.setSqlAnnoMeta(cacheResultMeta);
 		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_SQL_CACHE,cacheResult);
+
+		//hbt静态注解 
+		SQLAnnotation catlet = new CatletResult();
+		catlet.setSqlAnnoMeta(new CatletMeta());
+		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_CATLET, catlet );
 	}
 	
 	protected abstract void initMyCmdHandler();

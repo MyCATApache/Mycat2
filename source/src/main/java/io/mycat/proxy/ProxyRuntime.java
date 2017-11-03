@@ -1,5 +1,6 @@
 package io.mycat.proxy;
 
+import java.io.File;
 /**
  * 运行时环境，单例方式访问
  * @author wuzhihui
@@ -39,6 +40,7 @@ import io.mycat.proxy.man.MyCluster;
 import io.mycat.proxy.man.cmds.ConfigUpdatePacketCommand;
 import io.mycat.util.TimeUtil;
 import io.mycat.util.YamlUtil;
+import io.mycat.util.classloader.DynaClassLoader;
 
 public class ProxyRuntime {
 	public static final ProxyRuntime INSTANCE = new ProxyRuntime();
@@ -78,8 +80,12 @@ public class ProxyRuntime {
 	private ScheduledExecutorService heartbeatScheduler;
 	
 	public  long maxdataSourceInitTime = 60 * 1000L;
+	private int catletClassCheckSeconds = 60;
+	/*动态加载catlet的classs*/
+	private DynaClassLoader catletLoader = null;
 	
-	
+
+
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
 	 */
@@ -102,6 +108,10 @@ public class ProxyRuntime {
 		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 		MatchMethodGenerator.initShrinkCharTbl();
+	
+//		catletLoader = new DynaClassLoader("C:\\Users\\netinnet\\Documents\\GitHub\\tcp-proxy\\source\\target\\classes\\catlet", catletClassCheckSeconds);
+		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath()
+				+ File.separator + "catlet", catletClassCheckSeconds);
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
@@ -377,4 +387,9 @@ public class ProxyRuntime {
 	public void setLbSessionSessionManager(SessionManager<LBSession> lbSessionSessionManager) {
 		this.lbSessionSessionManager = lbSessionSessionManager;
 	}
+	
+	public DynaClassLoader getCatletLoader() {
+		return catletLoader;
+	}
+
 }

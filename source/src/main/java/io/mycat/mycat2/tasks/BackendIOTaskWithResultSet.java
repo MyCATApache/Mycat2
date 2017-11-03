@@ -39,31 +39,37 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
             //因为是解析所以只处理整包
             if (currPacketType == AbstractMySQLSession.CurrPacketType.Full) {
                 MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
-                switch (curRSState) {
-                    case RS_STATUS_COL_COUNT:
-                        onRsColCount(session);
-                        curRSState = ResultSetState.RS_STATUS_COL_DEF;
-                        break;
-                    case RS_STATUS_COL_DEF:
-                        if (curMQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
-                            curRSState = ResultSetState.RS_STATUS_ROW;
-                        } else {
-                            onRsColDef(session);
-                        }
-                        break;
-                    case RS_STATUS_ROW:
-                        if (curMQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
-                            curRSState = ResultSetState.RS_STATUS_FINISH;
-                            onRsFinish(session,true,null);
-                        } else {
-                            onRsRow(session);
-                        }
-                        break;
-                }
+            	if(curMQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET && curRSState.equals(ResultSetState.RS_STATUS_COL_COUNT) ) {
+    				 onRsFinish(session,false, "错误包");
+            	} else {
+            		switch (curRSState) {
+	                    case RS_STATUS_COL_COUNT:
+	                        onRsColCount(session);
+	                        curRSState = ResultSetState.RS_STATUS_COL_DEF;
+	                        break;
+	                    case RS_STATUS_COL_DEF:
+	                        if (curMQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
+	                            curRSState = ResultSetState.RS_STATUS_ROW;
+	                        } else {
+	                            onRsColDef(session);
+	                        }
+	                        break;
+	                    case RS_STATUS_ROW:
+	                        if (curMQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
+	                            curRSState = ResultSetState.RS_STATUS_FINISH;
+	                            onRsFinish(session,true, null);
+	                        } else {
+	                            onRsRow(session);
+	                        }
+	                        break;
+	                }
+	            }
             } else {
                 break;
             }
         }
+        //设置读取过的指针
+        session.proxyBuffer.readMark = session.proxyBuffer.readIndex;
     }
     
     abstract void onRsColCount(T session);

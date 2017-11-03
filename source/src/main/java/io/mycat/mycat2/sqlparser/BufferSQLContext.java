@@ -97,6 +97,7 @@ public class BufferSQLContext {
     private int tblResultArraySize = 256;//todo : 测试期先写死，后期考虑从设置参数中读取
     private byte annotationType;
     private long[] annotationValue;
+    private String[] annotationStringValue;
     private int totalSQLCount;
     private boolean hasLimit = false;
     private int limitStart = 0;
@@ -115,6 +116,7 @@ public class BufferSQLContext {
         tblResult = new short[tblResultArraySize];
         sqlInfoArray = new short[512];
         annotationValue = new long[16];
+        annotationStringValue = new String[16];
         annotationCondition=new int[64];
         myCmdValue = new HashArray(256);
         selectItemArray = new int[128];
@@ -344,7 +346,14 @@ public class BufferSQLContext {
     public void setAnnotationValue(byte typeKey, long value) {
         this.annotationValue[typeKey] = value;
     }
-
+    public void setAnnotationStringValue(byte typeKey, String value) {
+        this.annotationStringValue[typeKey] = value;
+    }
+    
+    public String getAnnotationStringValue(byte typeKey) {
+        return this.annotationStringValue[typeKey];
+    }
+    
     public void setAnnotationStart(int pos) {
     }
 
