@@ -7,6 +7,7 @@ import io.mycat.mycat2.cmds.ComPingCmd;
 import io.mycat.mycat2.cmds.ComQuitCmd;
 import io.mycat.mycat2.cmds.ComStatisticsCmd;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.HBTDemoCmd2;
 import io.mycat.mycat2.cmds.NotSupportCmd;
 import io.mycat.mycat2.cmds.manager.MycatShowConfigsCmd;
 import io.mycat.mycat2.cmds.manager.MycatSwitchReplCmd;
