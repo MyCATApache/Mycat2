@@ -715,7 +715,9 @@ public class TokenHash {
     public static final long SQL_TSI_MONTH = 0x8c3f094f1b906a03L;
     public static final long SQL_TSI_QUARTER = 0xe9ec207893081b87L;
     public static final long SQL_TSI_YEAR = 0xea71ed7ecec4f35bL;
-
+    
+    public static final long SESSIONS     = 0x562de22f337L;
+    
     public static void main(String[] args) {
         MatchMethodGenerator.initShrinkCharTbl();
     }

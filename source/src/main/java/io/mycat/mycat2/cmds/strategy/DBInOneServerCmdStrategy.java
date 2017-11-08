@@ -10,6 +10,7 @@ import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.HBTDemoCmd2;
 import io.mycat.mycat2.cmds.NotSupportCmd;
 import io.mycat.mycat2.cmds.manager.MycatShowConfigsCmd;
+import io.mycat.mycat2.cmds.manager.MycatShowSessionsCmd;
 import io.mycat.mycat2.cmds.manager.MycatSwitchReplCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComBeginCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComCommitCmd;
@@ -71,5 +72,6 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 		MYSQLCOMMANDMAP.put(BufferSQLContext.SHUTDOWN_SQL, SqlComShutdownCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SWITCH_REPL, MycatSwitchReplCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SHOW_CONFIGS, MycatShowConfigsCmd.INSTANCE);
+		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SHOW_SESSIONS, MycatShowSessionsCmd.INSTANCE);
 	}
 }
