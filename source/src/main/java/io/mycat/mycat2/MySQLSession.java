@@ -9,8 +9,7 @@ import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
 import io.mycat.mycat2.cmds.pkgread.PkgProcess;
 import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.proxy.BufferPool;
-import io.mycat.util.ErrorCode;
+import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 后端MySQL连接

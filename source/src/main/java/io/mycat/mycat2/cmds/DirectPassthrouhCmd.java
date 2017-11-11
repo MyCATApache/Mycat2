@@ -52,6 +52,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		session.clearReadWriteOpts();
 
 		session.getBackend((mysqlsession, sender, success, result) -> {
+
 			ProxyBuffer curBuffer = session.proxyBuffer;
 			// 切换 buffer 读写状态
 			curBuffer.flip();
@@ -149,7 +150,10 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	@Override
 	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
 		if (sessionCLosed) {
-			session.bufPool.recycleBuf(session.getProxyBuffer().getBuffer());
+			if(session.getProxyBuffer()!=null){
+				session.bufPool.recycle(session.getProxyBuffer().getBuffer());
+				session.setProxyBuffer(null);
+			}
 			session.unbindAllBackend();
 		}
 	}
@@ -157,7 +161,10 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	@Override
 	public void clearBackendResouces(MySQLSession mysqlSession, boolean sessionCLosed) {
 		if (sessionCLosed) {
-			mysqlSession.bufPool.recycleBuf(mysqlSession.getProxyBuffer().getBuffer());
+			if(mysqlSession.getProxyBuffer()!=null){
+				mysqlSession.bufPool.recycle(mysqlSession.getProxyBuffer().getBuffer());
+				mysqlSession.setProxyBuffer(null);
+			}
 		}
 	}
 }

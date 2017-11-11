@@ -23,10 +23,10 @@ public class CacheResult extends SQLAnnotation {
 	@Override
 	public boolean apply(MycatSession session,SQLAnnotationChain chain) {
 		CacheResultMeta meta = (CacheResultMeta) getSqlAnnoMeta();
-		
-		SQLAnnotationCmd cmd = meta.getSQLAnnotationCmd();
-		cmd.setSqlAnnotationChain(chain);
-		chain.addCmdChain(this,cmd);
+		//结果集缓存正在重构,当前版本存在bug,暂时去掉
+//		SQLAnnotationCmd cmd = meta.getSQLAnnotationCmd();
+//		cmd.setSqlAnnotationChain(chain);
+//		chain.addCmdChain(this,cmd);
 		
 		BufferSQLContext context = session.sqlContext;
 		context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);

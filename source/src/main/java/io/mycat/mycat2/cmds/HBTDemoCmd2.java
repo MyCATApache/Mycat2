@@ -147,7 +147,10 @@ public class HBTDemoCmd2 implements MySQLCommand {
 	@Override
 	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
 		if(sessionCLosed){
-			session.bufPool.recycleBuf(session.getProxyBuffer().getBuffer());
+			if(session.getProxyBuffer()!=null){
+				session.bufPool.recycle(session.getProxyBuffer().getBuffer());
+				session.setProxyBuffer(null);
+			}
 			session.unbindAllBackend();
 		}
 	}
@@ -155,7 +158,10 @@ public class HBTDemoCmd2 implements MySQLCommand {
 	@Override
 	public void clearBackendResouces(MySQLSession mysqlSession, boolean sessionCLosed) {
 		if(sessionCLosed){
-			mysqlSession.bufPool.recycleBuf(mysqlSession.getProxyBuffer().getBuffer());
+			if(mysqlSession.getProxyBuffer()!=null){
+				mysqlSession.bufPool.recycle(mysqlSession.getProxyBuffer().getBuffer());
+				mysqlSession.setProxyBuffer(null);
+			}
 			mysqlSession.unbindMycatSession();
 		}
 	}

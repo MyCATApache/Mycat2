@@ -1,7 +1,11 @@
 package io.mycat.mycat2.cmds.strategy;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
@@ -16,8 +20,11 @@ import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.util.ErrorCode;
 
 public abstract class AbstractCmdStrategy implements CmdStrategy {
+	
+	private static final Logger logger = LoggerFactory.getLogger(AbstractCmdStrategy.class);
 	
 	/**
 	 * 进行MySQL命令的处理的容器
@@ -46,7 +53,8 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		CacheResultMeta cacheResultMeta = new CacheResultMeta();
 		SQLAnnotation cacheResult = new CacheResult();
 		cacheResult.setSqlAnnoMeta(cacheResultMeta);
-		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_SQL_CACHE,cacheResult);
+//      结果集缓存存在bug,正在重构,暂时注释掉
+//		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_SQL_CACHE,cacheResult);
 
 		//hbt静态注解 
 		SQLAnnotation catlet = new CatletResult();
@@ -59,7 +67,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	protected abstract void initMySqlCmdHandler();
 	
 	@Override
-	final public void matchMySqlCommand(MycatSession session) {
+	final public boolean matchMySqlCommand(MycatSession session) {
 		
 		MySQLCommand  command = null;
 		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
@@ -69,7 +77,17 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			BufferSQLParser parser = new BufferSQLParser();
 			int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
 			int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
-			parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
+			try {
+				parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
+			} catch (Exception e) {
+				try {
+					logger.error("sql parse error",e);
+					session.sendErrorMsg(ErrorCode.ER_PARSE_ERROR, "sql parse error : "+e.getMessage());
+				} catch (IOException e1) {
+					session.close(false, e1.getMessage());
+				}
+				return false;
+			}
 			byte sqltype = session.sqlContext.getSQLType()!=0?session.sqlContext.getSQLType():session.sqlContext.getCurSQLType();
 			command = MYSQLCOMMANDMAP.get(sqltype);
 		}else{
@@ -91,5 +109,6 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			 .processDynamicAnno(session)
 			 .processStaticAnno(session, staticAnnontationMap)
 			 .build();
+		return true;
 	}
 }

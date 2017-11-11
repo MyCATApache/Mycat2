@@ -6,19 +6,20 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchemaTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 
 /**
@@ -109,10 +110,9 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
                 .map(mycatSession->mycatSession.getCurrCachedSession(targetMetaBean, runOnSlave,true))
                 .filter(session -> session != null).findFirst().orElse(null);
         if (mysqlSession != null) {
-			logger.debug("Use reactor cached backend connections for {}.{}:{}",
+			logger.debug("Use reactor cached backend connections for {}  {}",
 					(runOnSlave ? "read" : "write"),
-					mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),
-					mysqlSession.getMySQLMetaBean().getDsMetaBean().getPort());
+					mysqlSession);
             mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
             currMycatSession.bindBackend(mysqlSession);
             syncAndExecute(mysqlSession,callback);

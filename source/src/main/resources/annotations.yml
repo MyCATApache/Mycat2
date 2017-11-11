@@ -1,6 +1,5 @@
 annotations:
      - global:
-          - monitorSQL: false        # 全局sql 监控 开关。 sql 监控属于环绕类 监控，需要获取到sql 执行时间等信息。
           - blacklist:
              - selelctAllow: true         # sql 拦截     属于前置处理类
              - tableCheck: true
@@ -59,7 +58,7 @@ annotations:
                               actions:
                                     - cacheResult:
                                         cache_time: 1800
-                                        access_count: 90     
+                                        access_count: 90
                       - match:
                               name: insert无tables无条件
                               state: open

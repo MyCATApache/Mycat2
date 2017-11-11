@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.proxy.ProxyBuffer;
 
 public class ComQuitCmd implements MySQLCommand{
 	
@@ -48,7 +49,10 @@ public class ComQuitCmd implements MySQLCommand{
 	@Override
 	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
 		if(sessionCLosed){
-			session.bufPool.recycleBuf(session.getProxyBuffer().getBuffer());
+			if(session.getProxyBuffer()!=null){
+				session.bufPool.recycle(session.getProxyBuffer().getBuffer());
+				session.setProxyBuffer(null);
+			} 
 			session.unbindAllBackend();
 		}
 	}

@@ -7,19 +7,19 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.security.NoSuchAlgorithmException;
 
-import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.SecurityUtil;

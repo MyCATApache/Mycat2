@@ -5,6 +5,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 
+import io.mycat.proxy.buffer.BufferPool;
+
 /**
  * 用来处理新的连接请求并创建Session
  * 
