@@ -49,27 +49,27 @@ public class MycatShowSessionsCmd implements MySQLCommand {
         byte packetId = 0;
         header.packetId = ++packetId;
 
-        fields[i] = PacketUtil.getField("id", Fields.FIELD_TYPE_INT24);
+        fields[i] = PacketUtil.getField("Id", Fields.FIELD_TYPE_INT24);
         fields[i++].packetId = ++packetId;
         
-        fields[i] = PacketUtil.getField("host", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i] = PacketUtil.getField("User", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;  
+        
+        fields[i] = PacketUtil.getField("Host", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;
         
-        fields[i] = PacketUtil.getField("addr", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;   
-
-        fields[i] = PacketUtil.getField("user", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i] = PacketUtil.getField("db", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;  
         
        // fields[i] = PacketUtil.getField("charSet", Fields.FIELD_TYPE_VAR_STRING);
-       // fields[i++].packetId = ++packetId;  
-        
-        fields[i] = PacketUtil.getField("schema", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;  
-        
-        fields[i] = PacketUtil.getField("startTime", Fields.FIELD_TYPE_LONG);
+       // fields[i++].packetId = ++packetId;       
+       
+        fields[i] = PacketUtil.getField("Time", Fields.FIELD_TYPE_LONG);
         fields[i++].packetId = ++packetId;
-
+        
+        fields[i] = PacketUtil.getField("Info", Fields.FIELD_TYPE_VAR_STRING);
+        fields[i++].packetId = ++packetId;
+        
         eof.packetId = ++packetId;
     }
 
@@ -97,17 +97,17 @@ public class MycatShowSessionsCmd implements MySQLCommand {
 		    DateFormat format = new SimpleDateFormat(DATE_FORMAT);       	
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);
 			row.add(Integer.toString(mycatSession.getSessionId()).getBytes());
-			row.add(mycatSession.host.getBytes());
-			row.add(mycatSession.addr.getBytes());
 			if (mycatSession.clientUser==null){
 				row.add(String.valueOf("null").getBytes());	
 			}
 			else {
 			  row.add(mycatSession.clientUser.getBytes());
 			}
-			//row.add(mycatSession.charSet.charset.getBytes());			
-			row.add(mycatSession.schema.name.getBytes());
-			row.add(format.format(mycatSession.startTime).getBytes());
+			row.add(mycatSession.addr.getBytes());
+			row.add(mycatSession.schema.name.getBytes());				
+			//row.add(mycatSession.charSet.charset.getBytes());
+			row.add(Long.toString(System.currentTimeMillis()-mycatSession.startTime).getBytes());
+			row.add(mycatSession.sqlContext.getRealSQL(mycatSession.sqlContext.getSQLCount()-1).getBytes());		
 			row.packetId = ++packetId;
 			row.write(buffer);
         }
