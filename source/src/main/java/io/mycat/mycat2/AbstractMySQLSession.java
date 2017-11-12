@@ -291,12 +291,23 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 	 */
 	public void changeToDirectIfNeed(){
 		
-		if(!proxyBuffer.getBuffer().isDirect()
-				&&lastLargeMessageTime < lastReadTime - 30 * 1000L){
-			logger.info("change to direct con read buffer ,cur temp buf size : {}" ,proxyBuffer.getBuffer().capacity());
-			ByteBuffer bytebuffer = bufPool.allocate();
-			resetBuffer(bytebuffer);
-			lastLargeMessageTime = TimeUtil.currentTimeMillis();
+		if(!proxyBuffer.getBuffer().isDirect()){
+			
+			if(curMSQLPackgInf.pkgLength > bufPool.getChunkSize()){
+				lastLargeMessageTime = TimeUtil.currentTimeMillis();
+				return;
+			}
+			
+			if(lastLargeMessageTime < lastReadTime - 30 * 1000L){
+				logger.info("change to direct con read buffer ,cur temp buf size : {}" ,proxyBuffer.getBuffer().capacity());
+				ByteBuffer bytebuffer = bufPool.allocate();
+				if(!bytebuffer.isDirect()){
+					bufPool.recycle(bytebuffer);
+				}else{
+					resetBuffer(bytebuffer);
+				}
+				lastLargeMessageTime = TimeUtil.currentTimeMillis();
+			}
 		}
 	}
 }
