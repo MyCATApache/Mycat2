@@ -45,6 +45,7 @@ public abstract class AbstractSession implements Session {
 	// 操作的Socket连接
 	public String addr;
 	public String host;
+	public long startTime;
 	public SocketChannel channel;
 	public SelectionKey channelKey;
 
@@ -72,6 +73,7 @@ public abstract class AbstractSession implements Session {
 		this.channelKey = socketKey;
 		this.proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
+		this.startTime =System.currentTimeMillis();
 	}
 
 	/**

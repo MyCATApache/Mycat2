@@ -51,7 +51,11 @@ public class MYCATSQLParser {
 			context.setSQLType(BufferSQLContext.MYCAT_SHOW_CONFIGS);
 			TokenizerUtil.debug(pos, context);
 			return pos;
-		} else {
+		} else if (TokenHash.SESSIONS == longHash){
+				context.setSQLType(BufferSQLContext.MYCAT_SHOW_SESSIONS);
+				TokenizerUtil.debug(pos, context);
+				return pos;
+		} else {			
 			throw new InvalidParameterException(" the current mycat command is not support!!");
 		}
 	}
