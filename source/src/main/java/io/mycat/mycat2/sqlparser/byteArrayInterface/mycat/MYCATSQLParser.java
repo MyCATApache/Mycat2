@@ -2,6 +2,7 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.mycat;
 
 import java.security.InvalidParameterException;
 
+import io.mycat.mycat2.cmds.MycatCmds;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.IntTokenHash;
 import io.mycat.mycat2.sqlparser.TokenHash;
@@ -47,16 +48,13 @@ public class MYCATSQLParser {
 
 	private static int pickShow(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql){
 		long longHash = hashArray.getHash(pos);
-		if (TokenHash.CONFIGS == longHash){
-			context.setSQLType(BufferSQLContext.MYCAT_SHOW_CONFIGS);
-			TokenizerUtil.debug(pos, context);
-			return pos;
-		} else if (TokenHash.SESSIONS == longHash){
-				context.setSQLType(BufferSQLContext.MYCAT_SHOW_SESSIONS);
-				TokenizerUtil.debug(pos, context);
-				return pos;
-		} else {			
+		Byte cmd=MycatCmds.INSTANCE.getMycatHashCmd(longHash);
+		if (cmd==null){
 			throw new InvalidParameterException(" the current mycat command is not support!!");
+		}else {
+			context.setSQLType(cmd);
+			TokenizerUtil.debug(pos, context);
+			return pos;			
 		}
 	}
 }
