@@ -17,9 +17,10 @@ public class MycatCmds {
 	public static final MycatCmds INSTANCE = new MycatCmds();
 	
 	public MycatCmds(){
-		
+		addCMD("help",45,MycatShowHelpCmd.INSTANCE,"显示帮助信息");
 		addCMD("configs",46,MycatShowConfigsCmd.INSTANCE,"显示配置信息");
 		addCMD("sessions",47,MycatShowSessionsCmd.INSTANCE,"显示当前连接进程信息");
+		addCMD("processlist",48,MycatShowSessionsCmd.INSTANCE,"显示当前连接进程信息");
 	}
 	
 	public Map<Byte, MySQLCommand> getCmdMap(){
