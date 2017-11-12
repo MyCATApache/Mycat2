@@ -278,32 +278,25 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 	 * @param newBuffer
 	 */
 	private void resetBuffer(ByteBuffer newBuffer){
-		ByteBuffer buffer = proxyBuffer.getBuffer();
 		newBuffer.put(proxyBuffer.getBytes(proxyBuffer.readIndex, proxyBuffer.writeIndex-proxyBuffer.readIndex));
 		proxyBuffer.resetBuffer(newBuffer);
-		bufPool.recycle(buffer);
+		recycleAllocedBuffer(proxyBuffer);
 		curMSQLPackgInf.endPos = curMSQLPackgInf.endPos - curMSQLPackgInf.startPos;
 		curMSQLPackgInf.startPos = 0;
 	}
 	
 	/**
-	 * 如果申请大buffer 时间超过 30秒，检查一次 是否需要切换回正常大小buffer.
+	 * 检查 是否需要切换回正常大小buffer.
 	 * 
 	 */
 	public void changeToDirectIfNeed(){
 		
-		if(!proxyBuffer.getBuffer().isDirect()){
-			if(curMSQLPackgInf.pkgLength > bufPool.getChunkSize()){
-				lastLargeMessageTime = TimeUtil.currentTimeMillis();
-			}else if(lastLargeMessageTime < lastReadTime - 30 * 1000L){
-				// 每隔三十秒检查一次, 30秒可能并不准确。最小检查间隔是30秒.
-				// 间隔时间取决于  前端连接时间，以及 空闲检查时间。
-				// TODO 连接空闲超时回收时，需要切换回 正常大小的buffer.			
-				logger.info("change to direct con read buffer ,cur temp buf size : {}" ,proxyBuffer.getBuffer().capacity());
-				
-				ByteBuffer bytebuffer = bufPool.allocate();
-				resetBuffer(bytebuffer);
-			}
+		if(!proxyBuffer.getBuffer().isDirect()
+				&&lastLargeMessageTime < lastReadTime - 30 * 1000L){
+			logger.info("change to direct con read buffer ,cur temp buf size : {}" ,proxyBuffer.getBuffer().capacity());
+			ByteBuffer bytebuffer = bufPool.allocate();
+			resetBuffer(bytebuffer);
+			lastLargeMessageTime = TimeUtil.currentTimeMillis();
 		}
 	}
 }

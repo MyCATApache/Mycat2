@@ -80,10 +80,7 @@ public abstract class AbstractSession implements Session {
 	 */
 	public void useSharedBuffer(ProxyBuffer sharedBuffer) {
 		if (this.proxyBuffer != null && referedBuffer == false) {
-			if(proxyBuffer!=null){
-				this.bufPool.recycle(proxyBuffer.getBuffer());
-				this.setProxyBuffer(null);
-			}
+			recycleAllocedBuffer(proxyBuffer);
 			proxyBuffer = sharedBuffer;
 			this.referedBuffer = true;
 			logger.debug("use sharedBuffer. ");
@@ -105,10 +102,6 @@ public abstract class AbstractSession implements Session {
 
 	public ProxyBuffer getProxyBuffer() {
 		return proxyBuffer;
-	}
-	
-	public void setProxyBuffer(ProxyBuffer proxyBuffer){
-		this.proxyBuffer = proxyBuffer;
 	}
 
 	/**
@@ -221,10 +214,9 @@ public abstract class AbstractSession implements Session {
 	 */
 	public void recycleAllocedBuffer(ProxyBuffer curFrontBuffer) {
 		if (curFrontBuffer != null) {
-			if(proxyBuffer!=null){
-				this.bufPool.recycle(proxyBuffer.getBuffer());
-				proxyBuffer = null;
-			}
+			this.bufPool.recycle(curFrontBuffer.getBuffer());
+		}else{
+			logger.error("curFrontBuffer is null,please fix it !!!!");
 		}
 	}
 
@@ -288,10 +280,7 @@ public abstract class AbstractSession implements Session {
 			this.closed = true;
 			closeSocket(channel, normal, hint);
 			if (!referedBuffer) {
-				if(proxyBuffer!=null){
-					this.bufPool.recycle(proxyBuffer.getBuffer());
-					proxyBuffer = null;
-				}
+				recycleAllocedBuffer(proxyBuffer);
 			}
 			if(this instanceof MycatSession){
 				this.getMySessionManager().removeSession(this);

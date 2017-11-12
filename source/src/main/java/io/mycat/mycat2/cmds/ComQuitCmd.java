@@ -49,10 +49,7 @@ public class ComQuitCmd implements MySQLCommand{
 	@Override
 	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
 		if(sessionCLosed){
-			if(session.getProxyBuffer()!=null){
-				session.bufPool.recycle(session.getProxyBuffer().getBuffer());
-				session.setProxyBuffer(null);
-			} 
+			session.recycleAllocedBuffer(session.getProxyBuffer());
 			session.unbindAllBackend();
 		}
 	}

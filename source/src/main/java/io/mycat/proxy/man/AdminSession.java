@@ -198,18 +198,13 @@ public class AdminSession implements Session {
 			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
 			this.getMySessionManager().removeSession(this);
 			closeSocket(channel, normal, hint);
-			if(readingBuffer!=null){
-				bufPool.recycle(readingBuffer.getBuffer());
-				this.readingBuffer = null;
-			}
-			if(writingBuffer!=null){
-				bufPool.recycle(writingBuffer.getBuffer());
-				this.writingBuffer = null;
-			}
+			bufPool.recycle(readingBuffer.getBuffer());
+			bufPool.recycle(writingBuffer.getBuffer());
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}
 	}
+	
 	public String sessionInfo() {
 		return " [" + this.addr + ']';
 	}

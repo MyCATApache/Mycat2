@@ -7,12 +7,6 @@ package io.mycat.mycat2.beans;
  * @author: gaozhiwen
  */
 public class GlobalBean {
-    
-    public static final short DEFAULT_BUFFER_CHUNK_SIZE = 1024*4*2;
-    public static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 1024*1024*4;
-    public static final short DEFAULT_BUFFER_POOL_PAGE_NUMBER = 64;
-    
-    public static final int MAX_ALLOWED_PACKET  = 16 * 1024 * 1024;
 
     public static final String SINGLE_NODE_HEARTBEAT_SQL = "select 1";
     public static final String MASTER_SLAVE_HEARTBEAT_SQL = "show slave status";

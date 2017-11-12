@@ -10,6 +10,12 @@ import io.mycat.mycat2.beans.GlobalBean;
  */
 public class ProxyBean {
 	
+    private static final short DEFAULT_BUFFER_CHUNK_SIZE = 1024*4*2;
+    private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 1024*1024*4;
+    private static final short DEFAULT_BUFFER_POOL_PAGE_NUMBER = 64;
+    
+    private static final int MAX_ALLOWED_PACKET  = 16 * 1024 * 1024;
+	
     /**
      * 绑定的数据传输IP地址
      */
@@ -19,16 +25,16 @@ public class ProxyBean {
      */
     private int port = 8066;
     
-    private int max_allowed_packet = GlobalBean.MAX_ALLOWED_PACKET;
+    private int max_allowed_packet = MAX_ALLOWED_PACKET;
     
     // a page size
- 	private int bufferPoolPageSize = GlobalBean.DEFAULT_BUFFER_POOL_PAGE_SIZE;
+ 	private int bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
  	
  	//minimum allocation unit
- 	private short bufferPoolChunkSize = GlobalBean.DEFAULT_BUFFER_CHUNK_SIZE;
+ 	private short bufferPoolChunkSize = DEFAULT_BUFFER_CHUNK_SIZE;
  	
     // buffer pool page number 
- 	private short bufferPoolPageNumber = GlobalBean.DEFAULT_BUFFER_POOL_PAGE_NUMBER;
+ 	private short bufferPoolPageNumber = DEFAULT_BUFFER_POOL_PAGE_NUMBER;
  	
     /**
      * 是否使用动态配置的开关
