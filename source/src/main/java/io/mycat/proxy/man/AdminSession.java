@@ -11,14 +11,13 @@ import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.proxy.AbstractSession;
-import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
+import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * Mycat各个节点发起会话,规定Node name大的节点主动向Node Name节点小的发起连接请求， 比如 mycat-server-1，
@@ -59,8 +58,8 @@ public class AdminSession implements Session {
 		SelectionKey socketKey = channel.register(nioSelector, SelectionKey.OP_READ, this);
 		this.channelKey = socketKey;
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
-		this.readingBuffer = new ProxyBuffer(bufferPool.allocByteBuffer());
-		this.writingBuffer = new ProxyBuffer(bufferPool.allocByteBuffer());
+		this.readingBuffer = new ProxyBuffer(bufferPool.allocate());
+		this.writingBuffer = new ProxyBuffer(bufferPool.allocate());
 
 	}
 
@@ -199,12 +198,13 @@ public class AdminSession implements Session {
 			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
 			this.getMySessionManager().removeSession(this);
 			closeSocket(channel, normal, hint);
-			bufPool.recycleBuf(this.readingBuffer.getBuffer());
-			bufPool.recycleBuf(this.writingBuffer.getBuffer());
+			bufPool.recycle(readingBuffer.getBuffer());
+			bufPool.recycle(writingBuffer.getBuffer());
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}
 	}
+	
 	public String sessionInfo() {
 		return " [" + this.addr + ']';
 	}

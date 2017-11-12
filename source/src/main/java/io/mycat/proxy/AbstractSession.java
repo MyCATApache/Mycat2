@@ -10,12 +10,11 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.openjdk.jmh.runner.RunnerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 会话，代表一个前端连接
@@ -71,7 +70,7 @@ public abstract class AbstractSession implements Session {
 		this.host = clientAddr.getHostString();
 		SelectionKey socketKey = channel.register(nioSelector, socketOpt, this);
 		this.channelKey = socketKey;
-		this.proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
+		this.proxyBuffer = new ProxyBuffer(this.bufPool.allocate());
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
 		this.startTime =System.currentTimeMillis();
 	}
@@ -83,7 +82,7 @@ public abstract class AbstractSession implements Session {
 	 */
 	public void useSharedBuffer(ProxyBuffer sharedBuffer) {
 		if (this.proxyBuffer != null && referedBuffer == false) {
-			this.bufPool.recycleBuf(proxyBuffer.getBuffer());
+			recycleAllocedBuffer(proxyBuffer);
 			proxyBuffer = sharedBuffer;
 			this.referedBuffer = true;
 			logger.debug("use sharedBuffer. ");
@@ -93,7 +92,7 @@ public abstract class AbstractSession implements Session {
 //			proxyBuffer = sharedBuffer;
 		} else if (sharedBuffer == null) {
 			logger.debug("referedBuffer is false.");
-			proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
+			proxyBuffer = new ProxyBuffer(this.bufPool.allocate());
 			proxyBuffer.reset();
 			this.referedBuffer = false;
 		}
@@ -207,7 +206,7 @@ public abstract class AbstractSession implements Session {
 	 * @return ProxyBuffer
 	 */
 	public ProxyBuffer allocNewProxyBuffer() {
-		return new ProxyBuffer(bufPool.allocByteBuffer());
+		return new ProxyBuffer(bufPool.allocate());
 	}
 
 	/**
@@ -217,7 +216,9 @@ public abstract class AbstractSession implements Session {
 	 */
 	public void recycleAllocedBuffer(ProxyBuffer curFrontBuffer) {
 		if (curFrontBuffer != null) {
-			this.bufPool.recycleBuf(curFrontBuffer.getBuffer());
+			this.bufPool.recycle(curFrontBuffer.getBuffer());
+		}else{
+			logger.error("curFrontBuffer is null,please fix it !!!!");
 		}
 	}
 
@@ -281,7 +282,7 @@ public abstract class AbstractSession implements Session {
 			this.closed = true;
 			closeSocket(channel, normal, hint);
 			if (!referedBuffer) {
-				this.bufPool.recycleBuf(proxyBuffer.getBuffer());
+				recycleAllocedBuffer(proxyBuffer);
 			}
 			if(this instanceof MycatSession){
 				this.getMySessionManager().removeSession(this);

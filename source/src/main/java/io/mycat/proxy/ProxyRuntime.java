@@ -83,8 +83,6 @@ public class ProxyRuntime {
 	private int catletClassCheckSeconds = 60;
 	/*动态加载catlet的classs*/
 	private DynaClassLoader catletLoader = null;
-	
-
 
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
@@ -112,6 +110,8 @@ public class ProxyRuntime {
 //		catletLoader = new DynaClassLoader("C:\\Users\\netinnet\\Documents\\GitHub\\tcp-proxy\\source\\target\\classes\\catlet", catletClassCheckSeconds);
 		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath()
 				+ File.separator + "catlet", catletClassCheckSeconds);
+		
+		heartbeatScheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD,TimeUnit.MILLISECONDS);
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
@@ -211,7 +211,7 @@ public class ProxyRuntime {
 	}
 	
 	// 系统时间定时更新任务
-	private Runnable updateTime() {
+	public Runnable updateTime() {
 		return new Runnable() {
 			@Override
 			public void run() {
@@ -391,5 +391,4 @@ public class ProxyRuntime {
 	public DynaClassLoader getCatletLoader() {
 		return catletLoader;
 	}
-
 }
