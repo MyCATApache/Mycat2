@@ -1,5 +1,9 @@
 package io.mycat.mycat2.cmds.strategy;
 
+import java.util.Map;
+import java.util.Map.Entry;
+
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.cmds.ComChangeUserCmd;
 import io.mycat.mycat2.cmds.ComFieldListCmd;
 import io.mycat.mycat2.cmds.ComInitDB;
@@ -8,6 +12,7 @@ import io.mycat.mycat2.cmds.ComQuitCmd;
 import io.mycat.mycat2.cmds.ComStatisticsCmd;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.HBTDemoCmd2;
+import io.mycat.mycat2.cmds.MycatCmds;
 import io.mycat.mycat2.cmds.NotSupportCmd;
 import io.mycat.mycat2.cmds.manager.MycatShowConfigsCmd;
 import io.mycat.mycat2.cmds.manager.MycatShowSessionsCmd;
@@ -71,7 +76,10 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 		MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.SHUTDOWN_SQL, SqlComShutdownCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SWITCH_REPL, MycatSwitchReplCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SHOW_CONFIGS, MycatShowConfigsCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SHOW_SESSIONS, MycatShowSessionsCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SHOW_CONFIGS, MycatShowConfigsCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.MYCAT_SHOW_SESSIONS, MycatShowSessionsCmd.INSTANCE);		
+		for (Entry<Byte, MySQLCommand> entry : MycatCmds.INSTANCE.getCmdMap().entrySet()) {  
+			MYSQLCOMMANDMAP.put(entry.getKey() ,entry.getValue()); 
+		}
 	}
 }
