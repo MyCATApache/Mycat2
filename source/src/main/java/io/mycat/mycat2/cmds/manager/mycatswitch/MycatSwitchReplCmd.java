@@ -29,8 +29,6 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 
 	public static final MycatSwitchReplCmd INSTANCE = new MycatSwitchReplCmd();
 		
-	private final static Pattern pattern = Pattern.compile("^(\\s*mycat\\s+switch\\s+repl\\s+)", Pattern.CASE_INSENSITIVE);
-	
 	private final static String splitStr = "(?!^[\\s]*)\\s+(?![\\s]*$)";
 	
 	private MycatSwitchReplCmd(){}
@@ -38,29 +36,21 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
 		String executeSql = session.sqlContext.getRealSQL(0);
-				
-		Matcher matcher = pattern.matcher(executeSql);
-		if(matcher.find()){
-			executeSql = executeSql.replaceFirst(matcher.group(1), "");
-		}else{
-			session.sendErrorMsg(ErrorCode.ERR_NOT_SUPPORTED," command format error ");
-			return false;
-		}
-		
+
 		String[] params = executeSql.split(splitStr);
 		
-		if(params.length!=2){
+		if(params.length!=5){
 			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid number of parameters.");
 			return false;
 		}
 		
-		if(!StringUtils.isNumeric(params[1].trim())){
+		if(!StringUtils.isNumeric(params[4].trim())){
 			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid type of parameter ["+params[1]+"].");
 			return false;
 		}
 		
-		String replName = params[0];
-		int index = Integer.valueOf(params[1]);
+		String replName = params[3];
+		int index = Integer.valueOf(params[4]);
 		
 		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 		MySQLRepBean repBean = conf.getMySQLRepBean(replName);
