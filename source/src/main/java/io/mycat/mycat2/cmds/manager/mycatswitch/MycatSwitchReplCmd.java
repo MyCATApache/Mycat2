@@ -9,13 +9,12 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.CheckResult;
 import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.cmds.manager.MycatCmdHolder;
-import io.mycat.mycat2.cmds.manager.ParseContext;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
@@ -24,7 +23,7 @@ import io.mycat.util.ErrorCode;
  * @author yanjunli
  *
  */
-public class MycatSwitchReplCmd implements MycatCmdHolder {
+public class MycatSwitchReplCmd implements MySQLCommand {
 	
 	private static final Logger logger = LoggerFactory.getLogger(MycatSwitchReplCmd.class);
 
@@ -35,43 +34,6 @@ public class MycatSwitchReplCmd implements MycatCmdHolder {
 	private final static String splitStr = "(?!^[\\s]*)\\s+(?![\\s]*$)";
 	
 	private MycatSwitchReplCmd(){}
-
-	/**
-	 * 校验 repl 
-	 */
-	@Override
-	public Boolean apply(ParseContext t) {
-		int i = t.offset;
-		int length = t.sql.length();
-        for (; i < length; i++) {
-            switch (t.sql.charAt(i)) {
-            case ' ':
-                continue;
-            case 'R':
-            case 'r':
-                return replCheck(t,i);
-            default:
-                return Boolean.FALSE;
-            }
-        }
-		return Boolean.FALSE;
-	}
-	
-	private Boolean replCheck(ParseContext t,int offset){
-    	if (t.sql.length() > offset + "EPL".length()) {
-            char c1 = t.sql.charAt(++offset);
-            char c2 = t.sql.charAt(++offset);
-            char c3 = t.sql.charAt(++offset);
-            if ((c1 == 'E' || c1 == 'e') && (c2 == 'P' || c2 == 'p') && (c3 == 'L' || c3 == 'l')) {
-                if (t.sql.length() > ++offset && t.sql.charAt(offset) != ' ') {
-                    return Boolean.FALSE;
-                }
-                t.offset = offset;
-                return Boolean.TRUE;
-            }
-        }
-        return Boolean.FALSE;
-    }
 	
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
@@ -79,7 +41,7 @@ public class MycatSwitchReplCmd implements MycatCmdHolder {
 				
 		Matcher matcher = pattern.matcher(executeSql);
 		if(matcher.find()){
-			executeSql.replaceFirst(matcher.group(1), "");
+			executeSql = executeSql.replaceFirst(matcher.group(1), "");
 		}else{
 			session.sendErrorMsg(ErrorCode.ERR_NOT_SUPPORTED," command format error ");
 			return false;
@@ -92,7 +54,7 @@ public class MycatSwitchReplCmd implements MycatCmdHolder {
 			return false;
 		}
 		
-		if(!StringUtils.isNumeric(params[1])){
+		if(!StringUtils.isNumeric(params[1].trim())){
 			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid type of parameter ["+params[1]+"].");
 			return false;
 		}
@@ -102,6 +64,12 @@ public class MycatSwitchReplCmd implements MycatCmdHolder {
 		
 		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 		MySQLRepBean repBean = conf.getMySQLRepBean(replName);
+		
+		if(null==repBean){
+			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid replName ["+replName+"].");
+			return false;
+		}
+		
 		CheckResult result = repBean.switchDataSourcecheck(index);
 
 		if(!result.isSuccess()){

@@ -1,9 +1,10 @@
 package io.mycat.mycat2.cmds.manager;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import io.mycat.mycat2.MySQLCommand;
+import io.mycat.mycat2.cmds.NotSupportCmd;
 import io.mycat.mycat2.cmds.manager.mycatswitch.MycatSwitchCmdProcessor;
 import io.mycat.mycat2.cmds.manager.show.MycatShowCmdProcessor;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
@@ -21,25 +22,33 @@ public class MyCatCmdDispatcher{
 	
 	public static final MyCatCmdDispatcher getInstance() {    
        return LazyHolder.INSTANCE;    
-    } 
-		
-	private static List<MycatCmdProcssor> processorlist = new ArrayList<>();
+    }
+	
+	public final static String splitStr = "(?!^[\\s]*)\\s+(?![\\s]*$)";
+
+	private static Map<String,MycatCmdProcssor> processorMap = new HashMap<>();
 	
 	static{
-		processorlist.add(MycatShowCmdProcessor.getInstance());
-		processorlist.add(MycatSwitchCmdProcessor.getInstance());
+		processorMap.put("SHOW", MycatShowCmdProcessor.getInstance());
+		processorMap.put("SWITCH",MycatSwitchCmdProcessor.getInstance());
 	}
 	
 	public MySQLCommand getMycatCommand(BufferSQLContext sqlContext){
-		String sql = sqlContext.getRealSQL(0);
+		String[] tokens = sqlContext.getRealSQL(0).split(splitStr);
 		
-		ParseContext context = new ParseContext(sql);
+		int level = 1;		
 
-		return processorlist
-						.stream()
-						.filter(f->f.apply(context))
-						.findFirst()
-						.orElse(NotSupportCmdProcessor.INSTANCE)
-						.getCommand(context);
+		if(tokens.length <(level+1)){
+			return NotSupportCmd.INSTANCE;
+		}
+		
+		ParseContext context = new ParseContext(tokens);
+		
+		MycatCmdProcssor processor = processorMap.get(tokens[level].trim().toUpperCase());
+		
+		if(processor==null){
+			return NotSupportCmd.INSTANCE;
+		}
+		return processor.getCommand(context,level+1);
 	}
 }
