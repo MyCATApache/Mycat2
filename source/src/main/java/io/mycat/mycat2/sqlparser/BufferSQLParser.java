@@ -1,18 +1,20 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.*;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.mycat.MYCATSQLParser;
+import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
 
 import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteBufferArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.DefaultByteArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.SelectItemsParser;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
 
 /**
  * Created by Kaiz on 2017/2/6.
@@ -596,8 +598,10 @@ public class BufferSQLParser {
                     break;
                 }
                 case IntTokenHash.MYCAT:{
-                	TokenizerUtil.debug(pos,context);
-                	pos = MYCATSQLParser.pickMycat(++pos, arrayCount, context, hashArray, sql);
+                	if (hashArray.getHash(pos) == TokenHash.MYCAT) {
+                        context.setSQLType(BufferSQLContext.MYCAT_SQL);
+                        pos++;
+                    }
                 	break;
                 }
                 case IntTokenHash.SHUTDOWN:

@@ -12,6 +12,7 @@ import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
+import io.mycat.mycat2.cmds.manager.MyCatCmdDispatcher;
 import io.mycat.mycat2.sqlannotations.CacheResult;
 import io.mycat.mycat2.sqlannotations.CacheResultMeta;
 import io.mycat.mycat2.sqlannotations.CatletMeta;
@@ -88,7 +89,14 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 				}
 				return false;
 			}
+			
 			byte sqltype = session.sqlContext.getSQLType()!=0?session.sqlContext.getSQLType():session.sqlContext.getCurSQLType();
+			
+			if(BufferSQLContext.MYCAT_SQL==sqltype){
+				session.curSQLCommand = MyCatCmdDispatcher.getInstance().getMycatCommand(session.sqlContext);
+				return true;
+			}
+			
 			command = MYSQLCOMMANDMAP.get(sqltype);
 		}else{
 			command = MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
