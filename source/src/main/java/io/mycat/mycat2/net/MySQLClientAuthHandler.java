@@ -100,6 +100,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
 					logger.debug("set schema: {} for user: {}", session.schema, auth.user);
 					if (success(session, auth)) {
+						session.clientUser=auth.user;//设置session用户
 						session.proxyBuffer.reset();
 						session.answerFront(AUTH_OK);
 						// 认证通过，设置当前SQL Handler为默认Handler
