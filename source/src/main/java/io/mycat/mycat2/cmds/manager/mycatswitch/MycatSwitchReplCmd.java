@@ -1,9 +1,11 @@
-package io.mycat.mycat2.cmds.manager;
+package io.mycat.mycat2.cmds.manager.mycatswitch;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
-import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,9 +15,6 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.CheckResult;
 import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
-import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
@@ -29,26 +28,42 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	private static final Logger logger = LoggerFactory.getLogger(MycatSwitchReplCmd.class);
 
 	public static final MycatSwitchReplCmd INSTANCE = new MycatSwitchReplCmd();
+		
+	private final static String splitStr = "(?!^[\\s]*)\\s+(?![\\s]*$)";
 	
 	private MycatSwitchReplCmd(){}
 	
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		String charset = session.charSet.charset==null?StandardCharsets.UTF_8.name():session.charSet.charset;
-		HashArray hashArray = session.sqlContext.getMyCmdValue();
-		String replName = new String(TokenizerUtil.pickBytes(0, hashArray, session.proxyBuffer),charset);
-		int index = TokenizerUtil.pickNumber(1, hashArray, session.proxyBuffer);
+		String executeSql = session.sqlContext.getRealSQL(0);
+
+		String[] params = executeSql.split(splitStr);
+		
+		if(params.length!=5){
+			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid number of parameters.");
+			return false;
+		}
+		
+		if(!StringUtils.isNumeric(params[4].trim())){
+			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid type of parameter ["+params[1]+"].");
+			return false;
+		}
+		
+		String replName = params[3];
+		int index = Integer.valueOf(params[4]);
 		
 		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 		MySQLRepBean repBean = conf.getMySQLRepBean(replName);
+		
+		if(null==repBean){
+			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid replName ["+replName+"].");
+			return false;
+		}
+		
 		CheckResult result = repBean.switchDataSourcecheck(index);
 
 		if(!result.isSuccess()){
-			ErrorPacket errPkg = new ErrorPacket();
-			errPkg.packetId = 1;
-			errPkg.errno  = ErrorCode.ERR_WRONG_USED;
-			errPkg.message = result.getMsg();
-			session.responseOKOrError(errPkg);
+			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED,result.getMsg());
 		}else{
 			ProxyRuntime.INSTANCE.prepareSwitchDataSource(replName, index,false);
 			OKPacket packet = new OKPacket();
@@ -57,6 +72,7 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	        packet.serverStatus = 2;
 	        session.responseOKOrError(packet);
 		}
+		
 		return false;
 	}
 
@@ -75,7 +91,6 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
 		session.proxyBuffer.flip();
-		// session.chnageBothReadOpts();
 		session.takeOwner(SelectionKey.OP_READ);
 		return false;
 	}
