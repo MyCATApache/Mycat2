@@ -19,5 +19,6 @@ public class MycatSwitchCmdProcessor extends MycatCmdProcssor {
 	
 	static{
 		cmdMaps.put("REPL",MycatSwitchReplCmd.INSTANCE);
+		descMaps.put("REPL","设置主从切换");
 	}
 }

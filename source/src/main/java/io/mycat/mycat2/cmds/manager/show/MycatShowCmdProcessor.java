@@ -19,6 +19,14 @@ public class MycatShowCmdProcessor extends MycatCmdProcssor {
 	
 	//新命令在这里注册
 	static{
+		cmdMaps.put("HELP",MycatShowHelpCmd.INSTANCE);
 		cmdMaps.put("CONFIGS",MycatShowConfigsCmd.INSTANCE);
+		cmdMaps.put("SESSIONS",MycatShowSessionsCmd.INSTANCE);
+		cmdMaps.put("PROCESSLIST",MycatShowSessionsCmd.INSTANCE);
+		
+		descMaps.put("HELP","显示帮助信息");
+		descMaps.put("CONFIGS","显示配置信息");
+		descMaps.put("SESSIONS","显示当前连接进程信息");
+		descMaps.put("PROCESSLIST","显示当前连接进程信息");
 	}
 }
