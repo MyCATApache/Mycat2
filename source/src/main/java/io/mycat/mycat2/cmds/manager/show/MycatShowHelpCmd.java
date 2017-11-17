@@ -66,11 +66,10 @@ public class MycatShowHelpCmd implements MySQLCommand {
         byte packetId = eof.packetId;
         
 		for (Entry<String,MycatCmdProcssor> entry : MyCatCmdDispatcher.getInstance().getProcessorMap().entrySet()) {  					
-			String cmdOne=entry.getKey()+" ";
-			MycatCmdProcssor  cmdProcssor=entry.getValue();
-			for (Entry<String,String> descentry : cmdProcssor.getDescMaps().entrySet()) {  		
+			String cmdOne=entry.getKey().toLowerCase()+" ";
+			for (Entry<String,String> descentry : entry.getValue().getDescMaps().entrySet()) {  		
 			RowDataPacket row = new RowDataPacket(FIELD_COUNT);	
-			String cmdTwo="mycat "+cmdOne+descentry.getKey();
+			String cmdTwo="mycat "+cmdOne+descentry.getKey().toLowerCase();
 			row.add(cmdTwo.getBytes());
 			row.add(descentry.getValue().getBytes("gbk"));		
 			row.packetId = ++packetId;

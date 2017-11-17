@@ -8,8 +8,7 @@ import io.mycat.mycat2.cmds.NotSupportCmd;
 
 public abstract class MycatCmdProcssor {
 	
-	protected static Map<String,MySQLCommand> cmdMaps = new HashMap<>();
-	protected static Map<String,String> descMaps = new HashMap<>();
+	protected static Map<String,MySQLCommand> cmdMaps = new HashMap<>();	
 	
 	public MySQLCommand getCommand(ParseContext context,int level) {
 		
@@ -26,6 +25,7 @@ public abstract class MycatCmdProcssor {
 		return processor;
 	}
 	public Map<String,String> getDescMaps(){
-		return descMaps;
+		return null;
 	}
+
 }
