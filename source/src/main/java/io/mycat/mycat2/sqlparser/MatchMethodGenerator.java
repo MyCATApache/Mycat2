@@ -350,7 +350,7 @@ public class MatchMethodGenerator {
             Files.lines(Paths.get(fileName))
                     .filter(x -> x.length()>0)
                     .forEach(x -> {
-                System.out.format("    public static final int %-16s = 0x%04x%04x;%n", x, genHash2(x.toCharArray()) & 0xFFFF, x.length());
+                System.out.format("    public static final int %-16s = 0x%06x%02x;%n", x, genHash2(x.toCharArray()) & 0xFFFFFF, x.length());
 //                        System.out.format("    public static final long %-12s = 0x%x;%n", x, genHash(x.toCharArray()));
                     });
 //            System.out.println("conflict count : "+count);
@@ -367,8 +367,8 @@ public class MatchMethodGenerator {
 //        sqlKeyHastTest("minimal_sql_tokens.txt", s -> genHash(s.toCharArray()), 0x3FL);
 //        run();
 //        test1();
-//        GenerateIntTokenHash("minimal_sql_tokens.txt");
-        GenerateLongTokenHash("sql_tokens.txt");
+        GenerateIntTokenHash("minimal_sql_tokens.txt");
+//        GenerateLongTokenHash("sql_tokens.txt");
 //        initShrinkCharTbl();
 //        System.out.format("0x%xL;%n", genHash("dn1".toCharArray()));
 
