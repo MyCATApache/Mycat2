@@ -14,7 +14,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,14 +25,13 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.ClusterConfig;
 import io.mycat.mycat2.beans.conf.HeartbeatConfig;
-import io.mycat.mycat2.beans.conf.ReplicaBean.RepTypeEnum;
 import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
 import io.mycat.mycat2.common.ExecutorUtil;
 import io.mycat.mycat2.common.NameableExecutor;
 import io.mycat.mycat2.loadbalance.LBSession;
-import io.mycat.mycat2.loadbalance.LoadBalanceStrategy;
 import io.mycat.mycat2.loadbalance.ProxySession;
 import io.mycat.mycat2.sqlparser.MatchMethodGenerator;
+import io.mycat.proxy.buffer.BufferPooLFactory;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.AdminSession;
 import io.mycat.proxy.man.MyCluster;
@@ -83,6 +81,7 @@ public class ProxyRuntime {
 	private int catletClassCheckSeconds = 60;
 	/*动态加载catlet的classs*/
 	private DynaClassLoader catletLoader = null;
+	private BufferPooLFactory  bufferPoolFactory = null;
 
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
@@ -112,6 +111,8 @@ public class ProxyRuntime {
 				+ File.separator + "catlet", catletClassCheckSeconds);
 		
 		heartbeatScheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD,TimeUnit.MILLISECONDS);
+		
+		bufferPoolFactory = new BufferPooLFactory(nioReactorThreads);
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
@@ -390,5 +391,13 @@ public class ProxyRuntime {
 	
 	public DynaClassLoader getCatletLoader() {
 		return catletLoader;
+	}
+
+	public BufferPooLFactory getBufferPoolFactory() {
+		return bufferPoolFactory;
+	}
+
+	public void setBufferPoolFactory(BufferPooLFactory bufferPoolFactory) {
+		this.bufferPoolFactory = bufferPoolFactory;
 	}
 }

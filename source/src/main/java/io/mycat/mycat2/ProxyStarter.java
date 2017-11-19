@@ -20,6 +20,7 @@ import io.mycat.proxy.buffer.DirectByteBufferPool;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.MyCluster;
+import javafx.application.Platform;
 
 public class ProxyStarter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProxyStarter.class);
@@ -124,13 +125,10 @@ public class ProxyStarter {
 		// Mycat 2.0 Session Manager
 		MycatReactorThread[] nioThreads = (MycatReactorThread[]) MycatRuntime.INSTANCE.getReactorThreads();
 		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
-		ProxyBean proxybean = proxyConfig.getProxy();
 		int cpus = nioThreads.length;
+		
 		for (int i = 0; i < cpus; i++) {
-			MycatReactorThread thread = new MycatReactorThread(
-					new DirectByteBufferPool(proxybean.getBufferPoolPageSize(),
-							proxybean.getBufferPoolChunkSize(),
-							proxybean.getBufferPoolPageNumber()));
+			MycatReactorThread thread = new MycatReactorThread(ProxyRuntime.INSTANCE.getBufferPoolFactory().getBufferPool());
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
