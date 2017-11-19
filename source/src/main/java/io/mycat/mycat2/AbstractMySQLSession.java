@@ -5,26 +5,22 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.function.Function;
 
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.beans.conf.ProxyConfig;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.AbstractSession;
-import io.mycat.proxy.BufferPool;
+import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.StringUtil;
+import io.mycat.util.TimeUtil;
 
 /**
  * 抽象的MySQL的连接会话
@@ -63,20 +59,8 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 	 */
 	public byte[] seed;
 	
-	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
-	private CommandChain cmdChain = new CommandChain();
-	
-	public CommandChain getCmdChain(){
-		if(cmdChain==null){
-			cmdChain = new CommandChain();
-			logger.warn(" curr session cmdChain is null.{}", this);
-		}
-		return cmdChain;
-	}
-	
-	public void setCmdChain(CommandChain cmdChain){
-		this.cmdChain = cmdChain;
-	}
+	protected long lastLargeMessageTime;
+	protected long lastReadTime;
 	
 	/**
 	 * 当前处理中的SQL报文的信息
@@ -141,6 +125,8 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 	 */
 	public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded)
 			throws IOException {
+		
+		lastReadTime = TimeUtil.currentTimeMillis();
 
 		ByteBuffer buffer = proxyBuf.getBuffer();
 		// 读取的偏移位置
@@ -182,10 +168,7 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 
 		// 解包获取包的数据长度
 		int pkgLength = ParseUtil.getPacketLength(buffer, offset);
-		// 解析报文类型
-		// final byte packetType = buffer.get(offset +
-		// ParseUtil.msyql_packetHeaderSize);
-
+		
 		// 解析报文类型
 		int packetType = -1;
 
@@ -268,102 +251,63 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 		}
 	}
 	
-	/**
-	 * 命令处理链
-	 * @author yanjunli
-	 *
-	 */
-	public class CommandChain{
-						
-		/**
-		 * 目标命令
-		 */
-		private MySQLCommand target;
-		
-		/**
-		 * 所有的sqlAnno
-		 */
-		private List<Function<MycatSession, Boolean>> sqlAnnotations = new ArrayList<>(30);
-		
-		/**
-		 * 动态注解 命令映射关系表
-		 */
-		private Map<Function<MycatSession, Boolean>,MySQLCommand> sqlAnnoMapper = new HashMap<>();
-		
-		
-		/**
-		 * 前置类，后置类，around 类  动态注解  顺序，继承了SQLCommand 的动态注解会出现在此列表中
-		 */
-		private List<Function<MycatSession, Boolean>> queue = new ArrayList<>(20);
-		
-		/**
-		 * queue 列表当前索引值
-		 */
-		private int cmdIndex = 0;
-		
-		private String errMsg;
-				
-		public List<Function<MycatSession, Boolean>> getSqlAnnotations(){
-			return sqlAnnotations;
-		}
-		
-		/**
-		 * 查找当前命令的下一个处理命令
-		 * @param pre
-		 * @return
-		 * @throws Exception
-		 */
-		public MySQLCommand getNextSQLCommand(){
-			//sqlAnnotations 是  ArrayList .
-			if(sqlAnnotations.isEmpty()|| ++cmdIndex >= queue.size()){
-				/**
-				 *  动态注解处理完成后，调用目标命令，同时重置 cmdIndex.
-				 *  重置 cmdIndex  可以实现 对  around 类 动态注解的支持
-				 */
-				cmdIndex = 0;
-				return target;
-			}else{
-				return sqlAnnoMapper.get(queue.get(cmdIndex));
+	public void ensureFreeSpaceOfReadBuffer() {
+		int pkgLength = curMSQLPackgInf.pkgLength;
+		ByteBuffer buffer = proxyBuffer.getBuffer();
+		ProxyConfig config = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
+		// need a large buffer to hold the package
+		if (pkgLength > config.getProxy().getMax_allowed_packet()) {
+			throw new IllegalArgumentException("Packet size over the limit.");
+		} else if (buffer.capacity() < pkgLength) {
+			logger.debug("need a large buffer to hold the package.{}" ,curMSQLPackgInf);
+			lastLargeMessageTime = TimeUtil.currentTimeMillis();
+			ByteBuffer newBuffer = bufPool.allocate(Double.valueOf(pkgLength+pkgLength*0.1).intValue());
+			resetBuffer(newBuffer);
+		} else {
+			if (proxyBuffer.writeIndex != 0) {
+				// compact bytebuffer only
+				proxyBuffer.compact();
+			} else {
+				throw new RuntimeException(" not enough space");
 			}
-		}
-		
-		/**
-		 * 初始化设置  原始 命令
-		 * @param target
-		 */
-		public void setTarget(MySQLCommand target){
-			this.target = target;
-		}
-		
-		public MySQLCommand getCurrentSQLCommand(){
-			//sqlAnnotations 是  ArrayList .
-			if(sqlAnnotations.isEmpty()||cmdIndex >= queue.size()){
-				return target;
-			}else{
-				return sqlAnnoMapper.get(queue.get(cmdIndex));
-			}
-		}
-		
-		public void addCmdChain(Function<MycatSession, Boolean> sqlanno,MySQLCommand curr){
-			sqlAnnoMapper.put(sqlanno, curr);
-			queue.add(sqlanno);
-		}
-		
-		public void clear(){
-			sqlAnnoMapper.clear();
-			target = null;
-			sqlAnnotations.clear();
-			queue.clear();
-			cmdIndex = 0;
-		}
-
-		public String getErrMsg() {
-			return errMsg;
-		}
-
-		public void setErrMsg(String errMsg) {
-			this.errMsg = errMsg;
 		}
 	}
-
+	
+	/**
+	 * 重置buffer
+	 * @param newBuffer
+	 */
+	private void resetBuffer(ByteBuffer newBuffer){
+		newBuffer.put(proxyBuffer.getBytes(proxyBuffer.readIndex, proxyBuffer.writeIndex-proxyBuffer.readIndex));
+		proxyBuffer.resetBuffer(newBuffer);
+		recycleAllocedBuffer(proxyBuffer);
+		curMSQLPackgInf.endPos = curMSQLPackgInf.endPos - curMSQLPackgInf.startPos;
+		curMSQLPackgInf.startPos = 0;
+	}
+	
+	/**
+	 * 检查 是否需要切换回正常大小buffer.
+	 * 
+	 */
+	public void changeToDirectIfNeed(){
+		
+		if(!proxyBuffer.getBuffer().isDirect()){
+			
+			if(curMSQLPackgInf.pkgLength > bufPool.getChunkSize()){
+				lastLargeMessageTime = TimeUtil.currentTimeMillis();
+				return;
+			}
+			
+			if(lastLargeMessageTime < lastReadTime - 30 * 1000L){
+				logger.info("change to direct con read buffer ,cur temp buf size : {}" ,proxyBuffer.getBuffer().capacity());
+				ByteBuffer bytebuffer = bufPool.allocate();
+				if(!bytebuffer.isDirect()){
+					bufPool.recycle(bytebuffer);
+				}else{
+					resetBuffer(bytebuffer);
+				}
+				lastLargeMessageTime = TimeUtil.currentTimeMillis();
+			}
+		}
+	}
 }

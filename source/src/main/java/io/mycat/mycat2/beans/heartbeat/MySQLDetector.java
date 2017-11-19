@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.tasks.BackendHeartbeatTask;
+import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.util.TimeUtil;
 
@@ -89,6 +90,9 @@ public class MySQLDetector {
 				optSession.setCurNIOHandler(heartbeatTask);
 				heartbeatTask.doHeartbeat();
 			}else{
+				if(optSession!=null){
+					optSession.close(false, ((ErrorPacket)rv).message);
+				}
 				//连接创建 失败. 如果是主节点，需要重试.并在达到重试次数后,通知集群
 				if(heartbeat.incrErrorCount() < heartbeat.getSource().getDsMetaBean().getMaxRetryCount()){
 					heartbeat();

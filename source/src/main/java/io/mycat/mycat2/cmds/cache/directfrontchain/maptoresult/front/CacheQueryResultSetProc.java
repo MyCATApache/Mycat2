@@ -53,39 +53,45 @@ public class CacheQueryResultSetProc implements ChainExecInf {
 				String selectSql = (String) session.getSessionAttrMap()
 						.get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
 
-				// 首先清理之前的缓存
-				// 先将数据进行清理，再进行将缓存更新
-				CacheManager.INSTANCE.cleanCacheData(selectSql);
+				// 标识当前缓存放入开始
+				boolean upd = CacheManager.INSTANCE.begin(selectSql);
 
-				// 打上添加缓存的标识
-				// 标识当前添加缓存操作
-				session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_ADD_FLAG_KEY.getKey(), true);
+				if (upd) {
+					// 首先清理之前的缓存
+					// 先将数据进行清理，再进行将缓存更新
+					CacheManager.INSTANCE.cleanCacheData(selectSql);
 
-				// 标识当前缓存无需要响应前端
-				session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey(), false);
+					// 打上添加缓存的标识
+					// 标识当前添加缓存操作
+					session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_ADD_FLAG_KEY.getKey(), true);
 
-				ProxyBuffer proxyBuf = session.proxyBuffer;
+					// 标识当前缓存无需要响应前端
+					session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey(),
+							false);
 
-				// 清理buffer，重新组装查询的报文
-				proxyBuf.reset();
+					ProxyBuffer proxyBuf = session.proxyBuffer;
 
-				QueryPacket queryPkg = new QueryPacket();
+					// 清理buffer，重新组装查询的报文
+					proxyBuf.reset();
 
-				queryPkg.packetId = 0;
-				queryPkg.packetLength = selectSql.getBytes().length;
-				queryPkg.sql = selectSql;
+					QueryPacket queryPkg = new QueryPacket();
 
-				// 将查询的SQL写入buffer中
-				queryPkg.write(proxyBuf);
+					queryPkg.packetId = 0;
+					queryPkg.packetLength = selectSql.getBytes().length;
+					queryPkg.sql = selectSql;
 
-				// 切换 buffer 读写状态
-				proxyBuf.flip();
-				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-				proxyBuf.readIndex = proxyBuf.writeIndex;
-				// 改变 owner，对端Session获取，并且感兴趣写事件
-				session.giveupOwner(SelectionKey.OP_WRITE);
-				// 后数进行写入
-				session.curBackend.writeToChannel();
+					// 将查询的SQL写入buffer中
+					queryPkg.write(proxyBuf);
+
+					// 切换 buffer 读写状态
+					proxyBuf.flip();
+					// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+					proxyBuf.readIndex = proxyBuf.writeIndex;
+					// 改变 owner，对端Session获取，并且感兴趣写事件
+					session.giveupOwner(SelectionKey.OP_WRITE);
+					// 后数进行写入
+					session.curBackend.writeToChannel();
+				}
 
 			}
 		}

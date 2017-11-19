@@ -65,12 +65,54 @@ public class CacheManager {
 
 			SqlCacheBean result = CACHEBEANMAP.putIfAbsent(cacheSql, cacheBean);
 
-			// 当发现已经存在相同的
+			// 当发现已经存在相同的,进行缓存的清理操作
 			if (result != cacheBean && result != null) {
 				MapFileCacheImp.INSTANCE.close(cacheBean.getCacheMapFile());
 				cacheBean = null;
 			}
 		}
+	}
+
+	/**
+	 * 将线程id锁定的表中
+	 * 
+	 * @param cacheSql
+	 * @return
+	 */
+	public boolean begin(String cacheSql) {
+		if (CACHEBEANMAP.containsKey(cacheSql)) {
+
+			// 获取当前线程的
+			long id = Thread.currentThread().getId();
+
+			SqlCacheBean cacheBean = CACHEBEANMAP.get(cacheSql);
+
+			// 返回将线程的更新的结果
+			return cacheBean.getCacheThreadId().compareAndSet(0, id);
+		}
+
+		return false;
+	}
+
+	/**
+	 * 完成将状态修改为完成
+	 * 
+	 * @param cacheSql
+	 * @return
+	 */
+	public boolean commit(String cacheSql) {
+		if (CACHEBEANMAP.containsKey(cacheSql)) {
+
+			// 获取当前线程的
+			long id = Thread.currentThread().getId();
+
+			SqlCacheBean cacheBean = CACHEBEANMAP.get(cacheSql);
+
+			// 返回将线程的更新的结果
+			return cacheBean.getCacheThreadId().compareAndSet(id, 0);
+		}
+
+		return false;
 	}
 
 	/**
@@ -85,10 +127,17 @@ public class CacheManager {
 	 */
 	public void putCacheData(String cacheSql, ProxyBuffer buffer) throws Exception {
 		if (CACHEBEANMAP.containsKey(cacheSql)) {
+
+			// 获取当前线程的
+			long id = Thread.currentThread().getId();
+
 			SqlCacheBean cacheBean = CACHEBEANMAP.get(cacheSql);
 
-			// 向缓存中写入数据
-			MapFileCacheImp.INSTANCE.putCacheData(buffer, cacheBean.getCacheMapFile());
+			// 限制放入线程的数据将数据放入完成
+			if (cacheBean.getCacheThreadId().get() == id) {
+				// 向缓存中写入数据
+				MapFileCacheImp.INSTANCE.putCacheData(buffer, cacheBean.getCacheMapFile());
+			}
 		}
 	}
 
@@ -102,11 +151,22 @@ public class CacheManager {
 	 * @throws Exception
 	 */
 	public void cleanCacheData(String cacheSql) throws Exception {
+
 		if (CACHEBEANMAP.containsKey(cacheSql)) {
+
+			// 获取当前线程的
+			long id = Thread.currentThread().getId();
+
 			SqlCacheBean cacheBean = CACHEBEANMAP.get(cacheSql);
 
-			//重新设置新的缓存文件映射对象
-			cacheBean.setCacheMapFile(MapFileCacheImp.INSTANCE.clean(cacheBean.getCacheMapFile()));
+			// 限制放入线程的数据将数据放入完成
+			if (cacheBean.getCacheThreadId().get() == id) {
+				// 向缓存中写入数据
+				// MapFileCacheImp.INSTANCE.putCacheData(buffer,
+				// cacheBean.getCacheMapFile());
+				// 重新设置新的缓存文件映射对象
+				cacheBean.setCacheMapFile(MapFileCacheImp.INSTANCE.clean(cacheBean.getCacheMapFile()));
+			}
 		}
 	}
 
@@ -118,9 +178,20 @@ public class CacheManager {
 	 */
 	public void setCacheAvailable(String cacheSql, boolean flag) {
 		if (CACHEBEANMAP.containsKey(cacheSql)) {
+
+			// 获取当前线程的
+			long id = Thread.currentThread().getId();
+
 			SqlCacheBean cacheBean = CACHEBEANMAP.get(cacheSql);
 
-			cacheBean.getCacheMapFile().setCacheAvailable(flag);
+			// 限制放入线程的数据将数据放入完成
+			if (cacheBean.getCacheThreadId().get() == id) {
+				// 向缓存中写入数据
+				// MapFileCacheImp.INSTANCE.putCacheData(buffer,
+				// cacheBean.getCacheMapFile());
+				// 重新设置新的缓存文件映射对象
+				cacheBean.getCacheMapFile().setCacheAvailable(flag);
+			}
 		}
 	}
 
@@ -152,7 +223,7 @@ public class CacheManager {
 	 * @throws IOException
 	 *             异常信息
 	 */
-	public int getCacheValue(ProxyBuffer buffer, String cacheSql, int offset) throws IOException {
+	public long getCacheValue(ProxyBuffer buffer, String cacheSql, long offset) throws IOException {
 		if (CACHEBEANMAP.containsKey(cacheSql)) {
 			SqlCacheBean cacheBean = CACHEBEANMAP.get(cacheSql);
 

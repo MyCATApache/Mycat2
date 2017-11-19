@@ -27,6 +27,7 @@ public class TokenHash {
     public static final long ASENSITIVE   = 0xed1d69ad76119L;
     public static final long AT           = 0x20bL;
     public static final long AUTHORS      = 0xe27d1ca23L;
+    public static final long AUTOCOMMIT   = 0xee305b99db768L;
     public static final long AUTOEXTEND_SIZE = 0x464aad1de667b2c4L;
     public static final long AUTO_INCREMENT = 0xe297db9809eea053L;
     public static final long AUTO_REFRESH = 0x61c0bcdb33d9ba87L;
@@ -37,6 +38,7 @@ public class TokenHash {
     public static final long BALANCE      = 0xeb775c883L;
     public static final long BEFORE       = 0x5c8a2cfdL;
     public static final long BEGIN        = 0x241d4bcL;
+    public static final long BENCHMARK    = 0x615a508c3b76L;
     public static final long BETWEEN      = 0xed484eed7L;
     public static final long BIGINT       = 0x5d378abfL;
     public static final long BINARY       = 0x5d3eb36fL;
@@ -56,6 +58,7 @@ public class TokenHash {
     public static final long BYTE         = 0xe9d50L;
     public static final long CACHE        = 0x268a383L;
     public static final long CACHE_TIME   = 0x10a23d92583364L;
+    public static final long CACHE_RESULT = 0x6d39564de6b410c2L;
     public static final long CALL         = 0xf0bb0L;
     public static final long CASCADE      = 0xfd3c63759L;
     public static final long CASCADED     = 0x288eabedd50L;
@@ -79,6 +82,7 @@ public class TokenHash {
     public static final long CLOSE        = 0x2748585L;
     public static final long COALESCE     = 0x297ebc66617L;
     public static final long CODE         = 0xf664fL;
+    public static final long COERCIBILITY = 0x6fd78fb903e0bc4eL;
     public static final long COLLATE      = 0x10334f6c01L;
     public static final long COLLATION    = 0x6a60ec845118L;
     public static final long COLUMNS      = 0x10335930e6L;
@@ -95,7 +99,9 @@ public class TokenHash {
     public static final long CONCURRENT   = 0x1109d7275db039L;
     public static final long CONDITION    = 0x6a62ece0553aL;
     public static final long CONFIG       = 0x65295ad0L;
+    public static final long CONFIGS      = 0x10339f8b6eL;
     public static final long CONNECTION   = 0x1109e2e0c5262eL;
+    public static final long CONNECTION_ID = 0xeb2e99b33504d307L;
     public static final long CONSISTENT   = 0x1109e886ba6c70L;
     public static final long CONSTRAINT   = 0x1109e8d271817bL;
     public static final long CONSTRAINT_CATALOG = 0x2160d58342133e79L;
@@ -219,6 +225,7 @@ public class TokenHash {
     public static final long FOREIGN      = 0x1385ad7ac7L;
     public static final long FORMAT       = 0x79e5364bL;
     public static final long FOUND        = 0x2f92e2bL;
+    public static final long FOUND_ROWS   = 0x148861eb6e43e8L;
     public static final long FRAC_SECOND  = 0x34cc1d80f5a547cL;
     public static final long FROM         = 0x12a378L;
     public static final long FULL         = 0x12b6afL;
@@ -251,6 +258,7 @@ public class TokenHash {
     public static final long ID           = 0x343L;
     public static final long IDENTIFIED   = 0x17b2ebf9748803L;
     public static final long IF           = 0x345L;
+    public static final long IFNULL       = 0x8d14a25cL;
     public static final long IGNORE       = 0x8d3f9a06L;
     public static final long IGNORE_SERVER_IDS = 0x458aa01d4cb6f1bcL;
     public static final long IMPORT       = 0x8e44694dL;
@@ -288,6 +296,7 @@ public class TokenHash {
     public static final long KILL         = 0x17aa00L;
     public static final long LANGUAGE     = 0x420e34e9f9cL;
     public static final long LAST         = 0x1883d8L;
+    public static final long LAST_INSERT_ID = 0xb7d9f84aaa41c6eL;
     public static final long LEADING      = 0x19e08635c1L;
     public static final long LEAVES       = 0xa19357aaL;
     public static final long LEAVE        = 0x3f0dcacL;
@@ -396,12 +405,13 @@ public class TokenHash {
     public static final long NO_WAIT      = 0x1c604af94aL;
     public static final long NO_WRITE_TO_BINLOG = 0xd8e4fba760df3705L;
     public static final long NULL         = 0x1b2077L;
+    public static final long NULLIF       = 0xb22030acL;
     public static final long NUMBER       = 0xb220fba3L;
     public static final long NUMERIC      = 0x1c874bc8c0L;
     public static final long NVARCHAR     = 0x4927586d095L;
+    public static final long OFF          = 0xad84L;
     public static final long OFFLINE      = 0x1d39b08d88L;
     public static final long OFFSET       = 0xb67b1e11L;
-    public static final long OFF          = 0xad84L;
     public static final long OLD_PASSWORD = 0xcaed8a26ad23f3f9L;
     public static final long ON           = 0x443L;
     public static final long ONE_SHOT     = 0x4b711f6af83L;
@@ -480,7 +490,11 @@ public class TokenHash {
     public static final long REPAIR       = 0xcb118875L;
     public static final long REPEATABLE   = 0x2233dc5c8f419bL;
     public static final long REPEAT       = 0xcb11a173L;
+    public static final long REPL         = 0x1eecefL;
+    public static final long REPL_NAME    = 0xd58ef244a352L;
+    public static final long REPL_METABEAN_INDEX = 0xa7d557d5265cd8ffL;
     public static final long REPLACE      = 0x2085da3551L;
+    public static final long REPLICA      = 0x2085da69d5L;
     public static final long REPLICATION  = 0x57a4f90a076bbf3L;
     public static final long REPLICATE_DO_DB = 0x676228600fed6775L;
     public static final long REPLICATE_IGNORE_DB = 0x9c8545f719859952L;
@@ -592,8 +606,8 @@ public class TokenHash {
     public static final long SUPER        = 0x52fe2f6L;
     public static final long SUSPEND      = 0x220ffdebdfL;
     public static final long SWAPS        = 0x5319cadL;
-    public static final long SWITCHES     = 0x57681886a32L;
     public static final long SWITCH       = 0xd4fa9944L;
+    public static final long SWITCHES     = 0x57681886a32L;
     public static final long SYSDATE      = 0x222b90810aL;
     public static final long SYSTEM_USER  = 0x5c159a1fd978d40L;
     public static final long TABLES       = 0xd82644fdL;
@@ -662,6 +676,7 @@ public class TokenHash {
     public static final long VARYING      = 0x24d7226165L;
     public static final long VAR_POP      = 0x24d724aa00L;
     public static final long VAR_SAMP     = 0x5e674e2055dL;
+    public static final long VERSION      = 0x24f2bb5f63L;
     public static final long VIEW         = 0x233a5fL;
     public static final long VIRTUAL      = 0x250e5c064cL;
     public static final long WAIT         = 0x2413b1L;
@@ -700,11 +715,9 @@ public class TokenHash {
     public static final long SQL_TSI_MONTH = 0x8c3f094f1b906a03L;
     public static final long SQL_TSI_QUARTER = 0xe9ec207893081b87L;
     public static final long SQL_TSI_YEAR = 0xea71ed7ecec4f35bL;
-    public static final long AUTOCOMMIT = 4190263402411880L;
-    public static final long   IFNULL=2366939740L;
-    public static final long  NULLIF=2988454060L;
-    public static final long REPL = 0x1eecefL;
-
+    
+    public static final long SESSIONS     = 0x562de22f337L;
+    
     public static void main(String[] args) {
         MatchMethodGenerator.initShrinkCharTbl();
     }

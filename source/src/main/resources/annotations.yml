@@ -1,6 +1,5 @@
 annotations:
      - global:
-          - monitorSQL: false        # 全局sql 监控 开关。 sql 监控属于环绕类 监控，需要获取到sql 执行时间等信息。
           - blacklist:
              - selelctAllow: true         # sql 拦截     属于前置处理类
              - tableCheck: true
@@ -22,8 +21,9 @@ annotations:
                              tables:
                                   - test1
                              actions:
-                                  - sqlCach:
-                                          - param1: 111
+                                  - cacheResult:
+                                      cache_time: 1800
+                                      access_count: 60
                       - match:
                              name: select有条件多个tables
                              state: open
@@ -34,8 +34,9 @@ annotations:
                                   - test1
                                   - test2
                              actions:
-                                    - sqlCach:
-                                          - param1: 222
+                                    - cacheResult:
+                                        cache_time: 1800
+                                        access_count: 70
                                     - monitorSQL:
                                           - param1: 777
                       - match:
@@ -45,8 +46,9 @@ annotations:
                              where:
                                   - and: FROM test1
                              actions:
-                                    - sqlCach:
-                                          - param1: 555
+                                    - cacheResult:
+                                        cache_time: 1800
+                                        access_count: 80
                       - match:
                               name: select无条件有tables
                               state: open
@@ -55,7 +57,8 @@ annotations:
                                     - sbtest1
                               actions:
                                     - cacheResult:
-                                          - param1: 222     
+                                        cache_time: 1800
+                                        access_count: 90
                       - match:
                               name: insert无tables无条件
                               state: open

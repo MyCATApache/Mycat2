@@ -381,7 +381,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_CATLET, context.getAnnotationType());
-        //TODO 还需要完善提取catlet的类型
+        assertEquals("demo.catlets.ShareJoin", context.getCatletName());
     }
 
     @Test
@@ -455,6 +455,37 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(1000, context.getAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME));
         assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT));
         assertEquals(TokenHash.TRUE, context.getAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH));
+    }
+
+    @Test
+    public void testAnnotationCacheLimitSQL() throws Exception {
+        for(int i=0; i<1000; i++) {
+//            System.out.println("testAnnotationCacheLimitSQL "+i);
+            if (i%2==1) {
+                String sql = "/* MyCAT:cacheresult  cache_time=1000 auto_refresh=true access_count=100*/select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 100;";
+                parser.parse(sql.getBytes(), context);
+                assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+                assertEquals("tbl_A", context.getTableName(0));
+                assertEquals(BufferSQLContext.ANNOTATION_SQL_CACHE, context.getAnnotationType());
+                assertEquals(1000, context.getAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME));
+                assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT));
+                assertEquals(TokenHash.TRUE, context.getAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH));
+                assertEquals(100, context.getLimitCount());
+                assertEquals("select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 100;", context.getRealSQL(0));
+            } else {
+                String sql = "/* MyCAT:cacheresult  cache_time=100 auto_refresh=true access_count=100*/select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 10;";
+                parser.parse(sql.getBytes(), context);
+                assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+                assertEquals("tbl_A", context.getTableName(0));
+                assertEquals(BufferSQLContext.ANNOTATION_SQL_CACHE, context.getAnnotationType());
+                assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME));
+                assertEquals(100, context.getAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT));
+                assertEquals(TokenHash.TRUE, context.getAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH));
+                assertEquals(10, context.getLimitCount());
+                assertEquals("select a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z from tbl_A where id=1 limit 10;", context.getRealSQL(0));
+            }
+        }
+
     }
 
     @Test
@@ -533,6 +564,15 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         String sql = "SELECT * FROM tbl_A where id = 1234;";
         parser.parse(sql.getBytes(), context);
         assertEquals(Tokenizer.DIGITS, context.getTokenType(0, 7));
+    }
+
+    @Test
+    public void testSelectItemList1() throws Exception {
+        String sql = "SELECT VERSION(), USER(), DATABASE()";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(FunctionHash.VERSION, context.getSelectItem(0));
+        assertEquals(FunctionHash.USER, context.getSelectItem(1));
+        assertEquals(FunctionHash.DATABASE, context.getSelectItem(2));
     }
 
     private static final String sql1 = "select t3.*,ztd3.TypeDetailName as UseStateName\n" +

@@ -21,19 +21,26 @@ public class LeaderNotifyPacketCommand implements AdminCommand {
     public static final LeaderNotifyPacketCommand INSTANCE = new LeaderNotifyPacketCommand();
     private static final Logger LOGGER = LoggerFactory.getLogger(LeaderNotifyPacketCommand.class);
 
-    public void sendNotifyCmd(LeaderNotifyPacket pkg, AdminSession adminSession) {
+    public void sendNotifyCmd(byte type, String detail, String attach, AdminSession adminSession) {
+        LeaderNotifyPacket pkg = new LeaderNotifyPacket(type, detail, attach);
+        sendCmd(pkg, adminSession);
+    }
+
+    public void sendNotifyCmd(byte type, String detail, String attach) {
+        ProxyRuntime.INSTANCE.getAdminSessionManager().getAllSessions().forEach(adminSession -> {
+                LeaderNotifyPacket packet = new LeaderNotifyPacket(type, detail, attach);
+                sendCmd(packet, adminSession);
+            });
+    }
+
+    private void sendCmd(LeaderNotifyPacket packet, AdminSession adminSession) {
         if (adminSession.isChannelOpen()) {
             try {
-                adminSession.answerClientNow(pkg);
+                adminSession.answerClientNow(packet);
             } catch (Exception e) {
                 LOGGER.warn("notify node err " + adminSession.getNodeId(), e);
             }
         }
-    }
-
-    public void sendNotifyCmd(LeaderNotifyPacket pkg) {
-        ProxyRuntime.INSTANCE.getAdminSessionManager().getAllSessions()
-                .forEach(adminSession -> sendNotifyCmd(pkg, adminSession));
     }
 
     @Override
@@ -52,31 +59,64 @@ public class LeaderNotifyPacketCommand implements AdminCommand {
 
     /**
      * 处理leader发送来的命令报文
-     * 
+     *
      * @param session
      */
     private void handleCmd(AdminSession session) throws IOException {
         LeaderNotifyPacket packet = new LeaderNotifyPacket();
         packet.resolve(session.readingBuffer);
-        switch (packet.getType()) {
-            case LeaderNotifyPacket.LOAD_CHARACTER:
-                String repName = packet.getDetail();
-                int index = Integer.valueOf(packet.getAttach());
-                MySQLRepBean repBean = ProxyRuntime.INSTANCE.getConfig().getMySQLRepBean(repName);
-                if (repBean == null) {
-                    LOGGER.warn("leader packet repName may error, replica name: {}", repName);
-                    return;
-                }
-                MySQLMetaBean metaBean = repBean.getMetaBeans().get(index);
-                if (metaBean == null) {
-                    LOGGER.warn("leader packet index may error, index: {}", index);
-                    return;
-                }
-                metaBean.init();
-                metaBean.getHeartbeat().setStatus(DBHeartbeat.OK_STATUS);
-                break;
-            default:
-                LOGGER.warn("Maybe Bug, Leader us want you to fix it ");
+
+        byte type = packet.getType();
+        if (type == LeaderNotifyPacket.LOAD_CHARACTER) {
+            MySQLMetaBean metaBean = parsePacket(packet);
+            if (metaBean != null) {
+                loadCharacter(metaBean);
+            }
+        } else if (type == LeaderNotifyPacket.SLAVE_NODE_HEARTBEAT_ERROR) {
+            MySQLMetaBean metaBean = parsePacket(packet);
+            if (metaBean != null) {
+                slaveNodeHeartbeatError(metaBean);
+            }
+        } else if (type == LeaderNotifyPacket.SLAVE_NODE_HEARTBEAT_SUCCESS) {
+            MySQLMetaBean metaBean = parsePacket(packet);
+            if (metaBean != null) {
+                slaveNodeHeartbeatSuccess(metaBean);
+            }
+        } else {
+            LOGGER.warn("Maybe Bug, Leader us want you to fix it ");
         }
+    }
+
+    private MySQLMetaBean parsePacket(LeaderNotifyPacket packet) {
+        String repName = packet.getDetail();
+        int index = Integer.valueOf(packet.getAttach());
+        MySQLRepBean repBean = ProxyRuntime.INSTANCE.getConfig().getMySQLRepBean(repName);
+        if (repBean == null) {
+            LOGGER.warn("leader packet repName may error, replica name: {}", repName);
+            return null;
+        }
+
+        MySQLMetaBean metaBean = repBean.getMetaBeans().get(index);
+        if (metaBean == null) {
+            LOGGER.warn("leader packet index may error, index: {}", index);
+            return null;
+        }
+        return metaBean;
+    }
+
+    private void loadCharacter(MySQLMetaBean metaBean) throws IOException {
+        metaBean.init();
+        LOGGER.info("leader packet to set slave node ok, metaBean: {}", metaBean);
+        metaBean.getHeartbeat().setStatus(DBHeartbeat.OK_STATUS);
+    }
+
+    private void slaveNodeHeartbeatError(MySQLMetaBean metaBean) {
+        LOGGER.error("leader packet to set slave node error, metaBean: {}", metaBean);
+        metaBean.getHeartbeat().setStatus(DBHeartbeat.ERROR_STATUS);
+    }
+
+    private void slaveNodeHeartbeatSuccess(MySQLMetaBean metaBean) {
+        LOGGER.info("leader packet to set slave node success, metaBean: {}", metaBean);
+        metaBean.getHeartbeat().setStatus(DBHeartbeat.OK_STATUS);
     }
 }

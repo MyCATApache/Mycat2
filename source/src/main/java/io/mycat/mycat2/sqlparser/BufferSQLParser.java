@@ -1,20 +1,20 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.*;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.mycat.MYCATSQLParser;
+import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
 
 import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
-import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debugError;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteBufferArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.DefaultByteArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.SelectItemsParser;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
 
 /**
  * Created by Kaiz on 2017/2/6.
@@ -66,17 +66,17 @@ public class BufferSQLParser {
             pos++;
             while (pos < arrayCount) {
                 type = hashArray.getType(pos);
-                if (type == Tokenizer.DOT) {
+                if (type == Tokenizer2.DOT) {
                     ++pos;
                     context.pushSchemaName(pos);
                     //context.setTblNameStart(hashArray.getPos(pos));// TODO: 2017/3/10 可以优化成一个接口
                     //context.setTblNameSize(hashArray.getSize(pos));
                     ++pos;
-                } else if (type == Tokenizer.SEMICOLON) {
+                } else if (type == Tokenizer2.SEMICOLON) {
                     return pos;
-                } else if (type == Tokenizer.RIGHT_PARENTHESES || type == Tokenizer.LEFT_PARENTHESES) {
+                } else if (type == Tokenizer2.RIGHT_PARENTHESES || type == Tokenizer2.LEFT_PARENTHESES) {
                     return ++pos;
-                } else if (type == Tokenizer.COMMA) {
+                } else if (type == Tokenizer2.COMMA) {
                     return pickTableNames(++pos, arrayCount, context);
                 } else if ((type = hashArray.getIntHash(pos)) == IntTokenHash.AS) {
                     pos += 2;// TODO: 2017/3/10  二阶段解析需要别名，需要把别名存储下来
@@ -94,17 +94,17 @@ public class BufferSQLParser {
 
     int pickLimits(int pos, final int arrayCount, BufferSQLContext context) {
         int minus = 1;
-        if (hashArray.getType(pos) == Tokenizer.DIGITS) {
+        if (hashArray.getType(pos) == Tokenizer2.DIGITS) {
             context.setLimit();
             context.setLimitCount(TokenizerUtil.pickNumber(pos, hashArray, sql));
-            if (++pos < arrayCount && hashArray.getType(pos) == Tokenizer.COMMA) {
+            if (++pos < arrayCount && hashArray.getType(pos) == Tokenizer2.COMMA) {
                 context.pushLimitStart();
                 if (++pos < arrayCount) {
-                    if (hashArray.getType(pos) == Tokenizer.MINUS) {
+                    if (hashArray.getType(pos) == Tokenizer2.MINUS) {
                         minus = -1;
                         ++pos;
                     }
-                    if (hashArray.getType(pos) == Tokenizer.DIGITS) {
+                    if (hashArray.getType(pos) == Tokenizer2.DIGITS) {
                         //// TODO: 2017/3/11 需要完善处理数字部分逻辑
                         context.setLimitCount(TokenizerUtil.pickNumber(pos, hashArray, sql) * minus);
                     }
@@ -197,52 +197,61 @@ public class BufferSQLParser {
                     return pos;
                 case IntTokenHash.DATANODE:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_DATANODE);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                         context.setAnnotationValue(BufferSQLContext.ANNOTATION_DATANODE, hashArray.getHash(++pos));
                     }
                     break;
                 case IntTokenHash.SCHEMA:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_SCHEMA);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                         context.setAnnotationValue(BufferSQLContext.ANNOTATION_SCHEMA, hashArray.getHash(++pos));
                     }
                     break;
                 case IntTokenHash.SQL:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
 
                     }
                     break;
                 case IntTokenHash.CATLET:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_CATLET);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                        int start = hashArray.getPos(++pos);
+                        int length = hashArray.getSize(pos);
+                        intHash = hashArray.getIntHash(++pos);
+                        while ( pos < arrayCount && intHash != IntTokenHash.ANNOTATION_END) {
+                            length += hashArray.getSize(pos)+1;//+1是因为前面的 . 没有被收入HashArray
+                            intHash = hashArray.getIntHash(++pos);
+                        }
+                        context.setCatletName(start, length);
+                        context.setAnnotationStringValue(BufferSQLContext.ANNOTATION_CATLET, context.getCatletName());
 
                     }
                     break;
                 case IntTokenHash.DB_TYPE:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_DB_TYPE);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                         context.setAnnotationValue(BufferSQLContext.ANNOTATION_DB_TYPE, hashArray.getHash(++pos));
                         ++pos;
                     }
                     break;
                 case IntTokenHash.ACCESS_COUNT:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                         context.setAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT, TokenizerUtil.pickNumber(++pos, hashArray, sql));
                         ++pos;
                     }
                     break;
                 case IntTokenHash.AUTO_REFRESH:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                         context.setAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH, hashArray.getHash(++pos));
                         ++pos;
                     }
                     break;
                 case IntTokenHash.CACHE_TIME:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
-                    if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                    if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                         context.setAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME, TokenizerUtil.pickNumber(++pos, hashArray, sql));
                         ++pos;
                     }
@@ -255,7 +264,7 @@ public class BufferSQLParser {
                     if (hashArray.getHash(pos) == TokenHash.BALANCE) {
                         context.setAnnotationType(BufferSQLContext.ANNOTATION_BALANCE);
                         if (hashArray.getHash(++pos)==TokenHash.TYPE)  {
-                            if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                            if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                                 context.setAnnotationValue(BufferSQLContext.ANNOTATION_BALANCE, hashArray.getHash(++pos));
                                 ++pos;
                             }
@@ -265,7 +274,7 @@ public class BufferSQLParser {
                 case IntTokenHash.REPLICA:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_REPLICA_NAME);
                     if (hashArray.getHash(++pos)==TokenHash.NAME)  {
-                        if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
+                        if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                             context.setAnnotationValue(BufferSQLContext.ANNOTATION_REPLICA_NAME, hashArray.getHash(++pos));
                             ++pos;
                         }
@@ -329,9 +338,10 @@ public class BufferSQLParser {
         return pos;
     }
 
-    /*
-    * 用于进行第一遍处理，处理sql类型以及提取表名
-     */
+
+    /**
+     * 用于进行第一遍处理，处理sql类型以及提取表名
+     **/
     public void firstParse(BufferSQLContext context) {
         final int arrayCount = hashArray.getCount();
         int pos = 0;
@@ -389,7 +399,7 @@ public class BufferSQLParser {
                 case IntTokenHash.SELECT:
                     if (hashArray.getHash(pos) == TokenHash.SELECT) {
                         context.setSQLType(BufferSQLContext.SELECT_SQL);
-                        pos++;
+                        pos = SelectItemsParser.pickItemList(++pos, arrayCount, hashArray, context);
                     }
                     break;
                 case IntTokenHash.SHOW:
@@ -530,7 +540,11 @@ public class BufferSQLParser {
                     pos = pickAnnotation(++pos, arrayCount, context);
                     break;
                 case IntTokenHash.SQL_DELIMETER:
-                    context.setSQLFinished(++pos);
+                    if (hashArray.getHash(pos) == 0) {
+                        context.setSQLFinished(++pos);
+                    } else {
+                        pos++;
+                    }
                     break;
                 case IntTokenHash.FOR:
                     int next = pos + 1;
@@ -584,10 +598,18 @@ public class BufferSQLParser {
                     break;
                 }
                 case IntTokenHash.MYCAT:{
-                	TokenizerUtil.debug(pos,context);
-                	pos = MYCATSQLParser.pickMycat(++pos, arrayCount, context, hashArray, sql);
+                	if (hashArray.getHash(pos) == TokenHash.MYCAT) {
+                        context.setSQLType(BufferSQLContext.MYCAT_SQL);
+                        pos++;
+                    }
                 	break;
                 }
+                case IntTokenHash.SHUTDOWN:
+                    if (hashArray.getHash(pos) == TokenHash.SHUTDOWN) {
+                        context.setSQLType(BufferSQLContext.SHUTDOWN_SQL);
+                        pos++;
+                    }
+                    break;
                 default:
                   //  debugError(pos, context);
                     pos++;
@@ -612,13 +634,14 @@ public class BufferSQLParser {
         this.byteBufferArray.setSrc(src);
         this.byteBufferArray.setOffset(offset);
         this.byteBufferArray.setLength(length);
-        logger.debug("kaiz : "+this.byteBufferArray.getString(offset, length));
+        System.out.println("Recieved SQL : "+this.byteBufferArray.getString(offset, length));
         sql = this.byteBufferArray;
         hashArray = context.getHashArray();
         hashArray.init();
         context.setCurBuffer(sql);
         tokenizer.tokenize(sql, hashArray);
         firstParse(context);
+        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
     }
 
 
@@ -667,8 +690,8 @@ public class BufferSQLParser {
 //        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
 //        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
 
-//        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
-        ByteArrayInterface src = new DefaultByteArray("select 121345678;".getBytes());
+        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+//        ByteArrayInterface src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
 //        ByteArrayInterface src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
 //        long min = 0;
 //        for (int i = 0; i < 50; i++) {
@@ -682,7 +705,9 @@ public class BufferSQLParser {
 //        System.out.print("min time : " + min);
         parser.parse(src, context);
         System.out.println(context.getSQLCount());
-        IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
+        System.out.println(context.getSelectItem(0));
+        System.out.println(context.getSelectItem(1));
+        //IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
         //System.out.print("token count : "+parser.hashArray.getCount());
     }
 

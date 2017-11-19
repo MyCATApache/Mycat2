@@ -1,7 +1,6 @@
 actions:
       - monitorSQL: io.mycat.mycat2.sqlannotations.MonintorSQL
       - cacheResult: io.mycat.mycat2.sqlannotations.CacheResult
-      - sqlCach: io.mycat.mycat2.sqlannotations.SQLCach
       - blacklist: io.mycat.mycat2.sqlannotations.Blacklist
       - whitehost: io.mycat.mycat2.sqlannotations.Whitehost
       - tableCheck: io.mycat.mycat2.sqlannotations.TableCheck

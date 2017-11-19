@@ -1,40 +1,46 @@
 package io.mycat.mycat2.sqlannotations;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationCmd;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
 /**
  * Created by jamie on 2017/9/15.
  */
-public class CacheResult implements SQLAnnotation {
-	
+public class CacheResult extends SQLAnnotation {
+
 	private static final Logger logger = LoggerFactory.getLogger(CacheResult.class);
+	
+	/**
+	 * 动态注解 组装 mysqlCommand chain
+	 */
+	@Override
+	public boolean apply(MycatSession session,SQLAnnotationChain chain) {
+		CacheResultMeta meta = (CacheResultMeta) getSqlAnnoMeta();
+		//结果集缓存正在重构,当前版本存在bug,暂时去掉
+//		SQLAnnotationCmd cmd = meta.getSQLAnnotationCmd();
+//		cmd.setSqlAnnotationChain(chain);
+//		chain.addCmdChain(this,cmd);
+		
+		BufferSQLContext context = session.sqlContext;
+		context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
+		context.setAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME,meta.getCacheTime());
+		context.setAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT,meta.getAccessCount());		
+		return true;
+	}
 
-    public CacheResult() {
-        logger.debug("=>CacheResult 对象本身的构造 初始化");
-    }
-
-    @Override
-    public void init(Object args) {
-        logger.debug("=>CacheResult 动态注解初始化");
-    }
-
-    @Override
-    public Boolean apply(MycatSession context) {
-    	logger.debug("=>CacheResult");
-        return Boolean.TRUE;
-    }
-
-    @Override
-    public String getMethod() {
-        return null;
-    }
-
-    @Override
-    public void setMethod(String method) {
-
-    }
-
+	@Override
+	public void init(Object args) {
+		Map argMap = (Map)args;
+		CacheResultMeta meta = new CacheResultMeta();
+		meta.setAccessCount((int)argMap.get("access_count"));
+		meta.setCacheTime((int)argMap.get("cache_time"));
+		setSqlAnnoMeta(meta);
+	}
 }

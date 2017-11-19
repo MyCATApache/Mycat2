@@ -23,7 +23,6 @@ import io.mycat.util.IOUtils;
  * @version 0.0.1
  * @author liujun
  */
-@SuppressWarnings("restriction")
 public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 
 	/**
@@ -103,33 +102,19 @@ public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 
 		sqlCahce.setChannel(sqlCahce.getRandomFile().getChannel());
 
+		// 初始化通道都为0
+		sqlCahce.getChannel().position(0);
+
 		// 设置文件内存映射
 		sqlCahce.setMappedBuffer(sqlCahce.getRandomFile().getChannel().map(MapMode.READ_WRITE, 0, size));
 
 		sqlCahce.setCacheSize(size);
 
+		// 初始大小与内存大小相同
+		sqlCahce.setMapPosition(size);
+
 		return sqlCahce;
 
-	}
-
-	/**
-	 * 获取写入的索引编号 方法描述
-	 * 
-	 * @param offset
-	 * @return 2016年12月24日
-	 */
-	private long getIndex(SqlCacheInfoBean cacheResult, long offset) {
-		return cacheResult.getMemoryAddress() + offset;
-	}
-
-	/**
-	 * 将添加的指针加1
-	 * 
-	 * @return 2016年12月23日
-	 */
-	private long addPutPos(SqlCacheInfoBean cacheResult) {
-		cacheResult.setPutOption(cacheResult.getPutOption() + 1);
-		return cacheResult.getPutOption();
 	}
 
 	/**
@@ -156,27 +141,37 @@ public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 		// 进行加锁操作
 		boolean lock = false;
 
-		// 获取文件的游标
-		long filePosition = 0;
 		try {
 			cacheResult.getSemap().acquire();
 
 			lock = true;
-			filePosition = (long) cacheResult.getChannel().position();
 
-			long writeLength = filePosition + buffer.writeIndex - buffer.readMark;
+			long writeLength = cacheResult.getPutOption() + buffer.writeIndex - buffer.readMark;
 
 			// 重新标识出通道的大小
 			cacheResult.getChannel().position(writeLength);
 
 			// 仅在大于内存映射区域后进行文件大小的设置
-			if (writeLength > cacheResult.getCacheSize()) {
+			if (writeLength > cacheResult.getMapPosition()) {
+				// 写入磁盘
+				cacheResult.getMappedBuffer().force();
+
 				// 进行文件的扩容
 				cacheResult.getRandomFile().setLength(writeLength);
+
+				// 重新加载通道
+				cacheResult.getMappedBuffer().load();
+
+				// 初始大小与内存大小相同
+				cacheResult.setMapPosition(writeLength);
+
+				// cacheResult.getChannel().map(mode, position, size)
 			}
 
 			// 设置起始位置
 			buffer.getBuffer().position(buffer.readMark);
+
+			buffer.getBuffer().limit(buffer.writeIndex);
 
 			cacheResult.getMappedBuffer().limit((int) getPutPos(cacheResult) + buffer.writeIndex);
 
@@ -198,9 +193,9 @@ public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 
 	}
 
-	public int getByte(ProxyBuffer proBuffer, SqlCacheMapFileBean cacheResult, int offset) throws IOException {
+	public long getByte(ProxyBuffer proBuffer, SqlCacheMapFileBean cacheResult, long offset) throws IOException {
 
-		int length = cacheResult.getPutOption();
+		long length = cacheResult.getPutOption();
 
 		// 如果当前领移的数据超过了大小，则不处理
 		if (offset > length) {
@@ -221,8 +216,8 @@ public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 				// i)));
 			}
 		} else {
-			int startPosition = offset;
-			int endPosition = offset;
+			int startPosition = (int) offset;
+			long endPosition = offset;
 			// 如果最后一次数据，则以最长的标识为准备，不能超过
 			if (offset + buffer.limit() >= length) {
 				endPosition = length;
@@ -240,13 +235,16 @@ public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 
 		}
 
-		return 0;
+		return length;
 
 	}
 
 	public void close(SqlCacheMapFileBean cacheInfo) {
 
 		if (null != cacheInfo) {
+
+			// 写入磁盘
+			cacheInfo.getMappedBuffer().force();
 
 			// 关闭流将文件刷入磁盘中
 			IOUtils.colse(cacheInfo.getChannel());
@@ -265,9 +263,9 @@ public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public boolean clean(SqlCacheMapFileBean cacheResult) throws IOException, InterruptedException {
+	public SqlCacheMapFileBean clean(SqlCacheMapFileBean cacheResult) throws IOException, InterruptedException {
 
-		boolean result = false;
+		SqlCacheMapFileBean result = null;
 
 		if (null != cacheResult) {
 			// 进行加锁操作
@@ -277,14 +275,9 @@ public class MapBufferFileCacheImp implements CacheInf<SqlCacheMapFileBean> {
 				cacheResult.getSemap().acquire();
 				lock = true;
 
-				// 进行文件的扩容
-				cacheResult.getRandomFile().setLength(0);
-				// 重新标识出通道的大小
-				cacheResult.getChannel().position(0);
-				// 进行缓存 数据重置写入
-				cacheResult.setPutOption(0);
-
-				result = true;
+				close(cacheResult);
+				// 重新创建文件缓存
+				result = this.createCacheFile(null, cacheResult.getCacheSize());
 
 			} catch (IOException e) {
 				logger.error("MapFileCacheImp clean IOException", e);

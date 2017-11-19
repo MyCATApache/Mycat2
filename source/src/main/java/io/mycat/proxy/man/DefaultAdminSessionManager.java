@@ -9,11 +9,11 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
+import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.man.packet.NodeRegInfoPacket;
 
 /**

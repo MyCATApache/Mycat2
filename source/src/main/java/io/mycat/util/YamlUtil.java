@@ -31,7 +31,7 @@ public class YamlUtil {
         if (mycatHome == null) {
             StringBuilder sb = new StringBuilder();
             sb.append(System.getProperty("user.dir"))
-                .append(File.separator).append("source")
+//                .append(File.separator).append("source")
                 .append(File.separator).append("target")
                 .append(File.separator).append("classes")
                 .append(File.separator);
@@ -186,4 +186,8 @@ public class YamlUtil {
                     }
                 }).forEach(file -> file.delete());
     }
+
+	public static String getRootHomePath() {
+		return ROOT_PATH;
+	}
 }

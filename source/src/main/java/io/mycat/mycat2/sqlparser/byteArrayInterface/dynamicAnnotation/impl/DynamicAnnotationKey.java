@@ -5,11 +5,11 @@ import java.util.Arrays;
 
 public class DynamicAnnotationKey{
     final String schemaName;
-    final SQLType sqlType;
+    final int sqlType;
     final String[] tables;
     final String matchName;
 
-    public DynamicAnnotationKey(String schemaName, SQLType sqlType, String[] tables, String matchName) {
+    public DynamicAnnotationKey(String schemaName, int sqlType, String[] tables, String matchName) {
         this.schemaName = schemaName;
         this.sqlType = sqlType;
         this.tables = tables;
@@ -32,11 +32,11 @@ public class DynamicAnnotationKey{
 
     @Override
     public int hashCode() {
-      int result = schemaName != null ? schemaName.hashCode() : 0;
-      result = 31 * result + (sqlType != null ? sqlType.hashCode() : 0);
-      result = 31 * result + Arrays.hashCode(tables);
-      result = 31 * result + (matchName != null ? matchName.hashCode() : 0);
-      return result;
+        int result = schemaName != null ? schemaName.hashCode() : 0;
+        result = 31 * result + sqlType;
+        result = 31 * result + Arrays.hashCode(tables);
+        result = 31 * result + (matchName != null ? matchName.hashCode() : 0);
+        return result;
     }
 
     @Override

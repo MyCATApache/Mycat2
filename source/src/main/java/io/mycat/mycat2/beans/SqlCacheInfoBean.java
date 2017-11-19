@@ -14,7 +14,6 @@ public class SqlCacheInfoBean {
 	 */
 	private long memoryAddress;
 
-
 	/**
 	 * 内存缓存的大小
 	 */
@@ -23,7 +22,7 @@ public class SqlCacheInfoBean {
 	/**
 	 * 写入文件的位置
 	 */
-	private int putOption;
+	private long putOption;
 
 	public long getMemoryAddress() {
 		return memoryAddress;
@@ -33,7 +32,6 @@ public class SqlCacheInfoBean {
 		this.memoryAddress = memoryAddress;
 	}
 
-
 	public int getCacheSize() {
 		return cacheSize;
 	}
@@ -42,11 +40,11 @@ public class SqlCacheInfoBean {
 		this.cacheSize = cacheSize;
 	}
 
-	public int getPutOption() {
+	public long getPutOption() {
 		return putOption;
 	}
 
-	public void setPutOption(int putOption) {
+	public void setPutOption(long putOption) {
 		this.putOption = putOption;
 	}
 

@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public class ProxyBuffer {
 	
 	protected static Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
-	private final ByteBuffer buffer;
+	private ByteBuffer buffer;
 
 	// 对于Write to Buffer
 	// 的操作，readIndex表示当前可读的数据截止位置，readMark为数据开始位置，用户可以标记，下次写入Buffer时，从readMark的位置继续写入，
@@ -113,6 +113,13 @@ public class ProxyBuffer {
 		this.writeIndex = 0;
 		this.buffer.clear();
 	}
+	
+	public void resetBuffer(ByteBuffer newBuffer){
+		this.readIndex = 0;
+		this.readMark = 0;
+		this.writeIndex = newBuffer.position();
+		this.buffer = newBuffer;
+	}
 
 	/**
 	 * 只能用在读状态下，跳过指定的N个字符
@@ -169,13 +176,13 @@ public class ProxyBuffer {
 			readIndex += 1;
 			return getInt(index, 1);
 		} else if (len == 0xfc) {
-			readIndex += 2;
+			readIndex += 3;
 			return getInt(index + 1, 2);
 		} else if (len == 0xfd) {
-			readIndex += 3;
+			readIndex += 4;
 			return getInt(index + 1, 3);
 		} else {
-			readIndex += 8;
+			readIndex += 9;
 			return getInt(index + 1, 8);
 		}
 	}
@@ -388,7 +395,14 @@ public class ProxyBuffer {
 		writeIndex += offset + bytes.length;
 		return this;
 	}
-
+	
+	public ProxyBuffer writeLenencBytes(byte[] bytes, byte[] nullValue) {
+        if (bytes == null) {
+        	return writeLenencBytes(nullValue);
+        } else {
+        	return writeLenencBytes(bytes);
+        }
+    }
 	public ProxyBuffer writeByte(byte val) {
 		this.putByte(writeIndex, val);
 		writeIndex++;
@@ -424,6 +438,11 @@ public class ProxyBuffer {
 			return 9;
 		}
 	}
+	
+	public static int getLenencLength(byte[] bytes) {
+		int size = bytes.length;
+		return size + getLenencLength(size);
+	}
 
 	
 	public long getLenencInt(int index) {
@@ -434,14 +453,21 @@ public class ProxyBuffer {
 			return getInt(index + 1, 3);
 		} else if (len == 0xfe) {
 			return getInt(index + 1, 8);
+		} else if (len == 0xfb) {
+			return len;
 		} else {
 			return len;
-		}
+		} 
 	}
 
 	public byte[] readLenencBytes() {
 		int len = (int) getLenencInt(readIndex);
-		byte[] bytes = getBytes(readIndex + getLenencLength(len), len);
+		byte[] bytes = null;
+		if( (len & 0xff) == 0xfb) {
+			bytes = null;
+		} else {
+			bytes = getBytes(readIndex + getLenencLength(len), len);
+		}
 		readIndex += getLenencLength(len) + len;
 		return bytes;
 	}

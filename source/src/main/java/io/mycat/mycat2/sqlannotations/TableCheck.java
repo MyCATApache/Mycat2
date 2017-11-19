@@ -4,14 +4,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 
 /**
  * Created by jamie on 2017/9/24.
  */
-public class TableCheck implements SQLAnnotation{
+public class TableCheck extends SQLAnnotation{
 	
 	private static final Logger logger = LoggerFactory.getLogger(TableCheck.class);
-
+	
     public TableCheck() {
         logger.debug("=>TableCheck 对象本身的构造 初始化");
     }
@@ -22,18 +23,7 @@ public class TableCheck implements SQLAnnotation{
     }
 
     @Override
-    public Boolean apply(MycatSession context) {
-        return Boolean.TRUE;
+    public boolean apply(MycatSession context,SQLAnnotationChain chain) {
+        return true;
     }
-
-    @Override
-    public String getMethod() {
-        return null;
-    }
-
-    @Override
-    public void setMethod(String method) {
-
-    }
-
 }

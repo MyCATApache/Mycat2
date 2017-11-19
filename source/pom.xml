@@ -6,7 +6,7 @@
     <version>0.1</version>
 	<packaging>jar</packaging>
 	<name>mycat2</name>
-	<description>The project of Mycat-server</description>
+	<description>The project of Mycat2</description>
 	<url>http://io.mycat</url>
     
 	<properties>
@@ -17,9 +17,9 @@
 	</properties>
 	
 	<scm>
-		<connection>scm:git:ssh://apachemycat@github.com/MyCATApache/tcp-proxy.git</connection>
-		<developerConnection>scm:git:ssh://apachemycat@github.com/MyCATApache/tcp-proxy.git</developerConnection>
-		<url>scm:git:ssh://apachemycat@github.com/MyCATApache/tcp-proxy.git</url>
+		<connection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat2.git</connection>
+		<developerConnection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat2.git</developerConnection>
+		<url>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat2.git</url>
 	</scm>
 	
     <dependencies>
@@ -33,6 +33,11 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.6</version>
 		</dependency>
 		<!-- jmh -->
 		<dependency>

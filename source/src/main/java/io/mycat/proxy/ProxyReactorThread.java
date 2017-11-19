@@ -12,6 +12,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.mycat.proxy.buffer.BufferPool;
+
 /**
  * NIO Reactor Thread 负责多个Session会话
  * 

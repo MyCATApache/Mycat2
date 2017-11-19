@@ -4,12 +4,18 @@ import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.*;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.ActonFactory;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotation;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationKeyRoute;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Created by jamie on 2017/9/15.
@@ -30,11 +36,16 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
     final DynamicAnnotationKeyRoute route;
     final Map<Integer, DynamicAnnotation[]> cache;
     final Map<Integer, List<SQLAnnotationList>> schemaWithSQLtypeFunction = new HashMap<>();
+    SQLAnnotationList globalSQLAnnotationList = null;
     private static final Logger logger = LoggerFactory.getLogger(DynamicAnnotationManagerImpl.class);
     public DynamicAnnotationManagerImpl(String actionsPath, String annotationsPath, Map<Integer, DynamicAnnotation[]> cache) throws Exception {
        try {
            ActonFactory actonFactory = new ActonFactory(actionsPath);
-           this.route = new DynamicAnnotationKeyRoute(AnnotationsYamlParser.parse(annotationsPath, actonFactory,schemaWithSQLtypeFunction));
+           Map<String, SQLAnnotation> globalActionList = new HashMap<>();
+           this.route = new DynamicAnnotationKeyRoute(AnnotationsYamlParser.parse(annotationsPath, actonFactory, schemaWithSQLtypeFunction, globalActionList));
+           SQLAnnotationList global = new SQLAnnotationList();
+           global.setSqlAnnotations(globalActionList.values().stream().collect(Collectors.toList()));
+           globalSQLAnnotationList = global;
            this.cache = cache;
        }catch (Exception e){
            e.printStackTrace();
@@ -153,18 +164,20 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         }
         DynamicAnnotation[] res = annotations;
         List<SQLAnnotationList> schemaWithSQLtypeFunction = getSchemaWithSQLtypeFunction(schema, sqltype);
+        collect.add(globalSQLAnnotationList);
+        int size;
         if (res == null && schemaWithSQLtypeFunction == null) {
 
         } else if (res != null && schemaWithSQLtypeFunction == null) {
             collectAnnotationsListSQLAnnotationList(res, context, collect);
         } else if (res == null && schemaWithSQLtypeFunction != null) {
-            int size = schemaWithSQLtypeFunction.size();
+            size = schemaWithSQLtypeFunction.size();
             for (int i = 0; i < size; i++) {
                 collect.add(schemaWithSQLtypeFunction.get(i));
             }
         }else {
             collectAnnotationsListSQLAnnotationList(res, context, collect);
-            int size = schemaWithSQLtypeFunction.size();
+            size = schemaWithSQLtypeFunction.size();
             for (int i = 0; i < size; i++) {
                 collect.add(schemaWithSQLtypeFunction.get(i));
             }
@@ -186,18 +199,22 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
 
         }
         DynamicAnnotation[] res = annotations;
+        int size=globalSQLAnnotationList.getSqlAnnotations().size();
+        for (int i = 0; i <size ; i++) {
+            collect.add(globalSQLAnnotationList.getSqlAnnotations().get(i));
+        }
         List<SQLAnnotationList> globalFunction = getSchemaWithSQLtypeFunction(schema, sqltype);
         if (res == null && globalFunction == null) {
 
         } else if (res != null && globalFunction == null) {
             collectAnnotationsListSQLAnnotation(res, context, collect);
         } else if (res == null && globalFunction != null) {
-            int size = globalFunction.size();
+            size = globalFunction.size();
             for (int i = 0; i < size; i++) {
                 collect.addAll(globalFunction.get(i).getSqlAnnotations());
             }
         }else {
-            int size = globalFunction.size();
+            size = globalFunction.size();
             for (int i = 0; i < size; i++) {
                 collect.addAll(globalFunction.get(i).getSqlAnnotations());
             }
@@ -263,6 +280,7 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         String str = "select * where id between 1 and 100 and name = \"haha\" and a=1 and name2 = \"ha\"";
         System.out.println(str);
         sqlParser.parse(str.getBytes(), context);
-        manager.process("schemA", SQLType.INSERT, new String[]{"x1"}, context).run();
+        //  INSERT(14), DELETE(13), REPLACE(15), SELECT(11), UPDATE(12);
+        manager.process("schemA",12 , new String[]{"x1"}, context).run();
     }
 }

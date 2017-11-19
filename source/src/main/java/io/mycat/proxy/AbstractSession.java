@@ -10,12 +10,11 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.openjdk.jmh.runner.RunnerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 会话，代表一个前端连接
@@ -44,6 +43,8 @@ public abstract class AbstractSession implements Session {
 	public Selector nioSelector;
 	// 操作的Socket连接
 	public String addr;
+	public String host;
+	public long startTime;
 	public SocketChannel channel;
 	public SelectionKey channelKey;
 
@@ -66,10 +67,12 @@ public abstract class AbstractSession implements Session {
 		this.channel = channel;
 		InetSocketAddress clientAddr = (InetSocketAddress) channel.getRemoteAddress();
 		this.addr = clientAddr.getHostString() + ":" + clientAddr.getPort();
+		this.host = clientAddr.getHostString();
 		SelectionKey socketKey = channel.register(nioSelector, socketOpt, this);
 		this.channelKey = socketKey;
-		this.proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
+		this.proxyBuffer = new ProxyBuffer(this.bufPool.allocate());
 		this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
+		this.startTime =System.currentTimeMillis();
 	}
 
 	/**
@@ -79,7 +82,7 @@ public abstract class AbstractSession implements Session {
 	 */
 	public void useSharedBuffer(ProxyBuffer sharedBuffer) {
 		if (this.proxyBuffer != null && referedBuffer == false) {
-			this.bufPool.recycleBuf(proxyBuffer.getBuffer());
+			recycleAllocedBuffer(proxyBuffer);
 			proxyBuffer = sharedBuffer;
 			this.referedBuffer = true;
 			logger.debug("use sharedBuffer. ");
@@ -89,7 +92,7 @@ public abstract class AbstractSession implements Session {
 //			proxyBuffer = sharedBuffer;
 		} else if (sharedBuffer == null) {
 			logger.debug("referedBuffer is false.");
-			proxyBuffer = new ProxyBuffer(this.bufPool.allocByteBuffer());
+			proxyBuffer = new ProxyBuffer(this.bufPool.allocate());
 			proxyBuffer.reset();
 			this.referedBuffer = false;
 		}
@@ -129,25 +132,16 @@ public abstract class AbstractSession implements Session {
 			buffer.position(proxyBuffer.writeIndex);
 		}
 		
-		int readed = 0;
-		try{
-			readed = channel.read(buffer);
-		} catch(IOException e){
-			closeSocket(false,"Read EOF ,socket closed ");
-		}
+		int readed = channel.read(buffer);
 //		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
-			closeSocket(false,"Read EOF ,socket closed ");
+			logger.warn("Read EOF ,socket closed ");
+			throw new ClosedChannelException();
 		} else if (readed == 0) {
 			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
 		}
 		proxyBuffer.writeIndex = buffer.position();
 		return readed > 0;
-	}
-	
-	private void closeSocket(boolean normal,String msg) throws IOException{
-		close(false,msg);
-		throw new ClosedChannelException();
 	}
 
 	protected abstract void doTakeReadOwner();
@@ -171,12 +165,7 @@ public abstract class AbstractSession implements Session {
 		ByteBuffer buffer = proxyBuffer.getBuffer();
 		buffer.limit(proxyBuffer.readIndex);
 		buffer.position(proxyBuffer.readMark);
-		int writed = 0;
-		try{
-			writed = channel.write(buffer);
-		} catch(IOException e){
-			closeSocket(false,"write error ,socket closed ");
-		}
+		int writed = channel.write(buffer);
 		proxyBuffer.readMark += writed; // 记录本次磁轭如到 Channel 中的数据
 		if (!buffer.hasRemaining()) {
 //			logger.debug("writeToChannel write  {} bytes ,curChannel is {}", writed,this);
@@ -217,7 +206,7 @@ public abstract class AbstractSession implements Session {
 	 * @return ProxyBuffer
 	 */
 	public ProxyBuffer allocNewProxyBuffer() {
-		return new ProxyBuffer(bufPool.allocByteBuffer());
+		return new ProxyBuffer(bufPool.allocate());
 	}
 
 	/**
@@ -227,7 +216,9 @@ public abstract class AbstractSession implements Session {
 	 */
 	public void recycleAllocedBuffer(ProxyBuffer curFrontBuffer) {
 		if (curFrontBuffer != null) {
-			this.bufPool.recycleBuf(curFrontBuffer.getBuffer());
+			this.bufPool.recycle(curFrontBuffer.getBuffer());
+		}else{
+			logger.error("curFrontBuffer is null,please fix it !!!!");
 		}
 	}
 
@@ -270,7 +261,7 @@ public abstract class AbstractSession implements Session {
 	}
 
 	public String sessionInfo() {
-		return " [" + this.addr + ']';
+		return " [ sessionId = "+ sessionId+" ," + this.addr + ']';
 	}
 
 	public boolean isChannelOpen() {
@@ -289,10 +280,9 @@ public abstract class AbstractSession implements Session {
 	public void close(boolean normal, String hint) {
 		if (!this.isClosed()) {
 			this.closed = true;
-			logger.info("close session " + this.sessionInfo() + " for reason " + hint);
 			closeSocket(channel, normal, hint);
 			if (!referedBuffer) {
-				this.bufPool.recycleBuf(proxyBuffer.getBuffer());
+				recycleAllocedBuffer(proxyBuffer);
 			}
 			if(this instanceof MycatSession){
 				this.getMySessionManager().removeSession(this);
@@ -320,7 +310,7 @@ public abstract class AbstractSession implements Session {
 		if (channel == null) {
 			return;
 		}
-		String logInf = (normal) ? " normal close " : "abnormal close " + channel;
+		String logInf = (normal) ? " normal close " : "abnormal close " ;
 		logger.info(logInf + sessionInfo() + "  reason:" + msg);
 		try {
 			channel.close();

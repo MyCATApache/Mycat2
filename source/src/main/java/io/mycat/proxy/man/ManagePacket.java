@@ -38,6 +38,57 @@ public abstract class ManagePacket {
 	// 长度最长为2字节的short，即65535，长度包括包头3个字节在内
 	protected int pkgLength;
 
+	public static final String getTypeString(byte type) {
+		String str = "";
+		switch (type) {
+		case 0:
+			str = "PKG_FAILED";
+			break;
+		case 1:
+			str = "PKG_SUCCESS";
+			break;
+		case 2:
+			str = "PKG_NODE_REG";
+			break;
+		case 3:
+			str = "PKG_JOIN_REQ_ClUSTER";
+			break;
+		case 4:
+			str = "PKG_JOIN_NOTIFY_ClUSTER";
+			break;
+		case 5:
+			str = "PKG_JOIN_ACK_ClUSTER";
+			break;
+		case 6:
+			str = "PKG_CONFIG_VERSION_REQ";
+			break;
+		case 7:
+			str = "PKG_CONFIG_VERSION_RES";
+			break;
+		case 8:
+			str = "PKG_CONFIG_REQ";
+			break;
+		case 9:
+			str = "PKG_CONFIG_RES";
+			break;
+		case 10:
+			str = "PKG_CONFIG_PREPARE";
+			break;
+		case 11:
+			str = "PKG_CONFIG_CONFIRM";
+			break;
+		case 12:
+			str = "PKG_CONFIG_COMMIT";
+			break;
+		case 13:
+			str = "PKG_LEADER_NOTIFY";
+			break;
+		default:
+			break;
+		}
+		return str;
+	}
+
 	public ManagePacket(byte pkgType) {
 		this.pkgType = pkgType;
 	}

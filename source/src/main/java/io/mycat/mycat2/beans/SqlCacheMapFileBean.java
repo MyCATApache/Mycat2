@@ -1,5 +1,6 @@
 package io.mycat.mycat2.beans;
 
+import java.io.FileOutputStream;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -21,6 +22,12 @@ public class SqlCacheMapFileBean extends SqlCacheInfoBean {
 
 	/**
 	 * 随机文件读写信息 randomFile
+	 */
+	private FileOutputStream outputFile;
+	
+	
+	/**
+	 * 随机文件写入
 	 */
 	private RandomAccessFile randomFile;
 
@@ -48,6 +55,7 @@ public class SqlCacheMapFileBean extends SqlCacheInfoBean {
 	 * 当前映射的大小
 	 */
 	private long mapPosition;
+	
 
 	public RandomAccessFile getRandomFile() {
 		return randomFile;
@@ -55,6 +63,14 @@ public class SqlCacheMapFileBean extends SqlCacheInfoBean {
 
 	public void setRandomFile(RandomAccessFile randomFile) {
 		this.randomFile = randomFile;
+	}
+
+	public FileOutputStream getOutputFile() {
+		return outputFile;
+	}
+
+	public void setOutputFile(FileOutputStream outputFile) {
+		this.outputFile = outputFile;
 	}
 
 	public FileChannel getChannel() {

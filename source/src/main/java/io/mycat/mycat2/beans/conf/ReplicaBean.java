@@ -16,7 +16,7 @@ public class ReplicaBean {
     }
 
     public enum RepSwitchTypeEnum {
-        NOT_SWITCH, DEFAULT_SWITCH, SYN_STATUS_SWITCH, CLUSTER_STATUS_SWITCH;
+        NOT_SWITCH, SWITCH;
     }
 
     public enum RepTypeEnum {
@@ -25,9 +25,7 @@ public class ReplicaBean {
         // 普通主从
         MASTER_SLAVE(GlobalBean.MASTER_SLAVE_HEARTBEAT_SQL, GlobalBean.MYSQL_SLAVE_STAUTS_COLMS),
         // 普通基于garela cluster集群
-        GARELA_CLUSTER(GlobalBean.GARELA_CLUSTER_HEARTBEAT_SQL, GlobalBean.MYSQL_CLUSTER_STAUTS_COLMS),
-        // 基于MGR集群
-        GROUP_REPLICATION(GlobalBean.GROUP_REPLICATION_HEARTBEAT_SQL, GlobalBean.MYSQL_SLAVE_STAUTS_COLMS);
+        GARELA_CLUSTER(GlobalBean.GARELA_CLUSTER_HEARTBEAT_SQL, GlobalBean.MYSQL_CLUSTER_STAUTS_COLMS);
 
         private String hearbeatSQL;
         private String[] fetchColms;

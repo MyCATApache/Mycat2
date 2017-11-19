@@ -1,6 +1,8 @@
 package io.mycat.mycat2.net;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 
 import org.slf4j.Logger;
@@ -11,8 +13,10 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
 
 /**
  * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
@@ -37,29 +41,64 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		ProxyBuffer buffer = session.getProxyBuffer();
 		// 在load data的情况下，SESSION_PKG_READ_FLAG会被打开，以不让进行包的完整性检查
 		if (!session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey())
-				&& (readed == false ||
-						// 没有读到完整报文
-						MySQLSession.CurrPacketType.Full != session.resolveMySQLPackage(buffer, session.curMSQLPackgInf,
-								false))) {
+				&& readed == false) {
 			return;
 		}
+		
+		switch(session.resolveMySQLPackage(buffer, session.curMSQLPackgInf,false)){
+		 case Full:
+			session.changeToDirectIfNeed();
+			break;
+		 case LongHalfPacket:
+			// 解包获取包的数据长度
+			int pkgLength = session.curMSQLPackgInf.pkgLength;
+			ByteBuffer bytebuffer = session.proxyBuffer.getBuffer();
+			if(pkgLength>bytebuffer.capacity()&&!bytebuffer.hasRemaining()){
+				try {
+					session.ensureFreeSpaceOfReadBuffer();
+				}catch(RuntimeException e1){
+					if(!session.curMSQLPackgInf.crossBuffer){
+						session.curMSQLPackgInf.crossBuffer = true;
+						session.curMSQLPackgInf.remainsBytes = 
+								pkgLength - (session.curMSQLPackgInf.endPos - session.curMSQLPackgInf.startPos);
+						session.sendErrorMsg(ErrorCode.ER_UNKNOWN_ERROR, e1.getMessage());
+					}
+					session.proxyBuffer.readIndex = session.proxyBuffer.writeIndex;
+				}
+			}
+		 case ShortHalfPacket:
+			 session.proxyBuffer.readMark = session.proxyBuffer.readIndex;
+			return;
+		}
+		
 		if (session.curMSQLPackgInf.endPos < buffer.writeIndex) {
 			logger.warn("front contains multi package ");
 		}
 	    
-		session.matchMySqlCommand();
+		if(!session.matchMySqlCommand()){
+			return;
+		}
 
 		// 如果当前包需要处理，则交给对应方法处理，否则直接透传
-		if(session.getCmdChain().getCurrentSQLCommand().procssSQL(session)){
-			session.getCmdChain().getCurrentSQLCommand().clearFrontResouces(session, false);
+		if(session.curSQLCommand.procssSQL(session)){
+			session.curSQLCommand.clearFrontResouces(session, session.isClosed());
 		}
 	}
 
 	private void onBackendRead(MySQLSession session) throws IOException {
 		// 交给SQLComand去处理
-		MySQLCommand curCmd = session.getCmdChain().getCurrentSQLCommand();
-		if (curCmd.onBackendResponse(session)) {
-			curCmd.clearBackendResouces((MySQLSession) session,false);
+		MySQLCommand curCmd = session.getMycatSession().curSQLCommand;
+		try{
+			if (curCmd.onBackendResponse(session)) {
+				curCmd.clearBackendResouces(session,session.isClosed());
+			}
+		}catch(ClosedChannelException  ex){
+			String errmsg =  " read backend response error ,backend conn has closed.";
+			logger.error(errmsg);
+			session.getMycatSession().closeBackendAndResponseError(session,false,ErrorCode.ERR_CONNECT_SOCKET,errmsg);
+		} catch (IOException e) {
+			logger.error(" read backend response error.",e);
+			session.getMycatSession().closeBackendAndResponseError(session,false,ErrorCode.ERR_CONNECT_SOCKET, e.getMessage());
 		}
 	}
 
@@ -76,7 +115,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		} else {
 			MySQLSession mysqlSession = (MySQLSession) session;
 			try {
-				mysqlSession.getMycatSession().getCmdChain().getCurrentSQLCommand().onBackendClosed(mysqlSession, normal);
+				mysqlSession.getMycatSession().curSQLCommand.onBackendClosed(mysqlSession, normal);
 			} catch (IOException e) {
 				logger.warn("caught err ", e);
 			}
@@ -100,13 +139,13 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		// 交给SQLComand去处理
 		if (session instanceof MycatSession) {
 			MycatSession mycatSs = (MycatSession) session;
-			if (mycatSs.getCmdChain().getCurrentSQLCommand().onFrontWriteFinished(mycatSs)) {
-				mycatSs.getCmdChain().getCurrentSQLCommand().clearFrontResouces(mycatSs,false);
+			if (mycatSs.curSQLCommand.onFrontWriteFinished(mycatSs)) {
+				mycatSs.curSQLCommand.clearFrontResouces(mycatSs,false);
 			}
 		} else {
 			MycatSession mycatSs = ((MySQLSession) session).getMycatSession();
-			if (mycatSs.getCmdChain().getCurrentSQLCommand().onBackendWriteFinished((MySQLSession) session)) {
-				mycatSs.getCmdChain().getCurrentSQLCommand().clearBackendResouces((MySQLSession) session,false);
+			if (mycatSs.curSQLCommand.onBackendWriteFinished((MySQLSession) session)) {
+				mycatSs.curSQLCommand.clearBackendResouces((MySQLSession) session,false);
 			}
 		}
 	}

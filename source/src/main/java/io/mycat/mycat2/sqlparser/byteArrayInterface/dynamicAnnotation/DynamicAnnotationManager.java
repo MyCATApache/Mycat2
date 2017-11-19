@@ -4,7 +4,7 @@ import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlannotations.SQLAnnotationList;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationKeyRoute;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
+
 
 import java.util.List;
 
@@ -23,22 +23,22 @@ public interface DynamicAnnotationManager {
      * @return
      */
     //public void processNow(int schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception ;
-    public default Runnable process(String schema, SQLType sqltype, int[] tables, BufferSQLContext context) throws Exception {
+    public default Runnable process(String schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception {
 
-        return process(schema.hashCode(), sqltype.getValue(), tables, context);
+        return process(schema.hashCode(), sqltype, tables, context);
     }
 
-    public default Runnable process(String schema, SQLType sqltype, String[] tables, BufferSQLContext context) throws Exception {
-        return process(schema.hashCode(), sqltype.getValue(), DynamicAnnotationKeyRoute.stringArray2HashArray(tables), context);
+    public default Runnable process(String schema, int sqltype, String[] tables, BufferSQLContext context) throws Exception {
+        return process(schema.hashCode(), sqltype, DynamicAnnotationKeyRoute.stringArray2HashArray(tables), context);
     }
 
     public void collectInSQLAnnotationList(int schema, int sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotationList> collect)throws Exception;
-    public default void collectInSQLAnnotationList(String schema, SQLType sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotationList> collect) throws Exception {
-         collectInSQLAnnotationList(schema.hashCode(), sqltype.getValue(), tables, context,collect);
+    public default void collectInSQLAnnotationList(String schema, int sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotationList> collect) throws Exception {
+         collectInSQLAnnotationList(schema.hashCode(), sqltype, tables, context,collect);
     }
     public void collect(int schema, int sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotation> collect)throws Exception;
-    public default void collect(String schema, SQLType sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotation> collect) throws Exception {
-        collect(schema.hashCode(), sqltype.getValue(), tables, context,collect);
+    public default void collect(String schema, int sqltype, int[] tables, BufferSQLContext context, List<SQLAnnotation> collect) throws Exception {
+        collect(schema.hashCode(), sqltype, tables, context,collect);
     }
 
 

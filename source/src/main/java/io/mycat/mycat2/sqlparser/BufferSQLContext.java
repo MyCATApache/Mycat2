@@ -62,8 +62,13 @@ public class BufferSQLContext {
     public static final byte XA_START = 40;
     public static final byte XA_BEGIN = 41;
     public static final byte XA_END = 42;
-    
-    public static final byte MYCAT_SWITCH_REPL = 43;
+
+    //admin command
+//    public static final byte MYCAT_SWITCH_REPL = 43;
+//    public static final byte MYCAT_SHOW_CONFIGS = 44;
+    public static final byte MYCAT_SQL = 43;
+
+    public static final byte SHUTDOWN_SQL = 44;
 
     //ANNOTATION TYPE
     public static final byte ANNOTATION_BALANCE = 1;
@@ -82,6 +87,8 @@ public class BufferSQLContext {
     private short[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]
     private byte totalTblCount;
     private int[] annotationCondition;
+    private int[] selectItemArray;
+    private int selectItemArrayPos;
     private int tblResultPos;
     private byte schemaCount;
     private int schemaResultPos;
@@ -91,6 +98,7 @@ public class BufferSQLContext {
     private int tblResultArraySize = 256;//todo : 测试期先写死，后期考虑从设置参数中读取
     private byte annotationType;
     private long[] annotationValue;
+    private String[] annotationStringValue;
     private int totalSQLCount;
     private boolean hasLimit = false;
     private int limitStart = 0;
@@ -102,13 +110,17 @@ public class BufferSQLContext {
     private int preTableResultPos = 0;
     private int hashArrayRealSQLOffset = 0;//记录真实sql开始偏移
     private HashArray myCmdValue;
+    private int catletNameStart = 0;
+    private int catletNameLength = 0;
 
     public BufferSQLContext() {
         tblResult = new short[tblResultArraySize];
         sqlInfoArray = new short[512];
         annotationValue = new long[16];
+        annotationStringValue = new String[16];
         annotationCondition=new int[64];
         myCmdValue = new HashArray(256);
+        selectItemArray = new int[128];
     }
 
     public void setCurBuffer(ByteArrayInterface curBuffer) {
@@ -123,6 +135,8 @@ public class BufferSQLContext {
         sqlType = 0;
         annotationType = 0;
         Arrays.fill(annotationValue, 0);
+        Arrays.fill(selectItemArray, 0);
+        selectItemArrayPos = 0;
         hasLimit = false;
         totalSQLCount = 0;
         limitStart = 0;
@@ -133,6 +147,8 @@ public class BufferSQLContext {
         preTableResultPos = 0;
         hashArrayRealSQLOffset = 0;
         myCmdValue.init();
+        catletNameStart = 0;
+        catletNameLength = 0;
     }
 
     public void setTblName(int hashArrayPos) {
@@ -331,7 +347,14 @@ public class BufferSQLContext {
     public void setAnnotationValue(byte typeKey, long value) {
         this.annotationValue[typeKey] = value;
     }
-
+    public void setAnnotationStringValue(byte typeKey, String value) {
+        this.annotationStringValue[typeKey] = value;
+    }
+    
+    public String getAnnotationStringValue(byte typeKey) {
+        return this.annotationStringValue[typeKey];
+    }
+    
     public void setAnnotationStart(int pos) {
     }
 
@@ -384,5 +407,25 @@ public class BufferSQLContext {
 
     public byte getSchemaCount() {
         return schemaCount;
+    }
+
+    public void setSelectItem(int functionHash) {
+        selectItemArray[selectItemArrayPos++] = functionHash;
+    }
+
+    public int getSelectItem(int pos) {
+        if (pos > 128) {
+            return 0;
+        }
+        return selectItemArray[pos];
+    }
+
+    public void setCatletName(int start, int length) {
+        catletNameStart = start;
+        catletNameLength = length;
+    }
+
+    public String getCatletName() {
+        return buffer.getString(catletNameStart, catletNameLength);
     }
 }
