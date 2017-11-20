@@ -23,18 +23,18 @@ import io.mycat.proxy.ProxyBuffer;
 
 /**
  * 
- * 进行首包的读取
+ * 用来进行comm_query(3)的类型处理
  * 
  * @since 2017年8月23日 下午11:09:49
  * @version 0.0.1
  * @author liujun
  */
-public class PkgFirstReader implements PkgProcess {
+public class CommQueryHandlerAdapter implements CommandHandlerAdapter {
 
 	/**
 	 * 首包处理的实例对象
 	 */
-	public static final PkgFirstReader INSTANCE = new PkgFirstReader();
+	public static final CommQueryHandlerAdapter INSTANCE = new CommQueryHandlerAdapter();
 
 	/**
 	 * 查询包标识的开始
@@ -45,7 +45,7 @@ public class PkgFirstReader implements PkgProcess {
 	 * 指定需要处理的包类型信息
 	 */
 	private static final Map<Integer, DirectTransJudge> JUDGEMAP = new HashMap<>();
-	
+
 	/**
 	 * 特殊命令报文,不需要判断首包，直接返回。 例如
 	 */
@@ -56,13 +56,12 @@ public class PkgFirstReader implements PkgProcess {
 		JUDGEMAP.put((int) MySQLPacket.OK_PACKET, OkJudge.INSTANCE);
 		// 用来进行error包的处理
 		JUDGEMAP.put((int) MySQLPacket.ERROR_PACKET, ErrorJudge.INSTANCE);
-		
+
 		extendCmdPkg.add(ComStatisticsCmd.INSTANCE);
 	}
-	
 
 	@Override
-	public boolean procssPkg(MySQLSession session) throws IOException {
+	public boolean procss(MySQLSession session) throws IOException {
 
 		MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
 
@@ -75,8 +74,8 @@ public class PkgFirstReader implements PkgProcess {
 		if (null != pkgTypeEnum && CurrPacketType.Full == pkgTypeEnum) {
 
 			int pkgType = curMSQLPackgInf.pkgType;
-			
-			if(extendCmdPkg.contains(session.getMycatSession().curSQLCommand)){
+
+			if (extendCmdPkg.contains(session.getMycatSession().curSQLCommand)) {
 				return false;
 			}
 
@@ -88,7 +87,7 @@ public class PkgFirstReader implements PkgProcess {
 						MySQLPacket.RESULTSET_PACKET);
 
 				// 当前确认查询包，则切换至查询的读取操作
-				session.currPkgProc = PkgResultSetReader.INSTANCE;
+				session.commandHandler = CommQueryHandlerResultSetAdapter.INSTANCE;
 				return true;
 			}
 			// 如果当前为特殊的load data包，则直接进行切换至load data的逻辑处理

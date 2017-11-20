@@ -85,7 +85,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		boolean nextReadFlag = false;
 		do {
 			// 进行报文的处理流程
-			nextReadFlag = session.currPkgProc.procssPkg(session);
+			nextReadFlag = session.commandHandler.procss(session);
 		} while (nextReadFlag);
 
 		// 获取当前是否结束标识

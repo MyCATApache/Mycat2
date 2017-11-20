@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.pkgread.PkgResultSetReader;
+import io.mycat.mycat2.cmds.pkgread.CommQueryHandlerResultSetAdapter;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -54,7 +54,7 @@ public class ComFieldListCmd extends DirectPassthrouhCmd{
 			
 			if(success){
 				
-				mysqlsession.currPkgProc = PkgResultSetReader.INSTANCE;
+				mysqlsession.commandHandler = CommQueryHandlerResultSetAdapter.INSTANCE;
 				mysqlsession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey(), true);
 				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
 				curBuffer.readIndex = curBuffer.writeIndex;
