@@ -51,4 +51,7 @@ public class MyCatCmdDispatcher{
 		}
 		return processor.getCommand(context,level+1);
 	}
+	public Map<String,MycatCmdProcssor> getProcessorMap(){
+		return processorMap;
+	}
 }

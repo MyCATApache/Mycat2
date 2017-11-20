@@ -1,5 +1,8 @@
 package io.mycat.mycat2.cmds.manager.mycatswitch;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import io.mycat.mycat2.cmds.manager.MycatCmdProcssor;
 
 /**
@@ -17,7 +20,15 @@ public class MycatSwitchCmdProcessor extends MycatCmdProcssor {
        return LazyHolder.INSTANCE;    
    }
 	
+	private static Map<String,String> descMaps = new HashMap<>();
+	
 	static{
 		cmdMaps.put("REPL",MycatSwitchReplCmd.INSTANCE);
+		descMaps.put("REPL","设置主从切换");
+	}
+	
+	@Override
+	public Map<String,String> getDescMaps(){
+		return descMaps;
 	}
 }
