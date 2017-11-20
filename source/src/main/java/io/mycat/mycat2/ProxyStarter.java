@@ -20,7 +20,6 @@ import io.mycat.proxy.buffer.DirectByteBufferPool;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.MyCluster;
-import javafx.application.Platform;
 
 public class ProxyStarter {
 	private static final Logger LOGGER = LoggerFactory.getLogger(ProxyStarter.class);
