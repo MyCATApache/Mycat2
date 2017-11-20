@@ -112,7 +112,7 @@ public class ProxyRuntime {
 		
 		heartbeatScheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD,TimeUnit.MILLISECONDS);
 		
-		bufferPoolFactory = new BufferPooLFactory(nioReactorThreads);
+		bufferPoolFactory = BufferPooLFactory.getInstance();
 	}
 	
 	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){

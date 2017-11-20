@@ -27,8 +27,18 @@ public class BufferPooLFactory {
 	private ProxyBean proxybean;
 	
 	private List<BufferPool> bufferPools = new ArrayList<>();
+	
+	private static class LazyHolder {    
+	     private static final BufferPooLFactory INSTANCE = new BufferPooLFactory();    
+	}
+	
+	public static final BufferPooLFactory getInstance() {    
+      return LazyHolder.INSTANCE;    
+    }
 		
-	public BufferPooLFactory(int poolnum){
+	public BufferPooLFactory(){
+		
+		int poolCount = ProxyRuntime.INSTANCE.getNioReactorThreads();
 		
 		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
 		
@@ -36,7 +46,7 @@ public class BufferPooLFactory {
 		
 		long directMemorySize = (long)(Platform.getMaxDirectMemory()*DIRECT_SAFETY_FRACTION);
 		
-		int expectPoolSize = Double.valueOf(directMemorySize / poolnum).intValue();
+		int expectPoolSize = Double.valueOf(directMemorySize / poolCount).intValue();
 		
 		short bufferPoolPageNumber = proxybean.getBufferPoolPageNumber();
 		
@@ -51,8 +61,8 @@ public class BufferPooLFactory {
 					+ "please check it!!!!",bufferPoolPageNumber,bufferPoolPageSize,expectPoolSize);
 			
 			logger.warn("try reset bufferPool settings ");
-			if(directMemorySize < bufferPoolPageSize * poolnum ){
-				throw new InvalidParameterException("directMemorySize  is too small!!!. min {"+bufferPoolPageSize * poolnum+"}");
+			if(directMemorySize < bufferPoolPageSize * poolCount ){
+				throw new InvalidParameterException("directMemorySize  is too small!!!. min {"+bufferPoolPageSize * poolCount+"}");
 			}
 			
 			bufferPoolPageNumber = Double.valueOf(expectPoolSize / bufferPoolPageSize).shortValue();
@@ -60,7 +70,7 @@ public class BufferPooLFactory {
 			proxybean.setBufferPoolPageNumber(bufferPoolPageNumber);
 		}
 		
-		IntStream.range(0, poolnum).forEach(f->{
+		IntStream.range(0, poolCount).forEach(f->{
 			bufferPools.add(new DirectByteBufferPool(proxybean.getBufferPoolPageSize(),
 					proxybean.getBufferPoolChunkSize(),
 					proxybean.getBufferPoolPageNumber()));
@@ -68,17 +78,16 @@ public class BufferPooLFactory {
 	}
 	
 	/**
-	 * 正常情况，不会有并发
 	 * @return
 	 */
-	public synchronized BufferPool getBufferPool(){
+	public BufferPool getBufferPool(){
 		if(bufferPools.size()==0){
 			throw new InvalidParameterException("bufferPool is empty. maybe a bug,please fix it!!!!!");
 		}
 		return bufferPools.remove(bufferPools.size()-1);
 	}
 	
-	public synchronized void recycle(BufferPool pool){
+	public void recycle(BufferPool pool){
 		bufferPools.add(pool);
 	}
 }
