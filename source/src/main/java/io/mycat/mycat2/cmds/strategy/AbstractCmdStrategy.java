@@ -93,7 +93,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			byte sqltype = session.sqlContext.getSQLType()!=0?session.sqlContext.getSQLType():session.sqlContext.getCurSQLType();
 			
 			if(BufferSQLContext.MYCAT_SQL==sqltype){
-				session.curSQLCommand = MyCatCmdDispatcher.getInstance().getMycatCommand(session.sqlContext);
+				session.curSQLCommand = MyCatCmdDispatcher.INSTANCE.getMycatCommand(session.sqlContext);
 				return true;
 			}
 			
