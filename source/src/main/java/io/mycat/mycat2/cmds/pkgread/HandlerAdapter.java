@@ -22,11 +22,14 @@ public class HandlerAdapter {
 	// 指定关系
 	static {
 		// 0x01 COM_QUIT 关闭连接
-		HANDLERS[1] = CommQueryHandlerAdapter.INSTANCE;
+		HANDLERS[0x01] = CommQueryHandlerAdapter.INSTANCE;
 		// 0x02 COM_INIT_DB 切换数据库
-		HANDLERS[2] = CommQueryHandlerAdapter.INSTANCE;
+		HANDLERS[0x02] = CommQueryHandlerAdapter.INSTANCE;
 		// 0x03 COM_QUERY SQL查询请求
-		HANDLERS[3] = CommQueryHandlerAdapter.INSTANCE;
+		HANDLERS[0x03] = CommQueryHandlerAdapter.INSTANCE;
+
+		// 0x16 COM_STMT_PREPARE 预处理SQL语句
+		HANDLERS[0x16] = ComStmtPrepareHandlerAdapter.INSTANCE;
 
 	}
 

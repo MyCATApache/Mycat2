@@ -87,7 +87,7 @@ public class CommQueryHandlerAdapter implements CommandHandlerAdapter {
 						MySQLPacket.RESULTSET_PACKET);
 
 				// 当前确认查询包，则切换至查询的读取操作
-				session.commandHandler = CommQueryHandlerResultSetAdapter.INSTANCE;
+				session.getMycatSession().commandHandler = CommQueryHandlerResultSetAdapter.INSTANCE;
 				return true;
 			}
 			// 如果当前为特殊的load data包，则直接进行切换至load data的逻辑处理

@@ -28,7 +28,7 @@ public class FrontDataOverCheck implements ChainExecInf {
 		boolean nextReadFlag = false;
 		do {
 			// 进行报文的处理流程
-			nextReadFlag = session.curBackend.commandHandler.procss(session.curBackend);
+			nextReadFlag = session.commandHandler.procss(session.curBackend);
 		} while (nextReadFlag);
 
 		return seqList.nextExec();

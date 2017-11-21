@@ -28,7 +28,7 @@ public class DataOverCheck implements ChainExecInf {
 		boolean nextReadFlag = false;
 		do {
 			// 进行报文的处理流程
-			nextReadFlag = mysqlSession.commandHandler.procss(mysqlSession);
+			nextReadFlag = mysqlSession.getMycatSession().commandHandler.procss(mysqlSession);
 		} while (nextReadFlag);
 
 		return seqList.nextExec();

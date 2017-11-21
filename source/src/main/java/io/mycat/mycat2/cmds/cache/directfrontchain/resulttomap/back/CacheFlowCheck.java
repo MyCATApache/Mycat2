@@ -54,7 +54,7 @@ public class CacheFlowCheck implements ChainExecInf {
 		boolean nextReadFlag = false;
 		do {
 			// 进行报文的处理流程
-			nextReadFlag = mysqlSession.commandHandler.procss(mysqlSession);
+			nextReadFlag = mysqlSession.getMycatSession().commandHandler.procss(mysqlSession);
 		} while (nextReadFlag);
 
 		// 获取当前是否结束标识

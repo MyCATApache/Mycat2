@@ -15,7 +15,6 @@ import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.pkgread.CommandHandlerAdapter;
 import io.mycat.mycat2.cmds.pkgread.HandlerAdapter;
 import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
