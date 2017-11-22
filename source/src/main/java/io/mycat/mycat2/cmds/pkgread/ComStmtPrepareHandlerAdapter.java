@@ -96,22 +96,16 @@ public class ComStmtPrepareHandlerAdapter implements CommandHandlerAdapter {
 		}
 
 		// 标识当前传输未结束
-
-		// 切换buffer 读写状态
-		// curBuffer.flip();
 		MycatSession mycatSession = session.getMycatSession();
-		// 直接透传报文
-		// mycatSession.takeOwner(SelectionKey.OP_WRITE);
 
 		if (!isFinish) {
-			// 标识当前传输未结束
+			// 在stmt的处理中分为两阶段，首先进行SQL的预编译，然后进行值的执行,所以不能标识结束
 			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
-		} else {
-			// 结束移除标识
+		}
+		// 完成传输，则移除标识
+		else {
 			mycatSession.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
 		}
-
-		// mycatSession.writeToChannel();
 
 		/**
 		 * 当前命令处理是否全部结束,全部结束时需要清理资源

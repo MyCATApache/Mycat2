@@ -35,13 +35,22 @@ public class EofJudge implements DirectTransJudge {
 		if (multQuery || multResult) {
 			// 标识当前处于使用中
 			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+			// 需要继续读取结果集中的数据
 			return true;
+		}
+
+		// 检查是否通过fatch执行的语句
+		boolean cusorExists = ServerStatusEnum.StatusCheck(eofPkg.status, ServerStatusEnum.CURSOR_EXISTS);
+
+		if (cusorExists) {
+			// 标识当前处于使用中
+			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+			// 读取此标识，需要等等下一次fatch请求执行
+			return false;
 		}
 
 		// 事务状态的检查
 		boolean trans = ServerStatusEnum.StatusCheck(eofPkg.status, ServerStatusEnum.IN_TRANSACTION);
-
-		// 检查当前是否需要需要进行下一次的数据读取
 
 		// 如果当前事务状态被设置，连接标识为不能结束
 		if (trans) {
