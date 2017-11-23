@@ -13,18 +13,18 @@ import io.mycat.proxy.ProxyBuffer;
 
 /**
  * 
- * 0x16 COM_STMT_PREPARE 预处理SQL语句结果的一些小包处理，现在有错误处理
+ * 0x17 COM_STMT_EXECUTE 执行预处理语句 此语句执行完毕后，可能会释放连接
  * 
  * @since 2017年8月23日 下午11:09:49
  * @version 0.0.1
  * @author liujun
  */
-public class ComStmtPrepareHeaderHandlerAdapter implements CommandHandlerAdapter {
+public class ComStmtExecuteHeaderHandlerAdapter implements CommandHandlerAdapter {
 
 	/**
 	 * 首包处理的实例对象
 	 */
-	public static final ComStmtPrepareHeaderHandlerAdapter INSTANCE = new ComStmtPrepareHeaderHandlerAdapter();
+	public static final ComStmtExecuteHeaderHandlerAdapter INSTANCE = new ComStmtExecuteHeaderHandlerAdapter();
 
 	@Override
 	public boolean procss(MySQLSession session) throws IOException {
@@ -41,6 +41,17 @@ public class ComStmtPrepareHeaderHandlerAdapter implements CommandHandlerAdapter
 			// 如果当前为错误包，则进交给错误包处理
 			if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
 				boolean runFlag = ErrorJudge.INSTANCE.judge(session);
+
+				if (runFlag) {
+					return true;
+				}
+
+				return false;
+			}
+
+			// 进行当前执行的预处理的语句报文，如果为Ok则表示可以释放连接,进行正常的判断
+			else if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+				boolean runFlag = OkJudge.INSTANCE.judge(session);
 
 				if (runFlag) {
 					return true;

@@ -30,9 +30,8 @@ public class HandlerAdapter {
 		// 0x16 COM_STMT_PREPARE 预处理SQL语句
 		HANDLERS[0x16] = ComStmtPrepareHeaderHandlerAdapter.INSTANCE;
 		// 0x17 COM_STMT_EXECUTE 执行预处理语句
-		HANDLERS[0x17] = ComStmtPrepareHeaderHandlerAdapter.INSTANCE;
+		HANDLERS[0x17] = ComStmtExecuteHeaderHandlerAdapter.INSTANCE;
 		// 0x18 COM_STMT_SEND_LONG_DATA 发送BLOB类型的数据
-
 		// 0x19 COM_STMT_CLOSE 销毁预处理语句
 		HANDLERS[0x19] = CommQueryHandlerAdapter.INSTANCE;
 		// 0x1A COM_STMT_RESET 清除预处理语句参数缓存
