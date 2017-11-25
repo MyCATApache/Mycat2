@@ -1,12 +1,17 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
-import junit.framework.TestCase;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.IntStream;
+
 import org.junit.Before;
 import org.junit.Test;
 
-import java.nio.charset.StandardCharsets;
-import java.util.stream.IntStream;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteBufferArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
+import junit.framework.TestCase;
 
 /**
  * Created by Kaiz on 2017/1/22.
@@ -120,6 +125,20 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     }
 
     @Test
+    public void testPriorityUpdate() throws Exception {
+        String sql = "UPDATE LOW_PRIORITY tbl_A set name='kaiz' where name='nobody';";
+        parser.parse(sql.getBytes(), context);
+        assertEquals("tbl_A", context.getTableName(0));
+    }
+
+    @Test
+    public void testIgnoreUpdate() throws Exception {
+        String sql = "UPDATE IGNORE tbl_A set name='kaiz' where name='nobody';";
+        parser.parse(sql.getBytes(), context);
+        assertEquals("tbl_A", context.getTableName(0));
+    }
+
+    @Test
     public void testNormalDelete() throws Exception {
         String sql = "DELETE FROM tbl_A WHERE name='nobody';";
         parser.parse(sql.getBytes(), context);
@@ -149,6 +168,29 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         parser.parse(sql.getBytes(), context);
         assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
+    }
+
+    @Test
+    public void testDelayedInsert() throws Exception {
+        String sql = "INSERT DELAYED INTO tbl_A (`name`) VALUES ('kaiz');";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
+        assertEquals("tbl_A", context.getTableName(0));
+    }
+
+    @Test
+    public void testPriorityInsert() throws Exception {
+        String sql = "INSERT LOW_PRIORITY INTO tbl_A (`name`) VALUES ('kaiz');";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
+        assertEquals("tbl_A", context.getTableName(0));
+        assertEquals(context.getRealSQL(0), sql);
+
+        String sql2 = "INSERT HIGH_PRIORITY INTO tbl_B (`name`) VALUES ('kaiz');";
+        parser.parse(sql2.getBytes(), context);
+        assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
+        assertEquals("tbl_B", context.getTableName(0));
+        assertEquals(context.getRealSQL(0), sql2);
     }
 
     @Test
@@ -420,6 +462,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(20, context.getSQLCount());
         context.setSQLIdx(19);
         assertEquals("tbl_A", context.getSQLTableName(0, 0));
+        assertEquals("tbl_S", context.getSQLTableName(18, 0));
         assertEquals("tbl_T", context.getSQLTableName(19, 0));
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType(18));
         assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType(19));
@@ -491,6 +534,15 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     @Test
     public void testLoadDataSQL() throws Exception {
         String sql = "load data  low_priority infile \"/home/mark/data.sql\" replace into table tbl_A;";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.LOAD_SQL, context.getSQLType());
+        assertEquals("tbl_A", context.getTableName(0));
+    }
+
+    @Test
+    public void testLoadXMLSQL() throws Exception {
+        String sql =
+                "load xml concurrent local infile \"/home/mark/data.xml\" ignore into table tbl_A;";
         parser.parse(sql.getBytes(), context);
         assertEquals(BufferSQLContext.LOAD_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
@@ -573,6 +625,40 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(FunctionHash.VERSION, context.getSelectItem(0));
         assertEquals(FunctionHash.USER, context.getSelectItem(1));
         assertEquals(FunctionHash.DATABASE, context.getSelectItem(2));
+    }
+
+    @Test
+    public void testKill() throws Exception {
+        String sql = "kill 19201";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.KILL_SQL, context.getSQLType());
+
+        sql = "kill query 19201";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.KILL_QUERY_SQL, context.getSQLType());
+
+        sql = "kill connection 19201";
+        parser.parse(sql.getBytes(), context);
+        assertEquals(BufferSQLContext.KILL_SQL, context.getSQLType());
+    }
+
+    @Test
+    public void testHelp() throws Exception {
+        String sql = "help 'load data'";
+        parser.parse(ByteBuffer.wrap(sql.getBytes()), 0, sql.length(), context);
+        assertEquals(BufferSQLContext.HELP_SQL, context.getSQLType());
+        assertEquals(TokenHash.HELP, context.getTokenHash(0, 0));
+        assertEquals(Tokenizer2.STRINGS, context.getTokenType(0, 1));
+    }
+
+    @Test
+    public void testHelp2() throws Exception {
+        String sql = "help load data";
+        ByteArrayInterface src = new ByteBufferArray(sql.getBytes());
+        parser.parse(src, context);
+        assertEquals(BufferSQLContext.HELP_SQL, context.getSQLType());
+        assertEquals(TokenHash.HELP, context.getTokenHash(0, 0));
+        assertEquals(TokenHash.LOAD, context.getTokenHash(0, 1));
     }
 
     private static final String sql1 = "select t3.*,ztd3.TypeDetailName as UseStateName\n" +
