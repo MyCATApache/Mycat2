@@ -1,10 +1,11 @@
 package io.mycat.mycat2.sqlparser;
 
-import junit.framework.TestCase;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import junit.framework.TestCase;
 
 /**
  * Created by jamie on 2017/8/31.
@@ -180,7 +181,7 @@ public class DCLSQLParseTest extends TestCase {
     //    SQLParser parser;
     BufferSQLParser parser;
     BufferSQLContext context;
-    private static final Logger LOGGER = LoggerFactory.getLogger(TCLSQLParserTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DCLSQLParseTest.class);
 
     private void test(String t) {
         LOGGER.info(t);
