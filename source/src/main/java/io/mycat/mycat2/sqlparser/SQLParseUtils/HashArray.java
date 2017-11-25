@@ -1,14 +1,15 @@
 package io.mycat.mycat2.sqlparser.SQLParseUtils;
 
 /**
- * Created by Fanfan on 2017/3/21.
+ * Created by Kaiz on 2017/3/21.
+ * 2017/11/25: 调整hasharray大小，从4096增加到8192，如果要调整大小，需要调整 Context 中sqlInfo的 preHashPos 和 SQLSize 大小
  */
 public class HashArray {
     long[] hashArray;
     int pos = 0;
     
     public HashArray(){
-    	hashArray = new long[4096];
+    	hashArray = new long[8192];
     }
     
     public HashArray(int size){
