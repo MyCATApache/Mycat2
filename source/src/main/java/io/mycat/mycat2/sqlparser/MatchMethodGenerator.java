@@ -376,8 +376,8 @@ public class MatchMethodGenerator {
 //        sqlKeyHastTest("minimal_sql_tokens.txt", s -> genHash(s.toCharArray()), 0x3FL);
 //        run();
 //        test1();
-//        GenerateIntTokenHash("minimal_sql_tokens.txt");
-        GenerateLongTokenHash("sql_tokens.txt");
+        GenerateIntTokenHash("minimal_sql_tokens.txt");
+//        GenerateLongTokenHash("sql_tokens.txt");
 //        initShrinkCharTbl();
 //        System.out.format("0x%xL;%n", genHash("dn1".toCharArray()));
 
