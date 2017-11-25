@@ -14,6 +14,7 @@ import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.PacketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.util.Map.Entry;
@@ -39,11 +40,11 @@ public class MycatShowHelpCmd implements MySQLCommand {
         header.packetId = ++packetId;
 
         fields[i] = PacketUtil.getField("STATEMENT", Fields.FIELD_TYPE_VAR_STRING);
-        fields[i++].packetId = ++packetId;  
-        
+        fields[i++].packetId = ++packetId;
+
         fields[i] = PacketUtil.getField("DESCRIPTION", Fields.FIELD_TYPE_VAR_STRING);
         fields[i++].packetId = ++packetId;
-        
+
         eof.packetId = ++packetId;
     }
 
@@ -64,17 +65,17 @@ public class MycatShowHelpCmd implements MySQLCommand {
 
         // write rows
         byte packetId = eof.packetId;
-        
-		for (Entry<String,MycatCmdProcssor> entry : MyCatCmdDispatcher.getInstance().getProcessorMap().entrySet()) {  					
-			String cmdOne=entry.getKey().toLowerCase()+" ";
-			for (Entry<String,String> descentry : entry.getValue().getDescMaps().entrySet()) {  		
-			RowDataPacket row = new RowDataPacket(FIELD_COUNT);	
-			String cmdTwo="mycat "+cmdOne+descentry.getKey().toLowerCase();
-			row.add(cmdTwo.getBytes());
-			row.add(descentry.getValue().getBytes("gbk"));		
-			row.packetId = ++packetId;
-			row.write(buffer);
-		 }
+
+        for (Entry<String, MycatCmdProcssor> entry : MyCatCmdDispatcher.INSTANCE.getProcessorMap().entrySet()) {
+            String cmdOne = entry.getKey().toLowerCase() + " ";
+            for (Entry<String, String> descentry : entry.getValue().getDescMaps().entrySet()) {
+                RowDataPacket row = new RowDataPacket(FIELD_COUNT);
+                String cmdTwo = "mycat " + cmdOne + descentry.getKey().toLowerCase();
+                row.add(cmdTwo.getBytes());
+                row.add(descentry.getValue().getBytes());
+                row.packetId = ++packetId;
+                row.write(buffer);
+            }
         }
 
         // write last eof
