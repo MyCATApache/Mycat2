@@ -240,7 +240,7 @@ public class BufferSQLContext {
 
             int idx = curSQLIdx;
             curSQLIdx++;
-            long sqlInfo = ((long)preHashArrayPos & 0x3FF) << 50;
+            long sqlInfo = ((long)preHashArrayPos & 0x3FFF) << 50;
             sqlInfo |= ((long)hashArrayRealSQLOffset & 0xFF) << 42;
             sqlInfo |= ((long)sqlType & 0xFF) << 34 ;
             sqlInfo |= ((long)sqlSize & 0x3FFF) << 20;
@@ -307,7 +307,7 @@ public class BufferSQLContext {
     }
 
     public int getRealSQLSize(int sqlIdx) {
-        int hashArrayEndPos = ((int)(sqlInfoArray[sqlIdx] >> 20) & 0x3FF) - 1;
+        int hashArrayEndPos = ((int)(sqlInfoArray[sqlIdx] >> 20) & 0x3FFF) - 1;
         return hashArray.getPos(hashArrayEndPos) + hashArray.getSize(hashArrayEndPos);
     }
 
