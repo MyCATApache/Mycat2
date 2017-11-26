@@ -400,4 +400,11 @@ public class ProxyRuntime {
 	public void setBufferPoolFactory(BufferPooLFactory bufferPoolFactory) {
 		this.bufferPoolFactory = bufferPoolFactory;
 	}
+	
+	public NameableExecutor getTimerExecutor(){
+		return this.timerExecutor;
+	}
+	public NameableExecutor getBusinessExecutor(){
+		return this.businessExecutor;
+	}
 }
