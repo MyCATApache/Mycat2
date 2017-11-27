@@ -9,8 +9,7 @@ import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.cmds.pkgread.PkgFirstReader;
 import io.mycat.mycat2.cmds.pkgread.PkgProcess;
 import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.proxy.BufferPool;
-import io.mycat.util.ErrorCode;
+import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 后端MySQL连接
@@ -60,6 +59,13 @@ public class MySQLSession extends AbstractMySQLSession{
 		this.mycatSession = null;
 		this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
 	}
+	/**
+	 * 用来判断该连接是否空闲.
+	 * */
+	public boolean isIDLE() {
+		Boolean flag = (Boolean) this.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+		return (flag == null) ? true : flag;
+	}
 	
 	@Override
 	public void close(boolean normal, String hint) {
@@ -92,7 +98,7 @@ public class MySQLSession extends AbstractMySQLSession{
 
 	@Override
 	public String toString() {
-		return "MySQLSession [sessionId = "+getSessionId()+" , database=" + database + ", ip=" + mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort() + "]";
+		return "MySQLSession [sessionId = "+getSessionId()+" , database=" + database + ", ip=" + mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort()+ ",hashCode=" + this.hashCode() + "]";
 	}
 
 }

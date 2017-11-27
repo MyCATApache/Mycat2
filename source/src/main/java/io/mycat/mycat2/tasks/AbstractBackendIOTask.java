@@ -30,15 +30,17 @@ public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> impl
 	public AbstractBackendIOTask() {
 		this(null, false);
 	}
-
 	public void setSession(T session, boolean useNewBuffer) {
+		setSession( session, useNewBuffer, true);
+	}
+	public void setSession(T session, boolean useNewBuffer, boolean useNewCurHandler) {
 		this.useNewBuffer = useNewBuffer;
 		if (useNewBuffer) {
 			prevProxyBuffer = session.proxyBuffer;
 			session.proxyBuffer = session.allocNewProxyBuffer();
 			session.setCurBufOwner(true);
 		}
-		if (session != null) {
+		if (session != null && useNewCurHandler) {
 			this.session = session;
 			session.setCurNIOHandler(this);
 		}
@@ -70,7 +72,10 @@ public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> impl
 		this.callBack = callBack;
 
 	}
+	public AsynTaskCallBack<T>	getCallback() {
+		return this.callBack ;
 
+	}
 	@Override
 	public void onSocketClosed(T userSession, boolean normal) {
 	}

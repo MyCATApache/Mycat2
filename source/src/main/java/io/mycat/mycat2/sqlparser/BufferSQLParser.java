@@ -1,18 +1,20 @@
 package io.mycat.mycat2.sqlparser;
 
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.*;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.mycat.MYCATSQLParser;
+import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
 
 import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteBufferArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.DefaultByteArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.SelectItemsParser;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
 
 /**
  * Created by Kaiz on 2017/2/6.
@@ -214,6 +216,15 @@ public class BufferSQLParser {
                 case IntTokenHash.CATLET:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_CATLET);
                     if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                        int start = hashArray.getPos(++pos);
+                        int length = hashArray.getSize(pos);
+                        intHash = hashArray.getIntHash(++pos);
+                        while ( pos < arrayCount && intHash != IntTokenHash.ANNOTATION_END) {
+                            length += hashArray.getSize(pos)+1;//+1是因为前面的 . 没有被收入HashArray
+                            intHash = hashArray.getIntHash(++pos);
+                        }
+                        context.setCatletName(start, length);
+                        context.setAnnotationStringValue(BufferSQLContext.ANNOTATION_CATLET, context.getCatletName());
 
                     }
                     break;
@@ -587,8 +598,10 @@ public class BufferSQLParser {
                     break;
                 }
                 case IntTokenHash.MYCAT:{
-                	TokenizerUtil.debug(pos,context);
-                	pos = MYCATSQLParser.pickMycat(++pos, arrayCount, context, hashArray, sql);
+                	if (hashArray.getHash(pos) == TokenHash.MYCAT) {
+                        context.setSQLType(BufferSQLContext.MYCAT_SQL);
+                        pos++;
+                    }
                 	break;
                 }
                 case IntTokenHash.SHUTDOWN:
@@ -621,13 +634,14 @@ public class BufferSQLParser {
         this.byteBufferArray.setSrc(src);
         this.byteBufferArray.setOffset(offset);
         this.byteBufferArray.setLength(length);
-        logger.debug("kaiz : "+this.byteBufferArray.getString(offset, length));
+        System.out.println("Recieved SQL : "+this.byteBufferArray.getString(offset, length));
         sql = this.byteBufferArray;
         hashArray = context.getHashArray();
         hashArray.init();
         context.setCurBuffer(sql);
         tokenizer.tokenize(sql, hashArray);
         firstParse(context);
+        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
     }
 
 

@@ -1,10 +1,5 @@
 package io.mycat.mycat2.loadbalance;
 
-import io.mycat.proxy.BufferPool;
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.Session;
-import io.mycat.proxy.SessionManager;
-
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -12,6 +7,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
+import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.Session;
+import io.mycat.proxy.SessionManager;
+import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 负载均衡器前端会话管理器

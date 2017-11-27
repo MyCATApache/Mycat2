@@ -9,12 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
@@ -27,9 +28,9 @@ import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
-import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
@@ -81,11 +82,10 @@ public class MycatSession extends AbstractMySQLSession {
 	 * 获取sql 类型
 	 * @return
 	 */
-	public void matchMySqlCommand(){
+	public boolean matchMySqlCommand(){
 		switch(schema.schemaType){
 			case DB_IN_ONE_SERVER:
-				DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
-				break;
+				return DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case DB_IN_MULTI_SERVER:
 				DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case ANNOTATION_ROUTE:
@@ -232,6 +232,9 @@ public class MycatSession extends AbstractMySQLSession {
 		backend.useSharedBuffer(this.proxyBuffer);
 		backend.setCurNIOHandler(this.getCurNIOHandler());
 		backend.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+		logger.debug(" {} bind backConnection  for {}",
+				this,
+				backend.toString());
 	}
 
 	/**
@@ -497,10 +500,7 @@ public class MycatSession extends AbstractMySQLSession {
 			return null;
 		}
 		
-		return backendList.stream().filter(f -> {
-				Boolean flag = (Boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-				return (flag == null) ? false : flag;
-			})
+		return backendList.stream().filter(f -> f.isIDLE())
 			.findFirst()
 			.orElse(null);
 	}
@@ -527,8 +527,9 @@ public class MycatSession extends AbstractMySQLSession {
 				}
 				
 				if (isOnlyIdle) {
-					Boolean flag = (Boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-					return (flag == null) ? false : flag;
+					return f.isIDLE();
+//					Boolean flag = (Boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+//					return (flag == null) ? false : flag;
 				}
 				return true;
 			})
@@ -542,10 +543,9 @@ public class MycatSession extends AbstractMySQLSession {
 				curBackend = null;
 			}
 			backendList.remove(result);
-			logger.debug("Using SessionMap backend connections for {}.{}:{}",
+			logger.debug("Using SessionMap backend connections for {} {}",
 						(runOnSlave ? "read" : "write"),
-						result.getMySQLMetaBean().getDsMetaBean().getIp(),
-						result.getMySQLMetaBean().getDsMetaBean().getPort());
+						result);
 			return result;
 		}
 		return result;

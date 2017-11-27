@@ -9,6 +9,6 @@ import io.mycat.mycat2.MycatSession;
  */
 public interface CmdStrategy {
 	
-	void matchMySqlCommand(MycatSession session);
+	boolean matchMySqlCommand(MycatSession session);
 
 }

@@ -6,19 +6,20 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchemaTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 
 /**
@@ -109,10 +110,9 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
                 .map(mycatSession->mycatSession.getCurrCachedSession(targetMetaBean, runOnSlave,true))
                 .filter(session -> session != null).findFirst().orElse(null);
         if (mysqlSession != null) {
-			logger.debug("Use reactor cached backend connections for {}.{}:{}",
+			logger.debug("Use reactor cached backend connections for {}  {}",
 					(runOnSlave ? "read" : "write"),
-					mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),
-					mysqlSession.getMySQLMetaBean().getDsMetaBean().getPort());
+					mysqlSession);
             mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
             currMycatSession.bindBackend(mysqlSession);
             syncAndExecute(mysqlSession,callback);
@@ -124,7 +124,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 		LinkedList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(targetMetaBean);
 		if (mySQLSessionList != null && !mySQLSessionList.isEmpty()) {
 			mysqlSession = mySQLSessionList.removeLast();
-			if(mysqlSession!=null){
+			if(mysqlSession!=null && mysqlSession.isIDLE()){
 				logger.debug("Using the existing session in the datasource  for {}. {}:{}",
 						(runOnSlave ? "read" : "write"),
 						mysqlSession.getMySQLMetaBean().getDsMetaBean().getIp(),
@@ -195,7 +195,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
   			mysqlSession = mySQLSessionList.removeLast();
   			if(mysqlSession!=null){
   				if(logger.isDebugEnabled()){
-  					logger.debug("Using the existing session in the datasource .{}",mysqlSession);
+  					logger.debug("Using the existing session in the datasource .{} \n {}",mysqlSession.getMySQLMetaBean(),mysqlSession);
   				}
   				callback.finished(mysqlSession, null, true, null);
   				return;

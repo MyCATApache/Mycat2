@@ -2,17 +2,21 @@ package io.mycat.mycat2;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.beans.GlobalBean;
-import io.mycat.mycat2.beans.conf.*;
-import io.mycat.proxy.*;
-import io.mycat.proxy.NIOAcceptor.ServerType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.proxy.BufferPool;
+import io.mycat.mycat2.beans.conf.BalancerBean;
+import io.mycat.mycat2.beans.conf.BalancerConfig;
+import io.mycat.mycat2.beans.conf.ClusterBean;
+import io.mycat.mycat2.beans.conf.ClusterConfig;
+import io.mycat.mycat2.beans.conf.ProxyBean;
+import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOAcceptor;
+import io.mycat.proxy.NIOAcceptor.ServerType;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.buffer.DirectByteBufferPool;
 import io.mycat.proxy.man.AdminCommandResovler;
 import io.mycat.proxy.man.ClusterNode;
 import io.mycat.proxy.man.MyCluster;
@@ -28,9 +32,12 @@ public class ProxyStarter {
 	public void start() throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatConfig conf = runtime.getConfig();
-
+		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
+		ProxyBean proxybean = proxyConfig.getProxy();
 		// 启动NIO Acceptor
-		NIOAcceptor acceptor = new NIOAcceptor(new BufferPool(GlobalBean.BUFFER_POOL_SIZE));
+		NIOAcceptor acceptor = new NIOAcceptor(new DirectByteBufferPool(proxybean.getBufferPoolPageSize(),
+				proxybean.getBufferPoolChunkSize(),
+				proxybean.getBufferPoolPageNumber()));
 		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
@@ -116,9 +123,11 @@ public class ProxyStarter {
 	private void startReactor() throws IOException {
 		// Mycat 2.0 Session Manager
 		MycatReactorThread[] nioThreads = (MycatReactorThread[]) MycatRuntime.INSTANCE.getReactorThreads();
+		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
 		int cpus = nioThreads.length;
+		
 		for (int i = 0; i < cpus; i++) {
-			MycatReactorThread thread = new MycatReactorThread(new BufferPool(GlobalBean.BUFFER_POOL_SIZE));
+			MycatReactorThread thread = new MycatReactorThread(ProxyRuntime.INSTANCE.getBufferPoolFactory().getBufferPool());
 			thread.setName("NIO_Thread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;

@@ -32,8 +32,7 @@ public class TimeUtil {
     private static volatile long CURRENT_TIME = System.currentTimeMillis();
 
     public static final long currentTimeMillis() {
-//        return CURRENT_TIME;
-        return System.currentTimeMillis();
+        return CURRENT_TIME;
     }
     public static final long currentTimeNanos() {
         return System.nanoTime();

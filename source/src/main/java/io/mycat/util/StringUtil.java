@@ -163,7 +163,12 @@ public final class StringUtil {
     public final static boolean isEmpty(String str) {
     	return str == null || str == "";
     }
-    
+    public final static String parseString(byte[] bytes) {
+    	if(null != bytes) {
+    		return new String(bytes);
+    	}
+    	return null ;
+    }
 //    public final static String dumpAsHex(final ConDataBuffer buffer){
 //    	return (dumpAsHex(buffer, 0, buffer.getWritePos()));
 //    }

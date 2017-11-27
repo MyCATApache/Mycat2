@@ -6,7 +6,7 @@
     <version>0.1</version>
 	<packaging>jar</packaging>
 	<name>mycat2</name>
-	<description>The project of Mycat-server</description>
+	<description>The project of Mycat2</description>
 	<url>http://io.mycat</url>
     
 	<properties>
@@ -17,9 +17,9 @@
 	</properties>
 	
 	<scm>
-		<connection>scm:git:ssh://apachemycat@github.com/MyCATApache/tcp-proxy.git</connection>
-		<developerConnection>scm:git:ssh://apachemycat@github.com/MyCATApache/tcp-proxy.git</developerConnection>
-		<url>scm:git:ssh://apachemycat@github.com/MyCATApache/tcp-proxy.git</url>
+		<connection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat2.git</connection>
+		<developerConnection>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat2.git</developerConnection>
+		<url>scm:git:ssh://apachemycat@github.com/MyCATApache/Mycat2.git</url>
 	</scm>
 	
     <dependencies>
@@ -28,35 +28,48 @@
 			<artifactId>guava</artifactId>
 			<version>19.0</version>
 		</dependency>
-		<!-- junit -->
 		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-		</dependency>
-		<!-- jmh -->
-		<dependency>
-			<groupId>org.openjdk.jmh</groupId>
-			<artifactId>jmh-core</artifactId>
-			<version>1.19</version>
-		</dependency>
-		<dependency>
-			<groupId>org.openjdk.jmh</groupId>
-			<artifactId>jmh-generator-annprocess</artifactId>
-			<version>1.19</version>
-			<scope>provided</scope>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.6</version>
 		</dependency>
 		<dependency>
 			<groupId>org.yaml</groupId>
 			<artifactId>snakeyaml</artifactId>
 			<version>1.18</version>
 		</dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.2</version>
-        </dependency>
-    </dependencies>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>1.7.2</version>
+		</dependency>
+
+		<!-- jar for test -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-core</artifactId>
+			<version>1.19</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.openjdk.jmh</groupId>
+			<artifactId>jmh-generator-annprocess</artifactId>
+			<version>1.19</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>6.0.5</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
     
 	<build>
 		<resources>
@@ -139,7 +152,7 @@
 								</replacement>
 								<replacement>
 									<token>@giturl@</token>
-									<value>https://github.com/MyCATApache/tcp-proxy</value>
+									<value>https://github.com/MyCATApache/Mycat2</value>
 								</replacement>
 								<replacement>
 									<token>@mycatsite@</token>
@@ -429,6 +442,27 @@
 					</dependency>
 				</dependencies>
 
+			</plugin>
+			
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>0.7.9</version>
+				<executions>
+					<execution>
+						<id>pre-test</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>post-test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 
 		</plugins>

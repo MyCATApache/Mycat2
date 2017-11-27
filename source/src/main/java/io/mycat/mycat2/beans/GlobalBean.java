@@ -7,7 +7,6 @@ package io.mycat.mycat2.beans;
  * @author: gaozhiwen
  */
 public class GlobalBean {
-    public static final int BUFFER_POOL_SIZE = 1024 * 10;
 
     public static final String SINGLE_NODE_HEARTBEAT_SQL = "select 1";
     public static final String MASTER_SLAVE_HEARTBEAT_SQL = "show slave status";

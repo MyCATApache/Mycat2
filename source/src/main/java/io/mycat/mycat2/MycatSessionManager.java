@@ -9,12 +9,11 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.net.MySQLClientAuthHandler;
-import io.mycat.proxy.BufferPool;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
+import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * Mycat 2.0 Session Manager

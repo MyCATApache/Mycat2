@@ -1,4 +1,12 @@
-package io.mycat.mycat2.cmds.manager;
+package io.mycat.mycat2.cmds.manager.show;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
@@ -15,14 +23,6 @@ import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.PacketUtil;
 import io.mycat.util.YamlUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Objects;
 
 /**
  * mycat管理命令处理类，用于查询当前配置信息
