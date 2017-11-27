@@ -30,7 +30,7 @@ public class HashArray {
     public void set(int type, int start, int size) {
         set(type, start, size, 0L); }
     public void set(int type, int start, int size, long hash) {
-        size = size>0xFF?size:0xFF;
+        size = size<0xFF ? size : 0xFF;
         hashArray[pos++] = (((long)start) << 40) & 0xFFFFFF0000000000L | ((long)type << 8) & 0xFFFFFFFF00L | (long)size;
         hashArray[pos++] = hash;
     }
