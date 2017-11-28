@@ -180,11 +180,16 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
 
     @Test
     public void testPriorityInsert() throws Exception {
-        String sql = "INSERT LOW_PRIORITY INTO tbl_A (`name`) VALUES ('kaiz');";
+        String sql =
+                "INSERT LOW_PRIORITY INTO tbl_A (`name`) VALUES ('kaiz');\n"
+                        + "Select * from abc;Update tbl_B set a = 'im' where a = 'no';";
         parser.parse(sql.getBytes(), context);
         assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
-        assertEquals(context.getRealSQL(0), sql);
+        assertEquals(context.getRealSQL(0),
+                "INSERT LOW_PRIORITY INTO tbl_A (`name`) VALUES ('kaiz');");
+        assertEquals(context.getRealSQL(1), "Select * from abc;");
+        assertEquals(context.getRealSQL(2), "Update tbl_B set a = 'im' where a = 'no';");
 
         String sql2 = "INSERT HIGH_PRIORITY INTO tbl_B (`name`) VALUES ('kaiz');";
         parser.parse(sql2.getBytes(), context);
@@ -460,13 +465,16 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
                 "insert tbl_T(id, val) values(20, 2)";
         parser.parse(sql.getBytes(), context);
         assertEquals(20, context.getSQLCount());
-        context.setSQLIdx(19);
+        // context.setSQLIdx(19);
         assertEquals("tbl_A", context.getSQLTableName(0, 0));
         assertEquals("tbl_S", context.getSQLTableName(18, 0));
         assertEquals("tbl_T", context.getSQLTableName(19, 0));
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType(18));
         assertEquals(BufferSQLContext.INSERT_SQL, context.getSQLType(19));
-
+        assertEquals("insert tbl_A(id, val) values(1, 2);", context.getRealSQL(0));
+        assertEquals("insert tbl_B(id, val) values(2, 2);", context.getRealSQL(1));
+        assertEquals("insert tbl_R(id, val) values(18, 2);", context.getRealSQL(17));
+        assertEquals("SELECT id, val FROM tbl_S where id=19;", context.getRealSQL(18));
     }
 
     @Test
@@ -479,13 +487,15 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
 
     @Test
     public void testGetRealSQL() throws Exception {
-        String sql = "/* MyCAT:sql=select id from tbl_B where id = 101*/select * from tbl_A where id=1;";
+        String sql =
+                "/* MyCAT:sql=select id from tbl_B where id = 101*/select * from tbl_A where id=1;update tbl_A set name = 'a' wnere id =1;";
         parser.parse(sql.getBytes(), context);
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_SQL, context.getAnnotationType());
         assertEquals(50, context.getRealSQLOffset(0));
         assertEquals("select * from tbl_A where id=1;", context.getRealSQL(0));
+        assertEquals("update tbl_A set name = 'a' wnere id =1;", context.getRealSQL(1));
     }
 
     @Test

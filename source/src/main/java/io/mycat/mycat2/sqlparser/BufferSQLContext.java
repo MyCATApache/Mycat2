@@ -1,17 +1,19 @@
 package io.mycat.mycat2.sqlparser;
 
+import java.util.Arrays;
+
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 
-import java.util.Arrays;
-
 /**
- * Created by Kaiz on 2017/3/21.
- * 2017/11/25: sqlInfo 结构调整如下：
+ * Created by Kaiz on 2017/3/21. 2017/11/25: sqlInfo 结构调整如下：
+ * 
+ * <pre>
  * 63.............................................................0
  * |------14------|---8---|---8---|-----14-----|----12----|---8---|
  *   preHashPos    realSQL SQLType   SQLSize     TBLStart  TBLCount
+ * </pre>
  */
 public class BufferSQLContext {
     //DDL
@@ -302,12 +304,18 @@ public class BufferSQLContext {
     }
 
     public int getRealSQLOffset(int sqlIdx) {
-        int hashArrayOffset = (int)(sqlInfoArray[sqlIdx] >> 42) & 0xFF;
+        int hashArrayOffset = 0;
+        if (sqlIdx <= 0) {
+            hashArrayOffset = (int) (sqlInfoArray[sqlIdx] >> 42) & 0xFF;
+        } else {
+            hashArrayOffset = (int) (sqlInfoArray[sqlIdx] >> 50) & 0x3FFF;
+        }
         return hashArray.getPos(hashArrayOffset);
     }
 
     public int getRealSQLSize(int sqlIdx) {
-        int hashArrayEndPos = ((int)(sqlInfoArray[sqlIdx] >> 20) & 0x3FFF) - 1;
+        int hashArrayEndPos = ((int) (sqlInfoArray[sqlIdx] >> 50) & 0x3FFF)
+                + ((int) (sqlInfoArray[sqlIdx] >> 20) & 0x3FFF) - 1;
         return hashArray.getPos(hashArrayEndPos) + hashArray.getSize(hashArrayEndPos);
     }
 
