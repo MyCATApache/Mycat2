@@ -202,11 +202,11 @@ public class MatchMethodGenerator {
         }
         return hash;
     }
-    
+
   static void genIntTokenHash(String... strArray) {
     initShrinkCharTbl();
     for (String str : strArray) {
-      System.out.format("The IntTokenHash Of '%-16s' = 0x%04x%04x;%n", str,
+      System.out.format("The IntTokenHash Of '%-16s' = 0x%06x%02x;%n", str,
           genHash2(str.toCharArray()) & 0xFFFF, str.length());
     }
   }
@@ -359,7 +359,7 @@ public class MatchMethodGenerator {
             Files.lines(Paths.get(fileName))
                     .filter(x -> x.length()>0)
                     .forEach(x -> {
-                System.out.format("    public static final int %-16s = 0x%04x%04x;%n", x, genHash2(x.toCharArray()) & 0xFFFF, x.length());
+                System.out.format("    public static final int %-16s = 0x%06x%02x;%n", x, genHash2(x.toCharArray()) & 0xFFFFFF, x.length());
 //                        System.out.format("    public static final long %-12s = 0x%x;%n", x, genHash(x.toCharArray()));
                     });
 //            System.out.println("conflict count : "+count);
@@ -368,18 +368,18 @@ public class MatchMethodGenerator {
         }
     }
 
-  public static void main(String[] args) {
-    // isXXXTokenGenerator();
-    // skipXXXTokenGenerator();
-    // sqlKeyHastTest("sql_tokens.txt", s -> genHash(s.toCharArray()), 0x1FFL);
-    // sqlKeyHastTest("minimal_sql_tokens.txt", s -> (long)genHash2(s.toCharArray()), 0x1FL);
-    // sqlKeyHastTest("minimal_sql_tokens.txt", s -> genHash(s.toCharArray()), 0x3FL);
-    // run();
-    // test1();
-    // GenerateIntTokenHash("minimal_sql_tokens.txt");
-    // GenerateLongTokenHash("sql_tokens.txt");
-    // initShrinkCharTbl();
-    // System.out.format("0x%xL;%n", genHash("dn1".toCharArray()));
+    public static void main(String[] args) {
+        //isXXXTokenGenerator();
+        //skipXXXTokenGenerator();
+//        sqlKeyHastTest("sql_tokens.txt", s -> genHash(s.toCharArray()), 0x1FFL);
+//        sqlKeyHastTest("minimal_sql_tokens.txt", s -> (long)genHash2(s.toCharArray()), 0x1FL);
+//        sqlKeyHastTest("minimal_sql_tokens.txt", s -> genHash(s.toCharArray()), 0x3FL);
+//        run();
+//        test1();
+        GenerateIntTokenHash("minimal_sql_tokens.txt");
+//        GenerateLongTokenHash("sql_tokens.txt");
+//        initShrinkCharTbl();
+//        System.out.format("0x%xL;%n", genHash("dn1".toCharArray()));
 
     genIntTokenHash("SQL_DELIMETER", ";", "*", "AS", "$", "TRUNCATE", "HIGH_PRIORITY",
                 "REPL_METABEAN_INDEX", "XML");

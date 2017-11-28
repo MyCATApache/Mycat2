@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode(Mode.Throughput)//基准测试类型
 @OutputTimeUnit(TimeUnit.SECONDS)//基准测试结果的时间类型
-@Warmup(iterations = 20)//预热的迭代次数
+@Warmup(iterations = 10)//预热的迭代次数
 @Threads(1)//测试线程数量
 @State(Scope.Thread)//该状态为每个线程独享
 //度量:iterations进行测试的轮次，time每轮进行的时长，timeUnit时长单位,batchSize批次数量
@@ -34,13 +34,14 @@ public class SQLBenchmark {
     byte[] srcBytes;
     String src;
     ByteArrayInterface byteArrayInterface;
+    long[] hashArray = new long[128];
 
     //run
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
                 .include(SQLBenchmark.class.getSimpleName())
                 .forks(1)
-                .jvmArgs("-XX:+UnlockDiagnosticVMOptions", "-XX:+LogCompilation", "-XX:+TraceClassLoading", "-XX:+PrintAssembly")
+//                .jvmArgs("-XX:+UnlockDiagnosticVMOptions", "-XX:+LogCompilation", "-XX:+TraceClassLoading", "-XX:+PrintAssembly")
                 .addProfiler(GCProfiler.class)    // report GC time
                 //.output("SQLBenchmark.log")//输出信息到文件
                 .build();
@@ -64,14 +65,43 @@ public class SQLBenchmark {
         System.out.println("=> init");
     }
 
+//    @Benchmark
+//    public void NewSqQLParserTest() {
+//        newSQLParser.parse(srcBytes, newSQLContext);
+//    }
+
+//    @Benchmark
+//    public void NewSqQLParserWithByteArrayInterfaceTest() {
+//        newSQLParser2.parse(byteArrayInterface, newSQLContext2);
+//    }
+
     @Benchmark
-    public void NewSqQLParserTest() {
-        newSQLParser.parse(srcBytes, newSQLContext);
+    public void SetLong1() {
+        int type = 31;
+        int size = 15;
+        int start = 7;
+        long a = (long)type << 32 | size << 24 | start&0xFFFFFF;
     }
 
     @Benchmark
-    public void NewSqQLParserWithByteArrayInterfaceTest() {
-        newSQLParser2.parse(byteArrayInterface, newSQLContext2);
+    public void SetLong2() {
+        int type = 31;
+        int size = 15;
+        int start = 7;
+        long a = (((long)start) << 40) & 0xFFFFFF0000000000L | ((long)type << 8) & 0xFFFFFFFF00L | (long)size;
+    }
+
+    @Benchmark
+    public int GetLong1() {
+        int idx = 1;
+        long value = hashArray[idx << 1];
+        return (int)(value >>> 24);
+    }
+
+    @Benchmark
+    public int GetLong2() {
+        int idx = 1;
+        return (int)hashArray[idx << 1];
     }
 
 //    @Benchmark

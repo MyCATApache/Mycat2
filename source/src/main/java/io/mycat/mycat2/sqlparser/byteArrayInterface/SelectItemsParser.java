@@ -41,7 +41,7 @@ public class SelectItemsParser {
         int size;
         while (pos < arrayCount) {
             intHash = hashArray.getIntHash(pos);
-            size = intHash & 0xFFFF;
+            size = intHash & 0xFF;
 
             switch (size) {
                 case 4:
