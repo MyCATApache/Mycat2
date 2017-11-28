@@ -11,7 +11,7 @@ import io.mycat.mycat2.MySQLSession;
  * @version 0.0.1
  * @author liujun
  */
-public interface CommandHandlerAdapter {
+public interface CommandHandler {
 
 	/**
 	 * 进行包操作的接口

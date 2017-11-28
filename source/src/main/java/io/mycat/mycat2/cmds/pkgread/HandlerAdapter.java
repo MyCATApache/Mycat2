@@ -17,7 +17,7 @@ public class HandlerAdapter {
 	/**
 	 * 进行前段与后端结束的相验证的关系，索引为请求包的类型
 	 */
-	private static final CommandHandlerAdapter[] HANDLERS = new CommandHandlerAdapter[33];
+	private static final CommandHandler[] HANDLERS = new CommandHandler[33];
 
 	// 指定关系
 	static {
@@ -46,7 +46,7 @@ public class HandlerAdapter {
 	 * @param type
 	 * @return
 	 */
-	public CommandHandlerAdapter getHandlerByType(int type) {
+	public CommandHandler getHandlerByType(int type) {
 		if (type <= HANDLERS.length) {
 			return HANDLERS[type];
 		}

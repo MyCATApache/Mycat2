@@ -29,7 +29,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @version 0.0.1
  * @author liujun
  */
-public class CommQueryHandlerAdapter implements CommandHandlerAdapter {
+public class CommQueryHandlerAdapter implements CommandHandler {
 
 	/**
 	 * 首包处理的实例对象

@@ -21,7 +21,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @version 1.0.0
  * @since 2017年8月22日 下午4:13:07
  */
-public class CommQueryHandlerResultSetAdapter implements CommandHandlerAdapter {
+public class CommQueryHandlerResultSetAdapter implements CommandHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(CommQueryHandlerResultSetAdapter.class);
 

@@ -21,7 +21,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @version 0.0.1
  * @author liujun
  */
-public class ComStmtPrepareHandlerAdapter implements CommandHandlerAdapter {
+public class ComStmtPrepareHandlerAdapter implements CommandHandler {
 
 	private static final Logger logger = LoggerFactory.getLogger(ComStmtPrepareHandlerAdapter.class);
 
