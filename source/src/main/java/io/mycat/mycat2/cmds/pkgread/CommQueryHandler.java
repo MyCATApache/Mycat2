@@ -29,12 +29,12 @@ import io.mycat.proxy.ProxyBuffer;
  * @version 0.0.1
  * @author liujun
  */
-public class CommQueryHandlerAdapter implements CommandHandler {
+public class CommQueryHandler implements CommandHandler {
 
 	/**
 	 * 首包处理的实例对象
 	 */
-	public static final CommQueryHandlerAdapter INSTANCE = new CommQueryHandlerAdapter();
+	public static final CommQueryHandler INSTANCE = new CommQueryHandler();
 
 	/**
 	 * 查询包标识的开始
@@ -87,7 +87,7 @@ public class CommQueryHandlerAdapter implements CommandHandler {
 						MySQLPacket.RESULTSET_PACKET);
 
 				// 当前确认查询包，则切换至查询的读取操作
-				session.getMycatSession().commandHandler = CommQueryHandlerResultSetAdapter.INSTANCE;
+				session.getMycatSession().commandHandler = CommQueryHandlerResultSet.INSTANCE;
 				return true;
 			}
 			// 如果当前为特殊的load data包，则直接进行切换至load data的逻辑处理

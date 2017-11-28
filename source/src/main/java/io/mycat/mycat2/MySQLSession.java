@@ -6,8 +6,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.cmds.pkgread.CommQueryHandlerAdapter;
-import io.mycat.mycat2.cmds.pkgread.CommandHandlerAdapter;
+import io.mycat.mycat2.cmds.pkgread.CommQueryHandler;
+import io.mycat.mycat2.cmds.pkgread.CommandHandler;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.buffer.BufferPool;
 

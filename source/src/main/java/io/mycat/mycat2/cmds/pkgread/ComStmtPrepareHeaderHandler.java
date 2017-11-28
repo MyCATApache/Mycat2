@@ -19,12 +19,12 @@ import io.mycat.proxy.ProxyBuffer;
  * @version 0.0.1
  * @author liujun
  */
-public class ComStmtPrepareHeaderHandlerAdapter implements CommandHandler {
+public class ComStmtPrepareHeaderHandler implements CommandHandler {
 
 	/**
 	 * 首包处理的实例对象
 	 */
-	public static final ComStmtPrepareHeaderHandlerAdapter INSTANCE = new ComStmtPrepareHeaderHandlerAdapter();
+	public static final ComStmtPrepareHeaderHandler INSTANCE = new ComStmtPrepareHeaderHandler();
 
 	@Override
 	public boolean procss(MySQLSession session) throws IOException {
@@ -51,7 +51,7 @@ public class ComStmtPrepareHeaderHandlerAdapter implements CommandHandler {
 		}
 
 		// 其他包则交给stmt结果来处理来处理
-		session.getMycatSession().commandHandler = ComStmtPrepareHandlerAdapter.INSTANCE;
+		session.getMycatSession().commandHandler = ComStmtPrepareHandler.INSTANCE;
 		return true;
 
 	}

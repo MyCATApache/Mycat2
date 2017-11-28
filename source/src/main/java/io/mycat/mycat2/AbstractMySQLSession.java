@@ -9,8 +9,8 @@ import java.nio.channels.SocketChannel;
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
-import io.mycat.mycat2.cmds.pkgread.CommQueryHandlerAdapter;
-import io.mycat.mycat2.cmds.pkgread.CommandHandlerAdapter;
+import io.mycat.mycat2.cmds.pkgread.CommQueryHandler;
+import io.mycat.mycat2.cmds.pkgread.CommandHandler;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -72,7 +72,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	/**
 	 * 用来进行指定结束报文处理
 	 */
-	public CommandHandlerAdapter commandHandler = CommQueryHandlerAdapter.INSTANCE;
+	public CommandHandler commandHandler = CommQueryHandler.INSTANCE;
 
 	public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		this(bufferPool, selector, channel, SelectionKey.OP_READ);

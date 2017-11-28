@@ -15,22 +15,25 @@ import io.mycat.proxy.ProxyBuffer;
 
 /**
  * 
- * 0x16 COM_STMT_PREPARE 预处理SQL语句
+ * 仅进行查询结果的命令处理
  * 
- * @since 2017年8月23日 下午11:09:49
- * @version 0.0.1
  * @author liujun
+ * @version 1.0.0
+ * @since 2017年8月22日 下午4:13:07
  */
-public class ComStmtPrepareHandlerAdapter implements CommandHandler {
+public class CommQueryHandlerResultSet implements CommandHandler {
 
-	private static final Logger logger = LoggerFactory.getLogger(ComStmtPrepareHandlerAdapter.class);
+	private static final Logger logger = LoggerFactory.getLogger(CommQueryHandlerResultSet.class);
+
+	public static final CommQueryHandlerResultSet INSTANCE = new CommQueryHandlerResultSet();
 
 	/**
-	 * 首包处理的实例对象
+	 * 后端报文处理
+	 * 
+	 * @param session
+	 * @return
+	 * @throws IOException
 	 */
-	public static final ComStmtPrepareHandlerAdapter INSTANCE = new ComStmtPrepareHandlerAdapter();
-
-	@Override
 	public boolean procss(MySQLSession session) throws IOException {
 
 		MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
@@ -45,18 +48,30 @@ public class ComStmtPrepareHandlerAdapter implements CommandHandler {
 			switch (session.resolveMySQLPackage(curBuffer, curMSQLPackgInf, true)) {
 			// 如果当前为整包
 			case Full:
+				// System.out.println("整个包:" + curMSQLPackgInf.seq);
 				// 检查当前是否为eof包,并且为整包 ,解析eof包
 				if (session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
-					// 进行标识重置
-					session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey());
-					isFinish = true;
-					// 如果当前的eof包大于1说明已经为eof结束包,切换到解析器进行解析
-					boolean gotoRead = EofJudge.INSTANCE.judge(session);
+					// 首先检查当前列标识结果
+					if (!session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey())) {
+						session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey(), true);
+					}
+					// 如果当前列列结束，则进行结束标识验证
+					else {
+						// 进行标识重置
+						session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey());
+						isFinish = true;
 
-					// 检查是否需要读取下一个包
-					if (gotoRead) {
-						// 并且为直接返回
-						return true;
+						// 如果当前的eof包大于1说明已经为eof结束包,切换到解析器进行解析
+						boolean gotoRead = EofJudge.INSTANCE.judge(session);
+
+						// 当一个完整的查询检查结束后，切换至首包的检查
+						session.getMycatSession().commandHandler = CommQueryHandler.INSTANCE;
+
+						// 检查是否需要读取下一个包
+						if (gotoRead) {
+							// 并且为直接返回
+							return true;
+						}
 					}
 				}
 
@@ -72,7 +87,7 @@ public class ComStmtPrepareHandlerAdapter implements CommandHandler {
 				if (curMSQLPackgInf.crossBuffer) {
 					// 发生过透传的半包,往往包的长度超过了buffer 的长度.
 					logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-				} else if (curMSQLPackgInf.pkgType != MySQLPacket.EOF_PACKET) {
+				} else if (!isfinishPackage(curMSQLPackgInf)) {
 					// 不需要整包解析的长半包透传. result set .这种半包直接透传
 					curMSQLPackgInf.crossBuffer = true;
 					curBuffer.readIndex = curMSQLPackgInf.endPos;
@@ -96,21 +111,43 @@ public class ComStmtPrepareHandlerAdapter implements CommandHandler {
 		}
 
 		// 标识当前传输未结束
+
+		// 切换buffer 读写状态
+		// curBuffer.flip();
 		MycatSession mycatSession = session.getMycatSession();
+		// 直接透传报文
+		// mycatSession.takeOwner(SelectionKey.OP_WRITE);
 
 		if (!isFinish) {
-			// 在stmt的处理中分为两阶段，首先进行SQL的预编译，然后进行值的执行,所以不能标识结束
+			// 标识当前传输未结束
 			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
-		}
-		// 完成传输，则移除标识
-		else {
+		} else {
+			// 结束移除标识
 			mycatSession.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
 		}
+
+		// mycatSession.writeToChannel();
 
 		/**
 		 * 当前命令处理是否全部结束,全部结束时需要清理资源
 		 */
 		return false;
+	}
+
+	/**
+	 * 进行当前完成包验证
+	 * 
+	 * @param curMSQLPackgInf
+	 * @return
+	 * @throws IOException
+	 */
+	private boolean isfinishPackage(MySQLPackageInf curMSQLPackgInf) throws IOException {
+		switch (curMSQLPackgInf.pkgType) {
+		case MySQLPacket.EOF_PACKET:
+			return true;
+		default:
+			return false;
+		}
 	}
 
 }

@@ -12,8 +12,8 @@ import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.pkgread.CommandHandlerAdapter;
-import io.mycat.mycat2.cmds.pkgread.HandlerAdapter;
+import io.mycat.mycat2.cmds.pkgread.CommandHandler;
+import io.mycat.mycat2.cmds.pkgread.HandlerParse;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
@@ -77,7 +77,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		}
 
 		// 进行后端的结束报文处理的绑定
-		CommandHandlerAdapter adapter = HandlerAdapter.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);
+		CommandHandler adapter = HandlerParse.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);
 
 		if (null == adapter) {
 			logger.error("curr pkg Type :" + session.curMSQLPackgInf.pkgType + " is not handler proess");
