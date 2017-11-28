@@ -7,9 +7,9 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 
 /**
- * Created by Kaiz on 2017/3/21. 2017/11/25: sqlInfo 结构调整如下：
- * 
  * <pre>
+ * Created by Kaiz on 2017/3/21.
+ * 2017/11/25: sqlInfo 结构调整如下：
  * 63.............................................................0
  * |------14------|---8---|---8---|-----14-----|----12----|---8---|
  *   preHashPos    realSQL SQLType   SQLSize     TBLStart  TBLCount
