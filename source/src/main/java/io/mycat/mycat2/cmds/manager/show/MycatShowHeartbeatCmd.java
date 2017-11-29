@@ -26,7 +26,7 @@ public class MycatShowHeartbeatCmd implements MySQLCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatShowHelpCmd.class);
     public static final MycatShowHeartbeatCmd INSTANCE = new MycatShowHeartbeatCmd();
 
-    private static final int FIELD_COUNT = 6;
+    private static final int FIELD_COUNT = 11;
     //private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
     private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
@@ -48,12 +48,26 @@ public class MycatShowHeartbeatCmd implements MySQLCommand {
 		fields[i] = PacketUtil.getField("PORT", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("TIME", Fields.FIELD_TYPE_DATETIME);
+		fields[i] = PacketUtil.getField("RS_CODE", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
-		fields[i] = PacketUtil.getField("EXECUTE_TIME", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i] = PacketUtil.getField("RETRY", Fields.FIELD_TYPE_LONG);
 		fields[i++].packetId = ++packetId;
 
+		fields[i] = PacketUtil.getField("STATUS", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("TIMEOUT", Fields.FIELD_TYPE_LONGLONG);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("EXECUTE_TIME",Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("LAST_ACTIVE_TIME",Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;
+
+		fields[i] = PacketUtil.getField("STOP", Fields.FIELD_TYPE_VAR_STRING);
+		fields[i++].packetId = ++packetId;		
 		eof.packetId = ++packetId;
     }
 
@@ -94,16 +108,20 @@ public class MycatShowHeartbeatCmd implements MySQLCommand {
 		List<RowDataPacket> list = new LinkedList<RowDataPacket>();
 		
         ProxyRuntime.INSTANCE.getConfig().getMysqlRepMap().forEach((repName, repBean) -> {
-        	
             repBean.getMetaBeans().forEach(metaBean -> {
             	RowDataPacket row = new RowDataPacket(FIELD_COUNT);
-            	row.add(repName.getBytes());
-            	row.add(repBean.getReplicaBean().getRepType().name().getBytes());
+            	row.add(metaBean.getDsMetaBean().getHostName().getBytes());
+            	row.add(metaBean.isSlaveNode()? "Slave".getBytes() : "Master".getBytes());
             	row.add(metaBean.getDsMetaBean().getIp().getBytes());
             	row.add(Integer.toString(metaBean.getDsMetaBean().getPort()).getBytes());
-            	row.add(metaBean.getHeartbeat().getLastActiveTime().getBytes());
+            	row.add(Integer.toString(metaBean.getHeartbeat().getStatus()).getBytes());
+            	row.add(Integer.toString(metaBean.getHeartbeat().getErrorCount()).getBytes());
+            	row.add(metaBean.getHeartbeat().isChecking() ? "checking".getBytes() : "idle".getBytes());
+            	row.add(Long.toString(metaBean.getHeartbeat().getTimeout()).getBytes());            	
             	MySQLDetector detector=((MySQLHeartbeat) metaBean.getHeartbeat()).getDetector();
             	row.add(String.valueOf(detector.getLasstReveivedQryTime()-detector.getLastSendQryTime()).getBytes());
+            	row.add(metaBean.getHeartbeat().getLastActiveTime().getBytes());            	
+            	row.add(metaBean.getHeartbeat().isStop() ? "true".getBytes() : "false".getBytes());
             	list.add(row);
             });
         });		
