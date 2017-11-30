@@ -1,0 +1,171 @@
+以 select有条件and or有tables 为例
+{false=[id = ?], true=[WHERE]}
+-->DynamicAnnotationUtil.compile(match.getName(), resMap);  // 此时resMap =   {false=[id = ?], true=[WHERE]}
+	--> compile(String matchName,Map<Boolean, List< String>> lines) //   matchName = select有条件and or有tables, lines =   {false=[id = ?], true=[WHERE]}
+			-->  String filename ="_" +count.getAndIncrement(); // _0
+				-->  genJavacode(String className, String path, Map<Boolean, List< String>> lines) // className = _0,path = _0.java,lines = {false=[id = ?], true=[WHERE]} 
+						-->         DynamicAnnotationRuntime runtime = new DynamicAnnotationRuntime();
+        								runtime.setMatchName(className);
+        								--> assemble(Map<Boolean, List<String>> map, DynamicAnnotationRuntime runtime) // map == {false=[id = ?], true=[WHERE]}
+        										--> List<String> list = map.values().stream().flatMap(maps -> maps.stream()).collect(Collectors.toList()); // list = [id = ?, WHERE]
+        										--> preProcess(List<String> list, DynamicAnnotationRuntime runtime) 该方法主要目的是为了查找条件的公有后缀
+        												-->Map<Integer, String> int2str = new HashMap<>();  // 就当前的实例来说  int2str = {0=id = ?, 1=WHERE} 
+        													 Map<String, Integer> str2Int = new HashMap<>();  // {id = ?=0, WHERE=1}
+        													 
+        													 Map<String, Integer> backtrackingTable = new HashMap<>();  //{id = ?=0, WHERE=0}
+        										--> 	TrieCompiler.toCode1(String, DynamicAnnotationRuntime, TrieContext, Map<Boolean, List<String>>)	 // _0,    map =  {false=[id = ?], true=[WHERE]} 
+        													 --> toCode2(boolean isRoot, TrieContext context) // isRoot== true
+        													 			--> context.x += 1;  此时 context.x += 1
+        													 			-->  Map<Boolean, List<Map.Entry<TrieKey, TrieCompiler>>> map = this.children.entrySet().stream().collect(Collectors.partitioningBy((k) -> k.getKey().getType() == QUESTION_MARK));  // size = 2
+        													 			 // {false=[io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]}, io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}], true=[]}
+        													 			-->  String l = toCode3(isRoot, map.get(Boolean.TRUE), context); // 此时 entrySet 为空. context.y = 0
+        													 						--> String res = toCode4(isRoot, entrySet, context); 
+        													 														--> context.y += 1;   // 此时 context.y = 1
+        													 														--> context.y -= 1;  // 此时 context.y = 0
+        													 			-->   String r = toCode3(isRoot, map.get(Boolean.FALSE), context); 			
+        													 						--> String res = toCode4(isRoot, entrySet, context);  entrySet size为2 
+        													 														--> context.y += 1;   // 此时 context.y = 1
+        													 														//  for 循环 生成代码   此时我们的
+        													 														//  context.index += 1; // context.index = 1
+        													 														String e = i.getValue().toCode2(false, context);  
+        													 														
+        													 														--> context.y -= 1;  // 此时 context.y = 0									
+        													 
+        													 
+        													 
+        													 
+        													 
+        													 
+        													 
+        													 children = 
+        													 
+{io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]},
+
+
+ io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}}
+ 
+ 
+ 
+ --------------------------------io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationUtil.insert(String, TrieCompiler, String, int)  处理过程分析
+ 
+ ===========Map<Integer, String> int2str = new HashMap<>();  // 就当前的实例来说  int2str = {0=id = ?, 1=WHERE} 
+        		
+        		Map<String, Integer> str2Int = new HashMap<>();  // {id = ?=0, WHERE=1}
+        		
+        		Map<String, Integer> backtrackingTable = new HashMap<>();  //{id = ?=0, WHERE=0}
+   		for (Map.Entry<String, Integer> i : str2Int.entrySet()) {
+            insert(i.getKey(), trieCompiler, i.getValue().toString(), backtrackingTable.get(i.getKey()));
+        }
+        
+       // 对于当前场景 会循环两次, 第一次传入的参数为 insert("id = ?", trieCompiler,"0", 0);
+      												 第二次传入的参数为 insert("WHERE", trieCompiler,"1", 0);
+        		
+        		
+        		---> insert(String str, TrieCompiler trieCompiler, String mark, int backPos) // "id = ?", trieCompiler,"0", 0
+        					-->  BufferSQLParser parser = new BufferSQLParser();
+       								 BufferSQLContext context = new BufferSQLContext();
+        		
+        					--> BufferSQLParser.parse(byte[], BufferSQLContext) // "id = ?".getBytes() 
+        		
+        						  --> this.defaultByteArray.setSrc(src);
+        							-->  sql = this.defaultByteArray; 
+        							--> hashArray = context.getHashArray();
+        							--> hashArray.init();
+        									--> 将hasharray中的所有值都赋值为0
+        							-->   context.setCurBuffer(sql);
+        									
+											        buffer = curBuffer; 
+											        totalTblCount = 0;
+											        schemaCount = 0;
+											        tblResultPos = 0;
+											        schemaResultPos = 2;
+											        Arrays.fill(tblResult, (short) 0);
+											        Arrays.fill(sqlInfoArray, (short) 0);
+											        sqlHash = 0;
+											        sqlType = 0;
+											        annotationType = 0;
+											        Arrays.fill(annotationValue, 0);
+											        Arrays.fill(selectItemArray, 0);
+											        selectItemArrayPos = 0;
+											        hasLimit = false;
+											        totalSQLCount = 0;
+											        limitStart = 0;
+											        limitCount = 0;
+											        curSQLIdx = 0;
+											        curSQLTblCount = 0;
+											        preHashArrayPos = 0;
+											        preTableResultPos = 0;
+											        hashArrayRealSQLOffset = 0;
+											        myCmdValue.init();
+   														
+   														--> 将hasharray中的所有值都赋值为0     // note  BufferSQLParser 中有一个hashArray , BufferSQLContext 中也有一个
+        							--> Tokenizer2.tokenize(ByteArrayInterface, HashArray) //   在Tokenizer2 中 有一个charType 数组,该数组 实际上是一个hash
+        									--> int pos = sql.getOffset(); // 0 
+											        final int sqlLength = sql.length()+pos;
+											        this.sql = sql;
+											        this.hashArray = hashArray;
+											        byte c;
+											        byte cType;
+											        byte next;
+											        
+											        
+        											 while (pos < sqlLength) {  //   此时获得的是 "id = ?".getBytes() 该循环会依次的循环进行处理,遇到空字符串不进行处理.
+        											 														// 遇到 i  d  会调用 parseToken(ByteArrayInterface sql, int pos, final int sqlLength, byte c) 
+        											 														// 遇到 = 会调用 hashArray.set(cType, pos++, 1);
+        											 														// 遇到 ？ 会调用 hashArray.set(cType, pos++, 1);
+																--> parseToken(ByteArrayInterface sql, int pos, final int sqlLength, byte c) 
+																		// 该方法会调用两次 ,传入的参数依次是 sql , 0,6,i
+																																		 sql , 1,6,d
+																		// 该方法遍历 数组,直到没有遇到 char 位置. 此时 pos 指针指向的是 2 (即 “”);
+																		// 并最终会调用 
+																		--> hashArray.set(type, start, size, hash);  //  type , start = 0 ,size = 2 ,hash 值。  ????? type 是如何计算出来的, hash值是如何计算的
+																
+																--> 对于 = ？ 会调用 SQLParseUtils.HashArray.set(int, int, int)	 // 参数分别为 : [14,3,1],[25,5,1]
+																
+																
+																// note  此时修改的是 BufferSQLParser 中的 HashArray  也就是 context 中的hasharrry
+																
+											-->  			firstParse(BufferSQLContext context) // 用于进行第一遍处理，处理sql类型以及提取表名  该方法其实没执行
+											
+										-->  TrieCompiler.insertNode(context, trieCompiler, mark, backPos)	// 参数为   context,trieCompiler,"0", 0  
+											
+														-->   public static void doCallback(TrieCompiler head, String runnable) {
+																        if (head.callback == null) {
+																            head.callback = new HashSet<>();
+																        }
+																        head.callback.add(runnable);   // runnable   = 1 
+																   }
+																		
+																		
+																		// 对于当前节点  , 生成了 id  , = ? ，where 的字典树 在  id = ? 处 有 runnable = 0 , 在where出有 runnable = 1
+																		 
+																		
+																		
+																		
+																		
+																		
+																		
+																		
+==========================TrieCompiler.toCode1
+	
+	
+	
+--> 	TrieCompiler.toCode1(String, DynamicAnnotationRuntime, TrieContext, Map<Boolean, List<String>>)	 // _0,    map =  {false=[id = ?], true=[WHERE]} 
+											 --> toCode2(boolean isRoot, TrieContext context) // isRoot== true
+											 			--> context.x += 1;  此时 context.x += 1
+											 			-->  Map<Boolean, List<Map.Entry<TrieKey, TrieCompiler>>> map = this.children.entrySet().stream().collect(Collectors.partitioningBy((k) -> k.getKey().getType() == QUESTION_MARK));  // size = 2
+											 			 // {false=[io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]}, io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}], true=[]}
+											 			-->  String l = toCode3(isRoot, map.get(Boolean.TRUE), context); // 此时 entrySet 为空. context.y = 0
+											 						--> String res = toCode4(isRoot, entrySet, context);  
+											 														--> context.y += 1;   // 此时 context.y = 1
+											 														--> context.y -= 1;  // 此时 context.y = 0
+											 			-->   String r = toCode3(isRoot, map.get(Boolean.FALSE), context); 			
+											 						--> String res = toCode4(isRoot, entrySet, context);  entrySet size为2 
+											 														--> context.y += 1;   // 此时 context.y = 1
+											 														//  for 循环 生成代码   此时我们的
+											 														//  context.index += 1; // context.index = 1
+											 														String e = i.getValue().toCode2(false, context);  
+											 														
+											 														--> context.y -= 1;  // 此时 context.y = 0		
+        													 														
+        													 																															
