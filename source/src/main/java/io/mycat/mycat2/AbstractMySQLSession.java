@@ -9,6 +9,8 @@ import java.nio.channels.SocketChannel;
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.mycat2.cmds.pkgread.CommQueryHandler;
+import io.mycat.mycat2.cmds.pkgread.CommandHandler;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -28,7 +30,7 @@ import io.mycat.util.TimeUtil;
  * @author wuzhihui
  *
  */
-public abstract class AbstractMySQLSession  extends AbstractSession {
+public abstract class AbstractMySQLSession extends AbstractSession {
 
 	// 当前接收到的包类型
 	public enum CurrPacketType {
@@ -53,19 +55,24 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 	 * 事务提交方式
 	 */
 	public AutoCommit autoCommit = AutoCommit.ON;
-	
+
 	/**
 	 * 认证中的seed报文数据
 	 */
 	public byte[] seed;
-	
+
 	protected long lastLargeMessageTime;
 	protected long lastReadTime;
-	
+
 	/**
 	 * 当前处理中的SQL报文的信息
 	 */
 	public MySQLPackageInf curMSQLPackgInf = new MySQLPackageInf();
+
+	/**
+	 * 用来进行指定结束报文处理
+	 */
+	public CommandHandler commandHandler = CommQueryHandler.INSTANCE;
 
 	public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		this(bufferPool, selector, channel, SelectionKey.OP_READ);
@@ -97,7 +104,7 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
 		this.writeToChannel();
 	}
-	
+
 	/**
 	 * 回应客户端（front或Sever）OK 报文。
 	 *
@@ -125,7 +132,7 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 	 */
 	public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded)
 			throws IOException {
-		
+
 		lastReadTime = TimeUtil.currentTimeMillis();
 
 		ByteBuffer buffer = proxyBuf.getBuffer();
@@ -168,7 +175,7 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 
 		// 解包获取包的数据长度
 		int pkgLength = ParseUtil.getPacketLength(buffer, offset);
-		
+
 		// 解析报文类型
 		int packetType = -1;
 
@@ -250,7 +257,7 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 			return CurrPacketType.Full;
 		}
 	}
-	
+
 	public void ensureFreeSpaceOfReadBuffer() {
 		int pkgLength = curMSQLPackgInf.pkgLength;
 		ByteBuffer buffer = proxyBuffer.getBuffer();
@@ -259,9 +266,9 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 		if (pkgLength > config.getProxy().getMax_allowed_packet()) {
 			throw new IllegalArgumentException("Packet size over the limit.");
 		} else if (buffer.capacity() < pkgLength) {
-			logger.debug("need a large buffer to hold the package.{}" ,curMSQLPackgInf);
+			logger.debug("need a large buffer to hold the package.{}", curMSQLPackgInf);
 			lastLargeMessageTime = TimeUtil.currentTimeMillis();
-			ByteBuffer newBuffer = bufPool.allocate(Double.valueOf(pkgLength+pkgLength*0.1).intValue());
+			ByteBuffer newBuffer = bufPool.allocate(Double.valueOf(pkgLength + pkgLength * 0.1).intValue());
 			resetBuffer(newBuffer);
 		} else {
 			if (proxyBuffer.writeIndex != 0) {
@@ -272,38 +279,40 @@ public abstract class AbstractMySQLSession  extends AbstractSession {
 			}
 		}
 	}
-	
+
 	/**
 	 * 重置buffer
+	 * 
 	 * @param newBuffer
 	 */
-	private void resetBuffer(ByteBuffer newBuffer){
-		newBuffer.put(proxyBuffer.getBytes(proxyBuffer.readIndex, proxyBuffer.writeIndex-proxyBuffer.readIndex));
+	private void resetBuffer(ByteBuffer newBuffer) {
+		newBuffer.put(proxyBuffer.getBytes(proxyBuffer.readIndex, proxyBuffer.writeIndex - proxyBuffer.readIndex));
 		proxyBuffer.resetBuffer(newBuffer);
 		recycleAllocedBuffer(proxyBuffer);
 		curMSQLPackgInf.endPos = curMSQLPackgInf.endPos - curMSQLPackgInf.startPos;
 		curMSQLPackgInf.startPos = 0;
 	}
-	
+
 	/**
 	 * 检查 是否需要切换回正常大小buffer.
 	 * 
 	 */
-	public void changeToDirectIfNeed(){
-		
-		if(!proxyBuffer.getBuffer().isDirect()){
-			
-			if(curMSQLPackgInf.pkgLength > bufPool.getChunkSize()){
+	public void changeToDirectIfNeed() {
+
+		if (!proxyBuffer.getBuffer().isDirect()) {
+
+			if (curMSQLPackgInf.pkgLength > bufPool.getChunkSize()) {
 				lastLargeMessageTime = TimeUtil.currentTimeMillis();
 				return;
 			}
-			
-			if(lastLargeMessageTime < lastReadTime - 30 * 1000L){
-				logger.info("change to direct con read buffer ,cur temp buf size : {}" ,proxyBuffer.getBuffer().capacity());
+
+			if (lastLargeMessageTime < lastReadTime - 30 * 1000L) {
+				logger.info("change to direct con read buffer ,cur temp buf size : {}",
+						proxyBuffer.getBuffer().capacity());
 				ByteBuffer bytebuffer = bufPool.allocate();
-				if(!bytebuffer.isDirect()){
+				if (!bytebuffer.isDirect()) {
 					bufPool.recycle(bytebuffer);
-				}else{
+				} else {
 					resetBuffer(bytebuffer);
 				}
 				lastLargeMessageTime = TimeUtil.currentTimeMillis();

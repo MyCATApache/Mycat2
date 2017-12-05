@@ -64,10 +64,10 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 				try {
 					mysqlsession.writeToChannel();
 				} catch (IOException e) {
-					session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+					session.closeBackendAndResponseError(mysqlsession, success, ((ErrorPacket) result));
 				}
 			} else {
-				session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+				session.closeBackendAndResponseError(mysqlsession, success, ((ErrorPacket) result));
 			}
 		});
 		return false;
@@ -85,7 +85,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		boolean nextReadFlag = false;
 		do {
 			// 进行报文的处理流程
-			nextReadFlag = session.currPkgProc.procssPkg(session);
+			nextReadFlag = session.getMycatSession().commandHandler.procss(session);
 		} while (nextReadFlag);
 
 		// 获取当前是否结束标识

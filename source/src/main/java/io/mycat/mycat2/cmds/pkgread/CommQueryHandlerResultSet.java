@@ -21,11 +21,11 @@ import io.mycat.proxy.ProxyBuffer;
  * @version 1.0.0
  * @since 2017年8月22日 下午4:13:07
  */
-public class PkgResultSetReader implements PkgProcess {
+public class CommQueryHandlerResultSet implements CommandHandler {
 
-	private static final Logger logger = LoggerFactory.getLogger(PkgResultSetReader.class);
+	private static final Logger logger = LoggerFactory.getLogger(CommQueryHandlerResultSet.class);
 
-	public static final PkgResultSetReader INSTANCE = new PkgResultSetReader();
+	public static final CommQueryHandlerResultSet INSTANCE = new CommQueryHandlerResultSet();
 
 	/**
 	 * 后端报文处理
@@ -34,7 +34,7 @@ public class PkgResultSetReader implements PkgProcess {
 	 * @return
 	 * @throws IOException
 	 */
-	public boolean procssPkg(MySQLSession session) throws IOException {
+	public boolean procss(MySQLSession session) throws IOException {
 
 		MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
 
@@ -48,7 +48,7 @@ public class PkgResultSetReader implements PkgProcess {
 			switch (session.resolveMySQLPackage(curBuffer, curMSQLPackgInf, true)) {
 			// 如果当前为整包
 			case Full:
-				//System.out.println("整个包:" + curMSQLPackgInf.seq);
+				// System.out.println("整个包:" + curMSQLPackgInf.seq);
 				// 检查当前是否为eof包,并且为整包 ,解析eof包
 				if (session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
 					// 首先检查当前列标识结果
@@ -65,7 +65,7 @@ public class PkgResultSetReader implements PkgProcess {
 						boolean gotoRead = EofJudge.INSTANCE.judge(session);
 
 						// 当一个完整的查询检查结束后，切换至首包的检查
-						session.currPkgProc = PkgFirstReader.INSTANCE;
+						session.getMycatSession().commandHandler = CommQueryHandler.INSTANCE;
 
 						// 检查是否需要读取下一个包
 						if (gotoRead) {
@@ -83,7 +83,7 @@ public class PkgResultSetReader implements PkgProcess {
 				break;
 
 			case LongHalfPacket:
-				//System.out.println("长半包:" + curMSQLPackgInf.seq);
+				// System.out.println("长半包:" + curMSQLPackgInf.seq);
 				if (curMSQLPackgInf.crossBuffer) {
 					// 发生过透传的半包,往往包的长度超过了buffer 的长度.
 					logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
