@@ -500,13 +500,7 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 		
         return backendList.stream().filter(f -> {
-            if (!metaBean.equals(f.getMySQLMetaBean())) {
-                return false;
-            }
-            if (!f.isIDLE()) {
-                return false;
-            }
-            return true;
+            return metaBean == f.getMySQLMetaBean() && f.isIDLE();
         }).findFirst().orElse(null);
 	}
 
