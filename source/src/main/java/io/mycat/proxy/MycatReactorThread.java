@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,8 +253,8 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 	 * @throws IOException
 	 */
 	public void syncSchemaToBackend(MySQLSession mysqlSession,AsynTaskCallBack<MySQLSession> callback)  throws IOException{
-		if(mysqlSession.getMycatSession().schema!=null
-				&&!mysqlSession.getMycatSession().schema.getDefaultDN().getDatabase().equals(mysqlSession.getDatabase())){
+
+        if (StringUtils.isEmpty(mysqlSession.getDatabase())) {
 			MycatSession mycatSession = mysqlSession.getMycatSession();
 			BackendSynchemaTask backendSynchemaTask = new BackendSynchemaTask(mysqlSession);
 			backendSynchemaTask.setCallback((optSession, sender, exeSucces, rv) -> {

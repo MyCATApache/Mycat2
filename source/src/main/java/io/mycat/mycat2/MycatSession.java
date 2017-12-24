@@ -14,11 +14,14 @@ import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.route.RouteResultset;
+import io.mycat.mycat2.route.RouteResultsetNode;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mycat2.sqlparser.TokenHash;
@@ -46,6 +49,8 @@ public class MycatSession extends AbstractMySQLSession {
 
 	public MySQLSession curBackend;
 	
+    public RouteResultset curRouteResultset;
+
 	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
 	public MySQLCommand curSQLCommand;
 
@@ -86,7 +91,7 @@ public class MycatSession extends AbstractMySQLSession {
 			case DB_IN_ONE_SERVER:
 				return DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case DB_IN_MULTI_SERVER:
-				DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
+                return DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
 			case ANNOTATION_ROUTE:
 				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
 //			case SQL_PARSE_ROUTE:
@@ -366,6 +371,16 @@ public class MycatSession extends AbstractMySQLSession {
 			case ANNOTATION_ROUTE:
 				break;
 			case DB_IN_MULTI_SERVER:
+                RouteResultsetNode[] nodes = this.curRouteResultset.getNodes();
+                if (nodes != null && nodes.length > 0) {
+                    String dataNodeName = nodes[0].getName();
+                    DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
+                    if (dnBean != null) {
+                        backendName = dnBean.getReplica();
+                    }
+                } else {
+                    backendName = schema.getDefaultDN().getReplica();
+                }
 				break;
 //			case SQL_PARSE_ROUTE:
 //				break;

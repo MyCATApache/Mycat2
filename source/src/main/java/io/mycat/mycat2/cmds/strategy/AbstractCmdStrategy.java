@@ -67,8 +67,20 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	
 	protected abstract void initMySqlCmdHandler();
 	
+    /**
+     * 
+     * 需要做路由的子类重写该方法.
+     *
+     * @param session
+     * @return
+     * @since 1.0
+     */
+    protected boolean handleRoute(MycatSession session) {
+        return true;
+    };
+
 	@Override
-	final public boolean matchMySqlCommand(MycatSession session) {
+    public boolean matchMySqlCommand(MycatSession session) {
 		
 		MySQLCommand  command = null;
 		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
@@ -117,6 +129,9 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			 .processDynamicAnno(session)
 			 .processStaticAnno(session, staticAnnontationMap)
 			 .build();
+        if (!handleRoute(session)) {
+            return false;
+        }
 		return true;
 	}
 }

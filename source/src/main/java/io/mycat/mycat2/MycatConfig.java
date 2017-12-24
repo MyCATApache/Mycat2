@@ -3,11 +3,15 @@ package io.mycat.mycat2;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+
 import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mycat2.beans.conf.DatasourceConfig;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.beans.conf.SchemaConfig;
+import io.mycat.mycat2.beans.conf.TableDefBean;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.Configurable;
 
@@ -26,6 +30,14 @@ public class MycatConfig {
      */
     private Map<String, SchemaBean> mycatSchemaMap = new HashMap<String, SchemaBean>();
     /**
+     * 系统中所有DataNode的Map
+     */
+    private Map<String, DNBean> mycatDataNodeMap = new HashMap<String, DNBean>();
+    /**
+     * 系统中所有TableDefBean的Map
+     */
+    private Map<String, TableDefBean> mycatTableMap = new HashMap<String, TableDefBean>();
+    /**
      * 默认Schema,取配置文件种第一个Schema
      */
     private SchemaBean defaultSchemaBean;
@@ -41,12 +53,25 @@ public class MycatConfig {
 
     public void initSchemaMap() {
         SchemaConfig schemaConfig = getConfig(ConfigEnum.SCHEMA);
+        schemaConfig.getDataNodes().forEach(dataNode -> {
+            mycatDataNodeMap.put(dataNode.getName(), dataNode);
+        });
         schemaConfig.getSchemas().forEach(schema -> {
             if (defaultSchemaBean == null) {
                 defaultSchemaBean = schema;
             }
             mycatSchemaMap.put(schema.getName(), schema);
+            String defaultDnName = schema.getDefaultDataNode();
+            if (StringUtils.isNotEmpty(defaultDnName)
+                    && mycatDataNodeMap.containsKey(defaultDnName)) {
+                schema.setDefaultDN(mycatDataNodeMap.get(defaultDnName));
+            }
+            schema.getTables().forEach(table -> {
+                mycatTableMap.put(table.getName(), table);
+            });
         });
+
+
     }
 
     public MySQLRepBean getMySQLRepBean(String repName) {
@@ -55,6 +80,14 @@ public class MycatConfig {
 
     public SchemaBean getSchemaBean(String schemaName) {
         return mycatSchemaMap.get(schemaName);
+    }
+
+    public TableDefBean getTableDefBean(String tableName) {
+        return mycatTableMap.get(tableName);
+    }
+
+    public DNBean getDNBean(String dataNodeName) {
+        return mycatDataNodeMap.get(dataNodeName);
     }
 
     /**
@@ -96,6 +129,10 @@ public class MycatConfig {
 
     public Map<String, MySQLRepBean> getMysqlRepMap() {
         return mysqlRepMap;
+    }
+
+    public Map<String, DNBean> getMycatDataNodeMap() {
+        return mycatDataNodeMap;
     }
 
     public SchemaBean getDefaultSchemaBean() {

@@ -16,6 +16,7 @@ public class TableDefBean {
     private String shardingKey;
     private String shardingRule;
     private String store;
+    private String dataNode;
 
     public String getName() {
         return name;
@@ -57,9 +58,19 @@ public class TableDefBean {
         this.store = store;
     }
 
+    public String getDataNode() {
+        return dataNode;
+    }
+
+    public void setDataNode(String dataNode) {
+        this.dataNode = dataNode;
+    }
+
     @Override
     public String toString() {
-        return "TableDefBean [name=" + name + ", tableType=" + tableType + ", store=" + store + ", shardingKey=" + shardingKey + ", shardingRule="
-                + shardingRule + "]";
+        return "TableDefBean [name=" + name + ", tableType=" + tableType + ", shardingKey="
+                + shardingKey + ", shardingRule=" + shardingRule + ", store=" + store
+                + ", dataNode=" + dataNode + "]";
     }
+
 }
