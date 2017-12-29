@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
@@ -500,9 +499,9 @@ public class MycatSession extends AbstractMySQLSession {
 			return null;
 		}
 		
-		return backendList.stream().filter(f -> f.isIDLE())
-			.findFirst()
-			.orElse(null);
+        return backendList.stream().filter(f -> {
+            return metaBean == f.getMySQLMetaBean() && f.isIDLE();
+        }).findFirst().orElse(null);
 	}
 
     /**
