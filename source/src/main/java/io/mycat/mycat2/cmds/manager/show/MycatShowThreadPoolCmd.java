@@ -20,9 +20,9 @@ import io.mycat.mycat2.common.NameableExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MycatShowThreadPool implements MySQLCommand {
+public class MycatShowThreadPoolCmd implements MySQLCommand {
     private static final Logger LOGGER = LoggerFactory.getLogger(MycatShowHelpCmd.class);
-    public static final MycatShowThreadPool INSTANCE = new MycatShowThreadPool();
+    public static final MycatShowThreadPoolCmd INSTANCE = new MycatShowThreadPoolCmd();
 
     private static final int FIELD_COUNT = 6;
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);

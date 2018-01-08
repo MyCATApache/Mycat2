@@ -21,7 +21,7 @@ public class MycatShowCmdProcessor extends MycatCmdProcssor {
         cmdMaps.put("CONFIGS", MycatShowConfigsCmd.INSTANCE);
         cmdMaps.put("SESSIONS", MycatShowSessionsCmd.INSTANCE);
         cmdMaps.put("PROCESSLIST", MycatShowSessionsCmd.INSTANCE);
-        cmdMaps.put("THREADPOOL", MycatShowThreadPool.INSTANCE);
+        cmdMaps.put("THREADPOOL", MycatShowThreadPoolCmd.INSTANCE);
         cmdMaps.put("HEARTBEAT", MycatShowHeartbeatCmd.INSTANCE);
         
         descMaps.put("HELP", "show help information");
