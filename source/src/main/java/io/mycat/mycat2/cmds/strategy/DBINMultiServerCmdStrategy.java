@@ -85,7 +85,7 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
 
 
     @Override
-    protected boolean handleRoute(MycatSession session) {
+    protected boolean delegateRoute(MycatSession session) {
 
         byte sqltype = session.sqlContext.getSQLType() != 0 ? session.sqlContext.getSQLType()
                 : session.sqlContext.getCurSQLType();
