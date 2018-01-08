@@ -1,6 +1,16 @@
 schemas:
-  - name: test
-    schemaType: DB_IN_ONE_SERVER
-    defaultDN:
-      database: test
-      replica: test
+  - name: myfly
+    schemaType: DB_IN_MULTI_SERVER
+    defaultDataNode: dn1
+    tables:
+      - name: tb_fly
+        dataNode: dn1
+      - name: tb_boy
+        dataNode: dn2
+dataNodes:
+  - name: dn1
+    database: mytest
+    replica: repli
+  - name: dn2
+    database: mytest2
+    replica: repli2
