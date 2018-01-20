@@ -73,9 +73,9 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
      *
      * @param session
      * @return
-     * @since 1.0
+     * @since 2.0
      */
-    protected boolean handleRoute(MycatSession session) {
+    protected boolean delegateRoute(MycatSession session) {
         return true;
     };
 
@@ -117,6 +117,10 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			command = DirectPassthrouhCmd.INSTANCE;
 		}
 
+        if (!delegateRoute(session)) {
+            return false;
+        }
+
 		/**
 		 * 设置原始处理命令
 		 * 1. 设置目标命令
@@ -125,13 +129,9 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		 * 4. 构建命令或者注解链。    如果没有注解链，直接返回目标命令
 		 */
 		SQLAnnotationChain chain = new SQLAnnotationChain();
-		session.curSQLCommand = chain.setTarget(command) 
-			 .processDynamicAnno(session)
-			 .processStaticAnno(session, staticAnnontationMap)
-			 .build();
-        if (!handleRoute(session)) {
-            return false;
-        }
+        session.curSQLCommand =
+                chain.setTarget(command).processRoute(session).processDynamicAnno(session)
+                        .processStaticAnno(session, staticAnnontationMap).build();
 		return true;
 	}
 }

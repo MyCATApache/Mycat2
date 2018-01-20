@@ -27,10 +27,10 @@ import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.util.ErrorCode;
 
 public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
-	
+
     private static final Logger logger = LoggerFactory.getLogger(DBINMultiServerCmdStrategy.class);
 
-	public static final DBINMultiServerCmdStrategy INSTANCE = new DBINMultiServerCmdStrategy();
+    public static final DBINMultiServerCmdStrategy INSTANCE = new DBINMultiServerCmdStrategy();
 
     private RouteStrategy routeStrategy = new DBInMultiServerRouteStrategy();
 
@@ -73,6 +73,7 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
     protected void initMySqlCmdHandler() {
         MYSQLCOMMANDMAP.put(BufferSQLContext.INSERT_SQL, DirectPassthrouhCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.UPDATE_SQL, DirectPassthrouhCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.DROP_SQL, DirectPassthrouhCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DirectPassthrouhCmd.INSTANCE);
@@ -91,7 +92,9 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
                 : session.sqlContext.getCurSQLType();
         RouteResultset rrs = routeStrategy.route(session.schema, sqltype,
                 session.sqlContext.getRealSQL(0), null, session);
-        if (rrs.getNodes() != null && rrs.getNodes().length > 1) {
+
+        if (rrs.getNodes() != null && rrs.getNodes().length > 1 && !rrs.isGlobalTable()) {
+
             session.curRouteResultset = null;
             try {
                 logger.error(

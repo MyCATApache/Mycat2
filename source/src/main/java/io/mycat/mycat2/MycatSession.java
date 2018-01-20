@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,6 @@ import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.route.RouteResultsetNode;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
-import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mycat2.sqlparser.TokenHash;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mysql.AutoCommit;
@@ -50,6 +50,8 @@ public class MycatSession extends AbstractMySQLSession {
 	public MySQLSession curBackend;
 	
     public RouteResultset curRouteResultset;
+    
+    public RouteResultsetNode curRouteResultsetNode;
 
 	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
 	public MySQLCommand curSQLCommand;
@@ -65,22 +67,25 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private static List<Byte> masterSqlList = new ArrayList<>();
 	
-	static{
-		masterSqlList.add(NewSQLContext.INSERT_SQL);
-		masterSqlList.add(NewSQLContext.UPDATE_SQL);
-		masterSqlList.add(NewSQLContext.DELETE_SQL);
-		masterSqlList.add(NewSQLContext.REPLACE_SQL);
-		masterSqlList.add(NewSQLContext.SELECT_INTO_SQL);
-		masterSqlList.add(NewSQLContext.SELECT_FOR_UPDATE_SQL);
-		//TODO select lock in share mode 。 也需要走主节点    需要完善sql 解析器。
-		masterSqlList.add(NewSQLContext.LOAD_SQL);
-		masterSqlList.add(NewSQLContext.CALL_SQL);
-		masterSqlList.add(NewSQLContext.TRUNCATE_SQL);
+    static {
+        masterSqlList.add(BufferSQLContext.INSERT_SQL);
+        masterSqlList.add(BufferSQLContext.UPDATE_SQL);
+        masterSqlList.add(BufferSQLContext.DELETE_SQL);
+        masterSqlList.add(BufferSQLContext.REPLACE_SQL);
+        masterSqlList.add(BufferSQLContext.SELECT_INTO_SQL);
+        masterSqlList.add(BufferSQLContext.SELECT_FOR_UPDATE_SQL);
+        masterSqlList.add(BufferSQLContext.CREATE_SQL);
+        masterSqlList.add(BufferSQLContext.DROP_SQL);
+        // TODO select lock in share mode 。 也需要走主节点 需要完善sql 解析器。
+        masterSqlList.add(BufferSQLContext.LOAD_SQL);
+        masterSqlList.add(BufferSQLContext.CALL_SQL);
+        masterSqlList.add(BufferSQLContext.TRUNCATE_SQL);
 
-		masterSqlList.add(NewSQLContext.BEGIN_SQL);
-		masterSqlList.add(NewSQLContext.START_SQL);  //TODO 需要完善sql 解析器。 将 start transaction 分离出来。
-		masterSqlList.add(NewSQLContext.SET_AUTOCOMMIT_SQL);
-	}
+        masterSqlList.add(BufferSQLContext.BEGIN_SQL);
+        masterSqlList.add(BufferSQLContext.START_SQL); // TODO 需要完善sql 解析器。 将 start transaction
+                                                       // 分离出来。
+        masterSqlList.add(BufferSQLContext.SET_AUTOCOMMIT_SQL);
+    }
 	
 	/**
 	 * 获取sql 类型
@@ -372,13 +377,17 @@ public class MycatSession extends AbstractMySQLSession {
 				break;
 			case DB_IN_MULTI_SERVER:
                 RouteResultsetNode[] nodes = this.curRouteResultset.getNodes();
-                if (nodes != null && nodes.length > 0) {
-                    String dataNodeName = nodes[0].getName();
-                    DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
-                    if (dnBean != null) {
-                        backendName = dnBean.getReplica();
-                    }
-                } else {
+                String dataNodeName = "";
+                if (nodes != null && nodes.length == 1) {
+                    dataNodeName = nodes[0].getName();
+                } else if (nodes != null && nodes.length > 1 && curRouteResultsetNode != null) {
+                    dataNodeName = curRouteResultsetNode.getName();
+                }
+                DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
+                if (dnBean != null) {
+                    backendName = dnBean.getReplica();
+                }
+                if (StringUtils.isEmpty(backendName)) {
                     backendName = schema.getDefaultDN().getReplica();
                 }
 				break;
@@ -571,8 +580,9 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	private boolean canRunOnSlave(){
 		 //静态注解情况下 走读写分离
-		if(NewSQLContext.ANNOTATION_BALANCE==sqlContext.getAnnotationType()){
-			final long balancevalue = sqlContext.getAnnotationValue(NewSQLContext.ANNOTATION_BALANCE);
+        if (BufferSQLContext.ANNOTATION_BALANCE == sqlContext.getAnnotationType()) {
+            final long balancevalue =
+                    sqlContext.getAnnotationValue(BufferSQLContext.ANNOTATION_BALANCE);
 			if(TokenHash.MASTER == balancevalue){
 				return false;
 			}else if(TokenHash.SLAVE == balancevalue){

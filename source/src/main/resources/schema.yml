@@ -7,6 +7,9 @@ schemas:
         dataNode: dn1
       - name: tb_boy
         dataNode: dn2
+      - name: tb_paw
+        type: global
+        dataNode: dn$1-2
 dataNodes:
   - name: dn1
     database: mytest

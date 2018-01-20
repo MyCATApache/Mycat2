@@ -25,12 +25,10 @@ package io.mycat.mycat2.route;
 
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.mycat.mycat2.sqlengine.mpp.HavingCols;
 import io.mycat.util.FormatUtil;
 
 /**
@@ -38,7 +36,7 @@ import io.mycat.util.FormatUtil;
  */
 public final class RouteResultset implements Serializable {
     private String statement; // 原始语句
-    private final int sqlType;
+    private final byte sqlType;
     private RouteResultsetNode[] nodes; // 路由结果节点
     private Set<String> subTables;
     
@@ -50,7 +48,6 @@ public final class RouteResultset implements Serializable {
     private String primaryKey;
     // limit output total
     private int limitSize;
-    private SQLMerge sqlMerge;
 
     private boolean callStatement = false; // 处理call关键字
 
@@ -146,7 +143,7 @@ public final class RouteResultset implements Serializable {
         this.globalTableFlag = globalTableFlag;
     }
 
-    public RouteResultset(String stmt, int sqlType) {
+    public RouteResultset(String stmt, byte sqlType) {
         this.statement = stmt;
         this.limitSize = -1;
         this.sqlType = sqlType;
@@ -177,10 +174,6 @@ public final class RouteResultset implements Serializable {
     }
 
 
-    public SQLMerge getSqlMerge() {
-        return sqlMerge;
-    }
-
     public boolean isCacheAble() {
         return cacheAble;
     }
@@ -189,35 +182,12 @@ public final class RouteResultset implements Serializable {
         this.cacheAble = cacheAble;
     }
 
-    public boolean needMerge() {
-        return limitSize > 0 || sqlMerge != null;
-    }
-
-    public int getSqlType() {
+    public byte getSqlType() {
         return sqlType;
-    }
-
-    public boolean isHasAggrColumn() {
-        return (sqlMerge != null) && sqlMerge.isHasAggrColumn();
     }
 
     public int getLimitStart() {
         return limitStart;
-    }
-
-    public String[] getGroupByCols() {
-        return (sqlMerge != null) ? sqlMerge.getGroupByCols() : null;
-    }
-
-    private SQLMerge createSQLMergeIfNull() {
-        if (sqlMerge == null) {
-            sqlMerge = new SQLMerge();
-        }
-        return sqlMerge;
-    }
-
-    public Map<String, Integer> getMergeCols() {
-        return (sqlMerge != null) ? sqlMerge.getMergeCols() : null;
     }
 
     public void setLimitStart(int limitStart) {
@@ -247,36 +217,6 @@ public final class RouteResultset implements Serializable {
      */
     public String[] getPrimaryKeyItems() {
         return primaryKey.split("\\.");
-    }
-
-    public void setOrderByCols(LinkedHashMap<String, Integer> orderByCols) {
-        if (orderByCols != null && !orderByCols.isEmpty()) {
-            createSQLMergeIfNull().setOrderByCols(orderByCols);
-        }
-    }
-
-    public void setHasAggrColumn(boolean hasAggrColumn) {
-        if (hasAggrColumn) {
-            createSQLMergeIfNull().setHasAggrColumn(true);
-        }
-    }
-
-    public void setGroupByCols(String[] groupByCols) {
-        if (groupByCols != null && groupByCols.length > 0) {
-            createSQLMergeIfNull().setGroupByCols(groupByCols);
-        }
-    }
-
-    public void setMergeCols(Map<String, Integer> mergeCols) {
-        if (mergeCols != null && !mergeCols.isEmpty()) {
-            createSQLMergeIfNull().setMergeCols(mergeCols);
-        }
-
-    }
-
-    public LinkedHashMap<String, Integer> getOrderByCols() {
-        return (sqlMerge != null) ? sqlMerge.getOrderByCols() : null;
-
     }
 
     public String getStatement() {
@@ -331,24 +271,6 @@ public final class RouteResultset implements Serializable {
         }
     }
 
-    /*
-     * public void changeNodeSqlAfterAddLimit(SchemaConfig schemaConfig, String sourceDbType, String
-     * sql, int offset, int count, boolean isNeedConvert) { if (nodes != null) {
-     * 
-     * Map<String, String> dataNodeDbTypeMap = schemaConfig.getDataNodeDbTypeMap(); Map<String,
-     * String> sqlMapCache = new HashMap<>(); for (RouteResultsetNode node : nodes) { String dbType
-     * = dataNodeDbTypeMap.get(node.getName()); if (dbType.equalsIgnoreCase("mysql")) {
-     * node.setStatement(sql); //mysql之前已经加好limit } else if (sqlMapCache.containsKey(dbType)) {
-     * node.setStatement(sqlMapCache.get(dbType)); } else if(isNeedConvert) { String nativeSql =
-     * PageSQLUtil.convertLimitToNativePageSql(dbType, sql, offset, count); sqlMapCache.put(dbType,
-     * nativeSql); node.setStatement(nativeSql); } else { node.setStatement(sql); }
-     * 
-     * node.setLimitStart(offset); node.setLimitSize(count); }
-     * 
-     * 
-     * } }
-     */
-
     public boolean isAutocommit() {
         return autocommit;
     }
@@ -365,27 +287,9 @@ public final class RouteResultset implements Serializable {
         this.canRunInReadDB = canRunInReadDB;
     }
 
-	public HavingCols getHavingCols() {
-		return (sqlMerge != null) ? sqlMerge.getHavingCols() : null;
-	}
-
 	public void setSubTables(Set<String> subTables) {
 		this.subTables = subTables;
 	}
-
-	public void setHavings(HavingCols havings) {
-		if (havings != null) {
-			createSQLMergeIfNull().setHavingCols(havings);
-		}
-	}
-
-	// Added by winbill, 20160314, for having clause, Begin ==>
-	public void setHavingColsName(Object[] names) {
-		if (names != null && names.length > 0) {
-			createSQLMergeIfNull().setHavingColsName(names);
-		}
-	}
-	// Added by winbill, 20160314, for having clause, End  <==
 
 	public Set<String> getSubTables() {
 		return this.subTables;

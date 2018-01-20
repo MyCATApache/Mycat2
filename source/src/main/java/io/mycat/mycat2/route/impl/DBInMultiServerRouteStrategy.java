@@ -8,9 +8,11 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.beans.conf.TableDefBean;
+import io.mycat.mycat2.beans.conf.TableDefBean.TypeEnum;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.route.RouteResultsetNode;
 import io.mycat.mycat2.route.RouteStrategy;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.proxy.ProxyRuntime;
 
 /**
@@ -26,23 +28,44 @@ import io.mycat.proxy.ProxyRuntime;
 public class DBInMultiServerRouteStrategy implements RouteStrategy {
 
     @Override
-    public RouteResultset route(SchemaBean schema, int sqlType, String origSQL, String charset,
+    public RouteResultset route(SchemaBean schema, byte sqlType, String origSQL, String charset,
             MycatSession mycatSession) {
 
         Set<String> dataNodes = new HashSet<>();
-
+        Set<String> globalDataNodes = new HashSet<>(); // 全局表的datanode
         MycatConfig config = ProxyRuntime.INSTANCE.getConfig();
-
+        boolean existGlobalTable = false;
         for (int i = 0; i < mycatSession.sqlContext.getTableCount(); i++) {
             String tableName = mycatSession.sqlContext.getTableName(i);
 
             TableDefBean tableDefBean = config.getTableDefBean(tableName);
             if (tableDefBean != null) {
-                dataNodes.add(tableDefBean.getDataNode());
+                if (tableDefBean.getType() == TypeEnum.global) {
+                    if (!existGlobalTable) {
+                        existGlobalTable = true;
+                    }
+                    globalDataNodes.addAll(tableDefBean.getDataNodes());
+                } else {
+                    dataNodes.addAll(tableDefBean.getDataNodes());
+                }
+            } else {
+                dataNodes.add(schema.getDefaultDataNode());
+            }
+        }
+        // 就全局表而言，只有查询操作不需要跨节点，其他都要
+        if (sqlType != BufferSQLContext.SELECT_SQL
+                && sqlType != BufferSQLContext.SELECT_FOR_UPDATE_SQL
+                && sqlType != BufferSQLContext.SELECT_INTO_SQL) {
+            dataNodes.addAll(globalDataNodes);
+        } else {
+            if (!globalDataNodes.isEmpty()) {
+                dataNodes.add(globalDataNodes.stream().findFirst().get());
             }
         }
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
-
+        if (existGlobalTable) {
+            rrs.setGlobalTable(true);
+        }
         if (dataNodes.size() >= 1) {
             RouteResultsetNode[] nodes = new RouteResultsetNode[dataNodes.size()];
             int i = 0;
@@ -51,9 +74,13 @@ public class DBInMultiServerRouteStrategy implements RouteStrategy {
             }
             rrs.setNodes(nodes);
             return rrs;
+        } else {
+            // 使用默认datanode
+            RouteResultsetNode[] nodes = new RouteResultsetNode[1];
+            nodes[0] = new RouteResultsetNode(schema.getDefaultDataNode(), sqlType, origSQL);
+            rrs.setNodes(nodes);
+            return rrs;
         }
-
-        return rrs;
     }
 
 }

@@ -18,7 +18,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRouteStrategy.class);
 
 	@Override
-    public RouteResultset route(SchemaBean schema, int sqlType, String origSQL, String charset,
+    public RouteResultset route(SchemaBean schema, byte sqlType, String origSQL, String charset,
             MycatSession mycatSession) {
 
         // TODO 待处理checkSQLSchema by zhangsiwei

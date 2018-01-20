@@ -14,6 +14,7 @@ import io.mycat.mycat2.beans.conf.SchemaConfig;
 import io.mycat.mycat2.beans.conf.TableDefBean;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.Configurable;
+import io.mycat.util.SplitUtil;
 
 public class MycatConfig {
 	// 当前节点所用的配置文件的版本
@@ -67,6 +68,14 @@ public class MycatConfig {
                 schema.setDefaultDN(mycatDataNodeMap.get(defaultDnName));
             }
             schema.getTables().forEach(table -> {
+                String theDataNodes[] = SplitUtil.split(table.getDataNode(), ',', '$', '-');
+                if (theDataNodes == null || theDataNodes.length <= 0) {
+                    throw new IllegalArgumentException(
+                            "invalid table dataNodes: " + table.getDataNode());
+                }
+                for (String dn : theDataNodes) {
+                    table.getDataNodes().add(dn);
+                }
                 mycatTableMap.put(table.getName(), table);
             });
         });
