@@ -8,6 +8,6 @@ import io.mycat.mycat2.beans.conf.SchemaBean;
  *
  */
 public interface RouteStrategy {
-    public RouteResultset route(SchemaBean schema, int sqlType, String origSQL, String charset,
+    public RouteResultset route(SchemaBean schema, byte sqlType, String origSQL, String charset,
             MycatSession mycatSession);
 }

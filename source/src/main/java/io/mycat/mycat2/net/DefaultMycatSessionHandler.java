@@ -102,6 +102,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		MySQLCommand curCmd = session.getMycatSession().curSQLCommand;
 		try {
 			if (curCmd.onBackendResponse(session)) {
+                System.out.println("---------------" + session.isClosed());
 				curCmd.clearBackendResouces(session, session.isClosed());
 			}
 		} catch (ClosedChannelException ex) {
