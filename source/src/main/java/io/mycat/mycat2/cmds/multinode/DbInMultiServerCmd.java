@@ -81,54 +81,48 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
 
     @Override
     public boolean onBackendResponse(MySQLSession session) throws IOException {
-        lock.lock();
-        try {
-            ++executeCount;
-            // 首先进行一次报文的读取操作
-            if (!session.readFromChannel()) {
-                return false;
-            }
-            // 进行报文处理的流程化
-            boolean nextReadFlag = false;
-            do {
-                // 进行报文的处理流程
-                nextReadFlag = session.getMycatSession().commandHandler.procss(session);
-            } while (nextReadFlag);
-
-            // 获取当前是否结束标识
-            Boolean check = (Boolean) session.getSessionAttrMap()
-                    .get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-
-            MycatSession mycatSession = session.getMycatSession();
-            ProxyBuffer buffer = session.getProxyBuffer();
-
-            if (executeCount < session.getMycatSession().curRouteResultset.getNodes().length) {
-                // DbInMultiServer模式下，不考虑show tables等DSL语句的话，只有对全局表的操作才会跨节点，也就是对全局表的DDL，DML语句，
-                // 而对每个节点的全局表操作完后返回的报文都是一样的，因此只需要拿最后一次的报文返回给客户端即可
-                if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
-                    // 因为不是最后一个节点的返回报文，所以这里讲readmark设为readIndex，也就是丢弃掉这次报文（仅考虑全局表的DDL， DML返回报文）
-                    // TODO show tables类的DSL语句就不适用，这个后续考虑时再优化
-                    session.getProxyBuffer().readMark = session.getProxyBuffer().readIndex;
-                }
-                return false;
-            }
-
-            // 检查到当前已经完成,执行添加操作
-            if (null != check && check) {
-                // 当知道操作完成后，前段的注册感兴趣事件为读取
-                mycatSession.takeOwner(SelectionKey.OP_READ);
-            }
-            // 未完成执行继续读取操作
-            else {
-                // 直接透传报文
-                mycatSession.takeOwner(SelectionKey.OP_WRITE);
-            }
-            buffer.flip();
-            executeCount = 0;
-            mycatSession.writeToChannel();
-        } finally {
-            lock.unlock();
+        // 首先进行一次报文的读取操作
+        if (!session.readFromChannel()) {
+            return false;
         }
+        // 进行报文处理的流程化
+        boolean nextReadFlag = false;
+        do {
+            // 进行报文的处理流程
+            nextReadFlag = session.getMycatSession().commandHandler.procss(session);
+        } while (nextReadFlag);
+
+        // 获取当前是否结束标识
+        Boolean check = (Boolean) session.getSessionAttrMap()
+                .get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+
+        MycatSession mycatSession = session.getMycatSession();
+        ProxyBuffer buffer = session.getProxyBuffer();
+
+        if (++executeCount < session.getMycatSession().curRouteResultset.getNodes().length) {
+            // DbInMultiServer模式下，不考虑show tables等DSL语句的话，只有对全局表的操作才会跨节点，也就是对全局表的DDL，DML语句，
+            // 而对每个节点的全局表操作完后返回的报文都是一样的，因此只需要拿最后一次的报文返回给客户端即可
+            if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+                // 因为不是最后一个节点的返回报文，所以这里讲readmark设为readIndex，也就是丢弃掉这次报文（仅考虑全局表的DDL， DML返回报文）
+                // TODO show tables类的DSL语句就不适用，这个后续考虑时再优化
+                session.getProxyBuffer().readMark = session.getProxyBuffer().readIndex;
+            }
+            return false;
+        }
+
+        // 检查到当前已经完成,执行添加操作
+        if (null != check && check) {
+            // 当知道操作完成后，前段的注册感兴趣事件为读取
+            mycatSession.takeOwner(SelectionKey.OP_READ);
+        }
+        // 未完成执行继续读取操作
+        else {
+            // 直接透传报文
+            mycatSession.takeOwner(SelectionKey.OP_WRITE);
+        }
+        buffer.flip();
+        executeCount = 0;
+        mycatSession.writeToChannel();
         return false;
     }
 
