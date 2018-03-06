@@ -91,7 +91,7 @@ public class MycatCore {
 		}
 
 		if (cmd.hasOption(ArgsBean.CLUSTER_ENABLE)){
-			clusterConfig.getCluster().setEnable(Boolean.parseBoolean(ArgsBean.CLUSTER_ENABLE));
+			clusterConfig.getCluster().setEnable(Boolean.parseBoolean(cmd.getOptionValue(ArgsBean.CLUSTER_ENABLE)));
 		}
 		if (cmd.hasOption(ArgsBean.CLUSTER_PORT)){
 			clusterConfig.getCluster().setPort(Integer.parseInt(cmd.getOptionValue(ArgsBean.CLUSTER_PORT)));
