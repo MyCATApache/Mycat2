@@ -9,9 +9,11 @@ Mycat使用的线程模型是基于Reactor的设计模式，
 
 4.ProxyRuntime，我理解的为一个运行时容器
 
-5.MycatSession，前端连接会话
+5.MycatSession，前端连接会话（client连mycat）
 
-6.MySQLCommand 用来向前段写数据,或者后端写数据的cmd
+6.MySQLSession，后端连接会话（mycat连Mysql）
+
+7.MySQLCommand 用来向前段写数据,或者后端写数据的cmd
 
 
 下面开始流程：
