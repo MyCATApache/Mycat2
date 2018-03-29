@@ -316,7 +316,7 @@ MycatReactorThread和NIOAcceptor一样继承与ProxyReactorThread，这里创建
 		}
 	}
 代码很长这里我们只看最后的session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执行onFrontRead。
+DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执行所以执行onFrontRead。
 
 	public void onSocketRead(final AbstractMySQLSession session) throws IOException {
 		if (session instanceof MycatSession) {
