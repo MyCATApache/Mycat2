@@ -671,22 +671,27 @@ schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
 		checkWriteFinished();
 	}
 
-这里很有意思，设计的很巧妙，
+这里设计的很巧妙，
 1.proxyBuffer因为不能同时进行读写，所以确保proxyBuffer是可读状态。
+
 2.channel 始终从 readMark 开始 读取数据，到 readIndex 结束。
    即：写入到 channel中的数据范围是 readMark---readIndex 之间的数据。
+   
 3. readMark 指针的移动
    将数据写出到channel中后,readMark 对应写出了多少数据。即： writed = channel.write(buffer);
    每次写出数据后，readMark 增加写出数据的长度。即： readMark += writed ;
    readMark默认值为0. 有可能存在 要写出的数据 writed 没有写出去,或者只写出去了一部分的情况。
    下次channel 可写时（通常可写事件被触发），接着从readMark 开始写出数据到channel中。
    当readMark==readIndex 时,代表 数据全部写完。
+   
 4. 读写状态转换
    数据全部写完后,proxybuffer 状态 转换为 可写状态。即  inReading = false;
+   
 5. proxybuffer 压缩。
    每次从proxybuffer读取数据写入到channel后，
    判断当前proxybuffer 已读是否大于总容量的2/3（readIndex > buffer.capacity() * 2 / 3).
    如果大于 2/3 进行一次 compact。
+   
 最后还有一个重要的方法checkWriteFinished，进行是否写入完毕检查
 	
 	protected void checkWriteFinished() throws IOException {
