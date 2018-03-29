@@ -473,8 +473,66 @@ schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
 		return true;
 	}
 
-这个方法首先根据mysql的报文类型生成MySQLCommand.如果是COM_QUERY,则调用BufferSQLParser进行解析.否则通过MYCOMMANDMAP生成MySQLCommand.最后,如果command等于NULL,则为DirectPassthrouhCmd.
+这个方法首先根据mysql的报文类型生成MySQLCommand.如果是COM_QUERY,则调用BufferSQLParser进行解析.否则通过MYCOMMANDMAP生成MySQLCommand.最后,如果command等于NULL,则为DirectPassthrouhCmd.注解这块，不做详细分析。
+由于当前为DirectPassthrouhCmd，即session.curSQLCommand=DirectPassthrouhCmd, 那我们就看一下DirectPassthrouhCmd中的procssSQL
+	
+	public boolean procssSQL(MycatSession session) throws IOException {
+		/*
+		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
+		 */
+		session.clearReadWriteOpts();（1）
 
+		session.getBackend((mysqlsession, sender, success, result) -> {
+
+			ProxyBuffer curBuffer = session.proxyBuffer;
+			// 切换 buffer 读写状态
+			curBuffer.flip();
+			if (success) {
+				// 没有读取,直接透传时,需要指定 透传的数据 截止位置
+				curBuffer.readIndex = curBuffer.writeIndex;
+				// 改变 owner，对端Session获取，并且感兴趣写事件
+				session.giveupOwner(SelectionKey.OP_WRITE);
+				try {
+					mysqlsession.writeToChannel();
+				} catch (IOException e) {
+					session.closeBackendAndResponseError(mysqlsession, success, ((ErrorPacket) result));
+				}
+			} else {
+				session.closeBackendAndResponseError(mysqlsession, success, ((ErrorPacket) result));
+			}
+		});
+		return false;
+	}
+这个方法步骤
+1.首先取消前端读写事件，因为获取后端连接可能涉及到异步处理
+2.调用session.getBackend获取一个后端（mysql端）连接，并将命令发送给后端，我们看下getBackend
+
+	public void getBackend(AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
+		
+		final boolean runOnSlave = canRunOnSlave();
+		
+		MySQLRepBean repBean = getMySQLRepBean(getbackendName());
+		
+		/**
+		 * 本次根据读写分离策略要使用的metaBean
+		 */
+		MySQLMetaBean targetMetaBean = repBean.getBalanceMetaBean(runOnSlave);
+		
+		if(targetMetaBean==null){
+			String errmsg = " the metaBean is not found,please check datasource.yml!!! [balance] and [type]  propertie or see debug log or check heartbeat task!!";
+			if(logger.isDebugEnabled()){
+				logger.error(errmsg);
+			}
+			ErrorPacket error = new ErrorPacket();
+            error.errno = ErrorCode.ER_BAD_DB_ERROR;
+            error.packetId = 1;
+            error.message = errmsg;
+			responseOKOrError(error);
+			return;
+		}
+首先获取当前线程MycatReactorThread，根据 backendName获取MySQLRepBean(一組MySQL复制集群，如主从或者多主)(backendNam可在schema.yml中设置schemas.defaultDN.replica)
+然后根据=读写分离策略找出要使用的metaBean，如果为null，返回错误。
 接下来我们看下session.sendAuthPackge();
 
 	public void sendAuthPackge() throws IOException {
