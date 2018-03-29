@@ -11,5 +11,26 @@ Mycat使用的线程模型是基于Reactor的设计模式，
 程序的入口是io.mycat.mycat2.MycatCore. 在main 方法中 首选取得ProxyRuntime的实例,该类是一个单例模式
 初始化时:
 
-runtime.setReactorThreads(new MycatReactorThread[cpus]);  设置MycatReactorThread的线程池数量，也就是有多少个Selector
-runtime.setSessionManager(new MycatSessionManager()); 设置session为前台连接session
+   public static void main(String[] args) throws IOException {
+		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+		//设置负责读取配置文件的类
+		runtime.setConfig(new MycatConfig());
+		
+		//加载配置文件
+		ConfigLoader.INSTANCE.loadCore();
+		solveArgs(args);
+
+		int cpus = Runtime.getRuntime().availableProcessors();
+		runtime.setNioReactorThreads(cpus);
+		runtime.setReactorThreads(new MycatReactorThread[cpus]);
+
+		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
+		// runtime.setNioProxyHandler(new DefaultDirectProxyHandler());
+		// runtime.setSessionManager(new DefaultTCPProxySessionManager());
+		// Debug观察MySQL协议用
+		// runtime.setSessionManager(new MySQLStudySessionManager());
+		runtime.setSessionManager(new MycatSessionManager());
+		runtime.init();
+
+		ProxyStarter.INSTANCE.start();
+	}
