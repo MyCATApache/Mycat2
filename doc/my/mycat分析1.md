@@ -145,6 +145,19 @@ getProxyReactor这里可以理解为从工厂工获取一个可用的Reactor，�
 			}
 		});
 	}
+	
+	private void processNIOJob() {
+		Runnable nioJob = null;
+		while ((nioJob = pendingJobs.poll()) != null) {
+			try {
+				nioJob.run();
+			} catch (Exception e) {
+				logger.warn("run nio job err ", e);
+			}
+		}
+
+	}
+这里有一个ConcurrentLinkedQueue的队列，在acceptNewSocketChannel添加，processNIOJob执行，同时，processNIOJob在run方法中一直死循环的执行。相当于阻塞。
 展开createSession
 
 	public MycatSession createSession(Object keyAttachment, BufferPool bufPool, Selector nioSelector,
