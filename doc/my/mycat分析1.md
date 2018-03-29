@@ -1,4 +1,4 @@
-##sql如何经过mycat到达mysql的
+==sql如何经过mycat到达mysql的
 
 Mycat使用的线程模型是基于Reactor的设计模式，
 先说几个概念:
