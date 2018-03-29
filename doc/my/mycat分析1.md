@@ -315,7 +315,7 @@ MycatReactorThread和NIOAcceptor一样继承与ProxyReactorThread，这里创建
 			logger.warn("Frontend FrontendAuthenticatingState error:", e);
 		}
 	}
-代码很长这里我们只看最后的session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+代码很长这里我们只看最后的session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);假设已经认证成功的情况下，
 DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执行所以执行onFrontRead。
 
 	public void onSocketRead(final AbstractMySQLSession session) throws IOException {
