@@ -538,38 +538,6 @@ schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
 首先获取当前线程MycatReactorThread，根据 backendName获取MySQLRepBean(一組MySQL复制集群，如主从或者多主)(backendNam可在schema.yml中设置schemas.defaultDN.replica)
 然后根据=读写分离策略找出要使用的metaBean，如果为null，返回错误。
 
-	public MySQLMetaBean getBalanceMetaBean(boolean runOnSlave){
-		if(ReplicaBean.RepTypeEnum.SINGLE_NODE == replicaBean.getRepType()||!runOnSlave){
-			return getCurWriteMetaBean();
-		}
-
-		MySQLMetaBean datas = null;
-
-			switch(replicaBean.getBalanceType()){
-				case BALANCE_ALL:
-					datas = getLBReadWriteMetaBean();
-					break;
-				case BALANCE_ALL_READ:
-					datas = getLBReadMetaBean();
-					//如果从节点不可用,从主节点获取连接
-					if(datas==null){
-						logger.warn("all slaveNode is Unavailable. use master node for read . balance type is {}", replicaBean.getBalanceType());
-						datas = getCurWriteMetaBean();
-					}
-					break;
-				case BALANCE_NONE:
-					datas = getCurWriteMetaBean();
-					break;
-				default:
-					logger.warn("current balancetype is not supported!! [{}], use writenode connection .", replicaBean.getBalanceType());
-					datas = getCurWriteMetaBean();
-					break;
-			}
-			return datas;
-	    }
-
-默认配置的是BALANCE_ALL_READ,因此会调用getLBReadMetaBean,如果从节点不可用,则从主节点获取连接，这几种情况可展开单独说明，此处跳过
-
 2.canRunOnSlave方法判断后端连接 是否可以走从节点
  静态注解情况下 走读写分离
  事务场景下，走从节点
@@ -601,7 +569,73 @@ schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
 		}
 	}
 	
-	
+展开getBalanceMetaBean方法
+
+	public MySQLMetaBean getBalanceMetaBean(boolean runOnSlave){
+		if(ReplicaBean.RepTypeEnum.SINGLE_NODE == replicaBean.getRepType()||!runOnSlave){
+			return getCurWriteMetaBean();
+		}
+
+		MySQLMetaBean datas = null;
+
+			switch(replicaBean.getBalanceType()){
+				case BALANCE_ALL:
+					datas = getLBReadWriteMetaBean();
+					break;
+				case BALANCE_ALL_READ:
+					datas = getLBReadMetaBean();
+					//如果从节点不可用,从主节点获取连接
+					if(datas==null){
+						logger.warn("all slaveNode is Unavailable. use master node for read . balance type is {}", replicaBean.getBalanceType());
+						datas = getCurWriteMetaBean();
+					}
+					break;
+				case BALANCE_NONE:
+					datas = getCurWriteMetaBean();
+					break;
+				default:
+					logger.warn("current balancetype is not supported!! [{}], use writenode connection .", replicaBean.getBalanceType());
+					datas = getCurWriteMetaBean();
+					break;
+			}
+			return datas;
+	    }
+
+默认配置的是BALANCE_ALL_READ,因此会调用getLBReadMetaBean,如果从节点不可用,则从主节点获取连接，这几种情况可展开单独说明，此处跳过
+我们来看一下 getLBReadMetaBean
+
+	private MySQLMetaBean getLBReadMetaBean(){
+	List<MySQLMetaBean> result = metaBeans.stream()
+			.filter(f -> f.isSlaveNode() && f.canSelectAsReadNode())
+			.collect(Collectors.toList());
+	return result.isEmpty() ? null : result.get(ThreadLocalRandom.current().nextInt(result.size()));
+	}
+
+这个方法是去查找去读节点，放入list并返回。
+继续展开canSelectAsReadNode方法
+
+	public boolean canSelectAsReadNode() {
+		int slaveBehindMaster = heartbeat.getSlaveBehindMaster();
+		int dbSynStatus = heartbeat.getDbSynStatus();
+		
+		if (!isAlive()){
+			return false;
+		}
+		
+		if (dbSynStatus == DBHeartbeat.DB_SYN_ERROR) {
+			return false;
+		}
+		boolean isSync = dbSynStatus == DBHeartbeat.DB_SYN_NORMAL;
+		boolean isNotDelay = (slaveThreshold >= 0) ? (slaveBehindMaster < slaveThreshold) : true;
+		return isSync && isNotDelay;
+	}
+这个方法主要检查当前节点是否可用。如果不可用
+走getCurWriteMetaBean()方法。展开getCurWriteMetaBean()
+
+	private MySQLMetaBean getCurWriteMetaBean() {
+	return metaBeans.get(writeIndex).isAlive() ? metaBeans.get(writeIndex) : null;
+	}
+如果当前读不可用，得到写节点。从写节点读取数据
 
 接下来我们看下session.sendAuthPackge();
 
