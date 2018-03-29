@@ -257,7 +257,7 @@ getProxyReactor这里可以理解为从工厂工获取一个可用的Reactor，�
 			nioThreads[i] = thread;
 		}
 	}
-MycatReactorThread和NIOAcceptor一样继承与ProxyReactorThread，这里创建了和CPU个数相同的线程组。并开启，上文中给我们说到，MycatSession在创建的时候注册到nioReactor,并监听读。这里我们看一下MycatReactorThread读的操作。
+MycatReactorThread和NIOAcceptor一样继承与ProxyReactorThread，这里创建了和CPU个数相同的线程组。并开启，上面中给我们说到，MycatSession在创建的时候注册到nioReactor,并监听读。这里我们看一下MycatReactorThread读的操作。
 
 	protected void processReadKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
 		// only from cluster server socket
