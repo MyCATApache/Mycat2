@@ -391,7 +391,7 @@ DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执�
 		// 指定session中的handler处理为指定的handler
 		session.commandHandler = adapter;
 
-		if (!session.matchMySqlCommand()) {
+		if (!session.matchMySqlCommand()) {(1)
 			return;
 		}
 
@@ -401,6 +401,78 @@ DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执�
 		}
 	}
 这里我们重点看一下CommandHandler adapter = HandlerParse.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);这里是根据前台发过来的数据包类型选择不同的CommandHandler。
+这里还有一个重要的方法session.matchMySqlCommand(),根据sql类型构建CmdChain.绑定MySqlCommand，我们展开来看看
+	
+	public boolean matchMySqlCommand(){
+		switch(schema.schemaType){
+			case DB_IN_ONE_SERVER:
+				return DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
+			case DB_IN_MULTI_SERVER:
+				DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
+			case ANNOTATION_ROUTE:
+				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
+			//case SQL_PARSE_ROUTE:
+			//AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
+			default:
+				throw new InvalidParameterException("schema type is invalid ");
+		}
+	}
+schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
+我们这里只考虑DB_IN_ONE_SERVER，展开DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
+
+	final public boolean matchMySqlCommand(MycatSession session) {
+		
+		MySQLCommand  command = null;
+		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
+			/**
+			 * sqlparser
+			 */
+			BufferSQLParser parser = new BufferSQLParser();
+			int rowDataIndex = session.curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize +1 ;
+			int length = session.curMSQLPackgInf.pkgLength -  MySQLPacket.packetHeaderSize - 1 ;
+			try {
+				parser.parse(session.proxyBuffer.getBuffer(), rowDataIndex, length, session.sqlContext);
+			} catch (Exception e) {
+				try {
+					logger.error("sql parse error",e);
+					session.sendErrorMsg(ErrorCode.ER_PARSE_ERROR, "sql parse error : "+e.getMessage());
+				} catch (IOException e1) {
+					session.close(false, e1.getMessage());
+				}
+				return false;
+			}
+			
+			byte sqltype = session.sqlContext.getSQLType()!=0?session.sqlContext.getSQLType():session.sqlContext.getCurSQLType();
+			
+			if(BufferSQLContext.MYCAT_SQL==sqltype){
+				session.curSQLCommand = MyCatCmdDispatcher.INSTANCE.getMycatCommand(session.sqlContext);
+				return true;
+			}
+			
+			command = MYSQLCOMMANDMAP.get(sqltype);
+		}else{
+			command = MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
+		}
+		if(command==null){
+			command = DirectPassthrouhCmd.INSTANCE;
+		}
+
+		/**
+		 * 设置原始处理命令
+		 * 1. 设置目标命令
+		 * 2. 处理动态注解
+		 * 3. 处理静态注解
+		 * 4. 构建命令或者注解链。    如果没有注解链，直接返回目标命令
+		 */
+		SQLAnnotationChain chain = new SQLAnnotationChain();
+		session.curSQLCommand = chain.setTarget(command) 
+			 .processDynamicAnno(session)
+			 .processStaticAnno(session, staticAnnontationMap)
+			 .build();
+		return true;
+	}
+
+这个方法首先根据mysql的报文类型生成MySQLCommand.如果是COM_QUERY,则调用BufferSQLParser进行解析.否则通过MYCOMMANDMAP生成MySQLCommand.最后,如果command等于NULL,则为DirectPassthrouhCmd.
 
 接下来我们看下session.sendAuthPackge();
 
