@@ -400,7 +400,9 @@ DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执�
 		}
 	}
 这里我们重点看一下CommandHandler adapter = HandlerParse.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);
-这里是根据前台发过来的数据包类型选择不同的CommandHandler。
+
+根据前台发过来的数据包类型选择不同的CommandHandler
+
 这里还有一个重要的方法session.matchMySqlCommand(),根据sql类型构建CmdChain.绑定MySqlCommand，我们展开来看看
 	
 	public boolean matchMySqlCommand(){
@@ -569,6 +571,7 @@ schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
 2.canRunOnSlave方法判断后端连接 是否可以走从节点
  静态注解情况下 走读写分离
  事务场景下，走从节点
+ 
  	private boolean canRunOnSlave(){
 		 //静态注解情况下 走读写分离
 		if(NewSQLContext.ANNOTATION_BALANCE==sqlContext.getAnnotationType()){
