@@ -11,7 +11,7 @@ Mycat使用的线程模型是基于Reactor的设计模式，
 程序的入口是io.mycat.mycat2.MycatCore. 在main 方法中 首选取得ProxyRuntime的实例,该类是一个单例模式
 初始化时:
 
-   public static void main(String[] args) throws IOException {
+  	public static void main(String[] args) throws IOException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		//设置负责读取配置文件的类
 		runtime.setConfig(new MycatConfig());
