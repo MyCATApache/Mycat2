@@ -120,7 +120,7 @@ NIOAcceptor是一个线程，这里我们展开NIOAcceptor中的run方法
 		}
 
 	}
-(1)NIOAcceptor也是一个线程，通过一个死循环不断的监听事件,获取事件的超时时间为100ms.
+(1)NIOAcceptor里面我们看到它通过一个死循环不断的监听事件,获取事件的超时时间为100ms.
 如果没有事件要处理,并且pendingJobs不为空则进行任务处理.
 如果ioTimes大于5并且pendingJobs不为空则进行任务处理.
 否则就对事件进行处理.这里重点关注processAcceptKey(reactorEnv, key);我们发现processAcceptKey中调用了accept()方法。
@@ -131,7 +131,7 @@ NIOAcceptor是一个线程，这里我们展开NIOAcceptor中的run方法
 		// 将通道注册到reactor对象上
 		nioReactor.acceptNewSocketChannel(serverType, socketChannel);
 	}
-getProxyReactor这里可以理解为从工厂工获取一个可用的Reactor，这里我们的sessionMan为MycatSessionManager
+getProxyReactor这里可以理解为从工厂工获取一个可用的Reactor，这里我们的sessionManager为MycatSessionManager
 
 	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) throws IOException {
 		pendingJobs.offer(() -> {
