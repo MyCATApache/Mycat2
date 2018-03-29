@@ -64,7 +64,7 @@ Mycat使用的线程模型是基于Reactor的设计模式，
 		}
 	}
 	
-展开NIOAcceptor中的run方法
+NIOAcceptor是一个线程，这里我们展开NIOAcceptor中的run方法
 
 	public void run() {
 		long ioTimes = 0;
