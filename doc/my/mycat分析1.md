@@ -400,7 +400,8 @@ DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执�
 			session.curSQLCommand.clearFrontResouces(session, session.isClosed());
 		}
 	}
-这里我们重点看一下CommandHandler adapter = HandlerParse.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);这里是根据前台发过来的数据包类型选择不同的CommandHandler。
+这里我们重点看一下CommandHandler adapter = HandlerParse.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);
+这里是根据前台发过来的数据包类型选择不同的CommandHandler。
 这里还有一个重要的方法session.matchMySqlCommand(),根据sql类型构建CmdChain.绑定MySqlCommand，我们展开来看看
 	
 	public boolean matchMySqlCommand(){
