@@ -505,6 +505,7 @@ schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
 	}
 这个方法步骤
 1.首先取消前端读写事件，因为获取后端连接可能涉及到异步处理
+
 2.调用session.getBackend获取一个后端（mysql端）连接，并将命令发送给后端，我们看下getBackend
 
 	public void getBackend(AsynTaskCallBack<MySQLSession> callback) throws IOException {
