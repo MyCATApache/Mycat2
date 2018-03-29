@@ -496,3 +496,25 @@ DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执�
 		channelKey.interestOps(SelectionKey.OP_WRITE);
 		//}
 	}
+如果写入完成
+
+	public void writeFinished() throws IOException {
+		this.getCurNIOHandler().onWriteFinished(this);
+
+	}
+因为已经通过认证这里的curNIOHandler为DefaultMycatSessionHandler
+
+	public void onWriteFinished(AbstractMySQLSession session) throws IOException {
+		// 交给SQLComand去处理
+		if (session instanceof MycatSession) {
+			MycatSession mycatSs = (MycatSession) session;
+			if (mycatSs.curSQLCommand.onFrontWriteFinished(mycatSs)) {
+				mycatSs.curSQLCommand.clearFrontResouces(mycatSs, false);
+			}
+		} else {
+			MycatSession mycatSs = ((MySQLSession) session).getMycatSession();
+			if (mycatSs.curSQLCommand.onBackendWriteFinished((MySQLSession) session)) {
+				mycatSs.curSQLCommand.clearBackendResouces((MySQLSession) session, false);
+			}
+		}
+	}
