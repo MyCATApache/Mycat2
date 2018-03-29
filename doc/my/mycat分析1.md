@@ -382,7 +382,6 @@ DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执�
 
 		// 进行后端的结束报文处理的绑定
 		CommandHandler adapter = HandlerParse.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);(1)
-
 		if (null == adapter) {
 			logger.error("curr pkg Type :" + session.curMSQLPackgInf.pkgType + " is not handler proess");
 			throw new IOException("curr pkgtype " + session.curMSQLPackgInf.pkgType + " not handler!");
