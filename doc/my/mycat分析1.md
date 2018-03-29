@@ -741,7 +741,7 @@ schemaType可在schema.yml中进行配置,默认是DB_IN_ONE_SERVER
 			// clearReadWriteOpts();
 		}
 	}
-如果写入未完成，重新注册为OP_WRITE，继续执行写操作。
+如果写入未完成，重新注册为OP_WRITE，重新注册到selector中，因为selector一直在轮询会在一次的执行writeToChannel。 继续执行写操作。
 	
 	public void change2WriteOpts() {
 		checkBufferOwner(true);
