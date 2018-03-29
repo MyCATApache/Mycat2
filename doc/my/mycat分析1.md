@@ -11,6 +11,8 @@ Mycat使用的线程模型是基于Reactor的设计模式，
 
 5.MycatSession，前端连接会话
 
+6.MySQLCommand 用来向前段写数据,或者后端写数据的cmd
+
 
 下面开始流程：
 程序的入口是io.mycat.mycat2.MycatCore. 在main 方法中 首选取得ProxyRuntime的实例,该类是一个单例模式
