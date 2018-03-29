@@ -487,7 +487,7 @@ DefaultMycatSessionHandler中的onSocketRead，这里session为MycatSession执�
 		checkBufferOwner(true);
 		int intesOpts = this.channelKey.interestOps();
 		// 事件转换时,只注册一个事件,存在可读事件没有取消注册的情况。这里把判断取消
-//		if ((intesOpts & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
-			channelKey.interestOps(SelectionKey.OP_WRITE);
-//		}
+		//if ((intesOpts & SelectionKey.OP_WRITE) != SelectionKey.OP_WRITE) {
+		channelKey.interestOps(SelectionKey.OP_WRITE);
+		//}
 	}
