@@ -96,15 +96,17 @@ public class ProxyStarter {
 			});
 		}
 
-		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
-		ClusterBean clusterBean = clusterConfig.getCluster();
 		// 主节点才启动心跳，非集群按主节点处理
 		if (isLeader) {
 			runtime.startHeartBeatScheduler();
 		}
 
+		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
+		ClusterBean clusterBean = clusterConfig.getCluster();
+		
 		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
 		BalancerBean balancerBean = balancerConfig.getBalancer();
+
 		// 集群模式下才开启负载均衡服务
         if (clusterBean.isEnable() && balancerBean.isEnable()) {
 			runtime.getAcceptor().startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
