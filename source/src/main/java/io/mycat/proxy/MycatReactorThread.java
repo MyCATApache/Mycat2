@@ -65,7 +65,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 					MycatSession mycatSession = (MycatSession) session;
 					return mycatSession.getBackendConCounts(mySQLMetaBean);
 				})
-				.reduce(0, (sum, count) -> sum += count, (sum1, sum2) -> sum1 + sum2);
+				.reduce(0, (sum, count) -> sum += count);
 	}
 	
 	
