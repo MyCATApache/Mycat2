@@ -51,6 +51,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 				T session = sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel, true);
 				allSessions.add(session);
 			} catch (Exception e) {
+				e.printStackTrace();
 				logger.warn("regist new connection err " + e);
 			}
 		});

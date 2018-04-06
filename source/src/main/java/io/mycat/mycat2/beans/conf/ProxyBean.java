@@ -1,6 +1,9 @@
 package io.mycat.mycat2.beans.conf;
 
 import io.mycat.mycat2.beans.GlobalBean;
+import io.mycat.proxy.buffer.BufferPooLFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Desc: mycat代理配置类
@@ -13,7 +16,7 @@ public class ProxyBean {
     private static final short DEFAULT_BUFFER_CHUNK_SIZE = 1024*4*2;
     private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 1024*1024*4;
     private static final short DEFAULT_BUFFER_POOL_PAGE_NUMBER = 64;
-    
+	private static final Logger logger = LoggerFactory.getLogger(ProxyBean.class);
     private static final int MAX_ALLOWED_PACKET  = 16 * 1024 * 1024;
 	
     /**
@@ -83,6 +86,11 @@ public class ProxyBean {
 	}
 
 	public void setBufferPoolChunkSize(short bufferPoolChunkSize) {
+		if (bufferPoolChunkSize < 86){
+			///cjw  2018.4.6 fix the HandshakePacket write proxybuffer which is low than 86 lead to error
+			logger.warn("bufferPoolChunkSize should be greater than 86,and will be updated to 128;");
+			bufferPoolChunkSize = 128;
+		}
 		this.bufferPoolChunkSize = bufferPoolChunkSize;
 	}
 

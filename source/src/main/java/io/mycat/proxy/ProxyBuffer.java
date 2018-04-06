@@ -120,6 +120,9 @@ public class ProxyBuffer {
 		this.writeIndex = newBuffer.position();
 		this.buffer = newBuffer;
 	}
+	public void setBuffer(ByteBuffer newBuffer){
+		this.buffer = newBuffer;
+	}
 
 	/**
 	 * 只能用在读状态下，跳过指定的N个字符
