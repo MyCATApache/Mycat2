@@ -13,6 +13,7 @@ public interface BufferPool {
 	
 	public ByteBuffer allocate();
     public ByteBuffer allocate(int size);
+    public ByteBuffer expandBuffer(ByteBuffer buffer);
     public void recycle(ByteBuffer theBuf);
     public long capacity();
     public long size();

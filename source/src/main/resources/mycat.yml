@@ -2,5 +2,5 @@ proxy:
   ip: 0.0.0.0
   port: 8066
   bufferPoolPageSize: 4194304     # 一页的大小，默认 1024*1024*4
-  bufferPoolChunkSize: 8192       # chunk 大小 ， 默认 1024*4*2 。 chunk 为bufferpool 分配的最小单元
+  bufferPoolChunkSize: 8192       # chunk 大小 ， 默认 1024*4*2 。 chunk 为bufferpool 分配的最小单元,不能低于86
   bufferPoolPageNumber: 64        # 页数量. 默认 64
