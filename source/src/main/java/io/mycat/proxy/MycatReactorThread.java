@@ -3,7 +3,9 @@ package io.mycat.proxy;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -65,15 +67,17 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 					MycatSession mycatSession = (MycatSession) session;
 					return mycatSession.getBackendConCounts(mySQLMetaBean);
 				})
-				.reduce(0, (sum, count) -> sum += count);
+        .mapToInt(Integer::intValue)
+        .sum();
 	}
 	
 	
 	public void createSession(MySQLMetaBean mySQLMetaBean, SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack) throws IOException {
 		int count = Stream.of(ProxyRuntime.INSTANCE.getReactorThreads())
 						.map(session -> ((MycatReactorThread)session).mySQLSessionMap.get(mySQLMetaBean))
-						.filter(list -> list != null)
-						.reduce(0, (sum, list) -> sum += list.size(), (sum1, sum2) -> sum1 + sum2);
+						.filter(Objects::nonNull)
+            .mapToInt(List::size)
+            .sum();
 		int backendCounts = getUsingBackendConCounts(mySQLMetaBean);
 		logger.debug("all session backend count is {},reactor backend count is {},metabean max con is {}",backendCounts,count,mySQLMetaBean.getDsMetaBean().getMaxCon());
 		if (count + backendCounts + 1 > mySQLMetaBean.getDsMetaBean().getMaxCon()) {
