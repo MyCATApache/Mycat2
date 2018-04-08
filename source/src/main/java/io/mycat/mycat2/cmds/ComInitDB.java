@@ -2,12 +2,13 @@ package io.mycat.mycat2.cmds;
 
 import java.io.IOException;
 
-import io.mycat.mycat2.beans.conf.SchemaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.beans.conf.DNBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -49,7 +50,9 @@ public class ComInitDB extends DirectPassthrouhCmd{
             session.responseOKOrError(OKPacket.OK);
             return false;
 		}else if(SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER==session.schema.getSchemaType()){
-			session.schema.getDefaultDN().setDatabase(schema);
+            DNBean defaultDN = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+                    .get(session.schema.getDefaultDataNode());
+            defaultDN.setDatabase(schema);
 			return super.procssSQL(session);
 		}else{
 			logger.warn("Unknown database '" + schema + "'");

@@ -24,7 +24,6 @@ public class SchemaBean {
     public String name;
     public SchemaTypeEnum schemaType;
     private String defaultDataNode;
-    private DNBean defaultDN;
     private List<TableDefBean> tables = new ArrayList<TableDefBean>();
 
     public String getName() {
@@ -51,14 +50,6 @@ public class SchemaBean {
         this.defaultDataNode = defaultDataNode;
     }
 
-    public DNBean getDefaultDN() {
-        return defaultDN;
-    }
-
-    public void setDefaultDN(DNBean defaultDN) {
-        this.defaultDN = defaultDN;
-    }
-
     public List<TableDefBean> getTables() {
         return tables;
     }
@@ -69,6 +60,7 @@ public class SchemaBean {
 
     @Override
     public String toString() {
-        return "SchemaBean{" + "name='" + name + '\'' + ", schemaType=" + schemaType + ", defaultDN=" + defaultDN + ", tables=" + tables + '}';
+        return "SchemaBean{" + "name='" + name + '\'' + ", schemaType=" + schemaType + ", tables="
+                + tables + '}';
     }
 }
