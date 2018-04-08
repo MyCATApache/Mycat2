@@ -113,7 +113,8 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
             }
         }
         if (StringUtils.isEmpty(databases)) {
-            databases = session.getMycatSession().schema.getDefaultDN().getDatabase();
+            databases = dataNodeMap.get(session.getMycatSession().schema.getDefaultDataNode())
+                    .getDatabase();
         }
         return databases;
 	}
