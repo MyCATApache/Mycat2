@@ -2,15 +2,18 @@ package io.mycat.mycat2.tasks;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
+import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mysql.packet.CommandPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
 
 public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
@@ -19,7 +22,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 	
 	public BackendSynchemaTask(MySQLSession session) throws IOException{
 		super(session,true);
-		String databases = session.getMycatSession().schema.getDefaultDN().getDatabase();
+        String databases = findDatabase(session);
 		logger.debug("the Backend Synchema Task begin ");
 		logger.debug(" use  "+databases);
 		session.proxyBuffer.reset();
@@ -56,9 +59,9 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 		session.proxyBuffer.reset();
 		
 		try {
-    		if (!session.readFromChannel()){
-    			return;
-    		}
+            if (!session.readFromChannel()) {
+                return;
+            }
 		}catch(ClosedChannelException e){
 			session.close(false, e.getMessage());
 			return;
@@ -75,24 +78,44 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 			return;
 		}
 		
-    	switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, false)) {
-		case Full:
-			if(session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET){
-				String database = session.getMycatSession().schema.getDefaultDN().getDatabase();
-				session.setDatabase(database );
-				logger.debug("the Backend Synchema Task end ");
-				this.finished(true);
-			}else if(session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET){
-				errPkg = new ErrorPacket();
-	            errPkg.read(session.proxyBuffer);
-	            logger.debug("the Backend Synchema Task end ");
-	            logger.warn("backend state sync Error.Err No. " + errPkg.errno + "," + errPkg.message);
-	            this.finished(false);
-			}
-			break;
-		default:
-			return;
-    	}
+        switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, false)) {
+            case Full:
+                if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+                    String database = findDatabase(session);
+                    session.setDatabase(database);
+                    logger.debug("the Backend Synchema Task end ");
+                    this.finished(true);
+                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
+                    errPkg = new ErrorPacket();
+                    errPkg.read(session.proxyBuffer);
+                    logger.debug("the Backend Synchema Task end ");
+                    logger.warn("backend state sync Error.Err No. " + errPkg.errno + ","
+                            + errPkg.message);
+                    this.finished(false);
+                }
+                break;
+            default:
+                return;
+        }
+	}
+	
+	private String findDatabase(MySQLSession session) {
+	    String replicaName =
+                session.getMySQLMetaBean().getRepBean().getReplicaBean().getName();
+        Map<String, DNBean> dataNodeMap = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap();
+        String databases = "";
+        if (dataNodeMap != null) {
+            DNBean dataNode = dataNodeMap.values().stream().filter(dn -> {
+                return dn.getReplica().equalsIgnoreCase(replicaName);
+            }).findFirst().orElse(null);
+            if (dataNode != null) {
+                databases = dataNode.getDatabase();
+            }
+        }
+        if (StringUtils.isEmpty(databases)) {
+            databases = session.getMycatSession().schema.getDefaultDN().getDatabase();
+        }
+        return databases;
 	}
 
 }

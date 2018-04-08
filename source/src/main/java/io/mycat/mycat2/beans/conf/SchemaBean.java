@@ -1,5 +1,6 @@
 package io.mycat.mycat2.beans.conf;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,8 +23,9 @@ public class SchemaBean {
 
     public String name;
     public SchemaTypeEnum schemaType;
+    private String defaultDataNode;
     private DNBean defaultDN;
-    private List<TableDefBean> tables;
+    private List<TableDefBean> tables = new ArrayList<TableDefBean>();
 
     public String getName() {
         return name;
@@ -39,6 +41,14 @@ public class SchemaBean {
 
     public void setSchemaType(SchemaTypeEnum schemaType) {
         this.schemaType = schemaType;
+    }
+
+    public String getDefaultDataNode() {
+        return defaultDataNode;
+    }
+
+    public void setDefaultDataNode(String defaultDataNode) {
+        this.defaultDataNode = defaultDataNode;
     }
 
     public DNBean getDefaultDN() {

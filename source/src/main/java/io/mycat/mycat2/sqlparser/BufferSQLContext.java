@@ -283,6 +283,11 @@ public class BufferSQLContext {
             this.sqlType = sqlType;
     }
 
+    public boolean isDDL() {
+        return sqlType == CREATE_SQL || sqlType == ALTER_SQL || sqlType == DROP_SQL
+                || sqlType == TRUNCATE_SQL;
+    }
+
     public void setSQLIdx(int sqlIdx) {
         curSQLIdx = sqlIdx;
     }
