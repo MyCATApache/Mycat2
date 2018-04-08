@@ -371,7 +371,8 @@ public class MycatSession extends AbstractMySQLSession {
 		String backendName = null;
 		switch (schema.getSchemaType()) {
 			case DB_IN_ONE_SERVER:
-				backendName = schema.getDefaultDN().getReplica();
+                backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+                        .get(schema.getDefaultDataNode()).getReplica();
 				break;
 			case ANNOTATION_ROUTE:
 				break;
@@ -388,7 +389,8 @@ public class MycatSession extends AbstractMySQLSession {
                     backendName = dnBean.getReplica();
                 }
                 if (StringUtils.isEmpty(backendName)) {
-                    backendName = schema.getDefaultDN().getReplica();
+                    backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+                            .get(schema.getDefaultDataNode()).getReplica();
                 }
 				break;
 //			case SQL_PARSE_ROUTE:
