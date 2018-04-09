@@ -7,8 +7,17 @@ package io.mycat.mycat2.beans.conf;
  * @author: gaozhiwen
  */
 public class DNBean {
+    private String name;
     private String database;
     private String replica;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
 
     public String getDatabase() {
         return database;
@@ -26,11 +35,14 @@ public class DNBean {
         this.replica = replica;
     }
 
+
+
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((database == null) ? 0 : database.hashCode());
+        result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((replica == null) ? 0 : replica.hashCode());
         return result;
     }
@@ -49,6 +61,11 @@ public class DNBean {
                 return false;
         } else if (!database.equals(other.database))
             return false;
+        if (name == null) {
+            if (other.name != null)
+                return false;
+        } else if (!name.equals(other.name))
+            return false;
         if (replica == null) {
             if (other.replica != null)
                 return false;
@@ -59,6 +76,7 @@ public class DNBean {
 
     @Override
     public String toString() {
-        return "DNBean [database=" + database + ", mysqlReplica=" + replica + "]";
+        return "DNBean [name=" + name + ", database=" + database + ", replica=" + replica + "]";
     }
+
 }

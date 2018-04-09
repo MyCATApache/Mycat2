@@ -14,7 +14,7 @@ import io.mycat.mycat2.MySQLCommand;
  * @author wuzhihui
  *
  */
-public class AbstractMutiDNExeCmd implements MySQLCommand{
+public class AbstractMultiDNExeCmd implements MySQLCommand{
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
