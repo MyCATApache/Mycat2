@@ -418,6 +418,24 @@ public class MycatSession extends AbstractMySQLSession {
 		logger.debug("add backend connection in mycatSession . {}",mysqlSession);
 		list.add(mysqlSession);
 	}
+	/**
+	 * 根据datanode名称获取后端会话连接
+	 *
+	 * @return
+	 */
+	public void getBackendByDataNodeName(String dataNodeName,AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
+		String repBeanName = "";
+		if (dnBean != null) {
+			repBeanName = dnBean.getReplica();
+		}
+		if (StringUtils.isEmpty(repBeanName)) {
+			repBeanName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+					.get(schema.getDefaultDataNode()).getReplica();
+			logger.warn("failed to get the replication group for the specified datanode!!! and will set the default data node");
+		}
+		getBackendByRepBeanName(repBeanName,callback);
+	}
 
 	/**
 	 * 当前操作的后端会话连接
@@ -425,11 +443,21 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @return
 	 */
 	public void getBackend(AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		getBackendByRepBeanName(getbackendName(),callback);
+	}
+
+	/**
+	 *根据复制组名称获取后端会话连接
+	 * @param repBeanName 复制组名称
+	 * @param callback cjw
+	 * @throws IOException
+	 */
+	public void getBackendByRepBeanName(String repBeanName,AsynTaskCallBack<MySQLSession> callback) throws IOException {
 		MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
 		
 		final boolean runOnSlave = canRunOnSlave();
 		
-		MySQLRepBean repBean = getMySQLRepBean(getbackendName());
+		MySQLRepBean repBean = getMySQLRepBean(repBeanName);
 		
 		/**
 		 * 本次根据读写分离策略要使用的metaBean
