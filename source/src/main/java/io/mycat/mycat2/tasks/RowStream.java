@@ -59,6 +59,19 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 			e.printStackTrace();
 		}
 	}
+	public void fetchStream(ProxyBuffer proxyBuf) {
+		/*设置为忙*/
+		session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+		session.setCurNIOHandler(this);
+		proxyBuf.flip();
+		proxyBuf.readIndex = proxyBuf.writeIndex;
+		try {
+			this.session.writeToChannel();
+		} catch (IOException e) {
+			logger.error(" The FetchIntoRowStream  task write  is error . {}",e.getMessage());
+			e.printStackTrace();
+		}
+	}
 	@Override
 	void onRsColCount(MySQLSession session) {
 		ProxyBuffer proxyBuffer = session.proxyBuffer;

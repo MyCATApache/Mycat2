@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import io.mycat.mysql.packet.EOFPacket;
 import io.mycat.mysql.packet.RowDataPacket;
@@ -18,7 +20,7 @@ import io.mycat.util.ParseUtil;
 public class TableMeta {
 	public String table; 
 	public String alias;
-	public List<List<byte[]>> fieldValues; 
+	public List<List<byte[]>> fieldValues;
 	public int fieldCount;
 	public ResultSetMeta headerResultSetMeta;
 	private byte packetId;
@@ -44,7 +46,7 @@ public class TableMeta {
 		
 	}
 	
-	public void addFieldValues(List<byte[]> row) {
+	public synchronized void addFieldValues(List<byte[]> row) {
 		fieldValues.add(row);
 	}
 
@@ -69,8 +71,8 @@ public class TableMeta {
 			for(byte[] value : fieldValue) {
 				dataPacket.add(value);
 			}
-			
-			if(dataPacket.calcPacketSize() + ParseUtil.msyql_packetHeaderSize <= buffer.getBuffer().remaining()) {
+			int size = dataPacket.calcPacketSize() + ParseUtil.msyql_packetHeaderSize;
+			if(size <= buffer.getBuffer().remaining()) {
 				dataPacket.packetId = packetId ++;
 				dataPacket.write(buffer);
 				this.writeRowDataIndex ++;
@@ -183,5 +185,18 @@ public class TableMeta {
 	public void setFieldValues(List<List<byte[]>> fieldValues) {
 		this.fieldValues = fieldValues;
 	}
-	
+
+	@Override
+	public String toString() {
+		return "TableMeta{" +
+				"table='" + table + '\'' +
+				", alias='" + alias + '\'' +
+				", fieldValues=" + fieldValues.stream().flatMap(i->i.stream()).map(i->new String(i))
+				.collect(Collectors.joining(","))+
+				", fieldCount=" + fieldCount +
+				", headerResultSetMeta=" + headerResultSetMeta +
+				", packetId=" + packetId +
+				", writeRowDataIndex=" + writeRowDataIndex +
+				'}';
+	}
 }
