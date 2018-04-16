@@ -3,8 +3,6 @@ package io.mycat.mycat2;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.StringUtils;
-
 import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.DNBean;
@@ -62,11 +60,6 @@ public class MycatConfig {
                 defaultSchemaBean = schema;
             }
             mycatSchemaMap.put(schema.getName(), schema);
-            String defaultDnName = schema.getDefaultDataNode();
-            if (StringUtils.isNotEmpty(defaultDnName)
-                    && mycatDataNodeMap.containsKey(defaultDnName)) {
-                schema.setDefaultDN(mycatDataNodeMap.get(defaultDnName));
-            }
             schema.getTables().forEach(table -> {
                 String theDataNodes[] = SplitUtil.split(table.getDataNode(), ',', '$', '-');
                 if (theDataNodes == null || theDataNodes.length <= 0) {

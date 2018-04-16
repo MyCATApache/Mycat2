@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.mycat.mycat2.tasks.AbstractDataNodeMerge;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,8 @@ public class MycatSession extends AbstractMySQLSession {
     public RouteResultset curRouteResultset;
     
     public RouteResultsetNode curRouteResultsetNode;
+
+    public AbstractDataNodeMerge merge;
 
 	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
 	public MySQLCommand curSQLCommand;
@@ -371,26 +374,28 @@ public class MycatSession extends AbstractMySQLSession {
 		String backendName = null;
 		switch (schema.getSchemaType()) {
 			case DB_IN_ONE_SERVER:
-				backendName = schema.getDefaultDN().getReplica();
+                backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+                        .get(schema.getDefaultDataNode()).getReplica();
 				break;
 			case ANNOTATION_ROUTE:
 				break;
 			case DB_IN_MULTI_SERVER:
-                RouteResultsetNode[] nodes = this.curRouteResultset.getNodes();
-                String dataNodeName = "";
-                if (nodes != null && nodes.length == 1) {
-                    dataNodeName = nodes[0].getName();
-                } else if (nodes != null && nodes.length > 1 && curRouteResultsetNode != null) {
-                    dataNodeName = curRouteResultsetNode.getName();
-                }
-                DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
-                if (dnBean != null) {
-                    backendName = dnBean.getReplica();
-                }
-                if (StringUtils.isEmpty(backendName)) {
-                    backendName = schema.getDefaultDN().getReplica();
-                }
-				break;
+//                RouteResultsetNode[] nodes = this.curRouteResultset.getNodes();
+//                String dataNodeName = "";
+//                if (nodes != null && nodes.length == 1) {
+//                    dataNodeName = nodes[0].getName();
+//                } else if (nodes != null && nodes.length > 1 && curRouteResultsetNode != null) {
+//                    dataNodeName = curRouteResultsetNode.getName();
+//                }
+//                DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
+//                if (dnBean != null) {
+//                    backendName = dnBean.getReplica();
+//                }
+//                if (StringUtils.isEmpty(backendName)) {
+//                    backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+//                            .get(schema.getDefaultDataNode()).getReplica();
+//                }
+				return "repli";
 //			case SQL_PARSE_ROUTE:
 //				break;
 			default:
@@ -416,6 +421,16 @@ public class MycatSession extends AbstractMySQLSession {
 		logger.debug("add backend connection in mycatSession . {}",mysqlSession);
 		list.add(mysqlSession);
 	}
+	/**
+	 * 根据datanode名称获取后端会话连接
+	 *
+	 * @return
+	 */
+	public void getBackendByDataNodeName(String dataNodeName,AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
+		String repBeanName = dnBean.getReplica();
+		getBackendByRepBeanName(repBeanName,callback);
+	}
 
 	/**
 	 * 当前操作的后端会话连接
@@ -423,11 +438,21 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @return
 	 */
 	public void getBackend(AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		getBackendByRepBeanName(getbackendName(),callback);
+	}
+
+	/**
+	 *根据复制组名称获取后端会话连接
+	 * @param repBeanName 复制组名称
+	 * @param callback cjw
+	 * @throws IOException
+	 */
+	public void getBackendByRepBeanName(String repBeanName,AsynTaskCallBack<MySQLSession> callback) throws IOException {
 		MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
 		
 		final boolean runOnSlave = canRunOnSlave();
 		
-		MySQLRepBean repBean = getMySQLRepBean(getbackendName());
+		MySQLRepBean repBean = getMySQLRepBean(repBeanName);
 		
 		/**
 		 * 本次根据读写分离策略要使用的metaBean

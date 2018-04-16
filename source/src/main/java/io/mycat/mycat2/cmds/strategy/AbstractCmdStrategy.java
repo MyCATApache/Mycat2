@@ -117,9 +117,9 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			command = DirectPassthrouhCmd.INSTANCE;
 		}
 
-        if (!delegateRoute(session)) {
-            return false;
-        }
+//        if (!delegateRoute(session)) {
+//            return false;
+//        }
 
 		/**
 		 * 设置原始处理命令

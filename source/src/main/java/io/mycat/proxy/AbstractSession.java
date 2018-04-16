@@ -136,6 +136,7 @@ public abstract class AbstractSession implements Session {
 //		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
+			System.out.println("==============================>"+this);
 			throw new ClosedChannelException();
 		} else if (readed == 0) {
 			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");

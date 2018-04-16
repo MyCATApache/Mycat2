@@ -24,6 +24,7 @@
 package io.mycat.mycat2;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import io.mycat.mycat2.beans.ArgsBean;
 import io.mycat.mycat2.beans.conf.BalancerBean;
@@ -34,12 +35,18 @@ import io.mycat.proxy.ConfigEnum;
 
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
+import org.apache.commons.cli.*;
+import org.apache.commons.lang.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author wuzhihui
  */
 public class MycatCore {
-	public static void main(String[] args) throws IOException {
+	private static final Logger LOGGER = LoggerFactory.getLogger(MycatCore.class);
+
+	public static void main(String[] args) throws IOException, ParseException {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		runtime.setConfig(new MycatConfig());
 
@@ -61,44 +68,54 @@ public class MycatCore {
 		ProxyStarter.INSTANCE.start();
 	}
 
-	private static void solveArgs(String[] args) {
-		int lenght = args.length;
+	private static void solveArgs(String[] args) throws ParseException {
+		Options options = new Options();
+		options.addOption(null, ArgsBean.PROXY_PORT,true,"proxy port");
+		options.addOption(null, ArgsBean.CLUSTER_ENABLE,true,"cluster enable");
+		options.addOption(null, ArgsBean.CLUSTER_PORT,true,"cluster port");
+		options.addOption(null, ArgsBean.CLUSTER_MY_NODE_ID,true,"cluster my node id");
+		options.addOption(null, ArgsBean.BALANCER_ENABLE,true,"balancer enable");
+		options.addOption(null, ArgsBean.BALANCER_PORT,true,"balancer port");
+		options.addOption(null, ArgsBean.BALANCER_STRATEGY,true,"balancer strategy");
+
+		CommandLineParser parser = new DefaultParser();
+		CommandLine cmd = parser.parse(options,args);
 
 		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
 		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
 		BalancerConfig balancerConfig= conf.getConfig(ConfigEnum.BALANCER);
 
-		for (int i = 0; i < lenght; i++) {
-			switch(args[i]) {
-				case ArgsBean.PROXY_PORT:
-					proxyConfig.getProxy().setPort(Integer.parseInt(args[++i]));
-					break;
-				case ArgsBean.CLUSTER_ENABLE:
-					clusterConfig.getCluster().setEnable(Boolean.parseBoolean(args[++i]));
-					break;
-				case ArgsBean.CLUSTER_PORT:
-					clusterConfig.getCluster().setPort(Integer.parseInt(args[++i]));
-					break;
-				case ArgsBean.CLUSTER_MY_NODE_ID:
-					clusterConfig.getCluster().setMyNodeId(args[++i]);
-					break;
-				case ArgsBean.BALANCER_ENABLE:
-					balancerConfig.getBalancer().setEnable(Boolean.parseBoolean(args[++i]));
-					break;
-				case ArgsBean.BALANCER_PORT:
-					balancerConfig.getBalancer().setPort(Integer.parseInt(args[++i]));
-					break;
-				case ArgsBean.BALANCER_STRATEGY:
-					BalancerBean.BalancerStrategyEnum strategy = BalancerBean.BalancerStrategyEnum.getEnum(args[++i]);
-					if (strategy == null) {
-						throw new IllegalArgumentException("no such balancer strategy");
-					}
-					balancerConfig.getBalancer().setStrategy(strategy);
-					break;
-				default:
-					break;
+		if (cmd.hasOption(ArgsBean.PROXY_PORT)) {
+			proxyConfig.getProxy().setPort(Integer.parseInt(cmd.getOptionValue(ArgsBean.PROXY_PORT)));
+		}
+
+		if (cmd.hasOption(ArgsBean.CLUSTER_ENABLE)){
+			clusterConfig.getCluster().setEnable(Boolean.parseBoolean(cmd.getOptionValue(ArgsBean.CLUSTER_ENABLE)));
+		}
+		if (cmd.hasOption(ArgsBean.CLUSTER_PORT)){
+			clusterConfig.getCluster().setPort(Integer.parseInt(cmd.getOptionValue(ArgsBean.CLUSTER_PORT)));
+		}
+		if (cmd.hasOption(ArgsBean.CLUSTER_MY_NODE_ID)){
+			clusterConfig.getCluster().setMyNodeId(cmd.getOptionValue(ArgsBean.CLUSTER_MY_NODE_ID));
+		}
+
+		if (cmd.hasOption(ArgsBean.BALANCER_ENABLE)){
+			balancerConfig.getBalancer().setEnable(Boolean.parseBoolean(cmd.getOptionValue(ArgsBean.BALANCER_ENABLE)));
+		}
+		if (cmd.hasOption(ArgsBean.BALANCER_PORT)){
+			balancerConfig.getBalancer().setPort(Integer.parseInt(cmd.getOptionValue(ArgsBean.BALANCER_PORT)));
+		}
+		if (cmd.hasOption(ArgsBean.BALANCER_STRATEGY)){
+			BalancerBean.BalancerStrategyEnum strategy = BalancerBean.BalancerStrategyEnum.getEnum(cmd.getOptionValue(ArgsBean.BALANCER_STRATEGY));
+			if (strategy == null) {
+				throw new IllegalArgumentException("no such balancer strategy");
 			}
+			balancerConfig.getBalancer().setStrategy(strategy);
+		}
+		// 防止配置错误，做提示
+		if (ArrayUtils.isNotEmpty(cmd.getArgs())) {
+			LOGGER.warn("please check if param is correct");
 		}
 	}
 }
