@@ -2,6 +2,7 @@ package io.mycat.mycat2.cmds.strategy;
 
 import java.io.IOException;
 
+import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +77,7 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
         MYSQLCOMMANDMAP.put(BufferSQLContext.DROP_SQL, DirectPassthrouhCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
-        MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DirectPassthrouhCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DbInMultiServerCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);

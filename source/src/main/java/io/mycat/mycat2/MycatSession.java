@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.mycat.mycat2.tasks.AbstractDataNodeMerge;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +53,8 @@ public class MycatSession extends AbstractMySQLSession {
     public RouteResultset curRouteResultset;
     
     public RouteResultsetNode curRouteResultsetNode;
+
+    public AbstractDataNodeMerge merge;
 
 	//所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
 	public MySQLCommand curSQLCommand;
@@ -377,22 +380,22 @@ public class MycatSession extends AbstractMySQLSession {
 			case ANNOTATION_ROUTE:
 				break;
 			case DB_IN_MULTI_SERVER:
-                RouteResultsetNode[] nodes = this.curRouteResultset.getNodes();
-                String dataNodeName = "";
-                if (nodes != null && nodes.length == 1) {
-                    dataNodeName = nodes[0].getName();
-                } else if (nodes != null && nodes.length > 1 && curRouteResultsetNode != null) {
-                    dataNodeName = curRouteResultsetNode.getName();
-                }
-                DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
-                if (dnBean != null) {
-                    backendName = dnBean.getReplica();
-                }
-                if (StringUtils.isEmpty(backendName)) {
-                    backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
-                            .get(schema.getDefaultDataNode()).getReplica();
-                }
-				break;
+//                RouteResultsetNode[] nodes = this.curRouteResultset.getNodes();
+//                String dataNodeName = "";
+//                if (nodes != null && nodes.length == 1) {
+//                    dataNodeName = nodes[0].getName();
+//                } else if (nodes != null && nodes.length > 1 && curRouteResultsetNode != null) {
+//                    dataNodeName = curRouteResultsetNode.getName();
+//                }
+//                DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
+//                if (dnBean != null) {
+//                    backendName = dnBean.getReplica();
+//                }
+//                if (StringUtils.isEmpty(backendName)) {
+//                    backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+//                            .get(schema.getDefaultDataNode()).getReplica();
+//                }
+				return "repli";
 //			case SQL_PARSE_ROUTE:
 //				break;
 			default:
@@ -425,15 +428,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	public void getBackendByDataNodeName(String dataNodeName,AsynTaskCallBack<MySQLSession> callback) throws IOException {
 		DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
-		String repBeanName = "";
-		if (dnBean != null) {
-			repBeanName = dnBean.getReplica();
-		}
-		if (StringUtils.isEmpty(repBeanName)) {
-			repBeanName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
-					.get(schema.getDefaultDataNode()).getReplica();
-			logger.warn("failed to get the replication group for the specified datanode!!! and will set the default data node");
-		}
+		String repBeanName = dnBean.getReplica();
 		getBackendByRepBeanName(repBeanName,callback);
 	}
 
