@@ -103,11 +103,15 @@ public enum SessionKeyEnum {
 	 */
 	SESSION_KEY_HBT_TABLE_META("session_key_hbt_table_meta"),
 
+	/**
+	 * 标识当前merge数据是否结束的标识，存在此标识，标识未结束，否则即为结束
+	 */
+	SESSION_KEY_MERGE_OVER_FLAG("session_key_merge_over_flag"),
 	;
 
 	private String key;
 
-	private SessionKeyEnum(String key) {
+	SessionKeyEnum(String key) {
 		this.key = key;
 	}
 

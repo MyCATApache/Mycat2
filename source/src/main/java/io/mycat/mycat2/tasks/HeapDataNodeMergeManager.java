@@ -1,83 +1,67 @@
 package io.mycat.mycat2.tasks;
 
-import io.mycat.mycat2.ColumnMeta;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.PackWraper;
+import io.mycat.mycat2.beans.ColumnMeta;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.hbt.TableMeta;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
+import org.apache.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-public class HeapDataNodeMergeManager extends AbstractDataNodeMerge {
+public class HeapDataNodeMergeManager extends DataNodeManager {
+    private static Logger LOGGER = Logger.getLogger(HeapDataNodeMergeManager.class);
     TableMeta tableMeta;
-    /**
-     * 标志业务线程是否启动了？
-     */
-    protected final AtomicBoolean running = new AtomicBoolean(false);
 
     public HeapDataNodeMergeManager(RouteResultset rrs, MycatSession mycatSession) {
         super(rrs, mycatSession);
     }
 
     @Override
-    public void onRowMetaData(Map<String, ColumnMeta> columToIndx, int fieldCount) {
+    public void onRowMetaData(String datanode, Map<String, ColumnMeta> columToIndx, int fieldCount) {
         if (tableMeta == null) {
             tableMeta = new TableMeta();
             tableMeta.init(fieldCount);
             Set<Map.Entry<String, ColumnMeta>> entries = columToIndx.entrySet();
             for (Map.Entry<String, ColumnMeta> entry : entries) {
-                tableMeta.headerResultSetMeta.addFiled(entry.getKey(), entry.getValue().colType);
+                tableMeta.headerResultSetMeta.addField(entry.getKey(), entry.getValue().colType);
             }
         }
 
     }
 
     @Override
-    public Iterator<ByteBuffer> getResults(byte[] eof) {
+    public Iterator<ByteBuffer> getResults() {
         return null;
     }
 
+    public TableMeta getTableMeta() {
+        return tableMeta;
+    }
 
-    @Override
+
     public void clear() {
         this.tableMeta = null;
+        this.mycatSession.merge = null;
     }
 
     @Override
     public void run() {
-        // sort-or-group: no need for us to using multi-threads, because
-        //both sorter and group are synchronized!!
-        // @author Uncle-pan
-        // @since 2016-03-23
-        if (!running.compareAndSet(false, true)) {
-            return;
-        }
-
-        // eof handler has been placed to "if (pack == END_FLAG_PACK){}" in for-statement
-        // @author Uncle-pan
-        // @since 2016-03-23
-        boolean nulpack = false;
         try {
             // loop-on-packs
             for (; ; ) {
                 final PackWraper pack = packs.take();
-                System.out.println(packs.size());
-                // async: handling row pack queue, this business thread should exit when no pack
-                // @author Uncle-pan
-                // @since 2016-03-23
-                if (pack == null) {
-                    nulpack = true;
-                    break;
-                }
                 if (pack == END_FLAG_PACK) {
-                    System.out.println("END_FLAG_PACK");
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("END_FLAG_PACK");
+                    }
                     ProxyBuffer proxyBuffer = mycatSession.proxyBuffer;
                     proxyBuffer.reset();
                     tableMeta.writeBegin(proxyBuffer);
@@ -86,15 +70,9 @@ public class HeapDataNodeMergeManager extends AbstractDataNodeMerge {
                     proxyBuffer.readIndex = proxyBuffer.writeIndex;
                     mycatSession.takeBufferOwnerOnly();
                     if (!tableMeta.isWriteFinish()) {
-                        mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_HBT_TABLE_META.getKey(), tableMeta);
+                        mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_MERGE_OVER_FLAG.getKey(), null);
                     }
-                    try {
-                        System.out.println("开始发送");
-                        mycatSession.writeToChannel();
-                        clear();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    mycatSession.writeToChannel();
                     return;
                 } else {
                     ArrayList<byte[]> v = new ArrayList<>(tableMeta.fieldCount);
@@ -106,18 +84,19 @@ public class HeapDataNodeMergeManager extends AbstractDataNodeMerge {
                     tableMeta.addFieldValues(v);
                 }
             }
-        } catch (final Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            // multiQueryHandler.handleDataProcessException(e);
-        } finally {
-            running.set(false);
+            this.closeMutilBackendAndResponseError(false, ErrorCode.ER_UNKNOWN_ERROR, e.getMessage());
         }
-        // try to check packs, it's possible that adding a pack after polling a null pack
-        //and before this time pointer!!
-        // @author Uncle-pan
-        // @since 2016-03-23
-        if (nulpack && !packs.isEmpty()) {
-            this.run();
-        }
+    }
+
+    @Override
+    public void onError(String dataNode, String msg) {
+        this.closeMutilBackendAndResponseError(false, ErrorCode.ER_UNKNOWN_ERROR, msg);
+    }
+
+    @Override
+    public void onfinished() {
+        clearSQLQueryStreamResouces();
     }
 }

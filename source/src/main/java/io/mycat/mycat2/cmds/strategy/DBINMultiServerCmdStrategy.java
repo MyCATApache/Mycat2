@@ -1,31 +1,15 @@
 package io.mycat.mycat2.cmds.strategy;
 
-import java.io.IOException;
-
-import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.ComChangeUserCmd;
-import io.mycat.mycat2.cmds.ComFieldListCmd;
-import io.mycat.mycat2.cmds.ComInitDB;
-import io.mycat.mycat2.cmds.ComPingCmd;
-import io.mycat.mycat2.cmds.ComQuitCmd;
-import io.mycat.mycat2.cmds.ComStatisticsCmd;
-import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
-import io.mycat.mycat2.cmds.NotSupportCmd;
-import io.mycat.mycat2.cmds.sqlCmds.SqlComBeginCmd;
-import io.mycat.mycat2.cmds.sqlCmds.SqlComCommitCmd;
-import io.mycat.mycat2.cmds.sqlCmds.SqlComRollBackCmd;
-import io.mycat.mycat2.cmds.sqlCmds.SqlComShutdownCmd;
-import io.mycat.mycat2.cmds.sqlCmds.SqlComStartCmd;
-import io.mycat.mycat2.route.RouteResultset;
+import io.mycat.mycat2.cmds.*;
+import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
+import io.mycat.mycat2.cmds.sqlCmds.*;
 import io.mycat.mycat2.route.RouteStrategy;
 import io.mycat.mycat2.route.impl.DBInMultiServerRouteStrategy;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
 
@@ -88,29 +72,29 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
 
     @Override
     protected boolean delegateRoute(MycatSession session) {
-
-        byte sqltype = session.sqlContext.getSQLType() != 0 ? session.sqlContext.getSQLType()
-                : session.sqlContext.getCurSQLType();
-        RouteResultset rrs = routeStrategy.route(session.schema, sqltype,
-                session.sqlContext.getRealSQL(0), null, session);
-
-        if (rrs.getNodes() != null && rrs.getNodes().length > 1 && !rrs.isGlobalTable()) {
-
-            session.curRouteResultset = null;
-            try {
-                logger.error(
-                        "Multi node error! Not allowed to execute SQL statement across data nodes in DB_IN_MULTI_SERVER schemaType.\n"
-                                + "Original SQL:[{}]",
-                        session.sqlContext.getRealSQL(0));
-                session.sendErrorMsg(ErrorCode.ERR_MULTI_NODE_FAILED,
-                        "Not allowed to execute SQL statement across data nodes in DB_IN_MULTI_SERVER schemaType.");
-            } catch (IOException e) {
-                session.close(false, e.getMessage());
-            }
-            return false;
-        } else {
-            session.curRouteResultset = rrs;
-        }
+//
+//        byte sqltype = session.sqlContext.getSQLType() != 0 ? session.sqlContext.getSQLType()
+//                : session.sqlContext.getCurSQLType();
+//        RouteResultset routeResultset = routeStrategy.route(session.schema, sqltype,
+//                session.sqlContext.getRealSQL(0), null, session);
+//
+//        if (routeResultset.getNodes() != null && routeResultset.getNodes().length > 1 && !routeResultset.isGlobalTable()) {
+//
+//            session.curRouteResultset = null;
+//            try {
+//                logger.error(
+//                        "Multi node error! Not allowed to execute SQL statement across data nodes in DB_IN_MULTI_SERVER schemaType.\n"
+//                                + "Original SQL:[{}]",
+//                        session.sqlContext.getRealSQL(0));
+//                session.sendErrorMsg(ErrorCode.ERR_MULTI_NODE_FAILED,
+//                        "Not allowed to execute SQL statement across data nodes in DB_IN_MULTI_SERVER schemaType.");
+//            } catch (IOException e) {
+//                session.close(false, e.getMessage());
+//            }
+//            return false;
+//        } else {
+//            session.curRouteResultset = routeResultset;
+//        }
         return true;
     }
 }

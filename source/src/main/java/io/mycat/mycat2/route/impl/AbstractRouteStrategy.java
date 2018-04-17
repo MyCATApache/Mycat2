@@ -1,17 +1,16 @@
 package io.mycat.mycat2.route.impl;
 
-import java.sql.SQLNonTransientException;
-import java.sql.SQLSyntaxErrorException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.beans.conf.SchemaConfig;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.route.RouteStrategy;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLNonTransientException;
+import java.sql.SQLSyntaxErrorException;
 
 public abstract class AbstractRouteStrategy implements RouteStrategy {
 	
@@ -54,7 +53,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		 */
         /*
          * if (LOGGER.isDebugEnabled() && origSQL.startsWith(LoadData.loadDataHint)) {
-         * rrs.setCacheAble(false); }
+		 * routeResultset.setCacheAble(false); }
          */
 
         /**
@@ -62,14 +61,14 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
          * select ... for update的时候动态设定RouteResultsetNode的canRunInReadDB属性
          */
         /*
-         * if (sc != null ) { rrs.setAutocommit(sc.isAutocommit()); }
+		 * if (sc != null ) { routeResultset.setAutocommit(sc.isAutocommit()); }
          */
 
 		/**
 		 * DDL 语句的路由
 		 */
         if (BufferSQLContext.ALTER_SQL == sqlType) {
-            // return RouterUtil.routeToDDLNode(rrs, sqlType, stmt, schema);
+			// return RouterUtil.routeToDDLNode(routeResultset, sqlType, stmt, schema);
             return null;
 		}
 
@@ -78,12 +77,12 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		 */
         if ((schema.getTables() == null || schema.getTables().isEmpty())
                 && BufferSQLContext.SHOW_SQL != sqlType) {
-            // rrs = RouterUtil.routeToSingleNode(rrs, schema.getDataNode(), stmt);
+			// routeResultset = RouterUtil.routeToSingleNode(routeResultset, schema.getDataNode(), stmt);
             rrs = null;
 		} else {
-            // RouteResultset returnedSet = routeSystemInfo(schema, sqlType, stmt, rrs);
+			// RouteResultset returnedSet = routeSystemInfo(schema, sqlType, stmt, routeResultset);
             // if (returnedSet == null) {
-            // rrs = routeNormalSqlWithAST(schema, stmt, rrs, charset, sqlType, mycatSession);
+			// routeResultset = routeNormalSqlWithAST(schema, stmt, routeResultset, charset, sqlType, mycatSession);
             // }
 		}
 
