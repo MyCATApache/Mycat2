@@ -1,14 +1,5 @@
 package io.mycat.proxy;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.stream.Stream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
@@ -21,6 +12,13 @@ import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  *  mycat 多个Session会话
@@ -62,18 +60,20 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 		return allSessions.stream()
 //				.filter(session -> session instanceof MycatSession)
 				.map(session -> {
-					MycatSession mycatSession = (MycatSession) session;
+                    MycatSession mycatSession = session;
 					return mycatSession.getBackendConCounts(mySQLMetaBean);
 				})
-				.reduce(0, (sum, count) -> sum += count, (sum1, sum2) -> sum1 + sum2);
+        .mapToInt(Integer::intValue)
+        .sum();
 	}
 	
 	
 	public void createSession(MySQLMetaBean mySQLMetaBean, SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack) throws IOException {
 		int count = Stream.of(ProxyRuntime.INSTANCE.getReactorThreads())
 						.map(session -> ((MycatReactorThread)session).mySQLSessionMap.get(mySQLMetaBean))
-						.filter(list -> list != null)
-						.reduce(0, (sum, list) -> sum += list.size(), (sum1, sum2) -> sum1 + sum2);
+						.filter(Objects::nonNull)
+            .mapToInt(List::size)
+            .sum();
 		int backendCounts = getUsingBackendConCounts(mySQLMetaBean);
 		logger.debug("all session backend count is {},reactor backend count is {},metabean max con is {}",backendCounts,count,mySQLMetaBean.getDsMetaBean().getMaxCon());
 		if (count + backendCounts + 1 > mySQLMetaBean.getDsMetaBean().getMaxCon()) {
@@ -183,8 +183,10 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         	if (logger.isDebugEnabled()) {
     			logger.debug("Use front sessionMap cached backend connections.{}",mysqlSession);
     		}
-        	
-        	mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
+            MycatSession mycatSession = mysqlSession.getMycatSession();
+            if (mycatSession != null) {
+                mycatSession.unbindBeckend(mysqlSession);
+            }
             callback.finished(mysqlSession, null, true, null);
             return;
         }
@@ -252,8 +254,8 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 	 * @throws IOException
 	 */
 	public void syncSchemaToBackend(MySQLSession mysqlSession,AsynTaskCallBack<MySQLSession> callback)  throws IOException{
-		if(mysqlSession.getMycatSession().schema!=null
-				&&!mysqlSession.getMycatSession().schema.getDefaultDN().getDatabase().equals(mysqlSession.getDatabase())){
+
+        if (StringUtils.isEmpty(mysqlSession.getDatabase())) {
 			MycatSession mycatSession = mysqlSession.getMycatSession();
 			BackendSynchemaTask backendSynchemaTask = new BackendSynchemaTask(mysqlSession);
 			backendSynchemaTask.setCallback((optSession, sender, exeSucces, rv) -> {

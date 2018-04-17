@@ -59,6 +59,7 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 	protected void initMySqlCmdHandler() {
 		MYSQLCOMMANDMAP.put(BufferSQLContext.INSERT_SQL, DirectPassthrouhCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.UPDATE_SQL, DirectPassthrouhCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.DROP_SQL, DirectPassthrouhCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DirectPassthrouhCmd.INSTANCE);

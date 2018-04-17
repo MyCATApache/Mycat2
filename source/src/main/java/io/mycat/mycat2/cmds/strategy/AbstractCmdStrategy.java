@@ -67,8 +67,20 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 	
 	protected abstract void initMySqlCmdHandler();
 	
+    /**
+     * 
+     * 需要做路由的子类重写该方法.
+     *
+     * @param session
+     * @return
+     * @since 2.0
+     */
+    protected boolean delegateRoute(MycatSession session) {
+        return true;
+    };
+
 	@Override
-	final public boolean matchMySqlCommand(MycatSession session) {
+    public boolean matchMySqlCommand(MycatSession session) {
 		
 		MySQLCommand  command = null;
 		if(MySQLPacket.COM_QUERY==(byte)session.curMSQLPackgInf.pkgType){
@@ -105,6 +117,10 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 			command = DirectPassthrouhCmd.INSTANCE;
 		}
 
+//        if (!delegateRoute(session)) {
+//            return false;
+//        }
+
 		/**
 		 * 设置原始处理命令
 		 * 1. 设置目标命令
@@ -113,10 +129,9 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		 * 4. 构建命令或者注解链。    如果没有注解链，直接返回目标命令
 		 */
 		SQLAnnotationChain chain = new SQLAnnotationChain();
-		session.curSQLCommand = chain.setTarget(command) 
-			 .processDynamicAnno(session)
-			 .processStaticAnno(session, staticAnnontationMap)
-			 .build();
+        session.curSQLCommand =
+                chain.setTarget(command).processRoute(session).processDynamicAnno(session)
+                        .processStaticAnno(session, staticAnnontationMap).build();
 		return true;
 	}
 }

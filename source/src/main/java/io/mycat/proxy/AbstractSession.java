@@ -1,5 +1,10 @@
 package io.mycat.proxy;
 
+import io.mycat.mycat2.MycatSession;
+import io.mycat.proxy.buffer.BufferPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -9,12 +14,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.mycat2.MycatSession;
-import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 会话，代表一个前端连接
