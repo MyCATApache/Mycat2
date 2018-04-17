@@ -3,6 +3,7 @@ package io.mycat.mycat2.tasks;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -153,7 +154,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
     public void clearResouces() {
         session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
         revertPreBuffer();
-        session.setCurNIOHandler(null);// gc stream
+        session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
     }
 
     @Override

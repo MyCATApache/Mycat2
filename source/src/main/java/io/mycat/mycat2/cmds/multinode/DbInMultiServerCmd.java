@@ -68,28 +68,64 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
 
     @Override
     public boolean procssSQL(MycatSession mycatSession) throws IOException {
-        DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean("dn1");
-        DNBean dnBean2 = ProxyRuntime.INSTANCE.getConfig().getDNBean("dn2");
-        String sql = mycatSession.sqlContext.getRealSQL(0);
-        RouteResultset curRouteResultset = new RouteResultset(sql, (byte) 0);
-        curRouteResultset.setNodes(
-                new RouteResultsetNode[]{
-                        new RouteResultsetNode(dnBean.getName(), (byte) 1, sql),
-                        new RouteResultsetNode(dnBean2.getName(), (byte) 1, sql)});
-        mycatSession.setCurRouteResultset(curRouteResultset);
-        mycatSession.merge = new HeapDataNodeMergeManager(mycatSession.getCurRouteResultset(), mycatSession);
-        RouteResultsetNode[] nodes = mycatSession.merge.getRouteResultset().getNodes();
-        if (nodes != null && nodes.length > 0) {
-            broadcast(mycatSession, nodes);
-            return false;
+        if (mycatSession.getCurRouteResultset() != null) {
+            RouteResultsetNode[] nodes = mycatSession.getCurRouteResultset().getNodes();
+            if (nodes.length == 1) {
+                transparent(mycatSession, nodes[0].getName());
+                return false;
+            }
+        } else {
+            DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean("dn1");
+            DNBean dnBean2 = ProxyRuntime.INSTANCE.getConfig().getDNBean("dn2");
+            String sql = mycatSession.sqlContext.getRealSQL(0);
+            RouteResultset curRouteResultset = new RouteResultset(sql, (byte) 0);
+            curRouteResultset.setNodes(
+                    new RouteResultsetNode[]{
+                            new RouteResultsetNode(dnBean.getName(), (byte) 1, sql),
+                            new RouteResultsetNode(dnBean2.getName(), (byte) 1, sql)});
+            mycatSession.setCurRouteResultset(curRouteResultset);
+            mycatSession.merge = new HeapDataNodeMergeManager(mycatSession.getCurRouteResultset(), mycatSession);
+            RouteResultsetNode[] nodes = mycatSession.merge.getRouteResultset().getNodes();
+            if (nodes != null && nodes.length > 0) {
+                broadcast(mycatSession, nodes);
+                return false;
+            }
         }
         return inner.procssSQL(mycatSession);
+    }
+
+    public boolean transparent(MycatSession session, String dataNodeName) throws IOException {
+        /*
+         * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
+         */
+        session.clearReadWriteOpts();
+
+        session.getBackendByDataNodeName(dataNodeName, (mysqlsession, sender, success, result) -> {
+
+            ProxyBuffer curBuffer = session.proxyBuffer;
+            // 切换 buffer 读写状态
+            curBuffer.flip();
+            if (success) {
+                // 没有读取,直接透传时,需要指定 透传的数据 截止位置
+                curBuffer.readIndex = curBuffer.writeIndex;
+                // 改变 owner，对端Session获取，并且感兴趣写事件
+                session.giveupOwner(SelectionKey.OP_WRITE);
+                try {
+                    mysqlsession.writeToChannel();
+                } catch (IOException e) {
+                    session.closeBackendAndResponseError(mysqlsession, success, ((ErrorPacket) result));
+                }
+            } else {
+                session.closeBackendAndResponseError(mysqlsession, success, ((ErrorPacket) result));
+            }
+        });
+        return false;
     }
 
 
     @Override
     public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-        if (session.merge != null && session.merge.isMultiBackendMoreOne()) {
+        if (checkMutil(session)) {
             //@todo 改为迭代器实现
             TableMeta tableMeta = ((HeapDataNodeMergeManager) session.merge).getTableMeta();
             if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_MERGE_OVER_FLAG.getKey()) && !tableMeta.isWriteFinish()) {
@@ -109,15 +145,17 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
                 return true;
             }
         } else {
+            session.setCurRouteResultset(null);
             return inner.onFrontWriteFinished(session);
         }
     }
 
     @Override
     public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
-        if (session.merge != null && session.merge.isMultiBackendMoreOne()) {
+        if (checkMutil(session)) {
             session.merge.clearResouces();
         }
+        session.setCurRouteResultset(null);
         inner.clearFrontResouces(session, sessionCLosed);
     }
 
@@ -128,7 +166,7 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
      */
     @Override
     public boolean onBackendResponse(MySQLSession session) throws IOException {
-        if (session.getMycatSession().merge.isMultiBackendMoreOne()) {
+        if (checkMutil(session)) {
             throw new IOException("it is a bug , should call Stream");
         }
         return inner.onBackendResponse(session);
@@ -137,7 +175,7 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
 
     @Override
     public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
-        if (session.getMycatSession().merge.isMultiBackendMoreOne()) {
+        if (checkMutil(session)) {
             throw new IOException("it is a bug , should call Stream");
         }
         return inner.onBackendWriteFinished(session);
@@ -146,7 +184,7 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
 
     @Override
     public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
-        if (session.getMycatSession().merge.isMultiBackendMoreOne()) {
+        if (checkMutil(session)) {
             throw new IOException("it is a bug , should call Stream");
         }
         return inner.onBackendResponse(session);
@@ -154,10 +192,24 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
 
     @Override
     public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-        if (session.getMycatSession().merge.isMultiBackendMoreOne()) {
+        if (checkMutil(session)) {
             logger.error("it is a bug , should call Stream");
         }
         inner.clearBackendResouces(session, sessionCLosed);
     }
 
+    private boolean checkMutil(MySQLSession session) {
+        MycatSession mycatSession = session.getMycatSession();
+        return checkMutil(mycatSession);
+    }
+
+    private boolean checkMutil(MycatSession mycatSession) {
+        if (mycatSession != null) {
+            DataNodeManager manager = mycatSession.merge;
+            if (manager != null) {
+                return manager.isMultiBackendMoreOne();
+            }
+        }
+        return false;
+    }
 }

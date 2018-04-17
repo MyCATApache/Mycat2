@@ -98,7 +98,8 @@ public class SQLAnnotationChain {
 	 */
 	public SQLAnnotationChain processStaticAnno(MycatSession session,Map<Byte,SQLAnnotation> staticAnnontationMap){
 		BufferSQLContext context = session.sqlContext;
-		SQLAnnotation staticAnno = staticAnnontationMap.get(context.getAnnotationType());
+		byte value = context.getAnnotationType();
+		SQLAnnotation staticAnno = staticAnnontationMap.get(value);
 		/**
 		 * 处理静态注解
 		 */
