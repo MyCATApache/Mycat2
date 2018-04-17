@@ -89,14 +89,14 @@ public final class RouteResultset implements Serializable {
 
     public AtomicInteger count = new AtomicInteger(0);
 
-    public void countDown(MySQLSession session, Runnable runnable){
+    public void countDown(MySQLSession session, Runnable runnable) {
         int c = count.decrementAndGet();
-        if (c ==0){
-            System.out.println("count=>"+c);
+        if (c == 0) {
             runnable.run();
             count.set(nodes.length);
         }
     }
+
     public List<String> getTables() {
         return tables;
     }
@@ -300,10 +300,7 @@ public final class RouteResultset implements Serializable {
     }
 
     public boolean isDistTable() {
-        if (this.getSubTables() != null && !this.getSubTables().isEmpty()) {
-            return true;
-        }
-        return false;
+        return this.getSubTables() != null && !this.getSubTables().isEmpty();
     }
 
     @Override

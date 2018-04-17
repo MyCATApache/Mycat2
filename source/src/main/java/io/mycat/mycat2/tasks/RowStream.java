@@ -1,13 +1,5 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.console.SessionKeyEnum;
@@ -18,6 +10,13 @@ import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(RowStream.class);
@@ -97,7 +96,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
         proxyBuffer.readLenencString();
         proxyBuffer.readBytes(7); // 1(filler) + 2(charsetNumber) + 4 (length)
 		int fieldType = proxyBuffer.readByte() & 0xff;
-		this.resultSetMeta.addFiled(name, fieldType);
+		this.resultSetMeta.addField(name, fieldType);
         proxyBuffer.readIndex = tmpReadIndex;
         if(resultSetMeta.getFiledCount() == resultSetMeta.getRealFieldNameListSize()) {
             this.onHeader.apply(resultSetMeta);
