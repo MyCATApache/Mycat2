@@ -97,6 +97,7 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 
     @Override
     public void onfinished() {
+        clear();
         clearSQLQueryStreamResouces();
     }
 }
