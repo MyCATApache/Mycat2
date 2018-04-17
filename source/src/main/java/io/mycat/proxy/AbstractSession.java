@@ -1,5 +1,10 @@
 package io.mycat.proxy;
 
+import io.mycat.mycat2.MycatSession;
+import io.mycat.proxy.buffer.BufferPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -9,12 +14,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.mycat2.MycatSession;
-import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 会话，代表一个前端连接
@@ -136,7 +135,6 @@ public abstract class AbstractSession implements Session {
 //		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
 		if (readed == -1) {
 			logger.warn("Read EOF ,socket closed ");
-			System.out.println("==============================>"+this);
 			throw new ClosedChannelException();
 		} else if (readed == 0) {
 			logger.warn("readed zero bytes ,Maybe a bug ,please fix it !!!!");
