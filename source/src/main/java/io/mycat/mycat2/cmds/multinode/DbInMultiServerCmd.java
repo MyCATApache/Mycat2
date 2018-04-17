@@ -70,11 +70,12 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
     public boolean procssSQL(MycatSession mycatSession) throws IOException {
         DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean("dn1");
         DNBean dnBean2 = ProxyRuntime.INSTANCE.getConfig().getDNBean("dn2");
-        RouteResultset curRouteResultset = new RouteResultset("select * from travelrecord", (byte) 0);
+        String sql = mycatSession.sqlContext.getRealSQL(0);
+        RouteResultset curRouteResultset = new RouteResultset(sql, (byte) 0);
         curRouteResultset.setNodes(
                 new RouteResultsetNode[]{
-                        new RouteResultsetNode(dnBean.getName(), (byte) 1, "select * from travelrecord"),
-                        new RouteResultsetNode(dnBean2.getName(), (byte) 1, "select * from travelrecord")});
+                        new RouteResultsetNode(dnBean.getName(), (byte) 1, sql),
+                        new RouteResultsetNode(dnBean2.getName(), (byte) 1, sql)});
         mycatSession.setCurRouteResultset(curRouteResultset);
         mycatSession.merge = new HeapDataNodeMergeManager(mycatSession.getCurRouteResultset(), mycatSession);
         RouteResultsetNode[] nodes = mycatSession.merge.getRouteResultset().getNodes();
@@ -88,7 +89,7 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
 
     @Override
     public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-        if (session.merge.isMultiBackendMoreOne()) {
+        if (session.merge != null && session.merge.isMultiBackendMoreOne()) {
             //@todo 改为迭代器实现
             TableMeta tableMeta = ((HeapDataNodeMergeManager) session.merge).getTableMeta();
             if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_MERGE_OVER_FLAG.getKey()) && !tableMeta.isWriteFinish()) {
