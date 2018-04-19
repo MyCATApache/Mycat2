@@ -1,27 +1,22 @@
 package io.mycat.mycat2.cmds.strategy;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.cmds.manager.MyCatCmdDispatcher;
-import io.mycat.mycat2.sqlannotations.CacheResult;
-import io.mycat.mycat2.sqlannotations.CacheResultMeta;
-import io.mycat.mycat2.sqlannotations.CatletMeta;
-import io.mycat.mycat2.sqlannotations.CatletResult;
-import io.mycat.mycat2.sqlannotations.SQLAnnotation;
+import io.mycat.mycat2.sqlannotations.*;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class AbstractCmdStrategy implements CmdStrategy {
 	
@@ -61,6 +56,10 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		SQLAnnotation catlet = new CatletResult();
 		catlet.setSqlAnnoMeta(new CatletMeta());
 		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_CATLET, catlet );
+
+		AnnotationDataNode datanode = new AnnotationDataNode();
+		datanode.init(new AnnotationDataNodeMeta());
+		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_DATANODE, datanode);
 	}
 	
 	protected abstract void initMyCmdHandler();
@@ -77,7 +76,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
      */
     protected boolean delegateRoute(MycatSession session) {
         return true;
-    };
+	}
 
 	@Override
     public boolean matchMySqlCommand(MycatSession session) {

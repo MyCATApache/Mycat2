@@ -166,6 +166,6 @@ public abstract class DataNodeManager implements Runnable {
     }
 
     public boolean isMultiBackendMoreOne() {
-        return backendStreams.size() > 0;
+        return backendStreams.size() > 1;
     }
 }

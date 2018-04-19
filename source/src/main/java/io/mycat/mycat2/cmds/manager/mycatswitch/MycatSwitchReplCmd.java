@@ -1,14 +1,5 @@
 package io.mycat.mycat2.cmds.manager.mycatswitch;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatConfig;
@@ -18,6 +9,13 @@ import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.util.regex.Pattern;
 /**
  * 主从复制组切换命令
  * @author yanjunli
@@ -30,6 +28,8 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	public static final MycatSwitchReplCmd INSTANCE = new MycatSwitchReplCmd();
 		
 	private final static String splitStr = "(?!^[\\s]*)\\s+(?![\\s]*$)";
+
+    private final static Pattern splitPattern = Pattern.compile(splitStr);
 	
 	private MycatSwitchReplCmd(){}
 	
@@ -37,7 +37,7 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	public boolean procssSQL(MycatSession session) throws IOException {
 		String executeSql = session.sqlContext.getRealSQL(0);
 
-		String[] params = executeSql.split(splitStr);
+        String[] params = splitPattern.split(executeSql);
 		
 		if(params.length!=5){
 			session.sendErrorMsg(ErrorCode.ERR_WRONG_USED," Invalid number of parameters.");
@@ -77,13 +77,13 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendResponse(MySQLSession session) throws IOException {
+    public boolean onBackendResponse(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+    public boolean onBackendClosed(MySQLSession session, boolean normal) {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -96,7 +96,7 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
+    public boolean onBackendWriteFinished(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
