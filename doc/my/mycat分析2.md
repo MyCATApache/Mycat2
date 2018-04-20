@@ -13,7 +13,30 @@ mycat结果集合并主要有
 	
 这个方法里，也有order by语句的处理。
 
-初始化好了数据汇聚类
+	if (rrs.getOrderByCols() != null) {
+		LinkedHashMap<String, Integer> orders = rrs.getOrderByCols();
+		OrderCol[] orderCols = new OrderCol[orders.size()];
+		int i = 0;
+		//排序列遍历
+		for (Map.Entry<String, Integer> entry : orders.entrySet()) {
+			String key = StringUtil.removeBackquote(entry.getKey()
+					.toUpperCase());
+			ColMeta colMeta = columToIndx.get(key);
+			if (colMeta == null) {
+				throw new IllegalArgumentException(
+						"all columns in order by clause should be in the selected column list!"
+								+ entry.getKey());
+			}
+			orderCols[i++] = new OrderCol(colMeta, entry.getValue());
+		}
+
+		RowDataSorter tmp = new RowDataSorter(orderCols);
+		tmp.setLimit(rrs.getLimitStart(), rrs.getLimitSize());
+		sorter = tmp;
+	}
+
+初始化好了数据汇聚类。如果有order by同样初始化好了sorter类，同时想sorter传入limit参数
+
 那接下来我们看onNewRecord,这个方法主要是处理新进来每个row数据，通过PackWraper进行封装，该方法调用了addPack这个方法。在这个方法里面
  
 	protected final boolean addPack(final PackWraper pack){
@@ -83,19 +106,43 @@ mycat结果集合并主要有
 		// not aggreated ,insert new
 		result.add(rowDataPkg);
 	}
-	
+如果有排序，调用sorter.addRow(row)
+
+	public synchronized boolean addRow(RowDataPacket row) {
+		if (heap.getData().size() < total) {
+			heap.add(row);
+			return true;
+		}
+		// 堆已满，构建最大堆，并执行淘汰元素逻辑
+		if (heap.getData().size() == total && hasBuild == false) {
+			heap.buildHeap();
+			hasBuild = true;
+		}
+		return heap.addIfRequired(row);
+	}
+向已满的堆添加元素	
+	public boolean addIfRequired(RowDataPacket row) {
+		// 淘汰堆里最小的数据
+		RowDataPacket root = getRoot();
+		if (cmp.compare(row, root) < 0) {
+			setRoot(row);
+			return true;
+		}
+		return false;
+	}
+canDiscard这里已经废弃，查了之前的资料，之前的淘汰策率为在onNewRecord方法中判断canDiscard的长度是否等于下发的节点个数，如果是说明后续所有节点的数据都会被丢弃。现在已经改在addIfRequired方法中实现
 当结束时，就用到了上面的第三个方法outputMergeResult,该方法最终也会到达这里调用if (pack == END_FLAG_PACK) ，在这里调用了一个主要的方法getResults(array)，
 
 	public List<RowDataPacket> getResults(byte[] eof) {
 	
 		List<RowDataPacket> tmpResult = null;
-
+		//group操作
 		if (this.grouper != null) {
 			tmpResult = grouper.getResult();
 			grouper = null;
 		}
 
-		
+		//当run方法中执行group时，是不执行sorter的，所以如果group后的tmpResult不为空，执行sorter，排序操作
 		if (sorter != null) {
 			
 			if (tmpResult != null) {
