@@ -1,16 +1,17 @@
 package io.mycat.mycat2.tasks;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.ColumnMeta;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * @author <a href="mailto:karakapi@outlook.com">jamie</a>
@@ -20,7 +21,7 @@ public class SQLQueryStream extends RawSQLQueryResultTaskWrapper {
     private static Logger logger = LoggerFactory.getLogger(SQLQueryStream.class);
     final String dataNode;
     final private DataNodeManager merge;
-    final private Map<String, ColumnMeta> columToIndx = new HashMap<>();
+    final private Map<String, ColumnMeta> columToIndx = new LinkedHashMap<>();
     int fieldCount = 0;
     int getFieldCount = 0;
 
