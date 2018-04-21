@@ -66,6 +66,9 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
         MYSQLCOMMANDMAP.put(BufferSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.SHUTDOWN_SQL, SqlComShutdownCmd.INSTANCE);
+        
+        MYSQLCOMMANDMAP.put(BufferSQLContext.SHOW_DB_SQL, ShowDbCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.SHOW_TB_SQL, ShowTbCmd.INSTANCE);
     }
 
 

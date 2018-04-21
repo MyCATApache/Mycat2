@@ -143,4 +143,14 @@ public class MycatConfig {
     public SchemaBean getDefaultSchemaBean() {
         return defaultSchemaBean;
     }
+
+	public Map<String, SchemaBean> getMycatSchemaMap() {
+		return mycatSchemaMap;
+	}
+
+	public void setMycatSchemaMap(Map<String, SchemaBean> mycatSchemaMap) {
+		this.mycatSchemaMap = mycatSchemaMap;
+	}
+    
+    
 }

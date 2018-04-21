@@ -25,6 +25,10 @@ public class BufferSQLContext {
     public static final byte RENAME_SQL = 6;
     public static final byte USE_SQL = 7;
     public static final byte SHOW_SQL = 8;    //TODO 进一步细化。区分
+    
+    public static final byte SHOW_DB_SQL = 81;
+    public static final byte SHOW_TB_SQL = 82;
+    
     public static final byte SET_SQL = 9;     //TODO 进一步细化。区分
     public static final byte PARTITION_SQL = 10;
 
@@ -281,6 +285,11 @@ public class BufferSQLContext {
     public void setSQLType(byte sqlType) {
         if (this.sqlType == 0 || this.sqlType == SELECT_SQL)
             this.sqlType = sqlType;
+    }
+    
+    public void setShowSQLType(byte sqlType) {
+        if (this.sqlType == 0 || this.sqlType == SHOW_SQL)
+            this.sqlType = SHOW_DB_SQL;
     }
 
     public boolean isDDL() {
