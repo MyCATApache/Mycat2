@@ -570,7 +570,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testShowDatabasesSQL() throws Exception {
         String sql = "show databases";
         parser.parse(sql.getBytes(), context);
-        assertEquals(BufferSQLContext.SHOW_SQL, context.getSQLType());
+        assertEquals(BufferSQLContext.SHOW_DB_SQL, context.getSQLType());
         assertEquals(sql, context.getRealSQL(0));
     }
 
