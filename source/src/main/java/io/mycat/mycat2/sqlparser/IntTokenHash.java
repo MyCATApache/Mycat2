@@ -155,6 +155,6 @@ public class IntTokenHash {
     public static final int REPL_METABEAN_INDEX = 0x79a7b413;
     
     public static final int DATABASES =-0x63eca2f7;
-    public static final int TABLES =0xd82644fd;
+    public static final int TABLES =0x43ec8406;
 
 }
