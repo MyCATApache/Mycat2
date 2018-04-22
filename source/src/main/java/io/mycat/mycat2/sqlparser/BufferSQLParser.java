@@ -408,6 +408,18 @@ public class BufferSQLParser {
                         pos++;
                     }
                     break;
+                case IntTokenHash.DATABASES:
+                    if (hashArray.getHash(pos) == TokenHash.DATABASES) {
+                        context.setShowSQLType(BufferSQLContext.SHOW_DB_SQL);
+                        pos++;
+                    }
+                    break;
+                case IntTokenHash.TABLES:
+                    if (hashArray.getHash(pos) == TokenHash.TABLES) {
+                        context.setShowSQLType(BufferSQLContext.SHOW_TB_SQL);
+                        pos++;
+                    }
+                    break;
                 case IntTokenHash.INSERT:
                     if (hashArray.getHash(pos) == TokenHash.INSERT) {
                         context.setSQLType(BufferSQLContext.INSERT_SQL);
