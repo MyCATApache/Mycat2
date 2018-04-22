@@ -209,6 +209,9 @@ public class BufferSQLContext {
 
     //todo : 测试期返回String，将来应该要返回hashcode
     public String getTableName(int idx) {
+    	if(totalTblCount==0) {
+    		return null;
+    	}
         int hashArrayIdx = tblResult[(idx << 1) + 1];
         int pos = hashArray.getPos(hashArrayIdx);
         int size = hashArray.getSize(hashArrayIdx);
@@ -289,7 +292,7 @@ public class BufferSQLContext {
     
     public void setShowSQLType(byte sqlType) {
         if (this.sqlType == 0 || this.sqlType == SHOW_SQL)
-            this.sqlType = SHOW_DB_SQL;
+            this.sqlType = sqlType;
     }
 
     public boolean isDDL() {
