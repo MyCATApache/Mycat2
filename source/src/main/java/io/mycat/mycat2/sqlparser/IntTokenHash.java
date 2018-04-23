@@ -153,5 +153,8 @@ public class IntTokenHash {
     public static final int HIGH_PRIORITY    = 0xc97c6f0d;
     public static final int LAST_INSERT_ID   = 0x7b07370e;
     public static final int REPL_METABEAN_INDEX = 0x79a7b413;
+    
+    public static final int DATABASES =-0x63eca2f7;
+    public static final int TABLES =0x43ec8406;
 
 }

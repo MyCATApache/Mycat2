@@ -6,22 +6,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <pre>
  * 可重用的Buffer，连续读或者写，当空间不够时Compact擦除之前用过的空间， 处于写状态或者读状态之一，不能同时读写，
  * 只有数据被操作完成（读完或者写完）后State才能被改变（flip方法或手工切换状态），同时可能要改变Owner，chanageOwn
  *
- * 需要外部 关心的状态为 writeIndex 写入buffer 开始位置 readIndex 读取开始位置 inReading 当前buffer 读写状态
- * frontUsing owner 不需要外部关心的状态为 readMark 向channel 中写入数据时的开始位置, 该状态由
- * writeToChannel 自动维护,不需要外部显式指定 preUsing 上一个owner 仅在 write==0
- * 或只写了一部分数据的情况下,需要临时改变 owner .本次写入完成后,需要根据preUsing 自动切换回来 使用流程
- * 一、透传、只前端读写、只后端读写场景 1. 从channel 向 buffer 写入数据 始终从 writeIndex 开始写入 , inReading
- * 状态一定为 false 写入状态 2. 读取 buffer 中数据 读取的数据范围是 readIndex --- writeIndex 之间的数据. 3.
- * 向 channel 写入数据前, flip 切换读写状态 4. 数据全部透传完成（例如:整个结果集透传完成）后 changeOwner,否则 owner
- * 不变. 5. 从 buffer 向 channel 写入数据时,写入 readMark--readIndex 之间的数据. 6. 写完成后 flip
- * 切换读写状态。同时 如果 readIndex > buffer.capacity() * 2 / 3 进行一次压缩 7. 从 channel
- * 向buffer 写入数据时，如果 writeIndex > buffer.capacity() * 1 / 3 进行一次压缩
+ * 需要外部关心的状态
+ * writeIndex 写入buffer开始位置;
+ * readIndex 读取开始位置;
+ * inReading 当前buffer读写状态，inReading=true表示读状态，inReading=false表示写状态。
+ * 不需要外部关心的状态为 
+ * readMark 向channel 中写入数据时的开始位置, 该状态由writeToChannel 自动维护,不需要外部显式指定;
+ * 
+ * 使用流程
+ * 一、透传、只前端读写、只后端读写场景 
+ * 1. 从channel 向 buffer 写入数据 
+ * 始终从 writeIndex 开始写入 , inReading状态一定为 false 写入状态 
+ * 2. 读取 buffer 中数据 
+ * 读取的数据范围是 readIndex --- writeIndex 之间的数据. 
+ * 3. 向 channel 写入数据前, flip 切换读写状态 
+ * 4. 数据全部透传完成（例如:整个结果集透传完成）后 changeOwner,否则 owner不变. 
+ * 5. 从 buffer 向 channel 写入数据时,写入 readMark--readIndex 之间的数据. 
+ * 6. 写完成后 flip切换读写状态。同时 如果 readIndex > buffer.capacity() * 2 / 3 进行一次压缩 
+ * 7. 从 channel向buffer 写入数据时，如果 writeIndex > buffer.capacity() * 1 / 3 进行一次压缩
  *
- * 二、没有读取数据,向buffer中写入数据后 直接 write 到 channel的场景 1. 在写入到 channel 时 ,需要显式 指定
- * readIndex = writeIndex; 2. 其他步骤 同 （透传、只前端读写、只后端读写场景）场景
+ * 二、没有读取数据,向buffer中写入数据后 直接 write 到 channel的场景 
+ * 1. 在写入到 channel 时 ,需要显式 指定readIndex = writeIndex; 
+ * 2. 其他步骤 同 （透传、只前端读写、只后端读写场景）场景
+ * </pre>
  *
  * @author yanjunli
  *
@@ -118,6 +129,9 @@ public class ProxyBuffer {
 		this.readIndex = 0;
 		this.readMark = 0;
 		this.writeIndex = newBuffer.position();
+		this.buffer = newBuffer;
+	}
+	public void setBuffer(ByteBuffer newBuffer){
 		this.buffer = newBuffer;
 	}
 
