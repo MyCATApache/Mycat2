@@ -5,6 +5,7 @@ import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
 import io.mycat.mycat2.cmds.pkgread.CommQueryHandler;
 import io.mycat.mycat2.cmds.pkgread.CommandHandler;
+import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -236,7 +237,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if ((offset + pkgLength) > limit) {
             logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, limit ={}, "
                     + "ready to handle the next read event", pkgLength, (limit - offset), limit);
-            if (offset == 0 && pkgLength > limit){
+            if (offset == 0 && pkgLength > limit) {
                 /*
                 cjw 2018.4.6
                 假设整个buffer空间为88,开始位置是0,需要容纳89的数据大小,还缺一个数据没用接受完,
@@ -244,7 +245,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 导致一直没有把数据处理,一直报错 readed zero bytes ,Maybe a bug ,please fix it !!!!
                 解决办法:扩容
                  */
-               proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
+                proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
             }
             curPackInf.endPos = limit;
             return CurrPacketType.LongHalfPacket;
@@ -327,4 +328,57 @@ public abstract class AbstractMySQLSession extends AbstractSession {
             }
         }
     }
+
+    public int getPkgType() {
+        return (Integer) this.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey());
+    }
+
+    public void setPkgType(int value) {
+        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey(), value);
+    }
+
+    public void setTransferOver() {
+        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
+    }
+
+    public void removeTransferOver() {
+        this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
+    }
+
+    public boolean isTrans() {
+        return this.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey());
+    }
+
+    public void setTrans(boolean value) {
+        if (value) {
+            this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey(), true);
+        } else {
+            this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey());
+        }
+    }
+
+    public void removePkgReadFlag() {
+        this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
+    }
+
+    public boolean isPkgReadFlag() {
+        return this.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
+    }
+
+    public void setPkgReadFlag() {
+        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey(), true);
+    }
+
+    /**
+     * 用来判断该连接是否空闲.
+     */
+    public boolean isIDLE() {
+        Boolean flag = (Boolean) this.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+        return (flag == null) ? true : flag;
+    }
+
+    public void setIDLE(boolean value) {
+        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), value);
+    }
+
 }

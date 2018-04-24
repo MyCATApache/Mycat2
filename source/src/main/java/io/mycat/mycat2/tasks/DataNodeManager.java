@@ -91,14 +91,16 @@ public abstract class DataNodeManager implements Runnable {
     public abstract Iterator<ByteBuffer> getResults();
 
     public void clearResouces() {
-        this.packs.clear();
+        if (this.packs != null)
+            this.packs.clear();
         this.fieldCount = 0;
         this.routeResultset = null;
         clearSQLQueryStreamResouces();
     }
 
     public void close(boolean normal, String error) {
-        this.executor.shutdown();
+        if (this.executor != null)
+            this.executor.shutdown();
         unbindSQLQueryStreams(normal, error);
         this.packs = null;
         this.executor = null;

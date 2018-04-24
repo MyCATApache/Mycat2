@@ -1,24 +1,16 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.judge.DirectTransJudge;
-import io.mycat.mycat2.cmds.judge.ErrorJudge;
-import io.mycat.mycat2.cmds.judge.OkJudge;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
-import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 /**
  * 直接透传命令报文
@@ -31,18 +23,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	private static final Logger logger = LoggerFactory.getLogger(DirectPassthrouhCmd.class);
 
 	public static final DirectPassthrouhCmd INSTANCE = new DirectPassthrouhCmd();
-
-	/**
-	 * 指定需要处理的包类型信息
-	 */
-	private static final Map<Integer, DirectTransJudge> JUDGEMAP = new HashMap<>();
-
-	static {
-		// 用来进行ok包的处理理
-		JUDGEMAP.put((int) MySQLPacket.OK_PACKET, OkJudge.INSTANCE);
-		// 用来进行error包的处理
-		JUDGEMAP.put((int) MySQLPacket.ERROR_PACKET, ErrorJudge.INSTANCE);
-	}
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
@@ -131,7 +111,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
+	public boolean onBackendWriteFinished(MySQLSession session) {
 		// 绝大部分情况下，前端把数据写完后端发送出去后，就等待后端返回数据了，
 		// 向后端写入完成数据后，则从后端读取数据
 		session.proxyBuffer.flip();
@@ -142,7 +122,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+	public boolean onBackendClosed(MySQLSession session, boolean normal) {
 
 		return true;
 	}

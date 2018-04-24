@@ -1,11 +1,5 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
@@ -17,6 +11,12 @@ import io.mycat.mysql.packet.RowDataPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.PacketUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.util.Set;
 
 public class ShowDbCmd implements MySQLCommand {
 
@@ -78,25 +78,26 @@ public class ShowDbCmd implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendResponse(MySQLSession session) throws IOException {
+	public boolean onBackendResponse(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+	public boolean onBackendClosed(MySQLSession session, boolean normal) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-		// TODO Auto-generated method stub
+		session.proxyBuffer.flip();
+		session.takeOwner(SelectionKey.OP_READ);
 		return false;
 	}
 
 	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
+	public boolean onBackendWriteFinished(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
