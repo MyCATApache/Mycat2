@@ -1,17 +1,16 @@
 package io.mycat.mycat2.cmds.pkgread;
 
-import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.cmds.judge.EofJudge;
+import io.mycat.mycat2.cmds.judge.JudgeUtil;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 /**
  * 
@@ -62,7 +61,7 @@ public class CommQueryHandlerResultSet implements CommandHandler {
 						isFinish = true;
 
 						// 如果当前的eof包大于1说明已经为eof结束包,切换到解析器进行解析
-						boolean gotoRead = EofJudge.INSTANCE.judge(session);
+                        boolean gotoRead = JudgeUtil.judgeEOFPacket(session, session.proxyBuffer);
 
 						// 当一个完整的查询检查结束后，切换至首包的检查
 						session.getMycatSession().commandHandler = CommQueryHandler.INSTANCE;
@@ -75,11 +74,7 @@ public class CommQueryHandlerResultSet implements CommandHandler {
 					}
 				}
 
-				if (curBuffer.readIndex == curBuffer.writeIndex) {
-					isContinue = false;
-				} else {
-					isContinue = true;
-				}
+                isContinue = curBuffer.readIndex != curBuffer.writeIndex;
 				break;
 
 			case LongHalfPacket:
@@ -141,7 +136,7 @@ public class CommQueryHandlerResultSet implements CommandHandler {
 	 * @return
 	 * @throws IOException
 	 */
-	private boolean isfinishPackage(MySQLPackageInf curMSQLPackgInf) throws IOException {
+    private boolean isfinishPackage(MySQLPackageInf curMSQLPackgInf) {
 		switch (curMSQLPackgInf.pkgType) {
 		case MySQLPacket.EOF_PACKET:
 			return true;
