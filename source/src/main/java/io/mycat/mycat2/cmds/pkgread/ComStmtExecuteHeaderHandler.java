@@ -1,15 +1,13 @@
 package io.mycat.mycat2.cmds.pkgread;
 
-import java.io.IOException;
-
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.cmds.judge.ErrorJudge;
-import io.mycat.mycat2.cmds.judge.OkJudge;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.cmds.judge.JudgeUtil;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.io.IOException;
 
 /**
  * 
@@ -40,25 +38,17 @@ public class ComStmtExecuteHeaderHandler implements CommandHandler {
 		if (null != pkgTypeEnum && CurrPacketType.Full == pkgTypeEnum) {
 			// 如果当前为错误包，则进交给错误包处理
 			if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
-				boolean runFlag = ErrorJudge.INSTANCE.judge(session);
+                boolean runFlag = JudgeUtil.judgeErrorPacket(session, session.proxyBuffer);
+                return runFlag;
 
-				if (runFlag) {
-					return true;
-				}
-
-				return false;
-			}
+            }
 
 			// 进行当前执行的预处理的语句报文，如果为Ok则表示可以释放连接,进行正常的判断
 			else if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
-				boolean runFlag = OkJudge.INSTANCE.judge(session);
+                boolean runFlag = JudgeUtil.judgeOkPacket(session, session.proxyBuffer);
+                return runFlag;
 
-				if (runFlag) {
-					return true;
-				}
-
-				return false;
-			}
+            }
 		}
 
 		// 其他包则交给stmt结果来处理来处理

@@ -1,14 +1,13 @@
 package io.mycat.mycat2.cmds.pkgread;
 
-import java.io.IOException;
-
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.io.IOException;
 
 /**
  * 
@@ -45,17 +44,15 @@ public class ComStmtResetHandler implements CommandHandler {
 			// 如果当前为错误包，则进交给错误包处理
 			if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
 				// 标识连接当前非闲置
-				session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+                mycatSession.setIDLE(false);
 				// 标识当后端向前端响应已经结束
-				mycatSession.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
+                mycatSession.removeTransferOver();
 				return false;
 			}
 			// 如果是ok报文
 			else if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
-				// 标识连接当前非闲置
-				session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
-				// 标识当后端向前端响应已经结束
-				mycatSession.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
+                session.setIDLE(false);    // 标识连接当前非闲置
+                mycatSession.removeTransferOver();    // 标识当后端向前端响应已经结束
 				return false;
 			}
 		}
