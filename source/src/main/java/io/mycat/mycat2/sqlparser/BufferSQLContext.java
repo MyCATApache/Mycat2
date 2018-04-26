@@ -92,6 +92,7 @@ public class BufferSQLContext {
     public static final byte ANNOTATION_AUTO_REFRESH = 8;
     public static final byte ANNOTATION_CACHE_TIME = 9;
     public static final byte ANNOTATION_REPLICA_NAME = 10;
+    public static final byte ANNOTATION_MERGE = 10;
 
     private short[] tblResult;  //记录格式：[{schema hash array index(defaults 0), tbl hash array index}]
     private long[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]
@@ -122,6 +123,7 @@ public class BufferSQLContext {
     private HashArray myCmdValue;
     private int catletNameStart = 0;
     private int catletNameLength = 0;
+    private MergeAnnotation mergeAnnotation;
 
     public BufferSQLContext() {
         tblResult = new short[tblResultArraySize];
@@ -131,6 +133,7 @@ public class BufferSQLContext {
         annotationCondition = new int[64];
         myCmdValue = new HashArray(256);
         selectItemArray = new int[128];
+        mergeAnnotation = new MergeAnnotation(this);
     }
 
     public void setCurBuffer(ByteArrayInterface curBuffer) {
@@ -159,6 +162,7 @@ public class BufferSQLContext {
         myCmdValue.init();
         catletNameStart = 0;
         catletNameLength = 0;
+        mergeAnnotation.clear();//@todo maybe clear in the end of parse
     }
 
     public void setTblName(int hashArrayPos) {
@@ -207,11 +211,10 @@ public class BufferSQLContext {
         }
     }
 
-    //todo : 测试期返回String，将来应该要返回hashcode
     public String getTableName(int idx) {
-    	if(totalTblCount==0) {
-    		return null;
-    	}
+        if (totalTblCount == 0) {
+            return null;
+        }
         int hashArrayIdx = tblResult[(idx << 1) + 1];
         int pos = hashArray.getPos(hashArrayIdx);
         int size = hashArray.getSize(hashArrayIdx);
@@ -467,5 +470,9 @@ public class BufferSQLContext {
 
     public String getCatletName() {
         return buffer.getString(catletNameStart, catletNameLength);
+    }
+
+    public MergeAnnotation getMergeAnnotation() {
+        return mergeAnnotation;
     }
 }
