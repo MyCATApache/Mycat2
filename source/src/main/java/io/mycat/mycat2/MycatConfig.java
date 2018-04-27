@@ -1,18 +1,15 @@
 package io.mycat.mycat2;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import io.mycat.mycat2.beans.GlobalBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.conf.DNBean;
-import io.mycat.mycat2.beans.conf.DatasourceConfig;
-import io.mycat.mycat2.beans.conf.SchemaBean;
-import io.mycat.mycat2.beans.conf.SchemaConfig;
-import io.mycat.mycat2.beans.conf.TableDefBean;
+import io.mycat.mycat2.beans.conf.*;
+import io.mycat.mycat2.sqlparser.MatchMethodGenerator;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.Configurable;
 import io.mycat.util.SplitUtil;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class MycatConfig {
 	// 当前节点所用的配置文件的版本
@@ -31,7 +28,9 @@ public class MycatConfig {
     /**
      * 系统中所有DataNode的Map
      */
-    private Map<String, DNBean> mycatDataNodeMap = new HashMap<String, DNBean>();
+    private Map<String, DNBean> mycatDataNodeMap = new HashMap<>();
+
+    private Map<Long, DNBean> mycatLong2DataNodeMap = new HashMap<>();
     /**
      * 系统中所有TableDefBean的Map
      */
@@ -54,6 +53,7 @@ public class MycatConfig {
         SchemaConfig schemaConfig = getConfig(ConfigEnum.SCHEMA);
         schemaConfig.getDataNodes().forEach(dataNode -> {
             mycatDataNodeMap.put(dataNode.getName(), dataNode);
+            mycatLong2DataNodeMap.put(MatchMethodGenerator.genHash(dataNode.getName().toCharArray()), dataNode);
         });
         schemaConfig.getSchemas().forEach(schema -> {
             if (defaultSchemaBean == null) {
@@ -92,6 +92,9 @@ public class MycatConfig {
         return mycatDataNodeMap.get(dataNodeName);
     }
 
+    public DNBean getDNBean(long dataNodeName) {
+        return mycatLong2DataNodeMap.get(dataNodeName);
+    }
     /**
      * 获取指定的配置对象
      */
@@ -140,4 +143,14 @@ public class MycatConfig {
     public SchemaBean getDefaultSchemaBean() {
         return defaultSchemaBean;
     }
+
+	public Map<String, SchemaBean> getMycatSchemaMap() {
+		return mycatSchemaMap;
+	}
+
+	public void setMycatSchemaMap(Map<String, SchemaBean> mycatSchemaMap) {
+		this.mycatSchemaMap = mycatSchemaMap;
+	}
+    
+    
 }
