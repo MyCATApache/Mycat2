@@ -1,15 +1,13 @@
 package io.mycat.mycat2;
 
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.proxy.buffer.BufferPool;
+
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-
-import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.cmds.pkgread.CommQueryHandler;
-import io.mycat.mycat2.cmds.pkgread.CommandHandler;
-import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * 后端MySQL连接
@@ -54,15 +52,6 @@ public class MySQLSession extends AbstractMySQLSession {
 		this.mycatSession = null;
 		this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
 	}
-
-	/**
-	 * 用来判断该连接是否空闲.
-	 */
-	public boolean isIDLE() {
-		Boolean flag = (Boolean) this.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-		return (flag == null) ? true : flag;
-	}
-
 	@Override
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);
