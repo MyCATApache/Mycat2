@@ -497,6 +497,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_MERGE, context.getAnnotationType());
         MergeAnnotation mergeAnnotation = context.getMergeAnnotation();
+        assertEquals("sum", mergeAnnotation.getMergeType());
 
         assertEquals.accept(new String[]{"dn1", "dn2"}, mergeAnnotation.getDataNodes());
         assertEquals.accept(new String[]{"a", "b", "c"}, mergeAnnotation.getGroupColumns());
@@ -524,6 +525,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_MERGE, context.getAnnotationType());
         MergeAnnotation mergeAnnotation = context.getMergeAnnotation();
+        assertEquals("sum", mergeAnnotation.getMergeType());
 
         assertEquals.accept(new String[]{"dn1", "dn2"}, mergeAnnotation.getDataNodes());
         assertEquals.accept(new String[]{"a", "b", "c"}, mergeAnnotation.getGroupColumns());
