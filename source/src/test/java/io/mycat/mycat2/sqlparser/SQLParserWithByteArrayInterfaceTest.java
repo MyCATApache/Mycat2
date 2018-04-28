@@ -463,7 +463,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         String sql = "/* MyCAT:" +
                 "merge(" +
                 "dataNodes=dn1,dn2 " +
-                "orderDesc=a,b " +
+                "order=a:desc,b:asc " +
                 "limitStart=0 \n" +
                 "limitSize=100)" +
                 "*/select * from tbl_A where id=1;";
@@ -473,8 +473,8 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
 
         assertEquals.accept(new String[]{"dn1", "dn2"}, mergeAnnotation.getDataNodes());
 
-        assertEquals("a", mergeAnnotation.getOrderType(0));
-        assertEquals("b", mergeAnnotation.getOrderType(1));
+        assertEquals("a", mergeAnnotation.getOrderColumn(0));
+        assertEquals("b", mergeAnnotation.getOrderColumn(1));
         assertEquals(MergeAnnotation.OrderType.DESC, mergeAnnotation.getOrderType(0));
         assertEquals(MergeAnnotation.OrderType.ASC, mergeAnnotation.getOrderType(1));
         assertEquals(0, mergeAnnotation.getLimitStart());

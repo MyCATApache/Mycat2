@@ -208,6 +208,7 @@ public class BufferSQLParser {
                             case IntTokenHash.HAVING:
                             case IntTokenHash.LIMIT_START:
                             case IntTokenHash.LIMIT_SIZE:
+                            case IntTokenHash.ORDER:
                                 return true;
                             default:
                                 return false;
