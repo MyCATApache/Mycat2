@@ -206,10 +206,9 @@ public class BufferSQLParser {
                             case IntTokenHash.MERGE_COLUMNS:
                             case IntTokenHash.MERGE_TYPE:
                             case IntTokenHash.HAVING:
-                            case IntTokenHash.ORDER_ASC:
-                            case IntTokenHash.ORDER_DESC:
                             case IntTokenHash.LIMIT_START:
                             case IntTokenHash.LIMIT_SIZE:
+                            case IntTokenHash.ORDER:
                                 return true;
                             default:
                                 return false;
@@ -271,24 +270,15 @@ public class BufferSQLParser {
                                 }
                                 break;
                             }
-                            case IntTokenHash.ORDER_ASC: {
-                                annotation.setOrderType(IntTokenHash.ORDER_ASC);
+                            case IntTokenHash.ORDER: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                                     while (true) {
-                                        annotation.addOrderColumn(++pos);
-                                        if (isFinished.test(hashArray.getIntHash(pos + 1))) {
-                                            ++pos;
-                                            break;
-                                        }
-                                    }
-                                }
-                                break;
-                            }
-                            case IntTokenHash.ORDER_DESC: {
-                                annotation.setOrderType(IntTokenHash.ORDER_DESC);
-                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
-                                        annotation.addOrderColumn(++pos);
+                                        ++pos;
+                                        int colPos = pos;
+                                        int order = hashArray.getIntHash(++pos);
+                                        MergeAnnotation.OrderType orderType = order == IntTokenHash.DESC ?
+                                                MergeAnnotation.OrderType.DESC : MergeAnnotation.OrderType.ASC;
+                                        annotation.addOrderColumn(colPos, orderType);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
                                             break;

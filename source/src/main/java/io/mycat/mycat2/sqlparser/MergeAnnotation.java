@@ -24,7 +24,7 @@ public class MergeAnnotation {
     private int right;
     //sort
     private List<Integer> orderColumns;
-    private int orderType;
+    private List<OrderType> orderTypes;
     private long limitStart;
     private long limitSize;
 
@@ -38,7 +38,7 @@ public class MergeAnnotation {
         this.op = 0;
         this.right = 0;
         this.orderColumns = new ArrayList<>();
-        this.orderType = 0;
+        this.orderTypes = new ArrayList<>();
         this.limitStart = 0L;
         this.limitSize = 0L;
         this.context = context;
@@ -102,12 +102,19 @@ public class MergeAnnotation {
         this.right = right;
     }
 
-    public String[] getOrderColumns() {
-        return map(orderColumns);
+
+    public int orderColumnsSize() {
+        return this.orderColumns.size();
     }
 
-    public boolean isAsc() {
-        return orderType == IntTokenHash.ORDER_ASC;
+    public String getOrderColumn(int index) {
+        ByteArrayInterface byteArrayInterface = context.getBuffer();
+        HashArray hashArray = context.getHashArray();
+        return byteArrayInterface.getStringByHashArray(this.orderColumns.get(index), hashArray);
+    }
+
+    public OrderType getOrderType(int index) {
+        return this.orderTypes.get(index);
     }
 
     public long getLimitStart() {
@@ -138,12 +145,9 @@ public class MergeAnnotation {
         this.mergeColumns.add(mergeColumn);
     }
 
-    public void addOrderColumn(int orderColumn) {
+    public void addOrderColumn(int orderColumn, OrderType orderType) {
         this.orderColumns.add(orderColumn);
-    }
-
-    public void setOrderType(int orderType) {
-        this.orderType = orderType;
+        this.orderTypes.add(orderType);
     }
 
     public void clear() {
@@ -155,7 +159,7 @@ public class MergeAnnotation {
         this.op = 0;
         this.right = 0;
         this.orderColumns.clear();
-        this.orderType = 0;
+        this.orderTypes.clear();
         this.limitStart = 0L;
         this.limitSize = 0L;
     }
@@ -178,6 +182,11 @@ public class MergeAnnotation {
 
     @Override
     public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        int size = orderColumns.size();
+        for (int i = 0; i < size; i++) {
+            stringBuilder.append(orderColumns.get(i)).append(":").append(orderTypes.get(i));
+        }
         return "MergeAnnotation{" +
                 "context=" + context +
                 ", dataNodes=" + Arrays.toString(this.getDataNodes()) +
@@ -187,10 +196,13 @@ public class MergeAnnotation {
                 ", left=" + this.getLeft() +
                 ", op=" + this.getOp() +
                 ", right=" + this.getRight() +
-                ", orderColumns=" + Arrays.toString(this.getOrderColumns()) +
-                ", isAsc=" + this.isAsc() +
+                ", orderColumns=" + stringBuilder +
                 ", limitStart=" + this.getLimitStart() +
                 ", limitSize=" + this.getLimitSize() +
                 '}';
+    }
+
+    public enum OrderType {
+        ASC, DESC
     }
 }

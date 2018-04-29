@@ -430,7 +430,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
                 "mergeColumns=a,c \n" +
                 "mergeType=sum \n" +
                 "having=a gt c \n" +
-                "orderDesc=a,b \n" +
+                "order=a:desc,b:asc\n" +
                 "limitStart=0 \n" +
                 "limitSize=100)" +
                 "*/select * from tbl_A where id=1;";
@@ -443,13 +443,17 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals.accept(new String[]{"dn1", "dn2"}, mergeAnnotation.getDataNodes());
         assertEquals.accept(new String[]{"a", "b", "c"}, mergeAnnotation.getGroupColumns());
         assertEquals.accept(new String[]{"a", "c"}, mergeAnnotation.getMergeColumns());
+        assertEquals("sum", mergeAnnotation.getMergeType());
 
         assertEquals("a", mergeAnnotation.getLeft());
         assertEquals("gt", mergeAnnotation.getOp());
         assertEquals("c", mergeAnnotation.getRight());
 
-        assertEquals.accept(new String[]{"a", "b"}, mergeAnnotation.getOrderColumns());
-        assertEquals(mergeAnnotation.isAsc(), false);
+        assertEquals("a", mergeAnnotation.getOrderColumn(0));
+        assertEquals("b", mergeAnnotation.getOrderColumn(1));
+        assertEquals(MergeAnnotation.OrderType.DESC, mergeAnnotation.getOrderType(0));
+        assertEquals(MergeAnnotation.OrderType.ASC, mergeAnnotation.getOrderType(1));
+
         assertEquals(0, mergeAnnotation.getLimitStart());
         assertEquals(100, mergeAnnotation.getLimitSize());
     }
@@ -459,7 +463,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         String sql = "/* MyCAT:" +
                 "merge(" +
                 "dataNodes=dn1,dn2 " +
-                "orderDesc=a,b " +
+                "order=a:desc,b:asc " +
                 "limitStart=0 \n" +
                 "limitSize=100)" +
                 "*/select * from tbl_A where id=1;";
@@ -469,8 +473,10 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
 
         assertEquals.accept(new String[]{"dn1", "dn2"}, mergeAnnotation.getDataNodes());
 
-        assertEquals.accept(new String[]{"a", "b"}, mergeAnnotation.getOrderColumns());
-        assertEquals(mergeAnnotation.isAsc(), false);
+        assertEquals("a", mergeAnnotation.getOrderColumn(0));
+        assertEquals("b", mergeAnnotation.getOrderColumn(1));
+        assertEquals(MergeAnnotation.OrderType.DESC, mergeAnnotation.getOrderType(0));
+        assertEquals(MergeAnnotation.OrderType.ASC, mergeAnnotation.getOrderType(1));
         assertEquals(0, mergeAnnotation.getLimitStart());
         assertEquals(100, mergeAnnotation.getLimitSize());
     }
@@ -491,6 +497,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_MERGE, context.getAnnotationType());
         MergeAnnotation mergeAnnotation = context.getMergeAnnotation();
+        assertEquals("sum", mergeAnnotation.getMergeType());
 
         assertEquals.accept(new String[]{"dn1", "dn2"}, mergeAnnotation.getDataNodes());
         assertEquals.accept(new String[]{"a", "b", "c"}, mergeAnnotation.getGroupColumns());
@@ -509,7 +516,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
                 "groupColumns=a,b,c \n" +
                 "mergeColumns=a,c \n" +
                 "mergeType=sum \n" +
-                "orderDesc=a,b \n" +
+                "order=a:desc,b:asc\n" +
                 "limitStart=0 \n" +
                 "limitSize=100)" +
                 "*/select * from tbl_A where id=1;";
@@ -518,13 +525,16 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals("tbl_A", context.getTableName(0));
         assertEquals(BufferSQLContext.ANNOTATION_MERGE, context.getAnnotationType());
         MergeAnnotation mergeAnnotation = context.getMergeAnnotation();
+        assertEquals("sum", mergeAnnotation.getMergeType());
 
         assertEquals.accept(new String[]{"dn1", "dn2"}, mergeAnnotation.getDataNodes());
         assertEquals.accept(new String[]{"a", "b", "c"}, mergeAnnotation.getGroupColumns());
         assertEquals.accept(new String[]{"a", "c"}, mergeAnnotation.getMergeColumns());
 
-        assertEquals.accept(new String[]{"a", "b"}, mergeAnnotation.getOrderColumns());
-        assertEquals(mergeAnnotation.isAsc(), false);
+        assertEquals("a", mergeAnnotation.getOrderColumn(0));
+        assertEquals("b", mergeAnnotation.getOrderColumn(1));
+        assertEquals(MergeAnnotation.OrderType.DESC, mergeAnnotation.getOrderType(0));
+        assertEquals(MergeAnnotation.OrderType.ASC, mergeAnnotation.getOrderType(1));
         assertEquals(0, mergeAnnotation.getLimitStart());
         assertEquals(100, mergeAnnotation.getLimitSize());
     }

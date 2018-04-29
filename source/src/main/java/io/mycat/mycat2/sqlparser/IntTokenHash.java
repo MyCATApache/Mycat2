@@ -159,8 +159,6 @@ public class IntTokenHash {
     public static final int MERGE_COLUMNS = -1057453300;
     public static final int MERGE_TYPE = 905230857;
     public static final int HAVING = -102177274;
-    public static final int ORDER_ASC = 1806824712;
-    public static final int ORDER_DESC = 641409289;
     public static final int LIMIT_START = -1978316790;
     public static final int LIMIT_SIZE = -1728251639;
     public static final int DATABASES =-0x63eca2f7;
