@@ -1,5 +1,18 @@
 package io.mycat.mycat2;
 
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.DNBean;
@@ -23,18 +36,6 @@ import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 /**
  * 前端连接会话
@@ -375,9 +376,10 @@ public class MycatSession extends AbstractMySQLSession {
             case ANNOTATION_ROUTE:
                 break;
             case DB_IN_MULTI_SERVER:
-                //在 DB_IN_MULTI_SERVER 模式中,如果不指定datanode以及Replica名字取得backendName,则使用默认的
+                // 在 DB_IN_MULTI_SERVER 模式中,如果不指定datanode以及Replica名字取得backendName,则使用默认的
                 backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
                         .get(schema.getDefaultDataNode()).getReplica();
+                break;
             default:
                 break;
         }

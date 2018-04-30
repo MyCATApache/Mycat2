@@ -23,15 +23,15 @@
  */
 package io.mycat.mycat2.route;
 
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.util.FormatUtil;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.util.FormatUtil;
 
 /**
  * @author mycat

@@ -1,10 +1,10 @@
 package io.mycat.mycat2.sqlparser;
 
+import java.util.Arrays;
+
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
-
-import java.util.Arrays;
 
 /**
  * <pre>
@@ -22,6 +22,8 @@ public class BufferSQLContext {
     public static final byte DROP_SQL = 3;    //TODO 进一步细化，区分
     public static final byte TRUNCATE_SQL = 4;
     //    public static final byte COMMENT_SQL = 5;
+
+    // DAL (Database Administration Statements)
     public static final byte RENAME_SQL = 6;
     public static final byte USE_SQL = 7;
     public static final byte SHOW_SQL = 8;    //TODO 进一步细化。区分
@@ -301,6 +303,11 @@ public class BufferSQLContext {
     public boolean isDDL() {
         return sqlType == CREATE_SQL || sqlType == ALTER_SQL || sqlType == DROP_SQL
                 || sqlType == TRUNCATE_SQL;
+    }
+
+    public boolean isSelect() {
+        return this.getSQLType() == SELECT_SQL || this.getSQLType() == SELECT_INTO_SQL
+                || this.getSQLType() == SELECT_FOR_UPDATE_SQL;
     }
 
     public void setSQLIdx(int sqlIdx) {
