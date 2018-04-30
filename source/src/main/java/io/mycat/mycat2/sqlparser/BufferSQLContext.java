@@ -305,6 +305,11 @@ public class BufferSQLContext {
                 || sqlType == TRUNCATE_SQL;
     }
 
+    public boolean isSelect() {
+        return this.getSQLType() == SELECT_SQL || this.getSQLType() == SELECT_INTO_SQL
+                || this.getSQLType() == SELECT_FOR_UPDATE_SQL;
+    }
+
     public void setSQLIdx(int sqlIdx) {
         curSQLIdx = sqlIdx;
     }

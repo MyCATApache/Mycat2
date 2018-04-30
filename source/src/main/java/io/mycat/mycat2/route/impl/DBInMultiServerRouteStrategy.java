@@ -59,7 +59,7 @@ public class DBInMultiServerRouteStrategy implements RouteStrategy {
             dataNodes.addAll(globalDataNodes);
         } else {
             if (!globalDataNodes.isEmpty()) {
-                dataNodes.add(globalDataNodes.stream().findFirst().get());
+                dataNodes.retainAll(globalDataNodes);
             }
         }
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);

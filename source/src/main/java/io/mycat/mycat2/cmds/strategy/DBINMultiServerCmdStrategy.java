@@ -104,7 +104,7 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
 
 
         if (routeResultset.getNodes() != null && routeResultset.getNodes().length > 1
-                && !routeResultset.isGlobalTable()) {
+                && (!routeResultset.isGlobalTable() || session.sqlContext.isSelect())) {
 
             session.setCurRouteResultset(null);
             try {
