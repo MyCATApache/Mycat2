@@ -18,7 +18,7 @@ import io.mycat.proxy.ProxyRuntime;
 /**
  * <b><code>DBInMultiServerRouteStrategy</code></b>
  * <p>
- * DBInMultiServer模式下的路由策略，该模式下不允许跨库.
+ * DBInMultiServer模式下的路由策略，该模式下除全局表外不允许跨库.
  * </p>
  * <b>Creation Time:</b> 2017-12-24
  * 
@@ -52,7 +52,7 @@ public class DBInMultiServerRouteStrategy implements RouteStrategy {
                 dataNodes.add(schema.getDefaultDataNode());
             }
         }
-        // 就全局表而言，只有查询操作不需要跨节点，其他都要
+        // 就全局表而言，只有查询操作不需要跨节点，其他操作都要
         if (sqlType != BufferSQLContext.SELECT_SQL
                 && sqlType != BufferSQLContext.SELECT_FOR_UPDATE_SQL
                 && sqlType != BufferSQLContext.SELECT_INTO_SQL) {
