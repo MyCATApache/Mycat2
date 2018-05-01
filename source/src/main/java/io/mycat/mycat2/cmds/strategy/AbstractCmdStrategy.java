@@ -60,7 +60,13 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 
 		AnnotationDataNode datanode = new AnnotationDataNode();
 		datanode.init(new AnnotationDataNodeMeta());
+
+        AnnotationDataMergeNode mergeNode = new AnnotationDataMergeNode();
+        AnnotationDataMergeMeta dataMergeMeta = new AnnotationDataMergeMeta();
+        mergeNode.init(dataMergeMeta);
+
 		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_DATANODE, datanode);
+        staticAnnontationMap.put(BufferSQLContext.ANNOTATION_MERGE, mergeNode);
 	}
 	
 	protected abstract void initMyCmdHandler();

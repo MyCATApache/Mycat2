@@ -72,6 +72,10 @@ public class MergeAnnotation {
         return get(mergeType);
     }
 
+    public boolean hasMergeType() {
+        return mergeType != 0;
+    }
+
     public void setMergeType(int mergeType) {
         this.mergeType = mergeType;
     }

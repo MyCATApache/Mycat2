@@ -306,6 +306,7 @@ public class BufferSQLParser {
                             }
                             default: {
                                 ++pos;
+                                context.setRealSQLOffset(pos);
 //                                System.out.println(this.sql.getStringByHashArray(pos, this.hashArray)+":"+intHash);
                                 return pos;
                             }

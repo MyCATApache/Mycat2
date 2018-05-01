@@ -161,6 +161,10 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 		try {
 			// loop-on-packs
 			for (;;) {
+                //@todo it may be a bug
+                if (packs == null) {
+                    return;
+                }
 				final PackWraper pack = packs.take();
 				if (pack == null) {
 					nulpack = true;
@@ -197,6 +201,11 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 
 					// write fields
 					for (FieldPacket field : fields) {
+                        //@todo it must be a bug
+                        if (field == null) {
+                            continue;
+                        }
+
 						field.write(buffer);
 					}
 					// write eof
