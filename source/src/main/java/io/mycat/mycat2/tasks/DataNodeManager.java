@@ -1,21 +1,25 @@
 package io.mycat.mycat2.tasks;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.log4j.Logger;
+
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.PackWraper;
 import io.mycat.mycat2.beans.ColumnMeta;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mysql.packet.ErrorPacket;
-import org.apache.log4j.Logger;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
+import io.mycat.mysql.packet.RowDataPacket;
 
 public abstract class DataNodeManager implements Runnable {
 
@@ -26,6 +30,11 @@ public abstract class DataNodeManager implements Runnable {
     private static Logger LOGGER = Logger.getLogger(DataNodeManager.class);
 
     /**
+    * 标志业务线程是否启动了？
+    */
+    protected final AtomicBoolean running = new AtomicBoolean(false);
+    
+    /**
      * row 有多少col
      */
     protected int fieldCount;
@@ -33,7 +42,28 @@ public abstract class DataNodeManager implements Runnable {
      * 本次select的路由缓存集
      */
     protected RouteResultset routeResultset;
-
+    
+    /**
+     * 将Map对应的col字段集，返回row中对应的index数组
+     * @param columns
+     * @param toIndexMap
+     * @return
+     */
+    protected static int[] toColumnIndex(String[] columns, Map<String, ColumnMeta> toIndexMap) {
+        int[] result = new int[columns.length];
+        ColumnMeta curColMeta;
+        for (int i = 0; i < columns.length; i++) {
+            curColMeta = toIndexMap.get(columns[i]);
+            if (curColMeta == null) {
+                throw new IllegalArgumentException(
+                        "all columns in group by clause should be in the selected column list.!"
+                                + columns[i]);
+            }
+            result[i] = curColMeta.colIndex;
+        }
+        return result;
+    }
+    
     /**
      * rowData缓存队列
      */
@@ -66,7 +96,7 @@ public abstract class DataNodeManager implements Runnable {
 
     public boolean onNewRecords(String dataNode, ByteBuffer rowData) {
         /*
-        读取的数据范围是 readIndex --- writeIndex 之间的数据.
+        	读取的数据范围是 readIndex --- writeIndex 之间的数据.
          */
         System.out.println("onNewRecords" + dataNode + rowData);
         if (packs.offer(new PackWraper(rowData, dataNode))) {
@@ -88,19 +118,17 @@ public abstract class DataNodeManager implements Runnable {
      *
      * @return (最多i * ( offset + size)行数据)
      */
-    public abstract Iterator<ByteBuffer> getResults();
+    public abstract List<RowDataPacket> getResults();
 
     public void clearResouces() {
-        if (this.packs != null)
-            this.packs.clear();
+        this.packs.clear();
         this.fieldCount = 0;
         this.routeResultset = null;
         clearSQLQueryStreamResouces();
     }
 
     public void close(boolean normal, String error) {
-        if (this.executor != null)
-            this.executor.shutdown();
+        this.executor.shutdown();
         unbindSQLQueryStreams(normal, error);
         this.packs = null;
         this.executor = null;
