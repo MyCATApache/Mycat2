@@ -13,6 +13,8 @@ import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.cmds.manager.MyCatCmdDispatcher;
+import io.mycat.mycat2.cmds.multinode.AnnotationRouteServerCmd;
+import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
 import io.mycat.mycat2.sqlannotations.AnnotationDataNode;
 import io.mycat.mycat2.sqlannotations.AnnotationDataNodeMeta;
 import io.mycat.mycat2.sqlannotations.CacheResult;
@@ -115,7 +117,11 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 				return true;
 			}
 			
-			command = MYSQLCOMMANDMAP.get(sqltype);
+			if(session.sqlContext.getRealSQL(0).contains("order by")){
+				command = DbInMultiServerCmd.INSTANCE;
+			}else{
+				command = MYSQLCOMMANDMAP.get(sqltype);
+			}
 		}else{
 			command = MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
 		}
