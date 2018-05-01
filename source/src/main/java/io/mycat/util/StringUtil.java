@@ -181,6 +181,26 @@ public final class StringUtil {
 //    	return (dumpAsHex(new ConDataBufferGetable(buffer), offset, length));
 //    }
     
+    /**
+	 * 移除`符号
+	 * @param str
+	 * @return
+	 */
+	public static String removeBackquote(String str){
+		//删除名字中的`tablename`和'value'
+		if (str.length() > 0) {
+			StringBuilder sb = new StringBuilder(str);
+			if (sb.charAt(0) == '`'||sb.charAt(0) == '\'') {
+				sb.deleteCharAt(0);
+			}
+			if (sb.charAt(sb.length() - 1) == '`'||sb.charAt(sb.length() - 1) == '\'') {
+				sb.deleteCharAt(sb.length() - 1);
+			}
+			return sb.toString();
+		}
+		return "";
+	}
+    
     public static void main(String args[]){
     	final byte[] array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 48, 49, 50, 97, 98, 99};
     	
@@ -195,6 +215,5 @@ public final class StringUtil {
     	final ByteBuffer buffer = ByteBuffer.wrap(array);
     	buffer.position(buffer.limit());
     	System.out.println(dumpAsHex(buffer));
-    }
-    
+    }    
 }

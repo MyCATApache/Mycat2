@@ -23,15 +23,18 @@
  */
 package io.mycat.mycat2.route;
 
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.util.FormatUtil;
-
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.mpp.HavingCols;
+import io.mycat.mycat2.mpp.SQLMerge;
+import io.mycat.util.FormatUtil;
 
 /**
  * @author mycat
@@ -42,7 +45,8 @@ public final class RouteResultset implements Serializable {
     private RouteResultsetNode[] nodes; // 路由结果节点
     private Set<String> subTables;
 
-
+    private SQLMerge sqlMerge;
+    
     private int limitStart;
     private boolean cacheAble;
     // used to store table's ID->datanodes cache
@@ -302,7 +306,71 @@ public final class RouteResultset implements Serializable {
     public boolean isDistTable() {
         return this.getSubTables() != null && !this.getSubTables().isEmpty();
     }
-
+    
+    public String[] getGroupByCols() {
+        return (sqlMerge != null) ? sqlMerge.getGroupByCols() : null;
+    }
+    
+    public void setGroupByCols(String[] groupByCols) {
+        if (groupByCols != null && groupByCols.length > 0) {
+            createSQLMergeIfNull().setGroupByCols(groupByCols);
+        }
+    }
+    
+    private SQLMerge createSQLMergeIfNull() {
+        if (sqlMerge == null) {
+            sqlMerge = new SQLMerge();
+        }
+        return sqlMerge;
+    }
+	 
+	 public void setHasAggrColumn(boolean hasAggrColumn) {
+        if (hasAggrColumn) {
+            createSQLMergeIfNull().setHasAggrColumn(true);
+        }
+    }
+	 
+	public HavingCols getHavingCols() {
+		return (sqlMerge != null) ? sqlMerge.getHavingCols() : null;
+	}
+	
+	public void setHavingCols(HavingCols havings) {
+		if (havings != null) {
+			createSQLMergeIfNull().setHavingCols(havings);
+		}
+	}
+	
+	// Added by winbill, 20160314, for having clause, Begin ==>
+	public void setHavingColsName(Object[] names) {
+		if (names != null && names.length > 0) {
+			createSQLMergeIfNull().setHavingColsName(names);
+		}
+	}
+	
+	public void setMergeColumns(Map<String, Integer> mergeCols) {
+        if (mergeCols != null && !mergeCols.isEmpty()) {
+            createSQLMergeIfNull().setMergeColumns(mergeCols);
+        }
+    }
+	
+	public Map<String, Integer> getMergeColumns() {
+        return (sqlMerge != null) ? sqlMerge.getMergeColumns() : null;
+    }
+	
+	public boolean isHasAggrColumn() {
+        return (sqlMerge != null) && sqlMerge.isHasAggrColumn();
+    }
+	
+	public LinkedHashMap<String, Integer> getOrderByCols() {
+	    return (sqlMerge != null) ? sqlMerge.getOrderByCols() : null;
+	}
+	
+	public void setOrderByCols(LinkedHashMap<String, Integer> orderByCols) {
+        if (orderByCols != null && !orderByCols.isEmpty()) {
+            createSQLMergeIfNull().setOrderByCols(orderByCols);
+        }
+    }
+    
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
