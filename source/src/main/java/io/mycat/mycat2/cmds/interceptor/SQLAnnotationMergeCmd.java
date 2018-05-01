@@ -39,6 +39,11 @@ public class SQLAnnotationMergeCmd extends SQLAnnotationCmd {
             }
             RouteResultset routeResultset = new RouteResultset(sql, BufferSQLContext.SELECT_SQL);
             setMerge(session, routeResultset);
+            //todo 未完成
+            if (mergeAnnotation.hasOrder()) {
+                routeResultset.setLimitStart((int) mergeAnnotation.getLimitStart());
+                routeResultset.setLimitSize((int) mergeAnnotation.getLimitSize());
+            }
             routeResultset.setNodes(routeResultsetNodes);
             session.setCurRouteResultset(routeResultset);
         }
