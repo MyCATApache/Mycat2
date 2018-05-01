@@ -49,7 +49,7 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 	
 	@Override
 	public void onRowMetaData(String datanode, Map<String, ColumnMeta> columToIndx, int fieldCount) {
-		
+        System.out.println(columToIndx);
 		synchronized (this) {
 			if (fieldsReturned) {
 				return;
@@ -189,7 +189,6 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 						}
 						fields[i] = PacketUtil.getField(fieldName, entry.getValue().colType);
 						fields[i++].packetId = ++packetId;
-						break;
 					}
 					eof.packetId = ++packetId;
 
