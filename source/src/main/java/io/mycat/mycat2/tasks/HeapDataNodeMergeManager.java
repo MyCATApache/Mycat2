@@ -1,36 +1,15 @@
 package io.mycat.mycat2.tasks;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.log4j.Logger;
-
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
-import com.alibaba.druid.stat.TableStat.Column;
-
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.PackWraper;
 import io.mycat.mycat2.beans.ColumnMeta;
 import io.mycat.mycat2.hbt.TableMeta;
-import io.mycat.mycat2.mpp.HavingCols;
 import io.mycat.mycat2.mpp.MergeColumn;
 import io.mycat.mycat2.mpp.OrderCol;
 import io.mycat.mycat2.mpp.RowDataPacketGrouper;
 import io.mycat.mycat2.mpp.RowDataSorter;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.route.RouteResultsetNode;
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
-import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mysql.packet.EOFPacket;
 import io.mycat.mysql.packet.FieldPacket;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
@@ -39,6 +18,9 @@ import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.PacketUtil;
 import io.mycat.util.StringUtil;
+import org.apache.log4j.Logger;
+
+import java.util.*;
 
 public class HeapDataNodeMergeManager extends DataNodeManager {
 	private static Logger LOGGER = Logger.getLogger(HeapDataNodeMergeManager.class);
