@@ -789,6 +789,17 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
         assertEquals(TokenHash.LOAD, context.getTokenHash(0, 1));
     }
 
+    @Test
+    public void testSimpleOrderby() throws Exception {
+//        String sql = "select id1, id2, id3 from tbl_A order by 1;";
+        String sql = "select * from message order by id desc";
+        ByteArrayInterface src = new ByteBufferArray(sql.getBytes());
+        parser.parse(src, context);
+        assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
+    }
+
+
+
     private static final String sql1 = "select t3.*,ztd3.TypeDetailName as UseStateName\n" +
             "from\n" +
             "( \n" +

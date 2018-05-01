@@ -629,6 +629,10 @@ public class BufferSQLParser {
                     }
                     break;
                 case IntTokenHash.DESC:
+                    if (context.getCurSQLType() != 0) {
+                        pos++;
+                        break;
+                    }
                 case IntTokenHash.DESCRIBE:
                     long hashValue;
                     if (((hashValue = hashArray.getHash(pos)) == TokenHash.DESC) ||

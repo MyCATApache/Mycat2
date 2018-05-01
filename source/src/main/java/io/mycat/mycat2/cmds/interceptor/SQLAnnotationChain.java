@@ -1,5 +1,6 @@
 package io.mycat.mycat2.cmds.interceptor;
 
+
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -7,12 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
 import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
+
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SQLAnnotationChain {
 	
