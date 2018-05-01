@@ -44,6 +44,7 @@ import io.mycat.util.BufferUtil;
  * @author mycat
  */
 public class OKPacket extends MySQLPacket {
+
 	public byte pkgType = MySQLPacket.OK_PACKET;
 
 	public static final byte FIELD_COUNT = 0x00;
@@ -79,9 +80,7 @@ public class OKPacket extends MySQLPacket {
 		serverStatus = (int) buffer.readFixInt(2);
 		warningCount = (int) buffer.readFixInt(2);
 		if (index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex > 0) {
-			int msgLength = index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
-			this.message = buffer.getBytes(buffer.writeIndex, msgLength);
-			buffer.readIndex += msgLength;
+            this.message = buffer.readLenencString().getBytes();
 		}
 	}
 
