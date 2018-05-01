@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by jamie on 2018/4/17.
  */
-public class AnnotationDataNode extends SQLAnnotation {
+public class AnnotationDataMergeNode extends SQLAnnotation {
 
-    private static final Logger logger = LoggerFactory.getLogger(AnnotationDataNode.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnnotationDataMergeNode.class);
 
     /**
      * 动态注解 组装 mysqlCommand chain

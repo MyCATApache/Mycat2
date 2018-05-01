@@ -1,7 +1,17 @@
 package io.mycat.mycat2.cmds.interceptor;
 
+
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
 import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
@@ -56,11 +66,11 @@ public class SQLAnnotationChain {
             case DB_IN_ONE_SERVER:
                 break;
             case DB_IN_MULTI_SERVER:
-//                if (session.curRouteResultset != null
-//                        && session.curRouteResultset.getNodes().length > 1) {
-//                    // DB_IN_MULTI_SERVER 模式下
-//                    this.target = DbInMultiServerCmd.INSTANCE;
-//                }
+                if (session.getCurRouteResultset() != null
+                        && session.getCurRouteResultset().getNodes().length > 1) {
+                    // DB_IN_MULTI_SERVER 模式下
+                    this.target = DbInMultiServerCmd.INSTANCE;
+                }
                 break;
             case ANNOTATION_ROUTE:
                 break;

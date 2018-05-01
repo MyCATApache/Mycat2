@@ -96,7 +96,7 @@ public class MycatSession extends AbstractMySQLSession {
             case DB_IN_MULTI_SERVER:
                 return DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
             case ANNOTATION_ROUTE:
-                AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
+                return AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
 //			case SQL_PARSE_ROUTE:
 //				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
             default:
@@ -373,11 +373,14 @@ public class MycatSession extends AbstractMySQLSession {
                         .get(schema.getDefaultDataNode()).getReplica();
                 break;
             case ANNOTATION_ROUTE:
-                break;
-            case DB_IN_MULTI_SERVER:
-                //在 DB_IN_MULTI_SERVER 模式中,如果不指定datanode以及Replica名字取得backendName,则使用默认的
                 backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
                         .get(schema.getDefaultDataNode()).getReplica();
+                break;
+            case DB_IN_MULTI_SERVER:
+                // 在 DB_IN_MULTI_SERVER 模式中,如果不指定datanode以及Replica名字取得backendName,则使用默认的
+                backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
+                        .get(schema.getDefaultDataNode()).getReplica();
+                break;
             default:
                 break;
         }
