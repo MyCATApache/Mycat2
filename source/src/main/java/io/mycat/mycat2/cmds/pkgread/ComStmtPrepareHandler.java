@@ -1,17 +1,16 @@
 package io.mycat.mycat2.cmds.pkgread;
 
-import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.cmds.judge.EofJudge;
+import io.mycat.mycat2.cmds.judge.JudgeUtil;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 /**
  * 
@@ -51,7 +50,7 @@ public class ComStmtPrepareHandler implements CommandHandler {
 					session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_COLUMN_OVER.getKey());
 					isFinish = true;
 					// 如果当前的eof包大于1说明已经为eof结束包,切换到解析器进行解析
-					boolean gotoRead = EofJudge.INSTANCE.judge(session);
+                    boolean gotoRead = JudgeUtil.judgeEOFPacket(session, session.proxyBuffer);
 
 					// 检查是否需要读取下一个包
 					if (gotoRead) {
@@ -60,11 +59,7 @@ public class ComStmtPrepareHandler implements CommandHandler {
 					}
 				}
 
-				if (curBuffer.readIndex == curBuffer.writeIndex) {
-					isContinue = false;
-				} else {
-					isContinue = true;
-				}
+                isContinue = curBuffer.readIndex != curBuffer.writeIndex;
 				break;
 
 			case LongHalfPacket:

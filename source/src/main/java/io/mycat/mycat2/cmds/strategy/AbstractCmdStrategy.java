@@ -13,6 +13,10 @@ import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
 import io.mycat.mycat2.cmds.manager.MyCatCmdDispatcher;
+import io.mycat.mycat2.cmds.multinode.AnnotationRouteServerCmd;
+import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
+import io.mycat.mycat2.sqlannotations.AnnotationDataNode;
+import io.mycat.mycat2.sqlannotations.AnnotationDataNodeMeta;
 import io.mycat.mycat2.sqlannotations.CacheResult;
 import io.mycat.mycat2.sqlannotations.CacheResultMeta;
 import io.mycat.mycat2.sqlannotations.CatletMeta;
@@ -61,6 +65,10 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		SQLAnnotation catlet = new CatletResult();
 		catlet.setSqlAnnoMeta(new CatletMeta());
 		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_CATLET, catlet );
+
+		AnnotationDataNode datanode = new AnnotationDataNode();
+		datanode.init(new AnnotationDataNodeMeta());
+		staticAnnontationMap.put(BufferSQLContext.ANNOTATION_DATANODE, datanode);
 	}
 	
 	protected abstract void initMyCmdHandler();
@@ -77,7 +85,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
      */
     protected boolean delegateRoute(MycatSession session) {
         return true;
-    };
+	}
 
 	@Override
     public boolean matchMySqlCommand(MycatSession session) {
@@ -109,7 +117,11 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 				return true;
 			}
 			
-			command = MYSQLCOMMANDMAP.get(sqltype);
+			if(session.sqlContext.getRealSQL(0).contains("order by")){
+				command = DbInMultiServerCmd.INSTANCE;
+			}else{
+				command = MYSQLCOMMANDMAP.get(sqltype);
+			}
 		}else{
 			command = MYCOMMANDMAP.get((byte)session.curMSQLPackgInf.pkgType);
 		}
@@ -130,7 +142,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 		 */
 		SQLAnnotationChain chain = new SQLAnnotationChain();
         session.curSQLCommand =
-                chain.setTarget(command).processRoute(session).processDynamicAnno(session)
+                chain.setTarget(command).processDynamicAnno(session)
                         .processStaticAnno(session, staticAnnontationMap).build();
 		return true;
 	}

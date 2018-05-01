@@ -57,8 +57,8 @@ public class SQLAnnotationChain {
             case DB_IN_ONE_SERVER:
                 break;
             case DB_IN_MULTI_SERVER:
-                if (session.curRouteResultset != null
-                        && session.curRouteResultset.getNodes().length > 1) {
+                if (session.getCurRouteResultset() != null
+                        && session.getCurRouteResultset().getNodes().length > 1) {
                     // DB_IN_MULTI_SERVER 模式下
                     this.target = DbInMultiServerCmd.INSTANCE;
                 }
@@ -99,7 +99,8 @@ public class SQLAnnotationChain {
 	 */
 	public SQLAnnotationChain processStaticAnno(MycatSession session,Map<Byte,SQLAnnotation> staticAnnontationMap){
 		BufferSQLContext context = session.sqlContext;
-		SQLAnnotation staticAnno = staticAnnontationMap.get(context.getAnnotationType());
+		byte value = context.getAnnotationType();
+		SQLAnnotation staticAnno = staticAnnontationMap.get(value);
 		/**
 		 * 处理静态注解
 		 */

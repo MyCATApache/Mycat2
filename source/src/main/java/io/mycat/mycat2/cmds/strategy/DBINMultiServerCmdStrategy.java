@@ -14,6 +14,9 @@ import io.mycat.mycat2.cmds.ComQuitCmd;
 import io.mycat.mycat2.cmds.ComStatisticsCmd;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.NotSupportCmd;
+import io.mycat.mycat2.cmds.ShowDbCmd;
+import io.mycat.mycat2.cmds.ShowTbCmd;
+import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComBeginCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComCommitCmd;
 import io.mycat.mycat2.cmds.sqlCmds.SqlComRollBackCmd;
@@ -32,7 +35,8 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
 
     public static final DBINMultiServerCmdStrategy INSTANCE = new DBINMultiServerCmdStrategy();
 
-    private RouteStrategy routeStrategy = new DBInMultiServerRouteStrategy();
+    private RouteStrategy dbInMultiServerRouteStrategy = new DBInMultiServerRouteStrategy();
+
 
     @Override
     protected void initMyCmdHandler() {
@@ -71,16 +75,20 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
 
     @Override
     protected void initMySqlCmdHandler() {
-        MYSQLCOMMANDMAP.put(BufferSQLContext.INSERT_SQL, DirectPassthrouhCmd.INSTANCE);
-        MYSQLCOMMANDMAP.put(BufferSQLContext.UPDATE_SQL, DirectPassthrouhCmd.INSTANCE);
-        MYSQLCOMMANDMAP.put(BufferSQLContext.DROP_SQL, DirectPassthrouhCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.INSERT_SQL, DbInMultiServerCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.UPDATE_SQL, DbInMultiServerCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.DELETE_SQL, DbInMultiServerCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.DROP_SQL, DbInMultiServerCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
-        MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DirectPassthrouhCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DbInMultiServerCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.SHUTDOWN_SQL, SqlComShutdownCmd.INSTANCE);
+        
+        MYSQLCOMMANDMAP.put(BufferSQLContext.SHOW_DB_SQL, ShowDbCmd.INSTANCE);
+        MYSQLCOMMANDMAP.put(BufferSQLContext.SHOW_TB_SQL, ShowTbCmd.INSTANCE);
     }
 
 
@@ -90,12 +98,15 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
 
         byte sqltype = session.sqlContext.getSQLType() != 0 ? session.sqlContext.getSQLType()
                 : session.sqlContext.getCurSQLType();
-        RouteResultset rrs = routeStrategy.route(session.schema, sqltype,
+
+        RouteResultset routeResultset = dbInMultiServerRouteStrategy.route(session.schema, sqltype,
                 session.sqlContext.getRealSQL(0), null, session);
 
-        if (rrs.getNodes() != null && rrs.getNodes().length > 1 && !rrs.isGlobalTable()) {
 
-            session.curRouteResultset = null;
+        if (routeResultset.getNodes() != null && routeResultset.getNodes().length > 1
+                && (!routeResultset.isGlobalTable() || session.sqlContext.isSelect())) {
+
+            session.setCurRouteResultset(null);
             try {
                 logger.error(
                         "Multi node error! Not allowed to execute SQL statement across data nodes in DB_IN_MULTI_SERVER schemaType.\n"
@@ -108,7 +119,7 @@ public class DBINMultiServerCmdStrategy extends AbstractCmdStrategy {
             }
             return false;
         } else {
-            session.curRouteResultset = rrs;
+            session.setCurRouteResultset(routeResultset);
         }
         return true;
     }

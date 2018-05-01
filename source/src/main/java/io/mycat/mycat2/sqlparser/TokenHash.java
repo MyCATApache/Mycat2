@@ -718,6 +718,7 @@ public class TokenHash {
     
     public static final long SESSIONS     = 0x562de22f337L;
     
+    
     public static void main(String[] args) {
         MatchMethodGenerator.initShrinkCharTbl();
     }

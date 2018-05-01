@@ -1,17 +1,5 @@
 package io.mycat.proxy;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Stream;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
@@ -24,6 +12,13 @@ import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  *  mycat 多个Session会话
@@ -65,7 +60,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 		return allSessions.stream()
 //				.filter(session -> session instanceof MycatSession)
 				.map(session -> {
-					MycatSession mycatSession = (MycatSession) session;
+                    MycatSession mycatSession = session;
 					return mycatSession.getBackendConCounts(mySQLMetaBean);
 				})
         .mapToInt(Integer::intValue)
@@ -188,8 +183,10 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         	if (logger.isDebugEnabled()) {
     			logger.debug("Use front sessionMap cached backend connections.{}",mysqlSession);
     		}
-        	
-        	mysqlSession.getMycatSession().unbindBeckend(mysqlSession);
+            MycatSession mycatSession = mysqlSession.getMycatSession();
+            if (mycatSession != null) {
+                mycatSession.unbindBeckend(mysqlSession);
+            }
             callback.finished(mysqlSession, null, true, null);
             return;
         }

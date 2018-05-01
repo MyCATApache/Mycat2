@@ -1,15 +1,13 @@
 package io.mycat.mycat2.cmds.pkgread;
 
-import java.io.IOException;
-
 import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.cmds.judge.ErrorJudge;
-import io.mycat.mycat2.cmds.judge.OkJudge;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.cmds.judge.JudgeUtil;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.io.IOException;
 
 /**
  * 
@@ -40,13 +38,8 @@ public class ComStmtPrepareHeaderHandler implements CommandHandler {
 		if (null != pkgTypeEnum && CurrPacketType.Full == pkgTypeEnum) {
 			// 如果当前为错误包，则进交给错误包处理
 			if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
-				boolean runFlag = ErrorJudge.INSTANCE.judge(session);
-
-				if (runFlag) {
-					return true;
-				}
-
-				return false;
+                boolean runFlag = JudgeUtil.judgeErrorPacket(session, session.proxyBuffer);
+                return runFlag;
 			}
 		}
 

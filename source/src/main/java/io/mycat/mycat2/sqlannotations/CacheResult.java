@@ -1,14 +1,12 @@
 package io.mycat.mycat2.sqlannotations;
 
-import java.util.Map;
-
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
-import io.mycat.mycat2.cmds.interceptor.SQLAnnotationCmd;
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import java.util.Map;
 
 /**
  * Created by jamie on 2017/9/15.
@@ -27,8 +25,8 @@ public class CacheResult extends SQLAnnotation {
 //		SQLAnnotationCmd cmd = meta.getSQLAnnotationCmd();
 //		cmd.setSqlAnnotationChain(chain);
 //		chain.addCmdChain(this,cmd);
-		
-		BufferSQLContext context = session.sqlContext;
+
+        BufferSQLContext context = session.sqlContext;
 		context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
 		context.setAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME,meta.getCacheTime());
 		context.setAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT,meta.getAccessCount());		
