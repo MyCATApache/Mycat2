@@ -1,16 +1,16 @@
 package io.mycat.mycat2.tasks.multinode;
 
-import java.io.IOException;
-
-import org.apache.log4j.Logger;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.tasks.BackendIOTaskWithGenericResponse;
+import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyBuffer;
+import org.apache.log4j.Logger;
+
+import java.io.IOException;
 
 /**
  * 
@@ -39,7 +39,7 @@ public class PickOnlyOneInMultiNodeWithGenericResponse extends BackendIOTaskWith
     }
 
     @Override
-    public void onOkResponse(MySQLSession session) throws IOException {
+    public void onOkResponse(MySQLSession session) {
 
         routeResultset.countDown(session, () -> {
             try {
@@ -62,16 +62,22 @@ public class PickOnlyOneInMultiNodeWithGenericResponse extends BackendIOTaskWith
 
     @Override
     public void onErrResponse(MySQLSession session) {
+        ErrorPacket errorPacket = new ErrorPacket();
+        errorPacket.read(session.getProxyBuffer());
+        try {
+            session.getMycatSession().closeBackendAndResponseError(session, false, errorPacket);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // TODO 待实现，收到Error packet响应后应该执行回滚（分布式事务）
-
     }
 
     @Override
-    public void onFinished(boolean success, MySQLSession session) throws IOException {
+    public void onFinished(boolean success, MySQLSession session) {
         // 恢复默认的Handler
         session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
         // 把mysqlsession的proxybuffer切换回原来的共享buffer，即与mycatSession共享的buffer
         revertPreBuffer();
-        session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());;
+        session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
     }
 }

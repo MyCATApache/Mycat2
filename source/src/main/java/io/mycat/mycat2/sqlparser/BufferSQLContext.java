@@ -1,10 +1,10 @@
 package io.mycat.mycat2.sqlparser;
 
-import java.util.Arrays;
-
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
+
+import java.util.Arrays;
 
 /**
  * <pre>

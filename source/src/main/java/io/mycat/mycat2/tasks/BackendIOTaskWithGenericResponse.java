@@ -1,13 +1,13 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
-
 import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.io.IOException;
 
 /**
  * 
@@ -58,6 +58,7 @@ public abstract class BackendIOTaskWithGenericResponse
                     onErrResponse(session);
                 }
             } catch (Exception ex) {
+                ex.printStackTrace();
                 onFinished(false, session);
             }
             onFinished(true, session);

@@ -1,11 +1,5 @@
 package io.mycat.mycat2.cmds.multinode;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.AbstractMultiDNExeCmd;
@@ -13,10 +7,16 @@ import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.route.RouteResultsetNode;
 import io.mycat.mycat2.tasks.BackendIOTaskWithGenericResponse;
 import io.mycat.mycat2.tasks.DataNodeManager;
+import io.mycat.mycat2.tasks.HeapDataNodeMergeManager;
 import io.mycat.mycat2.tasks.multinode.PickOnlyOneInMultiNodeWithGenericResponse;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 /**
  * <b><code>DbInMultiServerCmd</code></b>
@@ -37,12 +37,13 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
 
     private static final Logger logger = LoggerFactory.getLogger(DbInMultiServerCmd.class);
 
-    private static void broadcast(MycatSession mycatSession, RouteResultsetNode[] nodes)
+    protected void broadcast(MycatSession mycatSession, RouteResultsetNode[] nodes)
             throws IOException {
         int size = nodes.length;
         for (int i = 0; i < size; i++) {
             RouteResultsetNode node = nodes[i];
-            DataNodeManager manager = mycatSession.merge;
+            DataNodeManager manager = mycatSession.merge = new HeapDataNodeMergeManager(mycatSession.getCurRouteResultset(), mycatSession);
+
             mycatSession.getBackendByDataNodeName(node.getName(),
                     (mysqlsession, sender, success, result) -> {
                         try {
@@ -169,9 +170,7 @@ public class DbInMultiServerCmd extends AbstractMultiDNExeCmd {
     private boolean checkMutil(MycatSession mycatSession) {
         if (mycatSession != null) {
             RouteResultsetNode[] nodes = mycatSession.getCurRouteResultset().getNodes();
-            if (nodes != null && nodes.length > 1) {
-                return true;
-            }
+            return nodes != null && nodes.length > 1;
         }
         return false;
     }

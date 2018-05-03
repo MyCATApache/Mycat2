@@ -370,7 +370,7 @@ public final class RouteResultset implements Serializable {
             createSQLMergeIfNull().setOrderByCols(orderByCols);
         }
     }
-    
+
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
