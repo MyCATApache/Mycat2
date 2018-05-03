@@ -204,7 +204,6 @@ public class BufferSQLParser {
                             case IntTokenHash.DATANODE:
                             case IntTokenHash.GROUP_COLUMNS:
                             case IntTokenHash.MERGE_COLUMNS:
-                            case IntTokenHash.MERGE_TYPE:
                             case IntTokenHash.HAVING:
                             case IntTokenHash.LIMIT_START:
                             case IntTokenHash.LIMIT_SIZE:
@@ -220,7 +219,7 @@ public class BufferSQLParser {
                         switch (intHash) {
                             case IntTokenHash.DATANODES: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
+                                    while (pos < arrayCount) {
                                         annotation.addDataNode(++pos);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
@@ -232,7 +231,7 @@ public class BufferSQLParser {
                             }
                             case IntTokenHash.GROUP_COLUMNS: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
+                                    while (pos < arrayCount) {
                                         annotation.addGroupColumn(++pos);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
@@ -244,20 +243,15 @@ public class BufferSQLParser {
                             }
                             case IntTokenHash.MERGE_COLUMNS: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
-                                        annotation.addMergeColumn(++pos);
+                                    while (pos < arrayCount) {
+                                        ++pos;
+                                        int colPos = pos;
+                                        annotation.addMergeColumn(colPos, ++pos);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
                                             break;
                                         }
                                     }
-                                }
-                                break;
-                            }
-                            case IntTokenHash.MERGE_TYPE: {
-                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    annotation.setMergeType(++pos);
-                                    ++pos;
                                 }
                                 break;
                             }
@@ -272,7 +266,7 @@ public class BufferSQLParser {
                             }
                             case IntTokenHash.ORDER: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
+                                    while (pos < arrayCount) {
                                         ++pos;
                                         int colPos = pos;
                                         int order = hashArray.getIntHash(++pos);

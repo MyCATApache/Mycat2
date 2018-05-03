@@ -6,6 +6,7 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * jamie 2018.4.26
@@ -17,7 +18,7 @@ public class MergeAnnotation {
     private List<Integer> dataNodes;
     private List<Integer> groupColumns;
     private List<Integer> mergeColumns;
-    private int mergeType;
+    private List<Integer> mergeTypes;
     //having
     private int left;
     private int op;
@@ -33,7 +34,7 @@ public class MergeAnnotation {
         this.dataNodes = new ArrayList<>();
         this.groupColumns = new ArrayList<>();
         this.mergeColumns = new ArrayList<>();
-        this.mergeType = 0;
+        this.mergeTypes = new ArrayList<>();
         this.left = 0;
         this.op = 0;
         this.right = 0;
@@ -68,16 +69,12 @@ public class MergeAnnotation {
         return map(mergeColumns);
     }
 
-    public String getMergeType() {
-        return get(mergeType);
+    public String getMergeType(int index) {
+        return get(this.mergeTypes.get(index));
     }
 
-    public boolean hasMergeType() {
-        return mergeType != 0;
-    }
-
-    public void setMergeType(int mergeType) {
-        this.mergeType = mergeType;
+    public void setMergeType(int index, int pos) {
+        this.mergeTypes.set(index, pos);
     }
 
     public String getLeft() {
@@ -145,8 +142,9 @@ public class MergeAnnotation {
         this.groupColumns.add(groupColumn);
     }
 
-    public void addMergeColumn(int mergeColumn) {
+    public void addMergeColumn(int mergeColumn, int mergeType) {
         this.mergeColumns.add(mergeColumn);
+        this.mergeTypes.add(mergeType);
     }
 
     public void addOrderColumn(int orderColumn, OrderType orderType) {
@@ -158,7 +156,7 @@ public class MergeAnnotation {
         this.dataNodes.clear();
         this.groupColumns.clear();
         this.mergeColumns.clear();
-        this.mergeType = 0;
+        this.mergeTypes.clear();
         this.left = 0;
         this.op = 0;
         this.right = 0;
@@ -196,7 +194,7 @@ public class MergeAnnotation {
                 ", dataNodes=" + Arrays.toString(this.getDataNodes()) +
                 ", groupColumns=" + Arrays.toString(this.getGroupColumns()) +
                 ", mergeColumns=" + Arrays.toString(this.getMergeColumns()) +
-                ", mergeType=" + this.getMergeType() +
+                ", mergeTypes=" + this.mergeTypes.stream().map(i -> get(i)).collect(Collectors.joining(",")) +
                 ", left=" + this.getLeft() +
                 ", op=" + this.getOp() +
                 ", right=" + this.getRight() +
