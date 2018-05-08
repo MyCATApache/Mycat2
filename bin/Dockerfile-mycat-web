@@ -1,0 +1,40 @@
+FROM maven:3.5.3-jdk-8 as builder
+
+LABEL maintainer="HanSenJ <28707699@qq.com>"
+
+ARG TZ="UTC"
+ENV TZ ${TZ}
+ENV REPO_ADDR https://github.com/MyCATApache/Mycat-Web.git
+
+RUN apt-get upgrade -y \
+    && apt-get install tzdata git -y \
+    && git clone ${REPO_ADDR} /mycat-web \
+    && (cd /mycat \
+    && mvn clean package -DskipTests) \
+    && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo ${TZ} > /etc/timezone \
+    && apt-get clean
+
+FROM openjdk:8u151-jdk
+
+ARG TZ="UTC"
+
+ENV TZ ${TZ}
+ENV MYCATWEB_HOME /usr/lib/mycat-web
+
+COPY --from=builder /mycat-web/dist/*.tar.gz /
+
+RUN apt-get upgrade -y \
+    && apt-get install tzdata -y \
+    && mkdir ${MYCATWEB_HOME} \
+	&& tar -zxf /*.tar.gz -C ${MYCATWEB_HOME} --strip-components 1 \
+    && ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime \
+    && echo ${TZ} > /etc/timezone \
+    && apt-get clean \
+    && rm -rf /*.tar.gz
+
+COPY bin/*.sh ${MYCATWEB_HOME}/bin/
+
+WORKDIR ${MYCATWEB_HOME}/bin
+
+CMD ["/bin/bash"]
