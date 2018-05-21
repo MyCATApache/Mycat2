@@ -1,0 +1,26 @@
+version: '3'
+services:
+  mycat:
+    container_name: mycat
+     image: mycat
+    restart: always
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "bootstrap.memory_lock=true"
+      - "discovery.type=single-node"
+      - "xpack.security.enabled=false"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    network_mode: "host"
+  mycat-web:
+    container_name: mycat-web
+    image: mycat-web:latest
+    restart: always
+    network_mode: "host"
+    volumes:
+      - ./mycat-web/application.yml
+    environment:
+      - TEST_DATABASE
+    command: ["bash","mycatWebService.sh"]
