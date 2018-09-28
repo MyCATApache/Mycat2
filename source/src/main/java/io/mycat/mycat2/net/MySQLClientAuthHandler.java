@@ -1,31 +1,28 @@
 package io.mycat.mycat2.net;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
+import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.FireWallBean;
 import io.mycat.mycat2.beans.conf.UserBean;
 import io.mycat.mycat2.beans.conf.UserConfig;
-import io.mycat.mysql.Alarms;
+import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mysql.packet.AuthPacket;
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.ProxyRuntime;
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
+import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * MySQL客户端登录认证的Handler，为第一个Handler
@@ -97,7 +94,9 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 					} else {
 						session.schema = config.getSchemaBean(auth.database);
 					}
-
+                    if (Objects.isNull(session.schema)) {
+                        logger.error(" schema:{} can not match user: {}", session.schema, auth.user);
+                    }
 					logger.debug("set schema: {} for user: {}", session.schema, auth.user);
 					if (success(session, auth)) {
 						session.clientUser=auth.user;//设置session用户
@@ -219,12 +218,12 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	}
 
 	@Override
-	public void onConnect(SelectionKey curKey, MycatSession session, boolean success, String msg) throws IOException {
+    public void onConnect(SelectionKey curKey, MycatSession session, boolean success, String msg) {
 		// TODO Auto-generated method stub
 	}
 
 	@Override
-	public void onWriteFinished(MycatSession session) throws IOException {
+    public void onWriteFinished(MycatSession session) {
 		// 明确开启读操作
 		session.proxyBuffer.flip();
 		session.change2ReadOpts();
