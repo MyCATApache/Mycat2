@@ -1,5 +1,8 @@
 package io.mycat.util.csv;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -14,6 +17,7 @@ import java.util.List;
  * @since 1.0
  */
 public abstract class CsvReader {
+    private Logger log = LoggerFactory.getLogger(getClass());
     /**
      * 主要功能：无特殊字符，逗号 分隔符，解析 csv 文件
      * 难点：边界判定。
@@ -27,6 +31,7 @@ public abstract class CsvReader {
      * 2. 将读取处理下沉到子类，分为普通 io 和 MappedByteBuffer 实现。MappedByteBuffer 实现是高效的实现
      */
 
+    protected CsvReaderConfig config;
     /**
      * 数据缓冲区：为了兼容高效的 MappedByteBuffer
      * 该 buffer 不允许操作 buffer.array() 因为不支持
@@ -95,6 +100,11 @@ public abstract class CsvReader {
         }
 
         return values.size() != 0;
+    }
+
+
+    public void config(CsvReaderConfig csvReaderConfig) {
+        this.config = csvReaderConfig;
     }
 
     private void recordDelimiterParse() {
@@ -199,7 +209,7 @@ public abstract class CsvReader {
             columnBuffer.flip();
             newColumnBuffer.put(columnBuffer.array(), 0, columnBuffer.limit());
             columnBuffer = newColumnBuffer;
-//            System.out.println("列扩容");
+            log.debug("列扩容 oldCapacity -> newCapacity : {} -> {}", oldCapacity, newCapacity);
         }
         if (length != 0) {
             byte[] bytes = new byte[length];

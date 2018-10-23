@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 /**
@@ -15,13 +14,17 @@ import java.nio.file.Path;
  * @date : 2018/10/21 22:49
  */
 public class DefaultCsvReader extends CsvReader implements AutoCloseable {
-    private static Charset defaultCharset = Charset.forName("utf-8");
     private InputStream input;
     /** 由于不允许操作  buffer.array() ,需要一个额外的数组来兼容 普通的 io 读取 */
     private byte[] bufferArray;
 
     private DefaultCsvReader(InputStream input) {
+        this(input, DefaultCsvReaderConfig.CONFIG);
+    }
+
+    private DefaultCsvReader(InputStream input, CsvReaderConfig config) {
         this.input = input;
+        this.config = config;
     }
 
     /**
@@ -31,7 +34,11 @@ public class DefaultCsvReader extends CsvReader implements AutoCloseable {
      * @throws IOException
      */
     public static CsvReader from(InputStream input) throws IOException {
-        DefaultCsvReader defaultCsvReader = new DefaultCsvReader(input);
+        return from(input, DefaultCsvReaderConfig.CONFIG);
+    }
+
+    public static CsvReader from(InputStream input, CsvReaderConfig config) throws IOException {
+        DefaultCsvReader defaultCsvReader = new DefaultCsvReader(input, config);
         defaultCsvReader.init();
         return defaultCsvReader;
     }
@@ -44,7 +51,12 @@ public class DefaultCsvReader extends CsvReader implements AutoCloseable {
      */
     public static CsvReader from(Path filePath) throws IOException {
         FileInputStream input = new FileInputStream(filePath.toString());
-        return from(input);
+        return from(input, DefaultCsvReaderConfig.CONFIG);
+    }
+
+    public static CsvReader from(Path filePath, CsvReaderConfig config) throws IOException {
+        FileInputStream input = new FileInputStream(filePath.toString());
+        return from(input, config);
     }
 
     /**
@@ -54,12 +66,12 @@ public class DefaultCsvReader extends CsvReader implements AutoCloseable {
      * @throws IOException
      */
     public static CsvReader fromString(String csvStr) throws IOException {
-        return fromString(csvStr, defaultCharset);
+        return fromString(csvStr, DefaultCsvReaderConfig.CONFIG);
     }
 
-    public static CsvReader fromString(String csvStr, Charset charset) throws IOException {
-        ByteArrayInputStream input = new ByteArrayInputStream(csvStr.getBytes(charset));
-        DefaultCsvReader defaultCsvReader = new DefaultCsvReader(input);
+    public static CsvReader fromString(String csvStr, CsvReaderConfig config) throws IOException {
+        ByteArrayInputStream input = new ByteArrayInputStream(csvStr.getBytes(config.getCharset()));
+        DefaultCsvReader defaultCsvReader = new DefaultCsvReader(input, config);
         defaultCsvReader.init();
         return defaultCsvReader;
     }
@@ -69,10 +81,10 @@ public class DefaultCsvReader extends CsvReader implements AutoCloseable {
         if (inited) {
             return;
         }
-        int bufferSize = 10;
+        int bufferSize = config.getReadeBufferSize();
         buffer = ByteBuffer.allocate(bufferSize);
         bufferArray = new byte[bufferSize];
-        columnBuffer = ByteBuffer.allocate(2);
+        columnBuffer = ByteBuffer.allocate(config.getColumnBufferSize());
         // 解决第一行数据获取的时候无 源数据的问题
         hasMoreData = getMoreData();
         inited = true;

@@ -26,7 +26,12 @@ public class MappedCsvReader extends CsvReader {
     private Path filePath;
 
     public MappedCsvReader(Path filePath) throws IOException {
+        this(filePath, DefaultCsvReaderConfig.CONFIG);
+    }
+
+    public MappedCsvReader(Path filePath, CsvReaderConfig config) throws IOException {
         this.filePath = filePath;
+        this.config = config;
         init();
     }
 
@@ -36,7 +41,7 @@ public class MappedCsvReader extends CsvReader {
             return;
         }
         // bufferSize 最大不能超过 Integer.MAX_VALUE
-        int bufferSize = 10;
+        int bufferSize = config.getReadeBufferSize();
         RandomAccessFile source = new RandomAccessFile(filePath.toFile(), "r");
         input = source.getChannel();
         // 要计算文件需要映射几次
@@ -51,7 +56,7 @@ public class MappedCsvReader extends CsvReader {
             fileChannelCurrentSize = bufferSize;
         }
         mappedCount = eachCount;
-        columnBuffer = ByteBuffer.allocate(2);
+        columnBuffer = ByteBuffer.allocate(config.getColumnBufferSize());
         // 解决第一行数据获取的时候无 源数据的问题
         hasMoreData = getMoreData();
         inited = true;
