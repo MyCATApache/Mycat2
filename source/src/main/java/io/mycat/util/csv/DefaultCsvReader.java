@@ -63,16 +63,16 @@ public class DefaultCsvReader extends CsvReader {
         bufferArray = new byte[bufferSize];
         columnBuffer = ByteBuffer.allocate(2);
         // 解决第一行数据获取的时候无 源数据的问题
-        hasMoreData = doCheckDataLength();
+        hasMoreData = getMoreData();
         inited = true;
     }
 
     @Override
-    protected boolean doCheckDataLength() throws IOException {
+    protected boolean getMoreData() throws IOException {
         int read = input.read(bufferArray);
         if (read == -1) {
             // 当数据没有的时候，需要考虑集中情况，到时候再来分析
-            System.out.println("没有更多的数据了");
+//            System.out.println("没有更多的数据了");
             return false;
         } else {
             buffer.clear();

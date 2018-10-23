@@ -86,11 +86,11 @@ public abstract class CsvReader {
             }
         }
 
-        // 需要做扫尾处理，有以下集中情况
+        // 需要做扫尾处理，有以下几种情况
         // - 当没有数据可处理的时候，hasMoreData 会修改为 false,所有循环都会停止
         //     那么残留在 columnBuffer 中的数据需要扫尾
-        if (startedColumn) {
-            endColumn();
+        if (startedColumn && columnBuffer.position() != 0) {
+            endColumnLast();
             endRecord();
         }
 
@@ -171,6 +171,18 @@ public abstract class CsvReader {
         startedColumn = false;
     }
 
+    /**
+     * 当没有数据可读取的时候，进行的列扫尾处理
+     */
+    private void endColumnLast() {
+        int lastLetter = columnBuffer.position();
+        byte[] columnValue = new byte[lastLetter];
+        System.arraycopy(columnBuffer.array(), 0, columnValue, 0, columnValue.length);
+        values.add(columnValue);
+        columnBuffer.clear();
+        startedColumn = false;
+    }
+
     private void endRecord() {
         startedRecord = false;
     }
@@ -200,6 +212,7 @@ public abstract class CsvReader {
             // 扫尾的时候会进入到 endColumn 中，再次获取 startedColumnPosition 的位置
             // 这里更新为了最新的，那么 buffer.position() - startedColumnPosition 的时候就获取不到最后一个字符
             // startedColumnPosition = buffer.position();
+            startedColumnPosition = buffer.position();
         }
     }
 
@@ -208,14 +221,19 @@ public abstract class CsvReader {
         // - 在解析中 buffer 耗尽的时候
         // 所以需要把之前已经解析的数据备份存档
         updateCurrentColumnBuffer();
-        hasMoreData = this.doCheckDataLength();
+        hasMoreData = this.getMoreData();
         if (hasMoreData) {
             // 重新读取之后，列开始只能是从 0 开始
             startedColumnPosition = 0;
         }
     }
 
-    protected abstract boolean doCheckDataLength() throws IOException;
+    /**
+     * 唯一要做的就是：获取一次更多的数据
+     * @return
+     * @throws IOException
+     */
+    protected abstract boolean getMoreData() throws IOException;
 
     private class Letters {
         public static final byte LF = '\n';
