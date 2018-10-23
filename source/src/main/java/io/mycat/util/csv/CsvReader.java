@@ -34,19 +34,19 @@ public abstract class CsvReader {
     protected ByteBuffer buffer;
     private byte currentLetter;
     protected boolean inited;
-    // 列开始标识，也意味着正在一列的解析中
+    /** 列开始标识，也意味着正在一列的解析中 */
     private boolean startedColumn;
-    // 列开始在 buffer 中的位置
+    /** 列开始在 buffer 中的位置 */
     private int startedColumnPosition;
 
-    // 列开始标识，也意味着正在一列的解析中
+    /** 列开始标识，也意味着正在一列的解析中 */
     private boolean startedRecord;
-    // 是否有更多的数据可处理，当输入源无数据的时候标识已经处理完
+    /** 是否有更多的数据可处理，当输入源无数据的时候标识已经处理完 */
     protected boolean hasMoreData = true;
 
-    // 该 buffer 可以使用 array ，因为不涉及到兼容问题
+    /** 该 buffer 可以使用 array ，因为不涉及到兼容问题 */
     protected ByteBuffer columnBuffer;
-    // 存放一行的记录
+    /** 存放一行的记录 */
     List<byte[]> values = new ArrayList<>();
 
     /**
@@ -207,11 +207,6 @@ public abstract class CsvReader {
             buffer.get(bytes);
             columnBuffer.put(bytes);
             // 数据 copy 之后需要更新列开始在 buffer 中的位置
-            // 这里不能更新，因为在 hashNext 中扫尾的时候还会用到 startedColumnPosition 的位置，
-            // 当该函数在 checkDataLength 调用之后，判定为无更多数据，则会进入扫尾模式
-            // 扫尾的时候会进入到 endColumn 中，再次获取 startedColumnPosition 的位置
-            // 这里更新为了最新的，那么 buffer.position() - startedColumnPosition 的时候就获取不到最后一个字符
-            // startedColumnPosition = buffer.position();
             startedColumnPosition = buffer.position();
         }
     }
