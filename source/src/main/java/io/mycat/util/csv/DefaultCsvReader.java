@@ -10,7 +10,6 @@ import java.nio.file.Path;
 /**
  * 普通 io 的输入源支持，支持更多的输入方式
  * @author : zhuqiang
- * @version : V1.0
  * @date : 2018/10/21 22:49
  */
 public class DefaultCsvReader extends CsvReader implements AutoCloseable {

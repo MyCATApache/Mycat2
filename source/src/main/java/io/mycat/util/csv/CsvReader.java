@@ -10,11 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ${desc}
+ * csv 格式文件读取解析公共逻辑
  * @author zhuqiang
- * @version 1.0.1 2018/10/20 17:08
  * @date 2018/10/20 17:08
- * @since 1.0
  */
 public abstract class CsvReader {
     private Logger log = LoggerFactory.getLogger(getClass());

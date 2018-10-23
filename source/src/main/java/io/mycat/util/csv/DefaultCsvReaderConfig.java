@@ -9,9 +9,7 @@ import java.nio.charset.Charset;
  *
  * </pre>
  * @author zhuqiang
- * @version 1.0.1 2018/10/23 14:38
  * @date 2018/10/23 14:38
- * @since 1.0
  */
 public class DefaultCsvReaderConfig {
     /** 默认字符集，解析中是不需要的，调试需要 */

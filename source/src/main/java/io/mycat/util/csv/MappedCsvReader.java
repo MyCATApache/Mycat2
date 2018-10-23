@@ -10,7 +10,6 @@ import java.nio.file.Path;
 /**
  * MappedByteBuffer 的数据源输入解析；比普通 io 具有更高的性能
  * @author : zhuqiang
- * @version : V1.0
  * @date : 2018/10/21 23:04
  */
 public class MappedCsvReader extends CsvReader {

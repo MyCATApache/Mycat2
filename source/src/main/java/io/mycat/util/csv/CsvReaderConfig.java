@@ -3,11 +3,9 @@ package io.mycat.util.csv;
 import java.nio.charset.Charset;
 
 /**
- * ${desc}
+ * csv 读取配置
  * @author zhuqiang
- * @version 1.0.1 2018/10/23 14:51
  * @date 2018/10/23 14:51
- * @since 1.0
  */
 public class CsvReaderConfig {
     private Charset charset = DefaultCsvReaderConfig.CHARSET;
