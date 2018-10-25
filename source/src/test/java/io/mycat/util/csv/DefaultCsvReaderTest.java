@@ -121,4 +121,25 @@ public class DefaultCsvReaderTest {
                         "\"2\",\"zhuqiang\",\"19\"");
         print(reader, utf8);
     }
+
+    /**
+     * 特殊字符解析
+     */
+    @Test
+    public void test9() throws IOException {
+        // csv 协议值："""id""","姓名","年龄"
+        // 实际值 "id",姓名,年龄
+        CsvReader reader = DefaultCsvReader.fromString(
+                "\"\"\"id\r\n\"\"\",\"姓名\",\"年龄\"\r\n" +
+                        "\"2\",\"zhuqiang\",\"19\"\r\n");
+        print(reader, utf8);
+    }
+
+    @Test
+    public void test10() throws IOException {
+        // 超级复杂的一列中是一个 html 网页，测试通过
+        String path = "C:\\Users\\mrcode\\Desktop\\mycatcsv\\product_info.csv";
+        CsvReader from = DefaultCsvReader.from(Paths.get(path));
+        print(from, utf8);
+    }
 }

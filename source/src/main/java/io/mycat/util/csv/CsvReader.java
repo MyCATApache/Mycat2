@@ -244,6 +244,7 @@ public abstract class CsvReader {
      */
     private void endColumnLast() {
         int lastLetter = columnBuffer.position();
+        // 当是文本边界符的时候，最后一个一定是 " 号，这个是边界符，需要去掉
         if (startedWasQualifier) {
             lastLetter--;
         }
