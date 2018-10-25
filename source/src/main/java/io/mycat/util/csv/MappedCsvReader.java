@@ -69,7 +69,9 @@ public class MappedCsvReader extends CsvReader {
             return false;
         }
 
-        if (mappedCount == currentMappedCount) {
+        // 当是最后一次的时候 （currentMappedCount 从 0 开始）
+        // 读取剩余的数据
+        if (mappedCount == currentMappedCount + 1) {
             fileChannelCurrentSize = totalFileSize - fileChannelPosition;
         } else {
             fileChannelPosition = currentMappedCount * fileChannelCurrentSize;
