@@ -157,7 +157,6 @@ public abstract class CsvReader {
         columnBuffer.clear();
         startedColumnPosition = buffer.position();
 
-//        boolean eatingTrailingJunk = false;
         // 最后一个字母是逃逸的值，也就是可能双引号的第一个引号，也有可能是文本边界
         boolean lastLetterWasEscape = false;
 

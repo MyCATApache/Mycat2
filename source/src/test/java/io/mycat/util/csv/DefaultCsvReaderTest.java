@@ -142,4 +142,23 @@ public class DefaultCsvReaderTest {
         CsvReader from = DefaultCsvReader.from(Paths.get(path));
         print(from, utf8);
     }
+
+    @Test
+    public void test11() throws IOException {
+        // 文本边界和无文本边界混合模式："2",zhuqiang,19
+        CsvReader reader = DefaultCsvReader.fromString(
+                "id,姓名,年龄\r\n" +
+                        "\"2\",zhuqiang,19");
+        print(reader, utf8);
+    }
+
+    @Test
+    public void test12() throws IOException {
+        // csv 协议值："2"",",zhuqiang,19
+        // 实际值 [2",] [zhuqiang] [19]
+        CsvReader reader = DefaultCsvReader.fromString(
+                "id,姓名,年龄\r\n" +
+                        "\"2\"\",\", zhuqiang, 19");
+        print(reader, utf8);
+    }
 }
