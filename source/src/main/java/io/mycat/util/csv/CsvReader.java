@@ -10,23 +10,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * csv 格式文件读取解析公共逻辑
+ * csv 格式文件读取解析公共逻辑;
+ * <pre>
+ * 无特殊字符解析：逗号 分隔符，CR / LF (/r/n) 换行
+ * 难点：边界判定。
+ *  1. 逗号边界判定截取列长度容易把逗号截住
+ *  2. 最后一列如果没有换行符的话，容易丢失最后一列的内容
+ *  3. 当列 buffer 需要扩容的时候，容易造成混乱
+ * ----------------------------------------------------
+ * 以上功能完成之后，开始支持 MappedByteBuffer 的改造
+ * 思路：也就是找到 传统 inputStream 和 MappedByteBuffer 读取数据源的不同之处
+ *  1. 分离从数据源中读取数据的函数
+ *  2. 将读取处理下沉到子类，分为普通 io 和 MappedByteBuffer 实现。MappedByteBuffer 实现是高效的实现
+ * ----------------------------------------------------
+ * 继续支持：带特殊字符的解析处理，符合 RFC 4180标准的 双引号列（字段）
+ *  RFC 4180标准：https://en.wikipedia.org/wiki/Comma-separated_values
+ *  - 以（CR / LF）字符结尾的MS-DOS样式行（最后一行可选）。
+ *  - 每条记录“应该”包含相同数量的逗号分隔字段
+ *  - 带有特殊符号的字段必须被双引号包裹，特殊字符包含换行符，双引号或逗号等一切符号
+ *  - 字段中的（双）引号字符必须由两个（双）引号字符表示。
+ *    如 [ 我是一个"粉刷匠" ],必须被表现为 [ "我是一个""粉刷匠""" ]
+ *    否则不能正常解析
+ * </pre>
  * @author zhuqiang
  * @date 2018/10/20 17:08
  */
 public abstract class CsvReader {
     private Logger log = LoggerFactory.getLogger(getClass());
     /**
-     * 主要功能：无特殊字符，逗号 分隔符，解析 csv 文件
-     * 难点：边界判定。
-     * 1. 逗号边界判定截取列长度容易把逗号截住
-     * 2. 最后一列如果没有换行符的话，容易丢失最后一列的内容
-     * 3. 当列 buffer 需要扩容的时候，容易造成混乱
-     * ----------------------------------------------------
-     * 以上功能完成之后，开始支持 MappedByteBuffer 的改造
-     * 思路：也就是找到 传统 inputStream 和 MappedByteBuffer 读取数据源的不同之处
-     * 1. 分离从数据源中读取数据的函数
-     * 2. 将读取处理下沉到子类，分为普通 io 和 MappedByteBuffer 实现。MappedByteBuffer 实现是高效的实现
+
      */
 
     protected CsvReaderConfig config;
@@ -83,7 +95,11 @@ public abstract class CsvReader {
             //      需要额外的跳过这一个换行符，因为也是需要去掉的
             if (currentLetter == Letters.LF || currentLetter == Letters.CR) {
                 recordDelimiterParse();
+            } else if (currentLetter == Letters.TEXT_QUALIFIER) {
+                startedWasQualifier = true;
+                textQualifierParse();
             } else {
+                startedWasQualifier = false;
                 // 先做无特殊字符的功能
                 noTextQualifierParse();
             }
@@ -98,11 +114,6 @@ public abstract class CsvReader {
         }
 
         return values.size() != 0;
-    }
-
-
-    public void config(CsvReaderConfig csvReaderConfig) {
-        this.config = csvReaderConfig;
     }
 
     private void recordDelimiterParse() {
@@ -135,6 +146,55 @@ public abstract class CsvReader {
             else if (currentLetter == Letters.CR || currentLetter == Letters.LF) {
                 endColumn();
                 endRecord();
+            }
+        }
+    }
+
+    private boolean startedWasQualifier = false;
+
+    private void textQualifierParse() throws IOException {
+        startedColumn = true;
+        columnBuffer.clear();
+        startedColumnPosition = buffer.position();
+
+//        boolean eatingTrailingJunk = false;
+        // 最后一个字母是逃逸的值，也就是可能双引号的第一个引号，也有可能是文本边界
+        boolean lastLetterWasEscape = false;
+
+        while (hasMoreData && startedColumn) {
+            if (!buffer.hasRemaining()) {
+                checkDataLength();
+                continue;
+            }
+            currentLetter = buffer.get();
+            // 要处理协议中的特殊字符
+            // - "我是一个,粉刷匠","粉刷匠"
+            // - "我是一个,粉\r\n刷匠","粉刷匠"
+            // - "我是""一个"",粉\r\n刷匠","粉刷匠"
+
+            // 先找到 ", 这种情况，那么必定是分割符了
+//            System.out.println((char) currentLetter);
+            if (currentLetter == Letters.TEXT_QUALIFIER) {
+                if (lastLetterWasEscape) {
+                    lastLetterWasEscape = false;
+                } else {
+                    updateCurrentColumnBuffer();
+//                    System.out.println("\r ->   :" + new String(columnBuffer.array(), 0, columnBuffer.position(), "utf8"));
+                    // 可能是双引号模式
+                    lastLetterWasEscape = true;
+                }
+            } else {
+                // 最后一个是边界符，判定是否是分隔符
+                if (lastLetterWasEscape) {
+                    if (currentLetter == Letters.COMMA) {
+                        endColumn();
+                    } else if (currentLetter == Letters.CR || currentLetter == Letters.LF) {
+                        endColumn();
+                        endRecord();
+                    } else {
+                        System.out.println("xxx");
+                    }
+                }
             }
         }
     }
@@ -184,6 +244,9 @@ public abstract class CsvReader {
      */
     private void endColumnLast() {
         int lastLetter = columnBuffer.position();
+        if (startedWasQualifier) {
+            lastLetter--;
+        }
         byte[] columnValue = new byte[lastLetter];
         System.arraycopy(columnBuffer.array(), 0, columnValue, 0, columnValue.length);
         values.add(columnValue);
@@ -198,25 +261,29 @@ public abstract class CsvReader {
     private void updateCurrentColumnBuffer() {
         int position = buffer.position();
         int length = position - startedColumnPosition;
-        // 当前列 buffer 剩余容量不够装下要更新的值的时候，需要扩容
-        if (columnBuffer.remaining() < length) {
-            // 需要扩容，确定新的扩容容量
-            int oldCapacity = columnBuffer.capacity();
-            int newCapacity = oldCapacity + length;
-            ByteBuffer newColumnBuffer = ByteBuffer.allocate(newCapacity);
-            columnBuffer.flip();
-            newColumnBuffer.put(columnBuffer.array(), 0, columnBuffer.limit());
-            columnBuffer = newColumnBuffer;
-            log.debug("列扩容 oldCapacity -> newCapacity : {} -> {}", oldCapacity, newCapacity);
+        // 在文本边界模式中：当跳过一个字符的时候，在检查数据长度的时候，startedColumnPosition 就会大于 position
+        if (startedColumnPosition < position) {
+            // 当前列 buffer 剩余容量不够装下要更新的值的时候，需要扩容
+            if (columnBuffer.remaining() < length) {
+                // 需要扩容，确定新的扩容容量
+                int oldCapacity = columnBuffer.capacity();
+                int newCapacity = oldCapacity + length;
+                ByteBuffer newColumnBuffer = ByteBuffer.allocate(newCapacity);
+                columnBuffer.flip();
+                newColumnBuffer.put(columnBuffer.array(), 0, columnBuffer.limit());
+                columnBuffer = newColumnBuffer;
+                log.debug("列扩容 oldCapacity -> newCapacity : {} -> {}", oldCapacity, newCapacity);
+            }
+            if (length != 0) {
+                byte[] bytes = new byte[length];
+                buffer.position(startedColumnPosition);
+                buffer.get(bytes);
+                columnBuffer.put(bytes);
+            }
         }
-        if (length != 0) {
-            byte[] bytes = new byte[length];
-            buffer.position(startedColumnPosition);
-            buffer.get(bytes);
-            columnBuffer.put(bytes);
-            // 数据 copy 之后需要更新列开始在 buffer 中的位置
-            startedColumnPosition = buffer.position();
-        }
+        // 数据 copy 之后需要更新列开始在 buffer 中的位置
+        // 在更新的时候也有可能是跳过一些需要丢弃的符号，主要用于使用文本边界的时候，跳过双引号
+        startedColumnPosition = buffer.position() + 1;
     }
 
     private void checkDataLength() throws IOException {
@@ -244,5 +311,7 @@ public abstract class CsvReader {
         public static final byte CR = '\r';
 
         public static final byte COMMA = ',';
+
+        public static final byte TEXT_QUALIFIER = '"';
     }
 }

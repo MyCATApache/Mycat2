@@ -46,16 +46,16 @@ public class DefaultCsvReaderTest {
     @Test
     public void test2() throws IOException {
         CsvReader reader = DefaultCsvReader.fromString("id,姓名,年龄\r\n" +
-                                                               "1,朱强,20\r\n" +
-                                                               "2,zhuqiang,19");
+                "1,朱强,20\r\n" +
+                "2,zhuqiang,19");
         print(reader, utf8);
     }
 
     @Test
     public void test3() throws IOException {
         CsvReader reader = DefaultCsvReader.fromString("id,姓名,年龄\r\n" +
-                                                               "1,\"朱强\",20\r\n" +
-                                                               "2,zhuqiang,19\r");
+                "1,\"朱强\",20\r\n" +
+                "2,zhuqiang,19\r");
         reader.hashNext();
         reader.hashNext();
         List<byte[]> next = reader.next();
@@ -66,16 +66,16 @@ public class DefaultCsvReaderTest {
     @Test
     public void test4() throws IOException {
         CsvReader reader = DefaultCsvReader.fromString("id,姓名,年龄\r\n" +
-                                                               "1,\"朱强\",20\r\n" +
-                                                               "2,zhuqiang,19\r");
+                "1,\"朱强\",20\r\n" +
+                "2,zhuqiang,19\r");
         print(reader, utf8);
     }
 
     @Test
     public void test5() throws IOException {
         CsvReader reader = DefaultCsvReader.fromString(",id,姓名,年龄\r\n" +
-                                                               "1,\"朱强\",20\r\n" +
-                                                               "2,zhuqiang,19");
+                "1,\"朱强\",20\r\n" +
+                "2,zhuqiang,19");
         reader.hashNext();
         // [][id][姓名][年龄]
         List<byte[]> next = reader.next();
@@ -85,7 +85,7 @@ public class DefaultCsvReaderTest {
     @Test
     public void test6() throws IOException {
         CsvReader reader = DefaultCsvReader.fromString("id,姓名,年龄\r\n" +
-                                                               "2,zhuqiang,19,");
+                "2,zhuqiang,19,");
         reader.hashNext();
         reader.hashNext();
         // [2][zhuqiang][19]
@@ -104,8 +104,21 @@ public class DefaultCsvReaderTest {
         csvReaderConfig.setReadeBufferSize(10);
         csvReaderConfig.setColumnBufferSize(2);
         CsvReader reader = DefaultCsvReader.fromString("id,姓名,年龄\r\n" +
-                                                               "2,zhuqiang,19,",
-                                                       csvReaderConfig);
+                        "2,zhuqiang,19,",
+                csvReaderConfig);
+        print(reader, utf8);
+    }
+
+    /**
+     * 特殊字符解析
+     */
+    @Test
+    public void test8() throws IOException {
+        // csv 协议值："""id""","姓名","年龄"
+        // 实际值 "id",姓名,年龄
+        CsvReader reader = DefaultCsvReader.fromString(
+                "\"\"\"id\"\"\",\"姓名\",\"年龄\"\r\n" +
+                        "\"2\",\"zhuqiang\",\"19\"");
         print(reader, utf8);
     }
 }
