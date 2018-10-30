@@ -219,7 +219,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 							source.getRepBean().getReplicaBean().getName(), Integer.toString(source.getIndex()));
                 }
 				source.init();
-			} catch (IOException e) {
+            } catch (Exception e) {
 				logger.error("error to init datasource for MySQLMetaBean {}", source);
 			}
 		}
