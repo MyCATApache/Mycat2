@@ -1,10 +1,5 @@
 package io.mycat.mycat2.cmds.sqlCmds;
 
-import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
@@ -14,13 +9,13 @@ import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front.CacheResult
 import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front.FrontDataOverCheck;
 import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.largeresult.DataEventProc;
 import io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.largeresult.ResultOverFlag;
-import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.BackEventProc;
-import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.CacheFlowCheck;
-import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.DataOverCheck;
-import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.FrontEventProc;
-import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.ResultSetDatatoMapFile;
+import io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back.*;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 
 /**
  * 进行缓存的文件处理
@@ -41,12 +36,12 @@ public class CacheMapFileCommand implements MySQLCommand {
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
 
-		SeqContextList seqcontext = (SeqContextList) session.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey());
+		SeqContextList seqcontext = (SeqContextList) session.getAttrMap()
+				.get(SessionKey.CACHE_MYCAT_CHAIN_SEQ);
 
 		if (null == seqcontext) {
 			seqcontext = new SeqContextList();
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey(), seqcontext);
+			session.getAttrMap().put(SessionKey.CACHE_MYCAT_CHAIN_SEQ, seqcontext);
 		}
 
 		seqcontext.clear();
@@ -76,12 +71,12 @@ public class CacheMapFileCommand implements MySQLCommand {
 			return false;
 		}
 
-		SeqContextList seqcontext = (SeqContextList) session.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey());
+		SeqContextList seqcontext = (SeqContextList) session.getAttrMap()
+				.get(SessionKey.CACHE_MYCAT_CHAIN_SEQ);
 
 		if (null == seqcontext) {
 			seqcontext = new SeqContextList();
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey(), seqcontext);
+			session.getAttrMap().put(SessionKey.CACHE_MYCAT_CHAIN_SEQ, seqcontext);
 		}
 
 		seqcontext.clear();
@@ -109,19 +104,19 @@ public class CacheMapFileCommand implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+	public boolean onBackendClosed(MySQLSession session, boolean normal) {
 		return false;
 	}
 
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
 
-		SeqContextList seqcontext = (SeqContextList) session.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey());
+		SeqContextList seqcontext = (SeqContextList) session.getAttrMap()
+				.get(SessionKey.CACHE_MYCAT_CHAIN_SEQ);
 
 		if (null == seqcontext) {
 			seqcontext = new SeqContextList();
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_MYCAT_CHAIN_SEQ.getKey(), seqcontext);
+			session.getAttrMap().put(SessionKey.CACHE_MYCAT_CHAIN_SEQ, seqcontext);
 		}
 
 		seqcontext.clear();
@@ -150,7 +145,7 @@ public class CacheMapFileCommand implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
+	public boolean onBackendWriteFinished(MySQLSession session) {
 		// 绝大部分情况下，前端把数据写完后端发送出去后，就等待后端返回数据了，
 		// 向后端写入完成数据后，则从后端读取数据
 		session.proxyBuffer.flip();

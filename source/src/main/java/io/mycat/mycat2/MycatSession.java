@@ -4,15 +4,11 @@ import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
-import io.mycat.mycat2.cmds.strategy.AnnotateRouteCmdStrategy;
-import io.mycat.mycat2.cmds.strategy.DBINMultiServerCmdStrategy;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
-import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mycat2.sqlparser.TokenHash;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
-import io.mycat.mycat2.tasks.DataNodeManager;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -34,14 +30,16 @@ import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 /**
  * 前端连接会话
  *
  * @author wuzhihui
  */
-public class MycatSession extends AbstractMySQLSession {
+public class
+MycatSession extends AbstractMySQLSession {
+
+
 
     private static Logger logger = LoggerFactory.getLogger(MycatSession.class);
     private static List<Byte> masterSqlList = new ArrayList<>();
@@ -67,17 +65,13 @@ public class MycatSession extends AbstractMySQLSession {
     }
 
     public MySQLSession curBackend;
-    public DataNodeManager merge;
     //所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
     public MySQLCommand curSQLCommand;
     public BufferSQLContext sqlContext = new BufferSQLContext();
-    /**
-     * Mycat Schema
-     */
-    public SchemaBean schema;
+    public SchemaBean mycatSchema;
+    public BufferSQLParser parser = new BufferSQLParser();
     private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
-    private ExecutorService executor;
-    private RouteResultset curRouteResultset;
+
 
     public MycatSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
         super(bufPool, nioSelector, frontChannel);
@@ -90,17 +84,17 @@ public class MycatSession extends AbstractMySQLSession {
      * @return
      */
     public boolean matchMySqlCommand() {
-        switch (schema.schemaType) {
+        switch (mycatSchema.schemaType) {
             case DB_IN_ONE_SERVER:
                 return DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
             case DB_IN_MULTI_SERVER:
-                return DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
+//                return DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
             case ANNOTATION_ROUTE:
-                return AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
+//                return AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
 //			case SQL_PARSE_ROUTE:
-//				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
+////				AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
             default:
-                throw new InvalidParameterException("schema type is invalid ");
+                throw new InvalidParameterException("mycatSchema type is invalid ");
         }
     }
 
@@ -164,11 +158,15 @@ public class MycatSession extends AbstractMySQLSession {
     }
 
     public int getBackendConCounts(MySQLMetaBean metaBean) {
-        return (int) backendMap.values()
-                .stream()
-                .flatMap(f -> f.stream())
-                .filter(f -> f.getMySQLMetaBean().equals(metaBean))
-                .count();
+        int sum = 0;
+        for (List<MySQLSession> value : backendMap.values()) {
+            for (MySQLSession mySQLSession : value) {
+                if (mySQLSession.getMySQLMetaBean().equals(metaBean)) {
+                    sum += 1;
+                }
+            }
+        }
+        return sum;
     }
 
     /**
@@ -176,7 +174,6 @@ public class MycatSession extends AbstractMySQLSession {
      *
      * @param mysqlsession
      * @param normal
-     * @param hint
      */
     public void closeBackendAndResponseError(MySQLSession mysqlsession, boolean normal, ErrorPacket error) throws IOException {
         unbindBeckend(mysqlsession);
@@ -188,7 +185,6 @@ public class MycatSession extends AbstractMySQLSession {
     /**
      * 关闭后端连接,同时向前端返回错误信息
      *
-     * @param session
      * @param mysqlsession
      * @param normal
      * @param errno
@@ -205,7 +201,7 @@ public class MycatSession extends AbstractMySQLSession {
     /**
      * 向客户端响应 错误信息
      *
-     * @param session
+     * @param errno
      * @throws IOException
      */
     public void sendErrorMsg(int errno, String errMsg) throws IOException {
@@ -232,11 +228,11 @@ public class MycatSession extends AbstractMySQLSession {
          * 连接池  新创建的连接放入 reactor 时,会进行一次reset ,保证  session 拿到的连接 buffer 状态是正确的.
          */
 //		backend.proxyBuffer.reset();
-        putbackendMap(backend);
+        putBackendMap(backend);
         backend.setMycatSession(this);
         backend.useSharedBuffer(this.proxyBuffer);
         backend.setCurNIOHandler(this.getCurNIOHandler());
-        backend.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+        backend.setBusy();
         logger.debug(" {} bind backConnection  for {}",
                 this,
                 backend.toString());
@@ -265,6 +261,10 @@ public class MycatSession extends AbstractMySQLSession {
 
     public void unbindBeckend(MySQLSession mysqlSession) {
         List<MySQLSession> list = backendMap.get(mysqlSession.getMySQLMetaBean().getRepBean());
+        unbindBeckend(list, mysqlSession);
+    }
+
+    public void unbindBeckend(List<MySQLSession> list, MySQLSession mysqlSession) {
         if (list != null) {
             mysqlSession.unbindMycatSession();
             list.remove(mysqlSession);
@@ -287,7 +287,7 @@ public class MycatSession extends AbstractMySQLSession {
         List<MySQLSession> list = backendMap.get(mySQLMetaBean.getRepBean());
 
         if (list != null && !list.isEmpty()) {
-            list.stream().forEach(f -> {
+            list.forEach(f -> {
                 f.setMycatSession(null);
                 f.close(true, reason);
             });
@@ -367,19 +367,19 @@ public class MycatSession extends AbstractMySQLSession {
 
     private String getbackendName() {
         String backendName = null;
-        switch (schema.getSchemaType()) {
+        switch (mycatSchema.getSchemaType()) {
             case DB_IN_ONE_SERVER:
                 backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
-                        .get(schema.getDefaultDataNode()).getReplica();
+                        .get(mycatSchema.getDefaultDataNode()).getReplica();
                 break;
             case ANNOTATION_ROUTE:
                 backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
-                        .get(schema.getDefaultDataNode()).getReplica();
+                        .get(mycatSchema.getDefaultDataNode()).getReplica();
                 break;
             case DB_IN_MULTI_SERVER:
                 // 在 DB_IN_MULTI_SERVER 模式中,如果不指定datanode以及Replica名字取得backendName,则使用默认的
                 backendName = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
-                        .get(schema.getDefaultDataNode()).getReplica();
+                        .get(mycatSchema.getDefaultDataNode()).getReplica();
                 break;
             default:
                 break;
@@ -395,7 +395,7 @@ public class MycatSession extends AbstractMySQLSession {
      *
      * @param mysqlSession
      */
-    private void putbackendMap(MySQLSession mysqlSession) {
+    private void putBackendMap(MySQLSession mysqlSession) {
         List<MySQLSession> list = backendMap.get(mysqlSession.getMySQLMetaBean().getRepBean());
         if (list == null) {
             list = new ArrayList<>();
@@ -446,7 +446,7 @@ public class MycatSession extends AbstractMySQLSession {
 
         if (targetMetaBean == null) {
             String errmsg = " the metaBean is not found,please check datasource.yml!!! [balance] and [type]  propertie or see debug log or check heartbeat task!!";
-            if (logger.isDebugEnabled()) {
+            if (logger.isErrorEnabled()) {
                 logger.error(errmsg);
             }
             ErrorPacket error = new ErrorPacket();
@@ -467,9 +467,11 @@ public class MycatSession extends AbstractMySQLSession {
         // 当前连接如果本次不被使用,会被自动放入 currSessionMap 中
         if (curBackend != null
                 && canUseforCurrent(curBackend, targetMetaBean, runOnSlave)) {
-            logger.debug("Using cached backend connections for {}。{}"
-                    , (runOnSlave ? "read" : "write"),
-                    curBackend);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Using cached backend connections for {}。{}"
+                        , (runOnSlave ? "read" : "write"),
+                        curBackend);
+            }
             reactorThread.syncAndExecute(curBackend, callback);
             return;
         }
@@ -495,13 +497,10 @@ public class MycatSession extends AbstractMySQLSession {
      * @return
      */
     private boolean canUseforCurrent(MySQLSession backend, MySQLMetaBean targetMetaBean, boolean runOnSlave) {
-
         MySQLMetaBean currMetaBean = backend.getMySQLMetaBean();
-
         if (targetMetaBean == null) {
             return false;
         }
-
         return currMetaBean.equals(targetMetaBean);
     }
 
@@ -531,10 +530,12 @@ public class MycatSession extends AbstractMySQLSession {
         if (backendList == null || backendList.isEmpty()) {
             return null;
         }
-
-        return backendList.stream().filter(f -> {
-            return metaBean == f.getMySQLMetaBean() && f.isIDLE();
-        }).findFirst().orElse(null);
+        for (MySQLSession mySQLSession : backendList) {
+            if (mySQLSession.getMySQLMetaBean() == metaBean && mySQLSession.isIdle()) {
+                return mySQLSession;
+            }
+        }
+        return null;
     }
 
     /**
@@ -544,40 +545,34 @@ public class MycatSession extends AbstractMySQLSession {
      */
     public MySQLSession getCurrCachedSession(MySQLMetaBean targetMetaBean, boolean runOnSlave, boolean isOnlyIdle) {
         MySQLSession result = null;
-
         MySQLRepBean repBean = targetMetaBean.getRepBean();
-
         List<MySQLSession> backendList = backendMap.get(repBean);
         if (backendList == null || backendList.isEmpty()) {
             return null;
         }
         //TODO 暂时不考虑分片情况下,分布式事务的问题。
-        result = backendList.stream().filter(f -> {
-
+        for (MySQLSession f : backendList) {
             if (!targetMetaBean.equals(f.getMySQLMetaBean())) {
-                return false;
+                continue;
             }
-
             if (isOnlyIdle) {
-                return f.isIDLE();
-//					Boolean flag = (Boolean) f.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-//					return (flag == null) ? false : flag;
+                if (!f.isIdle()) {
+                    continue;
+                }
             }
-            return true;
-        })
-                .findFirst()
-                .orElse(null);
-
+            result = f;
+        }
         if (result != null) {
             //取消绑定，不主动绑定.当前方法可能被 reactor 其他session 调用。在这里只取消绑定
-            if (curBackend != null &&
-                    curBackend.equals(result)) {
+            if (curBackend != null && curBackend.equals(result)) {
                 curBackend = null;
             }
             backendList.remove(result);
-            logger.debug("Using SessionMap backend connections for {} {}",
-                    (runOnSlave ? "read" : "write"),
-                    result);
+            if (logger.isDebugEnabled()) {
+                logger.debug("Using SessionMap backend connections for {} {}",
+                        (runOnSlave ? "read" : "write"),
+                        result);
+            }
             return result;
         }
         return result;
@@ -610,19 +605,4 @@ public class MycatSession extends AbstractMySQLSession {
         }
     }
 
-    public ExecutorService getExecutor() {
-        return executor;
-    }
-
-    public void setExecutor(ExecutorService executor) {
-        this.executor = executor;
-    }
-
-    public RouteResultset getCurRouteResultset() {
-        return curRouteResultset;
-    }
-
-    public void setCurRouteResultset(RouteResultset curRouteResultset) {
-        this.curRouteResultset = curRouteResultset;
-    }
 }

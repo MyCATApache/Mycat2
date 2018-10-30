@@ -1,13 +1,5 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mysql.packet.CommandPacket;
@@ -15,6 +7,13 @@ import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import java.util.Map;
 
 public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 	
@@ -43,7 +42,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 			return;
 		}  catch (Exception e) {
 			logger.debug("the Backend Synchema Task end ");
-			String errmsg = "backend sync schema task Error. " + e.getMessage();
+            String errmsg = "backend sync mycatSchema task Error. " + e.getMessage();
 			errPkg = new ErrorPacket();
 			errPkg.packetId = 1;
 			errPkg.errno = ErrorCode.ER_UNKNOWN_ERROR;
@@ -67,7 +66,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 			return;
 		}catch (IOException e) {
 			logger.debug("the Backend Synchema Task end ");
-			String errmsg = "the backend sync schema task Error."+e.getMessage();
+            String errmsg = "the backend sync mycatSchema task Error." + e.getMessage();
 			errPkg = new ErrorPacket();
 			errPkg.packetId = 1;
 			errPkg.errno = ErrorCode.ER_UNKNOWN_ERROR;
@@ -113,7 +112,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
             }
         }
         if (StringUtils.isEmpty(databases)) {
-            databases = dataNodeMap.get(session.getMycatSession().schema.getDefaultDataNode())
+            databases = dataNodeMap.get(session.getMycatSession().mycatSchema.getDefaultDataNode())
                     .getDatabase();
         }
         return databases;

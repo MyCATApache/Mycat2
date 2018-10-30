@@ -23,8 +23,8 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
         // TODO 待处理checkSQLSchema by zhangsiwei
 		//对应schema标签checkSQLschema属性，把表示schema的字符去掉
         /*
-         * if (schema.isCheckSQLSchema()) { origSQL = RouterUtil.removeSchema(origSQL,
-         * schema.getName()); }
+         * if (mycatSchema.isCheckSQLSchema()) { origSQL = RouterUtil.removeSchema(origSQL,
+         * mycatSchema.getName()); }
          */
 
 		/**
@@ -32,7 +32,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
      * 全局序列号，父子表插入
      */
         /*
-         * if (beforeRouteProcess(schema, sqlType, origSQL, mycatSession)) { return null; }
+         * if (beforeRouteProcess(mycatSchema, sqlType, origSQL, mycatSession)) { return null; }
          */
 
         // TODO 待处理全局表DML by zhangsiwei
@@ -68,7 +68,7 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		 * DDL 语句的路由
 		 */
         if (BufferSQLContext.ALTER_SQL == sqlType) {
-			// return RouterUtil.routeToDDLNode(routeResultset, sqlType, stmt, schema);
+            // return RouterUtil.routeToDDLNode(routeResultset, sqlType, stmt, mycatSchema);
             return null;
 		}
 
@@ -77,12 +77,12 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 		 */
         if ((schema.getTables() == null || schema.getTables().isEmpty())
                 && BufferSQLContext.SHOW_SQL != sqlType) {
-			// routeResultset = RouterUtil.routeToSingleNode(routeResultset, schema.getDataNode(), stmt);
+            // routeResultset = RouterUtil.routeToSingleNode(routeResultset, mycatSchema.getDataNode(), stmt);
             rrs = null;
 		} else {
-			// RouteResultset returnedSet = routeSystemInfo(schema, sqlType, stmt, routeResultset);
+            // RouteResultset returnedSet = routeSystemInfo(mycatSchema, sqlType, stmt, routeResultset);
             // if (returnedSet == null) {
-			// routeResultset = routeNormalSqlWithAST(schema, stmt, routeResultset, charset, sqlType, mycatSession);
+            // routeResultset = routeNormalSqlWithAST(mycatSchema, stmt, routeResultset, charset, sqlType, mycatSession);
             // }
 		}
 
@@ -95,12 +95,12 @@ public abstract class AbstractRouteStrategy implements RouteStrategy {
 	 * 主要是全局序列号插入，还有子表插入
 	 */
     /*
-     * private boolean beforeRouteProcess(SchemaConfig schema, int sqlType, String origSQL,
+     * private boolean beforeRouteProcess(SchemaConfig mycatSchema, int sqlType, String origSQL,
      * ServerConnection sc) throws SQLNonTransientException {
-     * 
-     * return RouterUtil.processWithMycatSeq(schema, sqlType, origSQL, sc) || (sqlType ==
-     * ServerParse.INSERT && RouterUtil.processERChildTable(schema, origSQL, sc)) || (sqlType ==
-     * ServerParse.INSERT && RouterUtil.processInsert(schema, sqlType, origSQL, sc)); }
+     *
+     * return RouterUtil.processWithMycatSeq(mycatSchema, sqlType, origSQL, sc) || (sqlType ==
+     * ServerParse.INSERT && RouterUtil.processERChildTable(mycatSchema, origSQL, sc)) || (sqlType ==
+     * ServerParse.INSERT && RouterUtil.processInsert(mycatSchema, sqlType, origSQL, sc)); }
      */
 
 	/**

@@ -1,29 +1,21 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.beans.conf.TableDefBean;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.Fields;
-import io.mycat.mysql.packet.EOFPacket;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.FieldPacket;
-import io.mycat.mysql.packet.ResultSetHeaderPacket;
-import io.mycat.mysql.packet.RowDataPacket;
-import io.mycat.proxy.AbstractSession;
+import io.mycat.mysql.packet.*;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.PacketUtil;
-import io.mycat.util.ParseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 public class ShowTbCmd implements MySQLCommand {
 	
@@ -54,7 +46,7 @@ public class ShowTbCmd implements MySQLCommand {
 				return false;
 			}
 		}
-		schema = (schema != null ? schema : session.schema);
+        schema = (schema != null ? schema : session.mycatSchema);
 
 		int i = 0;
 		byte packetId = 0;
@@ -99,13 +91,13 @@ public class ShowTbCmd implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendResponse(MySQLSession session) throws IOException {
+    public boolean onBackendResponse(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+    public boolean onBackendClosed(MySQLSession session, boolean normal) {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -121,7 +113,7 @@ public class ShowTbCmd implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
+    public boolean onBackendWriteFinished(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}

@@ -3,7 +3,6 @@ package io.mycat.mycat2.cmds.interceptor;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.multinode.DbInMultiServerCmd;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
@@ -53,22 +52,22 @@ public class SQLAnnotationChain {
      */
     public SQLAnnotationChain processRoute(MycatSession session) {
 
-        switch (session.schema.schemaType) {
+        switch (session.mycatSchema.schemaType) {
             case DB_IN_ONE_SERVER:
                 break;
             case DB_IN_MULTI_SERVER:
-                if (session.getCurRouteResultset() != null
-                        && session.getCurRouteResultset().getNodes().length > 1) {
-                    // DB_IN_MULTI_SERVER 模式下
-                    this.target = DbInMultiServerCmd.INSTANCE;
-                }
+//                if (session.getCurRouteResultset() != null
+//                        && session.getCurRouteResultset().getNodes().length > 1) {
+//                    // DB_IN_MULTI_SERVER 模式下
+//                    this.target = DbInMultiServerCmd.INSTANCE;
+//                }
                 break;
             case ANNOTATION_ROUTE:
                 break;
 //          case SQL_PARSE_ROUTE:
 //              AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
             default:
-                throw new InvalidParameterException("schema type is invalid ");
+                throw new InvalidParameterException("mycatSchema type is invalid ");
         }
         return this;
 

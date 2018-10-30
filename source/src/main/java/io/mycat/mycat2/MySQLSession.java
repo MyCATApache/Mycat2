@@ -1,13 +1,16 @@
 package io.mycat.mycat2;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.RowDataPacket;
 import io.mycat.proxy.buffer.BufferPool;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+
+import static io.mycat.mycat2.MySQLSession.ResponseState.COM_QUERY;
 
 /**
  * 后端MySQL连接
@@ -40,6 +43,75 @@ public class MySQLSession extends AbstractMySQLSession {
 		this.mycatSession = mycatSession;
 	}
 
+	public ResponseState responseState;
+
+	public void startResponse(ResponseState responseState) {
+		if (!responseState.isStart()) {
+			throw new RuntimeException();
+		}
+		this.responseState = responseState;
+	}
+
+	public boolean next(byte pkgType) {
+		switch (this.responseState) {
+			case COM_QUERY: {
+				if (pkgType == MySQLPacket.ERROR_PACKET) {
+					this.responseState = ResponseState.RESULT_SET_ERR;
+					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
+					return true;
+				}
+				if (pkgType == MySQLPacket.OK_PACKET) {
+					this.responseState = ResponseState.RESULT_SET_OK;
+					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
+					return true;
+				}
+				if (pkgType == MySQLPacket.REQUEST_FILE_FIELD_COUNT) {
+					this.responseState = ResponseState.RESULT_SET_FEILD_COUNT;
+					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
+				}
+				return false;
+			}
+			case RESULT_SET_FEILD_COUNT: {
+				if (pkgType == MySQLPacket.COM_FIELD_LIST) {
+					this.responseState = ResponseState.RESULT_SET_FEILD;
+					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FEILD_COUNT, pkgType, this.responseState);
+
+				}
+				return false;
+			}
+			case RESULT_SET_FEILD: {
+				if (pkgType == MySQLPacket.EOF_PACKET) {
+					this.responseState = ResponseState.RESULT_SET_FIRST_EOF;
+					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FEILD, pkgType, this.responseState);
+				}
+				return false;
+			}
+			case RESULT_SET_FIRST_EOF: {//进入row状态
+				if (pkgType == RowDataPacket.EOF_PACKET) {
+					this.responseState = ResponseState.RESULT_SET_SECOND_EOF;
+					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FIRST_EOF, pkgType, this.responseState);
+					return true;
+				}
+				if (pkgType == RowDataPacket.ERROR_PACKET) {
+					this.responseState = ResponseState.RESULT_SET_ERR;
+					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FIRST_EOF, pkgType, this.responseState);
+					return true;
+				}
+				return false;
+			}
+			default:
+				throw new RuntimeException("unknown state!");
+		}
+	}
+
+	public boolean isResponseFinished() {
+		return this.responseState.isFinished();
+	}
+
+	public boolean isResponseRowData() {
+		return this.responseState == ResponseState.RESULT_SET_FIRST_EOF;
+	}
+
 	/**
 	 * 该方法 仅限 mycatsession 调用。 心跳时，请从mycatSession 解除绑定
 	 */
@@ -50,7 +122,26 @@ public class MySQLSession extends AbstractMySQLSession {
 			this.mycatSession.clearBeckend(this);
 		}
 		this.mycatSession = null;
-		this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+		this.setIdle();
+	}
+
+
+	public enum ResponseState {
+		COM_QUERY,
+		RESULT_SET_FIRST_EOF,
+		RESULT_SET_FEILD_COUNT,
+		RESULT_SET_FEILD,
+		RESULT_SET_SECOND_EOF,
+		RESULT_SET_ERR,
+		RESULT_SET_OK;
+
+		public boolean isStart() {
+			return this == COM_QUERY;
+		}
+
+		public boolean isFinished() {
+			return !isStart() && this != RESULT_SET_FIRST_EOF;
+		}
 	}
 	@Override
 	public void close(boolean normal, String hint) {
@@ -88,5 +179,4 @@ public class MySQLSession extends AbstractMySQLSession {
 				+ mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort()
 				+ ",hashCode=" + this.hashCode() + "]";
 	}
-
 }

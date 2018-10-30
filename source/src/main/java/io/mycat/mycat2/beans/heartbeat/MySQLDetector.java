@@ -23,14 +23,14 @@
  */
 package io.mycat.mycat2.beans.heartbeat;
 
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.tasks.BackendHeartbeatTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.util.TimeUtil;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author mycat
@@ -78,14 +78,14 @@ public class MySQLDetector {
 		lastSendQryTime = System.currentTimeMillis();
 		MycatReactorThread reactor = (MycatReactorThread)Thread.currentThread();
 		MySQLDetector detector = this;
-		
+
 		reactor.getMysqlSession(heartbeat.getSource(), (optSession, sender, exeSucces, rv) -> {
 			if (exeSucces) {
 				BackendHeartbeatTask heartbeatTask = new BackendHeartbeatTask(optSession,detector);
 				heartbeatTask.setCallback((mysqlsession, sder, isSucc, rsmsg) -> {
 					//恢复默认的Handler
 					optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-					
+
 				});
 				optSession.setCurNIOHandler(heartbeatTask);
 				heartbeatTask.doHeartbeat();
@@ -97,14 +97,16 @@ public class MySQLDetector {
 				if(heartbeat.incrErrorCount() < heartbeat.getSource().getDsMetaBean().getMaxRetryCount()){
 					heartbeat();
 				}else{
-					heartbeat.setResult(DBHeartbeat.ERROR_STATUS, 
-										this, 
+                    heartbeat.setResult(DBHeartbeat.ERROR_STATUS,
+                            this,
 										heartbeat.getSource().getDsMetaBean().getIp()+":"+heartbeat.getSource().getDsMetaBean().getPort()
 										+" connection timeout!!");
 				}
 			}
 		});
-	}
+
+
+    }
 
 	public void quit() {
 		isQuit.lazySet(false);
