@@ -14,7 +14,7 @@ import static io.mycat.mycat2.MySQLSession.ResponseState.COM_QUERY;
 
 /**
  * 后端MySQL连接
- * 
+ *
  * @author wuzhihui
  *
  */
@@ -44,12 +44,8 @@ public class MySQLSession extends AbstractMySQLSession {
 	}
 
 	public ResponseState responseState;
-
-	public void startResponse(ResponseState responseState) {
-		if (!responseState.isStart()) {
-			throw new RuntimeException();
-		}
-		this.responseState = responseState;
+	public void startResponse() {
+		this.responseState = ResponseState.COM_QUERY;
 	}
 
 	public boolean next(byte pkgType) {
@@ -65,24 +61,9 @@ public class MySQLSession extends AbstractMySQLSession {
 					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
 					return true;
 				}
-				if (pkgType == MySQLPacket.REQUEST_FILE_FIELD_COUNT) {
-					this.responseState = ResponseState.RESULT_SET_FEILD_COUNT;
-					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
-				}
-				return false;
-			}
-			case RESULT_SET_FEILD_COUNT: {
-				if (pkgType == MySQLPacket.COM_FIELD_LIST) {
-					this.responseState = ResponseState.RESULT_SET_FEILD;
-					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FEILD_COUNT, pkgType, this.responseState);
-
-				}
-				return false;
-			}
-			case RESULT_SET_FEILD: {
 				if (pkgType == MySQLPacket.EOF_PACKET) {
 					this.responseState = ResponseState.RESULT_SET_FIRST_EOF;
-					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FEILD, pkgType, this.responseState);
+					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
 				}
 				return false;
 			}
@@ -129,8 +110,6 @@ public class MySQLSession extends AbstractMySQLSession {
 	public enum ResponseState {
 		COM_QUERY,
 		RESULT_SET_FIRST_EOF,
-		RESULT_SET_FEILD_COUNT,
-		RESULT_SET_FEILD,
 		RESULT_SET_SECOND_EOF,
 		RESULT_SET_ERR,
 		RESULT_SET_OK;

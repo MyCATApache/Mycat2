@@ -4,10 +4,12 @@ import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.cmds.judge.JudgeUtil;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +37,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
             // 切换 buffer 读写状态
             curBuffer.flip();
             if (success) {
-                session.curBackend.startResponse(MySQLSession.ResponseState.COM_QUERY);
+                session.curBackend.startResponse();
                 // 没有读取,直接透传时,需要指定 透传的数据 截止位置
                 curBuffer.readIndex = curBuffer.writeIndex;
                 // 改变 owner，对端Session获取，并且感兴趣写事件
@@ -55,48 +57,75 @@ public class DirectPassthrouhCmd implements MySQLCommand {
             return false;
         }
         // 获取当前是否结束标识
-        boolean check = false;
-        while (true) {
+        boolean proceed = true;
+        boolean isCommandFinished = false;
+        MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
+        ProxyBuffer curBuffer = session.proxyBuffer;
+        while (proceed) {
             AbstractMySQLSession.CurrPacketType pkgTypeEnum = session.resolveMySQLPackage();
             if (null != pkgTypeEnum && AbstractMySQLSession.CurrPacketType.Full == pkgTypeEnum) {
-                //@todo need refactor
-                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {// 如果当前为错误包，则进交给错误包处理
-                    check = JudgeUtil.judgeErrorPacket(session, session.proxyBuffer);
-                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {// 进行当前执行的预处理的语句报文，如果为Ok则表示可以释放连接,进行正常的判断
-                    check = JudgeUtil.judgeOkPacket(session, session.proxyBuffer);
+                final String hexs = StringUtil.dumpAsHex(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos, session.curMSQLPackgInf.pkgLength);
+                logger.info(hexs);
+                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
+                    JudgeUtil.judgeErrorPacket(session, session.proxyBuffer);
+                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+                    JudgeUtil.judgeOkPacket(session, session.proxyBuffer);
+                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
+                    JudgeUtil.judgeEOFPacket(session, session.proxyBuffer);
                 }
-                if (!check) {
-                    //@todo
-                    session.responseState = MySQLSession.ResponseState.RESULT_SET_SECOND_EOF;
-                    //  session.getAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG);
+                isCommandFinished = session.next((byte) session.curMSQLPackgInf.pkgType);
+            } else if (null != pkgTypeEnum && AbstractMySQLSession.CurrPacketType.LongHalfPacket == pkgTypeEnum) {
+                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
+                        session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||
+                        session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
+                    // 读取到了EOF/OK/ERROR 类型长半包 是需要保证是整包的.
+                    break;
                 }
-            } else {
+                if (curMSQLPackgInf.crossBuffer) {
+                    // 发生过透传的半包,往往包的长度超过了buffer 的长度.
+                    logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
+                } else {
+                    // 不需要整包解析的长半包透传. result set .这种半包直接透传
+                    curMSQLPackgInf.crossBuffer = true;
+                    curBuffer.readIndex = curMSQLPackgInf.endPos;
+                    curMSQLPackgInf.remainsBytes = curMSQLPackgInf.pkgLength
+                            - (curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
+                    logger.debug(" readed LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
+                    logger.debug(" curBuffer {}", curBuffer);
+                }
                 break;
             }
+            proceed = session.proxyBuffer.readIndex != session.proxyBuffer.writeIndex;
+
         }
         MycatSession mycatSession = session.getMycatSession();
         ProxyBuffer buffer = session.getProxyBuffer();
         buffer.flip();
-        mycatSession.takeOwner(SelectionKey.OP_WRITE);
+        if (isCommandFinished) {
+            logger.debug("mycatSession.takeOwner(SelectionKey.OP_READ)");
+            mycatSession.takeOwner(SelectionKey.OP_READ);
+        } else {
+            logger.debug("mycatSession.takeOwner(SelectionKey.OP_WRITE)");
+            mycatSession.takeOwner(SelectionKey.OP_WRITE);
+        }
         mycatSession.writeToChannel();
         return false;
     }
 
     @Override
     public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-        // 判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
-        // 检查当前已经结束，进行切换
-        // 检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
-        // EnumMap<SessionKeyEnum, Object> sessionAttrMap = session.getAttrMap();
+//         判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
+//         检查当前已经结束，进行切换
+//         检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
         if (!session.curBackend.isResponseFinished()) {
             session.proxyBuffer.flip();
             session.giveupOwner(SelectionKey.OP_READ);
             return false;
         }
-        // 当传输标识不存在，则说已经结束，则切换到前端的读取
+        //   当传输标识不存在，则说已经结束，则切换到前端的读取
         else {
+            session.curBackend.startResponse();
             session.proxyBuffer.flip();
-            // session.chnageBothReadOpts();
             session.takeOwner(SelectionKey.OP_READ);
             return true;
         }
