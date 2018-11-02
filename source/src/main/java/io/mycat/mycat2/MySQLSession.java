@@ -81,6 +81,7 @@ public class MySQLSession extends AbstractMySQLSession {
 				return false;
 			}
 			default:
+				logger.debug("from {} meet {} to {} ", this, pkgType, this.responseState);
 				throw new RuntimeException("unknown state!");
 		}
 	}
