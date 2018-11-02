@@ -63,7 +63,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         ProxyBuffer curBuffer = session.proxyBuffer;
         while (proceed) {
             AbstractMySQLSession.CurrPacketType pkgTypeEnum = session.resolveMySQLPackage();
-            if (null != pkgTypeEnum && AbstractMySQLSession.CurrPacketType.Full == pkgTypeEnum) {
+            if (AbstractMySQLSession.CurrPacketType.Full == pkgTypeEnum) {
                 final String hexs = StringUtil.dumpAsHex(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos, session.curMSQLPackgInf.pkgLength);
                 logger.info(hexs);
                 if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
@@ -74,7 +74,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
                     JudgeUtil.judgeEOFPacket(session, session.proxyBuffer);
                 }
                 isCommandFinished = session.next((byte) session.curMSQLPackgInf.pkgType);
-            } else if (null != pkgTypeEnum && AbstractMySQLSession.CurrPacketType.LongHalfPacket == pkgTypeEnum) {
+            } else if (AbstractMySQLSession.CurrPacketType.LongHalfPacket == pkgTypeEnum) {
                 if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
                         session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||
                         session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
@@ -93,6 +93,8 @@ public class DirectPassthrouhCmd implements MySQLCommand {
                     logger.debug(" readed LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
                     logger.debug(" curBuffer {}", curBuffer);
                 }
+                break;
+            }else if (AbstractMySQLSession.CurrPacketType.ShortHalfPacket == pkgTypeEnum){
                 break;
             }
             proceed = session.proxyBuffer.readIndex != session.proxyBuffer.writeIndex;
