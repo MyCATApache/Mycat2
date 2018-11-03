@@ -103,7 +103,7 @@ public class ResponseStateMachine {
                 return false;
             }
             case RESULT_SET_SECOND_EOF:
-                if (pkgType == RowDataPacket.OK_PACKET&&moreResultSets) {//@todo check this moreResultSets
+                if (pkgType == RowDataPacket.OK_PACKET&&!moreResultSets) {//@todo check this moreResultSets
                     this.responseState = PacketState.RESULT_OK;
                     logger.debug("from {} meet {} to {} ", PacketState.RESULT_SET_SECOND_EOF, pkgType, this.responseState);
                     return true;
