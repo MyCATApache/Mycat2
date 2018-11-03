@@ -2,10 +2,7 @@ package io.mycat.mycat2.e2e;
 
 import org.junit.Assert;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 
 /**
  * cjw
@@ -60,20 +57,34 @@ public class BaseSQLExeTest {
                     c.createStatement().executeUpdate("DROP PROCEDURE IF EXISTS multi;");
                     c.createStatement().executeUpdate(
                             "CREATE PROCEDURE multi()" +
-                            "SELECT 1;" +
-                            "SELECT 1;" +
-                            "INSERT INTO ins VALUES (1);" +
-                            "INSERT INTO ins VALUES (2);" +
-                            "INSERT INTO ins VALUES (3);"
+                                    "SELECT 1;" +
+                                    "SELECT 1;" +
+                                    "INSERT INTO ins VALUES (1);" +
+                                    "INSERT INTO ins VALUES (2);" +
+                                    "INSERT INTO ins VALUES (3);"
                     );
-            ResultSet resultSet = c.createStatement().executeQuery("CALL multi();");
-            Assert.assertTrue(resultSet.next());
-            c.createStatement().executeUpdate("DROP TABLE ins;");
+                    ResultSet resultSet = c.createStatement().executeQuery("CALL multi();");
+                    Assert.assertTrue(resultSet.next());
+                    c.createStatement().executeUpdate("DROP TABLE ins;");
                 }
         );
     }
+
+    public static void testPreparedStatement() {
+        using(c -> {
+                    c.createStatement().executeUpdate("DELETE FROM `db1`.`travelrecord` WHERE `id` = '1'; ");
+                    c.createStatement().executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`) VALUES ('1', '2', '2018-11-02', '2', '2'); ");
+
+                    CallableStatement callableStatement = c.prepareCall("SELECT * FROM `db1`.`travelrecord` WHERE id = ?");
+                    callableStatement.setInt(1, 1);
+                    ResultSet resultSet = callableStatement.executeQuery();
+                    Assert.assertTrue(resultSet.next());
+                }
+        );
+    }
+
     public static void main(String[] args) {
-        testStoredProcedure();
+        testPreparedStatement();
     }
 
     public static void using(ConsumerIO<Connection> c) {
