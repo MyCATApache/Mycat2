@@ -68,7 +68,7 @@ public class ResponseStateMachine {
     public boolean on(byte pkgType, boolean moreResults, boolean moreResultSets) {
         switch (this.responseState) {
             case COM_QUERY: {
-                if (pkgType == MySQLPacket.OK_PACKET) {
+                if (pkgType == MySQLPacket.OK_PACKET&&!moreResultSets) {
                     this.responseState = PacketState.RESULT_OK;
                     logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
                     return true;
@@ -103,7 +103,7 @@ public class ResponseStateMachine {
                 return false;
             }
             case RESULT_SET_SECOND_EOF:
-                if (pkgType == RowDataPacket.OK_PACKET) {
+                if (pkgType == RowDataPacket.OK_PACKET&&moreResultSets) {//@todo check this moreResultSets
                     this.responseState = PacketState.RESULT_OK;
                     logger.debug("from {} meet {} to {} ", PacketState.RESULT_SET_SECOND_EOF, pkgType, this.responseState);
                     return true;

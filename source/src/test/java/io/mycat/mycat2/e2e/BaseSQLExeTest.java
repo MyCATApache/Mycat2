@@ -1,7 +1,10 @@
 package io.mycat.mycat2.e2e;
 
+import org.junit.Assert;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 
 /**
@@ -33,8 +36,44 @@ public class BaseSQLExeTest {
         );
     }
 
+    /**
+     *
+     */
+    public static void testTransaction() {
+        using(c -> {
+                    c.createStatement().executeUpdate("DELETE FROM `db1`.`travelrecord` WHERE `id` = '1'; ");
+                    c.createStatement().executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`) VALUES ('1', '2', '2018-11-02', '2', '2'); ");
+                    c.setAutoCommit(false);
+
+                    c.createStatement().executeUpdate("DELETE FROM `db1`.`travelrecord` WHERE `id` = '1'; ");
+                    c.rollback();
+
+                    ResultSet resultSet = c.createStatement().executeQuery("SELECT * FROM `db1`.`travelrecord`;");
+                    Assert.assertTrue(resultSet.next());
+                }
+        );
+    }
+
+    public static void testStoredProcedure() {
+        using(c -> {
+                    c.createStatement().executeUpdate("CREATE TEMPORARY TABLE ins ( id INT );");
+                    c.createStatement().executeUpdate("DROP PROCEDURE IF EXISTS multi;");
+                    c.createStatement().executeUpdate(
+                            "CREATE PROCEDURE multi()" +
+                            "SELECT 1;" +
+                            "SELECT 1;" +
+                            "INSERT INTO ins VALUES (1);" +
+                            "INSERT INTO ins VALUES (2);" +
+                            "INSERT INTO ins VALUES (3);"
+                    );
+            ResultSet resultSet = c.createStatement().executeQuery("CALL multi();");
+            Assert.assertTrue(resultSet.next());
+            c.createStatement().executeUpdate("DROP TABLE ins;");
+                }
+        );
+    }
     public static void main(String[] args) {
-        testOneNormalSQl();
+        testStoredProcedure();
     }
 
     public static void using(ConsumerIO<Connection> c) {
