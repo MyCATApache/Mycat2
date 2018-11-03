@@ -43,11 +43,14 @@ public class JudgeUtil {
         changeTrans(serverStatus, session);
         return false;
     }
-
+    public static boolean hasMulitQuery(int serverStatus) {
+        return  ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.MULIT_QUERY);
+    }
+    public static boolean hasMoreResult(int serverStatus) {
+        return  ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.MORE_RESULTS);
+    }
     public static boolean hasResult(int serverStatus) {
-        boolean multQuery = ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.MULT_QUERY);
-        boolean multResult = ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.MORE_RESULTS);
-        return (multQuery || multResult);
+        return (hasMoreResult(serverStatus) || hasMulitQuery(serverStatus));
     }
 
     public static boolean hasFatch(int serverStatus) {

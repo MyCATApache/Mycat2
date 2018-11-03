@@ -1,16 +1,13 @@
 package io.mycat.mycat2;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.RowDataPacket;
+import io.mycat.mycat2.cmds.judge.ResponseStateMachine;
 import io.mycat.proxy.buffer.BufferPool;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-
-import static io.mycat.mycat2.MySQLSession.ResponseState.COM_QUERY;
 
 /**
  * 后端MySQL连接
@@ -29,6 +26,8 @@ public class MySQLSession extends AbstractMySQLSession {
 	// 记录当前后端连接所属的MetaBean，用于后端连接归还使用
 	private MySQLMetaBean mysqlMetaBean;
 
+	public ResponseStateMachine responseStateMachine = new ResponseStateMachine(this);
+
 
 	public MySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
 		super(bufferPool, selector, channel, SelectionKey.OP_CONNECT);
@@ -41,57 +40,6 @@ public class MySQLSession extends AbstractMySQLSession {
 	public void bind2MycatSession(MycatSession mycatSession) {
 		this.useSharedBuffer(mycatSession.getProxyBuffer());
 		this.mycatSession = mycatSession;
-	}
-
-	public ResponseState responseState;
-	public void startResponse() {
-		this.responseState = ResponseState.COM_QUERY;
-	}
-
-	public boolean next(byte pkgType) {
-		switch (this.responseState) {
-			case COM_QUERY: {
-				if (pkgType == MySQLPacket.ERROR_PACKET) {
-					this.responseState = ResponseState.RESULT_SET_ERR;
-					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
-					return true;
-				}
-				if (pkgType == MySQLPacket.OK_PACKET) {
-					this.responseState = ResponseState.RESULT_SET_OK;
-					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
-					return true;
-				}
-				if (pkgType == MySQLPacket.EOF_PACKET) {
-					this.responseState = ResponseState.RESULT_SET_FIRST_EOF;
-					logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
-				}
-				return false;
-			}
-			case RESULT_SET_FIRST_EOF: {//进入row状态
-				if (pkgType == RowDataPacket.EOF_PACKET) {
-					this.responseState = ResponseState.RESULT_SET_SECOND_EOF;
-					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FIRST_EOF, pkgType, this.responseState);
-					return true;
-				}
-				if (pkgType == RowDataPacket.ERROR_PACKET) {
-					this.responseState = ResponseState.RESULT_SET_ERR;
-					logger.debug("from {} meet {} to {} ", ResponseState.RESULT_SET_FIRST_EOF, pkgType, this.responseState);
-					return true;
-				}
-				return false;
-			}
-			default:
-				logger.debug("from {} meet {} to {} ", this, pkgType, this.responseState);
-				throw new RuntimeException("unknown state!");
-		}
-	}
-
-	public boolean isResponseFinished() {
-		return this.responseState.isFinished();
-	}
-
-	public boolean isResponseRowData() {
-		return this.responseState == ResponseState.RESULT_SET_FIRST_EOF;
 	}
 
 	/**
@@ -107,22 +55,6 @@ public class MySQLSession extends AbstractMySQLSession {
 		this.setIdle();
 	}
 
-
-	public enum ResponseState {
-		COM_QUERY,
-		RESULT_SET_FIRST_EOF,
-		RESULT_SET_SECOND_EOF,
-		RESULT_SET_ERR,
-		RESULT_SET_OK;
-
-		public boolean isStart() {
-			return this == COM_QUERY;
-		}
-
-		public boolean isFinished() {
-			return !isStart() && this != RESULT_SET_FIRST_EOF;
-		}
-	}
 	@Override
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);

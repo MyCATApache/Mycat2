@@ -40,7 +40,7 @@ import io.mycat.util.BufferUtil;
  * 
  * &#64;see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet
  * </pre>
- * 
+ * @todo 错误的注释
  * @author mycat
  */
 public final class OKPacket extends MySQLPacket {

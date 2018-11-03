@@ -37,7 +37,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
             // 切换 buffer 读写状态
             curBuffer.flip();
             if (success) {
-                session.curBackend.startResponse();
+                session.curBackend.responseStateMachine.reset();
                 // 没有读取,直接透传时,需要指定 透传的数据 截止位置
                 curBuffer.readIndex = curBuffer.writeIndex;
                 // 改变 owner，对端Session获取，并且感兴趣写事件
@@ -73,7 +73,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
                 } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
                     JudgeUtil.judgeEOFPacket(session, session.proxyBuffer);
                 }
-                isCommandFinished = session.next((byte) session.curMSQLPackgInf.pkgType);
+                isCommandFinished = session.responseStateMachine.on((byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
             } else if (AbstractMySQLSession.CurrPacketType.LongHalfPacket == pkgTypeEnum) {
                 if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
                         session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||
@@ -94,7 +94,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
                     logger.debug(" curBuffer {}", curBuffer);
                 }
                 break;
-            }else if (AbstractMySQLSession.CurrPacketType.ShortHalfPacket == pkgTypeEnum){
+            } else if (AbstractMySQLSession.CurrPacketType.ShortHalfPacket == pkgTypeEnum) {
                 break;
             }
             proceed = session.proxyBuffer.readIndex != session.proxyBuffer.writeIndex;
@@ -119,14 +119,14 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 //         判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
 //         检查当前已经结束，进行切换
 //         检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
-        if (!session.curBackend.isResponseFinished()) {
+        if (!session.curBackend.responseStateMachine.isFinished()) {
             session.proxyBuffer.flip();
             session.giveupOwner(SelectionKey.OP_READ);
             return false;
         }
         //   当传输标识不存在，则说已经结束，则切换到前端的读取
         else {
-            session.curBackend.startResponse();
+            session.curBackend.responseStateMachine.reset();
             session.proxyBuffer.flip();
             session.takeOwner(SelectionKey.OP_READ);
             return true;
