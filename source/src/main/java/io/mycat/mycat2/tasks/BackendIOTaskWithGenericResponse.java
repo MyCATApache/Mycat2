@@ -2,7 +2,6 @@ package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -28,7 +27,7 @@ public abstract class BackendIOTaskWithGenericResponse
         queryPacket.packetId = 0;
         queryPacket.sql = sql;
         /*设置为忙*/
-        session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+        session.setBusy();
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
         queryPacket.write(proxyBuf);

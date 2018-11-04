@@ -23,17 +23,8 @@
  */
 package io.mycat.mycat2.beans;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import io.mycat.mycat2.beans.conf.DatasourceMetaBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.conf.DatasourceMetaBean;
 import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mycat2.beans.heartbeat.MySQLHeartbeat;
 import io.mycat.mycat2.tasks.BackendCharsetReadTask;
@@ -41,6 +32,13 @@ import io.mycat.mycat2.tasks.BackendGetConnectionTask;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.TimeUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 后端mysql连接元数据类，对应datasource.xml配置中的mysql元数据信息
@@ -48,7 +46,9 @@ import io.mycat.util.TimeUtil;
  */
 public class MySQLMetaBean {
 	private static final Logger logger = LoggerFactory.getLogger(MySQLMetaBean.class);
-
+    //VM option -Ddebug=true 在虚拟机选项上添加这个参数，可以使心跳永为真，避免debug时候心跳超时
+//    private static final boolean DEBUG = Boolean.getBoolean("debug");
+	private static final boolean DEBUG = true;
 	private DatasourceMetaBean dsMetaBean;
     private volatile boolean slaveNode = true; // 默认为slave节点
     private volatile long heartbeatRecoveryTime;  // 心跳暂停时间
@@ -66,12 +66,15 @@ public class MySQLMetaBean {
     public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
     public void prepareHeartBeat(MySQLRepBean repBean, int status) {
-		logger.info("prepare heart beat for MySQLMetaBean {} ", this);
+        if (logger.isInfoEnabled()) {
+            logger.info("prepare heart beat for MySQLMetaBean {} ", this);
+
+        }
 		this.repBean = repBean;
 		this.heartbeat = new MySQLHeartbeat(this,status);
 	}
 
-    public void init() throws IOException {
+    public void init() {
 		logger.info("init backend connection for MySQLMetaBean {} ", this);
     	ProxyRuntime runtime = ProxyRuntime.INSTANCE;
         MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
@@ -129,7 +132,9 @@ public class MySQLMetaBean {
 	public void clearCons(String reason) {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
-		Arrays.stream(reactorThreads).forEach(f -> f.clearMySQLMetaBeanSession(this,reason));
+        for (MycatReactorThread f : reactorThreads) {
+            f.clearMySQLMetaBeanSession(this, reason);
+        }
 	}
 	
 	/**
@@ -148,7 +153,7 @@ public class MySQLMetaBean {
 			return false;
 		}
 		boolean isSync = dbSynStatus == DBHeartbeat.DB_SYN_NORMAL;
-		boolean isNotDelay = (slaveThreshold >= 0) ? (slaveBehindMaster < slaveThreshold) : true;
+        boolean isNotDelay = (slaveThreshold < 0) || (slaveBehindMaster < slaveThreshold);
 		return isSync && isNotDelay;
 	}
 
@@ -201,7 +206,7 @@ public class MySQLMetaBean {
 	 * @return
 	 */
 	public boolean isAlive() {
-		return heartbeat.getStatus() == DBHeartbeat.OK_STATUS;
+        return heartbeat.getStatus() == DBHeartbeat.OK_STATUS || DEBUG;
 	}
 
     @Override

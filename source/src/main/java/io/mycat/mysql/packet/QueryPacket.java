@@ -9,6 +9,14 @@ public class QueryPacket extends MySQLPacket {
     public String sql;
     private byte pkgType = MySQLPacket.COM_QUERY;
 
+    public QueryPacket(String sql, byte pkgType) {
+        this.sql = sql;
+        this.pkgType = pkgType;
+    }
+
+    public QueryPacket() {
+    }
+
     @Override
     public int calcPacketSize() {
         return sql.length() + 1;

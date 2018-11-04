@@ -1,7 +1,6 @@
 package io.mycat.mycat2.tasks.multinode;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.tasks.BackendIOTaskWithGenericResponse;
@@ -78,6 +77,6 @@ public class PickOnlyOneInMultiNodeWithGenericResponse extends BackendIOTaskWith
         session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
         // 把mysqlsession的proxybuffer切换回原来的共享buffer，即与mycatSession共享的buffer
         revertPreBuffer();
-        session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+        session.setIdle();
     }
 }

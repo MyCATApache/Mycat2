@@ -1,5 +1,14 @@
 package io.mycat.mycat2.tasks;
 
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.PackWraper;
+import io.mycat.mycat2.beans.ColumnMeta;
+import io.mycat.mycat2.route.RouteResultset;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.RowDataPacket;
+import org.apache.log4j.Logger;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -10,16 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.log4j.Logger;
-
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.PackWraper;
-import io.mycat.mycat2.beans.ColumnMeta;
-import io.mycat.mycat2.route.RouteResultset;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.RowDataPacket;
 
 public abstract class DataNodeManager implements Runnable {
 
@@ -132,7 +131,7 @@ public abstract class DataNodeManager implements Runnable {
         unbindSQLQueryStreams(normal, error);
         this.packs = null;
         this.executor = null;
-        mycatSession.merge = null;
+        // mycatSession.merge = null;
     }
 
     public abstract void onfinished();

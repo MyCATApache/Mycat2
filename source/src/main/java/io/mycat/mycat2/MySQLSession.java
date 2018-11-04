@@ -1,7 +1,7 @@
 package io.mycat.mycat2;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.cmds.judge.ResponseStateMachine;
 import io.mycat.proxy.buffer.BufferPool;
 
 import java.io.IOException;
@@ -11,7 +11,7 @@ import java.nio.channels.SocketChannel;
 
 /**
  * 后端MySQL连接
- * 
+ *
  * @author wuzhihui
  *
  */
@@ -25,6 +25,8 @@ public class MySQLSession extends AbstractMySQLSession {
 
 	// 记录当前后端连接所属的MetaBean，用于后端连接归还使用
 	private MySQLMetaBean mysqlMetaBean;
+
+	public ResponseStateMachine responseStateMachine = new ResponseStateMachine(this);
 
 
 	public MySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
@@ -50,8 +52,9 @@ public class MySQLSession extends AbstractMySQLSession {
 			this.mycatSession.clearBeckend(this);
 		}
 		this.mycatSession = null;
-		this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+		this.setIdle();
 	}
+
 	@Override
 	public void close(boolean normal, String hint) {
 		super.close(normal, hint);
@@ -88,5 +91,4 @@ public class MySQLSession extends AbstractMySQLSession {
 				+ mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort()
 				+ ",hashCode=" + this.hashCode() + "]";
 	}
-
 }

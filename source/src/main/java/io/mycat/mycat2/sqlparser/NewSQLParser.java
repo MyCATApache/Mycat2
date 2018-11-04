@@ -41,66 +41,37 @@ public class NewSQLParser {
     HashArray hashArray = new HashArray();
     Tokenizer tokenizer = new Tokenizer(hashArray);
 
-    boolean isAlias(int pos, int type) { //需要优化成数组判断
-        switch (type) {
-            case IntTokenHash.WHERE:
-                if (hashArray.getHash(pos) == TokenHash.WHERE)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.GROUP:
-                if (hashArray.getHash(pos) == TokenHash.GROUP)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.ORDER:
-                if (hashArray.getHash(pos) == TokenHash.ORDER)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.LIMIT:
-                if (hashArray.getHash(pos) == TokenHash.LIMIT)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.JOIN:
-                if (hashArray.getHash(pos) == TokenHash.JOIN)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.LEFT:
-                if (hashArray.getHash(pos) == TokenHash.LEFT)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.RIGHT:
-                if (hashArray.getHash(pos) == TokenHash.RIGHT)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.FOR:
-                if (hashArray.getHash(pos) == TokenHash.FOR)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.LOCK:
-                if (hashArray.getHash(pos) == TokenHash.LOCK)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.ON:
-                if (hashArray.getHash(pos) == TokenHash.ON)
-                    return false;
-                else
-                    return true;
-            case IntTokenHash.FROM:
-                if (hashArray.getHash(pos) == TokenHash.FROM)
-                    return false;
-                else
-                    return true;
-            default:
-                return true;
-        }
+    public static void main(String[] args) {
+        NewSQLParser parser = new NewSQLParser();
+        NewSQLContext context = new NewSQLContext();
+        //parser.init();
+//        byte[] src = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
+//        byte[] src = "INSERT `mycatSchema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
+//        byte[] src = ("select * from tbl_A, -- 单行注释\n" +
+//                "tbl_B b, #另一种单行注释\n" +
+//                "/*\n" +  //69
+//                "tbl_C\n" + //79
+//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
+//        byte[] src = sql3.getBytes(StandardCharsets.UTF_8);
+//        byte[] src = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
+//        byte[] src = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] src = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] src = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
+        byte[] src = "select * into tbl_B from tbl_A;".getBytes();
+//        long min = 0;
+//        for (int i = 0; i < 50; i++) {
+//            System.out.print("Loop " + i + " : ");
+//            long cur = RunBench(src, parser);//不加分析应该可以进2.6秒
+//            System.out.println(cur);
+//            if (cur < min || min == 0) {
+//                min = cur;
+//            }
+//        }
+//        System.out.print("min time : " + min);
+        parser.parse(src, context);
+        System.out.println(context.getSQLCount());
+        IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
+        //System.out.print("token count : "+parser.hashArray.getCount());
     }
 
     public int pickTableNames(int pos, final int arrayCount, NewSQLContext context) {
@@ -582,37 +553,33 @@ public class NewSQLParser {
 //        return System.currentTimeMillis() - start;
 //    }
 
-    public static void main(String[] args) {
-        NewSQLParser parser = new NewSQLParser();
-        NewSQLContext context = new NewSQLContext();
-        //parser.init();
-//        byte[] src = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
-//        byte[] src = "INSERT `schema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
-//        byte[] src = ("select * from tbl_A, -- 单行注释\n" +
-//                "tbl_B b, #另一种单行注释\n" +
-//                "/*\n" +  //69
-//                "tbl_C\n" + //79
-//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
-//        byte[] src = sql3.getBytes(StandardCharsets.UTF_8);
-//        byte[] src = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
-//        byte[] src = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] src = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] src = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
-        byte[] src = "select * into tbl_B from tbl_A;".getBytes();
-//        long min = 0;
-//        for (int i = 0; i < 50; i++) {
-//            System.out.print("Loop " + i + " : ");
-//            long cur = RunBench(src, parser);//不加分析应该可以进2.6秒
-//            System.out.println(cur);
-//            if (cur < min || min == 0) {
-//                min = cur;
-//            }
-//        }
-//        System.out.print("min time : " + min);
-        parser.parse(src, context);
-        System.out.println(context.getSQLCount());
-        IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
-        //System.out.print("token count : "+parser.hashArray.getCount());
+    boolean isAlias(int pos, int type) { //需要优化成数组判断
+        switch (type) {
+            case IntTokenHash.WHERE:
+                return hashArray.getHash(pos) != TokenHash.WHERE;
+            case IntTokenHash.GROUP:
+                return hashArray.getHash(pos) != TokenHash.GROUP;
+            case IntTokenHash.ORDER:
+                return hashArray.getHash(pos) != TokenHash.ORDER;
+            case IntTokenHash.LIMIT:
+                return hashArray.getHash(pos) != TokenHash.LIMIT;
+            case IntTokenHash.JOIN:
+                return hashArray.getHash(pos) != TokenHash.JOIN;
+            case IntTokenHash.LEFT:
+                return hashArray.getHash(pos) != TokenHash.LEFT;
+            case IntTokenHash.RIGHT:
+                return hashArray.getHash(pos) != TokenHash.RIGHT;
+            case IntTokenHash.FOR:
+                return hashArray.getHash(pos) != TokenHash.FOR;
+            case IntTokenHash.LOCK:
+                return hashArray.getHash(pos) != TokenHash.LOCK;
+            case IntTokenHash.ON:
+                return hashArray.getHash(pos) != TokenHash.ON;
+            case IntTokenHash.FROM:
+                return hashArray.getHash(pos) != TokenHash.FROM;
+            default:
+                return true;
+        }
     }
 
     static String sql3 = "SELECT  'product' as 'P_TYPE' ,\n" +

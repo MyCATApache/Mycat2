@@ -23,10 +23,6 @@
  */
 package io.mycat.mysql.packet;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-
 import io.mycat.proxy.ProxyBuffer;
 
 /**
@@ -90,8 +86,16 @@ public class CommandPacket extends MySQLPacket {
 
     public byte command;
     public byte[] arg;
-    
-	@Override
+
+    public CommandPacket(byte command, byte[] arg) {
+        this.command = command;
+        this.arg = arg;
+    }
+
+    public CommandPacket() {
+    }
+
+    @Override
 	public void write(ProxyBuffer buffer) {
 		this.write(buffer,calcPacketSize());
 	}

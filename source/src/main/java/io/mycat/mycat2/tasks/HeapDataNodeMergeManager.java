@@ -142,7 +142,7 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 
 	public void clear() {
 		this.tableMeta = null;
-		this.mycatSession.merge = null;
+        //this.mycatSession.merge = null;
 		result.clear();
 		grouper = null;
 		sorter = null;

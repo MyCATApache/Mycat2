@@ -2,7 +2,6 @@ package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
@@ -17,7 +16,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
 
     public void fetchSQL(QueryPacket queryPacket) throws IOException {
         /*设置为忙*/
-        session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+        session.setBusy();
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
         queryPacket.write(proxyBuf);
@@ -68,7 +67,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
         proxyBuffer.readIndex = rowDataIndex;
 
         String catalog = proxyBuffer.readLenencString().intern();  //catalog
-        String schema = proxyBuffer.readLenencString().intern();  //schema
+        String schema = proxyBuffer.readLenencString().intern();  //mycatSchema
         String table = proxyBuffer.readLenencString().intern();  //table
         String orgTable = proxyBuffer.readLenencString().intern();  //orgTable
         String name = proxyBuffer.readLenencString().intern();  //name
@@ -152,7 +151,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
     abstract void onRsFinished(MySQLSession session);
 
     public void clearResouces() {
-        session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+        session.setIdle();
         revertPreBuffer();
         session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
     }

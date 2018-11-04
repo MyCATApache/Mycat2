@@ -1,14 +1,14 @@
 package io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front;
 
-import java.nio.channels.SelectionKey;
-
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.cache.mapcache.CacheManager;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.nio.channels.SelectionKey;
 
 /**
  * 进行缓存结果集的查询发送
@@ -30,28 +30,28 @@ public class CacheQueryResultSetProc implements ChainExecInf {
 		// 检查当前查询结果集查询是否完成
 		MycatSession session = (MycatSession) seqList.getSession();
 
-		Boolean readOver = (Boolean) session.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CACHE_READY_OVER.getKey());
+		Boolean readOver = (Boolean) session.getAttrMap()
+				.get(SessionKey.CACHE_READY_OVER);
 
 		// 首先检整个响应是否结束
 		if (null != readOver && readOver) {
 
 			// 检查当前是否存在清理缓存，并发送查询操作
-			if (session.getSessionAttrMap()
-					.containsKey(SessionKeyEnum.SESSION_KEY_CACHE_DELETE_QUERY_FLAG_KEY.getKey())) {
+			if (session.getAttrMap()
+					.containsKey(SessionKey.CACHE_DELETE_QUERY_FLAG_KEY)) {
 
 				// 当发送完成，清理重新加载缓存的标识
-				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CACHE_DELETE_QUERY_FLAG_KEY.getKey());
+				session.getAttrMap().remove(SessionKey.CACHE_DELETE_QUERY_FLAG_KEY);
 
 				// 清理结束标识
-				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CACHE_READY_OVER.getKey());
+				session.getAttrMap().remove(SessionKey.CACHE_READY_OVER);
 
 				// 将缓存中的完结标识改为false，以便后续能发送查询的SQL
-				session.curBackend.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+				session.curBackend.setBusy();
 
 				// 获取SQL
-				String selectSql = (String) session.getSessionAttrMap()
-						.get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
+				String selectSql = (String) session.getAttrMap()
+						.get(SessionKey.CACHE_SQL_STR);
 
 				// 标识当前缓存放入开始
 				boolean upd = CacheManager.INSTANCE.begin(selectSql);
@@ -63,10 +63,10 @@ public class CacheQueryResultSetProc implements ChainExecInf {
 
 					// 打上添加缓存的标识
 					// 标识当前添加缓存操作
-					session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_ADD_FLAG_KEY.getKey(), true);
+					session.getAttrMap().put(SessionKey.CACHE_ADD_FLAG_KEY, true);
 
 					// 标识当前缓存无需要响应前端
-					session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey(),
+					session.getAttrMap().put(SessionKey.CACHE_WRITE_FRONT_FLAG_KEY,
 							false);
 
 					ProxyBuffer proxyBuf = session.proxyBuffer;

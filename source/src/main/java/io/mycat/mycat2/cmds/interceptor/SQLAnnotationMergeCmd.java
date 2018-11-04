@@ -45,7 +45,7 @@ public class SQLAnnotationMergeCmd extends SQLAnnotationCmd {
                 routeResultset.setLimitSize((int) mergeAnnotation.getLimitSize());
             }
             routeResultset.setNodes(routeResultsetNodes);
-            session.setCurRouteResultset(routeResultset);
+            //session.setCurRouteResultset(routeResultset);
         }
         return super.procssSQL(session);
     }

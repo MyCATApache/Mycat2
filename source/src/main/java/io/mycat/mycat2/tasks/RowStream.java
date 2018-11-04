@@ -2,7 +2,6 @@ package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.hbt.MyFunction;
 import io.mycat.mycat2.hbt.ResultSetMeta;
 import io.mycat.mycat2.hbt.SqlMeta;
@@ -41,7 +40,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	}
 	public void fetchStream() {
 		/*设置为忙*/
-		session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+		session.setBusy();
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
@@ -60,7 +59,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	}
 	public void fetchStream(ProxyBuffer proxyBuf) {
 		/*设置为忙*/
-		session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+		session.setBusy();
 		session.setCurNIOHandler(this);
 		proxyBuf.flip();
 		proxyBuf.readIndex = proxyBuf.writeIndex;
@@ -89,7 +88,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
         int rowDataIndex = curMQLPackgInf.startPos+MySQLPacket.packetHeaderSize;
         proxyBuffer.readIndex = rowDataIndex;
         proxyBuffer.readLenencString();  //catalog
-        proxyBuffer.readLenencString();  //schema 
+		proxyBuffer.readLenencString();  //mycatSchema
         proxyBuffer.readLenencString();  //table
         proxyBuffer.readLenencString();  //orgTable
         String name     = proxyBuffer.readLenencString();  //name
@@ -127,11 +126,11 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 		        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
 		        session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
 				this.errPkg.read(session.proxyBuffer);
-				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+				session.setIdle();
 				revertPreBuffer();
 		        callBack.finished(session, this, success, this.errPkg);
 			} else {
-				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+				session.setIdle();
 				revertPreBuffer();
 				callBack.finished(session, null, success, null);
 			}

@@ -54,9 +54,28 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
        }
     }
 
-    public DynamicAnnotation[] getAnnotations(int schema, int sqltype, int[] tables) throws Exception {
-        DynamicAnnotation[] proto = route.front(schema, sqltype, tables);
-        return proto;
+    /**
+     * 动态注解先匹配chema的名字,再sql类型，在匹配表名，在匹配条件
+     *
+     * @param
+     * @return
+     */
+//    public void processNow(int mycatSchema, int sqltype, int[] tables, BufferSQLContext context) throws Exception {
+//        Arrays.sort(tables);
+//        DynamicAnnotation[] annotations;
+//        int getHash = getHash(mycatSchema, sqltype, tables);
+//        annotations = cache.get(getHash);
+//        if (annotations == null) {
+//            cache.put(getHash, annotations = getAnnotations(mycatSchema, sqltype, tables));
+//        }
+//        DynamicAnnotation[] res = annotations;
+//        List<Function<BufferSQLContext, BufferSQLContext>> schemaWithSQLtypeFunction = getSchemaWithSQLtypeFunction(mycatSchema, sqltype);
+//        doList(schemaWithSQLtypeFunction, context);
+//        doAnnotations(res, context);
+//    }
+    private DynamicAnnotationManagerImpl(Map<Integer, DynamicAnnotation[]> cache, DynamicAnnotationKeyRoute route) {
+        this.cache = cache;
+        this.route = route;
     }
 
     public static void doAnnotations(DynamicAnnotation[] res, BufferSQLContext context) {
@@ -229,29 +248,11 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         }
     }
 
-    /**
-     * 动态注解先匹配chema的名字,再sql类型，在匹配表名，在匹配条件
-     *
-     * @param
-     * @return
-     */
-//    public void processNow(int schema, int sqltype, int[] tables, BufferSQLContext context) throws Exception {
-//        Arrays.sort(tables);
-//        DynamicAnnotation[] annotations;
-//        int getHash = getHash(schema, sqltype, tables);
-//        annotations = cache.get(getHash);
-//        if (annotations == null) {
-//            cache.put(getHash, annotations = getAnnotations(schema, sqltype, tables));
-//        }
-//        DynamicAnnotation[] res = annotations;
-//        List<Function<BufferSQLContext, BufferSQLContext>> schemaWithSQLtypeFunction = getSchemaWithSQLtypeFunction(schema, sqltype);
-//        doList(schemaWithSQLtypeFunction, context);
-//        doAnnotations(res, context);
-//    }
-
-    private DynamicAnnotationManagerImpl(Map<Integer, DynamicAnnotation[]> cache, DynamicAnnotationKeyRoute route) {
-        this.cache = cache;
-        this.route = route;
+    public static int getGlobalFunctionHash(int schema, int sqltype) {
+        int hash = schema;
+        hash = hash * 31 + sqltype;
+        logger.debug("mycatSchema is {},sqltype is {},hash is {}", schema, sqltype, hash);
+        return hash;
     }
 
     public static int getHash(int schema, int sqltype, int[] tables) {
@@ -261,11 +262,9 @@ public class DynamicAnnotationManagerImpl implements DynamicAnnotationManager {
         return hash;
     }
 
-    public static int getGlobalFunctionHash(int schema, int sqltype) {
-        int hash = schema;
-        hash = hash * 31 + sqltype;
-        logger.debug("schema is {},sqltype is {},hash is {}",schema,sqltype,hash);
-        return hash;
+    public DynamicAnnotation[] getAnnotations(int schema, int sqltype, int[] tables) {
+        DynamicAnnotation[] proto = route.front(schema, sqltype, tables);
+        return proto;
     }
 
 

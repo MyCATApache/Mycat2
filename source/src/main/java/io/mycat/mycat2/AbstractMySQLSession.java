@@ -3,9 +3,7 @@ package io.mycat.mycat2;
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
-import io.mycat.mycat2.cmds.pkgread.CommQueryHandler;
-import io.mycat.mycat2.cmds.pkgread.CommandHandler;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -31,6 +29,10 @@ import java.nio.channels.SocketChannel;
  * @author wuzhihui
  */
 public abstract class AbstractMySQLSession extends AbstractSession {
+
+    public AbstractMySQLSession() {
+
+    }
 
     // 当前接收到的包类型
     public enum CurrPacketType {
@@ -70,13 +72,32 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     public MySQLPackageInf curMSQLPackgInf = new MySQLPackageInf();
 
     /**
+     * 标识当前连接的闲置状态标识 ，true，闲置，false，未闲置,即在使用中
+     */
+    boolean idleFlag = true;
+
+    /**
      * 用来进行指定结束报文处理
      */
-    public CommandHandler commandHandler = CommQueryHandler.INSTANCE;
-
+    //  public CommandHandler commandHandler = CommQueryHandler.INSTANCE;
     public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
         this(bufferPool, selector, channel, SelectionKey.OP_READ);
 
+    }
+
+    public void setIdle() {
+        if(logger.isDebugEnabled()){
+            logger.debug("mysql session:{} is idle",this);
+        }
+        this.idleFlag = true;
+    }
+
+    public void setBusy() {
+        this.idleFlag = false;
+    }
+
+    public boolean isIdle() {
+        return this.idleFlag;
     }
 
     public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel, int keyOpt)
@@ -119,6 +140,14 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         this.writeToChannel();
     }
 
+    public CurrPacketType resolveMySQLPackage()  {
+        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true);
+    }
+
+    public boolean isResolveMySQLPackageFinished(){
+        return this.proxyBuffer.readIndex != this.proxyBuffer.writeIndex;
+    }
+
     /**
      * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
      * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded
@@ -128,9 +157,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * @return
      * @throws IOException
      */
-    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded)
-            throws IOException {
-
+    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded) {
         lastReadTime = TimeUtil.currentTimeMillis();
 
         ByteBuffer buffer = proxyBuf.getBuffer();
@@ -330,55 +357,35 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     }
 
     public int getPkgType() {
-        return (Integer) this.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey());
+        return (Integer) this.getAttrMap().get(SessionKey.PKG_TYPE_KEY);
     }
 
     public void setPkgType(int value) {
-        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey(), value);
-    }
-
-    public void setTransferOver() {
-        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey(), true);
-    }
-
-    public void removeTransferOver() {
-        this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSFER_OVER_FLAG.getKey());
+        this.getAttrMap().put(SessionKey.PKG_TYPE_KEY, value);
     }
 
     public boolean isTrans() {
-        return this.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey());
+        return this.getAttrMap().containsKey(SessionKey.TRANSACTION_FLAG);
     }
 
     public void setTrans(boolean value) {
         if (value) {
-            this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey(), true);
+            this.getAttrMap().put(SessionKey.TRANSACTION_FLAG, true);
         } else {
-            this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey());
+            this.getAttrMap().remove(SessionKey.TRANSACTION_FLAG);
         }
     }
 
     public void removePkgReadFlag() {
-        this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
+        this.getAttrMap().remove(SessionKey.PKG_READ_FLAG);
     }
 
     public boolean isPkgReadFlag() {
-        return this.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
+        return this.getAttrMap().containsKey(SessionKey.PKG_READ_FLAG);
     }
 
     public void setPkgReadFlag() {
-        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_TRANSACTION_FLAG.getKey(), true);
-    }
-
-    /**
-     * 用来判断该连接是否空闲.
-     */
-    public boolean isIDLE() {
-        Boolean flag = (Boolean) this.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-        return (flag == null) ? true : flag;
-    }
-
-    public void setIDLE(boolean value) {
-        this.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), value);
+        this.getAttrMap().put(SessionKey.TRANSACTION_FLAG, true);
     }
 
 }
