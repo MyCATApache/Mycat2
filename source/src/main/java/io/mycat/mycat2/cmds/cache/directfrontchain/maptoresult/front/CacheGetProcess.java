@@ -1,13 +1,13 @@
 package io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.front;
 
-import java.nio.channels.SelectionKey;
-
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.cache.mapcache.CacheManager;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.nio.channels.SelectionKey;
 
 /**
  * 缓存的获取操作
@@ -30,21 +30,21 @@ public class CacheGetProcess implements ChainExecInf {
 
 		// 首先检查当前否为获取数据标识
 		// 首先检查当前是否存在从缓存中获取数据的标识
-		if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_CACHE_GET_FLAG.getKey())) {
+		if (session.getAttrMap().containsKey(SessionKey.CACHE_GET_FLAG)) {
 
 			ProxyBuffer curBuffer = session.proxyBuffer;
 			long offset = 0;
-			if (session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey())) {
-				offset = (long) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey());
+			if (session.getAttrMap().containsKey(SessionKey.OFFSET_FLAG)) {
+				offset = (long) session.getAttrMap().get(SessionKey.OFFSET_FLAG);
 			}
 
-			String sql = (String) session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
+			String sql = (String) session.getAttrMap().get(SessionKey.CACHE_SQL_STR);
 
 			// 从缓存中获取数据
 			offset = CacheManager.INSTANCE.getCacheValue(curBuffer, sql, offset);
 
 			// 将当前的偏移放入到会话中
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_GET_OFFSET_FLAG.getKey(), offset);
+			session.getAttrMap().put(SessionKey.OFFSET_FLAG, offset);
 
 			// 获取到数据后
 			return seqList.nextExec();

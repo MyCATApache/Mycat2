@@ -1,31 +1,20 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.util.Arrays;
-
-import javax.swing.SortOrder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.mycat2.hbt.CountFunction;
-import io.mycat.mycat2.hbt.GroupPairKeyMeta;
-import io.mycat.mycat2.hbt.JoinMeta;
-import io.mycat.mycat2.hbt.OrderMeta;
-import io.mycat.mycat2.hbt.OutFunction;
-import io.mycat.mycat2.hbt.ResultSetMeta;
-import io.mycat.mycat2.hbt.RowMeta;
-import io.mycat.mycat2.hbt.SqlMeta;
-import io.mycat.mycat2.hbt.TableMeta;
+import io.mycat.mycat2.console.SessionKey;
+import io.mycat.mycat2.hbt.*;
 import io.mycat.mycat2.hbt.pipeline.HBTEngine;
-import io.mycat.mycat2.sqlparser.NewSQLContext;
 import io.mycat.mysql.Fields;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.*;
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.util.Arrays;
 
 /**
  * 直接透传命令报文
@@ -94,7 +83,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendResponse(MySQLSession session) throws IOException {
+	public boolean onBackendResponse(MySQLSession session) {
 
 
 
@@ -103,7 +92,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 
 	@Override
 	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-		TableMeta tableMeta = (TableMeta)session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_HBT_TABLE_META.getKey());
+		TableMeta tableMeta = (TableMeta) session.getAttrMap().get(SessionKey.HBT_TABLE_META);
 		
 		if(null != tableMeta && !tableMeta.isWriteFinish()) {
 			ProxyBuffer buffer = session.proxyBuffer;
@@ -119,7 +108,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 			} 
 			return false;
 		} else {
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_HBT_TABLE_META.getKey());
+			session.getAttrMap().remove(SessionKey.HBT_TABLE_META);
 			session.proxyBuffer.flip();
 			session.takeOwner(SelectionKey.OP_READ);
 			return true;
@@ -128,7 +117,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
+	public boolean onBackendWriteFinished(MySQLSession session) {
 		// 绝大部分情况下，前端把数据写完后端发送出去后，就等待后端返回数据了，
 		// 向后端写入完成数据后，则从后端读取数据
 		//session.proxyBuffer.flip();
@@ -139,7 +128,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+	public boolean onBackendClosed(MySQLSession session, boolean normal) {
 
 		return true;
 	}

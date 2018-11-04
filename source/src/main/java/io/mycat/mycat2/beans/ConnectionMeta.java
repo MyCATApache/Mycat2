@@ -65,7 +65,7 @@ public class ConnectionMeta {
 
 	@Override
 	public String toString() {
-		return "ConnectionMeta [schema=" + schema + ", charset=" + charset + ", txIsolation=" + txIsolation
+        return "ConnectionMeta [mycatSchema=" + schema + ", charset=" + charset + ", txIsolation=" + txIsolation
 				+ ", autocommit=" + autocommit + "]";
 	}
 

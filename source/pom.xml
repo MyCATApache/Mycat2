@@ -71,9 +71,17 @@
 		<dependency>
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
-			<version>6.0.5</version>
+			<version>5.1.15</version>
 			<scope>test</scope>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<version>2.23.0</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
     
 	<build>
