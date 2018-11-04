@@ -1,17 +1,16 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
 
 /**
  * 进行load data的命令处理
@@ -46,9 +45,9 @@ public class LoadDataCommand implements MySQLCommand {
 		this.readOverByte(session, curBuffer);
 		//检查是否传输完成
 		if (checkOver(session)) {
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), true);
+            session.getAttrMap().put(SessionKey.LOAD_DATA_FINISH_KEY, true);
 		} else {
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), false);
+            session.getAttrMap().put(SessionKey.LOAD_DATA_FINISH_KEY, false);
 		}
 		
 		/*
@@ -75,12 +74,12 @@ public class LoadDataCommand implements MySQLCommand {
 
 	/*获取结束flag标识的数组*/
 	private byte[] getOverFlag(MycatSession session) {
-		byte[] overFlag = (byte[])session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey());
+        byte[] overFlag = (byte[]) session.getAttrMap().get(SessionKey.LOAD_OVER_FLAG_ARRAY);
 		if(overFlag != null) {
 			return overFlag;
 		}
 		overFlag = new byte[FLAGLENGTH];
-		session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey(), overFlag);
+        session.getAttrMap().put(SessionKey.LOAD_OVER_FLAG_ARRAY, overFlag);
 		return overFlag; 
 	}
 	/**
@@ -151,13 +150,13 @@ public class LoadDataCommand implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendResponse(MySQLSession session) throws IOException {
+    public boolean onBackendResponse(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+    public boolean onBackendClosed(MySQLSession session, boolean normal) {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -171,16 +170,16 @@ public class LoadDataCommand implements MySQLCommand {
 	}
 
 	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
-		Boolean flag =  (Boolean)session.getMycatSession().getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey());
+    public boolean onBackendWriteFinished(MySQLSession session) {
+        Boolean flag = (Boolean) session.getMycatSession().getAttrMap().get(SessionKey.LOAD_DATA_FINISH_KEY);
 		//前段数据透传完成
 		if(flag) {
 			logger.debug("load data finish!!!");
 			//session.getMycatSession().curSQLCommand = DirectPassthrouhCmd.INSTANCE;
 			// 当load data的包完成后，则又重新打开包完整性检查
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
+            session.getAttrMap().remove(SessionKey.PKG_READ_FLAG);
 			//清除临时数组
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey());
+            session.getAttrMap().remove(SessionKey.LOAD_OVER_FLAG_ARRAY);
 			//读取后端的数据，然后进行透传
 			session.getMycatSession().giveupOwner(SelectionKey.OP_READ);
 			session.proxyBuffer.flip();

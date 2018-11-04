@@ -1,5 +1,6 @@
 package io.mycat.mycat2.beans.conf;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,8 +23,8 @@ public class SchemaBean {
 
     public String name;
     public SchemaTypeEnum schemaType;
-    private DNBean defaultDN;
-    private List<TableDefBean> tables;
+    private String defaultDataNode;
+    private List<TableDefBean> tables = new ArrayList<TableDefBean>();
 
     public String getName() {
         return name;
@@ -41,12 +42,12 @@ public class SchemaBean {
         this.schemaType = schemaType;
     }
 
-    public DNBean getDefaultDN() {
-        return defaultDN;
+    public String getDefaultDataNode() {
+        return defaultDataNode;
     }
 
-    public void setDefaultDN(DNBean defaultDN) {
-        this.defaultDN = defaultDN;
+    public void setDefaultDataNode(String defaultDataNode) {
+        this.defaultDataNode = defaultDataNode;
     }
 
     public List<TableDefBean> getTables() {
@@ -59,6 +60,7 @@ public class SchemaBean {
 
     @Override
     public String toString() {
-        return "SchemaBean{" + "name='" + name + '\'' + ", schemaType=" + schemaType + ", defaultDN=" + defaultDN + ", tables=" + tables + '}';
+        return "SchemaBean{" + "name='" + name + '\'' + ", schemaType=" + schemaType + ", tables="
+                + tables + '}';
     }
 }

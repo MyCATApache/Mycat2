@@ -1,19 +1,17 @@
 package io.mycat.mycat2;
 
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.cmds.judge.ResponseStateMachine;
+import io.mycat.proxy.buffer.BufferPool;
+
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
-import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.cmds.pkgread.CommQueryHandler;
-import io.mycat.mycat2.cmds.pkgread.CommandHandler;
-import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.proxy.buffer.BufferPool;
-
 /**
  * 后端MySQL连接
- * 
+ *
  * @author wuzhihui
  *
  */
@@ -27,6 +25,8 @@ public class MySQLSession extends AbstractMySQLSession {
 
 	// 记录当前后端连接所属的MetaBean，用于后端连接归还使用
 	private MySQLMetaBean mysqlMetaBean;
+
+	public ResponseStateMachine responseStateMachine = new ResponseStateMachine(this);
 
 
 	public MySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
@@ -52,15 +52,7 @@ public class MySQLSession extends AbstractMySQLSession {
 			this.mycatSession.clearBeckend(this);
 		}
 		this.mycatSession = null;
-		this.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-	}
-
-	/**
-	 * 用来判断该连接是否空闲.
-	 */
-	public boolean isIDLE() {
-		Boolean flag = (Boolean) this.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-		return (flag == null) ? true : flag;
+		this.setIdle();
 	}
 
 	@Override
@@ -99,5 +91,4 @@ public class MySQLSession extends AbstractMySQLSession {
 				+ mysqlMetaBean.getDsMetaBean().getIp() + ",port=" + mysqlMetaBean.getDsMetaBean().getPort()
 				+ ",hashCode=" + this.hashCode() + "]";
 	}
-
 }

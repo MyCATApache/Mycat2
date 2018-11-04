@@ -1,21 +1,15 @@
 package io.mycat.mycat2.sqlannotations;
 
-import java.nio.file.FileSystems;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardWatchEventKinds;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManager;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl;
 import io.mycat.proxy.ProxyRuntime;
+
+import java.nio.file.*;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by jamie on 2017/9/22.
@@ -55,7 +49,7 @@ public class AnnotationProcessor {
     public boolean parse(BufferSQLContext context, MycatSession session, List collect) {
         if (context.getTableCount() != 0) {
             int sqltype = context.getSQLType();
-            String schemaName = session.schema.getName();
+            String schemaName = session.mycatSchema.getName();
             int[] intHashTables;
             if (sqltype < 15 && sqltype > 10) {   //TODO  这里可能有更多的类型
                 int size = context.getTableCount();

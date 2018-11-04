@@ -1,5 +1,9 @@
 package io.mycat.proxy;
 
+import io.mycat.proxy.buffer.BufferPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.channels.SelectionKey;
@@ -8,11 +12,6 @@ import java.nio.channels.SocketChannel;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.proxy.buffer.BufferPool;
 
 /**
  * NIO Reactor Thread 负责多个Session会话
@@ -45,12 +44,13 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		sessionMan = (SessionManager<T>) ProxyRuntime.INSTANCE.getSessionManager();
 	}
 
-	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) throws IOException {
+	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) {
 		pendingJobs.offer(() -> {
 			try {
 				T session = sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel, true);
 				allSessions.add(session);
 			} catch (Exception e) {
+				e.printStackTrace();
 				logger.warn("regist new connection err " + e);
 			}
 		});
@@ -143,7 +143,9 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 							this.processWriteKey(reactorEnv, key);
 						}
 					} catch (Exception e) {
-						logger.warn("Socket IO err :", e);
+						if (logger.isWarnEnabled()) {
+							logger.warn("Socket IO err :", e);
+						}
 						key.cancel();
 						if (reactorEnv.curSession != null) {
 							reactorEnv.curSession.close(false, "Socket IO err:" + e);

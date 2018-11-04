@@ -2,7 +2,6 @@ package io.mycat.mycat2.cmds.manager.show;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.MycatSessionManager;
 import io.mycat.mysql.Fields;
@@ -10,14 +9,9 @@ import io.mycat.mysql.packet.EOFPacket;
 import io.mycat.mysql.packet.FieldPacket;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
 import io.mycat.mysql.packet.RowDataPacket;
-import io.mycat.proxy.ConfigEnum;
-import io.mycat.proxy.Configurable;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.SessionManager;
 import io.mycat.util.PacketUtil;
-import io.mycat.util.YamlUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +20,6 @@ import java.nio.channels.SelectionKey;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Objects;
 
 /**
  * mycat管理命令处理类，用于查询当前Session信息
@@ -104,7 +97,7 @@ public class MycatShowSessionsCmd implements MySQLCommand {
 			  row.add(mycatSession.clientUser.getBytes());
 			}
 			row.add(mycatSession.addr.getBytes());
-			row.add(mycatSession.schema.name.getBytes());				
+            row.add(mycatSession.mycatSchema.name.getBytes());
 			//row.add(mycatSession.charSet.charset.getBytes());
 			row.add(Long.toString(System.currentTimeMillis()-mycatSession.startTime).getBytes());
 		//	row.add(mycatSession.sqlContext.getRealSQL(mycatSession.sqlContext.getSQLCount()-1).getBytes());		
@@ -125,13 +118,13 @@ public class MycatShowSessionsCmd implements MySQLCommand {
     }
 
     @Override
-    public boolean onBackendResponse(MySQLSession session) throws IOException {
+    public boolean onBackendResponse(MySQLSession session) {
         // TODO Auto-generated method stub
         return false;
     }
 
     @Override
-    public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
+    public boolean onBackendClosed(MySQLSession session, boolean normal) {
         // TODO Auto-generated method stub
         return false;
     }
@@ -145,7 +138,7 @@ public class MycatShowSessionsCmd implements MySQLCommand {
     }
 
     @Override
-    public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
+    public boolean onBackendWriteFinished(MySQLSession session) {
         // TODO Auto-generated method stub
         return false;
     }

@@ -1,23 +1,20 @@
 package io.mycat.mycat2.net;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectionKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.pkgread.CommandHandler;
-import io.mycat.mycat2.cmds.pkgread.HandlerParse;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
 
 /**
  * 负责MycatSession的NIO事件，驱动SQLCommand命令执行，完成SQL的处理过程
@@ -41,7 +38,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 		boolean readed = session.readFromChannel();
 		ProxyBuffer buffer = session.getProxyBuffer();
 		// 在load data的情况下，SESSION_PKG_READ_FLAG会被打开，以不让进行包的完整性检查
-		if (!session.getSessionAttrMap().containsKey(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey())
+        if (!session.getAttrMap().containsKey(SessionKey.PKG_READ_FLAG)
 				&& readed == false) {
 			return;
 		}
@@ -76,17 +73,6 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 			logger.warn("front contains multi package ");
 		}
 
-		// 进行后端的结束报文处理的绑定
-		CommandHandler adapter = HandlerParse.INSTANCE.getHandlerByType(session.curMSQLPackgInf.pkgType);
-
-		if (null == adapter) {
-			logger.error("curr pkg Type :" + session.curMSQLPackgInf.pkgType + " is not handler proess");
-			throw new IOException("curr pkgtype " + session.curMSQLPackgInf.pkgType + " not handler!");
-		}
-
-		// 指定session中的handler处理为指定的handler
-		session.commandHandler = adapter;
-
 		if (!session.matchMySqlCommand()) {
 			return;
 		}
@@ -118,8 +104,8 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 
 	/**
 	 * 前端连接关闭后，延迟关闭会话
-	 * 
-	 * @param userSession
+	 *
+     * @param session
 	 * @param normal
 	 */
 	public void onSocketClosed(AbstractMySQLSession session, boolean normal) {
@@ -143,8 +129,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 	}
 
 	@Override
-	public void onConnect(SelectionKey curKey, AbstractMySQLSession session, boolean success, String msg)
-			throws IOException {
+    public void onConnect(SelectionKey curKey, AbstractMySQLSession session, boolean success, String msg) {
 		throw new java.lang.RuntimeException("not implemented ");
 	}
 
@@ -163,5 +148,12 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 			}
 		}
 	}
+
+//	public  BooleanSupplier getJudger(byte pkgType){
+//		switch (pkgType){
+//
+//		}
+//
+//	}
 
 }

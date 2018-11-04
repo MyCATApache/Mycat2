@@ -1,12 +1,12 @@
 package io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back;
 
-import java.nio.channels.SelectionKey;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.nio.channels.SelectionKey;
 
 /**
  * 前段事件处理
@@ -28,8 +28,8 @@ public class FrontEventProc implements ChainExecInf {
 		MySQLSession mysqlSession = (MySQLSession) seqList.getSession();
 
 		// 1,检查当前是否需写入前端
-		boolean rspFront = (boolean) mysqlSession.getMycatSession().getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey());
+        boolean rspFront = (boolean) mysqlSession.getMycatSession().getAttrMap()
+                .get(SessionKey.CACHE_WRITE_FRONT_FLAG_KEY);
 
 		if (rspFront) {
 			ProxyBuffer curBuffer = mysqlSession.proxyBuffer;
@@ -52,19 +52,19 @@ public class FrontEventProc implements ChainExecInf {
 		}
 
 		// 获取当前是否结束标识
-		Boolean check = (Boolean) mysqlSession.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
-
-		// 检查到当前已经完成
-		if (null != check && check) {
-			// 注册前段的读取事件
-			mysqlSession.getMycatSession().change2ReadOpts();
-			// 当检查到已经完成时，前段需要获得控制权
-			mysqlSession.getMycatSession().takeOwner(SelectionKey.OP_READ);
-		} else {
-			// 未完成，则清理前段的事件
-			mysqlSession.getMycatSession().clearReadWriteOpts();
-		}
+//		Boolean check = (Boolean) mysqlSession.getAttrMap()
+//				.get(SessionKey.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+//
+//		// 检查到当前已经完成
+//		if (null != check && check) {
+//			// 注册前段的读取事件
+//			mysqlSession.getMycatSession().change2ReadOpts();
+//			// 当检查到已经完成时，前段需要获得控制权
+//			mysqlSession.getMycatSession().takeOwner(SelectionKey.OP_READ);
+//		} else {
+//			// 未完成，则清理前段的事件
+//			mysqlSession.getMycatSession().clearReadWriteOpts();
+//		}
 
 		return seqList.nextExec();
 	}

@@ -1,14 +1,14 @@
 package io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.back;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 /**
  * 检查是否需要走缓存的流程
@@ -31,8 +31,8 @@ public class CacheFlowCheck implements ChainExecInf {
 		MySQLSession mysqlSession = (MySQLSession) seqList.getSession();
 
 		// 1,检查是否进行缓存添加的流程
-		if (mysqlSession.getMycatSession().getSessionAttrMap()
-				.containsKey(SessionKeyEnum.SESSION_KEY_CACHE_ADD_FLAG_KEY.getKey())) {
+		if (mysqlSession.getMycatSession().getAttrMap()
+				.containsKey(SessionKey.CACHE_ADD_FLAG_KEY)) {
 			// 继续进行下一个流程
 			return seqList.nextExec();
 		} else {
@@ -51,15 +51,14 @@ public class CacheFlowCheck implements ChainExecInf {
 	private void overCheckTrans(MySQLSession mysqlSession) throws IOException {
 		ProxyBuffer buffer = mysqlSession.getProxyBuffer();
 		// 进行当前的数据检查是否结束
-		boolean nextReadFlag = false;
-		do {
-			// 进行报文的处理流程
-			nextReadFlag = mysqlSession.getMycatSession().commandHandler.procss(mysqlSession);
-		} while (nextReadFlag);
+//		boolean nextReadFlag = false;
+//		do {
+//			// 进行报文的处理流程
+//			nextReadFlag = mysqlSession.getMycatSession().commandHandler.procss(mysqlSession);
+//		} while (nextReadFlag);
 
 		// 获取当前是否结束标识
-		Boolean check = (Boolean) mysqlSession.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+		Boolean check = mysqlSession.isIdle();
 
 		MycatSession mycatSession = mysqlSession.getMycatSession();
 

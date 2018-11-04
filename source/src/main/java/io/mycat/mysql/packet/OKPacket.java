@@ -40,11 +40,12 @@ import io.mycat.util.BufferUtil;
  * 
  * &#64;see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet
  * </pre>
- * 
+ * @todo 错误的注释
  * @author mycat
  */
-public class OKPacket extends MySQLPacket {
-	public byte pkgType = MySQLPacket.OK_PACKET;
+public final class OKPacket extends MySQLPacket {
+
+	public static final byte PKG_TYPE = MySQLPacket.OK_PACKET;
 
 	public static final byte FIELD_COUNT = 0x00;
 	public static final byte[] OK = new byte[] { 7, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0 };
@@ -65,7 +66,7 @@ public class OKPacket extends MySQLPacket {
 		buffer.writeFixInt(2, serverStatus);
 		buffer.writeFixInt(2, warningCount);
 		if (message != null) {
-			buffer.writeLenencString(new String(message));
+			buffer.writeLenencString(message);
 		}
 	}
 
@@ -79,9 +80,7 @@ public class OKPacket extends MySQLPacket {
 		serverStatus = (int) buffer.readFixInt(2);
 		warningCount = (int) buffer.readFixInt(2);
 		if (index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex > 0) {
-			int msgLength = index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
-			this.message = buffer.getBytes(buffer.writeIndex, msgLength);
-			buffer.readIndex += msgLength;
+			this.message = buffer.readLenencStringBytes();
 		}
 	}
 

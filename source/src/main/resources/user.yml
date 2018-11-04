@@ -2,7 +2,7 @@ users:
   - name: root
     password: 123456
     schemas:
-      - test
+      - db1
 
 firewall:
   enable: false

@@ -12,11 +12,11 @@ import java.util.List;
  */
 public class ReplicaBean {
     public enum BalanceTypeEnum {
-        BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE;
+        BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
     }
 
     public enum RepSwitchTypeEnum {
-        NOT_SWITCH, SWITCH;
+        NOT_SWITCH, SWITCH
     }
 
     public enum RepTypeEnum {
@@ -27,15 +27,15 @@ public class ReplicaBean {
         // 普通基于garela cluster集群
         GARELA_CLUSTER(GlobalBean.GARELA_CLUSTER_HEARTBEAT_SQL, GlobalBean.MYSQL_CLUSTER_STAUTS_COLMS);
 
-        private String hearbeatSQL;
+        private byte[] hearbeatSQL;
         private String[] fetchColms;
 
         RepTypeEnum(String hearbeatSQL, String[] fetchColms) {
-            this.hearbeatSQL = hearbeatSQL;
+            this.hearbeatSQL = hearbeatSQL.getBytes();
             this.fetchColms = fetchColms;
         }
 
-        public String getHearbeatSQL() {
+        public byte[] getHearbeatSQL() {
             return hearbeatSQL;
         }
 
