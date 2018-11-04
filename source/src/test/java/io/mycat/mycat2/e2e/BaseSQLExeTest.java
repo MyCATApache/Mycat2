@@ -12,13 +12,13 @@ import java.sql.*;
 public class BaseSQLExeTest {
     //3306
     //8066
-    final static String URL = "jdbc:mysql://127.0.0.1:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
+    final static String URL = "jdbc:mysql://127.0.0.1:8066/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
             "&useLocalSessionState=true&failOverReadOnly=false" +
             "&rewriteBatchedStatements=true" +
             "&allowMultiQueries=true" +
             "&useCursorFetch=true";
     final static String USERNAME = "root";
-    final static String PASSWORD = "";
+    final static String PASSWORD = "123456";
 
     static {
         try {
@@ -150,14 +150,27 @@ public class BaseSQLExeTest {
         );
     }
 
+    public static void testFieldList() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW COLUMNS FROM db1.`travelrecord`;");
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+            Assert.assertFalse(resultSet.next());
+        });
+    }
+
     public static void main(String[] args) {
-        testOneNormalSQl();
-        testTransaction();
-        testPreparedStatement();
-        testStoredProcedure();
-        testStoredProcedure2();
-        testRewriteBatchedStatements();
-        testCursor();
+//        testOneNormalSQl();
+//        testTransaction();
+//        testPreparedStatement();
+//        testStoredProcedure();
+//        testStoredProcedure2();
+//        testRewriteBatchedStatements();
+//        testCursor();
+        testFieldList();
     }
 
     public static void using(ConsumerIO<Connection> c) {

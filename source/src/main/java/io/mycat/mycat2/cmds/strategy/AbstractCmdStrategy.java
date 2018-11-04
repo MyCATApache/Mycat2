@@ -4,6 +4,7 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.CmdStrategy;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.LoadDataCommand;
 import io.mycat.mycat2.cmds.manager.MyCatCmdDispatcher;
 import io.mycat.mycat2.sqlannotations.*;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
@@ -15,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static io.mycat.mycat2.sqlparser.BufferSQLContext.LOAD_SQL;
 
 public abstract class AbstractCmdStrategy implements CmdStrategy {
 
@@ -133,6 +136,10 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 //                chain.setTarget(command).processDynamicAnno(session)
 //                        .processStaticAnno(session, staticAnnontationMap).build();
         session.curSQLCommand = command;
+
+        if (sqltype == LOAD_SQL){
+            session.curSQLCommand = LoadDataCommand.INSTANCE;
+        }
 
         return true;
     }

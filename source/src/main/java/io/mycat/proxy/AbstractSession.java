@@ -133,11 +133,11 @@ public abstract class AbstractSession implements Session {
         int readed = channel.read(buffer);
 
         try {
-            final String hexs = StringUtil.dumpAsHex(buffer.duplicate(), position,readed);
-            System.out.println(this);
-            System.out.println(hexs);
-            if (hexs.contains("17 00 00 ")&&hexs.contains("0c 00 00 01")){
-                System.out.println();
+            if (readed>0){
+                final String hexs = StringUtil.dumpAsHex(buffer.duplicate(), position,readed);
+                System.out.println(this);
+                System.out.println(hexs);
+
             }
 
         }catch (Exception e){
