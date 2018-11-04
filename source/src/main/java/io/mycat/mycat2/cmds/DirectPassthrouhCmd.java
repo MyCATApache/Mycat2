@@ -32,12 +32,13 @@ public class DirectPassthrouhCmd implements MySQLCommand {
          * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
          */
         session.clearReadWriteOpts();
+
         session.getBackend((mysqlsession, sender, success, result) -> {
             ProxyBuffer curBuffer = session.proxyBuffer;
             // 切换 buffer 读写状态
             curBuffer.flip();
             if (success) {
-                session.curBackend.responseStateMachine.reset();
+                session.curBackend.responseStateMachine.reset(mysqlsession.getMycatSession().getSqltype());
                 // 没有读取,直接透传时,需要指定 透传的数据 截止位置
                 curBuffer.readIndex = curBuffer.writeIndex;
                 // 改变 owner，对端Session获取，并且感兴趣写事件
@@ -65,34 +66,28 @@ public class DirectPassthrouhCmd implements MySQLCommand {
             AbstractMySQLSession.CurrPacketType pkgTypeEnum = session.resolveMySQLPackage();
             if (AbstractMySQLSession.CurrPacketType.Full == pkgTypeEnum) {
                 final String hexs = StringUtil.dumpAsHex(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos, session.curMSQLPackgInf.pkgLength);
+                logger.info(session.curMSQLPackgInf.pkgType+"");
                 logger.info(hexs);
-                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
-                    JudgeUtil.judgeErrorPacket(session, session.proxyBuffer);
-                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
-                    JudgeUtil.judgeOkPacket(session, session.proxyBuffer);
-                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
-                    JudgeUtil.judgeEOFPacket(session, session.proxyBuffer);
-                }
                 isCommandFinished = session.responseStateMachine.on((byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
             } else if (AbstractMySQLSession.CurrPacketType.LongHalfPacket == pkgTypeEnum) {
-                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
-                        session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||
-                        session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
-                    // 读取到了EOF/OK/ERROR 类型长半包 是需要保证是整包的.
-                    break;
-                }
-                if (curMSQLPackgInf.crossBuffer) {
-                    // 发生过透传的半包,往往包的长度超过了buffer 的长度.
-                    logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-                } else {
-                    // 不需要整包解析的长半包透传. result set .这种半包直接透传
-                    curMSQLPackgInf.crossBuffer = true;
-                    curBuffer.readIndex = curMSQLPackgInf.endPos;
-                    curMSQLPackgInf.remainsBytes = curMSQLPackgInf.pkgLength
-                            - (curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
-                    logger.debug(" readed LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-                    logger.debug(" curBuffer {}", curBuffer);
-                }
+//                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
+//                        session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||
+//                        session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
+//                    // 读取到了EOF/OK/ERROR 类型长半包 是需要保证是整包的.
+//                    break;
+//                }
+//                if (curMSQLPackgInf.crossBuffer) {
+//                    // 发生过透传的半包,往往包的长度超过了buffer 的长度.
+//                    logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
+//                } else {
+//                    // 不需要整包解析的长半包透传. result set .这种半包直接透传
+//                    curMSQLPackgInf.crossBuffer = true;
+//                    curBuffer.readIndex = curMSQLPackgInf.endPos;
+//                    curMSQLPackgInf.remainsBytes = curMSQLPackgInf.pkgLength
+//                            - (curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
+//                    logger.debug(" readed LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
+//                    logger.debug(" curBuffer {}", curBuffer);
+//                }
                 break;
             } else if (AbstractMySQLSession.CurrPacketType.ShortHalfPacket == pkgTypeEnum) {
                 break;
@@ -126,7 +121,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         }
         //   当传输标识不存在，则说已经结束，则切换到前端的读取
         else {
-            session.curBackend.responseStateMachine.reset();
             session.proxyBuffer.flip();
             session.takeOwner(SelectionKey.OP_READ);
             return true;
@@ -135,6 +129,12 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 
     @Override
     public boolean onBackendWriteFinished(MySQLSession session) {
+        if (session.responseStateMachine.isFinished()){
+            MycatSession mycatSession = session.getMycatSession();
+            mycatSession.proxyBuffer.flip();
+            mycatSession.takeOwner(SelectionKey.OP_READ);
+            return true;
+        }
         // 绝大部分情况下，前端把数据写完后端发送出去后，就等待后端返回数据了，
         // 向后端写入完成数据后，则从后端读取数据
         session.proxyBuffer.flip();

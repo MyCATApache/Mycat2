@@ -12,13 +12,13 @@ import java.sql.*;
 public class BaseSQLExeTest {
     //3306
     //8066
-    final static String URL = "jdbc:mysql://127.0.0.1:8066/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
+    final static String URL = "jdbc:mysql://127.0.0.1:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
             "&useLocalSessionState=true&failOverReadOnly=false" +
             "&rewriteBatchedStatements=true" +
             "&allowMultiQueries=true" +
             "&useCursorFetch=true";
     final static String USERNAME = "root";
-    final static String PASSWORD = "123456";
+    final static String PASSWORD = "";
 
     static {
         try {

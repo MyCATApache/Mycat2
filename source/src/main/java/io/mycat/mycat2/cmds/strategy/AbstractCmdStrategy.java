@@ -82,6 +82,8 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 
 
         MySQLCommand command = null;
+
+        byte sqltype = 0;
         if (MySQLPacket.COM_QUERY == (byte) session.curMSQLPackgInf.pkgType) {
             /**
              * sqlparser
@@ -99,14 +101,17 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
                 }
                 return false;
             }
-            byte sqltype = session.sqlContext.getSQLType() != 0 ? session.sqlContext.getSQLType() : session.sqlContext.getCurSQLType();
+            sqltype = session.sqlContext.getSQLType() != 0 ? session.sqlContext.getSQLType() : session.sqlContext.getCurSQLType();
             if (BufferSQLContext.MYCAT_SQL == sqltype) {
                 session.curSQLCommand = MyCatCmdDispatcher.INSTANCE.getMycatCommand(session.sqlContext);
                 return true;
             }
             command = MYSQLCOMMANDMAP.get(sqltype);
+            session.setSqltype(sqltype);
+
         } else {
             command = MYCOMMANDMAP.get((byte) session.curMSQLPackgInf.pkgType);
+            session.setSqltype((byte) session.curMSQLPackgInf.pkgType);
         }
         if (command == null) {
             command = DirectPassthrouhCmd.INSTANCE;
@@ -128,6 +133,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
 //                chain.setTarget(command).processDynamicAnno(session)
 //                        .processStaticAnno(session, staticAnnontationMap).build();
         session.curSQLCommand = command;
+
         return true;
     }
 }

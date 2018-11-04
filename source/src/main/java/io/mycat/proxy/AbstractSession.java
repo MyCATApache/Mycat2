@@ -3,6 +3,7 @@ package io.mycat.proxy;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKey;
 import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +71,10 @@ public abstract class AbstractSession implements Session {
         this.startTime = System.currentTimeMillis();
     }
 
+    public AbstractSession(){
+
+    }
+
     /**
      * 使用共享的Buffer
      *
@@ -124,8 +129,21 @@ public abstract class AbstractSession implements Session {
             // 大部分情况下 position == writeIndex
             buffer.position(proxyBuffer.writeIndex);
         }
-
+        int position = buffer.position();
         int readed = channel.read(buffer);
+
+        try {
+            final String hexs = StringUtil.dumpAsHex(buffer.duplicate(), position,readed);
+            System.out.println(this);
+            System.out.println(hexs);
+            if (hexs.contains("17 00 00 ")&&hexs.contains("0c 00 00 01")){
+                System.out.println();
+            }
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
 //		logger.debug(" readed {} total bytes curChannel is {}", readed,this);
         if (readed == -1) {
             logger.warn("Read EOF ,socket closed ");

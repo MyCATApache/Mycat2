@@ -30,6 +30,10 @@ import java.nio.channels.SocketChannel;
  */
 public abstract class AbstractMySQLSession extends AbstractSession {
 
+    public AbstractMySQLSession() {
+
+    }
+
     // 当前接收到的包类型
     public enum CurrPacketType {
         Full, LongHalfPacket, ShortHalfPacket
@@ -136,8 +140,12 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         this.writeToChannel();
     }
 
-    public CurrPacketType resolveMySQLPackage() throws IOException {
+    public CurrPacketType resolveMySQLPackage()  {
         return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true);
+    }
+
+    public boolean isResolveMySQLPackageFinished(){
+        return this.proxyBuffer.readIndex != this.proxyBuffer.writeIndex;
     }
 
     /**
@@ -149,8 +157,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * @return
      * @throws IOException
      */
-    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded) throws IOException {
-
+    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded) {
         lastReadTime = TimeUtil.currentTimeMillis();
 
         ByteBuffer buffer = proxyBuf.getBuffer();

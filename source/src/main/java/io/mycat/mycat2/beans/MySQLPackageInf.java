@@ -16,6 +16,19 @@ public class MySQLPackageInf {
      */
     public int remainsBytes;
 
+    public boolean isFiledCount() {
+        return (this.pkgLength <=7);
+    }
+    public boolean isERRPacket() {
+        return (this.pkgType  == 0xff);
+    }
+    public boolean isOkPacket() {
+        return (this.pkgType == 0&&this.pkgLength>7)||this.pkgType == 0xfe&&!isEOFPacket();
+    }
+
+    public boolean isEOFPacket() {
+        return (this.pkgType == 0xfe)&&this.pkgLength<9;
+    }
     @Override
     public String toString() {
         return "MySQLPackageInf [pkgType=" + pkgType + ", crossBuffer=" + crossBuffer + ", startPos=" + startPos

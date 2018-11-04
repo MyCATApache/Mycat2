@@ -71,7 +71,16 @@ MycatSession extends AbstractMySQLSession {
     public SchemaBean mycatSchema;
     public BufferSQLParser parser = new BufferSQLParser();
     private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
+    private byte sqltype;
 
+    public byte getSqltype() {
+        return sqltype;
+    }
+
+    public void setSqltype(byte sqltype) {
+        System.out.println(sqltype);
+        this.sqltype = sqltype;
+    }
 
     public MycatSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
         super(bufPool, nioSelector, frontChannel);
