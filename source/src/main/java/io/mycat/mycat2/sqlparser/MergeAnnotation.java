@@ -6,6 +6,7 @@ import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * jamie 2018.4.26
@@ -17,14 +18,14 @@ public class MergeAnnotation {
     private List<Integer> dataNodes;
     private List<Integer> groupColumns;
     private List<Integer> mergeColumns;
-    private int mergeType;
+    private List<Integer> mergeTypes;
     //having
     private int left;
     private int op;
     private int right;
     //sort
     private List<Integer> orderColumns;
-    private int orderType;
+    private List<OrderType> orderTypes;
     private long limitStart;
     private long limitSize;
 
@@ -33,12 +34,12 @@ public class MergeAnnotation {
         this.dataNodes = new ArrayList<>();
         this.groupColumns = new ArrayList<>();
         this.mergeColumns = new ArrayList<>();
-        this.mergeType = 0;
+        this.mergeTypes = new ArrayList<>();
         this.left = 0;
         this.op = 0;
         this.right = 0;
         this.orderColumns = new ArrayList<>();
-        this.orderType = 0;
+        this.orderTypes = new ArrayList<>();
         this.limitStart = 0L;
         this.limitSize = 0L;
         this.context = context;
@@ -68,12 +69,12 @@ public class MergeAnnotation {
         return map(mergeColumns);
     }
 
-    public String getMergeType() {
-        return get(mergeType);
+    public String getMergeType(int index) {
+        return get(this.mergeTypes.get(index));
     }
 
-    public void setMergeType(int mergeType) {
-        this.mergeType = mergeType;
+    public void setMergeType(int index, int pos) {
+        this.mergeTypes.set(index, pos);
     }
 
     public String getLeft() {
@@ -102,12 +103,19 @@ public class MergeAnnotation {
         this.right = right;
     }
 
-    public String[] getOrderColumns() {
-        return map(orderColumns);
+
+    public int orderColumnsSize() {
+        return this.orderColumns.size();
     }
 
-    public boolean isAsc() {
-        return orderType == IntTokenHash.ORDER_ASC;
+    public String getOrderColumn(int index) {
+        ByteArrayInterface byteArrayInterface = context.getBuffer();
+        HashArray hashArray = context.getHashArray();
+        return byteArrayInterface.getStringByHashArray(this.orderColumns.get(index), hashArray);
+    }
+
+    public OrderType getOrderType(int index) {
+        return this.orderTypes.get(index);
     }
 
     public long getLimitStart() {
@@ -134,28 +142,26 @@ public class MergeAnnotation {
         this.groupColumns.add(groupColumn);
     }
 
-    public void addMergeColumn(int mergeColumn) {
+    public void addMergeColumn(int mergeColumn, int mergeType) {
         this.mergeColumns.add(mergeColumn);
+        this.mergeTypes.add(mergeType);
     }
 
-    public void addOrderColumn(int orderColumn) {
+    public void addOrderColumn(int orderColumn, OrderType orderType) {
         this.orderColumns.add(orderColumn);
-    }
-
-    public void setOrderType(int orderType) {
-        this.orderType = orderType;
+        this.orderTypes.add(orderType);
     }
 
     public void clear() {
         this.dataNodes.clear();
         this.groupColumns.clear();
         this.mergeColumns.clear();
-        this.mergeType = 0;
+        this.mergeTypes.clear();
         this.left = 0;
         this.op = 0;
         this.right = 0;
         this.orderColumns.clear();
-        this.orderType = 0;
+        this.orderTypes.clear();
         this.limitStart = 0L;
         this.limitSize = 0L;
     }
@@ -178,19 +184,27 @@ public class MergeAnnotation {
 
     @Override
     public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        int size = orderColumns.size();
+        for (int i = 0; i < size; i++) {
+            stringBuilder.append(orderColumns.get(i)).append(":").append(orderTypes.get(i));
+        }
         return "MergeAnnotation{" +
                 "context=" + context +
                 ", dataNodes=" + Arrays.toString(this.getDataNodes()) +
                 ", groupColumns=" + Arrays.toString(this.getGroupColumns()) +
                 ", mergeColumns=" + Arrays.toString(this.getMergeColumns()) +
-                ", mergeType=" + this.getMergeType() +
+                ", mergeTypes=" + this.mergeTypes.stream().map(i -> get(i)).collect(Collectors.joining(",")) +
                 ", left=" + this.getLeft() +
                 ", op=" + this.getOp() +
                 ", right=" + this.getRight() +
-                ", orderColumns=" + Arrays.toString(this.getOrderColumns()) +
-                ", isAsc=" + this.isAsc() +
+                ", orderColumns=" + stringBuilder +
                 ", limitStart=" + this.getLimitStart() +
                 ", limitSize=" + this.getLimitSize() +
                 '}';
+    }
+
+    public enum OrderType {
+        ASC, DESC
     }
 }

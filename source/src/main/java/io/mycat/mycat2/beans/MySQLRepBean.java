@@ -23,27 +23,23 @@
  */
 package io.mycat.mycat2.beans;
 
-import java.io.IOException;
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.conf.DatasourceMetaBean;
+import io.mycat.mycat2.beans.conf.ReplicaBean;
+import io.mycat.mycat2.beans.conf.ReplicaBean.RepTypeEnum;
+import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
+import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
+import io.mycat.mysql.Alarms;
+import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.ProxyRuntime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.stream.Collectors;
-
-import io.mycat.mycat2.beans.conf.DatasourceMetaBean;
-import io.mycat.mycat2.beans.conf.ReplicaBean;
-import io.mycat.mycat2.beans.conf.ReplicaIndexConfig;
-import io.mycat.mycat2.beans.conf.ReplicaBean.RepTypeEnum;
-import io.mycat.proxy.ConfigEnum;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
-import io.mycat.mysql.Alarms;
-import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.man.MyCluster;
 
 /**
  * 表示一組MySQL Server复制集群，如主从或者多主
@@ -258,6 +254,9 @@ public class MySQLRepBean {
 				datas = getCurWriteMetaBean();
 				break;
 		}
+        if (datas == null) {
+            datas = getCurWriteMetaBean();
+        }
 		return datas;
     }
 
@@ -266,9 +265,12 @@ public class MySQLRepBean {
      * 当前读写节点都承担负载
      */
     private MySQLMetaBean getLBReadWriteMetaBean() {
-    	List<MySQLMetaBean> result = metaBeans.stream()
-    			.filter(f -> f.canSelectAsReadNode())
-    			.collect(Collectors.toList());
+        ArrayList<MySQLMetaBean> result = new ArrayList<>();
+        for (MySQLMetaBean metaBean : metaBeans) {
+            if (metaBean.canSelectAsReadNode()) {
+                result.add(metaBean);
+            }
+        }
         return result.isEmpty()?null:result.get(ThreadLocalRandom.current().nextInt(result.size()));
     }
 
@@ -277,9 +279,12 @@ public class MySQLRepBean {
      * @return
      */
     private MySQLMetaBean getLBReadMetaBean(){
-    	List<MySQLMetaBean> result = metaBeans.stream()
-    			.filter(f -> f.isSlaveNode() && f.canSelectAsReadNode())
-    			.collect(Collectors.toList());
+        ArrayList<MySQLMetaBean> result = new ArrayList<>();
+        for (MySQLMetaBean f : metaBeans) {
+            if (f.isSlaveNode() && f.canSelectAsReadNode()) {
+                result.add(f);
+            }
+        }
     	return result.isEmpty() ? null : result.get(ThreadLocalRandom.current().nextInt(result.size()));
     }
 

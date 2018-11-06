@@ -1,19 +1,18 @@
 package io.mycat.mycat2;
 
-import java.io.IOException;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.net.MySQLClientAuthHandler;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
 import io.mycat.proxy.buffer.BufferPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collection;
 
 /**
  * Mycat 2.0 Session Manager
@@ -28,7 +27,9 @@ public class MycatSessionManager implements SessionManager<MycatSession> {
 	@Override
 	public MycatSession createSession(Object keyAttachment, BufferPool bufPool, Selector nioSelector,
 			SocketChannel frontChannel, boolean isAcceptCon) throws IOException {
-		logger.info("MySQL client connected  ." + frontChannel);
+        if (logger.isInfoEnabled()) {
+            logger.info("MySQL client connected  ." + frontChannel);
+        }
 		MycatSession session = new MycatSession(bufPool, nioSelector, frontChannel);
 		// 第一个IO处理器为Client Authorware
 		session.setCurNIOHandler(MySQLClientAuthHandler.INSTANCE);

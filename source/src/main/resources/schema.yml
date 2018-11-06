@@ -1,19 +1,15 @@
 schemas:
-  - name: myfly
-    schemaType: DB_IN_MULTI_SERVER
+  - name: db1
+    schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
     tables:
-      - name: tb_fly
+      - name: travelrecord
         dataNode: dn1
-      - name: tb_boy
-        dataNode: dn2
-      - name: tb_paw
-        type: global
-        dataNode: dn$1-2
+
 dataNodes:
   - name: dn1
-    database: mytest
+    database: db1
     replica: repli
   - name: dn2
-    database: mytest2
+    database: db2
     replica: repli2

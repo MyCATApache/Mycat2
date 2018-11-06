@@ -204,12 +204,10 @@ public class BufferSQLParser {
                             case IntTokenHash.DATANODE:
                             case IntTokenHash.GROUP_COLUMNS:
                             case IntTokenHash.MERGE_COLUMNS:
-                            case IntTokenHash.MERGE_TYPE:
                             case IntTokenHash.HAVING:
-                            case IntTokenHash.ORDER_ASC:
-                            case IntTokenHash.ORDER_DESC:
                             case IntTokenHash.LIMIT_START:
                             case IntTokenHash.LIMIT_SIZE:
+                            case IntTokenHash.ORDER:
                                 return true;
                             default:
                                 return false;
@@ -221,7 +219,7 @@ public class BufferSQLParser {
                         switch (intHash) {
                             case IntTokenHash.DATANODES: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
+                                    while (pos < arrayCount) {
                                         annotation.addDataNode(++pos);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
@@ -233,7 +231,7 @@ public class BufferSQLParser {
                             }
                             case IntTokenHash.GROUP_COLUMNS: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
+                                    while (pos < arrayCount) {
                                         annotation.addGroupColumn(++pos);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
@@ -245,20 +243,15 @@ public class BufferSQLParser {
                             }
                             case IntTokenHash.MERGE_COLUMNS: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
-                                        annotation.addMergeColumn(++pos);
+                                    while (pos < arrayCount) {
+                                        ++pos;
+                                        int colPos = pos;
+                                        annotation.addMergeColumn(colPos, ++pos);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
                                             break;
                                         }
                                     }
-                                }
-                                break;
-                            }
-                            case IntTokenHash.MERGE_TYPE: {
-                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    annotation.setMergeType(++pos);
-                                    ++pos;
                                 }
                                 break;
                             }
@@ -271,24 +264,15 @@ public class BufferSQLParser {
                                 }
                                 break;
                             }
-                            case IntTokenHash.ORDER_ASC: {
-                                annotation.setOrderType(IntTokenHash.ORDER_ASC);
+                            case IntTokenHash.ORDER: {
                                 if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
-                                        annotation.addOrderColumn(++pos);
-                                        if (isFinished.test(hashArray.getIntHash(pos + 1))) {
-                                            ++pos;
-                                            break;
-                                        }
-                                    }
-                                }
-                                break;
-                            }
-                            case IntTokenHash.ORDER_DESC: {
-                                annotation.setOrderType(IntTokenHash.ORDER_DESC);
-                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
-                                    while (true) {
-                                        annotation.addOrderColumn(++pos);
+                                    while (pos < arrayCount) {
+                                        ++pos;
+                                        int colPos = pos;
+                                        int order = hashArray.getIntHash(++pos);
+                                        MergeAnnotation.OrderType orderType = order == IntTokenHash.DESC ?
+                                                MergeAnnotation.OrderType.DESC : MergeAnnotation.OrderType.ASC;
+                                        annotation.addOrderColumn(colPos, orderType);
                                         if (isFinished.test(hashArray.getIntHash(pos + 1))) {
                                             ++pos;
                                             break;
@@ -316,6 +300,7 @@ public class BufferSQLParser {
                             }
                             default: {
                                 ++pos;
+                                context.setRealSQLOffset(pos);
 //                                System.out.println(this.sql.getStringByHashArray(pos, this.hashArray)+":"+intHash);
                                 return pos;
                             }
@@ -638,6 +623,10 @@ public class BufferSQLParser {
                     }
                     break;
                 case IntTokenHash.DESC:
+                    if (context.getCurSQLType() != 0) {
+                        pos++;
+                        break;
+                    }
                 case IntTokenHash.DESCRIBE:
                     long hashValue;
                     if (((hashValue = hashArray.getHash(pos)) == TokenHash.DESC) ||
@@ -763,18 +752,42 @@ public class BufferSQLParser {
 
     }
 
-    public void parse(ByteBuffer src, int offset, int length, BufferSQLContext context) {
-        this.byteBufferArray.setSrc(src);
-        this.byteBufferArray.setOffset(offset);
-        this.byteBufferArray.setLength(length);
-        System.out.println("Recieved SQL : " + this.byteBufferArray.getString(offset, length));
-        sql = this.byteBufferArray;
-        hashArray = context.getHashArray();
-        hashArray.init();
-        context.setCurBuffer(sql);
-        tokenizer.tokenize(sql, hashArray);
-        firstParse(context);
-        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
+    public static void main(String[] args) {
+        BufferSQLParser parser = new BufferSQLParser();
+        BufferSQLContext context = new BufferSQLContext();
+        //parser.init();
+//        byte[] defaultByteArray = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
+//        byte[] defaultByteArray = "INSERT `mycatSchema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = ("select * from tbl_A, -- 单行注释\n" +
+//                "tbl_B b, #另一种单行注释\n" +
+//                "/*\n" +  //69
+//                "tbl_C\n" + //79
+//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = sql3.getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
+
+        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+//        ByteArrayInterface src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
+//        ByteArrayInterface src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
+//        long min = 0;
+//        for (int i = 0; i < 50; i++) {
+//            System.out.print("Loop " + i + " : ");
+//            long cur = RunBench(defaultByteArray, parser);//不加分析应该可以进2.6秒
+//            System.out.println(cur);
+//            if (cur < min || min == 0) {
+//                min = cur;
+//            }
+//        }
+//        System.out.print("min time : " + min);
+        parser.parse(src, context);
+        System.out.println(context.getSQLCount());
+        System.out.println(context.getSelectItem(0));
+        System.out.println(context.getSelectItem(1));
+        //IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
+        //System.out.print("token count : "+parser.hashArray.getCount());
     }
 
 
@@ -806,42 +819,20 @@ public class BufferSQLParser {
 //        return System.currentTimeMillis() - start;
 //    }
 
-    public static void main(String[] args) {
-        BufferSQLParser parser = new BufferSQLParser();
-        BufferSQLContext context = new BufferSQLContext();
-        //parser.init();
-//        byte[] defaultByteArray = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
-//        byte[] defaultByteArray = "INSERT `schema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = ("select * from tbl_A, -- 单行注释\n" +
-//                "tbl_B b, #另一种单行注释\n" +
-//                "/*\n" +  //69
-//                "tbl_C\n" + //79
-//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = sql3.getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
-
-        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
-//        ByteArrayInterface src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
-//        ByteArrayInterface src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
-//        long min = 0;
-//        for (int i = 0; i < 50; i++) {
-//            System.out.print("Loop " + i + " : ");
-//            long cur = RunBench(defaultByteArray, parser);//不加分析应该可以进2.6秒
-//            System.out.println(cur);
-//            if (cur < min || min == 0) {
-//                min = cur;
-//            }
-//        }
-//        System.out.print("min time : " + min);
-        parser.parse(src, context);
-        System.out.println(context.getSQLCount());
-        System.out.println(context.getSelectItem(0));
-        System.out.println(context.getSelectItem(1));
-        //IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
-        //System.out.print("token count : "+parser.hashArray.getCount());
+    public void parse(ByteBuffer src, int offset, int length, BufferSQLContext context) {
+        this.byteBufferArray.setSrc(src);
+        this.byteBufferArray.setOffset(offset);
+        this.byteBufferArray.setLength(length);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Recieved SQL : " + this.byteBufferArray.getString(offset, length));
+        }
+        sql = this.byteBufferArray;
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(sql);
+        tokenizer.tokenize(sql, hashArray);
+        firstParse(context);
+        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
     }
 
     static String sql3 = "SELECT  'product' as 'P_TYPE' ,\n" +

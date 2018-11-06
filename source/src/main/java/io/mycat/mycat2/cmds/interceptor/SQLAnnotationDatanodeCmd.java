@@ -30,7 +30,7 @@ public class SQLAnnotationDatanodeCmd extends SQLAnnotationCmd {
             String sql = context.getRealSQL(0);
             RouteResultset routeResultset = new RouteResultset(sql, BufferSQLContext.SELECT_SQL);
             routeResultset.setNodes(new RouteResultsetNode[]{new RouteResultsetNode(dnBean.getName(), BufferSQLContext.SELECT_SQL, sql)});
-            session.setCurRouteResultset(routeResultset);
+            // session.setCurRouteResultset(routeResultset);
         }
 
         return super.procssSQL(session);

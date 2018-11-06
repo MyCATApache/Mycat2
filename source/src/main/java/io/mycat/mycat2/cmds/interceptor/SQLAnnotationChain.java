@@ -1,8 +1,8 @@
 package io.mycat.mycat2.cmds.interceptor;
 
+
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.sqlannotations.AnnotationProcessor;
 import io.mycat.mycat2.sqlannotations.SQLAnnotation;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
@@ -52,12 +52,12 @@ public class SQLAnnotationChain {
      */
     public SQLAnnotationChain processRoute(MycatSession session) {
 
-        switch (session.schema.schemaType) {
+        switch (session.mycatSchema.schemaType) {
             case DB_IN_ONE_SERVER:
                 break;
             case DB_IN_MULTI_SERVER:
-//                if (session.curRouteResultset != null
-//                        && session.curRouteResultset.getNodes().length > 1) {
+//                if (session.getCurRouteResultset() != null
+//                        && session.getCurRouteResultset().getNodes().length > 1) {
 //                    // DB_IN_MULTI_SERVER 模式下
 //                    this.target = DbInMultiServerCmd.INSTANCE;
 //                }
@@ -67,7 +67,7 @@ public class SQLAnnotationChain {
 //          case SQL_PARSE_ROUTE:
 //              AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
             default:
-                throw new InvalidParameterException("schema type is invalid ");
+                throw new InvalidParameterException("mycatSchema type is invalid ");
         }
         return this;
 
@@ -77,16 +77,16 @@ public class SQLAnnotationChain {
 	 * 2. 处理动态注解
 	 */
 	public SQLAnnotationChain processDynamicAnno(MycatSession session){
-		List<SQLAnnotation> actions = new ArrayList<>(30);
-		if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
-			if(!actions.isEmpty()){
-				for(SQLAnnotation f:actions){
-					if(!f.apply(session,this)){
-						break;
-					}
-				}
-			}
-		}
+//		List<SQLAnnotation> actions = new ArrayList<>(30);
+//		if(AnnotationProcessor.getInstance().parse(session.sqlContext, session, actions)){
+//			if(!actions.isEmpty()){
+//				for(SQLAnnotation f:actions){
+//					if(!f.apply(session,this)){
+//						break;
+//					}
+//				}
+//			}
+//		}
 		return this;
 	}
 	

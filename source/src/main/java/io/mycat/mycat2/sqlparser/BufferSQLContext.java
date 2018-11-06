@@ -22,6 +22,8 @@ public class BufferSQLContext {
     public static final byte DROP_SQL = 3;    //TODO 进一步细化，区分
     public static final byte TRUNCATE_SQL = 4;
     //    public static final byte COMMENT_SQL = 5;
+
+    // DAL (Database Administration Statements)
     public static final byte RENAME_SQL = 6;
     public static final byte USE_SQL = 7;
     public static final byte SHOW_SQL = 8;    //TODO 进一步细化。区分
@@ -94,7 +96,7 @@ public class BufferSQLContext {
     public static final byte ANNOTATION_REPLICA_NAME = 10;
     public static final byte ANNOTATION_MERGE = 10;
 
-    private short[] tblResult;  //记录格式：[{schema hash array index(defaults 0), tbl hash array index}]
+    private short[] tblResult;  //记录格式：[{mycatSchema hash array index(defaults 0), tbl hash array index}]
     private long[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]
     private byte totalTblCount;
     private int[] annotationCondition;
@@ -301,6 +303,11 @@ public class BufferSQLContext {
     public boolean isDDL() {
         return sqlType == CREATE_SQL || sqlType == ALTER_SQL || sqlType == DROP_SQL
                 || sqlType == TRUNCATE_SQL;
+    }
+
+    public boolean isSelect() {
+        return this.getSQLType() == SELECT_SQL || this.getSQLType() == SELECT_INTO_SQL
+                || this.getSQLType() == SELECT_FOR_UPDATE_SQL;
     }
 
     public void setSQLIdx(int sqlIdx) {

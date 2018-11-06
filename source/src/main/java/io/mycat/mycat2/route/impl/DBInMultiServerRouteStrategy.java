@@ -1,9 +1,5 @@
 package io.mycat.mycat2.route.impl;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.SchemaBean;
@@ -15,10 +11,14 @@ import io.mycat.mycat2.route.RouteStrategy;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.proxy.ProxyRuntime;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
 /**
  * <b><code>DBInMultiServerRouteStrategy</code></b>
  * <p>
- * DBInMultiServer模式下的路由策略，该模式下不允许跨库.
+ * DBInMultiServer模式下的路由策略，该模式下除全局表外不允许跨库.
  * </p>
  * <b>Creation Time:</b> 2017-12-24
  * 
@@ -52,17 +52,18 @@ public class DBInMultiServerRouteStrategy implements RouteStrategy {
                 dataNodes.add(schema.getDefaultDataNode());
             }
         }
-        // 就全局表而言，只有查询操作不需要跨节点，其他都要
+        // 就全局表而言，只有查询操作不需要跨节点，其他操作都要
         if (sqlType != BufferSQLContext.SELECT_SQL
                 && sqlType != BufferSQLContext.SELECT_FOR_UPDATE_SQL
                 && sqlType != BufferSQLContext.SELECT_INTO_SQL) {
             dataNodes.addAll(globalDataNodes);
         } else {
             if (!globalDataNodes.isEmpty()) {
-                dataNodes.add(globalDataNodes.stream().findFirst().get());
+                dataNodes.retainAll(globalDataNodes);
             }
         }
         RouteResultset rrs = new RouteResultset(origSQL, sqlType);
+//        String changSql = setMerge(mycatSession, rrs);
         if (existGlobalTable) {
             rrs.setGlobalTable(true);
         }
@@ -82,5 +83,4 @@ public class DBInMultiServerRouteStrategy implements RouteStrategy {
             return rrs;
         }
     }
-
 }

@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
  */
 public class AnnotationDataNode extends SQLAnnotation {
 
-    private static final Logger logger = LoggerFactory.getLogger(AnnotationDataNodeMeta.class);
+    private static final Logger logger = LoggerFactory.getLogger(AnnotationDataNode.class);
 
     /**
      * 动态注解 组装 mysqlCommand chain
