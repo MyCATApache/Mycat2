@@ -26,7 +26,7 @@ package io.mycat.mysql;
 /**
  * 处理能力标识定义
  * 
- * @author mycat
+ * @author mycat cjw
  */
 public interface Capabilities {
 
@@ -109,4 +109,83 @@ public interface Capabilities {
     // 当打开CLIENT_MULTI_STATEMENTS时，这个标志自动的被打开。
     public static final int CLIENT_MULTI_RESULTS = 131072;
 
+
+    /**
+     Server
+     Sends extra data in Initial Handshake Packet and supports the pluggable authentication protocol.
+
+     Client
+     Supports authentication plugins.
+
+     Requires
+     CLIENT_PROTOCOL_41
+     */
+    public static final int CLIENT_PLUGIN_AUTH = 0x00080000;
+
+    /**
+     Value
+     0x00100000
+
+     Server
+     Permits connection attributes in Protocol::HandshakeResponse41.
+
+     Client
+     Sends connection attributes in Protocol::HandshakeResponse41.
+     */
+
+    public static final int CLIENT_CONNECT_ATTRS = 0x00100000;
+
+    /**
+     Value
+     0x00200000
+
+     Server
+     Understands length-encoded integer for auth response data in Protocol::HandshakeResponse41.
+
+     Client
+     Length of auth response data in Protocol::HandshakeResponse41 is a length-encoded integer.
+     The flag was introduced in 5.6.6, but had the wrong value.
+     */
+    public static final int CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA = 0x00200000;
+
+    /**
+     *Value
+     * 0x00400000
+     *
+     * Server
+     * Announces support for expired password extension.
+     *
+     * Client
+     * Can handle expired passwords.
+     */
+    public static final int CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS = 0x00400000;
+
+    /**
+     * Value
+     * 0x00800000
+     *
+     * Server
+     * Can set SERVER_SESSION_STATE_CHANGED in the Status Flags and send session-state change data after a OK packet.
+     *
+     * Client
+     * Expects the server to send sesson-state changes after a OK packet.
+     */
+    public static final int CLIENT_SESSION_TRACK = 0x00800000;
+
+    /**
+     Value
+     0x01000000
+
+     Server
+     Can send OK after a Text Resultset.
+
+     Client
+     Expects an OK (instead of EOF) after the resultset rows of a Text Resultset.
+
+     Background
+     To support CLIENT_SESSION_TRACK, additional information must be sent after all successful commands. Although the OK packet is extensible, the EOF packet is not due to the overlap of its bytes with the content of the Text Resultset Row.
+
+     Therefore, the EOF packet in the Text Resultset is replaced with an OK packet. EOF packets are deprecated as of MySQL 5.7.5.
+     */
+    public static final int CLIENT_DEPRECATE_EOF = 0x01000000;
 }
