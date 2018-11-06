@@ -48,7 +48,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @author mycat
  */
 public class HandshakePacket extends MySQLPacket {
-    private static final byte[] FILLER_13 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    private static final byte[] FILLER_11 = new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     public byte protocolVersion;
     public byte[] serverVersion;
@@ -87,7 +87,8 @@ public class HandshakePacket extends MySQLPacket {
         buffer.writeFixInt(2, serverCapabilities);
         buffer.writeByte(serverCharsetIndex);
         buffer.writeFixInt(2, serverStatus);
-        buffer.writeBytes(FILLER_13);
+        buffer.writeFixInt(2, 0xc3ff);//todo generating serverCapabilities
+        buffer.writeBytes(FILLER_11);
         buffer.writeNULString(new String(restOfScrambleBuff));
     }
 
