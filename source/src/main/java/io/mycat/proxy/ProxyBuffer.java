@@ -121,7 +121,12 @@ public class ProxyBuffer {
         //buffer.position(proxyBuffer.readMark);
         return readIndex == readMark;
     }
+    public boolean readFinished() {
 
+        //buffer.limit(proxyBuffer.readIndex);
+        //buffer.position(proxyBuffer.readMark);
+        return readIndex == writeIndex;
+    }
     /**
      * 需要谨慎使用，调用者需要清除当前Buffer所处的状态！！
      *
