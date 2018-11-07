@@ -15,7 +15,7 @@ public class HandshakePacketTest {
     @Test
     public void testReadHandshakePacket() {
         NewHandshakePacket handshakePacket = new NewHandshakePacket();
-        handshakePacket.read(ofBuffer(pkt17));
+        handshakePacket.readPayload(ofBuffer(pkt17));
         Assert.assertEquals(0x0a, handshakePacket.protocolVersion);
         Assert.assertEquals("8.0.12", handshakePacket.serverVersion);
         Assert.assertEquals(13, handshakePacket.connectionId);
@@ -75,11 +75,11 @@ public class HandshakePacketTest {
         handshakePacket.authPluginName = "mysql_native_password";
 
         NewHandshakePacket fact = new NewHandshakePacket();
-        fact.read(ofBuffer(pkt17));
+        fact.readPayload(ofBuffer(pkt17));
 
         Assert.assertEquals(handshakePacket.toString(), fact.toString());
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocate(pkt17.length));
-        handshakePacket.write(buffer);
+        handshakePacket.writePayload(buffer);
         byte[] array = buffer.getBuffer().array();
         pkt17[27] = 1;//unused
         Assert.assertArrayEquals(of(pkt17),array);
