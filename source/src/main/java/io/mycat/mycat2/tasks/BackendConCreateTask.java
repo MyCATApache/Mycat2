@@ -87,9 +87,9 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
         flag |= Capabilities.CLIENT_TRANSACTIONS;
         // flag |= Capabilities.CLIENT_RESERVED;
         flag |= Capabilities.CLIENT_SECURE_CONNECTION;
-        // client extension
-        flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
-        flag |= Capabilities.CLIENT_MULTI_RESULTS;
+//        // client extension
+//        flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
+//        flag |= Capabilities.CLIENT_MULTI_RESULTS;
         return flag;
     }
 
