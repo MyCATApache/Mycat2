@@ -20,10 +20,11 @@ public class HandshakePacketTest {
         Assert.assertEquals("8.0.12",handshakePacket.serverVersion);
         Assert.assertEquals(13,handshakePacket.connectionId);
         Assert.assertEquals(new String(of(0x15, 0x5f, 0x3e, 0x56, 0x1d, 0x15, 0x2b, 0x79)),handshakePacket.authPluginDataPartOne);
-        Assert.assertEquals(0xffff,handshakePacket.partOnecapabilityFlags.capabilities);
+        Assert.assertEquals(0xffff,handshakePacket.capabilities.value&0x0000ffff);
         Assert.assertEquals(255,handshakePacket.characterSet);
         Assert.assertEquals(0x0002,handshakePacket.statusFlags);
-        Assert.assertEquals(0xc3ff,handshakePacket.partTwoCapabilityFlags.capabilities);
+        System.out.println(Integer.toBinaryString(handshakePacket.capabilities.value));
+        Assert.assertEquals(0xc3ff,handshakePacket.capabilities.value>>>16);
         Assert.assertEquals(21,handshakePacket.authPluginDataLen);
         Assert.assertEquals(new String(new char[]{0,0,0,0,0,0,0,0,0,0}),handshakePacket.reserved);
         Assert.assertEquals("^@y\b\u000F\u001CH~cLI}\u0000",handshakePacket.authPluginDataPartTwo);
