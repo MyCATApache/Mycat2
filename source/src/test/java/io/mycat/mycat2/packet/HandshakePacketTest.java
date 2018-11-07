@@ -74,11 +74,16 @@ public class HandshakePacketTest {
         handshakePacket.authPluginDataPartTwo = "^@y\b\u000F\u001CH~cLI}\u0000";
         handshakePacket.authPluginName = "mysql_native_password";
 
-        System.out.println(handshakePacket.capabilities);
         NewHandshakePacket fact = new NewHandshakePacket();
         fact.read(ofBuffer(pkt17));
 
         Assert.assertEquals(handshakePacket.toString(), fact.toString());
+        ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocate(pkt17.length));
+        handshakePacket.write(buffer);
+        byte[] array = buffer.getBuffer().array();
+        pkt17[27] = 1;//unused
+        Assert.assertArrayEquals(of(pkt17),array);
+        Assert.assertEquals(handshakePacket.calcPacketSize(), pkt17.length);
     }
 
     static int[] pkt17 = {
