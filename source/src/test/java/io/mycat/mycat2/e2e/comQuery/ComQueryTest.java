@@ -1,9 +1,10 @@
 package io.mycat.mycat2.e2e.comQuery;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import org.junit.Assert;
+
+import java.sql.*;
+
+import static java.lang.Thread.sleep;
 
 /**
  * Created by linxiaofang on 2018/11/5.
@@ -13,13 +14,19 @@ import java.sql.Statement;
 public class ComQueryTest {
     //3306
     //8066
-    final static String URL = "jdbc:mysql://10.4.40.57:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
+    final static String URL = "jdbc:mysql://127.0.0.1:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
             "&useLocalSessionState=true&failOverReadOnly=false" +
             "&rewriteBatchedStatements=true" +
             "&allowMultiQueries=true" +
             "&useCursorFetch=true";
     final static String USERNAME = "root";
-    final static String PASSWORD = "Marble@dls16";
+    final static String PASSWORD = "";
+    final static String REPL_MASTER_HOST = "127.0.0.1";
+    final static int REPL_MASTER_PORT = 3307;
+    final static String REPL_MASTER_USER = "repl";
+    final static String REPL_MASTER_PASSWORD = "";
+    final static String REPL_MASTER_LOG_FILE = "mysql-bin.000001";
+    final static int REPL_MASTER_LOG_POS = 3143;
 
     static {
         try {
@@ -59,6 +66,8 @@ public class ComQueryTest {
 
     /*
      * 需要把/tmp/loaddata.txt上传到mysql所在机器的目录下
+     * 如果报错: The MySQL server is running with the --secure-file-priv option so it cannot execute this statement
+     * 需要修改my.cnf, 增加 secure-file-priv="" 后重启
      */
     public static void testLoadData() {
         using(c -> {
@@ -87,12 +96,13 @@ public class ComQueryTest {
         );
     }
 
-    public static void testGrant() {
+    public static void testGrantRevoke() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("DROP USER 'jeffrey'@'localhost';");
                     statement.execute("CREATE USER 'jeffrey'@'localhost' IDENTIFIED BY 'What?2018';");
                     statement.execute("GRANT ALL ON db1.* TO 'jeffrey'@'localhost';");
+                    statement.execute("REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';");
                 }
         );
     }
@@ -163,13 +173,137 @@ public class ComQueryTest {
         );
     }
 
+    public static void testCreateDropFunction() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("DROP FUNCTION IF EXISTS `hello`");
+                    statement.execute("CREATE FUNCTION `hello` (s CHAR(20))\n" +
+                            " RETURNS CHAR(50) DETERMINISTIC\n" +
+                            " RETURN CONCAT('Hello, ',s,'!');");
+                }
+        );
+    }
+
+    public static void testOptimize() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    Assert.assertTrue(statement.execute("OPTIMIZE TABLE `db1`.`travelrecord`;"));
+                }
+        );
+    }
+
+    public static void testCheck() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    Assert.assertTrue(statement.execute("CHECK TABLE `db1`.`travelrecord`;"));
+                }
+        );
+    }
+
+    public static void testCacheIndex() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("SET GLOBAL hot_cache.key_buffer_size=128*1024;");
+                    statement.execute("CACHE INDEX `db1`.`travelrecord` IN hot_cache;");
+                    statement.execute("LOAD INDEX INTO CACHE `db1`.`travelrecord` IGNORE LEAVES;");
+                }
+        );
+    }
+
+    public static void testFlush() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("FLUSH PRIVILEGES;");
+                }
+        );
+    }
+
+    /*
+     * 执行此方法前先手动执行select sleep(100),然后执行show processlist,找出对应的processId再执行kill命令
+     */
+    public static void testKill() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("KILL 333");
+                }
+        );
+    }
+
+    public static void testAnalyze() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("ANALYZE TABLE `db1`.`travelrecord`;");
+                }
+        );
+    }
+
+    public static void testRollback() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    c.setAutoCommit(false);
+                    statement.executeUpdate("DELETE FROM `db1`.`travelrecord` WHERE `id` = 3; ");
+                    c.rollback();
+                }
+        );
+    }
+
+    public static void testRollbackToSavePoint() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    c.setAutoCommit(false);
+                    statement.executeUpdate("REPLACE INTO `db1`.`travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`) VALUES (4, '2', '2018-11-02', '2', '2') ;");
+
+                    Savepoint sp = c.setSavepoint("after place");
+                    statement.executeUpdate("DELETE FROM `db1`.`travelrecord` WHERE `id` = 3;");
+                    c.rollback(sp);
+                    c.commit();
+                }
+        );
+    }
+
+    public static void testReleaseSavePoint() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    c.setAutoCommit(false);
+                    statement.executeUpdate("REPLACE INTO `db1`.`travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`) VALUES (4, '2', '2018-11-02', '2', '2') ;");
+
+                    Savepoint sp = c.setSavepoint("after place");
+                    c.releaseSavepoint(sp);
+                    c.rollback();
+                }
+        );
+    }
+
+    /*
+     * 执行testSlave,需要连接到Slave数据库
+     */
+    public static void testSlave() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("STOP SLAVE;");
+                    statement.execute("CHANGE MASTER to MASTER_HOST='" + REPL_MASTER_HOST + "',MASTER_PORT=" + REPL_MASTER_PORT + ",MASTER_USER='" + REPL_MASTER_USER +
+                            "',MASTER_PASSWORD='" + REPL_MASTER_PASSWORD + "',MASTER_LOG_FILE='" + REPL_MASTER_LOG_FILE + "', MASTER_LOG_POS=" + REPL_MASTER_LOG_POS + ";");
+                    statement.execute("START SLAVE;");
+                }
+        );
+    }
+
+    public static void testStartStopGroupReplication() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("START GROUP_REPLICATION;");
+                    statement.execute("STOP GROUP_REPLICATION;");
+                }
+        );
+    }
+
     public static void main(String[] args) {
         testShowTableStatus();
         testShowTriggers();
         testLoadData();
         testSetOption();
         testLockUnlock();
-        testGrant();
+        testGrantRevoke();
         testChangeDb();
         testCreateDb();
         testDropDb();
@@ -177,6 +311,17 @@ public class ComQueryTest {
         testRepair();
         testReplace();
         testReplaceSelect();
+        testCreateDropFunction();
+        testOptimize();
+        testCheck();
+        testCacheIndex();
+        testFlush();
+        testAnalyze();
+        testRollback();
+        testRollbackToSavePoint();
+        testReleaseSavePoint();
+//        testKill();       //testKill没法自动测试暂时注释掉,执行此方法前先手动执行select sleep(100),然后执行show processlist,找出对应的processId再执行kill命令
+//        testSlave();      //执行testSlave需要连slave数据库
     }
 
     public static void using(ConsumerIO<Connection> c) {
