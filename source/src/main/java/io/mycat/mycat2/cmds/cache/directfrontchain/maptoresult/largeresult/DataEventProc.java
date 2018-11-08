@@ -1,11 +1,11 @@
 package io.mycat.mycat2.cmds.cache.directfrontchain.maptoresult.largeresult;
 
-import java.nio.channels.SelectionKey;
-
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
+
+import java.nio.channels.SelectionKey;
 
 /**
  * 数据结束的事件处理
@@ -30,13 +30,12 @@ public class DataEventProc implements ChainExecInf {
 		session.proxyBuffer.readMark = 0;
 
 		// 获取当前是否结束标识
-		Boolean check = (Boolean) session.curBackend.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+        Boolean check = session.curBackend.isIdle();
 
 		// 当前完成，注册读取事件
-		if (null != check && check) {
+        if (check) {
 			// 获取当前是否结束标识
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_READY_OVER.getKey(), true);
+            session.getAttrMap().put(SessionKey.CACHE_READY_OVER, true);
 		}
 
 		// 完成之后将再次注册写入事件

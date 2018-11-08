@@ -1,16 +1,16 @@
 package io.mycat.mycat2.cmds.cache.directfrontchain.resulttomap.front;
 
-import java.io.IOException;
-
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.SqlCacheBean;
 import io.mycat.mycat2.cmds.cache.mapcache.CacheManager;
 import io.mycat.mycat2.cmds.sqlCmds.CacheMapFileCommand;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
+
+import java.io.IOException;
 
 /**
  * 用于缓存的逻辑检查操作
@@ -31,7 +31,7 @@ public class CacheExistsCheck implements ChainExecInf {
 
 		MycatSession mycatSession = (MycatSession) seqList.getSession();
 
-		String sql = (String) mycatSession.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
+		String sql = (String) mycatSession.getAttrMap().get(SessionKey.CACHE_SQL_STR);
 
 		// 检查缓存是否存在
 		boolean exists = CacheManager.INSTANCE.cacheExists(sql);
@@ -39,8 +39,8 @@ public class CacheExistsCheck implements ChainExecInf {
 		// 当缓存不存在时，创建缓存
 		if (!exists) {
 
-			long cacheTime = (long) mycatSession.getSessionAttrMap()
-					.get(SessionKeyEnum.SESSION_KEY_CACHE_TIMEOUT.getKey());
+			long cacheTime = (long) mycatSession.getAttrMap()
+					.get(SessionKey.CACHE_TIMEOUT);
 
 			// 标识当前缓存放入开始
 			boolean upd = CacheManager.INSTANCE.begin(sql);
@@ -59,8 +59,8 @@ public class CacheExistsCheck implements ChainExecInf {
 			// 检查当前是否可用
 			if (sqlBean != null && sqlBean.getCacheMapFile().isCacheAvailable()) {
 				// 获取临近过期时间的配制
-				long cacheTimeOut = (long) mycatSession.getSessionAttrMap()
-						.get(SessionKeyEnum.SESSION_KEY_CACHE_TIMEOUT_CRITICAL.getKey());
+				long cacheTimeOut = (long) mycatSession.getAttrMap()
+						.get(SessionKey.CACHE_TIMEOUT_CRITICAL);
 
 				long currTime = System.currentTimeMillis();
 
@@ -80,15 +80,15 @@ public class CacheExistsCheck implements ChainExecInf {
 				else if (currTime + cacheTimeOut >= sqlBean.getTimeOut()) {
 
 					// 标识当前响应前段
-					mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey(),
+					mycatSession.getAttrMap().put(SessionKey.CACHE_WRITE_FRONT_FLAG_KEY,
 							true);
 
 					// 标识当前需要从缓存中获取的标识
-					mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_GET_FLAG.getKey(), true);
+					mycatSession.getAttrMap().put(SessionKey.CACHE_GET_FLAG, true);
 
 					// 打上标识，当响应前段完成后，进行缓存的清理
-					mycatSession.getSessionAttrMap()
-							.put(SessionKeyEnum.SESSION_KEY_CACHE_DELETE_QUERY_FLAG_KEY.getKey(), true);
+					mycatSession.getAttrMap()
+							.put(SessionKey.CACHE_DELETE_QUERY_FLAG_KEY, true);
 
 					// 进行数据的读取流程
 					mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
@@ -99,11 +99,11 @@ public class CacheExistsCheck implements ChainExecInf {
 				// 未过期，直接从缓存中读取
 				else {
 					// 标识当前响应前段
-					mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey(),
+					mycatSession.getAttrMap().put(SessionKey.CACHE_WRITE_FRONT_FLAG_KEY,
 							true);
 
 					// 标识当前需要从缓存中获取的标识
-					mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_GET_FLAG.getKey(), true);
+					mycatSession.getAttrMap().put(SessionKey.CACHE_GET_FLAG, true);
 
 					// 进行数据的读取流程
 					mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
@@ -139,10 +139,10 @@ public class CacheExistsCheck implements ChainExecInf {
 		CacheManager.INSTANCE.createCache(sql, timeOut, mapMemory);
 
 		// 标识当前添加缓存操作
-		mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_ADD_FLAG_KEY.getKey(), true);
+		mycatSession.getAttrMap().put(SessionKey.CACHE_ADD_FLAG_KEY, true);
 
 		// 标识当前缓存需要响应前端
-		mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey(), rspFront);
+		mycatSession.getAttrMap().put(SessionKey.CACHE_WRITE_FRONT_FLAG_KEY, rspFront);
 
 		// // 将当前的SQLcommand切换到缓存数据响应的写入
 		// mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
@@ -172,14 +172,13 @@ public class CacheExistsCheck implements ChainExecInf {
 	 * 超时之后进行的数据重新查询操作
 	 * 
 	 * @param mycatSession
-	 * @throws IOException
 	 */
-	private void timeOueryCache(MycatSession mycatSession) throws IOException {
+	private void timeOueryCache(MycatSession mycatSession) {
 		// 标识当前添加缓存操作
-		mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_ADD_FLAG_KEY.getKey(), true);
+		mycatSession.getAttrMap().put(SessionKey.CACHE_ADD_FLAG_KEY, true);
 
 		// 标识当前缓存需要响应前端
-		mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CACHE_WRITE_FRONT_FLAG_KEY.getKey(), true);
+		mycatSession.getAttrMap().put(SessionKey.CACHE_WRITE_FRONT_FLAG_KEY, true);
 
 		// 将当前的SQLcommand切换到缓存数据响应的写入
 		// mycatSession.curSQLCommand = CacheMapFileCommand.INSTANCE;
@@ -204,8 +203,8 @@ public class CacheExistsCheck implements ChainExecInf {
 
 	private void queryBufferPkg(MycatSession mycatSession) {
 		// 将当前的SQL信息放入到session中
-		String selectSql = (String) mycatSession.getSessionAttrMap()
-				.get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
+		String selectSql = (String) mycatSession.getAttrMap()
+				.get(SessionKey.CACHE_SQL_STR);
 
 		// buffer查询
 		ProxyBuffer proxyBuf = mycatSession.proxyBuffer;

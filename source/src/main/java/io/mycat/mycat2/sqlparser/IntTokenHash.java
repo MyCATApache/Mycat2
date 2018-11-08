@@ -121,6 +121,7 @@ public class IntTokenHash {
     public static final int VERSION          = 0xcf663807;
     public static final int DATABASE         = 0x04bbcc08;
     public static final int DATANODE         = 0xd1045d08;
+    public static final int DATANODES = -2050455543;
     public static final int DESCRIBE         = 0x5b8ad308;
     public static final int ROLLBACK         = 0xc0e73908;
     public static final int SHUTDOWN         = 0x201f4408;
@@ -153,5 +154,13 @@ public class IntTokenHash {
     public static final int HIGH_PRIORITY    = 0xc97c6f0d;
     public static final int LAST_INSERT_ID   = 0x7b07370e;
     public static final int REPL_METABEAN_INDEX = 0x79a7b413;
+    public static final int MERGE = -984306427;
+    public static final int GROUP_COLUMNS = 1964591628;
+    public static final int MERGE_COLUMNS = -1057453300;
+    public static final int HAVING = -102177274;
+    public static final int LIMIT_START = -1978316790;
+    public static final int LIMIT_SIZE = -1728251639;
+    public static final int DATABASES =-0x63eca2f7;
+    public static final int TABLES =0x43ec8406;
 
 }

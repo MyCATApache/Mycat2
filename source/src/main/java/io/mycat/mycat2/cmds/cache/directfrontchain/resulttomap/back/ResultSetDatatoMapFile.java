@@ -4,7 +4,7 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.cmds.cache.mapcache.CacheManager;
 import io.mycat.mycat2.common.ChainExecInf;
 import io.mycat.mycat2.common.SeqContextList;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -29,13 +29,13 @@ public class ResultSetDatatoMapFile implements ChainExecInf {
 		MySQLSession mysqlSession = (MySQLSession) seqList.getSession();
 
 		// 如果当前为结果集结存
-		int type = (int) mysqlSession.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_PKG_TYPE_KEY.getKey());
+		int type = (int) mysqlSession.getAttrMap().get(SessionKey.PKG_TYPE_KEY);
 
 		// 如果为查询则放入
 		if (MySQLPacket.RESULTSET_PACKET == type) {
 
-			String cacheSql = (String) mysqlSession.getMycatSession().getSessionAttrMap()
-					.get(SessionKeyEnum.SESSION_KEY_CACHE_SQL_STR.getKey());
+			String cacheSql = (String) mysqlSession.getMycatSession().getAttrMap()
+					.get(SessionKey.CACHE_SQL_STR);
 
 			// 此处需要进行加锁操作，以防止 多个连接同时进行缓存的更新操作
 			ProxyBuffer buffer = mysqlSession.getProxyBuffer();

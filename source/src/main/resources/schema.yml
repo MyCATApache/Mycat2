@@ -1,6 +1,15 @@
 schemas:
-  - name: test
+  - name: db1
     schemaType: DB_IN_ONE_SERVER
-    defaultDN:
-      database: test
-      replica: test
+    defaultDataNode: dn1
+    tables:
+      - name: travelrecord
+        dataNode: dn1
+
+dataNodes:
+  - name: dn1
+    database: db1
+    replica: repli
+  - name: dn2
+    database: db2
+    replica: repli2

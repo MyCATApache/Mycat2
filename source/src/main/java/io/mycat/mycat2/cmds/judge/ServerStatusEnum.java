@@ -40,7 +40,7 @@ public enum ServerStatusEnum {
 	 * 
 	 * 一个SQL发送多条SQL语句，以此为标识是多个查询
 	 */
-	MULT_QUERY(3),
+	MULIT_QUERY(3),
 
 	/**
 	 * 设置bad index used

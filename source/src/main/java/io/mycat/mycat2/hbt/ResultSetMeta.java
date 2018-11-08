@@ -1,13 +1,13 @@
 package io.mycat.mycat2.hbt;
 
+import io.mycat.mysql.packet.FieldPacket;
+import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.PacketUtil;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import io.mycat.mysql.packet.FieldPacket;
-import io.mycat.proxy.ProxyBuffer;
-import io.mycat.util.PacketUtil;
 /**
  * 字段以及字段所有對應的類型
  * */
@@ -31,9 +31,9 @@ public class ResultSetMeta extends Meta {
 			fieldPosMap.put(fieldNameList.get(i), i);
 		}
 	}
-	
-	
-	public void addFiled(String fieldName, int fieldType) {
+
+
+	public void addField(String fieldName, int fieldType) {
 		int pos = fieldNameList.size(); 
 		fieldNameList.add(fieldName);
 		fieldPosMap.put(fieldName, pos);

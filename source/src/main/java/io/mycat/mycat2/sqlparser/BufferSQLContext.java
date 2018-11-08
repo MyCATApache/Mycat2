@@ -1,10 +1,10 @@
 package io.mycat.mycat2.sqlparser;
 
-import java.util.Arrays;
-
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
+
+import java.util.Arrays;
 
 /**
  * <pre>
@@ -22,9 +22,15 @@ public class BufferSQLContext {
     public static final byte DROP_SQL = 3;    //TODO 进一步细化，区分
     public static final byte TRUNCATE_SQL = 4;
     //    public static final byte COMMENT_SQL = 5;
+
+    // DAL (Database Administration Statements)
     public static final byte RENAME_SQL = 6;
     public static final byte USE_SQL = 7;
     public static final byte SHOW_SQL = 8;    //TODO 进一步细化。区分
+    
+    public static final byte SHOW_DB_SQL = 81;
+    public static final byte SHOW_TB_SQL = 82;
+    
     public static final byte SET_SQL = 9;     //TODO 进一步细化。区分
     public static final byte PARTITION_SQL = 10;
 
@@ -88,8 +94,9 @@ public class BufferSQLContext {
     public static final byte ANNOTATION_AUTO_REFRESH = 8;
     public static final byte ANNOTATION_CACHE_TIME = 9;
     public static final byte ANNOTATION_REPLICA_NAME = 10;
+    public static final byte ANNOTATION_MERGE = 10;
 
-    private short[] tblResult;  //记录格式：[{schema hash array index(defaults 0), tbl hash array index}]
+    private short[] tblResult;  //记录格式：[{mycatSchema hash array index(defaults 0), tbl hash array index}]
     private long[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]
     private byte totalTblCount;
     private int[] annotationCondition;
@@ -118,15 +125,17 @@ public class BufferSQLContext {
     private HashArray myCmdValue;
     private int catletNameStart = 0;
     private int catletNameLength = 0;
+    private MergeAnnotation mergeAnnotation;
 
     public BufferSQLContext() {
         tblResult = new short[tblResultArraySize];
         sqlInfoArray = new long[256];
         annotationValue = new long[16];
         annotationStringValue = new String[16];
-        annotationCondition=new int[64];
+        annotationCondition = new int[64];
         myCmdValue = new HashArray(256);
         selectItemArray = new int[128];
+        mergeAnnotation = new MergeAnnotation(this);
     }
 
     public void setCurBuffer(ByteArrayInterface curBuffer) {
@@ -155,6 +164,7 @@ public class BufferSQLContext {
         myCmdValue.init();
         catletNameStart = 0;
         catletNameLength = 0;
+        mergeAnnotation.clear();//@todo maybe clear in the end of parse
     }
 
     public void setTblName(int hashArrayPos) {
@@ -187,11 +197,11 @@ public class BufferSQLContext {
     }
 
     public long getTokenType(int sqlIdx, int sqlPos) {
-        return hashArray.getType( (int)(sqlInfoArray[sqlIdx] >>> 50) + sqlPos);
+        return hashArray.getType((int) (sqlInfoArray[sqlIdx] >>> 50) + sqlPos);
     }
 
     public long getTokenHash(int sqlIdx, int sqlPos) {
-        return hashArray.getHash( (int)(sqlInfoArray[sqlIdx] >>> 50) + sqlPos);
+        return hashArray.getHash((int) (sqlInfoArray[sqlIdx] >>> 50) + sqlPos);
     }
 
     public long getSchemaHash(int idx) {
@@ -203,8 +213,10 @@ public class BufferSQLContext {
         }
     }
 
-    //todo : 测试期返回String，将来应该要返回hashcode
     public String getTableName(int idx) {
+        if (totalTblCount == 0) {
+            return null;
+        }
         int hashArrayIdx = tblResult[(idx << 1) + 1];
         int pos = hashArray.getPos(hashArrayIdx);
         int size = hashArray.getSize(hashArrayIdx);
@@ -217,7 +229,7 @@ public class BufferSQLContext {
             // int sqlInfoOffset = (sqlIdx << 2) + 3;
             // int tblResultOffset = sqlInfoArray[sqlInfoOffset] >>> 8;
             // int tblResultCount = sqlInfoArray[sqlInfoOffset] & 0xFF;
-            int sqlInfo = (int)sqlInfoArray[sqlIdx];
+            int sqlInfo = (int) sqlInfoArray[sqlIdx];
             int tblResultOffset = (sqlInfo >>> 8) & 0xFFF;
             int tblResultCount = sqlInfo & 0xFF;
             if (tblIdx < tblResultCount) {
@@ -242,12 +254,12 @@ public class BufferSQLContext {
 
             int idx = curSQLIdx;
             curSQLIdx++;
-            long sqlInfo = ((long)preHashArrayPos & 0x3FFF) << 50;
-            sqlInfo |= ((long)hashArrayRealSQLOffset & 0xFF) << 42;
-            sqlInfo |= ((long)sqlType & 0xFF) << 34 ;
-            sqlInfo |= ((long)sqlSize & 0x3FFF) << 20;
-            sqlInfo |= ((long)preTableResultPos & 0xFFF) << 8;
-            sqlInfo |= (long)(curSQLTblCount & 0xFF);
+            long sqlInfo = ((long) preHashArrayPos & 0x3FFF) << 50;
+            sqlInfo |= ((long) hashArrayRealSQLOffset & 0xFF) << 42;
+            sqlInfo |= ((long) sqlType & 0xFF) << 34;
+            sqlInfo |= ((long) sqlSize & 0x3FFF) << 20;
+            sqlInfo |= ((long) preTableResultPos & 0xFFF) << 8;
+            sqlInfo |= (long) (curSQLTblCount & 0xFF);
             sqlInfoArray[idx] = sqlInfo;
             curSQLTblCount = 0;
             preTableResultPos = tblResultPos;
@@ -265,7 +277,7 @@ public class BufferSQLContext {
 
     public int getSQLTblCount(int sqlIdx) {
         if (sqlIdx < totalSQLCount) {
-            return (int)sqlInfoArray[sqlIdx] & 0xFF;
+            return (int) sqlInfoArray[sqlIdx] & 0xFF;
         }
         return 0;
     }
@@ -282,17 +294,32 @@ public class BufferSQLContext {
         if (this.sqlType == 0 || this.sqlType == SELECT_SQL)
             this.sqlType = sqlType;
     }
+    
+    public void setShowSQLType(byte sqlType) {
+        if (this.sqlType == 0 || this.sqlType == SHOW_SQL)
+            this.sqlType = sqlType;
+    }
+
+    public boolean isDDL() {
+        return sqlType == CREATE_SQL || sqlType == ALTER_SQL || sqlType == DROP_SQL
+                || sqlType == TRUNCATE_SQL;
+    }
+
+    public boolean isSelect() {
+        return this.getSQLType() == SELECT_SQL || this.getSQLType() == SELECT_INTO_SQL
+                || this.getSQLType() == SELECT_FOR_UPDATE_SQL;
+    }
 
     public void setSQLIdx(int sqlIdx) {
         curSQLIdx = sqlIdx;
     }
 
     public byte getSQLType() {
-        return (byte) ((this.sqlInfoArray[0]>>34) & 0xFF);
+        return (byte) ((this.sqlInfoArray[0] >> 34) & 0xFF);
     }
 
     public byte getSQLType(int sqlIdx) {
-        return (byte)((this.sqlInfoArray[sqlIdx]>>34) & 0xFF);
+        return (byte) ((this.sqlInfoArray[sqlIdx] >> 34) & 0xFF);
     }
 
     public byte getCurSQLType() {
@@ -316,13 +343,14 @@ public class BufferSQLContext {
     public int getRealSQLSize(int sqlIdx) {
         int hashArrayEndPos = ((int) (sqlInfoArray[sqlIdx] >> 50) & 0x3FFF)
                 + ((int) (sqlInfoArray[sqlIdx] >> 20) & 0x3FFF) - 1;
+        if (hashArrayEndPos < 0) return 0;
         return hashArray.getPos(hashArrayEndPos) + hashArray.getSize(hashArrayEndPos);
     }
 
     public String getRealSQL(int sqlIdx) {
         int sqlStartPos = getRealSQLOffset(sqlIdx);
         int sqlSize = getRealSQLSize(sqlIdx) - sqlStartPos;
-        return buffer.getString( sqlStartPos, sqlSize);
+        return buffer.getString(sqlStartPos, sqlSize);
     }
 
 
@@ -365,14 +393,15 @@ public class BufferSQLContext {
     public void setAnnotationValue(byte typeKey, long value) {
         this.annotationValue[typeKey] = value;
     }
+
     public void setAnnotationStringValue(byte typeKey, String value) {
         this.annotationStringValue[typeKey] = value;
     }
-    
+
     public String getAnnotationStringValue(byte typeKey) {
         return this.annotationStringValue[typeKey];
     }
-    
+
     public void setAnnotationStart(int pos) {
     }
 
@@ -390,6 +419,7 @@ public class BufferSQLContext {
     public HashArray getMyCmdValue() {
         return this.myCmdValue;
     }
+
     public String getAnnotationContent() {
         return null;
     } //by kaiz : 返回注解等号后面的内容
@@ -403,8 +433,9 @@ public class BufferSQLContext {
     }
 
     public boolean matchDigit(int pos1, int data) {
-        return TokenizerUtil.pickNumber(pos1,this.hashArray,buffer)==data;
+        return TokenizerUtil.pickNumber(pos1, this.hashArray, buffer) == data;
     }
+
     public int matchPlaceholders(int pos1) {
         ++pos1;
 //        if (hashArray.getType(pos1)== Tokenizer2.DOT){
@@ -413,6 +444,7 @@ public class BufferSQLContext {
 //        }
         return pos1;
     }
+
     public int getTableIntHash(int idx) {
         int hashArrayIdx = tblResult[(idx << 1) + 1];
         int intHash = hashArray.getIntHash(hashArrayIdx);
@@ -445,5 +477,9 @@ public class BufferSQLContext {
 
     public String getCatletName() {
         return buffer.getString(catletNameStart, catletNameLength);
+    }
+
+    public MergeAnnotation getMergeAnnotation() {
+        return mergeAnnotation;
     }
 }

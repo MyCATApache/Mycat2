@@ -1,16 +1,13 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.pkgread.CommQueryHandlerResultSet;
-import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.proxy.ProxyBuffer;
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 /**
  * Get a human readable string of internal statistics.

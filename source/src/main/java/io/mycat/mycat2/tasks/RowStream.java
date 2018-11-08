@@ -1,16 +1,7 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.hbt.MyFunction;
 import io.mycat.mycat2.hbt.ResultSetMeta;
 import io.mycat.mycat2.hbt.SqlMeta;
@@ -18,6 +9,13 @@ import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(RowStream.class);
@@ -42,7 +40,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	}
 	public void fetchStream() {
 		/*设置为忙*/
-		session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey(), false);
+		session.setBusy();
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
@@ -53,6 +51,19 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
         proxyBuf.flip();
         proxyBuf.readIndex = proxyBuf.writeIndex;
         try {
+			this.session.writeToChannel();
+		} catch (IOException e) {
+			logger.error(" The FetchIntoRowStream  task write  is error . {}",e.getMessage());
+			e.printStackTrace();
+		}
+	}
+	public void fetchStream(ProxyBuffer proxyBuf) {
+		/*设置为忙*/
+		session.setBusy();
+		session.setCurNIOHandler(this);
+		proxyBuf.flip();
+		proxyBuf.readIndex = proxyBuf.writeIndex;
+		try {
 			this.session.writeToChannel();
 		} catch (IOException e) {
 			logger.error(" The FetchIntoRowStream  task write  is error . {}",e.getMessage());
@@ -77,14 +88,14 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
         int rowDataIndex = curMQLPackgInf.startPos+MySQLPacket.packetHeaderSize;
         proxyBuffer.readIndex = rowDataIndex;
         proxyBuffer.readLenencString();  //catalog
-        proxyBuffer.readLenencString();  //schema 
+		proxyBuffer.readLenencString();  //mycatSchema
         proxyBuffer.readLenencString();  //table
         proxyBuffer.readLenencString();  //orgTable
         String name     = proxyBuffer.readLenencString();  //name
         proxyBuffer.readLenencString();
         proxyBuffer.readBytes(7); // 1(filler) + 2(charsetNumber) + 4 (length)
 		int fieldType = proxyBuffer.readByte() & 0xff;
-		this.resultSetMeta.addFiled(name, fieldType);
+		this.resultSetMeta.addField(name, fieldType);
         proxyBuffer.readIndex = tmpReadIndex;
         if(resultSetMeta.getFiledCount() == resultSetMeta.getRealFieldNameListSize()) {
             this.onHeader.apply(resultSetMeta);
@@ -115,11 +126,11 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 		        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
 		        session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
 				this.errPkg.read(session.proxyBuffer);
-				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+				session.setIdle();
 				revertPreBuffer();
 		        callBack.finished(session, this, success, this.errPkg);
 			} else {
-				session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_CONN_IDLE_FLAG.getKey());
+				session.setIdle();
 				revertPreBuffer();
 				callBack.finished(session, null, success, null);
 			}

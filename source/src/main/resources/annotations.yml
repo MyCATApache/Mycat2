@@ -1,75 +1,54 @@
 annotations:
-     - global:
-          - blacklist:
-             - selelctAllow: true         # sql 拦截     属于前置处理类
-             - tableCheck: true
-          - whitehost:
-               user: root
-               host: 127.0.0.1
      - schema:
-              name: test
-              blacklist:   # 覆盖全局配置
-                     - deleteAllow : false
-              matches:
-                      - match:
-                             name: select有条件and or有tables
-                             state: open
-                             sqltype: select
-                             where:
-                                  - and: WHERE
-                                  - or:  id = ?
-                             tables:
-                                  - test1
-                             actions:
-                                  - cacheResult:
-                                      cache_time: 1800
-                                      access_count: 60
-                      - match:
-                             name: select有条件多个tables
-                             state: open
-                             sqltype: select
-                             where:
-                                  - and: FROM
-                             tables:
-                                  - test1
-                                  - test2
-                             actions:
-                                    - cacheResult:
-                                        cache_time: 1800
-                                        access_count: 70
-                                    - monitorSQL:
-                                          - param1: 777
-                      - match:
-                             name: select有条件无tables
-                             state: open
-                             sqltype: select
-                             where:
-                                  - and: FROM test1
-                             actions:
-                                    - cacheResult:
-                                        cache_time: 1800
-                                        access_count: 80
-                      - match:
-                              name: select无条件有tables
-                              state: open
-                              sqltype: select
-                              tables:
-                                    - sbtest1
-                              actions:
-                                    - cacheResult:
-                                        cache_time: 1800
-                                        access_count: 90
-                      - match:
-                              name: insert无tables无条件
-                              state: open
-                              sqltype: insert
-                              actions:
-                                    - monitorSQL:
-                                          - param1: 777
-                      - match:
-                              name: insert无tables无条件2
-                              state: open
-                              sqltype: insert
-                              actions:
-                                    - monitorSQL:
-                                          - param1: 777
+         name: schemA
+         matches:
+         - match:
+             name: aaa
+             state: open
+             sqltype: insert
+             where:
+             - and: id between 1 and 100
+             - and: name = "haha" and a=?
+             - or: name2 = "ha"
+             tables:
+             - x1
+             - x2
+             - x3
+             actions:
+             - monitorSQL:
+               - param1: 1
+             - cacheResult:
+             - sqlCach:
+               - param1: 1
+               - param2: 2
+         - match:
+             name: bbb
+             state: open
+             sqltype: insert
+             where:
+             - and: id between 2 and 50
+             - or: name2 = ?
+             tables:
+             - x1
+             - x2
+             actions:
+             - monitorSQL:
+               - param1: 3
+             - cacheResult:
+             - sqlCach:
+               - param1: 2
+               - param2: 1
+         - match:
+             name: ccc
+             state: open
+             sqltype: insert
+             tables:
+             - x1
+             - x2
+             actions:
+             - monitorSQL:
+               - param1: 4
+             - cacheResult:
+             - sqlCach:
+               - param1: 5
+               - param2: 6
