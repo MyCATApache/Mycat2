@@ -2,6 +2,7 @@ package io.mycat.mycat2.e2e;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 
 public class BaseSQLTest {
     //    final static int port = 3306;
@@ -28,6 +29,10 @@ public class BaseSQLTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Connection newConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USERNAME, PASSWORD);
     }
 
     @FunctionalInterface
