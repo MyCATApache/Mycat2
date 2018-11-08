@@ -5,6 +5,9 @@ Mycat 2.0 预览版。
 
 前后端共享buffer，支持全透传和半透传，极致提升内核性能，稳定性和兼容性。
 
+Mycat 2.0 wiki(https://github.com/MyCATApache/Mycat2/wiki)
+
+Mycat 2.0 Projects(https://github.com/MyCATApache/Mycat2/projects/1)
 
 参与MyCAT 2.0 开发 联系 qq:294712221
 
