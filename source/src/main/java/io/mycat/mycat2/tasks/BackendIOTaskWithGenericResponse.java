@@ -1,7 +1,7 @@
 package io.mycat.mycat2.tasks;
 
-import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -44,10 +44,10 @@ public abstract class BackendIOTaskWithGenericResponse
         if (!session.readFromChannel()) {
             return;
         }
-        AbstractMySQLSession.CurrPacketType currPacketType = session.resolveMySQLPackage();
+        CurrPacketType currPacketType = session.resolveMySQLPackage();
 
         session.proxyBuffer.flip();
-        if (currPacketType == AbstractMySQLSession.CurrPacketType.Full) {
+        if (currPacketType == CurrPacketType.Full) {
 
             try {
                 if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {

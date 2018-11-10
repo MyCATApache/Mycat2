@@ -2,6 +2,7 @@ package io.mycat.mycat2.bufferTest;
 
 import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.buffer.DirectByteBufferPool;
@@ -40,8 +41,8 @@ public class MySQLPackageInfTest {
         ProxyBuffer proxyBuffer = new ProxyBuffer(allocate);
         headerPacket.write(proxyBuffer);
         AbstractMySQLSession mySQLSession = mock(proxyBuffer);
-        AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-        Assert.assertEquals(currPacketType, AbstractMySQLSession.CurrPacketType.Full);
+        CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+        Assert.assertEquals(currPacketType, CurrPacketType.Full);
         Assert.assertTrue(mySQLSession.curMSQLPackgInf.isFieldsCount());
         //在写入两个整包,并读出
         //testFullFullPacket();
@@ -58,8 +59,8 @@ public class MySQLPackageInfTest {
 
         AbstractMySQLSession mySQLSession = mock(proxyBuffer);
         while (mySQLSession.isResolveMySQLPackageFinished()) {
-            AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-            Assert.assertEquals(currPacketType, AbstractMySQLSession.CurrPacketType.Full);
+            CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+            Assert.assertEquals(currPacketType, CurrPacketType.Full);
             System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
         }
 
@@ -89,12 +90,12 @@ public class MySQLPackageInfTest {
         mySQLSession.bufPool = new DirectByteBufferPool((1024 * 1024 * 4), (short) (1024 * 4 * 2), (short) 64);
 
         while (mySQLSession.isResolveMySQLPackageFinished()) {
-            AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-            if (currPacketType == AbstractMySQLSession.CurrPacketType.Full) {
+            CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+            if (currPacketType == CurrPacketType.Full) {
                 System.out.println("-----FullPacket---");
                 System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
             }
-            if (currPacketType == AbstractMySQLSession.CurrPacketType.LongHalfPacket) {
+            if (currPacketType == CurrPacketType.LongHalfPacket) {
                 System.out.println("-----LongHalfPacket---");
                 System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
 
@@ -128,8 +129,8 @@ public class MySQLPackageInfTest {
             proxyBuffer.writeByte((byte) i);
         }
         AbstractMySQLSession mySQLSession = mock(proxyBuffer);
-        AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-        Assert.assertSame(AbstractMySQLSession.CurrPacketType.ShortHalfPacket,currPacketType);
+        CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+        Assert.assertSame(CurrPacketType.ShortHalfPacket, currPacketType);
         //再次写入剩下的包 查看proxyBuffer是否异常
         int[] peer1 = new int[]{
                 0x03, 0x73, 0x68, 0x6f, 0x77, 0x20, 0x74, 0x61, 0x62, 0x6c, 0x65, 0x73, 0x3b
@@ -138,7 +139,7 @@ public class MySQLPackageInfTest {
         for (int i : peer1) {
             proxyBuffer.writeByte((byte) i);
         }
-        Assert.assertSame(AbstractMySQLSession.CurrPacketType.Full, mySQLSession.resolveMySQLPackage());
+        Assert.assertSame(CurrPacketType.Full, mySQLSession.resolveMySQLPackage());
     }
 
     /**
@@ -150,16 +151,16 @@ public class MySQLPackageInfTest {
     public void testResultSetHeadFullPacketExmaple() {
         ProxyBuffer buffer = ofBuffer(0x03, 0x00, 0x00, 0x01, 0xfc, 0xe8, 0x03, 0x3b, 0x00);
         AbstractMySQLSession mySQLSession = mock(buffer);
-        AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-        Assert.assertSame(currPacketType, AbstractMySQLSession.CurrPacketType.Full);
+        CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+        Assert.assertSame(currPacketType, CurrPacketType.Full);
     }
 
     @Test
     public void testResultSetHeadFullPacket() {
         ProxyBuffer buffer = ofBuffer(0x01, 0x00, 0x00, 0x01, 0xfc, 0x01);
         AbstractMySQLSession mySQLSession = mock(buffer);
-        AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-        Assert.assertSame(currPacketType, AbstractMySQLSession.CurrPacketType.Full);
+        CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+        Assert.assertSame(currPacketType, CurrPacketType.Full);
         Assert.assertTrue(mySQLSession.curMSQLPackgInf.isFieldsCount());
         Assert.assertTrue(!mySQLSession.curMSQLPackgInf.isOkPacket());
     }
@@ -170,7 +171,7 @@ public class MySQLPackageInfTest {
     public void testResultSetShortHalfPacket() {
         ProxyBuffer buffer = ofBuffer(0x01, 0x00, 0x00, 0x01, 0xfc);
         AbstractMySQLSession mySQLSession = mock(buffer);
-        Assert.assertSame(AbstractMySQLSession.CurrPacketType.Full,mySQLSession.resolveMySQLPackage());
+        Assert.assertSame(CurrPacketType.Full, mySQLSession.resolveMySQLPackage());
         Assert.assertTrue(mySQLSession.curMSQLPackgInf.isFieldsCount());
         Assert.assertTrue(!mySQLSession.curMSQLPackgInf.isOkPacket());
     }
@@ -200,12 +201,12 @@ public class MySQLPackageInfTest {
         AbstractMySQLSession mySQLSession = mock(proxyBuffer);
         mySQLSession.bufPool = new DirectByteBufferPool((1024 * 1024 * 4), (short) (1024 * 4 * 2), (short) 64);
         while (mySQLSession.isResolveMySQLPackageFinished()) {
-            AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-            if (currPacketType == AbstractMySQLSession.CurrPacketType.Full) {
+            CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+            if (currPacketType == CurrPacketType.Full) {
                 System.out.println("-----FullPacket---");
                 System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
             }
-            if (currPacketType == AbstractMySQLSession.CurrPacketType.LongHalfPacket) {
+            if (currPacketType == CurrPacketType.LongHalfPacket) {
                 System.out.println("-----LongHalfPacket---");
                 System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
 
@@ -243,12 +244,12 @@ public class MySQLPackageInfTest {
 
         AbstractMySQLSession mySQLSession = mock(proxyBuffer);
         while (mySQLSession.isResolveMySQLPackageFinished()) {
-            AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-            if (currPacketType == AbstractMySQLSession.CurrPacketType.Full) {
+            CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+            if (currPacketType == CurrPacketType.Full) {
                 System.out.println("-----FullPacket---");
                 System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
             }
-            if (currPacketType == AbstractMySQLSession.CurrPacketType.ShortHalfPacket) {
+            if (currPacketType == CurrPacketType.ShortHalfPacket) {
                 System.out.println("-----ShortPacket---");
                 System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(),
                         mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
@@ -288,12 +289,65 @@ public class MySQLPackageInfTest {
 
         AbstractMySQLSession mySQLSession = mock(proxyBuffer);
         while (mySQLSession.isResolveMySQLPackageFinished()) {
-            AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
-            Assert.assertEquals(currPacketType, AbstractMySQLSession.CurrPacketType.Full);
+            CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
+            Assert.assertEquals(currPacketType, CurrPacketType.Full);
             System.out.println(StringUtil.dumpAsHex(mySQLSession.proxyBuffer.getBuffer(), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.pkgLength));
         }
         //再次写入一个整包,并读出
         testFullPacket();
+    }
+
+    /**
+     * cjw
+     */
+    @Test
+    public void testCrossBufferPacket() {
+        int[] ok = new int[]{0x0d, 0x00, 0x00, 0x00, 0x03,
+                0x73, 0x68, 0x6f, 0x77, 0x20,
+                0x74, 0x61, 0x62, 0x6c, 0x65,
+                0x73, 0x3b};
+        int length = ok.length;
+        ByteBuffer allocate = ByteBuffer.allocate(5);
+        ProxyBuffer buffer = new ProxyBuffer(allocate);
+        AbstractMySQLSession sqlSession = mock(buffer);
+
+        checkWriteAndChange2(sqlSession, ok[0], CurrPacketType.ShortHalfPacket, false);
+        checkWriteAndChange2(sqlSession, ok[1], CurrPacketType.ShortHalfPacket, false);
+        checkWriteAndChange2(sqlSession, ok[2], CurrPacketType.ShortHalfPacket, false);
+        checkWriteAndChange2(sqlSession, ok[3], CurrPacketType.ShortHalfPacket, false);
+        checkWriteAndChange2(sqlSession, ok[4], CurrPacketType.LongHalfPacket, true);
+
+        //进入crossBuffer状态
+        someoneTakeAway(sqlSession);
+
+        checkWriteAndChange2(sqlSession, ok[5], CurrPacketType.LongHalfPacket, true);
+        checkWriteAndChange2(sqlSession, ok[6], CurrPacketType.LongHalfPacket, true);
+
+        //可以任意取走数据
+        someoneTakeAway(sqlSession);
+
+        checkWriteAndChange2(sqlSession, ok[7], CurrPacketType.LongHalfPacket, true);
+        checkWriteAndChange2(sqlSession, ok[8], CurrPacketType.LongHalfPacket, true);
+        checkWriteAndChange2(sqlSession, ok[9], CurrPacketType.LongHalfPacket, true);
+
+        for (int i = 10; i < 16; i++) {
+            someoneTakeAway(sqlSession);
+            checkWriteAndChange2(sqlSession, ok[i], CurrPacketType.LongHalfPacket, true);
+        }
+        checkWriteAndChange2(sqlSession, ok[16], CurrPacketType.Full, true);
+        //接受新的报文
+        checkWriteAndChange2(sqlSession, 0x0d, CurrPacketType.ShortHalfPacket, false);
+    }
+    private void someoneTakeAway(AbstractMySQLSession sqlSession){
+        sqlSession.proxyBuffer.reset();
+        sqlSession.curMSQLPackgInf.startPos = 0;
+        sqlSession.curMSQLPackgInf.endPos = 0;
+    }
+
+    private void checkWriteAndChange2(AbstractMySQLSession sqlSession, int b, CurrPacketType type, boolean crossBuffer) {
+        sqlSession.proxyBuffer.writeByte((byte) b);
+        Assert.assertEquals(type, sqlSession.resolveMySQLPackageManually());
+        Assert.assertEquals(crossBuffer, sqlSession.curMSQLPackgInf.crossBuffer);
     }
 
 

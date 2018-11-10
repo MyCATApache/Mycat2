@@ -6,6 +6,7 @@ import io.mycat.mycat2.beans.conf.ProxyConfig;
 import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
+import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.AbstractSession;
@@ -32,11 +33,6 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 
     public AbstractMySQLSession() {
 
-    }
-
-    // 当前接收到的包类型
-    public enum CurrPacketType {
-        Full, LongHalfPacket, ShortHalfPacket
     }
 
     /**
@@ -193,7 +189,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if (curPackInf.remainsBytes == 0 && curPackInf.crossBuffer) {
             curPackInf.crossBuffer = false;
         }
-        // 如果当前跨多个报文
+        // 如果当前报文跨多个buffer
         if (curPackInf.crossBuffer) {
             if (curPackInf.remainsBytes <= totalLen) {
                 // 剩余报文结束
@@ -201,6 +197,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 offset += curPackInf.remainsBytes; // 继续处理下一个报文
                 proxyBuf.readIndex = offset;
                 curPackInf.remainsBytes = 0;
+                return CurrPacketType.Full;
             } else {// 剩余报文还没读完，等待下一次读取
                 curPackInf.startPos = 0;
                 curPackInf.remainsBytes -= totalLen;
@@ -247,6 +244,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
             }else {
                 curPackInf.crossBuffer = true;
+                curPackInf.remainsBytes = pkgLength - totalLen;
             }
             curPackInf.endPos = limit;
             return CurrPacketType.LongHalfPacket;
@@ -255,7 +253,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
             curPackInf.endPos = curPackInf.pkgLength + curPackInf.startPos;
             if (ProxyRuntime.INSTANCE.isTraceProtocol()) {
                 /**
-                 * @todo 跨多个报文的情况下，修正错误。
+                 * @todo 跨多个报文的情况下，修正错误。cjw fixed
                  */
                 final String hexs = StringUtil.dumpAsHex(buffer, curPackInf.startPos, curPackInf.pkgLength);
                 logger.debug(
