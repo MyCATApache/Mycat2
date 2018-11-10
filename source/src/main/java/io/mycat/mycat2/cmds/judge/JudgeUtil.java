@@ -44,10 +44,10 @@ public class JudgeUtil {
         return false;
     }
     public static boolean hasMulitQuery(int serverStatus) {
-        return  ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.MULIT_QUERY);
+        return  ServerStatus.statusCheck(serverStatus, ServerStatus.MULIT_QUERY);
     }
     public static boolean hasMoreResult(int serverStatus) {
-        return  ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.MORE_RESULTS);
+        return  ServerStatus.statusCheck(serverStatus, ServerStatus.MORE_RESULTS);
     }
     public static boolean hasResult(int serverStatus) {
         return (hasMoreResult(serverStatus) || hasMulitQuery(serverStatus));
@@ -55,12 +55,12 @@ public class JudgeUtil {
 
     public static boolean hasFatch(int serverStatus) {
         // 检查是否通过fatch执行的语句
-        return ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.CURSOR_EXISTS);
+        return ServerStatus.statusCheck(serverStatus, ServerStatus.CURSOR_EXISTS);
     }
 
     public static boolean hasTrans(int serverStatus) {
         // 检查是否通过fatch执行的语句
-        boolean trans = ServerStatusEnum.StatusCheck(serverStatus, ServerStatusEnum.IN_TRANSACTION);
+        boolean trans = ServerStatus.statusCheck(serverStatus, ServerStatus.IN_TRANSACTION);
         return trans;
     }
 
