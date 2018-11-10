@@ -1,18 +1,14 @@
-package io.mycat.mycat2.mysql;
+package io.mycat.mycat2.mysqlProxySM;
 
 import io.mycat.mycat2.MySQLCommand;
-import io.mycat.mycat2.TestUtil;
 import io.mycat.mycat2.cmds.judge.MySQLPacketCallback;
 import io.mycat.mycat2.cmds.judge.MySQLProxyStateM;
 import io.mycat.mysql.ServerStatus;
-import io.mycat.mysql.packet.*;
-import io.mycat.proxy.ProxyBuffer;
+import io.mycat.mysql.packet.MySQLPacket;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
-
-import static io.mycat.mycat2.TestUtil.fieldCount;
+import static io.mycat.mycat2.TestUtil.NOT_OK_EOF_ERR;
 
 /**
  * cjw
@@ -39,13 +35,58 @@ public class ComQueryTest {
         Assert.assertFalse(sm.isInteractive());
     }
 
-//    @Test
-//    public void test_one_field_eof_row_eof() {
-//        MySQLProxyStateM sm = new MySQLProxyStateM(callback);
-//        sm.reset(MySQLCommand.COM_QUERY);
-//        sm.on(fieldCount());
-//        Assert.assertTrue(sm.isFinished());
-//        Assert.assertFalse(sm.isInteractive());
-//    }
+    @Test
+    public void test_one_field_eof_empry_row_eof() {
+        MySQLProxyStateM sm = new MySQLProxyStateM(callback);
+        sm.reset(MySQLCommand.COM_QUERY);
+        sm.on(NOT_OK_EOF_ERR);//fieldCount
+        sm.on(NOT_OK_EOF_ERR);//field
+        sm.on(MySQLPacket.EOF_PACKET);
+        sm.on(MySQLPacket.EOF_PACKET);//empty row
+        Assert.assertTrue(sm.isFinished());
+        Assert.assertFalse(sm.isInteractive());
+    }
+    @Test
+    public void test_one_field_eof_one_row_eof() {
+        MySQLProxyStateM sm = new MySQLProxyStateM(callback);
+        sm.reset(MySQLCommand.COM_QUERY);
+        sm.on(NOT_OK_EOF_ERR);//fieldCount
+        sm.on(NOT_OK_EOF_ERR);//field
+        sm.on(MySQLPacket.EOF_PACKET);
+        sm.on(NOT_OK_EOF_ERR);//one row
+        sm.on(MySQLPacket.EOF_PACKET);
+        Assert.assertTrue(sm.isFinished());
+        Assert.assertFalse(sm.isInteractive());
+    }
+    @Test
+    public void test_one_field_eof_two_row_eof() {
+        MySQLProxyStateM sm = new MySQLProxyStateM(callback);
+        sm.reset(MySQLCommand.COM_QUERY);
+        sm.on(NOT_OK_EOF_ERR);//fieldCount
+        sm.on(NOT_OK_EOF_ERR);//field
+        sm.on(MySQLPacket.EOF_PACKET);
+        sm.on(NOT_OK_EOF_ERR);//two row
+        sm.on(MySQLPacket.EOF_PACKET);
+        Assert.assertTrue(sm.isFinished());
+        Assert.assertFalse(sm.isInteractive());
+    }
 
+    @Test
+    public void test_load_data_ok() {
+        MySQLProxyStateM sm = new MySQLProxyStateM(callback);
+        sm.reset(MySQLCommand.COM_QUERY);
+        //interactive with client
+        sm.on(MySQLPacket.OK_PACKET);
+        Assert.assertTrue(sm.isFinished());
+        Assert.assertFalse(sm.isInteractive());
+    }
+    @Test
+    public void test_load_data_error() {
+        MySQLProxyStateM sm = new MySQLProxyStateM(callback);
+        sm.reset(MySQLCommand.COM_QUERY);
+        //interactive with client
+        sm.on(MySQLPacket.ERROR_PACKET);
+        Assert.assertTrue(sm.isFinished());
+        Assert.assertFalse(sm.isInteractive());
+    }
 }

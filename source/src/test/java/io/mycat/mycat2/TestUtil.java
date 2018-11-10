@@ -10,6 +10,7 @@ import java.nio.ByteBuffer;
  * 294712221@qq.com
  */
 public class TestUtil {
+    public static int NOT_OK_EOF_ERR = Integer.MAX_VALUE;
     public static byte[] of(int... i) {
         byte[] bytes = new byte[i.length];
         int j = 0;
