@@ -41,7 +41,7 @@ public class MySQLPackageInfTest {
         AbstractMySQLSession mySQLSession = mock(proxyBuffer);
         AbstractMySQLSession.CurrPacketType currPacketType = mySQLSession.resolveMySQLPackage();
         Assert.assertEquals(currPacketType, AbstractMySQLSession.CurrPacketType.Full);
-        Assert.assertTrue(mySQLSession.curMSQLPackgInf.isFiledCount());
+        Assert.assertTrue(mySQLSession.curMSQLPackgInf.isFieldsCount());
         //在写入两个整包,并读出
         testFullFullPacket();
     }
