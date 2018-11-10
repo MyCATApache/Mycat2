@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
  * 6. 写完成后 flip切换读写状态。同时 如果 readIndex > buffer.capacity() * 2 / 3 进行一次压缩
  * 7. 从 channel向buffer 写入数据时，如果 writeIndex > buffer.capacity() * 1 / 3 进行一次压缩
  *
- * 二、没有读取数据,向buffer中写入数据后 直接 write 到 channel的场景
+ * 二、没有读取数据,向buffer中写入数据后 直接 writePayload 到 channel的场景
  * 1. 在写入到 channel 时 ,需要显式 指定readIndex = writeIndex;
  * 2. 其他步骤 同 （透传、只前端读写、只后端读写场景）场景
  * </pre>
@@ -69,8 +69,8 @@ public class ProxyBuffer {
      * *********************************************************************
      */
     /**
-     * 当前buffer 的读写状态 . 默认为写入状态 false 从 channel 中 向 buffer 写入数据 即： write 状态 true
-     * 从buffer 向 channel 写出数据 即： read 状态
+     * 当前buffer 的读写状态 . 默认为写入状态 false 从 channel 中 向 buffer 写入数据 即： writePayload 状态 true
+     * 从buffer 向 channel 写出数据 即： readPayload 状态
      */
     private boolean inReading = false;
 
@@ -482,7 +482,13 @@ public class ProxyBuffer {
         writeIndex++;
         return this;
     }
-
+    public ProxyBuffer writeReserved(int length) {
+        for (int i = 0; i < length; i++) {
+            this.putByte(writeIndex, (byte) 0);
+            writeIndex++;
+        }
+        return this;
+    }
     public byte readByte() {
         byte val = getByte(readIndex);
         readIndex++;

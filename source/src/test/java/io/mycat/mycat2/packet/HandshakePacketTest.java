@@ -6,7 +6,10 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
+import static io.mycat.mycat2.TestUtil.ofBuffer;
+import static io.mycat.mycat2.TestUtil.of;
 /**
  * cjw 294712221@qq.com
  */
@@ -81,8 +84,9 @@ public class HandshakePacketTest {
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocate(pkt17.length));
         handshakePacket.writePayload(buffer);
         byte[] array = buffer.getBuffer().array();
-        pkt17[27] = 1;//unused
-        Assert.assertArrayEquals(of(pkt17),array);
+        int[] ints = Arrays.copyOf(pkt17, pkt17.length);
+        ints[27] = 1;//unused
+        Assert.assertArrayEquals(of(ints),array);
         Assert.assertEquals(handshakePacket.calcPacketSize(), pkt17.length);
     }
 
@@ -99,19 +103,5 @@ public class HandshakePacketTest {
             0x73, 0x77, 0x6f, 0x72, 0x64, 0x00              /* sword. */
     };
 
-    public static byte[] of(int... i) {
-        byte[] bytes = new byte[i.length];
-        int j = 0;
-        for (int i1 : i) {
-            bytes[j] = (byte) i1;
-            j++;
-        }
-        return bytes;
-    }
 
-    public static ProxyBuffer ofBuffer(int... i) {
-        ProxyBuffer proxyBuffer = new ProxyBuffer(ByteBuffer.wrap(of(i)));
-        proxyBuffer.writeIndex = i.length;
-        return proxyBuffer;
-    }
 }
