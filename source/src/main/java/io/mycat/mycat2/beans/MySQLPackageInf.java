@@ -31,7 +31,6 @@ public class MySQLPackageInf {
         return (this.pkgType == 0xfe) && this.pkgLength < 9;
     }
 
-
     @Override
     public String toString() {
         return "MySQLPackageInf [pkgType=" + pkgType + ", crossBuffer=" + crossBuffer + ", startPos=" + startPos

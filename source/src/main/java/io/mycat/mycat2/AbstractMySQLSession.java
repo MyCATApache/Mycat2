@@ -140,12 +140,25 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true,true);
     }
 
-    public CurrPacketType resolveMySQLPackageManually() {
-        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, false,false);
+    public CurrPacketType resolveCrossBufferMySQLPackage() {
+        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true,false);
     }
 
     public boolean isResolveMySQLPackageFinished() {
         return this.proxyBuffer.readIndex != this.proxyBuffer.writeIndex;
+    }
+
+    /**
+     * 强制进入CrossBuffer模式
+     * cjw
+     * 294712221@qq.com
+     *并不限制进入该模式的时机,一般为第一次判断得到LongHalf之后进入该模式,因为LongHalf能获得报文的长度
+     * 其他情况不保证正确性
+     */
+    public void forceCrossBuffer() {
+        this.curMSQLPackgInf.crossBuffer = true;
+        this.curMSQLPackgInf.remainsBytes = this.curMSQLPackgInf.pkgLength - (this.curMSQLPackgInf.endPos - this.curMSQLPackgInf.startPos);
+        this.proxyBuffer.readIndex = this.curMSQLPackgInf.endPos;
     }
 
 
@@ -174,7 +187,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * @return
      * @throws IOException
      */
-    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded,boolean onlyProcessFull) {
+    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded,boolean forFull) {
         lastReadTime = TimeUtil.currentTimeMillis();
         ByteBuffer buffer = proxyBuf.getBuffer();
         // 读取的偏移位置
@@ -197,13 +210,13 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 offset += curPackInf.remainsBytes; // 继续处理下一个报文
                 proxyBuf.readIndex = offset;
                 curPackInf.remainsBytes = 0;
-                return CurrPacketType.Full;
+                return CurrPacketType.FinishedCrossBufferPacket;
             } else {// 剩余报文还没读完，等待下一次读取
                 curPackInf.startPos = 0;
                 curPackInf.remainsBytes -= totalLen;
                 curPackInf.endPos = limit;
                 proxyBuf.readIndex = curPackInf.endPos;
-                return CurrPacketType.LongHalfPacket;
+                return CurrPacketType.RestCrossBufferPacket;
             }
         }
         // check  limit - offset>4
@@ -233,7 +246,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if ((offset + pkgLength) > limit) {
             logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, limit ={}, "
                     + "ready to handle the next read event", pkgLength, (limit - offset), limit);
-            if (offset == 0 && pkgLength > limit&&onlyProcessFull) {
+            if (offset == 0 && pkgLength > limit&&forFull) {
                 /*
                 cjw 2018.4.6
                 假设整个buffer空间为88,开始位置是0,需要容纳89的数据大小,还缺一个数据没用接受完,
