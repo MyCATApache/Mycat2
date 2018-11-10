@@ -1,38 +1,34 @@
 package io.mycat.mycat2.cmds.judge;
 
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.packet.EOFPacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.OKPacket;
 import io.mycat.mysql.packet.RowDataPacket;
-import io.mycat.proxy.ProxyBuffer;
-import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.mycat.mycat2.cmds.judge.ResponseStateMachine.PacketState.COM_QUERY;
+import static io.mycat.mycat2.cmds.judge.MySQLProxyStateM.PacketState.COM_QUERY;
 
 /**
  * cjw
+ * 294712221@qq.com
  */
-public class ResponseStateMachine {
+public class MySQLProxyStateM<T> {
     int serverStatus;
     boolean isCommandFinished = false;
     byte commandType;//prepared
     long prepareFieldNum;
     long prepareParamNum;
-    private MySQLSession sqlSession;
+    public MySQLPacketCallback callback;
 
     public byte getCommandType() {
         return commandType;
     }
 
 
-    protected static Logger logger = LoggerFactory.getLogger(ResponseStateMachine.class);
+    protected static Logger logger = LoggerFactory.getLogger(MySQLProxyStateM.class);
 
-    public ResponseStateMachine(MySQLSession sqlSession) {
-        this.sqlSession = sqlSession;
+    public MySQLProxyStateM(MySQLPacketCallback callback) {
+        this.callback = callback;
     }
 
     public enum PacketState {
@@ -77,51 +73,19 @@ public class ResponseStateMachine {
         return JudgeUtil.hasTrans(serverStatus) || JudgeUtil.hasFatch(serverStatus);
     }
 
-    public boolean judgePreparedOkPacket(ProxyBuffer buffer, MySQLPackageInf curMSQLPackgInf) {
-        //0x16 COM_STMT_PREPARE
-        //@todo check or condition
-        String s = StringUtil.dumpAsHex(buffer.getBuffer(), curMSQLPackgInf.startPos, curMSQLPackgInf.pkgLength);
-        System.out.println(s);
-        int backupReadIndex = buffer.readIndex;
-        buffer.readIndex = curMSQLPackgInf.startPos;
-        try {
-            if (commandType == 22 && buffer.readByte() == 0x0c) {
-                buffer.readIndex = curMSQLPackgInf.startPos + 9;
-
-                long prepareFieldNum = buffer.readFixInt(2);
-                long prepareParamNum = buffer.readFixInt(2);
-                byte b1 = buffer.readByte();
-                boolean b = b1 == 0;
-                if (b) {
-                    this.prepareFieldNum = prepareFieldNum == 0 ? -1 : prepareFieldNum;
-                    this.prepareParamNum = prepareParamNum == 0 ? -1 : prepareParamNum;
-                }
-                return b;
-            }
-            return false;
-        } finally {
-            buffer.readIndex = backupReadIndex;
-            commandType = 0;
-        }
+    public boolean on(int pkgType) {
+        return on(pkgType, serverStatus, false);
     }
 
-    public boolean on(byte pkgType, ProxyBuffer buffer, MySQLSession sqlSession) {
-        int backupReadIndex = buffer.readIndex;
-        boolean preparedOkPacket = false;
-        if (pkgType == MySQLPacket.EOF_PACKET) {
-            buffer.readIndex = sqlSession.curMSQLPackgInf.startPos;
-            EOFPacket eofPacket = new EOFPacket();
-            eofPacket.read(buffer);
-            serverStatus = eofPacket.status;
-        } else if (pkgType == MySQLPacket.OK_PACKET) {
-            buffer.readIndex = sqlSession.curMSQLPackgInf.startPos;
-            OKPacket okPacket = new OKPacket();
-            okPacket.read(buffer);
-            preparedOkPacket = judgePreparedOkPacket(buffer, sqlSession.curMSQLPackgInf);
-            serverStatus = okPacket.serverStatus;
-        }
-        buffer.readIndex = backupReadIndex;
+    public boolean on(int pkgType, int serverStatus) {
+        return on(pkgType, serverStatus, false);
+    }
+
+    public boolean on(int pkgType, int serverStatus, boolean preparedOkPacket) {
         isCommandFinished = on(pkgType, JudgeUtil.hasMoreResult(serverStatus), JudgeUtil.hasMulitQuery(serverStatus), preparedOkPacket);
+        if (isCommandFinished) {
+            callback.onCommandFinished(this);
+        }
         logger.debug("cmd finished:{}", isCommandFinished);
         return isCommandFinished;
     }
@@ -149,7 +113,7 @@ public class ResponseStateMachine {
             }
             case RESULT_SET_FIRST_EOF: {//进入row状态
                 if (pkgType == RowDataPacket.EOF_PACKET) {
-                    onRsFinish(sqlSession);
+                    callback.onRsFinish(this);
                     if (!moreResultSets) {
                         this.responseState = PacketState.RESULT_SET_SECOND_EOF;
                     } else {
@@ -163,7 +127,7 @@ public class ResponseStateMachine {
                     logger.debug("from {} meet {} to {} ", PacketState.RESULT_SET_FIRST_EOF, pkgType, this.responseState);
                     return true;
                 }
-                onRsRow(sqlSession);
+                callback.onRsRow(this);
                 return false;
             }
             case RESULT_SET_SECOND_EOF:
@@ -219,19 +183,4 @@ public class ResponseStateMachine {
         return this.responseState == PacketState.RESULT_SET_FIRST_EOF;
     }
 
-    public void onRsColCount(MySQLSession session) {
-
-    }
-
-    public void onRsColDef(MySQLSession session) {
-
-    }
-
-    public void onRsRow(MySQLSession session) {
-
-    }
-
-    public void onRsFinish(MySQLSession session) {
-
-    }
 }

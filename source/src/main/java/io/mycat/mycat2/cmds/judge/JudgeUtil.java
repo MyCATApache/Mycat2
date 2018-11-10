@@ -1,6 +1,7 @@
 package io.mycat.mycat2.cmds.judge;
 
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mysql.ServerStatus;
 import io.mycat.mysql.packet.EOFPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.OKPacket;

@@ -4,6 +4,7 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.cmds.judge.MySQLProxyStateMHepler;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -66,7 +67,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
                 final String hexs = StringUtil.dumpAsHex(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos, session.curMSQLPackgInf.pkgLength);
                 logger.info(session.curMSQLPackgInf.pkgType+"");
                 logger.info(hexs);
-                isCommandFinished = session.responseStateMachine.on((byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
+                isCommandFinished = MySQLProxyStateMHepler.on(session.responseStateMachine,(byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
             } else if (CurrPacketType.LongHalfPacket == pkgTypeEnum) {
 //                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
 //                        session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||

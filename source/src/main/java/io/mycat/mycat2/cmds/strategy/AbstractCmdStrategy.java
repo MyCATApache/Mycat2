@@ -87,7 +87,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
         MySQLCommand command = null;
 
         byte sqltype = 0;
-        if (MySQLPacket.COM_QUERY == (byte) session.curMSQLPackgInf.pkgType) {
+        if (MySQLCommand.COM_QUERY == (byte) session.curMSQLPackgInf.pkgType) {
             /**
              * sqlparser
              */
