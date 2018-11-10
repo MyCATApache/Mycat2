@@ -36,7 +36,8 @@ public class MySQLPackageInfTest {
     public void testFullPacket() {
         //第一次写入读出
         ResultSetHeaderPacket headerPacket = new ResultSetHeaderPacket();
-        headerPacket.fieldCount = 0;
+        headerPacket.fieldCount = 1;//不可能为0
+        Assert.assertTrue(headerPacket.fieldCount>0);
         headerPacket.extra = 0;
         headerPacket.packetId = 0;
         ByteBuffer allocate = ByteBuffer.allocate(128);
