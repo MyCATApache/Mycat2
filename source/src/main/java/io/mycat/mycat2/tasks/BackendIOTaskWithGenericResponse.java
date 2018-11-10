@@ -44,7 +44,7 @@ public abstract class BackendIOTaskWithGenericResponse
         if (!session.readFromChannel()) {
             return;
         }
-        CurrPacketType currPacketType = session.resolveMySQLPackage();
+        CurrPacketType currPacketType = session.resolveMySQLPackage(true);
 
         session.proxyBuffer.flip();
         if (currPacketType == CurrPacketType.Full) {

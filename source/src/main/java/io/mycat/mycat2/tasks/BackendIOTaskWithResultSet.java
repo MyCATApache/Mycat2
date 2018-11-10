@@ -34,7 +34,7 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
 		}
     	
         for (; ; ) {
-           CurrPacketType currPacketType = session.resolveMySQLPackage();
+           CurrPacketType currPacketType = session.resolveMySQLPackage(true);
             //因为是解析所以只处理整包
             if (currPacketType == CurrPacketType.Full) {
                 MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;

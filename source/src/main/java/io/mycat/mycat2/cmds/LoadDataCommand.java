@@ -84,7 +84,7 @@ public class LoadDataCommand implements MySQLCommand {
 
         try {
             if (session.readFromChannel()) {
-                CurrPacketType currPacketType = session.resolveMySQLPackage();
+                CurrPacketType currPacketType = session.resolveMySQLPackage(true);
                 if (currPacketType == CurrPacketType.Full) {
                     MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
                     if (curMSQLPackgInf.isOkPacket()) {

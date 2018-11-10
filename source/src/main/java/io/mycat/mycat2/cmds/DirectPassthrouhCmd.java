@@ -61,7 +61,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
         ProxyBuffer curBuffer = session.proxyBuffer;
         while (proceed) {
-            CurrPacketType pkgTypeEnum = session.resolveMySQLPackage();
+            CurrPacketType pkgTypeEnum = session.resolveMySQLPackage(true);
             if (CurrPacketType.Full == pkgTypeEnum) {
                 final String hexs = StringUtil.dumpAsHex(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos, session.curMSQLPackgInf.pkgLength);
                 logger.info(session.curMSQLPackgInf.pkgType+"");

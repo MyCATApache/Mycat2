@@ -50,7 +50,7 @@ public enum LoadDataStream implements NIOHandler<AbstractMySQLSession> {
                 MySQLSession mySQLSession = (MySQLSession) session;
                 if (mySQLSession.readFromChannel()) {
                     MycatSession mycatSession = mySQLSession.getMycatSession();
-                    CurrPacketType currPacketType = mycatSession.resolveMySQLPackage();
+                    CurrPacketType currPacketType = mycatSession.resolveMySQLPackage(true);
                     if (currPacketType == CurrPacketType.Full) {
                         //不透传
                         ProxyBuffer proxyBuffer = mycatSession.proxyBuffer;

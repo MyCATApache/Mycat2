@@ -135,13 +135,15 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         proxyBuffer.readIndex = proxyBuffer.writeIndex;
         this.writeToChannel();
     }
-
-    public CurrPacketType resolveMySQLPackage() {
-        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true,true);
+    public CurrPacketType resolveMySQLPackage(boolean markReaded) {
+        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, markReaded, true);
     }
+//    public CurrPacketType resolveMySQLPackage() {
+//        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true, true);
+//    }
 
     public CurrPacketType resolveCrossBufferMySQLPackage() {
-        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true,false);
+        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true, false);
     }
 
     public boolean isResolveMySQLPackageFinished() {
@@ -152,7 +154,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * 强制进入CrossBuffer模式
      * cjw
      * 294712221@qq.com
-     *并不限制进入该模式的时机,一般为第一次判断得到LongHalf之后进入该模式,因为LongHalf能获得报文的长度
+     * 并不限制进入该模式的时机,一般为第一次判断得到LongHalf之后进入该模式,因为LongHalf能获得报文的长度
      * 其他情况不保证正确性
      */
     public void forceCrossBuffer() {
@@ -187,7 +189,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * @return
      * @throws IOException
      */
-    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded,boolean forFull) {
+    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded, boolean forFull) {
         lastReadTime = TimeUtil.currentTimeMillis();
         ByteBuffer buffer = proxyBuf.getBuffer();
         // 读取的偏移位置
@@ -234,6 +236,8 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         // 解析报文类型
         int packetType = -1;
 
+        packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
+
         // 包的类型
         curPackInf.pkgType = packetType;
         // 设置包的长度
@@ -246,7 +250,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if ((offset + pkgLength) > limit) {
             logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, limit ={}, "
                     + "ready to handle the next read event", pkgLength, (limit - offset), limit);
-            if (offset == 0 && pkgLength > limit&&forFull) {
+            if (offset == 0 && pkgLength > limit) {
                 /*
                 cjw 2018.4.6
                 假设整个buffer空间为88,开始位置是0,需要容纳89的数据大小,还缺一个数据没用接受完,
@@ -254,10 +258,12 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 导致一直没有把数据处理,一直报错 readed zero bytes ,Maybe a bug ,please fix it !!!!
                 解决办法:扩容
                  */
-                proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
-            }else {
-                curPackInf.crossBuffer = true;
-                curPackInf.remainsBytes = pkgLength - totalLen;
+                if (forFull) {
+                    proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
+                } else {
+                    curPackInf.crossBuffer = true;
+                    curPackInf.remainsBytes = pkgLength - totalLen;
+                }
             }
             curPackInf.endPos = limit;
             return CurrPacketType.LongHalfPacket;

@@ -1,5 +1,6 @@
 package io.mycat.mycat2.net;
 
+
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.FireWallBean;
@@ -40,7 +41,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	public void onSocketRead(MycatSession session) throws IOException {
 		ProxyBuffer frontBuffer = session.getProxyBuffer();
 		if (!session.readFromChannel()
-				|| CurrPacketType.Full != session.resolveMySQLPackage()) {
+				|| CurrPacketType.Full != session.resolveMySQLPackage(false)) {
 			return;
 		}
 

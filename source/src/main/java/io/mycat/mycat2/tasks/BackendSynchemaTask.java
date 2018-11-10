@@ -77,7 +77,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 			return;
 		}
 		
-        switch (session.resolveMySQLPackage()) {
+        switch (session.resolveMySQLPackage(true)) {
             case Full:
                 if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
                     String database = findDatabase(session);

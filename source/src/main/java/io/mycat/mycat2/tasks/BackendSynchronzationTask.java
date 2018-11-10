@@ -111,7 +111,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         
         boolean isAllOK = true;
         while (syncCmdNum >0) {
-        	switch (session.resolveMySQLPackage()) {
+        	switch (session.resolveMySQLPackage(true)) {
 			case Full:
 				if(session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET){
 					isAllOK = false;
