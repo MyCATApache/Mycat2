@@ -43,7 +43,7 @@ public class DefaultMycatSessionHandler implements NIOHandler<AbstractMySQLSessi
 			return;
 		}
 
-		switch (session.resolveMySQLPackage(buffer, session.curMSQLPackgInf, false)) {
+		switch (session.resolveMySQLPackageManually()) {
 		case Full:
 			session.changeToDirectIfNeed();
 			break;

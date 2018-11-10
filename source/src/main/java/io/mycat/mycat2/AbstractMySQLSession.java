@@ -86,8 +86,8 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     }
 
     public void setIdle() {
-        if(logger.isDebugEnabled()){
-            logger.debug("mysql session:{} is idle",this);
+        if (logger.isDebugEnabled()) {
+            logger.debug("mysql session:{} is idle", this);
         }
         this.idleFlag = true;
     }
@@ -140,26 +140,46 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         this.writeToChannel();
     }
 
-    public CurrPacketType resolveMySQLPackage()  {
-        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true);
+    public CurrPacketType resolveMySQLPackage() {
+        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true,true);
     }
 
-    public boolean isResolveMySQLPackageFinished(){
+    public CurrPacketType resolveMySQLPackageManually() {
+        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, false,false);
+    }
+
+    public boolean isResolveMySQLPackageFinished() {
         return this.proxyBuffer.readIndex != this.proxyBuffer.writeIndex;
     }
+
 
     /**
      * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
      * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded
      * =true
+     * <p>
+     * <p>
+     * 14.1.2 MySQL Packets
+     * If a MySQL client or server wants to send data, it:
+     * Splits the data into packets of size (224−1) bytes
+     * Prepends to each chunk a packet header
+     * Protocol::Packet
+     * Data between client and server is exchanged in packets of max 16MByte size.
+     * Payload
+     * Type Name Description
+     * int<3> payload_length Length of the payload. The number of bytes
+     * in the packet beyond the initial 4 bytes that
+     * make up the packet header.
+     * int<1> sequence_id Sequence ID
+     * string<var> payload [len=payload_length] payload of the packet
+     * lyj cjw
      *
      * @param proxyBuf
      * @return
      * @throws IOException
      */
-    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded) {
+    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded,boolean onlyProcessFull) {
         lastReadTime = TimeUtil.currentTimeMillis();
-
         ByteBuffer buffer = proxyBuf.getBuffer();
         // 读取的偏移位置
         int offset = proxyBuf.readIndex;
@@ -170,11 +190,9 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if (totalLen == 0) { // 透传情况下. 如果最后一个报文正好在buffer 最后位置,已经透传出去了.这里可能不会为零
             return CurrPacketType.ShortHalfPacket;
         }
-
         if (curPackInf.remainsBytes == 0 && curPackInf.crossBuffer) {
             curPackInf.crossBuffer = false;
         }
-
         // 如果当前跨多个报文
         if (curPackInf.crossBuffer) {
             if (curPackInf.remainsBytes <= totalLen) {
@@ -191,7 +209,9 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 return CurrPacketType.LongHalfPacket;
             }
         }
-        // 验证当前指针位置是否
+        // check  limit - offset>4
+        // header 's size at least 4 bytes size,payload least 1 bytes
+        // load data 's empty packet 's length is 4,but not pass here
         if (!ParseUtil.validateHeader(offset, limit)) {
             // 收到短半包
             logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
@@ -204,67 +224,19 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         // 解析报文类型
         int packetType = -1;
 
-        // 在包长度小于7时，作为resultSet的首包
-        if (pkgLength <= 7) {
-            int index = offset + ParseUtil.msyql_packetHeaderSize;
-
-            long len = proxyBuf.getInt(index, 1) & 0xff;
-            // 如果长度小于251,则取默认的长度
-            if (len < 251) {
-                packetType = (int) len;
-            } else if (len == 0xfc) {
-                // 进行验证是否位数足够,作为短包处理
-                if (!ParseUtil.validateResultHeader(offset, limit, 2)) {
-                    // 收到短半包
-                    logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset,
-                            limit);
-                    return CurrPacketType.ShortHalfPacket;
-                }
-                packetType = (int) proxyBuf.getInt(index + 1, 2);
-            } else if (len == 0xfd) {
-
-                // 进行验证是否位数足够,作为短包处理
-                if (!ParseUtil.validateResultHeader(offset, limit, 3)) {
-                    // 收到短半包
-                    logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset,
-                            limit);
-                    return CurrPacketType.ShortHalfPacket;
-                }
-
-                packetType = (int) proxyBuf.getInt(index + 1, 3);
-            } else {
-                // 进行验证是否位数足够,作为短包处理
-                if (!ParseUtil.validateResultHeader(offset, limit, 8)) {
-                    // 收到短半包
-                    logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset,
-                            limit);
-                    return CurrPacketType.ShortHalfPacket;
-                }
-
-                packetType = (int) proxyBuf.getInt(index + 1, 8);
-            }
-        } else {
-            // 解析报文类型
-            packetType = buffer.get(offset + ParseUtil.msyql_packetHeaderSize);
-        }
-
         // 包的类型
         curPackInf.pkgType = packetType;
         // 设置包的长度
         curPackInf.pkgLength = pkgLength;
         // 设置偏移位置
         curPackInf.startPos = offset;
-
         curPackInf.crossBuffer = false;
-
         curPackInf.remainsBytes = 0;
         // 如果当前需要跨buffer处理
-
-
         if ((offset + pkgLength) > limit) {
             logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, limit ={}, "
                     + "ready to handle the next read event", pkgLength, (limit - offset), limit);
-            if (offset == 0 && pkgLength > limit) {
+            if (offset == 0 && pkgLength > limit&&onlyProcessFull) {
                 /*
                 cjw 2018.4.6
                 假设整个buffer空间为88,开始位置是0,需要容纳89的数据大小,还缺一个数据没用接受完,
@@ -273,6 +245,8 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 解决办法:扩容
                  */
                 proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
+            }else {
+                curPackInf.crossBuffer = true;
             }
             curPackInf.endPos = limit;
             return CurrPacketType.LongHalfPacket;

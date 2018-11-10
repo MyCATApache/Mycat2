@@ -17,13 +17,13 @@ public class MySQLPackageInf {
     public int remainsBytes;
 
     public boolean isFieldsCount() {
-        return (this.pkgLength <=7);
+        return (this.pkgLength <=7)&&!isOkPacket();
     }
     public boolean isERRPacket() {
         return (this.pkgType  == 0xff);
     }
     public boolean isOkPacket() {
-        return (this.pkgType == 0&&this.pkgLength>7)||this.pkgType == 0xfe&&!isEOFPacket();
+        return (this.pkgType == 0&&this.pkgLength>7)||(this.pkgType == 0xfe&&!isEOFPacket());
     }
 
     public boolean isEOFPacket() {

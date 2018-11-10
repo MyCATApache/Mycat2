@@ -7,6 +7,8 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
+import static io.mycat.mycat2.TestUtil.ofBuffer;
+import static io.mycat.mycat2.TestUtil.of;
 /**
  * cjw 294712221@qq.com
  */
@@ -99,19 +101,5 @@ public class HandshakePacketTest {
             0x73, 0x77, 0x6f, 0x72, 0x64, 0x00              /* sword. */
     };
 
-    public static byte[] of(int... i) {
-        byte[] bytes = new byte[i.length];
-        int j = 0;
-        for (int i1 : i) {
-            bytes[j] = (byte) i1;
-            j++;
-        }
-        return bytes;
-    }
 
-    public static ProxyBuffer ofBuffer(int... i) {
-        ProxyBuffer proxyBuffer = new ProxyBuffer(ByteBuffer.wrap(of(i)));
-        proxyBuffer.writeIndex = i.length;
-        return proxyBuffer;
-    }
 }

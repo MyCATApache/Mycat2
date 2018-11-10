@@ -39,8 +39,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	@Override
 	public void onSocketRead(MycatSession session) throws IOException {
 		ProxyBuffer frontBuffer = session.getProxyBuffer();
-		if (session.readFromChannel() == false
-				|| CurrPacketType.Full != session.resolveMySQLPackage(frontBuffer, session.curMSQLPackgInf, false)) {
+		if (!session.readFromChannel()
+				|| CurrPacketType.Full != session.resolveMySQLPackage()) {
 			return;
 		}
 

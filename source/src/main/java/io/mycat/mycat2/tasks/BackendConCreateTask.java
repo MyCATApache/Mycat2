@@ -96,8 +96,8 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
     @Override
     public void onSocketRead(MySQLSession session) throws IOException {
         session.proxyBuffer.reset();
-        if (!session.readFromChannel() || CurrPacketType.Full != session.resolveMySQLPackage(session.proxyBuffer,
-                session.curMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
+        if (!session.readFromChannel() || CurrPacketType.Full != session.resolveMySQLPackage()) {
+            // 没有读到数据或者报文不完整
             return;
         }
 
