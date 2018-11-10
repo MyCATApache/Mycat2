@@ -1,13 +1,11 @@
 package io.mycat.mycat2.cmds;
 
-import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.cmds.judge.JudgeUtil;
+import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
@@ -63,13 +61,13 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
         ProxyBuffer curBuffer = session.proxyBuffer;
         while (proceed) {
-            AbstractMySQLSession.CurrPacketType pkgTypeEnum = session.resolveMySQLPackage();
-            if (AbstractMySQLSession.CurrPacketType.Full == pkgTypeEnum) {
+            CurrPacketType pkgTypeEnum = session.resolveMySQLPackage(true);
+            if (CurrPacketType.Full == pkgTypeEnum) {
                 final String hexs = StringUtil.dumpAsHex(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos, session.curMSQLPackgInf.pkgLength);
                 logger.info(session.curMSQLPackgInf.pkgType+"");
                 logger.info(hexs);
                 isCommandFinished = session.responseStateMachine.on((byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
-            } else if (AbstractMySQLSession.CurrPacketType.LongHalfPacket == pkgTypeEnum) {
+            } else if (CurrPacketType.LongHalfPacket == pkgTypeEnum) {
 //                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
 //                        session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||
 //                        session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
@@ -89,7 +87,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 //                    logger.debug(" curBuffer {}", curBuffer);
 //                }
                 break;
-            } else if (AbstractMySQLSession.CurrPacketType.ShortHalfPacket == pkgTypeEnum) {
+            } else if (CurrPacketType.ShortHalfPacket == pkgTypeEnum) {
                 break;
             }
             proceed = session.proxyBuffer.readIndex != session.proxyBuffer.writeIndex;

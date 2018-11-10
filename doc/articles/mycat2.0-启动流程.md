@@ -204,7 +204,7 @@ if (serverType == ServerType.CLUSTER) {
 }
 ```
 
-9.2.3 调用io.mycat.proxy.NIOAcceptor#getServerSocketChannel,进行启动.代码如下:
+9.2.3 调用io.mycat.proxy.NIOAcceptor#openServerChannel,进行启动.代码如下:
 
 
 ```

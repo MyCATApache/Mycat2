@@ -1,11 +1,5 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
-import java.nio.channels.ClosedChannelException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -13,6 +7,11 @@ import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 
 /**
  * Created by ynfeng on 2017/8/13.
@@ -112,7 +111,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
         
         boolean isAllOK = true;
         while (syncCmdNum >0) {
-        	switch (session.resolveMySQLPackage(session.proxyBuffer, session.curMSQLPackgInf, true)) {
+        	switch (session.resolveMySQLPackage(true)) {
 			case Full:
 				if(session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET){
 					isAllOK = false;
