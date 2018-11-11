@@ -51,7 +51,7 @@ public class MySQLProxyStateM<T> {
 
     public PacketState responseState;
 
-    public void reset(byte commandType) {
+    public void in(byte commandType) {
         this.commandType = commandType;
         this.responseState = COM_QUERY;
         this.isCommandFinished = false;
@@ -66,7 +66,7 @@ public class MySQLProxyStateM<T> {
     }
 
     public boolean isInteractive() {
-        return isInteractive(serverStatus);
+        return !isCommandFinished||isInteractive(serverStatus);
     }
 
     public static boolean isInteractive(int serverStatus) {
@@ -114,7 +114,7 @@ public class MySQLProxyStateM<T> {
             case RESULT_SET_FIRST_EOF: {//进入row状态
                 if (pkgType == RowDataPacket.EOF_PACKET) {
                     callback.onRsFinish(this);
-                    if (!moreResultSets) {
+                    if (!moreResults) {
                         this.responseState = PacketState.RESULT_SET_SECOND_EOF;
                     } else {
                         this.responseState = COM_QUERY;

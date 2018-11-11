@@ -236,7 +236,7 @@ MycatSession extends AbstractMySQLSession {
          * 这里reset ,会把前端连接的buffer 也给reset的掉.
          * 连接池  新创建的连接放入 reactor 时,会进行一次reset ,保证  session 拿到的连接 buffer 状态是正确的.
          */
-//		backend.proxyBuffer.reset();
+//		backend.proxyBuffer.in();
         putBackendMap(backend);
         backend.setMycatSession(this);
         backend.useSharedBuffer(this.proxyBuffer);

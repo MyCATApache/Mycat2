@@ -37,7 +37,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
             // 切换 buffer 读写状态
             curBuffer.flip();
             if (success) {
-                session.curBackend.responseStateMachine.reset(mysqlsession.getMycatSession().getSqltype());
+                session.curBackend.responseStateMachine.in(mysqlsession.getMycatSession().getSqltype());
                 // 没有读取,直接透传时,需要指定 透传的数据 截止位置
                 curBuffer.readIndex = curBuffer.writeIndex;
                 // 改变 owner，对端Session获取，并且感兴趣写事件

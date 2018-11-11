@@ -151,77 +151,77 @@ public final class ServerStatus {
         }
 
         public Builder setInTransaction() {
-            this.value &= IN_TRANSACTION;
+            this.value |= IN_TRANSACTION;
             return this;
         }
 
         public Builder setAutoCommit() {
-            this.value &= IN_TRANSACTION;
+            this.value |= IN_TRANSACTION;
             return this;
         }
 
         public Builder setMoreResult() {
-            this.value &= MORE_RESULTS;
+            this.value |= MORE_RESULTS;
             return this;
         }
 
         public Builder setMulitQuery() {
-            this.value &= MULIT_QUERY;
+            this.value |= MULIT_QUERY;
             return this;
         }
 
         public Builder setBadIndexUsed() {
-            this.value &= BAD_INDEX_USED;
+            this.value |= BAD_INDEX_USED;
             return this;
         }
 
         public Builder setNoIndexUsed() {
-            this.value &= NO_INDEX_USED;
+            this.value |= NO_INDEX_USED;
             return this;
         }
 
         public Builder setCursorExists() {
-            this.value &= NO_INDEX_USED;
+            this.value |= NO_INDEX_USED;
             return this;
         }
 
         public Builder setLastRowSent() {
-            this.value &= LAST_ROW_SENT;
+            this.value |= LAST_ROW_SENT;
             return this;
         }
 
         public Builder setDataBaseDroped() {
-            this.value &= DATABASE_DROPPED;
+            this.value |= DATABASE_DROPPED;
             return this;
         }
 
         public Builder setNoBackslashEscapes() {
-            this.value &= NO_BACKSLASH_ESCAPES;
+            this.value |= NO_BACKSLASH_ESCAPES;
             return this;
         }
 
         public Builder setSessionStateCheck() {
-            this.value &= SESSION_STATE_CHECK;
+            this.value |= SESSION_STATE_CHECK;
             return this;
         }
 
         public Builder setQueryWasSLow() {
-            this.value &= QUERY_WAS_SLOW;
+            this.value |= QUERY_WAS_SLOW;
             return this;
         }
 
         public Builder setPSOutParams() {
-            this.value &= PS_OUT_PARAMS;
+            this.value |= PS_OUT_PARAMS;
             return this;
         }
 
         public Builder setInTransReadonly() {
-            this.value &= IN_TRANS_READONLY;
+            this.value |= IN_TRANS_READONLY;
             return this;
         }
 
         public Builder setStateChanged() {
-            this.value &= STATE_CHANGED;
+            this.value |= STATE_CHANGED;
             return this;
         }
     }
