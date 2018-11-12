@@ -1,11 +1,11 @@
 package io.mycat.mycat2.cmds;
 
-import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.console.SessionKey;
+import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,8 +84,8 @@ public class LoadDataCommand implements MySQLCommand {
 
         try {
             if (session.readFromChannel()) {
-                AbstractMySQLSession.CurrPacketType currPacketType = session.resolveMySQLPackage();
-                if (currPacketType == AbstractMySQLSession.CurrPacketType.Full) {
+                CurrPacketType currPacketType = session.resolveMySQLPackage(true);
+                if (currPacketType == CurrPacketType.Full) {
                     MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
                     if (curMSQLPackgInf.isOkPacket()) {
                         session.getMycatSession().getAttrMap().put(SessionKey.LOAD_DATA_FINISH_KEY, Boolean.TRUE);

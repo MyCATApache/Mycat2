@@ -5,6 +5,7 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mycat2.net.DefaultMycatSessionHandler;
+import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
@@ -49,8 +50,8 @@ public enum LoadDataStream implements NIOHandler<AbstractMySQLSession> {
                 MySQLSession mySQLSession = (MySQLSession) session;
                 if (mySQLSession.readFromChannel()) {
                     MycatSession mycatSession = mySQLSession.getMycatSession();
-                    AbstractMySQLSession.CurrPacketType currPacketType = mycatSession.resolveMySQLPackage();
-                    if (currPacketType == AbstractMySQLSession.CurrPacketType.Full) {
+                    CurrPacketType currPacketType = mycatSession.resolveMySQLPackage(true);
+                    if (currPacketType == CurrPacketType.Full) {
                         //不透传
                         ProxyBuffer proxyBuffer = mycatSession.proxyBuffer;
                         proxyBuffer.flip();

@@ -1,14 +1,10 @@
 package io.mycat.mycat2.tasks;
 
-import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mysql.Capabilities;
-import io.mycat.mysql.packet.AuthPacket;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.HandshakePacket;
-import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.*;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
@@ -96,8 +92,8 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
     @Override
     public void onSocketRead(MySQLSession session) throws IOException {
         session.proxyBuffer.reset();
-        if (!session.readFromChannel() || CurrPacketType.Full != session.resolveMySQLPackage(session.proxyBuffer,
-                session.curMSQLPackgInf, false)) {// 没有读到数据或者报文不完整
+        if (!session.readFromChannel() || CurrPacketType.Full != session.resolveMySQLPackage(false)) {
+            // 没有读到数据或者报文不完整
             return;
         }
 

@@ -3,24 +3,26 @@ package io.mycat.mysql.packet;
 import io.mycat.mysql.Capabilities;
 import io.mycat.proxy.ProxyBuffer;
 
+import static io.mycat.mysql.Capabilities.CLIENT_CONNECT_ATTRS;
 import static io.mycat.mysql.Capabilities.CLIENT_PLUGIN_AUTH;
 
 public class NewHandshakePacket {
+    public byte packetId;
     public int protocolVersion;
     public String serverVersion;
     public long connectionId;
     public String authPluginDataPartOne;//salt auth plugin data part 1
-    public PartOneCapabilityFlags partOnecapabilityFlags;
+    public CapabilityFlags capabilities;
     public boolean hasPartTwo = false;
     public int characterSet;
     public int statusFlags;
-    public PartTwoCapabilityFlags partTwoCapabilityFlags;
     public int authPluginDataLen;
-    public String reserved;
+    // public String reserved="";
     public String authPluginDataPartTwo;
     public String authPluginName;
 
-    public void read(ProxyBuffer buffer) {
+
+    public void readPayload(ProxyBuffer buffer) {
         protocolVersion = buffer.readByte();
         if (protocolVersion != 0x0a) {
             throw new RuntimeException("unsupport HandshakeV9");
@@ -29,253 +31,414 @@ public class NewHandshakePacket {
         connectionId = buffer.readFixInt(4);
         authPluginDataPartOne = buffer.readFixString(8);
         buffer.skip(1);
-        partOnecapabilityFlags = new PartOneCapabilityFlags((int) buffer.readFixInt(2));
+        capabilities = new CapabilityFlags((int) buffer.readFixInt(2) & 0x0000ffff);
         if (!buffer.readFinished()) {
             hasPartTwo = true;
             characterSet = Byte.toUnsignedInt(buffer.readByte());
             statusFlags = (int) buffer.readFixInt(2);
-            partTwoCapabilityFlags = new PartTwoCapabilityFlags(buffer.readFixInt(2));
-            if (partTwoCapabilityFlags.isPluginAuth()) {
+            long l = buffer.readFixInt(2) << 16;
+            capabilities.value |= l;
+            if (capabilities.isPluginAuth()) {
                 byte b = buffer.readByte();
                 authPluginDataLen = Byte.toUnsignedInt(b);
             } else {
                 buffer.skip(1);
             }
-            reserved =  buffer.readFixString(10);
-            if (partOnecapabilityFlags.isCanDo41Anthentication()) {
-                authPluginDataPartTwo = buffer.readFixString(Math.min(13, authPluginDataLen));
+            //reserved = buffer.readFixString(10);
+            buffer.skip(10);
+            if (capabilities.isCanDo41Anthentication()) {
+                //todo check length in range [13.authPluginDataLen)
+                authPluginDataPartTwo = buffer.readFixString(13);
             }
-            if (partTwoCapabilityFlags.isPluginAuth()) {
+            if (capabilities.isPluginAuth()) {
                 authPluginName = buffer.readNULString();
             }
         }
     }
 
-    public void write(ProxyBuffer buffer) {
-
+    public void writePayload(ProxyBuffer buffer) {
+        buffer.writeByte((byte) 0x0a);
+        buffer.writeNULString(serverVersion);
+        buffer.writeFixInt(4, connectionId);
+        if (authPluginDataPartOne.length() != 8) {
+            throw new RuntimeException("authPluginDataPartOne's length must be 8!");
+        }
+        buffer.writeFixString(authPluginDataPartOne);
+        buffer.writeByte((byte) 0);
+        buffer.writeFixInt(2, this.capabilities.getLower2Bytes());
+        if (hasPartTwo) {
+            buffer.writeByte((byte) characterSet);
+            buffer.writeFixInt(2, this.statusFlags);
+            buffer.writeFixInt(2, this.capabilities.getUpper2Bytes());
+            if (this.capabilities.isPluginAuth()) {
+                buffer.writeByte((byte) authPluginDataLen);
+            } else {
+                buffer.writeByte((byte) 0);
+            }
+            buffer.writeReserved(10);
+            if (capabilities.isCanDo41Anthentication()) {
+                //todo check length in range [13.authPluginDataLen)
+                buffer.writeFixString(authPluginDataPartTwo);
+            }
+            if (capabilities.isPluginAuth()) {
+                buffer.writeNULString(this.authPluginName);
+            }
+        }
     }
+
+    public int calcPacketSize() {
+//        buffer.writeByte((byte) 0x0a);
+//        buffer.writeNULString(serverVersion);
+//        buffer.writeFixInt(4, connectionId);
+        int size = 0;
+        size += 1 + serverVersion.length() + 1 + 4;
+//        buffer.writeFixString(authPluginDataPartOne);
+//        buffer.writeByte((byte) 0);
+//        buffer.writeFixInt(2, this.capabilities.getLower2Bytes());
+        size += 8 + 1 + 2;
+        if (hasPartTwo) {
+//            buffer.writeByte((byte) characterSet);
+//            buffer.writeFixInt(2, this.statusFlags);
+//            buffer.writeFixInt(2, this.capabilities.getUpper2Bytes());
+            size += 1 + 2 + 2;
+//            if (this.capabilities.isPluginAuth()) {
+//                buffer.writeByte((byte) authPluginDataLen);
+//            } else {
+//                buffer.writeByte((byte) 0);
+//            }
+            size += 1;
+//            buffer.writeReserved(10);
+            size += 10;
+            if (capabilities.isCanDo41Anthentication()) {
+                //todo check length in range [13.authPluginDataLen)
+//                buffer.writeFixString(authPluginDataPartTwo);
+                size += authPluginDataPartTwo.length();
+            }
+            if (capabilities.isPluginAuth()) {
+//                buffer.writeNULString(this.authPluginName);
+                size += this.authPluginName.length() + 1;
+            }
+        }
+        return size;
+    }
+
+    public void read(ProxyBuffer buffer) {
+        int packetLength = (int) buffer.readFixInt(3);
+        int packetId = buffer.readByte();
+        readPayload(buffer);
+    }
+    public void write(ProxyBuffer buffer) {
+        int pkgSize = calcPacketSize();
+        buffer.writeFixInt(3, pkgSize);
+        buffer.writeByte(packetId);
+        writePayload(buffer);
+    }
+
 
     /**
      * cjw
      * 294712221@qq.com
      */
-    public static class PartOneCapabilityFlags {
-        public int capabilities = 0;
+    public static class CapabilityFlags {
+        public int value = 0;
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("PartOneCapabilityFlags{");
-            sb.append("capabilities=").append(capabilities);
+            final StringBuilder sb = new StringBuilder("CapabilityFlags{");
+            sb.append("value=").append(Integer.toBinaryString(value << 7));
             sb.append('}');
             return sb.toString();
         }
 
-        public PartOneCapabilityFlags(int capabilities) {
-            this.capabilities = capabilities;
+        public CapabilityFlags(int capabilities) {
+            this.value = capabilities;
         }
 
-        public PartOneCapabilityFlags() {
+        public CapabilityFlags() {
+        }
+
+        public int getLower2Bytes() {
+            return value & 0x0000ffff;
+        }
+
+        public int getUpper2Bytes() {
+            return value >>> 16;
         }
 
         public boolean isLongPassword() {
-            return (capabilities & Capabilities.CLIENT_LONG_PASSWORD) != 0;
+            return (value & Capabilities.CLIENT_LONG_PASSWORD) != 0;
         }
 
         public void setLongPassword() {
-            capabilities |= Capabilities.CLIENT_LONG_PASSWORD;
+            value |= Capabilities.CLIENT_LONG_PASSWORD;
         }
 
         public boolean isFoundRows() {
-            return (capabilities & Capabilities.CLIENT_FOUND_ROWS) != 0;
+            return (value & Capabilities.CLIENT_FOUND_ROWS) != 0;
         }
 
         public void setFoundRows() {
-            capabilities |= Capabilities.CLIENT_FOUND_ROWS;
+            value |= Capabilities.CLIENT_FOUND_ROWS;
         }
 
         public boolean isLongColumnWithFLags() {
-            return (capabilities & Capabilities.CLIENT_LONG_FLAG) != 0;
+            return (value & Capabilities.CLIENT_LONG_FLAG) != 0;
         }
 
         public void setLongColumnWithFLags() {
-            capabilities |= Capabilities.CLIENT_LONG_FLAG;
+            value |= Capabilities.CLIENT_LONG_FLAG;
+        }
+
+        public boolean isConnectionWithDatabase() {
+            return (value & Capabilities.CLIENT_CONNECT_WITH_DB) != 0;
+        }
+
+        public void setConnectionWithDatabase() {
+            value |= Capabilities.CLIENT_CONNECT_WITH_DB;
         }
 
         public boolean isDoNotAllowDatabaseDotTableDotColumn() {
-            return (capabilities & Capabilities.CLIENT_CONNECT_WITH_DB) != 0;
+            return (value & Capabilities.CLIENT_NO_SCHEMA) != 0;
         }
 
         public void setDoNotAllowDatabaseDotTableDotColumn() {
-            capabilities |= Capabilities.CLIENT_CONNECT_WITH_DB;
+            value |= Capabilities.CLIENT_NO_SCHEMA;
         }
 
         public boolean isCanUseCompressionProtocol() {
-            return (capabilities & Capabilities.CLIENT_COMPRESS) != 0;
+            return (value & Capabilities.CLIENT_COMPRESS) != 0;
         }
 
         public void setCanUseCompressionProtocol() {
-            capabilities |= Capabilities.CLIENT_COMPRESS;
+            value |= Capabilities.CLIENT_COMPRESS;
         }
 
         public boolean isODBCClient() {
-            return (capabilities & Capabilities.CLIENT_ODBC) != 0;
+            return (value & Capabilities.CLIENT_ODBC) != 0;
         }
 
         public void setODBCClient() {
-            capabilities |= Capabilities.CLIENT_ODBC;
+            value |= Capabilities.CLIENT_ODBC;
         }
 
         public boolean isCanUseLoadDataLocal() {
-            return (capabilities & Capabilities.CLIENT_LOCAL_FILES) != 0;
+            return (value & Capabilities.CLIENT_LOCAL_FILES) != 0;
         }
 
         public void setCanUseLoadDataLocal() {
-            capabilities |= Capabilities.CLIENT_LOCAL_FILES;
+            value |= Capabilities.CLIENT_LOCAL_FILES;
         }
 
         public boolean isIgnoreSpacesBeforeLeftBracket() {
-            return (capabilities & Capabilities.CLIENT_IGNORE_SPACE) != 0;
+            return (value & Capabilities.CLIENT_IGNORE_SPACE) != 0;
         }
 
         public void setIgnoreSpacesBeforeLeftBracket() {
-            capabilities |= Capabilities.CLIENT_IGNORE_SPACE;
+            value |= Capabilities.CLIENT_IGNORE_SPACE;
+        }
+
+        public boolean isClientProtocol41() {
+            return (value & Capabilities.CLIENT_PROTOCOL_41) != 0;
+        }
+
+
+        public void setClientProtocol41() {
+            value |= Capabilities.CLIENT_PROTOCOL_41;
         }
 
         public boolean isSwitchToSSLAfterHandshake() {
-            return (capabilities & Capabilities.CLIENT_SSL) != 0;
+            return (value & Capabilities.CLIENT_SSL) != 0;
         }
 
         public void setSwitchToSSLAfterHandshake() {
-            capabilities |= Capabilities.CLIENT_SSL;
+            value |= Capabilities.CLIENT_SSL;
         }
 
         public boolean isIgnoreSigpipes() {
-            return (capabilities & Capabilities.CLIENT_IGNORE_SIGPIPE) != 0;
+            return (value & Capabilities.CLIENT_IGNORE_SIGPIPE) != 0;
         }
 
         public void setIgnoreSigpipes() {
-            capabilities |= Capabilities.CLIENT_IGNORE_SIGPIPE;
+            value |= Capabilities.CLIENT_IGNORE_SIGPIPE;
         }
 
         public boolean isKnowsAboutTransactions() {
-            return (capabilities & Capabilities.CLIENT_TRANSACTIONS) != 0;
+            return (value & Capabilities.CLIENT_TRANSACTIONS) != 0;
         }
 
         public void setKnowsAboutTransactions() {
-            capabilities |= Capabilities.CLIENT_TRANSACTIONS;
+            value |= Capabilities.CLIENT_TRANSACTIONS;
+        }
+
+
+        public void setInteractive() {
+            value |= Capabilities.CLIENT_INTERACTIVE;
+        }
+
+        public boolean isInteractive() {
+            return (value & Capabilities.CLIENT_INTERACTIVE) != 0;
         }
 
         public boolean isSpeak41Protocol() {
-            return (capabilities & Capabilities.CLIENT_RESERVED) != 0;
+            return (value & Capabilities.CLIENT_RESERVED) != 0;
         }
 
         public void setSpeak41Protocol() {
-            capabilities |= Capabilities.CLIENT_RESERVED;
+            value |= Capabilities.CLIENT_RESERVED;
         }
 
+
         public boolean isCanDo41Anthentication() {
-            return (capabilities & Capabilities.CLIENT_SECURE_CONNECTION) != 0;
+            return (value & Capabilities.CLIENT_SECURE_CONNECTION) != 0;
         }
 
         public void setCanDo41Anthentication() {
-            capabilities |= Capabilities.CLIENT_SECURE_CONNECTION;
-        }
-    }
-
-    /**
-     * cjw
-     * 294712221@qq.com
-     */
-    public static class PartTwoCapabilityFlags {
-        public long capabilities = 0;
-
-        @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("PartTwoCapabilityFlags{");
-            sb.append("capabilities=").append(capabilities);
-            sb.append('}');
-            return sb.toString();
+            value |= Capabilities.CLIENT_SECURE_CONNECTION;
         }
 
-        public PartTwoCapabilityFlags(long capabilities) {
-            this.capabilities = capabilities;
-        }
-
-        public PartTwoCapabilityFlags() {
-        }
 
         public boolean isMultipleStatements() {
-            return (capabilities & Capabilities.CLIENT_MULTI_STATEMENTS) != 0;
+            return (value & Capabilities.CLIENT_MULTI_STATEMENTS) != 0;
         }
 
         public void setMultipleStatements() {
-            capabilities |= Capabilities.CLIENT_MULTI_STATEMENTS;
+            value |= Capabilities.CLIENT_MULTI_STATEMENTS;
         }
 
         public boolean isMultipleResults() {
-            return (capabilities & Capabilities.CLIENT_MULTI_RESULTS) != 0;
+            return (value & Capabilities.CLIENT_MULTI_RESULTS) != 0;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CapabilityFlags)) return false;
+
+            CapabilityFlags that = (CapabilityFlags) o;
+
+            return hashCode() == that.hashCode();
+        }
+
+        @Override
+        public int hashCode() {
+            return value << 7;
         }
 
         public void setMultipleResults() {
-            capabilities |= Capabilities.CLIENT_MULTI_RESULTS;
+            value |= Capabilities.CLIENT_MULTI_RESULTS;
         }
 
         public boolean isPSMultipleResults() {
-            return (capabilities & Capabilities.CLIENT_PS_MULTI_RESULTS) != 0;
+            return (value & Capabilities.CLIENT_PS_MULTI_RESULTS) != 0;
         }
 
         public void setPSMultipleResults() {
-            capabilities |= Capabilities.CLIENT_PS_MULTI_RESULTS;
+            value |= Capabilities.CLIENT_PS_MULTI_RESULTS;
         }
 
         public boolean isPluginAuth() {
-            return (capabilities & CLIENT_PLUGIN_AUTH) != 0;
+            return (value & CLIENT_PLUGIN_AUTH) != 0;
         }
 
         public void setPluginAuth() {
-            capabilities |= CLIENT_PLUGIN_AUTH;
+            value |= CLIENT_PLUGIN_AUTH;
         }
 
         public boolean isConnectAttrs() {
-            return (capabilities & CLIENT_PLUGIN_AUTH) != 0;
+            return (value & CLIENT_CONNECT_ATTRS) != 0;
         }
 
         public void setConnectAttrs() {
-            capabilities |= CLIENT_PLUGIN_AUTH;
+            value |= CLIENT_CONNECT_ATTRS;
         }
 
         public boolean isPluginAuthLenencClientData() {
-            return (capabilities & Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) != 0;
+            return (value & Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) != 0;
         }
 
         public void setPluginAuthLenencClientData() {
-            capabilities |= Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA;
+            value |= Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA;
         }
 
         public boolean isClientCanHandleExpiredPasswords() {
-            return (capabilities & Capabilities.CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS) != 0;
+            return (value & Capabilities.CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS) != 0;
         }
 
         public void setClientCanHandleExpiredPasswords() {
-            capabilities |= Capabilities.CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS;
+            value |= Capabilities.CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS;
         }
 
         public boolean isSessionVariableTracking() {
-            return (capabilities & Capabilities.CLIENT_SESSION_TRACK) != 0;
+            return (value & Capabilities.CLIENT_SESSION_TRACK) != 0;
         }
 
         public void setSessionVariableTracking() {
-            capabilities |= Capabilities.CLIENT_SESSION_TRACK;
+            value |= Capabilities.CLIENT_SESSION_TRACK;
         }
 
         public boolean isDeprecateEOF() {
-            return (capabilities & Capabilities.CLIENT_DEPRECATE_EOF) != 0;
+            return (value & Capabilities.CLIENT_DEPRECATE_EOF) != 0;
         }
 
         public void setDeprecateEOF() {
-            capabilities |= Capabilities.CLIENT_DEPRECATE_EOF;
+            value |= Capabilities.CLIENT_DEPRECATE_EOF;
         }
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof NewHandshakePacket)) return false;
 
+        NewHandshakePacket that = (NewHandshakePacket) o;
+
+        if (protocolVersion != that.protocolVersion) return false;
+        if (connectionId != that.connectionId) return false;
+        if (hasPartTwo != that.hasPartTwo) return false;
+        if (characterSet != that.characterSet) return false;
+        if (statusFlags != that.statusFlags) return false;
+        if (authPluginDataLen != that.authPluginDataLen) return false;
+        if (serverVersion != null ? !serverVersion.equals(that.serverVersion) : that.serverVersion != null)
+            return false;
+        if (authPluginDataPartOne != null ? !authPluginDataPartOne.equals(that.authPluginDataPartOne) : that.authPluginDataPartOne != null)
+            return false;
+        if (capabilities != null ? !capabilities.equals(that.capabilities) : that.capabilities != null) return false;
+        if (authPluginDataPartTwo != null ? !authPluginDataPartTwo.equals(that.authPluginDataPartTwo) : that.authPluginDataPartTwo != null)
+            return false;
+        return authPluginName != null ? authPluginName.equals(that.authPluginName) : that.authPluginName == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = protocolVersion;
+        result = 31 * result + (serverVersion != null ? serverVersion.hashCode() : 0);
+        result = 31 * result + (int) (connectionId ^ (connectionId >>> 32));
+        result = 31 * result + (authPluginDataPartOne != null ? authPluginDataPartOne.hashCode() : 0);
+        result = 31 * result + (capabilities != null ? capabilities.hashCode() : 0);
+        result = 31 * result + (hasPartTwo ? 1 : 0);
+        result = 31 * result + characterSet;
+        result = 31 * result + statusFlags;
+        result = 31 * result + authPluginDataLen;
+        result = 31 * result + (authPluginDataPartTwo != null ? authPluginDataPartTwo.hashCode() : 0);
+        result = 31 * result + (authPluginName != null ? authPluginName.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("NewHandshakePacket{");
+        sb.append("protocolVersion=").append(protocolVersion);
+        sb.append(", serverVersion='").append(serverVersion).append('\'');
+        sb.append(", connectionId=").append(connectionId);
+        sb.append(", authPluginDataPartOne='").append(authPluginDataPartOne).append('\'');
+        sb.append(", capabilities=").append(capabilities);
+        sb.append(", hasPartTwo=").append(hasPartTwo);
+        sb.append(", characterSet=").append(characterSet);
+        sb.append(", statusFlags=").append(statusFlags);
+        sb.append(", authPluginDataLen=").append(authPluginDataLen);
+        sb.append(", authPluginDataPartTwo='").append(authPluginDataPartTwo).append('\'');
+        sb.append(", authPluginName='").append(authPluginName).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
 }

@@ -3,6 +3,7 @@ package io.mycat.util;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import io.mycat.mycat2.AbstractMySQLSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +161,9 @@ public final class StringUtil {
     public final static String dumpAsHex(final ByteBuffer buffer, final int offset, final int length){
     	return (dumpAsHex(new ByteBufferGetable(buffer), offset, length));
     }
-    
+	public final static String dumpMySQLPackageInfAsHex(AbstractMySQLSession mySQLSession){
+		return (dumpAsHex(new ByteBufferGetable(mySQLSession.proxyBuffer.getBuffer()), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.endPos));
+	}
     public final static boolean isEmpty(String str) {
     	return str == null || str == "";
     }
