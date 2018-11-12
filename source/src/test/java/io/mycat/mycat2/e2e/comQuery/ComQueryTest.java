@@ -14,19 +14,19 @@ import static java.lang.Thread.sleep;
 public class ComQueryTest {
     //3306
     //8066
-    final static String URL = "jdbc:mysql://127.0.0.1:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
+    final static String URL = "jdbc:mysql://10.4.40.57:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
             "&useLocalSessionState=true&failOverReadOnly=false" +
             "&rewriteBatchedStatements=true" +
             "&allowMultiQueries=true" +
             "&useCursorFetch=true";
     final static String USERNAME = "root";
-    final static String PASSWORD = "";
-    final static String REPL_MASTER_HOST = "127.0.0.1";
-    final static int REPL_MASTER_PORT = 3307;
+    final static String PASSWORD = "Marble@dls16";
+    final static String REPL_MASTER_HOST = "10.4.40.57";
+    final static int REPL_MASTER_PORT = 3306;
     final static String REPL_MASTER_USER = "repl";
-    final static String REPL_MASTER_PASSWORD = "";
+    final static String REPL_MASTER_PASSWORD = "Marble@dls16";
     final static String REPL_MASTER_LOG_FILE = "mysql-bin.000001";
-    final static int REPL_MASTER_LOG_POS = 3143;
+    final static int REPL_MASTER_LOG_POS = 7849;
 
     static {
         try {
@@ -99,10 +99,15 @@ public class ComQueryTest {
     public static void testGrantRevoke() {
         using(c -> {
                     Statement statement = c.createStatement();
-                    statement.execute("DROP USER 'jeffrey'@'localhost';");
-                    statement.execute("CREATE USER 'jeffrey'@'localhost' IDENTIFIED BY 'What?2018';");
-                    statement.execute("GRANT ALL ON db1.* TO 'jeffrey'@'localhost';");
-                    statement.execute("REVOKE ALL ON db1.* FROM 'jeffrey'@'localhost';");
+                    statement.execute("CREATE USER 'jeffreyJF'@'localhost' IDENTIFIED BY 'What?2018';");
+                    statement.execute("FLUSH PRIVILEGES;");
+                    statement.execute("RENAME USER 'jeffreyJF'@'localhost' TO 'jeffrey'@'%';");
+                    statement.execute("FLUSH PRIVILEGES;");
+                    statement.execute("GRANT ALL ON db1.* TO 'jeffrey'@'%';");
+                    statement.execute("REVOKE ALL ON db1.* FROM 'jeffrey'@'%';");
+                    statement.execute("SHOW PRIVILEGES;");
+                    statement.execute("DROP USER 'jeffrey'@'%';");
+                    statement.execute("FLUSH PRIVILEGES;");
                 }
         );
     }
@@ -237,11 +242,21 @@ public class ComQueryTest {
         );
     }
 
+    public static void testBegin() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("BEGIN;");
+                    statement.execute("DELETE FROM `db1`.`travelrecord` WHERE `id` = 3;");
+                    statement.execute("ROLLBACK;");
+                }
+        );
+    }
+
     public static void testRollback() {
         using(c -> {
                     Statement statement = c.createStatement();
                     c.setAutoCommit(false);
-                    statement.executeUpdate("DELETE FROM `db1`.`travelrecord` WHERE `id` = 3; ");
+                    statement.executeUpdate("DELETE FROM `db1`.`travelrecord` WHERE `id` = 3;");
                     c.rollback();
                 }
         );
@@ -283,16 +298,148 @@ public class ComQueryTest {
                     statement.execute("STOP SLAVE;");
                     statement.execute("CHANGE MASTER to MASTER_HOST='" + REPL_MASTER_HOST + "',MASTER_PORT=" + REPL_MASTER_PORT + ",MASTER_USER='" + REPL_MASTER_USER +
                             "',MASTER_PASSWORD='" + REPL_MASTER_PASSWORD + "',MASTER_LOG_FILE='" + REPL_MASTER_LOG_FILE + "', MASTER_LOG_POS=" + REPL_MASTER_LOG_POS + ";");
+                    statement.execute("CHANGE REPLICATION FILTER REPLICATE_DO_DB = (db1);");
                     statement.execute("START SLAVE;");
                 }
         );
     }
 
-    public static void testStartStopGroupReplication() {
+    /*
+     * 必须开启group replication,否则会报异常:java.sql.SQLException: The server is not configured properly to be an active member of the group.
+     */
+    public static void testGroupReplication() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("START GROUP_REPLICATION;");
                     statement.execute("STOP GROUP_REPLICATION;");
+                }
+        );
+    }
+
+    /*
+     * 必须开启binlog才能执行,否则会报异常: java.sql.SQLException: You are not using binary logging
+     */
+    public static void testBinlog() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("SHOW BINARY LOGS;");
+                    statement.execute("SHOW MASTER LOGS;");
+                    statement.execute("SHOW BINLOG EVENTS;");
+                    statement.execute("PURGE BINARY LOGS BEFORE '2008-04-02 22:46:26';");
+                }
+        );
+    }
+
+    /*
+     * 空查询会报异常: jjava.sql.SQLException: Can not issue empty query.
+     */
+    public static void testEmptyQuery() {
+        using(c -> {
+                Statement statement = c.createStatement();
+                statement.executeQuery("");
+            }
+        );
+    }
+
+    public static void testShowSlaveHosts() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("SHOW SLAVE HOSTS;");
+                }
+        );
+    }
+
+    public static void testReset() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("RESET QUERY CACHE;");
+                }
+        );
+    }
+
+    public static void testRenameTable() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("RENAME TABLE `db1`.`travelrecord` TO `db1`.`travelrecord2`;");
+                    statement.execute("RENAME TABLE `db1`.`travelrecord2` TO `db1`.`travelrecord`;");
+                }
+        );
+    }
+
+    public static void testShowOpenTables() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("SHOW OPEN TABLES;");
+                }
+        );
+    }
+
+    /*
+     * 执行报错:com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: You have an error in your SQL syntax;
+     */
+    public static void testShowHelp() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("HELP;");
+                }
+        );
+    }
+
+    public static void testShowStorageEngines() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("SHOW STORAGE ENGINES;");
+                }
+        );
+    }
+
+    public static void testShowWarningsErrors() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("SHOW WARNINGS;");
+                    statement.execute("SHOW ERRORS;");
+                }
+        );
+    }
+
+    public static void testDo() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("DO SLEEP(1);");
+                }
+        );
+    }
+
+    public static void testHandler() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("HANDLER `db1`.`travelrecord` OPEN;");
+                    statement.execute("HANDLER travelrecord READ FIRST;");
+                    statement.execute("HANDLER travelrecord CLOSE;");
+                }
+        );
+    }
+
+    public static void testDeleteMulti() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("CREATE TABLE IF NOT EXISTS `db1`.`t1` (`id` int(11) NOT NULL, `count` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+                    statement.execute("CREATE TABLE IF NOT EXISTS `db1`.`t2` (`id` int(11) NOT NULL, `count` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+                    statement.executeUpdate("INSERT INTO `db1`.`t1` (`id`, `count`) VALUES (1, 1) ;");
+                    statement.executeUpdate("INSERT INTO `db1`.`t2` (`id`, `count`) VALUES (1,2 ) ;");
+                    statement.execute("DELETE `db1`.`t1`, `db1`.`t2` FROM `db1`.`t1` INNER JOIN `db1`.`t2` WHERE t1.id=t2.id;");
+            }
+        );
+    }
+
+    public static void testUpdateMulti() {
+        using(c -> {
+                    Statement statement = c.createStatement();
+                    statement.execute("CREATE TABLE IF NOT EXISTS `db1`.`t1` (`id` int(11) NOT NULL, `count` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+                    statement.execute("CREATE TABLE IF NOT EXISTS `db1`.`t2` (`id` int(11) NOT NULL, `count` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
+                    statement.executeUpdate("INSERT INTO `db1`.`t1` (`id`, `count`) VALUES (1, 1) ;");
+                    statement.executeUpdate("INSERT INTO `db1`.`t2` (`id`, `count`) VALUES (1, 2) ;");
+                    statement.execute("UPDATE `db1`.`t1`, `db1`.`t2` SET `db1`.`t1`.`count`=`db1`.`t1`.`count`+1, `db1`.`t2`.`count`=`db1`.`t2`.`count`-1 WHERE t1.id=t2.id;");
                 }
         );
     }
@@ -317,11 +464,27 @@ public class ComQueryTest {
         testCacheIndex();
         testFlush();
         testAnalyze();
+        testBegin();
         testRollback();
         testRollbackToSavePoint();
         testReleaseSavePoint();
-//        testKill();       //testKill没法自动测试暂时注释掉,执行此方法前先手动执行select sleep(100),然后执行show processlist,找出对应的processId再执行kill命令
-//        testSlave();      //执行testSlave需要连slave数据库
+        testReset();
+        testRenameTable();
+        testShowOpenTables();
+        testShowStorageEngines();
+        testShowWarningsErrors();
+        testDo();
+        testShowSlaveHosts();
+        testHandler();
+        testDeleteMulti();
+        testUpdateMulti();
+//        注释的用例
+//        testKill();               //testKill没法自动测试暂时注释掉,执行此方法前先手动执行select sleep(100),然后执行show processlist,找出对应的processId再执行kill命令
+//        testSlave();              //执行testSlave需要连slave数据库
+//        testBinlog();             //mysql必须开启binlog才能执行此命令
+//        testGroupReplication();   //mysql必须开启group replication才能执行此命令
+//        testEmptyQuery();         //执行空查询会报异常
+//        testShowHelp();           //jdbc不支持help命令
     }
 
     public static void using(ConsumerIO<Connection> c) {
