@@ -8,7 +8,8 @@ import io.mycat.mysql.packet.MySQLPacket;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static io.mycat.mycat2.TestUtil.NOT_OK_EOF_ERR;
+import static io.mycat.mysql.packet.MySQLPacket.NOT_OK_EOF_ERR;
+
 
 /**
  * cjw
@@ -137,7 +138,7 @@ public class ComQueryTest {
         Assert.assertFalse(sm.isFinished());
         Assert.assertTrue(sm.isInteractive());
 
-        sm.on(NOT_OK_EOF_ERR);//fieldCount
+        sm.on(NOT_OK_EOF_ERR,ServerStatus.builder().build());//fieldCount
         sm.on(NOT_OK_EOF_ERR);//field
         sm.on(MySQLPacket.EOF_PACKET);
         sm.on(NOT_OK_EOF_ERR);//two row

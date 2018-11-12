@@ -1,11 +1,13 @@
 package io.mycat.mycat2.cmds.judge;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mysql.packet.EOFPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.RowDataPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.mycat.mycat2.MySQLCommand.COM_STMT_FETCH;
 import static io.mycat.mycat2.cmds.judge.MySQLProxyStateM.PacketState.COM_QUERY;
 
 /**
@@ -13,11 +15,11 @@ import static io.mycat.mycat2.cmds.judge.MySQLProxyStateM.PacketState.COM_QUERY;
  * 294712221@qq.com
  */
 public class MySQLProxyStateM<T> {
-    int serverStatus;
-    boolean isCommandFinished = false;
-    byte commandType;//prepared
-    long prepareFieldNum;
-    long prepareParamNum;
+    public int serverStatus;
+    public boolean isCommandFinished = false;
+    public byte commandType;//prepared
+    public long prepareFieldNum;
+    public long prepareParamNum;
     public MySQLPacketCallback callback;
 
     public byte getCommandType() {
@@ -57,6 +59,7 @@ public class MySQLProxyStateM<T> {
         this.isCommandFinished = false;
         this.prepareFieldNum = 0;
         this.prepareParamNum = 0;
+        this.serverStatus = 0;
         switch (commandType) {
             case 25:
                 this.isCommandFinished = true;//Request Command Close Statement
@@ -66,7 +69,7 @@ public class MySQLProxyStateM<T> {
     }
 
     public boolean isInteractive() {
-        return !isCommandFinished||isInteractive(serverStatus);
+        return !isCommandFinished || isInteractive(serverStatus)||commandType == COM_STMT_FETCH;
     }
 
     public static boolean isInteractive(int serverStatus) {
@@ -78,10 +81,11 @@ public class MySQLProxyStateM<T> {
     }
 
     public boolean on(int pkgType, int serverStatus) {
-        return on(pkgType, serverStatus, false);
+        return on(pkgType, serverStatus, MySQLCommand.COM_STMT_PREPARE == this.commandType);
     }
 
     public boolean on(int pkgType, int serverStatus, boolean preparedOkPacket) {
+        this.serverStatus = serverStatus;
         isCommandFinished = on(pkgType, JudgeUtil.hasMoreResult(serverStatus), JudgeUtil.hasMulitQuery(serverStatus), preparedOkPacket);
         if (isCommandFinished) {
             callback.onCommandFinished(this);
@@ -90,10 +94,10 @@ public class MySQLProxyStateM<T> {
         return isCommandFinished;
     }
 
-    public boolean on(int pkgType, boolean moreResults, boolean moreResultSets, boolean preparedOkPacket) {
+    private boolean on(int pkgType, boolean moreResults, boolean moreResultSets, boolean preparedOkPacket) {
         switch (this.responseState) {
-            case COM_QUERY: {
-                if (pkgType == MySQLPacket.OK_PACKET && !moreResultSets && !preparedOkPacket) {
+            case COM_QUERY: {//check moreResults in fetch data
+                if (pkgType == MySQLPacket.OK_PACKET && !moreResultSets && !moreResults && !preparedOkPacket&&commandType!= COM_STMT_FETCH) {
                     this.responseState = PacketState.RESULT_OK;
                     logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
                     return true;
@@ -102,7 +106,12 @@ public class MySQLProxyStateM<T> {
                     logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
                     return true;
                 }
-                if (pkgType == MySQLPacket.EOF_PACKET) {
+                if (pkgType == MySQLPacket.EOF_PACKET && !moreResultSets && !moreResults) {
+                    if (commandType == MySQLCommand.COM_SET_OPTION ||
+                            commandType == MySQLCommand.COM_STMT_EXECUTE||
+                            commandType == COM_STMT_FETCH) {
+                        return true;
+                    }
                     this.responseState = PacketState.RESULT_SET_FIRST_EOF;
                     logger.debug("from {} meet {} to {} ", COM_QUERY, pkgType, this.responseState);
                 }
@@ -131,7 +140,7 @@ public class MySQLProxyStateM<T> {
                 return false;
             }
             case RESULT_SET_SECOND_EOF:
-                if (pkgType == RowDataPacket.OK_PACKET && !moreResultSets) {//@todo check this moreResultSets
+                if (pkgType == RowDataPacket.OK_PACKET && !moreResultSets&&!moreResults) {//@todo check this moreResultSets
                     this.responseState = PacketState.RESULT_OK;
                     logger.debug("from {} meet {} to {} ", PacketState.RESULT_SET_SECOND_EOF, pkgType, this.responseState);
                     return true;
@@ -176,7 +185,7 @@ public class MySQLProxyStateM<T> {
     }
 
     public boolean isFinished() {
-        return this.isCommandFinished;
+        return this.isCommandFinished ||MySQLCommand.COM_STMT_CLOSE == commandType;
     }
 
     public boolean isRowData() {

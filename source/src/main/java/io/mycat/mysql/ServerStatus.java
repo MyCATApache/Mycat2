@@ -181,7 +181,7 @@ public final class ServerStatus {
         }
 
         public Builder setCursorExists() {
-            this.value |= NO_INDEX_USED;
+            this.value |= CURSOR_EXISTS;
             return this;
         }
 

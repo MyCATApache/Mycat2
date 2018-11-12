@@ -37,6 +37,8 @@ public abstract class MySQLPacket {
     public static final byte OK_PACKET = 0;
     public static final byte ERROR_PACKET = (byte) 0xFF;
     public static final byte EOF_PACKET = (byte) 0xFE;
+    public static int NOT_OK_EOF_ERR = Integer.MAX_VALUE;
+
 //	public static final byte FIELD_EOF_PACKET = (byte) 0xFE;
 //	public static final byte ROW_EOF_PACKET = (byte) 0xFE;
 //	public static final byte AUTH_PACKET = 1;
