@@ -48,7 +48,7 @@ public class NewHandshakePacket {
             buffer.skip(10);
             if (capabilities.isCanDo41Anthentication()) {
                 //todo check length in range [13.authPluginDataLen)
-                authPluginDataPartTwo = buffer.readFixString(Math.min(13, authPluginDataLen));
+                authPluginDataPartTwo = buffer.readFixString(13);
             }
             if (capabilities.isPluginAuth()) {
                 authPluginName = buffer.readNULString();

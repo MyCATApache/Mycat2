@@ -3,7 +3,7 @@ package io.mycat.mycat2.cmds;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.cmds.judge.MySQLProxyStateMHepler;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -36,7 +36,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
             // 切换 buffer 读写状态
             curBuffer.flip();
             if (success) {
-                session.curBackend.responseStateMachine.reset(mysqlsession.getMycatSession().getSqltype());
+                session.curBackend.responseStateMachine.in(mysqlsession.getMycatSession().getSqltype());
                 // 没有读取,直接透传时,需要指定 透传的数据 截止位置
                 curBuffer.readIndex = curBuffer.writeIndex;
                 // 改变 owner，对端Session获取，并且感兴趣写事件
@@ -55,43 +55,26 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         if (!session.readFromChannel()) {
             return false;
         }
-        // 获取当前是否结束标识
-        boolean proceed = true;
         boolean isCommandFinished = false;
-        MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
         ProxyBuffer curBuffer = session.proxyBuffer;
-        while (proceed) {
+        while (session.isResolveMySQLPackageFinished()) {
             CurrPacketType pkgTypeEnum = session.resolveMySQLPackage(true);
             if (CurrPacketType.Full == pkgTypeEnum) {
                 final String hexs = StringUtil.dumpAsHex(session.proxyBuffer.getBuffer(), session.curMSQLPackgInf.startPos, session.curMSQLPackgInf.pkgLength);
                 logger.info(session.curMSQLPackgInf.pkgType+"");
                 logger.info(hexs);
-                isCommandFinished = session.responseStateMachine.on((byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
+                isCommandFinished = MySQLProxyStateMHepler.on(session.responseStateMachine,(byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
+                if (session.responseStateMachine.isInteractive()){
+                    session.setBusy();
+                }else {
+                    session.setIdle();
+                }
             } else if (CurrPacketType.LongHalfPacket == pkgTypeEnum) {
-//                if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET ||
-//                        session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET ||
-//                        session.curMSQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
-//                    // 读取到了EOF/OK/ERROR 类型长半包 是需要保证是整包的.
-//                    break;
-//                }
-//                if (curMSQLPackgInf.crossBuffer) {
-//                    // 发生过透传的半包,往往包的长度超过了buffer 的长度.
-//                    logger.debug(" readed crossBuffer LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-//                } else {
-//                    // 不需要整包解析的长半包透传. result set .这种半包直接透传
-//                    curMSQLPackgInf.crossBuffer = true;
-//                    curBuffer.readIndex = curMSQLPackgInf.endPos;
-//                    curMSQLPackgInf.remainsBytes = curMSQLPackgInf.pkgLength
-//                            - (curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
-//                    logger.debug(" readed LongHalfPacket ,curMSQLPackgInf is {}", curMSQLPackgInf);
-//                    logger.debug(" curBuffer {}", curBuffer);
-//                }
+                session.forceCrossBuffer();
                 break;
             } else if (CurrPacketType.ShortHalfPacket == pkgTypeEnum) {
                 break;
             }
-            proceed = session.proxyBuffer.readIndex != session.proxyBuffer.writeIndex;
-
         }
         MycatSession mycatSession = session.getMycatSession();
         ProxyBuffer buffer = session.getProxyBuffer();

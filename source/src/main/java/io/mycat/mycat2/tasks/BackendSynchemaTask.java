@@ -1,5 +1,6 @@
 package io.mycat.mycat2.tasks;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mysql.packet.CommandPacket;
@@ -27,7 +28,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 		session.proxyBuffer.reset();
 		CommandPacket packet = new CommandPacket();
 		packet.packetId = 0;
-		packet.command = MySQLPacket.COM_INIT_DB;
+		packet.command = MySQLCommand.COM_INIT_DB;
 		packet.arg = databases.getBytes();
 		packet.write(session.proxyBuffer);
 		session.proxyBuffer.flip();
