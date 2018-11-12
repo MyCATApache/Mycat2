@@ -4,8 +4,6 @@ import org.junit.Assert;
 
 import java.sql.*;
 
-import static java.lang.Thread.sleep;
-
 /**
  * Created by linxiaofang on 2018/11/5.
  * create database db1;
@@ -14,17 +12,17 @@ import static java.lang.Thread.sleep;
 public class ComQueryTest {
     //3306
     //8066
-    final static String URL = "jdbc:mysql://10.4.40.57:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
+    final static String URL = "jdbc:mysql://127.0.0.1:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
             "&useLocalSessionState=true&failOverReadOnly=false" +
             "&rewriteBatchedStatements=true" +
             "&allowMultiQueries=true" +
             "&useCursorFetch=true";
     final static String USERNAME = "root";
-    final static String PASSWORD = "Marble@dls16";
-    final static String REPL_MASTER_HOST = "10.4.40.57";
+    final static String PASSWORD = "";
+    final static String REPL_MASTER_HOST = "192.168.1.6";
     final static int REPL_MASTER_PORT = 3306;
     final static String REPL_MASTER_USER = "repl";
-    final static String REPL_MASTER_PASSWORD = "Marble@dls16";
+    final static String REPL_MASTER_PASSWORD = "";
     final static String REPL_MASTER_LOG_FILE = "mysql-bin.000001";
     final static int REPL_MASTER_LOG_POS = 7849;
 
