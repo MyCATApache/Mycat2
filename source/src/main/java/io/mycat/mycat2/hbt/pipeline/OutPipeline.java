@@ -71,7 +71,7 @@ public class OutPipeline extends ReferenceHBTPipeline {
 		try {
 			mycatSession.takeBufferOwnerOnly();
 			mycatSession.sendErrorMsg(ErrorCode.ERR_FOUND_EXCEPION, msg);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

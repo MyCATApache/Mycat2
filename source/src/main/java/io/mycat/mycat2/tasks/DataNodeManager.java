@@ -9,7 +9,6 @@ import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.RowDataPacket;
 import org.apache.log4j.Logger;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -144,7 +143,7 @@ public abstract class DataNodeManager implements Runnable {
         this.mycatSession.takeBufferOwnerOnly();
         try {
             this.mycatSession.sendErrorMsg(errno, error);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -156,7 +155,7 @@ public abstract class DataNodeManager implements Runnable {
         this.mycatSession.takeBufferOwnerOnly();
         try {
             this.mycatSession.responseOKOrError(error);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

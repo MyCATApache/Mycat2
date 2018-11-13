@@ -13,7 +13,6 @@ import io.mycat.util.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -99,7 +98,7 @@ public abstract class AbstractCmdStrategy implements CmdStrategy {
                 try {
                     logger.error("sql parse error", e);
                     session.sendErrorMsg(ErrorCode.ER_PARSE_ERROR, "sql parse error : " + e.getMessage());
-                } catch (IOException e1) {
+                } catch (Exception e1) {
                     session.close(false, e1.getMessage());
                 }
                 return false;

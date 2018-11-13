@@ -104,13 +104,17 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * @param pkg ，必须要是OK报文或者Err报文
      * @throws IOException
      */
-    public void responseOKOrError(MySQLPacket pkg) throws IOException {
+    public void responseOKOrError(MySQLPacket pkg) {
         // proxyBuffer.changeOwner(true);
         this.proxyBuffer.reset();
         pkg.write(this.proxyBuffer);
         proxyBuffer.flip();
         proxyBuffer.readIndex = proxyBuffer.writeIndex;
-        this.writeToChannel();
+        try {
+            this.writeToChannel();
+        }catch (Exception e){
+            logger.error(e.getLocalizedMessage());
+        }
     }
 
     /**
@@ -154,7 +158,9 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         this.curMSQLPackgInf.remainsBytes = this.curMSQLPackgInf.pkgLength - (this.curMSQLPackgInf.endPos - this.curMSQLPackgInf.startPos);
         this.proxyBuffer.readIndex = this.curMSQLPackgInf.endPos;
     }
-
+    public CurrPacketType resolveMySQLPackage(boolean markReaded, boolean forFull){
+        return resolveMySQLPackage(this.proxyBuffer,this.curMSQLPackgInf,markReaded,forFull);
+    }
 
     /**
      * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
@@ -251,7 +257,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 解决办法:扩容
                  */
                 if (forFull) {
-                    proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
+                    ensureFreeSpaceOfReadBuffer();
                 } else {
                     curPackInf.crossBuffer = true;
                     curPackInf.remainsBytes = pkgLength - totalLen;

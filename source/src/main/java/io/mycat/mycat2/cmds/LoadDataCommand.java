@@ -3,20 +3,23 @@ package io.mycat.mycat2.cmds;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.console.SessionKey;
+import io.mycat.mycat2.cmds.judge.MySQLProxyStateMHepler;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 
+import static io.mycat.mycat2.cmds.LoadDataState.*;
+import static io.mycat.util.LoadDataUtil.change2;
+
 /**
  * 进行load data的命令处理
  *
- * @author wuzhihui
+ * @author wuzhihui cjw
  */
 public class LoadDataCommand implements MySQLCommand {
 
@@ -26,11 +29,6 @@ public class LoadDataCommand implements MySQLCommand {
      * 透传的实例对象
      */
     public static final LoadDataCommand INSTANCE = new LoadDataCommand();
-
-    /**
-     * loaddata传送结束标识长度
-     */
-    private static final int FLAGLENGTH = 4;
 
     /**
      * 结束flag标识
@@ -45,8 +43,7 @@ public class LoadDataCommand implements MySQLCommand {
         session.clearReadWriteOpts();
         session.getBackend((mysqlsession, sender, success, result) -> {
             if (success) {
-                mysqlsession.setCurNIOHandler(LoadDataStream.CLIENT_2_SERVER_COM_QUERY);
-                session.setCurNIOHandler(LoadDataStream.CLIENT_2_SERVER_COM_QUERY);
+                session.loadDataStateMachine = CLIENT_2_SERVER_COM_QUERY;
                 // 切换buffer 读写状态
                 curBuffer.flip();
 
@@ -59,10 +56,6 @@ public class LoadDataCommand implements MySQLCommand {
         });
         return false;
     }
-
-
-
-
 
 
     @Override
@@ -80,25 +73,28 @@ public class LoadDataCommand implements MySQLCommand {
 
     @Override
     public boolean onBackendResponse(MySQLSession session) {
-
-
+        MycatSession mycatSession = session.getMycatSession();
         try {
-            if (session.readFromChannel()) {
-                CurrPacketType currPacketType = session.resolveMySQLPackage(true);
-                if (currPacketType == CurrPacketType.Full) {
-                    MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
-                    if (curMSQLPackgInf.isOkPacket()) {
-                        session.getMycatSession().getAttrMap().put(SessionKey.LOAD_DATA_FINISH_KEY, Boolean.TRUE);
+            if (mycatSession.loadDataStateMachine == SERVER_2_CLIENT_COM_QUERY_RESPONSE || mycatSession.loadDataStateMachine == SERVER_2_CLIENT_OK_PACKET) {
+                boolean readed = session.readFromChannel();
+                if (readed) {
+                    CurrPacketType currPacketType = mycatSession.resolveMySQLPackage(true, false);
+                    if (currPacketType == CurrPacketType.Full) {
+                        MySQLProxyStateMHepler.on(session.responseStateMachine,session.curMSQLPackgInf.pkgType, session.proxyBuffer,session);
+                        session.setIdle(!session.responseStateMachine.isInteractive());
+                        ProxyBuffer proxyBuffer = mycatSession.proxyBuffer;
+                        proxyBuffer.flip();
+                        mycatSession.takeOwner(SelectionKey.OP_WRITE);
+                        mycatSession.writeToChannel();
                     }
-                    MycatSession mycatSession = session.getMycatSession();
-                    mycatSession.proxyBuffer.flip();
-                    mycatSession.takeOwner(SelectionKey.OP_WRITE);
-                    mycatSession.writeToChannel();
                 }
+                return false;
             }
-
-        } catch (Exception e) {
-
+        } catch (IOException e) {
+            logger.info(e.getLocalizedMessage());
+            String errmsg = " load data fail in " + mycatSession.loadDataStateMachine;
+            mycatSession.sendErrorMsg(ErrorCode.ER_INVALID_DEFAULT, errmsg);
+            return true;
         }
         return false;
     }
@@ -111,26 +107,42 @@ public class LoadDataCommand implements MySQLCommand {
 
     @Override
     public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-//		//向前端写完数据，前段进入读状态
-//        if (session.getAttrMap().get(SessionKey.LOAD_DATA_FINISH_KEY) == Boolean.TRUE){
-//
-//            session.proxyBuffer.flip();
-//            session.change2ReadOpts();
-//            session.curSQLCommand =DirectPassthrouhCmd.INSTANCE;
-//            return true;
-//        }else {
-//            session.proxyBuffer.flip();
-//            session.takeOwner(SelectionKey.OP_READ);
-//            session
-//            return false;
-//        }
-        return false;
+        switch (session.loadDataStateMachine) {
+            case SERVER_2_CLIENT_COM_QUERY_RESPONSE:
+                session.proxyBuffer.flip();
+                change2(session, CLIENT_2_SERVER_CONTENT_FILENAME);
+                session.takeOwner(SelectionKey.OP_READ);
+                return false;
+            case SERVER_2_CLIENT_OK_PACKET:
+                session.proxyBuffer.flip();
+                session.takeOwner(SelectionKey.OP_READ);
+                session.loadDataStateMachine = NOT_LOAD_DATA;
+                return false;
+            default:
+                throw new RuntimeException("unknown state!!!");
+        }
     }
 
     @Override
     public boolean onBackendWriteFinished(MySQLSession session) {
-        session.getMycatSession().giveupOwner(SelectionKey.OP_READ);
-        session.proxyBuffer.flip();
+        MycatSession mycatSession = session.getMycatSession();
+        switch (mycatSession.loadDataStateMachine) {
+            case CLIENT_2_SERVER_COM_QUERY:
+                mycatSession.proxyBuffer.flip();
+                change2(mycatSession, SERVER_2_CLIENT_COM_QUERY_RESPONSE);
+                mycatSession.giveupOwner(SelectionKey.OP_READ);
+                break;
+            case CLIENT_2_SERVER_CONTENT_FILENAME:
+                mycatSession.proxyBuffer.flip();
+                mycatSession.takeOwner(SelectionKey.OP_READ);
+                break;
+            case CLIENT_2_SERVER_EMPTY_PACKET:
+                mycatSession.proxyBuffer.flip();
+                change2(mycatSession, SERVER_2_CLIENT_OK_PACKET);
+                mycatSession.giveupOwner(SelectionKey.OP_READ);
+                break;
+            default:
+        }
         return false;
     }
 }

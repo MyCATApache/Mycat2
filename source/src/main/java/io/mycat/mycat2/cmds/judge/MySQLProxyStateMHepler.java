@@ -13,7 +13,7 @@ import io.mycat.util.StringUtil;
  * 294712221@qq.com
  */
 public class MySQLProxyStateMHepler {
-    public static boolean on(MySQLProxyStateM sm,byte pkgType, ProxyBuffer buffer, MySQLSession sqlSession) {
+    public static boolean on(MySQLProxyStateM sm,int pkgType, ProxyBuffer buffer, MySQLSession sqlSession) {
         int backupReadIndex = buffer.readIndex;
         boolean preparedOkPacket = false;
         if (pkgType == MySQLPacket.EOF_PACKET) {
