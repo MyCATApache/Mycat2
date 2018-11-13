@@ -372,9 +372,11 @@ public class MySQLPackageInfTest {
         sqlSession.forceCrossBuffer();
         Assert.assertTrue(curMSQLPackgInf.crossBuffer);
         someoneTakeAway(sqlSession);
-        for (int i = 0; i < ok.length - 5; i++) {
+        for (int i = 5; i < ok.length - 1; i++) {
             buffer.writeByte(ok[i]);
+            Assert.assertEquals(RestCrossBufferPacket,sqlSession.resolveCrossBufferMySQLPackage());
         }
+        buffer.writeByte(ok[ok.length - 1]);
         Assert.assertEquals(FinishedCrossBufferPacket,sqlSession.resolveCrossBufferMySQLPackage());
         checkWriteAndChange2(sqlSession, 0x0d, CurrPacketType.ShortHalfPacket, false);
 
