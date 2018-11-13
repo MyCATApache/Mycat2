@@ -19,9 +19,9 @@ import io.mycat.util.ErrorCode;
  * @author wuzhihui
  *
  */
-public class CommandPhaseMySQLNIOHandler implements NIOHandler<MySQLSession> {
-	public static final CommandPhaseMySQLNIOHandler INSTANCE = new CommandPhaseMySQLNIOHandler();
-	private static Logger logger = LoggerFactory.getLogger(CommandPhaseMySQLNIOHandler.class);
+public class MainMySQLNIOHandler implements NIOHandler<MySQLSession> {
+	public static final MainMySQLNIOHandler INSTANCE = new MainMySQLNIOHandler();
+	private static Logger logger = LoggerFactory.getLogger(MainMySQLNIOHandler.class);
 
 	public void onSocketRead(final MySQLSession session) throws IOException {
 		// 交给SQLComand去处理
