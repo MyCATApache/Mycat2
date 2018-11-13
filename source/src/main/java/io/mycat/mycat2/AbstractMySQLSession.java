@@ -84,6 +84,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     public void setIdle(boolean idleFlag) {
         this.idleFlag = idleFlag;
     }
+
     public boolean isIdle() {
         return this.idleFlag;
     }
@@ -112,7 +113,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         proxyBuffer.readIndex = proxyBuffer.writeIndex;
         try {
             this.writeToChannel();
-        }catch (Exception e){
+        } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
         }
     }
@@ -131,6 +132,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         proxyBuffer.readIndex = proxyBuffer.writeIndex;
         this.writeToChannel();
     }
+
     public CurrPacketType resolveMySQLPackage(boolean markReaded) {
         return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, markReaded, true);
     }
@@ -158,8 +160,9 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         this.curMSQLPackgInf.remainsBytes = this.curMSQLPackgInf.pkgLength - (this.curMSQLPackgInf.endPos - this.curMSQLPackgInf.startPos);
         this.proxyBuffer.readIndex = this.curMSQLPackgInf.endPos;
     }
-    public CurrPacketType resolveMySQLPackage(boolean markReaded, boolean forFull){
-        return resolveMySQLPackage(this.proxyBuffer,this.curMSQLPackgInf,markReaded,forFull);
+
+    public CurrPacketType resolveMySQLPackage(boolean markReaded, boolean forFull) {
+        return resolveMySQLPackage(this.proxyBuffer, this.curMSQLPackgInf, markReaded, forFull);
     }
 
     /**
@@ -196,7 +199,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         int limit = proxyBuf.writeIndex;
         // 读取当前的总长度
         int totalLen = limit - offset;
-        if (totalLen == 0) { // 透传情况下. 如果最后一个报文正好在buffer 最后位置,已经透传出去了.这里可能不会为零
+        if (totalLen == 0 && !curPackInf.crossBuffer) { // 透传情况下. 如果最后一个报文正好在buffer 最后位置,已经透传出去了.这里可能不会为零
             return CurrPacketType.ShortHalfPacket;
         }
         if (curPackInf.remainsBytes == 0 && curPackInf.crossBuffer) {
@@ -248,7 +251,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if ((offset + pkgLength) > limit) {
             logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, limit ={}, "
                     + "ready to handle the next read event", pkgLength, (limit - offset), limit);
-            if (offset == 0 && pkgLength > limit) {
+            if (offset == 0 && pkgLength > limit && pkgLength > proxyBuffer.getBuffer().capacity()) {
                 /*
                 cjw 2018.4.6
                 假设整个buffer空间为88,开始位置是0,需要容纳89的数据大小,还缺一个数据没用接受完,
