@@ -1,19 +1,21 @@
 package io.mycat.mycat2.cmds;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.console.SessionKey;
-import io.mycat.mycat2.net.DefaultMycatSessionHandler;
+import io.mycat.mycat2.net.CommandPhaseMySQLNIOHandler;
+import io.mycat.mycat2.net.CommandPhaseMycatNIOHandler;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
 
 public enum LoadDataStream implements NIOHandler<AbstractMySQLSession> {
 
@@ -106,8 +108,8 @@ public enum LoadDataStream implements NIOHandler<AbstractMySQLSession> {
             case SERVER_2_CLIENT_OK_PACKET:
                 mycatSession.proxyBuffer.flip();
                 mycatSession.takeOwner(SelectionKey.OP_READ);
-                mycatSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
-                mycatSession.curBackend.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+                mycatSession.setCurNIOHandler(CommandPhaseMycatNIOHandler.INSTANCE);
+                mycatSession.curBackend.setCurNIOHandler(CommandPhaseMySQLNIOHandler.INSTANCE);
                 break;
         }
 

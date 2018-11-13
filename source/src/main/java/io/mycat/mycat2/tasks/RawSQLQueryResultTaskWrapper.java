@@ -1,15 +1,16 @@
 package io.mycat.mycat2.tasks;
 
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.net.DefaultMycatSessionHandler;
-import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.QueryPacket;
-import io.mycat.proxy.ProxyBuffer;
+import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.net.CommandPhaseMySQLNIOHandler;
+import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.QueryPacket;
+import io.mycat.proxy.ProxyBuffer;
 
 public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResultSet<MySQLSession> {
     private static Logger logger = LoggerFactory.getLogger(RawSQLQueryResultTaskWrapper.class);
@@ -153,7 +154,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
     public void clearResouces() {
         session.setIdle();
         revertPreBuffer();
-        session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+        session.setCurNIOHandler(CommandPhaseMySQLNIOHandler.INSTANCE);
     }
 
     @Override
