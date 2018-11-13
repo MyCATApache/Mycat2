@@ -52,7 +52,7 @@ public class SQLCachCmd extends SQLAnnotationCmd {
 
 		if (null != session.curBackend) {
 			// 设置后端为使用中
-            session.curBackend.setBusy();
+            session.curBackend.setIdle(false);
 		}
 
         SeqContextList seqcontext = (SeqContextList) session.getAttrMap()

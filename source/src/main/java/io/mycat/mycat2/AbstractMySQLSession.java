@@ -81,17 +81,9 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 
     }
 
-    public void setIdle() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("mysql session:{} is idle", this);
-        }
-        this.idleFlag = true;
+    public void setIdle(boolean idleFlag) {
+        this.idleFlag = idleFlag;
     }
-
-    public void setBusy() {
-        this.idleFlag = false;
-    }
-
     public boolean isIdle() {
         return this.idleFlag;
     }

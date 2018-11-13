@@ -1,9 +1,5 @@
 package io.mycat.mycat2.tasks.multinode;
 
-import java.io.IOException;
-
-import org.apache.log4j.Logger;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.net.CommandPhaseMySQLNIOHandler;
 import io.mycat.mycat2.route.RouteResultset;
@@ -11,6 +7,9 @@ import io.mycat.mycat2.tasks.BackendIOTaskWithGenericResponse;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyBuffer;
+import org.apache.log4j.Logger;
+
+import java.io.IOException;
 
 /**
  * 
@@ -78,6 +77,6 @@ public class PickOnlyOneInMultiNodeWithGenericResponse extends BackendIOTaskWith
         session.setCurNIOHandler(CommandPhaseMySQLNIOHandler.INSTANCE);
         // 把mysqlsession的proxybuffer切换回原来的共享buffer，即与mycatSession共享的buffer
         revertPreBuffer();
-        session.setIdle();
+        session.setIdle(true);
     }
 }

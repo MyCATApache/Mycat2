@@ -241,7 +241,7 @@ MycatSession extends AbstractMySQLSession {
         backend.setMycatSession(this);
         backend.useSharedBuffer(this.proxyBuffer);
         backend.setCurNIOHandler(this.getCurNIOHandler());
-        backend.setBusy();
+        backend.setIdle(false);
         logger.debug(" {} bind backConnection  for {}",
                 this,
                 backend.toString());

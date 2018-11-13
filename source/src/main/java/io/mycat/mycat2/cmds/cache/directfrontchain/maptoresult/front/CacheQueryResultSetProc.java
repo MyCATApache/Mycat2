@@ -47,7 +47,7 @@ public class CacheQueryResultSetProc implements ChainExecInf {
 				session.getAttrMap().remove(SessionKey.CACHE_READY_OVER);
 
 				// 将缓存中的完结标识改为false，以便后续能发送查询的SQL
-				session.curBackend.setBusy();
+				session.curBackend.setIdle(false);
 
 				// 获取SQL
 				String selectSql = (String) session.getAttrMap()

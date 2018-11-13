@@ -14,11 +14,11 @@ public class JudgeUtil {
         eofPkg.read(curBuffer);
         int serverStatus = eofPkg.status;
         if (hasResult(serverStatus)) {
-            session.setBusy(); // 标识当前处于使用中,不能结束
+            session.setIdle(false); // 标识当前处于使用中,不能结束
             return true;
         }
         if (hasFatch(serverStatus)) {
-            session.setBusy();            // 标识当前处于使用中
+            session.setIdle(false);            // 标识当前处于使用中
             return false;                      // 读取此标识，需要等等下一次fatch请求执行
         }
         changeTrans(serverStatus, session);
@@ -27,7 +27,7 @@ public class JudgeUtil {
 
     public static boolean judgeErrorPacket(MySQLSession session, ProxyBuffer curBuffer) {
         if (!session.isTrans()) { // 首先检查是否处于事务中，如果非事务中，将结识连接结束
-            session.setBusy();
+            session.setIdle(false);
         }
         return false;
     }
@@ -38,7 +38,7 @@ public class JudgeUtil {
         okpkg.read(curBuffer);
         int serverStatus = okpkg.serverStatus;
         if (hasResult(serverStatus)) {
-            session.setBusy(); // 标识当前处于使用中,不能结束
+            session.setIdle(false); // 标识当前处于使用中,不能结束
             return true;
         }
         changeTrans(serverStatus, session);
@@ -67,10 +67,10 @@ public class JudgeUtil {
 
     public static void changeTrans(int serverStatus, MySQLSession session) {
         if (hasTrans(serverStatus)) {           // 如果当前事务状态被设置，连接标识为不能结束
-            session.setBusy();            // 标识当前处于使用中
+            session.setIdle(false);            // 标识当前处于使用中
             session.setTrans(true);            // 标识当前处于事物中
         } else {
-            session.setBusy();             // 标识当前处于闲置中,
+            session.setIdle(false);             // 标识当前处于闲置中,
             session.setTrans(false);          // 当发现完毕后，将标识移除
         }
     }
