@@ -12,17 +12,19 @@ import java.sql.*;
 public class BaseSQLExeTest {
     //3306
     //8066
-    final static String URL = "jdbc:mysql://127.0.0.1:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
+    final static String URL = "jdbc:mysql://127.0.0.1:8066/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
             "&useLocalSessionState=true&failOverReadOnly=false" +
             "&rewriteBatchedStatements=true" +
             "&allowMultiQueries=true" +
-            "&useCursorFetch=true";
+            "&useCursorFetch=true"+
+            "&useSSL=false";
     final static String USERNAME = "root";
-    final static String PASSWORD = "";
+    final static String PASSWORD = "123456";
+    final static boolean LOCAL = false;
 
     static {
         try {
-            Class.forName("com.mysql.jdbc.Driver");
+            Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -150,27 +152,41 @@ public class BaseSQLExeTest {
         );
     }
 
+    public static void testFieldList() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW COLUMNS FROM db1.`travelrecord`;");
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+
     public static void main(String[] args) {
-        testOneNormalSQl();
-        testTransaction();
-        testPreparedStatement();
-        testStoredProcedure();
-        testStoredProcedure2();
-        testRewriteBatchedStatements();
-        testCursor();
+//        testOneNormalSQl();
+//        testTransaction();
+//        testPreparedStatement();
+//        testStoredProcedure();
+//        testStoredProcedure2();
+//        testRewriteBatchedStatements();
+//        testCursor();
+        testFieldList();
     }
 
     public static void using(ConsumerIO<Connection> c) {
-        try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
-            c.accept(connection);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        if (LOCAL){
+            try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
+                c.accept(connection);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
 
     @FunctionalInterface
-    interface ConsumerIO<T> {
+    public interface ConsumerIO<T> {
         void accept(T t) throws Exception;
     }
 

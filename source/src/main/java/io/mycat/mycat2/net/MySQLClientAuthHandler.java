@@ -1,12 +1,13 @@
 package io.mycat.mycat2.net;
 
-import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
+
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.FireWallBean;
 import io.mycat.mycat2.beans.conf.UserBean;
 import io.mycat.mycat2.beans.conf.UserConfig;
 import io.mycat.mysql.packet.AuthPacket;
+import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.NIOHandler;
@@ -39,8 +40,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	@Override
 	public void onSocketRead(MycatSession session) throws IOException {
 		ProxyBuffer frontBuffer = session.getProxyBuffer();
-		if (session.readFromChannel() == false
-				|| CurrPacketType.Full != session.resolveMySQLPackage(frontBuffer, session.curMSQLPackgInf, false)) {
+		if (!session.readFromChannel()
+				|| CurrPacketType.Full != session.resolveMySQLPackage(false)) {
 			return;
 		}
 
@@ -103,7 +104,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 						session.proxyBuffer.reset();
 						session.answerFront(AUTH_OK);
 						// 认证通过，设置当前SQL Handler为默认Handler
-						session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+						session.setCurNIOHandler(CommandPhaseMycatNIOHandler.INSTANCE);
 					}
 			}
 		} catch (Throwable e) {

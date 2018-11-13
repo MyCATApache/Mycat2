@@ -26,12 +26,12 @@ package io.mycat.mysql;
 /**
  * 处理能力标识定义
  * 
- * @author mycat
+ * @author mycat cjw
  */
 public interface Capabilities {
 
     /**
-     * server capabilities
+     * server value
      * 
      * <pre>
      * server:        11110111 11111111
@@ -102,11 +102,99 @@ public interface Capabilities {
 
     // Enable/disable multi-stmt support
     // 通知服务器客户端可以发送多条语句（由分号分隔）。如果该标志为没有被设置，多条语句执行。
-    public static final int CLIENT_MULTI_STATEMENTS = 65536;
+    public static final int CLIENT_MULTI_STATEMENTS = 1<<16;
 
     // Enable/disable multi-results
     // 通知服务器客户端可以处理由多语句或者存储过程执行生成的多结果集。
     // 当打开CLIENT_MULTI_STATEMENTS时，这个标志自动的被打开。
-    public static final int CLIENT_MULTI_RESULTS = 131072;
+    public static final int CLIENT_MULTI_RESULTS = 1<<1<<16;
 
+    /**
+     ServerCan send multiple resultsets for COM_STMT_EXECUTE.
+     Client
+     Can handle multiple resultsets for COM_STMT_EXECUTE.
+     Value
+     0x00040000
+     Requires
+     CLIENT_PROTOCOL_41
+     */
+    public static final int  CLIENT_PS_MULTI_RESULTS = 1<<2<<16;
+    /**
+     Server
+     Sends extra data in Initial Handshake Packet and supports the pluggable authentication protocol.
+
+     Client
+     Supports authentication plugins.
+
+     Requires
+     CLIENT_PROTOCOL_41
+     */
+    public static final int CLIENT_PLUGIN_AUTH = 1<<3<<16;
+
+    /**
+     Value
+     0x00100000
+
+     Server
+     Permits connection attributes in Protocol::HandshakeResponse41.
+
+     Client
+     Sends connection attributes in Protocol::HandshakeResponse41.
+     */
+
+    public static final int CLIENT_CONNECT_ATTRS = 1<<4<<16;
+
+    /**
+     Value
+     0x00200000
+
+     Server
+     Understands length-encoded integer for auth response data in Protocol::HandshakeResponse41.
+
+     Client
+     Length of auth response data in Protocol::HandshakeResponse41 is a length-encoded integer.
+     The flag was introduced in 5.6.6, but had the wrong value.
+     */
+    public static final int CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA = 1<<5<<16;
+
+    /**
+     *Value
+     * 0x00400000
+     *
+     * Server
+     * Announces support for expired password extension.
+     *
+     * Client
+     * Can handle expired passwords.
+     */
+    public static final int CLIENT_CAN_HANDLE_EXPIRED_PASSWORDS = 1<<6<<16;
+
+    /**
+     * Value
+     * 0x00800000
+     *
+     * Server
+     * Can set SERVER_SESSION_STATE_CHANGED in the Status Flags and send session-state change data after a OK packet.
+     *
+     * Client
+     * Expects the server to send sesson-state changes after a OK packet.
+     */
+    public static final int CLIENT_SESSION_TRACK = 1<<7<<16;
+
+    /**
+     Value
+     0x01000000
+
+     Server
+     Can send OK after a Text Resultset.
+
+     Client
+     Expects an OK (instead of EOF) after the resultset rows of a Text Resultset.
+
+     Background
+     To support CLIENT_SESSION_TRACK, additional information must be sent after all successful commands. Although the OK packet is extensible, the EOF packet is not due to the overlap of its bytes with the content of the Text Resultset Row.
+
+     Therefore, the EOF packet in the Text Resultset is replaced with an OK packet. EOF packets are deprecated as of MySQL 5.7.5.
+     */
+    public static final int CLIENT_DEPRECATE_EOF = 1<<8<<16;
 }
