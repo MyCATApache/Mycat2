@@ -1,13 +1,14 @@
 package io.mycat.util;
 
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.LoadDataState;
-import io.mycat.mycat2.console.SessionKey;
-import io.mycat.proxy.ProxyBuffer;
+import java.nio.ByteBuffer;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
+import io.mycat.mycat2.CurSQLState;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.LoadDataState;
+import io.mycat.proxy.ProxyBuffer;
 
 public class LoadDataUtil {
     private static Logger logger = LoggerFactory.getLogger(LoadDataUtil.class);
@@ -69,12 +70,12 @@ public class LoadDataUtil {
 
     /*获取结束flag标识的数组*/
     public static byte[] getOverFlag(MycatSession session) {
-        byte[] overFlag = (byte[]) session.getAttrMap().get(SessionKey.LOAD_OVER_FLAG_ARRAY);
+        byte[] overFlag = (byte[]) session.curSQLSate.get(CurSQLState.LOAD_OVER_FLAG_ARRAY);
         if (overFlag != null) {
             return overFlag;
         }
         overFlag = new byte[FLAGLENGTH];
-        session.getAttrMap().put(SessionKey.LOAD_OVER_FLAG_ARRAY, overFlag);
+        session.curSQLSate.set(CurSQLState.LOAD_OVER_FLAG_ARRAY, overFlag);
         return overFlag;
     }
 

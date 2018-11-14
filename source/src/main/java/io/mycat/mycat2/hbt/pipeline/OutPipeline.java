@@ -1,15 +1,15 @@
 package io.mycat.mycat2.hbt.pipeline;
 
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.util.List;
+
+import io.mycat.mycat2.CurSQLState;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mycat2.hbt.ResultSetMeta;
 import io.mycat.mycat2.hbt.TableMeta;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
-
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.util.List;
 
 public class OutPipeline extends ReferenceHBTPipeline {
 	
@@ -54,7 +54,7 @@ public class OutPipeline extends ReferenceHBTPipeline {
 		buffer.readIndex = buffer.writeIndex; 
 		mycatSession.takeOwner(SelectionKey.OP_WRITE);
 		if(!tableMeta.isWriteFinish()) {
-            mycatSession.getAttrMap().put(SessionKey.HBT_TABLE_META, tableMeta);
+            mycatSession.curSQLSate.set(CurSQLState.HBT_TABLE_META, tableMeta);
 		}
 		try {
 			mycatSession.writeToChannel();

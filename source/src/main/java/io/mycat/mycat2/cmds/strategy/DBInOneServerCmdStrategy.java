@@ -1,8 +1,13 @@
 package io.mycat.mycat2.cmds.strategy;
 
 import io.mycat.mycat2.MySQLCommand;
-import io.mycat.mycat2.cmds.*;
-import io.mycat.mycat2.cmds.sqlCmds.*;
+import io.mycat.mycat2.cmds.ComChangeUserCmd;
+import io.mycat.mycat2.cmds.ComInitDB;
+import io.mycat.mycat2.cmds.ComPingCmd;
+import io.mycat.mycat2.cmds.ComQuitCmd;
+import io.mycat.mycat2.cmds.ComStatisticsCmd;
+import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
+import io.mycat.mycat2.cmds.NotSupportCmd;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 
 public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{	
@@ -49,12 +54,12 @@ public class DBInOneServerCmdStrategy extends AbstractCmdStrategy{
 		MYSQLCOMMANDMAP.put(BufferSQLContext.INSERT_SQL, DirectPassthrouhCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.UPDATE_SQL, DirectPassthrouhCmd.INSTANCE);
         MYSQLCOMMANDMAP.put(BufferSQLContext.DROP_SQL, DirectPassthrouhCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.COMMIT_SQL, SqlComCommitCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.ROLLBACK_SQL, SqlComRollBackCmd.INSTANCE);
 		MYSQLCOMMANDMAP.put(BufferSQLContext.SELECT_SQL, DirectPassthrouhCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
-		MYSQLCOMMANDMAP.put(BufferSQLContext.SHUTDOWN_SQL, SqlComShutdownCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.BEGIN_SQL, SqlComBeginCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.START_SQL, SqlComStartCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.USE_SQL, SqlComStartCmd.INSTANCE);
+		//MYSQLCOMMANDMAP.put(BufferSQLContext.SHUTDOWN_SQL, SqlComShutdownCmd.INSTANCE);
 	}
 }
