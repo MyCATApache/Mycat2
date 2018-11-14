@@ -28,7 +28,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * UPDATE 
 	 */
-	//@Test
+	@Test
     public void update() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("UPDATE travelrecord set fee = 11 where id = 1");
@@ -40,7 +40,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * INSERT INTO SELECT  
 	 */
-	//@Test
+	@Test
     public void insertSelect() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("INSERT INTO travelrecord (user_id,traveldate,fee,days) SELECT user_id,traveldate,fee,days FROM travelrecord WHERE id = 1");
@@ -51,7 +51,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * DELETE 
 	 */
-	//@Test
+	@Test
     public void delete() {
         using(c -> {
         	c.createStatement().executeUpdate("DELETE FROM travelrecord WHERE user_id = 2");
@@ -108,7 +108,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * TRUNCATE 
 	 */
-	//@Test
+	@Test
     public void truncate() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("TRUNCATE travelrecord");
