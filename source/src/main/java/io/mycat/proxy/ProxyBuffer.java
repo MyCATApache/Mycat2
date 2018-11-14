@@ -448,7 +448,11 @@ public class ProxyBuffer {
         writeIndex += bytes.length + 1;
         return this;
     }
-
+    public ProxyBuffer writeNULString(byte[] vals) {
+        putNULString(writeIndex, vals);
+        writeIndex += vals.length + 1;
+        return this;
+    }
     public byte[] readBytes(int length) {
         byte[] bytes = this.getBytes(readIndex, length);
         readIndex += length;
