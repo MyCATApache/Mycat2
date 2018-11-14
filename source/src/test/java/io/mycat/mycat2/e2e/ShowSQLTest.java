@@ -329,7 +329,7 @@ public class ShowSQLTest extends BaseSQLTest {
     @Test
     public void showCreateFunction() {
         using(c -> {
-            ResultSet resultSet = c.createStatement().executeQuery("SHOW CREATE FUNCTION function_name");
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW CREATE FUNCTION hello");
             Assert.assertTrue(resultSet.next());
         });
     }
@@ -341,7 +341,7 @@ public class ShowSQLTest extends BaseSQLTest {
     @Test
     public void showCreateProcedure() {
         using(c -> {
-            ResultSet resultSet = c.createStatement().executeQuery("SHOW CREATE PROCEDURE procedure_name");
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW CREATE PROCEDURE simpleproc");
             Assert.assertTrue(resultSet.next());
         });
     }
@@ -427,6 +427,18 @@ public class ShowSQLTest extends BaseSQLTest {
     public void showCreateSchema() {
         using(c -> {
             ResultSet resultSet = c.createStatement().executeQuery("SHOW CREATE SCHEMA db1");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    
+    /**
+     * CHECKSUM TABLE
+     */
+    @Test
+    public void checksumTable() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("CHECKSUM TABLE travelrecord");
             Assert.assertTrue(resultSet.next());
         });
     }
