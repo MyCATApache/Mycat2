@@ -42,7 +42,6 @@ import java.util.Map;
  *      }
  * </pre>
  * @author : zhuqiang
- * @version : V1.0
  * @date : 2018/11/14 21:40
  */
 public class NewAuthPacket {
