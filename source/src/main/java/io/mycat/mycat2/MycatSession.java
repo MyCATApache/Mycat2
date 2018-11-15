@@ -4,6 +4,7 @@ import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mycat2.cmds.LoadDataState;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
@@ -72,6 +73,7 @@ MycatSession extends AbstractMySQLSession {
     public BufferSQLParser parser = new BufferSQLParser();
     private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
     private byte sqltype;
+    public LoadDataState loadDataStateMachine = LoadDataState.NOT_LOAD_DATA;
 
     public byte getSqltype() {
         return sqltype;
@@ -213,7 +215,7 @@ MycatSession extends AbstractMySQLSession {
      * @param errno
      * @throws IOException
      */
-    public void sendErrorMsg(int errno, String errMsg) throws IOException {
+    public void sendErrorMsg(int errno, String errMsg) {
         ErrorPacket errPkg = new ErrorPacket();
         errPkg.packetId = (byte) (proxyBuffer.getByte(curMSQLPackgInf.startPos
                 + ParseUtil.mysql_packetHeader_length) + 1);
@@ -236,12 +238,12 @@ MycatSession extends AbstractMySQLSession {
          * 这里reset ,会把前端连接的buffer 也给reset的掉.
          * 连接池  新创建的连接放入 reactor 时,会进行一次reset ,保证  session 拿到的连接 buffer 状态是正确的.
          */
-//		backend.proxyBuffer.reset();
+//		backend.proxyBuffer.in();
         putBackendMap(backend);
         backend.setMycatSession(this);
         backend.useSharedBuffer(this.proxyBuffer);
         backend.setCurNIOHandler(this.getCurNIOHandler());
-        backend.setBusy();
+        backend.setIdle(false);
         logger.debug(" {} bind backConnection  for {}",
                 this,
                 backend.toString());

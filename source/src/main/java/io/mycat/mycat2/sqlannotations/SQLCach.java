@@ -3,10 +3,8 @@ package io.mycat.mycat2.sqlannotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.cmds.interceptor.SQLAnnotationChain;
-import io.mycat.mycat2.cmds.interceptor.SQLCachCmd;
 
 public class SQLCach extends SQLAnnotation {
 

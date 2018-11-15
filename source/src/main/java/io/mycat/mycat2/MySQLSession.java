@@ -1,7 +1,8 @@
 package io.mycat.mycat2;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.cmds.judge.ResponseStateMachine;
+import io.mycat.mycat2.cmds.judge.MySQLPacketPrintCallback;
+import io.mycat.mycat2.cmds.judge.MySQLProxyStateM;
 import io.mycat.proxy.buffer.BufferPool;
 
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class MySQLSession extends AbstractMySQLSession {
 	// 记录当前后端连接所属的MetaBean，用于后端连接归还使用
 	private MySQLMetaBean mysqlMetaBean;
 
-	public ResponseStateMachine responseStateMachine = new ResponseStateMachine(this);
+	public MySQLProxyStateM responseStateMachine = new MySQLProxyStateM(new MySQLPacketPrintCallback());
 
 
 	public MySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
@@ -52,7 +53,7 @@ public class MySQLSession extends AbstractMySQLSession {
 			this.mycatSession.clearBeckend(this);
 		}
 		this.mycatSession = null;
-		this.setIdle();
+		this.setIdle(true);
 	}
 
 	@Override

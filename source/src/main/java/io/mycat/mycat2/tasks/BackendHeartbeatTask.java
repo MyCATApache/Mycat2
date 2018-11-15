@@ -1,5 +1,6 @@
 package io.mycat.mycat2.tasks;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLPackageInf;
@@ -50,7 +51,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
         optSession.proxyBuffer.reset();
         CommandPacket packet = new CommandPacket();
         packet.packetId = 0;
-        packet.command = MySQLPacket.COM_QUERY;
+        packet.command = MySQLCommand.COM_QUERY;
         packet.arg = repBean.getReplicaBean().getRepType().getHearbeatSQL();
         packet.write(optSession.proxyBuffer);
         packet = null;
@@ -124,7 +125,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
             MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
             session.proxyBuffer.reset();
 
-            optSession.setIdle();
+            optSession.setIdle(true);
             reactor.addMySQLSession(metaBean, session);
 
             switch (repBean.getReplicaBean().getRepType()) {
