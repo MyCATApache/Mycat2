@@ -5,6 +5,8 @@ import io.mycat.mysql.Capabilities;
 import io.mycat.proxy.ProxyBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -55,6 +57,53 @@ public class NewAuthPacket {
     public byte[] authPluginName;
     public Map<byte[], byte[]> clientConnectAttrs;
 
+    public void read(ProxyBuffer buffer) {
+        int packetLength = (int) buffer.readFixInt(3);
+        packetId = buffer.readByte();
+        readPayload(buffer);
+    }
+
+    public void readPayload(ProxyBuffer buffer) {
+        capabilities = (int) buffer.readFixInt(4);
+        maxPacketSize = (int) buffer.readFixInt(4);
+        characterSet = buffer.readByte();
+        buffer.readBytes(RESERVED.length);
+        username = buffer.readNULStringBytes();
+        if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)
+                == Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
+            password = buffer.readFixStringBytes((int) buffer.readLenencInt());
+        } else if ((capabilities & Capabilities.CLIENT_SECURE_CONNECTION)
+                == Capabilities.CLIENT_SECURE_CONNECTION) {
+            int passwordLength = buffer.readByte();
+            password = buffer.readFixStringBytes(passwordLength);
+        } else {
+            password = buffer.readNULStringBytes();
+        }
+
+        if ((capabilities & Capabilities.CLIENT_CONNECT_WITH_DB) == Capabilities.CLIENT_CONNECT_WITH_DB) {
+            database = buffer.readNULStringBytes();
+        }
+
+        if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH) == Capabilities.CLIENT_PLUGIN_AUTH) {
+            authPluginName = buffer.readNULStringBytes();
+        }
+
+        if ((capabilities & Capabilities.CLIENT_CONNECT_ATTRS) == Capabilities.CLIENT_CONNECT_ATTRS) {
+            long kvAllLength = buffer.readLenencInt();
+            if (kvAllLength != 0) {
+                clientConnectAttrs = new HashMap<>();
+            }
+            int count = 0;
+            while (count < kvAllLength) {
+                byte[] k = buffer.readLenencStringBytes();
+                byte[] v = buffer.readLenencStringBytes();
+                count += k.length;
+                count += v.length;
+                clientConnectAttrs.put(k, v);
+            }
+        }
+    }
+
     public void write(ProxyBuffer buffer) {
         buffer.writeFixInt(3, 0);
         buffer.writeByte(packetId);
@@ -79,8 +128,7 @@ public class NewAuthPacket {
             buffer.writeFixInt(1, password.length);
             buffer.writeFixString(password);
         } else {
-            buffer.writeFixString(password);
-            buffer.writeByte((byte) 0);
+            buffer.writeNULString(password);
         }
 
         if ((capabilities & Capabilities.CLIENT_CONNECT_WITH_DB) == Capabilities.CLIENT_CONNECT_WITH_DB
@@ -97,7 +145,7 @@ public class NewAuthPacket {
                 && clientConnectAttrs != null && !clientConnectAttrs.isEmpty()) {
             int kvAllLength = 0;
             for (Map.Entry<byte[], byte[]> item : clientConnectAttrs.entrySet()) {
-                kvAllLength += calcLenencLength(item.getKey().length);
+                kvAllLength += item.getKey().length;
                 kvAllLength += item.getValue().length;
             }
             buffer.writeLenencInt(kvAllLength);
@@ -110,15 +158,29 @@ public class NewAuthPacket {
      * @param val
      * @return
      */
-    public static int calcLenencLength(int val) {
-        if (val < 251) {
-            return 1;
-        } else if (val >= 251 && val < (1 << 16)) {
-            return 3;
-        } else if (val >= (1 << 16) && val < (1 << 24)) {
-            return 4;
-        } else {
-            return 9;
-        }
+//    public static int calcLenencLength(int val) {
+//        if (val < 251) {
+//            return 1;
+//        } else if (val >= 251 && val < (1 << 16)) {
+//            return 3;
+//        } else if (val >= (1 << 16) && val < (1 << 24)) {
+//            return 4;
+//        } else {
+//            return 9;
+//        }
+//    }
+    @Override
+    public String toString() {
+        return "NewAuthPacket{" +
+                "packetId=" + packetId +
+                ", capabilities=" + capabilities +
+                ", maxPacketSize=" + maxPacketSize +
+                ", characterSet=" + characterSet +
+                ", username=" + Arrays.toString(username) +
+                ", password=" + Arrays.toString(password) +
+                ", database=" + Arrays.toString(database) +
+                ", authPluginName=" + Arrays.toString(authPluginName) +
+                ", clientConnectAttrs=" + clientConnectAttrs +
+                '}';
     }
 }

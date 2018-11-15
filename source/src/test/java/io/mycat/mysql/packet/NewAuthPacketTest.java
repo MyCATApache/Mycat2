@@ -3,10 +3,12 @@ package io.mycat.mysql.packet;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.SecurityUtil;
 import io.mycat.util.StringUtil;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 
 /**
  * ${todo}
@@ -37,6 +39,7 @@ public class NewAuthPacketTest {
         capabilities.setSpeak41Protocol();
         capabilities.setCanDo41Anthentication();
         capabilities.setPluginAuth();
+        capabilities.setConnectAttrs();
 
         newAuthPacket.capabilities = capabilities.value;
         newAuthPacket.characterSet = 8;
@@ -45,11 +48,36 @@ public class NewAuthPacketTest {
         newAuthPacket.password = passwd("123456");
         newAuthPacket.database = "db1".getBytes();
         newAuthPacket.authPluginName = "mysql_native_password".getBytes();
+        HashMap<byte[], byte[]> clientConnectAttrs = new HashMap<>();
+        newAuthPacket.clientConnectAttrs = clientConnectAttrs;
+        clientConnectAttrs.put("useUnicode".getBytes(), "true".getBytes());
+        clientConnectAttrs.put("characterEncoding".getBytes(), "UTF-8".getBytes());
+        clientConnectAttrs.put("allowMultiQueries".getBytes(), "true".getBytes());
 
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocate(1024));
         newAuthPacket.write(buffer);
         buffer.flip();
-        System.out.println(StringUtil.dumpAsHex(buffer.getBuffer()));
+        ByteBuffer b = buffer.getBuffer();
+        int position = b.position();
+        byte[] buildBytes = new byte[position];
+        b.position(0);
+        b.get(buildBytes);
+        System.out.println(StringUtil.dumpAsHex(b));
+
+        read(buildBytes, newAuthPacket);
+    }
+
+    private void read(byte[] buildBytes, NewAuthPacket originAuthPacket) {
+        NewAuthPacket newAuthPacket = new NewAuthPacket();
+        ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.wrap(buildBytes));
+        buffer.writeIndex = buildBytes.length;
+        newAuthPacket.read(buffer);
+//        boolean equals = newAuthPacket.toString().equals(originAuthPacket.toString());
+//        Assert.assertTrue(equals);
+        int newSize = newAuthPacket.toString().length();
+        int originSize = originAuthPacket.toString().length();
+        Assert.assertEquals(newSize, originSize);
+
     }
 
     private static byte[] passwd(String pass) throws NoSuchAlgorithmException {
