@@ -1,20 +1,11 @@
 package io.mycat.proxy;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
-import io.mycat.mycat2.net.CommandPhaseMySQLNIOHandler;
-import io.mycat.mycat2.net.CommandPhaseMycatNIOHandler;
+import io.mycat.mycat2.net.MainMySQLNIOHandler;
+import io.mycat.mycat2.net.MainMycatNIOHandler;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mycat2.tasks.BackendConCreateTask;
 import io.mycat.mycat2.tasks.BackendSynchemaTask;
@@ -22,6 +13,14 @@ import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 
 /**
  * mycat 多个Session会话
@@ -151,11 +150,11 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         createSession(targetMetaBean, currMycatSession.mycatSchema, (optSession, Sender, exeSucces, retVal) -> {
 
             //恢复默认的Handler
-            currMycatSession.setCurNIOHandler(CommandPhaseMycatNIOHandler.INSTANCE);
+            currMycatSession.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
             if (exeSucces) {
                 //设置当前连接 读写分离属性
                 optSession.setDefaultChannelRead(targetMetaBean.isSlaveNode());
-                optSession.setCurNIOHandler(CommandPhaseMySQLNIOHandler.INSTANCE);
+                optSession.setCurNIOHandler(MainMySQLNIOHandler.INSTANCE);
                 currMycatSession.bindBackend(optSession);
                 syncAndExecute(optSession, callback);
 //				addMySQLSession(targetMetaBean, optSession); //新创建的连接加入到当前reactor 中
@@ -227,7 +226,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
                 //设置当前连接 读写分离属性
                 optSession.setDefaultChannelRead(mySQLMetaBean.isSlaveNode());
                 //恢复默认的Handler
-                optSession.setCurNIOHandler(CommandPhaseMySQLNIOHandler.INSTANCE);
+                optSession.setCurNIOHandler(MainMySQLNIOHandler.INSTANCE);
                 callback.finished(optSession, null, true, null);
             } else {
                 callback.finished(optSession, null, false, retVal);
@@ -247,8 +246,8 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
         BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mycatSession, mysqlSession);
         backendSynchronzationTask.setCallback((optSession, sender, exeSucces, rv) -> {
             //恢复默认的Handler
-            mycatSession.setCurNIOHandler(CommandPhaseMycatNIOHandler.INSTANCE);
-            optSession.setCurNIOHandler(CommandPhaseMySQLNIOHandler.INSTANCE);
+            mycatSession.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
+            optSession.setCurNIOHandler(MainMySQLNIOHandler.INSTANCE);
             if (exeSucces) {
                 syncSchemaToBackend(optSession, callback);
             } else {
@@ -274,8 +273,8 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
             BackendSynchemaTask backendSynchemaTask = new BackendSynchemaTask(mysqlSession);
             backendSynchemaTask.setCallback((optSession, sender, exeSucces, rv) -> {
                 //恢复默认的Handler
-                mycatSession.setCurNIOHandler(CommandPhaseMycatNIOHandler.INSTANCE);
-                optSession.setCurNIOHandler(CommandPhaseMySQLNIOHandler.INSTANCE);
+                mycatSession.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
+                optSession.setCurNIOHandler(MainMySQLNIOHandler.INSTANCE);
                 if (exeSucces) {
                     if (callback != null) {
                         callback.finished(optSession, sender, exeSucces, rv);

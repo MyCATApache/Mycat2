@@ -104,7 +104,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 						session.proxyBuffer.reset();
 						session.answerFront(AUTH_OK);
 						// 认证通过，设置当前SQL Handler为默认Handler
-						session.setCurNIOHandler(CommandPhaseMycatNIOHandler.INSTANCE);
+						session.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
 					}
 			}
 		} catch (Throwable e) {

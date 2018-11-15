@@ -53,7 +53,7 @@ public class MySQLSession extends AbstractMySQLSession {
 			this.mycatSession.clearBeckend(this);
 		}
 		this.mycatSession = null;
-		this.setIdle();
+		this.setIdle(true);
 	}
 
 	@Override

@@ -125,7 +125,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
             MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
             session.proxyBuffer.reset();
 
-            optSession.setIdle();
+            optSession.setIdle(true);
             reactor.addMySQLSession(metaBean, session);
 
             switch (repBean.getReplicaBean().getRepType()) {

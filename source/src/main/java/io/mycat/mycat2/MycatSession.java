@@ -4,6 +4,7 @@ import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mycat2.cmds.LoadDataState;
 import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
@@ -72,6 +73,7 @@ MycatSession extends AbstractMySQLSession {
     public BufferSQLParser parser = new BufferSQLParser();
     private ConcurrentHashMap<MySQLRepBean, List<MySQLSession>> backendMap = new ConcurrentHashMap<>();
     private byte sqltype;
+    public LoadDataState loadDataStateMachine = LoadDataState.NOT_LOAD_DATA;
 
     public byte getSqltype() {
         return sqltype;
@@ -213,7 +215,7 @@ MycatSession extends AbstractMySQLSession {
      * @param errno
      * @throws IOException
      */
-    public void sendErrorMsg(int errno, String errMsg) throws IOException {
+    public void sendErrorMsg(int errno, String errMsg) {
         ErrorPacket errPkg = new ErrorPacket();
         errPkg.packetId = (byte) (proxyBuffer.getByte(curMSQLPackgInf.startPos
                 + ParseUtil.mysql_packetHeader_length) + 1);
@@ -241,7 +243,7 @@ MycatSession extends AbstractMySQLSession {
         backend.setMycatSession(this);
         backend.useSharedBuffer(this.proxyBuffer);
         backend.setCurNIOHandler(this.getCurNIOHandler());
-        backend.setBusy();
+        backend.setIdle(false);
         logger.debug(" {} bind backConnection  for {}",
                 this,
                 backend.toString());

@@ -40,7 +40,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	}
 	public void fetchStream() {
 		/*设置为忙*/
-		session.setBusy();
+		session.setIdle(false);
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
         QueryPacket queryPacket = new QueryPacket();
@@ -59,7 +59,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	}
 	public void fetchStream(ProxyBuffer proxyBuf) {
 		/*设置为忙*/
-		session.setBusy();
+		session.setIdle(false);
 		session.setCurNIOHandler(this);
 		proxyBuf.flip();
 		proxyBuf.readIndex = proxyBuf.writeIndex;
@@ -126,11 +126,11 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 		        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
 		        session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
 				this.errPkg.read(session.proxyBuffer);
-				session.setIdle();
+				session.setIdle(true);
 				revertPreBuffer();
 		        callBack.finished(session, this, success, this.errPkg);
 			} else {
-				session.setIdle();
+				session.setIdle(true);
 				revertPreBuffer();
 				callBack.finished(session, null, success, null);
 			}
