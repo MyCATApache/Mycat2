@@ -249,11 +249,14 @@ public class ProxyBuffer {
     }
 
     public String readFixString(int length) {
-        byte[] bytes = getBytes(readIndex, length);
-        readIndex += length;
-        return new String(bytes);
+        return new String(readFixStringBytes(length));
     }
 
+    public byte[] readFixStringBytes(int length) {
+        byte[] bytes = getBytes(readIndex, length);
+        readIndex += length;
+        return bytes;
+    }
     public String getLenencString(int index) {
         int strLen = (int) getLenencInt(index);
         int lenencLen = getLenencLength(strLen);
@@ -286,6 +289,10 @@ public class ProxyBuffer {
     }
 
     public String getNULString(int index) {
+        return new String(getNULStringBytes(index));
+    }
+
+    public byte[] getNULStringBytes(int index) {
         int strLength = 0;
         int scanIndex = index;
         while (scanIndex < writeIndex) {
@@ -295,13 +302,19 @@ public class ProxyBuffer {
             strLength++;
         }
         byte[] bytes = getBytes(index, strLength);
-        return new String(bytes);
+        return bytes;
     }
 
     public String readNULString() {
         String rv = getNULString(readIndex);
         readIndex += rv.getBytes().length + 1;
         return rv;
+    }
+
+    public byte[] readNULStringBytes() {
+        byte[] v = getNULStringBytes(readIndex);
+        readIndex += v.length + 1;
+        return v;
     }
 
     public ProxyBuffer putFixInt(int index, int length, long val) {
@@ -543,4 +556,6 @@ public class ProxyBuffer {
         return "ProxyBuffer [buffer=" + buffer + ", writeIndex=" + writeIndex + ", readIndex=" + readIndex
                 + ", readMark=" + readMark + ", inReading=" + inReading + "]";
     }
+
+
 }
