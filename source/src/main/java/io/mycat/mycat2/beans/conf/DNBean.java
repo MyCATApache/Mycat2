@@ -11,6 +11,10 @@ public class DNBean {
     private String database;
     private String replica;
 
+    public DNBean()
+    {
+    	
+    }
     public String getName() {
         return name;
     }

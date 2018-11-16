@@ -38,8 +38,10 @@ public class HBTDemoCmd2 implements MySQLCommand {
 
 	public static final HBTDemoCmd2 INSTANCE = new HBTDemoCmd2();
 
+	private MycatSession session;
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
+		this.session=session;
 		logger.debug("current buffer is "+session.proxyBuffer);
 		/*
 		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
@@ -147,7 +149,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
 		if(sessionCLosed){
 			session.recycleAllocedBuffer(session.getProxyBuffer());
-			session.unbindAllBackend();
+			session.unbindBackends();
 		}
 	}
 
@@ -155,7 +157,7 @@ public class HBTDemoCmd2 implements MySQLCommand {
 	public void clearBackendResouces(MySQLSession mysqlSession, boolean sessionCLosed) {
 		if(sessionCLosed){
 			mysqlSession.recycleAllocedBuffer(mysqlSession.getProxyBuffer());
-			mysqlSession.unbindMycatSession();
+			session.unbindBackends();
 		}
 	}
 }

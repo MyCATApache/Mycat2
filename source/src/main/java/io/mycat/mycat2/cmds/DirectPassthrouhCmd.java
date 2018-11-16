@@ -35,14 +35,14 @@ public class DirectPassthrouhCmd implements MySQLCommand {
             // 切换 buffer 读写状态
             curBuffer.flip();
             if (success) {
-                session.curBackend.responseStateMachine.in(mysqlsession.getMycatSession().getSqltype());
+                session.responseStateMachine.in(mysqlsession.getMycatSession().getSqltype());
                 // 没有读取,直接透传时,需要指定 透传的数据 截止位置
                 curBuffer.readIndex = curBuffer.writeIndex;
                 // 改变 owner，对端Session获取，并且感兴趣写事件
                 session.giveupOwner(SelectionKey.OP_WRITE);
                 mysqlsession.writeToChannel();
             } else {
-                session.closeBackendAndResponseError(mysqlsession, success, ((ErrorPacket) result));
+                session.closeAllBackendsAndResponseError( success, ((ErrorPacket) result));
             }
         });
         return false;
@@ -54,16 +54,17 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         if (!session.readFromChannel()) {
             return false;
         }
+        MycatSession mycat=session.getMycatSession();
         boolean isCommandFinished = false;
         ProxyBuffer curBuffer = session.proxyBuffer;
         while (session.isResolveMySQLPackageFinished()) {
             CurrPacketType pkgTypeEnum = session.resolveCrossBufferMySQLPackage();
             if (CurrPacketType.Full == pkgTypeEnum) {
-                isCommandFinished = MySQLProxyStateMHepler.on(session.responseStateMachine, (byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
-                session.setIdle(!session.responseStateMachine.isInteractive());
+                isCommandFinished = MySQLProxyStateMHepler.on(mycat.responseStateMachine, (byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
+                session.setIdle(!mycat.responseStateMachine.isInteractive());
             } else if (CurrPacketType.LongHalfPacket == pkgTypeEnum) {
-                isCommandFinished = MySQLProxyStateMHepler.on(session.responseStateMachine, (byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
-                session.setIdle(!session.responseStateMachine.isInteractive());
+                isCommandFinished = MySQLProxyStateMHepler.on(mycat.responseStateMachine, (byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
+                session.setIdle(!mycat.responseStateMachine.isInteractive());
                 session.forceCrossBuffer();
                 break;
             } else if (CurrPacketType.ShortHalfPacket == pkgTypeEnum ||
@@ -91,7 +92,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 //         判断是否结果集传输完成，决定命令是否结束，切换到前端读取数据
 //         检查当前已经结束，进行切换
 //         检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
-        if (!session.curBackend.responseStateMachine.isFinished()) {
+        if (!session.responseStateMachine.isFinished()) {
             session.proxyBuffer.flip();
             session.giveupOwner(SelectionKey.OP_READ);
             return false;
@@ -106,8 +107,8 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 
     @Override
     public boolean onBackendWriteFinished(MySQLSession session) {
-        if (session.responseStateMachine.isFinished()) {
-            MycatSession mycatSession = session.getMycatSession();
+    	MycatSession mycatSession = session.getMycatSession();
+        if (mycatSession.responseStateMachine.isFinished()) {
             mycatSession.proxyBuffer.flip();
             mycatSession.takeOwner(SelectionKey.OP_READ);
             return true;
@@ -131,7 +132,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
     public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
         if (sessionCLosed) {
             session.recycleAllocedBuffer(session.getProxyBuffer());
-            session.unbindAllBackend();
+            session.unbindBackends();
         }
     }
 

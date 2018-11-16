@@ -32,11 +32,11 @@ public class MainMySQLNIOHandler implements NIOHandler<MySQLSession> {
         } catch (ClosedChannelException ex) {
             String errmsg = " read backend response error ,backend conn has closed.";
             logger.error(errmsg);
-            session.getMycatSession().closeBackendAndResponseError(session, false, ErrorCode.ERR_CONNECT_SOCKET,
+            session.getMycatSession().closeAllBackendsAndResponseError(false, ErrorCode.ERR_CONNECT_SOCKET,
                     errmsg);
         } catch (IOException e) {
             logger.error(" read backend response error.", e);
-            session.getMycatSession().closeBackendAndResponseError(session, false, ErrorCode.ERR_CONNECT_SOCKET,
+            session.getMycatSession().closeAllBackendsAndResponseError(false, ErrorCode.ERR_CONNECT_SOCKET,
                     e.getMessage());
         }
     }

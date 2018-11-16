@@ -178,12 +178,12 @@ public class MySQLRepBean {
 
 				// init again
 				MySQLMetaBean newWriteBean = metaBeans.get(newIndex);
-				newWriteBean.clearCons(reason);
+				newWriteBean.clearAndDestroyCons(reason);
 				newWriteBean.prepareHeartBeat(this, getDataSourceInitStatus());
 
 				// clear all connections
 				MySQLMetaBean oldMetaBean = metaBeans.get(current);
-				oldMetaBean.clearCons(reason);
+				oldMetaBean.clearAndDestroyCons(reason);
 				// write log
 				logger.warn(switchMessage(current, newIndex, reason));
 

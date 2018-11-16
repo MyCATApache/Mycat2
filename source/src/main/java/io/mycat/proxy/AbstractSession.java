@@ -172,7 +172,10 @@ public abstract class AbstractSession implements Session {
 		ByteBuffer buffer = proxyBuffer.getBuffer();
 		buffer.limit(proxyBuffer.readIndex);
 		buffer.position(proxyBuffer.readMark);
+		final String hexs = StringUtil.dumpAsHex(buffer, buffer.position(), buffer.remaining());
+		logger.debug( hexs);
 		int writed = channel.write(buffer);
+		
 		proxyBuffer.readMark += writed; // 记录本次磁轭如到 Channel 中的数据
 		if (!buffer.hasRemaining()) {
 			// logger.debug("writeToChannel write {} bytes ,curChannel is {}",
