@@ -6,6 +6,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
+import org.openjdk.jmh.runner.RunnerException;
+
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
@@ -199,6 +201,14 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 			return CurrPacketType.ShortHalfPacket;
 		}
 		if (curPackInf.remainsBytes == 0 && curPackInf.crossBuffer) {
+		    if(totalLen < (ParseUtil.msyql_packetHeaderSize + ParseUtil.mysql_packetTypeSize)){
+		         logger.error("shorthalf packets do not support transparent transmission, session {},offset {} ,limit {}", getSessionId(), offset, limit);
+                 try {
+                    throw new RunnerException();
+                  } catch (RunnerException e) {
+                    e.printStackTrace();
+                  }
+		    }
 			curPackInf.crossBuffer = false;
 		}
 		// 如果当前报文跨多个buffer
