@@ -433,8 +433,87 @@ public class MySQLPackageInfTest {
         Assert.assertEquals(Full,sqlSession.resolveCrossBufferMySQLPackage());
     }
     
-    
+    /**
+     * yushuozhu
+     * 1289303556@qq.com
+     * Full,ShortHalf透传测试
+     */
+    @Test
+    public void testCrossBufferFullShortHalfToShortHalfPacket() {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(20);
+        ProxyBuffer buffer = new ProxyBuffer(byteBuffer);
+        //full包
+        for (byte b : of(0x07, 0x00, 0x00, 0x11, 0x01, 0x39, 0x00, 0xfb, 0x01, 0x39, 0xfb)) {
+            buffer.writeByte(b);
+        }
+        AbstractMySQLSession sqlSession = mock(buffer);
+        MySQLPackageInf curMSQLPackgInf = sqlSession.curMSQLPackgInf;
+        CurrPacketType currPacketType = sqlSession.resolveMySQLPackage(true);//自动markread
+        Assert.assertEquals(Full,currPacketType);
+        
+        //full 包
+        byte[] ok = of(0x0d, 0x00, 0x00, 0x00, 0x03,
+            0x73, 0x68, 0x6f, 0x77, 0x20,
+            0x74, 0x61, 0x62, 0x6c, 0x65,
+            0x73, 0x3b);
+        
+        //写入short half包
+        for (int i = 0; i < 4; i++) {
+            buffer.writeByte(ok[i]);
+        }
+        
+        //透传
+        sqlSession.forceCrossBuffer();
+        Assert.assertTrue(curMSQLPackgInf.crossBuffer);
+        someoneTakeAway(sqlSession);
+        
+        Assert.assertEquals(ShortHalfPacket,sqlSession.resolveCrossBufferMySQLPackage());
+        
+//        buffer.writeByte(ok[4]);
+//        Assert.assertEquals(LongHalfPacket,sqlSession.resolveCrossBufferMySQLPackage());
+    }
 
+    /**
+     * yushuozhu
+     * 1289303556@qq.com
+     * RestLongHalf,ShortHalf透传测试
+     */
+    @Test
+    public void testCrossBufferRestLongHalfShortHalfToShortHalf() {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(8);
+        ProxyBuffer buffer = new ProxyBuffer(byteBuffer);
+        //RestLongHalf包 
+        for (byte b : of(0x01, 0x39, 0xfb)) {
+            buffer.writeByte(b);
+        }
+        AbstractMySQLSession sqlSession = mock(buffer);
+        sqlSession.bufPool = new DirectByteBufferPool((1024 * 1024 * 4), (short) (1024 * 4 * 2), (short) 64);
+        
+        MySQLPackageInf curMSQLPackgInf = sqlSession.curMSQLPackgInf;
+        CurrPacketType currPacketType = sqlSession.resolveMySQLPackage(true);//自动markread
+        Assert.assertEquals(ShortHalfPacket,currPacketType);
+        
+        byte[] ok = of(0x0d, 0x00, 0x00, 0x00, 0x03,
+            0x73, 0x68, 0x6f, 0x77, 0x20,
+            0x74, 0x61, 0x62, 0x6c, 0x65,
+            0x73, 0x3b);
+        
+        //short half包
+        for (int i = 0; i < 4; i++) {
+            buffer.writeByte(ok[i]);
+        }
+        
+        //透传
+        sqlSession.forceCrossBuffer();
+        Assert.assertTrue(curMSQLPackgInf.crossBuffer);
+        someoneTakeAway1(sqlSession, 3, 0, 0);
+        
+        Assert.assertEquals(ShortHalfPacket,sqlSession.resolveCrossBufferMySQLPackage());
+        
+//        buffer.writeByte(ok[4]);
+//        Assert.assertEquals(LongHalfPacket,sqlSession.resolveCrossBufferMySQLPackage());
+    }
+    
     /**
      * cjw
      * 294712221@qq.com
