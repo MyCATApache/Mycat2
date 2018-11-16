@@ -25,6 +25,7 @@ public class CurSQLState {
 	 */
 	public static final Short HBT_TABLE_META = 2001;
 
+
 	private final Map<Short, Object> requestAttrMap = new HashMap<>();
 
 	/**
@@ -65,5 +66,8 @@ public class CurSQLState {
 		logger.debug("clear sql state,total entries  ", requestAttrMap.size());
 		requestAttrMap.clear();
 	}
+
+
+	
 
 }

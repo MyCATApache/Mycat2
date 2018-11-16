@@ -111,12 +111,14 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 		// proxyBuffer.changeOwner(true);
 		this.proxyBuffer.reset();
 		pkg.write(this.proxyBuffer);
+		// 设置frontBuffer 为读取状态
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
+
 		try {
 			this.writeToChannel();
 		} catch (Exception e) {
-			logger.error(e.getLocalizedMessage());
+			logger.error("response write err , {} ", e);
 		}
 	}
 
@@ -130,7 +132,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
 	public void responseOKOrError(byte[] pkg) throws IOException {
 		// proxyBuffer.changeOwner(true);
 		this.proxyBuffer.reset();
-		proxyBuffer.writeBytes(OKPacket.OK);
+		proxyBuffer.writeBytes(pkg);
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
 		this.writeToChannel();

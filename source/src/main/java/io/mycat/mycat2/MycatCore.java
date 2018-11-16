@@ -24,7 +24,15 @@
 package io.mycat.mycat2;
 
 import java.io.IOException;
-import java.util.Arrays;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.beans.ArgsBean;
 import io.mycat.mycat2.beans.conf.BalancerBean;
@@ -32,13 +40,8 @@ import io.mycat.mycat2.beans.conf.BalancerConfig;
 import io.mycat.mycat2.beans.conf.ClusterConfig;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
 import io.mycat.proxy.ConfigEnum;
-
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
-import org.apache.commons.cli.*;
-import org.apache.commons.lang.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author wuzhihui

@@ -80,8 +80,8 @@ public class LoadDataCommand implements MySQLCommand {
                 if (readed) {
                     CurrPacketType currPacketType = mycatSession.resolveMySQLPackage(true, false);
                     if (currPacketType == CurrPacketType.Full) {
-                        MySQLProxyStateMHepler.on(session.responseStateMachine,session.curMSQLPackgInf.pkgType, session.proxyBuffer,session);
-                        session.setIdle(!session.responseStateMachine.isInteractive());
+                        MySQLProxyStateMHepler.on(mycatSession.responseStateMachine,session.curMSQLPackgInf.pkgType, session.proxyBuffer,session);
+                        session.setIdle(!mycatSession.responseStateMachine.isInteractive());
                         ProxyBuffer proxyBuffer = mycatSession.proxyBuffer;
                         proxyBuffer.flip();
                         mycatSession.takeOwner(SelectionKey.OP_WRITE);
