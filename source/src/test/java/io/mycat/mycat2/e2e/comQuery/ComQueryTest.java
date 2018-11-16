@@ -1,6 +1,9 @@
 package io.mycat.mycat2.e2e.comQuery;
 
+import io.mycat.mycat2.e2e.BaseSQLExeTest;
+import io.mycat.mycat2.e2e.BaseSQLTest;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.sql.*;
 
@@ -9,16 +12,7 @@ import java.sql.*;
  * create database db1;
  * create table travelrecord (id bigint not null primary key,user_id varchar(100),traveldate DATE, fee decimal,days int);
  */
-public class ComQueryTest {
-    //3306
-    //8066
-    final static String URL = "jdbc:mysql://127.0.0.1:3306/db1?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC" +
-            "&useLocalSessionState=true&failOverReadOnly=false" +
-            "&rewriteBatchedStatements=true" +
-            "&allowMultiQueries=true" +
-            "&useCursorFetch=true";
-    final static String USERNAME = "root";
-    final static String PASSWORD = "";
+public class ComQueryTest extends BaseSQLTest {
     final static String REPL_MASTER_HOST = "192.168.1.6";
     final static int REPL_MASTER_PORT = 3306;
     final static String REPL_MASTER_USER = "repl";
@@ -26,15 +20,8 @@ public class ComQueryTest {
     final static String REPL_MASTER_LOG_FILE = "mysql-bin.000001";
     final static int REPL_MASTER_LOG_POS = 7849;
 
-    static {
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void testShowTableStatus() {
+    @Test
+    public void testShowTableStatus() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.executeQuery("SHOW TABLE STATUS;");
@@ -48,7 +35,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testShowTriggers() {
+    @Test
+    public void testShowTriggers() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.executeQuery("SHOW TRIGGERS;");
@@ -67,16 +55,18 @@ public class ComQueryTest {
      * 如果报错: The MySQL server is running with the --secure-file-priv option so it cannot execute this statement
      * 需要修改my.cnf, 增加 secure-file-priv="" 后重启
      */
-    public static void testLoadData() {
+    @Test
+    public void testLoadData() {
         using(c -> {
                     Statement statement = c.createStatement();
-                    statement.executeQuery("TRUNCATE TABLE `db1`.`travelrecord`;");
-                    statement.executeQuery("LOAD DATA INFILE '/tmp/loaddata.txt' INTO TABLE `db1`.`travelrecord` FIELDS TERMINATED BY ',';");
+                    statement.execute("TRUNCATE TABLE `db1`.`travelrecord`;");
+                    statement.execute("LOAD DATA INFILE '/tmp/loaddata.txt' INTO TABLE `db1`.`travelrecord` FIELDS TERMINATED BY ',';");
                 }
         );
     }
 
-    public static void testSetOption() {
+    @Test
+    public void testSetOption() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.executeQuery("SET @Name=23");
@@ -84,7 +74,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testLockUnlock() {
+    @Test
+    public void testLockUnlock() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.executeQuery("LOCK TABLES `db1`.`travelrecord` READ;");
@@ -94,7 +85,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testGrantRevoke() {
+    @Test
+    public void testGrantRevoke() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("CREATE USER 'jeffreyJF'@'localhost' IDENTIFIED BY 'What?2018';");
@@ -110,7 +102,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testChangeDb() {
+    @Test
+    public void testChangeDb() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("USE `db1`;");
@@ -118,7 +111,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testCreateDb() {
+    @Test
+    public void testCreateDb() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("CREATE DATABASE IF NOT EXISTS `menagerie`;");
@@ -126,7 +120,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testDropDb() {
+    @Test
+    public void testDropDb() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("DROP DATABASE IF EXISTS `menagerie`;");
@@ -134,7 +129,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testAlterDb() {
+    @Test
+    public void testAlterDb() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("ALTER TABLE `db1`.`travelrecord` ADD i INT FIRST;");
@@ -143,7 +139,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testRepair() {
+    @Test
+    public void testRepair() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("REPAIR TABLE `db1`.`travelrecord`;");
@@ -151,7 +148,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testReplace() {
+    @Test
+    public void testReplace() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("REPLACE INTO `db1`.`travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`) VALUES (3, '2', '2018-11-02', '2', '2') ;");
@@ -159,7 +157,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testReplaceSelect() {
+    @Test
+    public void testReplaceSelect() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("CREATE TABLE IF NOT EXISTS `db1`.`travelrecord2` (\n" +
@@ -176,7 +175,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testCreateDropFunction() {
+    @Test
+    public void testCreateDropFunction() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("DROP FUNCTION IF EXISTS `hello`");
@@ -187,7 +187,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testOptimize() {
+    @Test
+    public void testOptimize() {
         using(c -> {
                     Statement statement = c.createStatement();
                     Assert.assertTrue(statement.execute("OPTIMIZE TABLE `db1`.`travelrecord`;"));
@@ -195,7 +196,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testCheck() {
+    @Test
+    public void testCheck() {
         using(c -> {
                     Statement statement = c.createStatement();
                     Assert.assertTrue(statement.execute("CHECK TABLE `db1`.`travelrecord`;"));
@@ -203,7 +205,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testCacheIndex() {
+    @Test
+    public void testCacheIndex() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("SET GLOBAL hot_cache.key_buffer_size=128*1024;");
@@ -213,7 +216,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testFlush() {
+    @Test
+    public void testFlush() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("FLUSH PRIVILEGES;");
@@ -224,7 +228,8 @@ public class ComQueryTest {
     /*
      * 执行此方法前先手动执行select sleep(100),然后执行show processlist,找出对应的processId再执行kill命令
      */
-    public static void testKill() {
+//    @Test
+    public void testKill() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("KILL 333");
@@ -232,7 +237,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testAnalyze() {
+    @Test
+    public void testAnalyze() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("ANALYZE TABLE `db1`.`travelrecord`;");
@@ -240,7 +246,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testBegin() {
+    @Test
+    public void testBegin() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("BEGIN;");
@@ -250,7 +257,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testRollback() {
+    @Test
+    public void testRollback() {
         using(c -> {
                     Statement statement = c.createStatement();
                     c.setAutoCommit(false);
@@ -260,7 +268,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testRollbackToSavePoint() {
+    @Test
+    public void testRollbackToSavePoint() {
         using(c -> {
                     Statement statement = c.createStatement();
                     c.setAutoCommit(false);
@@ -274,7 +283,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testReleaseSavePoint() {
+    @Test
+    public void testReleaseSavePoint() {
         using(c -> {
                     Statement statement = c.createStatement();
                     c.setAutoCommit(false);
@@ -290,7 +300,8 @@ public class ComQueryTest {
     /*
      * 执行testSlave,需要连接到Slave数据库
      */
-    public static void testSlave() {
+    @Test
+    public void testSlave() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("STOP SLAVE;");
@@ -305,7 +316,8 @@ public class ComQueryTest {
     /*
      * 必须开启group replication,否则会报异常:java.sql.SQLException: The server is not configured properly to be an active member of the group.
      */
-    public static void testGroupReplication() {
+//    @Test
+    public void testGroupReplication() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("START GROUP_REPLICATION;");
@@ -317,7 +329,8 @@ public class ComQueryTest {
     /*
      * 必须开启binlog才能执行,否则会报异常: java.sql.SQLException: You are not using binary logging
      */
-    public static void testBinlog() {
+    @Test
+    public void testBinlog() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("SHOW BINARY LOGS;");
@@ -331,7 +344,8 @@ public class ComQueryTest {
     /*
      * 空查询会报异常: jjava.sql.SQLException: Can not issue empty query.
      */
-    public static void testEmptyQuery() {
+//    @Test
+    public void testEmptyQuery() {
         using(c -> {
                 Statement statement = c.createStatement();
                 statement.executeQuery("");
@@ -339,7 +353,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testShowSlaveHosts() {
+    @Test
+    public void testShowSlaveHosts() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("SHOW SLAVE HOSTS;");
@@ -347,7 +362,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testReset() {
+    @Test
+    public void testReset() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("RESET QUERY CACHE;");
@@ -355,7 +371,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testRenameTable() {
+    @Test
+    public void testRenameTable() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("RENAME TABLE `db1`.`travelrecord` TO `db1`.`travelrecord2`;");
@@ -364,7 +381,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testShowOpenTables() {
+    @Test
+    public void testShowOpenTables() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("SHOW OPEN TABLES;");
@@ -375,7 +393,8 @@ public class ComQueryTest {
     /*
      * 执行报错:com.mysql.jdbc.exceptions.jdbc4.MySQLSyntaxErrorException: You have an error in your SQL syntax;
      */
-    public static void testShowHelp() {
+//    @Test
+    public void testShowHelp() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("HELP;");
@@ -383,7 +402,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testShowStorageEngines() {
+    @Test
+    public void testShowStorageEngines() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("SHOW STORAGE ENGINES;");
@@ -391,7 +411,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testShowWarningsErrors() {
+    @Test
+    public void testShowWarningsErrors() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("SHOW WARNINGS;");
@@ -400,7 +421,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testDo() {
+    @Test
+    public void testDo() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("DO SLEEP(1);");
@@ -408,7 +430,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testHandler() {
+    @Test
+    public void testHandler() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("HANDLER `db1`.`travelrecord` OPEN;");
@@ -418,7 +441,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testDeleteMulti() {
+    @Test
+    public void testDeleteMulti() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("CREATE TABLE IF NOT EXISTS `db1`.`t1` (`id` int(11) NOT NULL, `count` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
@@ -430,7 +454,8 @@ public class ComQueryTest {
         );
     }
 
-    public static void testUpdateMulti() {
+    @Test
+    public void testUpdateMulti() {
         using(c -> {
                     Statement statement = c.createStatement();
                     statement.execute("CREATE TABLE IF NOT EXISTS `db1`.`t1` (`id` int(11) NOT NULL, `count` int(11) NOT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8;");
@@ -440,61 +465,5 @@ public class ComQueryTest {
                     statement.execute("UPDATE `db1`.`t1`, `db1`.`t2` SET `db1`.`t1`.`count`=`db1`.`t1`.`count`+1, `db1`.`t2`.`count`=`db1`.`t2`.`count`-1 WHERE t1.id=t2.id;");
                 }
         );
-    }
-
-    public static void main(String[] args) {
-        testShowTableStatus();
-        testShowTriggers();
-        testLoadData();
-        testSetOption();
-        testLockUnlock();
-        testGrantRevoke();
-        testChangeDb();
-        testCreateDb();
-        testDropDb();
-        testAlterDb();
-        testRepair();
-        testReplace();
-        testReplaceSelect();
-        testCreateDropFunction();
-        testOptimize();
-        testCheck();
-        testCacheIndex();
-        testFlush();
-        testAnalyze();
-        testBegin();
-        testRollback();
-        testRollbackToSavePoint();
-        testReleaseSavePoint();
-        testReset();
-        testRenameTable();
-        testShowOpenTables();
-        testShowStorageEngines();
-        testShowWarningsErrors();
-        testDo();
-        testShowSlaveHosts();
-        testHandler();
-        testDeleteMulti();
-        testUpdateMulti();
-//        注释的用例
-//        testKill();               //testKill没法自动测试暂时注释掉,执行此方法前先手动执行select sleep(100),然后执行show processlist,找出对应的processId再执行kill命令
-//        testSlave();              //执行testSlave需要连slave数据库
-//        testBinlog();             //mysql必须开启binlog才能执行此命令
-//        testGroupReplication();   //mysql必须开启group replication才能执行此命令
-//        testEmptyQuery();         //执行空查询会报异常
-//        testShowHelp();           //jdbc不支持help命令
-    }
-
-    public static void using(ConsumerIO<Connection> c) {
-        try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
-            c.accept(connection);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @FunctionalInterface
-    interface ConsumerIO<T> {
-        void accept(T t) throws Exception;
     }
 }
