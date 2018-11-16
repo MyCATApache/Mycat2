@@ -11,8 +11,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static io.mycat.mycat2.TestUtil.of;
 import static io.mycat.mycat2.TestUtil.ofBuffer;

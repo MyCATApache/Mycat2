@@ -198,10 +198,10 @@ public abstract class AbstractMySQLSession extends AbstractSession {
             return CurrPacketType.ShortHalfPacket;
         }
         if (curPackInf.remainsBytes == 0 && curPackInf.crossBuffer) {
-            if (totalLen < (ParseUtil.msyql_packetHeaderSize + ParseUtil.mysql_packetTypeSize)) {
-                String error = String.format("shorthalf packets do not support transparent transmission, session %d,offset %d ,limit %d", getSessionId(), offset, limit);
-                throw new UnsupportedOperationException(error);
-            }
+//            if (totalLen < (ParseUtil.msyql_packetHeaderSize + ParseUtil.mysql_packetTypeSize)) {
+//                String error = String.format("shorthalf packets do not support transparent transmission, session %d,offset %d ,limit %d", getSessionId(), offset, limit);
+//                throw new UnsupportedOperationException(error);
+//            }
             curPackInf.crossBuffer = false;
         }
         // 如果当前报文跨多个buffer
