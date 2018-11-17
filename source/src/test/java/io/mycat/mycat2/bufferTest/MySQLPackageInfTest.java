@@ -47,7 +47,7 @@ public class MySQLPackageInfTest {
         MySQLPackageInf mySQLPackageInf = new MySQLPackageInf();
         for (int pkgType = Byte.MIN_VALUE; pkgType <= Byte.MAX_VALUE; pkgType++) {
             mySQLPackageInf.pkgType = pkgType;
-            for (int length = 4; length < 10; length++) {
+            for (int length = 4; length <= 13; length++) {
                 mySQLPackageInf.pkgLength = length;
                 int count = 0;
                 if (mySQLPackageInf.isOkPacket()) {
