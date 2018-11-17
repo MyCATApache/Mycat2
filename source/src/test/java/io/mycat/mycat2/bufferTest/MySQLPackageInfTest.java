@@ -100,7 +100,7 @@ public class MySQLPackageInfTest {
      * If the value is ≥ (224) and < (264) it is stored as fe + 8-byte integer
      * <p>
      * size = 5,7,8,13
-     *
+     * <p>
      * cjw
      * 294712221@qq.com
      */
@@ -118,19 +118,19 @@ public class MySQLPackageInfTest {
         packet.fieldCount = 251;
         checkFieldCount(proxyBuffer, session, packet);
 
-        packet.fieldCount = 2<<16-1;
+        packet.fieldCount = 2 << 16 - 1;
         checkFieldCount(proxyBuffer, session, packet);
 
-        packet.fieldCount = 2<<16;
+        packet.fieldCount = 2 << 16;
         checkFieldCount(proxyBuffer, session, packet);
 
-        packet.fieldCount = 2<<24-1;
+        packet.fieldCount = 2 << 24 - 1;
         checkFieldCount(proxyBuffer, session, packet);
 
-        packet.fieldCount = 2<<24;
+        packet.fieldCount = 2 << 24;
         checkFieldCount(proxyBuffer, session, packet);
 
-        packet.fieldCount =  Long.MAX_VALUE-1;
+        packet.fieldCount = Long.MAX_VALUE - 1;
         checkFieldCount(proxyBuffer, session, packet);
     }
 
@@ -148,6 +148,10 @@ public class MySQLPackageInfTest {
         curMSQLPackgInf.crossBuffer = false;
     }
 
+    /**
+     * cjw
+     * 294712221@qq.com
+     */
     @Test
     public void testAccurateEOFPacketType() {
         MySQLPackageInf mySQLPackageInf = new MySQLPackageInf();
@@ -165,6 +169,20 @@ public class MySQLPackageInfTest {
 
         mySQLPackageInf.pkgLength = 1;
         Assert.assertTrue(mySQLPackageInf.isEOFPacket());
+    }
+
+    /**
+     * cjw
+     * 294712221@qq.com
+     */
+    @Test
+    public void testAccurateErrorPacketType() {
+        MySQLPackageInf mySQLPackageInf = new MySQLPackageInf();
+        mySQLPackageInf.pkgType = 0xFF;
+        for (int i = 4; i <= 13; i++) {
+            mySQLPackageInf.pkgLength = i;
+            Assert.assertTrue(mySQLPackageInf.isERRPacket());
+        }
     }
 
     /*
