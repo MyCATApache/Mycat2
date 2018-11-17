@@ -122,7 +122,7 @@ public class ShowTbCmd implements MySQLCommand {
 	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
 		if (sessionCLosed) {
 			session.recycleAllocedBuffer(session.getProxyBuffer());
-			session.unbindAllBackend();
+			session.unbindBackends();
 		}
 	}
 

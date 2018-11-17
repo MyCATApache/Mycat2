@@ -83,7 +83,7 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
         mycatSession.proxyBuffer.flip();
         mycatSession.proxyBuffer.readIndex = mycatSession.proxyBuffer.writeIndex;
         mycatSession.giveupOwner(SelectionKey.OP_WRITE);
-        mycatSession.curBackend.writeToChannel();
+        mycatSession.getCurBackend().writeToChannel();
     }
 
     /**

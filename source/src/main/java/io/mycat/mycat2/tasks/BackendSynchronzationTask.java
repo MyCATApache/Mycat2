@@ -2,6 +2,7 @@ package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
@@ -132,6 +133,8 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
             finished(true);
         } else {
             errPkg = new ErrorPacket();
+            MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+	        session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
             errPkg.read(session.proxyBuffer);
             logger.error("backend state sync Error.Err No. " + errPkg.errno + "," + errPkg.message);
             finished(false);

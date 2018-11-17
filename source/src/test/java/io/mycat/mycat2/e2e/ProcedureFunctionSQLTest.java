@@ -1,9 +1,8 @@
 package io.mycat.mycat2.e2e;
 
-import java.sql.ResultSet;
-
 import org.junit.Assert;
-import org.junit.Test;
+
+import java.sql.ResultSet;
 
 /**
  * 
@@ -16,8 +15,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
 	/**
 	 * DROP PROCEDURE 
 	 */
-	@Test
-    public void dropProcedure() {
+	    public void dropProcedure() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("DROP PROCEDURE IF EXISTS simpleproc");
             Assert.assertEquals(0, resultSet);
@@ -28,8 +26,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
 	/**
 	 * CREATE PROCEDURE 
 	 */
-	@Test
-    public void createProcedure() {
+	    public void createProcedure() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("CREATE PROCEDURE simpleproc (OUT param1 INT) BEGIN SELECT COUNT(*) INTO @param1 FROM travelrecord; END");
             Assert.assertEquals(0, resultSet);
@@ -39,8 +36,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
 	 /**
      * CALL PROCEDURE
      */
-    @Test
-    public void callProcedure() {
+        public void callProcedure() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("CALL simpleproc(@a)");
         	Assert.assertEquals(1, resultSet);
@@ -51,8 +47,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
     /**
      * ALTER PROCEDURE
      */
-    @Test
-    public void alterProcedure() {
+        public void alterProcedure() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("ALTER PROCEDURE simpleproc READS SQL DATA COMMENT 'simple'");
         	Assert.assertEquals(0, resultSet);
@@ -64,8 +59,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
     /**
 	 * DROP FUNCTION 
 	 */
-	@Test
-    public void dropFunction() {
+	    public void dropFunction() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("DROP FUNCTION IF EXISTS hello");
             Assert.assertEquals(0, resultSet);
@@ -76,8 +70,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
 	/**
 	 * CREATE FUNCTION 
 	 */
-	@Test
-    public void createFunction() {
+	    public void createFunction() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("CREATE FUNCTION hello (s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ',s,'!')");
             Assert.assertEquals(0, resultSet);
@@ -87,8 +80,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
 	 /**
      * SELECT FUNCTION
      */
-    @Test
-    public void selectFunction() {
+        public void selectFunction() {
         using(c -> {
         	ResultSet resultSet = c.createStatement().executeQuery("SELECT hello('world')");
         	Assert.assertTrue(resultSet.next());
@@ -99,8 +91,7 @@ public class ProcedureFunctionSQLTest extends BaseSQLTest{
     /**
      * ALTER FUNCTION
      */
-    @Test
-    public void alterFunction() {
+        public void alterFunction() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("ALTER FUNCTION hello READS SQL DATA COMMENT 'hello'");
         	Assert.assertEquals(0, resultSet);

@@ -79,7 +79,7 @@ public class MySQLDetector {
 		MycatReactorThread reactor = (MycatReactorThread)Thread.currentThread();
 		MySQLDetector detector = this;
 
-		reactor.getMysqlSession(heartbeat.getSource(), (optSession, sender, exeSucces, rv) -> {
+		reactor.getHeatBeatCon(heartbeat.getSource(), (optSession, sender, exeSucces, rv) -> {
 			if (exeSucces) {
 				BackendHeartbeatTask heartbeatTask = new BackendHeartbeatTask(optSession,detector);
 				heartbeatTask.setCallback((mysqlsession, sder, isSucc, rsmsg) -> {

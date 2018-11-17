@@ -173,7 +173,7 @@ public abstract class DataNodeManager implements Runnable {
         Iterator<SQLQueryStream> iterator = this.backendStreams.iterator();
         while (iterator.hasNext()) {
             MySQLSession mysqlsession = iterator.next().session;
-            this.mycatSession.unbindBeckend(mysqlsession);
+            this.mycatSession.unbindBackend(mysqlsession);
             if (!normal) {
                 mysqlsession.close(normal, error);
             }

@@ -1,7 +1,6 @@
 package io.mycat.mycat2.e2e;
 
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.sql.ResultSet;
 
@@ -12,7 +11,6 @@ import java.sql.ResultSet;
  */
 public class PrepareSQLTest extends BaseSQLTest {
     /** SQLCOM_PREPARE、  SQLCOM_EXECUTE、  SQLCOM_DEALLOCATE_PREPARE  */
-    @Test
     public void sqlcomPrepare() {
         // TODO: 2018/11/7 jdbc 不知道怎么写
         using(c -> {

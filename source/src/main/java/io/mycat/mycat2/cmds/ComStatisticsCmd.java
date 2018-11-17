@@ -48,10 +48,10 @@ public class ComStatisticsCmd extends DirectPassthrouhCmd{
 				try {
 					mysqlsession.writeToChannel();
 				} catch (IOException e) {
-					session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+					session.closeAllBackendsAndResponseError(success,((ErrorPacket) result));
 				}
 			}else{
-				session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+				session.closeAllBackendsAndResponseError(success,((ErrorPacket) result));
 			}
 		});
 		return false;
