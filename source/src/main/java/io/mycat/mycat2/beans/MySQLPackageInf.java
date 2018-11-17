@@ -17,7 +17,7 @@ public class MySQLPackageInf {
     public int remainsBytes;
 
     public boolean isFieldsCount() {
-        return (this.pkgLength <= 7&&this.pkgType!=0) && !isOkPacket();
+        return ((this.pkgLength == 5||this.pkgLength == 7||this.pkgLength == 8||this.pkgLength == 13)&&this.pkgType!=0) && !isOkPacket();
     }
     public boolean isERRPacket() {
         return (this.pkgType == 0xff);
