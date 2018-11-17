@@ -326,7 +326,7 @@ public class MySQLPackageInfTest {
     /**
      * yushuozhu
      * 1289303556@qq.com
-     * Full,LongHalf透传后RestCrossBufferPacket测试
+     * Full,LongHalf透传后RestCrossBufferPacket测试 ..
      */
     @Test
     public void testCrossBufferFullLongHalfToRestLongHalfPacket() {
@@ -363,7 +363,7 @@ public class MySQLPackageInfTest {
     /**
      * yushuozhu
      * 1289303556@qq.com
-     * RestLongHalf,Full透传后FullPacket测试
+     * RestLongHalf,Full透传后FullPacket测试 ..
      */
     @Test
     public void testCrossBufferRestLongHalfFullToFullPacket() {
@@ -397,7 +397,7 @@ public class MySQLPackageInfTest {
     /**
      * yushuozhu
      * 1289303556@qq.com
-     * RestLongHalf,LongHalf透传后LongHalf测试
+     * RestLongHalf,LongHalf透传后LongHalf测试 ..
      */
     @Test
     public void testCrossBufferRestLongHalfLongHalfToLongHalf() {
@@ -435,8 +435,8 @@ public class MySQLPackageInfTest {
     
     /**
      * yushuozhu
-     * 1289303556@qq.com
-     * Full,ShortHalf透传测试
+     * 1289303556@qq.com ..
+     * Full,ShortHalf透传测试 
      */
     @Test
     public void testCrossBufferFullShortHalfToShortHalfPacket() {
@@ -555,9 +555,9 @@ public class MySQLPackageInfTest {
         }
         checkWriteAndChange2(sqlSession, ok[16], FinishedCrossBufferPacket, true);
         //接受新的报文
-        checkWriteAndChange2(sqlSession, 0x0d, CurrPacketType.ShortHalfPacket, false);
-
-        Assert.assertEquals(allocate.capacity(),5);
+//        checkWriteAndChange2(sqlSession, 0x0d, CurrPacketType.ShortHalfPacket, false);
+//
+//        Assert.assertEquals(allocate.capacity(),5);
     }
     /**
      * cjw
@@ -592,9 +592,9 @@ public class MySQLPackageInfTest {
         }
         buffer.writeByte(ok[ok.length - 1]);
         Assert.assertEquals(FinishedCrossBufferPacket,sqlSession.resolveCrossBufferMySQLPackage());
-        checkWriteAndChange2(sqlSession, 0x0d, CurrPacketType.ShortHalfPacket, false);
+//        checkWriteAndChange2(sqlSession, 0x0d, CurrPacketType.ShortHalfPacket, false);
 
-        Assert.assertEquals(byteBuffer.capacity(),16);
+//        Assert.assertEquals(byteBuffer.capacity(),16);
     }
     private void someoneTakeAway(AbstractMySQLSession sqlSession){
         sqlSession.proxyBuffer.reset();
