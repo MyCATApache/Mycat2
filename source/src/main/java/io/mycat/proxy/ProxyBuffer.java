@@ -171,7 +171,6 @@ public class ProxyBuffer {
      * 写状态时候，如果数据写满了，可以调用此方法移除之前的旧数据
      */
     public void compact() {
-
         this.buffer.position(readMark);
         this.buffer.limit(writeIndex);
         this.buffer.compact();
@@ -239,13 +238,15 @@ public class ProxyBuffer {
 
     public byte getByte(int index) {
         buffer.position(index);
-        byte b = buffer.get();
-        return b;
+        return buffer.get();
+    }
+
+    public byte[] getFixStringBytes(int index, int length) {
+        return getBytes(index, length);
     }
 
     public String getFixString(int index, int length) {
-        byte[] bytes = getBytes(index, length);
-        return new String(bytes);
+        return new String(getFixStringBytes(index,length));
     }
 
     public String readFixString(int length) {
@@ -306,9 +307,8 @@ public class ProxyBuffer {
     }
 
     public String readNULString() {
-        String rv = getNULString(readIndex);
-        readIndex += rv.getBytes().length + 1;
-        return rv;
+        byte[] bytes = readNULStringBytes();
+        return new String(bytes);
     }
 
     public byte[] readNULStringBytes() {
