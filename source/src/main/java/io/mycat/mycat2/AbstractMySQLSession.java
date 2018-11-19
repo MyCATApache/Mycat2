@@ -152,11 +152,21 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * 强制进入CrossBuffer模式 cjw 294712221@qq.com
      * 并不限制进入该模式的时机,一般为第一次判断得到LongHalf之后进入该模式,因为LongHalf能获得报文的长度 其他情况不保证正确性
      */
-    public void forceCrossBuffer() {
-        this.curMSQLPackgInf.crossBuffer = true;
+    public boolean forceCrossBuffer() {
+        MySQLPackageInf curMSQLPackgInf = this.curMSQLPackgInf;
+        if (curMSQLPackgInf.remainsBytes == 0 && !ParseUtil.validateHeader(curMSQLPackgInf.startPos, curMSQLPackgInf.endPos)) {
+            String error = String.format("shorthalf packets do not support transparent transmission, session %d,offset %d ,limit %d", getSessionId(), curMSQLPackgInf.startPos, curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
+            throw new UnsupportedOperationException(error);
+        }
+        if (curMSQLPackgInf.crossBuffer) {
+            String error = "have in crossBuffer";
+            throw new UnsupportedOperationException(error);
+        }
         this.curMSQLPackgInf.remainsBytes = this.curMSQLPackgInf.pkgLength
                 - (this.curMSQLPackgInf.endPos - this.curMSQLPackgInf.startPos);
         this.proxyBuffer.readIndex = this.curMSQLPackgInf.endPos;
+
+        return this.curMSQLPackgInf.crossBuffer = this.curMSQLPackgInf.remainsBytes > 0;
     }
 
     public CurrPacketType resolveMySQLPackage(boolean markReaded, boolean forFull) {
@@ -195,14 +205,13 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if (totalLen == 0 && !curPackInf.crossBuffer) { // 透传情况下.
             // 如果最后一个报文正好在buffer
             // 最后位置,已经透传出去了.这里可能不会为零
+            this.curMSQLPackgInf.remainsBytes = 0;
+            this.curMSQLPackgInf.crossBuffer = false;
+            this.curMSQLPackgInf.pkgLength = 0;
+            this.curMSQLPackgInf.startPos = offset;
+            this.curMSQLPackgInf.endPos = limit;
+            this.curMSQLPackgInf.pkgType = 0;
             return CurrPacketType.ShortHalfPacket;
-        }
-        if (curPackInf.remainsBytes == 0 && curPackInf.crossBuffer) {
-//            if (totalLen < (ParseUtil.msyql_packetHeaderSize + ParseUtil.mysql_packetTypeSize)) {
-//                String error = String.format("shorthalf packets do not support transparent transmission, session %d,offset %d ,limit %d", getSessionId(), offset, limit);
-//                throw new UnsupportedOperationException(error);
-//            }
-            curPackInf.crossBuffer = false;
         }
         // 如果当前报文跨多个buffer
         if (curPackInf.crossBuffer) {
@@ -212,6 +221,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 offset += curPackInf.remainsBytes; // 继续处理下一个报文
                 proxyBuf.readIndex = offset;
                 curPackInf.remainsBytes = 0;
+                curPackInf.crossBuffer = false;
                 return CurrPacketType.FinishedCrossBufferPacket;
             } else {// 剩余报文还没读完，等待下一次读取
                 curPackInf.startPos = 0;
@@ -227,6 +237,12 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if (!ParseUtil.validateHeader(offset, limit)) {
             // 收到短半包
             logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
+            this.curMSQLPackgInf.remainsBytes = 0;
+            this.curMSQLPackgInf.crossBuffer = false;
+            this.curMSQLPackgInf.pkgLength = -1;
+            this.curMSQLPackgInf.startPos = offset;
+            this.curMSQLPackgInf.endPos = limit;
+            this.curMSQLPackgInf.pkgType = -1;
             return CurrPacketType.ShortHalfPacket;
         }
 

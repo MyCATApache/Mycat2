@@ -61,10 +61,14 @@ public class MySQLProxyStateM<T> {
         this.prepareParamNum = 0;
         this.serverStatus = 0;
         switch (commandType) {
-            case 25:
+            case MySQLCommand.COM_STMT_CLOSE:
                 this.isCommandFinished = true;//Request Command Close Statement
+                break;
+            case MySQLCommand.MYCAT_SQL:
+                this.isCommandFinished = true;
+                break;
             default:
-
+                break;
         }
     }
 

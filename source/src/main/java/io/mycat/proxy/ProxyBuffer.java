@@ -250,6 +250,11 @@ public class ProxyBuffer {
         byte[] bytes = getBytes(index, length);
         return new String(bytes);
     }
+    public byte[] readFixStringBytes(int length) {
+        byte[] bytes = getBytes(readIndex, length);
+        readIndex += length;
+        return bytes;
+    }
 
     public String readFixString(int length) {
         byte[] bytes = getBytes(readIndex, length);
@@ -300,11 +305,14 @@ public class ProxyBuffer {
         byte[] bytes = getBytes(index, strLength);
         return bytes;
     }
-
-    public String readNULString() {
+    public byte[] readNULStringBytes() {
         byte[] rv = getNULStringBytes(readIndex);
         readIndex += rv.length + 1;
-        return new String(rv);
+        return rv;
+    }
+
+    public String readNULString() {
+        return new String(readNULStringBytes());
     }
 
     public byte[] getEOFStringBytes(int index) {
@@ -473,7 +481,11 @@ public class ProxyBuffer {
         writeIndex += bytes.length + 1;
         return this;
     }
-
+    public ProxyBuffer writeNULString(byte[] vals) {
+        putNULString(writeIndex, vals);
+        writeIndex += vals.length + 1;
+        return this;
+    }
     public ProxyBuffer writeEOFString(String val) {
         byte[] bytes = val.getBytes();
         putFixString(writeIndex, bytes);
