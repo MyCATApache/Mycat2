@@ -63,7 +63,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
                 isCommandFinished = MySQLProxyStateMHepler.on(mycat.responseStateMachine, (byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
                 session.setIdle(!mycat.responseStateMachine.isInteractive());
             } else if (CurrPacketType.LongHalfPacket == pkgTypeEnum){
-                session.forceCrossBuffer();
+                session.forceCrossBuffer();//其中这里出现错误用法抛异常
                 break;
             }else if (CurrPacketType.RestCrossBufferPacket == pkgTypeEnum){
                 break;
