@@ -41,6 +41,7 @@ public class MySQLPackageInfTest {
      * cjw
      * 294712221@qq.com
      * mySQLPackageInf 中的判断方法,不能出现矛盾,即不能出现isFieldsCount又是ok
+     * shorthalf为[1,5)的长度报文,LongHalf[5,完整报文长度) Full[完整报文]
      */
     @Test
     public void testDistinctPacketType() {
