@@ -41,7 +41,28 @@ public class MySQLPackageInfTest {
      * cjw
      * 294712221@qq.com
      * mySQLPackageInf 中的判断方法,不能出现矛盾,即不能出现isFieldsCount又是ok
+     * 报文保存在内存里 保存报文长度,保存完整数据
      * shorthalf为[1,5)的长度报文,LongHalf[5,完整报文长度) Full[完整报文]
+     *
+     * 报文不保存在内存里,保存报文长度 不保存完整数据
+     * restCrossBuffer为[5,完整报文长度)的长度报文,,FinishedCrossBuffer[接收报文长度==报文长度]
+     *                                      RestCrossBuffer->FinishedCrossBuffer
+     *                                  /
+     *                               /(forceCrossBuffer或者内存不足以保存完整报文)
+     *           Shorthalf->Longhalf
+     *                              \
+     *                              \(自动内存扩容buffer/(手动/自动缩小buffer)
+     *                              \
+     *                              Full
+     *
+     * 进入LongHalf时机为能判断出OK,EOF,ERROF的时机
+     *
+     * Full FinishedCrossBuffer 对应一个相等条件[接收报文长度==报文长度]
+     *
+     * Shorthalf Longhalf RestCrossBuffer 对应一个范围条件 可能存在多次进入此状态
+     *
+     * 涉及报文解析的,最有可能用Full
+     * 其余情况需要按需处理报文
      */
     @Test
     public void testDistinctPacketType() {
