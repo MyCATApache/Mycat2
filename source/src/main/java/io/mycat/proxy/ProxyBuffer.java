@@ -39,6 +39,7 @@ import java.nio.ByteBuffer;
 public class ProxyBuffer {
 
     protected static Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
+    public final static byte[] EMPTY_BYTE_ARRAY = new byte[]{};
     /*
      * 写入数据开始位置， 从socket buffer 写入数据时,从该位置开始写入
      */
@@ -121,12 +122,14 @@ public class ProxyBuffer {
         //buffer.position(proxyBuffer.readMark);
         return readIndex == readMark;
     }
+
     public boolean readFinished() {
 
         //buffer.limit(proxyBuffer.readIndex);
         //buffer.position(proxyBuffer.readMark);
         return readIndex == writeIndex;
     }
+
     /**
      * 需要谨慎使用，调用者需要清除当前Buffer所处的状态！！
      *
@@ -262,11 +265,7 @@ public class ProxyBuffer {
     }
 
     public String readLenencString() {
-        int strLen = (int) getLenencInt(readIndex);
-        int lenencLen = getLenencLength(strLen);
-        byte[] bytes = getBytes(readIndex + lenencLen, strLen);
-        readIndex += strLen + lenencLen;
-        return new String(bytes);
+        return new String(readLenencStringBytes());
     }
 
     public byte[] readLenencStringBytes() {
@@ -286,6 +285,10 @@ public class ProxyBuffer {
     }
 
     public String getNULString(int index) {
+        return new String(getNULStringBytes(index));
+    }
+
+    public byte[] getNULStringBytes(int index) {
         int strLength = 0;
         int scanIndex = index;
         while (scanIndex < writeIndex) {
@@ -295,38 +298,34 @@ public class ProxyBuffer {
             strLength++;
         }
         byte[] bytes = getBytes(index, strLength);
-        return new String(bytes);
+        return bytes;
     }
 
     public String readNULString() {
-        String rv = getNULString(readIndex);
-        readIndex += rv.getBytes().length + 1;
+        byte[] rv = getNULStringBytes(readIndex);
+        readIndex += rv.length + 1;
+        return new String(rv);
+    }
+
+    public byte[] getEOFStringBytes(int index) {
+        int strLength = writeIndex - index + 1;
+        byte[] bytes = getBytes(index, strLength);
+        return bytes;
+    }
+
+    public byte[] readEOFStringBytes() {
+        byte[] rv = getEOFStringBytes(readIndex);
+        readIndex += rv.length;
         return rv;
     }
-    
+
+
     public String getEOFString(int index) {
-        int strLength =writeIndex-index+1;
-        byte[] bytes = getBytes(index, strLength);
-        return new String(bytes);
+        return new String(getEOFStringBytes(index));
     }
 
     public String readEOFString() {
-        String rv = getEOFString(readIndex);
-        readIndex += rv.getBytes().length;
-        return rv;
-    }
-
-
-    public String getEOFString(int index) {
-        int strLength =writeIndex-index+1;
-        byte[] bytes = getBytes(index, strLength);
-        return new String(bytes);
-    }
-
-    public String readEOFString() {
-        String rv = getEOFString(readIndex);
-        readIndex += rv.getBytes().length;
-        return rv;
+        return new String(readEOFStringBytes());
     }
 
 
@@ -481,6 +480,7 @@ public class ProxyBuffer {
         writeIndex += bytes.length;
         return this;
     }
+
     public byte[] readBytes(int length) {
         byte[] bytes = this.getBytes(readIndex, length);
         readIndex += length;
@@ -514,6 +514,7 @@ public class ProxyBuffer {
         writeIndex++;
         return this;
     }
+
     public ProxyBuffer writeReserved(int length) {
         for (int i = 0; i < length; i++) {
             this.putByte(writeIndex, (byte) 0);
@@ -521,6 +522,7 @@ public class ProxyBuffer {
         }
         return this;
     }
+
     public byte readByte() {
         byte val = getByte(readIndex);
         readIndex++;
@@ -551,7 +553,7 @@ public class ProxyBuffer {
         int len = (int) getLenencInt(readIndex);
         byte[] bytes = null;
         if ((len & 0xff) == 0xfb) {
-            bytes = null;
+            bytes = EMPTY_BYTE_ARRAY;
         } else {
             bytes = getBytes(readIndex + getLenencLength(len), len);
         }
