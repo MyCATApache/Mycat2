@@ -54,7 +54,7 @@ public class NewAuthPacket {
     public byte[] password;
     public byte[] database;
     public byte[] authPluginName;
-    public Map<byte[], byte[]> clientConnectAttrs;
+    public Map<String, byte[]> clientConnectAttrs;
 
     public void read(ProxyBuffer buffer) {
         int packetLength = (int) buffer.readFixInt(3);
@@ -98,7 +98,9 @@ public class NewAuthPacket {
                 byte[] v = buffer.readLenencStringBytes();
                 count += k.length;
                 count += v.length;
-                clientConnectAttrs.put(k, v);
+                count += calcLenencLength(k.length);
+                count += calcLenencLength(v.length);
+                clientConnectAttrs.put(new String(k), v);
             }
         }
     }
@@ -143,8 +145,8 @@ public class NewAuthPacket {
         if ((capabilities & Capabilities.CLIENT_CONNECT_ATTRS) == Capabilities.CLIENT_CONNECT_ATTRS
                 && clientConnectAttrs != null && !clientConnectAttrs.isEmpty()) {
             int kvAllLength = 0;
-            for (Map.Entry<byte[], byte[]> item : clientConnectAttrs.entrySet()) {
-                kvAllLength += item.getKey().length;
+            for (Map.Entry<String, byte[]> item : clientConnectAttrs.entrySet()) {
+                kvAllLength += item.getKey().length();
                 kvAllLength += item.getValue().length;
             }
             buffer.writeLenencInt(kvAllLength);
@@ -157,17 +159,18 @@ public class NewAuthPacket {
      * @param val
      * @return
      */
-//    public static int calcLenencLength(int val) {
-//        if (val < 251) {
-//            return 1;
-//        } else if (val >= 251 && val < (1 << 16)) {
-//            return 3;
-//        } else if (val >= (1 << 16) && val < (1 << 24)) {
-//            return 4;
-//        } else {
-//            return 9;
-//        }
-//    }
+    public static int calcLenencLength(int val) {
+        if (val < 251) {
+            return 1;
+        } else if (val >= 251 && val < (1 << 16)) {
+            return 3;
+        } else if (val >= (1 << 16) && val < (1 << 24)) {
+            return 4;
+        } else {
+            return 9;
+        }
+    }
+
     @Override
     public String toString() {
         return "NewAuthPacket{" +
