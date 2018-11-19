@@ -1,5 +1,6 @@
 package io.mycat.mysql.packet;
 
+import io.mycat.mysql.CapabilityFlags;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.SecurityUtil;
 import io.mycat.util.StringUtil;
@@ -21,7 +22,7 @@ public class NewAuthPacketTest {
     @Test
     public void writePayload() throws NoSuchAlgorithmException {
         NewAuthPacket newAuthPacket = new NewAuthPacket();
-        NewHandshakePacket.CapabilityFlags capabilities = new NewHandshakePacket.CapabilityFlags(0);
+        CapabilityFlags capabilities = new CapabilityFlags(0);
         capabilities.setLongPassword();
         capabilities.setFoundRows();
         capabilities.setLongColumnWithFLags();
