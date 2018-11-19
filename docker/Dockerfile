@@ -1,27 +1,42 @@
-FROM vertigomedia/ubuntu-jdk8
-USER root
+FROM alpine:3.8
 
-MAINTAINER trecool "358659374@qq.com"
+MAINTAINER trezhang 358659374@qq.com
 
-# install mysql
-RUN apt-get update
-RUN apt-get install -y mysql-client
-RUN apt-get install -y mysql-server
-
-# set password and allow remote connections
-RUN chown -R mysql:mysql /var/lib/mysql && \
-	/etc/init.d/mysql start &&\
-	mysqladmin -uroot password 123456 &&\
-	mysql -p123456 -e "grant all privileges on *.* to 'root'@'%' identified by '123456';" &&\
-	mysql -p123456 -e "grant all privileges on *.* to 'root'@'localhost' identified by '123456';" &&\
-	mysql -p123456 -e "CREATE DATABASE test"
-RUN sed -i 's/^bind-address.*/bind-address=0.0.0.0/g' /etc/mysql/mysql.conf.d/mysqld.cnf
-
-# install mycat
-ADD mycat2.tar.gz /usr/local/
-COPY run.sh /usr/local/mycat2/
+# install jre and mysql
+RUN apk update && \
+	apk add openrc --no-cache && \
+	apk add openjdk8 && \
+	apk add mysql && \
+	apk add mysql-client && \
+	rm -rf /var/cache/apk/* && \
+	cp /usr/share/mariadb/mysql.server /etc/init.d/mysqld
+ENV JAVA_HOME=/usr/lib/jvm/java-1.8-openjdk
+	
+# install glibc
+# https://github.com/sgerrand/alpine-pkg-glibc
+RUN apk --no-cache add ca-certificates wget && \
+    wget -q -O /etc/apk/keys/sgerrand.rsa.pub https://alpine-pkgs.sgerrand.com/sgerrand.rsa.pub && \
+	wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.28-r0/glibc-2.28-r0.apk && \
+	apk add glibc-2.28-r0.apk
+	
+# install mycat service
+RUN apk add git && \
+	apk add maven && \
+	git clone https://github.com/MyCATApache/Mycat2.git && \
+	cd Mycat2/source && \
+	mvn package -DskipTests && \
+	cd target && \
+	tar -zxvf mycat2*-linux.tar.gz && \
+	mkdir /usr/local/mycat2 && \
+	mv mycat2 /usr/local
+COPY mycat_conf/* /usr/local/mycat2/conf
 RUN mkdir /usr/local/mycat2/logs
-RUN chmod 777 /usr/local/mycat2/run.sh
+
 EXPOSE 3306
 EXPOSE 8066
-ENTRYPOINT ["/usr/local/mycat2/run.sh"]
+
+COPY run.sh /
+COPY init_db.sh /
+RUN chmod 777 /run.sh
+RUN chmod 777 /init_db.sh
+CMD ["/run.sh"]
