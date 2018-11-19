@@ -303,6 +303,19 @@ public class ProxyBuffer {
         readIndex += rv.getBytes().length + 1;
         return rv;
     }
+    
+    public String getEOFString(int index) {
+        int strLength =writeIndex-index+1;
+        byte[] bytes = getBytes(index, strLength);
+        return new String(bytes);
+    }
+
+    public String readEOFString() {
+        String rv = getEOFString(readIndex);
+        readIndex += rv.getBytes().length;
+        return rv;
+    }
+
 
     public String getEOFString(int index) {
         int strLength =writeIndex-index+1;

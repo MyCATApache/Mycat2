@@ -27,6 +27,7 @@ import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
+import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.BufferPool;
@@ -357,6 +358,14 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 		return backendName;
 	}
+	public void responseOKOrError(byte[] pkg) throws IOException {
+		this.responseStateMachine.in((byte) 25);
+		super.responseOKOrError(pkg);
+	}
+	public void responseOKOrError(MySQLPacket pkg) {
+		this.responseStateMachine.in((byte) 25);
+		super.responseOKOrError(pkg);
+	}
 
 	/**
 	 * 将后端连接放入到后端连接缓存中
@@ -449,7 +458,6 @@ public class MycatSession extends AbstractMySQLSession {
 			reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
 		}
 	}
-
 	/**
 	 * 获取指定的复制组
 	 *
