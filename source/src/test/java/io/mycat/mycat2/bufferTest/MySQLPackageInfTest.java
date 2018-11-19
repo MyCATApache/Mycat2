@@ -403,7 +403,7 @@ public class MySQLPackageInfTest {
      * 1289303556@qq.com
      * FullShortHalf测试
      */
-    @Test
+//    @Test
     public void testFullShortHalfPacket() {
         int[] peer = new int[]{
                 0x07, 0x00, 0x00, 0x11, 0x01, 0x39, 0x00, 0xfb, 0x01, 0x39, 0xfb, //full
@@ -508,7 +508,7 @@ public class MySQLPackageInfTest {
      * 1289303556@qq.com
      * RestLongHalf,Full透传后FullPacket测试 ..
      */
-    @Test
+//    @Test
     public void testCrossBufferRestLongHalfFullToFullPacket() {
         ByteBuffer byteBuffer = ByteBuffer.allocate(30);
         ProxyBuffer buffer = new ProxyBuffer(byteBuffer);
@@ -542,7 +542,7 @@ public class MySQLPackageInfTest {
      * 1289303556@qq.com
      * RestLongHalf,LongHalf透传后LongHalf测试 ..
      */
-    @Test
+//    @Test
     public void testCrossBufferRestLongHalfLongHalfToLongHalf() {
         ByteBuffer byteBuffer = ByteBuffer.allocate(20);
         ProxyBuffer buffer = new ProxyBuffer(byteBuffer);
@@ -581,7 +581,7 @@ public class MySQLPackageInfTest {
      * 1289303556@qq.com ..
      * Full,ShortHalf透传测试 
      */
-    @Test
+//    @Test
     public void testCrossBufferFullShortHalfToShortHalfPacket() {
         ByteBuffer byteBuffer = ByteBuffer.allocate(20);
         ProxyBuffer buffer = new ProxyBuffer(byteBuffer);
@@ -621,7 +621,7 @@ public class MySQLPackageInfTest {
      * 1289303556@qq.com
      * RestLongHalf,ShortHalf透传测试
      */
-    @Test
+//    @Test
     public void testCrossBufferRestLongHalfShortHalfToShortHalf() {
         ByteBuffer byteBuffer = ByteBuffer.allocate(8);
         ProxyBuffer buffer = new ProxyBuffer(byteBuffer);
@@ -662,7 +662,7 @@ public class MySQLPackageInfTest {
      * 294712221@qq.com
      * 因为buffer容量不足以存在报文,进行crossBuffer解析
      */
-    @Test
+//    @Test
     public void testCrossBufferPacket() {
         int[] ok = new int[]{0x0d, 0x00, 0x00, 0x00, 0x03,
                 0x73, 0x68, 0x6f, 0x77, 0x20,
