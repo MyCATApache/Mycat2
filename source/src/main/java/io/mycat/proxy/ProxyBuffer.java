@@ -171,6 +171,7 @@ public class ProxyBuffer {
      * 写状态时候，如果数据写满了，可以调用此方法移除之前的旧数据
      */
     public void compact() {
+
         this.buffer.position(readMark);
         this.buffer.limit(writeIndex);
         this.buffer.compact();
@@ -238,26 +239,21 @@ public class ProxyBuffer {
 
     public byte getByte(int index) {
         buffer.position(index);
-        return buffer.get();
-    }
-
-    public byte[] getFixStringBytes(int index, int length) {
-        return getBytes(index, length);
+        byte b = buffer.get();
+        return b;
     }
 
     public String getFixString(int index, int length) {
-        return new String(getFixStringBytes(index,length));
+        byte[] bytes = getBytes(index, length);
+        return new String(bytes);
     }
 
     public String readFixString(int length) {
-        return new String(readFixStringBytes(length));
-    }
-
-    public byte[] readFixStringBytes(int length) {
         byte[] bytes = getBytes(readIndex, length);
         readIndex += length;
-        return bytes;
+        return new String(bytes);
     }
+
     public String getLenencString(int index) {
         int strLen = (int) getLenencInt(index);
         int lenencLen = getLenencLength(strLen);
@@ -290,10 +286,6 @@ public class ProxyBuffer {
     }
 
     public String getNULString(int index) {
-        return new String(getNULStringBytes(index));
-    }
-
-    public byte[] getNULStringBytes(int index) {
         int strLength = 0;
         int scanIndex = index;
         while (scanIndex < writeIndex) {
@@ -303,19 +295,27 @@ public class ProxyBuffer {
             strLength++;
         }
         byte[] bytes = getBytes(index, strLength);
-        return bytes;
-    }
-
-    public String readNULString() {
-        byte[] bytes = readNULStringBytes();
         return new String(bytes);
     }
 
-    public byte[] readNULStringBytes() {
-        byte[] v = getNULStringBytes(readIndex);
-        readIndex += v.length + 1;
-        return v;
+    public String readNULString() {
+        String rv = getNULString(readIndex);
+        readIndex += rv.getBytes().length + 1;
+        return rv;
     }
+
+    public String getEOFString(int index) {
+        int strLength =writeIndex-index+1;
+        byte[] bytes = getBytes(index, strLength);
+        return new String(bytes);
+    }
+
+    public String readEOFString() {
+        String rv = getEOFString(readIndex);
+        readIndex += rv.getBytes().length;
+        return rv;
+    }
+
 
     public ProxyBuffer putFixInt(int index, int length, long val) {
         int index0 = index;
@@ -461,9 +461,11 @@ public class ProxyBuffer {
         writeIndex += bytes.length + 1;
         return this;
     }
-    public ProxyBuffer writeNULString(byte[] vals) {
-        putNULString(writeIndex, vals);
-        writeIndex += vals.length + 1;
+
+    public ProxyBuffer writeEOFString(String val) {
+        byte[] bytes = val.getBytes();
+        putFixString(writeIndex, bytes);
+        writeIndex += bytes.length;
         return this;
     }
     public byte[] readBytes(int length) {
@@ -556,6 +558,4 @@ public class ProxyBuffer {
         return "ProxyBuffer [buffer=" + buffer + ", writeIndex=" + writeIndex + ", readIndex=" + readIndex
                 + ", readMark=" + readMark + ", inReading=" + inReading + "]";
     }
-
-
 }
