@@ -303,6 +303,19 @@ public class ProxyBuffer {
         readIndex += rv.getBytes().length + 1;
         return rv;
     }
+    
+    public String getEOFString(int index) {
+        int strLength =writeIndex-index+1;
+        byte[] bytes = getBytes(index, strLength);
+        return new String(bytes);
+    }
+
+    public String readEOFString() {
+        String rv = getEOFString(readIndex);
+        readIndex += rv.getBytes().length;
+        return rv;
+    }
+
 
     public ProxyBuffer putFixInt(int index, int length, long val) {
         int index0 = index;
@@ -449,6 +462,12 @@ public class ProxyBuffer {
         return this;
     }
 
+    public ProxyBuffer writeEOFString(String val) {
+        byte[] bytes = val.getBytes();
+        putFixString(writeIndex, bytes);
+        writeIndex += bytes.length;
+        return this;
+    }
     public byte[] readBytes(int length) {
         byte[] bytes = this.getBytes(readIndex, length);
         readIndex += length;
