@@ -12,8 +12,8 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 
-import static io.mycat.mycat2.TestUtil.of;
-import static io.mycat.mycat2.TestUtil.ofBuffer;
+import static io.mycat.mycat2.testTool.TestUtil.of;
+import static io.mycat.mycat2.testTool.TestUtil.ofBuffer;
 import static io.mycat.mysql.packet.CurrPacketType.*;
 
 /**chen junwen

@@ -1,35 +1,35 @@
 package io.mycat.proxy.buffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sun.nio.ch.DirectBuffer;
+
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sun.nio.ch.DirectBuffer;
-
 /**
  * DirectByteBuffer池，可以分配任意指定大小的DirectByteBuffer，用完需要归还
+ *
  * @author wuzhih
  * @author zagnix
  */
 @SuppressWarnings("restriction")
-public class DirectByteBufferPool implements BufferPool{
+public class DirectByteBufferPool implements BufferPool {
     private static final Logger LOGGER = LoggerFactory.getLogger(DirectByteBufferPool.class);
     public static final String LOCAL_BUF_THREAD_PREX = "$_";
     private ByteBufferPage[] allPages;
     private final int chunkSize;
-   // private int prevAllocatedPage = 0;
+    // private int prevAllocatedPage = 0;
     private AtomicInteger prevAllocatedPage;
-    private final  int pageSize;
-    private final short pageCount;
+    private final int pageSize;
+    private final int pageCount;
     /**
      * 记录对线程ID->该线程的所使用Direct Buffer的size
      */
-    private final ConcurrentHashMap<Long,Long> memoryUsage;
+    private final ConcurrentHashMap<Long, Long> memoryUsage;
 
-    public DirectByteBufferPool(int pageSize, short chunkSize, short pageCount) {
+    public DirectByteBufferPool(int pageSize, int chunkSize, int pageCount) {
         allPages = new ByteBufferPage[pageCount];
         this.chunkSize = chunkSize;
         this.pageSize = pageSize;
@@ -43,64 +43,65 @@ public class DirectByteBufferPool implements BufferPool{
 
     /**
      * TODO 当页不够时，考虑扩展内存池的页的数量...........
+     *
      * @param buffer
      * @return
      */
-    public  ByteBuffer expandBuffer(ByteBuffer buffer){
+    public ByteBuffer expandBuffer(ByteBuffer buffer) {
         int oldCapacity = buffer.capacity();
         int newCapacity = oldCapacity << 1;
         ByteBuffer newBuffer = allocate(newCapacity);
-        if(newBuffer != null){
+        if (newBuffer != null) {
             int newPosition = buffer.position();
             buffer.flip();
             newBuffer.put(buffer);
             newBuffer.position(newPosition);
             recycle(buffer);
-            return  newBuffer;
+            return newBuffer;
         }
         return null;
     }
-    
-	@Override
-	public ByteBuffer allocate() {
-		return allocate(chunkSize);
-	}
+
+    @Override
+    public ByteBuffer allocate() {
+        return allocate(chunkSize);
+    }
 
     public ByteBuffer allocate(int size) {
-    	final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
-    	// 如果大于一个chunk 的大小.分配堆内 内存,用完释放, 不再 使用堆外内存
-    	if(theChunkCount > 1){
-    		return  ByteBuffer.allocate(size);
-    	}
-        int selectedPage =  prevAllocatedPage.incrementAndGet() % allPages.length;
+        final int theChunkCount = size / chunkSize + (size % chunkSize == 0 ? 0 : 1);
+        // 如果大于一个chunk 的大小.分配堆内 内存,用完释放, 不再 使用堆外内存
+        if (theChunkCount > 1) {
+            return ByteBuffer.allocate(size);
+        }
+        int selectedPage = prevAllocatedPage.incrementAndGet() % allPages.length;
         ByteBuffer byteBuf = allocateBuffer(theChunkCount, 0, selectedPage);
         if (byteBuf == null) {
             byteBuf = allocateBuffer(theChunkCount, selectedPage, allPages.length);
         }
         final long threadId = Thread.currentThread().getId();
 
-        if(byteBuf !=null){
-            if (memoryUsage.containsKey(threadId)){
-                memoryUsage.put(threadId,memoryUsage.get(threadId)+byteBuf.capacity());
-            }else {
-                memoryUsage.put(threadId,(long)byteBuf.capacity());
+        if (byteBuf != null) {
+            if (memoryUsage.containsKey(threadId)) {
+                memoryUsage.put(threadId, memoryUsage.get(threadId) + byteBuf.capacity());
+            } else {
+                memoryUsage.put(threadId, (long) byteBuf.capacity());
             }
         }
-        
+
         //如果堆外内存，没有可用空间,分配 堆内内存,一段时间后,还在使用,看情况再转成堆外内存
-        if(byteBuf==null){
-            return  ByteBuffer.allocate(size);
+        if (byteBuf == null) {
+            return ByteBuffer.allocate(size);
         }
         return byteBuf;
     }
 
     public void recycle(ByteBuffer theBuf) {
-    	if(!(theBuf instanceof DirectBuffer)){
-    		theBuf.clear();
-    		return;
-    	}
+        if (!(theBuf instanceof DirectBuffer)) {
+            theBuf.clear();
+            return;
+        }
 
-    	final long size = theBuf.capacity();
+        final long size = theBuf.capacity();
 
         boolean recycled = false;
         DirectBuffer thisNavBuf = (DirectBuffer) theBuf;
@@ -114,8 +115,8 @@ public class DirectByteBufferPool implements BufferPool{
         }
         final long threadId = Thread.currentThread().getId();
 
-        if (memoryUsage.containsKey(threadId)){
-            memoryUsage.put(threadId,memoryUsage.get(threadId)-size);
+        if (memoryUsage.containsKey(threadId)) {
+            memoryUsage.put(threadId, memoryUsage.get(threadId) - size);
         }
         if (recycled == false) {
             LOGGER.warn("warning ,not recycled buffer " + theBuf);
@@ -136,9 +137,9 @@ public class DirectByteBufferPool implements BufferPool{
     public int getChunkSize() {
         return chunkSize;
     }
-	
-	 @Override
-    public ConcurrentHashMap<Long,Long> getNetDirectMemoryUsage() {
+
+    @Override
+    public ConcurrentHashMap<Long, Long> getNetDirectMemoryUsage() {
         return memoryUsage;
     }
 
@@ -146,20 +147,20 @@ public class DirectByteBufferPool implements BufferPool{
         return pageSize;
     }
 
-    public short getPageCount() {
+    public int getPageCount() {
         return pageCount;
     }
 
     public long capacity() {
-	return (long) pageSize * pageCount;
+        return (long) pageSize * pageCount;
     }
 
-    public long size(){
-        return  (long) pageSize * chunkSize * pageCount;
+    public long size() {
+        return (long) pageSize * chunkSize * pageCount;
     }
 
     //TODO
-    public  int getSharedOptsCount(){
+    public int getSharedOptsCount() {
         return 0;
     }
 }
