@@ -88,22 +88,24 @@ public class TestUtil {
      * @return byte[]
      */
     public static byte[] hexStringToBytes(String filePath) {
-      
+      RandomAccessFile fos = null;
+      FileChannel fc = null;
       try {
-        RandomAccessFile fos = new RandomAccessFile(filePath,"rw");
-        FileChannel fc = fos.getChannel();
+        fos = new RandomAccessFile(filePath,"rw");
+        fc = fos.getChannel();
         final MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_WRITE, 0, fos.length());
         
         byte[] bytes1 = new byte[(int) fos.length()];
         for (int i = 0; i < fos.length(); i++) {  
             bytes1[i] = mbb.get(i);
         } 
-        String hexString = new String(bytes1);
-        byte[] bytes = new byte[hexString.length() / 2];
-        for (int i = 0; i < hexString.length() / 2; i++) {
-          String temp = hexString.substring(i * 2, (i + 1) * 2);
-          byte v = (byte) Integer.parseInt(temp, 16);
-          bytes[i] = v;
+        byte[] bytes = new byte[bytes1.length / 2];
+        for (int i = 0; i < bytes1.length / 2; i++) {
+           byte[] b1s = new byte[2];
+           b1s[0] = bytes1[i*2];
+           b1s[1] = bytes1[i*2+1];
+           byte v = (byte) Integer.parseInt(new String(b1s), 16);
+           bytes[i] = v;
         } 
         return bytes;
       } catch (NumberFormatException e) {
@@ -112,6 +114,13 @@ public class TestUtil {
         e.printStackTrace();
       } catch (IOException e) {
         e.printStackTrace();
+      }finally {
+        try {
+          fos.close();
+          fc.close();
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
       }
       return null;
     }
@@ -121,6 +130,10 @@ public class TestUtil {
       /**
        * F:/mycat/hex.txt内容为hex流    0700000200000002000000
        */
+//      byte[] bytes = hexStringToBytes("F:/mycat/hex.txt");
+//      for (int i = 0; i < bytes.length; i++) {
+//        System.out.println(bytes[i]);
+//      }
       System.out.println(new String(hexStringToBytes("F:/mycat/hex.txt")));
     }
 }
