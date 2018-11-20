@@ -316,7 +316,7 @@ public class ProxyBuffer {
     }
 
     public byte[] getEOFStringBytes(int index) {
-        int strLength = writeIndex - index + 1;
+        int strLength = writeIndex - index;
         byte[] bytes = getBytes(index, strLength);
         return bytes;
     }
