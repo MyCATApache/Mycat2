@@ -1,6 +1,6 @@
-package io.mycat.mycat2.packet;
+package io.mycat.mysql.packet;
 
-import io.mycat.mysql.packet.NewHandshakePacket;
+import io.mycat.mysql.CapabilityFlags;
 import io.mycat.proxy.ProxyBuffer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -8,8 +8,8 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static io.mycat.mycat2.TestUtil.ofBuffer;
 import static io.mycat.mycat2.TestUtil.of;
+import static io.mycat.mycat2.TestUtil.ofBuffer;
 /**
  * cjw 294712221@qq.com
  */
@@ -40,7 +40,7 @@ public class HandshakePacketTest {
         handshakePacket.connectionId = 13;
         handshakePacket.authPluginDataPartOne = new String(of(0x15, 0x5f, 0x3e, 0x56, 0x1d, 0x15, 0x2b, 0x79));
         handshakePacket.hasPartTwo = true;
-        handshakePacket.capabilities = new NewHandshakePacket.CapabilityFlags(0);
+        handshakePacket.capabilities = new CapabilityFlags(0);
 
         handshakePacket.capabilities.setLongPassword();
         handshakePacket.capabilities.setFoundRows();
