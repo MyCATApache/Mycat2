@@ -43,6 +43,7 @@ public class LoadDataCommand implements MySQLCommand {
         session.clearReadWriteOpts();
         session.getBackend((mysqlsession, sender, success, result) -> {
             if (success) {
+                session.responseStateMachine.in(COM_QUERY);
                 session.loadDataStateMachine = CLIENT_2_SERVER_COM_QUERY;
                 // 切换buffer 读写状态
                 curBuffer.flip();
@@ -118,7 +119,7 @@ public class LoadDataCommand implements MySQLCommand {
                 session.takeOwner(SelectionKey.OP_READ);
                 session.loadDataStateMachine = NOT_LOAD_DATA;
                 session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
-                return false;
+                return true;
             default:
                 throw new RuntimeException("unknown state!!!");
         }

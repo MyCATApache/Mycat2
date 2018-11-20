@@ -61,16 +61,16 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 			}
 
 			// check user
-			if (!checkUser(session, userConfig, userBean)) {
-				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "' with addr '" + session.addr + "'");
-				return;
-			}
+//			if (!checkUser(session, userConfig, userBean)) {
+//				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "' with addr '" + session.addr + "'");
+//				return;
+//			}
 
 			// check password
-			if (!checkPassword(session, userBean, auth.password)) {
-				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because password is error ");
-				return;
-			}
+//			if (!checkPassword(session, userBean, auth.password)) {
+//				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because password is error ");
+//				return;
+//			}
 
 			// check degrade
 //			if (isDegrade(auth.user)) {
