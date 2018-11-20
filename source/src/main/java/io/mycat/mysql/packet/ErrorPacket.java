@@ -23,76 +23,79 @@
  */
 package io.mycat.mysql.packet;
 
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
- * From server to client in response to command, if error.
- * 
- * <pre>
- * Bytes                       Name
- * -----                       ----
- * 1                           field_count, always = 0xff
- * 2                           errno
- * 1                           (sqlstate marker), always '#'
- * 5                           sqlstate (5 characters)
- * n                           message
- * 
- * &#64;see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Error_Packet
- * </pre>
- * 
- * @author mycat
+ * https://mariadb.com/kb/en/library/err_packet/
+ * @author wuzhihui
+ *
  */
 public class ErrorPacket extends MySQLPacket {
-   
-    private static final byte SQLSTATE_MARKER = (byte) '#';
-    private static final byte[] DEFAULT_SQLSTATE = "HY000".getBytes();
 
-    public byte pkgType = MySQLPacket.ERROR_PACKET;
-    public int errno;
-    public byte mark = SQLSTATE_MARKER;
-    public byte[] sqlState = DEFAULT_SQLSTATE;
-    public String message;
+	private static final byte SQLSTATE_MARKER = (byte) '#';
+	private static final String DEFAULT_SQLSTATE = "HY000";
 
-  
-    public void read(ProxyBuffer byteBuffer) {
-        packetLength =(int) byteBuffer.readFixInt(3);
-        packetId =byteBuffer.readByte();
-        pkgType =byteBuffer.readByte();
-        errno = (int) byteBuffer.readFixInt(2);
-        if ((byteBuffer.writeIndex - byteBuffer.readIndex) >0 && (byteBuffer.getByte(byteBuffer.readIndex) == SQLSTATE_MARKER)) {
-        	byteBuffer.skip(1);
-            sqlState = byteBuffer.readBytes(5);
-        }
-       
-        message = byteBuffer.readEOFString();
-    }
+	public byte pkgType = MySQLPacket.ERROR_PACKET;
+	public int errno;
+	public int stage;
+	public int maxStage;
+	public int progress;
+	public String progress_info;
+	public byte mark = ' ';
+	public String sqlState = DEFAULT_SQLSTATE;
+	public String message;
 
-    public void write(ProxyBuffer buffer){
-        buffer.writeFixInt(3,calcPacketSize());
-        buffer.writeByte(packetId);
-        buffer.writeByte(pkgType);
-        buffer.writeFixInt(2,errno);
-        buffer.writeByte(mark);
-        buffer.writeBytes(sqlState);
-        if (message != null) {
-            buffer.writeEOFString(message);
+	public void read(ProxyBuffer byteBuffer) {
+		packetLength = (int) byteBuffer.readFixInt(3);
+		packetId = byteBuffer.readByte();
+		pkgType = byteBuffer.readByte();
+		errno = (int) byteBuffer.readFixInt(2);
+		if (errno == 0xFFFF) { /* progress reporting */
+			stage = (int) byteBuffer.readFixInt(1);
+			maxStage = (int) byteBuffer.readFixInt(1);
+			progress = (int) byteBuffer.readFixInt(3);
+			progress_info = byteBuffer.readLenencString();
+		} else if (byteBuffer.getByte(byteBuffer.readIndex) == SQLSTATE_MARKER) {
+			byteBuffer.skip(1);
+			mark = SQLSTATE_MARKER;
+			sqlState = byteBuffer.readFixString(5);
+		}
+		message = byteBuffer.readEOFString();
+	}
 
-        }
-    }
+	public void write(ProxyBuffer buffer) {
+		buffer.writeFixInt(3, calcPacketSize());
+		buffer.writeByte(packetId);
+		buffer.writeByte(pkgType);
+		buffer.writeFixInt(2, errno);
+		if (errno == 0xFFFF) { /* progress reporting */
+			buffer.writeFixInt(1, stage);
+			buffer.writeFixInt(1, maxStage);
+			buffer.writeFixInt(3, progress);
+			buffer.writeLenencString(progress_info);
 
-    @Override
-    public int calcPacketSize() {
-        int size = 9;// 1 + 2 + 1 + 5
-        if (message != null) {
-            size += message.length();
-        }
-        return size;
-    }
+		} else if (mark == SQLSTATE_MARKER) {
+			buffer.writeByte(mark);
+			buffer.writeFixString(sqlState);
+		}
+		buffer.writeEOFString(message);
+	}
 
-    @Override
-    protected String getPacketInfo() {
-        return "MySQL Error Packet";
-    }
+	@Override
+	public int calcPacketSize() {
+		int size = 1 + 2;// pkgType+errorcode
+		if (errno == 0xFFFF) { /* progress reporting */
+			size += 1 + 1 + 3 + ProxyBuffer.getLenencLength( progress_info.length())+progress_info.length();
+		} else if (mark == SQLSTATE_MARKER) {
+			size += 1 + 5;// mark+sqlstate
+		}
+		size += message.length();
+		return size;
+	}
+
+	@Override
+	protected String getPacketInfo() {
+		return "MySQL Error Packet";
+	}
 
 }
