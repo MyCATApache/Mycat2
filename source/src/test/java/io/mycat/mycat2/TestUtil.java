@@ -3,7 +3,12 @@ package io.mycat.mycat2;
 import io.mycat.mysql.packet.*;
 import io.mycat.proxy.ProxyBuffer;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 
 /**
  * cjw
@@ -71,5 +76,43 @@ public class TestUtil {
         ProxyBuffer buffer = exampleBuffer();
         rowDataPacket.write(buffer);
         return buffer;
+    }
+    
+    /**
+     * yushuozhu
+     * 1289303556@qq.com
+     * 
+     * Convert hex string to byte[]
+     * 
+     * @param hex stream files File path
+     * @return byte[]
+     */
+    public static byte[] hexStringToBytes(String filePath) {
+      
+      try {
+        RandomAccessFile fos = new RandomAccessFile(filePath,"rw");
+        FileChannel fc = fos.getChannel();
+        final MappedByteBuffer mbb = fc.map(FileChannel.MapMode.READ_WRITE, 0, fos.length());
+        
+        byte[] bytes1 = new byte[(int) fos.length()];
+        for (int i = 0; i < fos.length(); i++) {  
+            bytes1[i] = mbb.get(i);
+        } 
+        String hexString = new String(bytes1);
+        byte[] bytes = new byte[hexString.length() / 2];
+        for (int i = 0; i < hexString.length() / 2; i++) {
+          String temp = hexString.substring(i * 2, (i + 1) * 2);
+          byte v = (byte) Integer.parseInt(temp, 16);
+          bytes[i] = v;
+        } 
+        return bytes;
+      } catch (NumberFormatException e) {
+        e.printStackTrace();
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      return null;
     }
 }
