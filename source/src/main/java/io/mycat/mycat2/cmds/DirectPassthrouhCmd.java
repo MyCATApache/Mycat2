@@ -59,17 +59,15 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         ProxyBuffer curBuffer = session.proxyBuffer;
         while (session.isResolveMySQLPackageFinished()) {
             CurrPacketType pkgTypeEnum = session.resolveCrossBufferMySQLPackage();
-            if (CurrPacketType.Full == pkgTypeEnum) {
+            if (CurrPacketType.Full == pkgTypeEnum||CurrPacketType.FinishedCrossBufferPacket == pkgTypeEnum) {
                 isCommandFinished = MySQLProxyStateMHepler.on(mycat.responseStateMachine, (byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
                 session.setIdle(!mycat.responseStateMachine.isInteractive());
-            } else if (CurrPacketType.LongHalfPacket == pkgTypeEnum) {
-                isCommandFinished = MySQLProxyStateMHepler.on(mycat.responseStateMachine, (byte) session.curMSQLPackgInf.pkgType, curBuffer, session);
-                session.setIdle(!mycat.responseStateMachine.isInteractive());
-                session.forceCrossBuffer();
+            } else if (CurrPacketType.LongHalfPacket == pkgTypeEnum){
+                session.forceCrossBuffer();//其中这里出现错误用法抛异常
                 break;
-            } else if (CurrPacketType.ShortHalfPacket == pkgTypeEnum ||
-                    CurrPacketType.RestCrossBufferPacket == pkgTypeEnum ||
-                    CurrPacketType.FinishedCrossBufferPacket == pkgTypeEnum) {
+            }else if (CurrPacketType.RestCrossBufferPacket == pkgTypeEnum){
+                break;
+            } else if (CurrPacketType.ShortHalfPacket == pkgTypeEnum){
                 break;
             }
         }

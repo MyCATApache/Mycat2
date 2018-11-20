@@ -110,7 +110,8 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
 
     @Override
     public void onWriteFinished(MycatSession session) throws IOException {
-        // 交给SQLComand去处理
+    	logger.debug("write finished  {}",this);
+    	// 交给SQLComand去处理
         if (session.curSQLCommand.onFrontWriteFinished(session)) {
             session.curSQLCommand.clearFrontResouces(session, false);
         }

@@ -53,6 +53,7 @@ public interface MySQLCommand  {
 	 */
 	public boolean procssSQL(MycatSession session) throws IOException;
 
+	public static final byte MYCAT_SQL = (byte) 43;
 	/**
 	 * 当前为load data的响应包
 	 */

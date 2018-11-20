@@ -64,7 +64,8 @@ public class ErrorPacket extends MySQLPacket {
         	byteBuffer.skip(1);
             sqlState = byteBuffer.readBytes(5);
         }
-        message = byteBuffer.readNULString();
+       
+        message = byteBuffer.readEOFString();
     }
 
     public void write(ProxyBuffer buffer){
@@ -75,7 +76,7 @@ public class ErrorPacket extends MySQLPacket {
         buffer.writeByte(mark);
         buffer.writeBytes(sqlState);
         if (message != null) {
-            buffer.writeNULString(message);
+            buffer.writeEOFString(message);
 
         }
     }
@@ -84,7 +85,7 @@ public class ErrorPacket extends MySQLPacket {
     public int calcPacketSize() {
         int size = 9;// 1 + 2 + 1 + 5
         if (message != null) {
-            size += message.length()+1;
+            size += message.length();
         }
         return size;
     }

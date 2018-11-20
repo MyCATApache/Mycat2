@@ -1,16 +1,5 @@
 package io.mycat.mycat2;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.DNBean;
@@ -27,12 +16,23 @@ import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
+import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 前端连接会话
@@ -357,6 +357,14 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 		return backendName;
 	}
+	public void responseOKOrError(byte[] pkg) throws IOException {
+		this.responseStateMachine.in(MySQLCommand.MYCAT_SQL);
+		super.responseOKOrError(pkg);
+	}
+	public void responseOKOrError(MySQLPacket pkg) {
+		this.responseStateMachine.in(MySQLCommand.MYCAT_SQL);
+		super.responseOKOrError(pkg);
+	}
 
 	/**
 	 * 将后端连接放入到后端连接缓存中
@@ -449,7 +457,6 @@ public class MycatSession extends AbstractMySQLSession {
 			reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
 		}
 	}
-
 	/**
 	 * 获取指定的复制组
 	 *

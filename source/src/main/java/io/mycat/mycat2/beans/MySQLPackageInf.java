@@ -4,6 +4,7 @@ package io.mycat.mycat2.beans;
  * 表示MySQL 数据报文的信息
  *
  * @author wuzhihui
+ * @author cjw
  */
 public class MySQLPackageInf {
     public int pkgType;
@@ -17,14 +18,35 @@ public class MySQLPackageInf {
     public int remainsBytes;
 
     public boolean isFieldsCount() {
-        return ((this.pkgLength == 5||this.pkgLength == 7||this.pkgLength == 8||this.pkgLength == 13)&&this.pkgType!=0) && !isOkPacket();
+        return ((this.pkgLength == 5 || this.pkgLength == 7 || this.pkgLength == 8 || this.pkgLength == 13) && this.pkgType != 0) && !isOkPacket();
     }
+
     public boolean isERRPacket() {
         return (this.pkgType == 0xff);
     }
 
     public boolean isOkPacket() {
         return (this.pkgType == 0 && this.pkgLength > 7) || (this.pkgType == 0xfe && !isEOFPacket());
+    }
+
+    public boolean notOkEofErrPacket() {
+        return !isOkPacket() && !isEOFPacket() && !isERRPacket();
+    }
+
+    public boolean isCompletionPacket() {
+        return isOkPacket() || isEOFPacket();
+    }
+
+    public boolean maybePrepareOkPacket() {
+        return (this.pkgType == 0 && this.pkgLength == 12);
+    }
+
+    public boolean maybeColumnDefinition41() {
+        return (this.pkgType == 'd' && this.pkgLength > 21);
+    }
+
+    public boolean isLocalInfileRequest() {
+        return (this.pkgType == 0xfb && this.pkgLength > 6);
     }
 
     public boolean isEOFPacket() {
