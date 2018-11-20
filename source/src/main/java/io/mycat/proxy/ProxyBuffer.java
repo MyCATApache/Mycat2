@@ -352,20 +352,23 @@ public class ProxyBuffer {
         return this;
     }
 
-    public ProxyBuffer putLenencInt(int index, long val) {
+    public int putLenencIntReLenencLen(int index, long val) {
         if (val < 251) {
             putByte(index, (byte) val);
+            return 1;
         } else if (val >= 251 && val < (1 << 16)) {
             putByte(index, (byte) 0xfc);
             putFixInt(index + 1, 2, val);
+            return 3;
         } else if (val >= (1 << 16) && val < (1 << 24)) {
             putByte(index, (byte) 0xfd);
             putFixInt(index + 1, 3, val);
+            return 4;
         } else {
             putByte(index, (byte) 0xfe);
             putFixInt(index + 1, 8, val);
+            return 9;
         }
-        return this;
     }
 
     public ProxyBuffer writeLenencInt(long val) {
@@ -411,16 +414,14 @@ public class ProxyBuffer {
     }
 
     public ProxyBuffer putLenencString(int index, String val) {
-        byte[] bytes = val.getBytes();
-        this.putLenencInt(index, bytes.length);
-        int lenencLen = getLenencLength(bytes.length);
+        byte[] bytes = val.getBytes();;
+        int lenencLen = this.putLenencIntReLenencLen(index, bytes.length);
         this.putFixString(index + lenencLen, bytes);
         return this;
     }
 
-    public ProxyBuffer putLenencString(int index, byte[] val) {
-        this.putLenencInt(index, val.length);
-        int lenencLen = getLenencLength(val.length);
+    public ProxyBuffer putLenencString(int index, byte[] val) { ;
+        int lenencLen = this.putLenencIntReLenencLen(index, val.length);
         this.putFixString(index + lenencLen, val);
         return this;
     }
@@ -506,8 +507,7 @@ public class ProxyBuffer {
     }
 
     public ProxyBuffer writeLenencBytes(byte[] bytes) {
-        putLenencInt(writeIndex, bytes.length);
-        int offset = getLenencLength(bytes.length);
+        int offset =  this.putLenencIntReLenencLen(writeIndex, bytes.length);
         putBytes(writeIndex + offset, bytes);
         writeIndex += offset + bytes.length;
         return this;
@@ -574,8 +574,7 @@ public class ProxyBuffer {
     }
 
     public ProxyBuffer putLenencBytes(int index, byte[] bytes) {
-        putLenencInt(index, bytes.length);
-        int offset = getLenencLength(bytes.length);
+        int offset = this.putLenencIntReLenencLen(index, bytes.length);
         putBytes(index + offset, bytes);
         return this;
     }
