@@ -19,7 +19,7 @@ public class PreparedOKPacketTest {
     @Test
     public void testReadPreparedOKPacket() {
         PreparedOKPacket preparedOKPacket = new PreparedOKPacket();
-        preparedOKPacket.readPayload(ofBuffer(pkt17));
+        preparedOKPacket.read(ofBuffer(pkt17));
         Assert.assertEquals(0x00, preparedOKPacket.status);
         Assert.assertEquals(1, preparedOKPacket.columnsNumber);
         Assert.assertEquals(2, preparedOKPacket.parametersNumber);
@@ -28,9 +28,20 @@ public class PreparedOKPacketTest {
     }
 
     @Test
+    public void testDo1Packet() {
+        PreparedOKPacket preparedOKPacket = new PreparedOKPacket();
+        preparedOKPacket.read(ofBuffer(do1Packet));
+        Assert.assertEquals(0x00, preparedOKPacket.status);
+        Assert.assertEquals(0, preparedOKPacket.columnsNumber);
+        Assert.assertEquals(0, preparedOKPacket.parametersNumber);
+        Assert.assertEquals(0x00, preparedOKPacket.filler);
+        Assert.assertEquals(0x00, preparedOKPacket.warningCount);
+    }
+
+    @Test
     public void testWritePreparedOKPacket() {
         PreparedOKPacket fact = new PreparedOKPacket();
-        fact.readPayload(ofBuffer(pkt17));
+        fact.read(ofBuffer(pkt17));
 
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocate(pkt17.length));
         fact.write(buffer);
@@ -40,9 +51,7 @@ public class PreparedOKPacketTest {
 
         int[] ints = Arrays.copyOf(pkt17, pkt17.length);
         Assert.assertArrayEquals(of(ints),array);
-        System.out.println(fact.calcPacketSize());
         System.out.println(pkt17.length);
-        Assert.assertEquals(fact.calcPacketSize()+4, pkt17.length);
     }
 
     /*
@@ -58,6 +67,8 @@ public class PreparedOKPacketTest {
             0x0c,0x3f,0x00,0x00,0x00,0x00,0x00,0xfd,0x80,0x00,0x1f,0x00,0x00,0x05,0x00,0x00,        /* .?.............. */
             0x06,0xfe,0x00,0x00,0x02,0x00
     };
+
+    static int[] do1Packet = {
+            0x0c,0x00,0x00,0x01,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+    };
 }
-
-
