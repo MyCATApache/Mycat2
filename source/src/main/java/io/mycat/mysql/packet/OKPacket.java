@@ -23,6 +23,7 @@
  */
 package io.mycat.mysql.packet;
 
+import io.mycat.mysql.Capabilities;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.BufferUtil;
 
@@ -50,7 +51,7 @@ public final class OKPacket extends MySQLPacket {
 	public byte[] message;
 	NewHandshakePacket.CapabilityFlags capabilityFlags;
 
-	public OKPacket() { }
+	public OKPacket() { capabilityFlags = new NewHandshakePacket.CapabilityFlags(Capabilities.CLIENT_PROTOCOL_41); }
 
 	public OKPacket(int capabilities) {
 		capabilityFlags = new NewHandshakePacket.CapabilityFlags(capabilities);
