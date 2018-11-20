@@ -115,4 +115,12 @@ public class TestUtil {
       }
       return null;
     }
+    
+    
+    public static void main(String[] args) {
+      /**
+       * F:/mycat/hex.txt内容为hex流    0700000200000002000000
+       */
+      System.out.println(new String(hexStringToBytes("F:/mycat/hex.txt")));
+    }
 }
