@@ -3,6 +3,10 @@ package io.mycat.mysql.packet;
 import io.mycat.mysql.CapabilityFlags;
 import io.mycat.proxy.ProxyBuffer;
 
+/**
+ * cjw
+ * 294712221@qq.com
+ */
 public class NewHandshakePacket {
     public byte packetId;
     public int protocolVersion;
