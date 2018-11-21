@@ -46,7 +46,6 @@ public final class OKPacket extends MySQLPacket {
 	public int serverStatus;
 	public int warningCount;
 	public byte[] statusInfo;
-//	public byte[] sessionStateChanges;
 	public SessionStateInfo sessionStateChanges;
 	public byte[] message;
 	NewHandshakePacket.CapabilityFlags capabilityFlags;
@@ -108,7 +107,6 @@ public final class OKPacket extends MySQLPacket {
 				if ((serverStatus & SERVER_SESSION_STATE_CHANGED) != 0) {
 					sessionStateChanges = new SessionStateInfo();
 					sessionStateChanges.read(buffer);
-//					sessionStateChanges = buffer.readLenencBytes();
 				}
 			} else {
 				int remainLength = startIndex + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
