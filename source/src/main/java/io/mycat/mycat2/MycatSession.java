@@ -14,12 +14,15 @@ import io.mycat.mycat2.sqlparser.TokenHash;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
+import io.mycat.mysql.CapabilityFlags;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.NewHandshakePacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.util.CharsetUtil;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
@@ -132,6 +135,8 @@ public class MycatSession extends AbstractMySQLSession {
 		flag |= Capabilities.CLIENT_TRANSACTIONS;
 		// flag |= ServerDefs.CLIENT_RESERVED;
 		flag |= Capabilities.CLIENT_SECURE_CONNECTION;
+		flag |= Capabilities.CLIENT_PLUGIN_AUTH;
+		flag |= Capabilities.CLIENT_CONNECT_ATTRS;
 		return flag;
 	}
 
@@ -141,8 +146,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @throws IOException
 	 */
 	public void sendAuthPackge() throws IOException {
-		// 生成认证数据
-		byte[] rand1 = RandomUtil.randomBytes(8);
+	    byte[] rand1 = RandomUtil.randomBytes(8);
 		byte[] rand2 = RandomUtil.randomBytes(12);
 
 		// 保存认证数据
@@ -151,19 +155,21 @@ public class MycatSession extends AbstractMySQLSession {
 		System.arraycopy(rand2, 0, seed, rand1.length, rand2.length);
 		this.seed = seed;
 
-		// 发送握手数据包
-		HandshakePacket hs = new HandshakePacket();
-		hs.packetId = 0;
-		hs.protocolVersion = Version.PROTOCOL_VERSION;
-		hs.serverVersion = Version.SERVER_VERSION;
-		hs.threadId = this.getSessionId();
-		hs.seed = rand1;
-		hs.serverCapabilities = getServerCapabilities();
-		// hs.serverCharsetIndex = (byte) (charsetIndex & 0xff);
-		hs.serverStatus = 2;
-		hs.restOfScrambleBuff = rand2;
+        // 发送握手数据包
+        NewHandshakePacket hs = new NewHandshakePacket();
+        hs.packetId = 0;
+        hs.protocolVersion = Version.PROTOCOL_VERSION;
+        hs.serverVersion = new String(Version.SERVER_VERSION);
+        hs.connectionId = getSessionId();
+		hs.authPluginDataPartOne = new String(rand1);
+		hs.capabilities = new CapabilityFlags(getServerCapabilities());
+		hs.hasPartTwo = true;
+		hs.characterSet = 8;
+		hs.statusFlags = 2;
+		hs.authPluginDataLen = 21; // 有插件的话，总长度必是21, seed
+		hs.authPluginDataPartTwo = new String(rand2);
+		hs.authPluginName = "mysql_native_password";
 		hs.write(proxyBuffer);
-		// 设置frontBuffer 为读取状态
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
 		this.writeToChannel();
