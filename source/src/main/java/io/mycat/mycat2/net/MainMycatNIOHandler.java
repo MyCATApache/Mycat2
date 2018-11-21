@@ -1,7 +1,7 @@
 package io.mycat.mycat2.net;
 
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.LoadDataState;
+import io.mycat.mycat2.cmds.LoadDataCommand;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
@@ -29,11 +29,11 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
     public void onSocketRead(final MycatSession session) throws IOException {
         boolean readed = session.readFromChannel();
         if (!readed) return;
-        if (session.loadDataStateMachine == LoadDataState.CLIENT_2_SERVER_CONTENT_FILENAME) {
+        if (session.curSQLCommand == LoadDataCommand.INSTANCE) {
             resolveLoadData(session);
             return;
         } else {
-            CurrPacketType currPacketType = session.resolveMySQLPackage(false, false);
+            CurrPacketType currPacketType = session.resolveMySQLPackage(false, true);
             if (CurrPacketType.Full == currPacketType) {
                 session.changeToDirectIfNeed();
             } else if (CurrPacketType.LongHalfPacket == currPacketType || CurrPacketType.ShortHalfPacket == currPacketType) {

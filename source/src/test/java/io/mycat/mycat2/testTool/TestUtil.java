@@ -1,15 +1,82 @@
-package io.mycat.mycat2;
+package io.mycat.mycat2.testTool;
 
 import io.mycat.mysql.packet.*;
 import io.mycat.proxy.ProxyBuffer;
+import sun.nio.ch.SelectorProviderImpl;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.nio.channels.spi.AbstractSelectableChannel;
+import java.nio.channels.spi.AbstractSelector;
+import java.nio.channels.spi.SelectorProvider;
+import java.util.Set;
 
 /**
  * cjw
  * 294712221@qq.com
  */
 public class TestUtil {
+    public static SelectorProvider mockSelectorProvider(){
+        SelectorProviderImpl s = new SelectorProviderImpl(){
+            @Override
+            public AbstractSelector openSelector() throws IOException {
+                return null;
+            }
+        };
+        return s;
+    }
+
+    public static SocketChannel mockSocketChannel(SelectorProvider selectorProvider,ByteBuffer readBuffer,ByteBuffer writeBuffer){
+        return new MockSocketChannel(selectorProvider,readBuffer,writeBuffer);
+    }
+
+    public static Selector mockSelector(SelectorProvider selectorProvider ){
+        Selector mock = new AbstractSelector(selectorProvider) {
+            @Override
+            protected void implCloseSelector() throws IOException {
+
+            }
+
+            @Override
+            protected SelectionKey register(AbstractSelectableChannel ch, int ops, Object att) {
+                return null;
+            }
+
+            @Override
+            public Set<SelectionKey> keys() {
+                return null;
+            }
+
+            @Override
+            public Set<SelectionKey> selectedKeys() {
+                return null;
+            }
+
+            @Override
+            public int selectNow() throws IOException {
+                return 0;
+            }
+
+            @Override
+            public int select(long timeout) throws IOException {
+                return 0;
+            }
+
+            @Override
+            public int select() throws IOException {
+                return 0;
+            }
+
+            @Override
+            public Selector wakeup() {
+                return null;
+            }
+        };
+        return mock;
+    }
     public static byte[] of(int... i) {
         byte[] bytes = new byte[i.length];
         int j = 0;
