@@ -40,6 +40,9 @@ import java.util.Map;
  *          lenenc-str     value
  *         if-more data in 'length of all key-values', more keys and value pairs
  *      }
+ *
+ *  关于字符集：https://dev.mysql.com/doc/refman/8.0/en/charset-metadata.html
+ *  大部分都是 utf8,且在连接前都是 utf8.几乎上不用设置编码
  * </pre>
  * @author : zhuqiang
  * @date : 2018/11/14 21:40
@@ -50,11 +53,11 @@ public class NewAuthPacket {
     public int maxPacketSize;
     public byte characterSet;
     public static final byte[] RESERVED = new byte[23];
-    public byte[] username;
+    public String username;
     public byte[] password;
-    public byte[] database;
-    public byte[] authPluginName;
-    public Map<String, byte[]> clientConnectAttrs;
+    public String database;
+    public String authPluginName;
+    public Map<String, String> clientConnectAttrs;
 
     public void read(ProxyBuffer buffer) {
         int packetLength = (int) buffer.readFixInt(3);
@@ -67,7 +70,7 @@ public class NewAuthPacket {
         maxPacketSize = (int) buffer.readFixInt(4);
         characterSet = buffer.readByte();
         buffer.readBytes(RESERVED.length);
-        username = buffer.readNULStringBytes();
+        username = buffer.readNULString();
         if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)
                 == Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
             password = buffer.readFixStringBytes((int) buffer.readLenencInt());
@@ -80,11 +83,11 @@ public class NewAuthPacket {
         }
 
         if ((capabilities & Capabilities.CLIENT_CONNECT_WITH_DB) == Capabilities.CLIENT_CONNECT_WITH_DB) {
-            database = buffer.readNULStringBytes();
+            database = buffer.readNULString();
         }
 
         if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH) == Capabilities.CLIENT_PLUGIN_AUTH) {
-            authPluginName = buffer.readNULStringBytes();
+            authPluginName = buffer.readNULString();
         }
 
         if ((capabilities & Capabilities.CLIENT_CONNECT_ATTRS) == Capabilities.CLIENT_CONNECT_ATTRS) {
@@ -94,13 +97,20 @@ public class NewAuthPacket {
             }
             int count = 0;
             while (count < kvAllLength) {
-                byte[] k = buffer.readLenencStringBytes();
-                byte[] v = buffer.readLenencStringBytes();
-                count += k.length;
-                count += v.length;
-                count += calcLenencLength(k.length);
-                count += calcLenencLength(v.length);
-                clientConnectAttrs.put(new String(k), v);
+//                byte[] k = buffer.readLenencStringBytes();
+//                byte[] v = buffer.readLenencStringBytes();
+//                count += k.length;
+//                count += v.length;
+//                count += calcLenencLength(k.length);
+//                count += calcLenencLength(v.length);
+//                clientConnectAttrs.put(new String(k), new String(v));
+                String k = buffer.readLenencString();
+                String v = buffer.readLenencString();
+                count += k.length();
+                count += v.length();
+                count += calcLenencLength(k.length());
+                count += calcLenencLength(v.length());
+                clientConnectAttrs.put(k, v);
             }
         }
     }
@@ -145,9 +155,9 @@ public class NewAuthPacket {
         if ((capabilities & Capabilities.CLIENT_CONNECT_ATTRS) == Capabilities.CLIENT_CONNECT_ATTRS
                 && clientConnectAttrs != null && !clientConnectAttrs.isEmpty()) {
             int kvAllLength = 0;
-            for (Map.Entry<String, byte[]> item : clientConnectAttrs.entrySet()) {
+            for (Map.Entry<String, String> item : clientConnectAttrs.entrySet()) {
                 kvAllLength += item.getKey().length();
-                kvAllLength += item.getValue().length;
+                kvAllLength += item.getValue().length();
             }
             buffer.writeLenencInt(kvAllLength);
             clientConnectAttrs.forEach((k, v) -> buffer.writeLenencString(k).writeLenencString(v));
@@ -178,10 +188,10 @@ public class NewAuthPacket {
                 ", capabilities=" + capabilities +
                 ", maxPacketSize=" + maxPacketSize +
                 ", characterSet=" + characterSet +
-                ", username=" + Arrays.toString(username) +
+                ", username='" + username + '\'' +
                 ", password=" + Arrays.toString(password) +
-                ", database=" + Arrays.toString(database) +
-                ", authPluginName=" + Arrays.toString(authPluginName) +
+                ", database='" + database + '\'' +
+                ", authPluginName='" + authPluginName + '\'' +
                 ", clientConnectAttrs=" + clientConnectAttrs +
                 '}';
     }
