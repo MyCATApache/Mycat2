@@ -59,15 +59,9 @@ public class LoadDataCommand implements MySQLCommand {
     }
 
 
-    @Override
-    public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
-        // TODO Auto-generated method stub
-
-    }
-
 
     @Override
-    public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
+    public void clearResouces(MycatSession session, boolean sessionCLosed) {
         // TODO Auto-generated method stub
 
     }
@@ -118,7 +112,7 @@ public class LoadDataCommand implements MySQLCommand {
                 session.proxyBuffer.flip();
                 session.takeOwner(SelectionKey.OP_READ);
                 session.loadDataStateMachine = NOT_LOAD_DATA;
-                session.curSQLCommand = DirectPassthrouhCmd.INSTANCE;
+                session.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
                 return true;
             default:
                 throw new RuntimeException("unknown state!!!");
