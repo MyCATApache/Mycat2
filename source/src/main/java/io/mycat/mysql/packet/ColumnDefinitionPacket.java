@@ -4,12 +4,14 @@ import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.BufferUtil;
 
 /**
- * Created by linxiaofang on 2018/11/13.
+ * <pre>
+ * @see https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnDefinition
+ * </pre>
+ * @author linxiaofang
+ * @date 2018/11/12
  */
 public class ColumnDefinitionPacket extends MySQLPacket {
     private static final byte[] DEFAULT_CATALOG = "def".getBytes();
-    private static final byte NEXT_LENGTH = 0x0c;
-    private static final byte[] FILLER = { 00, 00 };
 
     public byte[] catalog = DEFAULT_CATALOG;
     public byte[] schema;
@@ -25,12 +27,21 @@ public class ColumnDefinitionPacket extends MySQLPacket {
     public byte decimals;
     public int filler;
     public byte[] defaultValues;
+    public byte command;
 
-    public void readPayload(ProxyBuffer buffer) {
+    public ColumnDefinitionPacket(byte cmd) {
+        command = cmd;
+    }
+
+    public void read(ProxyBuffer buffer) {
         // packet length:3
         packetLength = (int)buffer.readFixInt(3);
         // packet number:1
         packetId = buffer.readByte();
+        readPayload(buffer);
+    }
+
+    public void readPayload(ProxyBuffer buffer) {
         catalog = buffer.readLenencStringBytes();
         schema = buffer.readLenencStringBytes();
         table = buffer.readLenencStringBytes();
@@ -45,9 +56,9 @@ public class ColumnDefinitionPacket extends MySQLPacket {
         flags = (int)buffer.readFixInt(2);
         decimals = buffer.readByte();
         filler = (int)buffer.readFixInt(2);
-//        if (!buffer.readFinished()) {
-//            defaultValues = buffer.readLenencStringBytes();
-//        }
+        if (command == MySQLPacket.COM_FIELD_LIST) {
+            defaultValues = buffer.readLenencStringBytes();
+        }
     }
 
     @Override
@@ -70,9 +81,9 @@ public class ColumnDefinitionPacket extends MySQLPacket {
         buffer.writeFixInt(2, flags);
         buffer.writeByte(decimals);
         buffer.writeFixInt(2, filler);
-//        if (defaultValues != null) {
-//            buffer.writeLenencString(defaultValues);
-//        }
+        if (defaultValues != null) {
+            buffer.writeLenencString(defaultValues);
+        }
     }
 
     @Override
@@ -86,9 +97,9 @@ public class ColumnDefinitionPacket extends MySQLPacket {
         size += (name == null ? 1 : BufferUtil.getLength(name));
         size += (orgName == null ? 1 : BufferUtil.getLength(orgName));
         size += 13;
-//        if (defaultValues != null) {
-//            size += BufferUtil.getLength(defaultValues);
-//        }
+        if (defaultValues != null) {
+            size += BufferUtil.getLength(defaultValues);
+        }
         return size;
     }
 

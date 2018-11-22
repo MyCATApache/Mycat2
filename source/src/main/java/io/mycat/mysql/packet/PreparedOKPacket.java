@@ -43,11 +43,15 @@ public class PreparedOKPacket extends MySQLPacket {
     public ColumnDefinitionPacket[] columnDefinitions;
     public EOFPacket columnEOFPacket;
 
-    public void readPayload(ProxyBuffer buffer) {
+    public void read(ProxyBuffer buffer) {
         // packet length:3
         packetLength = (int)buffer.readFixInt(3);
         // packet number:1
         packetId = buffer.readByte();
+        readPayload(buffer);
+    }
+
+    public void readPayload(ProxyBuffer buffer) {
         // payload
         status = buffer.readByte();
         statementId = buffer.readFixInt(4);
@@ -58,8 +62,8 @@ public class PreparedOKPacket extends MySQLPacket {
         if (parametersNumber > 0) {
             parameterDefinitions = new ColumnDefinitionPacket[parametersNumber];
             for (int i=0; i<parametersNumber; i++) {
-                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket();
-                columnDefinition.readPayload(buffer);
+                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLPacket.COM_STMT_PREPARE);
+                columnDefinition.read(buffer);
                 parameterDefinitions[i] = columnDefinition;
             }
             parameterEOFPacket = new EOFPacket();
@@ -68,8 +72,8 @@ public class PreparedOKPacket extends MySQLPacket {
         if (columnsNumber > 0) {
             columnDefinitions = new ColumnDefinitionPacket[columnsNumber];
             for (int i=0; i<columnsNumber; i++) {
-                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket();
-                columnDefinition.readPayload(buffer);
+                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLPacket.COM_STMT_PREPARE);
+                columnDefinition.read(buffer);
                 columnDefinitions[i] = columnDefinition;
             }
             columnEOFPacket = new EOFPacket();
@@ -102,17 +106,7 @@ public class PreparedOKPacket extends MySQLPacket {
 
     @Override
     public int calcPacketSize() {
-        int size = 0;
-        size += 12;
-        for (ColumnDefinitionPacket packet : parameterDefinitions) {
-            size += packet.calcPacketSize() + 4;
-        }
-        size += parameterEOFPacket.calcPacketSize()+4;
-        for (ColumnDefinitionPacket packet : columnDefinitions) {
-            size += packet.calcPacketSize() + 4;
-        }
-        size += columnEOFPacket.calcPacketSize()+4;
-        return size;
+        return 12;
     }
 
     @Override
