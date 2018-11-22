@@ -1,31 +1,5 @@
 package io.mycat.mycat2;
 
-import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.conf.DNBean;
-import io.mycat.mycat2.beans.conf.SchemaBean;
-import io.mycat.mycat2.cmds.LoadDataState;
-import io.mycat.mycat2.cmds.judge.MySQLPacketPrintCallback;
-import io.mycat.mycat2.cmds.judge.MySQLProxyStateM;
-import io.mycat.mycat2.cmds.strategy.DBInOneServerCmdStrategy;
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
-import io.mycat.mycat2.sqlparser.BufferSQLParser;
-import io.mycat.mycat2.sqlparser.TokenHash;
-import io.mycat.mycat2.tasks.AsynTaskCallBack;
-import io.mycat.mysql.AutoCommit;
-import io.mycat.mysql.Capabilities;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.HandshakePacket;
-import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.buffer.BufferPool;
-import io.mycat.util.ErrorCode;
-import io.mycat.util.ParseUtil;
-import io.mycat.util.RandomUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -33,6 +7,35 @@ import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.MySQLRepBean;
+import io.mycat.mycat2.beans.conf.DNBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mycat2.cmds.LoadDataState;
+import io.mycat.mycat2.cmds.judge.MySQLPacketPrintCallback;
+import io.mycat.mycat2.cmds.judge.MySQLProxyStateM;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import io.mycat.mycat2.sqlparser.BufferSQLParser;
+import io.mycat.mycat2.sqlparser.TokenHash;
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
+import io.mycat.mysql.AutoCommit;
+import io.mycat.mysql.Capabilities;
+import io.mycat.mysql.CapabilityFlags;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.HandshakePacket;
+import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.NewHandshakePacket;
+import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.util.CharsetUtil;
+import io.mycat.util.ErrorCode;
+import io.mycat.util.ParseUtil;
+import io.mycat.util.RandomUtil;
 
 /**
  * 前端连接会话
@@ -68,13 +71,14 @@ public class MycatSession extends AbstractMySQLSession {
 	private ArrayList<MySQLSession> backends = new ArrayList<>(2);
 	private int curBackendIndex = -1;
 	// 所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
-	public MySQLCommand curSQLCommand;
+	private MySQLCommand curSQLCommand;
 	public BufferSQLContext sqlContext = new BufferSQLContext();
 	public SchemaBean mycatSchema;
 	public BufferSQLParser parser = new BufferSQLParser();
 	private byte sqltype;
 	public LoadDataState loadDataStateMachine = LoadDataState.NOT_LOAD_DATA;
 	public MySQLProxyStateM responseStateMachine = new MySQLProxyStateM(new MySQLPacketPrintCallback());
+
 	public byte getSqltype() {
 		return sqltype;
 	}
@@ -87,27 +91,6 @@ public class MycatSession extends AbstractMySQLSession {
 	public MycatSession(BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
 		super(bufPool, nioSelector, frontChannel);
 
-	}
-
-	/**
-	 * 获取sql 类型
-	 *
-	 * @return
-	 */
-	public boolean matchMySqlCommand() {
-		switch (mycatSchema.schemaType) {
-		case DB_IN_ONE_SERVER:
-			return DBInOneServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
-		case DB_IN_MULTI_SERVER:
-			// return
-			// DBINMultiServerCmdStrategy.INSTANCE.matchMySqlCommand(this);
-		case ANNOTATION_ROUTE:
-			// return AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
-			// case SQL_PARSE_ROUTE:
-			//// AnnotateRouteCmdStrategy.INSTANCE.matchMySqlCommand(this);
-		default:
-			throw new InvalidParameterException("mycatSchema type is invalid ");
-		}
 	}
 
 	protected int getServerCapabilities() {
@@ -132,6 +115,8 @@ public class MycatSession extends AbstractMySQLSession {
 		flag |= Capabilities.CLIENT_TRANSACTIONS;
 		// flag |= ServerDefs.CLIENT_RESERVED;
 		flag |= Capabilities.CLIENT_SECURE_CONNECTION;
+		flag |= Capabilities.CLIENT_PLUGIN_AUTH;
+		flag |= Capabilities.CLIENT_CONNECT_ATTRS;
 		return flag;
 	}
 
@@ -141,8 +126,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @throws IOException
 	 */
 	public void sendAuthPackge() throws IOException {
-		// 生成认证数据
-		byte[] rand1 = RandomUtil.randomBytes(8);
+	    byte[] rand1 = RandomUtil.randomBytes(8);
 		byte[] rand2 = RandomUtil.randomBytes(12);
 
 		// 保存认证数据
@@ -151,19 +135,21 @@ public class MycatSession extends AbstractMySQLSession {
 		System.arraycopy(rand2, 0, seed, rand1.length, rand2.length);
 		this.seed = seed;
 
-		// 发送握手数据包
-		HandshakePacket hs = new HandshakePacket();
-		hs.packetId = 0;
-		hs.protocolVersion = Version.PROTOCOL_VERSION;
-		hs.serverVersion = Version.SERVER_VERSION;
-		hs.threadId = this.getSessionId();
-		hs.seed = rand1;
-		hs.serverCapabilities = getServerCapabilities();
-		// hs.serverCharsetIndex = (byte) (charsetIndex & 0xff);
-		hs.serverStatus = 2;
-		hs.restOfScrambleBuff = rand2;
+        // 发送握手数据包
+        NewHandshakePacket hs = new NewHandshakePacket();
+        hs.packetId = 0;
+        hs.protocolVersion = Version.PROTOCOL_VERSION;
+        hs.serverVersion = new String(Version.SERVER_VERSION);
+        hs.connectionId = getSessionId();
+		hs.authPluginDataPartOne = new String(rand1);
+		hs.capabilities = new CapabilityFlags(getServerCapabilities());
+		hs.hasPartTwo = true;
+		hs.characterSet = 8;
+		hs.statusFlags = 2;
+		hs.authPluginDataLen = 21; // 有插件的话，总长度必是21, seed
+		hs.authPluginDataPartTwo = new String(rand2);
+		hs.authPluginName = "mysql_native_password";
 		hs.write(proxyBuffer);
-		// 设置frontBuffer 为读取状态
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
 		this.writeToChannel();
@@ -218,8 +204,8 @@ public class MycatSession extends AbstractMySQLSession {
 	}
 
 	/**
-	 * 绑定后端MySQL会话，同时作为当前的使用的后端连接(current backend)
-	 * 主意：调用后，curBackendIndex会更新为 backend对应的Index！
+	 * 绑定后端MySQL会话，同时作为当前的使用的后端连接(current backend) 主意：调用后，curBackendIndex会更新为
+	 * backend对应的Index！
 	 *
 	 * @param backend
 	 */
@@ -237,7 +223,7 @@ public class MycatSession extends AbstractMySQLSession {
 		} else {
 			unbindMySQLSession(backend);
 		}
-		//调整curBackendIndex
+		// 调整curBackendIndex
 		if (curSession == backend) {
 			this.curBackendIndex = -1;
 		} else if (curSession != null) {
@@ -304,9 +290,9 @@ public class MycatSession extends AbstractMySQLSession {
 				curBackend.change2ReadOpts();
 			} else {
 				curBackend.change2WriteOpts();
-			}	
+			}
 		}
-		
+
 	}
 
 	/**
@@ -357,13 +343,19 @@ public class MycatSession extends AbstractMySQLSession {
 		}
 		return backendName;
 	}
+
 	public void responseOKOrError(byte[] pkg) throws IOException {
 		this.responseStateMachine.in(MySQLCommand.MYCAT_SQL);
 		super.responseOKOrError(pkg);
 	}
+
 	public void responseOKOrError(MySQLPacket pkg) {
 		this.responseStateMachine.in(MySQLCommand.MYCAT_SQL);
 		super.responseOKOrError(pkg);
+	}
+
+	public MySQLCommand getCurSQLCommand() {
+		return curSQLCommand;
 	}
 
 	/**
@@ -378,8 +370,9 @@ public class MycatSession extends AbstractMySQLSession {
 		backend.setIdle(false);
 		this.backends.add(backend);
 		int total = backends.size();
-		logger.debug("add backend connection in mycatSession : {}, totals : {}  ,new bind is : {}", this,total, backend);
-		return total-1;
+		logger.debug("add backend connection in mycatSession : {}, totals : {}  ,new bind is : {}", this, total,
+				backend);
+		return total - 1;
 	}
 
 	/**
@@ -457,6 +450,7 @@ public class MycatSession extends AbstractMySQLSession {
 			reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
 		}
 	}
+
 	/**
 	 * 获取指定的复制组
 	 *
@@ -473,8 +467,7 @@ public class MycatSession extends AbstractMySQLSession {
 	}
 
 	/**
-	 * 从后端连接中获取满足条件的连接 1. 主从节点 2. 空闲节点
-	 * 返回-1，表示没找到，否则对应就是backends.get(i)
+	 * 从后端连接中获取满足条件的连接 1. 主从节点 2. 空闲节点 返回-1，表示没找到，否则对应就是backends.get(i)
 	 */
 	private int findMatchedMySQLSession(MySQLMetaBean targetMetaBean) {
 		int findIndex = -1;
@@ -521,6 +514,12 @@ public class MycatSession extends AbstractMySQLSession {
 		mysql.useSharedBuffer(null);
 		mysql.setCurBufOwner(true); // 设置后端连接 获取buffer 控制权
 		mysql.setIdle(true);
+	}
+
+	public void switchSQLCommand(MySQLCommand newCmd) {
+		logger.debug("{} switch command from {} to  {} ", this, this.curSQLCommand, newCmd);
+		this.curSQLCommand=newCmd;
+
 	}
 
 }

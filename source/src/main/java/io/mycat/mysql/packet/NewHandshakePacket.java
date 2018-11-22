@@ -3,6 +3,10 @@ package io.mycat.mysql.packet;
 import io.mycat.mysql.CapabilityFlags;
 import io.mycat.proxy.ProxyBuffer;
 
+/**
+ * cjw
+ * 294712221@qq.com
+ */
 public class NewHandshakePacket {
     public byte packetId;
     public int protocolVersion;
@@ -45,7 +49,8 @@ public class NewHandshakePacket {
             buffer.skip(10);
             if (capabilities.isCanDo41Anthentication()) {
                 //todo check length in range [13.authPluginDataLen)
-                authPluginDataPartTwo = buffer.readFixString(13);
+//                authPluginDataPartTwo = buffer.readFixString(13);
+                authPluginDataPartTwo = buffer.readNULString();
             }
             if (capabilities.isPluginAuth()) {
                 authPluginName = buffer.readNULString();
@@ -75,7 +80,8 @@ public class NewHandshakePacket {
             buffer.writeReserved(10);
             if (capabilities.isCanDo41Anthentication()) {
                 //todo check length in range [13.authPluginDataLen)
-                buffer.writeFixString(authPluginDataPartTwo);
+//                buffer.writeFixString(authPluginDataPartTwo);
+                buffer.writeNULString(authPluginDataPartTwo);
             }
             if (capabilities.isPluginAuth()) {
                 buffer.writeNULString(this.authPluginName);
@@ -109,7 +115,7 @@ public class NewHandshakePacket {
             if (capabilities.isCanDo41Anthentication()) {
                 //todo check length in range [13.authPluginDataLen)
 //                buffer.writeFixString(authPluginDataPartTwo);
-                size += authPluginDataPartTwo.length();
+                size += authPluginDataPartTwo.length() + 1;
             }
             if (capabilities.isPluginAuth()) {
 //                buffer.writeNULString(this.authPluginName);

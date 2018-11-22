@@ -17,6 +17,10 @@ public class MySQLPackageInf {
      */
     public int remainsBytes;
 
+    /**
+     *  mySQLPackageInf 中的判断方法,不能出现矛盾,即不能出现isFieldsCount又是ok
+     * @return
+     */
     public boolean isFieldsCount() {
         return ((this.pkgLength == 5 || this.pkgLength == 7 || this.pkgLength == 8 || this.pkgLength == 13) && this.pkgType != 0) && !isOkPacket();
     }

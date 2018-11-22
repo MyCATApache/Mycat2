@@ -46,15 +46,15 @@ public class NewAuthPacketTest {
         newAuthPacket.capabilities = capabilities.value;
         newAuthPacket.characterSet = 8;
         newAuthPacket.maxPacketSize = 16 * 1024 * 1024;
-        newAuthPacket.username = "root".getBytes();
+        newAuthPacket.username = "root";
         newAuthPacket.password = passwd("123456");
-        newAuthPacket.database = "db1".getBytes();
-        newAuthPacket.authPluginName = "mysql_native_password".getBytes();
-        HashMap<String, byte[]> clientConnectAttrs = new HashMap<>();
+        newAuthPacket.database = "db1";
+        newAuthPacket.authPluginName = "mysql_native_password";
+        HashMap<String, String> clientConnectAttrs = new HashMap<>();
         newAuthPacket.clientConnectAttrs = clientConnectAttrs;
-        clientConnectAttrs.put("useUnicode", "true".getBytes());
-        clientConnectAttrs.put("characterEncoding", "UTF-8".getBytes());
-        clientConnectAttrs.put("allowMultiQueries", "true".getBytes());
+        clientConnectAttrs.put("useUnicode", "true");
+        clientConnectAttrs.put("characterEncoding", "UTF-8");
+        clientConnectAttrs.put("allowMultiQueries", "true");
 
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocate(1024));
         newAuthPacket.write(buffer);
@@ -79,11 +79,11 @@ public class NewAuthPacketTest {
         Assert.assertEquals(newAuthPacket.maxPacketSize, originAuthPacket.maxPacketSize);
         Assert.assertEquals(newAuthPacket.characterSet, originAuthPacket.characterSet);
         Assert.assertEquals(newAuthPacket.RESERVED, originAuthPacket.RESERVED);
-        Assert.assertArrayEquals(newAuthPacket.username, originAuthPacket.username);
+        Assert.assertEquals(newAuthPacket.username, originAuthPacket.username);
         Assert.assertArrayEquals(newAuthPacket.password, originAuthPacket.password);
-        Assert.assertArrayEquals(newAuthPacket.database, originAuthPacket.database);
-        Assert.assertArrayEquals(newAuthPacket.authPluginName, originAuthPacket.authPluginName);
-        Map<String, byte[]> clientConnectAttrs = originAuthPacket.clientConnectAttrs;
+        Assert.assertEquals(newAuthPacket.database, originAuthPacket.database);
+        Assert.assertEquals(newAuthPacket.authPluginName, originAuthPacket.authPluginName);
+        Map<String, String> clientConnectAttrs = originAuthPacket.clientConnectAttrs;
         newAuthPacket.clientConnectAttrs.forEach((k, v) -> Assert.assertTrue(clientConnectAttrs.containsKey(k)));
     }
 
@@ -151,22 +151,22 @@ public class NewAuthPacketTest {
         Assert.assertEquals(0x003b, newAuthPacket.capabilities >> 16);
         Assert.assertEquals(16777215, newAuthPacket.maxPacketSize);
         Assert.assertEquals(33, newAuthPacket.characterSet);
-        Assert.assertArrayEquals("root".getBytes(), newAuthPacket.username);
+        Assert.assertEquals("root", newAuthPacket.username);
         // 要使用随机数解密才能对比了
 //        Assert.assertArrayEquals("f1b7b5e4d51e6b151ac0ed01c340bd8ea03ba842".getBytes(), newAuthPacket.password);
-        Assert.assertArrayEquals("db1".getBytes(), newAuthPacket.database);
-        Assert.assertArrayEquals("mysql_native_password".getBytes(), newAuthPacket.authPluginName);
-        Map<String, byte[]> clientConnectAttrs = newAuthPacket.clientConnectAttrs;
+        Assert.assertEquals("db1", newAuthPacket.database);
+        Assert.assertEquals("mysql_native_password", newAuthPacket.authPluginName);
+        Map<String, String> clientConnectAttrs = newAuthPacket.clientConnectAttrs;
         Assert.assertTrue(clientConnectAttrs.containsKey("_runtime_version"));
-        Assert.assertArrayEquals("1.8.0_45".getBytes(), clientConnectAttrs.get("_runtime_version"));
+        Assert.assertEquals("1.8.0_45", clientConnectAttrs.get("_runtime_version"));
         Assert.assertTrue(clientConnectAttrs.containsKey("_client_version"));
-        Assert.assertArrayEquals("5.1.34".getBytes(), clientConnectAttrs.get("_client_version"));
+        Assert.assertEquals("5.1.34", clientConnectAttrs.get("_client_version"));
         Assert.assertTrue(clientConnectAttrs.containsKey("_client_name"));
-        Assert.assertArrayEquals("MySQL Connector Java".getBytes(), clientConnectAttrs.get("_client_name"));
+        Assert.assertEquals("MySQL Connector Java", clientConnectAttrs.get("_client_name"));
         Assert.assertTrue(clientConnectAttrs.containsKey("_client_license"));
-        Assert.assertArrayEquals("GPL".getBytes(), clientConnectAttrs.get("_client_license"));
+        Assert.assertEquals("GPL", clientConnectAttrs.get("_client_license"));
         Assert.assertTrue(clientConnectAttrs.containsKey("_runtime_vendor"));
-        Assert.assertArrayEquals("Oracle Corporation".getBytes(), clientConnectAttrs.get("_runtime_vendor"));
+        Assert.assertEquals("Oracle Corporation", clientConnectAttrs.get("_runtime_vendor"));
     }
 
     public byte[] build() {

@@ -1,6 +1,9 @@
 package io.mycat.mycat2.e2e;
 
+import java.sql.ResultSet;
+
 import org.junit.Assert;
+import org.junit.Test;
 
 /**
  * @author : zhuqiang
@@ -49,4 +52,95 @@ public class DataDefinitionSQLTest extends BaseSQLTest {
             Assert.assertFalse(flag);
         });
     }
+    
+    
+    
+    /**
+	 * UNINSTALL PLUGIN
+	 */
+    public void uninstallPlugin() {
+	    using(c -> {
+	        int resultSet = c.createStatement().executeUpdate("UNINSTALL PLUGIN validate_password");
+	        Assert.assertEquals(0, resultSet);
+	    });
+    }
+    
+    /**
+	 * INSTALL PLUGIN
+	 */
+    public void installPlugin() {
+	    using(c -> {
+	        int resultSet = c.createStatement().executeUpdate("INSTALL PLUGIN validate_password SONAME 'validate_password.dll'");
+	        Assert.assertEquals(0, resultSet);
+	    });
+    }
+    
+    
+    /**
+     * SHOW PLUGINS
+     */
+    public void showPlugins() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW PLUGINS");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    
+    
+    /**
+	 * CREATE EVENT
+	 */
+    public void createEvent() {
+	    using(c -> {
+	        int resultSet = c.createStatement().executeUpdate("CREATE EVENT travelrecord_event ON SCHEDULE EVERY 10 SECOND DO INSERT INTO travelrecord(user_id,traveldate,fee,days) VALUES(5,NOW(),6,7)");
+	        Assert.assertEquals(0, resultSet);
+	    });
+    }
+    
+    
+    /**
+     * SHOW CREATE EVENT
+     */
+    public void showCreateEvent() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW CREATE EVENT travelrecord_event");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    
+    /**
+   	 * ALTER EVENT
+   	 */
+   public void alterEvent() {
+    using(c -> {
+        int resultSet = c.createStatement().executeUpdate("ALTER EVENT travelrecord_event ON SCHEDULE EVERY 10 SECOND DO INSERT INTO travelrecord(user_id,traveldate,fee,days) VALUES(6,NOW(),7,8)");
+        Assert.assertEquals(0, resultSet);
+    });
+   }
+       
+       
+       
+     /**
+   	  * DROP EVENT
+   	  */
+	  public void dropEvent() {
+	    using(c -> {
+	        int resultSet = c.createStatement().executeUpdate("DROP EVENT IF EXISTS travelrecord_event");
+	        Assert.assertEquals(0, resultSet);
+	    });
+	  }
+	  
+	  
+	/**
+	 * ALTER DATABASE
+	 */
+   public void alterDatabase() {
+    using(c -> {
+        int resultSet = c.createStatement().executeUpdate("ALTER DATABASE db1 DEFAULT CHARACTER SET = utf8mb4");
+        Assert.assertEquals(0, resultSet);
+    });
+   }
+    
 }
