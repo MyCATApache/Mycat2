@@ -47,15 +47,11 @@ public class SQLAnnotationCmd implements MySQLCommand {
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
-		sqlAnnoChain.next().clearFrontResouces(session, sessionCLosed);
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
+		sqlAnnoChain.next().clearResouces(session, sessionCLosed);
 	}
 
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		sqlAnnoChain.next().clearBackendResouces(session, sessionCLosed);
-	}
-
+	
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {		
 		return sqlAnnoChain.next().procssSQL(session);

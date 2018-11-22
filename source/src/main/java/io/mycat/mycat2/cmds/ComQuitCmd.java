@@ -10,8 +10,8 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.proxy.ProxyBuffer;
 
-public class ComQuitCmd implements MySQLCommand{
-	
+public class ComQuitCmd implements MySQLCommand {
+
 	private static final Logger logger = LoggerFactory.getLogger(ComQuitCmd.class);
 
 	public static final ComQuitCmd INSTANCE = new ComQuitCmd();
@@ -47,17 +47,11 @@ public class ComQuitCmd implements MySQLCommand{
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
-		if(sessionCLosed){
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
+		if (sessionCLosed) {
 			session.recycleAllocedBuffer(session.getProxyBuffer());
 			session.unbindBackends();
 		}
-	}
-
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

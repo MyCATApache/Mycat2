@@ -73,7 +73,7 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	        session.responseOKOrError(packet);
 		}
 		
-		return false;
+		return true;
 	}
 
 	@Override
@@ -102,14 +102,10 @@ public class MycatSwitchReplCmd implements MySQLCommand {
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
 		// TODO Auto-generated method stub
 
 	}
 
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
 
-	}
 }

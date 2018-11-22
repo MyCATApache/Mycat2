@@ -87,7 +87,7 @@ public class MycatShowThreadPoolCmd implements MySQLCommand {
         buffer.flip();
         buffer.readIndex = buffer.writeIndex;
         session.writeToChannel();
-        return false;
+        return true;
     }
     
 	private  RowDataPacket getRow(NameableExecutor exec, String charset) {
@@ -135,14 +135,10 @@ public class MycatShowThreadPoolCmd implements MySQLCommand {
     }
 
     @Override
-    public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+    public void clearResouces(MycatSession session, boolean sessionCLosed) {
         // TODO Auto-generated method stub
 
     }
 
-    @Override
-    public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-        // TODO Auto-generated method stub
-
-    }
+  
 }
