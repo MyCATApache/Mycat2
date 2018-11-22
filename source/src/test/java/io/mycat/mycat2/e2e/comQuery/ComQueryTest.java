@@ -91,6 +91,7 @@ public class ComQueryTest extends BaseSQLTest {
                     Statement statement = c.createStatement();
                     statement.execute("CREATE USER 'jeffreyJF'@'localhost' IDENTIFIED BY 'What?2018';");
                     statement.execute("FLUSH PRIVILEGES;");
+                    statement.execute("ALTER USER 'jeffrey'@'localhost' IDENTIFIED BY 'What?2018';");
                     statement.execute("RENAME USER 'jeffreyJF'@'localhost' TO 'jeffrey'@'%';");
                     statement.execute("FLUSH PRIVILEGES;");
                     statement.execute("GRANT ALL ON db1.* TO 'jeffrey'@'%';");
