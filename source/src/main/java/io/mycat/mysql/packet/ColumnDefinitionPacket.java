@@ -1,5 +1,6 @@
 package io.mycat.mysql.packet;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.BufferUtil;
 
@@ -56,7 +57,7 @@ public class ColumnDefinitionPacket extends MySQLPacket {
         flags = (int)buffer.readFixInt(2);
         decimals = buffer.readByte();
         filler = (int)buffer.readFixInt(2);
-        if (command == MySQLPacket.COM_FIELD_LIST) {
+        if (command == MySQLCommand.COM_FIELD_LIST) {
             defaultValues = buffer.readLenencStringBytes();
         }
     }

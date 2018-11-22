@@ -1,5 +1,6 @@
 package io.mycat.mysql.packet;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
@@ -62,7 +63,7 @@ public class PreparedOKPacket extends MySQLPacket {
         if (parametersNumber > 0) {
             parameterDefinitions = new ColumnDefinitionPacket[parametersNumber];
             for (int i=0; i<parametersNumber; i++) {
-                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLPacket.COM_STMT_PREPARE);
+                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLCommand.COM_STMT_PREPARE);
                 columnDefinition.read(buffer);
                 parameterDefinitions[i] = columnDefinition;
             }
@@ -72,7 +73,7 @@ public class PreparedOKPacket extends MySQLPacket {
         if (columnsNumber > 0) {
             columnDefinitions = new ColumnDefinitionPacket[columnsNumber];
             for (int i=0; i<columnsNumber; i++) {
-                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLPacket.COM_STMT_PREPARE);
+                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLCommand.COM_STMT_PREPARE);
                 columnDefinition.read(buffer);
                 columnDefinitions[i] = columnDefinition;
             }
