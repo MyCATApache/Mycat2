@@ -36,7 +36,7 @@ public class BaseSQLTest {
     }
 
     @FunctionalInterface
-    interface ConsumerIO<T> {
+    public interface ConsumerIO<T> {
         void accept(T t) throws Exception;
     }
 }

@@ -23,75 +23,131 @@
  */
 package io.mycat.mysql.packet;
 
+import io.mycat.mysql.Capabilities;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.BufferUtil;
 
+import static io.mycat.mysql.ServerStatus.SERVER_SESSION_STATE_CHANGED;
+
 /**
- * From Server To Client, at the end of a series of Field Packets, and at the
- * end of a series of Data Packets.With prepared statements, EOF Packet can also
- * end parameter information, which we'll describe later.
- * 
  * <pre>
- * Bytes                 Name
- * -----                 ----
- * 1                     field_count, always = 0xfe
- * 2                     warning_count
- * 2                     Status Flags
- * 
- * &#64;see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#EOF_Packet
+ * @see https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
  * </pre>
- * @todo 错误的注释
- * @author mycat
+ * @author linxiaofang
+ * @date 2018/11/12
  */
 public final class OKPacket extends MySQLPacket {
-
-	public static final byte PKG_TYPE = MySQLPacket.OK_PACKET;
-
-	public static final byte FIELD_COUNT = 0x00;
+	public static final byte OK_HEADER = 0x00;
 	public static final byte[] OK = new byte[] { 7, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0 };
 
-	public byte fieldCount = FIELD_COUNT;
+	public byte header;
 	public long affectedRows;
-	public long insertId;
+	public long lastInsertId;
 	public int serverStatus;
 	public int warningCount;
+	public byte[] statusInfo;
+	public SessionStateInfo sessionStateChanges;
 	public byte[] message;
+	NewHandshakePacket.CapabilityFlags capabilityFlags;
+
+	public OKPacket() { capabilityFlags = new NewHandshakePacket.CapabilityFlags(Capabilities.CLIENT_PROTOCOL_41); }
+
+	public OKPacket(int capabilities) {
+		capabilityFlags = new NewHandshakePacket.CapabilityFlags(capabilities);
+	}
 
 	public void write(ProxyBuffer buffer) {
 		buffer.writeFixInt(3, calcPacketSize());
 		buffer.writeByte(packetId);
-		buffer.writeLenencInt(fieldCount);
-		buffer.writeLenencInt(affectedRows);
-		buffer.writeLenencInt(insertId);
-		buffer.writeFixInt(2, serverStatus);
-		buffer.writeFixInt(2, warningCount);
-		if (message != null) {
-			buffer.writeLenencString(message);
+		buffer.writeLenencInt(header);
+		if (header == OK_HEADER) {
+			buffer.writeLenencInt(affectedRows);
+			buffer.writeLenencInt(lastInsertId);
+			if (capabilityFlags.isClientProtocol41()) {
+				buffer.writeFixInt(2, serverStatus);
+				buffer.writeFixInt(2, warningCount);
+			} else if (capabilityFlags.isKnowsAboutTransactions()) {
+				buffer.writeFixInt(2, serverStatus);
+			}
+			if (capabilityFlags.isSessionVariableTracking()) {
+				buffer.writeLenencBytes(statusInfo);
+				if ((serverStatus & SERVER_SESSION_STATE_CHANGED) != 0) {
+					sessionStateChanges.write(buffer);
+				}
+			} else {
+				if (message != null) {
+					buffer.writeBytes(message);
+				}
+			}
+		} else if (header < 0) {
+			if (capabilityFlags.isClientProtocol41()) {
+				buffer.writeFixInt(2, warningCount);
+				buffer.writeFixInt(2, serverStatus);
+			}
 		}
 	}
 
 	public void read(ProxyBuffer buffer) {
-		int index = buffer.readIndex;
+		int startIndex = buffer.readIndex;
 		packetLength = (int) buffer.readFixInt(3);
 		packetId = buffer.readByte();
-		fieldCount = buffer.readByte();
-		affectedRows = buffer.readLenencInt();
-		insertId = buffer.readLenencInt();
-		serverStatus = (int) buffer.readFixInt(2);
-		warningCount = (int) buffer.readFixInt(2);
-		if (index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex > 0) {
-			this.message = buffer.readLenencStringBytes();
+		header = buffer.readByte();
+		if (header == OK_HEADER) {
+			affectedRows = buffer.readLenencInt();
+			lastInsertId = buffer.readLenencInt();
+			if (capabilityFlags.isClientProtocol41()) {
+				serverStatus = (int) buffer.readFixInt(2);
+				warningCount = (int) buffer.readFixInt(2);
+
+			} else if (capabilityFlags.isKnowsAboutTransactions()) {
+				serverStatus = (int) buffer.readFixInt(2);
+			}
+			if (capabilityFlags.isSessionVariableTracking()) {
+				statusInfo = buffer.readLenencBytes();
+				if ((serverStatus & SERVER_SESSION_STATE_CHANGED) != 0) {
+					sessionStateChanges = new SessionStateInfo();
+					sessionStateChanges.read(buffer);
+				}
+			} else {
+				int remainLength = startIndex + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
+				if (remainLength > 0) {
+					message = buffer.readBytes(remainLength);
+					System.out.println(new String(message));
+				}
+			}
+		} else if (header < 0) {
+			if (capabilityFlags.isClientProtocol41()) {
+				warningCount = (int) buffer.readFixInt(2);
+				serverStatus = (int) buffer.readFixInt(2);
+			}
 		}
 	}
 
 	@Override
 	public int calcPacketSize() {
 		int i = 1;
-		i += BufferUtil.getLength(affectedRows);
-		i += BufferUtil.getLength(insertId);
-		i += 4;
-		if (message != null) {
-			i += BufferUtil.getLength(message);
+		if (header == OK_HEADER) {
+			i += BufferUtil.getLength(affectedRows);
+			i += BufferUtil.getLength(lastInsertId);
+			if (capabilityFlags.isClientProtocol41()) {
+				i += 4;
+			} else if (capabilityFlags.isKnowsAboutTransactions()) {
+				i += 2;
+			}
+			if (capabilityFlags.isSessionVariableTracking()) {
+				i += BufferUtil.getLength(statusInfo);
+				if ((serverStatus & SERVER_SESSION_STATE_CHANGED) != 0) {
+					i += sessionStateChanges.length();
+				}
+			} else {
+				if (message != null) {
+					i += message.length;
+				}
+			}
+		} else if (header < 0) {
+			if (capabilityFlags.isClientProtocol41()) {
+				i += 4;
+			}
 		}
 		return i;
 	}
@@ -99,6 +155,26 @@ public final class OKPacket extends MySQLPacket {
 	@Override
 	protected String getPacketInfo() {
 		return "MySQL OK Packet";
+	}
+
+	public class SessionStateInfo {
+		public byte type;
+		public byte[] data;
+
+		public void read(ProxyBuffer buffer) {
+			type = buffer.readByte();
+			data = buffer.readLenencBytes();
+			System.out.println(new String(data));
+		}
+
+		public void write(ProxyBuffer buffer) {
+			buffer.writeByte(type);
+			buffer.writeLenencBytes(data);
+		}
+
+		public int length() {
+			return 1+ BufferUtil.getLength(data);
+		}
 	}
 
 }
