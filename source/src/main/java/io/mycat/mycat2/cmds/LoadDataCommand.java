@@ -111,7 +111,6 @@ public class LoadDataCommand implements MySQLCommand {
                 session.proxyBuffer.flip();
                 session.takeOwner(SelectionKey.OP_READ);
                 session.loadDataStateMachine = NOT_LOAD_DATA;
-                session.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
                 return true;
             default:
                 throw new RuntimeException("unknown state!!!");
