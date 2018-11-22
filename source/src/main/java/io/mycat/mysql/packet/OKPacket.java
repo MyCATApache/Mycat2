@@ -83,7 +83,22 @@ public final class OKPacket extends MySQLPacket {
 			this.message = buffer.readLenencStringBytes();
 		}
 	}
-
+	public static int readServerStatus(ProxyBuffer buffer) {		
+		int index = buffer.readIndex;
+		int packetLength = (int) buffer.readFixInt(3);
+		//packetId(1) +fieldCount(1) 
+		buffer.skip(2);
+		buffer.readLenencInt();//affectedRows 
+		buffer.readLenencInt();//insertId 
+		int serverStatus = (int) buffer.readFixInt(2);
+		//warningCount  
+		buffer.readFixInt(2);
+		int msgLen = index + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
+		if(msgLen > 0) {
+			buffer.skip(msgLen);			
+		}
+		return serverStatus;
+	}
 	@Override
 	public int calcPacketSize() {
 		int i = 1;
