@@ -1,6 +1,7 @@
 package io.mycat.mycat2.e2e;
 
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.sql.ResultSet;
 
@@ -404,6 +405,81 @@ public class ShowSQLTest extends BaseSQLTest {
         using(c -> {
             ResultSet resultSet = c.createStatement().executeQuery("CHECKSUM TABLE travelrecord");
             Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    
+    /**
+     * SHOW PROFILE
+     */
+    public void showProfile() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW PROFILE");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    
+    /**
+     * SHOW PROFILES
+     */
+    public void showProfiles() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW PROFILES");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    /**
+     * SHOW RELAYLOG EVENTS
+     */
+    public void showRelaylogEvents() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW RELAYLOG EVENTS");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    
+    /**
+     * GET DIAGNOSTICS
+     */
+    public void getDiagnostics() {
+        using(c -> {
+            boolean result = c.createStatement().execute("GET DIAGNOSTICS CONDITION 1 @p1 = RETURNED_SQLSTATE, @p2 = MESSAGE_TEXT");
+            Assert.assertFalse(result);
+        });
+    }
+    
+    
+    /**
+     * EXPLAIN
+     */
+    public void explain() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("EXPLAIN travelrecord");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    /**
+     * SHOW CREATE USER
+     */
+    public void showCreateUser() {
+        using(c -> {
+            ResultSet resultSet = c.createStatement().executeQuery("SHOW CREATE USER root");
+            Assert.assertTrue(resultSet.next());
+        });
+    }
+    
+    
+    /**
+     * SHUTDOWN
+     */
+    public void shoutdown() {
+        using(c -> {
+            boolean result = c.createStatement().execute("SHUTDOWN");
+            Assert.assertFalse(result);
         });
     }
 }

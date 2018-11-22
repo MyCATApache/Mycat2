@@ -28,6 +28,7 @@ import io.mycat.mysql.CapabilityFlags;
 import io.mycat.mysql.ServerStatus;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.BufferUtil;
+import io.mycat.util.StringUtil;
 
 
 /**
@@ -117,13 +118,40 @@ public final class OKPacket extends MySQLPacket {
 				}
 			}
 		} else if (header < 0) {
+			//EOF
 			if (capabilityFlags.isClientProtocol41()) {
 				warningCount = (int) buffer.readFixInt(2);
 				serverStatus = (int) buffer.readFixInt(2);
 			}
 		}
 	}
-
+	public static int readServerStatus(ProxyBuffer buffer, CapabilityFlags capabilityFlags) {		
+		int startIndex = buffer.readIndex;
+		int packetLength = (int) buffer.readFixInt(3);
+		buffer.readByte(); //packetId = buffer.readByte();
+		byte header = buffer.readByte();
+		int serverStatus = 0;
+		if (header == OK_HEADER) {
+			buffer.readLenencInt();//affectedRows
+			buffer.readLenencInt();//lastInsertId
+			if (capabilityFlags.isClientProtocol41() || capabilityFlags.isKnowsAboutTransactions()) {
+				serverStatus = (int) buffer.readFixInt(2);
+				//剩下的一次性读取完
+				int remainLength = startIndex + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
+				if (remainLength > 0) {
+					buffer.skip(remainLength);
+				}				
+				return serverStatus;
+			} 			
+		} else if (header < 0) {
+			if (capabilityFlags.isClientProtocol41()) {
+				buffer.readFixInt(2); // warningCount = 
+				serverStatus = (int) buffer.readFixInt(2);
+				return serverStatus;
+			}
+		}	
+		throw new java.lang.RuntimeException("OKPacket readServerStatus error " + StringUtil.dumpAsHex(buffer.getBytes(startIndex, 4 + packetLength)));
+	}
 	@Override
 	public int calcPacketSize() {
 		int i = 1;

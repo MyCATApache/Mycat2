@@ -63,6 +63,11 @@ public final class EOFPacket extends MySQLPacket {
 		status = (int) buffer.readFixInt(2);
 	}
 
+	public static int readStatus(ProxyBuffer buffer) {
+		//7 = packetLength(3) +  packetId（1） +  pkgType（1） + warningCount（2）
+		buffer.skip(7);
+		return (int) buffer.readFixInt(2); //status
+	}
 	@Override
 	public int calcPacketSize() {
 		return 5;// 1+2+2;
