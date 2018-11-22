@@ -50,7 +50,7 @@ import io.mycat.util.BufferUtil;
  * @author mycat
  */
 public class ResultSetHeaderPacket extends MySQLPacket {
-    public int fieldCount;
+    public long fieldCount;
     public long extra;
 
     public void read(byte[] data) {
@@ -67,7 +67,7 @@ public class ResultSetHeaderPacket extends MySQLPacket {
     public void write(ProxyBuffer buffer) {
         buffer.writeFixInt(3, calcPacketSize());
         buffer.writeByte(packetId);
-        buffer.writeFixInt(1, fieldCount);
+        buffer.writeLenencInt(fieldCount);
         if (extra > 0) {
             buffer.writeLenencInt(extra);
         }

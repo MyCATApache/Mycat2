@@ -66,15 +66,15 @@ public class ShowDbCmd implements MySQLCommand {
 			row.write(buffer);
 		}
 
-		   // write last eof
-        EOFPacket lastEof = new EOFPacket();
-        lastEof.packetId = ++packetId;
-        lastEof.write(buffer);
+		// write last eof
+		EOFPacket lastEof = new EOFPacket();
+		lastEof.packetId = ++packetId;
+		lastEof.write(buffer);
 
-        buffer.flip();
-        buffer.readIndex = buffer.writeIndex;
-        session.writeToChannel();
-        return false;
+		buffer.flip();
+		buffer.readIndex = buffer.writeIndex;
+		session.writeToChannel();
+		return false;
 	}
 
 	@Override
@@ -103,17 +103,11 @@ public class ShowDbCmd implements MySQLCommand {
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
 		if (sessionCLosed) {
 			session.recycleAllocedBuffer(session.getProxyBuffer());
-			session.unbindAllBackend();
+			session.unbindBackends();
 		}
-	}
-
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-
 	}
 
 }

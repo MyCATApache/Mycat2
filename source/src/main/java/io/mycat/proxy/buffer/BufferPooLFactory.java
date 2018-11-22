@@ -60,13 +60,13 @@ public class BufferPooLFactory {
 					+ "bufferPoolPageNumber is {},bufferPoolPageSize is {},expectPoolSize is {} "
 					+ "please check it!!!!",bufferPoolPageNumber,bufferPoolPageSize,expectPoolSize);
 			
-			logger.warn("try reset bufferPool settings ");
+			logger.warn("try in bufferPool settings ");
 			if(directMemorySize < bufferPoolPageSize * poolCount ){
 				throw new InvalidParameterException("directMemorySize  is too small!!!. min {"+bufferPoolPageSize * poolCount+"}");
 			}
 			
 			bufferPoolPageNumber = Double.valueOf(expectPoolSize / bufferPoolPageSize).shortValue();
-			logger.info("reset bufferPoolPageNumber to {}",bufferPoolPageNumber);
+			logger.info("in bufferPoolPageNumber to {}",bufferPoolPageNumber);
 			proxybean.setBufferPoolPageNumber(bufferPoolPageNumber);
 		}
 		

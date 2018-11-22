@@ -1,8 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
 # Start mysql
-chown -R mysql:mysql /var/lib/mysql /var/run/mysqld
-service mysql start
+/init_db.sh
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start mysql: $status"
@@ -19,9 +18,9 @@ if [ $status -ne 0 ]; then
 fi
 
 while sleep 60; do
-  ps aux |grep mysql |grep -q -v grep
+  ps aux |grep mysqld
   PROCESS_1_STATUS=$?
-  ps aux |grep mycat |grep -q -v grep
+  ps aux |grep mycat
   PROCESS_2_STATUS=$?
   # If the greps above find anything, they exit with 0 status
   # If they are not both 0, then something is wrong

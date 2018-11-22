@@ -9,30 +9,29 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mysql.packet.OKPacket;
+
 /**
- * COM_PING:
-	check if the server is alive
-	Returns
-	OK_Packet
-	Payload
-	1 [0e] COM_PING
+ * COM_PING: check if the server is alive Returns OK_Packet Payload 1 [0e]
+ * COM_PING
+ * 
  * @author yanjunli
  *
  */
-public class ComPingCmd implements MySQLCommand{
-	
+public class ComPingCmd implements MySQLCommand {
+
 	private static final Logger logger = LoggerFactory.getLogger(ComPingCmd.class);
 
 	public static final ComPingCmd INSTANCE = new ComPingCmd();
-	
-	private ComPingCmd(){}
+
+	private ComPingCmd() {
+	}
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
 		session.responseOKOrError(OKPacket.OK);
-        return false;
+		return true;
 	}
-	
+
 	@Override
 	public boolean onBackendResponse(MySQLSession session) throws IOException {
 		// TODO Auto-generated method stub
@@ -58,15 +57,9 @@ public class ComPingCmd implements MySQLCommand{
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
 		// TODO Auto-generated method stub
-		
-	}
 
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

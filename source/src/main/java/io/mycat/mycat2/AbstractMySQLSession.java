@@ -3,12 +3,10 @@ package io.mycat.mycat2;
 import io.mycat.mycat2.beans.MySQLCharset;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
-import io.mycat.mycat2.console.SessionKey;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Isolation;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.AbstractSession;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.ProxyBuffer;
@@ -75,21 +73,14 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     /**
      * 用来进行指定结束报文处理
      */
-    //  public CommandHandler commandHandler = CommQueryHandler.INSTANCE;
+    // public CommandHandler commandHandler = CommQueryHandler.INSTANCE;
     public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
         this(bufferPool, selector, channel, SelectionKey.OP_READ);
 
     }
 
-    public void setIdle() {
-        if (logger.isDebugEnabled()) {
-            logger.debug("mysql session:{} is idle", this);
-        }
-        this.idleFlag = true;
-    }
-
-    public void setBusy() {
-        this.idleFlag = false;
+    public void setIdle(boolean idleFlag) {
+        this.idleFlag = idleFlag;
     }
 
     public boolean isIdle() {
@@ -112,13 +103,19 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * @param pkg ，必须要是OK报文或者Err报文
      * @throws IOException
      */
-    public void responseOKOrError(MySQLPacket pkg) throws IOException {
+    public void responseOKOrError(MySQLPacket pkg) {
         // proxyBuffer.changeOwner(true);
         this.proxyBuffer.reset();
         pkg.write(this.proxyBuffer);
+        // 设置frontBuffer 为读取状态
         proxyBuffer.flip();
         proxyBuffer.readIndex = proxyBuffer.writeIndex;
-        this.writeToChannel();
+
+        try {
+            this.writeToChannel();
+        } catch (Exception e) {
+            logger.error("response write err , {} ", e);
+        }
     }
 
     /**
@@ -130,17 +127,15 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     public void responseOKOrError(byte[] pkg) throws IOException {
         // proxyBuffer.changeOwner(true);
         this.proxyBuffer.reset();
-        proxyBuffer.writeBytes(OKPacket.OK);
+        proxyBuffer.writeBytes(pkg);
         proxyBuffer.flip();
         proxyBuffer.readIndex = proxyBuffer.writeIndex;
         this.writeToChannel();
     }
+
     public CurrPacketType resolveMySQLPackage(boolean markReaded) {
         return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, markReaded, true);
     }
-//    public CurrPacketType resolveMySQLPackage() {
-//        return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true, true);
-//    }
 
     public CurrPacketType resolveCrossBufferMySQLPackage() {
         return resolveMySQLPackage(proxyBuffer, curMSQLPackgInf, true, false);
@@ -151,45 +146,77 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     }
 
     /**
-     * 强制进入CrossBuffer模式
-     * cjw
-     * 294712221@qq.com
-     * 并不限制进入该模式的时机,一般为第一次判断得到LongHalf之后进入该模式,因为LongHalf能获得报文的长度
-     * 其他情况不保证正确性
+     * 强制进入CrossBuffer模式 cjw 294712221@qq.com
+     * 并不限制进入该模式的时机,一般为第一次判断得到LongHalf之后进入该模式,因为LongHalf能获得报文的长度 其他情况不保证正确性
      */
-    public void forceCrossBuffer() {
-        this.curMSQLPackgInf.crossBuffer = true;
-        this.curMSQLPackgInf.remainsBytes = this.curMSQLPackgInf.pkgLength - (this.curMSQLPackgInf.endPos - this.curMSQLPackgInf.startPos);
+    public boolean forceCrossBuffer() {
+        MySQLPackageInf curMSQLPackgInf = this.curMSQLPackgInf;
+        if (curMSQLPackgInf.remainsBytes == 0 && !ParseUtil.validateHeader(curMSQLPackgInf.startPos, curMSQLPackgInf.endPos)) {
+            String error = String.format("shorthalf packets do not support transparent transmission, session %d,offset %d ,limit %d", getSessionId(), curMSQLPackgInf.startPos, curMSQLPackgInf.endPos - curMSQLPackgInf.startPos);
+            throw new UnsupportedOperationException(error);
+        }
+        if (curMSQLPackgInf.crossBuffer) {
+            String error = "have in crossBuffer";
+            throw new UnsupportedOperationException(error);
+        }
+        this.curMSQLPackgInf.remainsBytes = this.curMSQLPackgInf.pkgLength
+                - (this.curMSQLPackgInf.endPos - this.curMSQLPackgInf.startPos);
         this.proxyBuffer.readIndex = this.curMSQLPackgInf.endPos;
+
+        return this.curMSQLPackgInf.crossBuffer = this.curMSQLPackgInf.remainsBytes > 0;
     }
 
+    public CurrPacketType resolveMySQLPackage(boolean markReaded, boolean forFull) {
+        return resolveMySQLPackage(this.proxyBuffer, this.curMSQLPackgInf, markReaded, forFull);
+    }
 
+    /**
+     * cjw
+     * 294712221@qq.com
+     * 报文保存在内存里 保存报文长度,保存完整数据
+     * shorthalf为[1,5)的长度报文,LongHalf[5,完整报文长度) Full[完整报文]
+     *
+     * 报文不保存在内存里,保存报文长度 不保存完整数据
+     * restCrossBuffer为[5,完整报文长度)的长度报文,,FinishedCrossBuffer[接收报文长度==报文长度]
+     *                                      RestCrossBuffer->FinishedCrossBuffer
+     *                                  /
+     *                               /(forceCrossBuffer或者内存不足以保存完整报文)
+     *           Shorthalf->Longhalf
+     *                              \
+     *                              \(自动内存扩容buffer/(手动/自动缩小buffer)
+     *                              \
+     *                              Full
+     *
+     * 进入LongHalf时机为能判断出OK,EOF,ERROF的时机
+     *
+     * Full FinishedCrossBuffer 对应一个相等条件[接收报文长度==报文长度]
+     *
+     * Shorthalf Longhalf RestCrossBuffer 对应一个范围条件 可能存在多次进入此状态
+     *
+     * 涉及报文解析的,最有可能用Full
+     * 其余情况需要按需处理报文
+     */
     /**
      * 解析MySQL报文，解析的结果存储在curMSQLPackgInf中，如果解析到完整的报文，就返回TRUE
      * 如果解析的过程中同时要移动ProxyBuffer的readState位置，即标记为读过，后继调用开始解析下一个报文，则需要参数markReaded
      * =true
      * <p>
      * <p>
-     * 14.1.2 MySQL Packets
-     * If a MySQL client or server wants to send data, it:
-     * Splits the data into packets of size (224−1) bytes
-     * Prepends to each chunk a packet header
-     * Protocol::Packet
-     * Data between client and server is exchanged in packets of max 16MByte size.
-     * Payload
-     * Type Name Description
-     * int<3> payload_length Length of the payload. The number of bytes
-     * in the packet beyond the initial 4 bytes that
-     * make up the packet header.
-     * int<1> sequence_id Sequence ID
-     * string<var> payload [len=payload_length] payload of the packet
-     * lyj cjw
+     * 14.1.2 MySQL Packets If a MySQL client or server wants to send data, it:
+     * Splits the data into packets of size (224−1) bytes Prepends to each chunk
+     * a packet header Protocol::Packet Data between client and server is
+     * exchanged in packets of max 16MByte size. Payload Type Name Description
+     * int<3> payload_length Length of the payload. The number of bytes in the
+     * packet beyond the initial 4 bytes that make up the packet header. int<1>
+     * sequence_id Sequence ID string<var> payload [len=payload_length] payload
+     * of the packet lyj cjw
      *
      * @param proxyBuf
      * @return
      * @throws IOException
      */
-    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded, boolean forFull) {
+    public CurrPacketType resolveMySQLPackage(ProxyBuffer proxyBuf, MySQLPackageInf curPackInf, boolean markReaded,
+                                              boolean forFull) {
         lastReadTime = TimeUtil.currentTimeMillis();
         ByteBuffer buffer = proxyBuf.getBuffer();
         // 读取的偏移位置
@@ -198,11 +225,16 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         int limit = proxyBuf.writeIndex;
         // 读取当前的总长度
         int totalLen = limit - offset;
-        if (totalLen == 0) { // 透传情况下. 如果最后一个报文正好在buffer 最后位置,已经透传出去了.这里可能不会为零
+        if (totalLen == 0 && !curPackInf.crossBuffer) { // 透传情况下.
+            // 如果最后一个报文正好在buffer
+            // 最后位置,已经透传出去了.这里可能不会为零
+            this.curMSQLPackgInf.remainsBytes = 0;
+            this.curMSQLPackgInf.crossBuffer = false;
+            this.curMSQLPackgInf.pkgLength = 0;
+            this.curMSQLPackgInf.startPos = offset;
+            this.curMSQLPackgInf.endPos = limit;
+            this.curMSQLPackgInf.pkgType = 0;
             return CurrPacketType.ShortHalfPacket;
-        }
-        if (curPackInf.remainsBytes == 0 && curPackInf.crossBuffer) {
-            curPackInf.crossBuffer = false;
         }
         // 如果当前报文跨多个buffer
         if (curPackInf.crossBuffer) {
@@ -212,6 +244,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 offset += curPackInf.remainsBytes; // 继续处理下一个报文
                 proxyBuf.readIndex = offset;
                 curPackInf.remainsBytes = 0;
+                curPackInf.crossBuffer = false;
                 return CurrPacketType.FinishedCrossBufferPacket;
             } else {// 剩余报文还没读完，等待下一次读取
                 curPackInf.startPos = 0;
@@ -221,12 +254,18 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 return CurrPacketType.RestCrossBufferPacket;
             }
         }
-        // check  limit - offset>4
+        // check limit - offset>4
         // header 's size at least 4 bytes size,payload least 1 bytes
         // load data 's empty packet 's length is 4,but not pass here
         if (!ParseUtil.validateHeader(offset, limit)) {
             // 收到短半包
             logger.debug("not read a whole packet ,session {},offset {} ,limit {}", getSessionId(), offset, limit);
+            this.curMSQLPackgInf.remainsBytes = 0;
+            this.curMSQLPackgInf.crossBuffer = false;
+            this.curMSQLPackgInf.pkgLength = -1;
+            this.curMSQLPackgInf.startPos = offset;
+            this.curMSQLPackgInf.endPos = limit;
+            this.curMSQLPackgInf.pkgType = -1;
             return CurrPacketType.ShortHalfPacket;
         }
 
@@ -250,16 +289,15 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         if ((offset + pkgLength) > limit) {
             logger.debug("Not a whole packet: required length = {} bytes, cur total length = {} bytes, limit ={}, "
                     + "ready to handle the next read event", pkgLength, (limit - offset), limit);
-            if (offset == 0 && pkgLength > limit) {
+            if (offset == 0 && pkgLength > limit && pkgLength > proxyBuffer.getBuffer().capacity()) {
                 /*
-                cjw 2018.4.6
-                假设整个buffer空间为88,开始位置是0,需要容纳89的数据大小,还缺一个数据没用接受完,
-                之后作为LongHalfPacket返回,之后上一级处理结果的函数因为是解析所以只处理整包,之后就一直不处理数据,
-                导致一直没有把数据处理,一直报错 readed zero bytes ,Maybe a bug ,please fix it !!!!
-                解决办法:扩容
+                 * cjw 2018.4.6 假设整个buffer空间为88,开始位置是0,需要容纳89的数据大小,还缺一个数据没用接受完,
+                 * 之后作为LongHalfPacket返回,之后上一级处理结果的函数因为是解析所以只处理整包,之后就一直不处理数据,
+                 * 导致一直没有把数据处理,一直报错 readed zero bytes ,Maybe a bug ,please fix
+                 * it !!!! 解决办法:扩容
                  */
                 if (forFull) {
-                    proxyBuf.setBuffer(this.bufPool.expandBuffer(this.proxyBuffer.getBuffer()));
+                    ensureFreeSpaceOfReadBuffer();
                 } else {
                     curPackInf.crossBuffer = true;
                     curPackInf.remainsBytes = pkgLength - totalLen;
@@ -345,38 +383,6 @@ public abstract class AbstractMySQLSession extends AbstractSession {
                 lastLargeMessageTime = TimeUtil.currentTimeMillis();
             }
         }
-    }
-
-    public int getPkgType() {
-        return (Integer) this.getAttrMap().get(SessionKey.PKG_TYPE_KEY);
-    }
-
-    public void setPkgType(int value) {
-        this.getAttrMap().put(SessionKey.PKG_TYPE_KEY, value);
-    }
-
-    public boolean isTrans() {
-        return this.getAttrMap().containsKey(SessionKey.TRANSACTION_FLAG);
-    }
-
-    public void setTrans(boolean value) {
-        if (value) {
-            this.getAttrMap().put(SessionKey.TRANSACTION_FLAG, true);
-        } else {
-            this.getAttrMap().remove(SessionKey.TRANSACTION_FLAG);
-        }
-    }
-
-    public void removePkgReadFlag() {
-        this.getAttrMap().remove(SessionKey.PKG_READ_FLAG);
-    }
-
-    public boolean isPkgReadFlag() {
-        return this.getAttrMap().containsKey(SessionKey.PKG_READ_FLAG);
-    }
-
-    public void setPkgReadFlag() {
-        this.getAttrMap().put(SessionKey.TRANSACTION_FLAG, true);
     }
 
 }

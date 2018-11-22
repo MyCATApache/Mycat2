@@ -27,7 +27,7 @@ public class NotSupportCmd implements MySQLCommand{
 				+ ParseUtil.mysql_packetHeader_length)+1);
         error.message = " command  is not supported";
         session.responseOKOrError(error);
-        return false;
+        return true;
 	}
 
 	@Override
@@ -56,14 +56,9 @@ public class NotSupportCmd implements MySQLCommand{
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
 		// TODO Auto-generated method stub
 		
 	}
 
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
-	}
 }

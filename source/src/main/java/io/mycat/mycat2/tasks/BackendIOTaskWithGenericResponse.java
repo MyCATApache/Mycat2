@@ -27,7 +27,7 @@ public abstract class BackendIOTaskWithGenericResponse
         queryPacket.packetId = 0;
         queryPacket.sql = sql;
         /*设置为忙*/
-        session.setBusy();
+        session.setIdle(false);
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
         queryPacket.write(proxyBuf);

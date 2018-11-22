@@ -23,7 +23,7 @@
  */
 package io.mycat.mycat2.beans.heartbeat;
 
-import io.mycat.mycat2.net.DefaultMycatSessionHandler;
+import io.mycat.mycat2.net.MainMycatNIOHandler;
 import io.mycat.mycat2.tasks.BackendHeartbeatTask;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.MycatReactorThread;
@@ -79,12 +79,12 @@ public class MySQLDetector {
 		MycatReactorThread reactor = (MycatReactorThread)Thread.currentThread();
 		MySQLDetector detector = this;
 
-		reactor.getMysqlSession(heartbeat.getSource(), (optSession, sender, exeSucces, rv) -> {
+		reactor.getHeatBeatCon(heartbeat.getSource(), (optSession, sender, exeSucces, rv) -> {
 			if (exeSucces) {
 				BackendHeartbeatTask heartbeatTask = new BackendHeartbeatTask(optSession,detector);
 				heartbeatTask.setCallback((mysqlsession, sder, isSucc, rsmsg) -> {
 					//恢复默认的Handler
-					optSession.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+					optSession.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
 
 				});
 				optSession.setCurNIOHandler(heartbeatTask);

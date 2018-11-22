@@ -1,6 +1,8 @@
 package io.mycat.mycat2.tasks;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mysql.packet.CommandPacket;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -27,7 +29,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 		session.proxyBuffer.reset();
 		CommandPacket packet = new CommandPacket();
 		packet.packetId = 0;
-		packet.command = MySQLPacket.COM_INIT_DB;
+		packet.command = MySQLCommand.COM_INIT_DB;
 		packet.arg = databases.getBytes();
 		packet.write(session.proxyBuffer);
 		session.proxyBuffer.flip();
@@ -86,6 +88,8 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
                     this.finished(true);
                 } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
                     errPkg = new ErrorPacket();
+                    MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+    		        session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
                     errPkg.read(session.proxyBuffer);
                     logger.debug("the Backend Synchema Task end ");
                     logger.warn("backend state sync Error.Err No. " + errPkg.errno + ","
