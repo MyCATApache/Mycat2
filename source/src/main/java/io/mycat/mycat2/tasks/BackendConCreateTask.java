@@ -79,32 +79,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		return SecurityUtil.scramble411(passwd, seed);
 	}
 
-	private static long initClientFlags() {
-		int flag = 0;
-		flag |= Capabilities.CLIENT_LONG_PASSWORD;
-		flag |= Capabilities.CLIENT_FOUND_ROWS;
-		flag |= Capabilities.CLIENT_LONG_FLAG;
-		flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
-		// flag |= Capabilities.CLIENT_NO_SCHEMA;
-		boolean usingCompress = false;
-		if (usingCompress) {
-			flag |= Capabilities.CLIENT_COMPRESS;
-		}
-		flag |= Capabilities.CLIENT_ODBC;
-		flag |= Capabilities.CLIENT_LOCAL_FILES;
-		flag |= Capabilities.CLIENT_IGNORE_SPACE;
-		flag |= Capabilities.CLIENT_PROTOCOL_41;
-		flag |= Capabilities.CLIENT_INTERACTIVE;
-		// flag |= Capabilities.CLIENT_SSL;
-		flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
-		flag |= Capabilities.CLIENT_TRANSACTIONS;
-		// flag |= Capabilities.CLIENT_RESERVED;
-		flag |= Capabilities.CLIENT_SECURE_CONNECTION;
-		// // client extension
-		// flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
-		// flag |= Capabilities.CLIENT_MULTI_RESULTS;
-		return flag;
-	}
+	
 
 	@Override
 	public void onSocketRead(MySQLSession session) throws IOException {
@@ -133,7 +108,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			// 发送应答报文给后端
 			AuthPacket packet = new AuthPacket();
 			packet.packetId = 1;
-			packet.clientFlags = initClientFlags();
+			packet.clientFlags = MySQLSession.getClientCapabilityFlags().value;
 			packet.maxPacketSize = 1024 * 1000;
 			packet.charsetIndex = charsetIndex;
 			packet.user = mySQLMetaBean.getDsMetaBean().getUser();
