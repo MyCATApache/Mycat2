@@ -6,6 +6,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mysql.Capabilities;
+import io.mycat.mysql.CapabilityFlags;
 import io.mycat.proxy.buffer.BufferPool;
 
 /**
@@ -62,7 +64,39 @@ public class MySQLSession extends AbstractMySQLSession {
 	public void setMySQLMetaBean(MySQLMetaBean metaBean) {
 		this.mysqlMetaBean = metaBean;
 	}
-
+	
+	
+	
+	private static int initClientFlags() {
+		int flag = 0;
+		flag |= Capabilities.CLIENT_LONG_PASSWORD;
+		flag |= Capabilities.CLIENT_FOUND_ROWS;
+		flag |= Capabilities.CLIENT_LONG_FLAG;
+		flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+		// flag |= Capabilities.CLIENT_NO_SCHEMA;
+		boolean usingCompress = false;
+		if (usingCompress) {
+			flag |= Capabilities.CLIENT_COMPRESS;
+		}
+		flag |= Capabilities.CLIENT_ODBC;
+		flag |= Capabilities.CLIENT_LOCAL_FILES;
+		flag |= Capabilities.CLIENT_IGNORE_SPACE;
+		flag |= Capabilities.CLIENT_PROTOCOL_41;
+		flag |= Capabilities.CLIENT_INTERACTIVE;
+		// flag |= Capabilities.CLIENT_SSL;
+		flag |= Capabilities.CLIENT_IGNORE_SIGPIPE;
+		flag |= Capabilities.CLIENT_TRANSACTIONS;
+		// flag |= Capabilities.CLIENT_RESERVED;
+		flag |= Capabilities.CLIENT_SECURE_CONNECTION;
+		// // client extension
+		// flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
+		// flag |= Capabilities.CLIENT_MULTI_RESULTS;
+		return flag;
+	}
+	private static CapabilityFlags capabilityFlags = new CapabilityFlags(initClientFlags());
+	public static CapabilityFlags getClientCapabilityFlags() {
+		return capabilityFlags;
+	}
 	@Override
 	public String toString() {
 		return "MySQLSession [sessionId = " + getSessionId() + " , database=" + database + ", ip="

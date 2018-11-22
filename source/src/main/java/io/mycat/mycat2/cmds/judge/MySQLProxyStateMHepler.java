@@ -1,6 +1,7 @@
 package io.mycat.mycat2.cmds.judge;
 
 
+
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mysql.packet.EOFPacket;
@@ -24,7 +25,7 @@ public class MySQLProxyStateMHepler {
             sm.callback.onServerStatusChanged(sm, old, sm.serverStatus);
         } else if (pkgType == MySQLPacket.OK_PACKET) {
             buffer.readIndex = sqlSession.curMSQLPackgInf.startPos;
-            int serverStatus = OKPacket.readServerStatus(buffer);
+            int serverStatus = OKPacket.readServerStatus(buffer , MySQLSession.getClientCapabilityFlags());
             preparedOkPacket = judgePreparedOkPacket(sm,buffer, sqlSession.curMSQLPackgInf);
             int old = sm.serverStatus;
             sm.serverStatus = serverStatus;
