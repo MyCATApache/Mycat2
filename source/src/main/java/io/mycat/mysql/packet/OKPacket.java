@@ -24,10 +24,11 @@
 package io.mycat.mysql.packet;
 
 import io.mycat.mysql.Capabilities;
+import io.mycat.mysql.CapabilityFlags;
+import io.mycat.mysql.ServerStatus;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.BufferUtil;
 
-import static io.mycat.mysql.ServerStatus.SERVER_SESSION_STATE_CHANGED;
 
 /**
  * <pre>
@@ -48,12 +49,12 @@ public final class OKPacket extends MySQLPacket {
 	public byte[] statusInfo;
 	public SessionStateInfo sessionStateChanges;
 	public byte[] message;
-	NewHandshakePacket.CapabilityFlags capabilityFlags;
+	CapabilityFlags capabilityFlags;
 
-	public OKPacket() { capabilityFlags = new NewHandshakePacket.CapabilityFlags(Capabilities.CLIENT_PROTOCOL_41); }
+	public OKPacket() { capabilityFlags = new CapabilityFlags(Capabilities.CLIENT_PROTOCOL_41); }
 
 	public OKPacket(int capabilities) {
-		capabilityFlags = new NewHandshakePacket.CapabilityFlags(capabilities);
+		capabilityFlags = new CapabilityFlags(capabilities);
 	}
 
 	public void write(ProxyBuffer buffer) {
@@ -71,7 +72,7 @@ public final class OKPacket extends MySQLPacket {
 			}
 			if (capabilityFlags.isSessionVariableTracking()) {
 				buffer.writeLenencBytes(statusInfo);
-				if ((serverStatus & SERVER_SESSION_STATE_CHANGED) != 0) {
+				if ((serverStatus & ServerStatus.STATE_CHANGED) != 0) {
 					sessionStateChanges.write(buffer);
 				}
 			} else {
@@ -104,7 +105,7 @@ public final class OKPacket extends MySQLPacket {
 			}
 			if (capabilityFlags.isSessionVariableTracking()) {
 				statusInfo = buffer.readLenencBytes();
-				if ((serverStatus & SERVER_SESSION_STATE_CHANGED) != 0) {
+				if ((serverStatus & ServerStatus.STATE_CHANGED) != 0) {
 					sessionStateChanges = new SessionStateInfo();
 					sessionStateChanges.read(buffer);
 				}
@@ -151,7 +152,7 @@ public final class OKPacket extends MySQLPacket {
 			}
 			if (capabilityFlags.isSessionVariableTracking()) {
 				i += BufferUtil.getLength(statusInfo);
-				if ((serverStatus & SERVER_SESSION_STATE_CHANGED) != 0) {
+				if ((serverStatus & ServerStatus.STATE_CHANGED) != 0) {
 					i += sessionStateChanges.length();
 				}
 			} else {

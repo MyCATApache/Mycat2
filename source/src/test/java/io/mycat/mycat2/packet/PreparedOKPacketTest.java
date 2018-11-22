@@ -1,5 +1,6 @@
 package io.mycat.mycat2.packet;
 
+import io.mycat.mycat2.testTool.TestUtil;
 import io.mycat.mysql.packet.PreparedOKPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.StringUtil;
@@ -9,8 +10,8 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static io.mycat.mycat2.TestUtil.of;
-import static io.mycat.mycat2.TestUtil.ofBuffer;
+import static io.mycat.mycat2.testTool.TestUtil.ofBuffer;
+
 
 /**
  * Created by linxiaofang on 2018/11/12.
@@ -50,7 +51,7 @@ public class PreparedOKPacketTest {
         System.out.println(hexs);
 
         int[] ints = Arrays.copyOf(pkt17, pkt17.length);
-        Assert.assertArrayEquals(of(ints),array);
+        Assert.assertArrayEquals(TestUtil.of(ints),array);
         System.out.println(pkt17.length);
     }
 
