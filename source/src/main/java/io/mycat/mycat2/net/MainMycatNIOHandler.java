@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.cmds.ComQuitCmd;
 import io.mycat.mycat2.cmds.DirectPassthrouhCmd;
 import io.mycat.mycat2.cmds.LoadDataCommand;
 import io.mycat.mycat2.cmds.manager.MyCatCmdDispatcher;
@@ -67,16 +68,25 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
 	}
 
 	private void processSQL(final MycatSession session) throws IOException {
+	    System.out.println(session);
 		switch (session.curMSQLPackgInf.pkgType) {
 		case MySQLCommand.COM_QUERY: {
 			doQuery(session);
 			return;
 		}
+		case MySQLCommand.COM_QUIT: {
+		  session.switchSQLCommand(ComQuitCmd.INSTANCE);
+		  break;
+		}
 		default: {
 			session.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
-			return;
+			break;
 		}
 		}
+		 if(session.getCurSQLCommand().procssSQL(session)){
+           session.getCurSQLCommand().clearResouces(session, session.isClosed());
+           session.switchSQLCommand(null);
+         }
 		// if (!delegateRoute(session)) {
 		// return false;
 		// }
