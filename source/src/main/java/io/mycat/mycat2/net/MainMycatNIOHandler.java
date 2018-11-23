@@ -68,7 +68,6 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
 	}
 
 	private void processSQL(final MycatSession session) throws IOException {
-	    System.out.println(session);
 		switch (session.curMSQLPackgInf.pkgType) {
 		case MySQLCommand.COM_QUERY: {
 			doQuery(session);
