@@ -1,11 +1,11 @@
 package io.mycat.mycat2.e2e.comQuery;
 
-import io.mycat.mycat2.e2e.BaseSQLExeTest;
-import io.mycat.mycat2.e2e.BaseSQLTest;
 import org.junit.Assert;
-import org.junit.Test;
 
-import java.sql.*;
+import java.sql.Savepoint;
+import java.sql.Statement;
+
+import io.mycat.mycat2.e2e.BaseSQLTest;
 
 /**
  * Created by linxiaofang on 2018/11/5.
@@ -20,7 +20,7 @@ public class ComQueryTest extends BaseSQLTest {
     final static String REPL_MASTER_LOG_FILE = "mysql-bin.000001";
     final static int REPL_MASTER_LOG_POS = 7849;
 
-    @Test
+//    @Test
     public void testShowTableStatus() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -35,7 +35,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testShowTriggers() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -55,7 +55,7 @@ public class ComQueryTest extends BaseSQLTest {
      * 如果报错: The MySQL server is running with the --secure-file-priv option so it cannot execute this statement
      * 需要修改my.cnf, 增加 secure-file-priv="" 后重启
      */
-    @Test
+//    @Test
     public void testLoadData() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -65,7 +65,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testSetOption() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -74,7 +74,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testLockUnlock() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -85,7 +85,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testGrantRevoke() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -103,7 +103,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testChangeDb() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -112,7 +112,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testCreateDb() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -121,7 +121,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testDropDb() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -130,7 +130,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testAlterDb() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -140,7 +140,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testRepair() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -149,7 +149,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testReplace() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -158,7 +158,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testReplaceSelect() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -176,7 +176,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testCreateDropFunction() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -188,7 +188,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testOptimize() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -197,7 +197,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testCheck() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -206,7 +206,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testCacheIndex() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -217,7 +217,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testFlush() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -238,7 +238,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testAnalyze() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -247,7 +247,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testBegin() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -258,7 +258,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testRollback() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -269,7 +269,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testRollbackToSavePoint() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -284,7 +284,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testReleaseSavePoint() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -301,7 +301,7 @@ public class ComQueryTest extends BaseSQLTest {
     /*
      * 执行testSlave,需要连接到Slave数据库
      */
-    @Test
+//    @Test
     public void testSlave() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -330,7 +330,7 @@ public class ComQueryTest extends BaseSQLTest {
     /*
      * 必须开启binlog才能执行,否则会报异常: java.sql.SQLException: You are not using binary logging
      */
-    @Test
+//    @Test
     public void testBinlog() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -354,7 +354,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testShowSlaveHosts() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -363,7 +363,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testReset() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -372,7 +372,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testRenameTable() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -382,7 +382,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testShowOpenTables() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -403,7 +403,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testShowStorageEngines() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -412,7 +412,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testShowWarningsErrors() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -422,7 +422,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testDo() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -431,7 +431,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testHandler() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -442,7 +442,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testDeleteMulti() {
         using(c -> {
                     Statement statement = c.createStatement();
@@ -455,7 +455,7 @@ public class ComQueryTest extends BaseSQLTest {
         );
     }
 
-    @Test
+//    @Test
     public void testUpdateMulti() {
         using(c -> {
                     Statement statement = c.createStatement();
