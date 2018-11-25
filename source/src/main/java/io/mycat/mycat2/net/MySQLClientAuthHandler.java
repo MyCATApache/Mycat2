@@ -1,11 +1,21 @@
 package io.mycat.mycat2.net;
 
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.util.List;
+import java.util.Objects;
+import java.util.regex.Pattern;
+
 import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.FireWallBean;
 import io.mycat.mycat2.beans.conf.UserBean;
 import io.mycat.mycat2.beans.conf.UserConfig;
+import io.mycat.mysql.MysqlNativePasswordPluginUtil;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.NewAuthPacket;
@@ -14,16 +24,6 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.util.ErrorCode;
-import io.mycat.util.SecurityUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Objects;
-import java.util.regex.Pattern;
 
 /**
  * MySQL客户端登录认证的Handler，为第一个Handler
@@ -156,14 +156,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 			return false;
 		}
 
-		// encrypt
-		byte[] encryptPass;
-		try {
-			encryptPass = SecurityUtil.scramble411(pass.getBytes(), session.seed);
-		} catch (NoSuchAlgorithmException e) {
-			logger.warn("no such algorithm", e);
-			return false;
-		}
+		byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(pass, session.seed);
 
 		if (encryptPass != null && (encryptPass.length == password.length)) {
 			int i = encryptPass.length;

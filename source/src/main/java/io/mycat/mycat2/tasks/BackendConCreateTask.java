@@ -8,12 +8,12 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.security.NoSuchAlgorithmException;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mysql.MysqlNativePasswordPluginUtil;
 import io.mycat.mysql.packet.CurrPacketType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -22,7 +22,6 @@ import io.mycat.mysql.packet.NewHandshakePacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
-import io.mycat.util.SecurityUtil;
 
 /**
  * 创建后端MySQL连接并负责完成登录认证的Processor
@@ -69,17 +68,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		this.addConnectionPool = addConnectionPool;
 	}
 
-	private static byte[] passwd(String pass, NewHandshakePacket hs) throws NoSuchAlgorithmException {
-		if (pass == null || pass.length() == 0) {
-			return null;
-		}
-		byte[] passwd = pass.getBytes();
-		byte[] seed = (hs.authPluginDataPartOne + hs.authPluginDataPartTwo).getBytes();
-		return SecurityUtil.scramble411(passwd, seed);
-	}
-
-	
-
 	@Override
 	public void onSocketRead(MySQLSession session) throws IOException {
 		session.proxyBuffer.reset();
@@ -110,14 +98,10 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			packet.packetId = 1;
 			packet.capabilities = MySQLSession.getClientCapabilityFlags().value;
 			packet.maxPacketSize = 1024 * 1000;
-			packet.characterSet = (byte)charsetIndex;
+			packet.characterSet = (byte) charsetIndex;
 			packet.username = mySQLMetaBean.getDsMetaBean().getUser();
-			try {
-				packet.password = passwd(mySQLMetaBean.getDsMetaBean().getPassword(), handshake);
-			} catch (NoSuchAlgorithmException e) {
-				throw new RuntimeException(e.getMessage());
-			}
-			packet.authPluginName = "mysql_native_password";
+			packet.password = MysqlNativePasswordPluginUtil.scramble411(mySQLMetaBean.getDsMetaBean().getPassword(), handshake.authPluginDataPartOne + handshake.authPluginDataPartTwo);
+			packet.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
 			// SchemaBean mycatSchema = session.mycatSchema;
 			// 创建连接时，默认不主动同步数据库
 			// if(mycatSchema!=null&&mycatSchema.getDefaultDN()!=null){

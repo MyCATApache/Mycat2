@@ -1,5 +1,8 @@
 package io.mycat.mycat2;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -7,9 +10,6 @@ import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
@@ -25,14 +25,13 @@ import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mysql.AutoCommit;
 import io.mycat.mysql.Capabilities;
 import io.mycat.mysql.CapabilityFlags;
+import io.mycat.mysql.MysqlNativePasswordPluginUtil;
 import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.NewHandshakePacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.BufferPool;
-import io.mycat.util.CharsetUtil;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
 import io.mycat.util.RandomUtil;
@@ -126,29 +125,23 @@ public class MycatSession extends AbstractMySQLSession {
 	 * @throws IOException
 	 */
 	public void sendAuthPackge() throws IOException {
-	    byte[] rand1 = RandomUtil.randomBytes(8);
-		byte[] rand2 = RandomUtil.randomBytes(12);
+		byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
+		this.seed = seedParts[2];
 
-		// 保存认证数据
-		byte[] seed = new byte[rand1.length + rand2.length];
-		System.arraycopy(rand1, 0, seed, 0, rand1.length);
-		System.arraycopy(rand2, 0, seed, rand1.length, rand2.length);
-		this.seed = seed;
-
-        // 发送握手数据包
-        NewHandshakePacket hs = new NewHandshakePacket();
-        hs.packetId = 0;
-        hs.protocolVersion = Version.PROTOCOL_VERSION;
-        hs.serverVersion = new String(Version.SERVER_VERSION);
-        hs.connectionId = getSessionId();
-		hs.authPluginDataPartOne = new String(rand1);
+		// 发送握手数据包
+		NewHandshakePacket hs = new NewHandshakePacket();
+		hs.packetId = 0;
+		hs.protocolVersion = Version.PROTOCOL_VERSION;
+		hs.serverVersion = new String(Version.SERVER_VERSION);
+		hs.connectionId = getSessionId();
+		hs.authPluginDataPartOne = new String(seedParts[0]);
 		hs.capabilities = new CapabilityFlags(getServerCapabilities());
 		hs.hasPartTwo = true;
 		hs.characterSet = 8;
 		hs.statusFlags = 2;
 		hs.authPluginDataLen = 21; // 有插件的话，总长度必是21, seed
-		hs.authPluginDataPartTwo = new String(rand2);
-		hs.authPluginName = "mysql_native_password";
+		hs.authPluginDataPartTwo = new String(seedParts[1]);
+		hs.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
 		hs.write(proxyBuffer);
 		proxyBuffer.flip();
 		proxyBuffer.readIndex = proxyBuffer.writeIndex;
