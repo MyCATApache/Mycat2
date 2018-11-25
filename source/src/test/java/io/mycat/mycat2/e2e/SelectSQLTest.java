@@ -2,6 +2,9 @@ package io.mycat.mycat2.e2e;
 
 import org.junit.Assert;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 /**
@@ -18,6 +21,30 @@ public class SelectSQLTest extends BaseSQLTest {
 	    public void insert() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("INSERT INTO travelrecord (user_id,traveldate,fee,days) VALUES('2',now(),21,10)");
+            Assert.assertEquals(1, resultSet);
+        });
+    }
+
+    /**
+     * 插入 16 m 的字段
+     */
+//    @Test
+    public void insertSelect16m() {
+        // 18874468 > 4194304
+        // show VARIABLES like '%max_allowed_packet%'
+        // set global max_allowed_packet = 18974468
+        // 添加一列 `test16m` longtext,
+        using(c -> {
+            String sql = "INSERT INTO travelrecord (id,user_id,traveldate,fee,days,test16m) VALUES(999,'999',now(),21,10,?)";
+            PreparedStatement statement = c.prepareStatement(sql);
+            int size = 1024 * 1024 * 18; // 18 m
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            for (int i = 0; i < size; i++) {
+                out.write('a');
+            }
+            out.write("END".getBytes());
+            statement.setAsciiStream(1,new ByteArrayInputStream(out.toByteArray()));
+            int resultSet = statement.executeUpdate();
             Assert.assertEquals(1, resultSet);
         });
     }
