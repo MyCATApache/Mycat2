@@ -72,7 +72,7 @@ public class MySQLSession extends AbstractMySQLSession {
 		flag |= Capabilities.CLIENT_LONG_PASSWORD;
 		flag |= Capabilities.CLIENT_FOUND_ROWS;
 		flag |= Capabilities.CLIENT_LONG_FLAG;
-		flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
+//		flag |= Capabilities.CLIENT_CONNECT_WITH_DB;
 		// flag |= Capabilities.CLIENT_NO_SCHEMA;
 		boolean usingCompress = false;
 		if (usingCompress) {
@@ -88,6 +88,7 @@ public class MySQLSession extends AbstractMySQLSession {
 		flag |= Capabilities.CLIENT_TRANSACTIONS;
 		// flag |= Capabilities.CLIENT_RESERVED;
 		flag |= Capabilities.CLIENT_SECURE_CONNECTION;
+		flag |= Capabilities.CLIENT_PLUGIN_AUTH;
 		// // client extension
 		// flag |= Capabilities.CLIENT_MULTI_STATEMENTS;
 		// flag |= Capabilities.CLIENT_MULTI_RESULTS;
