@@ -1,16 +1,5 @@
 package io.mycat.mycat2.tasks;
 
-import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mycat2.beans.conf.SchemaBean;
-import io.mycat.mysql.Capabilities;
-import io.mycat.mysql.packet.*;
-import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.buffer.BufferPool;
-import io.mycat.util.ErrorCode;
-import io.mycat.util.ParseUtil;
-import io.mycat.util.SecurityUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +8,20 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.security.NoSuchAlgorithmException;
+
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mysql.MysqlNativePasswordPluginUtil;
+import io.mycat.mysql.packet.CurrPacketType;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.NewAuthPacket;
+import io.mycat.mysql.packet.NewHandshakePacket;
+import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.util.ErrorCode;
 
 /**
  * 创建后端MySQL连接并负责完成登录认证的Processor
@@ -28,7 +30,7 @@ import java.security.NoSuchAlgorithmException;
  */
 public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
-	private HandshakePacket handshake;
+	private NewHandshakePacket handshake;
 	private boolean welcomePkgReceived = false;
 	private final MySQLMetaBean mySQLMetaBean;
 	private final SchemaBean schema;
@@ -66,21 +68,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		this.addConnectionPool = addConnectionPool;
 	}
 
-	private static byte[] passwd(String pass, HandshakePacket hs) throws NoSuchAlgorithmException {
-		if (pass == null || pass.length() == 0) {
-			return null;
-		}
-		byte[] passwd = pass.getBytes();
-		int sl1 = hs.seed.length;
-		int sl2 = hs.restOfScrambleBuff.length;
-		byte[] seed = new byte[sl1 + sl2];
-		System.arraycopy(hs.seed, 0, seed, 0, sl1);
-		System.arraycopy(hs.restOfScrambleBuff, 0, seed, sl1, sl2);
-		return SecurityUtil.scramble411(passwd, seed);
-	}
-
-	
-
 	@Override
 	public void onSocketRead(MySQLSession session) throws IOException {
 		session.proxyBuffer.reset();
@@ -100,23 +87,21 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		}
 
 		if (!welcomePkgReceived) {
-			handshake = new HandshakePacket();
+			handshake = new NewHandshakePacket();
 			handshake.read(this.session.proxyBuffer);
 
 			// 设置字符集编码
-			int charsetIndex = (handshake.serverCharsetIndex & 0xff);
+//			int charsetIndex = (handshake.characterSet & 0xff);
+			int charsetIndex = handshake.characterSet;
 			// 发送应答报文给后端
-			AuthPacket packet = new AuthPacket();
+			NewAuthPacket packet = new NewAuthPacket();
 			packet.packetId = 1;
-			packet.clientFlags = MySQLSession.getClientCapabilityFlags().value;
+			packet.capabilities = MySQLSession.getClientCapabilityFlags().value;
 			packet.maxPacketSize = 1024 * 1000;
-			packet.charsetIndex = charsetIndex;
-			packet.user = mySQLMetaBean.getDsMetaBean().getUser();
-			try {
-				packet.password = passwd(mySQLMetaBean.getDsMetaBean().getPassword(), handshake);
-			} catch (NoSuchAlgorithmException e) {
-				throw new RuntimeException(e.getMessage());
-			}
+			packet.characterSet = (byte) charsetIndex;
+			packet.username = mySQLMetaBean.getDsMetaBean().getUser();
+			packet.password = MysqlNativePasswordPluginUtil.scramble411(mySQLMetaBean.getDsMetaBean().getPassword(), handshake.authPluginDataPartOne + handshake.authPluginDataPartTwo);
+			packet.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
 			// SchemaBean mycatSchema = session.mycatSchema;
 			// 创建连接时，默认不主动同步数据库
 			// if(mycatSchema!=null&&mycatSchema.getDefaultDN()!=null){

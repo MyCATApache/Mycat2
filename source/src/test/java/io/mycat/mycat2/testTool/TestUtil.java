@@ -113,10 +113,17 @@ public class TestUtil {
         okPacket.write(buffer);
         return buffer;
     }
-
-    public static ProxyBuffer err() {
+    public static ErrorPacket errPacket(int packetId) {
         ErrorPacket eofPacket = new ErrorPacket();
-        ProxyBuffer buffer = exampleBuffer();
+        eofPacket.packetId = (byte) packetId;
+        eofPacket.message = "";
+        return eofPacket;
+    }
+    public static ProxyBuffer errBuffer() {
+        ErrorPacket eofPacket = new ErrorPacket();
+        eofPacket.packetId = 12;
+        eofPacket.message = "";
+        ProxyBuffer buffer = TestUtil.exampleBuffer();
         eofPacket.write(buffer);
         return buffer;
     }
