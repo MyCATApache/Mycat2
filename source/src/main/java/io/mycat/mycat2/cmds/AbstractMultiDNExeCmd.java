@@ -47,15 +47,10 @@ public class AbstractMultiDNExeCmd implements MySQLCommand{
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
 		// TODO Auto-generated method stub
 		
 	}
 
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
-	}
 
 }

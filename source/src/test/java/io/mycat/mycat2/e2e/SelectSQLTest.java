@@ -1,9 +1,11 @@
 package io.mycat.mycat2.e2e;
 
-import java.sql.ResultSet;
-
 import org.junit.Assert;
-import org.junit.Test;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 
 /**
  * 
@@ -16,10 +18,33 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * INSERT 
 	 */
-	@Test
-    public void insert() {
+	    public void insert() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("INSERT INTO travelrecord (user_id,traveldate,fee,days) VALUES('2',now(),21,10)");
+            Assert.assertEquals(1, resultSet);
+        });
+    }
+
+    /**
+     * 插入 16 m 的字段
+     */
+//    @Test
+    public void insertSelect16m() {
+        // 18874468 > 4194304
+        // show VARIABLES like '%max_allowed_packet%'
+        // set global max_allowed_packet = 18974468
+        // 添加一列 `test16m` longtext,
+        using(c -> {
+            String sql = "INSERT INTO travelrecord (id,user_id,traveldate,fee,days,test16m) VALUES(999,'999',now(),21,10,?)";
+            PreparedStatement statement = c.prepareStatement(sql);
+            int size = 1024 * 1024 * 18; // 18 m
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            for (int i = 0; i < size; i++) {
+                out.write('a');
+            }
+            out.write("END".getBytes());
+            statement.setAsciiStream(1,new ByteArrayInputStream(out.toByteArray()));
+            int resultSet = statement.executeUpdate();
             Assert.assertEquals(1, resultSet);
         });
     }
@@ -28,8 +53,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * UPDATE 
 	 */
-	@Test
-    public void update() {
+	    public void update() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("UPDATE travelrecord set fee = 11 where id = 1");
             Assert.assertEquals(1, resultSet);
@@ -40,8 +64,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * INSERT INTO SELECT  
 	 */
-	@Test
-    public void insertSelect() {
+	    public void insertSelect() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("INSERT INTO travelrecord (user_id,traveldate,fee,days) SELECT user_id,traveldate,fee,days FROM travelrecord WHERE id = 1");
             Assert.assertEquals(1, resultSet);
@@ -51,8 +74,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * DELETE 
 	 */
-	@Test
-    public void delete() {
+	    public void delete() {
         using(c -> {
         	c.createStatement().executeUpdate("DELETE FROM travelrecord WHERE user_id = 2");
         });
@@ -61,8 +83,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * SELECT 
 	 */
-	@Test
-    public void select() {
+	    public void select() {
         using(c -> {
             ResultSet resultSet = c.createStatement().executeQuery("SELECT * FROM travelrecord");
             Assert.assertTrue(resultSet.next());
@@ -73,8 +94,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * SELECT INTO
 	 */
-	@Test
-    public void selectInto() {
+	    public void selectInto() {
         using(c -> {
             boolean result = c.createStatement().execute("SELECT id,user_id INTO @x,@y FROM travelrecord LIMIT 1");
             Assert.assertFalse(result);
@@ -84,8 +104,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * SELECT LOCK IN SHARE MODE
 	 */
-	@Test
-    public void selectLockInShareMode() {
+	    public void selectLockInShareMode() {
         using(c -> {
             ResultSet resultSet = c.createStatement().executeQuery("SELECT * FROM travelrecord LOCK IN SHARE MODE");
             Assert.assertTrue(resultSet.next());
@@ -96,8 +115,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * SELECT FOR UPDATE
 	 */
-	@Test
-    public void selectForUpdate() {
+	    public void selectForUpdate() {
         using(c -> {
             ResultSet resultSet = c.createStatement().executeQuery("SELECT * FROM travelrecord FOR UPDATE");
             Assert.assertTrue(resultSet.next());
@@ -108,8 +126,7 @@ public class SelectSQLTest extends BaseSQLTest {
 	/**
 	 * TRUNCATE 
 	 */
-	@Test
-    public void truncate() {
+	    public void truncate() {
         using(c -> {
         	int resultSet = c.createStatement().executeUpdate("TRUNCATE travelrecord");
         	Assert.assertEquals(0, resultSet);

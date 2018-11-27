@@ -20,11 +20,11 @@ public class BaseSQLExeTest {
             "&useSSL=false";
     final static String USERNAME = "root";
     final static String PASSWORD = "123456";
-    final static boolean LOCAL = false;
+    final static boolean LOCAL = true;
 
     static {
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            Class.forName("com.mysql.jdbc.Driver");
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 
 public class ShowTbCmd implements MySQLCommand {
-	
+
 	protected static Logger logger = LoggerFactory.getLogger(ShowTbCmd.class);
 
 	private static final int FIELD_COUNT = 1;
@@ -46,7 +46,7 @@ public class ShowTbCmd implements MySQLCommand {
 				return false;
 			}
 		}
-        schema = (schema != null ? schema : session.mycatSchema);
+		schema = (schema != null ? schema : session.mycatSchema);
 
 		int i = 0;
 		byte packetId = 0;
@@ -91,13 +91,13 @@ public class ShowTbCmd implements MySQLCommand {
 	}
 
 	@Override
-    public boolean onBackendResponse(MySQLSession session) {
+	public boolean onBackendResponse(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-    public boolean onBackendClosed(MySQLSession session, boolean normal) {
+	public boolean onBackendClosed(MySQLSession session, boolean normal) {
 		// TODO Auto-generated method stub
 		return false;
 	}
@@ -107,29 +107,24 @@ public class ShowTbCmd implements MySQLCommand {
 
 		session.proxyBuffer.flip();
 		session.takeOwner(SelectionKey.OP_READ);
-	
-		logger.info("****************sessionID:"+session.getSessionId()+"isRead:"+session.getProxyBuffer().isInReading());
+
+		logger.info("****************sessionID:" + session.getSessionId() + "isRead:"
+				+ session.getProxyBuffer().isInReading());
 		return true;
 	}
 
 	@Override
-    public boolean onBackendWriteFinished(MySQLSession session) {
+	public boolean onBackendWriteFinished(MySQLSession session) {
 		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
 		if (sessionCLosed) {
 			session.recycleAllocedBuffer(session.getProxyBuffer());
-			session.unbindAllBackend();
+			session.unbindBackends();
 		}
-	}
-
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-
 	}
 
 }

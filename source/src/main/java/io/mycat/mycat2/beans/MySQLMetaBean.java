@@ -42,118 +42,156 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 后端mysql连接元数据类，对应datasource.xml配置中的mysql元数据信息
+ * 
  * @author wuzhihui
  */
 public class MySQLMetaBean {
 	private static final Logger logger = LoggerFactory.getLogger(MySQLMetaBean.class);
-    //VM option -Ddebug=true 在虚拟机选项上添加这个参数，可以使心跳永为真，避免debug时候心跳超时
-//    private static final boolean DEBUG = Boolean.getBoolean("debug");
+	// VM option -Ddebug=true 在虚拟机选项上添加这个参数，可以使心跳永为真，避免debug时候心跳超时
+	// private static final boolean DEBUG = Boolean.getBoolean("debug");
 	private static final boolean DEBUG = true;
 	private DatasourceMetaBean dsMetaBean;
-    private volatile boolean slaveNode = true; // 默认为slave节点
-    private volatile long heartbeatRecoveryTime;  // 心跳暂停时间
-    private DBHeartbeat heartbeat;
-    private MySQLRepBean repBean;
-    private int index;
+	private volatile boolean slaveNode = true; // 默认为slave节点
+	private volatile long heartbeatRecoveryTime; // 心跳暂停时间
+	private DBHeartbeat heartbeat;
+	private MySQLRepBean repBean;
+	private int index;
 
-    private int slaveThreshold = -1;
+	private int slaveThreshold = -1;
 
-    public boolean charsetLoaded = false;
+	public boolean charsetLoaded = false;
 
-    /** collationIndex 和 charsetName 的映射 */
-    public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
-    /** charsetName 到 默认collationIndex 的映射 */
-    public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
+	/** collationIndex 和 charsetName 的映射 */
+	public final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
+	/** charsetName 到 默认collationIndex 的映射 */
+	public final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
-    public void prepareHeartBeat(MySQLRepBean repBean, int status) {
-        if (logger.isInfoEnabled()) {
-            logger.info("prepare heart beat for MySQLMetaBean {} ", this);
+	public MySQLMetaBean() {
 
-        }
-		this.repBean = repBean;
-		this.heartbeat = new MySQLHeartbeat(this,status);
 	}
 
-    public void init() {
+	public void prepareHeartBeat(MySQLRepBean repBean, int status) {
+		if (logger.isInfoEnabled()) {
+			logger.info("prepare heart beat for MySQLMetaBean {} ", this);
+
+		}
+		this.repBean = repBean;
+		this.heartbeat = new MySQLHeartbeat(this, status);
+	}
+
+	public void init() {
 		logger.info("init backend connection for MySQLMetaBean {} ", this);
-    	ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-        MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
-        int reactorSize = runtime.getNioReactorThreads();
-        CopyOnWriteArrayList<MySQLSession > list = new CopyOnWriteArrayList<MySQLSession >();
-        BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, dsMetaBean.getMinCon());
-        for (int i = 0; i < dsMetaBean.getMinCon(); i++) {
-        	MycatReactorThread reactorThread = reactorThreads[i % reactorSize];
-            reactorThread.addNIOJob(() -> {
-                try {
-                    reactorThread.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
-                        if (exeSucces) {
-                            //设置当前连接 读写分离属性
-                            optSession.setDefaultChannelRead(this.isSlaveNode());
-                            if (this.charsetLoaded == false) {
+		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
+		int reactorSize = runtime.getNioReactorThreads();
+		CopyOnWriteArrayList<MySQLSession> list = new CopyOnWriteArrayList<MySQLSession>();
+		BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, dsMetaBean.getMinCon());
+		for (int i = 0; i < dsMetaBean.getMinCon(); i++) {
+			MycatReactorThread reactorThread = reactorThreads[i % reactorSize];
+			reactorThread.addNIOJob(() -> {
+				try {
+					reactorThread.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
+						if (exeSucces) {
+							// 设置当前连接 读写分离属性
+							optSession.setDefaultChannelRead(this.isSlaveNode());
+							if (this.charsetLoaded == false) {
 								this.charsetLoaded = true;
-                                logger.info("load charset for MySQLMetaBean {}:{}", this.dsMetaBean.getIp(), this.dsMetaBean.getPort());
-                                BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession, this,getConTask);
-                                optSession.setCurNIOHandler(backendCharsetReadTask);
-                                backendCharsetReadTask.readCharset();
-                            } else {
-                            	getConTask.finished(optSession,sender,exeSucces,retVal);
+								logger.info("load charset for MySQLMetaBean {}:{}", this.dsMetaBean.getIp(),
+										this.dsMetaBean.getPort());
+								BackendCharsetReadTask backendCharsetReadTask = new BackendCharsetReadTask(optSession,
+										this, getConTask);
+								optSession.setCurNIOHandler(backendCharsetReadTask);
+								backendCharsetReadTask.readCharset();
+							} else {
+								getConTask.finished(optSession, sender, exeSucces, retVal);
 							}
 							optSession.change2ReadOpts();
-							reactorThread.addMySQLSession(this, optSession);
 						} else {
 							this.charsetLoaded = false;
-							getConTask.finished(optSession,sender,exeSucces,retVal);
-                        }
-                    });
-                } catch (IOException e) {
-                	logger.error("error to load charset for metaBean {}", this, e);
-                }
-            });
-        }
-    }
-    
+							getConTask.finished(optSession, sender, exeSucces, retVal);
+						}
+					});
+				} catch (IOException e) {
+					logger.error("error to load charset for metaBean {}", this, e);
+				}
+			});
+		}
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((dsMetaBean == null) ? 0 : dsMetaBean.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MySQLMetaBean other = (MySQLMetaBean) obj;
+		if (dsMetaBean == null) {
+			if (other.dsMetaBean != null)
+				return false;
+		} else if (!dsMetaBean.equals(other.dsMetaBean))
+			return false;
+		return true;
+	}
+
 	public void doHeartbeat() {
 		// 未到预定恢复时间，不执行心跳检测。
 		if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
 			return;
 		}
-		
+
 		try {
 			heartbeat.heartbeat();
 		} catch (Exception e) {
 			logger.error(dsMetaBean.getHostName() + " heartbeat error.", e);
 		}
 	}
-	
+
 	/**
-	 * 清理旧
+	 * 清理旧连接
+	 * 
 	 * @param reason
 	 */
-	public void clearCons(String reason) {
+	public void clearAndDestroyCons(String reason) {
+		logger.info("clear and destroy connections of {} ,for reason ", this, reason);
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+		final MySQLMetaBean target = this;
 		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
-        for (MycatReactorThread f : reactorThreads) {
-            f.clearMySQLMetaBeanSession(this, reason);
-        }
+		// 每个MycatReactorThread异步清理自己使用的连接池
+		for (MycatReactorThread f : reactorThreads) {
+			f.addNIOJob(() -> {
+				f.clearAndDestroyMySQLSession(target, reason);
+			});
+		}
 	}
-	
+
 	/**
 	 * 检查当前是否可用
+	 * 
 	 * @return
-	 */	
+	 */
 	public boolean canSelectAsReadNode() {
 		int slaveBehindMaster = heartbeat.getSlaveBehindMaster();
 		int dbSynStatus = heartbeat.getDbSynStatus();
-		
-		if (!isAlive()){
+
+		if (!isAlive()) {
 			return false;
 		}
-		
+
 		if (dbSynStatus == DBHeartbeat.DB_SYN_ERROR) {
 			return false;
 		}
 		boolean isSync = dbSynStatus == DBHeartbeat.DB_SYN_NORMAL;
-        boolean isNotDelay = (slaveThreshold < 0) || (slaveBehindMaster < slaveThreshold);
+		boolean isNotDelay = (slaveThreshold < 0) || (slaveBehindMaster < slaveThreshold);
 		return isSync && isNotDelay;
 	}
 
@@ -166,12 +204,12 @@ public class MySQLMetaBean {
 	}
 
 	public boolean isSlaveNode() {
-        return slaveNode;
-    }
+		return slaveNode;
+	}
 
-    public void setSlaveNode(boolean slaveNode) {
-        this.slaveNode = slaveNode;
-    }
+	public void setSlaveNode(boolean slaveNode) {
+		this.slaveNode = slaveNode;
+	}
 
 	public MySQLRepBean getRepBean() {
 		return repBean;
@@ -203,15 +241,18 @@ public class MySQLMetaBean {
 
 	/**
 	 * 当前节点是否存活
+	 * 
 	 * @return
 	 */
 	public boolean isAlive() {
-        return heartbeat.getStatus() == DBHeartbeat.OK_STATUS || DEBUG;
+		return heartbeat.getStatus() == DBHeartbeat.OK_STATUS || DEBUG;
 	}
 
-    @Override
-    public String toString() {
-        return "MySQLMetaBean [hostName=" + dsMetaBean.getHostName() + ", ip=" + dsMetaBean.getIp() + ", port=" + dsMetaBean.getPort() + ", user=" + dsMetaBean.getUser() + ", password="
-                + dsMetaBean.getPassword() + ", maxCon=" + dsMetaBean.getMaxCon() + ", minCon=" + dsMetaBean.getMinCon() + ", slaveNode=" + slaveNode + "]";
-    }
+	@Override
+	public String toString() {
+		return "MySQLMetaBean [hostName=" + dsMetaBean.getHostName() + ", ip=" + dsMetaBean.getIp() + ", port="
+				+ dsMetaBean.getPort() + ", user=" + dsMetaBean.getUser() + ", password=" + dsMetaBean.getPassword()
+				+ ", maxCon=" + dsMetaBean.getMaxCon() + ", minCon=" + dsMetaBean.getMinCon() + ", slaveNode="
+				+ slaveNode + "]";
+	}
 }

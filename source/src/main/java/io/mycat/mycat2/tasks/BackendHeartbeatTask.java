@@ -1,5 +1,15 @@
 package io.mycat.mycat2.tasks;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
@@ -11,13 +21,7 @@ import io.mycat.mycat2.beans.heartbeat.MySQLDetector;
 import io.mycat.mycat2.beans.heartbeat.MySQLHeartbeat;
 import io.mycat.mysql.packet.CommandPacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
 
 public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSession> {
     private static final String Slave_IO_Running_str = "Slave_IO_Running";
@@ -122,12 +126,8 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
     void onRsFinish(MySQLSession session, boolean success, String msg) {
         if (success) {
             //归还连接
-            MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
             session.proxyBuffer.reset();
-
             optSession.setIdle(true);
-            reactor.addMySQLSession(metaBean, session);
-
             switch (repBean.getReplicaBean().getRepType()) {
                 case MASTER_SLAVE:
                     masterSlaveHeartbeat();
