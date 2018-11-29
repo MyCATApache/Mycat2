@@ -174,9 +174,12 @@ public class MycatSession extends AbstractMySQLSession {
 	}
 
 	private void unbindAndCloseAllBackend(boolean normal, String hint) {
+		MycatReactorThread curReactThread=(MycatReactorThread) Thread.currentThread();
 		for (MySQLSession mySQLSession : this.backends) {
 			logger.debug("close mysql connection {}", mySQLSession);
 			mySQLSession.close(normal, hint);
+			//从Reactor线程中移除
+			curReactThread.removeMySQLSessionFromMap(mySQLSession);
 		}
 		this.unbindBackends();
 	}
