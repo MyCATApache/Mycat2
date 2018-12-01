@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.List;
 
 import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
 import io.mycat.proxy.buffer.BufferPool;
 
@@ -24,7 +23,7 @@ public class LBSessionManager implements SessionManager<LBSession> {
 
     @Override
     public LBSession createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector,
-                                      SocketChannel channel, boolean isAcceptedCon) throws IOException {
+                                      SocketChannel channel) throws IOException {
         LBSession lbSession = new LBSession(bufPool,nioSelector,channel);
         lbSession.setCurNIOHandler(getDefaultSessionHandler());
         allSession.add(lbSession);
@@ -37,12 +36,17 @@ public class LBSessionManager implements SessionManager<LBSession> {
     }
 
     @Override
-    public NIOHandler getDefaultSessionHandler() {
+    public NIOHandler<LBSession>  getDefaultSessionHandler() {
         return defalultHandler;
     }
 
     @Override
-    public void removeSession(Session session) {
+    public void removeSession(LBSession session) {
         allSession.remove(session);
     }
+
+	@Override
+	public int curSessionCount() {
+		return allSession.size();
+	}
 }

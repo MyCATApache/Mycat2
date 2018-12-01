@@ -24,16 +24,27 @@ public interface SessionManager<T extends Session> {
 	 *            注册到对应的Selector上
 	 * @param channel
 	 *            Channel对象
-	 * @param isAcceptedCon
-	 *            是服务端收到的请求，还是客户端发起的请求
-	 * @return
+	 * @return T session
 	 * @throws IOException
 	 */
-	public T createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel,
-			boolean isAcceptedCon) throws IOException;
+	public T createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel)
+			throws IOException;
 
+	/**
+	 * 返回所有的Session，此方法可能会消耗性能，如果仅仅统计数量，不建议调用此方法
+	 * 
+	 * @return
+	 */
 	public Collection<T> getAllSessions();
-	public NIOHandler getDefaultSessionHandler();
-	public void removeSession(Session session);
+
+	/**
+	 * 获取当前Session数量
+	 * @return count
+	 */
+	public int curSessionCount();
+
+	public NIOHandler<T> getDefaultSessionHandler();
+
+	public void removeSession(T session);
 
 }
