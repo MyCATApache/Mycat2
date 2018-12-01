@@ -82,15 +82,15 @@ public class MySQLMetaBean {
 	public void init() {
 		logger.info("init backend connection for MySQLMetaBean {} ", this);
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
-		int reactorSize = runtime.getNioReactorThreads();
+		MycatReactorThread[] reactorThreads = runtime.getMycatReactorThreads();
+		int reactorSize = runtime.getMycatReactorThreads().length;
 		CopyOnWriteArrayList<MySQLSession> list = new CopyOnWriteArrayList<MySQLSession>();
 		BackendGetConnectionTask getConTask = new BackendGetConnectionTask(list, dsMetaBean.getMinCon());
 		for (int i = 0; i < dsMetaBean.getMinCon(); i++) {
 			MycatReactorThread reactorThread = reactorThreads[i % reactorSize];
 			reactorThread.addNIOJob(() -> {
 				try {
-					reactorThread.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
+					reactorThread.mysqlSessionMan.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
 						if (exeSucces) {
 							// 设置当前连接 读写分离属性
 							optSession.setDefaultChannelRead(this.isSlaveNode());
@@ -165,11 +165,11 @@ public class MySQLMetaBean {
 		logger.info("clear and destroy connections of {} ,for reason ", this, reason);
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		final MySQLMetaBean target = this;
-		MycatReactorThread[] reactorThreads = (MycatReactorThread[]) runtime.getReactorThreads();
+		MycatReactorThread[] reactorThreads = runtime.getMycatReactorThreads();
 		// 每个MycatReactorThread异步清理自己使用的连接池
 		for (MycatReactorThread f : reactorThreads) {
 			f.addNIOJob(() -> {
-				f.clearAndDestroyMySQLSession(target, reason);
+				f.mysqlSessionMan.clearAndDestroyMySQLSession(target, reason);
 			});
 		}
 	}

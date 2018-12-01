@@ -47,13 +47,17 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) {
 		pendingJobs.offer(() -> {
 			try {
-				T session = sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel, true);
+				T session = sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel);
 				allSessions.add(session);
 			} catch (Exception e) {
 				e.printStackTrace();
 				logger.warn("regist new connection err " + e);
 			}
 		});
+	}
+
+	public BufferPool getBufPool() {
+		return bufPool;
 	}
 
 	public void addNIOJob(Runnable job) {

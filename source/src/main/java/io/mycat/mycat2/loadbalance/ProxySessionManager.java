@@ -24,7 +24,7 @@ public class ProxySessionManager implements SessionManager<ProxySession> {
 
     @Override
     public ProxySession createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector,
-                                      SocketChannel channel, boolean isAcceptedCon) throws IOException {
+                                      SocketChannel channel) throws IOException {
         ProxySession proxySession = new ProxySession(bufPool, nioSelector, channel);
         proxySession.setCurNIOHandler(getDefaultSessionHandler());
         allSession.add(proxySession);
@@ -37,12 +37,17 @@ public class ProxySessionManager implements SessionManager<ProxySession> {
     }
 
     @Override
-    public NIOHandler getDefaultSessionHandler() {
+    public NIOHandler<ProxySession> getDefaultSessionHandler() {
         return defalultHandler;
     }
 
     @Override
-    public void removeSession(Session session) {
+    public void removeSession(ProxySession session) {
         allSession.remove(session);
     }
+
+	@Override
+	public int curSessionCount() {
+		return allSession.size();
+	}
 }

@@ -11,9 +11,11 @@ import io.mycat.mycat2.beans.conf.ClusterBean;
 import io.mycat.mycat2.beans.conf.ClusterConfig;
 import io.mycat.mycat2.beans.conf.ProxyBean;
 import io.mycat.mycat2.beans.conf.ProxyConfig;
+import io.mycat.mycat2.loadbalance.LBSession;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOAcceptor;
+import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.proxy.NIOAcceptor.ServerType;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.DirectByteBufferPool;
@@ -27,6 +29,7 @@ public class ProxyStarter {
 
 	/**
 	 * 用于初始化启动
+	 * 
 	 * @throws IOException
 	 */
 	public void start() throws IOException {
@@ -34,10 +37,9 @@ public class ProxyStarter {
 		MycatConfig conf = runtime.getConfig();
 		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
 		ProxyBean proxybean = proxyConfig.getProxy();
-		// 启动NIO Acceptor
+		// 启动Mycat NIO Acceptor
 		NIOAcceptor acceptor = new NIOAcceptor(new DirectByteBufferPool(proxybean.getBufferPoolPageSize(),
-				proxybean.getBufferPoolChunkSize(),
-				proxybean.getBufferPoolPageNumber()));
+				proxybean.getBufferPoolChunkSize(), proxybean.getBufferPoolPageNumber()));
 		acceptor.start();
 		runtime.setAcceptor(acceptor);
 
@@ -54,6 +56,7 @@ public class ProxyStarter {
 
 	/**
 	 * 集群模式下启动先启动admin对应的端口，等集群建立成功后才加载配置启动proxy
+	 * 
 	 * @param runtime
 	 * @param clusterBean
 	 * @param acceptor
@@ -63,7 +66,8 @@ public class ProxyStarter {
 		// 集群模式下，需要等集群启动，主节点确认完配置才能提供服务
 		acceptor.startServerChannel(clusterBean.getIp(), clusterBean.getPort(), ServerType.CLUSTER);
 
-		MyCluster cluster = new MyCluster(acceptor.getSelector(), clusterBean.getMyNodeId(), ClusterNode.parseNodesInf(clusterBean.getAllNodes()));
+		MyCluster cluster = new MyCluster(acceptor.getSelector(), clusterBean.getMyNodeId(),
+				ClusterNode.parseNodesInf(clusterBean.getAllNodes()));
 		runtime.setAdminCmdResolver(new AdminCommandResovler());
 		runtime.setMyCLuster(cluster);
 		cluster.initCluster();
@@ -71,7 +75,9 @@ public class ProxyStarter {
 
 	/**
 	 * 启动代理
-	 * @param isLeader true 主节点，false 从节点
+	 * 
+	 * @param isLeader
+	 *            true 主节点，false 从节点
 	 * @throws IOException
 	 */
 	public void startProxy(boolean isLeader) throws IOException {
@@ -81,7 +87,7 @@ public class ProxyStarter {
 
 		ProxyConfig proxyConfig = conf.getConfig(ConfigEnum.PROXY);
 		ProxyBean proxyBean = proxyConfig.getProxy();
-		if (acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT)){
+		if (acceptor.startServerChannel(proxyBean.getIp(), proxyBean.getPort(), ServerType.MYCAT)) {
 			startReactor();
 
 			// 加载配置文件信息
@@ -92,45 +98,59 @@ public class ProxyStarter {
 
 			conf.getMysqlRepMap().forEach((repName, repBean) -> {
 				repBean.initMaster();
-				repBean.getMetaBeans().forEach(metaBean -> metaBean.prepareHeartBeat(repBean, repBean.getDataSourceInitStatus()));
+				
+				repBean.getMetaBeans()
+						.forEach(metaBean -> metaBean.prepareHeartBeat(repBean, repBean.getDataSourceInitStatus()));
 			});
 		}
 
 		// 主节点才启动心跳，非集群按主节点处理
 		if (isLeader) {
+			//@todo heart beat erro logic ,ingore now by leader us
 			runtime.startHeartBeatScheduler();
 		}
 
 		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
 		ClusterBean clusterBean = clusterConfig.getCluster();
-		
+
 		BalancerConfig balancerConfig = conf.getConfig(ConfigEnum.BALANCER);
 		BalancerBean balancerBean = balancerConfig.getBalancer();
 
 		// 集群模式下才开启负载均衡服务
-        if (clusterBean.isEnable() && balancerBean.isEnable()) {
-			runtime.getAcceptor().startServerChannel(balancerBean.getIp(), balancerBean.getPort(), ServerType.LOAD_BALANCER);
-        }
+		if (clusterBean.isEnable() && balancerBean.isEnable()) {
+			// create and start lbreactor threads
+			runtime.getAcceptor().startServerChannel(balancerBean.getIp(), balancerBean.getPort(),
+					ServerType.LOAD_BALANCER);
+			ProxyReactorThread<LBSession>[] nioThreads = MycatRuntime.INSTANCE.getLbReactorThreads();
+			int cpus = nioThreads.length;
+			for (int i = 0; i < cpus; i++) {
+				ProxyReactorThread<LBSession> thread = new ProxyReactorThread<>(
+						ProxyRuntime.INSTANCE.getBufferPoolFactory().getBufferPool());
+				thread.setName("LoadBalance_Thread " + (i + 1));
+				thread.start();
+				nioThreads[i] = thread;
+			}
+		}
 	}
 
 	public void stopProxy() {
 		ProxyRuntime runtime = ProxyRuntime.INSTANCE;
 		NIOAcceptor acceptor = runtime.getAcceptor();
 		acceptor.stopServerChannel(false);
-		//todo 关闭所有前后端连接？
+		// todo 关闭所有前后端连接？
 
 		runtime.stopHeartBeatScheduler();
 	}
 
 	private void startReactor() throws IOException {
 		// Mycat 2.0 Session Manager
-		MycatReactorThread[] nioThreads = (MycatReactorThread[]) MycatRuntime.INSTANCE.getReactorThreads();
-		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
+		MycatReactorThread[] nioThreads = MycatRuntime.INSTANCE.getMycatReactorThreads();
 		int cpus = nioThreads.length;
-		
+
 		for (int i = 0; i < cpus; i++) {
-			MycatReactorThread thread = new MycatReactorThread(ProxyRuntime.INSTANCE.getBufferPoolFactory().getBufferPool());
-			thread.setName("NIO_Thread " + (i + 1));
+			MycatReactorThread thread = new MycatReactorThread(
+					ProxyRuntime.INSTANCE.getBufferPoolFactory().getBufferPool());
+			thread.setName("Mycat_NIOThread " + (i + 1));
 			thread.start();
 			nioThreads[i] = thread;
 		}
