@@ -1,13 +1,13 @@
 package io.mycat.mycat2.tasks;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
@@ -35,7 +35,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	private final MySQLMetaBean mySQLMetaBean;
 	private final SchemaBean schema;
 	private MySQLSession session;
-	private final boolean addConnectionPool;
 
 	/**
 	 * 异步非阻塞模式创建MySQL连接，如果连接创建成功，需要把新连接加入到所在ReactorThread的连接池，则参数addConnectionPool需要设置为True
@@ -51,7 +50,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	 * @throws IOException
 	 */
 	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLMetaBean mySQLMetaBean,
-			SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack, boolean addConnectionPool) throws IOException {
+			SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack) throws IOException {
 		String serverIP = mySQLMetaBean.getDsMetaBean().getIp();
 		int serverPort = mySQLMetaBean.getDsMetaBean().getPort();
 		logger.info("Connecting to backend MySQL Server " + serverIP + ":" + serverPort);
@@ -59,13 +58,13 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		SocketChannel backendChannel = SocketChannel.open();
 		backendChannel.configureBlocking(false);
 		backendChannel.connect(serverAddress);
-		session = new MySQLSession(bufPool, nioSelector, backendChannel);
+		session = ((MycatReactorThread) Thread.currentThread()).mysqlSessionMan.createSession(mySQLMetaBean, bufPool,
+				nioSelector, backendChannel);
 		session.setMySQLMetaBean(mySQLMetaBean);
 		this.setSession(session, false);
 		this.mySQLMetaBean = mySQLMetaBean;
 		this.schema = schema;
 		this.callBack = callBack;
-		this.addConnectionPool = addConnectionPool;
 	}
 
 	@Override
@@ -91,7 +90,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			handshake.read(this.session.proxyBuffer);
 
 			// 设置字符集编码
-//			int charsetIndex = (handshake.characterSet & 0xff);
+			// int charsetIndex = (handshake.characterSet & 0xff);
 			int charsetIndex = handshake.characterSet;
 			// 发送应答报文给后端
 			NewAuthPacket packet = new NewAuthPacket();
@@ -100,7 +99,8 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			packet.maxPacketSize = 1024 * 1000;
 			packet.characterSet = (byte) charsetIndex;
 			packet.username = mySQLMetaBean.getDsMetaBean().getUser();
-			packet.password = MysqlNativePasswordPluginUtil.scramble411(mySQLMetaBean.getDsMetaBean().getPassword(), handshake.authPluginDataPartOne + handshake.authPluginDataPartTwo);
+			packet.password = MysqlNativePasswordPluginUtil.scramble411(mySQLMetaBean.getDsMetaBean().getPassword(),
+					handshake.authPluginDataPartOne + handshake.authPluginDataPartTwo);
 			packet.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
 			// SchemaBean mycatSchema = session.mycatSchema;
 			// 创建连接时，默认不主动同步数据库
@@ -126,17 +126,15 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 		}
 	}
 
-	protected void onFinished(boolean success) {
-		super.onFinished(success);
-		if (success && addConnectionPool) {
-			logger.debug("add new created mysql session to reactorthread pool {} ", this.session);
-			((MycatReactorThread) Thread.currentThread()).addNewMySQLSession(this.session);
-		}
-	}
-
 	@Override
 	public void onConnect(SelectionKey theKey, MySQLSession userSession, boolean success, String msg)
 			throws IOException {
+		if (logger.isDebugEnabled()) {
+			String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
+			logger.debug("sessionId = {}," + logInfo + " {}:{}", userSession.getSessionId(),
+					userSession.getMySQLMetaBean().getDsMetaBean().getIp(),
+					userSession.getMySQLMetaBean().getDsMetaBean().getPort());
+		}
 		if (success) {
 			InetSocketAddress serverRemoteAddr = (InetSocketAddress) userSession.channel.getRemoteAddress();
 			InetSocketAddress serverLocalAddr = (InetSocketAddress) userSession.channel.getLocalAddress();
@@ -148,14 +146,11 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			errPkg.packetId = 1;
 			errPkg.errno = ErrorCode.ERR_CONNECT_SOCKET;
 			errPkg.message = "backend connect failed " + msg;
+			//新建连接失败，此时MySQLSession并未绑定到MycatSession上，因此需要单独关闭连接，从MySQLSessionManager中移除
+			userSession.close(true, msg);
 			finished(false);
 		}
-		if (logger.isDebugEnabled()) {
-			String logInfo = success ? " backend connect success " : "backend connect failed " + msg;
-			logger.debug("{}  sessionId = {}, {}:{}", logInfo, userSession.getSessionId(),
-					userSession.getMySQLMetaBean().getDsMetaBean().getIp(),
-					userSession.getMySQLMetaBean().getDsMetaBean().getPort());
-		}
+
 	}
 
 }

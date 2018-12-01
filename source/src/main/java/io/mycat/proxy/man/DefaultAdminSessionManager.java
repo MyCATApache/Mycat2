@@ -27,20 +27,14 @@ public class DefaultAdminSessionManager implements SessionManager<AdminSession> 
 	private ArrayList<AdminSession> allSessions = new ArrayList<>();
 
 	@Override
-	public AdminSession createSession(Object keyAttachement ,BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel,
-			boolean isAcceptedCon) throws IOException {
+	public AdminSession createSession(Object keyAttachement ,BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
 
 		AdminSession session = new AdminSession(bufPool, nioSelector, frontChannel);
 		session.setCurNIOHandler(DefaultAdminSessionHandler.INSTANCE);
 		String clusterNodeId = (String) keyAttachement;
 		session.setNodeId(clusterNodeId);
 		// session.setCurProxyHandler(proxyHandler);
-		if (isAcceptedCon) {// 客户端连接上来，所以发送信息给客户端
-			NodeRegInfoPacket nodeRegInf = new NodeRegInfoPacket(session.cluster().getMyNodeId(),
-					session.cluster().getClusterState(), session.cluster().getLastClusterStateTime(),
-					session.cluster().getMyLeaderId(), ProxyRuntime.INSTANCE.getStartTime());
-			session.answerClientNow(nodeRegInf);
-		}
+
 		logger.info(" connected to cluster port  ." + frontChannel + "create session " + session);
 		session.setSessionManager(this);
 		allSessions.add(session);
@@ -51,13 +45,21 @@ public class DefaultAdminSessionManager implements SessionManager<AdminSession> 
 	public Collection<AdminSession> getAllSessions() {
 		return this.allSessions;
 	}
-	public void removeSession(Session session) {
+	public void removeSession(AdminSession session) {
 		this.allSessions.remove(session);
 
 	}
 
 	@Override
-	public NIOHandler getDefaultSessionHandler() {
+	public NIOHandler<AdminSession> getDefaultSessionHandler() {
 		return DefaultAdminSessionHandler.INSTANCE;
+	}
+
+
+
+	@Override
+	public int curSessionCount() {
+		// TODO Auto-generated method stub
+		return allSessions.size();
 	}
 }

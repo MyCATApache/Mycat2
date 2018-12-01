@@ -57,8 +57,7 @@ public class MycatCore {
 		solveArgs(args);
 
 		int cpus = Runtime.getRuntime().availableProcessors();
-		runtime.setNioReactorThreads(cpus);
-		runtime.setReactorThreads(new MycatReactorThread[cpus]);
+		runtime.setMycatReactorThreads(new MycatReactorThread[cpus]);
 
 		// runtime.setNioProxyHandler(new DefaultMySQLProxyHandler());
 		// runtime.setNioProxyHandler(new DefaultDirectProxyHandler());

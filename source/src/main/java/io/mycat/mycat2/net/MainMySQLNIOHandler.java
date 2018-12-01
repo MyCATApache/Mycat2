@@ -49,6 +49,7 @@ public class MainMySQLNIOHandler implements NIOHandler<MySQLSession> {
 	 * @param normal
 	 */
 	public void onSocketClosed(MySQLSession session, boolean normal) {
+		logger.info("MySQL Session closed normal:{} ,{}" ,normal,session);
 		// 交给SQLComand去处理
 		MycatSession mycatSession = session.getMycatSession();
 		MySQLCommand curCmd = mycatSession.getCurSQLCommand();
@@ -59,7 +60,7 @@ public class MainMySQLNIOHandler implements NIOHandler<MySQLSession> {
 
 			}
 		} catch (IOException e) {
-			logger.warn("onSocketClosed caught err ", e);
+			logger.warn("MySQL Session {} onSocketClosed caught err ",session, e);
 			mycatSession.closeAllBackendsAndResponseError(false, ErrorCode.ER_ERROR_ON_CLOSE, e.toString());
 
 		}
