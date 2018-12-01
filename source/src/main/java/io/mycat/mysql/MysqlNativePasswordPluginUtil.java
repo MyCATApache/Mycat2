@@ -9,8 +9,7 @@ import io.mycat.util.RandomUtil;
 import io.mycat.util.SecurityUtil;
 
 /**
- * ${todo}
- *
+ * mysql 插件工具类
  * @author : zhuqiang
  * @date : 2018/11/25 20:03
  */
@@ -21,7 +20,7 @@ public class MysqlNativePasswordPluginUtil {
     public static byte[] scramble411(String password, byte[] seed) {
         if (password == null || password.length() == 0) {
             logger.warn("password is empty");
-            return null;
+            return new byte[0];
         }
         try {
             return SecurityUtil.scramble411(password.getBytes(), seed);
