@@ -1,8 +1,5 @@
 package io.mycat.mycat2;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -10,6 +7,9 @@ import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
@@ -34,7 +34,6 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
-import io.mycat.util.RandomUtil;
 
 /**
  * 前端连接会话
@@ -511,7 +510,7 @@ public class MycatSession extends AbstractMySQLSession {
 
 	public void switchSQLCommand(MySQLCommand newCmd) {
 		logger.debug("{} switch command from {} to  {} ", this, this.curSQLCommand, newCmd);
-		this.curSQLCommand=newCmd;
+		this.curSQLCommand = newCmd;
 
 	}
 

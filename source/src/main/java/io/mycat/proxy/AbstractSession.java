@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.CurSQLState;
-import io.mycat.mycat2.MycatSession;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.StringUtil;
 
@@ -296,9 +295,7 @@ public abstract class AbstractSession implements Session {
 			if (!referedBuffer) {
 				recycleAllocedBuffer(proxyBuffer);
 			}
-			if (this instanceof MycatSession) {
-				this.getMySessionManager().removeSession(this);
-			}
+			this.getMySessionManager().removeSession(this);
 		} else {
 			logger.warn("session already closed " + this.sessionInfo());
 		}

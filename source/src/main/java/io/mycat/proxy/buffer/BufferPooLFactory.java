@@ -38,7 +38,7 @@ public class BufferPooLFactory {
 		
 	public BufferPooLFactory(){
 		
-		int poolCount = ProxyRuntime.INSTANCE.getNioReactorThreads();
+		int poolCount = ProxyRuntime.INSTANCE.getMycatReactorThreads().length;
 		
 		ProxyConfig proxyConfig = ProxyRuntime.INSTANCE.getConfig().getConfig(ConfigEnum.PROXY);
 		

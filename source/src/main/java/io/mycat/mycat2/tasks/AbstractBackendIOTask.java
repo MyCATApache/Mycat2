@@ -3,6 +3,9 @@ package io.mycat.mycat2.tasks;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.mycat.mycat2.AbstractMySQLSession;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mysql.packet.ErrorPacket;
@@ -16,7 +19,7 @@ import io.mycat.proxy.ProxyBuffer;
  *
  */
 public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> implements NIOHandler<T> {
-
+	protected final static Logger logger = LoggerFactory.getLogger(AbstractBackendIOTask.class);
 	protected AsynTaskCallBack<T> callBack;
 	protected T session;
 	protected ProxyBuffer prevProxyBuffer;
@@ -30,9 +33,11 @@ public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> impl
 	public AbstractBackendIOTask() {
 		this(null, false);
 	}
+
 	public void setSession(T session, boolean useNewBuffer) {
-		setSession( session, useNewBuffer, true);
+		setSession(session, useNewBuffer, true);
 	}
+
 	public void setSession(T session, boolean useNewBuffer, boolean useNewCurHandler) {
 		this.useNewBuffer = useNewBuffer;
 		if (useNewBuffer) {
@@ -50,7 +55,6 @@ public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> impl
 		if (useNewBuffer) {
 			revertPreBuffer();
 		}
-		onFinished(success);
 		callBack.finished(session, this, success, this.errPkg);
 	}
 
@@ -59,25 +63,24 @@ public abstract class AbstractBackendIOTask<T extends AbstractMySQLSession> impl
 		session.proxyBuffer = this.prevProxyBuffer;
 	}
 
-	protected void onFinished(boolean success) {
-
-	}
-
 	public void onConnect(SelectionKey theKey, MySQLSession userSession, boolean success, String msg)
 			throws IOException {
-
+		logger.warn("not implemented onConnect event {}",this);
 	}
 
 	public void setCallback(AsynTaskCallBack<T> callBack) {
 		this.callBack = callBack;
 
 	}
-	public AsynTaskCallBack<T>	getCallback() {
-		return this.callBack ;
+
+	public AsynTaskCallBack<T> getCallback() {
+		return this.callBack;
 
 	}
+
 	@Override
 	public void onSocketClosed(T userSession, boolean normal) {
+		logger.warn("not implemented onConnect event {}",this);
 	}
 
 	@Override

@@ -47,20 +47,22 @@ public class ProxyRuntime {
 	/*
 	 * 时间更新周期
 	 */
-	private static final long TIME_UPDATE_PERIOD   = 20L;
-	private static final String TIME_UPDATE_TASK   = "TIME_UPDATE_TASK";
-	private static final String PROCESSOR_CHECK    = "PROCESSOR_CHECK";
+	private static final long TIME_UPDATE_PERIOD = 20L;
+	private static final String TIME_UPDATE_TASK = "TIME_UPDATE_TASK";
+	private static final String PROCESSOR_CHECK = "PROCESSOR_CHECK";
 	private static final String REPLICA_ILDE_CHECK = "REPLICA_ILDE_CHECK";
-	private static final String REPLICA_HEARTBEAT  = "REPLICA_HEARTBEAT";
+	private static final String REPLICA_HEARTBEAT = "REPLICA_HEARTBEAT";
 
 	private MycatConfig config;
 	private AtomicInteger sessionId = new AtomicInteger(1);
-	private int nioReactorThreads = 2;
 	private boolean traceProtocol = false;
 	private final long startTime = System.currentTimeMillis();
 
 	private NIOAcceptor acceptor;
-	private ProxyReactorThread<?>[] reactorThreads;
+	// Mycat 8066数据端口线程派发池
+	private MycatReactorThread[] reactorThreads;
+	// 负载均衡器所用的Reactor派发线程池
+	private ProxyReactorThread<LBSession>[] lbReactorThreads;
 	private SessionManager<?> sessionManager;
 	// 用于管理端口的Session会话管理
 	private SessionManager<AdminSession> adminSessionManager;
@@ -73,15 +75,15 @@ public class ProxyRuntime {
 	private NameableExecutor businessExecutor;
 	private ListeningExecutorService listeningExecutorService;
 
-	private Map<String,ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
+	private Map<String, ScheduledFuture<?>> heartBeatTasks = new HashMap<>();
 	private NameableExecutor timerExecutor;
 	private ScheduledExecutorService heartbeatScheduler;
-	
-	public  long maxdataSourceInitTime = 60 * 1000L;
+
+	public long maxdataSourceInitTime = 60 * 1000L;
 	private int catletClassCheckSeconds = 60;
-	/*动态加载catlet的classs*/
+	/* 动态加载catlet的classs */
 	private DynaClassLoader catletLoader = null;
-	private BufferPooLFactory  bufferPoolFactory = null;
+	private BufferPooLFactory bufferPoolFactory = null;
 
 	/**
 	 * 是否双向同时通信，大部分TCP Server是单向的，即发送命令，等待应答，然后下一个
@@ -98,45 +100,34 @@ public class ProxyRuntime {
 	private MyCluster myCLuster;
 
 	public void init() {
-		//心跳调度独立出来，避免被其他任务影响
+		// 心跳调度独立出来，避免被其他任务影响
 		heartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
 		HeartbeatConfig heartbeatConfig = config.getConfig(ConfigEnum.HEARTBEAT);
 		timerExecutor = ExecutorUtil.create("Timer", heartbeatConfig.getHeartbeat().getTimerExecutor());
-		businessExecutor = ExecutorUtil.create("BusinessExecutor",Runtime.getRuntime().availableProcessors());
+		businessExecutor = ExecutorUtil.create("BusinessExecutor", Runtime.getRuntime().availableProcessors());
 		listeningExecutorService = MoreExecutors.listeningDecorator(businessExecutor);
 		MatchMethodGenerator.initShrinkCharTbl();
-	
-//		catletLoader = new DynaClassLoader("C:\\Users\\netinnet\\Documents\\GitHub\\tcp-proxy\\source\\target\\classes\\catlet", catletClassCheckSeconds);
-		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath()
-				+ File.separator + "catlet", catletClassCheckSeconds);
-		
-		heartbeatScheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD,TimeUnit.MILLISECONDS);
-		
+
+		// catletLoader = new
+		// DynaClassLoader("C:\\Users\\netinnet\\Documents\\GitHub\\tcp-proxy\\source\\target\\classes\\catlet",
+		// catletClassCheckSeconds);
+		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath() + File.separator + "catlet",
+				catletClassCheckSeconds);
+
+		heartbeatScheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
+
 		bufferPoolFactory = BufferPooLFactory.getInstance();
 	}
-	
-	public ProxyReactorThread<?> getProxyReactorThread(ReactorEnv reactorEnv){
-		// 找到一个可用的NIO Reactor Thread，交付托管
-		if (reactorEnv.counter++ == Integer.MAX_VALUE) {
-			reactorEnv.counter = 1;
-		}
-		int index = reactorEnv.counter % ProxyRuntime.INSTANCE.getNioReactorThreads();
-		// 获取一个reactor对象
-		return ProxyRuntime.INSTANCE.getReactorThreads()[index];
-	}
-	
+
 	/**
 	 * 启动心跳检测任务
 	 */
-	public void startHeartBeatScheduler(){
-		if(heartBeatTasks.get(REPLICA_HEARTBEAT)==null){
+	public void startHeartBeatScheduler() {
+		if (heartBeatTasks.get(REPLICA_HEARTBEAT) == null) {
 			HeartbeatConfig heartbeatConfig = config.getConfig(ConfigEnum.HEARTBEAT);
 			long replicaHeartbeat = heartbeatConfig.getHeartbeat().getReplicaHeartbeatPeriod();
-			heartBeatTasks.put(REPLICA_HEARTBEAT,
-					heartbeatScheduler.scheduleAtFixedRate(replicaHeartbeat(),
-														  0,
-														  replicaHeartbeat,
-														  TimeUnit.MILLISECONDS));
+			heartBeatTasks.put(REPLICA_HEARTBEAT, heartbeatScheduler.scheduleAtFixedRate(replicaHeartbeat(), 0,
+					replicaHeartbeat, TimeUnit.MILLISECONDS));
 		}
 	}
 
@@ -147,15 +138,16 @@ public class ProxyRuntime {
 	public void addDelayedJob(Runnable job, int delayedSeconds) {
 		schedulerService.schedule(job, delayedSeconds, TimeUnit.SECONDS);
 	}
-	
+
 	/**
 	 * 准备切换
+	 * 
 	 * @param <T>
 	 * @param <R>
 	 * @param replBean
 	 * @param writeIndex
 	 */
-	public void prepareSwitchDataSource(String replBean,Integer writeIndex,boolean sync){
+	public void prepareSwitchDataSource(String replBean, Integer writeIndex, boolean sync) {
 		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
 		ClusterConfig clusterConfig = conf.getConfig(ConfigEnum.CLUSTER);
 		ReplicaIndexConfig curRepIndexConfig = conf.getConfig(ConfigEnum.REPLICA_INDEX);
@@ -172,45 +164,47 @@ public class ProxyRuntime {
 			int curVersion = conf.getConfigVersion(configEnum);
 			conf.setConfigVersion(configEnum, curVersion + 1);
 			YamlUtil.archiveAndDumpToFile(conf.getConfig(configEnum), configEnum.getFileName(), curVersion);
-			startSwitchDataSource(replBean, writeIndex,sync);
+			startSwitchDataSource(replBean, writeIndex, sync);
 		}
 	}
 
 	/**
 	 * 切换 metaBean 名称
 	 */
-	public void startSwitchDataSource(String replBean, Integer writeIndex, boolean sync){
+	public void startSwitchDataSource(String replBean, Integer writeIndex, boolean sync) {
 
 		MySQLRepBean repBean = config.getMySQLRepBean(replBean);
-		
+
 		Runnable runnable = () -> {
 			repBean.setSwitchResult(false);
-			repBean.switchSource(writeIndex,maxdataSourceInitTime);
+			repBean.switchSource(writeIndex, maxdataSourceInitTime);
 
-			if (repBean.getSwitchResult().get()){
-				logger.info("success to switch datasource for replica: {}, writeIndex: {}", repBean.getReplicaBean().getName(), writeIndex);
+			if (repBean.getSwitchResult().get()) {
+				logger.info("success to switch datasource for replica: {}, writeIndex: {}",
+						repBean.getReplicaBean().getName(), writeIndex);
 			} else {
-				logger.error("error to switch datasource for replica: {}, writeIndex: {}", repBean.getReplicaBean().getName(), writeIndex);
+				logger.error("error to switch datasource for replica: {}, writeIndex: {}",
+						repBean.getReplicaBean().getName(), writeIndex);
 			}
 		};
-		
-		if (repBean != null){
-			if (sync){
+
+		if (repBean != null) {
+			if (sync) {
 				addBusinessJob(runnable);
 			} else {
 				runnable.run();
 			}
-		}	
+		}
 	}
-	
+
 	/**
 	 * 停止
 	 */
-	public void stopHeartBeatScheduler(){
-		heartBeatTasks.values().stream().forEach(f->f.cancel(false));
+	public void stopHeartBeatScheduler() {
+		heartBeatTasks.values().stream().forEach(f -> f.cancel(false));
 		heartBeatTasks.clear();
 	}
-	
+
 	// 系统时间定时更新任务
 	public Runnable updateTime() {
 		return new Runnable() {
@@ -220,12 +214,13 @@ public class ProxyRuntime {
 			}
 		};
 	}
-		
+
 	// 数据节点定时心跳任务
 	private Runnable replicaHeartbeat() {
-		return ()->{
-			ProxyReactorThread<?> reactor  = getReactorThreads()[ThreadLocalRandom.current().nextInt(getReactorThreads().length)];
-			reactor.addNIOJob(()-> config.getMysqlRepMap().values().stream().forEach(f -> f.doHeartbeat()));
+		return () -> {
+			ProxyReactorThread<?> reactor = this.reactorThreads[ThreadLocalRandom.current()
+					.nextInt(reactorThreads.length)];
+			reactor.addNIOJob(() -> config.getMysqlRepMap().values().stream().forEach(f -> f.doHeartbeat()));
 		};
 	}
 
@@ -249,15 +244,7 @@ public class ProxyRuntime {
 		return schedulerService;
 	}
 
-	public int getNioReactorThreads() {
-		return nioReactorThreads;
-	}
-
-	public void setNioReactorThreads(int nioReactorThreads) {
-		this.nioReactorThreads = nioReactorThreads;
-	}
-
-	public ProxyReactorThread<?>[] getReactorThreads() {
+	public MycatReactorThread[] getMycatReactorThreads() {
 		return reactorThreads;
 	}
 
@@ -265,7 +252,7 @@ public class ProxyRuntime {
 		return nio_biproxyflag;
 	}
 
-	public void setReactorThreads(ProxyReactorThread<?>[] reactorThreads) {
+	public void setMycatReactorThreads(MycatReactorThread[] reactorThreads) {
 		this.reactorThreads = reactorThreads;
 	}
 
@@ -352,6 +339,14 @@ public class ProxyRuntime {
 		this.adminSessionManager = adminSessionManager;
 	}
 
+	public ProxyReactorThread<LBSession>[] getLbReactorThreads() {
+		return lbReactorThreads;
+	}
+
+	public void setLbReactorThreads(ProxyReactorThread<LBSession>[] lbReactorThreads) {
+		this.lbReactorThreads = lbReactorThreads;
+	}
+
 	public long getStartTime() {
 		return startTime;
 	}
@@ -372,7 +367,6 @@ public class ProxyRuntime {
 		this.acceptor = acceptor;
 	}
 
-
 	public SessionManager<ProxySession> getProxySessionSessionManager() {
 		return proxySessionSessionManager;
 	}
@@ -388,7 +382,7 @@ public class ProxyRuntime {
 	public void setLbSessionSessionManager(SessionManager<LBSession> lbSessionSessionManager) {
 		this.lbSessionSessionManager = lbSessionSessionManager;
 	}
-	
+
 	public DynaClassLoader getCatletLoader() {
 		return catletLoader;
 	}
@@ -400,11 +394,12 @@ public class ProxyRuntime {
 	public void setBufferPoolFactory(BufferPooLFactory bufferPoolFactory) {
 		this.bufferPoolFactory = bufferPoolFactory;
 	}
-	
-	public NameableExecutor getTimerExecutor(){
+
+	public NameableExecutor getTimerExecutor() {
 		return this.timerExecutor;
 	}
-	public NameableExecutor getBusinessExecutor(){
+
+	public NameableExecutor getBusinessExecutor() {
 		return this.businessExecutor;
 	}
 }
