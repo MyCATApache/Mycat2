@@ -8,25 +8,54 @@ import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ParseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
-import java.util.List;
+import java.util.StringJoiner;
 
 import static io.mycat.util.ParseUtil.msyql_packetHeaderSize;
 import static io.mycat.util.ParseUtil.mysql_packetTypeSize;
 
 public class MySQLProxyStateMachine {
+    protected static Logger logger = LoggerFactory.getLogger(MySQLProxyStateMachine.class);
     int sqlType = -1;
     int prepareFieldNum = 0;
     int prepareParamNum = 0;
     long columnCount = 0;
     int serverStatus = 0;
+
+
     int lastPacketId = 0;
     ComQueryRespState state = ComQueryRespState.FIRST_PACKET;
     boolean willBeFinished = false;
 
     MySQLRespPacketType mysqlPacketType = MySQLRespPacketType.UNKNOWN;
-    boolean payloadFinishedInThisPacket = false;
+    boolean crossPacket = false;
+
+    public void updatePayloadState(
+            int sqlType,
+            int prepareFieldNum,
+            int prepareParamNum,
+            long columnCount,
+            int serverStatus,
+            int lastPacketId,
+            ComQueryRespState state,
+            boolean willBeFinished,
+            MySQLRespPacketType mysqlPacketType,
+            boolean payloadFinishedInThisPacket
+    ) {
+        this.sqlType = sqlType;
+        this.prepareFieldNum = prepareFieldNum;
+        this.prepareParamNum = prepareParamNum;
+        this.columnCount = columnCount;
+        this.serverStatus = serverStatus;
+        this.lastPacketId = lastPacketId;
+        this.state = state;
+        this.willBeFinished = willBeFinished;
+        this.mysqlPacketType = mysqlPacketType;
+        this.crossPacket = payloadFinishedInThisPacket;
+    }
 
 
     CapabilityFlags capabilityFlags = MySQLSession.getClientCapabilityFlags();
@@ -37,19 +66,17 @@ public class MySQLProxyStateMachine {
     public static final int RESULT_MIN_LENGTH = 13;
 
 
-    public PayloadType resolveFullPayload(PacketInf packetInf, List<PacketInf> list) {
+    public PayloadType resolveFullPayload(PacketInf packetInf) {
         ProxyBuffer proxyBuf = packetInf.proxyBuffer;
         while (proxyBuf.writeIndex != proxyBuf.readIndex) {
             PacketType type = resolveMySQLPackage(packetInf);
             if (type == PacketType.FULL) {//终止条件
-                list.add(packetInf);
-                if (this.payloadFinishedInThisPacket) {
+                if (!this.crossPacket) {
                     return PayloadType.FULL_PAYLOAD;
                 } else {
                     return PayloadType.TYPE_PAYLOAD;
                 }
             } else if (packetInf.needExpandBuffer) {
-                list.add(packetInf);
                 break;
             } else if (type == PacketType.LONG_HALF) {
                 return PayloadType.TYPE_PAYLOAD;
@@ -62,26 +89,20 @@ public class MySQLProxyStateMachine {
 
     public PayloadType resolveCrossBufferFullPayload(PacketInf packetInf) {
         ProxyBuffer proxyBuf = packetInf.proxyBuffer;
-        while (proxyBuf.writeIndex != proxyBuf.readIndex) {
             PacketType type = resolveMySQLPackage(packetInf);
-            if (payloadFinishedInThisPacket && type == PacketType.FINISHED_CROSS) {
+            if (!crossPacket && type == PacketType.FINISHED_CROSS) {
                 return PayloadType.FULL_PAYLOAD;
-            } else if (type == PacketType.LONG_HALF) {
-                packetInf.crossBuffer();
-                return PayloadType.TYPE_PAYLOAD;
+            } else if (type == PacketType.LONG_HALF || (type == PacketType.FULL && crossPacket)) {
+                return packetInf.crossBuffer()?PayloadType.REST_CROSS_PAYLOAD:PayloadType.HALF_PAYLOAD;
             } else if (type == PacketType.SHORT_HALF) {
                 return PayloadType.HALF_PAYLOAD;
             } else if (type == PacketType.REST_CROSS) {
                 return PayloadType.REST_CROSS_PAYLOAD;
             }
-            if (payloadFinishedInThisPacket && type == PacketType.FULL) {
+            if (!crossPacket && type == PacketType.FULL) {
                 return PayloadType.FULL_PAYLOAD;
-            } else if (type == PacketType.FULL) {
-                return PayloadType.TYPE_PAYLOAD;
             }
-            return PayloadType.TYPE_PAYLOAD;
-        }
-        throw new RuntimeException("unknown state!");
+            throw new RuntimeException("unknown state!");
     }
 
     public PacketType resolveMySQLPackage(PacketInf packetInf) {
@@ -96,21 +117,26 @@ public class MySQLProxyStateMachine {
                 if (totalLen > 3) {//totalLen >= 4
                     int packetId = buffer.get(offset + 3) & 0xff;
                     checkPacketId(packetId);
-                    packetInf.resetByPacketId(packetId);
-                    packetInf.pkgLength = ParseUtil.getPacketLength(buffer, offset);
-                    boolean isCrossPacket = this.payloadFinishedInThisPacket;
-                    this.payloadFinishedInThisPacket = (packetInf.pkgLength) != 0xffffff + 4;
+                    packetInf.packetId = (packetId);
+                    packetInf.pkgLength = Math.min(ParseUtil.getPacketLength(buffer, offset), 0xffffff);
+                    boolean isCrossPacket = this.crossPacket;
+                    this.crossPacket = (packetInf.pkgLength) == 0xffffff;
                     boolean isPacketFinished = totalLen >= packetInf.pkgLength;
                     if (isCrossPacket) {
                         return resolveCrossPacket(packetInf, offset, limit, totalLen);
                     }
                     if (totalLen > 4) {
                         return resolveShort2FullOrLongHalf(packetInf, offset, limit, buffer, isPacketFinished);
-                    } else {// totalLen == 4 but not CrossPacket;
-                        throw new RuntimeException("unknown state!");
                     }
+                    if (totalLen == 4 && packetInf.pkgLength == 4) {
+                        this.updatePayloadState(this.sqlType, this.prepareFieldNum, this.prepareParamNum, this.columnCount, this.serverStatus, this.lastPacketId,
+                                this.state, false, MySQLRespPacketType.UNKNOWN, false);
+                    }
+
                 } else {
-                    return PacketType.SHORT_HALF;
+                    this.updatePayloadState(this.sqlType, this.prepareFieldNum, this.prepareParamNum, this.columnCount, this.serverStatus, this.lastPacketId,
+                            this.state, false, MySQLRespPacketType.UNKNOWN, false);
+                    return packetInf.change2ShortHalf();
                 }
             }
             case LONG_HALF:
@@ -132,7 +158,7 @@ public class MySQLProxyStateMachine {
         packetInf.startPos = offset;
         if (isPacketFinished) {
             packetInf.endPos = offset + packetInf.pkgLength;
-            if (packetInf.isMetaData) {
+            if (packetInf.isMetaData && !this.crossPacket) {
                 resolvePayloadType(packetInf, true);
             }
             return packetInf.packetType = PacketType.FULL;
@@ -170,6 +196,9 @@ public class MySQLProxyStateMachine {
         packetInf.startPos = offset;
         if (totalLen >= packetInf.pkgLength) {
             packetInf.endPos = offset + packetInf.pkgLength;
+            if (packetInf.isMetaData) {
+                resolvePayloadType(packetInf, true);
+            }
             return PacketType.FULL;
         } else {
             packetInf.endPos = limit;
@@ -240,7 +269,7 @@ public class MySQLProxyStateMachine {
             }
             case PREPARE_RESPONSE: {
                 this.mysqlPacketType = MySQLRespPacketType.PREPARE_OK;
-                resolvePrepareResponse(packetInf.proxyBuffer, head,isPacketFinished);
+                resolvePrepareResponse(packetInf.proxyBuffer, head, isPacketFinished);
             }
         }
     }
@@ -250,7 +279,7 @@ public class MySQLProxyStateMachine {
         if (totalLen >= packetInf.pkgLength) {
             packetInf.endPos = offset + packetInf.pkgLength;
             if (packetInf.isMetaData) {
-                resolvePayloadType(packetInf,true);
+                resolvePayloadType(packetInf, true);
             }
             return packetInf.packetType = PacketType.FULL;
         }
@@ -277,7 +306,7 @@ public class MySQLProxyStateMachine {
         }
     }
 
-    private void resolvePrepareResponse(ProxyBuffer proxyBuf, int head,boolean isPacketFinished) {
+    private void resolvePrepareResponse(ProxyBuffer proxyBuf, int head, boolean isPacketFinished) {
         if (!isPacketFinished) throw new RuntimeException("unknown state!");
         if (prepareFieldNum > 0) {
             prepareFieldNum--;
@@ -341,42 +370,73 @@ public class MySQLProxyStateMachine {
     }
 
     public static class PacketInf {
-        public int head;
-        public int packetId;
-        public int startPos;
-        public int endPos;
-        public int pkgLength;
-        public int remainsBytes;//还有多少字节才结束，仅对跨多个Buffer的MySQL报文有意义（crossBuffer=true)
-        public PacketType packetType = PacketType.SHORT_HALF;
-        public boolean needExpandBuffer;
-        public ProxyBuffer proxyBuffer;
-        private boolean isMetaData = false;
+        int head;
+        int packetId;
+        int startPos;
+        int endPos;
+        int pkgLength;
+        int remainsBytes;//还有多少字节才结束，仅对跨多个Buffer的MySQL报文有意义（crossBuffer=true)
+        PacketType packetType = PacketType.SHORT_HALF;
+        boolean needExpandBuffer;
+        ProxyBuffer proxyBuffer;
+        boolean isMetaData = false;
+
+        public void updateState(
+                int head,
+                int packetId,
+                int startPos,
+                int endPos,
+                int pkgLength,
+                int remainsBytes,
+                PacketType packetType,
+                boolean needExpandBuffer,
+                ProxyBuffer proxyBuffer,
+                boolean isMetaData
+        ) {
+            String oldState = null;
+            if (logger.isDebugEnabled()) {
+                oldState = this.toString();
+                logger.debug("from {}", oldState);
+            }
+            this.head = head;
+            this.packetId = packetId;
+            this.startPos = startPos;
+            this.endPos = endPos;
+            this.pkgLength = pkgLength;
+            this.remainsBytes = remainsBytes;
+            this.packetType = packetType;
+            this.needExpandBuffer = needExpandBuffer;
+            this.proxyBuffer = proxyBuffer;
+            this.isMetaData = isMetaData;
+            if (logger.isDebugEnabled()) {
+                logger.debug("to   {}", this.toString());
+            }
+        }
+
 
         public PacketInf(ProxyBuffer proxyBuffer) {
             this.proxyBuffer = proxyBuffer;
         }
 
-        public void resetByPacketId(int packetId) {
-            this.packetId = packetId;
-            this.pkgLength = 0;
-            this.head = 0;
-            this.startPos = 0;
-            this.endPos = 0;
-            this.remainsBytes = 0;
-            this.packetType = PacketType.SHORT_HALF;
-            this.needExpandBuffer = false;
-            this.isMetaData = false;
+//        public void resetByPacketId(int packetId) {
+//            this.updateState(0, packetId, 0, 0, 0, 0, PacketType.SHORT_HALF,
+//                    false, proxyBuffer, this.isMetaData);
+//        }
+
+        public PacketType change2ShortHalf() {
+            this.updateState(0, packetId, 0, 0, 0, 0, PacketType.SHORT_HALF,
+                    false, proxyBuffer, false);
+            return PacketType.SHORT_HALF;
         }
 
         public boolean crossBuffer() {
             if (this.packetType == PacketType.LONG_HALF && !isMetaData) {
-                this.packetType = PacketType.REST_CROSS;
-                PacketInf curMSQLPackgInf = this;
-                if (curMSQLPackgInf.remainsBytes == 0 && !ParseUtil.validateHeader(curMSQLPackgInf.startPos, curMSQLPackgInf.endPos)) {
+                if (this.remainsBytes == 0 && !ParseUtil.validateHeader(this.startPos, this.endPos)) {
                     throw new UnsupportedOperationException("");
                 }
-                this.remainsBytes = this.pkgLength - (this.endPos - this.startPos);
                 this.proxyBuffer.readIndex = this.endPos;
+                this.updateState(this.head, this.packetId, this.startPos, this.endPos, this.pkgLength, this.pkgLength - (this.endPos - this.startPos), PacketType.REST_CROSS,
+                        this.needExpandBuffer, proxyBuffer, this.isMetaData);
                 return true;
             } else {
                 return false;
@@ -387,8 +447,24 @@ public class MySQLProxyStateMachine {
             if (packetType == PacketType.FULL || packetType == PacketType.REST_CROSS || packetType == PacketType.FINISHED_CROSS) {
                 this.proxyBuffer.readIndex = endPos;
             } else {
-                throw new UnsupportedOperationException("markRead is only in FULL or REST_CROSS");
+                throw new UnsupportedOperationException("markRead is only in FULL or REST_CROSS or FINISHED_CROSS");
             }
+        }
+
+        @Override
+        public String toString() {
+            return new StringJoiner(", ", PacketInf.class.getSimpleName() + "[", "]")
+                    .add("head=" + head)
+                    .add("packetId=" + packetId)
+                    .add("startPos=" + startPos)
+                    .add("endPos=" + endPos)
+                    .add("pkgLength=" + pkgLength)
+                    .add("remainsBytes=" + remainsBytes)
+                    .add("packetType=" + packetType)
+                    .add("needExpandBuffer=" + needExpandBuffer)
+                    .add("proxyBuffer=" + proxyBuffer)
+                    .add("isMetaData=" + isMetaData)
+                    .toString();
         }
     }
 
