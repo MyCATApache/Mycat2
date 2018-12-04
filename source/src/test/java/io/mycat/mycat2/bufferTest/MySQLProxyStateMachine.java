@@ -89,20 +89,20 @@ public class MySQLProxyStateMachine {
 
     public PayloadType resolveCrossBufferFullPayload(PacketInf packetInf) {
         ProxyBuffer proxyBuf = packetInf.proxyBuffer;
-            PacketType type = resolveMySQLPackage(packetInf);
-            if (!crossPacket && type == PacketType.FINISHED_CROSS) {
-                return PayloadType.FULL_PAYLOAD;
-            } else if (type == PacketType.LONG_HALF || (type == PacketType.FULL && crossPacket)) {
-                return packetInf.crossBuffer()?PayloadType.REST_CROSS_PAYLOAD:PayloadType.HALF_PAYLOAD;
-            } else if (type == PacketType.SHORT_HALF) {
-                return PayloadType.HALF_PAYLOAD;
-            } else if (type == PacketType.REST_CROSS) {
-                return PayloadType.REST_CROSS_PAYLOAD;
-            }
-            if (!crossPacket && type == PacketType.FULL) {
-                return PayloadType.FULL_PAYLOAD;
-            }
-            throw new RuntimeException("unknown state!");
+        PacketType type = resolveMySQLPackage(packetInf);
+        if (!crossPacket && type == PacketType.FINISHED_CROSS) {
+            return PayloadType.FULL_PAYLOAD;
+        } else if (type == PacketType.LONG_HALF || (type == PacketType.FULL && crossPacket)) {
+            return packetInf.crossBuffer() ? PayloadType.REST_CROSS_PAYLOAD : PayloadType.HALF_PAYLOAD;
+        } else if (type == PacketType.SHORT_HALF) {
+            return PayloadType.HALF_PAYLOAD;
+        } else if (type == PacketType.REST_CROSS) {
+            return PayloadType.REST_CROSS_PAYLOAD;
+        }
+        if (!crossPacket && type == PacketType.FULL) {
+            return PayloadType.FULL_PAYLOAD;
+        }
+        throw new RuntimeException("unknown state!");
     }
 
     public PacketType resolveMySQLPackage(PacketInf packetInf) {
@@ -118,9 +118,15 @@ public class MySQLProxyStateMachine {
                     int packetId = buffer.get(offset + 3) & 0xff;
                     checkPacketId(packetId);
                     packetInf.packetId = (packetId);
-                    packetInf.pkgLength = Math.min(ParseUtil.getPacketLength(buffer, offset), 0xffffff);
+                    int payloadLength = ParseUtil.getPayloadLength(buffer, offset);
                     boolean isCrossPacket = this.crossPacket;
-                    this.crossPacket = (packetInf.pkgLength) == 0xffffff;
+                    this.crossPacket = payloadLength == 0xffffff;
+                    if (this.crossPacket) {
+                        packetInf.pkgLength = 0xffffff;
+                    } else {
+                        packetInf.pkgLength = payloadLength + 4;
+                    }
+
                     boolean isPacketFinished = totalLen >= packetInf.pkgLength;
                     if (isCrossPacket) {
                         return resolveCrossPacket(packetInf, offset, limit, totalLen);
@@ -131,13 +137,14 @@ public class MySQLProxyStateMachine {
                     if (totalLen == 4 && packetInf.pkgLength == 4) {
                         this.updatePayloadState(this.sqlType, this.prepareFieldNum, this.prepareParamNum, this.columnCount, this.serverStatus, this.lastPacketId,
                                 this.state, false, MySQLRespPacketType.UNKNOWN, false);
+                        packetInf.endPos = 4;
+                        return packetInf.packetType = PacketType.FULL;
                     }
 
-                } else {
-                    this.updatePayloadState(this.sqlType, this.prepareFieldNum, this.prepareParamNum, this.columnCount, this.serverStatus, this.lastPacketId,
-                            this.state, false, MySQLRespPacketType.UNKNOWN, false);
-                    return packetInf.change2ShortHalf();
                 }
+                this.updatePayloadState(this.sqlType, this.prepareFieldNum, this.prepareParamNum, this.columnCount, this.serverStatus, this.lastPacketId,
+                        this.state, false, MySQLRespPacketType.UNKNOWN, false);
+                return packetInf.change2ShortHalf();
             }
             case LONG_HALF:
                 return resolveLongHalf(packetInf, offset, limit, totalLen, buffer);

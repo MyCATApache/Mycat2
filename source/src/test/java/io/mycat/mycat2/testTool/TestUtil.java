@@ -119,6 +119,10 @@ public class TestUtil {
         eofPacket.message = "";
         return eofPacket;
     }
+    public static void  anyPacket(int payloadLength,int packetId,ProxyBuffer buffer) {
+        buffer.writeFixInt(3, payloadLength);
+        buffer.writeByte((byte) packetId);
+    }
     public static ProxyBuffer errBuffer() {
         ErrorPacket eofPacket = new ErrorPacket();
         eofPacket.packetId = 12;
