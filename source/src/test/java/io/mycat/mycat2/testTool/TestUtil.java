@@ -131,8 +131,9 @@ public class TestUtil {
         eofPacket.write(buffer);
         return buffer;
     }
-    public static ProxyBuffer fieldCount() {
+    public static ProxyBuffer fieldCount(int count) {
         ResultSetHeaderPacket headerPacket = new ResultSetHeaderPacket();
+        headerPacket.fieldCount = count;
         ProxyBuffer buffer = exampleBuffer();
         headerPacket.write(buffer);
         return buffer;

@@ -95,14 +95,14 @@ public class PreparedOKPacket extends MySQLPacket {
         buffer.writeFixInt(2, parametersNumber);
         buffer.writeByte(filler);
         buffer.writeFixInt(2, warningCount);
-        for (int i=0; i<parametersNumber; i++) {
-            parameterDefinitions[i].write(buffer);
-        }
-        parameterEOFPacket.write(buffer);
-        for (int i=0; i<columnsNumber; i++) {
-            columnDefinitions[i].write(buffer);
-        }
-        columnEOFPacket.write(buffer);
+//        for (int i=0; i<parametersNumber; i++) {
+//            parameterDefinitions[i].write(buffer);
+//        }
+//        parameterEOFPacket.write(buffer);
+//        for (int i=0; i<columnsNumber; i++) {
+//            columnDefinitions[i].write(buffer);
+//        }
+      //  columnEOFPacket.write(buffer);
     }
 
     @Override
