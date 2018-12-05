@@ -89,18 +89,20 @@ public class MySQLProxyStateMachine {
 
     public PayloadType resolveCrossBufferFullPayload(PacketInf packetInf) {
         ProxyBuffer proxyBuf = packetInf.proxyBuffer;
+        boolean crossPacket = this.crossPacket;
         PacketType type = resolveMySQLPackage(packetInf);
-        if (!crossPacket && type == PacketType.FINISHED_CROSS) {
-            return PayloadType.FULL_PAYLOAD;
-        } else if (type == PacketType.LONG_HALF || (type == PacketType.FULL && crossPacket)) {
-            return packetInf.crossBuffer() ? PayloadType.REST_CROSS_PAYLOAD : PayloadType.HALF_PAYLOAD;
+        if (!this.crossPacket && (type == PacketType.FINISHED_CROSS||type == PacketType.FULL)) {
+            return PayloadType.FINISHED_CROSS_PAYLOAD;
+        } else if (type == PacketType.LONG_HALF ) {
+            return packetInf.crossBuffer()||crossPacket ? PayloadType.REST_CROSS_PAYLOAD : PayloadType.HALF_PAYLOAD;
         } else if (type == PacketType.SHORT_HALF) {
             return PayloadType.HALF_PAYLOAD;
         } else if (type == PacketType.REST_CROSS) {
             return PayloadType.REST_CROSS_PAYLOAD;
-        }
-        if (!crossPacket && type == PacketType.FULL) {
-            return PayloadType.FULL_PAYLOAD;
+        }else if ((type == PacketType.FULL && this.crossPacket)){
+            return PayloadType.REST_CROSS_PAYLOAD;
+        }else if (crossPacket&& type == PacketType.FULL) {
+            return PayloadType.FINISHED_CROSS_PAYLOAD;
         }
         throw new RuntimeException("unknown state!");
     }
@@ -206,10 +208,10 @@ public class MySQLProxyStateMachine {
             if (packetInf.isMetaData) {
                 resolvePayloadType(packetInf, true);
             }
-            return PacketType.FULL;
+            return packetInf.packetType = PacketType.FULL;
         } else {
             packetInf.endPos = limit;
-            return PacketType.LONG_HALF;
+            return packetInf.packetType =  PacketType.LONG_HALF;
         }
     }
 

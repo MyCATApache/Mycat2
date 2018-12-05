@@ -303,15 +303,43 @@ public class MySQLProxySMAnyPacketTest {
         Assert.assertEquals(false, sm.willBeFinished);
 
         buffer.writeIndex = 0xffffff;
-        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.HALF_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.REST_CROSS_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
 
         packetInf.markRead();
 
         buffer.writeFixInt(3, 0);
         buffer.writeByte((byte) 13);
 
-        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.FULL_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.FINISHED_CROSS_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+    }
+    @Test
+    public void crossPayloadMutilPacket2() {
+        MySQLProxyStateMachine sm = new MySQLProxyStateMachine();
+        sm.lastPacketId = 11;
+        ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff + 5));
+        TestUtil.anyPacket(0xffffff, 12, buffer);
+        buffer.writeIndex = 0xffffff - 1;
+        MySQLProxyStateMachine.PacketInf packetInf = new MySQLProxyStateMachine.PacketInf(buffer);
+
+        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.HALF_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        Assert.assertEquals(UNKNOWN, sm.mysqlPacketType);
+        Assert.assertEquals(false, sm.willBeFinished);
+
+        buffer.writeIndex = 0xffffff;
+        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.REST_CROSS_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+
+        packetInf.markRead();
+        packetInf.proxyBuffer.readIndex = 0;
+        packetInf.proxyBuffer.writeIndex = 0;
 
 
+        buffer.writeFixInt(3, 1);
+        buffer.writeByte((byte) 13);
+        packetInf.proxyBuffer.writeIndex = 4;
+
+        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.REST_CROSS_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        packetInf.proxyBuffer.writeIndex = 5;
+
+        Assert.assertEquals(MySQLProxyStateMachine.PayloadType.FINISHED_CROSS_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
     }
 }
