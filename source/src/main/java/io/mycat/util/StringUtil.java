@@ -93,7 +93,7 @@ public final class StringUtil {
         int p    = offset;
         int wide = 32;
         int rows = length / wide;
-
+		out.append('\n');
         // rows
         for (int i = 0; (i < rows) && (p < end); i++) {
             // - hex string in a line
