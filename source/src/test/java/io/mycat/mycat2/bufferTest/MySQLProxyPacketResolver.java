@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.StringJoiner;
 
+import static io.mycat.mycat2.bufferTest.MySQLRespPacketType.EOF;
 import static io.mycat.util.ParseUtil.msyql_packetHeaderSize;
 import static io.mycat.util.ParseUtil.mysql_packetTypeSize;
 
@@ -219,14 +220,14 @@ public class MySQLProxyPacketResolver {
                     this.mysqlPacketType = MySQLRespPacketType.ERROR;
                     state = ComQueryRespState.END;
                 } else if (head == 0x00) {
-                    if (sqlType == MySQLCommand.COM_STMT_PREPARE&&packetInf.packetId == 1 && packetInf.pkgLength == 16 ) {
+                    if (sqlType == MySQLCommand.COM_STMT_PREPARE && packetInf.packetId == 1 && packetInf.pkgLength == 16) {
                         state = ComQueryRespState.PREPARE_RESPONSE;
                         ProxyBuffer buffer = packetInf.proxyBuffer;
                         buffer.readIndex = packetInf.startPos + 9;
-                        this. prepareFieldNum = (int)buffer.readFixInt(2);
-                        this.  prepareParamNum =(int) buffer.readFixInt(2);
+                        this.prepareFieldNum = (int) buffer.readFixInt(2);
+                        this.prepareParamNum = (int) buffer.readFixInt(2);
                         this.mysqlPacketType = MySQLRespPacketType.PREPARE_OK;
-                    }else {
+                    } else {
                         this.mysqlPacketType = MySQLRespPacketType.OK;
                         this.serverStatus = OKPacket.readServerStatus(packetInf.proxyBuffer, capabilityFlags);
                         state = ComQueryRespState.END;
@@ -234,7 +235,7 @@ public class MySQLProxyPacketResolver {
                 } else if (head == 0xfb) {
                     throw new UnsupportedOperationException("unsupport LOCAL INFILE!");
                 } else if (head == 0xfe) {
-                    this.mysqlPacketType = MySQLRespPacketType.EOF;
+                    this.mysqlPacketType = EOF;
                     this.serverStatus = EOFPacket.readStatus(packetInf.proxyBuffer);
                     state = ComQueryRespState.END;
                 } else {
@@ -256,7 +257,7 @@ public class MySQLProxyPacketResolver {
             case COLUMN_END_EOF: {
                 if (!isPacketFinished) throw new RuntimeException("unknown state!");
                 this.serverStatus = EOFPacket.readStatus(packetInf.proxyBuffer);
-                this.mysqlPacketType = MySQLRespPacketType.EOF;
+                this.mysqlPacketType = EOF;
                 this.state = ComQueryRespState.RESULTSET_ROW;
                 return;
             }
@@ -271,7 +272,7 @@ public class MySQLProxyPacketResolver {
                         //ok
                         serverStatus = OKPacket.readServerStatus(packetInf.proxyBuffer, capabilityFlags);
                     } else {
-                        this.mysqlPacketType = MySQLRespPacketType.EOF;
+                        this.mysqlPacketType = EOF;
                         //eof
                         serverStatus = OKPacket.readServerStatus(packetInf.proxyBuffer, capabilityFlags);
                     }
@@ -289,8 +290,7 @@ public class MySQLProxyPacketResolver {
                 }
                 break;
             }
-            case PREPARE_RESPONSE: {
-                this.mysqlPacketType = MySQLRespPacketType.PREPARE_OK;
+            default: {
                 resolvePrepareResponse(packetInf.proxyBuffer, head, isPacketFinished);
             }
         }
@@ -332,27 +332,34 @@ public class MySQLProxyPacketResolver {
         if (!isPacketFinished) throw new RuntimeException("unknown state!");
         if (prepareFieldNum > 0) {
             prepareFieldNum--;
-        } else if (prepareFieldNum == 0) {
-            if (CLIENT_DEPRECATE_EOF) {
-                prepareFieldNum = -1;
-            } else if (head == MySQLPacket.EOF_PACKET) {
-                prepareFieldNum = -1;
-                serverStatus = OKPacket.readServerStatus(proxyBuf, capabilityFlags);
-            }
-        } else if (prepareParamNum > 0) {
+            this.mysqlPacketType = MySQLRespPacketType.COULUMN_DEFINITION;
+            this.state = ComQueryRespState.PREPARE_FIELD;
+            return;
+        }
+        if (prepareFieldNum == 0 && !CLIENT_DEPRECATE_EOF && ComQueryRespState.PREPARE_FIELD == state&&head == 0xFE) {
+            this.serverStatus = EOFPacket.readStatus(proxyBuf);
+            this.mysqlPacketType = EOF;
+            this.state = ComQueryRespState.PREPARE_PARAM;
+            return;
+        }
+        if (prepareParamNum > 0) {
             prepareParamNum--;
-        }
-        if (prepareParamNum == 0) {
-            if (CLIENT_DEPRECATE_EOF) {
-                prepareParamNum = -1;
-            } else if (head == MySQLPacket.EOF_PACKET) {
-                prepareParamNum = -1;
-                serverStatus = OKPacket.readServerStatus(proxyBuf, capabilityFlags);
+            this.mysqlPacketType = MySQLRespPacketType.COULUMN_DEFINITION;
+            this.state = ComQueryRespState.PREPARE_PARAM;
+            if (!CLIENT_DEPRECATE_EOF){
+                return;
+            }else {
+                state = ComQueryRespState.END;
+                return;
             }
         }
-        if (prepareFieldNum == -1 && prepareParamNum == -1) {
+        if (prepareParamNum == 0 && !CLIENT_DEPRECATE_EOF && ComQueryRespState.PREPARE_PARAM == state&&head == 0xFE) {
+            this.serverStatus = EOFPacket.readStatus(proxyBuf);
+            this.mysqlPacketType = EOF;
             state = ComQueryRespState.END;
+            return;
         }
+        throw new RuntimeException("unknown state!");
     }
 
     private void resokveColumnCountPacketInFirstPacket(ProxyBuffer proxyBuf, int offset, int totalLen, int packageLength) {
@@ -385,6 +392,8 @@ public class MySQLProxyPacketResolver {
         PREPARE_RESPONSE,
         COLUMN_END_EOF,
         RESULTSET_ROW,
+        PREPARE_FIELD,
+        PREPARE_PARAM,
         END
     }
 
