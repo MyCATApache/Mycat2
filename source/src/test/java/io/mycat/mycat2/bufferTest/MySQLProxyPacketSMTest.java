@@ -192,7 +192,7 @@ public class MySQLProxyPacketSMTest {
     }
 
     @Test
-    public void testPrepareOKRespWithEof() {
+    public void testPrepareOKRespField1Param2WithEof() {
         MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver();
         ProxyBuffer buffer1 = TestUtil.exampleBuffer();
         TestUtil.anyPacket(12, 0, buffer1);
@@ -218,9 +218,35 @@ public class MySQLProxyPacketSMTest {
         Assert.assertEquals(MySQLRespPacketType.EOF, rs.mysqlPacketType);
         Assert.assertEquals(END, rs.state);
     }
-
     @Test
-    public void testPrepareOKRespWithoutEof() {
+    public void testPrepareOKRespField2Param1WithEof() {
+        MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver();
+        ProxyBuffer buffer1 = TestUtil.exampleBuffer();
+        TestUtil.anyPacket(12, 0, buffer1);
+        MySQLProxyPacketResolver.PacketInf inf = new MySQLProxyPacketResolver.PacketInf(buffer1);
+        rs.prepareFieldNum = 2;
+        rs.prepareParamNum = 1;
+        rs.state = PREPARE_RESPONSE;
+        inf.head = 0x00;
+        inf.pkgLength = 16;
+        inf.packetId = 1;
+        rs.sqlType = MySQLCommand.COM_STMT_PREPARE;
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
+        inf.head = 0xFE;
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(MySQLRespPacketType.EOF, rs.mysqlPacketType);
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
+        inf.head = 0xFE;
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(MySQLRespPacketType.EOF, rs.mysqlPacketType);
+        Assert.assertEquals(END, rs.state);
+    }
+    @Test
+    public void testPrepareOKRespField1Param2WithoutEof() {
         MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver(MySQLSession.getClientCapabilityFlags(),true);
         ProxyBuffer buffer1 = TestUtil.exampleBuffer();
         TestUtil.anyPacket(12, 0, buffer1);
@@ -234,10 +260,36 @@ public class MySQLProxyPacketSMTest {
         rs.sqlType = MySQLCommand.COM_STMT_PREPARE;
         rs.resolvePayloadType(inf, true);
         Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
+        Assert.assertEquals(0, rs.prepareFieldNum);
+        Assert.assertEquals(1, rs.prepareParamNum);
         rs.resolvePayloadType(inf, true);
         Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
         rs.resolvePayloadType(inf, true);
         Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
         Assert.assertEquals(END, rs.state);
     }
+    @Test
+    public void testPrepareOKRespField2Param1WithoutEof() {
+        MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver(MySQLSession.getClientCapabilityFlags(),true);
+        ProxyBuffer buffer1 = TestUtil.exampleBuffer();
+        TestUtil.anyPacket(12, 0, buffer1);
+        MySQLProxyPacketResolver.PacketInf inf = new MySQLProxyPacketResolver.PacketInf(buffer1);
+        rs.prepareFieldNum = 2;
+        rs.prepareParamNum = 1;
+        rs.state = PREPARE_RESPONSE;
+        inf.head = 0x00;
+        inf.pkgLength = 16;
+        inf.packetId = 1;
+        rs.sqlType = MySQLCommand.COM_STMT_PREPARE;
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
+        rs.resolvePayloadType(inf, true);
+        Assert.assertEquals(0, rs.prepareFieldNum);
+        Assert.assertEquals(1, rs.prepareParamNum);
+        Assert.assertEquals(MySQLRespPacketType.COULUMN_DEFINITION, rs.mysqlPacketType);
+        Assert.assertEquals(END, rs.state);
+    }
+
 }
