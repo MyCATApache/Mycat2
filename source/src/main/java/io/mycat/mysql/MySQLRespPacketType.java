@@ -1,4 +1,4 @@
-package io.mycat.mycat2.bufferTest;
+package io.mycat.mysql;
 
 public enum MySQLRespPacketType {
    UNKNOWN, ERROR,OK,EOF,COLUMN_COUNT,RESULT_SET_NULL,CHARACTER_SET,PREPARE_OK,COULUMN_DEFINITION,TEXT_RESULTSET_ROW,BINARY_RESULTSET_ROW
