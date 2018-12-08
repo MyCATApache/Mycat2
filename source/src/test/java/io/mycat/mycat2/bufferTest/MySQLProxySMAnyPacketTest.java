@@ -31,7 +31,7 @@ public class MySQLProxySMAnyPacketTest {
             Assert.assertEquals(MySQLProxyPacketResolver.PacketType.FULL, sm.resolveMySQLPackage(packetInf));
             Assert.assertEquals(MySQLProxyPacketResolver.PacketType.FULL, packetInf.packetType);
             Assert.assertEquals(HEADER_SIZE + payloadLength, packetInf.pkgLength);
-            Assert.assertEquals(1, packetInf.packetId);
+            Assert.assertEquals(1, sm.lastPacketId);
             Assert.assertEquals(0, packetInf.startPos);
             Assert.assertEquals(true, !sm.crossPacket);
             Assert.assertEquals(packetInf.pkgLength, packetInf.endPos);
@@ -56,7 +56,7 @@ public class MySQLProxySMAnyPacketTest {
             Assert.assertEquals(MySQLProxyPacketResolver.PacketType.FULL, sm.resolveMySQLPackage(packetInf));
             Assert.assertEquals(MySQLProxyPacketResolver.PacketType.FULL, packetInf.packetType);
             Assert.assertEquals(Math.min(0xffffff, payloadLength + 4), packetInf.pkgLength);
-            Assert.assertEquals(1, packetInf.packetId);
+            Assert.assertEquals(1, sm.lastPacketId);
             Assert.assertEquals(0, packetInf.startPos);
             Assert.assertEquals(false, sm.crossPacket);
             Assert.assertEquals(packetInf.pkgLength, packetInf.endPos);
@@ -80,7 +80,7 @@ public class MySQLProxySMAnyPacketTest {
         Assert.assertEquals(MySQLProxyPacketResolver.PacketType.FULL, sm.resolveMySQLPackage(packetInf));
         Assert.assertEquals(MySQLProxyPacketResolver.PacketType.FULL, packetInf.packetType);
         Assert.assertEquals(0xffffff, packetInf.pkgLength);
-        Assert.assertEquals(1, packetInf.packetId);
+        Assert.assertEquals(1, sm.lastPacketId);
         Assert.assertEquals(0, packetInf.startPos);
         Assert.assertEquals(true, sm.crossPacket);
         Assert.assertEquals(packetInf.pkgLength, packetInf.endPos);
@@ -116,7 +116,7 @@ public class MySQLProxySMAnyPacketTest {
         MySQLProxyPacketResolver.PacketInf packetInf = new MySQLProxyPacketResolver.PacketInf(buffer);
         MySQLProxyPacketResolver sm = null;
         TestUtil.anyPacket(1, 1, buffer);
-        int i = 0;
+        int i = 4;
         for (; i < 5; i++) {
             buffer.writeIndex = i;
             sm = new MySQLProxyPacketResolver();
@@ -208,7 +208,7 @@ public class MySQLProxySMAnyPacketTest {
         Assert.assertEquals(0, packetInf.startPos);
         Assert.assertEquals(buffer.writeIndex, packetInf.endPos);
 
-        packetInf.crossBuffer();
+        sm.crossBuffer(packetInf);
 
         for (int i = buffer.writeIndex; i < length; i++) {
             buffer.writeIndex = i;
@@ -256,7 +256,7 @@ public class MySQLProxySMAnyPacketTest {
         buffer.writeIndex = 0xffffff;
         MySQLProxyPacketResolver.PacketInf packetInf = new MySQLProxyPacketResolver.PacketInf(buffer);
 
-        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.TYPE_PAYLOAD, sm.resolveFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.LONG_PAYLOAD, sm.resolveFullPayload(packetInf));
 
         packetInf.markRead();
         buffer.readIndex = 0;
@@ -300,14 +300,15 @@ public class MySQLProxySMAnyPacketTest {
         buffer.writeIndex = 0xffffff - 1;
         MySQLProxyPacketResolver.PacketInf packetInf = new MySQLProxyPacketResolver.PacketInf(buffer);
 
-        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.HALF_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.SHORT_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
         Assert.assertEquals(UNKNOWN, sm.mysqlPacketType);
 
         buffer.writeIndex = 0xffffff;
         Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.REST_CROSS_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
 
         packetInf.markRead();
-
+        packetInf.proxyBuffer.writeIndex = 0;
+        packetInf.proxyBuffer.readIndex = 0;
         buffer.writeFixInt(3, 0);
         buffer.writeByte((byte) 13);
 
@@ -322,7 +323,7 @@ public class MySQLProxySMAnyPacketTest {
         buffer.writeIndex = 0xffffff - 1;
         MySQLProxyPacketResolver.PacketInf packetInf = new MySQLProxyPacketResolver.PacketInf(buffer);
 
-        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.HALF_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.SHORT_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
         Assert.assertEquals(UNKNOWN, sm.mysqlPacketType);
 
         buffer.writeIndex = 0xffffff;
@@ -351,7 +352,7 @@ public class MySQLProxySMAnyPacketTest {
         buffer.writeIndex = 0xffffff - 1;
         MySQLProxyPacketResolver.PacketInf packetInf = new MySQLProxyPacketResolver.PacketInf(buffer);
 
-        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.HALF_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.SHORT_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
         Assert.assertEquals(UNKNOWN, sm.mysqlPacketType);
 
         buffer.writeIndex = 0xffffff;

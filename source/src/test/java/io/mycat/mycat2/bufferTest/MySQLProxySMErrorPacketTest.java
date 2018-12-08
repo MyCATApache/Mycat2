@@ -28,7 +28,7 @@ public class MySQLProxySMErrorPacketTest {
         Assert.assertEquals(MySQLProxyPacketResolver.PacketType.FULL, packetInf.packetType);
         Assert.assertEquals(MySQLRespPacketType.ERROR, sm.mysqlPacketType);
         Assert.assertEquals(HEADER_SIZE + errorPacket.calcPacketSize(), packetInf.pkgLength);
-        Assert.assertEquals(errorPacket.packetId, packetInf.packetId);
+        Assert.assertEquals(errorPacket.packetId, sm.lastPacketId);
         Assert.assertEquals(0, packetInf.startPos);
         Assert.assertEquals(packetInf.pkgLength, packetInf.endPos);
         Assert.assertEquals(0xff, packetInf.head);
@@ -134,7 +134,7 @@ public class MySQLProxySMErrorPacketTest {
         Assert.assertEquals(buffer.writeIndex, packetInf.endPos);
         Assert.assertEquals(0xff, packetInf.head);
 
-        packetInf.crossBuffer();
+        sm.crossBuffer(packetInf);
 
         for (int i = buffer.writeIndex; i < length; i++) {
             buffer.writeIndex = i;
@@ -197,7 +197,7 @@ public class MySQLProxySMErrorPacketTest {
         buffer.writeIndex = 0xffffff;
         MySQLProxyPacketResolver.PacketInf packetInf = new MySQLProxyPacketResolver.PacketInf(buffer);
 
-        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.TYPE_PAYLOAD, sm.resolveFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.LONG_PAYLOAD, sm.resolveFullPayload(packetInf));
         Assert.assertEquals(UNKNOWN, sm.mysqlPacketType);
 
         packetInf.markRead();
@@ -251,12 +251,12 @@ public class MySQLProxySMErrorPacketTest {
         buffer.writeIndex = 0xffffff-1;
         MySQLProxyPacketResolver.PacketInf packetInf = new MySQLProxyPacketResolver.PacketInf(buffer);
 
-        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.HALF_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
+        Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.SHORT_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
         Assert.assertEquals(UNKNOWN, sm.mysqlPacketType);
 
         buffer.writeIndex = 0xffffff;
         Assert.assertEquals(MySQLProxyPacketResolver.PayloadType.REST_CROSS_PAYLOAD, sm.resolveCrossBufferFullPayload(packetInf));
-        Assert.assertEquals(MySQLRespPacketType.ERROR, sm.mysqlPacketType);
+        Assert.assertEquals(MySQLRespPacketType.UNKNOWN, sm.mysqlPacketType);
 
         packetInf.markRead();
 
