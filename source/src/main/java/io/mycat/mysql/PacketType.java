@@ -1,5 +1,8 @@
 package io.mycat.mysql;
-
+/*
+cjw
+294712221@qq.com
+ */
 public enum PacketType {
     FULL(PayloadType.UNKNOWN, PayloadType.FULL_PAYLOAD),
     LONG_HALF(PayloadType.UNKNOWN, PayloadType.LONG_PAYLOAD),

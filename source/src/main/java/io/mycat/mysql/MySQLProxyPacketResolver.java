@@ -15,6 +15,10 @@ import java.nio.ByteBuffer;
 
 import static io.mycat.mysql.MySQLPayloadType.*;
 
+/*
+cjw
+294712221@qq.com
+ */
 public class MySQLProxyPacketResolver {
     private final static Logger logger = LoggerFactory.getLogger(MySQLProxyPacketResolver.class);
     public int sqlType = -1;
@@ -23,7 +27,7 @@ public class MySQLProxyPacketResolver {
     public long columnCount = 0;
     public int serverStatus = 0;
     public byte nextPacketId = 0;
-    public ComQueryState state = ComQueryState.FIRST_PACKET;
+    public ComQueryState state = ComQueryState.DO_NOT;
     public final boolean CLIENT_DEPRECATE_EOF;
     public MySQLPayloadType mysqlPacketType = MySQLPayloadType.UNKNOWN;
     public boolean crossPacket = false;

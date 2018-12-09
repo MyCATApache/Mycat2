@@ -5,7 +5,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.StringJoiner;
-
+/*
+cjw
+294712221@qq.com
+ */
 public class MySQLPacketInf {
     private final static Logger logger = LoggerFactory.getLogger(MySQLPacketInf.class);
     public int head;

@@ -1,10 +1,7 @@
 package io.mycat.mycat2.bufferTest;
 
 import io.mycat.mycat2.testTool.TestUtil;
-import io.mycat.mysql.MySQLPacketInf;
-import io.mycat.mysql.MySQLProxyPacketResolver;
-import io.mycat.mysql.PacketType;
-import io.mycat.mysql.PayloadType;
+import io.mycat.mysql.*;
 import io.mycat.proxy.ProxyBuffer;
 import org.junit.Assert;
 import org.junit.Test;
@@ -31,6 +28,7 @@ public class MySQLProxySMAnyPacketTest {
             TestUtil.anyPacket(payloadLength, 1, buffer);
             buffer.writeIndex = 4 + payloadLength;
             MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
+            sm.state = ComQueryState.FIRST_PACKET;
             sm.nextPacketId = 1;
             MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
             Assert.assertEquals(PacketType.FULL, sm.resolveMySQLPacket(MySQLPacketInf));
@@ -55,6 +53,7 @@ public class MySQLProxySMAnyPacketTest {
             TestUtil.anyPacket(payloadLength, 1, buffer);
             buffer.writeIndex = 4 + payloadLength;
             MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
+            sm.state = ComQueryState.FIRST_PACKET;
             sm.nextPacketId = 1;
             MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
             Assert.assertEquals(PacketType.FULL, sm.resolveMySQLPacket(MySQLPacketInf));
@@ -78,6 +77,7 @@ public class MySQLProxySMAnyPacketTest {
         TestUtil.anyPacket(payloadLength, 1, buffer);
         buffer.writeIndex = 4 + payloadLength;
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
+        sm.state = ComQueryState.FIRST_PACKET;
         sm.nextPacketId = 1;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
         Assert.assertEquals(PacketType.FULL, sm.resolveMySQLPacket(MySQLPacketInf));
@@ -100,6 +100,7 @@ public class MySQLProxySMAnyPacketTest {
         for (int i = 0; i < HEADER_SIZE; i++) {
             buffer.writeIndex = i;
             sm = new MySQLProxyPacketResolver();
+            sm.state = ComQueryState.FIRST_PACKET;
             sm.nextPacketId = 1;
             Assert.assertEquals(PacketType.SHORT_HALF, sm.resolveMySQLPacket(MySQLPacketInf));
             Assert.assertEquals(PacketType.SHORT_HALF, MySQLPacketInf.packetType);
@@ -122,6 +123,7 @@ public class MySQLProxySMAnyPacketTest {
         for (; i < 5; i++) {
             buffer.writeIndex = i;
             sm = new MySQLProxyPacketResolver();
+            sm.state = ComQueryState.FIRST_PACKET;
             sm.nextPacketId = 1;
             Assert.assertEquals(PacketType.SHORT_HALF, sm.resolveMySQLPacket(MySQLPacketInf));
             Assert.assertEquals(PacketType.SHORT_HALF, MySQLPacketInf.packetType);
@@ -144,6 +146,7 @@ public class MySQLProxySMAnyPacketTest {
         MySQLPacketInf MySQLPacketInf = null;
         for (int i = 5; i < length; i++) {
             sm = new MySQLProxyPacketResolver();
+            sm.state = ComQueryState.FIRST_PACKET;
             sm.nextPacketId = 1;
             MySQLPacketInf = new MySQLPacketInf(buffer);
             buffer.writeIndex = 5;
@@ -169,6 +172,7 @@ public class MySQLProxySMAnyPacketTest {
         int length = buffer.writeIndex = 6;
 
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
+        sm.state = ComQueryState.FIRST_PACKET;
         sm.nextPacketId = 1;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
         buffer.writeIndex = length - 1;
@@ -202,6 +206,7 @@ public class MySQLProxySMAnyPacketTest {
 
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
+        sm.state = ComQueryState.FIRST_PACKET;
         sm.nextPacketId = 1;
         MySQLPacketInf.proxyBuffer = buffer;
         buffer.writeIndex = HEADER_SIZE + 1;//longHalf
@@ -246,6 +251,7 @@ public class MySQLProxySMAnyPacketTest {
         buffer.writeIndex = 10;
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.nextPacketId = 1;
+        sm.state = ComQueryState.FIRST_PACKET;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
         Assert.assertEquals(PayloadType.FULL_PAYLOAD, sm.resolveFullPayload(MySQLPacketInf));
     }
@@ -253,6 +259,7 @@ public class MySQLProxySMAnyPacketTest {
     @Test
     public void fullPayloadMutilPacket() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
+        sm.state = ComQueryState.FIRST_PACKET;
         sm.nextPacketId = 12;
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff + 8));
         TestUtil.anyPacket(0xffffff, 12, buffer);
@@ -275,6 +282,7 @@ public class MySQLProxySMAnyPacketTest {
     @Test
     public void crossPayloadOnePacket() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
+        sm.state = ComQueryState.FIRST_PACKET;
         sm.nextPacketId = 12;
 
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff + 8));
@@ -298,6 +306,7 @@ public class MySQLProxySMAnyPacketTest {
     public void crossPayloadMutilPacket() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.nextPacketId = 12;
+        sm.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff + 4));
         TestUtil.anyPacket(0xffffff, 12, buffer);
         buffer.writeIndex = 0xffffff - 1;
@@ -321,6 +330,7 @@ public class MySQLProxySMAnyPacketTest {
     public void crossPayloadMutilPacket2() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.nextPacketId = 12;
+        sm.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff + 5));
         TestUtil.anyPacket(0xffffff, 12, buffer);
         buffer.writeIndex = 0xffffff - 1;
@@ -350,6 +360,7 @@ public class MySQLProxySMAnyPacketTest {
     public void fullMetaPacket() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.nextPacketId = 12;
+        sm.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff + 5));
         TestUtil.anyPacket(0xffffff, 12, buffer);
         buffer.writeIndex = 0xffffff - 1;

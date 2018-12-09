@@ -3,6 +3,7 @@ package io.mycat.mycat2.bufferTest;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.testTool.TestUtil;
+import io.mycat.mysql.ComQueryState;
 import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.MySQLProxyPacketResolver;
 import io.mycat.mysql.ServerStatus;
@@ -20,6 +21,7 @@ public class MySQLProxyPacketSMTest {
     @Test
     public void testComQueryFirstErr() {
         MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver();
+        rs.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer = TestUtil.errBuffer();
         MySQLPacketInf inf = new MySQLPacketInf(buffer);
         inf.head = 0xff;
@@ -30,6 +32,7 @@ public class MySQLProxyPacketSMTest {
     @Test
     public void testComQueryFirstOk() {
         MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver();
+        rs.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer = TestUtil.ok(ServerStatus.AUTO_COMMIT);
         MySQLPacketInf inf = new MySQLPacketInf(buffer);
         inf.head = 0x00;
@@ -42,6 +45,7 @@ public class MySQLProxyPacketSMTest {
     @Test
     public void testComQueryFirstEof() {
         MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver();
+        rs.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer = TestUtil.eof(ServerStatus.AUTO_COMMIT);
         MySQLPacketInf inf = new MySQLPacketInf(buffer);
         inf.head = 0xFE;
@@ -53,6 +57,7 @@ public class MySQLProxyPacketSMTest {
     @Test
     public void testComQueryFirstColumnCount() {
         MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver();
+        rs.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer = TestUtil.fieldCount(2);
         MySQLPacketInf inf = new MySQLPacketInf(buffer);
         inf.head = 1;
@@ -175,6 +180,7 @@ public class MySQLProxyPacketSMTest {
     @Test
     public void testPrepareOK() {
         MySQLProxyPacketResolver rs = new MySQLProxyPacketResolver();
+        rs.state = ComQueryState.FIRST_PACKET;
         ProxyBuffer buffer1 = TestUtil.exampleBuffer();
         PreparedOKPacket preparedOKPacket = new PreparedOKPacket();
         preparedOKPacket.packetId = 1;
