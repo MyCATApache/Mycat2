@@ -294,7 +294,7 @@ public class MySQLProxyPacketResolver {
                 if (columnCount == 0) {
                     this.state = !this.CLIENT_DEPRECATE_EOF ? ComQueryState.COLUMN_END_EOF : ComQueryState.RESULTSET_ROW;
                 }
-                this.mysqlPacketType = MySQLPayloadType.COULUMN_DEFINITION;
+                this.mysqlPacketType = MySQLPayloadType.COLUMN_DEFINITION;
                 return;
             }
             case COLUMN_END_EOF: {
@@ -381,7 +381,7 @@ public class MySQLProxyPacketResolver {
         if (!isPacketFinished) throw new RuntimeException("unknown state!");
         if (prepareFieldNum > 0 && (state == ComQueryState.PREPARE_FIELD)) {
             prepareFieldNum--;
-            this.mysqlPacketType = MySQLPayloadType.COULUMN_DEFINITION;
+            this.mysqlPacketType = MySQLPayloadType.COLUMN_DEFINITION;
             this.state = ComQueryState.PREPARE_FIELD;
             if (prepareFieldNum == 0) {
                 if (!CLIENT_DEPRECATE_EOF) {
@@ -400,7 +400,7 @@ public class MySQLProxyPacketResolver {
             return;
         } else if (prepareParamNum > 0 && this.state == ComQueryState.PREPARE_PARAM) {
             prepareParamNum--;
-            this.mysqlPacketType = MySQLPayloadType.COULUMN_DEFINITION;
+            this.mysqlPacketType = MySQLPayloadType.COLUMN_DEFINITION;
             this.state = ComQueryState.PREPARE_PARAM;
             if (prepareParamNum == 0) {
                 if (!CLIENT_DEPRECATE_EOF) {
