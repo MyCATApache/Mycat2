@@ -23,7 +23,7 @@ public class MySQLProxyPacketResolver {
     public long columnCount = 0;
     public int serverStatus = 0;
     public byte nextPacketId = 0;
-    public ComQueryState state = ComQueryState.DO_NOT;
+    public ComQueryState state = ComQueryState.FIRST_PACKET;
     public final boolean CLIENT_DEPRECATE_EOF;
     public MySQLPayloadType mysqlPacketType = MySQLPayloadType.UNKNOWN;
     public boolean crossPacket = false;
@@ -86,7 +86,9 @@ public class MySQLProxyPacketResolver {
             return PayloadType.FINISHED_CROSS_PAYLOAD;
         } else if (type == PacketType.LONG_HALF) {
             PayloadType payloadType = crossBuffer(packetInf) || crossPacket ? PayloadType.REST_CROSS_PAYLOAD : PayloadType.SHORT_PAYLOAD;
-            packetInf.markRead();
+            if (packetInf.packetType == PacketType.REST_CROSS){
+                packetInf.markRead();
+            }
             return payloadType;
         } else if (type == PacketType.SHORT_HALF) {
             return PayloadType.SHORT_PAYLOAD;
@@ -338,12 +340,10 @@ public class MySQLProxyPacketResolver {
         if (!isPacketFinished) throw new RuntimeException("unknown state!");
         if (CLIENT_DEPRECATE_EOF) {
             this.mysqlPacketType = MySQLPayloadType.OK;
-            //ok
             serverStatus = OKPacket.readServerStatus(packetInf.proxyBuffer, capabilityFlags);
         } else {
             this.mysqlPacketType = EOF;
-            //eof
-            serverStatus = OKPacket.readServerStatus(packetInf.proxyBuffer, capabilityFlags);
+            serverStatus = EOFPacket.readStatus(packetInf.proxyBuffer);
         }
         if (JudgeUtil.hasMoreResult(serverStatus)) {
             state = ComQueryState.FIRST_PACKET;

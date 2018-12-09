@@ -43,7 +43,7 @@ import io.mycat.proxy.ProxyBuffer;
  * @author mycat
  */
 public final class EOFPacket extends MySQLPacket {
-	public int pkgType = MySQLPacket.EOF_PACKET;
+	public byte pkgType = (byte) MySQLPacket.EOF_PACKET;
 	public int warningCount;
 	public int status = 2;
 
