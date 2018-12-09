@@ -1,27 +1,22 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.ReplicaBean;
 import io.mycat.mycat2.beans.heartbeat.DBHeartbeat;
 import io.mycat.mycat2.beans.heartbeat.MySQLDetector;
 import io.mycat.mycat2.beans.heartbeat.MySQLHeartbeat;
+import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.packet.CommandPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.ProxyBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
 
 public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSession> {
     private static final String Slave_IO_Running_str = "Slave_IO_Running";
@@ -74,16 +69,16 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
     @Override
     void onRsColCount(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curPacketInf = session.curPacketInf;
         //读取有多少列
-        fieldCount = (int) proxyBuffer.getLenencInt(curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize);
+        fieldCount = (int) proxyBuffer.getLenencInt(curPacketInf.startPos + MySQLPacket.packetHeaderSize);
         fetchColPos = new ArrayList<>(fieldCount);
     }
 
     @Override
     void onRsColDef(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curMQLPackgInf = session.curPacketInf;
 //        byte[] bytes = proxyBuffer.getBytes(curMQLPackgInf.startPos+MySQLPacket.packetHeaderSize+1,
 //        									curMQLPackgInf.pkgLength - MySQLPacket.packetHeaderSize - 1);
         int tmpReadIndex = proxyBuffer.readIndex;
@@ -101,7 +96,7 @@ public class BackendHeartbeatTask extends BackendIOTaskWithResultSet<MySQLSessio
     @Override
     void onRsRow(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curMQLPackgInf = session.curPacketInf;
         int rowDataIndex = curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize;
 
         if (ReplicaBean.RepTypeEnum.GARELA_CLUSTER == repBean.getReplicaBean().getRepType()) {

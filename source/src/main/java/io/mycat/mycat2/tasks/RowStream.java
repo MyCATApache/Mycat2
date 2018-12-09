@@ -1,10 +1,10 @@
 package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.hbt.MyFunction;
 import io.mycat.mycat2.hbt.ResultSetMeta;
 import io.mycat.mycat2.hbt.SqlMeta;
+import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
@@ -73,7 +73,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	@Override
 	void onRsColCount(MySQLSession session) {
 		ProxyBuffer proxyBuffer = session.proxyBuffer;
-		MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
+		MySQLPacketInf curMSQLPackgInf = session.curPacketInf;
 	    int fieldCount = (int) proxyBuffer.getLenencInt(curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize);
 	    
 	    this.resultSetMeta = new ResultSetMeta(fieldCount);
@@ -82,7 +82,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	@Override
 	void onRsColDef(MySQLSession session) {
 		ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+		MySQLPacketInf curMQLPackgInf = session.curPacketInf;
 
         int tmpReadIndex = proxyBuffer.readIndex;
         int rowDataIndex = curMQLPackgInf.startPos+MySQLPacket.packetHeaderSize;
@@ -105,7 +105,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 	@Override
 	void onRsRow(MySQLSession session) {
 		ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+		MySQLPacketInf curMQLPackgInf = session.curPacketInf;
         int rowDataIndex = curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize;
         int fieldCount = resultSetMeta.getFiledCount();
         int tmpReadIndex = proxyBuffer.readIndex;
@@ -123,7 +123,7 @@ public class RowStream extends BackendIOTaskWithResultSet<MySQLSession> {
 		if(callBack != null) {
 			if(success == false) {
 				this.errPkg = new ErrorPacket();
-		        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+				MySQLPacketInf curMQLPackgInf = session.curPacketInf;
 		        session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
 				this.errPkg.read(session.proxyBuffer);
 				session.setIdle(true);

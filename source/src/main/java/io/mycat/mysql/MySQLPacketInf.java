@@ -6,8 +6,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.StringJoiner;
 
-public class PacketInf {
-    private final static Logger logger = LoggerFactory.getLogger(PacketInf.class);
+public class MySQLPacketInf {
+    private final static Logger logger = LoggerFactory.getLogger(MySQLPacketInf.class);
     public int head;
     public int startPos;
     public int endPos;
@@ -15,6 +15,48 @@ public class PacketInf {
     public int remainsBytes;//还有多少字节才结束，仅对跨多个Buffer的MySQL报文有意义（crossBuffer=true)
     public PacketType packetType = PacketType.SHORT_HALF;
     public ProxyBuffer proxyBuffer;
+    public MySQLProxyPacketResolver resolver = new MySQLProxyPacketResolver();
+
+    public boolean needContinueResolveMySQLPacket() {
+        return proxyBuffer.readIndex != proxyBuffer.writeIndex;
+    }
+    public MySQLPayloadType getType() {
+        return resolver.mysqlPacketType;
+    }
+    public int getCurrPacketId() {
+        return resolver.nextPacketId-1;
+    }
+    public PayloadType resolveCrossBufferMySQLPayload(ProxyBuffer proxyBuffer) {
+        this.proxyBuffer = proxyBuffer;
+        return resolver.resolveCrossBufferFullPayload(this);
+    }
+
+    public PayloadType resolveFullPayload(ProxyBuffer proxyBuffer) {
+        this.proxyBuffer = proxyBuffer;
+        return resolver.resolveFullPayload(this);
+    }
+
+    public void shift2DefRespPacket() {
+        resolver.shift2DefRespPacket();
+    }
+    public void shift2DefQueryPacket() {
+        resolver.shift2DefQueryPacket();
+    }
+    public void shift2QueryPacket() {
+        resolver.shift2QueryPacket();
+    }
+
+    public void shift2RespPacket() {
+        resolver.shift2RespPacket();
+    }
+
+    public boolean isCommandFinished() {
+        return this.resolver.isCommandFinished();
+    }
+
+    public boolean isInteractive() {
+        return this.resolver.isInteractive();
+    }
 
     public void updateState(
             int head,
@@ -42,9 +84,11 @@ public class PacketInf {
         }
     }
 
-
-    public PacketInf(ProxyBuffer proxyBuffer) {
+    public MySQLPacketInf(ProxyBuffer proxyBuffer) {
         this.proxyBuffer = proxyBuffer;
+    }
+
+    public MySQLPacketInf() {
     }
 
     public boolean needExpandBuffer() {
@@ -67,7 +111,7 @@ public class PacketInf {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", PacketInf.class.getSimpleName() + "[", "]")
+        return new StringJoiner(", ", MySQLPacketInf.class.getSimpleName() + "[", "]")
                 .add("head=" + head)
                 .add("startPos=" + startPos)
                 .add("endPos=" + endPos)

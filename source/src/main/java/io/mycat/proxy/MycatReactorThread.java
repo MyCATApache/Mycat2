@@ -1,12 +1,5 @@
 package io.mycat.proxy;
 
-import java.io.IOException;
-import java.util.ArrayList;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MySQLSessionManager;
 import io.mycat.mycat2.MycatSession;
@@ -17,6 +10,12 @@ import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mycat2.tasks.BackendSynchemaTask;
 import io.mycat.mycat2.tasks.BackendSynchronzationTask;
 import io.mycat.proxy.buffer.BufferPool;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * mycat 多个Session会话
@@ -173,8 +172,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 			throws IOException {
 		if (StringUtils.isEmpty(mysqlSession.getDatabase())) {
 			MycatSession mycatSession = mysqlSession.getMycatSession();
-			BackendSynchemaTask backendSynchemaTask = new BackendSynchemaTask(mysqlSession);
-			backendSynchemaTask.setCallback((optSession, sender, exeSucces, rv) -> {
+			BackendSynchemaTask backendSynchemaTask = new BackendSynchemaTask(mysqlSession,(optSession, sender, exeSucces, rv) -> {
 				// 恢复默认的Handler
 				mycatSession.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
 				optSession.setCurNIOHandler(MainMySQLNIOHandler.INSTANCE);

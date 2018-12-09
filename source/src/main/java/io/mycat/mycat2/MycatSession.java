@@ -1,31 +1,15 @@
 package io.mycat.mycat2;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.security.InvalidParameterException;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.MySQLRepBean;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.cmds.LoadDataState;
-import io.mycat.mycat2.cmds.judge.MySQLPacketPrintCallback;
-import io.mycat.mycat2.cmds.judge.MySQLProxyStateM;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mycat2.sqlparser.TokenHash;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
-import io.mycat.mysql.AutoCommit;
-import io.mycat.mysql.Capabilities;
-import io.mycat.mysql.CapabilityFlags;
-import io.mycat.mysql.MysqlNativePasswordPluginUtil;
+import io.mycat.mysql.*;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.NewHandshakePacket;
@@ -34,6 +18,16 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.security.InvalidParameterException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 前端连接会话
@@ -75,14 +69,13 @@ public class MycatSession extends AbstractMySQLSession {
 	public BufferSQLParser parser = new BufferSQLParser();
 	private byte sqltype;
 	public LoadDataState loadDataStateMachine = LoadDataState.NOT_LOAD_DATA;
-	public MySQLProxyStateM responseStateMachine = new MySQLProxyStateM(new MySQLPacketPrintCallback());
+
 
 	public byte getSqltype() {
 		return sqltype;
 	}
 
 	public void setSqltype(byte sqltype) {
-		System.out.println(sqltype);
 		this.sqltype = sqltype;
 	}
 
@@ -188,7 +181,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	public void sendErrorMsg(int errno, String errMsg) {
 		ErrorPacket errPkg = new ErrorPacket();
-		errPkg.packetId = (byte) (proxyBuffer.getByte(curMSQLPackgInf.startPos + ParseUtil.mysql_packetHeader_length)
+		errPkg.packetId = (byte) (proxyBuffer.getByte(curPacketInf.startPos + ParseUtil.mysql_packetHeader_length)
 				+ 1);
 		errPkg.errno = errno;
 		errPkg.message = errMsg;
@@ -337,12 +330,12 @@ public class MycatSession extends AbstractMySQLSession {
 	}
 
 	public void responseOKOrError(byte[] pkg) throws IOException {
-		this.responseStateMachine.in(MySQLCommand.MYCAT_SQL);
+		this.curPacketInf.shift2DefRespPacket();
 		super.responseOKOrError(pkg);
 	}
 
 	public void responseOKOrError(MySQLPacket pkg) {
-		this.responseStateMachine.in(MySQLCommand.MYCAT_SQL);
+		this.curPacketInf.shift2DefRespPacket();
 		super.responseOKOrError(pkg);
 	}
 
@@ -353,7 +346,7 @@ public class MycatSession extends AbstractMySQLSession {
 	/**
 	 * 将后端连接放入到后端连接缓存中
 	 *
-	 * @param mysqlSession
+	 * @param backend
 	 */
 	private int putBackendMap(MySQLSession backend) {
 		backend.setMycatSession(this);
@@ -427,20 +420,21 @@ public class MycatSession extends AbstractMySQLSession {
 		 * 连接复用优先级 1. 当前正在使用的 backend 2. 当前session 缓存的 backend
 		 */
 
-		int mysqlIndex = findMatchedMySQLSession(targetMetaBean);
-		if (mysqlIndex != -1) {
-			this.curBackendIndex = mysqlIndex;
-			MySQLSession curBackend = this.backends.get(curBackendIndex);
-			if (logger.isDebugEnabled()) {
-				logger.debug("Using cached backend connections for {}。{}", (runOnSlave ? "read" : "write"), curBackend);
-			}
-
-			reactorThread.syncAndExecute(curBackend, callback);
-
-		} else {
-			// 3. 从当前 actor 中获取连接
-			reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
-		}
+//		int mysqlIndex = findMatchedMySQLSession(targetMetaBean);
+//		if (mysqlIndex != -1) {
+//			this.curBackendIndex = mysqlIndex;
+//			MySQLSession curBackend = this.backends.get(curBackendIndex);
+//			if (logger.isDebugEnabled()) {
+//				logger.debug("Using cached backend connections for {}。{}", (runOnSlave ? "read" : "write"), curBackend);
+//			}
+//
+//			reactorThread.syncAndExecute(curBackend, callback);
+//
+//		} else {
+//			// 3. 从当前 actor 中获取连接
+//			reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
+//		}
+		reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
 	}
 
 	/**

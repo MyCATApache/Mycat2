@@ -35,7 +35,7 @@ public class ErrorPacket extends MySQLPacket {
 	private static final byte SQLSTATE_MARKER = (byte) '#';
 	private static final String DEFAULT_SQLSTATE = "HY000";
 
-	public byte pkgType = MySQLPacket.ERROR_PACKET;
+	public byte pkgType = (byte)MySQLPacket.ERROR_PACKET;
 	public int errno;
 	public int stage;
 	public int maxStage;

@@ -2,8 +2,8 @@ package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.DNBean;
+import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.packet.CommandPacket;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
@@ -21,8 +21,9 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 	
 	private static Logger logger = LoggerFactory.getLogger(BackendSynchemaTask.class);
 	
-	public BackendSynchemaTask(MySQLSession session) throws IOException{
+	public BackendSynchemaTask(MySQLSession session,AsynTaskCallBack<MySQLSession> callBack) throws IOException{
 		super(session,true);
+		this.callBack = callBack;
         String databases = findDatabase(session);
 		logger.debug("the Backend Synchema Task begin ");
 		logger.debug(" use  "+databases);
@@ -79,16 +80,17 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 			return;
 		}
 		
-        switch (session.resolveMySQLPackage(true)) {
-            case Full:
-                if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+        switch (session.resolveFullPayload()) {
+			case FULL_PAYLOAD:
+				session.curPacketInf.markRead();
+                if (session.curPacketInf.head == MySQLPacket.OK_PACKET) {
                     String database = findDatabase(session);
                     session.setDatabase(database);
                     logger.debug("the Backend Synchema Task end ");
                     this.finished(true);
-                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
+                } else if (session.curPacketInf.head == MySQLPacket.ERROR_PACKET) {
                     errPkg = new ErrorPacket();
-                    MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+                    MySQLPacketInf curMQLPackgInf = session.curPacketInf;
     		        session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
                     errPkg.read(session.proxyBuffer);
                     logger.debug("the Backend Synchema Task end ");
