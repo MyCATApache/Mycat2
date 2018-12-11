@@ -97,7 +97,7 @@ public class TestDemo {
         fieldPacket.orgName = fieldPacket.name;
         fieldPacket.charsetIndex = 63;
         fieldPacket.length = length;
-        fieldPacket.type = ColumnTypes.MYSQL_TYPE_LONGLONG;
+        fieldPacket.type = ColumnTypes.MYSQL_TYPE_LONGLONG.getValue();
         fieldPacket.flags = 0;
         fieldPacket.decimals = 0;
         return fieldPacket;
@@ -112,7 +112,7 @@ public class TestDemo {
         fieldPacket.orgName = fieldPacket.name;
         fieldPacket.charsetIndex = 33;
         fieldPacket.length = length;
-        fieldPacket.type = ColumnTypes.MYSQL_TYPE_VAR_STRING;
+        fieldPacket.type = ColumnTypes.VARBINARY_MYSQL_TYPE_VAR_STRING.getValue();
         fieldPacket.flags = 0;
         fieldPacket.decimals = 0;
         return fieldPacket;
@@ -127,7 +127,7 @@ public class TestDemo {
         fieldPacket.orgName = fieldPacket.name;
         fieldPacket.charsetIndex = 63;
         fieldPacket.length = 10;
-        fieldPacket.type = ColumnTypes.MYSQL_TYPE_DATE;
+        fieldPacket.type = ColumnTypes.MYSQL_TYPE_DATE.getValue();
         fieldPacket.flags = 0;
         fieldPacket.decimals = 0;
         return fieldPacket;
@@ -146,7 +146,7 @@ public class TestDemo {
         fieldPacket.orgName = fieldPacket.name;
         fieldPacket.charsetIndex = 63;
         fieldPacket.length = m + 1; // 小数点
-        fieldPacket.type = ColumnTypes.MYSQL_TYPE_DATE;
+        fieldPacket.type = ColumnTypes.MYSQL_TYPE_DATE.getValue();
         fieldPacket.flags = 0;
         fieldPacket.decimals = d;
         return fieldPacket;
@@ -161,7 +161,7 @@ public class TestDemo {
         fieldPacket.orgName = fieldPacket.name;
         fieldPacket.charsetIndex = 63;
         fieldPacket.length = m;
-        fieldPacket.type = ColumnTypes.MYSQL_TYPE_LONG;
+        fieldPacket.type = ColumnTypes.MYSQL_TYPE_LONG.getValue();
         fieldPacket.flags = 0;
         fieldPacket.decimals = 0;
         return fieldPacket;
