@@ -90,15 +90,15 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 				default:
 					// set mycatSchema
 					if (auth.database == null) {
-						session.mycatSchema = (userBean.getSchemas() == null) ?
-								config.getDefaultSchemaBean() : config.getSchemaBean(userBean.getSchemas().get(0));
+						session.setMycatSchema( (userBean.getSchemas() == null) ?
+								config.getDefaultSchemaBean() : config.getSchemaBean(userBean.getSchemas().get(0)));
 					} else {
-						session.mycatSchema = config.getSchemaBean(database);
+						session.setMycatSchema(config.getSchemaBean(database));
 					}
-					if (Objects.isNull(session.mycatSchema)) {
-						logger.error(" mycatSchema:{} can not match user: {}", session.mycatSchema, username);
+					if (Objects.isNull(session.getMycatSchema())) {
+						logger.error(" mycatSchema:{} can not match user: {}", session.getMycatSchema(), username);
 					}
-					logger.debug("set mycatSchema: {} for user: {}", session.mycatSchema, username);
+					logger.debug("set mycatSchema: {} for user: {}", session.getMycatSchema(), username);
 					if (success(session, auth)) {
 						session.clientUser = username;//设置session用户
 						session.proxyBuffer.reset();

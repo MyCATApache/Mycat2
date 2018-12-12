@@ -39,7 +39,6 @@ public abstract class AbstractSession implements Session {
 	 * 是否多个Session共用同一个Buffer
 	 */
 	protected boolean referedBuffer;
-	protected boolean defaultChannelRead = true;
 	/**
 	 * 是否多个Session共用同一个Buffer时，当前Session是否暂时获取了Buffer独家使用权，即独占Buffer
 	 */
@@ -357,14 +356,6 @@ public abstract class AbstractSession implements Session {
 	public void writeFinished() throws IOException {
 		this.getCurNIOHandler().onWriteFinished(this);
 
-	}
-
-	public boolean isDefaultChannelRead() {
-		return defaultChannelRead;
-	}
-
-	public void setDefaultChannelRead(boolean defaultChannelRead) {
-		this.defaultChannelRead = defaultChannelRead;
 	}
 
 	public boolean isReferedBuffer() {
