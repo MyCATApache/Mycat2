@@ -46,7 +46,7 @@ public class ShowTbCmd implements MySQLCommand {
 				return false;
 			}
 		}
-		schema = (schema != null ? schema : session.mycatSchema);
+		schema = (schema != null ? schema : session.getMycatSchema());
 
 		int i = 0;
 		byte packetId = 0;

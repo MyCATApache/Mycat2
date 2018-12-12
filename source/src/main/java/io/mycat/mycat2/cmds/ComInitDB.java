@@ -36,7 +36,7 @@ public class ComInitDB extends DirectPassthrouhCmd{
 		MycatConfig config = ProxyRuntime.INSTANCE.getConfig();
 		SchemaBean schemaBean = config.getSchemaBean(schema);
 
-        if (schemaBean == null && SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER != session.mycatSchema.getSchemaType()) {
+        if (schemaBean == null && SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER != session.getMycatSchema().getSchemaType()) {
             ErrorPacket error = new ErrorPacket();
             error.errno = ErrorCode.ER_BAD_DB_ERROR;
             error.packetId = session.proxyBuffer.getByte(session.curPacketInf.startPos
@@ -45,12 +45,12 @@ public class ComInitDB extends DirectPassthrouhCmd{
             session.responseOKOrError(error);
             return false;
 		}else if(schemaBean!=null){
-            session.mycatSchema = schemaBean;
+            session.setMycatSchema( schemaBean);
             session.responseOKOrError(OKPacket.OK);
             return false;
-        } else if (SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER == session.mycatSchema.getSchemaType()) {
+        } else if (SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER == session.getMycatSchema().getSchemaType()) {
             DNBean defaultDN = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
-                    .get(session.mycatSchema.getDefaultDataNode());
+                    .get(session.getMycatSchema().getDefaultDataNode());
             defaultDN.setDatabase(schema);
 			return super.procssSQL(session);
 		}else{

@@ -135,7 +135,7 @@ public class JoinPipeline extends ReferenceHBTPipeline {
             String sql = joinMeta.getSql(joinKeyList, fieldType, sqlMeta);
             System.out.println(sql);
             
-            mycatSession.getBackend((mysqlsession, sender, success,result) -> {
+            mycatSession.getBackendAndCallBack((mysqlsession, sender, success,result) -> {
                 if(success){ 
                     
                     SqlMeta sqlMetaNew = new SqlMeta(sql, ""); 

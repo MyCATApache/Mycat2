@@ -40,7 +40,7 @@ public class LoadDataCommand implements MySQLCommand {
         if (session.loadDataStateMachine == NOT_LOAD_DATA) {
             session.loadDataStateMachine = CLIENT_2_SERVER_COM_QUERY;
             session.clearReadWriteOpts();//获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
-            session.getBackend((mysqlsession, sender, success, result) -> {
+            session.getBackendAndCallBack((mysqlsession, sender, success, result) -> {
                 if (success) {
                     curBuffer.flip();// 切换buffer 读写状态
                     curBuffer.readIndex = curBuffer.writeIndex;

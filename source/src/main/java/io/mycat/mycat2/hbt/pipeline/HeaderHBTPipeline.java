@@ -35,7 +35,7 @@ public class HeaderHBTPipeline extends ReferenceHBTPipeline {
 		MyFunction onEnd = this::onEnd;
 		
 		try {
-            mycatSession.getBackend((mysqlsession, sender, success,result) -> {
+            mycatSession.getBackendAndCallBack((mysqlsession, sender, success,result) -> {
                 if(success){ 
                     RowStream rowStream = new RowStream(mysqlsession, sqlMeta 
                             ,onHeader, onRowData, onEnd);

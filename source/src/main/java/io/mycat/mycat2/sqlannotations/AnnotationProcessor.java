@@ -49,7 +49,7 @@ public class AnnotationProcessor {
     public boolean parse(BufferSQLContext context, MycatSession session, List collect) {
         if (context.getTableCount() != 0) {
             int sqltype = context.getSQLType();
-            String schemaName = session.mycatSchema.getName();
+            String schemaName = session.getMycatSchema().getName();
             int[] intHashTables;
             if (sqltype < 15 && sqltype > 10) {   //TODO  这里可能有更多的类型
                 int size = context.getTableCount();
