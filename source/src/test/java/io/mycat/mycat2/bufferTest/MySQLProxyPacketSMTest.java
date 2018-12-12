@@ -10,6 +10,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static io.mycat.mysql.ComQueryState.*;
+import static io.mycat.mysql.ComQueryState.COLUMN_DEFINITION;
 import static io.mycat.mysql.MySQLPayloadType.*;
 
 
