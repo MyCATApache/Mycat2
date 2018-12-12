@@ -1,26 +1,5 @@
 package io.mycat.mycat2;
 
-import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.MySQLRepBean;
-import io.mycat.mycat2.beans.conf.DNBean;
-import io.mycat.mycat2.beans.conf.SchemaBean;
-import io.mycat.mycat2.cmds.LoadDataState;
-import io.mycat.mycat2.sqlparser.BufferSQLContext;
-import io.mycat.mycat2.sqlparser.BufferSQLParser;
-import io.mycat.mycat2.sqlparser.TokenHash;
-import io.mycat.mycat2.tasks.AsynTaskCallBack;
-import io.mycat.mysql.*;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.NewHandshakePacket;
-import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.buffer.BufferPool;
-import io.mycat.util.ErrorCode;
-import io.mycat.util.ParseUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -28,6 +7,29 @@ import java.nio.channels.SocketChannel;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import io.mycat.mycat2.beans.MySQLMetaBean;
+import io.mycat.mycat2.beans.conf.DNBean;
+import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mycat2.cmds.LoadDataState;
+import io.mycat.mycat2.sqlparser.BufferSQLContext;
+import io.mycat.mycat2.sqlparser.BufferSQLParser;
+import io.mycat.mycat2.sqlparser.TokenHash;
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
+import io.mycat.mysql.AutoCommit;
+import io.mycat.mysql.Capabilities;
+import io.mycat.mysql.CapabilityFlags;
+import io.mycat.mysql.MysqlNativePasswordPluginUtil;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.MySQLPacket;
+import io.mycat.mysql.packet.NewHandshakePacket;
+import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.util.ParseUtil;
 
 /**
  * 前端连接会话
@@ -62,14 +64,17 @@ public class MycatSession extends AbstractMySQLSession {
 
 	private ArrayList<MySQLSession> backends = new ArrayList<>(2);
 	private int curBackendIndex = -1;
+	// 当前SQL期待在哪个目标DataNode上执行
+	private DNBean targetDataNode;
 	// 所有处理cmd中,用来向前段写数据,或者后端写数据的cmd的
 	private MySQLCommand curSQLCommand;
 	public BufferSQLContext sqlContext = new BufferSQLContext();
-	public SchemaBean mycatSchema;
+	// 客户端连接的Mycat逻辑库
+	private SchemaBean mycatSchema;
 	public BufferSQLParser parser = new BufferSQLParser();
 	private byte sqltype;
-	public LoadDataState loadDataStateMachine = LoadDataState.NOT_LOAD_DATA;
 
+	public LoadDataState loadDataStateMachine = LoadDataState.NOT_LOAD_DATA;
 
 	public byte getSqltype() {
 		return sqltype;
@@ -181,8 +186,7 @@ public class MycatSession extends AbstractMySQLSession {
 	 */
 	public void sendErrorMsg(int errno, String errMsg) {
 		ErrorPacket errPkg = new ErrorPacket();
-		errPkg.packetId = (byte) (proxyBuffer.getByte(curPacketInf.startPos + ParseUtil.mysql_packetHeader_length)
-				+ 1);
+		errPkg.packetId = (byte) (proxyBuffer.getByte(curPacketInf.startPos + ParseUtil.mysql_packetHeader_length) + 1);
 		errPkg.errno = errno;
 		errPkg.message = errMsg;
 		responseOKOrError(errPkg);
@@ -361,97 +365,26 @@ public class MycatSession extends AbstractMySQLSession {
 	}
 
 	/**
-	 * 根据datanode名称获取后端会话连接
-	 *
+	 * 获取一个后端连接（新建或者重用当前的连接）,完成后回调通知。
+	 * 
 	 * @return
 	 */
-	public void getBackendByDataNodeName(String dataNodeName, AsynTaskCallBack<MySQLSession> callback)
-			throws IOException {
-		DNBean dnBean = ProxyRuntime.INSTANCE.getConfig().getDNBean(dataNodeName);
-		String repBeanName = dnBean.getReplica();
-		getBackendByRepBeanName(repBeanName, callback);
+	public void getBackendAndCallBack(AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		((MycatReactorThread) Thread.currentThread()).tryGetMySQLAndExecute(this, callback);
+
 	}
 
-	/**
-	 * 当前操作的后端会话连接
-	 *
-	 * @return
-	 */
-	public void getBackend(AsynTaskCallBack<MySQLSession> callback) throws IOException {
-		getBackendByRepBeanName(getbackendName(), callback);
+	public DNBean getTargetDataNode() {
+		return targetDataNode;
 	}
 
-	/**
-	 * 根据复制组名称获取后端会话连接
-	 *
-	 * @param repBeanName
-	 *            复制组名称
-	 * @param callback
-	 *            cjw
-	 * @throws IOException
-	 */
-	public void getBackendByRepBeanName(String repBeanName, AsynTaskCallBack<MySQLSession> callback)
-			throws IOException {
-
-		final boolean runOnSlave = canRunOnSlave();
-		// 这里可能最合适的是先从Session里查找有没有合适的连接，没有的话在去看选择哪个节点？
-
-		MySQLRepBean repBean = getMySQLRepBean(repBeanName);
-
-		/**
-		 * 本次根据读写分离策略要使用的metaBean
-		 */
-		MySQLMetaBean targetMetaBean = repBean.getBalanceMetaBean(runOnSlave);
-
-		if (targetMetaBean == null) {
-			String errmsg = " the metaBean is not found,please check datasource.yml!!! [balance] and [type]  propertie or see debug log or check heartbeat task!!";
-			if (logger.isErrorEnabled()) {
-				logger.error(errmsg);
-			}
-			ErrorPacket error = new ErrorPacket();
-			error.errno = ErrorCode.ER_BAD_DB_ERROR;
-			error.packetId = 1;
-			error.message = errmsg;
-			responseOKOrError(error);
-			return;
-		}
-		MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
-		/*
-		 * 连接复用优先级 1. 当前正在使用的 backend 2. 当前session 缓存的 backend
-		 */
-
-//		int mysqlIndex = findMatchedMySQLSession(targetMetaBean);
-//		if (mysqlIndex != -1) {
-//			this.curBackendIndex = mysqlIndex;
-//			MySQLSession curBackend = this.backends.get(curBackendIndex);
-//			if (logger.isDebugEnabled()) {
-//				logger.debug("Using cached backend connections for {}。{}", (runOnSlave ? "read" : "write"), curBackend);
-//			}
-//
-//			reactorThread.syncAndExecute(curBackend, callback);
-//
-//		} else {
-//			// 3. 从当前 actor 中获取连接
-//			reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
-//		}
-		reactorThread.tryGetMySQLAndExecute(this, runOnSlave, targetMetaBean, callback);
+	public void setTargetDataNode(DNBean targetDataNode) {
+		logger.debug("{} set target datanode to {}", this, targetDataNode);
+		this.targetDataNode = targetDataNode;
 	}
 
-	/**
-	 * 获取指定的复制组
-	 *
-	 * @param replicaName
-	 * @return
-	 */
-	private MySQLRepBean getMySQLRepBean(String replicaName) {
-		MycatConfig conf = ProxyRuntime.INSTANCE.getConfig();
-		MySQLRepBean repBean = conf.getMySQLRepBean(replicaName);
-		if (repBean == null) {
-			throw new RuntimeException("no such MySQLRepBean " + replicaName);
-		}
-		return repBean;
-	}
 
+	
 	/**
 	 * 从后端连接中获取满足条件的连接 1. 主从节点 2. 空闲节点 返回-1，表示没找到，否则对应就是backends.get(i)
 	 */
@@ -493,6 +426,15 @@ public class MycatSession extends AbstractMySQLSession {
 		} else {
 			return false;
 		}
+	}
+
+	public SchemaBean getMycatSchema() {
+		return mycatSchema;
+	}
+
+	public void setMycatSchema(SchemaBean mycatSchema) {
+		logger.info("{} set Mycat schema to {}", this, mycatSchema);
+		this.mycatSchema = mycatSchema;
 	}
 
 	private void unbindMySQLSession(MySQLSession mysql) {
