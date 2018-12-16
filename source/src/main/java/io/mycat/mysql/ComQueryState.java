@@ -12,10 +12,10 @@ public enum ComQueryState {
     PREPARE_FIELD_EOF(true),
     PREPARE_PARAM(false),
     PREPARE_PARAM_EOF(true),
-    RESP_END(false),
-    LOCAL_INFILE_REQUEST(true),
+    COMMAND_END(false),
+//    LOCAL_INFILE_REQUEST(true),
     LOCAL_INFILE_FILE_CONTENT(true),
-    LOCAL_INFILE_EMPTY_PACKET(true),
+//    LOCAL_INFILE_EMPTY_PACKET(true),
     LOCAL_INFILE_OK_PACKET(true);
     boolean needFull;
 

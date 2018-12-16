@@ -108,7 +108,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		MycatSession mycatSession = mySQLSession.getMycatSession();
 		ProxyBuffer buffer = mySQLSession.getProxyBuffer();
 		buffer.flip();
-		if (packetInf.isCommandFinished()) {
+		if (packetInf.isResponseFinished()) {
 			mycatSession.takeOwner(SelectionKey.OP_READ);
 			mySQLSession.curPacketInf.shift2DefRespPacket();
 			mySQLSession.setIdle(!packetInf.isInteractive());
@@ -126,7 +126,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		// 检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
 		MySQLSession mySQLSession = mycatSession.getCurBackend();
 		MySQLPacketInf mySQLPacketInf = mySQLSession.curPacketInf;
-		if (!mySQLPacketInf.isCommandFinished()) {
+		if (!mySQLPacketInf.isResponseFinished()) {
 			mycatSession.proxyBuffer.flip();
 			mycatSession.giveupOwner(SelectionKey.OP_READ);
 			return false;
@@ -144,7 +144,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	public boolean onBackendWriteFinished(MySQLSession mySQLSession) {
 		MycatSession mycatSession = mySQLSession.getMycatSession();
 		MySQLPacketInf mycatPacketInf = mycatSession.curPacketInf;
-		if (mycatPacketInf.isCommandFinished()) {
+		if (mycatPacketInf.needContinueOnReadingRequest()) {
 			mycatSession.proxyBuffer.flip();
 			mycatSession.takeOwner(SelectionKey.OP_READ);
 			mycatPacketInf.shift2QueryPacket();

@@ -77,16 +77,20 @@ public final class StringUtil {
 			case FULL_PAYLOAD:
 			case REST_CROSS_PAYLOAD:
 			case FINISHED_CROSS_PAYLOAD:
-				System.out.println(
-						"-----------------------------" +
-								"packetId:" +
-								packetInf.getCurrPacketId() +
-								",packetType:" +
-								packetInf.getType()+
-								",payloadType:" +
-								payloadType+
-								"------------------------------------------\n"+
-								StringUtil.dumpAsHex(packetInf.proxyBuffer.getBytes(packetInf.startPos,packetInf.endPos-packetInf.startPos)));
+				try {
+					System.out.println(
+							"-----------------------------" +
+									"packetId:" +
+									packetInf.getCurrPacketId() +
+									",packetType:" +
+									packetInf.getType() +
+									",payloadType:" +
+									payloadType +
+									"------------------------------------------\n" +
+									StringUtil.dumpAsHex(packetInf.proxyBuffer.getBytes(packetInf.startPos, packetInf.endPos - packetInf.startPos)));
+				}catch (Exception e){
+					e.printStackTrace();
+				}
 				break;
 		}
 	}

@@ -26,6 +26,9 @@ public class MySQLPacketInf {
     public MySQLPayloadType getType() {
         return resolver.mysqlPacketType;
     }
+    public ComQueryState getState() {
+        return resolver.state;
+    }
     public int getCurrPacketId() {
         return resolver.nextPacketId-1;
     }
@@ -53,10 +56,12 @@ public class MySQLPacketInf {
         resolver.shift2RespPacket();
     }
 
-    public boolean isCommandFinished() {
-        return this.resolver.isCommandFinished();
+    public boolean needContinueOnReadingRequest() {
+        return this.resolver.needContinueOnReadingRequest();
     }
-
+    public boolean isResponseFinished() {
+        return this.resolver.isResponseFinished();
+    }
     public boolean isInteractive() {
         return this.resolver.isInteractive();
     }
