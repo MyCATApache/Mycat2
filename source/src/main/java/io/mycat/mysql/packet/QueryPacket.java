@@ -1,5 +1,6 @@
 package io.mycat.mysql.packet;
 
+import io.mycat.mycat2.MySQLCommand;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
@@ -7,7 +8,15 @@ import io.mycat.proxy.ProxyBuffer;
  */
 public class QueryPacket extends MySQLPacket {
     public String sql;
-    private byte pkgType = MySQLPacket.COM_QUERY;
+    private byte pkgType = MySQLCommand.COM_QUERY;
+
+    public QueryPacket(String sql, byte pkgType) {
+        this.sql = sql;
+        this.pkgType = pkgType;
+    }
+
+    public QueryPacket() {
+    }
 
     @Override
     public int calcPacketSize() {

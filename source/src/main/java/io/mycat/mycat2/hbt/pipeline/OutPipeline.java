@@ -4,11 +4,10 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.util.List;
 
+import io.mycat.mycat2.CurSQLState;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.console.SessionKeyEnum;
 import io.mycat.mycat2.hbt.ResultSetMeta;
 import io.mycat.mycat2.hbt.TableMeta;
-import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
 
@@ -55,7 +54,7 @@ public class OutPipeline extends ReferenceHBTPipeline {
 		buffer.readIndex = buffer.writeIndex; 
 		mycatSession.takeOwner(SelectionKey.OP_WRITE);
 		if(!tableMeta.isWriteFinish()) {
-			mycatSession.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_HBT_TABLE_META.getKey(), tableMeta);
+            mycatSession.curSQLSate.set(CurSQLState.HBT_TABLE_META, tableMeta);
 		}
 		try {
 			mycatSession.writeToChannel();
@@ -72,7 +71,7 @@ public class OutPipeline extends ReferenceHBTPipeline {
 		try {
 			mycatSession.takeBufferOwnerOnly();
 			mycatSession.sendErrorMsg(ErrorCode.ERR_FOUND_EXCEPION, msg);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

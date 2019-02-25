@@ -1,17 +1,16 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.ParseUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 public class NotSupportCmd implements MySQLCommand{
 	
@@ -23,11 +22,11 @@ public class NotSupportCmd implements MySQLCommand{
 	public boolean procssSQL(MycatSession session) throws IOException {
 		ErrorPacket error = new ErrorPacket();
         error.errno = ErrorCode.ER_BAD_DB_ERROR;
-        error.packetId = (byte)(session.proxyBuffer.getByte(session.curMSQLPackgInf.startPos 
+        error.packetId = (byte)(session.proxyBuffer.getByte(session.curPacketInf.startPos
 				+ ParseUtil.mysql_packetHeader_length)+1);
         error.message = " command  is not supported";
         session.responseOKOrError(error);
-        return false;
+        return true;
 	}
 
 	@Override
@@ -56,14 +55,9 @@ public class NotSupportCmd implements MySQLCommand{
 	}
 
 	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
+	public void clearResouces(MycatSession session, boolean sessionCLosed) {
 		// TODO Auto-generated method stub
 		
 	}
 
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
-	}
 }

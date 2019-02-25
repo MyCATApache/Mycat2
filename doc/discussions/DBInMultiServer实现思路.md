@@ -1,12 +1,14 @@
-| version | date | participants |
-|:---------:|------|:--------------:|
-| 1.0     | 2017-12-29 | 鼯鼠|
+| version | date | participants | content |
+|:---------:|------|:--------------:|:------------:|
+| 1.0     | 2017-12-29 | 鼯鼠|新建文档|
+| 1.1     | 2018-01-20 | 鼯鼠|支持全局表|
 
 ### 1. DBInMultiServer目标
 
 * 支持DBInMultiServer模式，即表在不同的MySQL Server上，但不分片
-* 暂不允许跨库DML ，DDL语句（给出错误提示）（已支持）
+* 暂不允许跨节点DML ，DDL语句（给出错误提示）（已支持）
 * 兼容MyCAT 动态注解，静态注解。（待测试）
+* 支持全局表
 
 ### 2.  实现思路
 
@@ -25,13 +27,15 @@ schemas:
         dataNode: dn1
       - name: tb_boy
         dataNode: dn2
+      - name: tb_paw
+        type: global
+        dataNode: dn$1-2
 dataNodes:
   - name: dn1
     database: mytest
     replica: repli
   - name: dn2
     database: mytest2
-    replica: repli2
 ```
 
 
@@ -130,6 +134,16 @@ private String getbackendName(){
 		return backendName;
 	}
 ```
+
+#### 2.3 全局表
+
+尽管DBInMultiServer模式一般情况下不允许跨库DML ，DDL语句，但全局表是个例外，仅针对全局表的DDL，DML语句可以跨节点执行。
+
+全局表具有如下特性：
+
+* 全局表的插入、更新操作会实时在所有节点上执行，保持各个分片的数据一致性
+* 全局表的查询操作，只从一个节点获取
+* 全局表可以跟任何一个表进行JOIN 操作
 
 ### 3.讨论点
 #### 3.1 数据库管理语句支持到什么程度

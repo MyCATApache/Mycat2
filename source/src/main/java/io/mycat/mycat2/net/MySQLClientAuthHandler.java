@@ -1,31 +1,28 @@
 package io.mycat.mycat2.net;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-import java.security.NoSuchAlgorithmException;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
 
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.FireWallBean;
 import io.mycat.mycat2.beans.conf.UserBean;
 import io.mycat.mycat2.beans.conf.UserConfig;
-import io.mycat.mysql.Alarms;
+import io.mycat.mysql.MysqlNativePasswordPluginUtil;
+import io.mycat.mysql.PayloadType;
 import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.NewAuthPacket;
 import io.mycat.proxy.ConfigEnum;
-import io.mycat.util.ErrorCode;
-import io.mycat.util.SecurityUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.mycat.mycat2.AbstractMySQLSession.CurrPacketType;
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+import java.util.List;
+import java.util.Objects;
+import java.util.regex.Pattern;
 
 /**
  * MySQL客户端登录认证的Handler，为第一个Handler
@@ -42,21 +39,21 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	@Override
 	public void onSocketRead(MycatSession session) throws IOException {
 		ProxyBuffer frontBuffer = session.getProxyBuffer();
-		if (session.readFromChannel() == false
-				|| CurrPacketType.Full != session.resolveMySQLPackage(frontBuffer, session.curMSQLPackgInf, false)) {
+		if (!session.readFromChannel() || PayloadType.FULL_PAYLOAD != session.resolveFullPayload()) {
 			return;
 		}
 
 		// 处理用户认证报文
 		try {
-			AuthPacket auth = new AuthPacket();
+			NewAuthPacket auth = new NewAuthPacket();
 			auth.read(frontBuffer);
 
 			MycatConfig config = ProxyRuntime.INSTANCE.getConfig();
 			UserConfig userConfig = config.getConfig(ConfigEnum.USER);
 			UserBean userBean = null;
+			String username = auth.username;
 			for (UserBean user : userConfig.getUsers()) {
-				if (user.getName().equals(auth.user)) {
+				if (user.getName().equals(username)) {
 					userBean = user;
 					break;
 				}
@@ -64,47 +61,50 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
 			// check user
 			if (!checkUser(session, userConfig, userBean)) {
-				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "' with addr '" + session.addr + "'");
+				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + username + "' with addr '" + session.addr + "'");
 				return;
 			}
 
-			// check password
+//			 check password
 			if (!checkPassword(session, userBean, auth.password)) {
-				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because password is error ");
+				failure(session, ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + username + "', because password is error ");
 				return;
 			}
 
-			// check degrade
+//			 check degrade
 //			if (isDegrade(auth.user)) {
 //				failure(ErrorCode.ER_ACCESS_DENIED_ERROR, "Access denied for user '" + auth.user + "', because service be degraded ");
 //				return;
 //			}
 
-			// check schema
-			switch (checkSchema(userBean, auth.database)) {
+			// check mycatSchema
+			String database = auth.database;
+			switch (checkSchema(userBean, database)) {
 				case ErrorCode.ER_BAD_DB_ERROR:
-					failure(session, ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + auth.database + "'");
+					failure(session, ErrorCode.ER_BAD_DB_ERROR, "Unknown database '" + database + "'");
 					break;
 				case ErrorCode.ER_DBACCESS_DENIED_ERROR:
-					String s = "Access denied for user '" + auth.user + "' to database '" + auth.database + "'";
+					String s = "Access denied for user '" + username + "' to database '" + database + "'";
 					failure(session, ErrorCode.ER_DBACCESS_DENIED_ERROR, s);
 					break;
 				default:
-					// set schema
+					// set mycatSchema
 					if (auth.database == null) {
-						session.schema = (userBean.getSchemas() == null) ?
-								config.getDefaultSchemaBean() : config.getSchemaBean(userBean.getSchemas().get(0));
+						session.setMycatSchema( (userBean.getSchemas() == null) ?
+								config.getDefaultSchemaBean() : config.getSchemaBean(userBean.getSchemas().get(0)));
 					} else {
-						session.schema = config.getSchemaBean(auth.database);
+						session.setMycatSchema(config.getSchemaBean(database));
 					}
-
-					logger.debug("set schema: {} for user: {}", session.schema, auth.user);
+					if (Objects.isNull(session.getMycatSchema())) {
+						logger.error(" mycatSchema:{} can not match user: {}", session.getMycatSchema(), username);
+					}
+					logger.debug("set mycatSchema: {} for user: {}", session.getMycatSchema(), username);
 					if (success(session, auth)) {
-						session.clientUser=auth.user;//设置session用户
+						session.clientUser = username;//设置session用户
 						session.proxyBuffer.reset();
 						session.answerFront(AUTH_OK);
 						// 认证通过，设置当前SQL Handler为默认Handler
-						session.setCurNIOHandler(DefaultMycatSessionHandler.INSTANCE);
+						session.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
 					}
 			}
 		} catch (Throwable e) {
@@ -112,7 +112,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 		}
 	}
 
-	private boolean checkUser(MycatSession session, UserConfig userConfig, UserBean userBean) throws IOException {
+    private boolean checkUser(MycatSession session, UserConfig userConfig, UserBean userBean) {
 		if (userBean == null) {
 			return false;
 		}
@@ -154,14 +154,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 			return false;
 		}
 
-		// encrypt
-		byte[] encryptPass;
-		try {
-			encryptPass = SecurityUtil.scramble411(pass.getBytes(), session.seed);
-		} catch (NoSuchAlgorithmException e) {
-			logger.warn("no such algorithm", e);
-			return false;
-		}
+		byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(pass, session.seed);
 
 		if (encryptPass != null && (encryptPass.length == password.length)) {
 			int i = encryptPass.length;
@@ -198,12 +191,12 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 		session.responseOKOrError(errorPacket);
 	}
 
-	private boolean success(MycatSession session, AuthPacket auth) throws IOException {
+    private boolean success(MycatSession session, NewAuthPacket auth) {
 		// 设置字符集编码
-		int charsetIndex = (auth.charsetIndex & 0xff);
+		int charsetIndex = (auth.characterSet & 0xff);
 		// 保存字符集索引
 		session.charSet.charsetIndex = charsetIndex;
-//		ProxyRuntime.INSTANCE.getConfig().getMySQLRepBean(session.schema.getDefaultDN().getReplica()).getMetaBeans().get(0).INDEX_TO_CHARSET.get(charsetIndex);
+//		ProxyRuntime.INSTANCE.getConfig().getMySQLRepBean(session.mycatSchema.getDefaultDN().getReplica()).getMetaBeans().get(0).INDEX_TO_CHARSET.get(charsetIndex);
 		logger.debug("login success, charsetIndex = {}", charsetIndex);
 		return true;
 	}
@@ -219,12 +212,12 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	}
 
 	@Override
-	public void onConnect(SelectionKey curKey, MycatSession session, boolean success, String msg) throws IOException {
+    public void onConnect(SelectionKey curKey, MycatSession session, boolean success, String msg) {
 		// TODO Auto-generated method stub
 	}
 
 	@Override
-	public void onWriteFinished(MycatSession session) throws IOException {
+    public void onWriteFinished(MycatSession session) {
 		// 明确开启读操作
 		session.proxyBuffer.flip();
 		session.change2ReadOpts();

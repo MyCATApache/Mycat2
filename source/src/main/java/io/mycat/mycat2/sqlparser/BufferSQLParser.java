@@ -1,20 +1,15 @@
 package io.mycat.mycat2.sqlparser;
 
-import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
-
-import java.nio.ByteBuffer;
-
+import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.*;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteBufferArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.DefaultByteArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.SelectItemsParser;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.dcl.DCLSQLParser;
+import java.nio.ByteBuffer;
+import java.util.function.Predicate;
+
+import static io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil.debug;
 
 /**
  * Created by Kaiz on 2017/2/6.
@@ -53,7 +48,7 @@ public class BufferSQLParser {
     Tokenizer2 tokenizer = new Tokenizer2();
     DefaultByteArray defaultByteArray = new DefaultByteArray();
     ByteBufferArray byteBufferArray = new ByteBufferArray();
-    
+
     private static final Logger logger = LoggerFactory.getLogger(BufferSQLParser.class);
 
     int pickTableNames(int pos, final int arrayCount, BufferSQLContext context) {
@@ -171,7 +166,7 @@ public class BufferSQLParser {
         while (pos < arrayCount) {
             intHash = hashArray.getIntHash(pos);
             hash = hashArray.getHash(pos);
-            if (intHash ==IntTokenHash. LOW_PRIORITY && hash == TokenHash.LOW_PRIORITY) {
+            if (intHash == IntTokenHash.LOW_PRIORITY && hash == TokenHash.LOW_PRIORITY) {
                 pos++;
                 continue;
             } else if (intHash == IntTokenHash.IGNORE && hash == TokenHash.IGNORE) {
@@ -201,6 +196,117 @@ public class BufferSQLParser {
                         context.setAnnotationValue(BufferSQLContext.ANNOTATION_DATANODE, hashArray.getHash(++pos));
                     }
                     break;
+                case IntTokenHash.MERGE:
+                    context.setAnnotationType(BufferSQLContext.ANNOTATION_MERGE);
+                    MergeAnnotation annotation = context.getMergeAnnotation();
+                    Predicate<Integer> isFinished = (i) -> {
+                        switch (i) {
+                            case IntTokenHash.DATANODE:
+                            case IntTokenHash.GROUP_COLUMNS:
+                            case IntTokenHash.MERGE_COLUMNS:
+                            case IntTokenHash.HAVING:
+                            case IntTokenHash.LIMIT_START:
+                            case IntTokenHash.LIMIT_SIZE:
+                            case IntTokenHash.ORDER:
+                                return true;
+                            default:
+                                return false;
+                        }
+                    };
+                    ++pos;
+                    while (pos < arrayCount) {
+                        intHash = hashArray.getIntHash(pos);
+                        switch (intHash) {
+                            case IntTokenHash.DATANODES: {
+                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                                    while (pos < arrayCount) {
+                                        annotation.addDataNode(++pos);
+                                        if (isFinished.test(hashArray.getIntHash(pos + 1))) {
+                                            ++pos;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                            case IntTokenHash.GROUP_COLUMNS: {
+                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                                    while (pos < arrayCount) {
+                                        annotation.addGroupColumn(++pos);
+                                        if (isFinished.test(hashArray.getIntHash(pos + 1))) {
+                                            ++pos;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                            case IntTokenHash.MERGE_COLUMNS: {
+                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                                    while (pos < arrayCount) {
+                                        ++pos;
+                                        int colPos = pos;
+                                        annotation.addMergeColumn(colPos, ++pos);
+                                        if (isFinished.test(hashArray.getIntHash(pos + 1))) {
+                                            ++pos;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                            case IntTokenHash.HAVING: {
+                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                                    annotation.setLeft(++pos);
+                                    annotation.setOp(++pos);//@todo bug can not getType > <
+                                    annotation.setRight(++pos);
+                                    ++pos;
+                                }
+                                break;
+                            }
+                            case IntTokenHash.ORDER: {
+                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                                    while (pos < arrayCount) {
+                                        ++pos;
+                                        int colPos = pos;
+                                        int order = hashArray.getIntHash(++pos);
+                                        MergeAnnotation.OrderType orderType = order == IntTokenHash.DESC ?
+                                                MergeAnnotation.OrderType.DESC : MergeAnnotation.OrderType.ASC;
+                                        annotation.addOrderColumn(colPos, orderType);
+                                        if (isFinished.test(hashArray.getIntHash(pos + 1))) {
+                                            ++pos;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                            case IntTokenHash.LIMIT_START: {
+                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                                    ///@todo ref pickLimits,change pickNumber retuen int type to long type
+                                    //ref pickLimits
+                                    annotation.setLimitStart(TokenizerUtil.pickNumber(++pos, hashArray, sql) * 1);
+                                    ++pos;
+                                }
+                                break;
+                            }
+                            case IntTokenHash.LIMIT_SIZE: {
+                                if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
+                                    ///@todo  ref pickLimits,change pickNumber retuen int type to long type
+                                    annotation.setLimitSize(TokenizerUtil.pickNumber(++pos, hashArray, sql) * 1);
+                                    ++pos;
+                                }
+                                break;
+                            }
+                            default: {
+                                ++pos;
+                                context.setRealSQLOffset(pos);
+//                                System.out.println(this.sql.getStringByHashArray(pos, this.hashArray)+":"+intHash);
+                                return pos;
+                            }
+                        }
+                    }
+                    break;
                 case IntTokenHash.SCHEMA:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_SCHEMA);
                     if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
@@ -219,8 +325,8 @@ public class BufferSQLParser {
                         int start = hashArray.getPos(++pos);
                         int length = hashArray.getSize(pos);
                         intHash = hashArray.getIntHash(++pos);
-                        while ( pos < arrayCount && intHash != IntTokenHash.ANNOTATION_END) {
-                            length += hashArray.getSize(pos)+1;//+1是因为前面的 . 没有被收入HashArray
+                        while (pos < arrayCount && intHash != IntTokenHash.ANNOTATION_END) {
+                            length += hashArray.getSize(pos) + 1;//+1是因为前面的 . 没有被收入HashArray
                             intHash = hashArray.getIntHash(++pos);
                         }
                         context.setCatletName(start, length);
@@ -263,7 +369,7 @@ public class BufferSQLParser {
                 case IntTokenHash.BALANCE:
                     if (hashArray.getHash(pos) == TokenHash.BALANCE) {
                         context.setAnnotationType(BufferSQLContext.ANNOTATION_BALANCE);
-                        if (hashArray.getHash(++pos)==TokenHash.TYPE)  {
+                        if (hashArray.getHash(++pos) == TokenHash.TYPE) {
                             if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                                 context.setAnnotationValue(BufferSQLContext.ANNOTATION_BALANCE, hashArray.getHash(++pos));
                                 ++pos;
@@ -273,7 +379,7 @@ public class BufferSQLParser {
                     break;
                 case IntTokenHash.REPLICA:
                     context.setAnnotationType(BufferSQLContext.ANNOTATION_REPLICA_NAME);
-                    if (hashArray.getHash(++pos)==TokenHash.NAME)  {
+                    if (hashArray.getHash(++pos) == TokenHash.NAME) {
                         if (hashArray.getType(++pos) == Tokenizer2.EQUAL) {
                             context.setAnnotationValue(BufferSQLContext.ANNOTATION_REPLICA_NAME, hashArray.getHash(++pos));
                             ++pos;
@@ -408,6 +514,18 @@ public class BufferSQLParser {
                         pos++;
                     }
                     break;
+                case IntTokenHash.DATABASES:
+                    if (hashArray.getHash(pos) == TokenHash.DATABASES) {
+                        context.setShowSQLType(BufferSQLContext.SHOW_DB_SQL);
+                        pos++;
+                    }
+                    break;
+                case IntTokenHash.TABLES:
+                    if (hashArray.getHash(pos) == TokenHash.TABLES) {
+                        context.setShowSQLType(BufferSQLContext.SHOW_TB_SQL);
+                        pos++;
+                    }
+                    break;
                 case IntTokenHash.INSERT:
                     if (hashArray.getHash(pos) == TokenHash.INSERT) {
                         context.setSQLType(BufferSQLContext.INSERT_SQL);
@@ -462,7 +580,7 @@ public class BufferSQLParser {
                         pos++;
                         TokenizerUtil.debug(() -> "START");
                         if (hashArray.getHash(pos) == TokenHash.TRANSACTION) {
-                            pos = TCLSQLParser.pickStartTransaction(       ++pos, arrayCount, context, hashArray);
+                            pos = TCLSQLParser.pickStartTransaction(++pos, arrayCount, context, hashArray);
                         }
                     }
                     break;
@@ -479,7 +597,7 @@ public class BufferSQLParser {
                     }
                     break;
                 case IntTokenHash.SAVEPOINT:
-                    debug(pos,context);
+                    debug(pos, context);
                     if (hashArray.getHash(pos) == TokenHash.SAVEPOINT) {
                         context.setSQLType(BufferSQLContext.SAVEPOINT_SQL);
                         pos++;
@@ -505,6 +623,10 @@ public class BufferSQLParser {
                     }
                     break;
                 case IntTokenHash.DESC:
+                    if (context.getCurSQLType() != 0) {
+                        pos++;
+                        break;
+                    }
                 case IntTokenHash.DESCRIBE:
                     long hashValue;
                     if (((hashValue = hashArray.getHash(pos)) == TokenHash.DESC) ||
@@ -570,7 +692,7 @@ public class BufferSQLParser {
                     ++pos;
                     if (hashArray.getHash(pos) == TokenHash.TABLES) {
                         debug(pos, context);
-                        pos = TCLSQLParser.pickLockTables(  ++pos, arrayCount, context, hashArray);
+                        pos = TCLSQLParser.pickLockTables(++pos, arrayCount, context, hashArray);
                     }
                     break;
                 }
@@ -584,25 +706,25 @@ public class BufferSQLParser {
                 }
                 case IntTokenHash.XA: {
                     debug(pos, context);
-                    pos = TCLSQLParser.pickXATransaction(      ++pos, arrayCount, context, hashArray);
+                    pos = TCLSQLParser.pickXATransaction(++pos, arrayCount, context, hashArray);
                     break;
                 }
                 case IntTokenHash.GRANT: {
-                    TokenizerUtil.debug(pos,context);
-                    pos = DCLSQLParser.pickGrant(++pos, arrayCount, context, hashArray,sql);
+                    TokenizerUtil.debug(pos, context);
+                    pos = DCLSQLParser.pickGrant(++pos, arrayCount, context, hashArray, sql);
                     break;
                 }
                 case IntTokenHash.REVOKE: {
-                    TokenizerUtil.debug(pos,context);
-                    pos = DCLSQLParser.pickRevoke(++pos, arrayCount, context, hashArray,sql);
+                    TokenizerUtil.debug(pos, context);
+                    pos = DCLSQLParser.pickRevoke(++pos, arrayCount, context, hashArray, sql);
                     break;
                 }
-                case IntTokenHash.MYCAT:{
-                	if (hashArray.getHash(pos) == TokenHash.MYCAT) {
+                case IntTokenHash.MYCAT: {
+                    if (hashArray.getHash(pos) == TokenHash.MYCAT) {
                         context.setSQLType(BufferSQLContext.MYCAT_SQL);
                         pos++;
                     }
-                	break;
+                    break;
                 }
                 case IntTokenHash.SHUTDOWN:
                     if (hashArray.getHash(pos) == TokenHash.SHUTDOWN) {
@@ -611,7 +733,7 @@ public class BufferSQLParser {
                     }
                     break;
                 default:
-                  //  debugError(pos, context);
+                    //  debugError(pos, context);
                     pos++;
                     break;
             }
@@ -620,8 +742,8 @@ public class BufferSQLParser {
     }
 
     /*
-    * 计划用于第二遍解析，处理分片表分片条件
-    */
+     * 计划用于第二遍解析，处理分片表分片条件
+     */
     public void secondParse() {
 
     }
@@ -630,18 +752,42 @@ public class BufferSQLParser {
 
     }
 
-    public void parse(ByteBuffer src, int offset, int length, BufferSQLContext context) {
-        this.byteBufferArray.setSrc(src);
-        this.byteBufferArray.setOffset(offset);
-        this.byteBufferArray.setLength(length);
-        System.out.println("Recieved SQL : "+this.byteBufferArray.getString(offset, length));
-        sql = this.byteBufferArray;
-        hashArray = context.getHashArray();
-        hashArray.init();
-        context.setCurBuffer(sql);
-        tokenizer.tokenize(sql, hashArray);
-        firstParse(context);
-        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
+    public static void main(String[] args) {
+        BufferSQLParser parser = new BufferSQLParser();
+        BufferSQLContext context = new BufferSQLContext();
+        //parser.init();
+//        byte[] defaultByteArray = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
+//        byte[] defaultByteArray = "INSERT `mycatSchema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = ("select * from tbl_A, -- 单行注释\n" +
+//                "tbl_B b, #另一种单行注释\n" +
+//                "/*\n" +  //69
+//                "tbl_C\n" + //79
+//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = sql3.getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
+
+        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+//        ByteArrayInterface src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
+//        ByteArrayInterface src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
+//        long min = 0;
+//        for (int i = 0; i < 50; i++) {
+//            System.out.print("Loop " + i + " : ");
+//            long cur = RunBench(defaultByteArray, parser);//不加分析应该可以进2.6秒
+//            System.out.println(cur);
+//            if (cur < min || min == 0) {
+//                min = cur;
+//            }
+//        }
+//        System.out.print("min time : " + min);
+        parser.parse(src, context);
+        System.out.println(context.getSQLCount());
+        System.out.println(context.getSelectItem(0));
+        System.out.println(context.getSelectItem(1));
+        //IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
+        //System.out.print("token count : "+parser.hashArray.getCount());
     }
 
 
@@ -673,42 +819,20 @@ public class BufferSQLParser {
 //        return System.currentTimeMillis() - start;
 //    }
 
-    public static void main(String[] args) {
-        BufferSQLParser parser = new BufferSQLParser();
-        BufferSQLContext context = new BufferSQLContext();
-        //parser.init();
-//        byte[] defaultByteArray = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
-//        byte[] defaultByteArray = "INSERT `schema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = ("select * from tbl_A, -- 单行注释\n" +
-//                "tbl_B b, #另一种单行注释\n" +
-//                "/*\n" +  //69
-//                "tbl_C\n" + //79
-//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = sql3.getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
-
-        ByteArrayInterface src = new DefaultByteArray("/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
-//        ByteArrayInterface src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
-//        ByteArrayInterface src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
-//        long min = 0;
-//        for (int i = 0; i < 50; i++) {
-//            System.out.print("Loop " + i + " : ");
-//            long cur = RunBench(defaultByteArray, parser);//不加分析应该可以进2.6秒
-//            System.out.println(cur);
-//            if (cur < min || min == 0) {
-//                min = cur;
-//            }
-//        }
-//        System.out.print("min time : " + min);
-        parser.parse(src, context);
-        System.out.println(context.getSQLCount());
-        System.out.println(context.getSelectItem(0));
-        System.out.println(context.getSelectItem(1));
-        //IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
-        //System.out.print("token count : "+parser.hashArray.getCount());
+    public void parse(ByteBuffer src, int offset, int length, BufferSQLContext context) {
+        this.byteBufferArray.setSrc(src);
+        this.byteBufferArray.setOffset(offset);
+        this.byteBufferArray.setLength(length);
+        if (logger.isDebugEnabled()) {
+            logger.debug("Recieved SQL : " + this.byteBufferArray.getString(offset, length));
+        }
+        sql = this.byteBufferArray;
+        hashArray = context.getHashArray();
+        hashArray.init();
+        context.setCurBuffer(sql);
+        tokenizer.tokenize(sql, hashArray);
+        firstParse(context);
+        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
     }
 
     static String sql3 = "SELECT  'product' as 'P_TYPE' ,\n" +

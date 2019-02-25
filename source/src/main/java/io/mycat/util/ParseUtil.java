@@ -23,7 +23,6 @@
  */
 package io.mycat.util;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
@@ -49,18 +48,20 @@ public final class ParseUtil {
 	 *            报文buffer
 	 * @param offset
 	 *            buffer解析位置偏移量
-	 * @param position
-	 *            buffer已读位置偏移量
 	 * @return 报文长度(Header长度+内容长度)
-	 * @throws IOException
 	 */
-	public static final int getPacketLength(ByteBuffer buffer, int offset) throws IOException {
+	public static final int getPacketLength(ByteBuffer buffer, int offset) {
 		int length = buffer.get(offset) & 0xff;
 		length |= (buffer.get(++offset) & 0xff) << 8;
 		length |= (buffer.get(++offset) & 0xff) << 16;
 		return length + msyql_packetHeaderSize;
 	}
-
+	public static final int getPayloadLength(ByteBuffer buffer, int offset) {
+		int length = buffer.get(offset) & 0xff;
+		length |= (buffer.get(++offset) & 0xff) << 8;
+		length |= (buffer.get(++offset) & 0xff) << 16;
+		return length;
+	}
 	/**
 	 * 进行resultSet的包验证
 	 * 

@@ -23,23 +23,22 @@
  */
 package io.mycat.mycat2.beans.heartbeat;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.concurrent.locks.ReentrantLock;
-
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.beans.CheckResult;
+import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.conf.ClusterConfig;
+import io.mycat.mycat2.beans.conf.HeartbeatConfig;
+import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.man.cmds.LeaderNotifyPacketCommand;
 import io.mycat.proxy.man.packet.LeaderNotifyPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.beans.CheckResult;
-import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.conf.HeartbeatConfig;
-import io.mycat.proxy.ConfigEnum;
-import io.mycat.proxy.ProxyRuntime;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author mycat
@@ -125,7 +124,9 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		lock.lock();
 		try {
 			if (isChecking.compareAndSet(false, true)) {
-				logger.debug("backend mysql heartbeat begin.{}:{}", source.getDsMetaBean().getIp(), source.getDsMetaBean().getPort());
+                if (logger.isDebugEnabled()) {
+                    logger.debug("backend mysql heartbeat begin.{}:{}", source.getDsMetaBean().getIp(), source.getDsMetaBean().getPort());
+                }
 				MySQLDetector detector = this.detector;
 				if (detector == null || detector.isQuit()) {
 					try {
@@ -218,7 +219,7 @@ public class MySQLHeartbeat extends DBHeartbeat {
 							source.getRepBean().getReplicaBean().getName(), Integer.toString(source.getIndex()));
                 }
 				source.init();
-			} catch (IOException e) {
+            } catch (Exception e) {
 				logger.error("error to init datasource for MySQLMetaBean {}", source);
 			}
 		}

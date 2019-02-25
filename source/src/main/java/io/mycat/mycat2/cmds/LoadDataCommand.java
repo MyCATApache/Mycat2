@@ -1,195 +1,152 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectionKey;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.console.SessionKeyEnum;
+import io.mycat.mysql.PayloadType;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.util.ErrorCode;
+import io.mycat.util.LoadDataUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
+
+import static io.mycat.mycat2.cmds.LoadDataState.*;
+import static io.mycat.util.LoadDataUtil.change2;
 
 /**
  * 进行load data的命令处理
- * 
- * @author wuzhihui
  *
+ * @author wuzhihui cjw
  */
 public class LoadDataCommand implements MySQLCommand {
 
-	private static final Logger logger = LoggerFactory.getLogger(LoadDataCommand.class);
+    private static final Logger logger = LoggerFactory.getLogger(LoadDataCommand.class);
 
-	/**
-	 * 透传的实例对象
-	 */
-	public static final LoadDataCommand INSTANCE = new LoadDataCommand();
+    /**
+     * 透传的实例对象
+     */
+    public static final LoadDataCommand INSTANCE = new LoadDataCommand();
 
-	/**
-	 * loaddata传送结束标识长度
-	 */
-	private static final int FLAGLENGTH = 4;
-
-	/**
-	 * 结束flag标识
-	 */
-	//private byte[] overFlag = new byte[FLAGLENGTH];
-
-	@Override
-	public boolean procssSQL(MycatSession session) throws IOException {
-		ProxyBuffer curBuffer = session.proxyBuffer;
-
-		// 进行结束符的读取
-		this.readOverByte(session, curBuffer);
-		//检查是否传输完成
-		if (checkOver(session)) {
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), true);
-		} else {
-			session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey(), false);
-		}
-		
-		/*
-		 * 获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
-		 */
-		session.clearReadWriteOpts();
-		
-		session.getBackend((mysqlsession, sender, success,result)->{
-			if(success){
-				// 切换buffer 读写状态
-				curBuffer.flip();
-				
-				curBuffer.readIndex = curBuffer.writeIndex;
-				// 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
-				session.giveupOwner(SelectionKey.OP_READ);
-				// 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
-				mysqlsession.writeToChannel();
-			}
-		});
-
-		return false;
-	}
+    /**
+     * 结束flag标识
+     */
+    //private byte[] overFlag = new byte[FLAGLENGTH];
+    @Override
+    public boolean procssSQL(MycatSession session) throws IOException {
+        ProxyBuffer curBuffer = session.proxyBuffer;
+        if (session.loadDataStateMachine == NOT_LOAD_DATA) {
+            session.loadDataStateMachine = CLIENT_2_SERVER_COM_QUERY;
+            session.clearReadWriteOpts();//获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
+            session.getBackendAndCallBack((mysqlsession, sender, success, result) -> {
+                if (success) {
+                    curBuffer.flip();// 切换buffer 读写状态
+                    curBuffer.readIndex = curBuffer.writeIndex;
+                    // 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
+                    session.giveupOwner(SelectionKey.OP_READ);
+                    // 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
+                    mysqlsession.writeToChannel();
+                    mysqlsession.curPacketInf.shift2RespPacket();
+                }
+            });
+        } else {
+            resolveLoadData(session);
+        }
+        return false;
+    }
 
 
-	/*获取结束flag标识的数组*/
-	private byte[] getOverFlag(MycatSession session) {
-		byte[] overFlag = (byte[])session.getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey());
-		if(overFlag != null) {
-			return overFlag;
-		}
-		overFlag = new byte[FLAGLENGTH];
-		session.getSessionAttrMap().put(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey(), overFlag);
-		return overFlag; 
-	}
-	/**
-	 * 进行结束符的读取
-	 * 
-	 * @param curBuffer
-	 *            buffer数组信息
-	 */
-	private void readOverByte(MycatSession session, ProxyBuffer curBuffer) {
-		byte[] overFlag = getOverFlag(session);
-		// 获取当前buffer的最后
-		ByteBuffer buffer = curBuffer.getBuffer();
+    @Override
+    public void clearResouces(MycatSession session, boolean sessionCLosed) {
+        // TODO Auto-generated method stub
 
-		// 如果数据的长度超过了，结束符的长度，可直接提取结束符
-		if (buffer.position() >= FLAGLENGTH) {
-			int opts = curBuffer.writeIndex;
-			buffer.position(opts - FLAGLENGTH);
-			buffer.get(overFlag, 0, FLAGLENGTH);
-			buffer.position(opts);
-		}
-		// 如果小于结束符，说明需要进行两个byte数组的合并
-		else {
-			int opts = curBuffer.writeIndex;
-			// 计算放入的位置
-			int moveSize = FLAGLENGTH - opts;
-			int index = 0;
-			// 进行数组的移动,以让出空间进行放入新的数据
-			for (int i = FLAGLENGTH - moveSize; i < FLAGLENGTH; i++) {
-				overFlag[index] = overFlag[i];
-				index++;
-			}
-			// 读取数据
-			buffer.position(0);
-			buffer.get(overFlag, moveSize, opts);
-			buffer.position(opts);
-		}
+    }
 
-	}
+    @Override
+    public boolean onBackendResponse(MySQLSession mySQLSession) {
+        MycatSession mycatSession = mySQLSession.getMycatSession();
+        try {
+            if (mycatSession.loadDataStateMachine == SERVER_2_CLIENT_COM_QUERY_RESPONSE || mycatSession.loadDataStateMachine == SERVER_2_CLIENT_OK_PACKET) {
+                boolean readed = mySQLSession.readFromChannel();
+                if (readed) {
+                    PayloadType payloadType = mySQLSession.resolveFullPayload();
+                    if (payloadType == PayloadType.FULL_PAYLOAD) {
+                        mySQLSession.curPacketInf.markRead();
+                        mySQLSession.setIdle(! mySQLSession.curPacketInf.isInteractive());
+                        ProxyBuffer proxyBuffer = mycatSession.proxyBuffer;
+                        proxyBuffer.flip();
+                        mycatSession.takeOwner(SelectionKey.OP_WRITE);
+                        mycatSession.writeToChannel();
+                    }
+                }
+                return false;
+            }
+        } catch (IOException e) {
+            logger.info(e.getLocalizedMessage());
+            String errmsg = " load data fail in " + mycatSession.loadDataStateMachine;
+            mycatSession.sendErrorMsg(ErrorCode.ER_INVALID_DEFAULT, errmsg);
+            return true;
+        }
+        return false;
+    }
 
-	/**
-	 * 进行结束符的检查,
-	 * 
-	 * 数据的结束符为0,0,0,包序，即可以验证读取到3个连续0，即为结束
-	 * 
-	 * @return
-	 */
-	private boolean checkOver(MycatSession session) {
-		byte[] overFlag = getOverFlag(session);
-		for (int i = 0; i < overFlag.length - 1; i++) {
-			if (overFlag[i] != 0) {
-				return false;
-			}
-		}
-		return true;
-	}
+    @Override
+    public boolean onBackendClosed(MySQLSession session, boolean normal) {
+        // TODO Auto-generated method stub
+        return false;
+    }
 
-	@Override
-	public void clearFrontResouces(MycatSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
-	}
+    @Override
+    public boolean onFrontWriteFinished(MycatSession session) throws IOException {
+        switch (session.loadDataStateMachine) {
+            case SERVER_2_CLIENT_COM_QUERY_RESPONSE:
+                session.proxyBuffer.flip();
+                change2(session, CLIENT_2_SERVER_CONTENT_FILENAME);
+                session.takeOwner(SelectionKey.OP_READ);
+                return false;
+            case SERVER_2_CLIENT_OK_PACKET:
+                session.proxyBuffer.flip();
+                session.takeOwner(SelectionKey.OP_READ);
+                session.loadDataStateMachine = NOT_LOAD_DATA;
+                return true;
+            default:
+                throw new RuntimeException("unknown state!!!");
+        }
+    }
 
+    @Override
+    public boolean onBackendWriteFinished(MySQLSession session) {
+        MycatSession mycatSession = session.getMycatSession();
+        switch (mycatSession.loadDataStateMachine) {
+            case CLIENT_2_SERVER_COM_QUERY:
+                mycatSession.proxyBuffer.flip();
+                change2(mycatSession, SERVER_2_CLIENT_COM_QUERY_RESPONSE);
+                mycatSession.giveupOwner(SelectionKey.OP_READ);
+                break;
+            case CLIENT_2_SERVER_CONTENT_FILENAME:
+                mycatSession.proxyBuffer.flip();
+                mycatSession.takeOwner(SelectionKey.OP_READ);
+                break;
+            case CLIENT_2_SERVER_EMPTY_PACKET:
+                mycatSession.proxyBuffer.flip();
+                change2(mycatSession, SERVER_2_CLIENT_OK_PACKET);
+                mycatSession.giveupOwner(SelectionKey.OP_READ);
+                break;
+            default:
+        }
+        return false;
+    }
 
-	@Override
-	public void clearBackendResouces(MySQLSession session, boolean sessionCLosed) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean onBackendResponse(MySQLSession session) throws IOException {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean onFrontWriteFinished(MycatSession session) throws IOException {
-		//向前端写完数据，前段进入读状态
-		session.proxyBuffer.flip();
-		session.change2ReadOpts();
-		return false;
-	}
-
-	@Override
-	public boolean onBackendWriteFinished(MySQLSession session) throws IOException {
-		Boolean flag =  (Boolean)session.getMycatSession().getSessionAttrMap().get(SessionKeyEnum.SESSION_KEY_LOAD_DATA_FINISH_KEY.getKey());
-		//前段数据透传完成
-		if(flag) {
-			logger.debug("load data finish!!!");
-			//session.getMycatSession().curSQLCommand = DirectPassthrouhCmd.INSTANCE;
-			// 当load data的包完成后，则又重新打开包完整性检查
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_PKG_READ_FLAG.getKey());
-			//清除临时数组
-			session.getSessionAttrMap().remove(SessionKeyEnum.SESSION_KEY_LOAD_OVER_FLAG_ARRAY.getKey());
-			//读取后端的数据，然后进行透传
-			session.getMycatSession().giveupOwner(SelectionKey.OP_READ);
-			session.proxyBuffer.flip();
-		} else {
-			logger.debug("load data from front!!!");
-			//前端改为读状态
-			session.getMycatSession().takeOwner(SelectionKey.OP_READ);
-			session.getMycatSession().proxyBuffer.flip();
-		}
-		return false;
-	}	
+    private void resolveLoadData(final MycatSession mycatSession) throws IOException {
+        LoadDataUtil.readOverByte(mycatSession, mycatSession.proxyBuffer);
+        if (LoadDataUtil.checkOver(mycatSession)) {
+            LoadDataUtil.change2(mycatSession, CLIENT_2_SERVER_EMPTY_PACKET);
+        }
+        mycatSession.proxyBuffer.flip();
+        mycatSession.proxyBuffer.readIndex = mycatSession.proxyBuffer.writeIndex;
+        mycatSession.giveupOwner(SelectionKey.OP_WRITE);
+        mycatSession.getCurBackend().writeToChannel();
+    }
 }

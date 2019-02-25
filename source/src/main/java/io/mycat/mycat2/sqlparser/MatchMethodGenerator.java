@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 //import com.alibaba.druid.sql.parser.Token;
-import javafx.util.Pair;
+//import javafx.util.Pair;
 
 /**
  * Created by Administrator on 2017/2/13 0013.
@@ -224,31 +224,31 @@ public class MatchMethodGenerator {
     }
 
     static int collideCount = 0;
-    static long hashCollideTest(final List<Pair<Long, char[]>> sqlKeys, final ArrayList<Character> srcArray,
-                                final int maxDepth, final int depth, final char[] str,
-                                final long totalCount, final long count) {
-        long newCount = count;
-        for (Character c: srcArray) {
-            str[depth] = c;
-            if (depth < maxDepth -1)
-                newCount = hashCollideTest(sqlKeys, srcArray, maxDepth, depth+1, str, totalCount, newCount);
-            else {
-                final long hash = genHash(str);
-                sqlKeys.forEach(x -> {
-                    if (x.getKey() == hash && !cmp(x.getValue(), str)) {
-                        collideCount++;
-                        System.out.println("Key '"+String.valueOf(x.getValue())+"' collides with '"+String.valueOf(str)+"' with hash : "+hash);
-                    }
-                });
-                newCount++;
-                if (newCount%10000000 == 1) {
-                    Date now=new Date();
-                    System.out.println(now.toLocaleString()+" progress : "+newCount+"/"+totalCount);
-                }
-            }
-        }
-        return newCount;
-    }
+//    static long hashCollideTest(final List<Pair<Long, char[]>> sqlKeys, final ArrayList<Character> srcArray,
+//                                final int maxDepth, final int depth, final char[] str,
+//                                final long totalCount, final long count) {
+//        long newCount = count;
+//        for (Character c: srcArray) {
+//            str[depth] = c;
+//            if (depth < maxDepth -1)
+//                newCount = hashCollideTest(sqlKeys, srcArray, maxDepth, depth+1, str, totalCount, newCount);
+//            else {
+//                final long hash = genHash(str);
+//                sqlKeys.forEach(x -> {
+//                    if (x.getKey() == hash && !cmp(x.getValue(), str)) {
+//                        collideCount++;
+//                        System.out.println("Key '"+String.valueOf(x.getValue())+"' collides with '"+String.valueOf(str)+"' with hash : "+hash);
+//                    }
+//                });
+//                newCount++;
+//                if (newCount%10000000 == 1) {
+//                    Date now=new Date();
+//                    System.out.println(now.toLocaleString()+" progress : "+newCount+"/"+totalCount);
+//                }
+//            }
+//        }
+//        return newCount;
+//    }
 
 //    static void run() {
 //        ArrayList<Character> srcArray = new ArrayList<>();

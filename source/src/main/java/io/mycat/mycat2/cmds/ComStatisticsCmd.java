@@ -1,16 +1,13 @@
 package io.mycat.mycat2.cmds;
 
-import java.io.IOException;
-import java.nio.channels.SelectionKey;
-
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.pkgread.CommQueryHandlerResultSet;
-import io.mycat.mycat2.console.SessionKeyEnum;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.proxy.ProxyBuffer;
+import java.io.IOException;
+import java.nio.channels.SelectionKey;
 
 /**
  * Get a human readable string of internal statistics.
@@ -38,7 +35,7 @@ public class ComStatisticsCmd extends DirectPassthrouhCmd{
 		 */
 		session.clearReadWriteOpts();
 		
-		session.getBackend((mysqlsession, sender, success,result)->{
+		session.getBackendAndCallBack((mysqlsession, sender, success,result)->{
 			ProxyBuffer curBuffer = session.proxyBuffer;
 			// 切换 buffer 读写状态
 			curBuffer.flip();
@@ -51,10 +48,10 @@ public class ComStatisticsCmd extends DirectPassthrouhCmd{
 				try {
 					mysqlsession.writeToChannel();
 				} catch (IOException e) {
-					session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+					session.closeAllBackendsAndResponseError(success,((ErrorPacket) result));
 				}
 			}else{
-				session.closeBackendAndResponseError(mysqlsession,success,((ErrorPacket) result));
+				session.closeAllBackendsAndResponseError(success,((ErrorPacket) result));
 			}
 		});
 		return false;

@@ -1,8 +1,10 @@
 package io.mycat.util;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import io.mycat.mycat2.AbstractMySQLSession;
+import io.mycat.mysql.MySQLPacketInf;
+import io.mycat.mysql.PayloadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +69,31 @@ public final class StringUtil {
 	public final static String dumpAsHex(final byte[] buffer) {
 		return dumpAsHex(buffer, 0, buffer.length);
 	}
-	
+	public final static void print(PayloadType payloadType, MySQLPacketInf packetInf) {
+		switch (payloadType) {
+			case UNKNOWN:
+			case SHORT_PAYLOAD:
+			case LONG_PAYLOAD:
+			case FULL_PAYLOAD:
+			case REST_CROSS_PAYLOAD:
+			case FINISHED_CROSS_PAYLOAD:
+				try {
+					System.out.println(
+							"-----------------------------" +
+									"packetId:" +
+									packetInf.getCurrPacketId() +
+									",packetType:" +
+									packetInf.getType() +
+									",payloadType:" +
+									payloadType +
+									"------------------------------------------\n" +
+									StringUtil.dumpAsHex(packetInf.proxyBuffer.getBytes(packetInf.startPos, packetInf.endPos - packetInf.startPos)));
+				}catch (Exception e){
+					e.printStackTrace();
+				}
+				break;
+		}
+	}
 	public final static String dumpAsHex(final byte[] buffer, final int length) {
 		return dumpAsHex(buffer, 0, length);
 	}
@@ -90,12 +116,13 @@ public final class StringUtil {
         final StringBuilder out = new StringBuilder(length * 4);
         final int end = offset + length;
         int p    = offset;
-        int rows = length / 8;
-
+        int wide = 32;
+        int rows = length / wide;
+		out.append('\n');
         // rows
         for (int i = 0; (i < rows) && (p < end); i++) {
             // - hex string in a line
-            for (int j = 0, k = p; j < 8; j++, k++) {
+            for (int j = 0, k = p; j < wide; j++, k++) {
                 final String hexs = Integer.toHexString(g.get(k) & 0xff);
                 if (hexs.length() == 1) {
                 	out.append('0');
@@ -104,7 +131,7 @@ public final class StringUtil {
             }
             out.append("    ");
             // - ascii char in a line
-            for (int j = 0; j < 8; j++, p++) {
+            for (int j = 0; j < wide; j++, p++) {
                 final int b = 0xff & g.get(p);
                 if (b > 32 && b < 127) {
                 	out.append((char) b);
@@ -127,7 +154,7 @@ public final class StringUtil {
         }
         LOGGER.debug("offset = {}, length = {}, end = {}, n = {}", offset, length, end, n);
         // padding hex string in line
-        for (int i = n; i < 8; i++) {
+        for (int i = n; i < wide; i++) {
         	out.append("   ");
         }
         out.append("    ");
@@ -159,7 +186,9 @@ public final class StringUtil {
     public final static String dumpAsHex(final ByteBuffer buffer, final int offset, final int length){
     	return (dumpAsHex(new ByteBufferGetable(buffer), offset, length));
     }
-    
+	public final static String dumpMySQLPackageInfAsHex(AbstractMySQLSession mySQLSession){
+		return (dumpAsHex(new ByteBufferGetable(mySQLSession.proxyBuffer.getBuffer()), mySQLSession.curPacketInf.startPos, mySQLSession.curPacketInf.endPos));
+	}
     public final static boolean isEmpty(String str) {
     	return str == null || str == "";
     }
@@ -181,6 +210,26 @@ public final class StringUtil {
 //    	return (dumpAsHex(new ConDataBufferGetable(buffer), offset, length));
 //    }
     
+    /**
+	 * 移除`符号
+	 * @param str
+	 * @return
+	 */
+	public static String removeBackquote(String str){
+		//删除名字中的`tablename`和'value'
+		if (str.length() > 0) {
+			StringBuilder sb = new StringBuilder(str);
+			if (sb.charAt(0) == '`'||sb.charAt(0) == '\'') {
+				sb.deleteCharAt(0);
+			}
+			if (sb.charAt(sb.length() - 1) == '`'||sb.charAt(sb.length() - 1) == '\'') {
+				sb.deleteCharAt(sb.length() - 1);
+			}
+			return sb.toString();
+		}
+		return "";
+	}
+    
     public static void main(String args[]){
     	final byte[] array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 48, 49, 50, 97, 98, 99};
     	
@@ -195,6 +244,5 @@ public final class StringUtil {
     	final ByteBuffer buffer = ByteBuffer.wrap(array);
     	buffer.position(buffer.limit());
     	System.out.println(dumpAsHex(buffer));
-    }
-    
+    }    
 }

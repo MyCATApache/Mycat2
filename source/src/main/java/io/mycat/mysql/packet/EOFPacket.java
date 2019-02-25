@@ -42,8 +42,8 @@ import io.mycat.proxy.ProxyBuffer;
  * 
  * @author mycat
  */
-public class EOFPacket extends MySQLPacket {
-	public byte pkgType = MySQLPacket.EOF_PACKET;
+public final class EOFPacket extends MySQLPacket {
+	public byte pkgType = (byte) MySQLPacket.EOF_PACKET;
 	public int warningCount;
 	public int status = 2;
 
@@ -58,11 +58,16 @@ public class EOFPacket extends MySQLPacket {
 	public void read(ProxyBuffer buffer) {
 		packetLength = (int) buffer.readFixInt(3);
 		packetId = buffer.readByte();
-		pkgType = (byte) buffer.readByte();
+		pkgType = buffer.readByte();
 		warningCount = (int) buffer.readFixInt(2);
 		status = (int) buffer.readFixInt(2);
 	}
 
+	public static int readStatus(ProxyBuffer buffer) {
+		//7 = packetLength(3) +  packetId（1） +  pkgType（1） + warningCount（2）
+		buffer.skip(7);
+		return (int) buffer.readFixInt(2); //status
+	}
 	@Override
 	public int calcPacketSize() {
 		return 5;// 1+2+2;

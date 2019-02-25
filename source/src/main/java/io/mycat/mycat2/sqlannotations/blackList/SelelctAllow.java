@@ -1,6 +1,6 @@
 package io.mycat.mycat2.sqlannotations.blackList;
 
-import javafx.util.Pair;
+//import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
