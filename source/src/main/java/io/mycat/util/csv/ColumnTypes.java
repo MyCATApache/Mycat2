@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * ${todo}
+ * 自定义数据结果集，伪造结果集包，根基自定义的类型响应默认协议类型相关信息
  *
  * @author : zhuqiang
  * @date : 2018/12/2 14:50
@@ -58,7 +58,7 @@ public enum ColumnTypes {
     /**
      * D适用于浮点和定点类型，并指示小数点后面的位数（刻度）。最大可能值为30，但不应大于 M-2
      */
-    private int d;
+    private byte d;
     /**
      * 适用于 TIME， DATETIME和 TIMESTAMP类型和表示小数精度秒; 也就是说，小数部分秒的小数点后面的位数。的 fsp值，如果给定的，必须在1到6的值为0表示没有小数部分范围为0。如果省略，则默认精度为0
      */
@@ -104,7 +104,7 @@ public enum ColumnTypes {
     ColumnTypes(int value, int m, int d, int fsp, int ccharetIndex, int status) {
         this.value = value;
         this.m = m;
-        this.d = d;
+        this.d = (byte) d;
         this.fsp = fsp;
         this.ccharetIndex = ccharetIndex;
         this.status = status;
@@ -125,7 +125,7 @@ public enum ColumnTypes {
         return m;
     }
 
-    public int getD() {
+    public byte getD() {
         return d;
     }
 
