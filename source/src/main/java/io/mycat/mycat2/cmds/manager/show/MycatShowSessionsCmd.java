@@ -97,7 +97,7 @@ public class MycatShowSessionsCmd implements MySQLCommand {
 			  row.add(mycatSession.clientUser.getBytes());
 			}
 			row.add(mycatSession.addr.getBytes());
-            row.add(mycatSession.mycatSchema.name.getBytes());
+            row.add(mycatSession.getMycatSchema().name.getBytes());
 			//row.add(mycatSession.charSet.charset.getBytes());
 			row.add(Long.toString(System.currentTimeMillis()-mycatSession.startTime).getBytes());
 		//	row.add(mycatSession.sqlContext.getRealSQL(mycatSession.sqlContext.getSQLCount()-1).getBytes());		

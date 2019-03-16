@@ -52,7 +52,7 @@ public class SQLAnnotationChain {
      */
     public SQLAnnotationChain processRoute(MycatSession session) {
 
-        switch (session.mycatSchema.schemaType) {
+        switch (session.getMycatSchema().schemaType) {
             case DB_IN_ONE_SERVER:
                 break;
             case DB_IN_MULTI_SERVER:

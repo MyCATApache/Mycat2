@@ -1,16 +1,5 @@
 package io.mycat.mycat2;
 
-import java.io.IOException;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mycat2.net.MainMySQLNIOHandler;
@@ -23,6 +12,16 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.SessionManager;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * MySQL Session Manager (bakcend mysql connection manager)

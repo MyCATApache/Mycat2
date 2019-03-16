@@ -1,6 +1,20 @@
 package io.mycat.mycat2.net;
 
 
+import io.mycat.mycat2.MycatConfig;
+import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.beans.conf.FireWallBean;
+import io.mycat.mycat2.beans.conf.UserBean;
+import io.mycat.mycat2.beans.conf.UserConfig;
+import io.mycat.mysql.MysqlNativePasswordPluginUtil;
+import io.mycat.mysql.PayloadType;
+import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.NewAuthPacket;
+import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.ProxyRuntime;
+import io.mycat.util.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,21 +23,6 @@ import java.nio.channels.SelectionKey;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Pattern;
-
-import io.mycat.mycat2.MycatConfig;
-import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.beans.conf.FireWallBean;
-import io.mycat.mycat2.beans.conf.UserBean;
-import io.mycat.mycat2.beans.conf.UserConfig;
-import io.mycat.mysql.MysqlNativePasswordPluginUtil;
-import io.mycat.mysql.packet.CurrPacketType;
-import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.NewAuthPacket;
-import io.mycat.proxy.ConfigEnum;
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.ProxyBuffer;
-import io.mycat.proxy.ProxyRuntime;
-import io.mycat.util.ErrorCode;
 
 /**
  * MySQL客户端登录认证的Handler，为第一个Handler
@@ -40,8 +39,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 	@Override
 	public void onSocketRead(MycatSession session) throws IOException {
 		ProxyBuffer frontBuffer = session.getProxyBuffer();
-		if (!session.readFromChannel()
-				|| CurrPacketType.Full != session.resolveMySQLPackage(false)) {
+		if (!session.readFromChannel() || PayloadType.FULL_PAYLOAD != session.resolveFullPayload()) {
 			return;
 		}
 
@@ -92,15 +90,15 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 				default:
 					// set mycatSchema
 					if (auth.database == null) {
-						session.mycatSchema = (userBean.getSchemas() == null) ?
-								config.getDefaultSchemaBean() : config.getSchemaBean(userBean.getSchemas().get(0));
+						session.setMycatSchema( (userBean.getSchemas() == null) ?
+								config.getDefaultSchemaBean() : config.getSchemaBean(userBean.getSchemas().get(0)));
 					} else {
-						session.mycatSchema = config.getSchemaBean(database);
+						session.setMycatSchema(config.getSchemaBean(database));
 					}
-					if (Objects.isNull(session.mycatSchema)) {
-						logger.error(" mycatSchema:{} can not match user: {}", session.mycatSchema, username);
+					if (Objects.isNull(session.getMycatSchema())) {
+						logger.error(" mycatSchema:{} can not match user: {}", session.getMycatSchema(), username);
 					}
-					logger.debug("set mycatSchema: {} for user: {}", session.mycatSchema, username);
+					logger.debug("set mycatSchema: {} for user: {}", session.getMycatSchema(), username);
 					if (success(session, auth)) {
 						session.clientUser = username;//设置session用户
 						session.proxyBuffer.reset();

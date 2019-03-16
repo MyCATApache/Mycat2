@@ -1,20 +1,11 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.beans.conf.SchemaBean;
+import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.MysqlNativePasswordPluginUtil;
-import io.mycat.mysql.packet.CurrPacketType;
+import io.mycat.mysql.PayloadType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.NewAuthPacket;
@@ -22,6 +13,14 @@ import io.mycat.mysql.packet.NewHandshakePacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 
 /**
  * 创建后端MySQL连接并负责完成登录认证的Processor
@@ -46,7 +45,6 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 	 * @param schema
 	 * @param callBack
 	 *            创建连接结束（成功或失败）后的回调接口
-	 * @param addConnectionPool
 	 * @throws IOException
 	 */
 	public BackendConCreateTask(BufferPool bufPool, Selector nioSelector, MySQLMetaBean mySQLMetaBean,
@@ -69,15 +67,14 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 
 	@Override
 	public void onSocketRead(MySQLSession session) throws IOException {
-		session.proxyBuffer.reset();
-		if (!session.readFromChannel() || CurrPacketType.Full != session.resolveMySQLPackage(false)) {
+		if (!session.readFromChannel() || PayloadType.FULL_PAYLOAD != session.resolveFullPayload()) {
 			// 没有读到数据或者报文不完整
 			return;
 		}
 
-		if (MySQLPacket.ERROR_PACKET == session.curMSQLPackgInf.pkgType) {
+		if (MySQLPacket.ERROR_PACKET == session.curPacketInf.head) {
 			errPkg = new ErrorPacket();
-			MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+			MySQLPacketInf curMQLPackgInf = session.curPacketInf;
 			session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
 			errPkg.read(session.proxyBuffer);
 			logger.warn("backend authed failed. Err No. " + errPkg.errno + "," + errPkg.message);
@@ -119,7 +116,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 			welcomePkgReceived = true;
 		} else {
 			// 认证结果报文收到
-			if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+			if (session.curPacketInf.head == MySQLPacket.OK_PACKET) {
 				logger.debug("backend authed suceess ");
 				this.finished(true);
 			}

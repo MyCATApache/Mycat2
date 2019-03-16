@@ -1,8 +1,8 @@
 package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.AbstractMySQLSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
-import io.mycat.mysql.packet.CurrPacketType;
+import io.mycat.mysql.MySQLPacketInf;
+import io.mycat.mysql.PayloadType;
 import io.mycat.mysql.packet.MySQLPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,11 +34,12 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
 		}
     	
         for (; ; ) {
-           CurrPacketType currPacketType = session.resolveMySQLPackage(true);
+           PayloadType payloadType = session.resolveFullPayload();
             //因为是解析所以只处理整包
-            if (currPacketType == CurrPacketType.Full) {
-                MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
-            	if(curMQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET && curRSState.equals(ResultSetState.RS_STATUS_COL_COUNT) ) {
+            if (payloadType == PayloadType.FULL_PAYLOAD) {
+				MySQLPacketInf curMQLPackgInf = session.curPacketInf;
+				curMQLPackgInf.markRead();
+				if(curMQLPackgInf.head == MySQLPacket.ERROR_PACKET && curRSState.equals(ResultSetState.RS_STATUS_COL_COUNT) ) {
     				 onRsFinish(session,false, "错误包");
             	} else {
             		switch (curRSState) {
@@ -47,14 +48,14 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
 	                        curRSState = ResultSetState.RS_STATUS_COL_DEF;
 	                        break;
 	                    case RS_STATUS_COL_DEF:
-	                        if (curMQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
+	                        if (curMQLPackgInf.head == MySQLPacket.EOF_PACKET) {
 	                            curRSState = ResultSetState.RS_STATUS_ROW;
 	                        } else {
 	                            onRsColDef(session);
 	                        }
 	                        break;
 	                    case RS_STATUS_ROW:
-	                        if (curMQLPackgInf.pkgType == MySQLPacket.EOF_PACKET) {
+	                        if (curMQLPackgInf.head == MySQLPacket.EOF_PACKET) {
 	                            curRSState = ResultSetState.RS_STATUS_FINISH;
 	                            onRsFinish(session,true, null);
 	                        } else {

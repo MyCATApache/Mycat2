@@ -2,7 +2,7 @@ package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
-import io.mycat.mycat2.beans.MySQLPackageInf;
+import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -69,7 +69,7 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     @Override
     void onRsColCount(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curMQLPackgInf = session.curPacketInf;
         //读取有多少列
         fieldCount = (int) proxyBuffer.getLenencInt(curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize);
     }
@@ -82,7 +82,7 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     @Override
     void onRsRow(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curMQLPackgInf = session.curPacketInf;
         int rowDataIndex = curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize;
 
         String collation = null;

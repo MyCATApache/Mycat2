@@ -1,9 +1,10 @@
 package io.mycat.util;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import io.mycat.mycat2.AbstractMySQLSession;
+import io.mycat.mysql.MySQLPacketInf;
+import io.mycat.mysql.PayloadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +69,31 @@ public final class StringUtil {
 	public final static String dumpAsHex(final byte[] buffer) {
 		return dumpAsHex(buffer, 0, buffer.length);
 	}
-	
+	public final static void print(PayloadType payloadType, MySQLPacketInf packetInf) {
+		switch (payloadType) {
+			case UNKNOWN:
+			case SHORT_PAYLOAD:
+			case LONG_PAYLOAD:
+			case FULL_PAYLOAD:
+			case REST_CROSS_PAYLOAD:
+			case FINISHED_CROSS_PAYLOAD:
+				try {
+					System.out.println(
+							"-----------------------------" +
+									"packetId:" +
+									packetInf.getCurrPacketId() +
+									",packetType:" +
+									packetInf.getType() +
+									",payloadType:" +
+									payloadType +
+									"------------------------------------------\n" +
+									StringUtil.dumpAsHex(packetInf.proxyBuffer.getBytes(packetInf.startPos, packetInf.endPos - packetInf.startPos)));
+				}catch (Exception e){
+					e.printStackTrace();
+				}
+				break;
+		}
+	}
 	public final static String dumpAsHex(final byte[] buffer, final int length) {
 		return dumpAsHex(buffer, 0, length);
 	}
@@ -162,7 +187,7 @@ public final class StringUtil {
     	return (dumpAsHex(new ByteBufferGetable(buffer), offset, length));
     }
 	public final static String dumpMySQLPackageInfAsHex(AbstractMySQLSession mySQLSession){
-		return (dumpAsHex(new ByteBufferGetable(mySQLSession.proxyBuffer.getBuffer()), mySQLSession.curMSQLPackgInf.startPos, mySQLSession.curMSQLPackgInf.endPos));
+		return (dumpAsHex(new ByteBufferGetable(mySQLSession.proxyBuffer.getBuffer()), mySQLSession.curPacketInf.startPos, mySQLSession.curPacketInf.endPos));
 	}
     public final static boolean isEmpty(String str) {
     	return str == null || str == "";

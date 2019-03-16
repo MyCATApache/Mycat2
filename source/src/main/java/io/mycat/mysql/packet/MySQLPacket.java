@@ -34,10 +34,10 @@ public abstract class MySQLPacket {
 
     // 后端报文类型
 //    public static final byte REQUEST_FILE_FIELD_COUNT = (byte) 251;
-    public static final byte OK_PACKET = 0;
-    public static final byte ERROR_PACKET = (byte) 0xFF;
-    public static final byte EOF_PACKET = (byte) 0xFE;
-    public static int NOT_OK_EOF_ERR = Integer.MAX_VALUE;
+    public static final int OK_PACKET = 0;
+    public static final int ERROR_PACKET = 0xFF;
+    public static final int EOF_PACKET =  0xFE;
+    public static final int NOT_OK_EOF_ERR = Integer.MAX_VALUE;
 
 //	public static final byte FIELD_EOF_PACKET = (byte) 0xFE;
 //	public static final byte ROW_EOF_PACKET = (byte) 0xFE;

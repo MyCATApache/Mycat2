@@ -1,8 +1,8 @@
 package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.net.MainMySQLNIOHandler;
+import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -29,7 +29,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
     @Override
     void onRsColCount(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMSQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curMSQLPackgInf = session.curPacketInf;
         onRsColCount(session, (int) proxyBuffer.getLenencInt(curMSQLPackgInf.startPos + MySQLPacket.packetHeaderSize));
     }
 
@@ -60,7 +60,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
     @Override
     void onRsColDef(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curMQLPackgInf = session.curPacketInf;
 
         int tmpReadIndex = proxyBuffer.readIndex;
         int rowDataIndex = curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize;
@@ -98,7 +98,7 @@ public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResu
     @Override
     void onRsRow(MySQLSession session) {
         ProxyBuffer proxyBuffer = session.proxyBuffer;
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+        MySQLPacketInf curMQLPackgInf = session.curPacketInf;
         int rowDataIndex = curMQLPackgInf.startPos + MySQLPacket.packetHeaderSize;
         int tmpReadIndex = proxyBuffer.readIndex;
         proxyBuffer.readIndex = rowDataIndex;

@@ -1,7 +1,7 @@
 package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mysql.packet.CurrPacketType;
+import io.mycat.mysql.PayloadType;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -40,19 +40,17 @@ public abstract class BackendIOTaskWithGenericResponse
 
     @Override
     public void onSocketRead(MySQLSession session) throws IOException {
-
         if (!session.readFromChannel()) {
             return;
         }
-        CurrPacketType currPacketType = session.resolveMySQLPackage(true);
-
+        PayloadType currPacketType = session.resolveFullPayload();
         session.proxyBuffer.flip();
-        if (currPacketType == CurrPacketType.Full) {
-
+        if (currPacketType == PayloadType.FULL_PAYLOAD) {
+            session.curPacketInf.markRead();
             try {
-                if (session.curMSQLPackgInf.pkgType == MySQLPacket.OK_PACKET) {
+                if (session.curPacketInf.head == MySQLPacket.OK_PACKET) {
                     onOkResponse(session);
-                } else if (session.curMSQLPackgInf.pkgType == MySQLPacket.ERROR_PACKET) {
+                } else if (session.curPacketInf.head == MySQLPacket.ERROR_PACKET) {
                     onErrResponse(session);
                 }
             } catch (Exception ex) {

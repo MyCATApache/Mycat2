@@ -1,10 +1,10 @@
 package io.mycat.mycat2.tasks.multinode;
 
 import io.mycat.mycat2.MySQLSession;
-import io.mycat.mycat2.beans.MySQLPackageInf;
 import io.mycat.mycat2.net.MainMySQLNIOHandler;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.tasks.BackendIOTaskWithGenericResponse;
+import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -64,7 +64,7 @@ public class PickOnlyOneInMultiNodeWithGenericResponse extends BackendIOTaskWith
 	public void onErrResponse(MySQLSession session) {
 		ErrorPacket errorPacket = new ErrorPacket();
         errPkg = new ErrorPacket();
-        MySQLPackageInf curMQLPackgInf = session.curMSQLPackgInf;
+		MySQLPacketInf curMQLPackgInf = session.curPacketInf;
         session.proxyBuffer.readIndex = curMQLPackgInf.startPos;
         errPkg.read(session.proxyBuffer);
 		session.getMycatSession().closeAllBackendsAndResponseError(false, errorPacket);

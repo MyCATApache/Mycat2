@@ -3,8 +3,7 @@ package io.mycat.mycat2.cmds;
 import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
-import io.mycat.mycat2.cmds.judge.MySQLProxyStateMHepler;
-import io.mycat.mysql.packet.CurrPacketType;
+import io.mycat.mysql.PayloadType;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
 import io.mycat.util.LoadDataUtil;
@@ -41,15 +40,15 @@ public class LoadDataCommand implements MySQLCommand {
         if (session.loadDataStateMachine == NOT_LOAD_DATA) {
             session.loadDataStateMachine = CLIENT_2_SERVER_COM_QUERY;
             session.clearReadWriteOpts();//获取后端连接可能涉及到异步处理,这里需要先取消前端读写事件
-            session.getBackend((mysqlsession, sender, success, result) -> {
+            session.getBackendAndCallBack((mysqlsession, sender, success, result) -> {
                 if (success) {
-                    session.responseStateMachine.in(COM_QUERY);
                     curBuffer.flip();// 切换buffer 读写状态
                     curBuffer.readIndex = curBuffer.writeIndex;
                     // 读取结束后 改变 owner，对端Session获取，并且感兴趣写事件
                     session.giveupOwner(SelectionKey.OP_READ);
                     // 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
                     mysqlsession.writeToChannel();
+                    mysqlsession.curPacketInf.shift2RespPacket();
                 }
             });
         } else {
@@ -66,16 +65,16 @@ public class LoadDataCommand implements MySQLCommand {
     }
 
     @Override
-    public boolean onBackendResponse(MySQLSession session) {
-        MycatSession mycatSession = session.getMycatSession();
+    public boolean onBackendResponse(MySQLSession mySQLSession) {
+        MycatSession mycatSession = mySQLSession.getMycatSession();
         try {
             if (mycatSession.loadDataStateMachine == SERVER_2_CLIENT_COM_QUERY_RESPONSE || mycatSession.loadDataStateMachine == SERVER_2_CLIENT_OK_PACKET) {
-                boolean readed = session.readFromChannel();
+                boolean readed = mySQLSession.readFromChannel();
                 if (readed) {
-                    CurrPacketType currPacketType = mycatSession.resolveMySQLPackage(true, false);
-                    if (currPacketType == CurrPacketType.Full) {
-                        MySQLProxyStateMHepler.on(mycatSession.responseStateMachine, session.curMSQLPackgInf.pkgType, session.proxyBuffer, session);
-                        session.setIdle(!mycatSession.responseStateMachine.isInteractive());
+                    PayloadType payloadType = mySQLSession.resolveFullPayload();
+                    if (payloadType == PayloadType.FULL_PAYLOAD) {
+                        mySQLSession.curPacketInf.markRead();
+                        mySQLSession.setIdle(! mySQLSession.curPacketInf.isInteractive());
                         ProxyBuffer proxyBuffer = mycatSession.proxyBuffer;
                         proxyBuffer.flip();
                         mycatSession.takeOwner(SelectionKey.OP_WRITE);

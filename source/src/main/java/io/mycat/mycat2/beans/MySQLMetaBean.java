@@ -92,8 +92,6 @@ public class MySQLMetaBean {
 				try {
 					reactorThread.mysqlSessionMan.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
 						if (exeSucces) {
-							// 设置当前连接 读写分离属性
-							optSession.setDefaultChannelRead(this.isSlaveNode());
 							if (this.charsetLoaded == false) {
 								this.charsetLoaded = true;
 								logger.info("load charset for MySQLMetaBean {}:{}", this.dsMetaBean.getIp(),
