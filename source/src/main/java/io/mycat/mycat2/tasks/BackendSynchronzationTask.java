@@ -85,6 +85,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
 
             }
         } else {
+            logger.debug("synchronzation state task end ");
             finished(true);
         }
     }

@@ -111,8 +111,8 @@ public class ProxyRuntime {
 		// catletLoader = new
 		// DynaClassLoader("C:\\Users\\netinnet\\Documents\\GitHub\\tcp-proxy\\source\\target\\classes\\catlet",
 		// catletClassCheckSeconds);
-		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath() + File.separator + "catlet",
-				catletClassCheckSeconds);
+//		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath() + File.separator + "catlet",
+//				catletClassCheckSeconds);
 
 		heartbeatScheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
 

@@ -50,7 +50,7 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
 				session.proxyBuffer.readMark = session.proxyBuffer.readIndex;//把readIndex之前的数据 compact
 				return;
 			}
-			StringUtil.print(payloadType,packetInf);
+			StringUtil.print("onSocketRead",payloadType,packetInf);
 			processSQL(session);
 		} else {
 			//当前的SQLCommand没有处理完请求，继续处理

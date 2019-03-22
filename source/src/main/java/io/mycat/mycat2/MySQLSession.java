@@ -85,6 +85,9 @@ public class MySQLSession extends AbstractMySQLSession {
 	 * @throws IOException
 	 */
 	public void syncAndCallback(AsynTaskCallBack<MySQLSession> callback) throws IOException {
+		if (logger.isDebugEnabled()){
+			logger.debug("syncAndCallback");
+		}
 		MycatSession mycatSession = getMycatSession();
 		BackendSynchronzationTask backendSynchronzationTask = new BackendSynchronzationTask(mycatSession, this);
 		backendSynchronzationTask.setCallback((optSession, sender, exeSucces, rv) -> {
@@ -92,11 +95,14 @@ public class MySQLSession extends AbstractMySQLSession {
 			mycatSession.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
 			optSession.setCurNIOHandler(MainMySQLNIOHandler.INSTANCE);
 			if (exeSucces) {
-				if(!optSession.getMycatSession().getTargetDataNode().getDatabase().equals(optSession.getDatabase()))
+				String targetDataNode = optSession.getMycatSession().getTargetDataNode().getDatabase();
+				String optSessionDatabase =  optSession.getDatabase();
+				if(!targetDataNode.equals(optSessionDatabase))
 				{
 					this.syncSchemaAndCallback(callback);
+				}else {
+					callback.finished(optSession, sender, exeSucces, rv);
 				}
-				
 			} else {
 				// ErrorPacket errPkg = (ErrorPacket) rv;
 				// mycatSession.close(true, errPkg.message);

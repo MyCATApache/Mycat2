@@ -69,7 +69,7 @@ public final class StringUtil {
 	public final static String dumpAsHex(final byte[] buffer) {
 		return dumpAsHex(buffer, 0, buffer.length);
 	}
-	public final static void print(PayloadType payloadType, MySQLPacketInf packetInf) {
+	public final static void print(String readSocketOrwriteSocketFlag,PayloadType payloadType, MySQLPacketInf packetInf) {
 		switch (payloadType) {
 			case UNKNOWN:
 			case SHORT_PAYLOAD:
@@ -79,7 +79,7 @@ public final class StringUtil {
 			case FINISHED_CROSS_PAYLOAD:
 				try {
 					System.out.println(
-							"-----------------------------" +
+							"---------------"+readSocketOrwriteSocketFlag +
 									"packetId:" +
 									packetInf.getCurrPacketId() +
 									",packetType:" +

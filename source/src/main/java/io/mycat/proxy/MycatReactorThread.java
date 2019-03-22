@@ -65,6 +65,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 			} else {
 				// 同步数据库连接状态后回调
 				AsynTaskCallBack<MySQLSession> callback2 = (mysqlsession, sender, success, result) -> {
+					logger.debug("同步数据库连接状态后回调");
 					if (success) {
 						callback.finished(curBackend, Thread.currentThread(), true, null);
 					} else {

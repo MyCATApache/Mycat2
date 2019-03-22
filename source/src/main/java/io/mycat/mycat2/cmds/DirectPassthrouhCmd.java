@@ -103,7 +103,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		packetInf.proxyBuffer = mySQLSession.proxyBuffer;
 		while (packetInf.needContinueResolveMySQLPacket()) {
 			PayloadType payloadType = packetInf.resolveCrossBufferMySQLPayload(mySQLSession.proxyBuffer);
-			StringUtil.print(payloadType, packetInf);
+			StringUtil.print("onBackendResponse",payloadType, packetInf);
 		}
 		MycatSession mycatSession = mySQLSession.getMycatSession();
 		ProxyBuffer buffer = mySQLSession.getProxyBuffer();
