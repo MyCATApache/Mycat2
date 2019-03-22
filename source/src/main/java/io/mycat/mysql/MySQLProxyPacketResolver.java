@@ -258,6 +258,19 @@ public class MySQLProxyPacketResolver {
                 return;
             case QUERY_PACKET: {
                 if (!isPacketFinished) throw new RuntimeException("unknown state!");
+                if (head == 18){
+//                    ProxyBuffer buffer = packetInf.proxyBuffer;
+//                    int startIndex = buffer.readIndex;
+//                    int endIndex = buffer.writeIndex;
+//                    int sendLongDataSize = endIndex - startIndex - (4+7);//packetHead大小+非data数据大小
+//                    buffer.readIndex = packetInf.startPos + 5;
+//                    int statementId = (int) buffer.readFixInt(4);
+//                    int paramId = (int) buffer.readFixInt(2);
+                    this.sqlType = head;
+                    this.mysqlPacketType = SEND_LONG_DATA;
+                    state = ComQueryState.FIRST_PACKET;
+                    return;
+                }
                 this.sqlType = head;
                 if (head != COM_STMT_CLOSE){
                     state = ComQueryState.FIRST_PACKET;
