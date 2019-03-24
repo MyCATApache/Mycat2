@@ -1,8 +1,8 @@
 package io.mycat.mycat2.tasks;
 
-import java.io.IOException;
+import io.mycat.proxy.Session;
 
-import io.mycat.mycat2.AbstractMySQLSession;
+import java.io.IOException;
 
 /**
  * 异步任务回调接口
@@ -10,7 +10,7 @@ import io.mycat.mycat2.AbstractMySQLSession;
  * @author wuzhihui
  *
  */
-public interface AsynTaskCallBack<T extends AbstractMySQLSession> {
+public interface AsynTaskCallBack<T extends Session> {
 
 	void finished(T session, Object sender, boolean success, Object result) throws IOException;
 }

@@ -49,7 +49,7 @@ public class MySQLMetaBean {
 	private static final Logger logger = LoggerFactory.getLogger(MySQLMetaBean.class);
 	// VM option -Ddebug=true 在虚拟机选项上添加这个参数，可以使心跳永为真，避免debug时候心跳超时
 	// private static final boolean DEBUG = Boolean.getBoolean("debug");
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private DatasourceMetaBean dsMetaBean;
 	private volatile boolean slaveNode = true; // 默认为slave节点
 	private volatile long heartbeatRecoveryTime; // 心跳暂停时间
@@ -142,10 +142,15 @@ public class MySQLMetaBean {
 	}
 
 	public void doHeartbeat() {
-		// 未到预定恢复时间，不执行心跳检测。
-		if (TimeUtil.currentTimeMillis() < heartbeatRecoveryTime) {
+
+		if (heartbeat.isChecking()){
 			return;
 		}
+
+			// 未到预定恢复时间，不执行心跳检测。
+//		if (TimeUtil.currentTimeMillis() < this.getHeartbeat().getLastActiveTime()+ this.getHeartbeat().) {
+//			return;
+//		}
 
 		try {
 			heartbeat.heartbeat();

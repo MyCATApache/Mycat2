@@ -95,23 +95,12 @@ public abstract class DBHeartbeat {
 		return ++errorCount;
 	}
 
-//	public HeartbeatRecorder getRecorder() {
-//		return recorder;
-//	}
-	
-//	public DataSourceSyncRecorder getAsynRecorder() {
-//		return this.asynRecorder;
-//	}
-
-	public abstract String getLastActiveTime();
-
+	public abstract long getLastActiveTime();
+	public abstract String getLastActiveTimeText();
 	public abstract long getTimeout();
 
 	public abstract void heartbeat();
 
-	public long getHeartbeatTimeout() {
-		return heartbeatTimeout;
-	}
 
 	public void setHeartbeatTimeout(long heartbeatTimeout) {
 		this.heartbeatTimeout = heartbeatTimeout;

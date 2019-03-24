@@ -19,6 +19,10 @@ public enum ComQueryState {
     LOCAL_INFILE_OK_PACKET(true);
     boolean needFull;
 
+    public boolean isNeedFull() {
+        return needFull;
+    }
+
     ComQueryState(boolean needFull) {
         this.needFull = needFull;
     }

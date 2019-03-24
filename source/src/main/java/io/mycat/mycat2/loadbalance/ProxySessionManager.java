@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.Session;
 import io.mycat.proxy.SessionManager;
@@ -22,13 +23,14 @@ public class ProxySessionManager implements SessionManager<ProxySession> {
     private List<ProxySession> allSession = new ArrayList<>();
     private static final NIOHandler<ProxySession> defalultHandler = new ProxyNIOHandler();
 
+
     @Override
-    public ProxySession createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector,
-                                      SocketChannel channel) throws IOException {
-        ProxySession proxySession = new ProxySession(bufPool, nioSelector, channel);
-        proxySession.setCurNIOHandler(getDefaultSessionHandler());
+    public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel, AsynTaskCallBack<ProxySession> callBack) throws IOException {
+        ProxySession proxySession = new ProxySession(bufPool, nioSelector, channel,getDefaultSessionHandler());
         allSession.add(proxySession);
-        return proxySession;
+        if (callBack!=null){
+            callBack.finished(proxySession,this,channel.isConnected(),null);
+        }
     }
 
     @Override

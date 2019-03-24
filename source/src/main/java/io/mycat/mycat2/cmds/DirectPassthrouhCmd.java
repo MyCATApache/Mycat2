@@ -6,16 +6,16 @@ import io.mycat.mycat2.MycatSession;
 import io.mycat.mycat2.beans.conf.DNBean;
 import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.mysql.MySQLPacketInf;
-import io.mycat.mysql.PayloadType;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
+
+import static io.mycat.mysql.MySQLPacketInf.directPassthrouhBuffer;
 
 /**
  * 直接透传命令报文
@@ -31,21 +31,21 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 	public boolean procssSQL(MycatSession session) throws IOException {
 
 		MySQLSession curBackend = session.getCurBackend();
-		if (curBackend != null) {
+		if (curBackend != null) {//@todo,需要检测后端session是否有效
 			if (session.getTargetDataNode() == null) {
 				logger.warn("{} not specified SQL target DataNode ,so set to default dataNode ", session);
 				DNBean targetDataNode = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()
 						.get(session.getMycatSchema().getDefaultDataNode());
 				session.setTargetDataNode(targetDataNode);
 			}
-			if (curBackend.synchronizedState(session.getTargetDataNode().getDatabase())) {
+			if (curBackend.synchronizedState(session.getTargetDataNode().getDatabase())&&curBackend.isActivated()) {
+				if (!curBackend.isIdle()){
+					throw new RuntimeException("Illegal state");
+				}
 				this.directTransetoBackend(session);
 			} else {
 				// 同步数据库连接状态后回调
 				AsynTaskCallBack<MySQLSession> callback = (mysqlsession, sender, success, result) -> {
-					ProxyBuffer curBuffer = session.proxyBuffer;
-					// 切换 buffer 读写状态
-					curBuffer.flip();
 					if (success) {
 						directTransetoBackend(session);
 					} else {
@@ -56,17 +56,8 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 			}
 		} else {// 没有当前连接，尝试获取新连接
 			session.getBackendAndCallBack((mysqlsession, sender, success, result) -> {
-				ProxyBuffer curBuffer = session.proxyBuffer;
-				// 切换 buffer 读写状态
-				curBuffer.flip();
 				if (success) {
-					// 没有读取,直接透传时,需要指定 透传的数据 截止位置
-					curBuffer.readIndex = curBuffer.writeIndex;
-					// 改变 owner，对端Session获取，并且感兴趣写事件
-					session.giveupOwner(SelectionKey.OP_WRITE);
-					mysqlsession.writeToChannel();
-					mysqlsession.curPacketInf.shift2RespPacket();
-					mysqlsession.curPacketInf.proxyBuffer = mysqlsession.proxyBuffer;
+					this.directTransetoBackend(session);
 				} else {
 					session.closeAllBackendsAndResponseError(success, ((ErrorPacket) result));
 				}
@@ -99,12 +90,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		if (!mySQLSession.readFromChannel()) {
 			return false;
 		}
-		MySQLPacketInf packetInf = mySQLSession.curPacketInf;
-		packetInf.proxyBuffer = mySQLSession.proxyBuffer;
-		while (packetInf.needContinueResolveMySQLPacket()) {
-			PayloadType payloadType = packetInf.resolveCrossBufferMySQLPayload(mySQLSession.proxyBuffer);
-			StringUtil.print("onBackendResponse",payloadType, packetInf);
-		}
+		MySQLPacketInf packetInf = directPassthrouhBuffer(mySQLSession);
 		MycatSession mycatSession = mySQLSession.getMycatSession();
 		ProxyBuffer buffer = mySQLSession.getProxyBuffer();
 		buffer.flip();
@@ -125,8 +111,8 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		// 检查当前已经结束，进行切换
 		// 检查如果存在传输的标识，说明后传数据向前传传输未完成,注册后端的读取事件
 		MySQLSession mySQLSession = mycatSession.getCurBackend();
-		MySQLPacketInf mySQLPacketInf = mySQLSession.curPacketInf;
-		if (!mySQLPacketInf.isResponseFinished()) {
+
+		if (mySQLSession!=null&& mySQLSession.curPacketInf!=null&&!mySQLSession.curPacketInf.isResponseFinished()) {
 			mycatSession.proxyBuffer.flip();
 			mycatSession.giveupOwner(SelectionKey.OP_READ);
 			return false;
@@ -136,6 +122,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 			mycatSession.proxyBuffer.flip();
 			mycatSession.takeOwner(SelectionKey.OP_READ);
 			mycatSession.curPacketInf.shift2QueryPacket();
+			mycatSession.proxyBuffer.reset();
 			return true;
 		}
 	}

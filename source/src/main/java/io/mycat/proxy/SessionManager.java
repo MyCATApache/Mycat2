@@ -5,6 +5,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 
+import io.mycat.mycat2.MySQLSession;
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import io.mycat.proxy.buffer.BufferPool;
 
 /**
@@ -27,7 +29,7 @@ public interface SessionManager<T extends Session> {
 	 * @return T session
 	 * @throws IOException
 	 */
-	public T createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel)
+	public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel, AsynTaskCallBack<T > callBack)
 			throws IOException;
 
 	/**

@@ -65,6 +65,7 @@ public abstract class BackendIOTaskWithResultSet<T extends AbstractMySQLSession>
 	                }
 	            }
             } else {
+                session.ensureFreeSpaceOfReadBuffer();
                 break;
             }
         }

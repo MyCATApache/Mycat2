@@ -120,7 +120,7 @@ public class MycatShowHeartbeatCmd implements MySQLCommand {
             	row.add(Long.toString(metaBean.getHeartbeat().getTimeout()).getBytes());            	
             	MySQLDetector detector=((MySQLHeartbeat) metaBean.getHeartbeat()).getDetector();
             	row.add(String.valueOf(detector.getLasstReveivedQryTime()-detector.getLastSendQryTime()).getBytes());
-            	row.add(metaBean.getHeartbeat().getLastActiveTime().getBytes());            	
+            	row.add(metaBean.getHeartbeat().getLastActiveTimeText().getBytes());
             	row.add(metaBean.getHeartbeat().isStop() ? "true".getBytes() : "false".getBytes());
             	list.add(row);
             });

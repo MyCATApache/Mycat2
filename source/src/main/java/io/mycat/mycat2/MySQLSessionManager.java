@@ -18,10 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * MySQL Session Manager (bakcend mysql connection manager)
@@ -33,18 +30,37 @@ public class MySQLSessionManager implements SessionManager<MySQLSession> {
 	protected static Logger logger = LoggerFactory.getLogger(MySQLSessionManager.class);
 	protected Map<MySQLMetaBean, ArrayList<MySQLSession>> mySQLSessionMap = new HashMap<>();
 
+
+
 	@Override
-	public MySQLSession createSession(Object keyAttachment, BufferPool bufPool, Selector nioSelector,
-			SocketChannel serverChanel) throws IOException {
-		MySQLSession session = new MySQLSession(bufPool, nioSelector, serverChanel);
-		MySQLMetaBean mySQLMetaBean = (MySQLMetaBean) keyAttachment;
-		session.setMySQLMetaBean(mySQLMetaBean);
-		session.setSessionManager(this);
-		addNewMySQLSession(session);
-		return session;
+	public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel, AsynTaskCallBack<MySQLSession> callBack) throws IOException {
+		if (logger.isInfoEnabled()) {
+			if (channel.isConnected()){
+				logger.debug("MySQL client is not connected "+channel);
+			}
+		}
+		BackendConCreateTask backendConCreateTask = (BackendConCreateTask) keyAttachement;
+		MycatReactorThread mycatReactorThread = (MycatReactorThread) Thread.currentThread();
+		AsynTaskCallBack<MySQLSession> task =  (session, sender, success, result) -> {
+			if (mycatReactorThread != Thread.currentThread()) {
+				throw new RuntimeException("Illegal state");
+			}
+			if (success){
+				session.setMySQLMetaBean(backendConCreateTask.getMySQLMetaBean());
+				session.setSessionManager(mycatReactorThread.mysqlSessionMan);
+				mycatReactorThread.mysqlSessionMan.addNewMySQLSession(session);
+				callBack.finished(session, this, success, result);
+			}else {
+				callBack.finished(session, this, false, result);
+			}
+		};
+		backendConCreateTask.setCallback(task);
+		channel.configureBlocking(false);
+		new MySQLSession(bufPool, nioSelector, channel,backendConCreateTask);
+
 	}
 
-	public ArrayList<MySQLSession> getSessionsOfHost(MySQLMetaBean mysqlMetaBean) {
+	public List<MySQLSession> getSessionsOfHost(MySQLMetaBean mysqlMetaBean) {
 		return mySQLSessionMap.get(mysqlMetaBean);
 	}
 
@@ -82,27 +98,35 @@ public class MySQLSessionManager implements SessionManager<MySQLSession> {
 	 */
 	public void createSession(MySQLMetaBean mySQLMetaBean, SchemaBean schema, AsynTaskCallBack<MySQLSession> callBack)
 			throws IOException {
+		if (mySQLMetaBean == null){
+			throw new RuntimeException("mySQLMetaBean is null!");
+		}
 		int backendCounts = 0;
 		for (MycatReactorThread reActorthread : ProxyRuntime.INSTANCE.getMycatReactorThreads()) {
-			ArrayList<MySQLSession> list = reActorthread.mysqlSessionMan.getSessionsOfHost(mySQLMetaBean);
+			List<MySQLSession> list = reActorthread.mysqlSessionMan.getSessionsOfHost(mySQLMetaBean);
 			if (null != list) {
 				backendCounts += list.size();
 			}
 		}
-		if (backendCounts + 1 > mySQLMetaBean.getDsMetaBean().getMaxCon()) {
-			ErrorPacket errPkg = new ErrorPacket();
-			errPkg.packetId = 1;
-			errPkg.errno = ErrorCode.ER_UNKNOWN_ERROR;
-			errPkg.message = "backend connection is full for " + mySQLMetaBean.getDsMetaBean().getIp() + ":"
-					+ mySQLMetaBean.getDsMetaBean().getPort();
-			callBack.finished(null, null, false, errPkg);
-			return;
+		try {
+			if (backendCounts + 1 > mySQLMetaBean.getDsMetaBean().getMaxCon()) {
+				ErrorPacket errPkg = new ErrorPacket();
+				errPkg.packetId = 1;
+				errPkg.errno = ErrorCode.ER_UNKNOWN_ERROR;
+				errPkg.message = "backend connection is full for " + mySQLMetaBean.getDsMetaBean().getIp() + ":"
+						+ mySQLMetaBean.getDsMetaBean().getPort();
+				callBack.finished(null, null, false, errPkg);
+				return;
+			}
+		}catch (Exception e){
+			e.printStackTrace();
 		}
 		MycatReactorThread curThread = (MycatReactorThread) Thread.currentThread();
 		try {
 			new BackendConCreateTask(curThread.getBufPool(), curThread.getSelector(), mySQLMetaBean, schema, callBack);
 		} catch (Exception e) {
-			logger.error(e.getLocalizedMessage());
+			e.printStackTrace();
+			logger.error(e.getMessage());
 			ErrorPacket errPkg = new ErrorPacket();
 			errPkg.packetId = 1;
 			errPkg.errno = ErrorCode.ER_UNKNOWN_ERROR;
@@ -112,17 +136,21 @@ public class MySQLSessionManager implements SessionManager<MySQLSession> {
 		}
 	}
 
-	private void addNewMySQLSession(MySQLSession mySQLSession) {
-		ArrayList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLSession.getMySQLMetaBean());
-		if (mySQLSessionList == null) {
-			mySQLSessionList = new ArrayList<>(50);
-			if (null != mySQLSessionMap.putIfAbsent(mySQLSession.getMySQLMetaBean(), mySQLSessionList)) {
-				throw new RuntimeException(
-						"Duplicated MySQL Session ！！！，Please fix this Bug! Leader call you ! " + mySQLSession);
+	public void addNewMySQLSession(MySQLSession mySQLSession) {
+		if (mySQLSession.channel().isConnected()){
+			ArrayList<MySQLSession> mySQLSessionList = mySQLSessionMap.get(mySQLSession.getMySQLMetaBean());
+			if (mySQLSessionList == null) {
+				mySQLSessionList = new ArrayList<>(50);
+				if (null != mySQLSessionMap.putIfAbsent(mySQLSession.getMySQLMetaBean(), mySQLSessionList)) {
+					throw new RuntimeException(
+							"Duplicated MySQL Session ！！！，Please fix this Bug! Leader call you ! " + mySQLSession);
+				}
 			}
+			mySQLSession.proxyBuffer.reset();
+			mySQLSessionList.add(mySQLSession);
+		}else {
+			throw new RuntimeException("MySQLSession NotYetConnectedException");
 		}
-		mySQLSession.proxyBuffer.reset();
-		mySQLSessionList.add(mySQLSession);
 	}
 
 	@Override

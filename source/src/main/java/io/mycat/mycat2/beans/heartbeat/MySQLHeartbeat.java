@@ -76,16 +76,18 @@ public class MySQLHeartbeat extends DBHeartbeat {
 		return detector.getHeartbeatTimeout();
 	}
 
-	public String getLastActiveTime() {
-		MySQLDetector detector = this.detector;
-		if (detector == null) {
-			return null;
-		}
-		long t = detector.getLasstReveivedQryTime();
+	public String getLastActiveTimeText() {
+		long t = getLastActiveTime();
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		return sdf.format(new Date(t));
 	}
-
+	public long getLastActiveTime() {
+		MySQLDetector detector = this.detector;
+		if (detector == null) {
+			return -1;
+		}
+		return detector.getLasstReveivedQryTime();
+	}
 	public void start() {
 		final ReentrantLock lock = this.lock;
 		lock.lock();
