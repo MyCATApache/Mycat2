@@ -28,7 +28,7 @@ public class DefaultAdminSessionManager implements SessionManager<AdminSession> 
 	private ArrayList<AdminSession> allSessions = new ArrayList<>();
 
 	@Override
-	public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel, AsynTaskCallBack<AdminSession> callBack) throws IOException {
+	public AdminSession createSessionForConnectedChannel(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel) throws IOException {
 		if (logger.isInfoEnabled()) {
 			if (channel.isConnected()) {
 				throw new RuntimeException("AdminSession is not connected " + channel);
@@ -43,9 +43,7 @@ public class DefaultAdminSessionManager implements SessionManager<AdminSession> 
 			logger.info(" connected to cluster port  ." + channel + "create session " + session);
 			session.setSessionManager(this);
 			allSessions.add(session);
-			if (callBack!=null){
-				callBack.finished(session,this,true,null);
-			}
+			return session;
 	}
 
 	@Override

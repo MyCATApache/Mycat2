@@ -39,7 +39,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 
     /**
      * 异步非阻塞模式创建MySQL连接，如果连接创建成功，需要把新连接加入到所在ReactorThread的连接池，则参数addConnectionPool需要设置为True
-     *
+     *该方法获得已经连接上mysql 的session会不会马上加入到mySQLSessionMap,因为callback的方法里面需要马上用到这个session
      * @param bufPool
      * @param nioSelector   在哪个Selector上注册NIO事件（即对应哪个ReactorThread）
      * @param mySQLMetaBean
@@ -56,8 +56,29 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
         SocketChannel backendChannel = SocketChannel.open();
         this.mySQLMetaBean = mySQLMetaBean;
         this.schema = schema;
+
+        if (logger.isDebugEnabled()) {
+            if (backendChannel.isConnected()) {
+                logger.debug("MySQL client is not connected so start connecting" + backendChannel);
+            }
+        }
+        BackendConCreateTask backendConCreateTask = this;
         MycatReactorThread mycatReactorThread = (MycatReactorThread) Thread.currentThread();
-        mycatReactorThread.mysqlSessionMan.createSession(this, bufPool, nioSelector, backendChannel, callBack);
+        AsynTaskCallBack<MySQLSession> task = (session, sender, success, result) -> {
+            if (success) {
+                session.setMySQLMetaBean(backendConCreateTask.getMySQLMetaBean());
+                session.setSessionManager(mycatReactorThread.mysqlSessionMan);
+                callBack.finished(session, mycatReactorThread.mysqlSessionMan, success, result);
+            } else {
+                callBack.finished(session, mycatReactorThread.mysqlSessionMan, false, result);
+            }
+        };
+        backendConCreateTask.setCallback(task);
+        backendChannel.configureBlocking(false);
+        MySQLSession mySQLSession = new MySQLSession(bufPool, nioSelector, backendChannel, backendConCreateTask);
+        backendConCreateTask.setSession(mySQLSession, false);
+        mySQLSession.setMySQLMetaBean(mySQLMetaBean);
+        backendChannel.connect(backendConCreateTask.getServerAddress());
     }
 
     @Override

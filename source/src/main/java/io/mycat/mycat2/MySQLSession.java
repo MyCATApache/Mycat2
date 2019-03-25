@@ -52,10 +52,6 @@ public class MySQLSession extends AbstractMySQLSession {
 
     public MySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel, BackendConCreateTask nioHandler) throws IOException {
         super(bufferPool, selector, channel, SelectionKey.OP_CONNECT,nioHandler);
-        nioHandler.setSession(this, false);
-        MySQLMetaBean mySQLMetaBean = nioHandler.getMySQLMetaBean();
-        this.setMySQLMetaBean(mySQLMetaBean);
-        channel.connect(nioHandler.getServerAddress());
     }
 
     /**

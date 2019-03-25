@@ -328,6 +328,10 @@ public abstract class AbstractSession implements Session {
         try {
             channel.close();
         } catch (IOException e) {
+            logger.error(e.getMessage());
+        }finally {
+            ProxyReactorThread proxyReactorThread = (ProxyReactorThread) Thread.currentThread();
+            proxyReactorThread.allSession.remove(this);
         }
     }
 

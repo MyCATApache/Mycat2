@@ -99,7 +99,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 
             // 新建连接
             logger.info("create new connection  ");
-            mysqlSessionMan.createSession(targetMetaBean, session.getMycatSchema(),
+            mysqlSessionMan.createMySQLSession(targetMetaBean, session.getMycatSchema(),
                     (optSession, Sender, exeSucces, retVal) -> {
                         // 恢复默认的Handler
                         session.setCurNIOHandler(MainMycatNIOHandler.INSTANCE);
@@ -148,7 +148,7 @@ public class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 
         // 新建连接
         logger.info("create new connection {} ", mySQLMetaBean);
-        mysqlSessionMan.createSession(mySQLMetaBean, null, (optSession, Sender, exeSucces, retVal) -> {
+        mysqlSessionMan.createMySQLSession(mySQLMetaBean, null, (optSession, Sender, exeSucces, retVal) -> {
             if (exeSucces) {
                 // 恢复默认的Handler
                 optSession.setCurNIOHandler(MainMySQLNIOHandler.INSTANCE);

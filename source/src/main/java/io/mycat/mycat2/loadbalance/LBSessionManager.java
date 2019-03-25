@@ -28,7 +28,7 @@ public class LBSessionManager implements SessionManager<LBSession> {
 
 
     @Override
-    public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel, AsynTaskCallBack<LBSession> callBack) throws IOException {
+    public LBSession createSessionForConnectedChannel(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel) throws IOException {
         if (logger.isInfoEnabled()) {
             if (channel.isConnected()){
                 throw new RuntimeException("LBSession is not connected "+channel);
@@ -36,9 +36,7 @@ public class LBSessionManager implements SessionManager<LBSession> {
         }
         LBSession lbSession = new LBSession(bufPool,nioSelector,channel,getDefaultSessionHandler());
         allSession.add(lbSession);
-        if (callBack!=null){
-            callBack.finished(lbSession,this,channel.isConnected(),null);
-        }
+        return lbSession;
     }
 
     @Override

@@ -31,7 +31,6 @@ import io.mycat.mycat2.tasks.BackendCharsetReadTask;
 import io.mycat.mycat2.tasks.BackendGetConnectionTask;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.util.TimeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,7 +89,7 @@ public class MySQLMetaBean {
 			MycatReactorThread reactorThread = reactorThreads[i % reactorSize];
 			reactorThread.addNIOJob(() -> {
 				try {
-					reactorThread.mysqlSessionMan.createSession(this, null, (optSession, sender, exeSucces, retVal) -> {
+					reactorThread.mysqlSessionMan.createMySQLSession(this, null, (optSession, sender, exeSucces, retVal) -> {
 						if (exeSucces) {
 							if (this.charsetLoaded == false) {
 								this.charsetLoaded = true;

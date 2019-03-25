@@ -218,7 +218,7 @@ public class MycatSession extends AbstractMySQLSession {
             throw new RuntimeException("can't find backend " + backend);
         } else {
             unbindMySQLSession(backend);
-            ((MycatReactorThread) Thread.currentThread()).mysqlSessionMan.addNewMySQLSession(backend);
+            ((MycatReactorThread) Thread.currentThread()).mysqlSessionMan.addMySQLSession(backend);
         }
         // 调整curBackendIndex
         if (curSession == backend) {

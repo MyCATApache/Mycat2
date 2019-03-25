@@ -25,12 +25,10 @@ public class ProxySessionManager implements SessionManager<ProxySession> {
 
 
     @Override
-    public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel, AsynTaskCallBack<ProxySession> callBack) throws IOException {
+    public ProxySession createSessionForConnectedChannel(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel) throws IOException {
         ProxySession proxySession = new ProxySession(bufPool, nioSelector, channel,getDefaultSessionHandler());
         allSession.add(proxySession);
-        if (callBack!=null){
-            callBack.finished(proxySession,this,channel.isConnected(),null);
-        }
+        return proxySession;
     }
 
     @Override

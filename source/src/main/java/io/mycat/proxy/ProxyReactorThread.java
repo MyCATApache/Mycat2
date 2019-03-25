@@ -28,6 +28,10 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	//用于管理连接等事件
 	protected final ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<>();
 
+	//保存所有的session 不区分类型(客户端session还是服务端session) 进行定时检查session状态,彻底清理状态异常的session
+    // 在reactor接受到新连接或者主动发起连接建立session后,加入到此容器,在session的close方法从容器移除
+    // @cjw
+    protected LinkedList<Session> allSession = new LinkedList<>();
 
 
 	public Selector getSelector() {
@@ -49,8 +53,9 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) {
 		pendingJobs.offer(() -> {
 			try {
-				sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel,null);
-			} catch (Exception e) {
+                T sessionForConnectedChannel = sessionMan.createSessionForConnectedChannel(keyAttachement, this.bufPool, selector, socketChannel);
+                allSession.add(sessionForConnectedChannel);
+            } catch (Exception e) {
 				e.printStackTrace();
 				logger.warn("register new connection error " + e);
 			}
@@ -87,6 +92,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		reactorEnv.curSession = session;
 		try {
 			if (((SocketChannel) curKey.channel()).finishConnect()) {
+                allSession.add(session);
 				session.getCurNIOHandler().onConnect(curKey, session, true, null);
 			}
 
@@ -149,15 +155,16 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 							logger.warn("Socket IO err :", e);
 						}
 						key.cancel();
+
 						if (reactorEnv.curSession != null) {
 							reactorEnv.curSession.close(false, "Socket IO err:" + e);
-							reactorEnv.curSession = null;
+                            reactorEnv.curSession = null;
 						}
 					}
 				}
 				keys.clear();
 			} catch (IOException e) {
-				logger.warn("caugh error ", e);
+				logger.warn("catch error ", e);
 			}
 		}
 	}

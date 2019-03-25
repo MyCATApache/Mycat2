@@ -30,6 +30,7 @@ public class MycatSessionManager implements SessionManager<MycatSession> {
 
 	/**
 	 * jdbc客户端连接mycat第一个报文回调的函数,在此函数处理中,如果buffer过小导致无法一次写入完整的验证包,则会抛出异常停机
+	 *  cjw
 	 * @param
 	 * @param bufPool
 	 *            用来获取Buffer的Pool
@@ -39,8 +40,7 @@ public class MycatSessionManager implements SessionManager<MycatSession> {
 	 * @return
 	 * @throws IOException
 	 */
-	@Override
-	public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel, AsynTaskCallBack<MycatSession> callBack) throws IOException {
+	public MycatSession createSessionForConnectedChannel(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
 		if (logger.isInfoEnabled()) {
 			if (!frontChannel.isConnected()){
 				throw new RuntimeException("MySQL client is not connected "+frontChannel);
@@ -55,9 +55,7 @@ public class MycatSessionManager implements SessionManager<MycatSession> {
 		session.sendAuthPackge();
 		session.setSessionManager(this);
 		allSessions.add(session);
-		if (callBack!=null){
-			callBack.finished(session,this,frontChannel.isConnected(),null);
-		}
+		return session;
 	}
 
 	@Override

@@ -93,18 +93,16 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
         logger.info("new Client connected: " + socketChannel);
         ServerType serverType = (ServerType) curKey.attachment();
         ProxyRuntime proxyRuntime = ProxyRuntime.INSTANCE;
-        if (!socketChannel.isConnected()){
-            throw new RuntimeException("socketChannel is not connected"+socketChannel);
+        if (!socketChannel.isConnected()) {
+            throw new RuntimeException("socketChannel is not connected" + socketChannel);
         }
         // 获取附着的标识，即得到当前是否为集群通信端口
         if (serverType == ServerType.CLUSTER) {
-            adminSessionMan.createSession(null, this.bufPool, selector, socketChannel, (session, sender, success, result) -> {
-                // 客户端连接上来，所以发送信息给客户端
-                NodeRegInfoPacket nodeRegInf = new NodeRegInfoPacket(session.cluster().getMyNodeId(),
-                        session.cluster().getClusterState(), session.cluster().getLastClusterStateTime(),
-                        session.cluster().getMyLeaderId(), ProxyRuntime.INSTANCE.getStartTime());
-                session.answerClientNow(nodeRegInf);
-            });
+            AdminSession session = adminSessionMan.createSessionForConnectedChannel(null, this.bufPool, selector, socketChannel);// 客户端连接上来，所以发送信息给客户端
+            NodeRegInfoPacket nodeRegInf = new NodeRegInfoPacket(session.cluster().getMyNodeId(),
+                    session.cluster().getClusterState(), session.cluster().getLastClusterStateTime(),
+                    session.cluster().getMyLeaderId(), ProxyRuntime.INSTANCE.getStartTime());
+            session.answerClientNow(nodeRegInf);
         } else if (serverType == ServerType.LOAD_BALANCER && proxyRuntime.getMyCLuster() != null
                 && proxyRuntime.getMyCLuster().getClusterState() == ClusterState.Clustered) {
             BalancerConfig balancerConfig = proxyRuntime.getConfig().getConfig(ConfigEnum.BALANCER);
@@ -120,10 +118,9 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
                 ProxyReactorThread<?> proxyReactor = getLBProxyReactor();
                 proxyReactor.addNIOJob(() -> {
                     try {
-                        ProxyRuntime.INSTANCE.getLbSessionSessionManager().createSession(null,
-                                proxyReactor.bufPool, proxyReactor.getSelector(), socketChannel, (lbSession, sender, success, result) -> {
-                                    lbSession.getCurNIOHandler().onConnect(curKey, lbSession, true, null);
-                                });
+                        LBSession lbSession = ProxyRuntime.INSTANCE.getLbSessionSessionManager().createSessionForConnectedChannel(null,
+                                proxyReactor.bufPool, proxyReactor.getSelector(), socketChannel);
+                        lbSession.getCurNIOHandler().onConnect(curKey, lbSession, true, null);
                     } catch (IOException e) {
                         logger.warn("load balancer accepted error:", e);
                     }
@@ -160,23 +157,20 @@ public class NIOAcceptor extends ProxyReactorThread<Session> {
                     ProxyReactorThread<LBSession> proxyReactor = getLBProxyReactor();
                     proxyReactor.addNIOJob(() -> {
                         try {
-                            ProxyRuntime.INSTANCE.getProxySessionSessionManager()
-                                    .createSession(null, proxyReactor.bufPool, proxyReactor.getSelector(), curChannel, (proxySession, sender, success, result) -> {
-                                        LBSession lbSession = (LBSession) obj;
-                                        proxySession.setLbSession(lbSession);
-                                        lbSession.setProxySession(proxySession);
-                                        proxySession.getCurNIOHandler().onConnect(curKey, proxySession, true, null);
-                                    });
+                            ProxySession proxySession = ProxyRuntime.INSTANCE.getProxySessionSessionManager()
+                                    .createSessionForConnectedChannel(null, proxyReactor.bufPool, proxyReactor.getSelector(), curChannel);
+                            LBSession lbSession = (LBSession) obj;
+                            proxySession.setLbSession(lbSession);
+                            lbSession.setProxySession(proxySession);
+                            proxySession.getCurNIOHandler().onConnect(curKey, proxySession, true, null);
                         } catch (Exception e) {
                             logger.warn("Load balancer connect remote mycat error:", e);
                         }
                     });
                 } else {
-                    adminSessionMan.createSession(curKey.attachment(), this.bufPool, selector,
-                            curChannel, (session, sender, success, result) -> {
-                                NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) session.getCurNIOHandler();
-                                connectIOHandler.onConnect(curKey, session, true, null);
-                            });
+                    AdminSession session = adminSessionMan.createSessionForConnectedChannel(curKey.attachment(), this.bufPool, selector, curChannel);
+                    NIOHandler<AdminSession> connectIOHandler = (NIOHandler<AdminSession>) session.getCurNIOHandler();
+                    connectIOHandler.onConnect(curKey, session, true, null);
                 }
             }
 

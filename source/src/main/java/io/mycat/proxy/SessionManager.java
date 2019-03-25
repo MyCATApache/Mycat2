@@ -19,7 +19,9 @@ public interface SessionManager<T extends Session> {
 
 	/**
 	 * 针对新创建的连接，产生对应的Session对象，
-	 * 
+	 *
+	 * @author cjw
+	 * 通道必须是已经连接的
 	 * @param bufPool
 	 *            用来获取Buffer的Pool
 	 * @param nioSelector
@@ -29,7 +31,7 @@ public interface SessionManager<T extends Session> {
 	 * @return T session
 	 * @throws IOException
 	 */
-	public void createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel, AsynTaskCallBack<T > callBack)
+	public T createSessionForConnectedChannel(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel)
 			throws IOException;
 
 	/**
