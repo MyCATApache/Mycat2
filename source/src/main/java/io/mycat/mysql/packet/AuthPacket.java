@@ -74,7 +74,7 @@ public class AuthPacket extends MySQLPacket {
     }
 
     public void write(ProxyBuffer buffer) {
-    	this.write(buffer, calcPacketSize());
+    	this.write(buffer, calcPayloadSize());
     }
     public void write(ProxyBuffer buffer, int pkgSize) {
         buffer.writeFixInt(3, pkgSize);
@@ -101,7 +101,7 @@ public class AuthPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         int size = 32;//4+4+1+23;
         size += (user == null) ? 1 : user.length() + 1;
         size += (password == null) ? 1 : BufferUtil.getLength(password);

@@ -34,7 +34,7 @@ public class MySQLProxySMErrorPacketTest {
         Assert.assertEquals(FULL, sm.resolveMySQLPacket(MySQLPacketInf));
         Assert.assertEquals(FULL, MySQLPacketInf.packetType);
         Assert.assertEquals(ERROR, sm.mysqlPacketType);
-        Assert.assertEquals(HEADER_SIZE + errorPacket.calcPacketSize(), MySQLPacketInf.pkgLength);
+        Assert.assertEquals(HEADER_SIZE + errorPacket.calcPayloadSize(), MySQLPacketInf.pkgLength);
         Assert.assertEquals(0, MySQLPacketInf.startPos);
         Assert.assertEquals(MySQLPacketInf.pkgLength, MySQLPacketInf.endPos);
         Assert.assertEquals(0xff, MySQLPacketInf.head);

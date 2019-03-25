@@ -106,7 +106,7 @@ public class PreparedOKPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         return 12;
     }
 

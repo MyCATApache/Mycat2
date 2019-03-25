@@ -82,7 +82,7 @@ public class RowDataPacket extends MySQLPacket {
 
     @Override
     public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPacketSize());
+        buffer.writeFixInt(3, calcPayloadSize());
         buffer.writeByte(packetId);
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = fieldValues.get(i);
@@ -97,7 +97,7 @@ public class RowDataPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         int size = 0;
         for (int i = 0; i < fieldCount; i++) {
             byte[] v = fieldValues.get(i);

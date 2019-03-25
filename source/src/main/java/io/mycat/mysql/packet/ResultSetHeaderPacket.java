@@ -65,7 +65,7 @@ public class ResultSetHeaderPacket extends MySQLPacket {
 
     @Override
     public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPacketSize());
+        buffer.writeFixInt(3, calcPayloadSize());
         buffer.writeByte(packetId);
         buffer.writeLenencInt(fieldCount);
         if (extra > 0) {
@@ -74,7 +74,7 @@ public class ResultSetHeaderPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         int size = BufferUtil.getLength(fieldCount);
         if (extra > 0) {
             size += BufferUtil.getLength(extra);

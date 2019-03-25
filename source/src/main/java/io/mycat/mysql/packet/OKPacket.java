@@ -62,7 +62,7 @@ public final class OKPacket extends MySQLPacket {
     }
 
     public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPacketSize());
+        buffer.writeFixInt(3, calcPayloadSize());
         buffer.writeByte(packetId);
         buffer.writeLenencInt(header);
         if (header == OK_HEADER) {
@@ -151,7 +151,7 @@ public final class OKPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         int i = 1;
         if (header == OK_HEADER) {
             i += BufferUtil.getLength(affectedRows);

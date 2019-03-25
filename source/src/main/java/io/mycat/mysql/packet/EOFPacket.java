@@ -48,7 +48,7 @@ public final class EOFPacket extends MySQLPacket {
 	public int status = 2;
 
 	public void write(ProxyBuffer buffer) {
-		buffer.writeFixInt(3, calcPacketSize());
+		buffer.writeFixInt(3, calcPayloadSize());
 		buffer.writeByte(packetId);
 		buffer.writeLenencInt(pkgType);
 		buffer.writeFixInt(2, warningCount);
@@ -69,7 +69,7 @@ public final class EOFPacket extends MySQLPacket {
 		return (int) buffer.readFixInt(2); //status
 	}
 	@Override
-	public int calcPacketSize() {
+	public int calcPayloadSize() {
 		return 5;// 1+2+2;
 	}
 

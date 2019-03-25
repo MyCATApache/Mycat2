@@ -83,13 +83,13 @@ public class FieldPacket extends MySQLPacket {
 
 	@Override
 	public void write(ProxyBuffer buffer) {
-		buffer.writeFixInt(3, calcPacketSize());
+		buffer.writeFixInt(3, calcPayloadSize());
 		buffer.writeByte(packetId);
 		writeBody(buffer);
 	}
 
 	@Override
-	public int calcPacketSize() {
+	public int calcPayloadSize() {
 		int size = (catalog == null ? 1 : BufferUtil.getLength(catalog));
 		size += (db == null ? 1 : BufferUtil.getLength(db));
 		size += (table == null ? 1 : BufferUtil.getLength(table));

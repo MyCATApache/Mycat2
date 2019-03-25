@@ -97,18 +97,18 @@ public class CommandPacket extends MySQLPacket {
 
     @Override
 	public void write(ProxyBuffer buffer) {
-		this.write(buffer,calcPacketSize());
+		this.write(buffer, calcPayloadSize());
 	}
 
     private void write(ProxyBuffer buffer,int pkgSize) {
-        buffer.writeFixInt(3,calcPacketSize());
+        buffer.writeFixInt(3, calcPayloadSize());
         buffer.writeByte(packetId);
         buffer.writeByte(command);
         buffer.writeBytes(arg);
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         return 1 + arg.length;
     }
 

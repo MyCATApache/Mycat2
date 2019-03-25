@@ -83,7 +83,7 @@ public class PacketUtil {
 //        FieldPacket field = new FieldPacket();
 //        field.read(src);
 //        field.name = encode(fieldName, CODE_PAGE_LATIN1);
-//        field.packetLength = field.calcPacketSize();
+//        field.packetLength = field.calcPayloadSize();
 //        return field;
 //    }
 }

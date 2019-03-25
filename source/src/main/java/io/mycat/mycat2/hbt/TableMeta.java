@@ -74,7 +74,7 @@ public class TableMeta {
             for (byte[] value : fieldValue) {
                 dataPacket.add(value);
             }
-            int size = dataPacket.calcPacketSize() + ParseUtil.msyql_packetHeaderSize;
+            int size = dataPacket.calcPayloadSize() + ParseUtil.msyql_packetHeaderSize;
             if (size <= buffer.getBuffer().remaining()) {
                 dataPacket.packetId = packetId++;
                 dataPacket.write(buffer);
@@ -136,7 +136,7 @@ public class TableMeta {
                 dataPacket.add(value);
             }
             dataPacket.packetId = packetId++;
-            if (dataPacket.calcPacketSize() + ParseUtil.msyql_packetHeaderSize > buffer.getBuffer().remaining()) {
+            if (dataPacket.calcPayloadSize() + ParseUtil.msyql_packetHeaderSize > buffer.getBuffer().remaining()) {
                 dataPacket.write(buffer);
             }
         }

@@ -75,7 +75,7 @@ public class HandshakePacket extends MySQLPacket {
     }
 
     public void write(ProxyBuffer buffer) {
-    	int pkgSize=calcPacketSize();
+    	int pkgSize= calcPayloadSize();
     	//进行将握手包，写入至ProxyBuffer中,将write的opt指针进行相应用修改
     	
         buffer.writeFixInt(3, pkgSize);
@@ -92,7 +92,7 @@ public class HandshakePacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         int size = 1;
         size += serverVersion.length;// n
         size += 5;// 1+4

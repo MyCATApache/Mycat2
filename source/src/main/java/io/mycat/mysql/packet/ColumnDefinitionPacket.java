@@ -88,7 +88,7 @@ public class ColumnDefinitionPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
 
         int size = 0;
         size += (catalog == null ? 1 : BufferUtil.getLength(catalog));

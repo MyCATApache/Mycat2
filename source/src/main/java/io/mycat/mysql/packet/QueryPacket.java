@@ -19,7 +19,7 @@ public class QueryPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         return sql.length() + 1;
     }
 
@@ -30,7 +30,7 @@ public class QueryPacket extends MySQLPacket {
 
     @Override
     public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPacketSize());
+        buffer.writeFixInt(3, calcPayloadSize());
         buffer.writeByte(packetId);
         buffer.writeByte(pkgType);
         buffer.writeFixString(sql);

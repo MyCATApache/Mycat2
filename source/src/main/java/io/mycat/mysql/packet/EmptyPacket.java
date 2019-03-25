@@ -32,7 +32,7 @@ public class EmptyPacket extends MySQLPacket {
     public static final byte[] EMPTY = new byte[] { 0, 0, 0,3 };
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         return 0;
     }
 

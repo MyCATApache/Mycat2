@@ -64,7 +64,7 @@ public class ErrorPacket extends MySQLPacket {
 	}
 
 	public void write(ProxyBuffer buffer) {
-		buffer.writeFixInt(3, calcPacketSize());
+		buffer.writeFixInt(3, calcPayloadSize());
 		buffer.writeByte(packetId);
 		buffer.writeByte(pkgType);
 		buffer.writeFixInt(2, errno);
@@ -82,7 +82,7 @@ public class ErrorPacket extends MySQLPacket {
 	}
 
 	@Override
-	public int calcPacketSize() {
+	public int calcPayloadSize() {
 		int size = 1 + 2;// pkgType+errorcode
 		if (errno == 0xFFFF) { /* progress reporting */
 			size += 1 + 1 + 3 + ProxyBuffer.getLenencLength( progress_info.length())+progress_info.length();

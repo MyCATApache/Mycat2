@@ -13,7 +13,7 @@ public class SendLongDataPacket extends MySQLPacket {
     private byte[] data = new byte[0];
 
     @Override
-    public int calcPacketSize() {
+    public int calcPayloadSize() {
         return 1 + 4 + 2 + data.length;
     }
 
@@ -24,7 +24,7 @@ public class SendLongDataPacket extends MySQLPacket {
 
     @Override
     public void write(ProxyBuffer buffer) {
-        int pkgSize = calcPacketSize();
+        int pkgSize = calcPayloadSize();
         buffer.writeFixInt(3, pkgSize);
         buffer.writeByte(packetId);
         writePayload(buffer);
