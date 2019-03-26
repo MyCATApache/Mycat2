@@ -1,5 +1,6 @@
 package io.mycat.mysql.packet;
 
+import io.mycat.mycat2.beans.MycatException;
 import io.mycat.mysql.CapabilityFlags;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -7,7 +8,7 @@ import io.mycat.proxy.ProxyBuffer;
  * cjw
  * 294712221@qq.com
  */
-public class HandshakePacket {
+public class HandshakePacket extends MySQLPacket{
     public byte packetId;
     public int protocolVersion;
     public String serverVersion;
@@ -89,6 +90,11 @@ public class HandshakePacket {
         }
     }
 
+    @Override
+    public int calcPayloadSize() {
+        throw new MycatException("require proxybuffer to be large enough to be 8192 bytes in size!");
+    }
+
     public int calcPacketSize() {
 //        buffer.writeByte((byte) 0x0a);
 //        buffer.writeNULString(serverVersion);
@@ -123,6 +129,11 @@ public class HandshakePacket {
             }
         }
         return size;
+    }
+
+    @Override
+    protected String getPacketInfo() {
+        return "Mysql HandshakePacket";
     }
 
     public void read(ProxyBuffer buffer) {

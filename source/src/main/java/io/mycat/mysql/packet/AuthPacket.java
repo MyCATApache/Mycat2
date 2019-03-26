@@ -1,6 +1,7 @@
 package io.mycat.mysql.packet;
 
 
+import io.mycat.mycat2.beans.MycatException;
 import io.mycat.mysql.Capabilities;
 import io.mycat.proxy.ProxyBuffer;
 
@@ -47,7 +48,7 @@ import java.util.Map;
  * @author : zhuqiang
  * @date : 2018/11/14 21:40
  */
-public class AuthPacket {
+public class AuthPacket extends MySQLPacket{
     public byte packetId;
     public int capabilities;
     public int maxPacketSize;
@@ -179,6 +180,16 @@ public class AuthPacket {
         } else {
             return 9;
         }
+    }
+
+    @Override
+    public int calcPayloadSize() {
+        throw new MycatException("require proxybuffer to be large enough to be 8192 bytes in size!");
+    }
+
+    @Override
+    protected String getPacketInfo() {
+        return "MySQL AuthPacket";
     }
 
     @Override
