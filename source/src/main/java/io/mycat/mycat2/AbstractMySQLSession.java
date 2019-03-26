@@ -25,7 +25,6 @@ import java.nio.channels.SocketChannel;
 public abstract class AbstractMySQLSession extends AbstractSession {
 
 
-
     public AbstractMySQLSession() {
 
     }
@@ -67,14 +66,14 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      * 用来进行指定结束报文处理
      */
     public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel, NIOHandler nioHandler) throws IOException {
-        this(bufferPool, selector, channel, SelectionKey.OP_READ,nioHandler);
+        this(bufferPool, selector, channel, SelectionKey.OP_READ, nioHandler);
 
     }
 
 
     public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel, int keyOpt, NIOHandler nioHandler)
             throws IOException {
-        super(bufferPool, selector, channel, keyOpt,nioHandler);
+        super(bufferPool, selector, channel, keyOpt, nioHandler);
 
     }
 
@@ -133,15 +132,13 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         } else if (buffer.capacity() < pkgLength) {
             logger.debug("need a large buffer to hold the package.{}", curPacketInf);
             lastLargeMessageTime = TimeUtil.currentTimeMillis();
-            MySQLProxyPacketResolver.simpleAdjustCapacityProxybuffer(proxyBuffer,proxyBuffer.writeIndex+pkgLength);
-//            ByteBuffer newBuffer = bufPool.allocate(Double.valueOf(pkgLength + pkgLength * 0.1).intValue());
-//            resetBuffer(newBuffer);
+            MySQLProxyPacketResolver.simpleAdjustCapacityProxybuffer(proxyBuffer, proxyBuffer.writeIndex + pkgLength);
         } else {
             if (proxyBuffer.writeIndex != 0) {
                 // compact bytebuffer only
                 proxyBuffer.compact();
             } else {
-              //  throw new RuntimeException(" not enough space");
+                //  throw new RuntimeException(" not enough space");
             }
         }
     }
@@ -153,8 +150,8 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      */
     private void resetBuffer(ByteBuffer newBuffer) {
         newBuffer.put(proxyBuffer.getBytes(proxyBuffer.readIndex, proxyBuffer.writeIndex - proxyBuffer.readIndex));
-        proxyBuffer.resetBuffer(newBuffer);
         recycleAllocedBuffer(proxyBuffer);
+        proxyBuffer.resetBuffer(newBuffer);
         curPacketInf.endPos = curPacketInf.endPos - curPacketInf.startPos;
         curPacketInf.startPos = 0;
     }

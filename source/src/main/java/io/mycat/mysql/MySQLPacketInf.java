@@ -25,6 +25,8 @@ public class MySQLPacketInf {
     public ProxyBuffer proxyBuffer;
     public MySQLProxyPacketResolver resolver = new MySQLProxyPacketResolver();
     public ByteBuffer largePayload;
+    public int largePayloadStartIndex;
+    public int largePayloadEndIndex;
     public BufferPool bufferPool;
 
     public void useDirectPassthrouhBuffer(){
@@ -32,6 +34,7 @@ public class MySQLPacketInf {
     }
 
     public static boolean resolveFullPayloadExpendBuffer(MycatSession session) {
+        session.curPacketInf.proxyBuffer = session.proxyBuffer;
         MySQLPacketInf inf = session.curPacketInf;
         inf.resolver.resolveMySQLPacket(inf);
         int startPos = inf.startPos + 4;
@@ -49,26 +52,29 @@ public class MySQLPacketInf {
                             inf.largePayload = session.bufPool.expandBuffer(inf.largePayload, length);
                         }
                         inf.largePayload.clear();
-                        ByteBuffer source = inf.proxyBuffer.getBuffer().duplicate();
+                        ByteBuffer source = inf.proxyBuffer.getBuffer();
+                        int orgPosition = source.position();
+                        int orgLimit = source.limit();
                         source.position(startPos).limit(endPos);
                         inf.largePayload.put(source);
+                        source.position(orgPosition).limit(orgLimit);
                         inf.markRead();
                         return false;
                     } else {
                         if (inf.largePayload == null) {//判断是否第一个报文
                             //如果第一个报文满足条件则直接使用proxybuffer的bytebuffer作为报文内容,减少拷贝
-                            inf.largePayload = inf.proxyBuffer.getBuffer().duplicate();
-                            inf.largePayload.position(startPos);
-                            inf.largePayload.limit(endPos);
+                            inf.largePayload = inf.proxyBuffer.getBuffer();
+                            session.curPacketInf.largePayloadStartIndex = startPos;
+                            session.curPacketInf.largePayloadEndIndex = endPos;
                             inf.markRead();
                             return true;
                         } else {
-                            ByteBuffer source = inf.proxyBuffer.getBuffer().duplicate();
+                            ByteBuffer source = inf.proxyBuffer.getBuffer();
                             source.position(startPos).limit(endPos);
                             inf.largePayload.put(source);
                             int finalLength = inf.largePayload.position();
-                            inf.largePayload.position(0);
-                            inf.largePayload.position(finalLength);
+                            session.curPacketInf.largePayloadStartIndex = 0;
+                            session.curPacketInf.largePayloadEndIndex = finalLength;
                             inf.markRead();
                             return true;
                         }

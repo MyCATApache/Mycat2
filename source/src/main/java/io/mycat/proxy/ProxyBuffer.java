@@ -463,7 +463,6 @@ public class ProxyBuffer {
         buffer.put(bytes, 0, length);
         return this;
     }
-
     public ProxyBuffer putByte(int index, byte val) {
         buffer.position(index);
         buffer.put(val);

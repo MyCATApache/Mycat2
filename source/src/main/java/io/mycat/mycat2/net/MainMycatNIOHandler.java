@@ -38,7 +38,6 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
         MySQLCommand curCmd = session.getCurSQLCommand();
         if (curCmd == null) {
             MySQLPacketInf packetInf = session.curPacketInf;
-            session.curPacketInf.proxyBuffer = session.proxyBuffer;
             if (!resolveFullPayloadExpendBuffer(session)) {
                 return;
             }
@@ -97,12 +96,8 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
     private void doQuery(final MycatSession session) throws IOException {
         MySQLCommand command;
         try {
-            int startIndex = session.curPacketInf.largePayload.position();
-            ByteBuffer duplicate = session.curPacketInf.largePayload.duplicate();
-            byte[] a = new byte[duplicate.limit() - duplicate.position()];
-            duplicate.get(a);
-            System.out.println(new String(a));
-            int endIndex = session.curPacketInf.largePayload.limit();
+            int startIndex = session.curPacketInf.largePayloadStartIndex;
+            int endIndex = session.curPacketInf.largePayloadEndIndex;
             session.parser.parse(session.curPacketInf.largePayload, startIndex, endIndex - startIndex, session.sqlContext);
         } catch (Exception e) {
             try {

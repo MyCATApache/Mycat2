@@ -214,7 +214,9 @@ public abstract class AbstractSession implements Session {
     public ProxyBuffer allocNewProxyBuffer() {
         return new ProxyBuffer(bufPool.allocate());
     }
-
+    public ProxyBuffer allocNewProxyBuffer(int len) {
+        return new ProxyBuffer(bufPool.allocate(len));
+    }
     /**
      * 释放手动分配的ProxyBuffer
      *
