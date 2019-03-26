@@ -9,7 +9,7 @@ import io.mycat.mycat2.beans.conf.UserConfig;
 import io.mycat.mysql.MySQLProxyPacketResolver;
 import io.mycat.mysql.MysqlNativePasswordPluginUtil;
 import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.NewAuthPacket;
+import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.proxy.ConfigEnum;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyBuffer;
@@ -48,7 +48,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
         // 处理用户认证报文
         try {
-            NewAuthPacket auth = new NewAuthPacket();
+            AuthPacket auth = new AuthPacket();
             auth.read(frontBuffer);
 
             MycatConfig config = ProxyRuntime.INSTANCE.getConfig();
@@ -194,7 +194,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         session.responseOKOrError(errorPacket);
     }
 
-    private boolean success(MycatSession session, NewAuthPacket auth) {
+    private boolean success(MycatSession session, AuthPacket auth) {
         // 设置字符集编码
         int charsetIndex = (auth.characterSet & 0xff);
         // 保存字符集索引

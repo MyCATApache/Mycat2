@@ -1,6 +1,5 @@
 package io.mycat.mysql.packet;
 
-import io.mycat.mycat2.MySQLCommand;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
@@ -39,19 +38,20 @@ public class PreparedOKPacket extends MySQLPacket {
     public int parametersNumber;
     public byte filler;
     public int warningCount;
-    public ColumnDefinitionPacket[] parameterDefinitions;
-    public EOFPacket parameterEOFPacket;
-    public ColumnDefinitionPacket[] columnDefinitions;
-    public EOFPacket columnEOFPacket;
+    public ColumnDefPacket[] parameterDefinitions;
+    public ColumnDefPacket[] columnDefinitions;
 
-    public void read(ProxyBuffer buffer) {
-        // packet length:3
-        packetLength = (int)buffer.readFixInt(3);
-        // packet number:1
-        packetId = buffer.readByte();
-        readPayload(buffer);
+    @Override
+    public void writePayload(ProxyBuffer buffer) {
+        // write payload
+        buffer.writeByte(status);
+        buffer.writeFixInt(4, statementId);
+        buffer.writeFixInt(2, columnsNumber);
+        buffer.writeFixInt(2, parametersNumber);
+        buffer.writeByte(filler);
+        buffer.writeFixInt(2, warningCount);
     }
-
+    @Override
     public void readPayload(ProxyBuffer buffer) {
         // payload
         status = buffer.readByte();
@@ -60,49 +60,6 @@ public class PreparedOKPacket extends MySQLPacket {
         parametersNumber = (int)buffer.readFixInt(2);
         filler = buffer.readByte();
         warningCount = (int)buffer.readFixInt(2);
-        if (parametersNumber > 0) {
-            parameterDefinitions = new ColumnDefinitionPacket[parametersNumber];
-            for (int i=0; i<parametersNumber; i++) {
-                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLCommand.COM_STMT_PREPARE);
-                columnDefinition.read(buffer);
-                parameterDefinitions[i] = columnDefinition;
-            }
-            parameterEOFPacket = new EOFPacket();
-            parameterEOFPacket.read(buffer);
-        }
-        if (columnsNumber > 0) {
-            columnDefinitions = new ColumnDefinitionPacket[columnsNumber];
-            for (int i=0; i<columnsNumber; i++) {
-                ColumnDefinitionPacket columnDefinition = new ColumnDefinitionPacket(MySQLCommand.COM_STMT_PREPARE);
-                columnDefinition.read(buffer);
-                columnDefinitions[i] = columnDefinition;
-            }
-            columnEOFPacket = new EOFPacket();
-            columnEOFPacket.read(buffer);
-        }
-    }
-
-    @Override
-    public void write(ProxyBuffer buffer) {
-        // write packet length
-        buffer.writeFixInt(3, packetLength);
-        // write packet number
-        buffer.writeByte(packetId);
-        // write payload
-        buffer.writeByte(status);
-        buffer.writeFixInt(4, statementId);
-        buffer.writeFixInt(2, columnsNumber);
-        buffer.writeFixInt(2, parametersNumber);
-        buffer.writeByte(filler);
-        buffer.writeFixInt(2, warningCount);
-//        for (int i=0; i<parametersNumber; i++) {
-//            parameterDefinitions[i].write(buffer);
-//        }
-//        parameterEOFPacket.write(buffer);
-//        for (int i=0; i<columnsNumber; i++) {
-//            columnDefinitions[i].write(buffer);
-//        }
-      //  columnEOFPacket.write(buffer);
     }
 
     @Override
@@ -112,6 +69,6 @@ public class PreparedOKPacket extends MySQLPacket {
 
     @Override
     protected String getPacketInfo() {
-        return "Prepared OK Packet";
+        return "Prepared DEFAULT_OK_PACKET Packet";
     }
 }

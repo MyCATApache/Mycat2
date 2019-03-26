@@ -3,8 +3,8 @@ package io.mycat.mycat2.tasks;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.MySQLMetaBean;
 import io.mycat.mysql.MySQLPacketInf;
+import io.mycat.mysql.packet.ComQueryPacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +53,7 @@ public class BackendCharsetReadTask extends BackendIOTaskWithResultSet<MySQLSess
     public void readCharset() throws IOException {
         ProxyBuffer proxyBuf = mySQLSession.proxyBuffer;
         proxyBuf.reset();
-        QueryPacket queryPacket = new QueryPacket();
+        ComQueryPacket queryPacket = new ComQueryPacket();
         queryPacket.packetId = 0;
         queryPacket.sql = SQL;
         queryPacket.write(proxyBuf);

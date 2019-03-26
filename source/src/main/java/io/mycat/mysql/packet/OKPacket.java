@@ -36,14 +36,14 @@ import io.mycat.util.StringUtil;
  * @see https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
  * </pre>
  *
- * @author linxiaofang
- * @date 2018/11/12
+ * @author linxiaofang cjw
+ * @date 2018/11/12 2019 3 26
  */
 public final class OKPacket extends MySQLPacket {
     public static final byte OK_HEADER = 0x00;
-    public static final byte[] OK = new byte[]{7, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0};
+    public static final byte[] DEFAULT_OK_PACKET = new byte[]{7, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0};
 
-    public byte header;
+    public byte header = 0x00;
     public long affectedRows;
     public long lastInsertId;
     public int serverStatus;
@@ -61,71 +61,51 @@ public final class OKPacket extends MySQLPacket {
         capabilityFlags = new CapabilityFlags(capabilities);
     }
 
-    public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPayloadSize());
-        buffer.writeByte(packetId);
-        buffer.writeLenencInt(header);
-        if (header == OK_HEADER) {
-            buffer.writeLenencInt(affectedRows);
-            buffer.writeLenencInt(lastInsertId);
-            if (capabilityFlags.isClientProtocol41()) {
-                buffer.writeFixInt(2, serverStatus);
-                buffer.writeFixInt(2, warningCount);
-            } else if (capabilityFlags.isKnowsAboutTransactions()) {
-                buffer.writeFixInt(2, serverStatus);
+
+    @Override
+    public void writePayload(ProxyBuffer buffer) {
+        buffer.writeFixInt(1, header);
+        buffer.writeLenencInt(affectedRows);
+        buffer.writeLenencInt(lastInsertId);
+        if (capabilityFlags.isClientProtocol41()) {
+            buffer.writeFixInt(2, serverStatus);
+            buffer.writeFixInt(2, warningCount);
+        } else if (capabilityFlags.isKnowsAboutTransactions()) {
+            buffer.writeFixInt(2, serverStatus);
+        }
+        if (capabilityFlags.isSessionVariableTracking()) {
+            buffer.writeLenencBytes(statusInfo);
+            if ((serverStatus & ServerStatus.STATE_CHANGED) != 0) {
+                sessionStateChanges.write(buffer);
             }
-            if (capabilityFlags.isSessionVariableTracking()) {
-                buffer.writeLenencBytes(statusInfo);
-                if ((serverStatus & ServerStatus.STATE_CHANGED) != 0) {
-                    sessionStateChanges.write(buffer);
-                }
-            } else {
-                if (message != null) {
-                    buffer.writeBytes(message);
-                }
-            }
-        } else if (header < 0) {
-            if (capabilityFlags.isClientProtocol41()) {
-                buffer.writeFixInt(2, warningCount);
-                buffer.writeFixInt(2, serverStatus);
+        } else {
+            if (message != null) {
+                buffer.writeBytes(message);
             }
         }
     }
 
-    public void read(ProxyBuffer buffer) {
-        int startIndex = buffer.readIndex;
-        packetLength = (int) buffer.readFixInt(3);
-        packetId = buffer.readByte();
+    @Override
+    public void readPayload(ProxyBuffer buffer) {
         header = buffer.readByte();
-        if (header == OK_HEADER) {
-            affectedRows = buffer.readLenencInt();
-            lastInsertId = buffer.readLenencInt();
-            if (capabilityFlags.isClientProtocol41()) {
-                serverStatus = (int) buffer.readFixInt(2);
-                warningCount = (int) buffer.readFixInt(2);
 
-            } else if (capabilityFlags.isKnowsAboutTransactions()) {
-                serverStatus = (int) buffer.readFixInt(2);
+        affectedRows = buffer.readLenencInt();
+        lastInsertId = buffer.readLenencInt();
+        if (capabilityFlags.isClientProtocol41()) {
+            serverStatus = (int) buffer.readFixInt(2);
+            warningCount = (int) buffer.readFixInt(2);
+
+        } else if (capabilityFlags.isKnowsAboutTransactions()) {
+            serverStatus = (int) buffer.readFixInt(2);
+        }
+        if (capabilityFlags.isSessionVariableTracking()) {
+            statusInfo = buffer.readLenencBytes();
+            if ((serverStatus & ServerStatus.STATE_CHANGED) != 0) {
+                sessionStateChanges = new SessionStateInfo();
+                sessionStateChanges.read(buffer);
             }
-            if (capabilityFlags.isSessionVariableTracking()) {
-                statusInfo = buffer.readLenencBytes();
-                if ((serverStatus & ServerStatus.STATE_CHANGED) != 0) {
-                    sessionStateChanges = new SessionStateInfo();
-                    sessionStateChanges.read(buffer);
-                }
-            } else {
-                int remainLength = startIndex + packetLength + MySQLPacket.packetHeaderSize - buffer.readIndex;
-                if (remainLength > 0) {
-                    message = buffer.readBytes(remainLength);
-                    System.out.println(new String(message));
-                }
-            }
-        } else if (header < 0) {
-            //EOF
-            if (capabilityFlags.isClientProtocol41()) {
-                warningCount = (int) buffer.readFixInt(2);
-                serverStatus = (int) buffer.readFixInt(2);
-            }
+        } else {
+            message = buffer.readEOFStringBytes();
         }
     }
 
@@ -181,7 +161,7 @@ public final class OKPacket extends MySQLPacket {
 
     @Override
     protected String getPacketInfo() {
-        return "MySQL OK Packet";
+        return "MySQL DEFAULT_OK_PACKET Packet";
     }
 
     public class SessionStateInfo {

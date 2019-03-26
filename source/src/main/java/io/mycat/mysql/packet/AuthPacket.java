@@ -1,117 +1,198 @@
-/*
- * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
- * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
- *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
- * terms of the GNU General Public License version 2 only, as published by the
- * Free Software Foundation.
- *
- * This code is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- * version 2 for more details (a copy is included in the LICENSE file that
- * accompanied this code).
- *
- * You should have received a copy of the GNU General Public License version
- * 2 along with this work; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
- * https://code.google.com/p/opencloudb/.
- *
- */
 package io.mycat.mysql.packet;
 
-import java.io.IOException;
 
 import io.mycat.mysql.Capabilities;
 import io.mycat.proxy.ProxyBuffer;
-import io.mycat.util.BufferUtil;
+
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * From client to server during initial handshake.
- * <p>
+ * HandshakeResponse41
+ * https://dev.mysql.com/doc/internals/en/connection-phase-packets.html
+ *
  * <pre>
- * Bytes                        Name
- * -----                        ----
- * 4                            client_flags
- * 4                            max_packet_size
- * 1                            charset_number
- * 23                           (filler) always 0x00...
- * n (Null-Terminated String)   user
- * n (Length Coded Binary)      scramble_buff (1 + x bytes)
- * n (Null-Terminated String)   databasename (optional)
+ *      4              capability flags, CLIENT_PROTOCOL_41 always set
+ *      4              max-packet size
+ *      1              character set
+ *      string[23]     reserved (all [0])
+ *      string[NUL]    username
+ *      if capabilities & CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA {   // 理解auth响应数据的长度编码整数
+ *          lenenc-int     length of auth-response
+ *          string[n]      auth-response
+ *      } else if capabilities & CLIENT_SECURE_CONNECTION {  // 支持 Authentication::Native41。
+ *          1              length of auth-response
+ *          string[n]      auth-response
+ *      } else {
+ *          string[NUL]    auth-response
+ *      }
+ *      if capabilities & CLIENT_CONNECT_WITH_DB {  // 可以在 connect 中指定数据库（模式）名称
+ *          string[NUL]    database
+ *      }
+ *      if capabilities & CLIENT_PLUGIN_AUTH {  // 在初始握手包中发送额外数据， 并支持可插拔认证协议。
+ *          string[NUL]    auth plugin name
+ *      }
+ *      if capabilities & CLIENT_CONNECT_ATTRS {  // 允许连接属性
+ *          lenenc-int     length of all key-values
+ *          lenenc-str     key
+ *          lenenc-str     value
+ *         if-more sql in 'length of all key-values', more keys and value pairs
+ *      }
  *
- * &#64;see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Client_Authentication_Packet
+ *  关于字符集：https://dev.mysql.com/doc/refman/8.0/en/charset-metadata.html
+ *  大部分都是 utf8,且在连接前都是 utf8.几乎上不用设置编码
  * </pre>
- *
- * @author mycat
+ * @author : zhuqiang
+ * @date : 2018/11/14 21:40
  */
-public class AuthPacket extends MySQLPacket {
-    private static final byte[] FILLER = new byte[23];
-
-    public long clientFlags;
-    public long maxPacketSize;
-    public int charsetIndex;
-    public byte[] extra;// from FILLER(23)
-    public String user;
+public class AuthPacket {
+    public byte packetId;
+    public int capabilities;
+    public int maxPacketSize;
+    public byte characterSet;
+    public static final byte[] RESERVED = new byte[23];
+    public String username;
     public byte[] password;
     public String database;
+    public String authPluginName;
+    public Map<String, String> clientConnectAttrs;
 
-    public void read(ProxyBuffer byteBuffer) throws IOException {
-        packetLength = (int) byteBuffer.readFixInt(3);
-        packetId = byteBuffer.readByte();
-        clientFlags = byteBuffer.readFixInt(4);
-        maxPacketSize = byteBuffer.readFixInt(4);
-        charsetIndex = byteBuffer.readByte();
-        byteBuffer.skip(23);
-        user = byteBuffer.readNULString();
-        password = byteBuffer.readLenencBytes();
-        if ((clientFlags & Capabilities.CLIENT_CONNECT_WITH_DB) != 0) {
-            database = byteBuffer.readNULString();
+    public void read(ProxyBuffer buffer) {
+        int packetLength = (int) buffer.readFixInt(3);
+        packetId = buffer.readByte();
+        readPayload(buffer);
+    }
+
+    public void readPayload(ProxyBuffer buffer) {
+        capabilities = (int) buffer.readFixInt(4);
+        maxPacketSize = (int) buffer.readFixInt(4);
+        characterSet = buffer.readByte();
+        buffer.readBytes(RESERVED.length);
+        username = buffer.readNULString();
+        if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)
+                == Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
+            password = buffer.readFixStringBytes((int) buffer.readLenencInt());
+        } else if ((capabilities & Capabilities.CLIENT_SECURE_CONNECTION)
+                == Capabilities.CLIENT_SECURE_CONNECTION) {
+            int passwordLength = buffer.readByte();
+            password = buffer.readFixStringBytes(passwordLength);
+        } else {
+            password = buffer.readNULStringBytes();
+        }
+
+        if ((capabilities & Capabilities.CLIENT_CONNECT_WITH_DB) == Capabilities.CLIENT_CONNECT_WITH_DB) {
+            database = buffer.readNULString();
+        }
+
+        if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH) == Capabilities.CLIENT_PLUGIN_AUTH) {
+            authPluginName = buffer.readNULString();
+        }
+
+        if ((capabilities & Capabilities.CLIENT_CONNECT_ATTRS) == Capabilities.CLIENT_CONNECT_ATTRS) {
+            long kvAllLength = buffer.readLenencInt();
+            if (kvAllLength != 0) {
+                clientConnectAttrs = new HashMap<>();
+            }
+            int count = 0;
+            while (count < kvAllLength) {
+//                byte[] k = buffer.readLenencStringBytes();
+//                byte[] v = buffer.readLenencStringBytes();
+//                count += k.length;
+//                count += v.length;
+//                count += calcLenencLength(k.length);
+//                count += calcLenencLength(v.length);
+//                clientConnectAttrs.put(new String(k), new String(v));
+                String k = buffer.readLenencString();
+                String v = buffer.readLenencString();
+                count += k.length();
+                count += v.length();
+                count += calcLenencLength(k.length());
+                count += calcLenencLength(v.length());
+                clientConnectAttrs.put(k, v);
+            }
         }
     }
 
     public void write(ProxyBuffer buffer) {
-    	this.write(buffer, calcPayloadSize());
-    }
-    public void write(ProxyBuffer buffer, int pkgSize) {
-        buffer.writeFixInt(3, pkgSize);
+        buffer.writeFixInt(3, 0);
         buffer.writeByte(packetId);
-        buffer.writeFixInt(4, clientFlags);
+        writePayload(buffer);
+        ByteBuffer b = buffer.getBuffer();
+        int position = b.position();
+        b.put(0, (byte) (position - 4));
+    }
+
+    public void writePayload(ProxyBuffer buffer) {
+        buffer.writeFixInt(4, capabilities);
         buffer.writeFixInt(4, maxPacketSize);
-        buffer.writeByte((byte) charsetIndex);
-        buffer.writeBytes(FILLER);
-        if (user == null) {
-            buffer.writeByte((byte) 0);
+        buffer.writeByte(characterSet);
+        buffer.writeBytes(RESERVED);
+        buffer.writeNULString(username);
+        if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)
+                == Capabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
+            buffer.writeLenencInt(password.length);
+            buffer.writeFixString(password);
+        } else if ((capabilities & Capabilities.CLIENT_SECURE_CONNECTION)
+                == Capabilities.CLIENT_SECURE_CONNECTION) {
+            buffer.writeFixInt(1, password.length);
+            buffer.writeFixString(password);
         } else {
-            buffer.writeNULString(user);
+            buffer.writeNULString(password);
         }
-        if (password == null) {
-            buffer.writeByte((byte) 0);
-        } else {
-            buffer.writeLenencBytes(password);
-        }
-        if (database == null) {
-            buffer.writeByte((byte) 0);
-        } else {
+
+        if ((capabilities & Capabilities.CLIENT_CONNECT_WITH_DB) == Capabilities.CLIENT_CONNECT_WITH_DB
+                && database != null) {
             buffer.writeNULString(database);
         }
+
+        if ((capabilities & Capabilities.CLIENT_PLUGIN_AUTH) == Capabilities.CLIENT_PLUGIN_AUTH
+                && authPluginName != null) {
+            buffer.writeNULString(authPluginName);
+        }
+
+        if ((capabilities & Capabilities.CLIENT_CONNECT_ATTRS) == Capabilities.CLIENT_CONNECT_ATTRS
+                && clientConnectAttrs != null && !clientConnectAttrs.isEmpty()) {
+            int kvAllLength = 0;
+            for (Map.Entry<String, String> item : clientConnectAttrs.entrySet()) {
+                kvAllLength += item.getKey().length();
+                kvAllLength += item.getValue().length();
+            }
+            buffer.writeLenencInt(kvAllLength);
+            clientConnectAttrs.forEach((k, v) -> buffer.writeLenencString(k).writeLenencString(v));
+        }
+    }
+
+    /**
+     * 计算 LengthEncodedInteger 的字节长度
+     * @param val
+     * @return
+     */
+    public static int calcLenencLength(int val) {
+        if (val < 251) {
+            return 1;
+        } else if (val >= 251 && val < (1 << 16)) {
+            return 3;
+        } else if (val >= (1 << 16) && val < (1 << 24)) {
+            return 4;
+        } else {
+            return 9;
+        }
     }
 
     @Override
-    public int calcPayloadSize() {
-        int size = 32;//4+4+1+23;
-        size += (user == null) ? 1 : user.length() + 1;
-        size += (password == null) ? 1 : BufferUtil.getLength(password);
-        size += (database == null) ? 1 : database.length() + 1;
-        return size;
+    public String toString() {
+        return "AuthPacket{" +
+                "packetId=" + packetId +
+                ", capabilities=" + capabilities +
+                ", maxPacketSize=" + maxPacketSize +
+                ", characterSet=" + characterSet +
+                ", username='" + username + '\'' +
+                ", password=" + Arrays.toString(password) +
+                ", database='" + database + '\'' +
+                ", authPluginName='" + authPluginName + '\'' +
+                ", clientConnectAttrs=" + clientConnectAttrs +
+                '}';
     }
-
-    @Override
-    protected String getPacketInfo() {
-        return "MySQL Authentication Packet";
-    }
-
 }

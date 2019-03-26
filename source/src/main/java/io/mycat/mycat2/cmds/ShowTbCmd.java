@@ -23,7 +23,7 @@ public class ShowTbCmd implements MySQLCommand {
 
 	private static final int FIELD_COUNT = 1;
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+	private static final ColumnDefPacket[] fields = new ColumnDefPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
 
 	public static final ShowTbCmd INSTANCE = new ShowTbCmd();
@@ -62,7 +62,7 @@ public class ShowTbCmd implements MySQLCommand {
 		header.write(buffer);
 
 		// write fields
-		for (FieldPacket field : fields) {
+		for (ColumnDefPacket field : fields) {
 			field.write(buffer);
 		}
 		// write eof

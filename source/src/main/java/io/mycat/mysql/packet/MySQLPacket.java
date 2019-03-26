@@ -34,7 +34,7 @@ public abstract class MySQLPacket {
 
     public static final int OK_PACKET = 0;
     public static final int ERROR_PACKET = 0xFF;
-    public static final int EOF_PACKET =  0xFE;
+    public static final int EOF_PACKET = 0xFE;
     public static final int NOT_OK_EOF_ERR = Integer.MAX_VALUE;
 
     public int packetLength;
@@ -45,8 +45,8 @@ public abstract class MySQLPacket {
      */
     public abstract int calcPayloadSize();
 
-    public int calcPacketSize(){
-        return calcPayloadSize()+4;
+    public int calcPacketSize() {
+        return calcPayloadSize() + 4;
     }
 
     /**
@@ -65,5 +65,19 @@ public abstract class MySQLPacket {
      *
      * @param buffer
      */
-    public abstract void write(ProxyBuffer buffer);
+    public void write(ProxyBuffer buffer) {
+        buffer.writeFixInt(3, calcPayloadSize());
+        buffer.writeByte(packetId);
+        this.writePayload(buffer);
+    }
+
+    public  void read(ProxyBuffer buffer){
+        packetLength = (int) buffer.readFixInt(3);
+        packetId = buffer.readByte();
+        this.readPayload(buffer);
+    }
+
+    public abstract void writePayload(ProxyBuffer buffer);
+
+    public abstract void readPayload(ProxyBuffer buffer);
 }

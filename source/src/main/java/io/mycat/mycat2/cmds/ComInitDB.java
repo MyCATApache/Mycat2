@@ -46,7 +46,7 @@ public class ComInitDB extends DirectPassthrouhCmd{
             return false;
 		}else if(schemaBean!=null){
             session.setMycatSchema( schemaBean);
-            session.responseOKOrError(OKPacket.OK);
+            session.responseOKOrError(OKPacket.DEFAULT_OK_PACKET);
             return false;
         } else if (SchemaBean.SchemaTypeEnum.DB_IN_ONE_SERVER == session.getMycatSchema().getSchemaType()) {
             DNBean defaultDN = ProxyRuntime.INSTANCE.getConfig().getMycatDataNodeMap()

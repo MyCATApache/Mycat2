@@ -5,6 +5,7 @@ import java.nio.channels.SelectionKey;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import io.mycat.mysql.packet.ColumnDefPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +15,6 @@ import io.mycat.mycat2.MycatConfig;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mysql.Fields;
 import io.mycat.mysql.packet.EOFPacket;
-import io.mycat.mysql.packet.FieldPacket;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
 import io.mycat.mysql.packet.RowDataPacket;
 import io.mycat.proxy.ConfigEnum;
@@ -37,7 +37,7 @@ public class MycatShowConfigsCmd implements MySQLCommand {
     private static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
     private static final int FIELD_COUNT = 4;
     private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-    private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+    private static final ColumnDefPacket[] fields = new ColumnDefPacket[FIELD_COUNT];
     private static final EOFPacket eof = new EOFPacket();
 
     static {
@@ -68,7 +68,7 @@ public class MycatShowConfigsCmd implements MySQLCommand {
         header.write(buffer);
 
         // write fields
-        for (FieldPacket field : fields) {
+        for (ColumnDefPacket field : fields) {
             field.write(buffer);
         }
 

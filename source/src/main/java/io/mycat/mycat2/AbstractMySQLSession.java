@@ -108,7 +108,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     }
 
     /**
-     * 回应客户端（front或Sever）OK 报文。
+     * 回应客户端（front或Sever）DEFAULT_OK_PACKET 报文。
      *
      * @param pkg ，必须要是OK报文或者Err报文
      * @throws IOException

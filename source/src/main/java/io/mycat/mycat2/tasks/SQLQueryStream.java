@@ -5,12 +5,12 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import io.mycat.mysql.packet.ComQueryPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.beans.ColumnMeta;
-import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
@@ -35,7 +35,7 @@ public class SQLQueryStream extends RawSQLQueryResultTaskWrapper {
 
 
     public void fetchSQL(String sql) throws IOException {
-        QueryPacket queryPacket = new QueryPacket();
+        ComQueryPacket queryPacket = new ComQueryPacket();
         queryPacket.packetId = 0;
         queryPacket.sql = sql;
         fetchSQL(queryPacket);

@@ -6,10 +6,10 @@ import io.mycat.mycat2.beans.conf.SchemaBean;
 import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.MysqlNativePasswordPluginUtil;
 import io.mycat.mysql.PayloadType;
+import io.mycat.mysql.packet.AuthPacket;
 import io.mycat.mysql.packet.ErrorPacket;
+import io.mycat.mysql.packet.HandshakePacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.NewAuthPacket;
-import io.mycat.mysql.packet.NewHandshakePacket;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.ErrorCode;
@@ -29,7 +29,7 @@ import java.nio.channels.SocketChannel;
  */
 public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
     private static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
-    private NewHandshakePacket handshake;
+    private HandshakePacket handshake;
     private boolean welcomePkgReceived = false;
     private MySQLMetaBean mySQLMetaBean;
     private SchemaBean schema;
@@ -99,14 +99,14 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
         }
 
         if (!welcomePkgReceived) {
-            handshake = new NewHandshakePacket();
+            handshake = new HandshakePacket();
             handshake.read(this.session.proxyBuffer);
 
             // 设置字符集编码
             // int charsetIndex = (handshake.characterSet & 0xff);
             int charsetIndex = handshake.characterSet;
             // 发送应答报文给后端
-            NewAuthPacket packet = new NewAuthPacket();
+            AuthPacket packet = new AuthPacket();
             packet.packetId = 1;
             packet.capabilities = MySQLSession.getClientCapabilityFlags().value;
             packet.maxPacketSize = 1024 * 1000;
@@ -166,7 +166,7 @@ public class BackendConCreateTask extends AbstractBackendIOTask<MySQLSession> {
 
     }
 
-    public NewHandshakePacket getHandshake() {
+    public HandshakePacket getHandshake() {
         return handshake;
     }
 

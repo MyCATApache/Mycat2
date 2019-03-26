@@ -26,10 +26,9 @@ package io.mycat.mysql.packet;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
- * @author mycat暂时只发现在load data infile时用到
+ * @author mycat暂时只发现在load sql infile时用到
  */
 public class EmptyPacket extends MySQLPacket {
-    public static final byte[] EMPTY = new byte[] { 0, 0, 0,3 };
 
     @Override
     public int calcPayloadSize() {
@@ -41,10 +40,14 @@ public class EmptyPacket extends MySQLPacket {
         return "MySQL Empty Packet";
     }
 
-	@Override
-	public void write(ProxyBuffer buffer) {
-		throw new java.lang.RuntimeException("not implmented ,leader want you ");
-		
-	}
+
+    @Override
+    public void writePayload(ProxyBuffer buffer) {
+    }
+
+    @Override
+    public void readPayload(ProxyBuffer buffer) {
+
+    }
 
 }

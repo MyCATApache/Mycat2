@@ -23,14 +23,14 @@
  */
 package io.mycat.util;
 
+import io.mycat.mysql.packet.ColumnDefPacket;
 import io.mycat.mysql.packet.ErrorPacket;
-import io.mycat.mysql.packet.FieldPacket;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
 
 import java.io.UnsupportedEncodingException;
 
 /**
- * @author mycat
+ * @author mycat cjw
  */
 public class PacketUtil {
     private static final String CODE_PAGE_LATIN1 = "latin1";
@@ -54,18 +54,18 @@ public class PacketUtil {
         }
     }
 
-    public static final FieldPacket getField(String name, String orgName, int type) {
-        FieldPacket packet = new FieldPacket();
-        packet.charsetIndex = CHARSET_LATIN1; //CharsetUtil.getIndex(CODE_PAGE_LATIN1);
+    public static final ColumnDefPacket getField(String name, String orgName, int type) {
+        ColumnDefPacket packet = new ColumnDefPacket();
+        packet.charsetSet = CHARSET_LATIN1; //CharsetUtil.getIndex(CODE_PAGE_LATIN1);
         packet.name = encode(name, CODE_PAGE_LATIN1);
         packet.orgName = encode(orgName, CODE_PAGE_LATIN1);
         packet.type = (byte) type;
         return packet;
     }
 
-    public static final FieldPacket getField(String name, int type) {
-        FieldPacket packet = new FieldPacket();
-        packet.charsetIndex = CHARSET_LATIN1; //CharsetUtil.getIndex(CODE_PAGE_LATIN1);
+    public static final ColumnDefPacket getField(String name, int type) {
+        ColumnDefPacket packet = new ColumnDefPacket();
+        packet.charsetSet = CHARSET_LATIN1; //CharsetUtil.getIndex(CODE_PAGE_LATIN1);
         packet.name = encode(name, CODE_PAGE_LATIN1);
         packet.type = (byte) type;
         return packet;
@@ -79,11 +79,4 @@ public class PacketUtil {
         return error;
     }
 
-//    public static final FieldPacket getField(BinaryPacket src, String fieldName) {
-//        FieldPacket field = new FieldPacket();
-//        field.read(src);
-//        field.name = encode(fieldName, CODE_PAGE_LATIN1);
-//        field.packetLength = field.calcPayloadSize();
-//        return field;
-//    }
 }

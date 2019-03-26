@@ -10,8 +10,8 @@ import io.mycat.mycat2.mpp.RowDataPacketGrouper;
 import io.mycat.mycat2.mpp.RowDataSorter;
 import io.mycat.mycat2.route.RouteResultset;
 import io.mycat.mycat2.route.RouteResultsetNode;
+import io.mycat.mysql.packet.ColumnDefPacket;
 import io.mycat.mysql.packet.EOFPacket;
-import io.mycat.mysql.packet.FieldPacket;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
 import io.mycat.mysql.packet.RowDataPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -174,7 +174,7 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 				if (pack == END_FLAG_PACK) {
 					fieldCount  = fieldCount-shouldRemoveAvgField.size();
 					ResultSetHeaderPacket header = PacketUtil.getHeader(fieldCount);
-					FieldPacket[] fields = new FieldPacket[fieldCount];
+					ColumnDefPacket[] fields = new ColumnDefPacket[fieldCount];
 					EOFPacket eof = new EOFPacket();
 
 					int i = 0;
@@ -199,7 +199,7 @@ public class HeapDataNodeMergeManager extends DataNodeManager {
 					header.write(buffer);
 
 					// write fields
-					for (FieldPacket field : fields) {
+					for (ColumnDefPacket field : fields) {
                         //@todo it must be a bug
                         if (field == null) {
                             continue;
