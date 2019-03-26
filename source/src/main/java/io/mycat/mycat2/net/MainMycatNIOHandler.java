@@ -39,15 +39,12 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
         if (curCmd == null) {
             MySQLPacketInf packetInf = session.curPacketInf;
             session.curPacketInf.proxyBuffer = session.proxyBuffer;
-            packetInf.shift2QueryPacket();
-
             if (!resolveFullPayloadExpendBuffer(session)) {
                 return;
             }
             try {
                 processSQL(session);
-            }
-            catch (RuntimeException e){
+            } catch (RuntimeException e){
                 throw e;
             } finally {
                 packetInf.recycleLargePayloadBuffer();

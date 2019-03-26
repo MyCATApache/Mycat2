@@ -342,12 +342,10 @@ public class MycatSession extends AbstractMySQLSession {
     }
 
     public void responseOKOrError(byte[] pkg) throws IOException {
-        this.curPacketInf.shift2DefRespPacket();
         super.responseOKOrError(pkg);
     }
 
     public void responseOKOrError(MySQLPacket pkg) {
-        this.curPacketInf.shift2DefRespPacket();
         super.responseOKOrError(pkg);
     }
 

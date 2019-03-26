@@ -48,7 +48,6 @@ public class LoadDataCommand implements MySQLCommand {
                     session.giveupOwner(SelectionKey.OP_READ);
                     // 进行传输，并检查返回结果检查 ，当传输完成，就将切换为正常的透传
                     mysqlsession.writeToChannel();
-                    mysqlsession.curPacketInf.shift2RespPacket();
                 }
             });
         } else {

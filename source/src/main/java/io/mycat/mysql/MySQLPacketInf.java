@@ -27,6 +27,10 @@ public class MySQLPacketInf {
     public ByteBuffer largePayload;
     public BufferPool bufferPool;
 
+    public void useDirectPassthrouhBuffer(){
+        resolver.state = ComQueryState.FIRST_PACKET;
+    }
+
     public static boolean resolveFullPayloadExpendBuffer(MycatSession session) {
         MySQLPacketInf inf = session.curPacketInf;
         inf.resolver.resolveMySQLPacket(inf);
@@ -122,7 +126,7 @@ public class MySQLPacketInf {
     }
 
     public int getCurrPacketId() {
-        return resolver.nextPacketId - 1;
+        return resolver.packetId - 1;
     }
 
     public PayloadType resolveCrossBufferMySQLPayload(ProxyBuffer proxyBuffer) {
@@ -135,21 +139,6 @@ public class MySQLPacketInf {
         return resolver.resolveFullPayload(this);
     }
 
-    public void shift2DefRespPacket() {
-        resolver.shift2DefRespPacket();
-    }
-
-    public void shift2DefQueryPacket() {
-        resolver.shift2DefQueryPacket();
-    }
-
-    public void shift2QueryPacket() {
-        resolver.shift2QueryPacket();
-    }
-
-    public void shift2RespPacket() {
-        resolver.shift2RespPacket();
-    }
 
     public boolean needContinueOnReadingRequest() {
         return this.resolver.needContinueOnReadingRequest();

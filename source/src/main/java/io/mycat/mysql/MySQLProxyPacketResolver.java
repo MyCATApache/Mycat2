@@ -28,7 +28,7 @@ public class MySQLProxyPacketResolver {
     public int prepareParamNum = 0;
     public long columnCount = 0;
     public int serverStatus = 0;
-    public byte nextPacketId = 0;
+    public byte packetId = 0;
     public ComQueryState state = ComQueryState.DO_NOT;
     public final boolean CLIENT_DEPRECATE_EOF;
     public MySQLPayloadType mysqlPacketType = MySQLPayloadType.UNKNOWN;
@@ -45,30 +45,6 @@ public class MySQLProxyPacketResolver {
         this.CLIENT_DEPRECATE_EOF = CLIENT_DEPRECATE_EOF;
     }
 
-    public void shift2DefRespPacket() {
-        this.state = ComQueryState.COMMAND_END;
-        this.serverStatus = 0;
-    }
-
-    public void shift2DefQueryPacket() {
-        this.state = ComQueryState.FIRST_PACKET;
-        this.serverStatus = 0;
-        this.nextPacketId = 0;
-    }
-
-    public void shift2DoNot() {
-        this.state = ComQueryState.DO_NOT;
-    }
-
-    public void shift2QueryPacket() {
-        this.state = ComQueryState.QUERY_PACKET;
-        this.nextPacketId = 0;
-    }
-
-    public void shift2RespPacket() {
-        this.state = ComQueryState.FIRST_PACKET;
-        this.nextPacketId = 1;
-    }
 
     public PayloadType resolveFullPayload(MySQLPacketInf packetInf) {
         return resolveFullPayload(packetInf, packetInf.proxyBuffer);
@@ -164,7 +140,7 @@ public class MySQLProxyPacketResolver {
                 if (totalLen > 3) {//totalLen >= 4
                     hasResolvePayloadType = false;
                     byte packetId = buffer.get(offset + 3);
-                    checkPacketId(packetId);
+                    checkRequestStart(packetId);
                     int payloadLength = ParseUtil.getPayloadLength(buffer, offset);
                     boolean isCrossPacket = this.crossPacket;
                     this.crossPacket = payloadLength == 0xffffff;
@@ -286,14 +262,26 @@ public class MySQLProxyPacketResolver {
             this.state = ComQueryState.RESULTSET_ROW_END;
         }
     }
+    private void checkRequestStart(byte packetId) {
+        if (packetId == 0){
+           this.state = ComQueryState.QUERY_PACKET;
+           if (logger.isDebugEnabled()){
+               logger.debug("because packetId is "+packetId+" so start QUERY_PACKET");
+           }
+            this.packetId = 1;
+        }
+    }
 
     private void checkPacketId(byte packetId) {
         if (this.state != ComQueryState.DO_NOT) {
-            if (nextPacketId != packetId) {
-//                throw new RuntimeException("packetId should be " + nextPacketId + " that is not match " + packetId);
+            if (this.packetId != packetId) {
+//                throw new RuntimeException("packetId should be " + packetId + " that is not match " + packetId);
             } else {
             }
-            ++nextPacketId;
+            ++this.packetId;
+        }
+        if (packetId == 0){
+            System.out.println("-------------------------------------------------------------------------");;
         }
     }
 

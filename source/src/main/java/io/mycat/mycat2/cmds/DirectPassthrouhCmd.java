@@ -80,7 +80,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
         curBuffer.flip();
 		session.giveupOwner(SelectionKey.OP_WRITE);
 		curBackend.writeToChannel();
-		curBackend.curPacketInf.shift2RespPacket();
+		curBackend.curPacketInf.useDirectPassthrouhBuffer();
 		curBackend.curPacketInf.proxyBuffer = curBackend.proxyBuffer;
 	}
 
@@ -96,7 +96,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		buffer.flip();
 		if (packetInf.isResponseFinished()) {
 			mycatSession.takeOwner(SelectionKey.OP_READ);
-			mySQLSession.curPacketInf.shift2DefRespPacket();
 			mySQLSession.setIdle(!packetInf.isInteractive());
 		} else {
 			mycatSession.takeOwner(SelectionKey.OP_WRITE);
@@ -121,7 +120,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		else {
 			mycatSession.proxyBuffer.flip();
 			mycatSession.takeOwner(SelectionKey.OP_READ);
-			mycatSession.curPacketInf.shift2QueryPacket();
 			mycatSession.proxyBuffer.reset();
 			return true;
 		}
@@ -134,7 +132,6 @@ public class DirectPassthrouhCmd implements MySQLCommand {
 		if (mycatPacketInf.needContinueOnReadingRequest()) {
 			mycatSession.proxyBuffer.flip();
 			mycatSession.takeOwner(SelectionKey.OP_READ);
-			mycatPacketInf.shift2QueryPacket();
 			return true;
 		}
 		// 绝大部分情况下，前端把数据写完后端发送出去后，就等待后端返回数据了，
