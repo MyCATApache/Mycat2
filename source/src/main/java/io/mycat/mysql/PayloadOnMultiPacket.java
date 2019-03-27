@@ -1,63 +1,50 @@
 package io.mycat.mysql;
 
 import io.mycat.mysql.packet.PacketSplitter;
-import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.proxy.ProxyBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.MappedByteBuffer;
 
 /**
- *
+ * chen jun wen
+ * 294712221@qq.com
  */
 public class PayloadOnMultiPacket {
-    BufferPool bufferPool;
-    List<ByteBuffer> bufferList = new ArrayList<>();
-    private final int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
-    ByteBuffer currentBuffer;
-    int size = 0;
-    int index = 0;
-    int packetId = 0;
-    int rest;
     PacketSplitter packetSplitter = new PacketSplitter();
+    ByteBuffer byteBuffer;
+    private byte packetId;
 
-    public void add(byte b) {
-        if (bufferList.isEmpty()) {
-            currentBuffer = bufferList.set(0, bufferPool.allocate(MAX_PACKET_SIZE));
-        } else if (!currentBuffer.hasRemaining()) {
-            currentBuffer = bufferList.set(bufferList.size(), bufferPool.allocate(MAX_PACKET_SIZE));
-        }
-        currentBuffer.put(b);
-        size++;
+    public PayloadOnMultiPacket(ByteBuffer byteBuffer, byte packetId) {
+        this.byteBuffer = byteBuffer;
+        this.packetId = packetId;
+        packetSplitter.init(byteBuffer.limit());
+    }
+
+    public boolean hasNext() {
+        return packetSplitter.nextPacket();
+    }
+
+    public void next(ProxyBuffer proxyBuffer) {
+        proxyBuffer.writeFixInt(3, packetSplitter.getPacketLen());
+        proxyBuffer.writeFixInt(1, packetId++);
+        byteBuffer.position(packetSplitter.getOffset());
+        byteBuffer.limit(packetSplitter.getOffset() + packetSplitter.getPacketLen());
+        proxyBuffer.getBuffer().put(byteBuffer);
+        proxyBuffer.writeIndex += packetSplitter.getPacketLen();
     }
 
 
-    public PayloadOnMultiPacket(BufferPool bufferPool,int size) {
-        this.bufferPool = bufferPool;
-        this.size = size;
-        packetSplitter.init(size);
+    public PacketSplitter getPacketSplitter() {
+        return packetSplitter;
     }
 
-
-    public byte get() {
-        if (bufferList.isEmpty()) {
-            throw new RuntimeException("");
-        } else if (currentBuffer == null) {
-            index = 0;
-            currentBuffer = bufferList.get(0);
-            currentBuffer.position(0);
-            return currentBuffer.get();
-        } else if (currentBuffer.hasRemaining()) {
-            return currentBuffer.get();
-        } else {
-            currentBuffer = bufferList.get(++index);
-            currentBuffer.position(0);
-            return get();
-        }
+    public ByteBuffer getByteBuffer() {
+        return byteBuffer;
     }
 
-
-    public int length() {
-        return size;
+    public byte getPacketId() {
+        return packetId;
     }
+
 }
