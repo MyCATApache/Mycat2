@@ -3,7 +3,7 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 
 import javax.tools.JavaCompiler;
 import javax.tools.StandardJavaFileManager;
@@ -253,7 +253,7 @@ public class DynamicAnnotationUtil {
         BufferSQLParser sqlParser = new BufferSQLParser();
         sqlParser.parse(bytes, context);
         HashArray array = context.getHashArray();
-        ByteArrayInterface bi = context.getBuffer();
+        ByteArrayView bi = context.getBuffer();
         int count = array.getCount();
         String[] res = new String[count];
         for (int i = 0; i < count; i++) {

@@ -5,7 +5,7 @@ package io.mycat.mycat2.sqlparser;
 //import com.alibaba.druid.sql.ast.SQLStatement;
 //import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
 
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.DefaultByteArray;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.profile.GCProfiler;
@@ -33,7 +33,7 @@ public class SQLBenchmark {
     BufferSQLContext newSQLContext2;
     byte[] srcBytes;
     String src;
-    ByteArrayInterface byteArrayInterface;
+    ByteArrayView byteArrayView;
     long[] hashArray = new long[128];
 
     //run
@@ -52,7 +52,7 @@ public class SQLBenchmark {
     public void init() {
         src = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));";
         srcBytes = src.getBytes(StandardCharsets.UTF_8);//20794
-        byteArrayInterface=new DefaultByteArray(srcBytes);
+        byteArrayView =new DefaultByteArray(srcBytes);
 //        parser = new SQLParser();
 //        context = new SQLContext();
         newSQLParser = new NewSQLParser();
@@ -72,7 +72,7 @@ public class SQLBenchmark {
 
 //    @Benchmark
 //    public void NewSqQLParserWithByteArrayInterfaceTest() {
-//        newSQLParser2.parse(byteArrayInterface, newSQLContext2);
+//        newSQLParser2.parse(byteArrayView, newSQLContext2);
 //    }
 
     @Benchmark

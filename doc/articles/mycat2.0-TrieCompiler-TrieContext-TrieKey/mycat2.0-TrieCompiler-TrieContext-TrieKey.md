@@ -152,7 +152,7 @@ DynamicAnnotationManager 在实例化需要读取annotations.yml,actions.yml ,�
 
 2. 插入操作实现. 
 
-	mycat中关于trie树实现 是在io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieCompiler#insertNode(BufferSQLContext, TrieCompiler, String, int)	 中实现的.代码如下:
+	mycat中关于trie树实现 是在io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieCompiler#insertNode(BufferSQLContext, TrieCompiler, String, int)	 中实现的.代码如下:
 	
 	```
 	 public static boolean insertNode(BufferSQLContext context, TrieCompiler head, String runnable, int backPos) {

@@ -1,7 +1,7 @@
 package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteBufferArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 import junit.framework.TestCase;
@@ -17,7 +17,7 @@ import java.util.stream.IntStream;
 /**
  * Created by Kaiz on 2017/1/22.
  */
-public class SQLParserWithByteArrayInterfaceTest extends TestCase {
+public class SQLParserWithByteArrayViewTest extends TestCase {
     final static BiConsumer<Object[], Object[]> assertEquals = (x, y) -> assertEquals(Arrays.toString(x), Arrays.toString(y));
     BufferSQLContext context;
     //    SQLParser parser;
@@ -784,7 +784,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     @Test
     public void testHelp2() {
         String sql = "help load data";
-        ByteArrayInterface src = new ByteBufferArray(sql.getBytes());
+        ByteArrayView src = new ByteBufferArray(sql.getBytes());
         parser.parse(src, context);
         assertEquals(BufferSQLContext.HELP_SQL, context.getSQLType());
         assertEquals(TokenHash.HELP, context.getTokenHash(0, 0));
@@ -795,7 +795,7 @@ public class SQLParserWithByteArrayInterfaceTest extends TestCase {
     public void testSimpleOrderby() {
 //        String sql = "select id1, id2, id3 from tbl_A order by 1;";
         String sql = "select * from message order by id desc";
-        ByteArrayInterface src = new ByteBufferArray(sql.getBytes());
+        ByteArrayView src = new ByteBufferArray(sql.getBytes());
         parser.parse(src, context);
         assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
     }

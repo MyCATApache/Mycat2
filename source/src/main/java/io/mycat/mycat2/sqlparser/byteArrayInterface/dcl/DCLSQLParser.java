@@ -3,7 +3,7 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dcl;
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.TokenHash;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 
@@ -15,7 +15,7 @@ public class DCLSQLParser {
     /**
      * 前置条件 当前pos指向grant的下一个token
      */
-    public static int pickGrant(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickGrant(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.PROXY == longHash) {
             TokenizerUtil.debug(pos, context);
@@ -25,7 +25,7 @@ public class DCLSQLParser {
         }
     }
 
-    public static int pickRevoke(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickRevoke(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.PROXY == longHash) {
             TokenizerUtil.debug(pos, context);
@@ -51,7 +51,7 @@ public class DCLSQLParser {
      * TO user [, user] ...
      * [WITH GRANT OPTION]
      **/
-    public static int pickGrantProxy(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickGrantProxy(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.ON == longHash) {
             TokenizerUtil.debug(pos, context);
@@ -106,7 +106,7 @@ public class DCLSQLParser {
      * [WITH {GRANT OPTION | resource_option} ...]
      * todo 检查一下前置条件
      */
-    public static int pickGrantPrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickGrantPrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash;
         pos = pickPrivTypeWithColumnList(pos, arrayCount, context, hashArray, sql);
         longHash = hashArray.getHash(pos++);
@@ -147,7 +147,7 @@ public class DCLSQLParser {
      * }
      * TO user [auth_option] [, user [auth_option]] ...
      */
-    public static int pickToUserAuthOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickToUserAuthOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         pos++;
         int type;
         do {
@@ -167,7 +167,7 @@ public class DCLSQLParser {
     /**
      * [WITH {GRANT OPTION | resource_option} ...]
      */
-    public static int pickWithGrantOptionResourceOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickWithGrantOptionResourceOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         TokenizerUtil.debug(pos, context);
         long longHash = hashArray.getHash(pos);
         if (TokenHash.GRANT == longHash) {
@@ -191,7 +191,7 @@ public class DCLSQLParser {
         return pos;
     }
 
-    public static int pickRequire(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickRequire(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.NONE == longHash) {
             TokenizerUtil.debug(pos, context);
@@ -223,7 +223,7 @@ public class DCLSQLParser {
         return pos;
     }
 
-    public static int pickPrivTypeWithColumnList(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickPrivTypeWithColumnList(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         while (true) {
             pos = DCLSQLParserHelper.pickPrivType(pos, arrayCount, context, hashArray, sql);
             //todo  捕获 priv_type
@@ -258,7 +258,7 @@ public class DCLSQLParser {
      * REVOKE PROXY ON user
      * FROM user [, user] ...
      */
-    public static int pickRevokeProxy(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickRevokeProxy(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.ON == longHash) {
             TokenizerUtil.debug(()->"ON");
@@ -284,7 +284,7 @@ public class DCLSQLParser {
      REVOKE ALL [PRIVILEGES], GRANT OPTION
      FROM user [, user] ...
      **/
-    public static int pickRevokeAll(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickRevokeAll(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.PRIVILEGES == longHash) {
             TokenizerUtil.debug(pos,context);
@@ -326,7 +326,7 @@ public class DCLSQLParser {
      * ON [object_type] priv_level
      * FROM user [, user] ...
      ***/
-    public static int pickRevokePrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickRevokePrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash;
         pos = pickPrivTypeWithColumnList(pos, arrayCount, context, hashArray, sql);
         longHash = hashArray.getHash(pos++);

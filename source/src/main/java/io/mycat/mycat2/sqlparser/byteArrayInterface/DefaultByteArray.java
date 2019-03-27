@@ -3,7 +3,7 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface;
 /**
  * Created by jamie on 2017/8/29.
  */
-public class DefaultByteArray implements ByteArrayInterface {
+public class DefaultByteArray implements ByteArrayView {
     byte[] src;
     int offset = 0;
     @Override

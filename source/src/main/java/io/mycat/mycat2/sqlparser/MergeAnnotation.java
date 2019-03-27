@@ -1,7 +1,7 @@
 package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -109,9 +109,9 @@ public class MergeAnnotation {
     }
 
     public String getOrderColumn(int index) {
-        ByteArrayInterface byteArrayInterface = context.getBuffer();
+        ByteArrayView byteArrayView = context.getBuffer();
         HashArray hashArray = context.getHashArray();
-        return byteArrayInterface.getStringByHashArray(this.orderColumns.get(index), hashArray);
+        return byteArrayView.getStringByHashArray(this.orderColumns.get(index), hashArray);
     }
 
     public OrderType getOrderType(int index) {
@@ -167,19 +167,19 @@ public class MergeAnnotation {
     }
 
     private String[] map(List<Integer> list) {
-        ByteArrayInterface byteArrayInterface = context.getBuffer();
+        ByteArrayView byteArrayView = context.getBuffer();
         HashArray hashArray = context.getHashArray();
         int size = list.size();
         String[] res = new String[size];
         for (int i = 0; i < size; i++) {
-            res[i] = byteArrayInterface.getStringByHashArray(list.get(i), hashArray);
+            res[i] = byteArrayView.getStringByHashArray(list.get(i), hashArray);
         }
         return res;
     }
 
     private String get(int pos) {
-        ByteArrayInterface byteArrayInterface = context.getBuffer();
-        return byteArrayInterface.getStringByHashArray(pos, context.getHashArray());
+        ByteArrayView byteArrayView = context.getBuffer();
+        return byteArrayView.getStringByHashArray(pos, context.getHashArray());
     }
 
     @Override

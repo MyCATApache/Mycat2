@@ -2,7 +2,7 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl;
 
 import io.mycat.mycat2.sqlparser.BufferSQLContext;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 
 import java.util.*;
@@ -24,7 +24,7 @@ public class TrieCompiler {
 
     public static boolean insertNode(BufferSQLContext context, TrieCompiler head, String runnable, int backPos) {
         HashArray array = context.getHashArray();
-        ByteArrayInterface byteArray = context.getBuffer();
+        ByteArrayView byteArray = context.getBuffer();
         if (array == null || array.getCount() == 0)
             return false;
         int i = 0;
@@ -92,7 +92,7 @@ public class TrieCompiler {
                 "\n" +
                 "import io.mycat.mycat2.sqlparser.BufferSQLContext;\n" +
                 "import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;\n" +
-                "import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;" +
+                "import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;" +
                 "public class " +className+
                 " implements DynamicAnnotationMatch {\n" +
                 "    public final void pick(int i, final int arrayCount, BufferSQLContext context, HashArray array) {\n" +

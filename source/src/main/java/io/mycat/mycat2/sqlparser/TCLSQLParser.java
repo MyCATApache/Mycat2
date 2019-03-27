@@ -2,7 +2,7 @@ package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.Tokenizer;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 import org.slf4j.Logger;
@@ -75,7 +75,7 @@ public class TCLSQLParser {
         return pos;
     }
 
-    public static int pickSetAutocommit(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickSetAutocommit(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         debug(() -> "AUTOCOMMIT");
         context.setSQLType(BufferSQLContext.SET_AUTOCOMMIT_SQL);
         if (hashArray.getType(pos) == Tokenizer2.EQUAL) {
@@ -203,7 +203,7 @@ public class TCLSQLParser {
         return pos;
     }
 
-    public static int pickSetAutocommitAndSetTransaction(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickSetAutocommitAndSetTransaction(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         TokenizerUtil.debug(() -> "SET");
         long hash = hashArray.getHash(pos);
         if (hash == TokenHash.AUTOCOMMIT) {
