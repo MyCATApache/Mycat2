@@ -4,6 +4,7 @@ import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,15 +26,17 @@ public class MySQLPacketInf {
     public ProxyBuffer proxyBuffer;
     public MySQLProxyPacketResolver resolver = new MySQLProxyPacketResolver();
     public ByteBuffer largePayload;
+    public final PacketListToPayloadReader payloadReader = new PacketListToPayloadReader();
+    public final MultiPacketWriter multiPacketWriter = new MultiPacketWriter();
     public int largePayloadStartIndex;
     public int largePayloadEndIndex;
     public BufferPool bufferPool;
 
-    public void useDirectPassthrouhBuffer(){
+    public void useDirectPassthrouhBuffer() {
         resolver.state = ComQueryState.FIRST_PACKET;
     }
 
-    public static boolean resolveFullPayloadExpendBuffer(MycatSession session) {
+    public static boolean readFully(MycatSession session) {
         session.curPacketInf.proxyBuffer = session.proxyBuffer;
         MySQLPacketInf inf = session.curPacketInf;
         inf.resolver.resolveMySQLPacket(inf);
@@ -43,43 +46,12 @@ public class MySQLPacketInf {
         while (true) {
             switch (inf.packetType) {
                 case FULL: {
-                    if (inf.resolver.crossPacket) {
-                        if (inf.largePayload == null) {//判断是否第一个报文,所以一定要回收inf.largeBuffer表示结束
-                            inf.bufferPool = session.bufPool;
-                            inf.largePayload = session.bufPool.allocate(length);
-                        } else if ((inf.largePayload.limit() - inf.largePayload.position()) <= (length + inf.largePayload.position())) {
-                            inf.bufferPool = session.bufPool;
-                            inf.largePayload = session.bufPool.expandBuffer(inf.largePayload, length);
-                        }
-                        inf.largePayload.clear();
-                        ByteBuffer source = inf.proxyBuffer.getBuffer();
-                        int orgPosition = source.position();
-                        int orgLimit = source.limit();
-                        source.position(startPos).limit(endPos);
-                        inf.largePayload.put(source);
-                        source.position(orgPosition).limit(orgLimit);
-                        inf.markRead();
-                        return false;
-                    } else {
-                        if (inf.largePayload == null) {//判断是否第一个报文
-                            //如果第一个报文满足条件则直接使用proxybuffer的bytebuffer作为报文内容,减少拷贝
-                            inf.largePayload = inf.proxyBuffer.getBuffer();
-                            session.curPacketInf.largePayloadStartIndex = startPos;
-                            session.curPacketInf.largePayloadEndIndex = endPos;
-                            inf.markRead();
-                            return true;
-                        } else {
-                            ByteBuffer source = inf.proxyBuffer.getBuffer();
-                            source.position(startPos).limit(endPos);
-                            inf.largePayload.put(source);
-                            int finalLength = inf.largePayload.position();
-                            session.curPacketInf.largePayloadStartIndex = 0;
-                            session.curPacketInf.largePayloadEndIndex = finalLength;
-                            inf.markRead();
-                            return true;
-                        }
-
+                    inf.payloadReader.addBuffer(inf.proxyBuffer);
+                    boolean b = inf.resolver.crossPacket;
+                    if (b){
+                        inf.proxyBuffer.resetBuffer(inf.bufferPool.allocate());
                     }
+                    return !b;
                 }
                 default:
                     session.ensureFreeSpaceOfReadBuffer();
@@ -88,19 +60,20 @@ public class MySQLPacketInf {
         }
 
     }
+
     public static MySQLPacketInf directPassthrouhBuffer(MySQLSession mySQLSession) {
         MySQLPacketInf packetInf = mySQLSession.curPacketInf;
         packetInf.proxyBuffer = mySQLSession.proxyBuffer;
         boolean loop = true;
-        while (	loop) {
+        while (loop) {
             PayloadType payloadType = packetInf.resolveCrossBufferMySQLPayload(mySQLSession.proxyBuffer);
             switch (payloadType) {
                 case SHORT_PAYLOAD:
                 case LONG_PAYLOAD:
                 case REST_CROSS_PAYLOAD:
                     loop = false;
-                    if (packetInf.resolver.state.isNeedFull()){
-                        MySQLProxyPacketResolver.simpleAdjustCapacityProxybuffer(packetInf.proxyBuffer,packetInf.endPos+packetInf.pkgLength);
+                    if (packetInf.resolver.state.isNeedFull()&&packetInf.needExpandBuffer()) {
+                        MySQLProxyPacketResolver.simpleAdjustCapacityProxybuffer(packetInf.proxyBuffer, packetInf.endPos + packetInf.pkgLength);
                     }
                     break;
                 case FULL_PAYLOAD:
@@ -111,6 +84,7 @@ public class MySQLPacketInf {
         }
         return packetInf;
     }
+
     public void recycleLargePayloadBuffer() {
         if (bufferPool != null && largePayload != null) {
             bufferPool.recycle(largePayload);
