@@ -17,7 +17,7 @@ import io.mycat.proxy.ProxyBuffer;
 public class TokenizerUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(TokenizerUtil.class);
 
-    public static int pickNumber(int pos, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickNumber(int pos, HashArray hashArray, ByteArrayView sql) {
         int value = 0;
         int start = hashArray.getPos(pos);
         int end = start + hashArray.getSize(pos);
@@ -137,7 +137,7 @@ public class TokenizerUtil {
     /**
      * Account name syntax is 'user_name'@'host_name'.
      */
-    public static int pickSpecifyingAccountNames(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickSpecifyingAccountNames(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         TokenizerUtil.debug(pos,context);
         //todo 捕获 'user_name'
         ++pos;
@@ -153,7 +153,7 @@ public class TokenizerUtil {
         return pos;
     }
 
-    public static int pickColumnList(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickColumnList(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         //todo 捕获 'column'
         TokenizerUtil.debug(pos,context);
         ++pos;

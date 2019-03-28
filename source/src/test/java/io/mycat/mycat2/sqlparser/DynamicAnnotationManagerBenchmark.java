@@ -1,8 +1,8 @@
 //package io.mycat.mycat2.sqlparser;
 //
-//import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.*;
-//import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationKeyRoute;
-//import io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.SQLType;
+//import io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.*;
+//import io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.DynamicAnnotationKeyRoute;
+//import io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.SQLType;
 //import junit.framework.TestCase;
 //import org.openjdk.jmh.annotations.*;
 //import org.openjdk.jmh.profile.GCProfiler;

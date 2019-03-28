@@ -26,32 +26,16 @@ package io.mycat.mysql.packet;
 import io.mycat.proxy.ProxyBuffer;
 
 /**
- * @author wuzhihui
+ * @author wuzhihui cjw
  */
 public abstract class MySQLPacket {
 
     public static int packetHeaderSize = 4;
 
-    // 后端报文类型
-//    public static final byte REQUEST_FILE_FIELD_COUNT = (byte) 251;
     public static final int OK_PACKET = 0;
     public static final int ERROR_PACKET = 0xFF;
-    public static final int EOF_PACKET =  0xFE;
+    public static final int EOF_PACKET = 0xFE;
     public static final int NOT_OK_EOF_ERR = Integer.MAX_VALUE;
-
-//	public static final byte FIELD_EOF_PACKET = (byte) 0xFE;
-//	public static final byte ROW_EOF_PACKET = (byte) 0xFE;
-//	public static final byte AUTH_PACKET = 1;
-//	public static final byte QUIT_PACKET = 2;
-    /**
-     * Mycat heartbeat
-     */
-    public static final byte COM_HEARTBEAT = 64;
-
-    /**
-     * 此用来标识当前为查询的响应包，mysql本身无此定义，但由于查询结果集无法统一标识，在程序中做出此标识
-     */
-    public static final int RESULTSET_PACKET = 12032;
 
     public int packetLength;
     public byte packetId;
@@ -59,7 +43,11 @@ public abstract class MySQLPacket {
     /**
      * 计算数据包大小，不包含包头长度。
      */
-    public abstract int calcPacketSize();
+    public abstract int calcPayloadSize();
+
+    public int calcPacketSize() {
+        return calcPayloadSize() + 4;
+    }
 
     /**
      * 取得数据包信息
@@ -77,5 +65,19 @@ public abstract class MySQLPacket {
      *
      * @param buffer
      */
-    public abstract void write(ProxyBuffer buffer);
+    public void write(ProxyBuffer buffer) {
+        buffer.writeFixInt(3, calcPayloadSize());
+        buffer.writeByte(packetId);
+        this.writePayload(buffer);
+    }
+
+    public  void read(ProxyBuffer buffer){
+        packetLength = (int) buffer.readFixInt(3);
+        packetId = buffer.readByte();
+        this.readPayload(buffer);
+    }
+
+    public abstract void writePayload(ProxyBuffer buffer);
+
+    public abstract void readPayload(ProxyBuffer buffer);
 }

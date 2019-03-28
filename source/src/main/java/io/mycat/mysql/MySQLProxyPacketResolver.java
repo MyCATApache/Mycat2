@@ -7,6 +7,7 @@ import io.mycat.mysql.packet.EOFPacket;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.mysql.packet.OKPacket;
 import io.mycat.proxy.ProxyBuffer;
+import io.mycat.proxy.ProxyReactorThread;
 import io.mycat.util.ParseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +28,13 @@ public class MySQLProxyPacketResolver {
     public int prepareParamNum = 0;
     public long columnCount = 0;
     public int serverStatus = 0;
-    public byte nextPacketId = 0;
+    public byte packetId = 0;
     public ComQueryState state = ComQueryState.DO_NOT;
     public final boolean CLIENT_DEPRECATE_EOF;
     public MySQLPayloadType mysqlPacketType = MySQLPayloadType.UNKNOWN;
     public boolean crossPacket = false;
     public final CapabilityFlags capabilityFlags;
+    private boolean hasResolvePayloadType = false;
 
     public MySQLProxyPacketResolver() {
         this(MySQLSession.getClientCapabilityFlags(), Boolean.FALSE);
@@ -43,31 +45,43 @@ public class MySQLProxyPacketResolver {
         this.CLIENT_DEPRECATE_EOF = CLIENT_DEPRECATE_EOF;
     }
 
-    public void shift2DefRespPacket() {
-        this.state = ComQueryState.COMMAND_END;
-        this.serverStatus = 0;
-    }
-    public void shift2DefQueryPacket() {
-        this.state = ComQueryState.FIRST_PACKET;
-        this.serverStatus = 0;
-        this.nextPacketId = 0;
-    }
-    public void shift2DoNot() {
-        this.state = ComQueryState.DO_NOT;
-    }
-
-    public void shift2QueryPacket() {
-        this.state = ComQueryState.QUERY_PACKET;
-        this.nextPacketId = 0;
-    }
-
-    public void shift2RespPacket() {
-        this.state = ComQueryState.FIRST_PACKET;
-        this.nextPacketId = 1;
-    }
 
     public PayloadType resolveFullPayload(MySQLPacketInf packetInf) {
         return resolveFullPayload(packetInf, packetInf.proxyBuffer);
+    }
+
+    public static boolean simpleJudgeFullPacket(ProxyBuffer proxyBuffer) {
+        int offset = proxyBuffer.readIndex;   // 读取的偏移位置
+        int limit = proxyBuffer.writeIndex;   // 读取的总长度
+        int totalLen = limit - offset;      // 读取当前的总长度
+        if (totalLen < 4) {
+            return false;
+        }
+        int payloadLength = ParseUtil.getPayloadLength(proxyBuffer.getBuffer(), offset);
+        return totalLen >= payloadLength + 4;
+    }
+
+    public static boolean needExpandCapacity(ProxyBuffer proxyBuffer) {
+        ByteBuffer buffer = proxyBuffer.getBuffer();
+        return buffer.capacity() == buffer.position();
+    }
+
+    public static void simpleAdjustCapacityProxybuffer(ProxyBuffer proxyBuffer, int len) {
+        int offset = proxyBuffer.readIndex;   // 读取的偏移位置
+        int limit = proxyBuffer.writeIndex;   // 读取的总长度
+        int totalLen = limit - offset;      // 读取当前的总长度
+        ByteBuffer buffer = proxyBuffer.getBuffer();
+        ProxyReactorThread proxyReactorThread = (ProxyReactorThread) Thread.currentThread();
+        ByteBuffer allocate = proxyReactorThread.getBufPool().allocate(len);
+        int olimit = buffer.limit();
+        int oPosition = buffer.position();
+        buffer.position(0);
+        buffer.limit(buffer.capacity());
+        allocate.put(buffer);
+        proxyReactorThread.getBufPool().recycle(buffer);
+        allocate.position(oPosition);
+        allocate.limit(len);
+        proxyBuffer.setBuffer(allocate);
     }
 
     public PayloadType resolveFullPayload(MySQLPacketInf packetInf, ProxyBuffer proxyBuffer) {
@@ -83,23 +97,29 @@ public class MySQLProxyPacketResolver {
         return resolveCrossBufferFullPayload(packetInf, packetInf.proxyBuffer);
     }
 
+    /**
+     * 本函数可以有返回布尔值
+     * @param packetInf
+     * @param proxyBuffer
+     * @return
+     */
     public PayloadType resolveCrossBufferFullPayload(MySQLPacketInf packetInf, ProxyBuffer proxyBuffer) {
         boolean crossPacket = this.crossPacket;
         PacketType type = resolveMySQLPacket(packetInf, proxyBuffer);
         if (!this.crossPacket && (type == PacketType.FINISHED_CROSS || type == PacketType.FULL)) {
             packetInf.markRead();
-            return PayloadType.FINISHED_CROSS_PAYLOAD;
+            return PayloadType.FINISHED_CROSS_PAYLOAD;//true
         } else if (type == PacketType.LONG_HALF) {
             PayloadType payloadType = crossBuffer(packetInf) || crossPacket ? PayloadType.REST_CROSS_PAYLOAD : PayloadType.SHORT_PAYLOAD;
-            if (packetInf.packetType == PacketType.REST_CROSS){
+            if (packetInf.packetType == PacketType.REST_CROSS) {
                 packetInf.markRead();
             }
-            return payloadType;
+            return payloadType;//false
         } else if (type == PacketType.SHORT_HALF) {
-            return PayloadType.SHORT_PAYLOAD;
+            return PayloadType.SHORT_PAYLOAD;//false
         } else {
             packetInf.markRead();
-            return PayloadType.REST_CROSS_PAYLOAD;
+            return PayloadType.REST_CROSS_PAYLOAD;//false
         }
     }
 
@@ -118,8 +138,9 @@ public class MySQLProxyPacketResolver {
             case FULL:
             case FINISHED_CROSS: {
                 if (totalLen > 3) {//totalLen >= 4
+                    hasResolvePayloadType = false;
                     byte packetId = buffer.get(offset + 3);
-                    checkPacketId(packetId);
+                    checkRequestStart(packetId);
                     int payloadLength = ParseUtil.getPayloadLength(buffer, offset);
                     boolean isCrossPacket = this.crossPacket;
                     this.crossPacket = payloadLength == 0xffffff;
@@ -183,12 +204,14 @@ public class MySQLProxyPacketResolver {
 
     public boolean isResponseFinished() {
         return this.state == ComQueryState.COMMAND_END
-                ||this.state == ComQueryState.LOCAL_INFILE_FILE_CONTENT;
+                || this.state == ComQueryState.LOCAL_INFILE_FILE_CONTENT;
     }
+
     public boolean needContinueOnReadingRequest() {
         return this.sqlType == COM_STMT_CLOSE
-                ||this.state == ComQueryState.LOCAL_INFILE_FILE_CONTENT;
+                || this.state == ComQueryState.LOCAL_INFILE_FILE_CONTENT;
     }
+
     public boolean isInteractive() {
         return this.state != ComQueryState.COMMAND_END || JudgeUtil.hasTrans(serverStatus) || JudgeUtil.hasFatch(serverStatus);
     }
@@ -239,27 +262,56 @@ public class MySQLProxyPacketResolver {
             this.state = ComQueryState.RESULTSET_ROW_END;
         }
     }
+    private void checkRequestStart(byte packetId) {
+        if (packetId == 0){
+           this.state = ComQueryState.QUERY_PACKET;
+           if (logger.isDebugEnabled()){
+               logger.debug("because packetId is "+packetId+" so start QUERY_PACKET");
+           }
+            this.packetId = 1;
+        }
+    }
 
     private void checkPacketId(byte packetId) {
         if (this.state != ComQueryState.DO_NOT) {
-            if (nextPacketId != packetId){
-//                throw new RuntimeException("packetId should be " + nextPacketId + " that is not match " + packetId);
-            }else {
+            if (this.packetId != packetId) {
+//                throw new RuntimeException("packetId should be " + packetId + " that is not match " + packetId);
+            } else {
             }
-            ++nextPacketId;
+            ++this.packetId;
+        }
+        if (packetId == 0){
+            System.out.println("-------------------------------------------------------------------------");;
         }
     }
 
 
     public void resolvePayloadType(MySQLPacketInf packetInf, boolean isPacketFinished) {
+        if (hasResolvePayloadType) {
+            return;
+        }
+        hasResolvePayloadType = true;
         int head = packetInf.head;
         switch (state) {
             case DO_NOT:
                 return;
             case QUERY_PACKET: {
                 if (!isPacketFinished) throw new RuntimeException("unknown state!");
+                if (head == 18) {
+//                    ProxyBuffer buffer = packetInf.proxyBuffer;
+//                    int startIndex = buffer.readIndex;
+//                    int endIndex = buffer.writeIndex;
+//                    int sendLongDataSize = endIndex - startIndex - (4+7);//packetHead大小+非data数据大小
+//                    buffer.readIndex = packetInf.startPos + 5;
+//                    int statementId = (int) buffer.readFixInt(4);
+//                    int paramId = (int) buffer.readFixInt(2);
+                    this.sqlType = head;
+                    this.mysqlPacketType = SEND_LONG_DATA;
+                    state = ComQueryState.FIRST_PACKET;
+                    return;
+                }
                 this.sqlType = head;
-                if (head != COM_STMT_CLOSE){
+                if (head != COM_STMT_CLOSE) {
                     state = ComQueryState.FIRST_PACKET;
                 }
                 return;
@@ -338,11 +390,11 @@ public class MySQLProxyPacketResolver {
                 resolvePrepareResponse(packetInf.proxyBuffer, head, isPacketFinished);
                 return;
             case LOCAL_INFILE_FILE_CONTENT:
-                if (packetInf.pkgLength == 4){
+                if (packetInf.pkgLength == 4) {
                     state = ComQueryState.LOCAL_INFILE_OK_PACKET;
                     this.mysqlPacketType = LOCAL_INFILE_EMPTY_PACKET;
                     return;
-                }else {
+                } else {
                     state = ComQueryState.LOCAL_INFILE_FILE_CONTENT;
                     this.mysqlPacketType = LOCAL_INFILE_CONTENT_OF_FILENAME;
                     return;
@@ -354,8 +406,13 @@ public class MySQLProxyPacketResolver {
                 state = ComQueryState.COMMAND_END;
                 return;
             case COMMAND_END:
+                return;
             default: {
-                if (!isPacketFinished) throw new RuntimeException("unknown state!");
+                if (!isPacketFinished) {
+                    throw new RuntimeException("unknown state!");
+                }else {
+
+                }
             }
         }
     }

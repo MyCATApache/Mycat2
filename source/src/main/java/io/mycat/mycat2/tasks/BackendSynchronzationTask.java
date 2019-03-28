@@ -2,12 +2,14 @@ package io.mycat.mycat2.tasks;
 
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
+import io.mycat.mycat2.beans.MycatException;
 import io.mycat.mysql.MySQLPacketInf;
 import io.mycat.mysql.packet.ErrorPacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.QueryPacket;
+import io.mycat.mysql.packet.ComQueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.ErrorCode;
+import io.mycat.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +35,10 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
     public void syncState(MycatSession mycatSession, MySQLSession mySQLSession) throws IOException {
         ProxyBuffer proxyBuf = mySQLSession.proxyBuffer;
         proxyBuf.reset();
-        QueryPacket queryPacket = new QueryPacket();
+        ComQueryPacket queryPacket = new ComQueryPacket();
         queryPacket.packetId = 0;
-
         queryPacket.sql = "";
+
         if (!mySQLSession.getMySQLMetaBean().isSlaveNode()) {
             //隔离级别同步
             if (mycatSession.isolation != mySQLSession.isolation) {
@@ -56,6 +58,9 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
             //2.从节点和主节点的mysql版本号必定一致
             //3.所以直接取主节点
             String charsetName = mySQLSession.getMySQLMetaBean().INDEX_TO_CHARSET.get(mycatSession.charSet.charsetIndex);
+            if (StringUtil.isEmpty(charsetName)){
+                throw new MycatException("cannot load character set");
+            }
             queryPacket.sql += "SET names " + charsetName + ";";
             syncCmdNum++;
         }
@@ -85,6 +90,7 @@ public class BackendSynchronzationTask extends AbstractBackendIOTask<MySQLSessio
 
             }
         } else {
+            logger.debug("synchronzation state task end ");
             finished(true);
         }
     }

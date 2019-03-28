@@ -425,7 +425,14 @@ public class ProxyBuffer {
         this.putFixString(index + lenencLen, val);
         return this;
     }
-
+    public void writeLenencBytesWithNullable(byte[] bytes) {
+        byte nullVal = 0;
+        if (bytes == null) {
+            buffer.put(nullVal);
+        } else {
+            writeLenencBytes(bytes);
+        }
+    }
     public ProxyBuffer writeLenencString(byte[] bytes) {
         putLenencString(writeIndex, bytes);
         int lenencLen = getLenencLength(bytes.length);
@@ -456,7 +463,6 @@ public class ProxyBuffer {
         buffer.put(bytes, 0, length);
         return this;
     }
-
     public ProxyBuffer putByte(int index, byte val) {
         buffer.position(index);
         buffer.put(val);

@@ -349,7 +349,7 @@ RootBean类图如下:
 	
 	
 	
- 7.  如果Match中没有配置where条件的.则通过io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.DynamicAnnotationManagerImpl#getGlobalFunctionHash获得schemaName,sqlType对应的hash值.然后放入到schemaWithSQLtypeFunction中.
+ 7.  如果Match中没有配置where条件的.则通过io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.DynamicAnnotationManagerImpl#getGlobalFunctionHash获得schemaName,sqlType对应的hash值.然后放入到schemaWithSQLtypeFunction中.
 	 
  
  

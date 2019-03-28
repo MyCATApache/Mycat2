@@ -5,7 +5,7 @@ import io.mycat.mycat2.sqlparser.BufferSQLParser;
 import io.mycat.mycat2.sqlparser.IntTokenHash;
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 import io.mycat.mycat2.sqlparser.TokenHash;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.DefaultByteArray;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.Tokenizer2;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  * Created by jamie on 2017/9/4.
  */
 public class DCLSQLParserHelper {
-    public static int pickPrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickPrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         int intHash = hashArray.getIntHash(pos);
         long longHash;
         switch (intHash) {
@@ -245,7 +245,7 @@ public class DCLSQLParserHelper {
         }
         return pos;
     }
-    public static boolean isPrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static boolean isPrivType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         int intHash = hashArray.getIntHash(pos);
         long longHash;
         switch (intHash) {
@@ -387,7 +387,7 @@ public class DCLSQLParserHelper {
      * | SUBJECT 'subject'
      * }
      */
-    public static int pickTlsOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickTlsOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.SSL == longHash) {
             //todo SSL
@@ -418,7 +418,7 @@ public class DCLSQLParserHelper {
         }
         return pos;
     }
-    public static boolean isTlsOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static boolean isTlsOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.SSL == longHash) {
             //todo SSL
@@ -452,7 +452,7 @@ public class DCLSQLParserHelper {
     | MAX_USER_CONNECTIONS count
     }
      */
-    public static int pickResourceOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickResourceOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.MAX_QUERIES_PER_HOUR == longHash) {
             TokenizerUtil.debug(pos,context);
@@ -482,7 +482,7 @@ public class DCLSQLParserHelper {
         ++pos;
         return pos;
     }
-    public static boolean isResourceOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static boolean isResourceOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.MAX_QUERIES_PER_HOUR == longHash) {
           return true;
@@ -506,7 +506,7 @@ public class DCLSQLParserHelper {
      | IDENTIFIED BY PASSWORD 'hash_string'
      }
      */
-    public static int pickAuthOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickAuthOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
        //todo 捕获 IDENTIFIED
         TokenizerUtil.debug(pos,context);
         ++pos;
@@ -553,7 +553,7 @@ public class DCLSQLParserHelper {
         }
         return pos;
     }
-    public static boolean isAuthOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static boolean isAuthOption(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         //todo 捕获 IDENTIFIED
         ++pos;
         long longHash=hashArray.getHash(pos);
@@ -604,7 +604,7 @@ public class DCLSQLParserHelper {
      | PROCEDURE
      }
      */
-    public static int pickObjectType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickObjectType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.TABLE == longHash) {
             //todo 捕获 TABLE
@@ -623,7 +623,7 @@ public class DCLSQLParserHelper {
         }
         return pos;
     }
-    public static boolean isObjectType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static boolean isObjectType(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.TABLE == longHash) {
            return true;
@@ -646,7 +646,7 @@ public class DCLSQLParserHelper {
      | db_name.routine_name
      }
      */
-    public static int pickPrivLevel(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickPrivLevel(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         int type = hashArray.getType(pos);
         if (Tokenizer2.STAR==type){
             type = hashArray.getType(pos+1);
@@ -685,7 +685,7 @@ public class DCLSQLParserHelper {
     /**
      * Account name syntax is 'user_name'@'host_name'.
      */
-    public static int pickUser(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickUser(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         return TokenizerUtil.pickSpecifyingAccountNames(pos, arrayCount, context, hashArray, sql);
     }
 
@@ -703,7 +703,7 @@ public class DCLSQLParserHelper {
         //false 无空格,即一个字符串
         List<String> singleString = map.get(Boolean.FALSE);
         String s = singleString.stream().collect(Collectors.joining(" "));
-        ByteArrayInterface src = new DefaultByteArray(s.getBytes());
+        ByteArrayView src = new DefaultByteArray(s.getBytes());
         parser.parse(src, context);
         HashArray hashArray = context.getHashArray();
         int count = hashArray.getCount();

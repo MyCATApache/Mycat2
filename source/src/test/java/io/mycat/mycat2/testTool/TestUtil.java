@@ -139,7 +139,7 @@ public class TestUtil {
         return buffer;
     }
     public static ProxyBuffer field() {
-        FieldPacket fieldPacket = new FieldPacket();
+        ColumnDefPacket fieldPacket = new ColumnDefPacket();
         ProxyBuffer buffer = exampleBuffer();
         fieldPacket.write(buffer);
         return buffer;

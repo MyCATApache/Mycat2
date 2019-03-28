@@ -2,8 +2,8 @@
  * Copyright (c) 2013, OpenCloudDB/MyCAT and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
- * This code is free software;Designed and Developed mainly by many Chinese 
- * opensource volunteers. you can redistribute it and/or modify it under the 
+ * This code is free software;Designed and Developed mainly by many Chinese
+ * opensource volunteers. you can redistribute it and/or modify it under the
  * terms of the GNU General Public License version 2 only, as published by the
  * Free Software Foundation.
  *
@@ -16,8 +16,8 @@
  * You should have received a copy of the GNU General Public License version
  * 2 along with this work; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
- * 
- * Any questions about this component can be directed to it's project Web address 
+ *
+ * Any questions about this component can be directed to it's project Web address
  * https://code.google.com/p/opencloudb/.
  *
  */
@@ -31,55 +31,40 @@ import io.mycat.util.BufferUtil;
  * if the command was a query which returned a result set. The Result Set Header
  * Packet is the first of several, possibly many, packets that the server sends
  * for result sets. The order of packets for a result set is:
- * 
+ *
  * <pre>
  * (Result Set Header Packet)   the number of columns
  * (Field Packets)              column descriptors
  * (EOF Packet)                 marker: end of Field Packets
  * (Row Data Packets)           row contents
  * (EOF Packet)                 marker: end of Data Packets
- * 
+ *
  * Bytes                        Name
  * -----                        ----
  * 1-9   (Length-Coded-Binary)  field_count
  * 1-9   (Length-Coded-Binary)  extra
- * 
+ *
  * @see http://forge.mysql.com/wiki/MySQL_Internals_ClientServer_Protocol#Result_Set_Header_Packet
  * </pre>
- * 
- * @author mycat
+ *
+ * @author mycat cjw
  */
 public class ResultSetHeaderPacket extends MySQLPacket {
     public long fieldCount;
-    public long extra;
 
-    public void read(byte[] data) {
-        MySQLMessage mm = new MySQLMessage(data);
-        this.packetLength = mm.readUB3();
-        this.packetId = mm.read();
-        this.fieldCount = (int) mm.readLength();
-        if (mm.hasRemaining()) {
-            this.extra = mm.readLength();
-        }
+    @Override
+    public void writePayload(ProxyBuffer buffer) {
+        buffer.writeLenencInt(this.fieldCount);
     }
 
     @Override
-    public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPacketSize());
-        buffer.writeByte(packetId);
-        buffer.writeLenencInt(fieldCount);
-        if (extra > 0) {
-            buffer.writeLenencInt(extra);
-        }
+    public void readPayload(ProxyBuffer buffer) {
+        fieldCount = buffer.readLenencInt();
     }
 
     @Override
-    public int calcPacketSize() {
-        int size = BufferUtil.getLength(fieldCount);
-        if (extra > 0) {
-            size += BufferUtil.getLength(extra);
-        }
-        return size;
+    public int calcPayloadSize() {
+        return BufferUtil.getLength(fieldCount);
     }
 
     @Override

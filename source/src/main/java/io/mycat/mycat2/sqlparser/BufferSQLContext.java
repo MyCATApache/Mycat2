@@ -1,7 +1,7 @@
 package io.mycat.mycat2.sqlparser;
 
 import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
-import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayInterface;
+import io.mycat.mycat2.sqlparser.byteArrayInterface.ByteArrayView;
 import io.mycat.mycat2.sqlparser.byteArrayInterface.TokenizerUtil;
 
 import java.util.Arrays;
@@ -105,7 +105,7 @@ public class BufferSQLContext {
     private int tblResultPos;
     private byte schemaCount;
     private int schemaResultPos;
-    private ByteArrayInterface buffer;
+    private ByteArrayView buffer;
     private long sqlHash;
     private byte sqlType;
     private int tblResultArraySize = 256;//todo : 测试期先写死，后期考虑从设置参数中读取
@@ -138,7 +138,7 @@ public class BufferSQLContext {
         mergeAnnotation = new MergeAnnotation(this);
     }
 
-    public void setCurBuffer(ByteArrayInterface curBuffer) {
+    public void setCurBuffer(ByteArrayView curBuffer) {
         buffer = curBuffer;
         totalTblCount = 0;
         schemaCount = 0;
@@ -424,7 +424,7 @@ public class BufferSQLContext {
         return null;
     } //by kaiz : 返回注解等号后面的内容
 
-    public ByteArrayInterface getBuffer() {
+    public ByteArrayView getBuffer() {
         return buffer;
     }
 

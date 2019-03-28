@@ -27,7 +27,7 @@ import io.mycat.proxy.ProxyBuffer;
 
 /**
  * https://mariadb.com/kb/en/library/err_packet/
- * @author wuzhihui
+ * @author wuzhihui cjw
  *
  */
 public class ErrorPacket extends MySQLPacket {
@@ -45,27 +45,8 @@ public class ErrorPacket extends MySQLPacket {
 	public String sqlState = DEFAULT_SQLSTATE;
 	public String message;
 
-	public void read(ProxyBuffer byteBuffer) {
-		packetLength = (int) byteBuffer.readFixInt(3);
-		packetId = byteBuffer.readByte();
-		pkgType = byteBuffer.readByte();
-		errno = (int) byteBuffer.readFixInt(2);
-		if (errno == 0xFFFF) { /* progress reporting */
-			stage = (int) byteBuffer.readFixInt(1);
-			maxStage = (int) byteBuffer.readFixInt(1);
-			progress = (int) byteBuffer.readFixInt(3);
-			progress_info = byteBuffer.readLenencString();
-		} else if (byteBuffer.getByte(byteBuffer.readIndex) == SQLSTATE_MARKER) {
-			byteBuffer.skip(1);
-			mark = SQLSTATE_MARKER;
-			sqlState = byteBuffer.readFixString(5);
-		}
-		message = byteBuffer.readEOFString();
-	}
-
-	public void write(ProxyBuffer buffer) {
-		buffer.writeFixInt(3, calcPacketSize());
-		buffer.writeByte(packetId);
+	@Override
+	public void writePayload(ProxyBuffer buffer) {
 		buffer.writeByte(pkgType);
 		buffer.writeFixInt(2, errno);
 		if (errno == 0xFFFF) { /* progress reporting */
@@ -82,14 +63,33 @@ public class ErrorPacket extends MySQLPacket {
 	}
 
 	@Override
-	public int calcPacketSize() {
+	public void readPayload(ProxyBuffer byteBuffer) {
+		pkgType = byteBuffer.readByte();
+		errno = (int) byteBuffer.readFixInt(2);
+		if (errno == 0xFFFF) { /* progress reporting */
+			stage = (int) byteBuffer.readFixInt(1);
+			maxStage = (int) byteBuffer.readFixInt(1);
+			progress = (int) byteBuffer.readFixInt(3);
+			progress_info = byteBuffer.readLenencString();
+		} else if (byteBuffer.getByte(byteBuffer.readIndex) == SQLSTATE_MARKER) {
+			byteBuffer.skip(1);
+			mark = SQLSTATE_MARKER;
+			sqlState = byteBuffer.readFixString(5);
+		}
+		message = byteBuffer.readEOFString();
+	}
+
+	@Override
+	public int calcPayloadSize() {
 		int size = 1 + 2;// pkgType+errorcode
 		if (errno == 0xFFFF) { /* progress reporting */
 			size += 1 + 1 + 3 + ProxyBuffer.getLenencLength( progress_info.length())+progress_info.length();
 		} else if (mark == SQLSTATE_MARKER) {
 			size += 1 + 5;// mark+sqlstate
 		}
-		size += message.length();
+		if (message != null){
+			size += message.length();
+		}
 		return size;
 	}
 

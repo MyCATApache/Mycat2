@@ -17,7 +17,7 @@
         													 --> toCode2(boolean isRoot, TrieContext context) // isRoot== true
         													 			--> context.x += 1;  此时 context.x += 1
         													 			-->  Map<Boolean, List<Map.Entry<TrieKey, TrieCompiler>>> map = this.children.entrySet().stream().collect(Collectors.partitioningBy((k) -> k.getKey().getType() == QUESTION_MARK));  // size = 2
-        													 			 // {false=[io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]}, io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}], true=[]}
+        													 			 // {false=[io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]}, io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}], true=[]}
         													 			-->  String l = toCode3(isRoot, map.get(Boolean.TRUE), context); // 此时 entrySet 为空. context.y = 0
         													 						--> String res = toCode4(isRoot, entrySet, context); 
         													 														--> context.y += 1;   // 此时 context.y = 1
@@ -39,14 +39,14 @@
         													 
         													 children = 
         													 
-{io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]},
+{io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]},
 
 
- io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}}
+ io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}}
  
  
  
- --------------------------------io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.DynamicAnnotationUtil.insert(String, TrieCompiler, String, int)  处理过程分析
+ --------------------------------io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.DynamicAnnotationUtil.insert(String, TrieCompiler, String, int)  处理过程分析
  
  ===========Map<Integer, String> int2str = new HashMap<>();  // 就当前的实例来说  int2str = {0=id = ?, 1=WHERE} 
         		
@@ -154,7 +154,7 @@
 											 --> toCode2(boolean isRoot, TrieContext context) // isRoot== true
 											 			--> context.x += 1;  此时 context.x += 1
 											 			-->  Map<Boolean, List<Map.Entry<TrieKey, TrieCompiler>>> map = this.children.entrySet().stream().collect(Collectors.partitioningBy((k) -> k.getKey().getType() == QUESTION_MARK));  // size = 2
-											 			 // {false=[io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]}, io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayInterface.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}], true=[]}
+											 			 // {false=[io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@c8fb29b7=TrieCompiler{isTrie=true, children={}, callback=[1]}, io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@812d1700=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@1b234ea=TrieCompiler{isTrie=false, children={io.mycat.mycat2.sqlparser.byteArrayView.dynamicAnnotation.impl.TrieKey@3075e37=TrieCompiler{isTrie=true, children={}, callback=[0]}}, callback=null}}, callback=null}], true=[]}
 											 			-->  String l = toCode3(isRoot, map.get(Boolean.TRUE), context); // 此时 entrySet 为空. context.y = 0
 											 						--> String res = toCode4(isRoot, entrySet, context);  
 											 														--> context.y += 1;   // 此时 context.y = 1

@@ -5,16 +5,22 @@ import io.mycat.mycat2.sqlparser.SQLParseUtils.HashArray;
 /**
  * Created by jamie on 2017/8/29.
  */
-public interface ByteArrayInterface {
-    int offset = 0;
+public interface ByteArrayView {
+
     byte get(int index);
 
     int length();
 
-    void set(int index, byte value);
+    default void set(int index, byte value){
 
-    void setOffset(int offset);
-    int getOffset();
+    }
+
+    default void setOffset(int offset){
+
+    }
+    default  int getOffset(){
+        return 0;
+    }
 
     default String getString(int pos, int size) {
         byte[] bytes = new byte[size];

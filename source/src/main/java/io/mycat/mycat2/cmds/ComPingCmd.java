@@ -28,7 +28,7 @@ public class ComPingCmd implements MySQLCommand {
 
 	@Override
 	public boolean procssSQL(MycatSession session) throws IOException {
-		session.responseOKOrError(OKPacket.OK);
+		session.responseOKOrError(OKPacket.DEFAULT_OK_PACKET);
 		return true;
 	}
 

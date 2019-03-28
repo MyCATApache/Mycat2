@@ -8,10 +8,11 @@ import io.mycat.util.BufferUtil;
  * <pre>
  * @see https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnDefinition
  * </pre>
+ *
  * @author linxiaofang
  * @date 2018/11/12
  */
-public class ColumnDefinitionPacket extends MySQLPacket {
+public class ColumnDefPacket extends MySQLPacket {
     private static final byte[] DEFAULT_CATALOG = "def".getBytes();
 
     public byte[] catalog = DEFAULT_CATALOG;
@@ -26,20 +27,35 @@ public class ColumnDefinitionPacket extends MySQLPacket {
     public byte type;
     public int flags;
     public byte decimals;
-    public int filler;
     public byte[] defaultValues;
-    public byte command;
+    public boolean comFieldList;
 
-    public ColumnDefinitionPacket(byte cmd) {
-        command = cmd;
+    public ColumnDefPacket(boolean comFieldList) {
+       this.comFieldList = comFieldList;
+    }
+    public ColumnDefPacket() {
+        this.comFieldList = false;
     }
 
-    public void read(ProxyBuffer buffer) {
-        // packet length:3
-        packetLength = (int)buffer.readFixInt(3);
-        // packet number:1
-        packetId = buffer.readByte();
-        readPayload(buffer);
+    @Override
+    public void writePayload(ProxyBuffer buffer) {
+        buffer.writeLenencBytesWithNullable(catalog);
+        buffer.writeLenencBytesWithNullable(schema);
+        buffer.writeLenencBytesWithNullable(table);
+        buffer.writeLenencBytesWithNullable(orgTable);
+        buffer.writeLenencBytesWithNullable(name);
+        buffer.writeLenencBytesWithNullable(orgName);
+        buffer.writeByte(nextLength);
+        buffer.writeFixInt(2, charsetSet);
+        buffer.writeFixInt(4, columnLength);
+        buffer.writeByte(type);
+        buffer.writeFixInt(2, flags);
+        buffer.writeByte(decimals);
+        buffer.writeByte((byte) 0x00);//filler
+        buffer.writeByte((byte) 0x00);//filler
+        if (defaultValues != null) {
+            buffer.writeLenencString(defaultValues);
+        }
     }
 
     public void readPayload(ProxyBuffer buffer) {
@@ -48,48 +64,23 @@ public class ColumnDefinitionPacket extends MySQLPacket {
         table = buffer.readLenencStringBytes();
         orgTable = buffer.readLenencStringBytes();
         name = buffer.readLenencStringBytes();
-        System.out.println(new String(name));
         orgName = buffer.readLenencStringBytes();
         nextLength = buffer.readByte();
-        charsetSet = (int)buffer.readFixInt(2);
+        charsetSet = (int) buffer.readFixInt(2);
         columnLength = buffer.readFixInt(4);
-        type = (byte)(buffer.readByte() & 0xff);
-        flags = (int)buffer.readFixInt(2);
+        type = (byte) (buffer.readByte() & 0xff);
+        flags = (int) buffer.readFixInt(2);
         decimals = buffer.readByte();
-        filler = (int)buffer.readFixInt(2);
-        if (command == MySQLCommand.COM_FIELD_LIST) {
+        if (buffer.readByte() != 0x00 && buffer.readByte() != 0x00) {//filler
+            throw new IllegalArgumentException("ColumnDefPacket read fail!!!:" + this);
+        }
+        if (comFieldList) {
             defaultValues = buffer.readLenencStringBytes();
         }
     }
 
     @Override
-    public void write(ProxyBuffer buffer) {
-        // write packet length
-        buffer.writeFixInt(3, packetLength);
-        // write packet number
-        buffer.writeByte(packetId);
-        // write payload
-        buffer.writeLenencString(catalog);
-        buffer.writeLenencString(schema);
-        buffer.writeLenencString(table);
-        buffer.writeLenencString(orgTable);
-        buffer.writeLenencString(name);
-        buffer.writeLenencString(orgName);
-        buffer.writeByte(nextLength);
-        buffer.writeFixInt(2, charsetSet);
-        buffer.writeFixInt(4, columnLength);
-        buffer.writeByte(type);
-        buffer.writeFixInt(2, flags);
-        buffer.writeByte(decimals);
-        buffer.writeFixInt(2, filler);
-        if (defaultValues != null) {
-            buffer.writeLenencString(defaultValues);
-        }
-    }
-
-    @Override
-    public int calcPacketSize() {
-
+    public int calcPayloadSize() {
         int size = 0;
         size += (catalog == null ? 1 : BufferUtil.getLength(catalog));
         size += (schema == null ? 1 : BufferUtil.getLength(schema));
@@ -108,4 +99,6 @@ public class ColumnDefinitionPacket extends MySQLPacket {
     protected String getPacketInfo() {
         return "Column Definition Packet";
     }
+
+
 }

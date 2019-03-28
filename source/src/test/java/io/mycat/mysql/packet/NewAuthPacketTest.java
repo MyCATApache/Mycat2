@@ -21,7 +21,7 @@ public class NewAuthPacketTest {
 
     @Test
     public void writePayload() throws NoSuchAlgorithmException {
-        NewAuthPacket newAuthPacket = new NewAuthPacket();
+        AuthPacket newAuthPacket = new AuthPacket();
         CapabilityFlags capabilities = new CapabilityFlags(0);
         capabilities.setLongPassword();
         capabilities.setFoundRows();
@@ -69,8 +69,8 @@ public class NewAuthPacketTest {
         read(buildBytes, newAuthPacket);
     }
 
-    private void read(byte[] buildBytes, NewAuthPacket originAuthPacket) {
-        NewAuthPacket newAuthPacket = new NewAuthPacket();
+    private void read(byte[] buildBytes, AuthPacket originAuthPacket) {
+        AuthPacket newAuthPacket = new AuthPacket();
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.wrap(buildBytes));
         buffer.writeIndex = buildBytes.length;
         newAuthPacket.read(buffer);
@@ -145,7 +145,7 @@ public class NewAuthPacketTest {
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.wrap(bytes));
         buffer.writeIndex = bytes.length;
 
-        NewAuthPacket newAuthPacket = new NewAuthPacket();
+        AuthPacket newAuthPacket = new AuthPacket();
         newAuthPacket.read(buffer);
         Assert.assertEquals(1, newAuthPacket.packetId);
         Assert.assertEquals(0x003b, newAuthPacket.capabilities >> 16);

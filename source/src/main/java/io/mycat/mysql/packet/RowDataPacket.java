@@ -58,32 +58,21 @@ public class RowDataPacket extends MySQLPacket {
 
     public RowDataPacket(int fieldCount) {
         this.fieldCount = fieldCount;
-        this.fieldValues = new ArrayList<byte[]>(fieldCount);
+        this.fieldValues = new ArrayList<>(fieldCount);
     }
 
     public void add(byte[] value) {
         // 这里应该修改value
         fieldValues.add(value);
     }
-
-    public void addFieldCount(int add) {
-        // 这里应该修改field
-        fieldCount = fieldCount + add;
-    }
-
     public void read(byte[] data) {
         MySQLMessage mm = new MySQLMessage(data);
         packetLength = mm.readUB3();
         packetId = mm.read();
-        for (int i = 0; i < fieldCount; i++) {
-            fieldValues.add(mm.readBytesWithLength());
-        }
-    }
 
+    }
     @Override
-    public void write(ProxyBuffer buffer) {
-        buffer.writeFixInt(3, calcPacketSize());
-        buffer.writeByte(packetId);
+    public void writePayload(ProxyBuffer buffer) {
         for (int i = 0; i < fieldCount; i++) {
             byte[] fv = fieldValues.get(i);
             if (fv == null) {
@@ -97,7 +86,14 @@ public class RowDataPacket extends MySQLPacket {
     }
 
     @Override
-    public int calcPacketSize() {
+    public void readPayload(ProxyBuffer buffer) {
+        for (int i = 0; i < fieldCount; i++) {
+            fieldValues.add(buffer.readLenencBytes());
+        }
+    }
+
+    @Override
+    public int calcPayloadSize() {
         int size = 0;
         for (int i = 0; i < fieldCount; i++) {
             byte[] v = fieldValues.get(i);

@@ -53,7 +53,7 @@ public class Tokenizer2 {
     public static final byte AND_AND = 38;// &&
     public static final byte LESS_LESS = 39;// <<
     public static final byte GREATER_GREATER = 40;// >>
-    ByteArrayInterface sql;
+    ByteArrayView sql;
     final byte[] charType = new byte[512];
     HashArray hashArray;
 
@@ -103,7 +103,7 @@ public class Tokenizer2 {
 
     }
 
-    int parseToken(ByteArrayInterface sql, int pos, final int sqlLength, byte c) {
+    int parseToken(ByteArrayView sql, int pos, final int sqlLength, byte c) {
         int cType;
         int start = pos;
         int size = 1;
@@ -120,7 +120,7 @@ public class Tokenizer2 {
         return pos;
     }
 
-    int parseString(ByteArrayInterface sql, int pos, final int sqlLength, byte startSign) {
+    int parseString(ByteArrayView sql, int pos, final int sqlLength, byte startSign) {
         int size = 1;
         int start = pos;
         long hash = 1315423911;
@@ -141,7 +141,7 @@ public class Tokenizer2 {
         return ++pos;
     }
 
-    int parseDigits(ByteArrayInterface sql, int pos, final int sqlLength, byte c) {  // TODO: 需要增加小数和hex类型处理吗？
+    int parseDigits(ByteArrayView sql, int pos, final int sqlLength, byte c) {  // TODO: 需要增加小数和hex类型处理吗？
         int start = pos;
         int size = 1;
         long longValue = (long)(c-'0');
@@ -153,7 +153,7 @@ public class Tokenizer2 {
         return pos;
     }
 
-    int parseAnnotation(ByteArrayInterface sql, int pos, final int sqlLength) {
+    int parseAnnotation(ByteArrayView sql, int pos, final int sqlLength) {
         hashArray.set(ANNOTATION_START, pos-2, 2);
         //byte cur = sql[pos];
         //byte next = sql[++pos];
@@ -187,12 +187,12 @@ public class Tokenizer2 {
         return pos;
     }
 
-    int skipSingleLineComment(ByteArrayInterface sql, int pos, final int sqlLength) {
+    int skipSingleLineComment(ByteArrayView sql, int pos, final int sqlLength) {
         while (++pos < sqlLength && sql.get(pos)!='\n');
         return pos;
     }
 
-    int skipMultiLineComment(ByteArrayInterface sql, int pos, final int sqlLength, byte pre) {
+    int skipMultiLineComment(ByteArrayView sql, int pos, final int sqlLength, byte pre) {
         //int start = pos-2;
         //int size=2;
         byte cur = sql.get(pos);
@@ -208,7 +208,7 @@ public class Tokenizer2 {
         return pos;
     }
 
-    public void tokenize(ByteArrayInterface sql, HashArray hashArray) {
+    public void tokenize(ByteArrayView sql, HashArray hashArray) {
         int pos = sql.getOffset();
         final int sqlLength = sql.length()+pos;
         this.sql = sql;

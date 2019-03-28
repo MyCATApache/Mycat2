@@ -15,6 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.mycat.mycat2.beans.MySQLMetaBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,8 +112,8 @@ public class ProxyRuntime {
 		// catletLoader = new
 		// DynaClassLoader("C:\\Users\\netinnet\\Documents\\GitHub\\tcp-proxy\\source\\target\\classes\\catlet",
 		// catletClassCheckSeconds);
-		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath() + File.separator + "catlet",
-				catletClassCheckSeconds);
+//		catletLoader = new DynaClassLoader(YamlUtil.getRootHomePath() + File.separator + "catlet",
+//				catletClassCheckSeconds);
 
 		heartbeatScheduler.scheduleAtFixedRate(updateTime(), 0L, TIME_UPDATE_PERIOD, TimeUnit.MILLISECONDS);
 
@@ -141,9 +142,7 @@ public class ProxyRuntime {
 
 	/**
 	 * 准备切换
-	 * 
-	 * @param <T>
-	 * @param <R>
+	 *
 	 * @param replBean
 	 * @param writeIndex
 	 */
@@ -220,7 +219,20 @@ public class ProxyRuntime {
 		return () -> {
 			ProxyReactorThread<?> reactor = this.reactorThreads[ThreadLocalRandom.current()
 					.nextInt(reactorThreads.length)];
-			reactor.addNIOJob(() -> config.getMysqlRepMap().values().stream().forEach(f -> f.doHeartbeat()));
+			HeartbeatConfig config = this.config.getConfig(ConfigEnum.HEARTBEAT);
+			long minHeartbeatChecktime = config.getHeartbeat().getMinHeartbeatChecktime();
+			long now = System.currentTimeMillis();
+			long l = now - minHeartbeatChecktime;
+			for (MySQLRepBean value : this.config.getMysqlRepMap().values()) {
+				for (MySQLMetaBean metaBean : value.getMetaBeans()) {
+					boolean active = !(metaBean.getHeartbeat().getLastActiveTime() + minHeartbeatChecktime < now);
+					if(!metaBean.getHeartbeat().isChecking()&&!active){
+						reactor.addNIOJob(() ->metaBean.doHeartbeat());
+					}
+				}
+			}
+
+
 		};
 	}
 

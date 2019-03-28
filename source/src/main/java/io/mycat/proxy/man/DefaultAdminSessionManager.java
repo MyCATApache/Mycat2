@@ -6,6 +6,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,18 +28,22 @@ public class DefaultAdminSessionManager implements SessionManager<AdminSession> 
 	private ArrayList<AdminSession> allSessions = new ArrayList<>();
 
 	@Override
-	public AdminSession createSession(Object keyAttachement ,BufferPool bufPool, Selector nioSelector, SocketChannel frontChannel) throws IOException {
+	public AdminSession createSessionForConnectedChannel(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel) throws IOException {
+		if (logger.isInfoEnabled()) {
+			if (channel.isConnected()) {
+				throw new RuntimeException("AdminSession is not connected " + channel);
+			}
+		}
+			AdminSession session = new AdminSession(bufPool, nioSelector, channel);
+			session.setCurNIOHandler(DefaultAdminSessionHandler.INSTANCE);
+			String clusterNodeId = (String) keyAttachement;
+			session.setNodeId(clusterNodeId);
+			// session.setCurProxyHandler(proxyHandler);
 
-		AdminSession session = new AdminSession(bufPool, nioSelector, frontChannel);
-		session.setCurNIOHandler(DefaultAdminSessionHandler.INSTANCE);
-		String clusterNodeId = (String) keyAttachement;
-		session.setNodeId(clusterNodeId);
-		// session.setCurProxyHandler(proxyHandler);
-
-		logger.info(" connected to cluster port  ." + frontChannel + "create session " + session);
-		session.setSessionManager(this);
-		allSessions.add(session);
-		return session;
+			logger.info(" connected to cluster port  ." + channel + "create session " + session);
+			session.setSessionManager(this);
+			allSessions.add(session);
+			return session;
 	}
 
 	@Override

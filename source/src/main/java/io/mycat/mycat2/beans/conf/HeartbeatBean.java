@@ -7,6 +7,17 @@ package io.mycat.mycat2.beans.conf;
  * @author: gaozhiwen
  */
 public class HeartbeatBean {
+
+    public long getMinHeartbeatChecktime() {
+        return minHeartbeatChecktime;
+    }
+
+    public void setMinHeartbeatChecktime(long minHeartbeatChecktime) {
+        this.minHeartbeatChecktime = minHeartbeatChecktime;
+    }
+
+    private long minHeartbeatChecktime = 1*1000L;//秒
+
     private int timerExecutor = 2;
     /**
      * 默认复制组心跳周期

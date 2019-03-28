@@ -45,7 +45,7 @@ import io.mycat.proxy.ProxyBuffer;
  *               0x01   COM_QUIT            mysql_close
  *               0x02   COM_INIT_DB         mysql_select_db 
  *               0x03   COM_QUERY           mysql_real_query
- *               0x04   COM_FIELD_LIST      mysql_list_fields
+ *               0x04   comFieldList      mysql_list_fields
  *               0x05   COM_CREATE_DB       mysql_create_db (deprecated)
  *               0x06   COM_DROP_DB         mysql_drop_db (deprecated)
  *               0x07   COM_REFRESH         mysql_refresh
@@ -96,19 +96,19 @@ public class CommandPacket extends MySQLPacket {
     }
 
     @Override
-	public void write(ProxyBuffer buffer) {
-		this.write(buffer,calcPacketSize());
-	}
-
-    private void write(ProxyBuffer buffer,int pkgSize) {
-        buffer.writeFixInt(3,calcPacketSize());
-        buffer.writeByte(packetId);
+    public void writePayload(ProxyBuffer buffer) {
         buffer.writeByte(command);
         buffer.writeBytes(arg);
     }
 
     @Override
-    public int calcPacketSize() {
+    public void readPayload(ProxyBuffer buffer) {
+
+    }
+
+
+    @Override
+    public int calcPayloadSize() {
         return 1 + arg.length;
     }
 

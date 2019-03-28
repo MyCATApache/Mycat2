@@ -1,6 +1,6 @@
 package io.mycat.mycat2.hbt;
 
-import io.mycat.mysql.packet.FieldPacket;
+import io.mycat.mysql.packet.ColumnDefPacket;
 import io.mycat.proxy.ProxyBuffer;
 import io.mycat.util.PacketUtil;
 
@@ -88,7 +88,7 @@ public class ResultSetMeta extends Meta {
 	 * */
 	public byte write(byte packetId, ProxyBuffer buffer) {
 		for(int i = 0 ; i < filedCount; i ++) {
-			FieldPacket fieldPacket = PacketUtil.getField(fieldNameList.get(i), fieldTypeList[i]);
+			ColumnDefPacket fieldPacket = PacketUtil.getField(fieldNameList.get(i), fieldTypeList[i]);
 			fieldPacket.packetId = packetId ++;
 			fieldPacket.write(buffer);
 		}

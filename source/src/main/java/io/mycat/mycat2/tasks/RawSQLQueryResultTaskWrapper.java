@@ -3,8 +3,8 @@ package io.mycat.mycat2.tasks;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.net.MainMySQLNIOHandler;
 import io.mycat.mysql.MySQLPacketInf;
+import io.mycat.mysql.packet.ComQueryPacket;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.QueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,12 +14,12 @@ import java.io.IOException;
 public abstract class RawSQLQueryResultTaskWrapper extends BackendIOTaskWithResultSet<MySQLSession> {
     private static Logger logger = LoggerFactory.getLogger(RawSQLQueryResultTaskWrapper.class);
 
-    public void fetchSQL(QueryPacket queryPacket) throws IOException {
+    public void fetchSQL(ComQueryPacket genericPacket) throws IOException {
         /*设置为忙*/
         session.setIdle(false);
         ProxyBuffer proxyBuf = session.proxyBuffer;
         proxyBuf.reset();
-        queryPacket.write(proxyBuf);
+        genericPacket.write(proxyBuf);
         session.setCurNIOHandler(this);
         proxyBuf.flip();
         proxyBuf.readIndex = proxyBuf.writeIndex;

@@ -16,8 +16,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * NIO Reactor Thread 负责多个Session会话
  * 
- * @author wuzhihui
- *
+ * @author wuzhihui cjw
+ * @checked
  */
 public class ProxyReactorThread<T extends Session> extends Thread {
 	protected final static long SELECTOR_TIMEOUT = 100;
@@ -25,16 +25,17 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 	protected final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
 	protected final Selector selector;
 	protected final BufferPool bufPool;
-	protected ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<Runnable>();
-	protected LinkedList<T> allSessions = new LinkedList<T>();
+	//用于管理连接等事件
+	protected final ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<>();
+
+	//保存所有的session 不区分类型(客户端session还是服务端session) 进行定时检查session状态,彻底清理状态异常的session
+    // 在reactor接受到新连接或者主动发起连接建立session后,加入到此容器,在session的close方法从容器移除
+    // @cjw
+    protected LinkedList<Session> allSession = new LinkedList<>();
 
 
 	public Selector getSelector() {
 		return selector;
-	}
-
-	public LinkedList<T> getAllSessions() {
-		return allSessions;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -44,14 +45,19 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		sessionMan = (SessionManager<T>) ProxyRuntime.INSTANCE.getSessionManager();
 	}
 
+	/**
+	 * 处理连接请求
+	 * @param keyAttachement
+	 * @param socketChannel
+	 */
 	public void acceptNewSocketChannel(Object keyAttachement, final SocketChannel socketChannel) {
 		pendingJobs.offer(() -> {
 			try {
-				T session = sessionMan.createSession(keyAttachement, this.bufPool, selector, socketChannel);
-				allSessions.add(session);
-			} catch (Exception e) {
+                T sessionForConnectedChannel = sessionMan.createSessionForConnectedChannel(keyAttachement, this.bufPool, selector, socketChannel);
+                allSession.add(sessionForConnectedChannel);
+            } catch (Exception e) {
 				e.printStackTrace();
-				logger.warn("regist new connection err " + e);
+				logger.warn("register new connection error " + e);
 			}
 		});
 	}
@@ -86,6 +92,7 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 		reactorEnv.curSession = session;
 		try {
 			if (((SocketChannel) curKey.channel()).finishConnect()) {
+                allSession.add(session);
 				session.getCurNIOHandler().onConnect(curKey, session, true, null);
 			}
 
@@ -96,7 +103,6 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 
 	@SuppressWarnings("unchecked")
 	protected void processReadKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
-		// only from cluster server socket
 		T session = (T) curKey.attachment();
 		reactorEnv.curSession = session;
 		session.getCurNIOHandler().onSocketRead(session);
@@ -104,7 +110,6 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 
 	@SuppressWarnings("unchecked")
 	protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
-		// only from cluster server socket
 		T session = (T) curKey.attachment();
 		reactorEnv.curSession = session;
 		session.getCurNIOHandler().onSocketWrite(session);
@@ -117,7 +122,6 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 			try {
 				selector.select(SELECTOR_TIMEOUT);
 				final Set<SelectionKey> keys = selector.selectedKeys();
-				// logger.info("handler keys ,total " + selected);
 				if (keys.isEmpty()) {
 					if (!pendingJobs.isEmpty()) {
 						ioTimes = 0;
@@ -146,24 +150,22 @@ public class ProxyReactorThread<T extends Session> extends Thread {
 						} else if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
 							this.processWriteKey(reactorEnv, key);
 						}
-					} catch (Exception e) {
+					} catch (IOException e) {//如果设置为IOException方便调试,避免吞没其他类型异常
 						if (logger.isWarnEnabled()) {
 							logger.warn("Socket IO err :", e);
 						}
 						key.cancel();
+
 						if (reactorEnv.curSession != null) {
 							reactorEnv.curSession.close(false, "Socket IO err:" + e);
-							this.allSessions.remove(reactorEnv.curSession);
-							reactorEnv.curSession = null;
+                            reactorEnv.curSession = null;
 						}
 					}
 				}
 				keys.clear();
 			} catch (IOException e) {
-				logger.warn("caugh error ", e);
+				logger.warn("catch error ", e);
 			}
-
 		}
-
 	}
 }

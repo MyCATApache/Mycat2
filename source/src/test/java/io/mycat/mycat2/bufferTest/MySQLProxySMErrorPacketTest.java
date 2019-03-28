@@ -28,13 +28,13 @@ public class MySQLProxySMErrorPacketTest {
 
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 12;
+        sm.packetId = 12;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
 
         Assert.assertEquals(FULL, sm.resolveMySQLPacket(MySQLPacketInf));
         Assert.assertEquals(FULL, MySQLPacketInf.packetType);
         Assert.assertEquals(ERROR, sm.mysqlPacketType);
-        Assert.assertEquals(HEADER_SIZE + errorPacket.calcPacketSize(), MySQLPacketInf.pkgLength);
+        Assert.assertEquals(HEADER_SIZE + errorPacket.calcPayloadSize(), MySQLPacketInf.pkgLength);
         Assert.assertEquals(0, MySQLPacketInf.startPos);
         Assert.assertEquals(MySQLPacketInf.pkgLength, MySQLPacketInf.endPos);
         Assert.assertEquals(0xff, MySQLPacketInf.head);
@@ -47,7 +47,7 @@ public class MySQLProxySMErrorPacketTest {
         errorPacket.write(buffer);
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 1;
+        sm.packetId = 1;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
         for (int i = 0; i < HEADER_SIZE+1; i++) {
             buffer.writeIndex = i;
@@ -92,7 +92,7 @@ public class MySQLProxySMErrorPacketTest {
 
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 2;
+        sm.packetId = 2;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
         buffer.writeIndex = length - 1;
         Assert.assertEquals(LONG_HALF, sm.resolveMySQLPacket(MySQLPacketInf));
@@ -133,7 +133,7 @@ public class MySQLProxySMErrorPacketTest {
 
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 0;
+        sm.packetId = 0;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
 
         MySQLPacketInf.proxyBuffer = buffer;
@@ -190,7 +190,7 @@ public class MySQLProxySMErrorPacketTest {
 
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 12;
+        sm.packetId = 12;
         MySQLPacketInf MySQLPacketInf = new MySQLPacketInf(buffer);
         Assert.assertEquals(FULL_PAYLOAD, sm.resolveFullPayload(MySQLPacketInf));
         Assert.assertEquals(ERROR, sm.mysqlPacketType);
@@ -200,7 +200,7 @@ public class MySQLProxySMErrorPacketTest {
     public void fullPayloadMutilPacket() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 12;
+        sm.packetId = 12;
 
         ErrorPacket errorPacket = TestUtil.errPacket(12);
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff+8));
@@ -228,7 +228,7 @@ public class MySQLProxySMErrorPacketTest {
     public void crossPayloadOnePacket() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 12;
+        sm.packetId = 12;
 
         ErrorPacket errorPacket = TestUtil.errPacket(12);
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff+4));
@@ -256,7 +256,7 @@ public class MySQLProxySMErrorPacketTest {
     public void crossPayloadMutilPacket() {
         MySQLProxyPacketResolver sm = new MySQLProxyPacketResolver();
         sm.state = ComQueryState.FIRST_PACKET;
-        sm.nextPacketId = 12;
+        sm.packetId = 12;
 
         ErrorPacket errorPacket = TestUtil.errPacket(12);
         ProxyBuffer buffer = new ProxyBuffer(ByteBuffer.allocateDirect(0xffffff+4));

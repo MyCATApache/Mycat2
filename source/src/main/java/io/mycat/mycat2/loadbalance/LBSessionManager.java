@@ -1,5 +1,12 @@
 package io.mycat.mycat2.loadbalance;
 
+import io.mycat.mycat2.tasks.AsynTaskCallBack;
+import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.SessionManager;
+import io.mycat.proxy.buffer.BufferPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -8,24 +15,26 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.SessionManager;
-import io.mycat.proxy.buffer.BufferPool;
-
 /**
  * 负载均衡器前端会话管理器
  * <p>
  * Created by ynfeng on 2017/9/13.
  */
 public class LBSessionManager implements SessionManager<LBSession> {
+    protected static Logger logger = LoggerFactory.getLogger(LBSessionManager.class);
     private List<LBSession> allSession = new ArrayList<>();
     private static final NIOHandler<LBSession> defalultHandler = new LBNIOHandler();
 
+
+
     @Override
-    public LBSession createSession(Object keyAttachement, BufferPool bufPool, Selector nioSelector,
-                                      SocketChannel channel) throws IOException {
-        LBSession lbSession = new LBSession(bufPool,nioSelector,channel);
-        lbSession.setCurNIOHandler(getDefaultSessionHandler());
+    public LBSession createSessionForConnectedChannel(Object keyAttachement, BufferPool bufPool, Selector nioSelector, SocketChannel channel) throws IOException {
+        if (logger.isInfoEnabled()) {
+            if (channel.isConnected()){
+                throw new RuntimeException("LBSession is not connected "+channel);
+            }
+        }
+        LBSession lbSession = new LBSession(bufPool,nioSelector,channel,getDefaultSessionHandler());
         allSession.add(lbSession);
         return lbSession;
     }

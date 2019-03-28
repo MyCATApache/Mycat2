@@ -6,6 +6,7 @@ import io.mycat.mysql.*;
 import io.mycat.mysql.packet.MySQLPacket;
 import io.mycat.proxy.AbstractSession;
 import io.mycat.proxy.ConfigEnum;
+import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.util.TimeUtil;
@@ -22,6 +23,7 @@ import java.nio.channels.SocketChannel;
  * @author wuzhihui
  */
 public abstract class AbstractMySQLSession extends AbstractSession {
+
 
     public AbstractMySQLSession() {
 
@@ -57,21 +59,21 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     /**
      * 当前处理中的SQL报文的信息
      */
-    public MySQLPacketInf curPacketInf = new MySQLPacketInf();
+    public final MySQLPacketInf curPacketInf = new MySQLPacketInf();
 
 
     /**
      * 用来进行指定结束报文处理
      */
-    public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel) throws IOException {
-        this(bufferPool, selector, channel, SelectionKey.OP_READ);
+    public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel, NIOHandler nioHandler) throws IOException {
+        this(bufferPool, selector, channel, SelectionKey.OP_READ, nioHandler);
 
     }
 
 
-    public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel, int keyOpt)
+    public AbstractMySQLSession(BufferPool bufferPool, Selector selector, SocketChannel channel, int keyOpt, NIOHandler nioHandler)
             throws IOException {
-        super(bufferPool, selector, channel, keyOpt);
+        super(bufferPool, selector, channel, keyOpt, nioHandler);
 
     }
 
@@ -79,10 +81,10 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         this.curBufOwner = curBufOwner;
     }
 
-    public PayloadType resolveFullPayload(){
-        this.curPacketInf.proxyBuffer = this.proxyBuffer;
+    public PayloadType resolveFullPayload() {
         return this.curPacketInf.resolveFullPayload(this.proxyBuffer);
     }
+
     /**
      * 回应客户端（front或Sever）OK 报文。
      *
@@ -105,7 +107,7 @@ public abstract class AbstractMySQLSession extends AbstractSession {
     }
 
     /**
-     * 回应客户端（front或Sever）OK 报文。
+     * 回应客户端（front或Sever）DEFAULT_OK_PACKET 报文。
      *
      * @param pkg ，必须要是OK报文或者Err报文
      * @throws IOException
@@ -130,14 +132,13 @@ public abstract class AbstractMySQLSession extends AbstractSession {
         } else if (buffer.capacity() < pkgLength) {
             logger.debug("need a large buffer to hold the package.{}", curPacketInf);
             lastLargeMessageTime = TimeUtil.currentTimeMillis();
-            ByteBuffer newBuffer = bufPool.allocate(Double.valueOf(pkgLength + pkgLength * 0.1).intValue());
-            resetBuffer(newBuffer);
+            MySQLProxyPacketResolver.simpleAdjustCapacityProxybuffer(proxyBuffer, proxyBuffer.writeIndex + pkgLength);
         } else {
             if (proxyBuffer.writeIndex != 0) {
                 // compact bytebuffer only
                 proxyBuffer.compact();
             } else {
-                throw new RuntimeException(" not enough space");
+                //  throw new RuntimeException(" not enough space");
             }
         }
     }
@@ -149,8 +150,8 @@ public abstract class AbstractMySQLSession extends AbstractSession {
      */
     private void resetBuffer(ByteBuffer newBuffer) {
         newBuffer.put(proxyBuffer.getBytes(proxyBuffer.readIndex, proxyBuffer.writeIndex - proxyBuffer.readIndex));
-        proxyBuffer.resetBuffer(newBuffer);
         recycleAllocedBuffer(proxyBuffer);
+        proxyBuffer.resetBuffer(newBuffer);
         curPacketInf.endPos = curPacketInf.endPos - curPacketInf.startPos;
         curPacketInf.startPos = 0;
     }

@@ -4,8 +4,8 @@ import io.mycat.mycat2.MySQLCommand;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mycat2.MycatSession;
 import io.mycat.mysql.Fields;
+import io.mycat.mysql.packet.ColumnDefPacket;
 import io.mycat.mysql.packet.EOFPacket;
-import io.mycat.mysql.packet.FieldPacket;
 import io.mycat.mysql.packet.ResultSetHeaderPacket;
 import io.mycat.mysql.packet.RowDataPacket;
 import io.mycat.proxy.ProxyBuffer;
@@ -26,7 +26,7 @@ public class ShowDbCmd implements MySQLCommand {
 
 	private static final int FIELD_COUNT = 1;
 	private static final ResultSetHeaderPacket header = PacketUtil.getHeader(FIELD_COUNT);
-	private static final FieldPacket[] fields = new FieldPacket[FIELD_COUNT];
+	private static final ColumnDefPacket[] fields = new ColumnDefPacket[FIELD_COUNT];
 	private static final EOFPacket eof = new EOFPacket();
 
 	static {
@@ -48,7 +48,7 @@ public class ShowDbCmd implements MySQLCommand {
 		header.write(buffer);
 
 		// write fields
-		for (FieldPacket field : fields) {
+		for (ColumnDefPacket field : fields) {
 			field.write(buffer);
 		}
 		// write eof

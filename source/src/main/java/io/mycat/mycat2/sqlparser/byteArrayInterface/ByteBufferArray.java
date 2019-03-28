@@ -2,7 +2,7 @@ package io.mycat.mycat2.sqlparser.byteArrayInterface;
 
 import java.nio.ByteBuffer;
 
-public class ByteBufferArray implements ByteArrayInterface {
+public class ByteBufferArray implements ByteArrayView {
     ByteBuffer src;
     int offset = 0;
     int length = 0;

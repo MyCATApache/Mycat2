@@ -3,7 +3,7 @@ package io.mycat.mycat2.tasks;
 import io.mycat.mycat2.MySQLSession;
 import io.mycat.mysql.PayloadType;
 import io.mycat.mysql.packet.MySQLPacket;
-import io.mycat.mysql.packet.QueryPacket;
+import io.mycat.mysql.packet.ComQueryPacket;
 import io.mycat.proxy.ProxyBuffer;
 
 import java.io.IOException;
@@ -23,7 +23,7 @@ public abstract class BackendIOTaskWithGenericResponse
         extends AbstractBackendIOTask<MySQLSession> {
 
     public void excecuteSQL(String sql) throws IOException {
-        QueryPacket queryPacket = new QueryPacket();
+        ComQueryPacket queryPacket = new ComQueryPacket();
         queryPacket.packetId = 0;
         queryPacket.sql = sql;
         /*设置为忙*/

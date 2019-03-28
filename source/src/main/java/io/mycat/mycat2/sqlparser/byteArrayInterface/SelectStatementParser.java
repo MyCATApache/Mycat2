@@ -12,7 +12,7 @@ public class SelectStatementParser {
     /**
      * 前置条件,传进来的pos指向select后面的token
      */
-    public static int pickSelectStatement(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickSelectStatement(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         if (TokenHash.SELECT==longHash){
             //测试的路径
@@ -96,7 +96,7 @@ public class SelectStatementParser {
         return pos;
     }
 
-    public static int pickSelectExpr(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayInterface sql) {
+    public static int pickSelectExpr(int pos, final int arrayCount, BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
         long longHash = hashArray.getHash(pos);
         TokenizerUtil.debug(pos, context);
         ++pos;

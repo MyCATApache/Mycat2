@@ -34,7 +34,7 @@ public class OKPacketTest {
         System.out.println(hexs);
         int[] ints = Arrays.copyOf(okPkt, okPkt.length);
         Assert.assertArrayEquals(TestUtil.of(ints),array);
-        Assert.assertEquals(okPacket.calcPacketSize()+4, okPkt.length);
+        Assert.assertEquals(okPacket.calcPayloadSize()+4, okPkt.length);
     }
 
 //    @Test
@@ -52,7 +52,7 @@ public class OKPacketTest {
 //        System.out.println(hexs);
 //        int[] ints = Arrays.copyOf(setAutoCommitOffPkt, setAutoCommitOffPkt.length);
 //        Assert.assertArrayEquals(of(ints),array);
-//        Assert.assertEquals(okPacket.calcPacketSize()+4, setAutoCommitOffPkt.length);
+//        Assert.assertEquals(okPacket.calcPayloadSize()+4, setAutoCommitOffPkt.length);
 //    }
 //
 //    @Test
@@ -70,7 +70,7 @@ public class OKPacketTest {
 //        System.out.println(hexs);
 //        int[] ints = Arrays.copyOf(useDbPkt, useDbPkt.length);
 //        Assert.assertArrayEquals(of(ints),array);
-//        Assert.assertEquals(okPacket.calcPacketSize()+4, useDbPkt.length);
+//        Assert.assertEquals(okPacket.calcPayloadSize()+4, useDbPkt.length);
 //    }
 //
 //    @Test
@@ -88,7 +88,7 @@ public class OKPacketTest {
 //        System.out.println(hexs);
 //        int[] ints = Arrays.copyOf(setSessionPkt, setSessionPkt.length);
 //        Assert.assertArrayEquals(of(ints),array);
-//        Assert.assertEquals(okPacket.calcPacketSize()+4, setSessionPkt.length);
+//        Assert.assertEquals(okPacket.calcPayloadSize()+4, setSessionPkt.length);
 //    }
 
     @Test
@@ -103,7 +103,7 @@ public class OKPacketTest {
         System.out.println(hexs);
         int[] ints = Arrays.copyOf(eofPkt, eofPkt.length);
         Assert.assertArrayEquals(TestUtil.of(ints),array);
-        Assert.assertEquals(okPacket.calcPacketSize()+4, eofPkt.length);
+        Assert.assertEquals(okPacket.calcPayloadSize()+4, eofPkt.length);
     }
 
     /*

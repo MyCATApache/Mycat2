@@ -6,6 +6,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 import io.mycat.proxy.AbstractSession;
+import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
 
 /**
@@ -17,8 +18,8 @@ public class LBSession extends AbstractSession {
     private ProxySession proxySession;
 
     public LBSession(BufferPool bufferPool, Selector selector,
-                     SocketChannel channel) throws IOException {
-        super(bufferPool, selector, channel);
+                     SocketChannel channel, NIOHandler nioHandler) throws IOException {
+        super(bufferPool, selector, channel,nioHandler);
     }
 
     public void setCurBufOwner(boolean ownerFlag) {

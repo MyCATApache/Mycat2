@@ -78,7 +78,7 @@ public class BackendSynchemaTask extends AbstractBackendIOTask<MySQLSession> {
 
 		switch (session.resolveFullPayload()) {
 		case FULL_PAYLOAD:
-			session.curPacketInf.markRead();
+
 			if (session.curPacketInf.head == MySQLPacket.OK_PACKET) {
 				String database = session.getMycatSession().getTargetDataNode().getDatabase();
 				session.setDatabase(database);
