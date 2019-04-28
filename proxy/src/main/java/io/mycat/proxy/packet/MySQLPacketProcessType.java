@@ -1,0 +1,26 @@
+package io.mycat.proxy.packet;
+
+public enum  MySQLPacketProcessType {
+    REQUEST(),
+    LOAD_DATA_REQUEST,
+    REQUEST_SEND_LONG_DATA(),
+    REQUEST_COM_STMT_CLOSE(),
+    FIRST_ERROR(),
+    FIRST_OK(),
+    FIRST_EOF,
+    COLUMN_COUNT,
+    COLUMN_DEF,
+    COLUMN_EOF,
+    TEXT_ROW,
+    BINARY_ROW,
+    ROW_EOF,
+    ROW_FINISHED,
+    ROW_OK,
+    ROW_ERROR,
+    PREPARE_OK,
+    PREPARE_OK_PARAMER_DEF,
+    PREPARE_OK_COLUMN_DEF,
+    PREPARE_OK_COLUMN_DEF_EOF,
+    PREPARE_OK_PARAMER_DEF_EOF;
+
+}
