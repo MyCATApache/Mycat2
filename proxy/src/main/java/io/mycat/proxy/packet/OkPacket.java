@@ -34,9 +34,9 @@ public interface OkPacket{
 
     public void setOkLastInsertId(int lastInsertId);
 
-    public int getOkServerStatus();
+    public int getServerStatus();
 
-    public int setOkServerStatus(int serverStatus);
+    public int setServerStatus(int serverStatus);
 
     public int getOkWarningCount();
 

@@ -18,6 +18,8 @@ package io.mycat.proxy;
 
 import io.mycat.beans.DataNode;
 import io.mycat.proxy.buffer.ProxyBuffer;
+import io.mycat.proxy.command.MySQLProxyCommand;
+import io.mycat.proxy.packet.ErrorCode;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.MySQLSession;
@@ -27,7 +29,7 @@ import io.mycat.router.RouteResult;
 
 import java.io.IOException;
 
-public class DirectPassthrouhCmd implements MySQLCommand {
+public class DirectPassthrouhCmd implements MySQLProxyCommand {
     public static final DirectPassthrouhCmd INSTANCE = new DirectPassthrouhCmd();
 
     @Override
@@ -39,7 +41,7 @@ public class DirectPassthrouhCmd implements MySQLCommand {
            proxyBuffer.channelWriteStartIndex(0);
            proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
        }else {
-           throw new MycatExpection("unsupport!!");
+           throw new MycatExpection(ErrorCode.ER_UNKNOWN_ERROR,"unsupport!!");
        }
        if (route.getDataNodeName() != null){
            dataNode = MycatRuntime.INSTANCE.getMycatConfig().getDataNodeByName(route.getDataNodeName());

@@ -1,26 +1,26 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.packet;
 
 import io.mycat.beans.mysql.MySQLCapabilityFlags;
+import io.mycat.beans.mysql.MySQLServerStatus;
 import io.mycat.proxy.MycatExpection;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.session.AbstractMySQLSession;
+import io.mycat.proxy.session.MySQLSessionMonopolizeType;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -64,6 +64,7 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   final MySQLCapabilityFlags capabilityFlags;
   final AbstractMySQLSession session;
   MySQLPacketProcessType mySQLPacketProcessType;
+
 
   public MySQLPacketResolverImpl(boolean CLIENT_DEPRECATE_EOF, MySQLCapabilityFlags capabilityFlags,
       AbstractMySQLSession session) {
@@ -314,7 +315,7 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   public void resetPayload() {
     MySQLPacket mySQLPacket = payload;
     payload = null;
-    if (mySQLPacket != null&&mySQLPacket!=currentProxybuffer()) {
+    if (mySQLPacket != null && mySQLPacket != currentProxybuffer()) {
       mySQLPacket.reset();
     }
   }
@@ -494,12 +495,12 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public int getOkServerStatus() {
+  public int getServerStatus() {
     return serverStatus;
   }
 
   @Override
-  public int setOkServerStatus(int serverStatus) {
+  public int setServerStatus(int serverStatus) {
     return this.serverStatus = serverStatus;
   }
 

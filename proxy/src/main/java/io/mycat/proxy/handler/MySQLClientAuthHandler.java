@@ -53,9 +53,11 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         if (!mycat.readMySQLPayloadFully()) {
             return;
         }
+
         MySQLPacket mySQLPacket = mycat.currentPayload();
         AuthPacketImpl auth = new AuthPacketImpl();
         auth.readPayload(mySQLPacket);
+        mycat.resetCurrentPayload();
 
         mycat.setAutoCommit(MySQLAutoCommit.OFF);
         Schema defaultSchema = MycatRuntime.INSTANCE.getMycatConfig().getDefaultSchema();
@@ -98,7 +100,9 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             hs.serverVersion = new String(MySQLVersion.SERVER_VERSION);
             hs.connectionId = mycat.sessionId();
             hs.authPluginDataPartOne = new String(seedParts[0]);
-            hs.capabilities = new MySQLCapabilityFlags(mycat.getServerCapabilities());
+            int serverCapabilities = mycat.getDefaultServerCapabilities();
+            mycat.setServerCapabilities(serverCapabilities);
+            hs.capabilities = new MySQLCapabilityFlags(serverCapabilities);
             hs.hasPartTwo = true;
             hs.characterSet = 8;
             hs.statusFlags = 2;

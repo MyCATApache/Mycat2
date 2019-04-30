@@ -62,7 +62,9 @@ public interface MySQLAPI {
         sendBlob(preparedStatement, index, data, future);
         return future;
     }
-
+    default void sleep(AsynTaskCallBack<MySQLSession> callback) {
+        new CommandTask().request(getThis(), 0x00,new byte[]{}, callback);
+    }
     default void sendBlob(PreparedStatement preparedStatement, int index, byte[] data, AsynTaskCallBack<MySQLSession> callback) {
         preparedStatement.put(index, data);
         new SendLongDataTask().request(getThis(), preparedStatement, callback);

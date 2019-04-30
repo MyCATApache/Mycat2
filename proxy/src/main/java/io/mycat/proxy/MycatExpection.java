@@ -16,12 +16,26 @@
  */
 package io.mycat.proxy;
 
+import io.mycat.proxy.packet.ErrorCode;
+
 public class MycatExpection extends RuntimeException {
+
+    private final int errorCode;
+
+    public int getErrorCode() {
+        return errorCode;
+    }
     public MycatExpection(String message) {
         super(message);
+        this.errorCode = ErrorCode.ER_UNKNOWN_ERROR;
+    }
+    public MycatExpection(int errorCode,String message) {
+        super(message);
+        this.errorCode = errorCode;
     }
 
     public MycatExpection(String message, Throwable cause) {
         super(message, cause);
+        this.errorCode = ErrorCode.ER_UNKNOWN_ERROR;
     }
 }

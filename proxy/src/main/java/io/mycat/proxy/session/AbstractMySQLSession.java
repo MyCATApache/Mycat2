@@ -1,24 +1,23 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.session;
 
 import io.mycat.beans.MySQLMeta;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLServerStatus;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -28,7 +27,6 @@ import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.packet.PacketSplitterImpl;
-import io.mycat.proxy.payload.MySQLPayloadReader;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,8 +44,13 @@ public abstract class AbstractMySQLSession<T extends AbstractSession> extends Ab
   private String clientUser;
   private MySQLAutoCommit autoCommit;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
-  private ProxyBuffer proxyBuffer;
 
+
+
+
+
+
+  private ProxyBuffer proxyBuffer;
   private AsynTaskCallBack<T> callBack;
 
   // final MySQLPayloadReadView mySQLPayloadReadView = new MySQLPayloadReadView();
@@ -196,9 +199,11 @@ public abstract class AbstractMySQLSession<T extends AbstractSession> extends Ab
   public MySQLPacket currentPayload() throws IOException {
     return packetResolver.currentPayload();
   }
+
   public void resetCurrentPayload() throws IOException {
-     packetResolver.resetPayload();
+    packetResolver.resetPayload();
   }
+
   public boolean readMySQLPacketFully() throws IOException {
     return packetResolver.readMySQLPacketFully();
   }

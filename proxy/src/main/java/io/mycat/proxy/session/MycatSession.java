@@ -1,32 +1,33 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.session;
 
 import io.mycat.beans.DataNode;
 import io.mycat.beans.Schema;
 import io.mycat.beans.mysql.MySQLCapabilities;
+import io.mycat.beans.mysql.MySQLCapabilityFlags;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.MySQLCommand;
+import io.mycat.proxy.MycatExpection;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
+import io.mycat.proxy.command.MySQLProxyCommand;
 import io.mycat.proxy.packet.ErrorCode;
 import io.mycat.proxy.packet.ErrorPacketImpl;
+import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.router.ByteArrayView;
 import io.mycat.router.RouteResult;
@@ -45,10 +46,44 @@ public class MycatSession extends AbstractMySQLSession {
     setCurrentProxyBuffer(new ProxyBufferImpl(bufferPool));
   }
 
-  private MySQLCommand curSQLCommand;
+  private MySQLProxyCommand curSQLCommand;
   private MySQLSession backend;
 
   private RouteStrategy routeStrategy = new RouteStrategyImpl();
+
+  private String lastMessage;
+  private long affectedRows;
+  private int serverStatus;
+  private int warningCount;
+  private long lastInsertId;
+  private int serverCapabilities;
+  private int lastErrorCode;
+  private final static byte[] SQL_STATE = "HY000".getBytes();
+
+
+  public void writeOkPacket() throws IOException {
+    MySQLPacket buffer = newCurrentMySQLPacket();
+    String lastMessage = getLastMessage();
+    buffer.writeByte((byte) 0x00);
+    buffer.writeLenencInt(affectedRows);
+    buffer.writeLenencInt(lastInsertId);
+
+    if (MySQLCapabilityFlags.isClientProtocol41(serverCapabilities)) {
+      buffer.writeFixInt(2, serverStatus);
+      buffer.writeFixInt(2, warningCount);
+    } else if (MySQLCapabilityFlags.isKnowsAboutTransactions(serverCapabilities)) {
+      buffer.writeFixInt(2, serverStatus);
+    }
+
+    if (lastMessage != null && !lastMessage.isEmpty()) {
+      buffer.writeLenencBytes(lastMessage.getBytes());
+    }
+    setLastMessage(null);
+    writeMySQLPacket(buffer);
+    setResponseFinished(true);
+    this.switchSQLCommand(null);
+  }
+
 
   public RouteResult route(ByteArrayView byteArrayView) {
     routeStrategy.preprocessRoute(byteArrayView, this.getSchema().getSchemaName());
@@ -71,7 +106,7 @@ public class MycatSession extends AbstractMySQLSession {
     return backend;
   }
 
-  public MySQLCommand getCurSQLCommand() {
+  public MySQLProxyCommand getCurSQLCommand() {
     return curSQLCommand;
   }
 
@@ -90,7 +125,7 @@ public class MycatSession extends AbstractMySQLSession {
   }
 
 
-  public void switchSQLCommand(MySQLCommand newCmd) {
+  public void switchSQLCommand(MySQLProxyCommand newCmd) {
     logger.debug("{} switch command from {} to  {} ", this, this.curSQLCommand, newCmd);
     this.curSQLCommand = newCmd;
   }
@@ -119,11 +154,18 @@ public class MycatSession extends AbstractMySQLSession {
 
   }
 
+  public int getServerCapabilities() {
+    return serverCapabilities;
+  }
+
+  public void setServerCapabilities(int serverCapabilities) {
+    this.serverCapabilities = serverCapabilities;
+  }
 
   /**
    * 服务器能力@cjw
    */
-  public int getServerCapabilities() {
+  public int getDefaultServerCapabilities() {
     int flag = 0;
     flag |= MySQLCapabilities.CLIENT_LONG_PASSWORD;
     flag |= MySQLCapabilities.CLIENT_FOUND_ROWS;
@@ -150,17 +192,78 @@ public class MycatSession extends AbstractMySQLSession {
     return flag;
   }
 
-  public void writeErrorPacket(String message) throws IOException {
+  public void writeErrorPacket(Throwable throwable) throws IOException {
     ErrorPacketImpl errorPacket = new ErrorPacketImpl();
-    errorPacket.errno = ErrorCode.ER_UNKNOWN_ERROR;
-    errorPacket.message = message;
-    errorPacket.writePayload(newCurrentMySQLPacket());
-    this.packetResolver.setRequestFininshed(true);
+    if (throwable instanceof MycatExpection) {
+      MycatExpection error = (MycatExpection) throwable;
+      errorPacket.errno = error.getErrorCode();
+      errorPacket.message = error.getMessage();
+    } else {
+      errorPacket.errno = ErrorCode.ER_UNKNOWN_ERROR;
+      errorPacket.message = throwable.getMessage();
+    }
+    writeErrorPacket(errorPacket);
+  }
+  public void writeErrorPacket(int errorCode, String errorMessage) throws IOException {
+    ErrorPacketImpl errorPacket = new ErrorPacketImpl();
+    errorPacket.errno = errorCode;
+    errorPacket.setErrorMessage(errorMessage.getBytes());
+    writeErrorPacket(errorPacket);
+  }
+  public void writeErrorPacket(ErrorPacketImpl errorPacket) throws IOException {
+    this.lastErrorCode = errorPacket.errno;
+    errorPacket.setErrorSqlState(SQL_STATE);
+    setResponseFinished(true);
+    errorPacket.writePayload(newCurrentMySQLPacket(), getServerCapabilities());
     this.writeToChannel();
     this.switchSQLCommand(null);
   }
 
   public void bind(MySQLSession mySQLSession) {
     this.backend = mySQLSession;
+  }
+
+  public String getLastMessage() {
+    return lastMessage;
+  }
+
+  public void setLastMessage(String lastMessage) {
+    this.lastMessage = lastMessage;
+  }
+
+  public void setBackend(MySQLSession backend) {
+    this.backend = backend;
+  }
+
+  public long getAffectedRows() {
+    return affectedRows;
+  }
+
+  public void setAffectedRows(long affectedRows) {
+    this.affectedRows = affectedRows;
+  }
+
+  public int getServerStatus() {
+    return serverStatus;
+  }
+
+  public void setServerStatus(int serverStatus) {
+    this.serverStatus = serverStatus;
+  }
+
+  public int getWarningCount() {
+    return warningCount;
+  }
+
+  public void setWarningCount(int warningCount) {
+    this.warningCount = warningCount;
+  }
+
+  public long getLastInsertId() {
+    return lastInsertId;
+  }
+
+  public void setLastInsertId(long lastInsertId) {
+    this.lastInsertId = lastInsertId;
   }
 }

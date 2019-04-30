@@ -14,14 +14,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy;
+package io.mycat.proxy.command;
 
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MySQLSession;
 
 import java.io.IOException;
 
-public interface MySQLCommand {
+public interface MySQLProxyCommand {
     /**
      * 收到后端应答报文
      *

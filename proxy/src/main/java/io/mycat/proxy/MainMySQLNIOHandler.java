@@ -16,6 +16,7 @@
  */
 package io.mycat.proxy;
 
+import io.mycat.proxy.command.MySQLProxyCommand;
 import io.mycat.proxy.session.MySQLSession;
 import io.mycat.proxy.session.MycatSession;
 import org.slf4j.Logger;
@@ -29,7 +30,7 @@ public class MainMySQLNIOHandler implements NIOHandler<MySQLSession> {
     @Override
     public void onSocketRead(MySQLSession session) throws IOException {
         MycatSession mycatSession = session.getMycatSession();
-        MySQLCommand curSQLCommand = session.getMycatSession().getCurSQLCommand();
+        MySQLProxyCommand curSQLCommand = session.getMycatSession().getCurSQLCommand();
         if (curSQLCommand == null){
             System.out.println();
         }
@@ -47,7 +48,7 @@ public class MainMySQLNIOHandler implements NIOHandler<MySQLSession> {
     @Override
     public void onWriteFinished(MySQLSession session) throws IOException {
         MycatSession mycatSession = session.getMycatSession();
-        MySQLCommand curSQLCommand = session.getMycatSession().getCurSQLCommand();
+        MySQLProxyCommand curSQLCommand = session.getMycatSession().getCurSQLCommand();
         if(curSQLCommand.onBackendWriteFinished(session)){
             curSQLCommand.clearResouces(session,session.isClosed());
             mycatSession.switchSQLCommand(null);
@@ -59,7 +60,7 @@ public class MainMySQLNIOHandler implements NIOHandler<MySQLSession> {
         logger.info("MySQL Session closed normal:{} ,{}" ,normal,session);
         // 交给SQLComand去处理
         MycatSession mycatSession = session.getMycatSession();
-        MySQLCommand curCmd = mycatSession.getCurSQLCommand();
+        MySQLProxyCommand curCmd = mycatSession.getCurSQLCommand();
         try {
             if (curCmd.onBackendClosed(session, normal)) {
                 curCmd.clearResouces(mycatSession, session.isClosed());

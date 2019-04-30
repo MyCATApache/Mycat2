@@ -17,6 +17,8 @@
 package io.mycat.proxy.packet;
 
 
+import io.mycat.beans.mysql.MySQLCapabilityFlags;
+
 /**
  * https://mariadb.com/kb/en/library/err_packet/
  *
@@ -32,7 +34,7 @@ public class ErrorPacketImpl implements ErrorPacket {
     public byte[] sqlState = DEFAULT_SQLSTATE;
     public String message;
 
-    public void writePayload(MySQLPacket buffer) {
+    public void writePayload(MySQLPacket buffer,int serverCapabilities) {
         buffer.writeByte((byte) 0xff);
         buffer.writeFixInt(2, errno);
         if (errno == 0xFFFF) { /* progress reporting */
@@ -40,12 +42,13 @@ public class ErrorPacketImpl implements ErrorPacket {
             buffer.writeFixInt(1, maxStage);
             buffer.writeFixInt(3, progress);
             buffer.writeLenencString(progress_info);
-
-        } else if (mark == SQLSTATE_MARKER) {
+        } else if (MySQLCapabilityFlags.isClientProtocol41(serverCapabilities)) {
             buffer.writeByte(mark);
             buffer.writeFixString(sqlState);
+            buffer.writeEOFString(message);
+        }else {
+            buffer.writeEOFString(message);
         }
-        buffer.writeEOFString(message);
     }
 
     public void readPayload(MySQLPacket byteBuffer) {
