@@ -12,6 +12,7 @@ public interface ProxyBuffer {
 
     ByteBuffer currentByteBuffer();
 
+    int capacity();
     public int position();
 
     public int position(int index);
@@ -53,7 +54,7 @@ public interface ProxyBuffer {
     public void channelReadStartIndex(int index);
 
     public void channelReadEndIndex(int index);
-
+    public void expendToLength(int length) ;
 
     public boolean readFromChannel(SocketChannel channel) throws IOException;
 

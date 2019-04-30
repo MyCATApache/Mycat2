@@ -26,9 +26,6 @@ public class MySQLSession extends AbstractMySQLSession implements MySQLAPI {
     private final Datasource datasource;
 
 
-
-
-
     public DataNode getDataNode() {
         return dataNode;
     }
@@ -55,29 +52,6 @@ public class MySQLSession extends AbstractMySQLSession implements MySQLAPI {
     public void writeToChannel(ProxyBuffer proxyBuffer) throws IOException {
         this.proxyBuffer = proxyBuffer;
         this.writeToChannel();
-    }
-
-    /**
-     * @param
-     */
-    public void writeToChannel(ProxyBufferWriteIter iter) {
-        while (iter.hasNext()) {
-            if (iter.write(currentProxyBuffer())) {
-                iter.writeFinished(currentProxyBuffer());
-            } else {
-                break;
-            }
-        }
-    }
-
-    public void continueWriteToChannel(ProxyBufferWriteIter iter) throws IOException {
-        while (iter.hasNext()) {
-            if (iter.write(currentProxyBuffer())) {
-                iter.writeFinished(currentProxyBuffer());
-            } else {
-                break;
-            }
-        }
     }
 
     @Override
@@ -115,7 +89,16 @@ public class MySQLSession extends AbstractMySQLSession implements MySQLAPI {
         reactorThread.getMySQLSessionManager().addIdleSession(this);
         return true;
     }
-
+    public boolean end() {
+        this.resetPacket();
+        this.proxyBuffer = null;
+        if (mycat!=null){
+            mycat.resetPacket();
+        }
+        MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
+        reactorThread.getMySQLSessionManager().addIdleSession(this);
+        return true;
+    }
     public void synchronizedState(DataNode dataNode, AsynTaskCallBack<MySQLSession> finallyCallBack) {
 
     }

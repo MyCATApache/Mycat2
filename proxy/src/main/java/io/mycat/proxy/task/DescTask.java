@@ -193,8 +193,6 @@ public class DescTask implements ResultSetTask {
 
     @Override
     public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) {
-        mySQLPacket.packetReadStartIndex(startPos + 4);
-
         for (int columnIndex = 0; columnIndex < this.columnCount; columnIndex++) {
 
             ColumnDefPacket columnDef = currentColumnDefList[columnIndex];

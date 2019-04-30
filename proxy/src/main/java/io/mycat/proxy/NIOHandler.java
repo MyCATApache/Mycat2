@@ -1,5 +1,6 @@
 package io.mycat.proxy;
 
+import io.mycat.proxy.session.AbstractMySQLSession;
 import io.mycat.proxy.session.MySQLSession;
 import io.mycat.proxy.session.Session;
 
@@ -23,9 +24,9 @@ public interface NIOHandler<T extends Session> {
     void onSocketClosed(T session, boolean normal);
 
 
-    default public MySQLSession getCurrentMySQLSession() {
+    default public T getCurrentMySQLSession() {
         MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-        return (MySQLSession) thread.getReactorEnv().getCurSession();
+        return (T) thread.getReactorEnv().getCurSession();
     }
 
 }

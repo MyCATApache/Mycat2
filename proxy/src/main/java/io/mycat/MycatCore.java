@@ -307,6 +307,11 @@ public class MycatCore {
     runtime.initHeartbeat();
     runtime.initAcceptor();
 
+    //init(runtime);
+
+  }
+
+  private static void init(MycatRuntime runtime) {
     DataNode dn1 = runtime.getDataNodeByName("dn1");
     AsynTaskFuture<MySQLSession> future = AsynTaskFuture.future();
     dn1.getMySQLSessionFromUserThread(MySQLIsolation.READ_UNCOMMITTED, MySQLAutoCommit.OFF, "UTF8",
@@ -388,7 +393,6 @@ public class MycatCore {
             });
       });
     });
-
   }
 
 }

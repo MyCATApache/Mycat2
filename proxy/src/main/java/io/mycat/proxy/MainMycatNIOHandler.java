@@ -19,8 +19,8 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
         if(!session.readFromChannel()){
             return;
         }
-        if (!session.readMySQLPacketFully()) return;
-        MySQLPacket curPacket = session.currentFullPayload();
+        if (!session.readMySQLPayloadFully()) return;
+        MySQLPacket curPacket = session.currentPayload();
         byte head = curPacket.readByte();
         String sql = curPacket.readEOFString();
         processSQL(head, session);

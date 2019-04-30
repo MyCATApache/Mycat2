@@ -48,7 +48,7 @@ public class SendLongDataTask implements ResultSetTask {
                 splitter.init(payloadLength);
                 while (splitter.nextPacketInPacketSplitter()) {
                     int offset = splitter.getOffsetInPacketSplitter();
-                    int packetLen = splitter.getCurrentPacketLenInPacketSplitter();
+                    int packetLen = splitter.getPacketLenInPacketSplitter();
                     MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
                     mySQLPacket.writeFixInt(3, packetLen);
                     mySQLPacket.writeByte(packetId);

@@ -52,7 +52,7 @@ public class MySQLPayloadReadView implements MySQLPayloadReader<MySQLPayloadRead
         int index = this.startPos;
         packetSplitter.init(totalLength);
         while (packetSplitter.nextPacketInPacketSplitter()) {
-            int payloadLen = packetSplitter.getCurrentPacketLenInPacketSplitter();
+            int payloadLen = packetSplitter.getPacketLenInPacketSplitter();
             byteBuffer.position(index + 4);
             if (i == buffers.length) {
                 buffers = Arrays.copyOf(buffers, buffers.length + 1);

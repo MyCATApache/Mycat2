@@ -7,17 +7,17 @@ public interface PacketSplitter {
     // static final int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
     public static final int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
 
-    default public void init(int totalSize) {
+    default void init(int totalSize) {
         setTotalSizeInPacketSplitter(totalSize);
-        setCurrentPacketLenInPacketSplitter(0);
+        setPacketLenInPacketSplitter(0);
         setOffsetInPacketSplitter(0);
     }
 
-    default public boolean nextPacketInPacketSplitter() {
-        setOffsetInPacketSplitter(getOffsetInPacketSplitter() + getCurrentPacketLenInPacketSplitter());
+    default boolean nextPacketInPacketSplitter() {
+        setOffsetInPacketSplitter(getOffsetInPacketSplitter() + getPacketLenInPacketSplitter());
         // need a zero-len packet if final packet len is MAX_PACKET_SIZE
-        if (getCurrentPacketLenInPacketSplitter() == MAX_PACKET_SIZE && getOffsetInPacketSplitter() == getTotalSizeInPacketSplitter()) {
-            setCurrentPacketLenInPacketSplitter(0);
+        if (getPacketLenInPacketSplitter() == MAX_PACKET_SIZE && getOffsetInPacketSplitter() == getTotalSizeInPacketSplitter()) {
+            setPacketLenInPacketSplitter(0);
             return true;
         }
 
@@ -32,9 +32,9 @@ public interface PacketSplitter {
         int totalSize = getTotalSizeInPacketSplitter();
         currentPacketLen = getTotalSizeInPacketSplitter() - offset;
         if (currentPacketLen > MAX_PACKET_SIZE) {
-            setCurrentPacketLenInPacketSplitter(MAX_PACKET_SIZE);
+            setPacketLenInPacketSplitter(MAX_PACKET_SIZE);
         } else {
-            setCurrentPacketLenInPacketSplitter(currentPacketLen);
+            setPacketLenInPacketSplitter(currentPacketLen);
         }
         return offset < totalSize;
     }
@@ -43,9 +43,9 @@ public interface PacketSplitter {
 
     public void setTotalSizeInPacketSplitter(int totalSize);
 
-    public int getCurrentPacketLenInPacketSplitter();
+    public int getPacketLenInPacketSplitter();
 
-    public void setCurrentPacketLenInPacketSplitter(int currentPacketLen);
+    public void setPacketLenInPacketSplitter(int currentPacketLen);
 
     public void setOffsetInPacketSplitter(int offset);
 

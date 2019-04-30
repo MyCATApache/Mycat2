@@ -34,10 +34,10 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         if(!mycat.readFromChannel()){
             return;
         }
-        if (!mycat.readMySQLPacketFully()) {
+        if (!mycat.readMySQLPayloadFully()) {
             return;
         }
-        MySQLPacket mySQLPacket = mycat.currentFullPayload();
+        MySQLPacket mySQLPacket = mycat.currentPayload();
         AuthPacketImpl auth = new AuthPacketImpl();
         auth.readPayload(mySQLPacket);
 

@@ -197,23 +197,18 @@ public class LoadDataFileContentTask2 implements NIOHandler<MySQLSession>, Packe
     }
 
 
-    public int getCurrentPacketLenInPacketSplitter() {
+    public int getPacketLenInPacketSplitter() {
         return currentPacketLen;
     }
 
 
-    public void setCurrentPacketLenInPacketSplitter(int currentPacketLen) {
+    public void setPacketLenInPacketSplitter(int currentPacketLen) {
         this.currentPacketLen = currentPacketLen;
     }
 
 
     public void setOffsetInPacketSplitter(int offset) {
         this.offset = offset;
-    }
-
-
-    public int getPacketLenInPacketSplitter() {
-        return currentPacketLen;
     }
 
 

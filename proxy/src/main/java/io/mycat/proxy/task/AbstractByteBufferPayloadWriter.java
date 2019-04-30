@@ -196,12 +196,8 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
     }
 
 
-    public int getCurrentPacketLenInPacketSplitter() {
-        return currentPacketLen;
-    }
 
-
-    public void setCurrentPacketLenInPacketSplitter(int currentPacketLen) {
+    public void setPacketLenInPacketSplitter(int currentPacketLen) {
         this.currentPacketLen = currentPacketLen;
     }
 

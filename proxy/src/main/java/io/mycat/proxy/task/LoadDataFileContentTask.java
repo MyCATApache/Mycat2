@@ -33,7 +33,7 @@ public class LoadDataFileContentTask implements ResultSetTask {
             mysql.setCallBack(callBack);
             packetSplitter.init(length);
             packetSplitter.nextPacketInPacketSplitter();
-            curRemains = packetSplitter.getCurrentPacketLenInPacketSplitter();
+            curRemains = packetSplitter.getPacketLenInPacketSplitter();
             writeData();
         } catch (Exception e) {
             e.printStackTrace();
@@ -45,7 +45,7 @@ public class LoadDataFileContentTask implements ResultSetTask {
             long res;
             while (curRemains > 0) {
                 SocketChannel channel = mysql.channel();
-                curRemains = packetSplitter.getCurrentPacketLenInPacketSplitter();
+                curRemains = packetSplitter.getPacketLenInPacketSplitter();
                 channel.write(ByteBuffer.wrap(MySQLPacket.getFixIntByteArray(3, curRemains)));
                 byte b = mysql.incrementPacketIdAndGet();
                 channel.write(ByteBuffer.wrap(new byte[]{b}));
@@ -57,7 +57,7 @@ public class LoadDataFileContentTask implements ResultSetTask {
                     break;
                 } else if (allRemains > 0 && curRemains == 0) {
                     if (packetSplitter.nextPacketInPacketSplitter()) {
-                        curRemains = packetSplitter.getCurrentPacketLenInPacketSplitter();
+                        curRemains = packetSplitter.getPacketLenInPacketSplitter();
                         continue;
                     }
                 } else {

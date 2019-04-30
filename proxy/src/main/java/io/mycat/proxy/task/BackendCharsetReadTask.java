@@ -29,7 +29,7 @@ public class BackendCharsetReadTask implements QueryResultSetTask {
 
     @Override
     public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) {
-        int rowDataIndex = startPos + MySQLPacket.getPacketHeaderSize();
+        int rowDataIndex = startPos;
 
         String collation = null;
         String charset = null;

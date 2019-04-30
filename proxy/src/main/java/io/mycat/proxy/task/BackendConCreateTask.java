@@ -66,7 +66,8 @@ public class BackendConCreateTask implements NIOHandler<MySQLSession> {
             if ((proxyBuffer.get(4) & 0xff) == 0xff) {
                 throw new MycatExpection("receive error packet");
             }
-            hs.readPayload(mysql.currentFullPayload());
+            hs.readPayload(mysql.currentPayload());
+            mysql.resetCurrentPayload();
             int charsetIndex = hs.characterSet;
             AuthPacketImpl packet = new AuthPacketImpl();
             packet.capabilities = MySQLMeta.getClientCapabilityFlags().value;

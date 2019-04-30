@@ -105,12 +105,12 @@ public abstract class MySQLSinglePayloadWriterHandler<T extends AbstractSession<
     }
 
     @Override
-    public int getCurrentPacketLenInPacketSplitter() {
+    public int getPacketLenInPacketSplitter() {
         return currentPacketLen;
     }
 
     @Override
-    public void setCurrentPacketLenInPacketSplitter(int currentPacketLen) {
+    public void setPacketLenInPacketSplitter(int currentPacketLen) {
         this.currentPacketLen = currentPacketLen;
     }
 

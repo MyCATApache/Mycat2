@@ -94,12 +94,12 @@ public class MySQLResultSetWriter implements MySQLPayloadWriter<MycatSession> {
     }
 
     @Override
-    public int getCurrentPacketLenInPacketSplitter() {
+    public int getPacketLenInPacketSplitter() {
         return 0;
     }
 
     @Override
-    public void setCurrentPacketLenInPacketSplitter(int currentPacketLen) {
+    public void setPacketLenInPacketSplitter(int currentPacketLen) {
 
     }
 

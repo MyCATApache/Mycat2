@@ -29,7 +29,7 @@ public interface MySQLPayloadWriter<T extends Session> extends PacketSplitter {
             boolean hasNext = false;
             while (hasNext = nextPacketInPacketSplitter()) {
                 int offset = getOffsetInPacketSplitter();
-                int packetLen = getCurrentPacketLenInPacketSplitter();
+                int packetLen = getPacketLenInPacketSplitter();
                 setReminsPacketLen(packetLen + 4);
                 setPacketId((byte) (1 + getPacketId()));
                 writeHeader(buffer[0], getPacketId(), packetLen);
@@ -61,7 +61,7 @@ public interface MySQLPayloadWriter<T extends Session> extends PacketSplitter {
             while (getReminsPacketLen() == 0) {
                 if (nextPacketInPacketSplitter()) {
                     int offset = getOffsetInPacketSplitter();
-                    int packetLen = getCurrentPacketLenInPacketSplitter();
+                    int packetLen = getPacketLenInPacketSplitter();
                     setReminsPacketLen(packetLen + 4);
                     setPacketId((byte) (1 + getPacketId()));
                     ByteBuffer[] buffer = getBuffer();

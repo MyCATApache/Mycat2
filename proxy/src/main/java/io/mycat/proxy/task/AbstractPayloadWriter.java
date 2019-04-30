@@ -7,7 +7,6 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.session.AbstractMySQLSession;
 import io.mycat.proxy.session.MySQLSession;
-import io.mycat.proxy.session.Session;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -197,12 +196,9 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMyS
     }
 
 
-    public int getCurrentPacketLenInPacketSplitter() {
-        return currentPacketLen;
-    }
 
 
-    public void setCurrentPacketLenInPacketSplitter(int currentPacketLen) {
+    public void setPacketLenInPacketSplitter(int currentPacketLen) {
         this.currentPacketLen = currentPacketLen;
     }
 
