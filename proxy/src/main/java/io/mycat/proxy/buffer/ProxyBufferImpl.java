@@ -18,15 +18,14 @@ package io.mycat.proxy.buffer;
 
 import io.mycat.proxy.MycatExpection;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.router.ByteArrayView;
+import io.mycat.sqlparser.util.ByteArrayView;
 import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
-public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBufferImpl>,
-                                                  ByteArrayView {
+public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBufferImpl> {
 
   ByteBuffer buffer;
   BufferPool bufferPool;
@@ -105,10 +104,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     return buffer.get();
   }
 
-  @Override
-  public boolean hasNext() {
-    return buffer.hasRemaining();
-  }
+
 
   @Override
   public byte get(int index) {

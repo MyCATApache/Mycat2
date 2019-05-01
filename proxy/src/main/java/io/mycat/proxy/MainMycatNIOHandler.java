@@ -14,14 +14,17 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.proxy.command.DirectPassthrouhCmd;
 import io.mycat.beans.mysql.MySQLCommandType;
+import io.mycat.proxy.command.DirectPassthrouhCmd;
 import io.mycat.proxy.command.MySQLPacketCommand;
 import io.mycat.proxy.command.MySQLProxyCommand;
 import io.mycat.proxy.packet.ErrorCode;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.router.RouteResult;
+import io.mycat.sqlparser.util.ByteArrayView;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,15 +48,16 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
     //command dispatcher
     switch (head) {
       case MySQLCommandType.COM_QUERY: {
-        String sql = curPacket.readEOFString();
-        doQuery(curPacket.currentBuffer().currentByteBuffer().asCharBuffer(), mycat);
+        ByteArrayView byteArrayView = getByteArrayView(curPacket);
+        doQuery(byteArrayView, mycat);
+        mycat.resetCurrentPayload();
         if (mycat.getCurSQLCommand().handle(mycat)) {
           mycat.getCurSQLCommand().clearResouces(mycat, mycat.isClosed());
         }
         break;
       }
       case MySQLCommandType.COM_SLEEP: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_QUIT: {
@@ -64,9 +68,9 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
         String schema = curPacket.readEOFString();
         try {
           mycat.useSchema(schema);
-          mycat.writeOkPacket();
+          mycat.writeEndingOkPacket();
         } catch (Exception e) {
-          mycat.writeErrorPacket(e);
+          mycat.writeEndingErrorPacket(e);
         }
         break;
       }
@@ -87,7 +91,7 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
         break;
       }
       case MySQLCommandType.COM_SHUTDOWN: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_STATISTICS: {
@@ -99,44 +103,44 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
         break;
       }
       case MySQLCommandType.COM_CONNECT: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_PROCESS_KILL: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_DEBUG: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_PING: {
-        mycat.writeOkPacket();
+        mycat.writeEndingOkPacket();
         break;
       }
       case MySQLCommandType.COM_TIME: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_DELAYED_INSERT: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_CHANGE_USER: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_RESET_CONNECTION: {
         try {
           mycat.resetSession();
-          mycat.writeOkPacket();
+          mycat.writeEndingOkPacket();
         } catch (Exception e) {
-          mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+          mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         }
         break;
       }
       case MySQLCommandType.COM_DAEMON: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        mycat.writeEndingErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_SET_OPTION: {
@@ -168,8 +172,55 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
     }
   }
 
-  private void doQuery(CharSequence sql, final MycatSession mycat) throws IOException {
+  private ByteArrayView getByteArrayView(MySQLPacket curPacket) {
+    return new ByteArrayView() {
+            ByteBuffer buffer = curPacket.currentBuffer().currentByteBuffer().asReadOnlyBuffer();
+            int length = curPacket.packetReadEndIndex() - curPacket.packetReadStartIndex();
+            int offset = curPacket.packetReadStartIndex();
+
+            @Override
+            public byte getByte(int index) {
+              return buffer.get(index);
+            }
+
+            @Override
+            public int length() {
+              return length;
+            }
+
+            @Override
+            public void set(int index, byte value) {
+              buffer.put(index, value);
+            }
+
+            @Override
+            public void setOffset(int offset) {
+              this.offset = offset;
+            }
+
+            @Override
+            public int getOffset() {
+              return this.offset;
+            }
+          };
+  }
+
+  private void doQuery(ByteArrayView sql, final MycatSession mycat)
+      throws IOException {
     mycat.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
+    RouteResult routeResult = mycat.route(sql);
+    switch (routeResult.getRouteType()) {
+      case PURE_QUERY_SINGLE_NODE:
+        String dataNodeName = routeResult.getDataNodeName();
+        mycat.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
+        break;
+      case COMPLEX_QUERY:
+        mycat.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
+        break;
+      case OTHER:
+        mycat.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
+        break;
+    }
   }
 
   @Override
@@ -182,6 +233,7 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
     MySQLProxyCommand command = mycat.getCurSQLCommand();
     if (command == null) {
       if (mycat.isResponseFinished()) {
+        mycat.resetPacket();
         mycat.change2ReadOpts();
       } else {
         mycat.writeToChannel();

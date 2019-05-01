@@ -17,5 +17,10 @@
         <artifactId>config</artifactId>
         <version>0.1</version>
     </dependency>
+    <dependency>
+        <groupId>io.mycat</groupId>
+        <artifactId>sqlparser</artifactId>
+        <version>0.1</version>
+    </dependency>
 </dependencies>
 </project>

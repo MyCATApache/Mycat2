@@ -20,6 +20,7 @@ import io.mycat.beans.mysql.MySQLCapabilities;
 import io.mycat.beans.mysql.MySQLCapabilityFlags;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.MycatExpection;
+import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
@@ -29,10 +30,10 @@ import io.mycat.proxy.packet.ErrorCode;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.task.AsynTaskCallBack;
-import io.mycat.router.ByteArrayView;
 import io.mycat.router.RouteResult;
 import io.mycat.router.RouteStrategy;
 import io.mycat.router.RouteStrategyImpl;
+import io.mycat.sqlparser.util.ByteArrayView;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -49,8 +50,6 @@ public class MycatSession extends AbstractMySQLSession {
   private MySQLProxyCommand curSQLCommand;
   private MySQLSession backend;
 
-  private RouteStrategy routeStrategy = new RouteStrategyImpl();
-
   private String lastMessage;
   private long affectedRows;
   private int serverStatus;
@@ -59,9 +58,9 @@ public class MycatSession extends AbstractMySQLSession {
   private int serverCapabilities;
   private int lastErrorCode;
   private final static byte[] SQL_STATE = "HY000".getBytes();
+  final private RouteStrategy routeStrategy = new RouteStrategyImpl();
 
-
-  public void writeOkPacket() throws IOException {
+  public void writeEndingOkPacket() throws IOException {
     MySQLPacket buffer = newCurrentMySQLPacket();
     String lastMessage = getLastMessage();
     buffer.writeByte((byte) 0x00);
@@ -79,9 +78,9 @@ public class MycatSession extends AbstractMySQLSession {
       buffer.writeLenencBytes(lastMessage.getBytes());
     }
     setLastMessage(null);
-    writeMySQLPacket(buffer);
-    setResponseFinished(true);
     this.switchSQLCommand(null);
+    setResponseFinished(true);
+    writeMySQLPacket(buffer);
   }
 
 
@@ -193,7 +192,7 @@ public class MycatSession extends AbstractMySQLSession {
     return flag;
   }
 
-  public void writeErrorPacket(Throwable throwable) throws IOException {
+  public void writeEndingErrorPacket(Throwable throwable) throws IOException {
     ErrorPacketImpl errorPacket = new ErrorPacketImpl();
     if (throwable instanceof MycatExpection) {
       MycatExpection error = (MycatExpection) throwable;
@@ -203,19 +202,22 @@ public class MycatSession extends AbstractMySQLSession {
       errorPacket.errno = ErrorCode.ER_UNKNOWN_ERROR;
       errorPacket.message = throwable.getMessage();
     }
-    writeErrorPacket(errorPacket);
+    writeEndingErrorPacket(errorPacket);
   }
-  public void writeErrorPacket(int errorCode, String errorMessage) throws IOException {
+
+  public void writeEndingErrorPacket(int errorCode, String errorMessage) throws IOException {
     ErrorPacketImpl errorPacket = new ErrorPacketImpl();
     errorPacket.errno = errorCode;
     errorPacket.setErrorMessage(errorMessage.getBytes());
-    writeErrorPacket(errorPacket);
+    writeEndingErrorPacket(errorPacket);
   }
-  public void writeErrorPacket(ErrorPacketImpl errorPacket) throws IOException {
+
+  public void writeEndingErrorPacket(ErrorPacketImpl errorPacket) throws IOException {
     this.lastErrorCode = errorPacket.errno;
     errorPacket.setErrorSqlState(SQL_STATE);
     setResponseFinished(true);
     errorPacket.writePayload(newCurrentMySQLPacket(), getServerCapabilities());
+    setResponseFinished(true);
     this.writeToChannel();
     this.switchSQLCommand(null);
   }

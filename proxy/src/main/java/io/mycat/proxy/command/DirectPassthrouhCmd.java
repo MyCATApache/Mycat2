@@ -25,7 +25,6 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.MySQLSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.router.ByteArrayView;
 import io.mycat.router.RouteResult;
 
 import java.io.IOException;
@@ -36,17 +35,19 @@ public final class DirectPassthrouhCmd implements MySQLProxyCommand {
     @Override
     public boolean handle(MycatSession mycat) throws IOException {
         ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
-        RouteResult route = mycat.route((ByteArrayView) proxyBuffer);
+        proxyBuffer.channelWriteStartIndex(0);
+        proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
+//        RouteResult route = mycat.route(new );
         DataNode dataNode = mycat.getSchema().getDefaultDataNode();
-        if(!route.isSQLChanged()){
-           proxyBuffer.channelWriteStartIndex(0);
-           proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
-       }else {
-           throw new MycatExpection(ErrorCode.ER_UNKNOWN_ERROR,"unsupport!!");
-       }
-       if (route.getDataNodeName() != null){
-           dataNode = MycatRuntime.INSTANCE.getMycatConfig().getDataNodeByName(route.getDataNodeName());
-       }
+//        if(!route.isSQLChanged()){
+//           proxyBuffer.channelWriteStartIndex(0);
+//           proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
+//       }else {
+//           throw new MycatExpection(ErrorCode.ER_UNKNOWN_ERROR,"unsupport!!");
+//       }
+//       if (route.getDataNodeName() != null){
+//           dataNode = MycatRuntime.INSTANCE.getMycatConfig().getDataNodeByName(route.getDataNodeName());
+//       }
         writeProxyBufferToDataNode(mycat, proxyBuffer, dataNode);
         return false;
     }

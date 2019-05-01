@@ -1,7 +1,9 @@
 package io.mycat.router;
 
+import io.mycat.sqlparser.util.ByteArrayView;
+
 public interface RouteStrategy {
     RouteResult getRouteResult();
-    boolean preprocessRoute(ByteArrayView view,String schema);
+    RouteType preprocessRoute(ByteArrayView view,String schema);
     RouteResultFuture processRoute(RouteResult routeResult);
 }

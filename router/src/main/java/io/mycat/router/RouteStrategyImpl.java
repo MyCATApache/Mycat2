@@ -1,35 +1,41 @@
 package io.mycat.router;
 
-import java.util.StringTokenizer;
+import io.mycat.sqlparser.util.BufferSQLContext;
+import io.mycat.sqlparser.util.BufferSQLParser;
+import io.mycat.sqlparser.util.ByteArrayView;
 
 public class RouteStrategyImpl implements RouteStrategy {
-    final RouteResult routeResult = new RouteResult();
 
-    @Override
-    public RouteResult getRouteResult() {
-        return routeResult;
+  final RouteResult routeResult = new RouteResult();
+  final BufferSQLParser sqlParser = new BufferSQLParser();
+  final BufferSQLContext context = new BufferSQLContext();
+
+  @Override
+  public RouteResult getRouteResult() {
+    return routeResult;
+  }
+
+  @Override
+  public RouteType preprocessRoute(ByteArrayView view, String schema) {
+    routeResult.reset();
+    sqlParser.parse(view, context);
+    RouteType routeType = RouteType.OTHER;
+    byte sqlType = context.getSQLType();
+    if (sqlType == BufferSQLContext.SELECT_SQL) {
+      if (context.isHasWhere() & !context.isHasBetween() && !context.isHasCompare()
+              && !context.isHasJoin() && !context.isHasSubQuery() && !context.isHasUnion()
+              && context.getTableCount() == 1) {
+        routeType = RouteType.PURE_QUERY_SINGLE_NODE;
+      } else {
+        routeType = RouteType.COMPLEX_QUERY;
+      }
     }
+    routeResult.setRouteType(routeType);
+    return routeType;
+  }
 
-    @Override
-    public boolean preprocessRoute(ByteArrayView view, String schema) {
-        routeResult.setDataNodeName(null);
-        StringBuilder sb = new StringBuilder();
-        while (view.hasNext()) {
-            sb.append(view.get());
-        }
-        StringTokenizer stringTokenizer = new StringTokenizer(sb.toString());
-        while (stringTokenizer.hasMoreElements()) {
-            if("form".equals(stringTokenizer.nextToken())){
-                routeResult.setDataNodeName(stringTokenizer.nextToken());
-                break;
-            }
-        }
-        return true;
-    }
-
-
-    @Override
-    public RouteResultFuture processRoute(RouteResult routeResult) {
-        return null;
-    }
+  @Override
+  public RouteResultFuture processRoute(RouteResult routeResult) {
+    return null;
+  }
 }
