@@ -1,0 +1,10 @@
+annotations:
+  - annotation:
+      type: single
+      name: annotation-name
+      columnNameList: id
+      columnValueList: ^[1-9]\d*$
+      tableName: travelrecord
+      additional:
+        - param1: ^[1-9]\d*$
+        - param2: ^[1-9]\d*$

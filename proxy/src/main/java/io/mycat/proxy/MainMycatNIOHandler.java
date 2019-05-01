@@ -14,7 +14,9 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.proxy.command.MySQLCommandType;
+import io.mycat.proxy.command.DirectPassthrouhCmd;
+import io.mycat.beans.mysql.MySQLCommandType;
+import io.mycat.proxy.command.MySQLPacketCommand;
 import io.mycat.proxy.command.MySQLProxyCommand;
 import io.mycat.proxy.packet.ErrorCode;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -27,6 +29,7 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
 
   public static final MainMycatNIOHandler INSTANCE = new MainMycatNIOHandler();
   private static final Logger logger = LoggerFactory.getLogger(MainMycatNIOHandler.class);
+  private static final String UNKNOWN_COMMAND = "Unknown command";
 
   @Override
   public void onSocketRead(MycatSession mycat) throws IOException {
@@ -43,98 +46,129 @@ public class MainMycatNIOHandler implements NIOHandler<MycatSession> {
     switch (head) {
       case MySQLCommandType.COM_QUERY: {
         String sql = curPacket.readEOFString();
-        doQuery(curPacket.currentBuffer().currentByteBuffer().asCharBuffer(),mycat);
-        if (mycat.getCurSQLCommand().procssSQL(mycat)) {
+        doQuery(curPacket.currentBuffer().currentByteBuffer().asCharBuffer(), mycat);
+        if (mycat.getCurSQLCommand().handle(mycat)) {
           mycat.getCurSQLCommand().clearResouces(mycat, mycat.isClosed());
         }
         break;
       }
       case MySQLCommandType.COM_SLEEP: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR,"Unknown command");
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_QUIT: {
-        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR,"Unknown command");
+        mycat.close(true, "COM_QUIT");
         break;
       }
       case MySQLCommandType.COM_INIT_DB: {
+        String schema = curPacket.readEOFString();
+        try {
+          mycat.useSchema(schema);
+          mycat.writeOkPacket();
+        } catch (Exception e) {
+          mycat.writeErrorPacket(e);
+        }
         break;
       }
-
       case MySQLCommandType.COM_FIELD_LIST: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_CREATE_DB: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_DROP_DB: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_REFRESH: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_SHUTDOWN: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_STATISTICS: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_PROCESS_INFO: {
-        break;
-      }
-      case MySQLCommandType.COM_CONNECT_OUT: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_CONNECT: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_PROCESS_KILL: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_DEBUG: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_PING: {
+        mycat.writeOkPacket();
         break;
       }
       case MySQLCommandType.COM_TIME: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_DELAYED_INSERT: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_CHANGE_USER: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_RESET_CONNECTION: {
+        try {
+          mycat.resetSession();
+          mycat.writeOkPacket();
+        } catch (Exception e) {
+          mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
+        }
         break;
       }
       case MySQLCommandType.COM_DAEMON: {
+        mycat.writeErrorPacket(ErrorCode.ER_UNKNOWN_COM_ERROR, UNKNOWN_COMMAND);
         break;
       }
       case MySQLCommandType.COM_SET_OPTION: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_STMT_PREPARE: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_STMT_SEND_LONG_DATA: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_STMT_EXECUTE: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_STMT_CLOSE: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
       case MySQLCommandType.COM_STMT_RESET: {
+        mycat.switchSQLCommand(MySQLPacketCommand.INSTANCE).handle(mycat);
         break;
       }
+      default:
+        throw new MycatExpection("unknown sql type");
     }
-
   }
 
-  private void doQuery(CharSequence sql,final MycatSession mycat) throws IOException {
+  private void doQuery(CharSequence sql, final MycatSession mycat) throws IOException {
     mycat.switchSQLCommand(DirectPassthrouhCmd.INSTANCE);
   }
 

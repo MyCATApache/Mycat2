@@ -14,11 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy;
+package io.mycat.proxy.command;
 
 import io.mycat.beans.DataNode;
+import io.mycat.proxy.MycatExpection;
+import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.proxy.command.MySQLProxyCommand;
 import io.mycat.proxy.packet.ErrorCode;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -29,11 +30,11 @@ import io.mycat.router.RouteResult;
 
 import java.io.IOException;
 
-public class DirectPassthrouhCmd implements MySQLProxyCommand {
+public final class DirectPassthrouhCmd implements MySQLProxyCommand {
     public static final DirectPassthrouhCmd INSTANCE = new DirectPassthrouhCmd();
 
     @Override
-    public boolean procssSQL(MycatSession mycat) throws IOException {
+    public boolean handle(MycatSession mycat) throws IOException {
         ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
         RouteResult route = mycat.route((ByteArrayView) proxyBuffer);
         DataNode dataNode = mycat.getSchema().getDefaultDataNode();
@@ -46,6 +47,14 @@ public class DirectPassthrouhCmd implements MySQLProxyCommand {
        if (route.getDataNodeName() != null){
            dataNode = MycatRuntime.INSTANCE.getMycatConfig().getDataNodeByName(route.getDataNodeName());
        }
+        writeProxyBufferToDataNode(mycat, proxyBuffer, dataNode);
+        return false;
+    }
+
+    public void writeProxyBufferToDataNode(
+        MycatSession mycat,
+        ProxyBuffer proxyBuffer,
+        DataNode dataNode) {
         mycat.setRequestFinished(true);
         mycat.getSingleBackendAndCallBack(false, dataNode ,null, (mysql, sender, success, result, throwable) -> {
             if (success) {
@@ -59,7 +68,6 @@ public class DirectPassthrouhCmd implements MySQLProxyCommand {
                 mycat.closeAllBackendsAndResponseError("");
             }
         });
-        return false;
     }
 
     @Override

@@ -125,9 +125,10 @@ public class MycatSession extends AbstractMySQLSession {
   }
 
 
-  public void switchSQLCommand(MySQLProxyCommand newCmd) {
+  public MySQLProxyCommand switchSQLCommand(MySQLProxyCommand newCmd) {
     logger.debug("{} switch command from {} to  {} ", this, this.curSQLCommand, newCmd);
     this.curSQLCommand = newCmd;
+    return newCmd;
   }
 
   public void closeAllBackendsAndResponseError(String errorMessage) {
@@ -265,5 +266,13 @@ public class MycatSession extends AbstractMySQLSession {
 
   public void setLastInsertId(long lastInsertId) {
     this.lastInsertId = lastInsertId;
+  }
+
+  public void useSchema(String schema) {
+    this.schema = MycatRuntime.INSTANCE.getMycatConfig().getSchemaByName(schema);
+  }
+
+  public void resetSession() {
+    throw new MycatExpection("unsupport!");
   }
 }

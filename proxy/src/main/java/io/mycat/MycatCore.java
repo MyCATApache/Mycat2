@@ -17,14 +17,11 @@ package io.mycat;
 import io.mycat.beans.DataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.beans.mysql.PrepareStmtExecuteFlag;
 import io.mycat.config.MycatConfig;
 import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.packet.ResultSetCollectorImpl;
 import io.mycat.proxy.session.MySQLSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.AsynTaskFuture;
-import io.mycat.proxy.task.prepareStatement.PreparedStatement;
 
 /**
  * @author cjw
@@ -47,7 +44,7 @@ public class MycatCore {
     runtime.initHeartbeat();
     runtime.initAcceptor();
 
-   // init(runtime);
+    //init(runtime);
 
   }
 
@@ -61,11 +58,11 @@ public class MycatCore {
       @Override
       public void finished(MySQLSession m, Object sender, boolean success, Object result,
           Object errorMessage) {
-        m.sleep(new AsynTaskCallBack<MySQLSession>() {
+        m.ping( new AsynTaskCallBack<MySQLSession>() {
           @Override
           public void finished(MySQLSession session, Object sender, boolean success, Object result,
               Object attr) {
-            if (success){
+            if (success) {
               System.out.print("ssss");
             }
             System.out.print("ssss");

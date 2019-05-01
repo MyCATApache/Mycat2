@@ -77,8 +77,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     @Override
     public void onWriteFinished(MycatSession mycat) throws IOException {
-        mycat.currentProxyBuffer().reset();
         if (!finished) {
+            mycat.currentProxyBuffer().reset();
             mycat.change2ReadOpts();
         }else {
             mycat.resetPacket();

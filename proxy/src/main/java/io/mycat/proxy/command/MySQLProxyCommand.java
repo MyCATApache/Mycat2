@@ -29,9 +29,7 @@ public interface MySQLProxyCommand {
      * @return 是否完成了应答
      * @throws IOException
      */
-    public default boolean onBackendResponse(MySQLSession session) throws IOException {
-        return true;
-    }
+    public  boolean onBackendResponse(MySQLSession session) throws IOException;
 
     /**
      * 后端连接关闭了
@@ -41,9 +39,7 @@ public interface MySQLProxyCommand {
      * @return 是否完成了应答
      * @throws IOException
      */
-    public default boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException {
-        return true;
-    }
+    public  boolean onBackendClosed(MySQLSession session, boolean normal) throws IOException ;
 
     /**
      * 前端数据已经写完，即发送给MyCat前端应答的数据（结果集等）已经写完到Channel（可做流控使用）
@@ -61,9 +57,7 @@ public interface MySQLProxyCommand {
      * @return 是否完成了应答
      * @throws IOException
      */
-    public default boolean onBackendWriteFinished(MySQLSession session) throws IOException{
-        return true;
-    }
+    public  boolean onBackendWriteFinished(MySQLSession session) throws IOException;
 
     /**
      * 清理资源，只清理自己产生的资源（如创建了Buffer，以及Session中放入了某些对象）
@@ -79,6 +73,6 @@ public interface MySQLProxyCommand {
      * @param session
      * @return 是否完成了应答（如果是多个阶段应答的，则只在最后一个节点才返回true表示应答完成）
      */
-    public boolean procssSQL(MycatSession session) throws IOException;
+    public boolean handle(MycatSession session) throws IOException;
 
 }

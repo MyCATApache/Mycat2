@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.command;
+package io.mycat.beans.mysql;
 
 /**
  * @author mycat
@@ -179,4 +179,24 @@ public class MySQLCommandType {
    */
   public static final byte COM_RESET_CONNECTION = 31;
 
+  public interface SubCommand{
+    public static final byte REFRESH_GRANT = 0x01;
+    public static final byte REFRESH_LOG = 0x02;
+    public static final byte REFRESH_TABLES = 0x04;
+    public static final byte REFRESH_HOSTS = 0x08;
+    public static final byte REFRESH_STATUS = 0x10;
+    public static final byte REFRESH_THREADS = 0x20;
+    public static final byte REFRESH_SLAVE = 0x40;
+    public static final byte REFRESH_MASTER = (byte) 0x80;
+  }
+  public interface ShutdownType{
+    public static final byte DEFAULT = 0x00;
+    public static final byte WAIT_CONNECTIONS = 0x01;
+    public static final byte TRANSCTIONS = 0x02;
+    public static final byte UPDATES = 0x08;
+    public static final byte ALL_BUFFERS = 0x10;
+    public static final byte CRITICAL_BUFFERS = 0x11;
+    public static final byte KILL_QUERY = (byte) 0xfe;
+    public static final byte KILL_CONNECTION = (byte) 0xff;
+  }
 }
