@@ -1,18 +1,16 @@
 /**
  * Copyright (C) <2019>  <gaozhiwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.config.schema;
 
@@ -22,61 +20,71 @@ import java.util.List;
 /**
  * Desc:
  *
- * @date: 24/09/2017
- * @author: gaozhiwen
+ * @date: 24/09/2017  02/05/2019
+ * @author: gaozhiwen chenjunwen
  */
 public class SchemaConfig {
-    public enum SchemaTypeEnum {
-        // 所有表在一个MySQL Server上（但不分片），
-        DB_IN_ONE_SERVER,
-        // 所有表在不同的MySQL Server上（但不分片），
-        DB_IN_MULTI_SERVER,
-        // 只使用基于SQL注解的路由模式（高性能但手工指定）
-        ANNOTATION_ROUTE;
-        // 使用SQL解析的方式去判断路由
-//        SQL_PARSE_ROUTE;
-    }
 
-    public String name;
-    public SchemaTypeEnum schemaType;
-    private String defaultDataNode;
-    private List<TableDefConfig> tables = new ArrayList<TableDefConfig>();
+  public enum SchemaType {
+    // 所有表在一个MySQL Server上（但不分片），
+    DB_IN_ONE_SERVER,
+    // 所有表在不同的MySQL Server上（但不分片），
+    DB_IN_MULTI_SERVER,
+    // 只使用基于SQL注解的路由模式（高性能但手工指定）
+    ANNOTATION_ROUTE,
+    // 使用SQL解析的方式去判断路由
+    SQL_PARSE_ROUTE;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String name;
+  public SchemaType schemaType;
+  private String defaultDataNode;
+  private String sqlMaxLimit;
+  private List<TableDefConfig> tables = new ArrayList<TableDefConfig>();
 
-    public void setName(String name) {
-        this.name = name;
-    }
+  public String getName() {
+    return name;
+  }
 
-    public SchemaTypeEnum getSchemaType() {
-        return schemaType;
-    }
+  public void setName(String name) {
+    this.name = name;
+  }
 
-    public void setSchemaType(SchemaTypeEnum schemaType) {
-        this.schemaType = schemaType;
-    }
+  public SchemaType getSchemaType() {
+    return schemaType;
+  }
 
-    public String getDefaultDataNode() {
-        return defaultDataNode;
-    }
+  public void setSchemaType(SchemaType schemaType) {
+    this.schemaType = schemaType;
+  }
 
-    public void setDefaultDataNode(String defaultDataNode) {
-        this.defaultDataNode = defaultDataNode;
-    }
+  public String getDefaultDataNode() {
+    return defaultDataNode;
+  }
 
-    public List<TableDefConfig> getTables() {
-        return tables;
-    }
+  public void setDefaultDataNode(String defaultDataNode) {
+    this.defaultDataNode = defaultDataNode;
+  }
 
-    public void setTables(List<TableDefConfig> tables) {
-        this.tables = tables;
-    }
+  public List<TableDefConfig> getTables() {
+    return tables;
+  }
 
-    @Override
-    public String toString() {
-        return "SchemaBean{" + "name='" + name + '\'' + ", schemaType=" + schemaType + ", tables="
-                + tables + '}';
-    }
+  public void setTables(List<TableDefConfig> tables) {
+    this.tables = tables;
+  }
+
+  public String getSqlMaxLimit() {
+    return sqlMaxLimit;
+  }
+
+  public void setSqlMaxLimit(String sqlMaxLimit) {
+    this.sqlMaxLimit = sqlMaxLimit;
+  }
+
+  @Override
+  public String toString() {
+    return "SchemaBean{" + "name='" + name + '\'' + ", schemaType=" + schemaType + ", tables="
+               + tables + '}';
+  }
 }

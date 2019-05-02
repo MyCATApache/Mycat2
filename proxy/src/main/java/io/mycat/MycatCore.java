@@ -40,9 +40,12 @@ public class MycatCore {
 
     config.initRepliac();
     config.initSchema();
+    config.initDynamicAnnotation();
 
     runtime.initHeartbeat();
     runtime.initAcceptor();
+
+
 
     //init(runtime);
 

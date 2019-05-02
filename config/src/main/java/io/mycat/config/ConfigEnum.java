@@ -20,6 +20,7 @@ package io.mycat.config;
 import io.mycat.config.datasource.DatasourceRootConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
+import io.mycat.config.route.DynamicAnnotationRootConfig;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.user.UserRootConfig;
 
@@ -34,7 +35,8 @@ public enum ConfigEnum {
     USER(5, "user.yml", UserRootConfig.class),
     DATASOURCE(6, "datasource.yml", DatasourceRootConfig.class),
     REPLICA_INDEX(7, "replica-index.yml", ReplicaIndexRootConfig.class),
-    SCHEMA(8, "schema.yml", SchemaRootConfig.class);
+    SCHEMA(8, "schema.yml", SchemaRootConfig.class),
+    DYNAMIC_ANNOTATION(9,"dynamicAnnotation.yml", DynamicAnnotationRootConfig .class);
     private byte type;
     private String fileName;
     private Class clazz;

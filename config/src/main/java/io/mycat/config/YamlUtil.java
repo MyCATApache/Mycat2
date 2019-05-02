@@ -16,6 +16,10 @@
  */
 package io.mycat.config;
 
+import io.mycat.config.route.DynamicAnnotationConfig;
+import io.mycat.config.route.DynamicAnnotationRootConfig;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.DumperOptions;
@@ -101,6 +105,17 @@ public class YamlUtil {
         representer.addClassTag(obj.getClass(), Tag.MAP);
         Yaml yaml = new Yaml(representer, options);
         return yaml.dump(obj);
+    }
+
+    public static void main(String[] args) {
+        DynamicAnnotationRootConfig rootConfig = new DynamicAnnotationRootConfig();
+        rootConfig.setDynamicAnnotations(new ArrayList<>());
+        List<DynamicAnnotationConfig> dynamicAnnotationConfig = rootConfig.getDynamicAnnotations();
+        DynamicAnnotationConfig dynamicAnnotation = new DynamicAnnotationConfig();
+        dynamicAnnotationConfig.add(dynamicAnnotation);
+        dynamicAnnotation.setName("expr");
+        dynamicAnnotation.setPattern("sssss");
+        String dump = dump(rootConfig);
     }
 
     /**

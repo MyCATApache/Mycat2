@@ -22,5 +22,26 @@
         <artifactId>sqlparser</artifactId>
         <version>0.1</version>
     </dependency>
+    <dependency>
+        <groupId>com.fulmicoton</groupId>
+        <artifactId>multiregexp</artifactId>
+        <version>0.3</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.yevdo/jwildcard -->
+    <dependency>
+        <groupId>com.yevdo</groupId>
+        <artifactId>jwildcard</artifactId>
+        <version>1.4</version>
+    </dependency>
+    <dependency>
+        <groupId>com.google.re2j</groupId>
+        <artifactId>re2j</artifactId>
+        <version>1.2</version>
+    </dependency>
+    <dependency>
+        <groupId>com.github.jsqlparser</groupId>
+        <artifactId>jsqlparser</artifactId>
+        <version>1.4</version>
+    </dependency>
 </dependencies>
 </project>

@@ -22,10 +22,12 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
+import io.mycat.config.route.DynamicAnnotationRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.SchemaConfig;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.replica.Replica;
+import io.mycat.router.dynamicAnnotation.DynamicAnnotationMatcher;
 import io.mycat.util.SplitUtil;
 import java.io.IOException;
 import java.util.EnumMap;
@@ -193,5 +195,21 @@ public class MycatConfig implements ConfigReceiver {
   @Override
   public <T extends Configurable> T getConfig(ConfigEnum configEnum) {
     return (T) configMap.get(configEnum);
+  }
+
+  public void initDynamicAnnotation() {
+    DynamicAnnotationRootConfig dynamicAnnotationRootConfig =(DynamicAnnotationRootConfig) configMap.get(ConfigEnum.DYNAMIC_ANNOTATION);
+    DynamicAnnotationMatcher dynamicAnnotationMatcher = new DynamicAnnotationMatcher(dynamicAnnotationRootConfig.getDynamicAnnotations());
+    Map<String,String> matcher = dynamicAnnotationMatcher.match("id = 1 between 2 and 3");
+//    while (matcher.find()){
+//      System.out.printf("Group zero, start= %s, end= %s, match= '%s'%n",
+//          matcher.start(), matcher.end(), matcher.group());
+//      for (int i = 1; i <= matcher.groupCount(); i++) {
+//        System.out.printf("Group number: %s, start: %s, end: %s, match= '%s'%n%n",
+//            i, matcher.start(i), matcher.end(i), matcher.group(i));
+//      }
+//    }
+
+
   }
 }

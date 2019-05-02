@@ -48,6 +48,7 @@ public class ConfigLoader {
         loadConfig(ConfigEnum.USER, GlobalConfig.INIT_VERSION,receiver);
         loadConfig(ConfigEnum.DATASOURCE, GlobalConfig.INIT_VERSION,receiver);
         loadConfig(ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION,receiver);
+        loadConfig(ConfigEnum.DYNAMIC_ANNOTATION, GlobalConfig.INIT_VERSION,receiver);
         // 清空prepare文件夹
         YamlUtil.clearDirectory(DIR_PREPARE, null);
     }
