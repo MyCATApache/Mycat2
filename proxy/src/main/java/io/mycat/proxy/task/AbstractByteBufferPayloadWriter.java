@@ -21,14 +21,14 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.session.AbstractMySQLSession;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.AbstractMySQLClientSession;
+import io.mycat.proxy.session.MySQLClientSession;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> implements NIOHandler<AbstractMySQLSession>, PacketSplitter {
+public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> implements NIOHandler<AbstractMySQLClientSession>, PacketSplitter {
     private ByteBuffer[] buffers;
     private int startIndex;
     private int writeIndex;
@@ -39,9 +39,9 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
     int totalSize;
     int currentPacketLen;
     int offset;
-    private MySQLSession mysql;
+    private MySQLClientSession mysql;
 
-    public void request(MySQLSession mysql, T buffer, int position, int length, AsynTaskCallBack<MySQLSession> callBack) {
+    public void request(MySQLClientSession mysql, T buffer, int position, int length, AsynTaskCallBack<MySQLClientSession> callBack) {
         try {
             this.mysql = mysql;
             this.buffers = new ByteBuffer[2];
@@ -88,7 +88,7 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
                 }
             }
             if (!hasNext) {
-                writeFinishedAndClear(true);
+                writeFinishedAndClear(mysql,true);
                 return;
             }
         } catch (Exception e) {
@@ -98,7 +98,7 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
     }
 
     @Override
-    public void onSocketWrite(AbstractMySQLSession session) throws IOException {
+    public void onSocketWrite(AbstractMySQLClientSession session) throws IOException {
         int writed = writePayload(buffers, this.writeIndex, getReminsPacketLen(), getServerSocket());
         this.writeIndex += writed;
         setReminsPacketLen(getReminsPacketLen() - writed);
@@ -111,7 +111,7 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
                 this.writeIndex += writed;
                 setReminsPacketLen(getReminsPacketLen() - writed);
             } else {
-                writeFinishedAndClear(true);
+                writeFinishedAndClear(mysql,true);
                 return;
             }
         }
@@ -128,13 +128,13 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
             return serverSocket.write(body);
         }
     }
-    public void writeFinishedAndClear(boolean success) {
+    public void writeFinishedAndClear(MySQLClientSession mysql,boolean success) {
         mysql.clearReadWriteOpts();
         getBufferPool().recycle(buffers[0]);
         buffers[0] = null;
         setServerSocket(null);
         ByteBuffer buffer = buffers[1];
-        onWriteFinished((T) buffer, success);
+        onWriteFinished(mysql,(T) buffer, success);
     }
 
     <T extends ByteBuffer> void writeHeader(T buffer, int packetLen, int packerId) {
@@ -144,8 +144,8 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
         buffer.position(0);
     }
 
-    void onWriteFinished(T buffer, boolean success) {
-        AsynTaskCallBack callBackAndReset = getCurrentMySQLSession().getCallBackAndReset();
+    void onWriteFinished(MySQLClientSession mysql,T buffer, boolean success) {
+        AsynTaskCallBack callBackAndReset = mysql.getCallBackAndReset();
         try {
             clearResource(buffer);
             callBackAndReset.finished(this.mysql, this, success, null, null);
@@ -159,7 +159,7 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
 
     void onError(Throwable e) {
         mysql.setLastThrowable(e);
-        writeFinishedAndClear(false);
+        writeFinishedAndClear(mysql,false);
     }
 
     public byte getPacketId() {
@@ -234,26 +234,26 @@ public abstract class AbstractByteBufferPayloadWriter<T extends ByteBuffer> impl
 
 
 
-    public void onSocketClosed(MySQLSession session, boolean normal) {
+    public void onSocketClosed(MySQLClientSession session, boolean normal) {
         if (!normal) {
-            onError(getCurrentMySQLSession().getLastThrowableAndReset());
+            onError(getSessionCaller().getLastThrowableAndReset());
         } else {
-            writeFinishedAndClear(false);
+            writeFinishedAndClear(mysql,false);
         }
     }
 
     @Override
-    public void onSocketRead(AbstractMySQLSession session) throws IOException {
+    public void onSocketRead(AbstractMySQLClientSession session) throws IOException {
 
     }
 
     @Override
-    public void onWriteFinished(AbstractMySQLSession session) throws IOException {
+    public void onWriteFinished(AbstractMySQLClientSession session) throws IOException {
 
     }
 
     @Override
-    public void onSocketClosed(AbstractMySQLSession session, boolean normal) {
+    public void onSocketClosed(AbstractMySQLClientSession session, boolean normal) {
 
     }
 }

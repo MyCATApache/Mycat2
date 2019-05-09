@@ -18,8 +18,10 @@ package io.mycat.beans;
 
 import io.mycat.beans.mysql.MySQLCollation;
 import io.mycat.beans.mysql.MySQLCollationTable;
+import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.MySQLFieldsType;
 
+import io.mycat.beans.mysql.MySQLTableInfo;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;

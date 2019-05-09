@@ -16,6 +16,7 @@
  */
 package io.mycat.proxy.buffer;
 
+import io.mycat.proxy.packet.MySQLPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,11 +38,11 @@ public interface ProxyBuffer {
 
     public float readFloat();
 
-    public void writeLong(long l);
+    public MySQLPacket writeLong(long l);
 
     public long readLong();
 
-    public void writeDouble(double d);
+    public MySQLPacket writeDouble(double d);
 
     public double readDouble();
 
@@ -52,7 +53,7 @@ public interface ProxyBuffer {
     public ProxyBuffer get(byte[] bytes);
 
     public byte put(byte b);
-
+    public void put(byte[] bytes);
     public void put(byte[] bytes, int offset, int legnth);
 
     public int channelWriteStartIndex();

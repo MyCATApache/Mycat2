@@ -20,7 +20,7 @@ import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.BackendCharsetReadTask;
 import org.slf4j.Logger;
@@ -33,12 +33,12 @@ public class Datasource {
     private final int index;
     private boolean master = false;
     private final DatasourceConfig datasourceConfig;
-    private Replica replica;
+    private MySQLReplica replica;
     private MySQLCollationIndex collationIndex = new MySQLCollationIndex();
 
 
 
-    public Datasource(int index, boolean master, DatasourceConfig datasourceConfig, Replica replica) {
+    public Datasource(int index, boolean master, DatasourceConfig datasourceConfig, MySQLReplica replica) {
         this.index = index;
         this.master = master;
         this.datasourceConfig = datasourceConfig;
@@ -80,7 +80,7 @@ public class Datasource {
         }));
     }
 
-    private Runnable createMySQLSession(MycatReactorThread thread, AsynTaskCallBack<MySQLSession> callback) {
+    private Runnable createMySQLSession(MycatReactorThread thread, AsynTaskCallBack<MySQLClientSession> callback) {
        return ()-> thread.getMySQLSessionManager().createSession(this, (mysql, sender, success, result, errorMessage) -> {
             if (success) {
                 callback.finished(mysql,this,true,null,null);
@@ -136,7 +136,7 @@ public class Datasource {
         return !isMaster();
     }
 
-    public Replica getReplica() {
+    public MySQLReplica getReplica() {
         return replica;
     }
     public MySQLCollationIndex getCollationIndex() {

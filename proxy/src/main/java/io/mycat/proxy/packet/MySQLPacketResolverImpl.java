@@ -14,13 +14,11 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.beans.mysql.MySQLCapabilityFlags;
-import io.mycat.beans.mysql.MySQLServerStatus;
-import io.mycat.proxy.MycatExpection;
+import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.session.AbstractMySQLSession;
-import io.mycat.proxy.session.MySQLSessionMonopolizeType;
+import io.mycat.proxy.session.MySQLProxySession;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -58,21 +56,16 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   byte[] okStatusInfo;
   byte okSessionStateInfoType;
   byte[] okSessionStateInfoTypeData;
-  final boolean CLIENT_DEPRECATE_EOF;
   int wholePacketStartPos;
   int wholePacketEndPos;
-  final MySQLCapabilityFlags capabilityFlags;
-  final AbstractMySQLSession session;
+  final MySQLProxySession session;
+  int capabilityFlags;
   MySQLPacketProcessType mySQLPacketProcessType;
 
 
-  public MySQLPacketResolverImpl(boolean CLIENT_DEPRECATE_EOF, MySQLCapabilityFlags capabilityFlags,
-      AbstractMySQLSession session) {
-    this.CLIENT_DEPRECATE_EOF = CLIENT_DEPRECATE_EOF;
-    this.capabilityFlags = capabilityFlags;
+  public MySQLPacketResolverImpl(MySQLProxySession session) {
     this.session = session;
   }
-
   @Override
   public MySQLPacketProcessType getMySQLPacketProcessType() {
     return mySQLPacketProcessType;
@@ -239,13 +232,19 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public boolean clientDeprecateEof() {
-    return CLIENT_DEPRECATE_EOF;
+    return MySQLServerCapabilityFlags.isDeprecateEOF(capabilityFlags());
   }
 
   @Override
-  public MySQLCapabilityFlags capabilityFlags() {
+  public int capabilityFlags() {
     return capabilityFlags;
   }
+
+  @Override
+  public void setCapabilityFlags(int serverCapability) {
+    this.capabilityFlags = serverCapability;
+  }
+
 
   @Override
   public int setRemainsBytes(int remainsBytes) {

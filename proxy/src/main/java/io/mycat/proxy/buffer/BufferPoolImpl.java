@@ -21,14 +21,25 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BufferPoolImpl implements BufferPool {
+
+    @Override
+    public int defaultAllocate() {
+        return 128;
+    }
+
     @Override
     public ByteBuffer allocate() {
-        return ByteBuffer.allocate(128);
+        return ByteBuffer.allocate(defaultAllocate());
     }
 
     @Override
     public ByteBuffer allocate(int size) {
         return  ByteBuffer.allocate(size);
+    }
+
+    @Override
+    public ByteBuffer allocate(byte[] bytes) {
+        return ByteBuffer.wrap(bytes);
     }
 
     @Override

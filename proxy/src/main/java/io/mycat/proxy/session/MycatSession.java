@@ -14,130 +14,119 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.beans.DataNode;
-import io.mycat.beans.Schema;
-import io.mycat.beans.mysql.MySQLCapabilities;
-import io.mycat.beans.mysql.MySQLCapabilityFlags;
+import io.mycat.MySQLDataNode;
+import io.mycat.MycatExpection;
+import io.mycat.beans.MySQLServerStatus;
+import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.beans.mysql.MySQLAutoCommit;
+import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.MycatExpection;
-import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
+import io.mycat.proxy.MycatSessionWriteHandler;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.command.MySQLProxyCommand;
-import io.mycat.proxy.packet.ErrorCode;
-import io.mycat.proxy.packet.ErrorPacketImpl;
+import io.mycat.proxy.executer.MySQLDataNodeExecuter;
 import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.proxy.packet.MySQLPacketResolver;
+import io.mycat.proxy.packet.MySQLPacketResolverImpl;
+import io.mycat.proxy.packet.PacketSplitter;
+import io.mycat.proxy.packet.PacketSplitterImpl;
 import io.mycat.proxy.task.AsynTaskCallBack;
-import io.mycat.router.RouteResult;
-import io.mycat.router.RouteStrategy;
-import io.mycat.router.RouteStrategyImpl;
-import io.mycat.sqlparser.util.ByteArrayView;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
-public class MycatSession extends AbstractMySQLSession {
+public class MycatSession extends AbstractSession<MycatSession> implements
+    MySQLServerSession<MycatSession>, MySQLProxySession<MycatSession> {
 
   public MycatSession(BufferPool bufferPool, Selector selector, SocketChannel channel,
       int socketOpt, NIOHandler nioHandler, SessionManager<? extends Session> sessionManager)
       throws IOException {
     super(selector, channel, socketOpt, nioHandler, sessionManager);
-    setCurrentProxyBuffer(new ProxyBufferImpl(bufferPool));
+    proxyBuffer = new ProxyBufferImpl(bufferPool);
   }
 
-  private MySQLProxyCommand curSQLCommand;
-  private MySQLSession backend;
+  private MycatSchema schema;
+  private final ProxyBuffer proxyBuffer;
+  private final ByteBuffer header = ByteBuffer.allocate(4);
+  final MySQLServerStatus serverStatus = new MySQLServerStatus();
+  private MySQLClientSession backend;
+  private String dataNode;
+  protected final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();
+  protected final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);
+  private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
+  private MySQLCommandFinishedType finishedType = MySQLCommandFinishedType.RESPONSE;
+  private boolean responseFinished = false;
+  final ByteBuffer[] packetContainer = new ByteBuffer[2];
+  final PacketSplitter packetSplitter = new PacketSplitterImpl();
 
-  private String lastMessage;
-  private long affectedRows;
-  private int serverStatus;
-  private int warningCount;
-  private long lastInsertId;
-  private int serverCapabilities;
-  private int lastErrorCode;
-  private final static byte[] SQL_STATE = "HY000".getBytes();
-  final private RouteStrategy routeStrategy = new RouteStrategyImpl();
+  public MySQLCommandFinishedType getCommandFinishedType() {
+    return finishedType;
+  }
 
-  public void writeEndingOkPacket() throws IOException {
-    MySQLPacket buffer = newCurrentMySQLPacket();
-    String lastMessage = getLastMessage();
-    buffer.writeByte((byte) 0x00);
-    buffer.writeLenencInt(affectedRows);
-    buffer.writeLenencInt(lastInsertId);
+  public void switchWriteHandler(MycatSessionWriteHandler writeHandler) {
+    this.writeHandler = writeHandler;
+  }
 
-    if (MySQLCapabilityFlags.isClientProtocol41(serverCapabilities)) {
-      buffer.writeFixInt(2, serverStatus);
-      buffer.writeFixInt(2, warningCount);
-    } else if (MySQLCapabilityFlags.isKnowsAboutTransactions(serverCapabilities)) {
-      buffer.writeFixInt(2, serverStatus);
-    }
+  public void responseFinishedClear() {
+    return;
+  }
 
-    if (lastMessage != null && !lastMessage.isEmpty()) {
-      buffer.writeLenencBytes(lastMessage.getBytes());
-    }
-    setLastMessage(null);
-    this.switchSQLCommand(null);
-    setResponseFinished(true);
-    writeMySQLPacket(buffer);
+  public void setAutoCommit(MySQLAutoCommit off) {
+    this.serverStatus.setAutoCommit(off);
+  }
+
+  public void setIsolation(MySQLIsolation readUncommitted) {
+    this.serverStatus.setIsolation(readUncommitted);
+  }
+
+  public void setCharset(int index, String charsetName) {
+    this.serverStatus.setCharset(index, charsetName, Charset.forName(charsetName));
+  }
+
+  public String getDataNode() {
+    return dataNode;
+  }
+
+  public void setDataNode(String dataNode) {
+    this.dataNode = dataNode;
   }
 
 
-  public RouteResult route(ByteArrayView byteArrayView) {
-    routeStrategy.preprocessRoute(byteArrayView, this.getSchema().getSchemaName());
-    return routeStrategy.getRouteResult();
-  }
-
-  public Schema getSchema() {
-    return schema == null ? schema = MycatRuntime.INSTANCE.getMycatConfig().getDefaultSchema()
+  public MycatSchema getSchema() {
+    return schema == null ? schema = MycatRuntime.INSTANCE.getDefaultSchema()
                : schema;
   }
 
-
-  public void setSchema(Schema schema) {
+  public void setSchema(MycatSchema schema) {
     this.schema = schema;
   }
 
-  private Schema schema;
-
-  public MySQLSession getBackend() {
+  public MySQLClientSession getBackend() {
     return backend;
   }
 
-  public MySQLProxyCommand getCurSQLCommand() {
-    return curSQLCommand;
-  }
-
-  public byte getPacketId() {
-    return (byte) super.packetResolver.getPacketId();
-  }
-
-
-  public int getAndIncrementPacketId() {
-    return super.packetResolver.getAndIncrementPacketId();
-  }
-
-
-  public boolean isRequestFinished() {
-    return super.packetResolver.isRequestFininshed();
-  }
-
-
-  public MySQLProxyCommand switchSQLCommand(MySQLProxyCommand newCmd) {
-    logger.debug("{} switch command from {} to  {} ", this, this.curSQLCommand, newCmd);
-    this.curSQLCommand = newCmd;
-    return newCmd;
-  }
-
-  public void closeAllBackendsAndResponseError(String errorMessage) {
-
-  }
-
-  public void getSingleBackendAndCallBack(boolean runOnSlave, DataNode dataNode,
-      LoadBalanceStrategy strategy, AsynTaskCallBack<MySQLSession> finallyCallBack) {
-    dataNode
-        .getMySQLSession(this.getIsolation(), this.getAutoCommit(), this.getCharset(), runOnSlave,
+  public void getBackend(boolean runOnSlave, MySQLDataNode dataNode,
+      LoadBalanceStrategy strategy, AsynTaskCallBack<MySQLClientSession> finallyCallBack) {
+    if (this.backend != null) {
+      //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
+      finallyCallBack.finished(this.backend, this, true, null, null);
+      return;
+    }
+    MySQLIsolation isolation = this.getIsolation();
+    MySQLAutoCommit autoCommit = this.getAutoCommit();
+    String charsetName = this.getCharsetName();
+    MySQLDataNodeExecuter
+        .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
+            runOnSlave,
             strategy, (session, sender, success, result, errorMessage) ->
             {
               if (success) {
@@ -149,132 +138,244 @@ public class MycatSession extends AbstractMySQLSession {
             });
   }
 
+  public MySQLAutoCommit getAutoCommit() {
+    return this.serverStatus.getAutoCommit();
+  }
+
+  public MySQLIsolation getIsolation() {
+    return this.serverStatus.getIsolation();
+  }
+
   @Override
   public void close(boolean normal, String hint) {
 
   }
 
+  @Override
+  public ProxyBuffer currentProxyBuffer() {
+    return proxyBuffer;
+  }
+
+  @Override
+  public MySQLPacketResolver getPacketResolver() {
+    return packetResolver;
+  }
+
+  @Override
+  public void setCurrentProxyBuffer(ProxyBuffer buffer) {
+    throw new MycatExpection("unsupport!");
+  }
+
   public int getServerCapabilities() {
-    return serverCapabilities;
+    return this.serverStatus.getServerCapabilities();
   }
 
   public void setServerCapabilities(int serverCapabilities) {
-    this.serverCapabilities = serverCapabilities;
+    this.serverStatus.setServerCapabilities(serverCapabilities);
+    packetResolver.setCapabilityFlags(serverCapabilities);
   }
 
-  /**
-   * 服务器能力@cjw
-   */
-  public int getDefaultServerCapabilities() {
-    int flag = 0;
-    flag |= MySQLCapabilities.CLIENT_LONG_PASSWORD;
-    flag |= MySQLCapabilities.CLIENT_FOUND_ROWS;
-    flag |= MySQLCapabilities.CLIENT_LONG_FLAG;
-    flag |= MySQLCapabilities.CLIENT_CONNECT_WITH_DB;
-    // flag |= MySQLCapabilities.CLIENT_NO_SCHEMA;
-    // boolean usingCompress = MycatServer.getInstance().getConfig()
-    // .getSystem().getUseCompression() == 1;
-    // if (usingCompress) {
-    // flag |= MySQLCapabilities.CLIENT_COMPRESS;
-    // }
-    flag |= MySQLCapabilities.CLIENT_ODBC;
-    flag |= MySQLCapabilities.CLIENT_LOCAL_FILES;
-    flag |= MySQLCapabilities.CLIENT_IGNORE_SPACE;
-    flag |= MySQLCapabilities.CLIENT_PROTOCOL_41;
-    flag |= MySQLCapabilities.CLIENT_INTERACTIVE;
-    // flag |= MySQLCapabilities.CLIENT_SSL;
-    flag |= MySQLCapabilities.CLIENT_IGNORE_SIGPIPE;
-    flag |= MySQLCapabilities.CLIENT_TRANSACTIONS;
-    // flag |= ServerDefs.CLIENT_RESERVED;
-    flag |= MySQLCapabilities.CLIENT_SECURE_CONNECTION;
-    flag |= MySQLCapabilities.CLIENT_PLUGIN_AUTH;
-    flag |= MySQLCapabilities.CLIENT_CONNECT_ATTRS;
-    return flag;
-  }
-
-  public void writeEndingErrorPacket(Throwable throwable) throws IOException {
-    ErrorPacketImpl errorPacket = new ErrorPacketImpl();
-    if (throwable instanceof MycatExpection) {
-      MycatExpection error = (MycatExpection) throwable;
-      errorPacket.errno = error.getErrorCode();
-      errorPacket.message = error.getMessage();
-    } else {
-      errorPacket.errno = ErrorCode.ER_UNKNOWN_ERROR;
-      errorPacket.message = throwable.getMessage();
-    }
-    writeEndingErrorPacket(errorPacket);
-  }
-
-  public void writeEndingErrorPacket(int errorCode, String errorMessage) throws IOException {
-    ErrorPacketImpl errorPacket = new ErrorPacketImpl();
-    errorPacket.errno = errorCode;
-    errorPacket.setErrorMessage(errorMessage.getBytes());
-    writeEndingErrorPacket(errorPacket);
-  }
-
-  public void writeEndingErrorPacket(ErrorPacketImpl errorPacket) throws IOException {
-    this.lastErrorCode = errorPacket.errno;
-    errorPacket.setErrorSqlState(SQL_STATE);
-    setResponseFinished(true);
-    errorPacket.writePayload(newCurrentMySQLPacket(), getServerCapabilities());
-    setResponseFinished(true);
-    this.writeToChannel();
-    this.switchSQLCommand(null);
-  }
-
-  public void bind(MySQLSession mySQLSession) {
+  public void bind(MySQLClientSession mySQLSession) {
     this.backend = mySQLSession;
   }
 
   public String getLastMessage() {
-    return lastMessage;
+    return this.serverStatus.getLastMessage();
   }
 
   public void setLastMessage(String lastMessage) {
-    this.lastMessage = lastMessage;
+    this.serverStatus.setLastMessage(lastMessage);
   }
 
-  public void setBackend(MySQLSession backend) {
+  public void setBackend(MySQLClientSession backend) {
     this.backend = backend;
   }
 
   public long getAffectedRows() {
-    return affectedRows;
+    return this.serverStatus.getAffectedRows();
   }
 
   public void setAffectedRows(long affectedRows) {
-    this.affectedRows = affectedRows;
+    this.serverStatus.setAffectedRows(affectedRows);
   }
 
   public int getServerStatus() {
-    return serverStatus;
+    return this.serverStatus.getServerStatus();
   }
 
-  public void setServerStatus(int serverStatus) {
-    this.serverStatus = serverStatus;
+  @Override
+  public LinkedList<ByteBuffer> writeQueue() {
+    return writeQueue;
+  }
+
+  @Override
+  public BufferPool bufferPool() {
+    return getMycatReactorThread().getBufPool();
+  }
+
+  @Override
+  public ByteBuffer packetHeaderBuffer() {
+    return header;
+  }
+
+
+  @Override
+  public ByteBuffer[] packetContainer() {
+    return packetContainer;
+  }
+
+  @Override
+  public void setPakcetId(int packet) {
+    packetResolver.setPacketId(packet);
+  }
+
+  @Override
+  public byte getNextPacketId() {
+    return (byte) packetResolver.incrementPacketIdAndGet();
+  }
+
+
+  @Override
+  public PacketSplitter packetSplitter() {
+    return packetSplitter;
+  }
+
+  @Override
+  public String lastMessage() {
+    return this.serverStatus.getLastMessage();
+  }
+
+  @Override
+  public long affectedRows() {
+    return this.serverStatus.getAffectedRows();
+  }
+
+  @Override
+  public long incrementAffectedRows() {
+    return serverStatus.incrementAffectedRows();
+  }
+
+  @Override
+  public int serverStatus() {
+    return this.serverStatus.getServerStatus();
+  }
+
+  @Override
+  public int setServerStatus(int s) {
+    return this.serverStatus.setServerStatus(s);
+  }
+
+
+  @Override
+  public int incrementWarningCount() {
+    return this.serverStatus.incrementWarningCount();
+  }
+
+  @Override
+  public int warningCount() {
+    return this.serverStatus.getWarningCount();
+  }
+
+  @Override
+  public long lastInsertId() {
+    return this.serverStatus.getWarningCount();
+  }
+
+  @Override
+  public int setLastInsertId(int s) {
+    return this.serverStatus.getWarningCount();
+  }
+
+  @Override
+  public int lastErrorCode() {
+    return this.serverStatus.getWarningCount();
+  }
+
+  @Override
+  public boolean isDeprecateEOF() {
+    return MySQLServerCapabilityFlags.isDeprecateEOF(this.serverStatus.getServerCapabilities());
   }
 
   public int getWarningCount() {
-    return warningCount;
+    return this.serverStatus.getWarningCount();
   }
 
   public void setWarningCount(int warningCount) {
-    this.warningCount = warningCount;
+    this.serverStatus.setWarningCount(warningCount);
   }
 
   public long getLastInsertId() {
-    return lastInsertId;
+    return this.serverStatus.getLastInsertId();
   }
 
   public void setLastInsertId(long lastInsertId) {
-    this.lastInsertId = lastInsertId;
+    this.serverStatus.setLastInsertId(lastInsertId);
   }
 
   public void useSchema(String schema) {
-    this.schema = MycatRuntime.INSTANCE.getMycatConfig().getSchemaByName(schema);
+    this.schema = MycatRuntime.INSTANCE.getSchemaByName(schema);
   }
 
   public void resetSession() {
     throw new MycatExpection("unsupport!");
+  }
+
+  @Override
+  public Charset charset() {
+    return this.serverStatus.getCharset();
+  }
+
+  public String getCharsetName() {
+    return this.serverStatus.getCharsetName();
+  }
+
+  @Override
+  public int charsetIndex() {
+    return this.serverStatus.getCharsetIndex();
+  }
+
+  @Override
+  public int capabilities() {
+    return this.serverStatus.getServerCapabilities();
+  }
+
+  @Override
+  public void setLastErrorCode(int errorCode) {
+    this.serverStatus.setLastErrorCode(errorCode);
+  }
+
+  @Override
+  public boolean isResponseFinished() {
+    return responseFinished;
+  }
+
+  @Override
+  public void setResponseFinished(boolean b) {
+    responseFinished = b;
+  }
+
+  @Override
+  public void writeToChannel() throws IOException {
+    writeHandler.writeToChannel(this);
+  }
+
+  public boolean readProxyPayloadFully() throws IOException {
+    return packetResolver.readMySQLPayloadFully();
+  }
+
+  public MySQLPacket currentProxyPayload() throws IOException {
+    return packetResolver.currentPayload();
+  }
+
+  public void resetCurrentProxyPayload() throws IOException {
+    packetResolver.resetPayload();
+  }
+
+  public boolean readPartProxyPayload() throws IOException {
+    return packetResolver.readMySQLPacket();
+  }
+
+  public void resetPacket() {
+    packetResolver.reset();
   }
 }

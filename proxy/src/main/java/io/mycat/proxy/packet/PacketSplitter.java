@@ -28,7 +28,9 @@ public interface PacketSplitter {
         setPacketLenInPacketSplitter(0);
         setOffsetInPacketSplitter(0);
     }
-
+    public static int caculWholePacketSize(int payloadLen){
+      return   (payloadLen / (PacketSplitter.MAX_PACKET_SIZE)+1) * 4;
+    }
     default boolean nextPacketInPacketSplitter() {
         setOffsetInPacketSplitter(getOffsetInPacketSplitter() + getPacketLenInPacketSplitter());
         // need a zero-len packet if final packet len is MAX_PACKET_SIZE

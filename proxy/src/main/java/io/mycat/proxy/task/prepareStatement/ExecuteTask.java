@@ -18,15 +18,16 @@ package io.mycat.proxy.task.prepareStatement;
 
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLPStmtBindValueList;
-import io.mycat.beans.mysql.PrepareStmtExecuteFlag;
-import io.mycat.proxy.MycatExpection;
+import io.mycat.beans.mysql.MySQLPrepareStmtExecuteFlag;
+import io.mycat.beans.mysql.MySQLPreparedStatement;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.ColumnDefPacket;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.ResultSetCollector;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;
 
@@ -214,7 +215,7 @@ public class ExecuteTask  implements ResultSetTask {
         collector.onRowEnd();
     }
 
-    public void request(MySQLSession mysql, PreparedStatement ps, PrepareStmtExecuteFlag flags, ResultSetCollector collector, AsynTaskCallBack<MySQLSession> callBack) {
+    public void request(MySQLClientSession mysql, MySQLPreparedStatement ps, MySQLPrepareStmtExecuteFlag flags, ResultSetCollector collector, AsynTaskCallBack<MySQLClientSession> callBack) {
         if (!ps.getLongDataMap().isEmpty()) {
             new SendLongDataTask().request(mysql, ps, (session, sender, success, result, errorMessage) -> {
                 request(mysql, ps, flags, collector, callBack);
@@ -231,8 +232,8 @@ public class ExecuteTask  implements ResultSetTask {
             }
 
             MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-            mysql.setProxyBuffer(new ProxyBufferImpl(thread.getBufPool()));
-            MySQLPacket mySQLPacket = mysql.newCurrentMySQLPacket();
+            mysql.setCurrentProxyBuffer(new ProxyBufferImpl(thread.getBufPool()));
+            MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(8192);//@todo
             mySQLPacket.writeByte((byte) 0x17);
             mySQLPacket.writeFixInt(4, ps.getStatementId());
             mySQLPacket.writeByte(flags.getValue());
@@ -287,9 +288,9 @@ public class ExecuteTask  implements ResultSetTask {
                 }
             }
             mysql.prepareReveiceResponse();
-            mysql.writeMySQLPacket(mySQLPacket, 0);
+            mysql.writeProxyPacket(mySQLPacket, 0);
         } catch (IOException e) {
-            this.clearAndFinished(false, e.getMessage());
+            this.clearAndFinished(mysql,false, e.getMessage());
         }
     }
 

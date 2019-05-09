@@ -249,6 +249,10 @@ public class BufferSQLContext {
       return buffer.getString(pos, size);
     }
   }
+  public int getSchemaNameHashIndex(int index) {
+    int hashArrayIdx = tblResult[index << 1];
+    return hashArrayIdx;
+  }
 
   public long getTokenType(int sqlIdx, int sqlPos) {
     return hashArray.getType((int) (sqlInfoArray[sqlIdx] >>> 50) + sqlPos);
@@ -266,7 +270,10 @@ public class BufferSQLContext {
       return hashArray.getHash(hashArrayIdx);
     }
   }
-
+  public int getTableNameHashIndex(int idx) {
+    int hashArrayIdx = tblResult[(idx << 1) + 1];
+    return hashArrayIdx;
+  }
   public String getTableName(int idx) {
     if (totalTblCount == 0) {
       return null;
@@ -359,6 +366,9 @@ public class BufferSQLContext {
   public boolean isDDL() {
     return sqlType == CREATE_SQL || sqlType == ALTER_SQL || sqlType == DROP_SQL
                || sqlType == TRUNCATE_SQL;
+  }
+  public boolean isSimpleSelect() {
+    return this.getSQLType() == SELECT_SQL;
   }
 
   public boolean isSelect() {
@@ -513,8 +523,8 @@ public class BufferSQLContext {
     return annotationCondition;
   }
 
-  public byte getSchemaCount() {
-    return schemaCount;
+  public int getSchemaCount() {
+    return schemaCount&0xff;
   }
 
   public void setSelectItem(int functionHash) {

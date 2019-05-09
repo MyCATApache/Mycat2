@@ -12,4 +12,23 @@
     <artifactId>sqlparser</artifactId>
 
 
+    <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.github.jsqlparser/jsqlparser -->
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>2.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.16</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.mnadeem</groupId>
+            <artifactId>sql-table-name-parser</artifactId>
+            <version>0.0.5</version>
+        </dependency>
+    </dependencies>
 </project>

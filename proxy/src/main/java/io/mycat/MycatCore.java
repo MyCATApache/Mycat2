@@ -14,12 +14,11 @@
  */
 package io.mycat;
 
-import io.mycat.beans.DataNode;
+import io.mycat.proxy.executer.MySQLDataNodeExecuter;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.config.MycatConfig;
 import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.AsynTaskFuture;
 
@@ -31,39 +30,31 @@ public class MycatCore {
 
   public static void main(String[] args) throws Exception {
     MycatRuntime runtime = MycatRuntime.INSTANCE;
-    MycatConfig config = runtime.getMycatConfig();
-
-    config.loadProxy();
-    config.loadMycat();
-
+    runtime.loadMycat();
+    runtime.loadProxy();
     runtime.initReactor();
-
-    config.initRepliac();
-    config.initSchema();
-    config.initDynamicAnnotation();
-
+    runtime.initRepliac();
     runtime.initHeartbeat();
     runtime.initAcceptor();
 
 
 
-    //init(runtime);
+    //clear(runtime);
 
   }
 
   private static void init(MycatRuntime runtime) {
-    DataNode dn1 = runtime.getDataNodeByName("dn1");
-    AsynTaskFuture<MySQLSession> future = AsynTaskFuture.future();
-    dn1.getMySQLSessionFromUserThread(MySQLIsolation.READ_UNCOMMITTED, MySQLAutoCommit.OFF, "UTF8",
+    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
+     MySQLDataNodeExecuter.getMySQLSessionFromUserThread("dn1",MySQLIsolation.READ_UNCOMMITTED, MySQLAutoCommit.OFF, "UTF8",
         false, null, future);
 
-    future.setCallBack(new AsynTaskCallBack<MySQLSession>() {
+    future.setCallBack(new AsynTaskCallBack<MySQLClientSession>() {
       @Override
-      public void finished(MySQLSession m, Object sender, boolean success, Object result,
+      public void finished(MySQLClientSession m, Object sender, boolean success, Object result,
           Object errorMessage) {
-        m.ping( new AsynTaskCallBack<MySQLSession>() {
+        m.ping( new AsynTaskCallBack<MySQLClientSession>() {
           @Override
-          public void finished(MySQLSession session, Object sender, boolean success, Object result,
+          public void finished(MySQLClientSession session, Object sender, boolean success, Object result,
               Object attr) {
             if (success) {
               System.out.print("ssss");
@@ -75,18 +66,18 @@ public class MycatCore {
       }
     });
 //
-//    future.setCallBack(new AsynTaskCallBack<MySQLSession>() {
+//    future.setCallBack(new AsynTaskCallBack<MySQLClientSession>() {
 //      @Override
-//      public void finished(MySQLSession session, Object sender, boolean success, Object result,
+//      public void finished(MySQLClientSession session, Object sender, boolean success, Object result,
 //          Object errorMessage) {
 //        session.loadData("LOAD DATA LOCAL INFILE 'd:/loadData.csv' INTO TABLE test;",
-//            new AsynTaskCallBack<MySQLSession>() {
+//            new AsynTaskCallBack<MySQLClientSession>() {
 //              @Override
-//              public void finished(MySQLSession session, Object sender, boolean success,
+//              public void finished(MySQLClientSession session, Object sender, boolean success,
 //                  Object result, Object errorMessage) {
-//                session.commit(new AsynTaskCallBack<MySQLSession>() {
+//                session.commit(new AsynTaskCallBack<MySQLClientSession>() {
 //                  @Override
-//                  public void finished(MySQLSession session, Object sender, boolean success,
+//                  public void finished(MySQLClientSession session, Object sender, boolean success,
 //                      Object result, Object errorMessage) {
 //                  }
 //                });
@@ -95,14 +86,14 @@ public class MycatCore {
 //      }
 //    });
 //    future.setCallBack((session, sender, success, result, errorMessage) -> {
-//      AsynTaskFuture<MySQLSession> prepare = session.prepare(
+//      AsynTaskFuture<MySQLClientSession> prepare = session.prepare(
 //          "INSERT INTO `db1`.`test` (`2`) VALUES (?);");
 //      prepare.setCallBack((session1, sender1, success1, result1, errorMessage1) -> {
-//        PreparedStatement ps = (PreparedStatement) result1;
+//        MySQLPreparedStatement ps = (MySQLPreparedStatement) result1;
 //        session1.sendBlob(ps, 0, "hello".getBytes())
 //            .setCallBack((session13, sender13, success13, result13, errorMessage13) -> {
-//              AsynTaskFuture<MySQLSession> execute = session13.execute(ps,
-//                  PrepareStmtExecuteFlag.CURSOR_TYPE_NO_CURSOR,
+//              AsynTaskFuture<MySQLClientSession> execute = session13.execute(ps,
+//                  MySQLPrepareStmtExecuteFlag.CURSOR_TYPE_NO_CURSOR,
 //                  ResultSetCollectorImpl.INSTANCE);
 //              execute.setCallBack(
 //                  (session2, sender2, success2, result2, errorMessage2) -> {
@@ -116,10 +107,10 @@ public class MycatCore {
 //                                            .doQuery(
 //                                                "select 1;")
 //                                            .setCallBack(
-//                                                new AsynTaskCallBack<MySQLSession>() {
+//                                                new AsynTaskCallBack<MySQLClientSession>() {
 //                                                  @Override
 //                                                  public void finished(
-//                                                      MySQLSession session,
+//                                                      MySQLClientSession session,
 //                                                      Object sender,
 //                                                      boolean success,
 //                                                      Object result,

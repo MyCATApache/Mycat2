@@ -18,6 +18,7 @@ package io.mycat.config;
 
 import io.mycat.config.route.DynamicAnnotationConfig;
 import io.mycat.config.route.DynamicAnnotationRootConfig;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -75,6 +76,9 @@ public class YamlUtil {
         InputStreamReader fis = null;
         try {
             URL url = YamlUtil.class.getClassLoader().getResource(fileName);
+            if (url == null){
+                url = Paths.get(fileName).toAbsolutePath().toUri().toURL();
+            }
             if (url != null) {
                 Yaml yaml = new Yaml();
                 fis = new InputStreamReader(new FileInputStream(url.getFile()), StandardCharsets.UTF_8);
@@ -82,6 +86,8 @@ public class YamlUtil {
                 return obj;
             }
             return null;
+        } catch (MalformedURLException e) {
+            throw new FileNotFoundException(fileName);
         } finally {
             if (fis != null) {
                 try {

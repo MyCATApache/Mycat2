@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.task;
 
-import io.mycat.proxy.MycatExpection;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -25,56 +25,55 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketProcessType;
 import io.mycat.proxy.packet.MySQLPacketResolver;
-import io.mycat.proxy.session.AbstractMySQLSession;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import java.io.IOException;
 
-public interface ResultSetTask extends NIOHandler<MySQLSession>, MySQLPacketCallback {
+public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPacketCallback {
 
-  default public void request(MySQLSession mysql, int head, String data,
-      AsynTaskCallBack<MySQLSession> callBack) {
+  default public void request(MySQLClientSession mysql, int head, String data,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
     request(mysql, head, data, (MycatReactorThread) Thread.currentThread(), callBack);
   }
 
-  default public void requestEmptyPacket(MySQLSession mysql, byte nextPacketId,
-      AsynTaskCallBack<MySQLSession> callBack) {
+  default public void requestEmptyPacket(MySQLClientSession mysql, byte nextPacketId,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
     requestEmptyPacket(mysql, nextPacketId, (MycatReactorThread) Thread.currentThread(), callBack);
   }
 
-  default public void requestEmptyPacket(MySQLSession mysql, byte nextPacketId,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLSession> callBack) {
+  default public void requestEmptyPacket(MySQLClientSession mysql, byte nextPacketId,
+      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
     try {
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
       if (mysql.currentProxyBuffer() != null) {
         throw new MycatExpection("");
       }
-      mysql.setProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentMySQLPacket();
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(4);
       mysql.prepareReveiceResponse();
-      mysql.writeMySQLPacket(mySQLPacket, nextPacketId);
+      mysql.writeProxyPacket(mySQLPacket, nextPacketId);
     } catch (IOException e) {
-      this.clearAndFinished(false, e.getMessage());
+      this.clearAndFinished(mysql,false, e.getMessage());
     }
   }
 
-  default public void request(MySQLSession mysql, int head, byte[] data,
-      AsynTaskCallBack<MySQLSession> callBack) {
+  default public void request(MySQLClientSession mysql, int head, byte[] data,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
     request(mysql, head, data, (MycatReactorThread) Thread.currentThread(), callBack);
   }
 
-  default public void request(MySQLSession mysql, int head, long data,
-      AsynTaskCallBack<MySQLSession> callBack) {
+  default public void request(MySQLClientSession mysql, int head, long data,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
     request(mysql, head, data, (MycatReactorThread) Thread.currentThread(), callBack);
   }
 
-  default public void request(MySQLSession mysql, int head, String data,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLSession> callBack) {
+  default public void request(MySQLClientSession mysql, int head, String data,
+      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
     request(mysql, head, data.getBytes(), curThread, callBack);
   }
 
-  default public void request(MySQLSession mysql, int head, byte[] data,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLSession> callBack) {
+  default public void request(MySQLClientSession mysql, int head, byte[] data,
+      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
     try {
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
@@ -82,41 +81,54 @@ public interface ResultSetTask extends NIOHandler<MySQLSession>, MySQLPacketCall
 //                throw new MycatExpection("");
         mysql.currentProxyBuffer().reset();
       }
-      mysql.setProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentMySQLPacket();
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(data.length+5);
       mySQLPacket.writeByte((byte) head);
       mySQLPacket.writeBytes(data);
       mysql.prepareReveiceResponse();
-      mysql.writeMySQLPacket(mySQLPacket, mysql.setPacketId(0));
+      mysql.writeProxyPacket(mySQLPacket, mysql.setPacketId(0));
     } catch (IOException e) {
-      this.clearAndFinished(false, e.getMessage());
+      this.clearAndFinished(mysql,false, e.getMessage());
     }
   }
-
-  default public void request(MySQLSession mysql, int head, long data, MycatReactorThread curThread,
-      AsynTaskCallBack<MySQLSession> callBack) {
+  default public void request(MySQLClientSession mysql,byte[] packetData,
+      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
+    try {
+      mysql.setCallBack(callBack);
+      mysql.switchNioHandler(this);
+      if (mysql.currentProxyBuffer() != null) {
+//                throw new MycatExpection("");
+        mysql.currentProxyBuffer().reset();
+      }
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+      mysql.writeProxyBufferToChannel(packetData);
+    } catch (IOException e) {
+      this.clearAndFinished(mysql,false, e.getMessage());
+    }
+  }
+  default public void request(MySQLClientSession mysql, int head, long data, MycatReactorThread curThread,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
     try {
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
       if (mysql.currentProxyBuffer() != null) {
         throw new MycatExpection("");
       }
-      mysql.setProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentMySQLPacket();
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(12);
       mySQLPacket.writeByte((byte) head);
       mySQLPacket.writeFixInt(4, data);
       mysql.prepareReveiceResponse();
-      mysql.writeMySQLPacket(mySQLPacket, 0);
+      mysql.writeProxyPacket(mySQLPacket, 0);
     } catch (IOException e) {
-      this.clearAndFinished(false, e.getMessage());
+      this.clearAndFinished(mysql,false, e.getMessage());
     }
   }
 
-  @Override
-  default void onFinished(boolean success, String errorMessage) {
-    AbstractMySQLSession currentMySQLSession = getCurrentMySQLSession();
-    AsynTaskCallBack callBack = currentMySQLSession.getCallBackAndReset();
-    callBack.finished(currentMySQLSession, this, success, getResult(), errorMessage);
+
+  default void onFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
+    AsynTaskCallBack callBack = mysql.getCallBackAndReset();
+    callBack.finished(mysql, this, success, getResult(), errorMessage);
   }
 
   default Object getResult() {
@@ -124,7 +136,7 @@ public interface ResultSetTask extends NIOHandler<MySQLSession>, MySQLPacketCall
   }
 
   @Override
-  default public void onSocketRead(MySQLSession mysql) throws IOException {
+  default public void onSocketRead(MySQLClientSession mysql) throws IOException {
     try {
       if (mysql.getCurNIOHandler() != this) {
         return;
@@ -138,10 +150,10 @@ public interface ResultSetTask extends NIOHandler<MySQLSession>, MySQLPacketCall
       int totalPacketEndIndex = proxyBuffer.channelReadEndIndex();
       MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
       boolean isResponseFinished = false;
-      while (mysql.getCurNIOHandler() == this && mysql.readMySQLPayloadFully()) {
+      while (mysql.getCurNIOHandler() == this && mysql.readProxyPayloadFully()) {
         MySQLPacketProcessType type = mysql.getPacketResolver().getMySQLPacketProcessType();
         isResponseFinished = mysql.isResponseFinished();
-        MySQLPacket payload = (MySQLPacket)mysql.currentPayload();
+        MySQLPacket payload = (MySQLPacket)mysql.currentProxyPayload();
         int startPos = payload.packetReadStartIndex();
         int endPos = payload.packetReadEndIndex();
         switch (type) {
@@ -207,7 +219,7 @@ public interface ResultSetTask extends NIOHandler<MySQLSession>, MySQLPacketCall
             this.onPrepareOkColumnDefEof(resolver);
             break;
         }
-        mysql.resetCurrentPayload();
+        mysql.resetCurrentProxyPayload();
         proxyBuffer.channelReadEndIndex(totalPacketEndIndex);
         if (isResponseFinished) {
           break;
@@ -217,31 +229,30 @@ public interface ResultSetTask extends NIOHandler<MySQLSession>, MySQLPacketCall
         }
       }
       if (isResponseFinished) {
-        clearAndFinished(true, null);
+        clearAndFinished(mysql,true, null);
       }
     } catch (Throwable e) {
       e.printStackTrace();
-      clearAndFinished(false, e.getMessage());
+      clearAndFinished(mysql,false, e.getMessage());
     }
   }
 
-  default public void clearAndFinished(boolean success, String errorMessage) {
-
-    MySQLSession mysql = getCurrentMySQLSession();
+  default public void clearAndFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
     mysql.resetPacket();
-    mysql.setProxyBuffer(null);
+    mysql.setCurrentProxyBuffer(null);
     mysql.switchDefaultNioHandler();
-    onFinished(success, errorMessage);
+    onFinished(mysql,success, errorMessage);
   }
 
   @Override
-  default public void onWriteFinished(MySQLSession mysql) throws IOException {
+  default public void onWriteFinished(MySQLClientSession mysql) throws IOException {
+    mysql.resetPacket();
     mysql.change2ReadOpts();
   }
 
   @Override
-  default public void onSocketClosed(MySQLSession session, boolean normal) {
-    onFinished(false, "socket closed");
+  default public void onSocketClosed(MySQLClientSession session, boolean normal) {
+    onFinished(session,false, "socket closed");
   }
 
 }

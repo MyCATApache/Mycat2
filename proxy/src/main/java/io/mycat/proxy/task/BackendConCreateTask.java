@@ -16,8 +16,8 @@
  */
 package io.mycat.proxy.task;
 
-import io.mycat.beans.MySQLMeta;
-import io.mycat.proxy.MycatExpection;
+import io.mycat.beans.MySQLServerMeta;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MysqlNativePasswordPluginUtil;
 import io.mycat.proxy.NIOHandler;
@@ -27,7 +27,7 @@ import io.mycat.proxy.packet.AuthPacketImpl;
 import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.Datasource;
 import org.slf4j.Logger;
@@ -38,24 +38,24 @@ import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
-public class BackendConCreateTask implements NIOHandler<MySQLSession> {
+public class BackendConCreateTask implements NIOHandler<MySQLClientSession> {
     final Datasource datasource;
-    final AsynTaskCallBack<MySQLSession> callback;
+    final AsynTaskCallBack<MySQLClientSession> callback;
     boolean welcomePkgReceived = false;
     protected final static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
 
-    public BackendConCreateTask(Datasource datasource, MySQLSessionManager sessionManager, MycatReactorThread curThread, AsynTaskCallBack<MySQLSession> callback) throws IOException {
+    public BackendConCreateTask(Datasource datasource, MySQLSessionManager sessionManager, MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callback) throws IOException {
         this.datasource = datasource;
         this.callback = callback;
         SocketChannel channel = SocketChannel.open();
         channel.configureBlocking(false);
-        MySQLSession mySQLSession = new MySQLSession(datasource, curThread.getSelector(), channel, SelectionKey.OP_CONNECT, this, sessionManager);
-        mySQLSession.setProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+        MySQLClientSession mySQLSession = new MySQLClientSession(datasource, curThread.getSelector(), channel, SelectionKey.OP_CONNECT, this, sessionManager);
+        mySQLSession.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
         channel.connect(new InetSocketAddress(datasource.getIp(), datasource.getPort()));
     }
 
     @Override
-    public void onConnect(SelectionKey curKey, MySQLSession mysql, boolean success, Throwable throwable) throws IOException {
+    public void onConnect(SelectionKey curKey, MySQLClientSession mysql, boolean success, Throwable throwable) throws IOException {
         if (success) {
             mysql.change2ReadOpts();
         } else {
@@ -66,7 +66,7 @@ public class BackendConCreateTask implements NIOHandler<MySQLSession> {
     }
 
     @Override
-    public void onSocketRead(MySQLSession mysql) throws IOException {
+    public void onSocketRead(MySQLClientSession mysql) throws IOException {
         ProxyBuffer proxyBuffer = mysql.currentProxyBuffer().newBufferIfNeed();
         if (this != mysql.getCurNIOHandler()) {
             return;
@@ -74,32 +74,35 @@ public class BackendConCreateTask implements NIOHandler<MySQLSession> {
         if (!mysql.readFromChannel()){
             return;
         }
-        if (!mysql.readMySQLPayloadFully()) {
+        if (!mysql.readProxyPayloadFully()) {
             return;
         }
         if (!welcomePkgReceived) {
+            int serverCapabilities = MySQLServerMeta.getClientCapabilityFlags().value;
+            mysql.getPacketResolver().setCapabilityFlags(serverCapabilities);
+
             HandshakePacketImpl hs = new HandshakePacketImpl();
             if ((proxyBuffer.get(4) & 0xff) == 0xff) {
                 throw new MycatExpection("receive error packet");
             }
-            hs.readPayload(mysql.currentPayload());
-            mysql.resetCurrentPayload();
+            hs.readPayload(mysql.currentProxyPayload());
+            mysql.resetCurrentProxyPayload();
             int charsetIndex = hs.characterSet;
             AuthPacketImpl packet = new AuthPacketImpl();
-            packet.capabilities = MySQLMeta.getClientCapabilityFlags().value;
+            packet.capabilities = serverCapabilities;
             packet.maxPacketSize = 1024 * 1000;
             packet.characterSet = (byte) charsetIndex;
             packet.username = datasource.getUsername();
             packet.password = MysqlNativePasswordPluginUtil.scramble411(datasource.getPassword(), hs.authPluginDataPartOne + hs.authPluginDataPartTwo);
             packet.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
-            MySQLPacket mySQLPacket = mysql.newCurrentMySQLPacket();
+            MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(1024);
             packet.writePayload(mySQLPacket);
             welcomePkgReceived = true;
-            mysql.writeMySQLPacket(mySQLPacket, 1);
+            mysql.writeProxyPacket(mySQLPacket, 1);
         } else {
             if (mysql.getPayloadType() == MySQLPayloadType.OK) {
                 mysql.resetPacket();
-                mysql.setProxyBuffer(null);
+                mysql.setCurrentProxyBuffer(null);
                 callback.finished(mysql, this, true, null, null);
             } else {
                 callback.finished(null, this, false, null, "create mysql backend fail");
@@ -109,12 +112,12 @@ public class BackendConCreateTask implements NIOHandler<MySQLSession> {
     }
 
     @Override
-    public void onWriteFinished(MySQLSession mysql) throws IOException {
+    public void onWriteFinished(MySQLClientSession mysql) throws IOException {
         mysql.change2ReadOpts();
     }
 
     @Override
-    public void onSocketClosed(MySQLSession mysql, boolean normal) {
+    public void onSocketClosed(MySQLClientSession mysql, boolean normal) {
 
     }
 

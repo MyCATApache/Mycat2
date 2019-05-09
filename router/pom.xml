@@ -14,7 +14,17 @@
 <dependencies>
     <dependency>
         <groupId>io.mycat</groupId>
+        <artifactId>logTip</artifactId>
+        <version>0.1</version>
+    </dependency>
+    <dependency>
+        <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
+        <version>0.1</version>
+    </dependency>
+    <dependency>
+        <groupId>io.mycat</groupId>
+        <artifactId>common</artifactId>
         <version>0.1</version>
     </dependency>
     <dependency>
@@ -38,10 +48,14 @@
         <artifactId>re2j</artifactId>
         <version>1.2</version>
     </dependency>
+
+    <!-- https://mvnrepository.com/artifact/junit/junit -->
     <dependency>
-        <groupId>com.github.jsqlparser</groupId>
-        <artifactId>jsqlparser</artifactId>
-        <version>1.4</version>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+        <scope>test</scope>
     </dependency>
+
 </dependencies>
 </project>

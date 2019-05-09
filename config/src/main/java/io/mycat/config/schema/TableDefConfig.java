@@ -15,7 +15,6 @@
 
 package io.mycat.config.schema;
 
-import io.mycat.config.route.DynamicAnnotationConfig;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,19 +31,32 @@ public class TableDefConfig {
   }
 
   private String name;
-  private MycatTableType tableType;
-  private DynamicAnnotationConfig dynamicAnnotation;
-  private List<String> shardingKeys;
-  private List<String> shardingRule;
-  private String dataNode;
-  private List<String> subTables = new ArrayList<>();
-  private String sharingRule;
+  private String dataNodes;
+  private String tableRule;
   private String primaryKey;
-  private boolean autoIncrement;
-  private boolean defaultLimit;
-  private List<String> dataNodes = new ArrayList<String>();
-  private List<ERChildTableConfig> childTableConfigs = new ArrayList<>();
 
+  public List<String> getSubTables() {
+    return subTables;
+  }
+
+  public void setSubTables(List<String> subTables) {
+    this.subTables = subTables;
+  }
+
+  private List<String> subTables;
+  private boolean autoIncrement;
+  private boolean addDefaultLimit;
+  private List<ERChildTableConfig> childTableConfigs;
+
+  public MycatTableType getType() {
+    return type;
+  }
+
+  public void setType(MycatTableType type) {
+    this.type = type;
+  }
+
+  private MycatTableType type;
   public String getName() {
     return name;
   }
@@ -54,37 +66,67 @@ public class TableDefConfig {
   }
 
 
-  public String getDataNode() {
-    return dataNode;
-  }
-
-  public void setDataNode(String dataNode) {
-    this.dataNode = dataNode;
-  }
-
-
-  public List<String> getDataNodes() {
+  public String getDataNodes() {
     return dataNodes;
   }
 
-  public void setDataNodes(List<String> dataNodes) {
-    this.dataNodes = dataNodes;
+
+
+
+  public void setDataNodes(String dataNode) {
+    this.dataNodes = dataNode;
+  }
+
+  public String getTableRule() {
+    return tableRule;
+  }
+
+  public void setTableRule(String tableRule) {
+    this.tableRule = tableRule;
+  }
+
+  public String getPrimaryKey() {
+    return primaryKey;
+  }
+
+  public void setPrimaryKey(String primaryKey) {
+    this.primaryKey = primaryKey;
+  }
+
+  public boolean isAutoIncrement() {
+    return autoIncrement;
+  }
+
+  public void setAutoIncrement(boolean autoIncrement) {
+    this.autoIncrement = autoIncrement;
+  }
+
+  public boolean isAddDefaultLimit() {
+    return addDefaultLimit;
+  }
+
+  public void setAddDefaultLimit(boolean addDefaultLimit) {
+    this.addDefaultLimit = addDefaultLimit;
+  }
+
+  public List<ERChildTableConfig> getChildTableConfigs() {
+    return childTableConfigs;
+  }
+
+  public void setChildTableConfigs(
+      List<ERChildTableConfig> childTableConfigs) {
+    this.childTableConfigs = childTableConfigs;
   }
 
   @Override
   public String toString() {
     return "TableDefConfig{" +
                "name='" + name + '\'' +
-               ", tableType=" + tableType +
-               ", dynamicAnnotation=" + dynamicAnnotation +
-               ", shardingKeys=" + shardingKeys +
-               ", shardingRule=" + shardingRule +
-               ", dataNode='" + dataNode + '\'' +
-               ", subTables=" + subTables +
-               ", sharingRule='" + sharingRule + '\'' +
+               ", dataNodes='" + dataNodes + '\'' +
+               ", tableRule='" + tableRule + '\'' +
                ", primaryKey='" + primaryKey + '\'' +
                ", autoIncrement=" + autoIncrement +
-               ", defaultLimit=" + defaultLimit +
+               ", addDefaultLimit=" + addDefaultLimit +
                ", dataNodes=" + dataNodes +
                ", childTableConfigs=" + childTableConfigs +
                '}';

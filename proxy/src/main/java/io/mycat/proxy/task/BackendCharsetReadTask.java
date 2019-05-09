@@ -17,9 +17,8 @@
 package io.mycat.proxy.task;
 
 import io.mycat.beans.mysql.MySQLCollationIndex;
-import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,7 @@ public class BackendCharsetReadTask implements QueryResultSetTask {
         this.collationIndex = collationIndex;
     }
 
-    public void request(MySQLSession sqlSession, AsynTaskCallBack<MySQLSession> callBack){
+    public void request(MySQLClientSession sqlSession, AsynTaskCallBack<MySQLClientSession> callBack){
         request(sqlSession,"SHOW COLLATION;",callBack);
     }
 

@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.proxy.MycatExpection;
+import io.mycat.MycatExpection;
 
 public interface MySQLPacketAppendStrategy {
 

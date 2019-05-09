@@ -61,15 +61,15 @@ public interface MySQLPayloadWriter<T extends MySQLPayloadWriter<T>> {
     public T writeDouble(double d);
 
 
-    public boolean writeToChannel(SocketChannel channel) throws IOException;
+  //  public boolean writeProxyBufferToChannel(SocketChannel channel) throws IOException;
 
-    public int startPacket();
-
-    public int startPacket(int payload);
-
-    public int endPacket();
-
-    public void setPacketId(int packetId);
-
-    public byte increaseAndGetPacketId();
+//    public int startPacket();
+//
+//    public int startPacket(int payload);
+//
+//    public int endPacket();
+//
+//    public void setPacketId(int packetId);
+//
+//    public byte increaseAndGetPacketId();
 }

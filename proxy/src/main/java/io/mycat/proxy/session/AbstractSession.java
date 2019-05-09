@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.MycatExpection;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyReactorThread;
@@ -57,6 +57,10 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
         this.nioHandler = getSessionManager().getDefaultSessionHandler();
     }
 
+    public void updateLastActiveTime(){
+        lastActiveTime = System.currentTimeMillis();
+    }
+
     public void switchDefaultNioHandler(Runnable runnable) {
         switchNioHandler(getSessionManager().getDefaultSessionHandler(), runnable);
     }
@@ -76,14 +80,6 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
         this.startTime = System.currentTimeMillis();
     }
 
-    public boolean readFromChannel() throws IOException {
-        logger.debug("readFromChannel");
-        ProxyBuffer proxyBuffer = currentProxyBuffer();
-        proxyBuffer.compactInChannelReadingIfNeed();
-        boolean b = proxyBuffer.readFromChannel(this.channel());
-        lastActiveTime = System.currentTimeMillis();
-        return b;
-    }
 
     @Override
     public void setLastThrowable(Throwable e) {
@@ -113,35 +109,6 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
             return null;
         }
     }
-
-    public void writeToChannel(byte[] bytes) throws IOException {
-        ProxyBuffer buffer = currentProxyBuffer();
-        buffer.reset();
-        buffer.newBuffer(bytes);
-        buffer.channelWriteStartIndex(0);
-        buffer.channelWriteEndIndex(bytes.length);
-        writeToChannel();
-    }
-
-    public void writeToChannel() throws IOException {
-        currentProxyBuffer().writeToChannel(channel());
-        lastActiveTime = System.currentTimeMillis();
-        checkWriteFinished();
-    }
-
-    protected void checkWriteFinished() throws IOException {
-        ProxyBuffer proxyBuffer = currentProxyBuffer();
-        if (!proxyBuffer.channelWriteFinished()) {
-            this.change2WriteOpts();
-        } else {
-            writeFinished();
-        }
-    }
-
-    public void writeFinished() throws IOException {
-        nioHandler.onWriteFinished(this);
-    }
-
     public void change2ReadOpts() {
         channelKey.interestOps(SelectionKey.OP_READ);
         if (logger.isDebugEnabled())
@@ -178,4 +145,5 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     public int sessionId() {
         return sessionId;
     }
+
 }

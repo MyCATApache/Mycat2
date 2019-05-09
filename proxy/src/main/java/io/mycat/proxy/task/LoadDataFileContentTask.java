@@ -16,28 +16,28 @@
  */
 package io.mycat.proxy.task;
 
-import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.packet.PacketSplitterImpl;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 
+import io.mycat.util.MySQLUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 
 public class LoadDataFileContentTask implements ResultSetTask {
-    private MySQLSession mysql;
+    private MySQLClientSession mysql;
     private FileChannel fileChannel;
     private int position;
     int length;
     int allRemains;
-    private AsynTaskCallBack<MySQLSession> callBack;
+    private AsynTaskCallBack<MySQLClientSession> callBack;
     int curRemains = 0;
     //byte packetId = 2;
     PacketSplitter packetSplitter = new PacketSplitterImpl();
 
-    public void request(MySQLSession mysql, FileChannel fileChannel, int position, int length, AsynTaskCallBack<MySQLSession> callBack) {
+    public void request(MySQLClientSession mysql, FileChannel fileChannel, int position, int length, AsynTaskCallBack<MySQLClientSession> callBack) {
         try {
             this.mysql = mysql;
             this.fileChannel = fileChannel;
@@ -62,7 +62,7 @@ public class LoadDataFileContentTask implements ResultSetTask {
             while (curRemains > 0) {
                 SocketChannel channel = mysql.channel();
                 curRemains = packetSplitter.getPacketLenInPacketSplitter();
-                channel.write(ByteBuffer.wrap(MySQLPacket.getFixIntByteArray(3, curRemains)));
+                channel.write(ByteBuffer.wrap(MySQLUtil.getFixIntByteArray(3, curRemains)));
                 byte b = mysql.incrementPacketIdAndGet();
                 channel.write(ByteBuffer.wrap(new byte[]{b}));
                 res =  fileChannel.transferTo(position + packetSplitter.getOffsetInPacketSplitter(),curRemains,channel);
@@ -88,17 +88,17 @@ public class LoadDataFileContentTask implements ResultSetTask {
     }
 
     @Override
-    public void onSocketWrite(MySQLSession mysql) throws IOException {
+    public void onSocketWrite(MySQLClientSession mysql) throws IOException {
         onWriteFinished(mysql);
     }
 
     @Override
-    public void onWriteFinished(MySQLSession mysql) throws IOException {
+    public void onWriteFinished(MySQLClientSession mysql) throws IOException {
         if (mysql.getCurNIOHandler() == this) {
             if (this.allRemains == 0) {
                 fileChannel.close();
                 mysql.change2ReadOpts();
-                clearAndFinished(true, null);
+                clearAndFinished(mysql,true, null);
             } else {
                 writeData();
             }
@@ -106,9 +106,9 @@ public class LoadDataFileContentTask implements ResultSetTask {
     }
 
     @Override
-    public void onFinished(boolean success, String errorMessage) {
-        MySQLSession currentMySQLSession = getCurrentMySQLSession();
-        AsynTaskCallBack<MySQLSession> callBack = currentMySQLSession.getCallBackAndReset();
+    public void onFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
+        MySQLClientSession currentMySQLSession = mysql;
+        AsynTaskCallBack<MySQLClientSession> callBack = currentMySQLSession.getCallBackAndReset();
         callBack.finished(currentMySQLSession, this, success, null, errorMessage);
 
     }

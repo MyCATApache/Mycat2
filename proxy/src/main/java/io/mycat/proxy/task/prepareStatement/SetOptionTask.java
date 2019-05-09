@@ -19,7 +19,7 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;
 import java.io.IOException;
@@ -29,11 +29,12 @@ import java.io.IOException;
  * @date 2019-05-01 15:27
  **/
 public class SetOptionTask implements ResultSetTask {
-  public void request(MySQLSession mysql, MySQLSetOption setOption, AsynTaskCallBack<MySQLSession> callBack){
+  public void request(
+      MySQLClientSession mysql, MySQLSetOption setOption, AsynTaskCallBack<MySQLClientSession> callBack){
     request(mysql,setOption,(MycatReactorThread) Thread.currentThread(),callBack);
   }
-  public void request(MySQLSession mysql, MySQLSetOption setOption,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLSession> callBack) {
+  public void request(MySQLClientSession mysql, MySQLSetOption setOption,
+      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
     try {
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
@@ -41,14 +42,14 @@ public class SetOptionTask implements ResultSetTask {
 //                throw new MycatExpection("");
         mysql.currentProxyBuffer().reset();
       }
-      mysql.setProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentMySQLPacket();
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(7);
       mySQLPacket.writeByte((byte) MySQLCommandType.COM_SET_OPTION);
       mySQLPacket.writeFixInt(2,setOption.getValue());
       mysql.prepareReveiceResponse();
-      mysql.writeMySQLPacket(mySQLPacket, mysql.setPacketId(0));
+      mysql.writeProxyPacket(mySQLPacket, mysql.setPacketId(0));
     } catch (IOException e) {
-      this.clearAndFinished(false, e.getMessage());
+      this.clearAndFinished(mysql,false, e.getMessage());
     }
   }
 

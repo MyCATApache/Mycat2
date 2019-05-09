@@ -16,10 +16,10 @@
  */
 package io.mycat.proxy.task;
 
-import io.mycat.proxy.MycatExpection;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.packet.ColumnDefPacket;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
-import io.mycat.proxy.packet.ErrorCode;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.ResultSetCollector;
 
@@ -216,7 +216,7 @@ public class DescTask implements ResultSetTask {
             int startIndex = mySQLPacket.packetReadStartIndex();
             switch (resultSetColumnTypeList[columnIndex]) {
                 default: {
-                    throw new MycatExpection(ErrorCode.ER_UNKNOWN_ERROR,"");
+                    throw new MycatExpection(MySQLErrorCode.ER_UNKNOWN_ERROR,"");
                 }
                 case FIELD_TYPE_DECIMAL: {
                     collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff, mySQLPacket, startIndex);

@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.MycatExpection;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.MainMycatNIOHandler;

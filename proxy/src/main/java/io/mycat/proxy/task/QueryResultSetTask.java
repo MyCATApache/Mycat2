@@ -17,11 +17,12 @@
 package io.mycat.proxy.task;
 
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 
 public interface QueryResultSetTask extends ResultSetTask {
 
-    default public void request(MySQLSession mysql, String sql, AsynTaskCallBack<MySQLSession> callBack) {
+    default public void request(
+        MySQLClientSession mysql, String sql, AsynTaskCallBack<MySQLClientSession> callBack) {
         request(mysql, 3, sql,callBack);
     }
 

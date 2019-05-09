@@ -22,14 +22,17 @@ import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.session.FrontSessionManager;
 import io.mycat.proxy.session.MySQLSessionManager;
 
-import io.mycat.router.RouteStrategy;
-import io.mycat.router.RouteStrategyImpl;
+import io.mycat.router.MycatRouter;
 import java.io.IOException;
 
 public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
     final MySQLSessionManager mySQLSessionManager = new MySQLSessionManager();
     final PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
+    final MycatRouter router = new MycatRouter(MycatRuntime.INSTANCE.getRouterConfig());
 
+    public MycatRouter getRouter() {
+        return router;
+    }
 
     public PacketSplitterImpl getPacketSplitter() {
         return packetSplitter;

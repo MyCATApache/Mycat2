@@ -17,20 +17,20 @@
 package io.mycat.proxy.task.prepareStatement;
 
 import io.mycat.beans.mysql.MySQLPStmtBindValueList;
+import io.mycat.beans.mysql.MySQLPreparedStatement;
 import io.mycat.proxy.packet.ColumnDefPacket;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PreparedOKPacket;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PrepareTask implements ResultSetTask, PreparedStatement {
+public class PrepareTask implements ResultSetTask, MySQLPreparedStatement {
     long statementId;
     String prepareStatement;
     int[] parameterTypeList;
@@ -39,7 +39,8 @@ public class PrepareTask implements ResultSetTask, PreparedStatement {
     MySQLPStmtBindValueList valueList;
     Map<Integer,ByteArrayOutputStream> longDataMap;
 
-    public void request(MySQLSession mysql, String prepareStatement, AsynTaskCallBack<MySQLSession> callBack) {
+    public void request(
+        MySQLClientSession mysql, String prepareStatement, AsynTaskCallBack<MySQLClientSession> callBack) {
         this.prepareStatement = prepareStatement;
         request(mysql, 0x16, prepareStatement, callBack);
         mysql.prepareReveicePrepareOkResponse();
@@ -56,10 +57,10 @@ public class PrepareTask implements ResultSetTask, PreparedStatement {
     }
 
     @Override
-    public void onFinished(boolean success, String errorMessage) {
+    public void onFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
         valueList = new MySQLPStmtBindValueList(this);
-        MySQLSession currentMySQLSession = getCurrentMySQLSession();
-        AsynTaskCallBack<MySQLSession> callBack = currentMySQLSession.getCallBackAndReset();
+        MySQLClientSession currentMySQLSession = mysql;
+        AsynTaskCallBack<MySQLClientSession> callBack = currentMySQLSession.getCallBackAndReset();
         callBack.finished(currentMySQLSession, this, success, this, errorMessage);
     }
 
@@ -67,7 +68,8 @@ public class PrepareTask implements ResultSetTask, PreparedStatement {
     public void onPrepareOkParameterDef(MySQLPacket buffer, int startPos, int endPos) {
         ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl();
         columnDefPacket.read(buffer, startPos, endPos);
-        int prepareOkParametersCount = getCurrentMySQLSession().getPacketResolver().getPrepareOkParametersCount();
+        MySQLClientSession sessionCaller = getSessionCaller();
+        int prepareOkParametersCount = sessionCaller.getPacketResolver().getPrepareOkParametersCount();
         int length = parameterTypeList.length-1;
         int index = length - prepareOkParametersCount;
         parameterTypeList[index] = (byte) columnDefPacket.getColumnType();
@@ -77,7 +79,8 @@ public class PrepareTask implements ResultSetTask, PreparedStatement {
     public void onPrepareOkColumnDef(MySQLPacket buffer, int startPos, int endPos) {
         ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl();
         columnDefPacket.read(buffer, startPos, endPos);
-        int prepareOkColumnsCount = getCurrentMySQLSession().getPacketResolver().getPrepareOkColumnsCount();
+        MySQLClientSession sessionCaller = getSessionCaller();
+        int prepareOkColumnsCount = sessionCaller.getPacketResolver().getPrepareOkColumnsCount();
         columnDefList[columnDefList.length - prepareOkColumnsCount-1] = columnDefPacket;
     }
 
@@ -113,11 +116,6 @@ public class PrepareTask implements ResultSetTask, PreparedStatement {
     @Override
     public int[] getParameterTypeList() {
         return parameterTypeList;
-    }
-
-    @Override
-    public ColumnDefPacket[] getColumnDefList() {
-        return columnDefList;
     }
 
     @Override

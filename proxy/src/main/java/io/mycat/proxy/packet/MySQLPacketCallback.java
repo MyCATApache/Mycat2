@@ -16,6 +16,8 @@
  */
 package io.mycat.proxy.packet;
 
+import io.mycat.proxy.session.MySQLClientSession;
+
 public interface MySQLPacketCallback {
 
     default void onRequest(MySQLPacket mySQLPacket, int startPos, int endPos) {
@@ -62,7 +64,7 @@ public interface MySQLPacketCallback {
 
     }
 
-    void onFinished(boolean success, String errorMessage);
+    void onFinished(MySQLClientSession mysql,boolean success, String errorMessage);
 
     default void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
 

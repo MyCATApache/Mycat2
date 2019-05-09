@@ -1,0 +1,20 @@
+tableRules:
+  - funtion: mpartitionByLong
+    name: travelrecord
+    rules:
+      - column: id1
+        equalAnnotations:
+          - (?:id = )(?<id1>([0-9]))
+        equalKey: id1
+        rangeAnnotations:
+          - '((id1 (?:between )(?<id1s>[0-9])(?: and )(?<id1e>[0-9])))'
+        rangeEnd: id1e
+        rangeStart: id1s
+      - column: id2
+        equalAnnotations:
+          - (?:id = )(?<id2>([0-9]))
+        equalKey: id2
+        rangeAnnotations:
+          - '((id2 (?:between )(?<id2s>[0-9])(?: and )(?<id2e>[0-9])))'
+        rangeEnd: id2e
+        rangeStart: id2s

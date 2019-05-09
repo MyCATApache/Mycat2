@@ -335,16 +335,21 @@ public class BufferSQLParser {
           if (hashArray.getHash(pos) == TokenHash.WHERE) {
             context.setHasWhere(true);
           }
+          ++pos;
           break;
         case IntTokenHash.BETWEEN:
           if (hashArray.getHash(pos) == TokenHash.BETWEEN) {
             context.setHasBetween(true);
           }
+          ++pos;
+
           break;
         case IntTokenHash.UNION:
           if (hashArray.getHash(pos) == TokenHash.UNION) {
             context.setHasUnion(true);
           }
+          ++pos;
+
           break;
         case IntTokenHash.FROM:
           if (hashArray.getHash(pos) == TokenHash.FROM) {
@@ -404,6 +409,7 @@ public class BufferSQLParser {
             context.setSQLType(BufferSQLContext.SELECT_SQL);
 //                        pos = SelectItemsParser.pickItemList(++pos, arrayCount, hashArray, context);
           }
+          pos++;
           break;
         case IntTokenHash.SHOW:
           if (hashArray.getHash(pos) == TokenHash.SHOW) {
@@ -460,6 +466,7 @@ public class BufferSQLParser {
           break;
         case IntTokenHash.SET:
           if (hashArray.getHash(pos) == TokenHash.SET) {
+            ++pos;
             //    pos = TCLSQLParser.pickSetAutocommitAndSetTransaction(++pos, arrayCount, context, hashArray, sql);
           }
           break;

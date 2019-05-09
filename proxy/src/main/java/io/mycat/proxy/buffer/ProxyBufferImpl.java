@@ -16,9 +16,8 @@
  */
 package io.mycat.proxy.buffer;
 
-import io.mycat.proxy.MycatExpection;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.sqlparser.util.ByteArrayView;
 import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -26,7 +25,6 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBufferImpl> {
-
   ByteBuffer buffer;
   BufferPool bufferPool;
   int readStartIndex;
@@ -69,8 +67,9 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   }
 
   @Override
-  public void writeLong(long l) {
+  public MySQLPacket writeLong(long l) {
     buffer.putLong(l);
+    return this;
   }
 
   @Override
@@ -84,8 +83,9 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   }
 
   @Override
-  public void writeDouble(double d) {
+  public MySQLPacket writeDouble(double d) {
     buffer.putDouble(d);
+    return this;
   }
 
   @Override
@@ -127,7 +127,9 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   public void put(byte[] bytes, int offset, int legnth) {
     buffer.put(bytes, offset, legnth);
   }
-
+  public void put(byte[] bytes) {
+    buffer.put(bytes);
+  }
   @Override
   public int channelWriteStartIndex() {
     return buffer.position();
@@ -229,6 +231,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   @Override
   public void writeToChannel(SocketChannel channel) throws IOException {
     applyChannelWritingIndex();
+    System.out.println(StringUtil.dumpAsHex(buffer,buffer.limit()));
     if (channel.write(buffer) == -1) {
       logger.warn("Read EOF ,socket closed ");
       throw new ClosedChannelException();
@@ -361,7 +364,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     }
     buffer = ByteBuffer.wrap(bytes);
     readStartIndex = 0;
-    readEndIndex = buffer.capacity();
+    readEndIndex = bytes.length;
   }
 
   @Override
@@ -371,7 +374,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     }
     buffer = bufferPool.allocate(len);
     readStartIndex = 0;
-    readEndIndex = buffer.capacity();
+    readEndIndex = 0;
   }
 
 //    @Override

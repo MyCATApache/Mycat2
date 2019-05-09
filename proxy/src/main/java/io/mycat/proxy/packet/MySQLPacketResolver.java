@@ -46,9 +46,9 @@ import static io.mycat.proxy.packet.MySQLPayloadType.LOCAL_INFILE_EMPTY_PACKET;
 import static io.mycat.proxy.packet.MySQLPayloadType.LOCAL_INFILE_REQUEST;
 import static io.mycat.proxy.packet.MySQLPayloadType.UNKNOWN;
 
-import io.mycat.beans.mysql.MySQLCapabilityFlags;
-import io.mycat.beans.mysql.MySQLServerStatus;
-import io.mycat.proxy.MycatExpection;
+import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.MycatExpection;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.util.StringUtil;
 import java.io.IOException;
@@ -124,8 +124,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
 
   boolean clientDeprecateEof();
 
-  MySQLCapabilityFlags capabilityFlags();
-
+  int capabilityFlags();
+  void setCapabilityFlags(int serverCapability);
   int setRemainsBytes(int remainsBytes);
 
   int getRemainsBytes();
@@ -250,7 +250,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
     if (wholePakcetSize < 4) {
       return false;
     }
-    System.out.print(StringUtil.dumpAsHex(mySQLPacket.currentBuffer().currentByteBuffer(),0,128));
     int length = (int) mySQLPacket.getFixInt(startIndex, 3);
     if (length>1000){
       System.out.println();
@@ -312,7 +311,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
   default int incrementPacketIdAndGet() {
     int packetId = getPacketId();
     int i = packetId + 1;
-    return setPacketId(i == 256 ? 0 : i);
+    setPacketId(i);
+    return i;
   }
 
   default boolean readMySQLPacket() throws IOException {
@@ -322,7 +322,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
       System.out.println("readMySQLPacketFully");
       return readMySQLPacketFully();
     } else {
-      System.out.println("readMySQLPacket");
+      System.out.println("readPartProxyPayload");
       int startIndex = mySQLPacket.packetReadStartIndex();
       int endIndex = mySQLPacket.packetReadEndIndex();
       logger.debug("startIndex:" + startIndex);
@@ -411,17 +411,17 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
       setRemainsBytes(remains);
       boolean isEnd = !multiPacket;
 //            if (isPacketHeader && isEnd || !lastMultiPacket && !isEnd || !lastMultiPacket && isEnd) {
-//                appendFirstPacket(currentPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
+//                appendFirstPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
 //            } else if (isPacketHeader && multiPacket && !lastMultiPacket&&!isEnd) {
-//                appendFirstMultiPacket(currentPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
+//                appendFirstMultiPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
 //            } else if (lastMultiPacket&&!isPacketHeader && isEnd) {
-//                appendEndMultiPacket(currentPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
+//                appendEndMultiPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
 //            } else if (!isPacketHeader && !isEnd) {
-//                appendAfterMultiPacket(currentPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
+//                appendAfterMultiPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
 //            }
       setPayloadFinished(isEnd && remains == 0);
       if (isEnd) {
-        resolvePayloadType(getHead(), false, true, currentProxybuffer(), getPayloadLength());
+        resolvePayloadType(getHead(), isPayloadFinished(), true, currentProxybuffer(), getPayloadLength());
       }
       return true;
     }
@@ -615,8 +615,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
 
     setOkAffectedRows(buffer.readLenencInt());//affectedRows
     setOkLastInsertId(buffer.readLenencInt());//lastInsertId
-    MySQLCapabilityFlags capabilityFlags = capabilityFlags();
-    if (capabilityFlags.isClientProtocol41() || capabilityFlags.isKnowsAboutTransactions()) {
+    int capabilityFlags = capabilityFlags();
+    if (MySQLServerCapabilityFlags.isClientProtocol41(capabilityFlags) || MySQLServerCapabilityFlags.isKnowsAboutTransactions(capabilityFlags)) {
       setServerStatus(serverStatus = (int) buffer.readFixInt(2));
       buffer.packetReadStartIndex(bpStartIndex);
       buffer.packetReadEndIndex(bpEndIndex);
@@ -631,7 +631,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
 //        setOkAffectedRows(buffers.readLenencInt());
 //        setOkLastInsertId(buffers.readLenencInt());
 //
-//        MySQLCapabilityFlags capabilityFlags = capabilityFlags();
+//        MySQLServerCapabilityFlags capabilityFlags = capabilityFlags();
 //        if (capabilityFlags.isClientProtocol41()) {
 //            setServerStatus((int) buffers.readFixInt(2));
 //            setOkWarningCount((int) buffers.readFixInt(2));
@@ -641,7 +641,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
 //        }
 //        if (capabilityFlags.isSessionVariableTracking()) {
 //            setOkStatusInfo(buffers.readLenencBytes());
-//            if ((getServerStatus() & MySQLServerStatus.STATE_CHANGED) != 0) {
+//            if ((getServerStatus() & MySQLServerStatusFlags.STATE_CHANGED) != 0) {
 //                setOkSessionStateInfoType(buffers.readByte());
 //                setOkSessionStateInfoTypeData(buffers.readLenencBytes());
 //            }
@@ -769,11 +769,11 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
   }
 
   public static boolean hasMulitQuery(int serverStatus) {
-    return MySQLServerStatus.statusCheck(serverStatus, MySQLServerStatus.MULIT_QUERY);
+    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MULIT_QUERY);
   }
 
   public static boolean hasMoreResult(int serverStatus) {
-    return MySQLServerStatus.statusCheck(serverStatus, MySQLServerStatus.MORE_RESULTS);
+    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MORE_RESULTS);
   }
 
   public static boolean hasResult(int serverStatus) {
@@ -782,14 +782,14 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
 
   public static boolean hasFatch(int serverStatus) {
     // 检查是否通过fatch执行的语句
-    return MySQLServerStatus.statusCheck(serverStatus, MySQLServerStatus.CURSOR_EXISTS);
+    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.CURSOR_EXISTS);
   }
 
   public static boolean hasTrans(int serverStatus) {
     // 检查是否通过fatch执行的语句
-    boolean trans = MySQLServerStatus.statusCheck(serverStatus, MySQLServerStatus.IN_TRANSACTION)
-                        || MySQLServerStatus
-                               .statusCheck(serverStatus, MySQLServerStatus.IN_TRANS_READONLY);
+    boolean trans = MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)
+                        || MySQLServerStatusFlags
+                               .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANS_READONLY);
     return trans;
   }
 

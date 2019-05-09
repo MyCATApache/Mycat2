@@ -11,6 +11,8 @@
         <module>router</module>
         <module>sqlparser</module>
         <module>expression</module>
+      <module>common</module>
+      <module>logTip</module>
     </modules>
     <packaging>pom</packaging>
     <name>mycat2</name>

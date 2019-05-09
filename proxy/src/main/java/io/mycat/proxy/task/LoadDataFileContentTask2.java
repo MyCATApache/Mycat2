@@ -21,14 +21,14 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 
-public class LoadDataFileContentTask2 implements NIOHandler<MySQLSession>, PacketSplitter {
+public class LoadDataFileContentTask2 implements NIOHandler<MySQLClientSession>, PacketSplitter {
     private FileChannel fileChannel;
     private int startIndex;
     private int writeIndex;
@@ -41,9 +41,9 @@ public class LoadDataFileContentTask2 implements NIOHandler<MySQLSession>, Packe
     int currentPacketLenFlag;
     int offset;
     ByteBuffer header;
-    private MySQLSession mysql;
+    private MySQLClientSession mysql;
 
-    public void request(MySQLSession mysql, FileChannel fileChannel, int position, int length, AsynTaskCallBack<MySQLSession> callBack) {
+    public void request(MySQLClientSession mysql, FileChannel fileChannel, int position, int length, AsynTaskCallBack<MySQLClientSession> callBack) {
         try {
             this.mysql = mysql;
             this.fileChannel = fileChannel;
@@ -101,7 +101,7 @@ public class LoadDataFileContentTask2 implements NIOHandler<MySQLSession>, Packe
     }
 
     @Override
-    public void onSocketWrite(MySQLSession session) throws IOException {
+    public void onSocketWrite(MySQLClientSession session) throws IOException {
         if (header.hasRemaining()) {
             getServerSocket().write(header);
             return;
@@ -137,7 +137,7 @@ public class LoadDataFileContentTask2 implements NIOHandler<MySQLSession>, Packe
         getBufferPool().recycle(header);
         header = null;
         setServerSocket(null);
-        onWriteFinished(fileChannel, success);
+        onWriteFinished(mysql,fileChannel, success);
     }
 
     void writeHeader(ByteBuffer buffer, int packetLen, int packerId) {
@@ -147,8 +147,8 @@ public class LoadDataFileContentTask2 implements NIOHandler<MySQLSession>, Packe
         buffer.position(0);
     }
 
-    void onWriteFinished(FileChannel fileChannel, boolean success) {
-        AsynTaskCallBack callBackAndReset = getCurrentMySQLSession().getCallBackAndReset();
+    void onWriteFinished(MySQLClientSession mysql,FileChannel fileChannel, boolean success) {
+        AsynTaskCallBack callBackAndReset = mysql.getCallBackAndReset();
         try {
             fileChannel.close();
             callBackAndReset.finished(this.mysql, this, success, null, null);
@@ -233,21 +233,21 @@ public class LoadDataFileContentTask2 implements NIOHandler<MySQLSession>, Packe
     }
 
 
-    public void onSocketRead(MySQLSession session) throws IOException {
+    public void onSocketRead(MySQLClientSession session) throws IOException {
 
     }
 
 
-    public void onWriteFinished(MySQLSession session) throws IOException {
+    public void onWriteFinished(MySQLClientSession session) throws IOException {
 
     }
 
 
-    public void onSocketClosed(MySQLSession session, boolean normal) {
+    public void onSocketClosed(MySQLClientSession session, boolean normal) {
         if (!normal) {
-            onError(getCurrentMySQLSession().getLastThrowableAndReset());
+            onError(getSessionCaller().getLastThrowableAndReset());
         } else {
-            onWriteFinished(fileChannel, true);
+            onWriteFinished(session,fileChannel, true);
         }
     }
 }

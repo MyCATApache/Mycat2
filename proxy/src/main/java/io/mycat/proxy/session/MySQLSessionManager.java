@@ -30,13 +30,13 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MySQLSessionManager implements BackendSessionManager<MySQLSession, Datasource> {
-    LinkedList<MySQLSession> allSessions = new LinkedList<>();
-    HashMap<Datasource, LinkedList<MySQLSession>> idleDatasourcehMap = new HashMap<>();
+public class MySQLSessionManager implements BackendSessionManager<MySQLClientSession, Datasource> {
+    LinkedList<MySQLClientSession> allSessions = new LinkedList<>();
+    HashMap<Datasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
     private int count = 0;
 
     @Override
-    public Collection<MySQLSession> getAllSessions() {
+    public Collection<MySQLClientSession> getAllSessions() {
         return Collections.unmodifiableCollection(allSessions);
     }
 
@@ -46,30 +46,30 @@ public class MySQLSessionManager implements BackendSessionManager<MySQLSession, 
     }
 
     @Override
-    public void removeSession(MySQLSession session) {
+    public void removeSession(MySQLClientSession session) {
         allSessions.remove(session);
-        LinkedList<MySQLSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
+        LinkedList<MySQLClientSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
         mySQLSessions.remove(session);
         count--;
     }
 
     @Override
-    public void getIdleSessionsOfKey(Datasource datasource, AsynTaskCallBack<MySQLSession> asynTaskCallBack) {
+    public void getIdleSessionsOfKey(Datasource datasource, AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
         if (!datasource.isAlive()) {
             asynTaskCallBack.finished(null, this, false, null, datasource.getName() + " is not alive!");
         } else {
-            LinkedList<MySQLSession> mySQLSessions = this.idleDatasourcehMap.get(datasource);
+            LinkedList<MySQLClientSession> mySQLSessions = this.idleDatasourcehMap.get(datasource);
             if (mySQLSessions == null || mySQLSessions.isEmpty()) {
                 createSession(datasource, asynTaskCallBack);
             } else {
-                MySQLSession mySQLSession = ThreadLocalRandom.current().nextBoolean() ? mySQLSessions.getLast() : mySQLSessions.getFirst();
+                MySQLClientSession mySQLSession = ThreadLocalRandom.current().nextBoolean() ? mySQLSessions.removeFirst() : mySQLSessions.removeLast();
                 asynTaskCallBack.finished(mySQLSession, this, true, null, null);
             }
         }
     }
 
     @Override
-    public void addIdleSession(MySQLSession session) {
+    public void addIdleSession(MySQLClientSession session) {
         idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
             if (l == null) {
                 l = new LinkedList<>();
@@ -80,8 +80,8 @@ public class MySQLSessionManager implements BackendSessionManager<MySQLSession, 
     }
 
     @Override
-    public void removeIdleSession(MySQLSession session) {
-        LinkedList<MySQLSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
+    public void removeIdleSession(MySQLClientSession session) {
+        LinkedList<MySQLClientSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
         mySQLSessions.remove(session);
     }
 
@@ -91,7 +91,7 @@ public class MySQLSessionManager implements BackendSessionManager<MySQLSession, 
     }
 
     @Override
-    public void createSession(Datasource key, AsynTaskCallBack<MySQLSession> callBack) {
+    public void createSession(Datasource key, AsynTaskCallBack<MySQLClientSession> callBack) {
         DatasourceMeta datasourceMeta = new DatasourceMeta(key.getName(), key.getIp(), key.getPort(), key.getUsername(), key.getPassword());
         try {
             BackendConCreateTask conCreateTask = new BackendConCreateTask(key,this, (MycatReactorThread) Thread.currentThread(), callBack);
@@ -105,7 +105,7 @@ public class MySQLSessionManager implements BackendSessionManager<MySQLSession, 
     }
 
     @Override
-    public NIOHandler<MySQLSession> getDefaultSessionHandler() {
+    public NIOHandler<MySQLClientSession> getDefaultSessionHandler() {
         return MainMySQLNIOHandler.INSTANCE;
     }
 

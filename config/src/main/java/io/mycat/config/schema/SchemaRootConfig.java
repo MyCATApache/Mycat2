@@ -47,4 +47,14 @@ public class SchemaRootConfig implements Configurable {
     public void setDataNodes(List<DataNodeConfig> dataNodes) {
         this.dataNodes = dataNodes;
     }
+
+    public String defaultSchemaName;
+
+    public String getDefaultSchemaName() {
+        return defaultSchemaName;
+    }
+
+    public void setDefaultSchemaName(String defaultSchemaName) {
+        this.defaultSchemaName = defaultSchemaName;
+    }
 }

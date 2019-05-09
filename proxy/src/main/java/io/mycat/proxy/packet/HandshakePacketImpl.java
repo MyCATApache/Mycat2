@@ -17,11 +17,11 @@
 package io.mycat.proxy.packet;
 
 
-import io.mycat.proxy.MycatExpection;
-import io.mycat.beans.mysql.MySQLCapabilityFlags;
-import io.mycat.proxy.payload.MySQLPayload;
-import io.mycat.proxy.payload.MySQLPayloadReadView;
+import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.proxy.payload.MySQLPacketWriter;
 import io.mycat.proxy.payload.MySQLPayloadReader;
+import io.mycat.proxy.payload.MySQLPayloadWriter;
 
 /**
  * cjw
@@ -32,7 +32,7 @@ public class HandshakePacketImpl {
     public String serverVersion;
     public long connectionId;
     public String authPluginDataPartOne;//salt auth plugin sql part 1
-    public MySQLCapabilityFlags capabilities;
+    public MySQLServerCapabilityFlags capabilities;
     public boolean hasPartTwo = false;
     public int characterSet;
     public int statusFlags;
@@ -49,7 +49,7 @@ public class HandshakePacketImpl {
         connectionId = buffer.readFixInt(4);
         authPluginDataPartOne = buffer.readFixString(8);
         buffer.skipInReading(1);
-        capabilities = new MySQLCapabilityFlags((int) buffer.readFixInt(2) & 0x0000ffff);
+        capabilities = new MySQLServerCapabilityFlags((int) buffer.readFixInt(2) & 0x0000ffff);
         if (!buffer.readFinished()) {
             hasPartTwo = true;
             characterSet = Byte.toUnsignedInt(buffer.readByte());
@@ -75,7 +75,7 @@ public class HandshakePacketImpl {
         }
     }
 
-    public void writePayload(MySQLPacket buffer) {
+    public void writePayload(MySQLPayloadWriter buffer) {
         buffer.writeByte((byte) 0x0a);
         buffer.writeNULString(serverVersion);
         buffer.writeFixInt(4, connectionId);

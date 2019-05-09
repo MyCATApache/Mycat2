@@ -43,6 +43,6 @@ public class ResultSetImpl extends ResultSet<ColumnDefPacket, Row, MycatSession>
 
     @Override
     public void writeResultRow(Row row, MycatSession mycat) {
-     //   row.writeToChannel(mycat.channel());
+     //   row.writeProxyBufferToChannel(mycat.channel());
     }
 }

@@ -17,7 +17,6 @@
 package io.mycat.proxy.task;
 
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.MySQLSession;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;

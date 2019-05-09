@@ -20,7 +20,7 @@ public interface MySQLPayload<T extends MySQLPayload<T>> {
     int getLength();
 
 //    public boolean readFromChannel(SocketChannel channel);
-//    public boolean writeToChannel(SocketChannel channel) throws IOException;
+//    public boolean writeProxyBufferToChannel(SocketChannel channel) throws IOException;
 
     byte get();
 

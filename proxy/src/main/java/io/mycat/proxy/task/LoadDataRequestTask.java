@@ -17,21 +17,20 @@
 package io.mycat.proxy.task;
 
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 
 public class LoadDataRequestTask implements ResultSetTask {
     String fileName;
 
     @Override
-    public void onFinished(boolean success, String errorMessage) {
-        MySQLSession currentMySQLSession = getCurrentMySQLSession();
-        AsynTaskCallBack<MySQLSession> callBack = currentMySQLSession.getCallBackAndReset();
-        callBack.finished(currentMySQLSession, this, success, fileName, errorMessage);
+    public void onFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
+        AsynTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
+        callBack.finished(mysql, this, success, fileName, errorMessage);
     }
 
     @Override
     public void onLoadDataRequest(MySQLPacket mySQLPacket, int startPos, int endPos) {
         fileName = mySQLPacket.getEOFString(startPos + 5);
-        clearAndFinished(true,null);
+        clearAndFinished((MySQLClientSession) getSessionCaller(),true,null);
     }
 }

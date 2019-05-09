@@ -17,7 +17,7 @@
 package io.mycat.proxy.task;
 
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 
 public class MultiOkQueriesCounterTask implements QueryResultSetTask {
     private int counter = 0;
@@ -43,13 +43,13 @@ public class MultiOkQueriesCounterTask implements QueryResultSetTask {
     }
 
     @Override
-    public void onFinished(boolean success, String errorMessage) {
+    public void onFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
         if (counter == 0) {
-            AsynTaskCallBack<MySQLSession> callBack = getCurrentMySQLSession().getCallBackAndReset();
-            callBack.finished(getCurrentMySQLSession(), this, true, null, errorMessage);
+            AsynTaskCallBack<MySQLClientSession> callBack =mysql.getCallBackAndReset();
+            callBack.finished(mysql, this, true, null, errorMessage);
         } else {
-            AsynTaskCallBack<MySQLSession> callBack = getCurrentMySQLSession().getCallBackAndReset();
-            callBack.finished(getCurrentMySQLSession(), this, false, null,success? "couter fail":errorMessage);
+            AsynTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
+            callBack.finished(mysql, this, false, null,success? "couter fail":errorMessage);
         }
     }
 

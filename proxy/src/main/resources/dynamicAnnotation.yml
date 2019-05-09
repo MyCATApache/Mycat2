@@ -1,0 +1,5 @@
+dynamicAnnotations:
+  - name: idEquals
+    pattern: '(?:id = )(?<id>([0-9]))'
+  - name: between
+    pattern: '(?<between>((?:between )(?<left>[0-9])(?: and )(?<right>[0-9])))'

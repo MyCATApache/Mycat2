@@ -18,7 +18,7 @@ import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;
 import java.io.IOException;
@@ -29,13 +29,13 @@ import java.io.IOException;
  **/
 public class FetchTask implements ResultSetTask {
 
-  public void request(MySQLSession mysql, long stmtId, long numRows,
-      AsynTaskCallBack<MySQLSession> callBack) {
+  public void request(MySQLClientSession mysql, long stmtId, long numRows,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
     request(mysql, stmtId, numRows, (MycatReactorThread) Thread.currentThread(), callBack);
   }
 
-  public void request(MySQLSession mysql, long stmtId, long numRows,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLSession> callBack) {
+  public void request(MySQLClientSession mysql, long stmtId, long numRows,
+      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
     try {
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
@@ -43,15 +43,15 @@ public class FetchTask implements ResultSetTask {
 //                throw new MycatExpection("");
         mysql.currentProxyBuffer().reset();
       }
-      mysql.setProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentMySQLPacket();
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
+      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(9);
       mySQLPacket.writeByte((byte) MySQLCommandType.COM_STMT_FETCH);
       mySQLPacket.writeFixInt(2, stmtId);
       mySQLPacket.writeFixInt(2, numRows);
       mysql.prepareReveiceResponse();
-      mysql.writeMySQLPacket(mySQLPacket, mysql.setPacketId(0));
+      mysql.writeProxyPacket(mySQLPacket, mysql.setPacketId(0));
     } catch (IOException e) {
-      this.clearAndFinished(false, e.getMessage());
+      this.clearAndFinished(mysql,false, e.getMessage());
     }
   }
 }

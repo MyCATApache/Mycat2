@@ -20,7 +20,6 @@ public class PacketSplitterImpl implements PacketSplitter {
     int totalSize;
     int currentPacketLen;
     int offset;
-    int paketLen;
     @Override
     public int getTotalSizeInPacketSplitter() {
         return totalSize;
@@ -50,6 +49,6 @@ public class PacketSplitterImpl implements PacketSplitter {
 
     @Override
     public int getOffsetInPacketSplitter() {
-        return paketLen;
+        return offset;
     }
 }

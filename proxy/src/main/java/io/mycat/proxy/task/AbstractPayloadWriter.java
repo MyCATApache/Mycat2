@@ -21,14 +21,14 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.session.AbstractMySQLSession;
-import io.mycat.proxy.session.MySQLSession;
+import io.mycat.proxy.session.AbstractMySQLClientSession;
+import io.mycat.proxy.session.MySQLClientSession;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMySQLSession>, PacketSplitter {
+public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMySQLClientSession>, PacketSplitter {
     private T buffer;
     private int startIndex;
     private int writeIndex;
@@ -40,9 +40,9 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMyS
     int currentPacketLen;
     int offset;
     ByteBuffer header;
-    private MySQLSession mysql;
+    private MySQLClientSession mysql;
 
-    public void request(MySQLSession mysql, T buffer, int position, int length, AsynTaskCallBack<MySQLSession> callBack) {
+    public void request(MySQLClientSession mysql, T buffer, int position, int length, AsynTaskCallBack<MySQLClientSession> callBack) {
         try {
             this.mysql = mysql;
             this.buffer = buffer;
@@ -100,7 +100,7 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMyS
     }
 
 
-    public void onSocketWrite(MySQLSession session) throws IOException {
+    public void onSocketWrite(MySQLClientSession session) throws IOException {
         if (header.hasRemaining()) {
             getServerSocket().write(header);
             return;
@@ -145,7 +145,7 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMyS
     }
 
     void onWriteFinished(T fileChannel, boolean success) {
-        AsynTaskCallBack callBackAndReset = getCurrentMySQLSession().getCallBackAndReset();
+        AsynTaskCallBack callBackAndReset =mysql.getCallBackAndReset();
         try {
             clearResource(fileChannel);
             callBackAndReset.finished(this.mysql, this, success, null, null);
@@ -234,19 +234,19 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMyS
     }
 
 
-    public void onSocketRead(AbstractMySQLSession session) throws IOException {
+    public void onSocketRead(AbstractMySQLClientSession session) throws IOException {
 
     }
 
 
-    public void onWriteFinished(AbstractMySQLSession session) throws IOException {
+    public void onWriteFinished(AbstractMySQLClientSession session) throws IOException {
 
     }
 
 
-    public void onSocketClosed(AbstractMySQLSession session, boolean normal) {
+    public void onSocketClosed(AbstractMySQLClientSession session, boolean normal) {
         if (!normal) {
-            onError(getCurrentMySQLSession().getLastThrowableAndReset());
+            onError(getSessionCaller().getLastThrowableAndReset());
         } else {
             onWriteFinished(buffer, true);
         }

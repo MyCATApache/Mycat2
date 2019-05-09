@@ -1,10 +1,28 @@
 schemas:
-  - name: db1
+  - name: test
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
     tables:
-      - name: travelrecord
-        dataNode: dn1
+       - name: travelrecord
+
+#
+#  - name: test
+#    schemaType: DB_IN_ONE_SERVER
+#    defaultDataNode: dn1
+#    tables:
+#      - name: hootask1
+
+#  - name: test
+#    schemaType: DB_IN_MULTI_SERVER
+#    defaultDataNode: dn1
+#    tables:
+#      - name: hootask1
+#        dataNodes: dn1
+#      - name: t2
+#        dataNodes: dn2
+#      - name: travelrecord
+#        dataNodes: dn3
+
 
 dataNodes:
   - name: dn1
@@ -12,4 +30,7 @@ dataNodes:
     replica: repli
   - name: dn2
     database: db2
-    replica: repli2
+    replica: repli
+  - name: dn3
+    database: db3
+    replica: repli
