@@ -22,15 +22,11 @@ import io.mycat.proxy.packet.ResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.CommandTask;
-import io.mycat.proxy.task.LoadDataRequestTask;
-import io.mycat.proxy.task.MappedByteBufferPayloadWriter;
 import io.mycat.proxy.task.QueryUtil;
 import io.mycat.proxy.task.client.prepareStatement.ExecuteTask;
 import io.mycat.proxy.task.client.prepareStatement.PrepareStmtUtil;
 import io.mycat.proxy.task.client.prepareStatement.PrepareTask;
 import io.mycat.proxy.task.client.prepareStatement.SendLongDataTask;
-import java.nio.channels.FileChannel;
-import java.nio.file.Paths;
 
 public interface MySQLAPI {
 
@@ -163,47 +159,6 @@ public interface MySQLAPI {
     new CommandTask().request(getThis(), 2, dataBase, callback);
   }
 
-  default void loadData(String sql, AsynTaskCallBack<MySQLClientSession> callback) {
-    new LoadDataRequestTask()
-        .request(getThis(), 3, sql, new AsynTaskCallBack<MySQLClientSession>() {
-          @Override
-          public void finished(MySQLClientSession session, Object sender, boolean success,
-              Object result,
-              Object attr) {
-            try {
-              FileChannel open = FileChannel.open(Paths.get((String) result));
-              loadDataFileContext(open, 0, (int) open.size(),
-                  new AsynTaskCallBack<MySQLClientSession>() {
-                    @Override
-                    public void finished(MySQLClientSession session, Object sender, boolean success,
-                        Object packetId, Object attr) {
-                      if (success) {
-                        session.loadDataEmptyPacket(callback, session.incrementPacketIdAndGet());
-                      } else {
-                        callback.finished(session, this, false, null, attr);
-                      }
-                    }
-                  });
-            } catch (Exception e) {
-
-              callback.finished(session, this, false, null, attr);
-            }
-          }
-        });
-
-  }
-
-  default void loadDataEmptyPacket(AsynTaskCallBack<MySQLClientSession> callback,
-      byte nextPacketId) {
-    new CommandTask().requestEmptyPacket(getThis(), nextPacketId, callback);
-  }
-
-  default void loadDataFileContext(FileChannel fileChannel, int position, int length,
-      AsynTaskCallBack<MySQLClientSession> callback) throws Exception {
-    new MappedByteBufferPayloadWriter()
-        .request(getThis(), fileChannel.map(FileChannel.MapMode.READ_ONLY, position, length),
-            position, length, callback);
-  }
 
   default void close(MySQLPreparedStatement preparedStatement,
       AsynTaskCallBack<MySQLClientSession> callback) {

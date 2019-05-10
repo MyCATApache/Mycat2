@@ -14,9 +14,6 @@
  */
 package io.mycat.proxy.packet;
 
-import static io.mycat.proxy.packet.ComQueryState.COLUMN_DEFINITION;
-import static io.mycat.proxy.packet.ComQueryState.FIRST_PACKET;
-import static io.mycat.proxy.packet.ComQueryState.QUERY_PACKET;
 import static io.mycat.proxy.packet.MySQLPayloadType.BINARY_ROW;
 import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_COUNT;
 import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_DEF;
@@ -112,6 +109,15 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   ComQueryState getState();
 
+  default void prepareReveiceResponse() {
+    setState(ComQueryState.FIRST_PACKET);
+  }
+
+  default void prepareReveicePrepareOkResponse() {
+    setState(ComQueryState.FIRST_PACKET);
+    setCurrentComQuerySQLType(0x22);
+  }
+
   void setState(ComQueryState state);
 
   int setColumnCount(int count);
@@ -136,12 +142,12 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   boolean isMultiPacket();
 
-  default void setRequestFininshed(boolean b) {
-    setState(b ? FIRST_PACKET : QUERY_PACKET);
+  default boolean isRequestFininshed() {
+    return getState() != ComQueryState.QUERY_PACKET;
   }
 
-  default boolean isRequestFininshed() {
-    return getState() != QUERY_PACKET;
+  default void setRequestFininshed(boolean b) {
+    setState(b ? ComQueryState.FIRST_PACKET : ComQueryState.QUERY_PACKET);
   }
 
   void resetCurrentMySQLPacket();
@@ -464,17 +470,17 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         if (head == 18) {
           int statementId = (int) mySQLPacket.readFixInt(4);
           int paramId = (int) mySQLPacket.readFixInt(2);
-          setState(QUERY_PACKET);
+          setState(ComQueryState.QUERY_PACKET);
           setMySQLPayloadType(REQUEST_SEND_LONG_DATA);
           return;
         } else if (head == 25) {
-          setState(QUERY_PACKET);
+          setState(ComQueryState.QUERY_PACKET);
           setRequestFininshed(true);
           setMySQLPayloadType(REQUEST_COM_STMT_CLOSE);
           return;
         } else {
           setCurrentComQuerySQLType(head);
-          setState(FIRST_PACKET);
+          setState(ComQueryState.FIRST_PACKET);
           setRequestFininshed(true);
           setMySQLPayloadType(REQUEST);
           return;
@@ -496,7 +502,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
             setServerStatus(okPacketReadServerStatus(mySQLPacket));
             setMySQLPayloadType(FIRST_OK);
             if (hasMoreResult(getServerStatus())) {
-              setState(FIRST_PACKET);
+              setState(ComQueryState.FIRST_PACKET);
             } else {
               setState(ComQueryState.COMMAND_END);
             }
@@ -515,7 +521,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           int count = (int) mySQLPacket
                                 .getLenencInt(getStartPos() + MySQLPacket.getPacketHeaderSize());
           setColumnCount(count);
-          setState(COLUMN_DEFINITION);
+          setState(ComQueryState.COLUMN_DEFINITION);
           setMySQLPayloadType(COLUMN_COUNT);
         }
         return;
@@ -622,7 +628,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   }
 
   default void setResponseFinished(boolean b) {
-    setState(b ? ComQueryState.COMMAND_END : FIRST_PACKET);
+    setState(b ? ComQueryState.COMMAND_END : ComQueryState.FIRST_PACKET);
   }
 
   default int eofPacketReadStatus(MySQLPacket buffer) {
@@ -679,7 +685,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     logger.debug("{}", endPos - startPos);
     logger.debug("{}", getPacketId());
     if (hasMoreResult(getServerStatus())) {
-      setState(FIRST_PACKET);
+      setState(ComQueryState.FIRST_PACKET);
     } else {
       setState(ComQueryState.COMMAND_END);
       setMySQLPayloadType(ROW_FINISHED);
@@ -741,5 +747,33 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       return;
     }
     throw new RuntimeException("unknown state!");
+  }
+
+  enum ComQueryState {
+    //DO_NOT(false),
+    QUERY_PACKET(true),
+    FIRST_PACKET(true),
+    COLUMN_DEFINITION(false),
+    COLUMN_END_EOF(true),
+    RESULTSET_ROW(false),
+    RESULTSET_ROW_END(true),
+    PREPARE_FIELD(false),
+    PREPARE_FIELD_EOF(true),
+    PREPARE_PARAM(false),
+    PREPARE_PARAM_EOF(true),
+    COMMAND_END(false),
+    //    LOCAL_INFILE_REQUEST(true),
+    LOCAL_INFILE_FILE_CONTENT(true),
+    //    LOCAL_INFILE_EMPTY_PACKET(true),
+    LOCAL_INFILE_OK_PACKET(true);
+    boolean needFull;
+
+    ComQueryState(boolean needFull) {
+      this.needFull = needFull;
+    }
+
+    public boolean isNeedFull() {
+      return needFull;
+    }
   }
 }

@@ -1,8 +1,8 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
+import io.mycat.proxy.MainMycatNIOHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.MySQLProxyHandler;
-import io.mycat.proxy.MycatSessionWriteHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -18,27 +18,33 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   ProxyBuffer currentProxyBuffer();
 
-  public MySQLPacketResolver getPacketResolver();
- default void switchMySQLProxyWriteHandler(){
+  static void writeProxyBufferToChannel(MySQLProxySession proxySession) throws IOException {
+    proxySession.currentProxyBuffer().writeToChannel(proxySession.channel());
+    proxySession.updateLastActiveTime();
+    proxySession.checkWriteFinished();
+  }
 
- }
+  static void checkWriteFinished(MySQLProxySession proxySession) throws IOException {
+    ProxyBuffer proxyBuffer = proxySession.currentProxyBuffer();
+    if (!proxyBuffer.channelWriteFinished()) {
+      proxySession.change2WriteOpts();
+    } else {
+      proxySession.writeFinished(proxySession);
+    }
+  }
+
   void setCurrentProxyBuffer(ProxyBuffer buffer);
-  default void rebuildProxyRequest(byte[] bytes){
-      ProxyBuffer proxyBuffer = this.currentProxyBuffer();
-      proxyBuffer.reset();
-      proxyBuffer.newBuffer(bytes);
-  }
-  public default boolean readFromChannel() throws IOException {
-    ProxyBuffer proxyBuffer = currentProxyBuffer();
-    proxyBuffer.compactInChannelReadingIfNeed();
-    boolean b = proxyBuffer.readFromChannel(this.channel());
-    updateLastActiveTime();
-    return b;
+
+  MySQLPacketResolver getPacketResolver();
+
+  default void switchMySQLProxyWriteHandler() {
+
   }
 
-  public default void writeProxyBufferToChannel(byte[] bytes) throws IOException {
-    switchMySQLProxyWriteHandler();
-    writeProxyBufferToChannel(this, bytes);
+  default void rebuildProxyRequest(byte[] bytes) {
+    ProxyBuffer proxyBuffer = this.currentProxyBuffer();
+    proxyBuffer.reset();
+    proxyBuffer.newBuffer(bytes);
   }
 
   static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
@@ -51,30 +57,28 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     proxySession.writeToChannel();
   }
 
-  public default void writeToChannel() throws IOException {
+  default boolean readFromChannel() throws IOException {
+    ProxyBuffer proxyBuffer = currentProxyBuffer();
+    proxyBuffer.compactInChannelReadingIfNeed();
+    boolean b = proxyBuffer.readFromChannel(this.channel());
+    updateLastActiveTime();
+    return b;
+  }
+
+  default void writeProxyBufferToChannel(byte[] bytes) throws IOException {
+    switchMySQLProxyWriteHandler();
+    writeProxyBufferToChannel(this, bytes);
+  }
+
+  default void writeToChannel() throws IOException {
     writeProxyBufferToChannel(this);
   }
 
-  public static void writeProxyBufferToChannel(MySQLProxySession proxySession) throws IOException {
-    proxySession.currentProxyBuffer().writeToChannel(proxySession.channel());
-    proxySession.updateLastActiveTime();
-    proxySession.checkWriteFinished();
-  }
-
-  public default void checkWriteFinished() throws IOException {
+  default void checkWriteFinished() throws IOException {
     checkWriteFinished(this);
   }
 
-  public static void checkWriteFinished(MySQLProxySession proxySession) throws IOException {
-    ProxyBuffer proxyBuffer = proxySession.currentProxyBuffer();
-    if (!proxyBuffer.channelWriteFinished()) {
-      proxySession.change2WriteOpts();
-    } else {
-      proxySession.writeFinished(proxySession);
-    }
-  }
-
-  public default MySQLPacket newCurrentProxyPacket(int packetLength) {
+  default MySQLPacket newCurrentProxyPacket(int packetLength) {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
     proxyBuffer.reset();
     proxyBuffer.newBuffer(packetLength);
@@ -83,12 +87,12 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     return mySQLPacket;
   }
 
-  public default void writeProxyPacket(MySQLPacket packet) throws IOException {
+  default void writeProxyPacket(MySQLPacket packet) throws IOException {
     int packetId = getPacketResolver().getAndIncrementPacketId();
     writeProxyPacket(packet, packetId);
   }
 
-  public default void writeProxyPacket(MySQLPacket ogrin, int packetId) throws IOException {
+  default void writeProxyPacket(MySQLPacket ogrin, int packetId) throws IOException {
     ProxyBufferImpl mySQLPacket1 = (ProxyBufferImpl) ogrin;
     ByteBuffer buffer = mySQLPacket1.currentByteBuffer();
     int packetEndPos = buffer.position();
@@ -105,34 +109,34 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     }
   }
 
-  public default void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
+  default void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
     switchMySQLProxyWriteHandler();
     this.setCurrentProxyBuffer(proxyBuffer);
     this.writeToChannel();
   }
 
-  public default boolean readProxyPayloadFully() throws IOException {
+  default boolean readProxyPayloadFully() throws IOException {
     return getPacketResolver().readMySQLPayloadFully();
   }
 
-  public default MySQLPacket currentProxyPayload() throws IOException {
+  default MySQLPacket currentProxyPayload() throws IOException {
     return getPacketResolver().currentPayload();
   }
 
-  public default void resetCurrentProxyPayload() throws IOException {
+  default void resetCurrentProxyPayload() throws IOException {
     getPacketResolver().resetPayload();
   }
 
-  public default boolean readPartProxyPayload() throws IOException {
+  default boolean readPartProxyPayload() throws IOException {
     return getPacketResolver().readMySQLPacket();
   }
 
-  public default void resetPacket() {
+  default void resetPacket() {
     getPacketResolver().reset();
   }
 
 
-  public static enum WriteHandler implements MycatSessionWriteHandler {
+  enum WriteHandler implements MycatSessionWriteHandler {
     INSTANCE;
 
     @Override
@@ -151,7 +155,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
           MySQLClientSession backend = proxySession.getBackend();
           if (backend != null) {
             MySQLProxyHandler.INSTANCE.onFrontWriteFinished(proxySession);
-          }else {
+          } else {
             onWriteFinished(proxySession);
           }
         }

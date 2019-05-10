@@ -20,7 +20,7 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public enum  MainMycatNIOHandler implements NIOHandler<MycatSession> {
+public enum MainMycatNIOHandler implements NIOHandler<MycatSession> {
   INSTANCE;
   private static final Logger logger = LoggerFactory.getLogger(MainMycatNIOHandler.class);
 
@@ -38,17 +38,12 @@ public enum  MainMycatNIOHandler implements NIOHandler<MycatSession> {
   }
 
   @Override
-  public void onSocketWrite(MycatSession mycat) throws IOException {
-    mycat.writeToChannel();
-  }
-
-  @Override
   public void onWriteFinished(MycatSession mycat) throws IOException {
-    if(mycat.isResponseFinished()){
+    if (mycat.isResponseFinished()) {
       mycat.responseFinishedClear();
       mycat.resetPacket();
       mycat.change2ReadOpts();
-    }else {
+    } else {
       mycat.writeToChannel();
     }
   }
@@ -56,6 +51,13 @@ public enum  MainMycatNIOHandler implements NIOHandler<MycatSession> {
   @Override
   public void onSocketClosed(MycatSession session, boolean normal) {
     session.close(normal, "");
+  }
+
+  public interface MycatSessionWriteHandler {
+
+    void writeToChannel(MycatSession session) throws IOException;
+
+    void onWriteFinished(MycatSession session) throws IOException;
   }
 
 }

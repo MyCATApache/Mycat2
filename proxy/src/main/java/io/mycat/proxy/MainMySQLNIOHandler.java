@@ -30,11 +30,6 @@ public enum MainMySQLNIOHandler implements NIOHandler<MySQLClientSession> {
   }
 
   @Override
-  public void onSocketWrite(MySQLClientSession session) throws IOException {
-    session.writeToChannel();
-  }
-
-  @Override
   public void onWriteFinished(MySQLClientSession session) throws IOException {
     HANDLER.onBackendWriteFinished(session);
   }

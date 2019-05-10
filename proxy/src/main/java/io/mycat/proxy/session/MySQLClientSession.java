@@ -20,7 +20,6 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.proxy.packet.ComQueryState;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
 import java.nio.channels.Selector;
@@ -58,12 +57,11 @@ public class MySQLClientSession extends AbstractMySQLClientSession implements My
 
 
   public void prepareReveiceResponse() {
-    this.packetResolver.setState(ComQueryState.FIRST_PACKET);
+    this.packetResolver.prepareReveiceResponse();
   }
 
   public void prepareReveicePrepareOkResponse() {
-    this.packetResolver.setState(ComQueryState.FIRST_PACKET);
-    this.packetResolver.setCurrentComQuerySQLType(0x22);
+    this.packetResolver.prepareReveicePrepareOkResponse();
   }
 
   public void bind(MycatSession mycatSession) {
