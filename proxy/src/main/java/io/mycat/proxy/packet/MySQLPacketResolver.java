@@ -19,27 +19,27 @@ package io.mycat.proxy.packet;
 import static io.mycat.proxy.packet.ComQueryState.COLUMN_DEFINITION;
 import static io.mycat.proxy.packet.ComQueryState.FIRST_PACKET;
 import static io.mycat.proxy.packet.ComQueryState.QUERY_PACKET;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.BINARY_ROW;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.COLUMN_COUNT;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.COLUMN_DEF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.COLUMN_EOF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.FIRST_EOF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.FIRST_ERROR;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.FIRST_OK;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.LOAD_DATA_REQUEST;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.PREPARE_OK;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.PREPARE_OK_COLUMN_DEF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.PREPARE_OK_COLUMN_DEF_EOF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.PREPARE_OK_PARAMER_DEF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.PREPARE_OK_PARAMER_DEF_EOF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.REQUEST;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.REQUEST_COM_STMT_CLOSE;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.REQUEST_SEND_LONG_DATA;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.ROW_EOF;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.ROW_ERROR;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.ROW_FINISHED;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.ROW_OK;
-import static io.mycat.proxy.packet.MySQLPacketProcessType.TEXT_ROW;
+import static io.mycat.proxy.packet.MySQLPayloadType.BINARY_ROW;
+import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_COUNT;
+import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_DEF;
+import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_EOF;
+import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_EOF;
+import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_ERROR;
+import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_OK;
+import static io.mycat.proxy.packet.MySQLPayloadType.LOAD_DATA_REQUEST;
+import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK;
+import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_COLUMN_DEF;
+import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_COLUMN_DEF_EOF;
+import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_PARAMER_DEF;
+import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_PARAMER_DEF_EOF;
+import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST;
+import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_COM_STMT_CLOSE;
+import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_SEND_LONG_DATA;
+import static io.mycat.proxy.packet.MySQLPayloadType.ROW_EOF;
+import static io.mycat.proxy.packet.MySQLPayloadType.ROW_ERROR;
+import static io.mycat.proxy.packet.MySQLPayloadType.ROW_FINISHED;
+import static io.mycat.proxy.packet.MySQLPayloadType.ROW_OK;
+import static io.mycat.proxy.packet.MySQLPayloadType.TEXT_ROW;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
@@ -52,23 +52,39 @@ import org.slf4j.LoggerFactory;
 
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 
-  static final Logger logger = LoggerFactory.getLogger(MySQLPacketResolver.class);
+  Logger logger = LoggerFactory.getLogger(MySQLPacketResolver.class);
 
-  MySQLPacketProcessType getMySQLPacketProcessType();
+  static boolean hasMulitQuery(int serverStatus) {
+    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MULIT_QUERY);
+  }
 
-  void setMySQLPacketProcessType(MySQLPacketProcessType type);
+  static boolean hasMoreResult(int serverStatus) {
+    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MORE_RESULTS);
+  }
 
-  public void setWholePacketStartPos(int length);
+  static boolean hasResult(int serverStatus) {
+    return (hasMoreResult(serverStatus) || hasMulitQuery(serverStatus));
+  }
 
-  public void setWholePacketEndPos(int length);
+  static boolean hasFatch(int serverStatus) {
+    // 检查是否通过fatch执行的语句
+    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.CURSOR_EXISTS);
+  }
 
-  public int getWholePacketStartPos();
+  static boolean hasTrans(int serverStatus) {
+    // 检查是否通过fatch执行的语句
+    boolean trans =
+        MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)
+            || MySQLServerStatusFlags
+                   .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANS_READONLY);
+    return trans;
+  }
 
-  public int getWholePacketEndPos();
+  MySQLPayloadType getMySQLPayloadType();
 
-  public void setPayloadLength(int length);
+  void setMySQLPayloadType(MySQLPayloadType type);
 
-  public int getPayloadLength();
+  int getWholePacketStartPos();
 
   int setPacketId(int packetId);
 
@@ -114,19 +130,19 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   int getRemainsBytes();
 
-  public boolean setMultiPacket(boolean c);
+  void setWholePacketStartPos(int length);
 
-  public boolean isMultiPacket();
+  int getWholePacketEndPos();
 
-  public MySQLPacket currentProxybuffer();
+  void setWholePacketEndPos(int length);
 
-  public void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex, int payloadEndIndex);
+  int getPayloadLength();
 
-  public void setPayload(MySQLPacket mySQLPacket);
+  void setPayloadLength(int length);
 
-   public void resetPayload() ;
+  boolean setMultiPacket(boolean c);
 
-  public MySQLPacket currentPayload();
+  boolean isMultiPacket();
 
   default void setRequestFininshed(boolean b) {
     setState(b ? FIRST_PACKET : QUERY_PACKET);
@@ -228,7 +244,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     logger.debug("startIndex:" + startIndex);
     logger.debug("endIndex:" + endIndex);
     logger.debug(Objects.toString(this.getState()));
-    logger.debug(Objects.toString(this.getPailoadType()));
     int wholePakcetSize = endIndex - startIndex;
     if (wholePakcetSize < 4) {
       return false;
@@ -410,8 +425,42 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     }
   }
 
+  MySQLPacket currentProxybuffer();
 
-  default public void resolvePayloadType(int head, boolean isPacketFinished, boolean parse,
+  void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex, int payloadEndIndex);
+
+  void setPayload(MySQLPacket mySQLPacket);
+
+  void resetPayload();
+
+  MySQLPacket currentPayload();
+//
+//    default public void okPacketReadPayload(MySQLPacket buffers) {
+//        byte header = buffers.readByte();
+//        assert (0x00 == header) || (0xfe == header);
+//        setOkAffectedRows(buffers.readLenencInt());
+//        setOkLastInsertId(buffers.readLenencInt());
+//
+//        MySQLServerCapabilityFlags capabilityFlags = capabilityFlags();
+//        if (capabilityFlags.isClientProtocol41()) {
+//            setServerStatus((int) buffers.readFixInt(2));
+//            setOkWarningCount((int) buffers.readFixInt(2));
+//
+//        } else if (capabilityFlags.isKnowsAboutTransactions()) {
+//            setServerStatus((int) buffers.readFixInt(2));
+//        }
+//        if (capabilityFlags.isSessionVariableTracking()) {
+//            setOkStatusInfo(buffers.readLenencBytes());
+//            if ((getServerStatus() & MySQLServerStatusFlags.STATE_CHANGED) != 0) {
+//                setOkSessionStateInfoType(buffers.readByte());
+//                setOkSessionStateInfoTypeData(buffers.readLenencBytes());
+//            }
+//        } else {
+//            setOkMessage(buffers.readEOFStringBytes());
+//        }
+//    }
+
+  default void resolvePayloadType(int head, boolean isPacketFinished, boolean parse,
       MySQLPacket mySQLPacket, int payloadLength) {
     if (hasResolvePayloadType()) {
       return;
@@ -427,18 +476,18 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           int statementId = (int) mySQLPacket.readFixInt(4);
           int paramId = (int) mySQLPacket.readFixInt(2);
           setState(QUERY_PACKET);
-          setMySQLPacketProcessType(REQUEST_SEND_LONG_DATA);
+          setMySQLPayloadType(REQUEST_SEND_LONG_DATA);
           return;
         } else if (head == 25) {
           setState(QUERY_PACKET);
           setRequestFininshed(true);
-          setMySQLPacketProcessType(REQUEST_COM_STMT_CLOSE);
+          setMySQLPayloadType(REQUEST_COM_STMT_CLOSE);
           return;
         } else {
           setCurrentComQuerySQLType(head);
           setState(FIRST_PACKET);
           setRequestFininshed(true);
-          setMySQLPacketProcessType(REQUEST);
+          setMySQLPayloadType(REQUEST);
           return;
         }
       }
@@ -448,15 +497,15 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         }
         if (head == 0xff) {
           setState(ComQueryState.COMMAND_END);
-          setMySQLPacketProcessType(FIRST_ERROR);
+          setMySQLPayloadType(FIRST_ERROR);
         } else if (head == 0x00) {
           if (getCurrentSQLType() == 0x22 && payloadLength == 12 && getPacketId() == 2) {
             resolvePrepareOkPacket(mySQLPacket, isPacketFinished);
-            setMySQLPacketProcessType(PREPARE_OK);
+            setMySQLPayloadType(PREPARE_OK);
             return;
           } else {
             setServerStatus(okPacketReadServerStatus(mySQLPacket));
-            setMySQLPacketProcessType(FIRST_OK);
+            setMySQLPayloadType(FIRST_OK);
             if (hasMoreResult(getServerStatus())) {
               setState(FIRST_PACKET);
             } else {
@@ -466,18 +515,18 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           }
         } else if (head == 0xfb) {
           setState(ComQueryState.LOCAL_INFILE_FILE_CONTENT);
-          setMySQLPacketProcessType(LOAD_DATA_REQUEST);
+          setMySQLPayloadType(LOAD_DATA_REQUEST);
           return;
         } else if (head == 0xfe) {
           setServerStatus(eofPacketReadStatus(mySQLPacket));
           setState(ComQueryState.COMMAND_END);
-          setMySQLPacketProcessType(FIRST_EOF);
+          setMySQLPayloadType(FIRST_EOF);
           return;
         } else {
           int count =   (int) mySQLPacket.getLenencInt(getStartPos() + MySQLPacket.getPacketHeaderSize());
           setColumnCount(count);
           setState(COLUMN_DEFINITION);
-          setMySQLPacketProcessType(COLUMN_COUNT);
+          setMySQLPayloadType(COLUMN_COUNT);
         }
         return;
       }
@@ -486,7 +535,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           setState(
               !clientDeprecateEof() ? ComQueryState.COLUMN_END_EOF : ComQueryState.RESULTSET_ROW);
         }
-        setMySQLPacketProcessType(COLUMN_DEF);
+        setMySQLPayloadType(COLUMN_DEF);
         return;
       }
       case COLUMN_END_EOF: {
@@ -495,20 +544,20 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         }
         setServerStatus(eofPacketReadStatus(mySQLPacket));
         setState(ComQueryState.RESULTSET_ROW);
-        setMySQLPacketProcessType(COLUMN_EOF);
+        setMySQLPayloadType(COLUMN_EOF);
         return;
       }
       case RESULTSET_ROW: {
         if (head == 0x00) {
-          setMySQLPacketProcessType(BINARY_ROW);
+          setMySQLPayloadType(BINARY_ROW);
         } else if (head == 0xfe && payloadLength < 0xffffff) {
           resolveResultsetRowEnd(mySQLPacket, isPacketFinished);
         } else if (head == 0xff) {
           setState(ComQueryState.COMMAND_END);
-          setMySQLPacketProcessType(ROW_ERROR);
+          setMySQLPayloadType(ROW_ERROR);
         } else {
           //text resultset row
-          setMySQLPacketProcessType(TEXT_ROW);
+          setMySQLPayloadType(TEXT_ROW);
         }
         break;
       }
@@ -549,98 +598,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     }
   }
 
-  default public void setResponseFinished(boolean b) {
-    setState(b ? ComQueryState.COMMAND_END : FIRST_PACKET);
-  }
-
-  default public boolean isResponseFinished() {
-    return getState() == ComQueryState.COMMAND_END;
-  }
-
-  default public int eofPacketReadStatus(MySQLPacket buffer) {
-    int bpStartIndex = buffer.packetReadStartIndex();
-    int bpEndIndex = buffer.packetReadEndIndex();
-    buffer.packetReadStartIndex(getStartPos());
-    buffer.packetReadStartIndex(getEndPos());
-    //7 = packetLength(3) +  packetId（1） +  pkgType（1） + warningCount（2）
-//        buffers.skipInReading(7);
-    setEofServerStatus((int) buffer.getFixInt(getStartPos() + 5, 2));
-    int i = setServerStatus((int) buffer.getFixInt(getStartPos() + 7, 2));//status
-    buffer.packetReadStartIndex(bpStartIndex);
-    buffer.packetReadEndIndex(bpEndIndex);
-    return i;
-  }
-
-  default public int okPacketReadServerStatus(MySQLPacket buffer) {
-    int bpStartIndex = buffer.packetReadStartIndex();
-    int bpEndIndex = buffer.packetReadEndIndex();
-    buffer.packetReadStartIndex(getStartPos() + 4);
-    buffer.packetReadEndIndex(getEndPos());
-    byte header = buffer.readByte();
-    assert (0x00 == header) || (0xfe == header);
-    int serverStatus = 0;
-
-    setOkAffectedRows(buffer.readLenencInt());//affectedRows
-    setOkLastInsertId(buffer.readLenencInt());//lastInsertId
-    int capabilityFlags = capabilityFlags();
-    if (MySQLServerCapabilityFlags.isClientProtocol41(capabilityFlags) || MySQLServerCapabilityFlags.isKnowsAboutTransactions(capabilityFlags)) {
-      setServerStatus(serverStatus = (int) buffer.readFixInt(2));
-      buffer.packetReadStartIndex(bpStartIndex);
-      buffer.packetReadEndIndex(bpEndIndex);
-      return serverStatus;
-    }
-    throw new java.lang.RuntimeException("OKPacket readServerStatus error ");
-  }
-//
-//    default public void okPacketReadPayload(MySQLPacket buffers) {
-//        byte header = buffers.readByte();
-//        assert (0x00 == header) || (0xfe == header);
-//        setOkAffectedRows(buffers.readLenencInt());
-//        setOkLastInsertId(buffers.readLenencInt());
-//
-//        MySQLServerCapabilityFlags capabilityFlags = capabilityFlags();
-//        if (capabilityFlags.isClientProtocol41()) {
-//            setServerStatus((int) buffers.readFixInt(2));
-//            setOkWarningCount((int) buffers.readFixInt(2));
-//
-//        } else if (capabilityFlags.isKnowsAboutTransactions()) {
-//            setServerStatus((int) buffers.readFixInt(2));
-//        }
-//        if (capabilityFlags.isSessionVariableTracking()) {
-//            setOkStatusInfo(buffers.readLenencBytes());
-//            if ((getServerStatus() & MySQLServerStatusFlags.STATE_CHANGED) != 0) {
-//                setOkSessionStateInfoType(buffers.readByte());
-//                setOkSessionStateInfoTypeData(buffers.readLenencBytes());
-//            }
-//        } else {
-//            setOkMessage(buffers.readEOFStringBytes());
-//        }
-//    }
-
-  default void resolveResultsetRowEnd(MySQLPacket mySQLPacket, boolean isPacketFinished) {
-    if (!isPacketFinished) {
-      throw new RuntimeException("unknown state!");
-    }
-    logger.debug("{}", getPacketId());
-    if (clientDeprecateEof()) {
-      setServerStatus(okPacketReadServerStatus(mySQLPacket));
-      setMySQLPacketProcessType(ROW_OK);
-    } else {
-      setServerStatus(eofPacketReadStatus(mySQLPacket));
-      setMySQLPacketProcessType(ROW_EOF);
-    }
-    int startPos = getStartPos();
-    int endPos = getEndPos();
-    logger.debug("{}", endPos - startPos);
-    logger.debug("{}", getPacketId());
-    if (hasMoreResult(getServerStatus())) {
-      setState(FIRST_PACKET);
-    } else {
-      setState(ComQueryState.COMMAND_END);
-      setMySQLPacketProcessType(ROW_FINISHED);
-    }
-  }
-
   default void resolvePrepareOkPacket(MySQLPacket buffer, boolean isPacketFinished) {
     if (!isPacketFinished) {
       throw new RuntimeException("unknown state!");
@@ -670,6 +627,73 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     throw new RuntimeException("unknown state!");
   }
 
+  default boolean isResponseFinished() {
+    return getState() == ComQueryState.COMMAND_END;
+  }
+
+  default void setResponseFinished(boolean b) {
+    setState(b ? ComQueryState.COMMAND_END : FIRST_PACKET);
+  }
+
+  default int eofPacketReadStatus(MySQLPacket buffer) {
+    int bpStartIndex = buffer.packetReadStartIndex();
+    int bpEndIndex = buffer.packetReadEndIndex();
+    buffer.packetReadStartIndex(getStartPos());
+    buffer.packetReadStartIndex(getEndPos());
+    //7 = packetLength(3) +  packetId（1） +  pkgType（1） + warningCount（2）
+//        buffers.skipInReading(7);
+    setEofServerStatus((int) buffer.getFixInt(getStartPos() + 5, 2));
+    int i = setServerStatus((int) buffer.getFixInt(getStartPos() + 7, 2));//status
+    buffer.packetReadStartIndex(bpStartIndex);
+    buffer.packetReadEndIndex(bpEndIndex);
+    return i;
+  }
+
+  default int okPacketReadServerStatus(MySQLPacket buffer) {
+    int bpStartIndex = buffer.packetReadStartIndex();
+    int bpEndIndex = buffer.packetReadEndIndex();
+    buffer.packetReadStartIndex(getStartPos() + 4);
+    buffer.packetReadEndIndex(getEndPos());
+    byte header = buffer.readByte();
+    assert (0x00 == header) || (0xfe == header);
+    int serverStatus = 0;
+
+    setOkAffectedRows(buffer.readLenencInt());//affectedRows
+    setOkLastInsertId(buffer.readLenencInt());//lastInsertId
+    int capabilityFlags = capabilityFlags();
+    if (MySQLServerCapabilityFlags.isClientProtocol41(capabilityFlags) || MySQLServerCapabilityFlags.isKnowsAboutTransactions(capabilityFlags)) {
+      setServerStatus(serverStatus = (int) buffer.readFixInt(2));
+      buffer.packetReadStartIndex(bpStartIndex);
+      buffer.packetReadEndIndex(bpEndIndex);
+      return serverStatus;
+    }
+    throw new java.lang.RuntimeException("OKPacket readServerStatus error ");
+  }
+
+  default void resolveResultsetRowEnd(MySQLPacket mySQLPacket, boolean isPacketFinished) {
+    if (!isPacketFinished) {
+      throw new RuntimeException("unknown state!");
+    }
+    logger.debug("{}", getPacketId());
+    if (clientDeprecateEof()) {
+      setServerStatus(okPacketReadServerStatus(mySQLPacket));
+      setMySQLPayloadType(ROW_OK);
+    } else {
+      setServerStatus(eofPacketReadStatus(mySQLPacket));
+      setMySQLPayloadType(ROW_EOF);
+    }
+    int startPos = getStartPos();
+    int endPos = getEndPos();
+    logger.debug("{}", endPos - startPos);
+    logger.debug("{}", getPacketId());
+    if (hasMoreResult(getServerStatus())) {
+      setState(FIRST_PACKET);
+    } else {
+      setState(ComQueryState.COMMAND_END);
+      setMySQLPayloadType(ROW_FINISHED);
+    }
+  }
+
   default void resolvePrepareResponse(MySQLPacket proxyBuf, int head, boolean isPacketFinished) {
     if (!isPacketFinished) {
       throw new RuntimeException("unknown state!");
@@ -678,7 +702,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     if (p.getPrepareOkColumnsCount() > 0 && (getState() == ComQueryState.PREPARE_FIELD)) {
       p.setPrepareOkColumnsCount(p.getPrepareOkColumnsCount() - 1);
       setState(ComQueryState.PREPARE_FIELD);
-      setMySQLPacketProcessType(PREPARE_OK_COLUMN_DEF);
+      setMySQLPayloadType(PREPARE_OK_COLUMN_DEF);
       if (p.getPrepareOkColumnsCount() == 0) {
         if (!clientDeprecateEof()) {
           setState(ComQueryState.PREPARE_FIELD_EOF);
@@ -693,18 +717,18 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
                    && p.getPrepareOkParametersCount() > 0) {
       setServerStatus(eofPacketReadStatus(proxyBuf));
       setState(ComQueryState.PREPARE_PARAM);
-      setMySQLPacketProcessType(PREPARE_OK_COLUMN_DEF_EOF);
+      setMySQLPayloadType(PREPARE_OK_COLUMN_DEF_EOF);
       return;
     } else if (getState() == ComQueryState.PREPARE_FIELD_EOF && head == 0xFE
                    && p.getPrepareOkParametersCount() == 0) {
       setServerStatus(eofPacketReadStatus(proxyBuf));
       setState(ComQueryState.COMMAND_END);
-      setMySQLPacketProcessType(PREPARE_OK_COLUMN_DEF_EOF);
+      setMySQLPayloadType(PREPARE_OK_COLUMN_DEF_EOF);
       return;
     } else if (p.getPrepareOkParametersCount() > 0 && getState() == ComQueryState.PREPARE_PARAM) {
       p.setPrepareOkParametersCount(p.getPrepareOkParametersCount() - 1);
       setState(ComQueryState.PREPARE_PARAM);
-      setMySQLPacketProcessType(PREPARE_OK_PARAMER_DEF);
+      setMySQLPayloadType(PREPARE_OK_PARAMER_DEF);
       if (p.getPrepareOkParametersCount() == 0) {
         if (!clientDeprecateEof()) {
           setState(ComQueryState.PREPARE_PARAM_EOF);
@@ -721,37 +745,9 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
                    && head == 0xFE) {
       setServerStatus(eofPacketReadStatus(proxyBuf));
       setState(ComQueryState.COMMAND_END);
-      setMySQLPacketProcessType(PREPARE_OK_PARAMER_DEF_EOF);
+      setMySQLPayloadType(PREPARE_OK_PARAMER_DEF_EOF);
       return;
     }
     throw new RuntimeException("unknown state!");
   }
-
-  public static boolean hasMulitQuery(int serverStatus) {
-    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MULIT_QUERY);
-  }
-
-  public static boolean hasMoreResult(int serverStatus) {
-    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MORE_RESULTS);
-  }
-
-  public static boolean hasResult(int serverStatus) {
-    return (hasMoreResult(serverStatus) || hasMulitQuery(serverStatus));
-  }
-
-  public static boolean hasFatch(int serverStatus) {
-    // 检查是否通过fatch执行的语句
-    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.CURSOR_EXISTS);
-  }
-
-  public static boolean hasTrans(int serverStatus) {
-    // 检查是否通过fatch执行的语句
-    boolean trans = MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)
-                        || MySQLServerStatusFlags
-                               .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANS_READONLY);
-    return trans;
-  }
-
-
-  MySQLPacketProcessType getPailoadType();
 }

@@ -50,19 +50,19 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   int wholePacketEndPos;
   final MySQLProxySession session;
   int capabilityFlags;
-  MySQLPacketProcessType mySQLPacketProcessType;
+  MySQLPayloadType mySQLPacketProcessType;
 
 
   public MySQLPacketResolverImpl(MySQLProxySession session) {
     this.session = session;
   }
   @Override
-  public MySQLPacketProcessType getMySQLPacketProcessType() {
+  public MySQLPayloadType getMySQLPayloadType() {
     return mySQLPacketProcessType;
   }
 
   @Override
-  public void setMySQLPacketProcessType(MySQLPacketProcessType type) {
+  public void setMySQLPayloadType(MySQLPayloadType type) {
     this.mySQLPacketProcessType = type;
   }
 
@@ -320,11 +320,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   @Override
   public boolean setPayloadFinished(boolean b) {
     return isPayloadFinished = b;
-  }
-
-  @Override
-  public MySQLPacketProcessType getPailoadType() {
-    return mySQLPacketProcessType;
   }
 
   @Override

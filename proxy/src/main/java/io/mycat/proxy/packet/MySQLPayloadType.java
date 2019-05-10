@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.packet;
 
-public enum  MySQLPacketProcessType {
+public enum MySQLPayloadType {
     REQUEST(),
     LOAD_DATA_REQUEST,
     REQUEST_SEND_LONG_DATA(),
@@ -37,6 +37,6 @@ public enum  MySQLPacketProcessType {
     PREPARE_OK_PARAMER_DEF,
     PREPARE_OK_COLUMN_DEF,
     PREPARE_OK_COLUMN_DEF_EOF,
-    PREPARE_OK_PARAMER_DEF_EOF;
+    PREPARE_OK_PARAMER_DEF_EOF
 
 }
