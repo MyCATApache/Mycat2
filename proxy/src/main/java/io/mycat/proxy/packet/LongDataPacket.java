@@ -12,7 +12,10 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.beans.mysql.packet;
+package io.mycat.proxy.packet;
+
+import io.mycat.beans.mysql.packet.MySQLPayloadReader;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
 
 public interface LongDataPacket {
 

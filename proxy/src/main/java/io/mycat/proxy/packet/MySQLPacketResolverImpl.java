@@ -54,95 +54,95 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   public MySQLPacketResolverImpl(MySQLProxySession session) {
     this.session = session;
   }
+
   @Override
-  public MySQLPayloadType getMySQLPayloadType() {
+  public final MySQLPayloadType getMySQLPayloadType() {
     return mySQLPacketProcessType;
   }
 
   @Override
-  public void setMySQLPayloadType(MySQLPayloadType type) {
+  public final void setMySQLPayloadType(MySQLPayloadType type) {
     this.mySQLPacketProcessType = type;
   }
 
   @Override
-  public void setPayloadLength(int length) {
+  public final int getPayloadLength() {
+    return length;
+  }
+
+  @Override
+  public final void setPayloadLength(int length) {
     this.length = length;
   }
 
   @Override
-  public int getPayloadLength() {
-    return length;
-  }
-
-
-  @Override
-  public int setPacketId(int packetId) {
+  public final int setPacketId(int packetId) {
     return this.packetId = packetId;
   }
 
   @Override
-  public int getPacketId() {
+  public final int getPacketId() {
     return this.packetId;
   }
 
   @Override
-  public boolean readFromChannel() throws IOException {
+  public final boolean readFromChannel() throws IOException {
     throw new MycatExpection("");
   }
 
   @Override
-  public void writeToChannel() throws IOException {
+  public final void writeToChannel() throws IOException {
     throw new MycatExpection("");
   }
 
 
   @Override
-  public boolean hasResolvePayloadType() {
+  public final boolean hasResolvePayloadType() {
     return hasResolvePayloadType;
   }
 
   @Override
-  public void markedResolvePayloadType(boolean marked) {
+  public final void markedResolvePayloadType(boolean marked) {
     hasResolvePayloadType = marked;
   }
 
   @Override
-  public int getHead() {
+  public final int getHead() {
     return this.head;
   }
 
   @Override
-  public int setHead(int head) {
+  public final int setHead(int head) {
     return this.head = head;
   }
 
   @Override
-  public int setCurrentComQuerySQLType(int type) {
+  public final int setCurrentComQuerySQLType(int type) {
     return this.currentSqlType = type;
   }
 
   @Override
-  public int getCurrentSQLType() {
+  public final int getCurrentSQLType() {
     return this.currentSqlType;
   }
 
   @Override
-  public int setStartPos(int i) {
+  public final int setStartPos(int i) {
     return startPos = i;
   }
 
   @Override
-  public int getStartPos() {
+  public final int getStartPos() {
     return startPos;
   }
 
   @Override
-  public int setEndPos(int i) {
+  public final int setEndPos(int i) {
     return endPos = i;
   }
 
   @Override
-  public int getEndPos() {
+  public final int getEndPos() {
     if (endPos < 0) {
       throw new MycatExpection("");
     }
@@ -151,44 +151,44 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
 
   @Override
-  public ComQueryState getState() {
+  public final ComQueryState getState() {
     return this.state;
   }
 
   @Override
-  public void setState(ComQueryState state) {
+  public final void setState(ComQueryState state) {
     this.state = state;
   }
 
 
   @Override
-  public int setColumnCount(int count) {
+  public final int setColumnCount(int count) {
     return columnCount = count;
   }
 
   @Override
-  public int getColumnCount() {
+  public final int getColumnCount() {
     return columnCount;
   }
 
   @Override
-  public boolean clientDeprecateEof() {
+  public final boolean clientDeprecateEof() {
     return MySQLServerCapabilityFlags.isDeprecateEOF(capabilityFlags());
   }
 
   @Override
-  public int capabilityFlags() {
+  public final int capabilityFlags() {
     return capabilityFlags;
   }
 
   @Override
-  public void setCapabilityFlags(int serverCapability) {
+  public final void setCapabilityFlags(int serverCapability) {
     this.capabilityFlags = serverCapability;
   }
 
 
   @Override
-  public int setRemainsBytes(int remainsBytes) {
+  public final int setRemainsBytes(int remainsBytes) {
     if (remainsBytes < 0) {
       throw new MycatExpection("");
     }
@@ -196,28 +196,29 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public int getRemainsBytes() {
+  public final int getRemainsBytes() {
     return this.remainsBytes;
   }
 
   @Override
-  public boolean setMultiPacket(boolean c) {
+  public final boolean setMultiPacket(boolean c) {
     return multiPacket = c;
   }
 
 
   @Override
-  public boolean isMultiPacket() {
+  public final boolean isMultiPacket() {
     return multiPacket;
   }
 
   @Override
-  public MySQLPacket currentProxybuffer() {
+  public final MySQLPacket currentProxybuffer() {
     return (MySQLPacket) session.currentProxyBuffer();
   }
 
   @Override
-  public void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex, int payloadEndIndex) {
+  public final void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex,
+      int payloadEndIndex) {
     if (length < 0xffffff) {
       mySQLPacket.packetReadStartIndex(payloadStartIndex);
       mySQLPacket.packetReadEndIndex(getEndPos());
@@ -247,12 +248,12 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public void setPayload(MySQLPacket mySQLPacket) {
+  public final void setPayload(MySQLPacket mySQLPacket) {
     this.payload = mySQLPacket;
   }
 
   @Override
-  public void resetPayload() {
+  public final void resetPayload() {
     MySQLPacket mySQLPacket = payload;
     payload = null;
     if (mySQLPacket != null && mySQLPacket != currentProxybuffer()) {
@@ -261,7 +262,7 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public MySQLPacket currentPayload() {
+  public final MySQLPacket currentPayload() {
     MySQLPacket mySQLPacket = currentProxybuffer();
     if (mySQLPacket == payload) {
       return mySQLPacket;
@@ -274,12 +275,12 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
 
   @Override
-  public void setRequestFininshed(boolean b) {
+  public final void setRequestFininshed(boolean b) {
     this.requestFinished = b;
   }
 
   @Override
-  public void resetCurrentMySQLPacket() {
+  public final void resetCurrentMySQLPacket() {
     if (mySQLPacket != null) {
       mySQLPacket.reset();
     }
@@ -288,17 +289,17 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
 
   @Override
-  public boolean isPayloadFinished() {
+  public final boolean isPayloadFinished() {
     return isPayloadFinished;
   }
 
   @Override
-  public boolean setPayloadFinished(boolean b) {
+  public final boolean setPayloadFinished(boolean b) {
     return isPayloadFinished = b;
   }
 
   @Override
-  public long getPreparedOkStatementId() {
+  public final long getPreparedOkStatementId() {
     return this.statementId;
   }
 
@@ -308,17 +309,17 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public int getPrepareOkColumnsCount() {
+  public final int getPrepareOkColumnsCount() {
     return columnCount;
   }
 
   @Override
-  public void setPrepareOkColumnsCount(int columnsNumber) {
+  public final void setPrepareOkColumnsCount(int columnsNumber) {
     this.columnCount = columnsNumber;
   }
 
   @Override
-  public int getPrepareOkParametersCount() {
+  public final int getPrepareOkParametersCount() {
     return this.prepareOkParametersCount;
   }
 
@@ -328,110 +329,110 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public int getPreparedOkWarningCount() {
+  public final int getPreparedOkWarningCount() {
     return warningCount;
   }
 
   @Override
-  public void setPreparedOkWarningCount(int warningCount) {
+  public final void setPreparedOkWarningCount(int warningCount) {
     this.warningCount = warningCount;
   }
 
 
   @Override
-  public int getOkAffectedRows() {
+  public final int getOkAffectedRows() {
     return this.affectedRows;
   }
 
   @Override
-  public void setOkAffectedRows(int affectedRows) {
+  public final void setOkAffectedRows(int affectedRows) {
     this.affectedRows = affectedRows;
   }
 
   @Override
-  public int getOkLastInsertId() {
+  public final int getOkLastInsertId() {
     return this.lastInsertId;
   }
 
   @Override
-  public void setOkLastInsertId(int lastInsertId) {
+  public final void setOkLastInsertId(int lastInsertId) {
     this.lastInsertId = lastInsertId;
   }
 
   @Override
-  public int getServerStatus() {
+  public final int getServerStatus() {
     return serverStatus;
   }
 
   @Override
-  public int setServerStatus(int serverStatus) {
+  public final int setServerStatus(int serverStatus) {
     return this.serverStatus = serverStatus;
   }
 
   @Override
-  public int getOkWarningCount() {
+  public final int getOkWarningCount() {
     return warningCount;
   }
 
   @Override
-  public void setOkWarningCount(int warningCount) {
+  public final void setOkWarningCount(int warningCount) {
     this.warningCount = warningCount;
   }
 
   @Override
-  public byte[] getOkStatusInfo() {
+  public final byte[] getOkStatusInfo() {
     throw new MycatExpection("");
   }
 
   @Override
-  public void setOkStatusInfo(byte[] statusInfo) {
+  public final void setOkStatusInfo(byte[] statusInfo) {
   }
 
   @Override
-  public byte getOkSessionStateInfoType() {
+  public final byte getOkSessionStateInfoType() {
     return okSessionStateInfoType;
   }
 
   @Override
-  public void setOkSessionStateInfoType(byte sessionStateInfoType) {
+  public final void setOkSessionStateInfoType(byte sessionStateInfoType) {
     this.okSessionStateInfoType = sessionStateInfoType;
   }
 
   @Override
-  public byte[] getOkSessionStateInfoTypeData() {
+  public final byte[] getOkSessionStateInfoTypeData() {
     throw new MycatExpection("");
   }
 
   @Override
-  public void setOkSessionStateInfoTypeData(byte[] sessionStateInfoTypeData) {
+  public final void setOkSessionStateInfoTypeData(byte[] sessionStateInfoTypeData) {
   }
 
   @Override
-  public byte[] getOkMessage() {
+  public final byte[] getOkMessage() {
     throw new MycatExpection("");
   }
 
   @Override
-  public void setOkMessage(byte[] message) {
+  public final void setOkMessage(byte[] message) {
   }
 
   @Override
-  public int getEofWarningCount() {
+  public final int getEofWarningCount() {
     return this.warningCount;
   }
 
   @Override
-  public void setEofWarningCount(int warningCount) {
+  public final void setEofWarningCount(int warningCount) {
     this.warningCount = warningCount;
   }
 
   @Override
-  public int getEofServerStatus() {
+  public final int getEofServerStatus() {
     return this.serverStatus;
   }
 
   @Override
-  public int setEofServerStatus(int status) {
+  public final int setEofServerStatus(int status) {
     return this.serverStatus = status;
   }
 
