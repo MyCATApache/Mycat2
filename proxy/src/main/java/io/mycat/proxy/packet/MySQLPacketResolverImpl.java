@@ -38,18 +38,14 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   boolean requestFinished;
   boolean isPayloadFinished;
   ComQueryState state = ComQueryState.QUERY_PACKET;
-  MySQLPayloadType payloadType;
   long statementId;
   int columnCount;
-//  byte[] message;
   int prepareOkParametersCount;
   int warningCount;
   int affectedRows;
   int lastInsertId;
   int serverStatus;
-//  byte[] okStatusInfo;
   byte okSessionStateInfoType;
-//  byte[] okSessionStateInfoTypeData;
   int wholePacketStartPos;
   int wholePacketEndPos;
   final MySQLProxySession session;
@@ -189,10 +185,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
     this.state = state;
   }
 
-  @Override
-  public void setMySQLpayloadType(MySQLPayloadType type) {
-    this.payloadType = type;
-  }
 
   @Override
   public int setColumnCount(int count) {
@@ -331,8 +323,8 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public MySQLPayloadType getPailoadType() {
-    return payloadType;
+  public MySQLPacketProcessType getPailoadType() {
+    return mySQLPacketProcessType;
   }
 
   @Override

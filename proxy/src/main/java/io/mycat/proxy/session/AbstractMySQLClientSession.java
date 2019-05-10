@@ -19,9 +19,9 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
+import io.mycat.proxy.packet.MySQLPacketProcessType;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
-import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import java.io.IOException;
 import java.nio.channels.Selector;
@@ -129,7 +129,7 @@ public abstract class AbstractMySQLClientSession<T extends AbstractSession<T>> e
 
 
 
-  public MySQLPayloadType getPayloadType() {
+  public MySQLPacketProcessType getPayloadType() {
     return this.packetResolver.getPailoadType();
   }
 

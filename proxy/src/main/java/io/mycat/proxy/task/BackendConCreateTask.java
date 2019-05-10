@@ -25,7 +25,7 @@ import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.AuthPacketImpl;
 import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.MySQLPayloadType;
+import io.mycat.proxy.packet.MySQLPacketProcessType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.MySQLDatasource;
@@ -99,7 +99,7 @@ public class BackendConCreateTask implements NIOHandler<MySQLClientSession> {
             welcomePkgReceived = true;
             mysql.writeProxyPacket(mySQLPacket, 1);
         } else {
-            if (mysql.getPayloadType() == MySQLPayloadType.OK) {
+            if (mysql.getPayloadType() == MySQLPacketProcessType.FIRST_OK) {
                 mysql.resetPacket();
                 mysql.setCurrentProxyBuffer(null);
                 callback.finished(mysql, this, true, null, null);
