@@ -1,5 +1,6 @@
-package io.mycat.proxy.session;
+package io.mycat.proxy.packet;
 
+import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.util.JavaClassToMySQLTypeUtil;
 import java.io.IOException;
 import java.util.ArrayList;

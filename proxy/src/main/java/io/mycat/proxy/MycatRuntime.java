@@ -15,7 +15,6 @@
 package io.mycat.proxy;
 
 import io.mycat.MySQLDataNode;
-import io.mycat.beans.MySQLSchemaManager;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.config.ConfigEnum;
@@ -30,8 +29,6 @@ import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouterConfig;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.channels.Pipe;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -122,13 +119,6 @@ public class MycatRuntime extends ConfigReceiverImpl {
   public int getBufferPoolPageNumber() {
     return getProxy().getBufferPoolPageNumber();
   }
-
-
-  public MySQLSchemaManager getMySQLSchemaManager() {
-    return mySQLSchemaManager;
-  }
-
-  private final MySQLSchemaManager mySQLSchemaManager = new MySQLSchemaManager();
 
   public MycatScheduler getMycatScheduler() {
     return mycatScheduler;
