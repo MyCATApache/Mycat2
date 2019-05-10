@@ -2,7 +2,9 @@ package io.mycat.proxy.task;
 
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
+import java.io.IOException;
 import java.nio.channels.FileChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.file.Paths;
 
 /**
@@ -56,7 +58,7 @@ public class LoadDataUtil {
     new CommandTask().requestEmptyPacket(mysql, nextPacketId, callback);
   }
 
-  public static class LoadDataRequestTask implements ResultSetTask {
+  private static class LoadDataRequestTask implements ResultSetTask {
 
     String fileName;
 
@@ -70,6 +72,20 @@ public class LoadDataUtil {
     public void onLoadDataRequest(MySQLPacket mySQLPacket, int startPos, int endPos) {
       fileName = mySQLPacket.getEOFString(startPos + 1);
       clearAndFinished(getSessionCaller(), true, null);
+    }
+  }
+
+  private static class FileChannelPayloadWriterHandler extends AbstractPayloadWriter<FileChannel> {
+
+    @Override
+    protected int writePayload(FileChannel fileChannel, int writeIndex, int reminsPacketLen,
+        SocketChannel serverSocket) throws IOException {
+      return (int) fileChannel.transferTo(writeIndex, reminsPacketLen, serverSocket);
+    }
+
+    @Override
+    void clearResource(FileChannel f) throws Exception {
+      f.close();
     }
   }
 }

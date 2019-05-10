@@ -402,15 +402,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       }
       setRemainsBytes(remains);
       boolean isEnd = !multiPacket;
-//            if (isPacketHeader && isEnd || !lastMultiPacket && !isEnd || !lastMultiPacket && isEnd) {
-//                appendFirstPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
-//            } else if (isPacketHeader && multiPacket && !lastMultiPacket&&!isEnd) {
-//                appendFirstMultiPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
-//            } else if (lastMultiPacket&&!isPacketHeader && isEnd) {
-//                appendEndMultiPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
-//            } else if (!isPacketHeader && !isEnd) {
-//                appendAfterMultiPacket(currentProxyPayload(), currentMySQLPacket, getStartPos(), getEndPos(), getRemainsBytes());
-//            }
       setPayloadFinished(isEnd && remains == 0);
       if (isEnd) {
         resolvePayloadType(getHead(), isPayloadFinished(), true, currentProxybuffer(),
@@ -429,31 +420,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   void resetPayload();
 
   MySQLPacket currentPayload();
-//
-//    default public void okPacketReadPayload(MySQLPacket buffers) {
-//        byte header = buffers.readByte();
-//        assert (0x00 == header) || (0xfe == header);
-//        setOkAffectedRows(buffers.readLenencInt());
-//        setOkLastInsertId(buffers.readLenencInt());
-//
-//        MySQLServerCapabilityFlags capabilityFlags = capabilityFlags();
-//        if (capabilityFlags.isClientProtocol41()) {
-//            setServerStatus((int) buffers.readFixInt(2));
-//            setOkWarningCount((int) buffers.readFixInt(2));
-//
-//        } else if (capabilityFlags.isKnowsAboutTransactions()) {
-//            setServerStatus((int) buffers.readFixInt(2));
-//        }
-//        if (capabilityFlags.isSessionVariableTracking()) {
-//            setOkStatusInfo(buffers.readLenencBytes());
-//            if ((getServerStatus() & MySQLServerStatusFlags.STATE_CHANGED) != 0) {
-//                setOkSessionStateInfoType(buffers.readByte());
-//                setOkSessionStateInfoTypeData(buffers.readLenencBytes());
-//            }
-//        } else {
-//            setOkMessage(buffers.readEOFStringBytes());
-//        }
-//    }
 
   default void resolvePayloadType(int head, boolean isPacketFinished, boolean parse,
       MySQLPacket mySQLPacket, int payloadLength) {
