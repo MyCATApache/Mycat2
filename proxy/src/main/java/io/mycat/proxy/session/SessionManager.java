@@ -17,7 +17,6 @@
 package io.mycat.proxy.session;
 
 import io.mycat.proxy.NIOHandler;
-
 import java.util.Collection;
 
 public interface SessionManager<T extends Session> {

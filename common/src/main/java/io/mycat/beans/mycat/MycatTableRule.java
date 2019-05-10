@@ -15,7 +15,6 @@
 package io.mycat.beans.mycat;
 
 import io.mycat.router.DynamicAnnotationMatcher;
-import io.mycat.router.DynamicAnnotationResult;
 import io.mycat.router.Route;
 import io.mycat.router.RuleAlgorithm;
 

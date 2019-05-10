@@ -24,10 +24,9 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.BackendCharsetReadTask;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.function.BiConsumer;
 
 public class MySQLDatasource {
     private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);

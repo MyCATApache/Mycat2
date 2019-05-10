@@ -20,9 +20,6 @@ import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.ProxyReactorThread;
-import io.mycat.proxy.buffer.ProxyBuffer;
-
-import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;

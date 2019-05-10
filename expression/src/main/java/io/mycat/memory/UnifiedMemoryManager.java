@@ -1,8 +1,8 @@
 package io.mycat.memory;
 
-import java.util.Map;
-
 import static io.mycat.memory.MemoryConf.EXECUTOR_MEMORY;
+
+import java.util.Map;
 
 public class UnifiedMemoryManager extends MemoryManager {
     private final long maxHeapMemory;

@@ -1,12 +1,11 @@
 package io.mycat.memory;
 
 
+import java.util.Map;
+import javax.annotation.concurrent.GuardedBy;
 import org.apache.spark.unsafe.Platform;
 import org.apache.spark.unsafe.array.ByteArrayMethods;
 import org.apache.spark.unsafe.memory.MemoryAllocator;
-
-import javax.annotation.concurrent.GuardedBy;
-import java.util.Map;
 
 public abstract class MemoryManager {
 

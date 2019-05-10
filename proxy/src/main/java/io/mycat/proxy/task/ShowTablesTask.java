@@ -17,7 +17,6 @@
 package io.mycat.proxy.task;
 
 import io.mycat.proxy.packet.MySQLPacket;
-
 import java.util.ArrayList;
 import java.util.List;
 

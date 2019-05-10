@@ -17,12 +17,11 @@
 package io.mycat.proxy.buffer;
 
 import io.mycat.proxy.packet.MySQLPacket;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface ProxyBuffer {
     final static Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);

@@ -46,9 +46,9 @@ import static io.mycat.proxy.packet.MySQLPayloadType.LOCAL_INFILE_EMPTY_PACKET;
 import static io.mycat.proxy.packet.MySQLPayloadType.LOCAL_INFILE_REQUEST;
 import static io.mycat.proxy.packet.MySQLPayloadType.UNKNOWN;
 
-import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import java.io.IOException;
 import java.util.Objects;

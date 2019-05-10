@@ -18,7 +18,6 @@
 package io.mycat.config.user;
 
 import io.mycat.config.Configurable;
-
 import java.util.List;
 
 /**

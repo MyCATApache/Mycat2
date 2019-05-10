@@ -15,8 +15,8 @@
 package io.mycat.router.routeStrategy;
 
 import io.mycat.beans.mycat.MycatSchema;
-import io.mycat.router.RouteContext;
 import io.mycat.router.ResultRoute;
+import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
 import io.mycat.router.routeResult.OneServerResultRoute;
 

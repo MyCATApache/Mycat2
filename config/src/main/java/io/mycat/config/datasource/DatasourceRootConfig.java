@@ -19,7 +19,6 @@
 package io.mycat.config.datasource;
 
 import io.mycat.config.Configurable;
-
 import java.util.List;
 
 /**

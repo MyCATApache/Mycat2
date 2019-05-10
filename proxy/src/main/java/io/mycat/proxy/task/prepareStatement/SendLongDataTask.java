@@ -26,7 +26,6 @@ import io.mycat.proxy.packet.PacketSplitterImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Iterator;

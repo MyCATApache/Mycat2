@@ -23,7 +23,6 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.session.AbstractMySQLClientSession;
 import io.mycat.proxy.session.MySQLClientSession;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;

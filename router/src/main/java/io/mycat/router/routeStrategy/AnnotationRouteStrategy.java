@@ -15,15 +15,15 @@
 package io.mycat.router.routeStrategy;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mycat.GlobalTable;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
 import io.mycat.beans.mycat.MycatTableRule;
-import io.mycat.beans.mycat.GlobalTable;
 import io.mycat.beans.mycat.ShardingDbTable;
 import io.mycat.beans.mycat.ShardingTableTable;
 import io.mycat.router.DynamicAnnotationResult;
-import io.mycat.router.RouteContext;
 import io.mycat.router.ResultRoute;
+import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
 import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;

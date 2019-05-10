@@ -14,33 +14,6 @@
  */
 package io.mycat.router;
 
-import static io.mycat.sqlparser.util.BufferSQLContext.ALTER_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.BEGIN_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.CALL_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.COMMIT_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.CREATE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.DELETE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.DESCRIBE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.DROP_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.HELP_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.INSERT_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.KILL_QUERY_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.KILL_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.LOAD_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.REPLACE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.ROLLBACK_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SAVEPOINT_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_FOR_UPDATE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_INTO_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_TB_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.START_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.TRUNCATE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.UPDATE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.USE_SQL;
-
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.router.routeResult.MySQLCommandRouteResultRoute;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;

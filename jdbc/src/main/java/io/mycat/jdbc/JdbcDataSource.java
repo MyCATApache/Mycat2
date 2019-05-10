@@ -1,7 +1,5 @@
 package io.mycat.jdbc;
 
-import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiverImpl;
@@ -10,11 +8,7 @@ import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.DatasourceRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;

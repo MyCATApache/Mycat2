@@ -1,7 +1,6 @@
 package io.mycat.router.util;
 
 import com.alibaba.druid.sql.ast.SQLExpr;
-
 import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import java.util.ArrayList;

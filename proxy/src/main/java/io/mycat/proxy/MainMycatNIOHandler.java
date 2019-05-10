@@ -50,12 +50,6 @@ public enum  MainMycatNIOHandler implements NIOHandler<MycatSession> {
       mycat.change2ReadOpts();
     }else {
       mycat.writeToChannel();
-//      if (mycat.isResponseFinished()) {
-//        mycat.resetPacket();
-//        mycat.change2ReadOpts();
-//      } else {
-//        mycat.writeToChannel();
-//      }
     }
   }
 

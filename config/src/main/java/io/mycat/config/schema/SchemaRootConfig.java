@@ -17,7 +17,6 @@
 package io.mycat.config.schema;
 
 import io.mycat.config.Configurable;
-
 import java.util.ArrayList;
 import java.util.List;
 

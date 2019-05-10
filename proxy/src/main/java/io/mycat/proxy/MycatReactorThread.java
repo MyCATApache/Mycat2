@@ -16,12 +16,11 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.proxy.packet.PacketSplitterImpl;
-import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.proxy.packet.PacketSplitterImpl;
 import io.mycat.proxy.session.FrontSessionManager;
 import io.mycat.proxy.session.MySQLSessionManager;
-
+import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import java.io.IOException;
 

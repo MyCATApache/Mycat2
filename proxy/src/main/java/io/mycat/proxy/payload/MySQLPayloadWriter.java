@@ -16,9 +16,6 @@
  */
 package io.mycat.proxy.payload;
 
-import java.io.IOException;
-import java.nio.channels.SocketChannel;
-
 public interface MySQLPayloadWriter<T extends MySQLPayloadWriter<T>> {
     public T writeLong(long l);
 

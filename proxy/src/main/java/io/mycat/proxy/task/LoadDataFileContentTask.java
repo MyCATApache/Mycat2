@@ -22,7 +22,6 @@ import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.session.MySQLClientSession;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;

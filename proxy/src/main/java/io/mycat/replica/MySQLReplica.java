@@ -16,17 +16,16 @@
  */
 package io.mycat.replica;
 
+import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.plug.loadBalance.BalanceAllRead;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;

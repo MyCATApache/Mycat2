@@ -14,10 +14,6 @@
  */
 package io.mycat.router;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * @author jamie12221
  * @date 2019-05-02 23:51

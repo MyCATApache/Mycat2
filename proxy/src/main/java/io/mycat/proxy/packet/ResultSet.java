@@ -4,8 +4,6 @@ import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.util.JavaClassToMySQLTypeUtil;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 import java.util.ListIterator;
 
 /**

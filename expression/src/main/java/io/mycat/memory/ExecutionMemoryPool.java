@@ -1,7 +1,6 @@
 package io.mycat.memory;
 
 import java.util.HashMap;
-import java.util.function.LongSupplier;
 
 public class ExecutionMemoryPool extends MemoryPool {
     final MemoryMode mode;

@@ -1,9 +1,6 @@
 package io.mycat.proxy.payload;
 
 import io.mycat.util.ByteArrayOutput;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 
 /**
  * @author jamie12221

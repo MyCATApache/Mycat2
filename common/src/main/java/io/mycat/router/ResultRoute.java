@@ -14,9 +14,9 @@
  */
 package io.mycat.router;
 
-import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.MySQLCommandRouteResultRoute;
+import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.routeResult.SubTableResultRoute;
 import io.mycat.router.routeResult.dbResultSet.DbResultSet;
 import java.io.IOException;

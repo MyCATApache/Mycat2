@@ -22,7 +22,6 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.BackendConCreateTask;
 import io.mycat.replica.MySQLDatasource;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;

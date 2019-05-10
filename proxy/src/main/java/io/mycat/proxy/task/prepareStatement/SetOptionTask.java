@@ -14,10 +14,10 @@ package io.mycat.proxy.task.prepareStatement;
  * not, see <http://www.gnu.org/licenses/>.
  */
 
+import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLSetOption;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;

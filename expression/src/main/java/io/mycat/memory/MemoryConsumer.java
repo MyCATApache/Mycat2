@@ -1,9 +1,8 @@
 package io.mycat.memory;
 
+import java.io.IOException;
 import org.apache.spark.unsafe.array.LongArray;
 import org.apache.spark.unsafe.memory.MemoryBlock;
-
-import java.io.IOException;
 
 public abstract class MemoryConsumer {
 

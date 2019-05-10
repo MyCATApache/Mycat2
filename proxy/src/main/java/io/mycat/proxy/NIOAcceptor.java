@@ -18,7 +18,6 @@ package io.mycat.proxy;
 
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.session.Session;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;

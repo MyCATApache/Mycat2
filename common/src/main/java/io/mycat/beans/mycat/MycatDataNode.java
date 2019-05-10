@@ -14,9 +14,6 @@
  */
 package io.mycat.beans.mycat;
 
-import io.mycat.MySQLDataNode;
-import java.util.Objects;
-
 /**
  * @author jamie12221
  * @date 2019-05-04 15:06

@@ -20,7 +20,6 @@ package io.mycat.config.datasource;
 
 
 import io.mycat.config.GlobalConfig;
-
 import java.util.List;
 
 /**

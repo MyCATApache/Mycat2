@@ -1,14 +1,10 @@
 package io.mycat.jdbc;
 
-import com.mysql.jdbc.MySQLConnection;
-import com.mysql.jdbc.StatementImpl;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Properties;
 
 /**
  * @author jamie12221

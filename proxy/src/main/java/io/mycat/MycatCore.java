@@ -14,10 +14,10 @@
  */
 package io.mycat;
 
-import io.mycat.proxy.executer.MySQLDataNodeExecuter;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.MycatRuntime;
+import io.mycat.proxy.executer.MySQLDataNodeExecuter;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.AsynTaskFuture;

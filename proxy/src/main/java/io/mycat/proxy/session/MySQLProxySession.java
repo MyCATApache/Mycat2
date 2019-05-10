@@ -1,10 +1,10 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
+import io.mycat.proxy.MySQLProxyHandler;
 import io.mycat.proxy.MycatSessionWriteHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.MySQLProxyHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import java.io.IOException;

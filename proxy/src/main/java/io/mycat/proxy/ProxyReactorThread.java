@@ -19,9 +19,6 @@ package io.mycat.proxy;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.session.FrontSessionManager;
 import io.mycat.proxy.session.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.channels.SelectionKey;
@@ -29,7 +26,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProxyReactorThread<T extends Session> extends Thread {
     protected final static long SELECTOR_TIMEOUT = 100;

@@ -1,7 +1,5 @@
 package io.mycat.proxy.packet;
 
-import java.nio.charset.Charset;
-
 /**
  * @author jamie12221
  * @date 2019-05-07 23:22

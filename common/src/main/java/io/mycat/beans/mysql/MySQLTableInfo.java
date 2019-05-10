@@ -16,8 +16,6 @@
  */
 package io.mycat.beans.mysql;
 
-import io.mycat.beans.mysql.MySQLRowStoreType;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
