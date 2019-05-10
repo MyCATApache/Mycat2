@@ -154,6 +154,6 @@ public class MySQLServerStatus {
   }
 
   public byte[] getSqlState() {
-    return SQL_STATE;
+    return SQL_STATE == null ? state : SQL_STATE;
   }
 }
