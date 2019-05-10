@@ -16,13 +16,12 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.beans.DatasourceMeta;
 import io.mycat.proxy.MainMySQLNIOHandler;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.BackendConCreateTask;
-import io.mycat.replica.Datasource;
+import io.mycat.replica.MySQLDatasource;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -30,9 +29,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MySQLSessionManager implements BackendSessionManager<MySQLClientSession, Datasource> {
+public class MySQLSessionManager implements BackendSessionManager<MySQLClientSession, MySQLDatasource> {
     LinkedList<MySQLClientSession> allSessions = new LinkedList<>();
-    HashMap<Datasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
+    HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
     private int count = 0;
 
     @Override
@@ -54,7 +53,7 @@ public class MySQLSessionManager implements BackendSessionManager<MySQLClientSes
     }
 
     @Override
-    public void getIdleSessionsOfKey(Datasource datasource, AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+    public void getIdleSessionsOfKey(MySQLDatasource datasource, AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
         if (!datasource.isAlive()) {
             asynTaskCallBack.finished(null, this, false, null, datasource.getName() + " is not alive!");
         } else {
@@ -86,15 +85,24 @@ public class MySQLSessionManager implements BackendSessionManager<MySQLClientSes
     }
 
     @Override
-    public void clearAndDestroyMySQLSession(Datasource dsMetaBean, String reason) {
+    public void clearAndDestroyMySQLSession(MySQLDatasource dsMetaBean, String reason) {
 
     }
 
     @Override
-    public void createSession(Datasource key, AsynTaskCallBack<MySQLClientSession> callBack) {
-        DatasourceMeta datasourceMeta = new DatasourceMeta(key.getName(), key.getIp(), key.getPort(), key.getUsername(), key.getPassword());
+    public void createSession(MySQLDatasource key, AsynTaskCallBack<MySQLClientSession> callBack) {
         try {
-            BackendConCreateTask conCreateTask = new BackendConCreateTask(key,this, (MycatReactorThread) Thread.currentThread(), callBack);
+            BackendConCreateTask conCreateTask = new BackendConCreateTask(key, this,
+                (MycatReactorThread) Thread.currentThread(),
+                (session, sender, success, result, attr) -> {
+                    if (success){
+                        count++;
+                        allSessions.add(session);
+                        callBack.finished(session,sender,success,result,attr);
+                    }else {
+                        callBack.finished(session,sender,success,result,attr);
+                    }
+                });
         } catch (Exception e) {
             try {
                 callBack.finished(null, this, false, null, e.getMessage());

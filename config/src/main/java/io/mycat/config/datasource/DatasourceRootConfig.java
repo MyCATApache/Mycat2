@@ -30,6 +30,15 @@ import java.util.List;
  */
 public class DatasourceRootConfig implements Configurable {
     private List<ReplicaConfig> replicas;
+    private String charset;
+
+    public String getCharset() {
+        return charset == null?"uft8mb4":charset;
+    }
+
+    public void setCharset(String charset) {
+        this.charset = charset;
+    }
 
     public List<ReplicaConfig> getReplicas() {
         return replicas;

@@ -13,6 +13,8 @@
         <module>expression</module>
       <module>common</module>
       <module>logTip</module>
+      <module>rpc</module>
+      <module>jdbc</module>
     </modules>
     <packaging>pom</packaging>
     <name>mycat2</name>

@@ -21,21 +21,21 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.packet.ComQueryState;
-import io.mycat.replica.Datasource;
+import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
 public class MySQLClientSession extends AbstractMySQLClientSession implements MySQLAPI {
 
-  public MySQLClientSession(Datasource datasource, Selector selector, SocketChannel channel,
+  public MySQLClientSession(MySQLDatasource datasource, Selector selector, SocketChannel channel,
       int socketOpt, NIOHandler nioHandler, MySQLSessionManager sessionManager) throws IOException {
     super(selector, channel, socketOpt, nioHandler, sessionManager);
     this.datasource = datasource;
   }
 
   private MycatSession mycat;
-  private final Datasource datasource;
+  private final MySQLDatasource datasource;
   private MycatDataNode dataNode;
   private MySQLSessionMonopolizeType monopolizeType = MySQLSessionMonopolizeType.NONE;
 
@@ -48,7 +48,7 @@ public class MySQLClientSession extends AbstractMySQLClientSession implements My
     this.dataNode = dataNode;
   }
 
-  public Datasource getDatasource() {
+  public MySQLDatasource getDatasource() {
     return datasource;
   }
 

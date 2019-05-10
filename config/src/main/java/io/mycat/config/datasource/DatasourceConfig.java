@@ -18,6 +18,7 @@
 package io.mycat.config.datasource;
 
 import io.mycat.config.GlobalConfig;
+import java.util.Objects;
 
 /**
  * dataSource
@@ -34,39 +35,36 @@ public class DatasourceConfig {
     private int maxCon = 1000;
     private int minCon = 1;
     private int maxRetryCount = GlobalConfig.MAX_RETRY_COUNT;
+    private String dbType;
+    private String url;
+
 
     @Override
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((hostName == null) ? 0 : hostName.hashCode());
-        result = prime * result + ((ip == null) ? 0 : ip.hashCode());
-        result = prime * result + port;
-        return result;
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DatasourceConfig that = (DatasourceConfig) o;
+        return port == that.port &&
+                   maxCon == that.maxCon &&
+                   minCon == that.minCon &&
+                   maxRetryCount == that.maxRetryCount &&
+                   Objects.equals(hostName, that.hostName) &&
+                   Objects.equals(ip, that.ip) &&
+                   Objects.equals(user, that.user) &&
+                   Objects.equals(password, that.password) &&
+                   Objects.equals(dbType, that.dbType) &&
+                   Objects.equals(url, that.url);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        DatasourceConfig other = (DatasourceConfig) obj;
-        if (hostName == null) {
-            if (other.hostName != null)
-                return false;
-        } else if (!hostName.equals(other.hostName))
-            return false;
-        if (ip == null) {
-            if (other.ip != null)
-                return false;
-        } else if (!ip.equals(other.ip))
-            return false;
-        if (port != other.port)
-            return false;
-        return true;
+    public int hashCode() {
+        return Objects
+                   .hash(hostName, ip, port, user, password, maxCon, minCon, maxRetryCount, dbType,
+                       url);
     }
 
     public String getHostName() {
@@ -133,9 +131,19 @@ public class DatasourceConfig {
         this.maxRetryCount = maxRetryCount;
     }
 
-    @Override
-    public String toString() {
-        return "DatasourceConfig{" + "hostName='" + hostName + '\'' + ", ip='" + ip + '\'' + ", port=" + port + ", user='" + user + '\''
-                + ", password='" + password + '\'' + ", maxCon=" + maxCon + ", minCon=" + minCon + ", maxRetryCount=" + maxRetryCount + '}';
+    public String getDbType() {
+        return dbType;
+    }
+
+    public void setDbType(String dbType) {
+        this.dbType = dbType;
+    }
+
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 }

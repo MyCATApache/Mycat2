@@ -35,7 +35,7 @@ public class MySQLReplica implements MycatReplica {
     private final ReplicaConfig config;
     private volatile int writeIndex = 0; //主节点默认为0
     private long lastInitTime;  //最后一次初始化时间
-    private List<Datasource> datasourceList = new ArrayList<>();
+    private List<MySQLDatasource> datasourceList = new ArrayList<>();
     private LoadBalanceStrategy defaultLoadBalanceStrategy = BalanceAllRead.INSTANCE;
     private MySQLCollationIndex collationIndex;
 
@@ -45,7 +45,10 @@ public class MySQLReplica implements MycatReplica {
         this.config = replicaConfig;
         for (int index = 0; index < mysqls.size(); index++) {
             boolean master = index == writeIndex;
-            datasourceList.add(new Datasource(index, master, mysqls.get(index), this));
+            DatasourceConfig datasourceConfig = mysqls.get(index);
+            if (datasourceConfig.getDbType() == null){
+                datasourceList.add(new MySQLDatasource(index, master,datasourceConfig , this));
+            }
         }
     }
 
@@ -54,11 +57,11 @@ public class MySQLReplica implements MycatReplica {
     }
 
     public void init() {
-        BiConsumer<Datasource, Boolean> defaultCallBack = (datasource, success) -> {
+        BiConsumer<MySQLDatasource, Boolean> defaultCallBack = (datasource, success) -> {
             this.lastInitTime = System.currentTimeMillis();
             this.collationIndex =datasource.getCollationIndex();
         };
-        for (Datasource datasource : datasourceList) {
+        for (MySQLDatasource datasource : datasourceList) {
             datasource.init(defaultCallBack);
         }
     }
@@ -69,7 +72,7 @@ public class MySQLReplica implements MycatReplica {
 
 
     public void getMySQLSessionByBalance(boolean runOnSlave, LoadBalanceStrategy strategy, AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
-        Datasource datasource;
+        MySQLDatasource datasource;
         if (!runOnSlave) {
             getWriteDatasource(asynTaskCallBack);
             return;
@@ -86,12 +89,12 @@ public class MySQLReplica implements MycatReplica {
     }
 
     private void getWriteDatasource(AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
-        Datasource datasource = this.datasourceList.get(writeIndex);
+        MySQLDatasource datasource = this.datasourceList.get(writeIndex);
         getDatasource(asynTaskCallBack, datasource);
         return;
     }
 
-    private void getDatasource(AsynTaskCallBack<MySQLClientSession> asynTaskCallBack, Datasource datasource) {
+    private void getDatasource(AsynTaskCallBack<MySQLClientSession> asynTaskCallBack, MySQLDatasource datasource) {
         if (Thread.currentThread() instanceof MycatReactorThread){
             MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
             reactor.getMySQLSessionManager().getIdleSessionsOfKey(datasource, asynTaskCallBack);
@@ -101,9 +104,9 @@ public class MySQLReplica implements MycatReplica {
     }
 
     public void doHeartbeat() {
-        Datasource master = datasourceList.get(writeIndex);
+        MySQLDatasource master = datasourceList.get(writeIndex);
         if (master == null) return;
-        for (Datasource ds : datasourceList) {
+        for (MySQLDatasource ds : datasourceList) {
             if (ds != null) {
                 ds.doHeartbeat();
             }

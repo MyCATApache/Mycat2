@@ -29,7 +29,7 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
-import io.mycat.replica.Datasource;
+import io.mycat.replica.MySQLDatasource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,12 +39,12 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 
 public class BackendConCreateTask implements NIOHandler<MySQLClientSession> {
-    final Datasource datasource;
+    final MySQLDatasource datasource;
     final AsynTaskCallBack<MySQLClientSession> callback;
     boolean welcomePkgReceived = false;
     protected final static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
 
-    public BackendConCreateTask(Datasource datasource, MySQLSessionManager sessionManager, MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callback) throws IOException {
+    public BackendConCreateTask(MySQLDatasource datasource, MySQLSessionManager sessionManager, MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callback) throws IOException {
         this.datasource = datasource;
         this.callback = callback;
         SocketChannel channel = SocketChannel.open();

@@ -45,7 +45,7 @@ public class MySQLDataNodeExecuter {
   public static void getMySQLSession(MySQLDataNode dataNode,
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit,
-      String charSet,
+      String charset,
       boolean runOnSlave,
       LoadBalanceStrategy strategy,
       AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
@@ -63,7 +63,7 @@ public class MySQLDataNodeExecuter {
                 String databaseName = dataNode.getDatabaseName();
                 String sql =
                     isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
-                        + ";" + "SET names " + charSet + ";";
+                        + ";" + "SET names " + charset + ";";
                 new MultiOkQueriesCounterTask(4)
                     .request(mysql, sql, asynTaskCallBack);
               }

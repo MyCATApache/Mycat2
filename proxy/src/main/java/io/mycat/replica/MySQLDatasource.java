@@ -23,13 +23,14 @@ import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.BackendCharsetReadTask;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.BiConsumer;
 
-public class Datasource {
-    private static final Logger logger = LoggerFactory.getLogger(Datasource.class);
+public class MySQLDatasource {
+    private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
     private final int index;
     private boolean master = false;
     private final DatasourceConfig datasourceConfig;
@@ -38,14 +39,14 @@ public class Datasource {
 
 
 
-    public Datasource(int index, boolean master, DatasourceConfig datasourceConfig, MySQLReplica replica) {
+    public MySQLDatasource(int index, boolean master, DatasourceConfig datasourceConfig, MySQLReplica replica) {
         this.index = index;
         this.master = master;
         this.datasourceConfig = datasourceConfig;
         this.replica = replica;
     }
 
-    public void init(BiConsumer<Datasource, Boolean> successCallback) {
+    public void init(BiConsumer<MySQLDatasource, Boolean> successCallback) {
         int minCon = datasourceConfig.getMinCon();
         MycatReactorThread[] threads = MycatRuntime.INSTANCE.getMycatReactorThreads();
         MycatReactorThread firstThread = threads[0 % threads.length];
@@ -144,5 +145,26 @@ public class Datasource {
     }
     public void doHeartbeat() {
 
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        MySQLDatasource that = (MySQLDatasource) o;
+        return index == that.index &&
+                   master == that.master &&
+                   Objects.equals(datasourceConfig, that.datasourceConfig) &&
+                   Objects.equals(replica, that.replica) &&
+                   Objects.equals(collationIndex, that.collationIndex);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(index, master, datasourceConfig, replica, collationIndex);
     }
 }
