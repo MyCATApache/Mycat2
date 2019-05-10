@@ -192,40 +192,6 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
       throw e;
     }
   }
-//
-//    ByteBuffer header = ByteBuffer.allocate(4);
-//    public boolean writeToChannel2(SocketChannel channel) throws IOException {
-//        ByteBuffer[] bufferList = null;
-//        channel.write(bufferList)
-//    }
-//    public boolean readFromChannel2(SocketChannel channel) throws IOException {
-//        ByteBuffer[] bufferList = new ArrayList<>();
-//            while (true){
-//                if (header.hasRemaining()) {
-//                    channel.read(header);
-//                }
-//                if (!header.hasRemaining()) {
-//                    int length = MySQLPacket.getInt(header, 3);
-//                    ByteBuffer body = bufferPool.allocate(length);
-//                    body.limit(length);
-//                    channel.read(body);
-//                    if (!body.hasRemaining()) {
-//                        bufferList.add(body);
-//                        header.reset();
-//                        if (length<0xffffff-1){
-//                           return true;
-//                        }else {
-//                            continue;
-//                        }
-//                    }else {
-//                        break;
-//                    }
-//                }else {
-//                    break;
-//                }
-//            }
-//            return true;
-//    }
 
   @Override
   public void writeToChannel(SocketChannel channel) throws IOException {
@@ -275,18 +241,6 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     buffer.position(index);
     return index;
   }
-//
-//    @Override
-//    public ProxyBufferImpl appendInWriting(ProxyBufferImpl packet) {
-//        int added = packet.channelWriteEndIndex() - packet.channelWriteStartIndex();
-//        this.compactOrExpendIfNeedRemainsBytesInWriting(added);
-//        packet.buffer.position(packet.channelWriteStartIndex());
-//        packet.buffer.limit(packet.channelWriteEndIndex());
-//        this.buffer.put(packet.buffer);
-//        channelWriteEndIndex(channelWriteEndIndex() + added);
-//        packet.applyChannelWritingIndex();
-//        return this;
-//    }
 
   @Override
   public void expendToLengthIfNeedInReading(int length) {
