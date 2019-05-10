@@ -15,6 +15,7 @@
 package io.mycat.proxy.buffer;
 
 import io.mycat.MycatExpection;
+import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -16,9 +16,9 @@
  */
 package io.mycat.proxy.task;
 
+import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.session.AbstractMySQLClientSession;

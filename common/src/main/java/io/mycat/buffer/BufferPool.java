@@ -1,4 +1,4 @@
-package io.mycat.proxy.buffer;
+package io.mycat.buffer;
 
 /**
  * Copyright (C) <2019>  <Hash Zhang>
@@ -27,16 +27,28 @@ import java.util.concurrent.ConcurrentHashMap;
  * @time 12:19 2016/5/23
  */
 public interface BufferPool {
-    public int defaultAllocate();
-	public ByteBuffer allocate();
-    public ByteBuffer allocate(int size);
-    public ByteBuffer allocate(byte[] bytes);
-    public ByteBuffer expandBuffer(ByteBuffer buffer);
-    public ByteBuffer expandBuffer(ByteBuffer buffer, int len);
-    public void recycle(ByteBuffer theBuf);
-    public long capacity();
-    public long size();
-    public  int getSharedOptsCount();
-    public int getChunkSize();
-    public ConcurrentHashMap<Long, Long> getNetDirectMemoryUsage();
+
+    int defaultAllocate();
+
+    ByteBuffer allocate();
+
+    ByteBuffer allocate(int size);
+
+    ByteBuffer allocate(byte[] bytes);
+
+    ByteBuffer expandBuffer(ByteBuffer buffer);
+
+    ByteBuffer expandBuffer(ByteBuffer buffer, int len);
+
+    void recycle(ByteBuffer theBuf);
+
+    long capacity();
+
+    long size();
+
+    int getSharedOptsCount();
+
+    int getChunkSize();
+
+    ConcurrentHashMap<Long, Long> getNetDirectMemoryUsage();
 }

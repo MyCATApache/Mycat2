@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package io.mycat.proxy.buffer;
+package io.mycat.buffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
