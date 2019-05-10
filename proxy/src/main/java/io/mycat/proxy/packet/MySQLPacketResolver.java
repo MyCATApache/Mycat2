@@ -46,11 +46,10 @@ import static io.mycat.proxy.packet.MySQLPayloadType.LOCAL_INFILE_EMPTY_PACKET;
 import static io.mycat.proxy.packet.MySQLPayloadType.LOCAL_INFILE_REQUEST;
 import static io.mycat.proxy.packet.MySQLPayloadType.UNKNOWN;
 
-import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.MycatExpection;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.util.Objects;
 import org.slf4j.Logger;

@@ -1,6 +1,6 @@
 package io.mycat.proxy.session;
 
-import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MycatSessionWriteHandler;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;

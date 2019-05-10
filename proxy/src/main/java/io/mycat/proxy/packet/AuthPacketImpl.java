@@ -18,8 +18,7 @@ package io.mycat.proxy.packet;
 
 
 
-import io.mycat.beans.mysql.MySQLCapabilities;
-
+import io.mycat.config.MySQLServerCapabilityFlags;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -79,26 +78,24 @@ public class AuthPacketImpl {
         characterSet = buffer.readByte();
         buffer.readBytes(RESERVED.length);
         username = buffer.readNULString();
-        if ((capabilities & MySQLCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)
-                == MySQLCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
+        if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)) {
             password = buffer.readFixStringBytes((int) buffer.readLenencInt());
-        } else if ((capabilities & MySQLCapabilities.CLIENT_SECURE_CONNECTION)
-                == MySQLCapabilities.CLIENT_SECURE_CONNECTION) {
+        } else if ((MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities))) {
             int passwordLength = buffer.readByte();
             password = buffer.readFixStringBytes(passwordLength);
         } else {
             password = buffer.readNULStringBytes();
         }
 
-        if ((capabilities & MySQLCapabilities.CLIENT_CONNECT_WITH_DB) == MySQLCapabilities.CLIENT_CONNECT_WITH_DB) {
+        if (MySQLServerCapabilityFlags.isConnectionWithDatabase(capabilities)) {
             database = buffer.readNULString();
         }
 
-        if ((capabilities & MySQLCapabilities.CLIENT_PLUGIN_AUTH) == MySQLCapabilities.CLIENT_PLUGIN_AUTH) {
+        if (MySQLServerCapabilityFlags.isPluginAuth(capabilities)) {
             authPluginName = buffer.readNULString();
         }
 
-        if ((capabilities & MySQLCapabilities.CLIENT_CONNECT_ATTRS) == MySQLCapabilities.CLIENT_CONNECT_ATTRS) {
+        if (MySQLServerCapabilityFlags.isConnectAttrs(capabilities)) {
             long kvAllLength = buffer.readLenencInt();
             if (kvAllLength != 0) {
                 clientConnectAttrs = new HashMap<>();
@@ -130,29 +127,27 @@ public class AuthPacketImpl {
         buffer.writeByte(characterSet);
         buffer.writeBytes(RESERVED);
         buffer.writeNULString(username);
-        if ((capabilities & MySQLCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA)
-                == MySQLCapabilities.CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA) {
+        if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)){
             buffer.writeLenencInt(password.length);
             buffer.writeFixString(password);
-        } else if ((capabilities & MySQLCapabilities.CLIENT_SECURE_CONNECTION)
-                == MySQLCapabilities.CLIENT_SECURE_CONNECTION) {
+        } else if (MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities)){
             buffer.writeFixInt(1, password.length);
             buffer.writeFixString(password);
         } else {
             buffer.writeNULString(password);
         }
 
-        if ((capabilities & MySQLCapabilities.CLIENT_CONNECT_WITH_DB) == MySQLCapabilities.CLIENT_CONNECT_WITH_DB
+        if (MySQLServerCapabilityFlags.isConnectionWithDatabase(capabilities)
                 && database != null) {
             buffer.writeNULString(database);
         }
 
-        if ((capabilities & MySQLCapabilities.CLIENT_PLUGIN_AUTH) == MySQLCapabilities.CLIENT_PLUGIN_AUTH
-                && authPluginName != null) {
+        if ((MySQLServerCapabilityFlags.isPluginAuth(capabilities)
+                && authPluginName != null)) {
             buffer.writeNULString(authPluginName);
         }
 
-        if ((capabilities & MySQLCapabilities.CLIENT_CONNECT_ATTRS) == MySQLCapabilities.CLIENT_CONNECT_ATTRS
+        if (MySQLServerCapabilityFlags.isConnectAttrs(capabilities)
                 && clientConnectAttrs != null && !clientConnectAttrs.isEmpty()) {
             int kvAllLength = 0;
             for (Map.Entry<String, String> item : clientConnectAttrs.entrySet()) {

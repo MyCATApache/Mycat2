@@ -45,4 +45,41 @@ public class GlobalConfig {
     public static final int INIT_VERSION = 1;
     // 默认的重试次数
     public static final int MAX_RETRY_COUNT = 5;
+
+    private static MySQLServerCapabilityFlags capabilityFlags = new MySQLServerCapabilityFlags(initClientFlags());
+
+    public static MySQLServerCapabilityFlags getClientCapabilityFlags() {
+        return capabilityFlags;
+    }
+
+    private static int initClientFlags() {
+        int flag = 0;
+        flag |= MySQLServerCapabilityFlags.CLIENT_LONG_PASSWORD;
+        flag |= MySQLServerCapabilityFlags.CLIENT_FOUND_ROWS;
+        flag |= MySQLServerCapabilityFlags.CLIENT_LONG_FLAG;
+        // flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_WITH_DB;
+        // flag |= MySQLServerCapabilityFlags.CLIENT_NO_SCHEMA;
+        boolean usingCompress = false;
+        if (usingCompress) {
+            flag |= MySQLServerCapabilityFlags.CLIENT_COMPRESS;
+        }
+        flag |= MySQLServerCapabilityFlags.CLIENT_ODBC;
+        flag |= MySQLServerCapabilityFlags.CLIENT_LOCAL_FILES;
+        flag |= MySQLServerCapabilityFlags.CLIENT_IGNORE_SPACE;
+        flag |= MySQLServerCapabilityFlags.CLIENT_PROTOCOL_41;
+        flag |= MySQLServerCapabilityFlags.CLIENT_INTERACTIVE;
+        // flag |= MySQLServerCapabilityFlags.CLIENT_SSL;
+        flag |= MySQLServerCapabilityFlags.CLIENT_IGNORE_SIGPIPE;
+        flag |= MySQLServerCapabilityFlags.CLIENT_TRANSACTIONS;
+        // flag |= MySQLServerCapabilityFlags.CLIENT_RESERVED;
+        flag |= MySQLServerCapabilityFlags.CLIENT_SECURE_CONNECTION;
+        flag |= MySQLServerCapabilityFlags.CLIENT_PLUGIN_AUTH;
+
+        flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_STATEMENTS;
+        flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_RESULTS;
+        // // client extension
+        // flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_STATEMENTS;
+        // flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_RESULTS;
+        return flag;
+    }
 }

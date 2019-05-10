@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.MycatExpection;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;

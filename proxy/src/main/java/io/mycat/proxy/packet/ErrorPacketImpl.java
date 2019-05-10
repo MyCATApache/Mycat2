@@ -17,7 +17,7 @@
 package io.mycat.proxy.packet;
 
 
-import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.payload.MySQLPayloadWriter;
 
 /**

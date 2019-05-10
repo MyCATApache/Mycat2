@@ -16,8 +16,8 @@
  */
 package io.mycat.proxy.task;
 
-import io.mycat.beans.MySQLServerMeta;
 import io.mycat.MycatExpection;
+import io.mycat.config.GlobalConfig;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MysqlNativePasswordPluginUtil;
 import io.mycat.proxy.NIOHandler;
@@ -30,13 +30,12 @@ import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.MySQLDatasource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BackendConCreateTask implements NIOHandler<MySQLClientSession> {
     final MySQLDatasource datasource;
@@ -78,7 +77,7 @@ public class BackendConCreateTask implements NIOHandler<MySQLClientSession> {
             return;
         }
         if (!welcomePkgReceived) {
-            int serverCapabilities = MySQLServerMeta.getClientCapabilityFlags().value;
+            int serverCapabilities = GlobalConfig.getClientCapabilityFlags().value;
             mysql.getPacketResolver().setCapabilityFlags(serverCapabilities);
 
             HandshakePacketImpl hs = new HandshakePacketImpl();

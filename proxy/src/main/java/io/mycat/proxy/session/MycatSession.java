@@ -20,7 +20,7 @@ import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.beans.mysql.MySQLServerCapabilityFlags;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.MycatSessionWriteHandler;
@@ -40,9 +40,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.List;
 
 public class MycatSession extends AbstractSession<MycatSession> implements
     MySQLServerSession<MycatSession>, MySQLProxySession<MycatSession> {
