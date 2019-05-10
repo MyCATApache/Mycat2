@@ -19,7 +19,7 @@ package io.mycat.proxy.task;
 import io.mycat.MycatExpection;
 import io.mycat.config.GlobalConfig;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.MysqlNativePasswordPluginUtil;
+import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
