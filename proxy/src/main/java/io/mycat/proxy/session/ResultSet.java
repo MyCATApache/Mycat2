@@ -52,7 +52,7 @@ public class ResultSet {
       }
     }
     if (end){
-      s.writeRowEndPacket(true);
+      s.writeRowEndPacket(true,false);
     }
   }
 }

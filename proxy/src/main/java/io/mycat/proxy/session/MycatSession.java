@@ -34,6 +34,7 @@ import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.packet.PacketSplitterImpl;
+import io.mycat.proxy.session.MySQLServerSession.WriteHandler;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -157,6 +158,11 @@ public class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public MySQLPacketResolver getPacketResolver() {
     return packetResolver;
+  }
+
+  @Override
+  public void switchMySQLProxyWriteHandler() {
+    this.writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
   }
 
   @Override
@@ -350,6 +356,11 @@ public class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public void setResponseFinished(boolean b) {
     responseFinished = b;
+  }
+
+  @Override
+  public void switchMySQLServerWriteHandler() {
+    this.writeHandler = MySQLServerSession.WriteHandler.INSTANCE;
   }
 
   @Override

@@ -148,7 +148,6 @@ public class MySQLClientSession extends AbstractMySQLClientSession implements My
     this.monopolizeType = monopolizeType;
   }
 
-
   @Override
   public void setCurrentProxyBuffer(ProxyBuffer buffer) {
     this.proxyBuffer = buffer;

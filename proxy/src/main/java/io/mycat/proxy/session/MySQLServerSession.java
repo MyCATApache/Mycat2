@@ -1,5 +1,7 @@
 package io.mycat.proxy.session;
 
+import io.mycat.beans.MySQLServerStatus;
+import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MycatSessionWriteHandler;
 import io.mycat.proxy.buffer.BufferPool;
@@ -69,30 +71,37 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   void setResponseFinished(boolean b);
 
+  void switchMySQLServerWriteHandler();
+
   final static byte[] SQL_STATE = "HY000".getBytes();
 
   public default void writeTextRowPacket(byte[][] row) throws IOException {
+    switchMySQLServerWriteHandler();
     byte[] bytes = MySQLPacketUtil.generateTextRow(row);
     writeBytes(bytes);
   }
 
-  public default void writeBinaryRowPacket(byte[][] row) throws IOException {
+  public default void writeBinaryRowPacket(byte[][] row) {
+    switchMySQLServerWriteHandler();
     byte[] bytes = MySQLPacketUtil.generateBinaryRow(row);
     writeBytes(bytes);
   }
 
-  public default void writeColumnCount(int count) throws IOException {
+  public default void writeColumnCount(int count) {
+    switchMySQLServerWriteHandler();
     byte[] bytes = MySQLPacketUtil.generateResultSetCount(count);
     writeBytes(bytes);
   }
 
-  public default void writeColumnDef(String columnName, int type) throws IOException {
+  public default void writeColumnDef(String columnName, int type) {
+    switchMySQLServerWriteHandler();
     byte[] bytes = MySQLPacketUtil
                        .generateColumnDef(columnName, type, charsetIndex(), charset());
     writeBytes(bytes);
   }
 
-  public default void writeOkEndPacket() throws IOException {
+  public default void writeOkEndPacket() {
+    switchMySQLServerWriteHandler();
     this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
                        .generateOk(0, warningCount(), serverStatus(), affectedRows(),
@@ -115,7 +124,8 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     }
   }
 
-  public default void writeColumnEndPacket() throws IOException {
+  public default void writeColumnEndPacket() {
+    switchMySQLServerWriteHandler();
     if (isDeprecateEOF()) {
     } else {
       byte[] bytes = MySQLPacketUtil.generateEof(warningCount(), serverStatus());
@@ -123,11 +133,19 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     }
   }
 
-  public default void writeRowEndPacket(boolean hasMoreResult) throws IOException {
+  public default void writeRowEndPacket(boolean hasMoreResult,boolean hasCursor) {
+    switchMySQLServerWriteHandler();
     this.setResponseFinished(true);
     byte[] bytes;
+    int serverStatus = serverStatus();
+    if (hasMoreResult){
+      serverStatus|= MySQLServerStatusFlags.MORE_RESULTS;
+    }
+    if (hasCursor){
+      serverStatus |=MySQLServerStatusFlags.CURSOR_EXISTS;
+    }
     if (isDeprecateEOF()) {
-      bytes = MySQLPacketUtil.generateOk(0xfe, warningCount(), 2, affectedRows(),
+      bytes = MySQLPacketUtil.generateOk(0xfe, warningCount(), serverStatus, affectedRows(),
           lastInsertId(), MySQLServerCapabilityFlags.isClientProtocol41(capabilities()),
           MySQLServerCapabilityFlags.isKnowsAboutTransactions(capabilities()),
           MySQLServerCapabilityFlags.isSessionVariableTracking(capabilities()),
@@ -138,6 +156,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     writeBytes(bytes);
   }
   public default void writeErrorEndPacket(){
+    switchMySQLServerWriteHandler();
     this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
                        .generateError(lastErrorCode(), lastMessage(), this.capabilities());
@@ -200,8 +219,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
               continue;
             }
           } else {
-            System.out.println(StringUtil.dumpAsHex(packetContainer[0]));
-            System.out.println(StringUtil.dumpAsHex(packetContainer[1]));
             byteBuffers.removeFirst();
             session.bufferPool().recycle(first);
           }

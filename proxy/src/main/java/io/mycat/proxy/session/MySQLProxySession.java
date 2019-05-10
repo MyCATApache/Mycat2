@@ -19,7 +19,9 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   ProxyBuffer currentProxyBuffer();
 
   public MySQLPacketResolver getPacketResolver();
+ default void switchMySQLProxyWriteHandler(){
 
+ }
   void setCurrentProxyBuffer(ProxyBuffer buffer);
   default void rebuildProxyRequest(byte[] bytes){
       ProxyBuffer proxyBuffer = this.currentProxyBuffer();
@@ -35,6 +37,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   }
 
   public default void writeProxyBufferToChannel(byte[] bytes) throws IOException {
+    switchMySQLProxyWriteHandler();
     writeProxyBufferToChannel(this, bytes);
   }
 
@@ -86,7 +89,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   }
 
   public default void writeProxyPacket(MySQLPacket ogrin, int packetId) throws IOException {
-
+    switchMySQLProxyWriteHandler();
     ProxyBufferImpl mySQLPacket1 = (ProxyBufferImpl) ogrin;
     ByteBuffer buffer = mySQLPacket1.currentByteBuffer();
     int packetEndPos = buffer.position();
@@ -104,6 +107,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   }
 
   public default void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
+    switchMySQLProxyWriteHandler();
     this.setCurrentProxyBuffer(proxyBuffer);
     this.writeToChannel();
   }

@@ -127,7 +127,7 @@ public enum CommandHandler {
           String schemaName = schema.getSchemaName();
           mycat.writeTextRowPacket(new byte[][]{schemaName.getBytes(mycat.charset())});
         }
-        mycat.writeRowEndPacket(false);
+        mycat.writeRowEndPacket(false,false);
         break;
       }
       case SHOW_TB_SQL: {
@@ -145,7 +145,7 @@ public enum CommandHandler {
         for (String name : schema.getMycatTables().keySet()) {
           mycat.writeTextRowPacket(new byte[][]{name.getBytes(), basetable});
         }
-        mycat.writeRowEndPacket(false);
+        mycat.writeRowEndPacket(false,false);
         break;
       }
       case SELECT_SQL: {

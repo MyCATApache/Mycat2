@@ -41,7 +41,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
   public byte[] seed;
   public MycatSession mycat;
   private boolean finished = false;
-  private static final byte[] AUTH_OK = new byte[]{7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0};
+ // private static final byte[] AUTH_OK = new byte[]{7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0};
 
   public void setMycatSession(MycatSession mycatSession) {
     this.mycat = mycatSession;
@@ -79,7 +79,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     mycat.setCharset(index, charset);
     finished = true;
 
-    mycat.writeProxyBufferToChannel(AUTH_OK);
+    mycat.writeOkEndPacket();
   }
 
   @Override
