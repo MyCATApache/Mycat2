@@ -23,7 +23,7 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
-import io.mycat.proxy.task.MultiOkQueriesCounterTask;
+import io.mycat.proxy.task.QueryUtil;
 import io.mycat.replica.MySQLReplica;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -35,7 +35,7 @@ public class MySQLDataNodeExecuter {
       AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
     MycatReactorThread[] threads = MycatRuntime.INSTANCE.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-    MySQLDataNode dataNode = (MySQLDataNode) MycatRuntime.INSTANCE.getDataNodeByName(dataNodeName);
+    MySQLDataNode dataNode = MycatRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     threads[i].addNIOJob(() -> {
       getMySQLSession(dataNode, isolation, autoCommit, charSet, runOnSlave, strategy,
           asynTaskCallBack);
@@ -64,8 +64,7 @@ public class MySQLDataNodeExecuter {
                 String sql =
                     isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
                         + ";" + "SET names " + charset + ";";
-                new MultiOkQueriesCounterTask(4)
-                    .request(mysql, sql, asynTaskCallBack);
+                QueryUtil.mutilOkResultSet(mysql, 4, sql, asynTaskCallBack);
               }
             } else {
               asynTaskCallBack.finished(mysql, sender, success, result, errorMessage);

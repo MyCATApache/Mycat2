@@ -16,6 +16,12 @@ public class QueryUtil {
 
   private final static SetOptionTask SET_OPTION = new SetOptionTask();
 
+  public static void mutilOkResultSet(
+      MySQLClientSession mysql, int count, String sql,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
+    new MultiOkQueriesCounterTask(count).request(mysql, sql, callBack);
+  }
+
   public static void setOption(
       MySQLClientSession mysql, MySQLSetOption setOption,
       AsynTaskCallBack<MySQLClientSession> callBack) {
@@ -23,6 +29,7 @@ public class QueryUtil {
   }
 
   private static class SetOptionTask implements ResultSetTask {
+
     public void request(
         MySQLClientSession mysql, MySQLSetOption setOption,
         AsynTaskCallBack<MySQLClientSession> callBack) {
@@ -34,7 +41,7 @@ public class QueryUtil {
 
       mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
       MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(7);
-      mySQLPacket.writeByte((byte) MySQLCommandType.COM_SET_OPTION);
+      mySQLPacket.writeByte(MySQLCommandType.COM_SET_OPTION);
       mySQLPacket.writeFixInt(2, setOption.getValue());
 
       try {
@@ -46,6 +53,52 @@ public class QueryUtil {
         this.clearAndFinished(mysql, false, e.getMessage());
       }
     }
-
   }
+
+  private static class MultiOkQueriesCounterTask implements QueryResultSetTask {
+
+    private int counter = 0;
+
+    public MultiOkQueriesCounterTask(int counter) {
+      this.counter = counter;
+    }
+
+
+    @Override
+    public void onColumnDef(MySQLPacket mySQLPacket, int startPos, int endPos) {
+
+    }
+
+    @Override
+    public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) {
+
+    }
+
+    @Override
+    public void onBinaryRow(MySQLPacket mySQLPacket, int startPos, int endPos) {
+
+    }
+
+    @Override
+    public void onFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
+      if (counter == 0) {
+        AsynTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
+        callBack.finished(mysql, this, true, null, errorMessage);
+      } else {
+        AsynTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
+        callBack.finished(mysql, this, false, null, success ? "couter fail" : errorMessage);
+      }
+    }
+
+    @Override
+    public void onOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
+      counter--;
+    }
+
+    @Override
+    public void onColumnCount(int columnCount) {
+
+    }
+  }
+
 }
