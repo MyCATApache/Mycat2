@@ -1,6 +1,5 @@
 package io.mycat.proxy.session;
 
-import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MycatSessionWriteHandler;
@@ -8,7 +7,6 @@ import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.payload.MySQLPacketUtil;
-import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;

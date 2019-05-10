@@ -18,7 +18,7 @@ package io.mycat.proxy.buffer;
 
 import io.mycat.MycatExpection;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.util.StringUtil;
+import io.mycat.util.DumpUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
@@ -187,7 +187,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
       this.channelReadEndIndex(buffer.position());
       System.out.println("rec:");
       System.out.println(
-          StringUtil.dumpAsHex(buffer, 0,      buffer.position()));
+          DumpUtil.dumpAsHex(buffer, 0,      buffer.position()));
       return readed > 0;
     } catch (Exception e) {
       throw e;
@@ -231,7 +231,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   @Override
   public void writeToChannel(SocketChannel channel) throws IOException {
     applyChannelWritingIndex();
-    System.out.println(StringUtil.dumpAsHex(buffer,buffer.limit()));
+    System.out.println(DumpUtil.dumpAsHex(buffer,buffer.limit()));
     if (channel.write(buffer) == -1) {
       logger.warn("Read EOF ,socket closed ");
       throw new ClosedChannelException();

@@ -62,14 +62,10 @@ public class MycatSession extends AbstractSession<MycatSession> implements
   protected final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();
   protected final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);
   private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
-  private MySQLCommandFinishedType finishedType = MySQLCommandFinishedType.RESPONSE;
   private boolean responseFinished = false;
   final ByteBuffer[] packetContainer = new ByteBuffer[2];
   final PacketSplitter packetSplitter = new PacketSplitterImpl();
 
-  public MySQLCommandFinishedType getCommandFinishedType() {
-    return finishedType;
-  }
 
   public void switchWriteHandler(MycatSessionWriteHandler writeHandler) {
     this.writeHandler = writeHandler;

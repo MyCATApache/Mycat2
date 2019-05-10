@@ -27,11 +27,11 @@ import org.slf4j.LoggerFactory;
  * @since 2016-09-29
  *
  */
-public final class StringUtil {
+public final class DumpUtil {
 	
-	final static Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);
+	final static Logger LOGGER = LoggerFactory.getLogger(DumpUtil.class);
 	
-	private StringUtil(){
+	private DumpUtil(){
 		
 	}
 	

@@ -15,13 +15,10 @@
 package io.mycat.proxy;
 
 import io.mycat.MySQLDataNode;
-import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.MySQLCommandFinishedType;
-import io.mycat.proxy.session.MySQLProxySession;
 import io.mycat.proxy.session.MySQLProxySession.WriteHandler;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
