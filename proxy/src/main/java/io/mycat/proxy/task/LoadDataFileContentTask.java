@@ -16,100 +16,238 @@
  */
 package io.mycat.proxy.task;
 
+import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.packet.PacketSplitterImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 
-import io.mycat.util.MySQLUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 
-public class LoadDataFileContentTask implements ResultSetTask {
-    private MySQLClientSession mysql;
+public class LoadDataFileContentTask implements NIOHandler<MySQLClientSession>, PacketSplitter {
     private FileChannel fileChannel;
-    private int position;
-    int length;
-    int allRemains;
-    private AsynTaskCallBack<MySQLClientSession> callBack;
-    int curRemains = 0;
-    //byte packetId = 2;
-    PacketSplitter packetSplitter = new PacketSplitterImpl();
+    private int startIndex;
+    private int writeIndex;
+    private int length;
+    BufferPool bufferPool;
+    SocketChannel socketChannel;
+    int reminsPacketLen;
+    int totalSize;
+    int currentPacketLen;
+    int currentPacketLenFlag;
+    int offset;
+    ByteBuffer header;
+    private MySQLClientSession mysql;
 
     public void request(MySQLClientSession mysql, FileChannel fileChannel, int position, int length, AsynTaskCallBack<MySQLClientSession> callBack) {
         try {
             this.mysql = mysql;
             this.fileChannel = fileChannel;
-            this.position = position;
+            this.writeIndex = this.startIndex = position;
             this.length = length;
-            this.allRemains = length;
-            this.callBack = callBack;
-            mysql.switchNioHandler(this);
             mysql.setCallBack(callBack);
-            packetSplitter.init(length);
-            packetSplitter.nextPacketInPacketSplitter();
-            curRemains = packetSplitter.getPacketLenInPacketSplitter();
-            writeData();
+            this.setServerSocket(mysql.channel());
+            MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+            setBufferPool(thread.getBufPool());
+            this.init(length);
+            mysql.switchNioHandler(this);
+            onStart();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void writeData() {
+
+    public int onPayloadLength() {
+        return length;
+    }
+
+
+    public void onStart() {
         try {
-            long res;
-            while (curRemains > 0) {
-                SocketChannel channel = mysql.channel();
-                curRemains = packetSplitter.getPacketLenInPacketSplitter();
-                channel.write(ByteBuffer.wrap(MySQLUtil.getFixIntByteArray(3, curRemains)));
-                byte b = mysql.incrementPacketIdAndGet();
-                channel.write(ByteBuffer.wrap(new byte[]{b}));
-                res =  fileChannel.transferTo(position + packetSplitter.getOffsetInPacketSplitter(),curRemains,channel);
-                allRemains -= res;
-                curRemains -= res;
-                if (allRemains == 0 && curRemains == 0) {
-                    onWriteFinished(mysql);
-                    break;
-                } else if (allRemains > 0 && curRemains == 0) {
-                    if (packetSplitter.nextPacketInPacketSplitter()) {
-                        curRemains = packetSplitter.getPacketLenInPacketSplitter();
-                        continue;
-                    }
-                } else {
+            init(onPayloadLength());
+            header = getBufferPool().allocate(4);
+            boolean hasNext = false;
+            while (hasNext = nextPacketInPacketSplitter()) {
+                this.writeIndex += startIndex + getOffsetInPacketSplitter();
+                setReminsPacketLen(getPacketLenInPacketSplitter());
+                setPacketId((byte) (1 + getPacketId()));
+                writeHeader(header, getPacketLenInPacketSplitter(), getPacketId());
+                getServerSocket().write(header);
+                if (!header.hasRemaining()) {
+                    int writed = writePayload(fileChannel, this.writeIndex, getReminsPacketLen(), getServerSocket());
+                    this.writeIndex += writed;
+                    setReminsPacketLen(getReminsPacketLen() - writed);
+                }
+                int reminsPacketLen = getReminsPacketLen();
+                if (reminsPacketLen > 0) {
                     mysql.change2WriteOpts();
                     break;
+                } else if (reminsPacketLen == 0) {
+                    continue;
                 }
             }
-
-        } catch (IOException e) {
-            callBack.finished(mysql, this, false, null, e.getMessage());
+            if (!hasNext) {
+                writeFinishedAndClear(true);
+                return;
+            }
+        } catch (Exception e) {
+            onError(e);
         }
     }
 
     @Override
-    public void onSocketWrite(MySQLClientSession mysql) throws IOException {
-        onWriteFinished(mysql);
-    }
-
-    @Override
-    public void onWriteFinished(MySQLClientSession mysql) throws IOException {
-        if (mysql.getCurNIOHandler() == this) {
-            if (this.allRemains == 0) {
-                fileChannel.close();
-                mysql.change2ReadOpts();
-                clearAndFinished(mysql,true, null);
+    public void onSocketWrite(MySQLClientSession session) throws IOException {
+        if (header.hasRemaining()) {
+            getServerSocket().write(header);
+            return;
+        }
+        int writed = writePayload(fileChannel, this.writeIndex, getReminsPacketLen(), getServerSocket());
+        this.writeIndex += writed;
+        setReminsPacketLen(getReminsPacketLen() - writed);
+        while (getReminsPacketLen() == 0) {
+            if (nextPacketInPacketSplitter()) {
+                this.writeIndex = this.startIndex + getOffsetInPacketSplitter();
+                setReminsPacketLen(getPacketLenInPacketSplitter());
+                setPacketId((byte) (1 + getPacketId()));
+                writeHeader(header, getPacketLenInPacketSplitter(), getPacketId());
+                getServerSocket().write(header);
+                if (!header.hasRemaining()) {
+                    writed = writePayload(fileChannel, this.writeIndex, getReminsPacketLen(), getServerSocket());
+                    this.writeIndex += writed;
+                    setReminsPacketLen(getReminsPacketLen() - writed);
+                }
             } else {
-                writeData();
+                writeFinishedAndClear(true);
+                return;
             }
         }
     }
 
-    @Override
-    public void onFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
-        MySQLClientSession currentMySQLSession = mysql;
-        AsynTaskCallBack<MySQLClientSession> callBack = currentMySQLSession.getCallBackAndReset();
-        callBack.finished(currentMySQLSession, this, success, null, errorMessage);
+    private int writePayload(FileChannel fileChannel, int writeIndex, int reminsPacketLen, SocketChannel serverSocket) throws IOException {
+        return (int) fileChannel.transferTo(writeIndex, reminsPacketLen, serverSocket);
+    }
 
+    public void writeFinishedAndClear(boolean success) {
+        mysql.clearReadWriteOpts();
+        getBufferPool().recycle(header);
+        header = null;
+        setServerSocket(null);
+        onWriteFinished(mysql,fileChannel, success);
+    }
+
+    void writeHeader(ByteBuffer buffer, int packetLen, int packerId) {
+        buffer.position(0);
+        MySQLPacket.writeFixIntByteBuffer(buffer, 3, packetLen);
+        buffer.put((byte) packerId);
+        buffer.position(0);
+    }
+
+    void onWriteFinished(MySQLClientSession mysql,FileChannel fileChannel, boolean success) {
+        AsynTaskCallBack callBackAndReset = mysql.getCallBackAndReset();
+        try {
+            fileChannel.close();
+            callBackAndReset.finished(this.mysql, this, success, null, null);
+        } catch (Exception e) {
+            mysql.setLastThrowable(e);
+            callBackAndReset.finished(this.mysql, this, false, null, null);
+        }
+    }
+
+    void onError(Throwable e) {
+        mysql.setLastThrowable(e);
+        writeFinishedAndClear(false);
+    }
+
+    public byte getPacketId() {
+        return mysql.getPacketId();
+    }
+
+
+    public void setPacketId(byte packetId) {
+        mysql.setPacketId(packetId);
+    }
+
+
+    public BufferPool getBufferPool() {
+        return bufferPool;
+    }
+
+
+    public void setBufferPool(BufferPool bufferPool) {
+        this.bufferPool = bufferPool;
+    }
+
+
+    public SocketChannel getServerSocket() {
+        return socketChannel;
+    }
+
+
+    public void setServerSocket(SocketChannel serverSocket) {
+        this.socketChannel = serverSocket;
+    }
+
+
+    public int getReminsPacketLen() {
+        return reminsPacketLen;
+    }
+
+
+    public void setReminsPacketLen(int reminsPacketLen) {
+        this.reminsPacketLen = reminsPacketLen;
+    }
+
+
+    public int getTotalSizeInPacketSplitter() {
+        return totalSize;
+    }
+
+
+    public void setTotalSizeInPacketSplitter(int totalSize) {
+        this.totalSize = totalSize;
+    }
+
+
+    public int getPacketLenInPacketSplitter() {
+        return currentPacketLen;
+    }
+
+
+    public void setPacketLenInPacketSplitter(int currentPacketLen) {
+        this.currentPacketLen = currentPacketLen;
+    }
+
+
+    public void setOffsetInPacketSplitter(int offset) {
+        this.offset = offset;
+    }
+
+
+    public int getOffsetInPacketSplitter() {
+        return offset;
+    }
+
+
+    public void onSocketRead(MySQLClientSession session) throws IOException {
+
+    }
+
+
+    public void onWriteFinished(MySQLClientSession session) throws IOException {
+
+    }
+
+
+    public void onSocketClosed(MySQLClientSession session, boolean normal) {
+        if (!normal) {
+            onError(getSessionCaller().getLastThrowableAndReset());
+        } else {
+            onWriteFinished(session,fileChannel, true);
+        }
     }
 }
