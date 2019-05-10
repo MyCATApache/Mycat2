@@ -191,7 +191,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public void setMySQLpayloadType(MySQLPayloadType type) {
-    System.out.println(type);
     this.payloadType = type;
   }
 
