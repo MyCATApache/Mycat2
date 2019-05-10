@@ -21,19 +21,14 @@ import io.mycat.beans.mysql.MySQLSetOption;
 import io.mycat.proxy.packet.ResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
-import io.mycat.proxy.task.AsynTaskFuture;
 import io.mycat.proxy.task.CommandTask;
-import io.mycat.proxy.task.DescTask;
 import io.mycat.proxy.task.LoadDataRequestTask;
 import io.mycat.proxy.task.MappedByteBufferPayloadWriter;
-import io.mycat.proxy.task.ShowTablesTask;
-import io.mycat.proxy.task.prepareStatement.CloseTask;
-import io.mycat.proxy.task.prepareStatement.ExecuteTask;
-import io.mycat.proxy.task.prepareStatement.FetchTask;
-import io.mycat.proxy.task.prepareStatement.PrepareTask;
-import io.mycat.proxy.task.prepareStatement.ResetTask;
-import io.mycat.proxy.task.prepareStatement.SendLongDataTask;
-import io.mycat.proxy.task.prepareStatement.SetOptionTask;
+import io.mycat.proxy.task.QueryUtil;
+import io.mycat.proxy.task.client.prepareStatement.ExecuteTask;
+import io.mycat.proxy.task.client.prepareStatement.PrepareStmtUtil;
+import io.mycat.proxy.task.client.prepareStatement.PrepareTask;
+import io.mycat.proxy.task.client.prepareStatement.SendLongDataTask;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 
@@ -45,39 +40,15 @@ public interface MySQLAPI {
     new CommandTask().request(getThis(), 3, "commit;", callback);
   }
 
-  default AsynTaskFuture<MySQLClientSession> commit() {
-    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
-    commit(future);
-    return future;
-  }
 
   default void execute(MySQLPreparedStatement preparedStatement, MySQLPrepareStmtExecuteFlag flags,
       ResultSetCollector collector, AsynTaskCallBack<MySQLClientSession> callBack) {
     new ExecuteTask().request(getThis(), preparedStatement, flags, collector, callBack);
   }
 
-  default AsynTaskFuture<MySQLClientSession> execute(MySQLPreparedStatement preparedStatement,
-      MySQLPrepareStmtExecuteFlag flags, ResultSetCollector collector) {
-    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
-    execute(preparedStatement, flags, collector, future);
-    return future;
-  }
-
-  default AsynTaskFuture<MySQLClientSession> prepare(String prepareStatement) {
-    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
-    prepare(prepareStatement, future);
-    return future;
-  }
 
   default void prepare(String prepareStatement, AsynTaskCallBack<MySQLClientSession> callback) {
     new PrepareTask().request(getThis(), prepareStatement, callback);
-  }
-
-  default AsynTaskFuture<MySQLClientSession> sendBlob(MySQLPreparedStatement preparedStatement, int index,
-      byte[] data) {
-    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
-    sendBlob(preparedStatement, index, data, future);
-    return future;
   }
 
   default void sleep(AsynTaskCallBack<MySQLClientSession> callback) {
@@ -167,90 +138,63 @@ public interface MySQLAPI {
     new SendLongDataTask().request(getThis(), preparedStatement, callback);
   }
 
-  default AsynTaskFuture<MySQLClientSession> reset(MySQLPreparedStatement preparedStatement) {
-    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
-    reset(preparedStatement, future);
-    return future;
-  }
 
-  default void reset(MySQLPreparedStatement preparedStatement, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void reset(MySQLPreparedStatement preparedStatement,
+      AsynTaskCallBack<MySQLClientSession> callback) {
     preparedStatement.resetLongData();
-    new ResetTask().request(getThis(), 0x1a, preparedStatement.getStatementId(), callback);
+    PrepareStmtUtil.reset(getThis(), preparedStatement.getStatementId(), callback);
   }
 
   default void setOption(MySQLSetOption option, AsynTaskCallBack<MySQLClientSession> callback) {
-    new SetOptionTask().request(getThis(), option, callback);
+    QueryUtil.setOption(getThis(), option, callback);
   }
 
   default void fetch(long stmtId, long numRows, AsynTaskCallBack<MySQLClientSession> callback) {
-    new FetchTask().request(getThis(),stmtId, numRows, callback);
+    PrepareStmtUtil.fetch(getThis(), stmtId, numRows, callback);
   }
 
-  default AsynTaskFuture<MySQLClientSession> close(MySQLPreparedStatement preparedStatement) {
-    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
-    preparedStatement.resetLongData();
-    close(preparedStatement, future);
-    return future;
-  }
 
   default void doQuery(String sql, AsynTaskCallBack<MySQLClientSession> callbac) {
     new CommandTask().request(getThis(), 3, sql, callbac);
   }
 
-  default void showTables(AsynTaskCallBack<MySQLClientSession> callbac) {
-    new ShowTablesTask().request(getThis(), 3, "show tables;", callbac);
-  }
-
-  default void desc(String tableName, AsynTaskCallBack<MySQLClientSession> callbac) {
-    new DescTask().request(getThis(), 3, "select * from " + tableName + " limit 0;",
-        new AsynTaskCallBack<MySQLClientSession>() {
-          @Override
-          public void finished(MySQLClientSession session, Object sender, boolean success, Object result,
-              Object attr) {
-            new DescTask()
-                .request(getThis(), 3, "select * from " + tableName + " limit 0;", callbac);
-          }
-        });
-  }
-
-  default AsynTaskFuture<MySQLClientSession> doQuery(String sql) {
-    AsynTaskFuture<MySQLClientSession> future = AsynTaskFuture.future();
-    doQuery(sql, future);
-    return future;
-  }
 
   default void initDb(String dataBase, AsynTaskCallBack<MySQLClientSession> callback) {
     new CommandTask().request(getThis(), 2, dataBase, callback);
   }
 
   default void loadData(String sql, AsynTaskCallBack<MySQLClientSession> callback) {
-    new LoadDataRequestTask().request(getThis(), 3, sql, new AsynTaskCallBack<MySQLClientSession>() {
-      @Override
-      public void finished(MySQLClientSession session, Object sender, boolean success, Object result,
-          Object attr) {
-        try {
-          FileChannel open = FileChannel.open(Paths.get((String) result));
-          loadDataFileContext(open, 0, (int) open.size(), new AsynTaskCallBack<MySQLClientSession>() {
-            @Override
-            public void finished(MySQLClientSession session, Object sender, boolean success,
-                Object packetId, Object attr) {
-              if (success) {
-                session.loadDataEmptyPacket(callback, session.incrementPacketIdAndGet());
-              } else {
-                callback.finished(session, this, false, null, attr);
-              }
-            }
-          });
-        } catch (Exception e) {
+    new LoadDataRequestTask()
+        .request(getThis(), 3, sql, new AsynTaskCallBack<MySQLClientSession>() {
+          @Override
+          public void finished(MySQLClientSession session, Object sender, boolean success,
+              Object result,
+              Object attr) {
+            try {
+              FileChannel open = FileChannel.open(Paths.get((String) result));
+              loadDataFileContext(open, 0, (int) open.size(),
+                  new AsynTaskCallBack<MySQLClientSession>() {
+                    @Override
+                    public void finished(MySQLClientSession session, Object sender, boolean success,
+                        Object packetId, Object attr) {
+                      if (success) {
+                        session.loadDataEmptyPacket(callback, session.incrementPacketIdAndGet());
+                      } else {
+                        callback.finished(session, this, false, null, attr);
+                      }
+                    }
+                  });
+            } catch (Exception e) {
 
-          callback.finished(session, this, false, null, attr);
-        }
-      }
-    });
+              callback.finished(session, this, false, null, attr);
+            }
+          }
+        });
 
   }
 
-  default void loadDataEmptyPacket(AsynTaskCallBack<MySQLClientSession> callback, byte nextPacketId) {
+  default void loadDataEmptyPacket(AsynTaskCallBack<MySQLClientSession> callback,
+      byte nextPacketId) {
     new CommandTask().requestEmptyPacket(getThis(), nextPacketId, callback);
   }
 
@@ -261,8 +205,9 @@ public interface MySQLAPI {
             position, length, callback);
   }
 
-  default void close(MySQLPreparedStatement preparedStatement, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void close(MySQLPreparedStatement preparedStatement,
+      AsynTaskCallBack<MySQLClientSession> callback) {
     preparedStatement.resetLongData();
-    new CloseTask().request(getThis(), preparedStatement.getStatementId(), callback);
+    PrepareStmtUtil.close(getThis(), preparedStatement.getStatementId(), callback);
   }
 }

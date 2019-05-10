@@ -35,12 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
-
   private static final Logger logger = LoggerFactory.getLogger(MySQLClientAuthHandler.class);
   public byte[] seed;
   public MycatSession mycat;
   private boolean finished = false;
- // private static final byte[] AUTH_OK = new byte[]{7, 0, 0, 2, 0, 0, 0, 2, 0, 0, 0};
 
   public void setMycatSession(MycatSession mycatSession) {
     this.mycat = mycatSession;

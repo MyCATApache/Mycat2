@@ -19,14 +19,10 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import java.nio.charset.Charset;
 
-/**
- * 存放当前执行的SQL的相关状态属性，类似Servlet HTTP Request级别的状态，生命周期与当前SQL执行的生命周期相同。
- * 当前SQL执行完毕后清理，相关的SQLCommand ,NIOHandler等需要关注清理事件
- * 一些非常频繁使用的状态数据，可以作为CurSQLState的属性定义，加速访问
- *
- * @author leader us
- */
 
+/**
+ * chen junwen
+ */
 public class MySQLServerStatus {
   private String lastMessage;
   private long affectedRows;

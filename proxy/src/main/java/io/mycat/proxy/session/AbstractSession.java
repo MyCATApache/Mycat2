@@ -58,15 +58,6 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
         lastActiveTime = System.currentTimeMillis();
     }
 
-    public void switchDefaultNioHandler(Runnable runnable) {
-        switchNioHandler(getSessionManager().getDefaultSessionHandler(), runnable);
-    }
-
-    public void switchNioHandler(NIOHandler nioHandler, Runnable runnable) {
-        this.nioHandler = nioHandler;
-        ((ProxyReactorThread) Thread.currentThread()).addNIOJob(runnable);
-    }
-
     public AbstractSession(Selector selector, SocketChannel channel, int socketOpt, NIOHandler nioHandler, SessionManager<? extends Session> sessionManager) throws ClosedChannelException {
         this.nioSelector = selector;
         this.channel = channel;

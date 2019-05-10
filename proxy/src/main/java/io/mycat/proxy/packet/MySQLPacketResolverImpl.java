@@ -41,21 +41,15 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   MySQLPayloadType payloadType;
   long statementId;
   int columnCount;
-  int errorStage;
-  int errorMaxStage;
-  int errorProgress;
-  byte[] errorProgressInfo;
-  byte errorMark;
-  byte[] errorSqlState;
-  byte[] message;
+//  byte[] message;
   int prepareOkParametersCount;
   int warningCount;
   int affectedRows;
   int lastInsertId;
   int serverStatus;
-  byte[] okStatusInfo;
+//  byte[] okStatusInfo;
   byte okSessionStateInfoType;
-  byte[] okSessionStateInfoTypeData;
+//  byte[] okSessionStateInfoTypeData;
   int wholePacketStartPos;
   int wholePacketEndPos;
   final MySQLProxySession session;
@@ -184,25 +178,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
     return endPos;
   }
 
-  @Override
-  public int setPayloadStartPos(int i) {
-    return 0;
-  }
-
-  @Override
-  public int getPayloadStartPos() {
-    return 0;
-  }
-
-  @Override
-  public int setPayloadEndPos(int i) {
-    return 0;
-  }
-
-  @Override
-  public int getPayloadEndPos() {
-    return 0;
-  }
 
   @Override
   public ComQueryState getState() {
@@ -362,77 +337,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   }
 
   @Override
-  public int getErrorStage() {
-    return errorStage;
-  }
-
-  @Override
-  public void setErrorStage(int stage) {
-    this.errorStage = stage;
-  }
-
-  @Override
-  public int getErrorMaxStage() {
-    return errorMaxStage;
-  }
-
-  @Override
-  public void setErrorMaxStage(int maxStage) {
-    this.errorMaxStage = maxStage;
-  }
-
-  @Override
-  public int getErrorProgress() {
-    return errorProgress;
-  }
-
-  @Override
-  public void setErrorProgress(int progress) {
-    this.errorProgress = progress;
-  }
-
-  @Override
-  public byte[] getErrorProgressInfo() {
-    return errorProgressInfo;
-  }
-
-  @Override
-  public void setErrorProgressInfo(byte[] progressInfo) {
-    this.errorProgressInfo = progressInfo;
-  }
-
-  @Override
-  public byte getErrorMark() {
-    return errorMark;
-  }
-
-  @Override
-  public void setErrorMark(byte mark) {
-    this.errorMark = mark;
-  }
-
-  @Override
-  public byte[] getErrorSqlState() {
-    return errorSqlState;
-  }
-
-  @Override
-  public void setErrorSqlState(byte[] sqlState) {
-    this.errorSqlState = sqlState;
-  }
-
-  @Override
-  public byte[] getErrorMessage() {
-    return message;
-  }
-
-  @Override
-  public void setErrorMessage(byte[] message) {
-    this.message = message;
-  }
-
-
-  @Override
   public long getPreparedOkStatementId() {
     return this.statementId;
   }
@@ -515,12 +419,11 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public byte[] getOkStatusInfo() {
-    return okStatusInfo;
+    throw new MycatExpection("");
   }
 
   @Override
   public void setOkStatusInfo(byte[] statusInfo) {
-    this.okStatusInfo = statusInfo;
   }
 
   @Override
@@ -535,22 +438,20 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public byte[] getOkSessionStateInfoTypeData() {
-    return this.okSessionStateInfoTypeData;
+    throw new MycatExpection("");
   }
 
   @Override
   public void setOkSessionStateInfoTypeData(byte[] sessionStateInfoTypeData) {
-    this.okSessionStateInfoTypeData = sessionStateInfoTypeData;
   }
 
   @Override
   public byte[] getOkMessage() {
-    return message;
+    throw new MycatExpection("");
   }
 
   @Override
   public void setOkMessage(byte[] message) {
-    this.message = message;
   }
 
   @Override
@@ -572,11 +473,5 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   public int setEofServerStatus(int status) {
     return this.serverStatus = status;
   }
-
-
-  public void setCurrentPayloadMySQLPacket(MySQLPacket mySQLPacket) {
-    this.mySQLPacket = mySQLPacket;
-  }
-
 
 }

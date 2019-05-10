@@ -89,7 +89,6 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   }
 
   public default void writeProxyPacket(MySQLPacket ogrin, int packetId) throws IOException {
-    switchMySQLProxyWriteHandler();
     ProxyBufferImpl mySQLPacket1 = (ProxyBufferImpl) ogrin;
     ByteBuffer buffer = mySQLPacket1.currentByteBuffer();
     int packetEndPos = buffer.position();

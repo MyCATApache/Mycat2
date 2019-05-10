@@ -39,8 +39,6 @@ public abstract class AbstractMySQLClientSession<T extends AbstractSession<T>> e
   protected ProxyBuffer proxyBuffer;
   protected AsynTaskCallBack<T> callBack;
 
-  // final MySQLPayloadReadView mySQLPayloadReadView = new MySQLPayloadReadView();
-
   public byte setPacketId(int packetId) {
     return (byte) this.packetResolver.setPacketId(packetId);
   }

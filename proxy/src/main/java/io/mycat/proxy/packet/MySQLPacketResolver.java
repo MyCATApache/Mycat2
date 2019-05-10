@@ -55,7 +55,7 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, PreparedOKPacket {
+public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 
   static final Logger logger = LoggerFactory.getLogger(MySQLPacketResolver.class);
 
@@ -102,14 +102,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
   int setEndPos(int i);
 
   int getEndPos();
-
-  int setPayloadStartPos(int i);
-
-  int getPayloadStartPos();
-
-  int setPayloadEndPos(int i);
-
-  int getPayloadEndPos();
 
   ComQueryState getState();
 
@@ -169,13 +161,17 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
     setColumnCount(0);
     setRemainsBytes(0);
     setMultiPacket(false);
-    setErrorStage(0);
-    setErrorMaxStage(0);
-    setErrorProgress(0);
-    setErrorProgressInfo(null);
-    setErrorMark((byte) 0);
-    setErrorSqlState(null);
-    setErrorMessage(null);
+
+    /**
+     setErrorStage(0);
+     setErrorMaxStage(0);
+     setErrorProgress(0);
+     setErrorProgressInfo(null);
+     setErrorMark((byte) 0);
+     setErrorSqlState(null);
+     setErrorMessage(null);
+     */
+
     setPreparedOkStatementId(0);
     setPrepareOkColumnsCount(0);
     setPrepareOkParametersCount(0);
@@ -212,14 +208,11 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
       setWholePacketStartPos(getStartPos());
       setWholePacketEndPos(getEndPos());
 
-      setPayloadStartPos(payloadStartIndex);
-      setPayloadEndPos(getEndPos());
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       return true;
     }
     if (multiPacket && !lastIsMultiPacket) {
       setWholePacketStartPos(getStartPos());
-      setPayloadStartPos(payloadStartIndex);
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       return false;
     }
@@ -227,7 +220,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, ErrorPacket, P
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       setEndPos(payloadEndIndex);
       setWholePacketEndPos(payloadEndIndex);
-      setPayloadEndPos(payloadEndIndex);
     }
     if (multiPacket && lastIsMultiPacket) {
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);

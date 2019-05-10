@@ -102,13 +102,6 @@ public class AuthPacketImpl {
             }
             int count = 0;
             while (count < kvAllLength) {
-//                byte[] k = buffers.readLenencStringBytes();
-//                byte[] v = buffers.readLenencStringBytes();
-//                count += k.length;
-//                count += v.length;
-//                count += calcLenencLength(k.length);
-//                count += calcLenencLength(v.length);
-//                clientConnectAttrs.put(new String(k), new String(v));
                 String k = buffer.readLenencString();
                 String v = buffer.readLenencString();
                 count += k.length();

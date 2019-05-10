@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.task.prepareStatement;
+package io.mycat.proxy.task.client.prepareStatement;
 
 import static io.mycat.beans.mysql.MySQLFieldsType.BINARY_FLAG;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_BIT;
@@ -43,7 +43,7 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY_BLOB;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VARCHAR;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
+import static io.mycat.beans.mysql.MySQLFieldsType.*;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLFieldsType;
