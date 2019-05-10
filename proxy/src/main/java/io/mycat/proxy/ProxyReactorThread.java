@@ -17,8 +17,8 @@
 package io.mycat.proxy;
 
 import io.mycat.proxy.buffer.BufferPool;
-import io.mycat.proxy.session.FrontSessionManager;
 import io.mycat.proxy.session.Session;
+import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.nio.channels.SelectionKey;

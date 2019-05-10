@@ -21,6 +21,7 @@ import io.mycat.proxy.MainMycatNIOHandler;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.BufferPool;
 import io.mycat.proxy.handler.MySQLClientAuthHandler;
+import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;

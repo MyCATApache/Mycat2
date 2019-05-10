@@ -1,18 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.buffer;
 
@@ -24,119 +22,100 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface ProxyBuffer {
-    final static Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
 
-    ByteBuffer currentByteBuffer();
+  Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
 
-    int capacity();
-    public int position();
+  ByteBuffer currentByteBuffer();
 
-    public int position(int index);
+  int capacity();
 
-    public void writeFloat(float f);
+  int position();
 
-    public float readFloat();
+  int position(int index);
 
-    public MySQLPacket writeLong(long l);
+  void writeFloat(float f);
 
-    public long readLong();
+  float readFloat();
 
-    public MySQLPacket writeDouble(double d);
+  MySQLPacket writeLong(long l);
 
-    public double readDouble();
+  long readLong();
 
-    public byte get();
+  MySQLPacket writeDouble(double d);
 
-    public byte get(int index);
+  double readDouble();
 
-    public ProxyBuffer get(byte[] bytes);
+  byte get();
 
-    public byte put(byte b);
-    public void put(byte[] bytes);
-    public void put(byte[] bytes, int offset, int legnth);
+  byte get(int index);
 
-    public int channelWriteStartIndex();
+  ProxyBuffer get(byte[] bytes);
 
-    public int channelWriteEndIndex();
+  byte put(byte b);
 
-    public int channelReadStartIndex();
+  void put(byte[] bytes);
 
-    public int channelReadEndIndex();
+  void put(byte[] bytes, int offset, int legnth);
 
-    public void channelWriteStartIndex(int index);
+  int channelWriteStartIndex();
 
-    public void channelWriteEndIndex(int index);
+  int channelWriteEndIndex();
 
-    public void channelReadStartIndex(int index);
+  int channelReadStartIndex();
 
-    public void channelReadEndIndex(int index);
-    public void expendToLength(int length) ;
+  int channelReadEndIndex();
 
-    public boolean readFromChannel(SocketChannel channel) throws IOException;
+  void channelWriteStartIndex(int index);
 
-    public void writeToChannel(SocketChannel channel) throws IOException;
+  void channelWriteEndIndex(int index);
 
-    public BufferPool bufferPool();
+  void channelReadStartIndex(int index);
 
-    public void reset();
+  void channelReadEndIndex(int index);
 
-    public void newBuffer();
+  void expendToLength(int length);
 
-    public void newBuffer(byte[] bytes);
+  boolean readFromChannel(SocketChannel channel) throws IOException;
 
-    public void newBuffer(int len);
+  void writeToChannel(SocketChannel channel) throws IOException;
 
-    //    public void compactInChannelWritingIfNeed();
-    void expendToLengthIfNeedInReading(int length);
-    public void appendLengthIfInReading(int length);
-    public void appendLengthIfInReading(int length, boolean c);
-    public void compactInChannelReadingIfNeed();
+  BufferPool bufferPool();
 
-//    public void compactOrExpendIfNeedRemainsBytesInReading(int len);
+  void reset();
 
-    public ProxyBuffer newBufferIfNeed();
-//    {
-//        if (buffers() == null) {
-//            newBuffer();
-//        }
-//        return this;
-//    }
+  void newBuffer();
 
-//    public void expend(int len);
+  void newBuffer(byte[] bytes);
 
-//    public void compactOrExpendIfNeedRemainsBytesInWriting(int len);
+  void newBuffer(int len);
 
-    public default boolean channelWriteFinished() {
-        boolean b = channelWriteStartIndex() == channelWriteEndIndex();
-        return b;
-    }
+  void expendToLengthIfNeedInReading(int length);
 
-    public default boolean channelReadFinished() {
-        return channelReadStartIndex() == channelReadEndIndex();
-    }
+  void appendLengthIfInReading(int length);
 
-    public ProxyBuffer applyChannelWritingIndex();
+  void appendLengthIfInReading(int length, boolean c);
 
-    //    {
-//        ByteBuffer buffer = buffers();
-//        buffer.position(channelWriteStartIndex());
-//        buffer.limit(channelWriteEndIndex());
-//        return this;
-//    }
-    void cutRangeBytesInReading(int start, int end);
+  void compactInChannelReadingIfNeed();
 
-    public ProxyBuffer applyChannelReadingIndex();
-//    {
-//        ByteBuffer buffer = buffers();
-//        buffer.position(channelReadStartIndex());
-//        buffer.limit(channelReadEndIndex());
-//        return this;
-//    }
 
-    public void applyChannelWritingIndexForChannelReadingIndex();
-//    {
-//        ByteBuffer buffer = buffers();
-//        channelReadStartIndex(channelWriteStartIndex());
-//        channelReadEndIndex(channelWriteEndIndex());
-//    }
+  ProxyBuffer newBufferIfNeed();
+
+
+  default boolean channelWriteFinished() {
+    return channelWriteStartIndex() == channelWriteEndIndex();
+  }
+
+  default boolean channelReadFinished() {
+    return channelReadStartIndex() == channelReadEndIndex();
+  }
+
+  ProxyBuffer applyChannelWritingIndex();
+
+  void cutRangeBytesInReading(int start, int end);
+
+  ProxyBuffer applyChannelReadingIndex();
+
+  void applyChannelWritingIndexForChannelReadingIndex();
+
+  int remainsInReading();
 }

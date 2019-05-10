@@ -19,6 +19,7 @@ package io.mycat.proxy.session;
 import io.mycat.proxy.MainMySQLNIOHandler;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.session.SessionManager.BackendSessionManager;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.BackendConCreateTask;
 import io.mycat.replica.MySQLDatasource;
@@ -28,7 +29,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MySQLSessionManager implements BackendSessionManager<MySQLClientSession, MySQLDatasource> {
+public class MySQLSessionManager implements
+    BackendSessionManager<MySQLClientSession, MySQLDatasource> {
     LinkedList<MySQLClientSession> allSessions = new LinkedList<>();
     HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
     private int count = 0;

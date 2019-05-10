@@ -1,18 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.packet;
 
@@ -123,7 +121,9 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   boolean clientDeprecateEof();
 
   int capabilityFlags();
+
   void setCapabilityFlags(int serverCapability);
+
   int setRemainsBytes(int remainsBytes);
 
   int getRemainsBytes();
@@ -236,7 +236,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       return false;
     }
     int length = (int) mySQLPacket.getFixInt(startIndex, 3);
-    if (length>1000){
+    if (length > 1000) {
       System.out.println();
     }
     logger.debug("body:" + length);
@@ -253,10 +253,13 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     } else {
       packetLength = packetLength + 4;
     }
-    ((ProxyBuffer) mySQLPacket).expendToLengthIfNeedInReading(startIndex + packetLength);
+    int endPos = startIndex + packetLength;
+    if (mySQLPacket.currentBuffer().capacity() < endPos) {
+      ((ProxyBuffer) mySQLPacket).expendToLengthIfNeedInReading(endPos);
+    }
     if (packetLength <= (wholePakcetSize)) {
       setStartPos(startIndex);
-      setEndPos(startIndex + packetLength);
+      setEndPos(endPos);
       logger.debug("packetLength:" + packetLength);
       logger.debug("startPos:" + getStartPos());
       logger.debug("endPos:" + getEndPos());
@@ -276,8 +279,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       setPayloadFinished(isEnd && getRemainsBytes() == 0);
       if (isEnd) {
         resolvePayloadType(getHead(), true, true, currentProxybuffer(), getPayloadLength());
-      } else {
-
       }
       return isEnd;
     } else {
@@ -288,14 +289,14 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   default int getAndIncrementPacketId() {
     int packetId = getPacketId();
-    int i = packetId + 1;
-    setPacketId(i == 256 ? 0 : i);
+    byte i = (byte) (packetId + 1);
+    setPacketId(i);
     return packetId;
   }
 
   default int incrementPacketIdAndGet() {
     int packetId = getPacketId();
-    int i = packetId + 1;
+    byte i = (byte) (packetId + 1);
     setPacketId(i);
     return i;
   }
@@ -379,7 +380,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           logger.debug("packetLength:" + packetLength);
           logger.debug("startPos:" + getStartPos());
           logger.debug("endPos:" + getEndPos());
-          System.out.println("remains:" + remains);
+          System.out.println("remainsInReading:" + remains);
         }
       } else {
         if (receiveSize >= remains) {
@@ -406,7 +407,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 //            }
       setPayloadFinished(isEnd && remains == 0);
       if (isEnd) {
-        resolvePayloadType(getHead(), isPayloadFinished(), true, currentProxybuffer(), getPayloadLength());
+        resolvePayloadType(getHead(), isPayloadFinished(), true, currentProxybuffer(),
+            getPayloadLength());
       }
       return true;
     }
@@ -510,7 +512,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           setMySQLPayloadType(FIRST_EOF);
           return;
         } else {
-          int count =   (int) mySQLPacket.getLenencInt(getStartPos() + MySQLPacket.getPacketHeaderSize());
+          int count = (int) mySQLPacket
+                                .getLenencInt(getStartPos() + MySQLPacket.getPacketHeaderSize());
           setColumnCount(count);
           setState(COLUMN_DEFINITION);
           setMySQLPayloadType(COLUMN_COUNT);
@@ -648,7 +651,9 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     setOkAffectedRows(buffer.readLenencInt());//affectedRows
     setOkLastInsertId(buffer.readLenencInt());//lastInsertId
     int capabilityFlags = capabilityFlags();
-    if (MySQLServerCapabilityFlags.isClientProtocol41(capabilityFlags) || MySQLServerCapabilityFlags.isKnowsAboutTransactions(capabilityFlags)) {
+    if (MySQLServerCapabilityFlags.isClientProtocol41(capabilityFlags) || MySQLServerCapabilityFlags
+                                                                              .isKnowsAboutTransactions(
+                                                                                  capabilityFlags)) {
       setServerStatus(serverStatus = (int) buffer.readFixInt(2));
       buffer.packetReadStartIndex(bpStartIndex);
       buffer.packetReadEndIndex(bpEndIndex);

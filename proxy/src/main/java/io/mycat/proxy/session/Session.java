@@ -25,13 +25,13 @@ import org.slf4j.LoggerFactory;
 
 public interface Session<T extends Session> {
 
-  final static Logger logger = LoggerFactory.getLogger(Session.class);
+  Logger logger = LoggerFactory.getLogger(Session.class);
 
-  public SocketChannel channel();
+  SocketChannel channel();
 
   boolean isClosed();
 
-  public NIOHandler getCurNIOHandler();
+  NIOHandler getCurNIOHandler();
 
   /**
    * 会话关闭时候的的动作，需要清理释放资源
@@ -40,39 +40,40 @@ public interface Session<T extends Session> {
 
   int sessionId();
 
-  public void updateLastActiveTime();
+  void updateLastActiveTime();
 
-  public void writeToChannel() throws IOException;
+  void writeToChannel() throws IOException;
 
-  public default void writeFinished(T session) throws IOException {
+  default void writeFinished(T session) throws IOException {
     session.getCurNIOHandler().onWriteFinished(session);
   }
 
 
-  public boolean readFromChannel() throws IOException;
+  boolean readFromChannel() throws IOException;
 
-  public default void setCallBack(AsynTaskCallBack<T> callBack) {
+  default void setCallBack(AsynTaskCallBack<T> callBack) {
     throw new MycatExpection("unsupport!");
   }
 
-  public void setLastThrowable(Throwable e);
+  void setLastThrowable(Throwable e);
 
-  public boolean hasError();
+  boolean hasError();
 
-  public Throwable getLastThrowableAndReset();
+  Throwable getLastThrowableAndReset();
 
-  public void change2ReadOpts();
+  void change2ReadOpts();
 
-  public void clearReadWriteOpts();
+  void clearReadWriteOpts();
 
-  public void change2WriteOpts();
+  void change2WriteOpts();
 
 
-  public String getLastThrowableInfoTextAndReset();
+  String getLastThrowableInfoTextAndReset();
 
-  public default MycatReactorThread getMycatReactorThread() {
+  default MycatReactorThread getMycatReactorThread() {
     Thread thread = Thread.currentThread();
     return (MycatReactorThread) thread;
   }
+
 
 }

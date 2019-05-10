@@ -1,30 +1,28 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.buffer;
 
 import io.mycat.MycatExpection;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.util.DumpUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBufferImpl> {
+
   ByteBuffer buffer;
   BufferPool bufferPool;
   int readStartIndex;
@@ -105,7 +103,6 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   }
 
 
-
   @Override
   public byte get(int index) {
     return buffer.get(index);
@@ -127,9 +124,11 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   public void put(byte[] bytes, int offset, int legnth) {
     buffer.put(bytes, offset, legnth);
   }
+
   public void put(byte[] bytes) {
     buffer.put(bytes);
   }
+
   @Override
   public int channelWriteStartIndex() {
     return buffer.position();
@@ -185,9 +184,9 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
         throw new MycatExpection("readed zero bytes ,Maybe a bug ,please fix it !!!!");
       }
       this.channelReadEndIndex(buffer.position());
-      System.out.println("rec:");
-      System.out.println(
-          DumpUtil.dumpAsHex(buffer, 0,      buffer.position()));
+//      System.out.println("rec:");
+//      System.out.println(
+//          DumpUtil.dumpAsHex(buffer, 0,      buffer.position()));
       return readed > 0;
     } catch (Exception e) {
       throw e;
@@ -231,7 +230,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   @Override
   public void writeToChannel(SocketChannel channel) throws IOException {
     applyChannelWritingIndex();
-    System.out.println(DumpUtil.dumpAsHex(buffer,buffer.limit()));
+    //System.out.println(DumpUtil.dumpAsHex(buffer,buffer.limit()));
     if (channel.write(buffer) == -1) {
       logger.warn("Read EOF ,socket closed ");
       throw new ClosedChannelException();
@@ -413,8 +412,8 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
 //    @Override
 //    public void compactOrExpendIfNeedRemainsBytesInWriting(int len) {
 //        this.compactInChannelWritingIfNeed();
-//        int remains = this.channelWriteEndIndex() - this.channelWriteStartIndex();
-//        if (remains < len) {
+//        int remainsInReading = this.channelWriteEndIndex() - this.channelWriteStartIndex();
+//        if (remainsInReading < len) {
 //            expend(this.channelWriteEndIndex() + len);
 //        }
 //    }
@@ -458,11 +457,16 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     channelReadEndIndex(channelWriteEndIndex());
   }
 
+  @Override
+  public int remainsInReading() {
+    return this.capacity() - readEndIndex;
+  }
+
 //    @Override
 //    public void compactOrExpendIfNeedRemainsBytesInReading(int len) {
 //        this.compactInChannelReadingIfNeed();
-//        int remains = this.channelReadEndIndex() - this.channelReadStartIndex();
-//        if (remains < len) {
+//        int remainsInReading = this.channelReadEndIndex() - this.channelReadStartIndex();
+//        if (remainsInReading < len) {
 //            expend(this.channelReadEndIndex() + len);
 //        }
 //    }

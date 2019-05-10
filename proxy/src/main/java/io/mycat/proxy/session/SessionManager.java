@@ -17,6 +17,11 @@
 package io.mycat.proxy.session;
 
 import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.buffer.BufferPool;
+import io.mycat.proxy.task.AsynTaskCallBack;
+import java.io.IOException;
+import java.nio.channels.Selector;
+import java.nio.channels.SocketChannel;
 import java.util.Collection;
 
 public interface SessionManager<T extends Session> {
@@ -27,24 +32,43 @@ public interface SessionManager<T extends Session> {
 	 * 
 	 * @return
 	 */
-	public Collection<T> getAllSessions();
+	Collection<T> getAllSessions();
 
 	/**
 	 * 获取当前Session数量
 	 * @return count
 	 */
-	public int curSessionCount();
+	int curSessionCount();
 
 	/**
 	 * 获取默认的Session处理句柄
 	 * @return
 	 */
-	public NIOHandler<T> getDefaultSessionHandler();
+	NIOHandler<T> getDefaultSessionHandler();
 
 	/**
 	 * 从管理器中移除Session
 	 * @param session
 	 */
-	public void removeSession(T session);
+	void removeSession(T session);
+
+	interface FrontSessionManager<T extends Session> extends SessionManager<T> {
+
+		T acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool, Selector selector,
+				SocketChannel socketChannel) throws IOException;
+	}
+
+	interface BackendSessionManager<T extends Session, ARG> extends SessionManager<T> {
+
+		void getIdleSessionsOfKey(ARG key, AsynTaskCallBack<T> asynTaskCallBack);
+
+		void addIdleSession(T Session);
+
+		void removeIdleSession(T Session);
+
+		void createSession(ARG key, AsynTaskCallBack<T> callBack);
+
+		void clearAndDestroyMySQLSession(ARG dsMetaBean, String reason);
+	}
 
 }

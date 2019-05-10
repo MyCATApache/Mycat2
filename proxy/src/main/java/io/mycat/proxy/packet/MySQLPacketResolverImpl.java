@@ -87,12 +87,12 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public boolean readFromChannel() throws IOException {
-    return session.readFromChannel();
+    throw new MycatExpection("");
   }
 
   @Override
   public void writeToChannel() throws IOException {
-    session.writeToChannel();
+    throw new MycatExpection("");
   }
 
 
@@ -128,7 +128,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public int setStartPos(int i) {
-    System.out.println("startPos:" + i);
     return startPos = i;
   }
 
