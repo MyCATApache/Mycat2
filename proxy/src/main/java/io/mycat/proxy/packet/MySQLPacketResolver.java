@@ -84,8 +84,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   void setMySQLPayloadType(MySQLPayloadType type);
 
-  int getWholePacketStartPos();
-
   int setPacketId(int packetId);
 
   int getPacketId();
@@ -129,12 +127,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   int setRemainsBytes(int remainsBytes);
 
   int getRemainsBytes();
-
-  void setWholePacketStartPos(int length);
-
-  int getWholePacketEndPos();
-
-  void setWholePacketEndPos(int length);
 
   int getPayloadLength();
 
@@ -213,21 +205,16 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     int payloadStartIndex = getStartPos() + 4;
     int payloadEndIndex = getEndPos();
     if (!multiPacket && !lastIsMultiPacket) {
-      setWholePacketStartPos(getStartPos());
-      setWholePacketEndPos(getEndPos());
-
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       return true;
     }
     if (multiPacket && !lastIsMultiPacket) {
-      setWholePacketStartPos(getStartPos());
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       return false;
     }
     if (!multiPacket && lastIsMultiPacket) {
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       setEndPos(payloadEndIndex);
-      setWholePacketEndPos(payloadEndIndex);
     }
     if (multiPacket && lastIsMultiPacket) {
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);

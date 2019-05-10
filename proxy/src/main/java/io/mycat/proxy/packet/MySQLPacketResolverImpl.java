@@ -46,8 +46,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   int lastInsertId;
   int serverStatus;
   byte okSessionStateInfoType;
-  int wholePacketStartPos;
-  int wholePacketEndPos;
   final MySQLProxySession session;
   int capabilityFlags;
   MySQLPayloadType mySQLPacketProcessType;
@@ -65,27 +63,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
   public void setMySQLPayloadType(MySQLPayloadType type) {
     this.mySQLPacketProcessType = type;
   }
-
-  @Override
-  public void setWholePacketStartPos(int length) {
-    wholePacketStartPos = length;
-  }
-
-  @Override
-  public void setWholePacketEndPos(int length) {
-    wholePacketEndPos = length;
-  }
-
-  @Override
-  public int getWholePacketStartPos() {
-    return wholePacketStartPos;
-  }
-
-  @Override
-  public int getWholePacketEndPos() {
-    return wholePacketEndPos;
-  }
-
 
   @Override
   public void setPayloadLength(int length) {
@@ -162,7 +139,6 @@ public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public int setEndPos(int i) {
-    System.out.println("endPos:" + i);
     return endPos = i;
   }
 
