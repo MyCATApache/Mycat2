@@ -1,12 +1,10 @@
-package io.mycat.proxy.payload;
+package io.mycat.proxy.packet;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.PacketSplitter;
+import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.packet.ColumnDefPacketImpl;
-import io.mycat.proxy.packet.ErrorPacketImpl;
-import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.packet.PacketSplitterImpl;
 import io.mycat.util.ByteArrayOutput;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;

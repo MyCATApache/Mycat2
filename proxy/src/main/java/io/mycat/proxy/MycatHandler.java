@@ -20,9 +20,9 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public enum MainMycatNIOHandler implements NIOHandler<MycatSession> {
+public enum MycatHandler implements NIOHandler<MycatSession> {
   INSTANCE;
-  private static final Logger logger = LoggerFactory.getLogger(MainMycatNIOHandler.class);
+  private static final Logger logger = LoggerFactory.getLogger(MycatHandler.class);
 
   @Override
   public void onSocketRead(MycatSession mycat) throws IOException {

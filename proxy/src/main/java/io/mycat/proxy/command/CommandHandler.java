@@ -59,11 +59,11 @@ import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.config.schema.TableDefConfig.MycatTableType;
 import io.mycat.proxy.MultiMySQLQueryTask;
-import io.mycat.proxy.MySQLProxyHandler;
+import io.mycat.proxy.MySQLPacketExchanger;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.executer.RouteResultExecuter;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.payload.MySQLPacketUtil;
+import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLServerSession.WriteHandler;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
@@ -167,7 +167,7 @@ public enum CommandHandler {
           if (bufferSQLContext.getTableCount() == 1 && tableName != null) {
             String s = mycat.getSchema().getTableByTableName(tableName).getDataNodes().get(0);
             mycat.setDataNode(s);
-            MySQLProxyHandler.INSTANCE.handle(mycat);
+            MySQLPacketExchanger.INSTANCE.handle(mycat);
             return;
           }
         } catch (Exception e) {
@@ -277,7 +277,7 @@ public enum CommandHandler {
                   (session, sender, success, result, attr) -> {
                     try {
                       mycat.rebuildProxyRequest(sqlBytes);
-                      MySQLProxyHandler.INSTANCE.handle(mycat);
+                      MySQLPacketExchanger.INSTANCE.handle(mycat);
                     } catch (Exception e) {
                       mycat.resetPacket();
                       mycat.writeErrorEndPacket();
@@ -293,7 +293,7 @@ public enum CommandHandler {
           String defaultDataNode = mycat.getSchema().getDefaultDataNode();
           mycat.rebuildProxyRequest(sqlBytes);
           mycat.setDataNode(defaultDataNode);
-          MySQLProxyHandler.INSTANCE.handle(mycat);
+          MySQLPacketExchanger.INSTANCE.handle(mycat);
         }
       }
     }

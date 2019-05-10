@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.MainMySQLNIOHandler;
+import io.mycat.proxy.MySQLPacketExchanger;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
@@ -115,7 +115,7 @@ public class MySQLSessionManager implements
 
     @Override
     public NIOHandler<MySQLClientSession> getDefaultSessionHandler() {
-        return MainMySQLNIOHandler.INSTANCE;
+        return MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE;
     }
 
 }

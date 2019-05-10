@@ -1,8 +1,8 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
-import io.mycat.proxy.MainMycatNIOHandler.MycatSessionWriteHandler;
-import io.mycat.proxy.MySQLProxyHandler;
+import io.mycat.proxy.MySQLPacketExchanger;
+import io.mycat.proxy.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -37,9 +37,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   MySQLPacketResolver getPacketResolver();
 
-  default void switchMySQLProxyWriteHandler() {
-
-  }
+  void switchMySQLProxy();
 
   default void rebuildProxyRequest(byte[] bytes) {
     ProxyBuffer proxyBuffer = this.currentProxyBuffer();
@@ -66,7 +64,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   }
 
   default void writeProxyBufferToChannel(byte[] bytes) throws IOException {
-    switchMySQLProxyWriteHandler();
+    switchMySQLProxy();
     writeProxyBufferToChannel(this, bytes);
   }
 
@@ -110,7 +108,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   }
 
   default void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
-    switchMySQLProxyWriteHandler();
+    switchMySQLProxy();
     this.setCurrentProxyBuffer(proxyBuffer);
     this.writeToChannel();
   }
@@ -154,7 +152,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
         } else {
           MySQLClientSession backend = proxySession.getBackend();
           if (backend != null) {
-            MySQLProxyHandler.INSTANCE.onFrontWriteFinished(proxySession);
+            MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(proxySession);
           } else {
             onWriteFinished(proxySession);
           }

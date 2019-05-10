@@ -16,11 +16,11 @@
  */
 package io.mycat.proxy.task;
 
+import io.mycat.beans.mysql.packet.PacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.PacketSplitter;
 import io.mycat.proxy.session.AbstractMySQLClientSession;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.io.IOException;

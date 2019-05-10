@@ -22,8 +22,10 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLProxySession.WriteHandler;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public enum MySQLProxyHandler {
+public enum MySQLPacketExchanger {
   INSTANCE;
 
   public boolean handle(MycatSession mycat) throws IOException {
@@ -31,7 +33,7 @@ public enum MySQLProxyHandler {
     ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
     proxyBuffer.channelWriteStartIndex(0);
     proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
-    MySQLDataNode dataNode = (MySQLDataNode) MycatRuntime.INSTANCE
+    MySQLDataNode dataNode = MycatRuntime.INSTANCE
                                                  .getDataNodeByName(mycat.getDataNode());
     writeProxyBufferToDataNode(mycat, proxyBuffer, dataNode);
     return false;
@@ -128,6 +130,31 @@ public enum MySQLProxyHandler {
 
   public void clearResouces(MySQLClientSession mysql, boolean sessionCLosed) {
 
+  }
+
+  public enum MySQLProxyNIOHandler implements NIOHandler<MySQLClientSession> {
+    INSTANCE;
+    protected final static Logger logger = LoggerFactory.getLogger(MySQLProxyNIOHandler.class);
+    static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
+
+    @Override
+    public void onSocketRead(MySQLClientSession session) throws IOException {
+      HANDLER.onBackendResponse(session);
+    }
+
+    @Override
+    public void onWriteFinished(MySQLClientSession session) throws IOException {
+      HANDLER.onBackendWriteFinished(session);
+    }
+
+    @Override
+    public void onSocketClosed(MySQLClientSession session, boolean normal) {
+      try {
+        HANDLER.onBackendClosed(session, normal);
+      } catch (IOException e) {
+        logger.warn("MySQL Session {} onSocketClosed caught err ", session, e);
+      }
+    }
   }
 
 }

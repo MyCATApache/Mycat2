@@ -1,12 +1,12 @@
 package io.mycat.proxy.session;
 
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.beans.mysql.packet.PacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.MainMycatNIOHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.payload.MySQLPacketUtil;
+import io.mycat.proxy.packet.MySQLPacketUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;

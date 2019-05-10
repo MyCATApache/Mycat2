@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql.packet;
 
 public interface LongDataPacket {
 
@@ -28,7 +28,7 @@ public interface LongDataPacket {
 
   void setLongData(byte[] longData);
 
-  default void readPayload(MySQLPacket buffer, int payloadLength) {
+  default void readPayload(MySQLPayloadReader buffer, int payloadLength) {
     assert buffer.readByte() == 0x18;
     this.setLongDataStatementId(buffer.readFixInt(4));
     this.setLongDataParamId((int) buffer.readFixInt(2));
@@ -36,7 +36,7 @@ public interface LongDataPacket {
   }
 
 
-  default void writePayload(MySQLPacket buffer) {
+  default void writePayload(MySQLPayloadWriter buffer) {
     buffer.writeByte((byte) 0x18);
     buffer.writeFixInt(4, getLongDataStatementId());
     buffer.writeFixInt(2, getLongDataParamId());

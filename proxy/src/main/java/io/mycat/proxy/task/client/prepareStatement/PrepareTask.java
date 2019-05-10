@@ -18,10 +18,10 @@ package io.mycat.proxy.task.client.prepareStatement;
 
 import io.mycat.beans.mysql.MySQLPStmtBindValueList;
 import io.mycat.beans.mysql.MySQLPreparedStatement;
+import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.proxy.packet.ColumnDefPacket;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.PreparedOKPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;

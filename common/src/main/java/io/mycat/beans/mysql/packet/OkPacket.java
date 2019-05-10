@@ -12,23 +12,40 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql.packet;
 
-public interface PreparedOKPacket {
+public interface OkPacket {
 
-  public long getPreparedOkStatementId();
+  int getOkAffectedRows();
 
-  public void setPreparedOkStatementId(long statementId);
+  void setOkAffectedRows(int affectedRows);
 
-  public int getPrepareOkColumnsCount();
+  int getOkLastInsertId();
 
-  public void setPrepareOkColumnsCount(int columnsNumber);
+  void setOkLastInsertId(int lastInsertId);
 
-  public int getPrepareOkParametersCount();
+  int getServerStatus();
 
-  public void setPrepareOkParametersCount(int parametersNumber);
+  int setServerStatus(int serverStatus);
 
-  public int getPreparedOkWarningCount();
+  int getOkWarningCount();
 
-  public void setPreparedOkWarningCount(int warningCount);
+  void setOkWarningCount(int warningCount);
+
+  byte[] getOkStatusInfo();
+
+  void setOkStatusInfo(byte[] statusInfo);
+
+  byte getOkSessionStateInfoType();
+
+  void setOkSessionStateInfoType(byte sessionStateInfoType);
+
+  byte[] getOkSessionStateInfoTypeData();
+
+  void setOkSessionStateInfoTypeData(byte[] sessionStateInfoTypeData);
+
+  byte[] getOkMessage();
+
+  void setOkMessage(byte[] message);
+
 }

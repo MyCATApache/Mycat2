@@ -14,14 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql.packet;
 
 public interface EOFPacket {
-    public int getEofWarningCount();
 
-    public void setEofWarningCount(int warningCount) ;
+    int getEofWarningCount();
 
-    public int getEofServerStatus() ;
+    void setEofWarningCount(int warningCount);
 
-    public int setEofServerStatus(int status);
+    int getEofServerStatus();
+
+    int setEofServerStatus(int status);
 }

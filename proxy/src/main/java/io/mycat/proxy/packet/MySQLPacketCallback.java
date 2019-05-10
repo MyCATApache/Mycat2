@@ -16,6 +16,8 @@
  */
 package io.mycat.proxy.packet;
 
+import io.mycat.beans.mysql.packet.EOFPacket;
+import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 
 public interface MySQLPacketCallback {

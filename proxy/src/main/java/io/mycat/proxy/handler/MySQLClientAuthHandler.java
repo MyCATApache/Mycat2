@@ -21,7 +21,7 @@ import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.MainMycatNIOHandler;
+import io.mycat.proxy.MycatHandler;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.packet.AuthPacketImpl;
@@ -67,7 +67,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     MycatSchema defaultSchema = MycatRuntime.INSTANCE.getDefaultSchema();
     mycat.setSchema(defaultSchema);
     mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
-    MySQLDataNode dataNode = (MySQLDataNode) MycatRuntime.INSTANCE.getDataNodeByName(
+    MySQLDataNode dataNode = MycatRuntime.INSTANCE.getDataNodeByName(
         defaultSchema.getDefaultDataNode());
     MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
     MySQLCollationIndex collationIndex = replica.getCollationIndex();
@@ -91,7 +91,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
       mycat.change2ReadOpts();
     } else {
       mycat.resetPacket();
-      mycat.switchNioHandler(MainMycatNIOHandler.INSTANCE);
+      mycat.switchNioHandler(MycatHandler.INSTANCE);
     }
   }
 

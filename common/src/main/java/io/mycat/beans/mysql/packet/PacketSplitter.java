@@ -14,21 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql.packet;
 
 /**
  * copy form com.mysql.cj.protocol.a
  */
 public interface PacketSplitter {
     // static final int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
-    public static final int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
+    int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
 
     default void init(int totalSize) {
         setTotalSizeInPacketSplitter(totalSize);
         setPacketLenInPacketSplitter(0);
         setOffsetInPacketSplitter(0);
     }
-    public static int caculWholePacketSize(int payloadLen){
+
+  static int caculWholePacketSize(int payloadLen) {
       return   (payloadLen / (PacketSplitter.MAX_PACKET_SIZE)+1) * 4;
     }
     default boolean nextPacketInPacketSplitter() {
@@ -57,16 +58,16 @@ public interface PacketSplitter {
         return offset < totalSize;
     }
 
-    public int getTotalSizeInPacketSplitter();
+  int getTotalSizeInPacketSplitter();
 
-    public void setTotalSizeInPacketSplitter(int totalSize);
+  void setTotalSizeInPacketSplitter(int totalSize);
 
-    public int getPacketLenInPacketSplitter();
+  int getPacketLenInPacketSplitter();
 
-    public void setPacketLenInPacketSplitter(int currentPacketLen);
+  void setPacketLenInPacketSplitter(int currentPacketLen);
 
-    public void setOffsetInPacketSplitter(int offset);
+  int getOffsetInPacketSplitter();
 
-    public int getOffsetInPacketSplitter();
+  void setOffsetInPacketSplitter(int offset);
 
 }

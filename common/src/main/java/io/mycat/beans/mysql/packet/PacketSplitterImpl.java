@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql.packet;
 
 public class PacketSplitterImpl implements PacketSplitter {
     int totalSize;

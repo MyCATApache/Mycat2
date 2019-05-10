@@ -18,7 +18,7 @@ package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.MainMycatNIOHandler;
+import io.mycat.proxy.MycatHandler;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.handler.MySQLClientAuthHandler;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
@@ -43,7 +43,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
     @Override
     public NIOHandler<MycatSession> getDefaultSessionHandler() {
-        return MainMycatNIOHandler.INSTANCE;
+      return MycatHandler.INSTANCE;
     }
 
     @Override

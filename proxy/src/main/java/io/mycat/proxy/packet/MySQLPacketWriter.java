@@ -1,12 +1,14 @@
-package io.mycat.proxy.payload;
+package io.mycat.proxy.packet;
 
+import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
 import io.mycat.util.ByteArrayOutput;
 
 /**
  * @author jamie12221
  * @date 2019-05-07 21:47
  **/
-public class MySQLPacketWriter extends ByteArrayOutput implements MySQLPayloadWriter<MySQLPacketWriter> {
+public class MySQLPacketWriter extends ByteArrayOutput implements
+    MySQLPayloadWriter<MySQLPacketWriter> {
 
   public MySQLPacketWriter() {
   }

@@ -17,8 +17,9 @@
 package io.mycat.proxy.packet;
 
 
+import io.mycat.beans.mysql.packet.ErrorPacket;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.payload.MySQLPayloadWriter;
 
 /**
  * https://mariadb.com/kb/en/library/err_packet/

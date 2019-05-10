@@ -17,6 +17,7 @@ package io.mycat.proxy.session;
 import io.mycat.MySQLAPI;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.proxy.MySQLPacketExchanger.MySQLProxyNIOHandler;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -149,6 +150,11 @@ public class MySQLClientSession extends AbstractMySQLClientSession implements My
   @Override
   public void setCurrentProxyBuffer(ProxyBuffer buffer) {
     this.proxyBuffer = buffer;
+  }
+
+  @Override
+  public void switchMySQLProxy() {
+    switchNioHandler(MySQLProxyNIOHandler.INSTANCE);
   }
 
   @Override

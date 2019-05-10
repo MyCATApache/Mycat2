@@ -17,12 +17,12 @@
 package io.mycat.proxy.task.client.prepareStatement;
 
 import io.mycat.beans.mysql.MySQLPreparedStatement;
+import io.mycat.beans.mysql.packet.PacketSplitter;
+import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.packet.PacketSplitterImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;

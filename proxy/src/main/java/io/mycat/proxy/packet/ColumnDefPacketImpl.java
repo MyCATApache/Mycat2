@@ -15,7 +15,7 @@
 package io.mycat.proxy.packet;
 
 import io.mycat.beans.mysql.MySQLFieldInfo;
-import io.mycat.proxy.payload.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 

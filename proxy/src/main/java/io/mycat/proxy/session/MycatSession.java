@@ -20,10 +20,12 @@ import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.packet.PacketSplitter;
+import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.MainMycatNIOHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -32,8 +34,6 @@ import io.mycat.proxy.executer.MySQLDataNodeExecuter;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
-import io.mycat.proxy.packet.PacketSplitter;
-import io.mycat.proxy.packet.PacketSplitterImpl;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -156,7 +156,7 @@ public class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public void switchMySQLProxyWriteHandler() {
+  public void switchMySQLProxy() {
     this.writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
   }
 

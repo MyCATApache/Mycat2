@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.payload;
+package io.mycat.beans.mysql.packet;
 
 public interface MySQLPayloadWriter<T extends MySQLPayloadWriter<T>> {
 
@@ -32,6 +32,7 @@ public interface MySQLPayloadWriter<T extends MySQLPayloadWriter<T>> {
 
   T writeLenencString(String val);
 
+  T writeBytes(byte[] bytes);
   T writeBytes(byte[] bytes, int offset, int length);
 
   T writeNULString(String val);

@@ -12,45 +12,23 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.payload;
+package io.mycat.beans.mysql.packet;
 
-public interface MySQLPayloadReader<T extends MySQLPayloadReader<T>> {
+public interface PreparedOKPacket {
 
-  int length();
+  long getPreparedOkStatementId();
 
-  long readFixInt(int length);
+  void setPreparedOkStatementId(long statementId);
 
-  int readLenencInt();
+  int getPrepareOkColumnsCount();
 
-  String readFixString(int length);
+  void setPrepareOkColumnsCount(int columnsNumber);
 
-  String readLenencString();
+  int getPrepareOkParametersCount();
 
-  byte[] readLenencStringBytes();
+  void setPrepareOkParametersCount(int parametersNumber);
 
-  byte[] readNULStringBytes();
+  int getPreparedOkWarningCount();
 
-  String readNULString();
-
-  byte[] readEOFStringBytes();
-
-  String readEOFString();
-
-  byte[] readBytes(int length);
-
-  byte[] readFixStringBytes(int length);
-
-  byte readByte();
-
-  byte[] readLenencBytes();
-
-  long readLong();
-
-  double readDouble();
-
-  void reset();
-
-  void skipInReading(int i);
-
-  boolean readFinished();
+  void setPreparedOkWarningCount(int warningCount);
 }

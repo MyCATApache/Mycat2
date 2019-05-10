@@ -14,54 +14,21 @@
  */
 package io.mycat.proxy.packet;
 
+import io.mycat.beans.mysql.packet.MySQLPayloadReader;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.proxy.payload.MySQLPayloadReader;
-import io.mycat.proxy.payload.MySQLPayloadWriter;
 import java.nio.ByteBuffer;
 
 
 public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, MySQLPayloadWriter {
 
-  public final static byte[] EMPTY_BYTE_ARRAY = new byte[]{};
+  byte[] EMPTY_BYTE_ARRAY = new byte[]{};
 
-  public static int getPacketHeaderSize() {
+  static int getPacketHeaderSize() {
     return 4;
   }
 
   T currentBuffer();
-
-  public default boolean multiPackets() {
-    return false;
-  }
-
-  public void reset();
-
-  public int packetReadStartIndex();
-
-  public int packetReadStartIndex(int index);
-
-  public int packetReadEndIndex();
-
-  public int packetReadEndIndex(int endPos);
-
-  public default int packetReadStartIndexAdd(int len) {
-    return packetReadStartIndex(packetReadStartIndex() + len);
-  }
-
-  public int packetWriteIndex();
-
-  public int packetWriteIndex(int index);
-
-  public default int skip4() {
-    return packetWriteIndex(packetWriteIndex() + 4);
-  }
-
-  public default int packetWriteIndexAdd(int len) {
-    return packetWriteIndex(packetWriteIndex() + len);
-  }
-//
-//    public T appendInReading(T packet);
-//    public T appendInWriting(T packet);
 
   /**
    * 获取lenenc占用的字节长度
@@ -69,7 +36,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
    * @param lenenc 值
    * @return 长度
    */
-  public static int getLenencLength(int lenenc) {
+  static int getLenencLength(int lenenc) {
     if (lenenc < 251) {
       return 1;
     } else if (lenenc >= 251 && lenenc < (1 << 16)) {
@@ -81,27 +48,76 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     }
   }
 
-  public default MySQLPacket writeBytes(byte[] bytes) {
+  static int getInt(ByteBuffer buffer, int length) {
+    int rv = 0;
+    for (int i = 0; i < length; i++) {
+      byte b = buffer.get();
+      rv |= (((long) b) & 0xFF) << (i * 8);
+    }
+    return rv;
+  }
+
+  static void writeFixIntByteBuffer(ByteBuffer buffer, int length, long val) {
+    for (int i = 0; i < length; i++) {
+      byte b = (byte) ((val >>> (i * 8)) & 0xFF);
+      buffer.put(b);
+    }
+  }
+
+  default boolean multiPackets() {
+    return false;
+  }
+
+  void reset();
+
+  int packetReadStartIndex();
+
+  int packetReadStartIndex(int index);
+
+  int packetReadEndIndex();
+
+  int packetReadEndIndex(int endPos);
+
+  default int packetReadStartIndexAdd(int len) {
+    return packetReadStartIndex(packetReadStartIndex() + len);
+  }
+
+  int packetWriteIndex();
+//
+//    public T appendInReading(T packet);
+//    public T appendInWriting(T packet);
+
+  int packetWriteIndex(int index);
+
+  default int skip4() {
+    return packetWriteIndex(packetWriteIndex() + 4);
+  }
+
+  default int packetWriteIndexAdd(int len) {
+    return packetWriteIndex(packetWriteIndex() + len);
+  }
+
+  default MySQLPacket writeBytes(byte[] bytes) {
     this.writeBytes(bytes.length, bytes);
     return this;
   }
 
-  public default MySQLPacket writeCharSequence(CharSequence sequence) {
+  default MySQLPacket writeCharSequence(CharSequence sequence) {
     this.writeBytes(sequence.toString().getBytes());
     return this;
   }
 
-  public default long readFixInt(int length) {
+  default long readFixInt(int length) {
     long val = getInt(packetReadStartIndex(), length);
     packetReadStartIndexAdd(length);
     return val;
   }
 
-  public default long getFixInt(int index, int length) {
+  default long getFixInt(int index, int length) {
     return getInt(index, length);
   }
 
-  public default int readLenencInt() {
+  default int readLenencInt() {
     int index = packetReadStartIndex();
     long len = getInt(index, 1) & 0xff;
     if (len < 251) {
@@ -119,7 +135,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     }
   }
 
-  public default int getInt(int index, int length) {
+  default int getInt(int index, int length) {
     currentBuffer().position(index);
     int rv = 0;
     for (int i = 0; i < length; i++) {
@@ -129,55 +145,46 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return rv;
   }
 
-  public static int getInt(ByteBuffer buffer, int length) {
-    int rv = 0;
-    for (int i = 0; i < length; i++) {
-      byte b = buffer.get();
-      rv |= (((long) b) & 0xFF) << (i * 8);
-    }
-    return rv;
-  }
-
-  public default byte[] getBytes(int index, int length) {
+  default byte[] getBytes(int index, int length) {
     currentBuffer().position(index);
     byte[] bytes = new byte[length];
     currentBuffer().get(bytes);
     return bytes;
   }
 
-  public default byte getByte(int index) {
+  default byte getByte(int index) {
     return currentBuffer().get(index);
   }
 
-  public default String getFixString(int index, int length) {
+  default String getFixString(int index, int length) {
     byte[] bytes = getBytes(index, length);
     return new String(bytes);
   }
 
-  public default byte[] readFixStringBytes(int length) {
+  default byte[] readFixStringBytes(int length) {
     byte[] bytes = getBytes(packetReadStartIndex(), length);
     packetReadStartIndexAdd(length);
     return bytes;
   }
 
-  public default String readFixString(int length) {
+  default String readFixString(int length) {
     byte[] bytes = getBytes(packetReadStartIndex(), length);
     packetReadStartIndexAdd(length);
     return new String(bytes);
   }
 
-  public default String getLenencString(int index) {
+  default String getLenencString(int index) {
     int strLen = (int) getLenencInt(index);
     int lenencLen = getLenencLength(strLen);
     byte[] bytes = getBytes(index + lenencLen, strLen);
     return new String(bytes);
   }
 
-  public default String readLenencString() {
+  default String readLenencString() {
     return new String(readLenencStringBytes());
   }
 
-  public default byte[] readLenencStringBytes() {
+  default byte[] readLenencStringBytes() {
     int strLen = (int) getLenencInt(packetReadStartIndex());
     int lenencLen = getLenencLength(strLen);
     byte[] bytes = getBytes(packetReadStartIndex() + lenencLen, strLen);
@@ -185,19 +192,19 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return bytes;
   }
 
-  public default String getVarString(int index, int length) {
+  default String getVarString(int index, int length) {
     return getFixString(index, length);
   }
 
-  public default String readVarString(int length) {
+  default String readVarString(int length) {
     return readFixString(length);
   }
 
-  public default String getNULString(int index) {
+  default String getNULString(int index) {
     return new String(getNULStringBytes(index));
   }
 
-  public default byte[] getNULStringBytes(int index) {
+  default byte[] getNULStringBytes(int index) {
     int strLength = 0;
     int scanIndex = index;
     int length = packetReadEndIndex();
@@ -210,38 +217,36 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return getBytes(index, strLength);
   }
 
-  public default byte[] readNULStringBytes() {
+  default byte[] readNULStringBytes() {
     byte[] rv = getNULStringBytes(packetReadStartIndex());
     packetReadStartIndexAdd(rv.length + 1);
     return rv;
   }
 
-  public default String readNULString() {
+  default String readNULString() {
     return new String(readNULStringBytes());
   }
 
-  public default byte[] getEOFStringBytes(int index) {
+  default byte[] getEOFStringBytes(int index) {
     int strLength = packetReadEndIndex() - index;
     return getBytes(index, strLength);
   }
 
-  public default byte[] readEOFStringBytes() {
+  default byte[] readEOFStringBytes() {
     byte[] rv = getEOFStringBytes(packetReadStartIndex());
     packetReadStartIndexAdd(rv.length);
     return rv;
   }
 
-
-  public default String getEOFString(int index) {
+  default String getEOFString(int index) {
     return new String(getEOFStringBytes(index));
   }
 
-  public default String readEOFString() {
+  default String readEOFString() {
     return new String(readEOFStringBytes());
   }
 
-
-  public default MySQLPacket putFixInt(int index, int length, long val) {
+  default MySQLPacket putFixInt(int index, int length, long val) {
     int index0 = index;
     for (int i = 0; i < length; i++) {
       byte b = (byte) ((val >>> (i * 8)) & 0xFF);
@@ -250,20 +255,12 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return this;
   }
 
-
-  public static void writeFixIntByteBuffer(ByteBuffer buffer, int length, long val) {
-    for (int i = 0; i < length; i++) {
-      byte b = (byte) ((val >>> (i * 8)) & 0xFF);
-      buffer.put(b);
-    }
-  }
-
-  public default MySQLPacket writeFixInt(int length, long val) {
+  default MySQLPacket writeFixInt(int length, long val) {
     putFixInt(packetWriteIndex(), length, val);
     return this;
   }
 
-  public default int putLenencIntReLenencLen(int index, long val) {
+  default int putLenencIntReLenencLen(int index, long val) {
     if (val < 251) {
       putByte(index, (byte) val);
       return 1;
@@ -282,7 +279,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     }
   }
 
-  public default MySQLPacket writeLenencInt(long val) {
+  default MySQLPacket writeLenencInt(long val) {
     if (val < 251) {
       putByte(packetWriteIndexAdd(1), (byte) val);
     } else if (val >= 251 && val < (1 << 16)) {
@@ -301,41 +298,41 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return this;
   }
 
-  public default MySQLPacket putFixString(int index, String val) {
+  default MySQLPacket putFixString(int index, String val) {
     putBytes(index, val.getBytes());
     return this;
   }
 
-  public default MySQLPacket putFixString(int index, byte[] val) {
+  default MySQLPacket putFixString(int index, byte[] val) {
     putBytes(index, val);
     return this;
   }
 
-  public default MySQLPacket writeFixString(String val) {
+  default MySQLPacket writeFixString(String val) {
     byte[] bytes = val.getBytes();
     putBytes(packetWriteIndex(), bytes);
     return this;
   }
 
-  public default MySQLPacket writeFixString(byte[] val) {
+  default MySQLPacket writeFixString(byte[] val) {
     putBytes(packetWriteIndex(), val);
     return this;
   }
 
-  public default MySQLPacket putLenencString(int index, String val) {
+  default MySQLPacket putLenencString(int index, String val) {
     byte[] bytes = val.getBytes();
     int lenencLen = this.putLenencIntReLenencLen(index, bytes.length);
     this.putFixString(index + lenencLen, bytes);
     return this;
   }
 
-  public default MySQLPacket putLenencString(int index, byte[] val) {
+  default MySQLPacket putLenencString(int index, byte[] val) {
     int lenencLen = this.putLenencIntReLenencLen(index, val.length);
     this.putFixString(index + lenencLen, val);
     return this;
   }
 
-  public default MySQLPayloadWriter writeLenencBytesWithNullable(byte[] bytes) {
+  default MySQLPayloadWriter writeLenencBytesWithNullable(byte[] bytes) {
     byte nullVal = 0;
     if (bytes == null) {
       currentBuffer().put(nullVal);
@@ -345,101 +342,101 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return this;
   }
 
-  public default MySQLPacket writeLenencString(byte[] bytes) {
+  default MySQLPacket writeLenencString(byte[] bytes) {
     putLenencString(packetWriteIndex(), bytes);
     int lenencLen = getLenencLength(bytes.length);
     return this;
   }
 
-  public default MySQLPacket writeLenencString(String val) {
+  default MySQLPacket writeLenencString(String val) {
     return writeLenencString(val.getBytes());
   }
 
-  public default MySQLPacket putBytes(int index, byte[] bytes) {
+  default MySQLPacket putBytes(int index, byte[] bytes) {
     putBytes(index, bytes, bytes.length);
     return this;
   }
 
-  public default MySQLPacket writeBytes(byte[] bytes, int offset, int length) {
+  default MySQLPacket writeBytes(byte[] bytes, int offset, int length) {
     currentBuffer().position(this.packetWriteIndex());
     currentBuffer().put(bytes, offset, length);
     return this;
   }
 
-  public default MySQLPacket writeBytes(int index, byte[] bytes, int offset, int length) {
+  default MySQLPacket writeBytes(int index, byte[] bytes, int offset, int length) {
     currentBuffer().position(index);
     currentBuffer().put(bytes, offset, length);
     return this;
   }
 
-  public default MySQLPacket putBytes(int index, byte[] bytes, int length) {
+  default MySQLPacket putBytes(int index, byte[] bytes, int length) {
     currentBuffer().position(index);
     currentBuffer().put(bytes, 0, length);
     return this;
   }
 
-  public default MySQLPacket putByte(int index, byte val) {
+  default MySQLPacket putByte(int index, byte val) {
     currentBuffer().position(index);
     currentBuffer().put(val);
     return this;
   }
 
-  public default MySQLPacket putNULString(int index, String val) {
+  default MySQLPacket putNULString(int index, String val) {
     byte[] bytes = val.getBytes();
     putFixString(index, bytes);
     putByte(bytes.length + index, (byte) 0);
     return this;
   }
 
-  public default MySQLPacket putNULString(int index, byte[] bytes) {
+  default MySQLPacket putNULString(int index, byte[] bytes) {
     putFixString(index, bytes);
     putByte(bytes.length + index, (byte) 0);
     return this;
   }
 
-  public default MySQLPacket writeNULString(String val) {
+  default MySQLPacket writeNULString(String val) {
     byte[] bytes = val.getBytes();
     putNULString(packetWriteIndex(), bytes);
     return this;
   }
 
-  public default MySQLPacket writeNULString(byte[] vals) {
+  default MySQLPacket writeNULString(byte[] vals) {
     putNULString(packetWriteIndex(), vals);
 
     return this;
   }
 
-  public default MySQLPacket writeEOFString(String val) {
+  default MySQLPacket writeEOFString(String val) {
     byte[] bytes = val.getBytes();
     putFixString(packetWriteIndex(), bytes);
 
     return this;
   }
 
-  public default MySQLPacket writeEOFStringBytes(byte[] bytes) {
+  default MySQLPacket writeEOFStringBytes(byte[] bytes) {
     putFixString(packetWriteIndex(), bytes);
     return this;
   }
 
-  public default byte[] readBytes(int length) {
+  default byte[] readBytes(int length) {
     byte[] bytes = this.getBytes(packetReadStartIndex(), length);
     packetReadStartIndexAdd(length);
     return bytes;
   }
 
-  public default MySQLPacket writeBytes(int length, byte[] bytes) {
+  default MySQLPacket writeBytes(int length, byte[] bytes) {
     this.putBytes(packetWriteIndex(), bytes, length);
     return this;
   }
 
 
-  public default MySQLPacket writeLenencBytes(byte[] bytes) {
+  default MySQLPacket writeLenencBytes(byte[] bytes) {
     int offset = this.putLenencIntReLenencLen(packetWriteIndex(), bytes.length);
     putBytes(packetWriteIndex() + offset, bytes);
     return this;
   }
 
-  public default MySQLPacket writeLenencBytes(byte[] bytes, byte[] nullValue) {
+  default MySQLPacket writeLenencBytes(byte[] bytes, byte[] nullValue) {
     if (bytes == null) {
       return writeLenencBytes(nullValue);
     } else {
@@ -448,12 +445,12 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
   }
 
 
-  public default MySQLPacket writeByte(byte val) {
+  default MySQLPacket writeByte(byte val) {
     this.putByte(packetWriteIndex(), val);
     return this;
   }
 
-  public default MySQLPacket writeReserved(int length) {
+  default MySQLPacket writeReserved(int length) {
     int i1 = packetWriteIndex();
     for (int i = 0; i < length; i++) {
       this.writeByte((byte) 0);
@@ -461,18 +458,18 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return this;
   }
 
-  public default byte readByte() {
+  default byte readByte() {
     byte val = getByte(packetReadStartIndex());
     packetReadStartIndexAdd(1);
     return val;
   }
 
-  public default byte[] getLenencBytes(int index) {
+  default byte[] getLenencBytes(int index) {
     int len = (int) getLenencInt(index);
     return getBytes(index + getLenencLength(len), len);
   }
 
-  public default long getLenencInt(int index) {
+  default long getLenencInt(int index) {
     long len = getInt(index, 1) & 0xff;
     if (len == 0xfc) {
       return getInt(index + 1, 2);
@@ -487,7 +484,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     }
   }
 
-  public default byte[] readLenencBytes() {
+  default byte[] readLenencBytes() {
     int len = (int) getLenencInt(packetReadStartIndex());
     byte[] bytes = null;
     if ((len & 0xff) == 0xfb) {
@@ -499,35 +496,35 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return bytes;
   }
 
-  public default MySQLPacket putLenencBytes(int index, byte[] bytes) {
+  default MySQLPacket putLenencBytes(int index, byte[] bytes) {
     int offset = this.putLenencIntReLenencLen(index, bytes.length);
     putBytes(index + offset, bytes);
     return this;
   }
 
-  public default boolean readFinished() {
+  default boolean readFinished() {
     return packetReadStartIndex() == packetReadEndIndex();
   }
 
-  public default void skipInReading(int i) {
+  default void skipInReading(int i) {
     packetReadStartIndexAdd(i);
   }
 
-  public default void writeSkipInWriting(int i) {
+  default void writeSkipInWriting(int i) {
     packetWriteIndex(packetWriteIndex() + i);
   }
 
-  public void writeFloat(float f);
+  void writeFloat(float f);
 
-  public float readFloat();
+  float readFloat();
 
-  public MySQLPacket writeLong(long l);
+  MySQLPacket writeLong(long l);
 
-  public long readLong();
+  long readLong();
 
-  public MySQLPacket writeDouble(double d);
+  MySQLPacket writeDouble(double d);
 
-  public double readDouble();
+  double readDouble();
 
   void writeShort(short o);
 

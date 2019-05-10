@@ -38,6 +38,9 @@ import static io.mycat.proxy.packet.MySQLPayloadType.TEXT_ROW;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.beans.mysql.packet.EOFPacket;
+import io.mycat.beans.mysql.packet.OkPacket;
+import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import java.io.IOException;
