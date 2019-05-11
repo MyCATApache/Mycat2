@@ -22,6 +22,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
+/**
+ *
+ */
 public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBufferImpl> {
 
   ByteBuffer buffer;
@@ -40,12 +43,12 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   }
 
   @Override
-  public int capacity() {
+  public final int capacity() {
     return buffer.capacity();
   }
 
   @Override
-  public int position() {
+  public final int position() {
     return buffer.position();
   }
 

@@ -14,8 +14,6 @@
  */
 package io.mycat.router;
 
-import com.fulmicoton.multiregexp.MultiPattern;
-import com.fulmicoton.multiregexp.MultiPatternSearcher;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,7 +94,7 @@ public interface SingleDataNodeDynamicAnnotation2 {
   }
 
   //SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));
-  public static void main(String[] args) throws ParseException, JSQLParserException {
+  static void main(String[] args) throws ParseException, JSQLParserException {
 
     Pattern compile = Pattern.compile(
         "((?<idExpr>(?:id = )(?<id>[0-9]))|(?<betweenExpr>(?: between )(?<left>[0-9])(?: and )(?<right>[0-9])))*");
@@ -128,21 +126,21 @@ public interface SingleDataNodeDynamicAnnotation2 {
         throw new RuntimeException();
       }
     }
-
-    MultiPatternSearcher matcher = MultiPattern
-                                       .of(textCharacteristicList)
-                                       .searcher();
-    String sql = "SELECT * FROM t where id = 1 between 1 and 9";
-    MultiPatternSearcher.Cursor cursor = matcher.search(sql);
-    Map<String, String> arg = new HashMap<>();
-    SQLMatchResult result = new SQLMatchResult(sql);
-    while (cursor.next()) {
-      int index = cursor.match();   // array with the pattern id which match ends at this position
-      String pattern = textCharacteristicList.get(index);
-      int start = cursor.start();
-      int end = cursor.end();
-      arg.put(pattern, sql.substring(start, end));
-    }
-    result.setCharacteristicPositionList(arg);
+//
+//    MultiPatternSearcher matcher = MultiPattern
+//                                       .of(textCharacteristicList)
+//                                       .searcher();
+//    String sql = "SELECT * FROM t where id = 1 between 1 and 9";
+//    MultiPatternSearcher.Cursor cursor = matcher.search(sql);
+//    Map<String, String> arg = new HashMap<>();
+//    SQLMatchResult result = new SQLMatchResult(sql);
+//    while (cursor.next()) {
+//      int index = cursor.match();   // array with the pattern id which match ends at this position
+//      String pattern = textCharacteristicList.get(index);
+//      int start = cursor.start();
+//      int end = cursor.end();
+//      arg.put(pattern, sql.substring(start, end));
+//    }
+//    result.setCharacteristicPositionList(arg);
   }
 }

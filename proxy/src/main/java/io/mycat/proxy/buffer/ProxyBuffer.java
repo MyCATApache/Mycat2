@@ -22,6 +22,10 @@ import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author chen junwen
+ * @date 2019-05-09 02:30
+ **/
 public interface ProxyBuffer {
 
   Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);

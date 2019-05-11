@@ -60,9 +60,9 @@ public enum MySQLPacketExchanger {
         });
   }
 
-  public boolean onBackendResponse(MySQLClientSession mysql) throws IOException {
+  public void onBackendResponse(MySQLClientSession mysql) throws IOException {
     if (!mysql.readFromChannel()) {
-      return false;
+      return;
     }
     ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
     MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
@@ -77,7 +77,7 @@ public enum MySQLPacketExchanger {
     proxyBuffer.channelWriteStartIndex(startIndex);
     proxyBuffer.channelWriteEndIndex(endPos);
     mysql.getMycatSession().writeToChannel();
-    return false;
+    return;
   }
 
 

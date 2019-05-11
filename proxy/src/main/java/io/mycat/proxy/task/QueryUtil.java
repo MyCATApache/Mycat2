@@ -1,10 +1,13 @@
 package io.mycat.proxy.task;
 
+import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLSetOption;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.proxy.packet.QueryResultSetCollector;
+import io.mycat.proxy.packet.TextResultSetTransforCollector;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.io.IOException;
 
@@ -15,6 +18,49 @@ import java.io.IOException;
 public class QueryUtil {
 
   private final static SetOptionTask SET_OPTION = new SetOptionTask();
+
+  public static void query(
+      MySQLClientSession mysql, String sql,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
+    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
+    queryResultSetTask.request(mysql, sql, callBack);
+  }
+
+  public static void collectCollation2(
+      MySQLClientSession mysql, MySQLCollationIndex collationIndex,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
+    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
+    queryResultSetTask.request(mysql, "SHOW COLLATION;", value -> {
+      return true;
+    }, new QueryResultSetCollector(), callBack);
+  }
+
+  public static void collectCollation(
+      MySQLClientSession mysql, MySQLCollationIndex collationIndex,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
+    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
+    queryResultSetTask.request(mysql, "SHOW COLLATION;", value -> {
+      switch (value) {
+        case 1:
+        case 2:
+          return true;
+        default:
+          return false;
+      }
+    }, new TextResultSetTransforCollector() {
+      String value;
+
+      @Override
+      protected void addValue(int columnIndex, String value) {
+        this.value = value;
+      }
+
+      @Override
+      protected void addValue(int columnIndex, long value) {
+        collationIndex.put((int) value, this.value);
+      }
+    }, callBack);
+  }
 
   public static void mutilOkResultSet(
       MySQLClientSession mysql, int count, String sql,
@@ -55,7 +101,7 @@ public class QueryUtil {
     }
   }
 
-  private static class MultiOkQueriesCounterTask implements QueryResultSetTask {
+  private static class MultiOkQueriesCounterTask implements ResultSetTask {
 
     private int counter = 0;
 
@@ -63,6 +109,11 @@ public class QueryUtil {
       this.counter = counter;
     }
 
+    public void request(
+        MySQLClientSession mysql, String sql,
+        AsynTaskCallBack<MySQLClientSession> callBack) {
+      request(mysql, 3, sql, callBack);
+    }
 
     @Override
     public void onColumnDef(MySQLPacket mySQLPacket, int startPos, int endPos) {

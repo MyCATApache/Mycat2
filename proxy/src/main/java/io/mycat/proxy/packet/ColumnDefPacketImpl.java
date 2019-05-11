@@ -14,6 +14,7 @@
  */
 package io.mycat.proxy.packet;
 
+import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
 import java.nio.channels.SocketChannel;
@@ -95,7 +96,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
 
   }
 
-  byte columnType;
+  int columnType;
   int columnFlags;
   byte columnDecimals;
   byte[] columnDefaultValues;
@@ -192,12 +193,12 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
 
   @Override
   public int getColumnType() {
-    return columnType & 0xff;
+    return columnType;
   }
 
   @Override
   public void setColumnType(int type) {
-    this.columnType = (byte) type;
+    this.columnType = type;
   }
 
   @Override
@@ -231,23 +232,26 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
   }
 
   public void read(MySQLPacket buffer, int startPos, int endPos) {
-    buffer.skipInReading(4);
-    buffer.readLenencStringBytes();
+    byte[] bytes = buffer.readLenencStringBytes();
     this.columnSchema = buffer.readLenencStringBytes();
     this.columnTable = buffer.readLenencStringBytes();
     this.columnOrgTable = buffer.readLenencStringBytes();
     this.columnName = buffer.readLenencStringBytes();
     this.columnOrgName = buffer.readLenencStringBytes();
-    assert 0xc == buffer.readByte();
+    if (0xc != buffer.readByte()) {
+      throw new MycatExpection("");
+    }
     this.columnCharsetSet = (int) buffer.readFixInt(2);
     this.columnLength = (int) buffer.readFixInt(4);
-    this.columnType = (byte) (buffer.readByte() & 0xff);
+    this.columnType = (buffer.readByte() & 0xff);
     this.columnFlags = (int) buffer.readFixInt(2);
     this.columnDecimals = buffer.readByte();
     buffer.skipInReading(2);
     if (buffer.packetReadStartIndex() != endPos) {
       int i = buffer.readLenencInt();
-      this.columnDefaultValues = buffer.readFixStringBytes(i);
+      if (i != 0) {
+        this.columnDefaultValues = buffer.readFixStringBytes(i);
+      }
     }
   }
 

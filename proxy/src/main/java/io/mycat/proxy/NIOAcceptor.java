@@ -28,7 +28,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class NIOAcceptor extends ProxyReactorThread<Session> {
+public final class NIOAcceptor extends ProxyReactorThread<Session> {
     public NIOAcceptor(BufferPool bufPool) throws IOException {
         super(bufPool, null);
     }

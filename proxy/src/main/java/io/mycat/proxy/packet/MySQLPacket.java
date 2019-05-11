@@ -181,15 +181,13 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
   }
 
   default String readLenencString() {
-    return new String(readLenencStringBytes());
+    int startIndex = packetReadStartIndex();
+    String s = new String(readLenencStringBytes());
+    return s;
   }
 
   default byte[] readLenencStringBytes() {
-    int strLen = (int) getLenencInt(packetReadStartIndex());
-    int lenencLen = getLenencLength(strLen);
-    byte[] bytes = getBytes(packetReadStartIndex() + lenencLen, strLen);
-    packetReadStartIndexAdd(strLen + lenencLen);
-    return bytes;
+    return readLenencBytes();
   }
 
   default String getVarString(int index, int length) {
@@ -467,6 +465,13 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
   default byte[] getLenencBytes(int index) {
     int len = (int) getLenencInt(index);
     return getBytes(index + getLenencLength(len), len);
+  }
+
+  default int skipLenencBytes(int index) {
+    int len = (int) getLenencInt(index);
+    int end = getLenencLength(len) + len;
+    packetReadStartIndex(index + end);
+    return packetReadStartIndex();
   }
 
   default long getLenencInt(int index) {

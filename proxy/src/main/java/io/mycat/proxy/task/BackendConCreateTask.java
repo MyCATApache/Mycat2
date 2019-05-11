@@ -37,7 +37,7 @@ import java.nio.channels.SocketChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BackendConCreateTask implements NIOHandler<MySQLClientSession> {
+public final class BackendConCreateTask implements NIOHandler<MySQLClientSession> {
     final MySQLDatasource datasource;
     final AsynTaskCallBack<MySQLClientSession> callback;
     boolean welcomePkgReceived = false;

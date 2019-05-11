@@ -43,7 +43,7 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY_BLOB;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VARCHAR;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
-import static io.mycat.beans.mysql.MySQLFieldsType.*;
+import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLFieldsType;
@@ -64,7 +64,6 @@ import java.io.IOException;
 public class ExecuteTask  implements ResultSetTask {
     int binaryNullBitMapLength;
     int columnCount;
-    int[] resultSetColumnTypeList;
     ColumnDefPacket[] currentColumnDefList;
     ResultSetCollector collector;
 
@@ -72,7 +71,6 @@ public class ExecuteTask  implements ResultSetTask {
     public void onColumnCount(int columnCount) {
         this.columnCount = 0;
         this.binaryNullBitMapLength = (columnCount + 7 + 2) / 8;
-        this.resultSetColumnTypeList = new int[columnCount];
         this.currentColumnDefList = new ColumnDefPacket[columnCount];
         collector.onResultSetStart();
     }
@@ -98,7 +96,6 @@ public class ExecuteTask  implements ResultSetTask {
         ColumnDefPacket packet = new ColumnDefPacketImpl();
         ((ColumnDefPacketImpl) packet).read(mySQLPacket, startPos, endPos);
         int i = this.columnCount++;
-        this.resultSetColumnTypeList[i] = packet.getColumnType();
         this.currentColumnDefList[i] = packet;
     }
 
@@ -113,7 +110,7 @@ public class ExecuteTask  implements ResultSetTask {
         int nullBitMapStartPos = startPos + 4 + 1;
         int nullBitMapEndPos = nullBitMapStartPos + binaryNullBitMapLength;
         mySQLPacket.packetReadStartIndex(nullBitMapEndPos);
-        for (int columnIndex = 0; columnIndex < resultSetColumnTypeList.length; columnIndex++) {
+        for (int columnIndex = 0; columnIndex < currentColumnDefList.length; columnIndex++) {
             ColumnDefPacket columnDef = currentColumnDefList[columnIndex];
             int i = nullBitMapStartPos + (columnIndex + 2) / 8;
             byte aByte = mySQLPacket.getByte(i);
@@ -123,7 +120,7 @@ public class ExecuteTask  implements ResultSetTask {
                 collector.collectNull(columnIndex, columnDef, mySQLPacket, mySQLPacket.packetReadStartIndex());
                 continue;
             }
-            switch (resultSetColumnTypeList[columnIndex]) {
+            switch (columnDef.getColumnType()) {
                 default: {
                     throw new MycatExpection("");
                 }
