@@ -14,6 +14,7 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.proxy.MySQLPacketExchanger.MySQLProxyNIOHandler.MySQLIdleNIOHandler;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
 import io.mycat.proxy.task.AsynTaskCallBack;
@@ -88,6 +89,7 @@ public final class MySQLSessionManager implements
      */
     assert session.getMycatSession() == null;
     assert session.getCurNIOHandler() == null;
+    session.switchNioHandler(MySQLIdleNIOHandler.INSTANCE);
     session.change2ReadOpts();
     idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
       if (l == null) {

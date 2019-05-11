@@ -14,6 +14,9 @@
  */
 package io.mycat.proxy;
 
+import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_CLOSE;
+import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_RESPONSE;
+
 import io.mycat.MySQLDataNode;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -153,6 +156,28 @@ public enum MySQLPacketExchanger {
         HANDLER.onBackendClosed(session, normal);
       } catch (IOException e) {
         logger.warn("MySQL Session {} onSocketClosed caught err ", session, e);
+      }
+    }
+
+    public enum MySQLIdleNIOHandler implements NIOHandler<MySQLClientSession> {
+      INSTANCE;
+      protected final static Logger logger = LoggerFactory.getLogger(
+          MySQLPacketExchanger.MySQLProxyNIOHandler.class);
+      static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
+
+      @Override
+      public void onSocketRead(MySQLClientSession session) throws IOException {
+        session.close(false, UNKNOWN_IDLE_RESPONSE.getMessage());
+      }
+
+      @Override
+      public void onWriteFinished(MySQLClientSession session) throws IOException {
+        session.close(false, UNKNOWN_IDLE_RESPONSE.getMessage());
+      }
+
+      @Override
+      public void onSocketClosed(MySQLClientSession session, boolean normal) {
+        session.close(normal, UNKNOWN_IDLE_CLOSE.getMessage());
       }
     }
   }

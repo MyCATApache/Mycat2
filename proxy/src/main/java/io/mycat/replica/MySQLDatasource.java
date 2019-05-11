@@ -56,7 +56,6 @@ public class MySQLDatasource {
                 (mysql1, sender1, success1, result1, errorMessage1) -> {
                   if (success1) {
                     mysql1.end();
-                    firstThread.getMySQLSessionManager().addIdleSession(mysql1);
                     logger.info("dataSource read charset successful!!");
                     for (int index = 1; index < minCon; index++) {
                       MycatReactorThread thread = threads[index % threads.length];

@@ -179,10 +179,8 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
       buffer.limit(buffer.capacity());
       int readEndIndex = this.readEndIndex;
       buffer.position(readEndIndex);
-
       int readed = channel.read(buffer);
       if (readed == -1) {
-        logger.warn("Read EOF ,socket closed ");
         throw new ClosedChannelException();
       } else if (readed == 0) {
         throw new MycatExpection("readed zero bytes ,Maybe a bug ,please fix it !!!!");
