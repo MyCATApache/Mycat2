@@ -14,7 +14,6 @@
  */
 package io.mycat.proxy;
 
-import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_CLOSE;
 import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_RESPONSE;
 
 import io.mycat.MySQLDataNode;
@@ -28,28 +27,32 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *
+ */
 public enum MySQLPacketExchanger {
   INSTANCE;
 
-  public boolean handle(MycatSession mycat) throws IOException {
+  public boolean handle(MycatSession mycat, boolean noResponse) throws IOException {
     mycat.switchWriteHandler(WriteHandler.INSTANCE);
     ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
     proxyBuffer.channelWriteStartIndex(0);
     proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
     MySQLDataNode dataNode = MycatRuntime.INSTANCE
-                                                 .getDataNodeByName(mycat.getDataNode());
-    writeProxyBufferToDataNode(mycat, proxyBuffer, dataNode);
+                                 .getDataNodeByName(mycat.getDataNode());
+    writeProxyBufferToDataNode(mycat, proxyBuffer, dataNode, noResponse);
     return false;
   }
 
-  public void writeProxyBufferToDataNode(
+  private void writeProxyBufferToDataNode(
       MycatSession mycat,
       ProxyBuffer proxyBuffer,
-      MySQLDataNode dataNode) {
+      MySQLDataNode dataNode, boolean noResponse) {
     mycat.getBackend(false, dataNode, null,
         (mysql, sender, success, result, throwable) -> {
           if (success) {
             mycat.clearReadWriteOpts();
+            mysql.setNoResponse(noResponse);
             try {
               mysql.writeProxyBufferToChannel(proxyBuffer);
             } catch (IOException e) {
@@ -58,7 +61,7 @@ public enum MySQLPacketExchanger {
             }
           } else {
             System.out.println("---------------------------------------------------------");
-         //   mycat.closeAllBackendsAndResponseError("");
+            //   mycat.closeAllBackendsAndResponseError("");
           }
         });
   }
@@ -70,7 +73,6 @@ public enum MySQLPacketExchanger {
     ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
     MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
     MySQLPacketResolver packetResolver = mysql.getPacketResolver();
-
     int startIndex = mySQLPacket.packetReadStartIndex();
     int endPos = startIndex;
     while (mysql.readPartProxyPayload()) {
@@ -82,12 +84,6 @@ public enum MySQLPacketExchanger {
     mysql.getMycatSession().writeToChannel();
     return;
   }
-
-
-  public boolean onBackendClosed(MySQLClientSession session, boolean normal) throws IOException {
-    return false;
-  }
-
 
   public boolean onFrontWriteFinished(MycatSession mycat) throws IOException {
     MySQLClientSession mysql = mycat.getBackend();
@@ -108,31 +104,22 @@ public enum MySQLPacketExchanger {
   }
 
 
-  public boolean onBackendWriteFinished(MySQLClientSession mysql) throws IOException {
+  public void onBackendWriteFinished(MySQLClientSession mysql) throws IOException {
     MycatSession mycat = mysql.getMycatSession();
-    if (true) {
-      //mysql.clearReadWriteOpts();
+    if (!mysql.isNoResponse()) {
       mysql.currentProxyBuffer().reset();
       mysql.currentProxyBuffer().newBuffer();
       mysql.prepareReveiceResponse();
       mysql.change2ReadOpts();
     } else {
-      // mycat.clearReadWriteOpts();
-      mysql.change2WriteOpts();
-      mysql.writeToChannel();
+
     }
-    return false;
   }
 
 
-  public void clearResouces(MycatSession mycat, boolean sessionCLosed) {
+  public void clearResouces(MycatSession mycat, MySQLClientSession mysql, boolean sessionCLosed) {
     MySQLClientSession backend = mycat.getBackend();
     backend.unbindMycatIfNeed(mycat);
-  }
-
-
-  public void clearResouces(MySQLClientSession mysql, boolean sessionCLosed) {
-
   }
 
   public enum MySQLProxyNIOHandler implements NIOHandler<MySQLClientSession> {
@@ -152,11 +139,7 @@ public enum MySQLPacketExchanger {
 
     @Override
     public void onSocketClosed(MySQLClientSession session, boolean normal) {
-      try {
-        HANDLER.onBackendClosed(session, normal);
-      } catch (IOException e) {
-        logger.warn("MySQL Session {} onSocketClosed caught err ", session, e);
-      }
+
     }
 
     public enum MySQLIdleNIOHandler implements NIOHandler<MySQLClientSession> {
@@ -175,9 +158,11 @@ public enum MySQLPacketExchanger {
         session.close(false, UNKNOWN_IDLE_RESPONSE.getMessage());
       }
 
+      /**
+       * 因为onSocketClosed是被session.close调用,所以不需要重复调用
+       */
       @Override
       public void onSocketClosed(MySQLClientSession session, boolean normal) {
-        session.close(normal, UNKNOWN_IDLE_CLOSE.getMessage());
       }
     }
   }

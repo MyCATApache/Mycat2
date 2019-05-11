@@ -167,7 +167,7 @@ public enum CommandHandler {
           if (bufferSQLContext.getTableCount() == 1 && tableName != null) {
             String s = mycat.getSchema().getTableByTableName(tableName).getDataNodes().get(0);
             mycat.switchDataNode(s);
-            MySQLPacketExchanger.INSTANCE.handle(mycat);
+            MySQLPacketExchanger.INSTANCE.handle(mycat, false);
             return;
           }
         } catch (Exception e) {
@@ -277,7 +277,7 @@ public enum CommandHandler {
                   (session, sender, success, result, attr) -> {
                     try {
                       mycat.rebuildProxyRequest(sqlBytes);
-                      MySQLPacketExchanger.INSTANCE.handle(mycat);
+                      MySQLPacketExchanger.INSTANCE.handle(mycat, false);
                     } catch (Exception e) {
                       mycat.resetPacket();
                       mycat.writeErrorEndPacket();
@@ -293,7 +293,7 @@ public enum CommandHandler {
           String defaultDataNode = mycat.getSchema().getDefaultDataNode();
           mycat.rebuildProxyRequest(sqlBytes);
           mycat.switchDataNode(defaultDataNode);
-          MySQLPacketExchanger.INSTANCE.handle(mycat);
+          MySQLPacketExchanger.INSTANCE.handle(mycat, false);
         }
       }
     }

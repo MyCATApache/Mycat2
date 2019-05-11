@@ -26,7 +26,7 @@ public enum RouteResultExecuter implements ResultRoute.Executer<MycatSession> {
   public void run(OneServerResultRoute dbResultSet, MycatSession mycatSession)
       throws IOException {
     mycatSession.switchDataNode(dbResultSet.getDataNode());
-    MySQLPacketExchanger.INSTANCE.handle(mycatSession);
+    MySQLPacketExchanger.INSTANCE.handle(mycatSession, false);
   }
 
   @Override
