@@ -18,11 +18,12 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   ProxyBuffer currentProxyBuffer();
 
-  static void writeProxyBufferToChannel(MySQLProxySession proxySession) throws IOException {
-    proxySession.currentProxyBuffer().writeToChannel(proxySession.channel());
-    proxySession.updateLastActiveTime();
-    proxySession.checkWriteFinished();
-  }
+
+  void setCurrentProxyBuffer(ProxyBuffer buffer);
+
+  MySQLPacketResolver getPacketResolver();
+
+  void switchMySQLProxy();
 
   static void checkWriteFinished(MySQLProxySession proxySession) throws IOException {
     ProxyBuffer proxyBuffer = proxySession.currentProxyBuffer();
@@ -31,18 +32,6 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     } else {
       proxySession.writeFinished(proxySession);
     }
-  }
-
-  void setCurrentProxyBuffer(ProxyBuffer buffer);
-
-  MySQLPacketResolver getPacketResolver();
-
-  void switchMySQLProxy();
-
-  default void rebuildProxyRequest(byte[] bytes) {
-    ProxyBuffer proxyBuffer = this.currentProxyBuffer();
-    proxyBuffer.reset();
-    proxyBuffer.newBuffer(bytes);
   }
 
   static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
@@ -55,25 +44,16 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     proxySession.writeToChannel();
   }
 
-  default boolean readFromChannel() throws IOException {
-    ProxyBuffer proxyBuffer = currentProxyBuffer();
-    proxyBuffer.compactInChannelReadingIfNeed();
-    boolean b = proxyBuffer.readFromChannel(this.channel());
-    updateLastActiveTime();
-    return b;
+  default void rebuildProxyRequest(byte[] bytes) {
+    ProxyBuffer proxyBuffer = this.currentProxyBuffer();
+    proxyBuffer.reset();
+    proxyBuffer.newBuffer(bytes);
   }
 
-  default void writeProxyBufferToChannel(byte[] bytes) throws IOException {
-    switchMySQLProxy();
-    writeProxyBufferToChannel(this, bytes);
-  }
-
-  default void writeToChannel() throws IOException {
-    writeProxyBufferToChannel(this);
-  }
-
-  default void checkWriteFinished() throws IOException {
-    checkWriteFinished(this);
+  static void writeProxyBufferToChannel(MySQLProxySession proxySession) throws IOException {
+    proxySession.currentProxyBuffer().writeToChannel(proxySession.channel());
+    proxySession.updateLastActiveTime();
+    proxySession.checkWriteFinished();
   }
 
   default MySQLPacket newCurrentProxyPacket(int packetLength) {
@@ -83,6 +63,15 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
     mySQLPacket.writeSkipInWriting(4);
     return mySQLPacket;
+  }
+
+  default void writeProxyBufferToChannel(byte[] bytes) throws IOException {
+    switchMySQLProxy();
+    writeProxyBufferToChannel(this, bytes);
+  }
+
+  default void writeToChannel() throws IOException {
+    writeProxyBufferToChannel(this);
   }
 
   default void writeProxyPacket(MySQLPacket packet) throws IOException {
@@ -112,6 +101,19 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     this.setCurrentProxyBuffer(proxyBuffer);
     this.writeToChannel();
   }
+
+  default void checkWriteFinished() throws IOException {
+    checkWriteFinished(this);
+  }
+
+  default boolean readFromChannel() throws IOException {
+    ProxyBuffer proxyBuffer = currentProxyBuffer();
+    proxyBuffer.compactInChannelReadingIfNeed();
+    boolean b = proxyBuffer.readFromChannel(this.channel());
+    updateLastActiveTime();
+    return b;
+  }
+
 
   default boolean readProxyPayloadFully() throws IOException {
     return getPacketResolver().readMySQLPayloadFully();

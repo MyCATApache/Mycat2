@@ -71,8 +71,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   void switchMySQLServerWriteHandler();
 
-  byte[] SQL_STATE = "HY000".getBytes();
-
   static void writeToChannel(MySQLServerSession session) throws IOException {
     LinkedList<ByteBuffer> byteBuffers = session.writeQueue();
     ByteBuffer[] packetContainer = session.packetContainer();
@@ -116,17 +114,15 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       }
     } while (writed > 0);
     if (writed == -1) {
-      logger.warn("Write EOF ,socket closed ");
       throw new ClosedChannelException();
     }
     if (byteBuffers.isEmpty() && session.isResponseFinished()) {
       session.writeFinished(session);
       return;
     }
-
   }
 
-  default void writeTextRowPacket(byte[][] row) throws IOException {
+  default void writeTextRowPacket(byte[][] row) {
     switchMySQLServerWriteHandler();
     byte[] bytes = MySQLPacketUtil.generateTextRow(row);
     writeBytes(bytes);
@@ -152,6 +148,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
   }
 
   default void writeBytes(byte[] bytes) {
+    switchMySQLServerWriteHandler();
     try {
       ByteBuffer buffer = bufferPool().allocate(bytes);
       writeQueue().push(buffer);
@@ -189,11 +186,11 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     this.setResponseFinished(true);
     byte[] bytes;
     int serverStatus = serverStatus();
-    if (hasMoreResult){
-      serverStatus|= MySQLServerStatusFlags.MORE_RESULTS;
+    if (hasMoreResult) {
+      serverStatus |= MySQLServerStatusFlags.MORE_RESULTS;
     }
-    if (hasCursor){
-      serverStatus |=MySQLServerStatusFlags.CURSOR_EXISTS;
+    if (hasCursor) {
+      serverStatus |= MySQLServerStatusFlags.CURSOR_EXISTS;
     }
     if (isDeprecateEOF()) {
       bytes = MySQLPacketUtil.generateOk(0xfe, warningCount(), serverStatus, affectedRows(),

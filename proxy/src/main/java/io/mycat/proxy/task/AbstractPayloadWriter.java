@@ -21,13 +21,13 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.session.AbstractMySQLClientSession;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
-public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMySQLClientSession>, PacketSplitter {
+public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClientSession>,
+                                                              PacketSplitter {
     private T buffer;
     private int startIndex;
     private int writeIndex;
@@ -233,17 +233,17 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<AbstractMyS
     }
 
 
-    public void onSocketRead(AbstractMySQLClientSession session) throws IOException {
+    public void onSocketRead(MySQLClientSession session) throws IOException {
 
     }
 
 
-    public void onWriteFinished(AbstractMySQLClientSession session) throws IOException {
+    public void onWriteFinished(MySQLClientSession session) throws IOException {
 
     }
 
 
-    public void onSocketClosed(AbstractMySQLClientSession session, boolean normal) {
+    public void onSocketClosed(MySQLClientSession session, boolean normal) {
         if (!normal) {
             onError(getSessionCaller().getLastThrowableAndReset());
         } else {

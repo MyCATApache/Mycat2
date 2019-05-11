@@ -55,6 +55,7 @@ public class MySQLDatasource {
             QueryUtil.collectCollation(mysql0, collationIndex,
                 (mysql1, sender1, success1, result1, errorMessage1) -> {
                   if (success1) {
+                    mysql1.end();
                     firstThread.getMySQLSessionManager().addIdleSession(mysql1);
                     logger.info("dataSource read charset successful!!");
                     for (int index = 1; index < minCon; index++) {
@@ -98,7 +99,7 @@ public class MySQLDatasource {
   public void clearAndDestroyCons(String reason) {
     for (MycatReactorThread thread : MycatRuntime.INSTANCE.getMycatReactorThreads()) {
       thread.addNIOJob(
-          () -> thread.getMySQLSessionManager().clearAndDestroyMySQLSession(this, reason));
+          () -> thread.getMySQLSessionManager().clearAndDestroyDataSource(this, reason));
     }
   }
 

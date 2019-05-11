@@ -188,9 +188,6 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
         throw new MycatExpection("readed zero bytes ,Maybe a bug ,please fix it !!!!");
       }
       this.channelReadEndIndex(buffer.position());
-//      System.out.println("rec:");
-//      System.out.println(
-//          DumpUtil.dumpAsHex(buffer, 0,      buffer.position()));
       return readed > 0;
     } catch (Exception e) {
       throw e;

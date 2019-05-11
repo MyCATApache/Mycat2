@@ -18,13 +18,13 @@ public class MySQLPacketUtil {
   private static final byte NULL_MARK = (byte) 251;
   private static final byte EMPTY_MARK = (byte) 0;
   public static final byte[] generateRequest(int head,byte[] data) {
-    MySQLPacketWriter writer = new MySQLPacketWriter(1+data.length);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(1 + data.length);
     writer.write(head);
     writer.write(data);
     return writer.toByteArray();
   }
   public static final byte[] generateComQueryPacket(String sql) {
-    MySQLPacketWriter writer = new MySQLPacketWriter(sql.length()+5);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(sql.length() + 5);
     writer.write(0x3);
     writer.writeEOFString(sql);
     return generateMySQLPacket(0,writer.toByteArray());
@@ -34,7 +34,7 @@ public class MySQLPacketUtil {
     return generateMySQLPacket(0,bytes);
   }
   public static final byte[] generateResultSetCount(int fieldCount) {
-    MySQLPacketWriter writer = new MySQLPacketWriter(1);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(1);
     writer.writeLenencInt(fieldCount);
     return writer.toByteArray();
   }
@@ -47,7 +47,7 @@ public class MySQLPacketUtil {
   public static final byte[] generateEof(
       int warningCount, int status
   ) {
-    MySQLPacketWriter writer = new MySQLPacketWriter(12);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(12);
     writer.writeByte(0xfe);
     writer.writeFixInt(2, warningCount);
     writer.writeFixInt(2, status);
@@ -59,7 +59,7 @@ public class MySQLPacketUtil {
       boolean isClientProtocol41, boolean isKnowsAboutTransactions,
       boolean sessionVariableTracking, String message
   ) {
-    MySQLPacketWriter writer = new MySQLPacketWriter(12);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(12);
     writer.writeByte((byte) header);
     writer.writeLenencInt(affectedRows);
     writer.writeLenencInt(lastInsertId);
@@ -83,7 +83,7 @@ public class MySQLPacketUtil {
       int errno,
       String message, int serverCapabilityFlags
   ) {
-    MySQLPacketWriter writer = new MySQLPacketWriter(64);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(64);
     ErrorPacketImpl errorPacket = new ErrorPacketImpl();
     errorPacket.setErrorMessage(message.getBytes());
     errorPacket.setErrorCode(errno);
@@ -94,7 +94,7 @@ public class MySQLPacketUtil {
   public static final byte[] generateProgressInfoErrorPacket(
       int stage, int maxStage, int progress, byte[] progressInfo
   ) {
-    MySQLPacketWriter writer = new MySQLPacketWriter(64);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(64);
     ErrorPacketImpl errorPacket = new ErrorPacketImpl();
     errorPacket.setErrorCode(0xFFFF);
     errorPacket.setErrorStage(stage);
@@ -110,7 +110,7 @@ public class MySQLPacketUtil {
     final int binaryNullBitMapLength = (columnCount + 7 + 2) / 8;
     byte[] nullMap = new byte[binaryNullBitMapLength];
     final int payloayEstimateMaxSize = generateBinaryRowHeader(rows, nullMap);
-    final MySQLPacketWriter writer = new MySQLPacketWriter(payloayEstimateMaxSize);
+    final MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(payloayEstimateMaxSize);
     writer.writeBytes(nullMap);
     nullMap = null;
     for (byte[] row : rows) {
@@ -148,7 +148,7 @@ public class MySQLPacketUtil {
     c.setColumnType(type);
     c.setColumnFlags(columnFlags);
     c.setColumnDecimals((byte) columnDecimals);
-    MySQLPacketWriter writer = new MySQLPacketWriter(64);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(64);
     c.writePayload(writer);
     return writer.toByteArray();
   }
@@ -170,7 +170,7 @@ public class MySQLPacketUtil {
       MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
       PacketSplitterImpl packetSplitter = reactorThread.getPacketSplitter();
       int wholePacketSize = PacketSplitter.caculWholePacketSize(packet.length);
-      MySQLPacketWriter byteArray = new MySQLPacketWriter(
+      MySQLPayloadWriterImpl byteArray = new MySQLPayloadWriterImpl(
           wholePacketSize);
       packetSplitter.init(packet.length);
       while (packetSplitter.nextPacketInPacketSplitter()) {
@@ -232,7 +232,7 @@ public class MySQLPacketUtil {
 
   public static final byte[] generateTextRow(byte[][] fieldValues) {
     int len = calcTextRowPayloadSize(fieldValues);
-    MySQLPacketWriter writer = new MySQLPacketWriter(len);
+    MySQLPayloadWriterImpl writer = new MySQLPayloadWriterImpl(len);
     writeTextRow(fieldValues, writer);
     return writer.toByteArray();
   }

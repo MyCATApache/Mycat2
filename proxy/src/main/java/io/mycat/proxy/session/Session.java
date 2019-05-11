@@ -20,12 +20,9 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public interface Session<T extends Session> {
 
-  Logger logger = LoggerFactory.getLogger(Session.class);
 
   SocketChannel channel();
 

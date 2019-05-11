@@ -27,6 +27,7 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.packet.AuthPacketImpl;
 import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.proxy.packet.MySQLPayloadWriterImpl;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
@@ -119,9 +120,14 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
       hs.authPluginDataPartTwo = new String(seedParts[1]);
       hs.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
 
-      MySQLPacket mySQLPacket = mycat.newCurrentProxyPacket(1024);
-      hs.writePayload(mySQLPacket);
-      mycat.writeProxyPacket(mySQLPacket);
+//      MySQLPacket mySQLPacket = mycat.newCurrentProxyPacket(1024);
+//      hs.writePayload(mySQLPacket);
+//      mycat.writeProxyPacket(mySQLPacket);
+
+      MySQLPayloadWriterImpl mySQLPayloadWriter = new MySQLPayloadWriterImpl();
+      hs.writePayload(mySQLPayloadWriter);
+      mycat.setPakcetId(-1);//使用获取的packetId变为0
+      mycat.writeBytes(mySQLPayloadWriter.toByteArray());
     } catch (Exception e) {
       e.printStackTrace();
     }

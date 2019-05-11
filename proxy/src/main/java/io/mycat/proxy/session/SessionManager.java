@@ -17,7 +17,6 @@
 package io.mycat.proxy.session;
 
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import java.io.IOException;
 import java.nio.channels.Selector;
@@ -38,19 +37,13 @@ public interface SessionManager<T extends Session> {
 	 * 获取当前Session数量
 	 * @return count
 	 */
-	int curSessionCount();
-
-	/**
-	 * 获取默认的Session处理句柄
-	 * @return
-	 */
-	NIOHandler<T> getDefaultSessionHandler();
+  int currentSessionCount();
 
 	/**
 	 * 从管理器中移除Session
 	 * @param session
 	 */
-	void removeSession(T session);
+  void removeSession(T session, boolean normal, String reason);
 
 	interface FrontSessionManager<T extends Session> extends SessionManager<T> {
 
@@ -64,11 +57,9 @@ public interface SessionManager<T extends Session> {
 
 		void addIdleSession(T Session);
 
-		void removeIdleSession(T Session);
-
 		void createSession(ARG key, AsynTaskCallBack<T> callBack);
 
-		void clearAndDestroyMySQLSession(ARG dsMetaBean, String reason);
+    void clearAndDestroyDataSource(ARG dsMetaBean, String reason);
 	}
 
 }

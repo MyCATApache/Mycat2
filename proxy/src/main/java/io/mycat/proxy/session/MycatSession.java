@@ -24,6 +24,7 @@ import io.mycat.beans.mysql.packet.PacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.logTip.SessionTip;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.MycatRuntime;
@@ -42,29 +43,41 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 
-public class MycatSession extends AbstractSession<MycatSession> implements
+public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLServerSession<MycatSession>, MySQLProxySession<MycatSession> {
 
+  /**
+   * mysql服务器状态
+   */
+  private final MySQLServerStatus serverStatus = new MySQLServerStatus();
+  /***
+   * 以下资源要做session关闭时候释放
+   */
+  private final ProxyBuffer proxyBuffer;//reset
+  private final ByteBuffer header = ByteBuffer.allocate(4);//gc
+  private MycatSchema schema;
+  private final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();//buffer recycle
+  private final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);//reset
+  /**
+   * 报文写入辅助类
+   */
+  private final ByteBuffer[] packetContainer = new ByteBuffer[2];
+  private final PacketSplitter packetSplitter = new PacketSplitterImpl();
+  private boolean responseFinished = false;//每次在处理请求时候就需要重置
+  private MySQLClientSession backend;//unbind
+  private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
+  /**
+   * 路由信息
+   */
+  private String dataNode;
+
+
   public MycatSession(BufferPool bufferPool, Selector selector, SocketChannel channel,
-      int socketOpt, NIOHandler nioHandler, SessionManager<? extends Session> sessionManager)
+      int socketOpt, NIOHandler nioHandler, SessionManager<MycatSession> sessionManager)
       throws IOException {
     super(selector, channel, socketOpt, nioHandler, sessionManager);
     proxyBuffer = new ProxyBufferImpl(bufferPool);
   }
-
-  private MycatSchema schema;
-  private final ProxyBuffer proxyBuffer;
-  private final ByteBuffer header = ByteBuffer.allocate(4);
-  final MySQLServerStatus serverStatus = new MySQLServerStatus();
-  private MySQLClientSession backend;
-  private String dataNode;
-  protected final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();
-  protected final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);
-  private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
-  private boolean responseFinished = false;
-  final ByteBuffer[] packetContainer = new ByteBuffer[2];
-  final PacketSplitter packetSplitter = new PacketSplitterImpl();
-
 
   public void switchWriteHandler(MycatSessionWriteHandler writeHandler) {
     this.writeHandler = writeHandler;
@@ -74,8 +87,16 @@ public class MycatSession extends AbstractSession<MycatSession> implements
     return;
   }
 
+  public MySQLAutoCommit getAutoCommit() {
+    return this.serverStatus.getAutoCommit();
+  }
+
   public void setAutoCommit(MySQLAutoCommit off) {
     this.serverStatus.setAutoCommit(off);
+  }
+
+  public MySQLIsolation getIsolation() {
+    return this.serverStatus.getIsolation();
   }
 
   public void setIsolation(MySQLIsolation readUncommitted) {
@@ -86,12 +107,22 @@ public class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setCharset(index, charsetName, Charset.forName(charsetName));
   }
 
+
   public String getDataNode() {
     return dataNode;
   }
 
-  public void setDataNode(String dataNode) {
-    this.dataNode = dataNode;
+  public void switchDataNode(String dataNode) {
+    if (this.backend == null) {
+      this.dataNode = dataNode;
+      return;
+    } else {
+      if (dataNode.equals(this.dataNode)) {
+        return;
+      } else {
+        throw new MycatExpection(SessionTip.CANNOT_SWITCH_DATANODE.getMessage());
+      }
+    }
   }
 
 
@@ -110,6 +141,7 @@ public class MycatSession extends AbstractSession<MycatSession> implements
 
   public void getBackend(boolean runOnSlave, MySQLDataNode dataNode,
       LoadBalanceStrategy strategy, AsynTaskCallBack<MySQLClientSession> finallyCallBack) {
+    this.switchDataNode(dataNode.getName());
     if (this.backend != null) {
       //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
       finallyCallBack.finished(this.backend, this, true, null, null);
@@ -124,6 +156,7 @@ public class MycatSession extends AbstractSession<MycatSession> implements
             strategy, (session, sender, success, result, errorMessage) ->
             {
               if (success) {
+                this.switchDataNode(dataNode.getName());
                 session.bind(this);
                 finallyCallBack.finished(session, sender, true, result, errorMessage);
               } else {
@@ -132,17 +165,10 @@ public class MycatSession extends AbstractSession<MycatSession> implements
             });
   }
 
-  public MySQLAutoCommit getAutoCommit() {
-    return this.serverStatus.getAutoCommit();
-  }
-
-  public MySQLIsolation getIsolation() {
-    return this.serverStatus.getIsolation();
-  }
 
   @Override
   public void close(boolean normal, String hint) {
-
+    resetPacket();
   }
 
   @Override
@@ -184,10 +210,6 @@ public class MycatSession extends AbstractSession<MycatSession> implements
 
   public void setLastMessage(String lastMessage) {
     this.serverStatus.setLastMessage(lastMessage);
-  }
-
-  public void setBackend(MySQLClientSession backend) {
-    this.backend = backend;
   }
 
   public long getAffectedRows() {
@@ -381,5 +403,27 @@ public class MycatSession extends AbstractSession<MycatSession> implements
 
   public void resetPacket() {
     packetResolver.reset();
+    for (ByteBuffer byteBuffer : writeQueue()) {
+      getMycatReactorThread().getBufPool().recycle(byteBuffer);
+    }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    MycatSession that = (MycatSession) o;
+
+    return this.sessionId == that.sessionId;
+  }
+
+  @Override
+  public int hashCode() {
+    return this.sessionId;
   }
 }
