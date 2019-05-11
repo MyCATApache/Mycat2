@@ -242,6 +242,11 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
 
     }
 
+    @Override
+    public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
+
+    }
+
 
     public void onSocketClosed(MySQLClientSession session, boolean normal) {
         if (!normal) {

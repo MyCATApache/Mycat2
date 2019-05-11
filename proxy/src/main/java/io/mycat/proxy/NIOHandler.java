@@ -31,12 +31,12 @@ public interface NIOHandler<T extends Session> {
     session.writeToChannel();
   }
 
-  public void onWriteFinished(T session) throws IOException;
+  void onWriteFinished(T session) throws IOException;
 
-  void onSocketClosed(T session, boolean normal);
+  void onSocketClosed(T session, boolean normal, String reasion);
 
 
-  default public <T extends Session<T>> T getSessionCaller() {
+  default <T extends Session<T>> T getSessionCaller() {
     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
     Session curSession = thread.getReactorEnv().getCurSession();
     return (T) curSession;

@@ -18,7 +18,6 @@ import io.mycat.MySQLAPI;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.proxy.MySQLPacketExchanger.MySQLProxyNIOHandler;
-import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -42,6 +41,77 @@ public class MySQLClientSession extends
   protected AsynTaskCallBack<MySQLClientSession> callBack;
   private MycatDataNode dataNode;
   private boolean noResponse = false;
+
+  /**
+   * 0.本方法直接是关闭调用的第一个方法 1.先关闭handler handler仅关闭handler自身的资源,不关闭其他资源 2.然后清理packetResolver(payload
+   * ,packet) 3.与mycat session1解除绑定
+   */
+  @Override
+  public void close(boolean normal, String hint) {
+    NIOHandler curNIOHandler = getCurNIOHandler();
+    assert curNIOHandler != null;
+    curNIOHandler.onSocketClosed(this, normal, hint);
+    switchNioHandler(null);
+
+    if (this.mycat != null) {
+      MycatSession mycat = this.mycat;
+      unbindMycatIfNeed(true);
+      mycat.setLastMessage(hint);
+      mycat.writeErrorEndPacket();
+    } else {
+      end(true);
+    }
+
+    getSessionManager().removeSession(this, normal, hint);
+    channelKey.cancel();
+    try {
+      channel.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public boolean unbindMycatIfNeed() {
+    return unbindMycatIfNeed(false);
+  }
+
+  private boolean unbindMycatIfNeed(boolean isClose) {
+    assert this.mycat != null;
+    if (isMonopolized() && !isClose) {
+      System.out.println("can not unbind monopolized mysql Session");
+      return false;
+    }
+
+    this.resetPacket();
+    this.proxyBuffer = null;
+
+    switchNioHandler(null);
+
+    this.mycat.bind(null);
+    this.mycat.resetPacket();
+    this.mycat.switchWriteHandler(MySQLServerSession.WriteHandler.INSTANCE);
+    this.mycat = null;
+
+    if (!isClose) {
+      getSessionManager().addIdleSession(this);
+    }
+    return true;
+  }
+
+  public void end() {
+    end(false);
+  }
+
+  private void end(boolean isClose) {
+    assert mycat == null;
+    assert this.proxyBuffer == null;
+    this.resetPacket();
+    switchNioHandler(null);
+    if (!isClose) {
+      getSessionManager().addIdleSession(this);
+    }
+  }
+
 
   /**
    * 与mycat session绑定的信息 monopolizeType 是无法解绑的原因 TRANSACTION,事务 LOAD_DATA,交换过程
@@ -147,34 +217,6 @@ public class MySQLClientSession extends
     this.datasource = datasource;
   }
 
-  public boolean unbindMycatIfNeed(MycatSession mycat) {
-    if (isMonopolized()) {
-      System.out.println("can not unbind monopolized mysql Session");
-      return false;
-    }
-    this.resetPacket();
-    this.proxyBuffer = null;
-    mycat.resetPacket();
-    MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
-    switchNioHandler(null);
-    this.mycat = null;
-    reactorThread.getMySQLSessionManager().addIdleSession(this);
-    mycat.bind(null);
-    mycat.switchWriteHandler(MySQLServerSession.WriteHandler.INSTANCE);
-    return true;
-  }
-
-  public boolean end() {
-    this.resetPacket();
-    this.proxyBuffer = null;
-    switchNioHandler(null);
-    if (mycat != null) {
-      mycat.resetPacket();
-    }
-    MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
-    reactorThread.getMySQLSessionManager().addIdleSession(this);
-    return true;
-  }
 
   @Override
   public boolean equals(Object o) {
@@ -269,22 +311,16 @@ public class MySQLClientSession extends
     packetResolver.reset();
   }
 
-  @Override
-  public void close(boolean normal, String hint) {
-
-    try {
-      channel.close();
-      //proxyBuffer.reset();MySQLSession不能释放Proxybuffer,proxybuffer是mycatSession分配的
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
   public boolean isNoResponse() {
     return noResponse;
   }
 
   public void setNoResponse(boolean noResponse) {
     this.noResponse = noResponse;
+  }
+
+  @Override
+  public MySQLSessionManager getSessionManager() {
+    return (MySQLSessionManager) sessionManager;
   }
 }

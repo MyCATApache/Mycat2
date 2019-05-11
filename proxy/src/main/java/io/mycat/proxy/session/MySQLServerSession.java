@@ -212,6 +212,24 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     writeBytes(bytes);
   }
 
+  default void writeErrorEndPacketBySyncInProcessError() {
+    switchMySQLServerWriteHandler();
+    this.setResponseFinished(true);
+    byte[] bytes = MySQLPacketUtil
+                       .generateError(lastErrorCode(), lastMessage(), this.capabilities());
+    byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(0, bytes);
+    ByteBuffer message = ByteBuffer.wrap(bytes1);
+    int counter = 0;
+    try {
+      while (message.hasRemaining() && counter < 4) {
+        channel().write(message);
+        counter++;
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   default void writeToChannel() throws IOException {
     writeToChannel(this);
   }

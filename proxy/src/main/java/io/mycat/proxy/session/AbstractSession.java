@@ -148,7 +148,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     return sessionId;
   }
 
-  public SessionManager<? extends Session> getSessionManager() {
+  public SessionManager<T> getSessionManager() {
     return sessionManager;
   }
 

@@ -33,7 +33,9 @@ public interface Session<T extends Session> {
   /**
    * 会话关闭时候的的动作，需要清理释放资源
    */
-  void close(boolean normal, String hint);
+  default void close(boolean normal, String hint) {
+    getCurNIOHandler().onSocketClosed(this, normal, hint);
+  }
 
   int sessionId();
 

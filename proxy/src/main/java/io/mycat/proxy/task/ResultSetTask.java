@@ -253,8 +253,7 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
   }
 
   @Override
-  default void onSocketClosed(MySQLClientSession session, boolean normal) {
-    onFinished(session,false, "socket closed");
+  default void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
+    onFinished(session, false, reasion);
   }
-
 }

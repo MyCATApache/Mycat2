@@ -83,8 +83,16 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.writeHandler = writeHandler;
   }
 
-  public void responseFinishedClear() {
-    return;
+  public void onHandlerFinishedClear() {
+    if (backend != null) {
+      backend.unbindMycatIfNeed();
+    } else {
+      resetPacket();
+      BufferPool bufPool = getMycatReactorThread().getBufPool();
+      for (ByteBuffer byteBuffer : writeQueue) {
+        bufPool.recycle(byteBuffer);
+      }
+    }
   }
 
   public MySQLAutoCommit getAutoCommit() {
@@ -165,10 +173,20 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
             });
   }
 
-
   @Override
   public void close(boolean normal, String hint) {
-    resetPacket();
+    if (!normal) {
+      setLastMessage(hint);
+      writeErrorEndPacketBySyncInProcessError();
+
+    }
+    onHandlerFinishedClear();
+    channelKey.cancel();
+    try {
+      channel.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
@@ -426,4 +444,5 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public int hashCode() {
     return this.sessionId;
   }
+
 }

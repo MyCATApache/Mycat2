@@ -97,12 +97,12 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
   }
 
   @Override
-  public void onSocketClosed(MycatSession session, boolean normal) {
+  public void onSocketClosed(MycatSession session, boolean normal, String reasion) {
 
   }
 
+
   public void sendAuthPackge() {
-    try {
       byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
       this.seed = seedParts[2];
       HandshakePacketImpl hs = new HandshakePacketImpl();
@@ -123,8 +123,5 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
       hs.writePayload(mySQLPayloadWriter);
       mycat.setPakcetId(-1);//使用获取的packetId变为0
       mycat.writeBytes(mySQLPayloadWriter.toByteArray());
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
   }
 }

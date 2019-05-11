@@ -116,8 +116,9 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
     }
 
     @Override
-    public void onSocketClosed(MySQLClientSession mysql, boolean normal) {
-
+    public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
+        callback.finished(session, this, normal, null, reasion);
     }
+
 
 }

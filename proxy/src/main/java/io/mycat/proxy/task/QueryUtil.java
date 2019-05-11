@@ -99,6 +99,11 @@ public class QueryUtil {
         this.clearAndFinished(mysql, false, e.getMessage());
       }
     }
+
+    @Override
+    public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
+
+    }
   }
 
   private static class MultiOkQueriesCounterTask implements ResultSetTask {
@@ -148,6 +153,11 @@ public class QueryUtil {
 
     @Override
     public void onColumnCount(int columnCount) {
+
+    }
+
+    @Override
+    public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
 
     }
   }

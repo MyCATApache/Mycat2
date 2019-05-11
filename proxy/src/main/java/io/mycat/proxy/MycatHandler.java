@@ -17,12 +17,9 @@ package io.mycat.proxy;
 import io.mycat.proxy.command.CommandHandler;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public enum MycatHandler implements NIOHandler<MycatSession> {
   INSTANCE;
-  private static final Logger logger = LoggerFactory.getLogger(MycatHandler.class);
 
   @Override
   public void onSocketRead(MycatSession mycat) throws IOException {
@@ -40,7 +37,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
   @Override
   public void onWriteFinished(MycatSession mycat) throws IOException {
     if (mycat.isResponseFinished()) {
-      mycat.responseFinishedClear();
+      mycat.onHandlerFinishedClear();
       mycat.resetPacket();
       mycat.change2ReadOpts();
     } else {
@@ -48,9 +45,12 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
     }
   }
 
+  /**
+   * 1.mycat session 不存在切换 handler的情况 2.onSocketClosed是session的close方法,它完成了整个状态清理与关闭,所以onSocketClosed无需实现
+   */
   @Override
-  public void onSocketClosed(MycatSession session, boolean normal) {
-    session.close(normal, "");
+  public void onSocketClosed(MycatSession session, boolean normal, String reasion) {
+
   }
 
   public interface MycatSessionWriteHandler {

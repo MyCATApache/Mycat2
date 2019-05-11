@@ -140,31 +140,37 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     INSTANCE;
 
     @Override
-    public void writeToChannel(MycatSession proxySession) throws IOException {
-      proxySession.currentProxyBuffer().writeToChannel(proxySession.channel());
-      proxySession.updateLastActiveTime();
+    public void writeToChannel(MycatSession mycat) throws IOException {
+      mycat.currentProxyBuffer().writeToChannel(mycat.channel());
+      mycat.updateLastActiveTime();
 
-      ProxyBuffer proxyBuffer = proxySession.currentProxyBuffer();
+      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
       if (!proxyBuffer.channelWriteFinished()) {
-        proxySession.change2WriteOpts();
+        mycat.change2WriteOpts();
       } else {
-        if (proxySession.isResponseFinished()) {
-          proxySession.resetPacket();
-          proxySession.change2ReadOpts();
+        if (mycat.isResponseFinished()) {
+          mycat.change2ReadOpts();
+          mycat.onHandlerFinishedClear();
         } else {
-          MySQLClientSession backend = proxySession.getBackend();
-          if (backend != null) {
-            MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(proxySession);
+          MySQLClientSession mysql = mycat.getBackend();
+          if (mysql != null) {
+            boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
+            if (b) {
+              mycat.onHandlerFinishedClear();
+            }
           } else {
-            onWriteFinished(proxySession);
+            onWriteFinished(mycat);
           }
         }
       }
     }
 
+    /**
+     * mycat seesion没有重写onWriteFinished方法,所以onWriteFinished调用的是此类的writeToChannel方法
+     */
     @Override
     public void onWriteFinished(MycatSession proxySession) throws IOException {
-      proxySession.writeFinished(proxySession);
+      // proxySession.writeFinished(proxySession);
     }
   }
 
