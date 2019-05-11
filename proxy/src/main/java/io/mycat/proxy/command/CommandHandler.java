@@ -91,7 +91,7 @@ public enum CommandHandler {
     sql = RouterUtil.removeSchema(sql, mycat.getSchema().getSchemaName());
     byte[] sqlBytes = MySQLPacketUtil
                           .generateRequestPacket(MySQLCommandType.COM_QUERY, sql.getBytes());
-    mycat.rebuildProxyRequest(sqlBytes);
+    mycat.rebuildProxyBuffer(sqlBytes);
     String tableName = bufferSQLContext.getTableName(0);
     byte sqlType = bufferSQLContext.getSQLType();
     switch (sqlType) {
@@ -276,7 +276,7 @@ public enum CommandHandler {
                   strings,
                   (session, sender, success, result, attr) -> {
                     try {
-                      mycat.rebuildProxyRequest(sqlBytes);
+                      mycat.rebuildProxyBuffer(sqlBytes);
                       MySQLPacketExchanger.INSTANCE.handle(mycat, false);
                     } catch (Exception e) {
                       mycat.resetPacket();
@@ -291,7 +291,7 @@ public enum CommandHandler {
         }
         {
           String defaultDataNode = mycat.getSchema().getDefaultDataNode();
-          mycat.rebuildProxyRequest(sqlBytes);
+          mycat.rebuildProxyBuffer(sqlBytes);
           mycat.switchDataNode(defaultDataNode);
           MySQLPacketExchanger.INSTANCE.handle(mycat, false);
         }

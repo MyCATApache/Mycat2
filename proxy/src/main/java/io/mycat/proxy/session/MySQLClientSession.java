@@ -15,17 +15,21 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MySQLAPI;
+import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.proxy.MySQLPacketExchanger.MySQLProxyNIOHandler;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
+import io.mycat.proxy.buffer.ProxyBufferImpl;
+import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.task.AsynTaskCallBack;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 
@@ -75,41 +79,52 @@ public class MySQLClientSession extends
     return unbindMycatIfNeed(false);
   }
 
-  private boolean unbindMycatIfNeed(boolean isClose) {
-    assert this.mycat != null;
-    if (isMonopolized() && !isClose) {
-      System.out.println("can not unbind monopolized mysql Session");
-      return false;
-    }
-
-    this.resetPacket();
-    this.proxyBuffer = null;
-
-    switchNioHandler(null);
-
-    this.mycat.bind(null);
-    this.mycat.resetPacket();
-    this.mycat.switchWriteHandler(MySQLServerSession.WriteHandler.INSTANCE);
-    this.mycat = null;
-
-    if (!isClose) {
-      getSessionManager().addIdleSession(this);
-    }
-    return true;
+  static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
+      throws IOException {
+    ProxyBuffer buffer = proxySession.currentProxyBuffer();
+    buffer.reset();
+    buffer.newBuffer(bytes);
+    buffer.channelWriteStartIndex(0);
+    buffer.channelWriteEndIndex(bytes.length);
+    proxySession.writeToChannel();
   }
 
   public void end() {
     end(false);
   }
 
-  private void end(boolean isClose) {
-    assert mycat == null;
-    assert this.proxyBuffer == null;
-    this.resetPacket();
-    switchNioHandler(null);
-    if (!isClose) {
-      getSessionManager().addIdleSession(this);
+  private boolean unbindMycatIfNeed(boolean isClose) {
+    assert this.mycat != null;
+    setResponseFinished(false);
+    setRequestFinished(false);
+    setNoResponse(false);
+    MycatSession mycat = this.mycat;
+    try {
+      if (isMonopolized() && !isClose) {
+        System.out.println("can not unbind monopolized mysql Session");
+        return false;
+      }
+
+      this.resetPacket();
+      this.proxyBuffer = null;
+
+      switchNioHandler(null);
+
+      this.mycat.bind(null);
+      this.mycat.resetPacket();
+      this.mycat.switchWriteHandler(MySQLServerSession.WriteHandler.INSTANCE);
+      this.mycat = null;
+
+      if (!isClose) {
+        getSessionManager().addIdleSession(this);
+      }
+      return true;
+    } catch (Exception e) {
+      mycat.setLastMessage(e.getMessage());
+      mycat.writeErrorEndPacketBySyncInProcessError();
+      mycat.close(false, e.getMessage());
     }
+    return true;
   }
 
 
@@ -297,6 +312,23 @@ public class MySQLClientSession extends
     return (timeInterval < 60 * 1000);//60 second
   }
 
+  private void end(boolean isClose) {
+    assert mycat == null;
+    assert this.proxyBuffer == null;
+    setResponseFinished(false);
+    setRequestFinished(false);
+    setNoResponse(false);
+    this.resetPacket();
+    switchNioHandler(null);
+    if (!isClose) {
+      getSessionManager().addIdleSession(this);
+    }
+  }
+
+  public void writeToChannel() throws IOException {
+    writeProxyBufferToChannel();
+  }
+
 
   public void checkWriteFinished() throws IOException {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
@@ -305,6 +337,55 @@ public class MySQLClientSession extends
     } else {
       writeFinished(this);
     }
+  }
+
+  void writeProxyBufferToChannel() throws IOException {
+    this.currentProxyBuffer().writeToChannel(this.channel());
+    this.updateLastActiveTime();
+    this.checkWriteFinished();
+  }
+
+  public MySQLPacket newCurrentProxyPacket(int packetLength) {
+    ProxyBuffer proxyBuffer = currentProxyBuffer();
+    proxyBuffer.reset();
+    proxyBuffer.newBuffer(packetLength);
+    MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
+    mySQLPacket.writeSkipInWriting(4);
+    return mySQLPacket;
+  }
+
+  public void writeProxyBufferToChannel(byte[] bytes) throws IOException {
+    switchMySQLProxy();
+    writeProxyBufferToChannel(this, bytes);
+  }
+
+
+  public void writeProxyPacket(MySQLPacket packet) throws IOException {
+    int packetId = getPacketResolver().getAndIncrementPacketId();
+    writeProxyPacket(packet, packetId);
+  }
+
+  public void writeProxyPacket(MySQLPacket ogrin, int packetId) throws IOException {
+    ProxyBufferImpl mySQLPacket1 = (ProxyBufferImpl) ogrin;
+    ByteBuffer buffer = mySQLPacket1.currentByteBuffer();
+    int packetEndPos = buffer.position();
+    int payloadLen = buffer.position() - 4;
+    if (payloadLen < 0xffffff) {
+      ogrin.putFixInt(0, 3, payloadLen);
+      ogrin.putByte(3, (byte) packetId);
+      ProxyBuffer packet1 = (ProxyBuffer) ogrin;
+      packet1.channelWriteStartIndex(0);
+      packet1.channelWriteEndIndex(packetEndPos);
+      writeToChannel();
+    } else {
+      throw new MycatExpection("unsupport!");
+    }
+  }
+
+  public void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
+    switchMySQLProxy();
+    this.setCurrentProxyBuffer(proxyBuffer);
+    this.writeToChannel();
   }
 
   public void resetPacket() {

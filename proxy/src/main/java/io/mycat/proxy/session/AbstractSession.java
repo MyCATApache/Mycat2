@@ -89,24 +89,10 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   }
 
   @Override
-  public boolean hasError() {
-    return this.lastThrowable != null;
-  }
-
-  @Override
   public Throwable getLastThrowableAndReset() {
     Throwable lastThrowable = this.lastThrowable;
     this.lastThrowable = null;
     return lastThrowable;
-  }
-
-  @Override
-  public String getLastThrowableInfoTextAndReset() {
-    if (this.lastThrowable != null) {
-      return lastThrowable.getMessage();
-    } else {
-      return null;
-    }
   }
 
   public void change2ReadOpts() {

@@ -47,7 +47,6 @@ public interface Session<T extends Session> {
     session.getCurNIOHandler().onWriteFinished(session);
   }
 
-
   boolean readFromChannel() throws IOException;
 
   default void setCallBack(AsynTaskCallBack<T> callBack) {
@@ -56,8 +55,6 @@ public interface Session<T extends Session> {
 
   void setLastThrowable(Throwable e);
 
-  boolean hasError();
-
   Throwable getLastThrowableAndReset();
 
   void change2ReadOpts();
@@ -65,9 +62,6 @@ public interface Session<T extends Session> {
   void clearReadWriteOpts();
 
   void change2WriteOpts();
-
-
-  String getLastThrowableInfoTextAndReset();
 
   default MycatReactorThread getMycatReactorThread() {
     Thread thread = Thread.currentThread();

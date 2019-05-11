@@ -14,10 +14,7 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatExpection;
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.MycatHandler;
-import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.handler.MySQLClientAuthHandler;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import java.io.IOException;
@@ -47,24 +44,16 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
     return mycatSessions.size();
   }
 
-
-  public NIOHandler<MycatSession> getDefaultSessionHandler() {
-    return MycatHandler.INSTANCE;
-  }
-
   @Override
   public void removeSession(MycatSession mycat, boolean normal, String reason) {
     mycatSessions.remove(mycat);
-    mycat.close(normal, reason);
+//    mycat.close(normal, reason);
   }
 
 
   @Override
   public MycatSession acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
-    if (!frontChannel.isConnected()) {
-      throw new MycatExpection("");
-    }
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();
     MycatSession mycat = new MycatSession(bufPool, nioSelector, frontChannel, SelectionKey.OP_READ,
         mySQLClientAuthHandler, this);

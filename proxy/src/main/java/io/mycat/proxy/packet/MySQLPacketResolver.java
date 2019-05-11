@@ -203,7 +203,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   boolean setPayloadFinished(boolean b);
 
 
-  default boolean readMySQLPayloadFully() throws IOException {
+  default boolean readMySQLPayloadFully() {
     MySQLPacket proxybuffer = currentProxybuffer();
     boolean lastIsMultiPacket = isMultiPacket();
     boolean b = readMySQLPacketFully();
@@ -232,7 +232,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     return true;
   }
 
-  default boolean readMySQLPacketFully() throws IOException {
+  default boolean readMySQLPacketFully() {
     logger.debug("readMySQLPacketFully");
     MySQLPacket mySQLPacket = currentProxybuffer();
     int startIndex = mySQLPacket.packetReadStartIndex();

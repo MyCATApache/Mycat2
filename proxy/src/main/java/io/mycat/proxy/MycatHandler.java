@@ -38,7 +38,6 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
   public void onWriteFinished(MycatSession mycat) throws IOException {
     if (mycat.isResponseFinished()) {
       mycat.onHandlerFinishedClear();
-      mycat.resetPacket();
       mycat.change2ReadOpts();
     } else {
       mycat.writeToChannel();

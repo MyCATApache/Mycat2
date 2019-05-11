@@ -88,11 +88,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       backend.unbindMycatIfNeed();
     } else {
       resetPacket();
-      BufferPool bufPool = getMycatReactorThread().getBufPool();
-      for (ByteBuffer byteBuffer : writeQueue) {
-        bufPool.recycle(byteBuffer);
-      }
     }
+    setResponseFinished(false);
   }
 
   public MySQLAutoCommit getAutoCommit() {
@@ -183,6 +180,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     onHandlerFinishedClear();
     channelKey.cancel();
     try {
+      getSessionManager().removeSession(this, normal, hint);
       channel.close();
     } catch (IOException e) {
       e.printStackTrace();
@@ -403,27 +401,24 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     writeHandler.writeToChannel(this);
   }
 
-  public boolean readProxyPayloadFully() throws IOException {
+  public boolean readProxyPayloadFully() {
     return packetResolver.readMySQLPayloadFully();
   }
 
-  public MySQLPacket currentProxyPayload() throws IOException {
+  public MySQLPacket currentProxyPayload() {
     return packetResolver.currentPayload();
   }
 
-  public void resetCurrentProxyPayload() throws IOException {
+  public void resetCurrentProxyPayload() {
     packetResolver.resetPayload();
-  }
-
-  public boolean readPartProxyPayload() throws IOException {
-    return packetResolver.readMySQLPacket();
   }
 
   public void resetPacket() {
     packetResolver.reset();
-    for (ByteBuffer byteBuffer : writeQueue()) {
+    for (ByteBuffer byteBuffer : writeQueue) {
       getMycatReactorThread().getBufPool().recycle(byteBuffer);
     }
+    writeQueue.clear();
   }
 
   @Override
