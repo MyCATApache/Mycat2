@@ -14,6 +14,7 @@
  */
 package io.mycat.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -24,12 +25,12 @@ import java.util.Arrays;
  * @date 2019-05-07 21:36
  **/
 
-public class ByteArrayOutput {
+public class ByteArrayOutput implements Closeable {
 
   /**
    * The buffer where data is stored.
    */
-  protected byte buf[];
+  protected byte[] buf;
 
   /**
    * The number of valid bytes in the buffer.
@@ -130,7 +131,7 @@ public class ByteArrayOutput {
    * @param off the start offset in the data.
    * @param len the number of bytes to write.
    */
-  public void write(byte b[], int off, int len) {
+  public void write(byte[] b, int off, int len) {
     if ((off < 0) || (off > b.length) || (len < 0) ||
             ((off + len) - b.length > 0)) {
       throw new IndexOutOfBoundsException();
@@ -152,7 +153,7 @@ public class ByteArrayOutput {
     out.write(buf, 0, count);
   }
 
-  public void write(byte b[]) {
+  public void write(byte[] b) {
     write(b, 0, b.length);
   }
 
@@ -174,7 +175,7 @@ public class ByteArrayOutput {
    * @return the current contents of this output stream, as a byte array.
    * @see java.io.ByteArrayOutputStream#size()
    */
-  public byte toByteArray()[] {
+  public byte[] toByteArray() {
     return Arrays.copyOf(buf, count);
   }
 
@@ -251,4 +252,8 @@ public class ByteArrayOutput {
     return new String(buf, hibyte, 0, count);
   }
 
+  @Override
+  public void close() {
+
+  }
 }

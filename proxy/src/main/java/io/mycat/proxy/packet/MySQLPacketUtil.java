@@ -6,7 +6,6 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.util.ByteArrayOutput;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 
@@ -18,22 +17,28 @@ public class MySQLPacketUtil {
 
   private static final byte NULL_MARK = (byte) 251;
   private static final byte EMPTY_MARK = (byte) 0;
-  public static final byte[] generateRequest(int head,byte[] data) {
-    MySQLPayloadWriter writer = new MySQLPayloadWriter(1 + data.length);
-    writer.write(head);
-    writer.write(data);
-    return writer.toByteArray();
+
+  public static final byte[] generateRequest(int head, byte[] data) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(1 + data.length)) {
+      writer.write(head);
+      writer.write(data);
+      return writer.toByteArray();
+    }
   }
+
   public static final byte[] generateComQueryPacket(String sql) {
-    MySQLPayloadWriter writer = new MySQLPayloadWriter(sql.length() + 5);
-    writer.write(0x3);
-    writer.writeEOFString(sql);
-    return generateMySQLPacket(0,writer.toByteArray());
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(sql.length() + 5)) {
+      writer.write(0x3);
+      writer.writeEOFString(sql);
+      return generateMySQLPacket(0, writer.toByteArray());
+    }
   }
-  public static final byte[] generateRequestPacket(int head,byte[] data) {
+
+  public static final byte[] generateRequestPacket(int head, byte[] data) {
     byte[] bytes = generateRequest(head, data);
-    return generateMySQLPacket(0,bytes);
+    return generateMySQLPacket(0, bytes);
   }
+
   public static final byte[] generateResultSetCount(int fieldCount) {
     MySQLPayloadWriter writer = new MySQLPayloadWriter(1);
     writer.writeLenencInt(fieldCount);
@@ -48,11 +53,12 @@ public class MySQLPacketUtil {
   public static final byte[] generateEof(
       int warningCount, int status
   ) {
-    MySQLPayloadWriter writer = new MySQLPayloadWriter(12);
-    writer.writeByte(0xfe);
-    writer.writeFixInt(2, warningCount);
-    writer.writeFixInt(2, status);
-    return writer.toByteArray();
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(12)) {
+      writer.writeByte(0xfe);
+      writer.writeFixInt(2, warningCount);
+      writer.writeFixInt(2, status);
+      return writer.toByteArray();
+    }
   }
 
   public static final byte[] generateOk(int header,
@@ -60,49 +66,52 @@ public class MySQLPacketUtil {
       boolean isClientProtocol41, boolean isKnowsAboutTransactions,
       boolean sessionVariableTracking, String message
   ) {
-    MySQLPayloadWriter writer = new MySQLPayloadWriter(12);
-    writer.writeByte((byte) header);
-    writer.writeLenencInt(affectedRows);
-    writer.writeLenencInt(lastInsertId);
-    if (isClientProtocol41) {
-      writer.writeFixInt(2, serverStatus);
-      writer.writeFixInt(2, warningCount);
-    } else if (isKnowsAboutTransactions) {
-      writer.writeFixInt(2, serverStatus);
-    }
-    if (sessionVariableTracking) {
-      throw new MycatExpection("unsupport!!");
-    } else {
-      if (message != null) {
-        writer.writeBytes(message.getBytes());
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(12)) {
+      writer.writeByte((byte) header);
+      writer.writeLenencInt(affectedRows);
+      writer.writeLenencInt(lastInsertId);
+      if (isClientProtocol41) {
+        writer.writeFixInt(2, serverStatus);
+        writer.writeFixInt(2, warningCount);
+      } else if (isKnowsAboutTransactions) {
+        writer.writeFixInt(2, serverStatus);
       }
+      if (sessionVariableTracking) {
+        throw new MycatExpection("unsupport!!");
+      } else {
+        if (message != null) {
+          writer.writeBytes(message.getBytes());
+        }
+      }
+      return writer.toByteArray();
     }
-    return writer.toByteArray();
   }
 
   public static final byte[] generateError(
       int errno,
       String message, int serverCapabilityFlags
   ) {
-    MySQLPayloadWriter writer = new MySQLPayloadWriter(64);
-    ErrorPacketImpl errorPacket = new ErrorPacketImpl();
-    errorPacket.setErrorMessage(message.getBytes());
-    errorPacket.setErrorCode(errno);
-    errorPacket.writePayload(writer, serverCapabilityFlags);
-    return writer.toByteArray();
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(64)) {
+      ErrorPacketImpl errorPacket = new ErrorPacketImpl();
+      errorPacket.setErrorMessage(message.getBytes());
+      errorPacket.setErrorCode(errno);
+      errorPacket.writePayload(writer, serverCapabilityFlags);
+      return writer.toByteArray();
+    }
   }
 
   public static final byte[] generateProgressInfoErrorPacket(
       int stage, int maxStage, int progress, byte[] progressInfo
   ) {
-    MySQLPayloadWriter writer = new MySQLPayloadWriter(64);
-    ErrorPacketImpl errorPacket = new ErrorPacketImpl();
-    errorPacket.setErrorCode(0xFFFF);
-    errorPacket.setErrorStage(stage);
-    errorPacket.setErrorMaxStage(maxStage);
-    errorPacket.setErrorProgress(progress);
-    errorPacket.setErrorProgressInfo(progressInfo);
-    return writer.toByteArray();
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(64)) {
+      ErrorPacketImpl errorPacket = new ErrorPacketImpl();
+      errorPacket.setErrorCode(0xFFFF);
+      errorPacket.setErrorStage(stage);
+      errorPacket.setErrorMaxStage(maxStage);
+      errorPacket.setErrorProgress(progress);
+      errorPacket.setErrorProgressInfo(progressInfo);
+      return writer.toByteArray();
+    }
   }
 
   public static final byte[] generateBinaryRow(
@@ -111,15 +120,16 @@ public class MySQLPacketUtil {
     final int binaryNullBitMapLength = (columnCount + 7 + 2) / 8;
     byte[] nullMap = new byte[binaryNullBitMapLength];
     final int payloayEstimateMaxSize = generateBinaryRowHeader(rows, nullMap);
-    final MySQLPayloadWriter writer = new MySQLPayloadWriter(payloayEstimateMaxSize);
-    writer.writeBytes(nullMap);
-    nullMap = null;
-    for (byte[] row : rows) {
-      if (row != null) {
-        writer.writeLenencBytes(row);
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(payloayEstimateMaxSize)) {
+      writer.writeBytes(nullMap);
+      nullMap = null;
+      for (byte[] row : rows) {
+        if (row != null) {
+          writer.writeLenencBytes(row);
+        }
       }
+      return writer.toByteArray();
     }
-    return writer.toByteArray();
   }
 
   private static int generateBinaryRowHeader(byte[][] rows, byte[] nullMap) {
@@ -155,8 +165,7 @@ public class MySQLPacketUtil {
   }
 
   public static byte[] generateMySQLCommandRequest(int packetId, byte head, byte[] packet) {
-    try {
-      ByteArrayOutput byteArrayOutput = new ByteArrayOutput(1 + packet.length);
+    try (MySQLPayloadWriter byteArrayOutput = new MySQLPayloadWriter(1 + packet.length)) {
       byteArrayOutput.write(head);
       byteArrayOutput.write(packet);
       byte[] bytes = byteArrayOutput.toByteArray();
@@ -166,23 +175,47 @@ public class MySQLPacketUtil {
     }
   }
 
+  public static byte[] generateMySQLPacket(int packetId, MySQLPayloadWriter writer) {
+    byte[] bytes = writer.toByteArray();
+    try {
+      MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
+      PacketSplitterImpl packetSplitter = reactorThread.getPacketSplitter();
+      int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(bytes.length);
+      try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
+          wholePacketSize)) {
+        packetSplitter.init(bytes.length);
+        while (packetSplitter.nextPacketInPacketSplitter()) {
+          int offset = packetSplitter.getOffsetInPacketSplitter();
+          int len = packetSplitter.getPacketLenInPacketSplitter();
+          byteArray.writeFixInt(3, len);
+          byteArray.write(packetId);
+          byteArray.write(bytes, offset, len);
+          ++packetId;
+        }
+        return byteArray.toByteArray();
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
   public static byte[] generateMySQLPacket(int packetId, byte[] packet) {
     try {
       MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
       PacketSplitterImpl packetSplitter = reactorThread.getPacketSplitter();
       int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(packet.length);
-      MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
-          wholePacketSize);
-      packetSplitter.init(packet.length);
-      while (packetSplitter.nextPacketInPacketSplitter()) {
-        int offset = packetSplitter.getOffsetInPacketSplitter();
-        int len = packetSplitter.getPacketLenInPacketSplitter();
-        byteArray.writeFixInt(3,len);
-        byteArray.write(packetId);
-        byteArray.write(packet, offset, len);
-        ++packetId;
+      try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
+          wholePacketSize)) {
+        packetSplitter.init(packet.length);
+        while (packetSplitter.nextPacketInPacketSplitter()) {
+          int offset = packetSplitter.getOffsetInPacketSplitter();
+          int len = packetSplitter.getPacketLenInPacketSplitter();
+          byteArray.writeFixInt(3, len);
+          byteArray.write(packetId);
+          byteArray.write(packet, offset, len);
+          ++packetId;
+        }
+        return byteArray.toByteArray();
       }
-      return byteArray.toByteArray();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -233,8 +266,9 @@ public class MySQLPacketUtil {
 
   public static final byte[] generateTextRow(byte[][] fieldValues) {
     int len = calcTextRowPayloadSize(fieldValues);
-    MySQLPayloadWriter writer = new MySQLPayloadWriter(len);
-    writeTextRow(fieldValues, writer);
-    return writer.toByteArray();
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(len)) {
+      writeTextRow(fieldValues, writer);
+      return writer.toByteArray();
+    }
   }
 }

@@ -23,13 +23,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public class BufferPoolImpl implements BufferPool {
 
     @Override
-    public int defaultAllocate() {
+    public int defaultAllocateLength() {
         return 128;
     }
 
     @Override
     public ByteBuffer allocate() {
-        return ByteBuffer.allocate(defaultAllocate());
+        return ByteBuffer.allocate(defaultAllocateLength());
     }
 
     @Override

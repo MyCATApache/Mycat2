@@ -1,23 +1,20 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.task;
 
 import io.mycat.MycatExpection;
-import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
@@ -30,105 +27,71 @@ import java.io.IOException;
 
 public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPacketCallback {
 
-  default void request(MySQLClientSession mysql, int head, String data,
+  default void request(MySQLClientSession mysql, int head, byte[] data,
       AsynTaskCallBack<MySQLClientSession> callBack) {
-    request(mysql, head, data, (MycatReactorThread) Thread.currentThread(), callBack);
+    assert (mysql.currentProxyBuffer() == null);
+    if (mysql.getMycatReactorThread().getBufPool().defaultAllocateLength() > 1024) {
+      throw new MycatExpection("ResultSetTask unsupport request length more than 1024 bytes");
+    }
+    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
+    MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(data.length + 5);
+    mySQLPacket.writeByte((byte) head);
+    mySQLPacket.writeBytes(data);
+    request(mysql, callBack, mySQLPacket, mysql.setPacketId(0));
   }
 
-  default void requestEmptyPacket(MySQLClientSession mysql, byte nextPacketId,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
-    requestEmptyPacket(mysql, nextPacketId, (MycatReactorThread) Thread.currentThread(), callBack);
-  }
-
-  default void requestEmptyPacket(MySQLClientSession mysql, byte nextPacketId,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
+  default void request(MySQLClientSession mysql, AsynTaskCallBack<MySQLClientSession> callBack,
+      MySQLPacket mySQLPacket, int b) {
     try {
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
-      if (mysql.currentProxyBuffer() != null) {
-        throw new MycatExpection("");
-      }
-      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(4);
       mysql.prepareReveiceResponse();
-      mysql.writeProxyPacket(mySQLPacket, nextPacketId);
+      mysql.writeProxyPacket(mySQLPacket, b);
     } catch (IOException e) {
-      this.clearAndFinished(mysql,false, e.getMessage());
+      this.clearAndFinished(mysql, false, e.getMessage());
     }
-  }
-
-  default void request(MySQLClientSession mysql, int head, byte[] data,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
-    request(mysql, head, data, (MycatReactorThread) Thread.currentThread(), callBack);
   }
 
   default void request(MySQLClientSession mysql, int head, long data,
       AsynTaskCallBack<MySQLClientSession> callBack) {
-    request(mysql, head, data, (MycatReactorThread) Thread.currentThread(), callBack);
+    assert (mysql.currentProxyBuffer() == null);
+    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
+    MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(12);
+    mySQLPacket.writeByte((byte) head);
+    mySQLPacket.writeFixInt(4, data);
+
+    request(mysql, callBack, mySQLPacket, 0);
   }
 
-  default void request(MySQLClientSession mysql, int head, String data,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
-    request(mysql, head, data.getBytes(), curThread, callBack);
-  }
-
-  default void request(MySQLClientSession mysql, int head, byte[] data,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
-    try {
-      mysql.setCallBack(callBack);
-      mysql.switchNioHandler(this);
-      if (mysql.currentProxyBuffer() != null) {
-//                throw new MycatExpection("");
-        mysql.currentProxyBuffer().reset();
-      }
-      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(data.length+5);
-      mySQLPacket.writeByte((byte) head);
-      mySQLPacket.writeBytes(data);
-      mysql.prepareReveiceResponse();
-      mysql.writeProxyPacket(mySQLPacket, mysql.setPacketId(0));
-    } catch (IOException e) {
-      this.clearAndFinished(mysql,false, e.getMessage());
-    }
+  default void requestEmptyPacket(MySQLClientSession mysql, byte nextPacketId,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
+    assert (mysql.currentProxyBuffer() == null);
+    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
+    MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(4);
+    request(mysql, callBack, mySQLPacket, nextPacketId);
   }
 
   default void request(MySQLClientSession mysql, byte[] packetData,
-      MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
-    try {
-      mysql.setCallBack(callBack);
-      mysql.switchNioHandler(this);
-      if (mysql.currentProxyBuffer() != null) {
-//                throw new MycatExpection("");
-        mysql.currentProxyBuffer().reset();
-      }
-      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      mysql.writeProxyBufferToChannel(packetData);
-    } catch (IOException e) {
-      this.clearAndFinished(mysql,false, e.getMessage());
-    }
-  }
-
-  default void request(MySQLClientSession mysql, int head, long data, MycatReactorThread curThread,
       AsynTaskCallBack<MySQLClientSession> callBack) {
     try {
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
-      if (mysql.currentProxyBuffer() != null) {
-        throw new MycatExpection("");
-      }
-      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(12);
-      mySQLPacket.writeByte((byte) head);
-      mySQLPacket.writeFixInt(4, data);
+      assert (mysql.currentProxyBuffer() == null);
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
       mysql.prepareReveiceResponse();
-      mysql.writeProxyPacket(mySQLPacket, 0);
+      mysql.writeProxyBufferToChannel(packetData);
     } catch (IOException e) {
-      this.clearAndFinished(mysql,false, e.getMessage());
+      this.clearAndFinished(mysql, false, e.getMessage());
     }
   }
 
+  default void request(MySQLClientSession mysql, int head, String data,
+      AsynTaskCallBack<MySQLClientSession> callBack) {
+    request(mysql, head, data.getBytes(), callBack);
+  }
 
-  default void onFinished(MySQLClientSession mysql,boolean success, String errorMessage) {
+
+  default void onFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
     AsynTaskCallBack callBack = mysql.getCallBackAndReset();
     callBack.finished(mysql, this, success, getResult(), errorMessage);
   }
@@ -231,11 +194,11 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
         }
       }
       if (isResponseFinished) {
-        clearAndFinished(mysql,true, null);
+        clearAndFinished(mysql, true, null);
       }
     } catch (Throwable e) {
       e.printStackTrace();
-      clearAndFinished(mysql,false, e.getMessage());
+      clearAndFinished(mysql, false, e.getMessage());
     }
   }
 
@@ -243,7 +206,7 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
     mysql.resetPacket();
     mysql.setCurrentProxyBuffer(null);
     mysql.switchDefaultNioHandler();
-    onFinished(mysql,success, errorMessage);
+    onFinished(mysql, success, errorMessage);
   }
 
   @Override

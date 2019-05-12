@@ -56,7 +56,7 @@ public class MultiMySQLQueryTask implements ResultSetTask {
               null, (session, sender, success, result, errorMessage) ->
               {
                 if (success) {
-                  request(session,packetData,mycat.getMycatReactorThread(),callBack);
+                  request(session, packetData, callBack);
                 } else {
                   callBack.finished(null, sender, false, result, errorMessage);
                 }

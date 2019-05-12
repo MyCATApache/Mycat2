@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface BufferPool {
 
-    int defaultAllocate();
+  int defaultAllocateLength();
 
     ByteBuffer allocate();
 

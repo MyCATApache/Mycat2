@@ -15,13 +15,12 @@
 package io.mycat.proxy.packet;
 
 import java.math.BigDecimal;
-import java.sql.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class TextResultSetTransforCollector implements ResultSetCollector {
+public abstract class BinaryResultSetTransforCollector implements ResultSetCollector {
 
-  static final Logger logger = LoggerFactory.getLogger(TextResultSetTransforCollector.class);
+  static final Logger logger = LoggerFactory.getLogger(BinaryResultSetTransforCollector.class);
 
   @Override
   public void onResultSetStart() {
@@ -64,6 +63,10 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
 
   }
 
+  protected void addValue(int columnIndex, java.util.Date date) {
+
+  }
+
   @Override
   public void onRowStart() {
     logger.debug("onRowStart");
@@ -86,7 +89,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectTiny(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      int i = Integer.parseInt(mySQLPacket.readLenencString());
+      int i = mySQLPacket.readByte() & 0xff;
       addValue(columnIndex, i);
       logger.debug("{}:{}", columnDef.getColumnNameString(), i);
     }
@@ -96,9 +99,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectGeometry(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      String v = mySQLPacket.readLenencString();
-      addValue(columnIndex, v);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), v);
+      String lenencBytes = mySQLPacket.readLenencString();
+      addValue(columnIndex, lenencBytes);
+      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
     }
   }
 
@@ -126,7 +129,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectShort(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      int lenencInt = Integer.parseInt(mySQLPacket.readLenencString());
+      int lenencInt = (int) mySQLPacket.readFixInt(2);
       addValue(columnIndex, lenencInt);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
     }
@@ -166,7 +169,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectFloat(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      double v = Double.parseDouble(mySQLPacket.readLenencString());
+      float v = mySQLPacket.readFloat();
       addValue(columnIndex, v);
       logger.debug("{}:{}", columnDef.getColumnNameString(), v);
     }
@@ -176,7 +179,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectDouble(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      double v = Double.parseDouble(mySQLPacket.readLenencString());
+      double v = mySQLPacket.readDouble();
       addValue(columnIndex, v);
       logger.debug("{}:{}", columnDef.getColumnNameString(), v);
     }
@@ -195,21 +198,18 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectTimestamp(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      Date date = Date.valueOf(mySQLPacket.readLenencString());
+      java.util.Date date = mySQLPacket.readDate();
       addValue(columnIndex, date);
       logger.debug("{}:{}", columnDef.getColumnNameString(), date);
     }
   }
 
-  private void addValue(int columnIndex, Date date) {
-
-  }
 
   @Override
   public void collectInt24(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      int lenencInt = Integer.parseInt(mySQLPacket.readLenencString());
+      int lenencInt = (int) mySQLPacket.readFixInt(4);
       addValue(columnIndex, lenencInt);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
     }
@@ -219,7 +219,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectDate(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      Date date = Date.valueOf(mySQLPacket.readLenencString());
+      java.util.Date date = mySQLPacket.readDate();
       addValue(columnIndex, date);
       logger.debug("{}:{}", columnDef.getColumnNameString(), date);
     }
@@ -229,7 +229,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectTime(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      Date date = Date.valueOf(mySQLPacket.readLenencString());
+      java.util.Date date = mySQLPacket.readDate();
       addValue(columnIndex, date);
       logger.debug("{}:{}", columnDef.getColumnNameString(), date);
     }
@@ -239,7 +239,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectDatetime(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      Date date = Date.valueOf(mySQLPacket.readLenencString());
+      java.util.Date date = mySQLPacket.readDate();
       addValue(columnIndex, date);
       logger.debug("{}:{}", columnDef.getColumnNameString(), date);
     }
@@ -249,7 +249,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectYear(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      Date date = Date.valueOf(mySQLPacket.readLenencString());
+      java.util.Date date = mySQLPacket.readDate();
       addValue(columnIndex, date);
       logger.debug("{}:{}", columnDef.getColumnNameString(), date);
     }
@@ -259,7 +259,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectNewDate(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      Date date = Date.valueOf(mySQLPacket.readLenencString());
+      java.util.Date date = mySQLPacket.readDate();
       addValue(columnIndex, date);
       logger.debug("{}:{}", columnDef.getColumnNameString(), date);
     }
@@ -289,7 +289,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectNewDecimal(int columnIndex, ColumnDefPacket columnDef, int decimalScale,
       MySQLPacket mySQLPacket, int startIndex) {
     if (true) {
-      BigDecimal bigDecimal = new BigDecimal(mySQLPacket.readLenencString());
+      BigDecimal bigDecimal = mySQLPacket.readBigDecimal();
       logger.debug("{}:{}", columnDef.getColumnNameString(), bigDecimal);
     }
   }
@@ -318,7 +318,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectLong(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      long lenencInt = Long.parseLong(mySQLPacket.readLenencString());
+      long lenencInt = mySQLPacket.readLong();
       addValue(columnIndex, lenencInt);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
     }
@@ -328,7 +328,7 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectLongLong(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      long lenencInt = Long.parseLong(mySQLPacket.readLenencString());
+      long lenencInt = mySQLPacket.readLong();
       addValue(columnIndex, lenencInt);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
     }
@@ -348,4 +348,5 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
   public void collectColumnList(ColumnDefPacket[] packets) {
 
   }
+
 }

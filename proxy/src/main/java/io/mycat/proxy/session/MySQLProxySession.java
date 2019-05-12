@@ -53,6 +53,12 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   }
 
 
+  default void resetProxyBuffer(byte[] bytes) {
+    ProxyBuffer proxyBuffer = this.currentProxyBuffer();
+    proxyBuffer.reset();
+    proxyBuffer.newBuffer(bytes);
+  }
+
   enum WriteHandler implements MycatSessionWriteHandler {
     INSTANCE;
 
@@ -76,7 +82,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
               mycat.onHandlerFinishedClear();
             }
           } else {
-            onWriteFinished(mycat);
+            assert false;//mycat session使用了Proxybuffer写入
           }
         }
       }
@@ -87,13 +93,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
      */
     @Override
     public void onWriteFinished(MycatSession proxySession) throws IOException {
-      // proxySession.writeFinished(proxySession);
+      proxySession.writeFinished(proxySession);
     }
-  }
-
-  default void rebuildProxyBuffer(byte[] bytes) {
-    ProxyBuffer proxyBuffer = this.currentProxyBuffer();
-    proxyBuffer.reset();
-    proxyBuffer.newBuffer(bytes);
   }
 }

@@ -16,7 +16,6 @@ package io.mycat.proxy.task.client.prepareStatement;
 
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLPreparedStatement;
-import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacketUtil;
@@ -51,12 +50,11 @@ public class SendLongDataTask implements ResultSetTask {
       Iterator<Map.Entry<Integer, MySQLPayloadWriter>> iterator = entries.iterator();
       if (iterator.hasNext()) {
         Map.Entry<Integer, MySQLPayloadWriter> next = iterator.next();
-        MySQLPayloadWriter longData = next.getValue();
-        MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(
-            MySQLPacketSplitter.caculWholePacketSize(longData.size()));
-        byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, mySQLPayloadWriter.toByteArray());
-        mysql.writeProxyBufferToChannel(bytes);
-        iterator.remove();
+        try (MySQLPayloadWriter longData = next.getValue()) {
+          byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, longData.toByteArray());
+          mysql.writeProxyBufferToChannel(bytes);
+          iterator.remove();
+        }
       } else {
         clearAndFinished(mysql, true, null);
       }
