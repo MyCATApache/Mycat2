@@ -70,7 +70,7 @@ public class QueryUtil {
   public static void mutilOkResultSet(
       MySQLClientSession mysql, int count, String sql,
       AsynTaskCallBack<MySQLClientSession> callBack) {
-    new MultiOkQueriesCounterTask(count).request(mysql, sql, callBack);
+    new MultiUpdateCounterTask(count).request(mysql, sql, callBack);
   }
 
   public static void setOption(
@@ -111,11 +111,11 @@ public class QueryUtil {
     }
   }
 
-  private static class MultiOkQueriesCounterTask implements ResultSetTask {
+  private static class MultiUpdateCounterTask implements ResultSetTask {
 
     private int counter = 0;
 
-    public MultiOkQueriesCounterTask(int counter) {
+    public MultiUpdateCounterTask(int counter) {
       this.counter = counter;
     }
 
