@@ -198,11 +198,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public void switchMySQLProxy() {
-    this.writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
-  }
-
-  @Override
   public void setCurrentProxyBuffer(ProxyBuffer buffer) {
     throw new MycatExpection("unsupport!");
   }

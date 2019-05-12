@@ -15,7 +15,6 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
-import io.mycat.proxy.MySQLPacketExchanger.MySQLProxyNIOHandler;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import java.nio.channels.ClosedChannelException;
@@ -69,12 +68,6 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     this.nioHandler = nioHandler;
   }
 
-  /**
-   * 实际上mysql默认的NIOhandler只有
-   */
-  public void switchDefaultNioHandler() {
-    this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
-  }
 
   public void updateLastActiveTime() {
     lastActiveTime = System.currentTimeMillis();

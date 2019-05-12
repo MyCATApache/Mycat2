@@ -20,8 +20,6 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   MySQLPacketResolver getPacketResolver();
 
-  void switchMySQLProxy();
-
 
   default boolean readFromChannel() throws IOException {
     ProxyBuffer proxyBuffer = currentProxyBuffer();

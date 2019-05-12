@@ -155,6 +155,12 @@ public class MySQLClientSession extends
     return mycat;
   }
 
+  /**
+   * 实际上mysql默认的NIOhandler只有
+   */
+  public void switchDefaultNioHandler() {
+    this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
+  }
 
   public void prepareReveiceResponse() {
     this.packetResolver.prepareReveiceResponse();
@@ -217,11 +223,6 @@ public class MySQLClientSession extends
   @Override
   public void setCurrentProxyBuffer(ProxyBuffer buffer) {
     this.proxyBuffer = buffer;
-  }
-
-  @Override
-  public void switchMySQLProxy() {
-    switchNioHandler(MySQLProxyNIOHandler.INSTANCE);
   }
 
   public MySQLClientSession(MySQLDatasource datasource, Selector selector, SocketChannel channel,
