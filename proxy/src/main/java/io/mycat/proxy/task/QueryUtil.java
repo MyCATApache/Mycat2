@@ -18,6 +18,8 @@ import java.io.IOException;
 public class QueryUtil {
 
   private final static SetOptionTask SET_OPTION = new SetOptionTask();
+  public final static ResultSetTask COMMAND = new ResultSetTask() {
+  };
 
   public static void query(
       MySQLClientSession mysql, String sql,
@@ -42,27 +44,27 @@ public class QueryUtil {
     queryResultSetTask
         .request(mysql, "SELECT id, character_set_name FROM information_schema.collations",
             value -> {
-      switch (value) {
-        case 0:
-        case 1:
-          return true;
-        default:
-          return false;
-      }
-    }, new TextResultSetTransforCollector() {
+              switch (value) {
+                case 0:
+                case 1:
+                  return true;
+                default:
+                  return false;
+              }
+            }, new TextResultSetTransforCollector() {
               int value;
 
-      @Override
-      protected void addValue(int columnIndex, String value) {
-        collationIndex.put(this.value, value);
+              @Override
+              protected void addValue(int columnIndex, String value) {
+                collationIndex.put(this.value, value);
 
-      }
+              }
 
-      @Override
-      protected void addValue(int columnIndex, long value) {
-        this.value = (int) value;
-      }
-    }, callBack);
+              @Override
+              protected void addValue(int columnIndex, long value) {
+                this.value = (int) value;
+              }
+            }, callBack);
   }
 
   public static void mutilOkResultSet(
