@@ -355,7 +355,6 @@ public class MySQLClientSession extends
   }
 
   public void writeProxyBufferToChannel(byte[] bytes) throws IOException {
-    switchMySQLProxy();
     writeProxyBufferToChannel(this, bytes);
   }
 
@@ -383,7 +382,6 @@ public class MySQLClientSession extends
   }
 
   public void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
-    switchMySQLProxy();
     this.setCurrentProxyBuffer(proxyBuffer);
     this.writeToChannel();
   }

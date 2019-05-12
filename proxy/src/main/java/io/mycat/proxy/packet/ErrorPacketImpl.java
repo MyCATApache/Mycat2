@@ -18,7 +18,7 @@ package io.mycat.proxy.packet;
 
 
 import io.mycat.beans.mysql.packet.ErrorPacket;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.config.MySQLServerCapabilityFlags;
 
 /**
@@ -45,7 +45,7 @@ public class ErrorPacketImpl implements ErrorPacket {
 
     private String message;
 
-    public void writePayload(MySQLPayloadWriter buffer,int serverCapabilities) {
+  public void writePayload(MySQLPayloadWriteView buffer, int serverCapabilities) {
         buffer.writeByte((byte) 0xff);
         buffer.writeFixInt(2, errno);
         if (errno == 0xFFFF) { /* progress reporting */

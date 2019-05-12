@@ -14,13 +14,14 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.beans.mysql.packet.MySQLPayloadReader;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import java.nio.ByteBuffer;
 
 
-public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, MySQLPayloadWriter {
+public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView,
+                                                                MySQLPayloadWriteView {
 
   byte[] EMPTY_BYTE_ARRAY = new byte[]{};
 
@@ -330,7 +331,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReader, 
     return this;
   }
 
-  default MySQLPayloadWriter writeLenencBytesWithNullable(byte[] bytes) {
+  default MySQLPayloadWriteView writeLenencBytesWithNullable(byte[] bytes) {
     byte nullVal = 0;
     if (bytes == null) {
       currentBuffer().put(nullVal);

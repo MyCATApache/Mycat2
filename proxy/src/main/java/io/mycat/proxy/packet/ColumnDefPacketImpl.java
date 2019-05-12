@@ -16,7 +16,7 @@ package io.mycat.proxy.packet;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLFieldInfo;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
@@ -52,7 +52,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     return columnDefPacket;
   }
 
-  public void writePayload(MySQLPayloadWriter buffer) {
+  public void writePayload(MySQLPayloadWriteView buffer) {
     buffer.writeLenencBytesWithNullable(ColumnDefPacket.DEFAULT_CATALOG);
     buffer.writeLenencBytesWithNullable(columnSchema);
     buffer.writeLenencBytesWithNullable(columnTable);

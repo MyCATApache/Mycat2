@@ -14,7 +14,7 @@
  */
 package io.mycat.beans.mysql.packet;
 
-public interface MySQLPayloadReader<T extends MySQLPayloadReader<T>> {
+public interface MySQLPayloadReadView<T extends MySQLPayloadReadView<T>> {
 
   int length();
 

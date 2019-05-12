@@ -52,7 +52,7 @@ public class MySQLDatasource {
         createMySQLSession(firstThread, (mysql0, sender0, success0, result0, errorMessage0) -> {
           if (success0) {
             logger.info("dataSource create successful!!");
-            QueryUtil.collectCollation(mysql0, collationIndex,
+            QueryUtil.collectCharset(mysql0, collationIndex,
                 (mysql1, sender1, success1, result1, errorMessage1) -> {
                   if (success1) {
                     mysql1.end();

@@ -1,7 +1,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.beans.mysql.packet.PacketSplitter;
+import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MycatHandler.MycatSessionWriteHandler;
@@ -31,50 +31,10 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   byte getNextPacketId();
 
-  PacketSplitter packetSplitter();
-
-  String lastMessage();
-
-  long affectedRows();
-
-  long incrementAffectedRows();
-
-  int serverStatus();
-
-  int setServerStatus(int s);
-
-  int incrementWarningCount();
-
-  int warningCount();
-
-  long lastInsertId();
-
-  int setLastInsertId(int s);
-
-  int lastErrorCode();
-
-  boolean isDeprecateEOF();
-
-  void resetSession();
-
-  Charset charset();
-
-  int charsetIndex();
-
-  int capabilities();
-
-  void setLastErrorCode(int errorCode);
-
-  boolean isResponseFinished();
-
-  void setResponseFinished(boolean b);
-
-  void switchMySQLServerWriteHandler();
-
   static void writeToChannel(MySQLServerSession session) throws IOException {
     LinkedList<ByteBuffer> byteBuffers = session.writeQueue();
     ByteBuffer[] packetContainer = session.packetContainer();
-    PacketSplitter packetSplitter = session.packetSplitter();
+    MySQLPacketSplitter packetSplitter = session.packetSplitter();
     long writed;
     do {
       writed = 0;
@@ -120,6 +80,55 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       session.writeFinished(session);
       return;
     }
+  }
+
+  String lastMessage();
+
+  long affectedRows();
+
+  long incrementAffectedRows();
+
+  int serverStatus();
+
+  int setServerStatus(int s);
+
+  int incrementWarningCount();
+
+  int warningCount();
+
+  long lastInsertId();
+
+  int setLastInsertId(int s);
+
+  int lastErrorCode();
+
+  boolean isDeprecateEOF();
+
+  void resetSession();
+
+  Charset charset();
+
+  int charsetIndex();
+
+  int capabilities();
+
+  void setLastErrorCode(int errorCode);
+
+  boolean isResponseFinished();
+
+  void setResponseFinished(boolean b);
+
+  void switchMySQLServerWriteHandler();
+
+  static void splitPacket(MySQLServerSession session, ByteBuffer[] packetContainer,
+      MySQLPacketSplitter packetSplitter,
+      ByteBuffer first) {
+    int offset = packetSplitter.getOffsetInPacketSplitter();
+    int len = packetSplitter.getPacketLenInPacketSplitter();
+    setPacketHeader(session, packetContainer, len);
+
+    first.position(offset).limit(len + offset);
+    packetContainer[1] = first;
   }
 
   default void writeTextRowPacket(byte[][] row) {
@@ -249,16 +258,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     }
   }
 
-  static void splitPacket(MySQLServerSession session, ByteBuffer[] packetContainer,
-      PacketSplitter packetSplitter,
-      ByteBuffer first) {
-    int offset = packetSplitter.getOffsetInPacketSplitter();
-    int len = packetSplitter.getPacketLenInPacketSplitter();
-    setPacketHeader(session, packetContainer, len);
-
-    first.position(offset).limit(len + offset);
-    packetContainer[1] = first;
-  }
+  MySQLPacketSplitter packetSplitter();
 
   static void setPacketHeader(MySQLServerSession session, ByteBuffer[] packetContainer, int len) {
     ByteBuffer header = session.packetHeaderBuffer();

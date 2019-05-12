@@ -19,7 +19,7 @@ package io.mycat.beans.mysql.packet;
 /**
  * copy form com.mysql.cj.protocol.a
  */
-public interface PacketSplitter {
+public interface MySQLPacketSplitter {
     // static final int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
     int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;
 
@@ -30,7 +30,7 @@ public interface PacketSplitter {
     }
 
   static int caculWholePacketSize(int payloadLen) {
-      return   (payloadLen / (PacketSplitter.MAX_PACKET_SIZE)+1) * 4;
+    return (payloadLen / (MySQLPacketSplitter.MAX_PACKET_SIZE) + 1) * 4;
     }
     default boolean nextPacketInPacketSplitter() {
         setOffsetInPacketSplitter(getOffsetInPacketSplitter() + getPacketLenInPacketSplitter());

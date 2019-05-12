@@ -35,29 +35,32 @@ public class QueryUtil {
     }, new QueryResultSetCollector(), callBack);
   }
 
-  public static void collectCollation(
+  public static void collectCharset(
       MySQLClientSession mysql, MySQLCollationIndex collationIndex,
       AsynTaskCallBack<MySQLClientSession> callBack) {
     QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
-    queryResultSetTask.request(mysql, "SHOW COLLATION;", value -> {
+    queryResultSetTask
+        .request(mysql, "SELECT id, character_set_name FROM information_schema.collations",
+            value -> {
       switch (value) {
+        case 0:
         case 1:
-        case 2:
           return true;
         default:
           return false;
       }
     }, new TextResultSetTransforCollector() {
-      String value;
+              int value;
 
       @Override
       protected void addValue(int columnIndex, String value) {
-        this.value = value;
+        collationIndex.put(this.value, value);
+
       }
 
       @Override
       protected void addValue(int columnIndex, long value) {
-        collationIndex.put((int) value, this.value);
+        this.value = (int) value;
       }
     }, callBack);
   }

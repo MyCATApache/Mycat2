@@ -1,24 +1,24 @@
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql;
 
-import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.util.ByteArrayOutput;
 
 /**
  * @author jamie12221
  * @date 2019-05-07 21:47
  **/
-public class MySQLPayloadWriterImpl extends ByteArrayOutput implements
-    MySQLPayloadWriter<MySQLPayloadWriterImpl> {
+public class MySQLPayloadWriter extends ByteArrayOutput implements
+    MySQLPayloadWriteView<MySQLPayloadWriter> {
 
-  public MySQLPayloadWriterImpl() {
+  public MySQLPayloadWriter() {
   }
 
-  public MySQLPayloadWriterImpl(int size) {
+  public MySQLPayloadWriter(int size) {
     super(size);
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeLong(long x) {
+  public MySQLPayloadWriter writeLong(long x) {
     writeByte(long0(x));
     writeByte(long1(x));
     writeByte(long2(x));
@@ -31,7 +31,7 @@ public class MySQLPayloadWriterImpl extends ByteArrayOutput implements
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeFixInt(int length, long val) {
+  public MySQLPayloadWriter writeFixInt(int length, long val) {
     for (int i = 0; i < length; i++) {
       byte b = (byte) ((val >>> (i * 8)) & 0xFF);
       writeByte(b);
@@ -40,7 +40,7 @@ public class MySQLPayloadWriterImpl extends ByteArrayOutput implements
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeLenencInt(long val) {
+  public MySQLPayloadWriter writeLenencInt(long val) {
     if (val < 251) {
       writeByte((byte) val);
     } else if (val >= 251 && val < (1 << 16)) {
@@ -57,19 +57,19 @@ public class MySQLPayloadWriterImpl extends ByteArrayOutput implements
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeFixString(String val) {
+  public MySQLPayloadWriter writeFixString(String val) {
     writeFixString(val.getBytes());
     return this;
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeFixString(byte[] bytes) {
+  public MySQLPayloadWriter writeFixString(byte[] bytes) {
     writeBytes(bytes, 0, bytes.length);
     return this;
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeLenencBytesWithNullable(byte[] bytes) {
+  public MySQLPayloadWriter writeLenencBytesWithNullable(byte[] bytes) {
     byte nullVal = 0;
     if (bytes == null) {
       writeByte(nullVal);
@@ -80,57 +80,57 @@ public class MySQLPayloadWriterImpl extends ByteArrayOutput implements
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeLenencString(byte[] bytes) {
+  public MySQLPayloadWriter writeLenencString(byte[] bytes) {
     return writeLenencBytes(bytes);
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeLenencString(String val) {
+  public MySQLPayloadWriter writeLenencString(String val) {
     return writeLenencBytes(val.getBytes());
   }
 
-  public MySQLPayloadWriterImpl writeBytes(byte[] bytes) {
+  public MySQLPayloadWriter writeBytes(byte[] bytes) {
     write(bytes, 0, bytes.length);
     return this;
   }
   @Override
-  public MySQLPayloadWriterImpl writeBytes(byte[] bytes, int offset, int length) {
+  public MySQLPayloadWriter writeBytes(byte[] bytes, int offset, int length) {
     write(bytes, offset, length);
     return this;
   }
 
 
   @Override
-  public MySQLPayloadWriterImpl writeNULString(String val) {
+  public MySQLPayloadWriter writeNULString(String val) {
     return writeNULString(val.getBytes());
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeNULString(byte[] vals) {
+  public MySQLPayloadWriter writeNULString(byte[] vals) {
     writeFixString(vals);
     writeByte(0);
     return this;
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeEOFString(String val) {
+  public MySQLPayloadWriter writeEOFString(String val) {
     return writeFixString(val);
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeEOFStringBytes(byte[] bytes) {
+  public MySQLPayloadWriter writeEOFStringBytes(byte[] bytes) {
     return writeBytes(bytes, 0, bytes.length);
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeLenencBytes(byte[] bytes) {
+  public MySQLPayloadWriter writeLenencBytes(byte[] bytes) {
     writeLenencInt(bytes.length);
     writeBytes(bytes);
     return this;
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeLenencBytes(byte[] bytes, byte[] nullValue) {
+  public MySQLPayloadWriter writeLenencBytes(byte[] bytes, byte[] nullValue) {
     if (bytes == null) {
       return writeLenencBytes(nullValue);
     } else {
@@ -139,13 +139,13 @@ public class MySQLPayloadWriterImpl extends ByteArrayOutput implements
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeByte(byte val) {
+  public MySQLPayloadWriter writeByte(byte val) {
     write(val);
     return this;
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeReserved(int length) {
+  public MySQLPayloadWriter writeReserved(int length) {
     for (int i = 0; i < length; i++) {
       writeByte(0);
     }
@@ -153,7 +153,7 @@ public class MySQLPayloadWriterImpl extends ByteArrayOutput implements
   }
 
   @Override
-  public MySQLPayloadWriterImpl writeDouble(double d) {
+  public MySQLPayloadWriter writeDouble(double d) {
     writeLong(Double.doubleToRawLongBits(d));
     return this;
   }

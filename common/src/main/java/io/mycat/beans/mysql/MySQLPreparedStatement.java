@@ -16,10 +16,7 @@
  */
 package io.mycat.beans.mysql;
 
-import io.mycat.util.MySQLUtil;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Map;
 
 /**
@@ -32,11 +29,11 @@ public interface MySQLPreparedStatement {
 
     int getParametersNumber();
 
-    Map<Integer, ByteArrayOutputStream> getLongDataMap();
+  Map<Integer, MySQLPayloadWriter> getLongDataMap();
 
     boolean setNewParameterBoundFlag(boolean b);
 
-    default public OutputStream getLongData(int paramId) {
+  default MySQLPayloadWriter getLongData(int paramId) {
         return getLongDataMap().get(paramId);
     }
 
@@ -47,26 +44,23 @@ public interface MySQLPreparedStatement {
     /**
      * COM_STMT_RESET命令将调用该方法进行数据重置
      */
-    default public void resetLongData() {
-        Map<Integer, ByteArrayOutputStream> longDataMap = getLongDataMap();
+    default void resetLongData() {
+      Map<Integer, MySQLPayloadWriter> longDataMap = getLongDataMap();
         int length = longDataMap.size();
         for (int i = 0; i < length; i++) {
-            ByteArrayOutputStream byteArrayOutputStream = longDataMap.get(i);
+          MySQLPayloadWriter byteArrayOutputStream = longDataMap.get(i);
             if (byteArrayOutputStream != null) {
-                try {
-                    byteArrayOutputStream.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
                 longDataMap.put(i, null);
             }
         }
         getBindValueList().reset();
     }
-    public default void putBlob(int index, byte[] value) {
+
+  default void putBlob(int index, byte[] value) {
         getBindValueList().put(index, value);
     }
-    public default void put(int index, Object value) {
+
+  default void put(int index, Object value) {
         getBindValueList().put(index, value);
     }
     MySQLPStmtBindValueList getBindValueList();
@@ -80,10 +74,10 @@ public interface MySQLPreparedStatement {
      * @param data
      * @throws IOException
      */
-    default public void appendLongData(Integer paramId, byte[] data) throws IOException {
-        Map<Integer, ByteArrayOutputStream> longDataMap = getLongDataMap();
+    default void appendLongData(Integer paramId, byte[] data) throws IOException {
+      Map<Integer, MySQLPayloadWriter> longDataMap = getLongDataMap();
         if (getLongData(paramId) == null) {
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
+          MySQLPayloadWriter out = new MySQLPayloadWriter();
             out.write(data);
             longDataMap.put(paramId, out);
         } else {
@@ -91,17 +85,13 @@ public interface MySQLPreparedStatement {
         }
     }
 
-    default public void putLongDataForBuildLongData(int paramId, byte[] data) {
-        Map<Integer, ByteArrayOutputStream> longDataMap = getLongDataMap();
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try {
-            out.write(0x18);
-            out.write(MySQLUtil.getFixIntByteArray(4, this.getStatementId()));
-            out.write(MySQLUtil.getFixIntByteArray(2, paramId));
-            out.write(data);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+  default void putLongDataForBuildLongData(int paramId, byte[] data) {
+    Map<Integer, MySQLPayloadWriter> longDataMap = getLongDataMap();
+    MySQLPayloadWriter out = new MySQLPayloadWriter();
+    out.write(0x18);
+    out.writeFixInt(4, this.getStatementId());
+    out.writeFixInt(2, paramId);
+    out.write(data);
         longDataMap.put(paramId, out);
     }
 }

@@ -16,7 +16,7 @@
  */
 package io.mycat.beans.mysql.packet;
 
-public class PacketSplitterImpl implements PacketSplitter {
+public class PacketSplitterImpl implements MySQLPacketSplitter {
     int totalSize;
     int currentPacketLen;
     int offset;

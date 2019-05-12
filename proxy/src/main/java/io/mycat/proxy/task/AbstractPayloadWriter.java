@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.task;
 
-import io.mycat.beans.mysql.packet.PacketSplitter;
+import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 
 public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClientSession>,
-                                                              PacketSplitter {
+                                                              MySQLPacketSplitter {
     private T buffer;
     private int startIndex;
     private int writeIndex;

@@ -14,7 +14,7 @@
  */
 package io.mycat.beans.mysql.packet;
 
-public interface MySQLPayloadWriter<T extends MySQLPayloadWriter<T>> {
+public interface MySQLPayloadWriteView<T extends MySQLPayloadWriteView<T>> {
 
   T writeLong(long l);
 

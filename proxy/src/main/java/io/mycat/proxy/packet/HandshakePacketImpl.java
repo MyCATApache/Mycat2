@@ -18,8 +18,8 @@ package io.mycat.proxy.packet;
 
 
 import io.mycat.MycatExpection;
-import io.mycat.beans.mysql.packet.MySQLPayloadReader;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.config.MySQLServerCapabilityFlags;
 
 /**
@@ -39,7 +39,7 @@ public class HandshakePacketImpl {
     public String authPluginDataPartTwo;
     public String authPluginName;
 
-    public void readPayload(MySQLPayloadReader buffer) {
+  public void readPayload(MySQLPayloadReadView buffer) {
         protocolVersion = buffer.readByte();
         if (protocolVersion != 0x0a) {
             throw new MycatExpection("unsupport HandshakeV9");
@@ -74,7 +74,7 @@ public class HandshakePacketImpl {
         }
     }
 
-    public void writePayload(MySQLPayloadWriter buffer) {
+  public void writePayload(MySQLPayloadWriteView buffer) {
         buffer.writeByte((byte) 0x0a);
         buffer.writeNULString(serverVersion);
         buffer.writeFixInt(4, connectionId);

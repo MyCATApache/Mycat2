@@ -14,8 +14,8 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.beans.mysql.packet.MySQLPayloadReader;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
+import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 
 public interface LongDataPacket {
 
@@ -31,7 +31,7 @@ public interface LongDataPacket {
 
   void setLongData(byte[] longData);
 
-  default void readPayload(MySQLPayloadReader buffer, int payloadLength) {
+  default void readPayload(MySQLPayloadReadView buffer, int payloadLength) {
     assert buffer.readByte() == 0x18;
     this.setLongDataStatementId(buffer.readFixInt(4));
     this.setLongDataParamId((int) buffer.readFixInt(2));
@@ -39,7 +39,7 @@ public interface LongDataPacket {
   }
 
 
-  default void writePayload(MySQLPayloadWriter buffer) {
+  default void writePayload(MySQLPayloadWriteView buffer) {
     buffer.writeByte((byte) 0x18);
     buffer.writeFixInt(4, getLongDataStatementId());
     buffer.writeFixInt(2, getLongDataParamId());

@@ -20,7 +20,7 @@ import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.beans.mysql.packet.PacketSplitter;
+import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
@@ -62,7 +62,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    * 报文写入辅助类
    */
   private final ByteBuffer[] packetContainer = new ByteBuffer[2];
-  private final PacketSplitter packetSplitter = new PacketSplitterImpl();
+  private final MySQLPacketSplitter packetSplitter = new PacketSplitterImpl();
   private boolean responseFinished = false;//每次在处理请求时候就需要重置
   private MySQLClientSession backend;//unbind
   private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
@@ -273,7 +273,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
   @Override
-  public PacketSplitter packetSplitter() {
+  public MySQLPacketSplitter packetSplitter() {
     return packetSplitter;
   }
 

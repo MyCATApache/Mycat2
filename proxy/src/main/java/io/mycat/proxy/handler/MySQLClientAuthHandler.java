@@ -19,6 +19,7 @@ import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MycatHandler;
@@ -27,7 +28,6 @@ import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.packet.AuthPacketImpl;
 import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.MySQLPayloadWriterImpl;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
@@ -119,7 +119,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
       hs.authPluginDataLen = 21; // 有插件的话，总长度必是21, seed
       hs.authPluginDataPartTwo = new String(seedParts[1]);
       hs.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
-      MySQLPayloadWriterImpl mySQLPayloadWriter = new MySQLPayloadWriterImpl();
+    MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
       hs.writePayload(mySQLPayloadWriter);
       mycat.setPakcetId(-1);//使用获取的packetId变为0
       mycat.writeBytes(mySQLPayloadWriter.toByteArray());
