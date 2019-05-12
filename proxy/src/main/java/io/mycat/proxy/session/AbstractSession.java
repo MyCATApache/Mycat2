@@ -14,7 +14,6 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import java.nio.channels.ClosedChannelException;
@@ -71,21 +70,6 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
 
   public void updateLastActiveTime() {
     lastActiveTime = System.currentTimeMillis();
-  }
-
-  @Override
-  public void setLastThrowable(Throwable e) {
-    if (this.lastThrowable != null) {
-      throw new MycatExpection("multi error！！！！");
-    }
-    this.lastThrowable = e;
-  }
-
-  @Override
-  public Throwable getLastThrowableAndReset() {
-    Throwable lastThrowable = this.lastThrowable;
-    this.lastThrowable = null;
-    return lastThrowable;
   }
 
   public void change2ReadOpts() {

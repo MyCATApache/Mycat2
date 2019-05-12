@@ -16,8 +16,9 @@ package io.mycat.buffer;
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Map;
 
 /**
  * 缓冲池
@@ -28,7 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface BufferPool {
 
-  int defaultAllocateLength();
 
     ByteBuffer allocate();
 
@@ -46,9 +46,8 @@ public interface BufferPool {
 
     long size();
 
-    int getSharedOptsCount();
 
     int getChunkSize();
 
-    ConcurrentHashMap<Long, Long> getNetDirectMemoryUsage();
+    Map<Long, Long> getNetDirectMemoryUsage();
 }

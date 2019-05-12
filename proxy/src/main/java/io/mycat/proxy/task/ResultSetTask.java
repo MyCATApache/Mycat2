@@ -30,7 +30,7 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
   default void request(MySQLClientSession mysql, int head, byte[] data,
       AsynTaskCallBack<MySQLClientSession> callBack) {
     assert (mysql.currentProxyBuffer() == null);
-    if (mysql.getMycatReactorThread().getBufPool().defaultAllocateLength() > 1024) {
+    if (data.length > mysql.getMycatReactorThread().getBufPool().getChunkSize()) {
       throw new MycatExpection("ResultSetTask unsupport request length more than 1024 bytes");
     }
     mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));

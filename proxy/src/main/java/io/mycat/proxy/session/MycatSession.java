@@ -175,7 +175,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     if (!normal) {
       setLastMessage(hint);
       writeErrorEndPacketBySyncInProcessError();
-
     }
     onHandlerFinishedClear();
     channelKey.cancel();
@@ -213,14 +212,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void bind(MySQLClientSession mySQLSession) {
     this.backend = mySQLSession;
-  }
-
-  public String getLastMessage() {
-    return this.serverStatus.getLastMessage();
-  }
-
-  public void setLastMessage(String lastMessage) {
-    this.serverStatus.setLastMessage(lastMessage);
   }
 
   public long getAffectedRows() {
@@ -274,7 +265,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   @Override
   public String lastMessage() {
-    return this.serverStatus.getLastMessage();
+    String lastMessage = this.serverStatus.getLastMessage();
+    return lastMessage + "";
+  }
+
+  public String setLastMessage(String lastMessage) {
+    this.serverStatus.setLastMessage(lastMessage);
+    return lastMessage;
   }
 
   @Override

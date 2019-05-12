@@ -53,10 +53,6 @@ public interface Session<T extends Session> {
     throw new MycatExpection("unsupport!");
   }
 
-  void setLastThrowable(Throwable e);
-
-  Throwable getLastThrowableAndReset();
-
   void change2ReadOpts();
 
   void clearReadWriteOpts();
@@ -68,5 +64,22 @@ public interface Session<T extends Session> {
     return (MycatReactorThread) thread;
   }
 
+  String lastMessage();
+
+  String setLastMessage(String lastMessage);
+
+  default String setLastMessage(Throwable e) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(e.toString());
+    sb.append("\n");
+    StackTraceElement[] stackArray = e.getStackTrace();
+    for (int i = 0; i < stackArray.length; i++) {
+      StackTraceElement element = stackArray[i];
+      sb.append(element.toString()).append("\n");
+    }
+    String string = sb.toString();
+    setLastMessage(string);
+    return string;
+  }
 
 }

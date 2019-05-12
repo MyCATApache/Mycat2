@@ -45,6 +45,7 @@ public class MySQLClientSession extends
   protected AsynTaskCallBack<MySQLClientSession> callBack;
   private MycatDataNode dataNode;
   private boolean noResponse = false;
+  private String lastMessage;
 
   /**
    * 0.本方法直接是关闭调用的第一个方法 1.先关闭handler handler仅关闭handler自身的资源,不关闭其他资源 2.然后清理packetResolver(payload
@@ -276,6 +277,17 @@ public class MySQLClientSession extends
 
   public void setCallBack(AsynTaskCallBack<MySQLClientSession> callBack) {
     this.callBack = callBack;
+  }
+
+  @Override
+  public String lastMessage() {
+    return this.lastMessage;
+  }
+
+  @Override
+  public String setLastMessage(String lastMessage) {
+    this.lastMessage = lastMessage;
+    return lastMessage;
   }
 
   public MySQLPacketResolver getPacketResolver() {

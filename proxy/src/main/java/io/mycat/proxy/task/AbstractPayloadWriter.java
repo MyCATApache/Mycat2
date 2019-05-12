@@ -94,7 +94,7 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
                 return;
             }
         } catch (Exception e) {
-            onError(e);
+            onError(e.getMessage());
         }
     }
 
@@ -149,15 +149,14 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
             clearResource(fileChannel);
             callBackAndReset.finished(this.mysql, this, success, null, null);
         } catch (Exception e) {
-            mysql.setLastThrowable(e);
-            callBackAndReset.finished(this.mysql, this, false, null, null);
+            callBackAndReset.finished(this.mysql, this, false, e.getMessage(), null);
         }
     }
 
      abstract  void clearResource(T f)throws Exception;
 
-    void onError(Throwable e) {
-        mysql.setLastThrowable(e);
+    void onError(String e) {
+        mysql.setLastMessage(e);
         writeFinishedAndClear(false);
     }
 
@@ -244,13 +243,8 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
 
     @Override
     public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
-
-    }
-
-
-    public void onSocketClosed(MySQLClientSession session, boolean normal) {
         if (!normal) {
-            onError(getSessionCaller().getLastThrowableAndReset());
+            onError(reasion);
         } else {
             onWriteFinished(buffer, true);
         }

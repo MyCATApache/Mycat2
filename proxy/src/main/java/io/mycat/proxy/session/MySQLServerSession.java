@@ -1,5 +1,6 @@
 package io.mycat.proxy.session;
 
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
@@ -163,7 +164,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       writeQueue().push(buffer);
       writeToChannel();
     } catch (Exception e) {
-      this.close(false, e.getMessage());
+      this.close(false, setLastMessage(e));
     }
   }
 
@@ -225,7 +226,8 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     switchMySQLServerWriteHandler();
     this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
-                       .generateError(lastErrorCode(), lastMessage(), this.capabilities());
+                       .generateError(MySQLErrorCode.ER_UNKNOWN_ERROR, lastMessage(),
+                           this.capabilities());
     byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(0, bytes);
     ByteBuffer message = ByteBuffer.wrap(bytes1);
     int counter = 0;

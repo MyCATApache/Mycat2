@@ -17,6 +17,7 @@ package io.mycat.proxy;
 import io.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.BufferPoolImpl;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
@@ -133,7 +134,9 @@ public class MycatRuntime extends ConfigReceiverImpl {
     MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[1];
     this.setMycatReactorThreads(mycatReactorThreads);
     for (int i = 0; i < mycatReactorThreads.length; i++) {
-      mycatReactorThreads[i] = new MycatReactorThread(new BufferPoolImpl(),
+      BufferPool bufferPool = new BufferPoolImpl(getBufferPoolPageSize(), getBufferPoolChunkSize(),
+          getBufferPoolPageNumber());
+      mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
           new MycatSessionManager());
       mycatReactorThreads[i].start();
     }
@@ -148,7 +151,7 @@ public class MycatRuntime extends ConfigReceiverImpl {
   }
 
   public void initAcceptor() throws IOException {
-    NIOAcceptor acceptor = new NIOAcceptor(new BufferPoolImpl());
+    NIOAcceptor acceptor = new NIOAcceptor(null);
     this.setAcceptor(acceptor);
     acceptor.start();
     acceptor.startServerChannel(getIP(), getPort());
