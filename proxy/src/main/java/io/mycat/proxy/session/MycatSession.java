@@ -31,6 +31,9 @@ import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
+import io.mycat.proxy.command.AbsCommandHandler;
+import io.mycat.proxy.command.CommandHandlerAdapter;
+import io.mycat.proxy.command.MycatSessionView;
 import io.mycat.proxy.executer.MySQLDataNodeExecuter;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -44,7 +47,10 @@ import java.nio.charset.Charset;
 import java.util.LinkedList;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements
-    MySQLServerSession<MycatSession>, MySQLProxySession<MycatSession> {
+    MySQLProxySession<MycatSession>, MycatSessionView {
+
+  private final CommandHandlerAdapter commandHandler = new CommandHandlerAdapter(
+      new AbsCommandHandler());
 
   /**
    * mysql服务器状态
@@ -58,6 +64,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MycatSchema schema;
   private final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();//buffer recycle
   private final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);//reset
+
+
   /**
    * 报文写入辅助类
    */
@@ -66,11 +74,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private boolean responseFinished = false;//每次在处理请求时候就需要重置
   private MySQLClientSession backend;//unbind
   private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
+  private AsynTaskCallBack finallyCallBack;
   /**
    * 路由信息
    */
   private String dataNode;
-
 
   public MycatSession(BufferPool bufferPool, Selector selector, SocketChannel channel,
       int socketOpt, NIOHandler nioHandler, SessionManager<MycatSession> sessionManager)
@@ -79,17 +87,26 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     proxyBuffer = new ProxyBufferImpl(bufferPool);
   }
 
+  public void handle() throws IOException {
+    commandHandler.handle(this);
+  }
+
+
   public void switchWriteHandler(MycatSessionWriteHandler writeHandler) {
     this.writeHandler = writeHandler;
   }
 
-  public void onHandlerFinishedClear() {
+  public void onHandlerFinishedClear(boolean success) {
     if (backend != null) {
       backend.unbindMycatIfNeed();
     } else {
       resetPacket();
     }
     setResponseFinished(false);
+    if (finallyCallBack != null) {
+      finallyCallBack.finished(this, this, success, this.lastMessage(), null);
+      finallyCallBack = null;
+    }
   }
 
   public MySQLAutoCommit getAutoCommit() {
@@ -140,7 +157,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.schema = schema;
   }
 
-  public MySQLClientSession getBackend() {
+  public MySQLClientSession currentBackend() {
     return backend;
   }
 
@@ -173,10 +190,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public void close(boolean normal, String hint) {
     if (!normal) {
+      assert hint != null;
       setLastMessage(hint);
       writeErrorEndPacketBySyncInProcessError();
     }
-    onHandlerFinishedClear();
+    assert hint == null;
+    onHandlerFinishedClear(normal);
     channelKey.cancel();
     try {
       getSessionManager().removeSession(this, normal, hint);
@@ -185,6 +204,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       e.printStackTrace();
     }
   }
+
 
   @Override
   public ProxyBuffer currentProxyBuffer() {
@@ -432,4 +452,29 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     return this.sessionId;
   }
 
+  @Override
+  public int getLocalInFileState() {
+    return this.serverStatus.getLocalInFileRequestState();
+  }
+
+  @Override
+  public void setLocalInFileState(int value) {
+    this.serverStatus.setLocalInFileRequestState(value);
+  }
+
+  @Override
+  public int getNumParamsByStatementId(long statementId) {
+    return 0;
+  }
+
+  public AsynTaskCallBack<MycatSessionView> getCallBack() {
+    AsynTaskCallBack<MycatSessionView> finallyCallBack = this.finallyCallBack;
+    this.finallyCallBack = null;
+    return finallyCallBack;
+  }
+
+  @Override
+  public void setCallBack(AsynTaskCallBack callBack) {
+    this.finallyCallBack = callBack;
+  }
 }

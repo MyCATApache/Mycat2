@@ -30,6 +30,7 @@ public class MycatCore {
     runtime.initRepliac();
     runtime.initHeartbeat();
     runtime.initAcceptor();
+    runtime.setCommandHandler();
 
 
 

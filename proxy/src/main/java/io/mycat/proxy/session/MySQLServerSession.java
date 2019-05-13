@@ -48,6 +48,8 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
         packetSplitter.init(first.limit());
         packetSplitter.nextPacketInPacketSplitter();
         splitPacket(session, packetContainer, packetSplitter, first);
+        assert packetContainer[0] != null;
+        assert packetContainer[1] != null;
         writed = session.channel().write(packetContainer);
         if (first.hasRemaining()) {
           return;
@@ -55,6 +57,8 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
           continue;
         }
       } else {
+        assert packetContainer[0] != null;
+        assert packetContainer[1] != null;
         writed = session.channel().write(packetContainer);
         if (first.hasRemaining()) {
           return;

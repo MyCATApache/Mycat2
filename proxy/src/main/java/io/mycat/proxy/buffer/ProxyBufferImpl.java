@@ -314,9 +314,10 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     if (buffer != null) {
       throw new MycatExpection("");
     }
-    buffer = ByteBuffer.wrap(bytes);
+    buffer = bufferPool.allocate(bytes);
     readStartIndex = 0;
     readEndIndex = bytes.length;
+    assert buffer.position() == 0;
   }
 
   @Override

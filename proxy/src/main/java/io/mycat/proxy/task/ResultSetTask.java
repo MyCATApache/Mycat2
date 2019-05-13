@@ -205,7 +205,7 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
   default void clearAndFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
     mysql.resetPacket();
     mysql.setCurrentProxyBuffer(null);
-    mysql.switchDefaultNioHandler();
+    mysql.switchProxyNioHandler();
     onFinished(mysql, success, errorMessage);
   }
 

@@ -71,13 +71,13 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
       } else {
         if (mycat.isResponseFinished()) {
           mycat.change2ReadOpts();
-          mycat.onHandlerFinishedClear();
+          mycat.onHandlerFinishedClear(true);
         } else {
-          MySQLClientSession mysql = mycat.getBackend();
+          MySQLClientSession mysql = mycat.currentBackend();
           if (mysql != null) {
             boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
             if (b) {
-              mycat.onHandlerFinishedClear();
+              mycat.onHandlerFinishedClear(true);
             }
           } else {
             assert false;//mycat session使用了Proxybuffer写入

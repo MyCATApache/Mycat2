@@ -102,7 +102,7 @@ public class MySQLClientSession extends
     MycatSession mycat = this.mycat;
     try {
       if (isMonopolized() && !isClose) {
-        System.out.println("can not unbind monopolized mysql Session");
+        System.out.println("can not unbind monopolized mysql LocalInFileSession");
         return false;
       }
 
@@ -159,7 +159,7 @@ public class MySQLClientSession extends
   /**
    * 实际上mysql默认的NIOhandler只有
    */
-  public void switchDefaultNioHandler() {
+  public void switchProxyNioHandler() {
     this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
   }
 
@@ -395,6 +395,7 @@ public class MySQLClientSession extends
   }
 
   public void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
+    assert proxyBuffer.channelWriteStartIndex() == 0;
     this.setCurrentProxyBuffer(proxyBuffer);
     this.writeToChannel();
   }

@@ -184,4 +184,8 @@ public class MycatRuntime extends ConfigReceiverImpl {
   public MySQLReplica getMySQLReplicaByReplicaName(String name) {
     return replicaMap.get(name);
   }
+
+  public void setCommandHandler() {
+
+  }
 }

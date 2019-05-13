@@ -53,6 +53,7 @@ public enum MySQLPacketExchanger {
           if (success) {
             mycat.clearReadWriteOpts();
             mysql.setNoResponse(noResponse);
+            mysql.switchProxyNioHandler();
             try {
               mysql.writeProxyBufferToChannel(proxyBuffer);
             } catch (IOException e) {
@@ -86,7 +87,7 @@ public enum MySQLPacketExchanger {
   }
 
   public boolean onFrontWriteFinished(MycatSession mycat) {
-    MySQLClientSession mysql = mycat.getBackend();
+    MySQLClientSession mysql = mycat.currentBackend();
     if (mysql.isResponseFinished()) {
       mycat.change2ReadOpts();
       mysql.clearReadWriteOpts();
@@ -129,7 +130,7 @@ public enum MySQLPacketExchanger {
       boolean b = HANDLER.onBackendWriteFinished(session);
       if (b) {
         MycatSession mycatSession = session.getMycatSession();
-        mycatSession.onHandlerFinishedClear();
+        mycatSession.onHandlerFinishedClear(true);
       }
     }
 

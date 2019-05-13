@@ -198,6 +198,7 @@ public class MySQLPacketUtil {
       throw new RuntimeException(e);
     }
   }
+
   public static byte[] generateMySQLPacket(int packetId, byte[] packet) {
     try {
       MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();

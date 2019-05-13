@@ -27,7 +27,7 @@ import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 集中管理MySQL Session 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
+ * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
  *
  * @author jamie12221
  * @date 2019-05-10 13:21
@@ -137,7 +137,7 @@ public final class MySQLSessionManager implements
   }
 
   /**
-   * 根据dataSource信息创建MySQL Session 1.这个函数并不会把连接加入到闲置的连接池,因为创建的session就是马上使用的,如果创建之后就加入闲置连接池就会发生挣用问题
+   * 根据dataSource信息创建MySQL LocalInFileSession 1.这个函数并不会把连接加入到闲置的连接池,因为创建的session就是马上使用的,如果创建之后就加入闲置连接池就会发生挣用问题
    * 2.错误信息放置在attr
    */
   @Override

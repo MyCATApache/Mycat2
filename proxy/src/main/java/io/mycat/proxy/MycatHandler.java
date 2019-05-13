@@ -14,13 +14,13 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.proxy.command.CommandHandler;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 
 public enum MycatHandler implements NIOHandler<MycatSession> {
   INSTANCE;
 
+  final
   @Override
   public void onSocketRead(MycatSession mycat) throws IOException {
     mycat.currentProxyBuffer().newBufferIfNeed();
@@ -30,14 +30,14 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
     if (!mycat.readProxyPayloadFully()) {
       return;
     }
-    CommandHandler.INSTANCE.handle(mycat);
+    mycat.handle();
     return;
   }
 
   @Override
   public void onWriteFinished(MycatSession mycat) throws IOException {
     if (mycat.isResponseFinished()) {
-      mycat.onHandlerFinishedClear();
+      mycat.onHandlerFinishedClear(true);
       mycat.change2ReadOpts();
     } else {
       mycat.writeToChannel();

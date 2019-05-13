@@ -17,6 +17,7 @@ package io.mycat.beans;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.proxy.command.LocalInFileRequestHandler;
 import java.nio.charset.Charset;
 
 
@@ -39,6 +40,15 @@ public class MySQLServerStatus {
   private String clientUser;
   private MySQLAutoCommit autoCommit;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
+  protected int localInFileRequestState = LocalInFileRequestHandler.COM_QUERY;
+
+  public int getLocalInFileRequestState() {
+    return localInFileRequestState;
+  }
+
+  public void setLocalInFileRequestState(int localInFileRequestState) {
+    this.localInFileRequestState = localInFileRequestState;
+  }
 
   public long incrementAffectedRows() {
     return ++affectedRows;
