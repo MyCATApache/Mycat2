@@ -32,22 +32,22 @@ import java.util.Map;
  *      1              character set
  *      string[23]     reserved (all [0])
  *      string[NUL]    username
- *      if capabilities & CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA {   // 理解auth响应数据的长度编码整数
+ *      if getCapabilities & CLIENT_PLUGIN_AUTH_LENENC_CLIENT_DATA {   // 理解auth响应数据的长度编码整数
  *          lenenc-int     length of auth-response
  *          string[n]      auth-response
- *      } else if capabilities & CLIENT_SECURE_CONNECTION {  // 支持 Authentication::Native41。
+ *      } else if getCapabilities & CLIENT_SECURE_CONNECTION {  // 支持 Authentication::Native41。
  *          1              length of auth-response
  *          string[n]      auth-response
  *      } else {
  *          string[NUL]    auth-response
  *      }
- *      if capabilities & CLIENT_CONNECT_WITH_DB {  // 可以在 connect 中指定数据库（模式）名称
+ *      if getCapabilities & CLIENT_CONNECT_WITH_DB {  // 可以在 connect 中指定数据库（模式）名称
  *          string[NUL]    database
  *      }
- *      if capabilities & CLIENT_PLUGIN_AUTH {  // 在初始握手包中发送额外数据， 并支持可插拔认证协议。
+ *      if getCapabilities & CLIENT_PLUGIN_AUTH {  // 在初始握手包中发送额外数据， 并支持可插拔认证协议。
  *          string[NUL]    auth plugin name
  *      }
- *      if capabilities & CLIENT_CONNECT_ATTRS {  // 允许连接属性
+ *      if getCapabilities & CLIENT_CONNECT_ATTRS {  // 允许连接属性
  *          lenenc-int     length of all key-values
  *          lenenc-str     key
  *          lenenc-str     value
@@ -79,7 +79,7 @@ public class AuthPacketImpl {
         buffer.readBytes(RESERVED.length);
         username = buffer.readNULString();
         if (MySQLServerCapabilityFlags.isPluginAuthLenencClientData(capabilities)) {
-            password = buffer.readFixStringBytes((int) buffer.readLenencInt());
+          password = buffer.readFixStringBytes(buffer.readLenencInt());
         } else if ((MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities))) {
             int passwordLength = buffer.readByte();
             password = buffer.readFixStringBytes(passwordLength);

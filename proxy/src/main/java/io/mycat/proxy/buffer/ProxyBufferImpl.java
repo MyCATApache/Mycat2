@@ -295,15 +295,12 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     if (buffer != null) {
       bufferPool.recycle(buffer);
     }
-    logger.debug("clear buffer");
     buffer = null;
   }
 
   @Override
   public void newBuffer() {
-    if (buffer != null) {
-      throw new MycatExpection("");
-    }
+    assert (buffer == null);
     buffer = bufferPool.allocate();
     readStartIndex = 0;
     readEndIndex = 0;
@@ -311,9 +308,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
 
   @Override
   public void newBuffer(byte[] bytes) {
-    if (buffer != null) {
-      throw new MycatExpection("");
-    }
+    assert (buffer == null);
     buffer = bufferPool.allocate(bytes);
     readStartIndex = 0;
     readEndIndex = bytes.length;
@@ -322,9 +317,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
 
   @Override
   public void newBuffer(int len) {
-    if (buffer != null) {
-      throw new MycatExpection("");
-    }
+    assert (buffer == null);
     buffer = bufferPool.allocate(len);
     readStartIndex = 0;
     readEndIndex = 0;
@@ -393,7 +386,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
 
       this.readEndIndex -= (end - start);
     } else {
-      throw new MycatExpection("");
+      assert false;
     }
   }
 

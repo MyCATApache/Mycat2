@@ -3,10 +3,10 @@ package io.mycat.proxy.task;
 import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLSetOption;
+import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.QueryResultSetCollector;
 import io.mycat.proxy.packet.TextResultSetTransforCollector;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.io.IOException;
@@ -14,32 +14,34 @@ import java.io.IOException;
 /**
  * @author jamie12221
  * @date 2019-05-10 21:57
+ * Task请求帮助类
  **/
 public class QueryUtil {
 
   private final static SetOptionTask SET_OPTION = new SetOptionTask();
   public final static ResultSetTask COMMAND = new ResultSetTask() {
+
   };
 
+  /**
+   * com_query
+   */
   public static void query(
       MySQLClientSession mysql, String sql,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
     QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
     queryResultSetTask.request(mysql, sql, callBack);
   }
 
-  public static void collectCollation2(
-      MySQLClientSession mysql, MySQLCollationIndex collationIndex,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
-    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
-    queryResultSetTask.request(mysql, "SHOW COLLATION;", value -> {
-      return true;
-    }, new QueryResultSetCollector(), callBack);
-  }
-
+  /**
+   * 获取字符集id,结果在回调的result参数
+   * @param mysql
+   * @param collationIndex
+   * @param callBack
+   */
   public static void collectCharset(
       MySQLClientSession mysql, MySQLCollationIndex collationIndex,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
     QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
     queryResultSetTask
         .request(mysql, "SELECT id, character_set_name FROM information_schema.collations",
@@ -67,15 +69,28 @@ public class QueryUtil {
             }, callBack);
   }
 
+  /**
+   * 多个修改语句发送
+   * @param mysql
+   * @param count 结果数量,对应语句数量
+   * @param sql
+   * @param callBack
+   */
   public static void mutilOkResultSet(
       MySQLClientSession mysql, int count, String sql,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
     new MultiUpdateCounterTask(count).request(mysql, sql, callBack);
   }
 
+  /**
+   * set option 命令
+   * @param mysql
+   * @param setOption
+   * @param callBack
+   */
   public static void setOption(
       MySQLClientSession mysql, MySQLSetOption setOption,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
     SET_OPTION.request(mysql, setOption, callBack);
   }
 
@@ -83,12 +98,12 @@ public class QueryUtil {
 
     public void request(
         MySQLClientSession mysql, MySQLSetOption setOption,
-        AsynTaskCallBack<MySQLClientSession> callBack) {
+        AsyncTaskCallBack<MySQLClientSession> callBack) {
       request(mysql, setOption, (MycatReactorThread) Thread.currentThread(), callBack);
     }
 
     public void request(MySQLClientSession mysql, MySQLSetOption setOption,
-        MycatReactorThread curThread, AsynTaskCallBack<MySQLClientSession> callBack) {
+        MycatReactorThread curThread, AsyncTaskCallBack<MySQLClientSession> callBack) {
 
       mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
       MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(7);
@@ -99,15 +114,15 @@ public class QueryUtil {
         mysql.setCallBack(callBack);
         mysql.switchNioHandler(this);
         mysql.prepareReveiceResponse();
-        mysql.writeProxyPacket(mySQLPacket, mysql.setPacketId(0));
+        mysql.writeCurrentProxyPacket(mySQLPacket, mysql.setPacketId(0));
       } catch (IOException e) {
-        this.clearAndFinished(mysql, false, e.getMessage());
+        this.clearAndFinished(mysql, false, mysql.setLastMessage(e.getMessage()));
       }
     }
 
     @Override
-    public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
-
+    public void onSocketClosed(MySQLClientSession mysql, boolean normal, String reason) {
+      this.clearAndFinished(mysql, false, mysql.setLastMessage(reason));
     }
   }
 
@@ -121,7 +136,7 @@ public class QueryUtil {
 
     public void request(
         MySQLClientSession mysql, String sql,
-        AsynTaskCallBack<MySQLClientSession> callBack) {
+        AsyncTaskCallBack<MySQLClientSession> callBack) {
       request(mysql, 3, sql, callBack);
     }
 
@@ -143,11 +158,12 @@ public class QueryUtil {
     @Override
     public void onFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
       if (counter == 0) {
-        AsynTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
+        AsyncTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
         callBack.finished(mysql, this, true, null, errorMessage);
       } else {
-        AsynTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
-        callBack.finished(mysql, this, false, null, success ? "couter fail" : errorMessage);
+        AsyncTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
+        callBack.finished(mysql, this, false,
+            success ? TaskTip.MULTI_OK_REVEIVE_FAIL.getMessage() : errorMessage, null);
       }
     }
 
@@ -162,8 +178,9 @@ public class QueryUtil {
     }
 
     @Override
-    public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
-
+    public void onSocketClosed(MySQLClientSession mysql, boolean normal, String reason) {
+      AsyncTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
+      callBack.finished(mysql, this, false, reason, null);
     }
   }
 

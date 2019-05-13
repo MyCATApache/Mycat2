@@ -113,14 +113,14 @@ public class HandshakePacketImpl {
         size += 1 + serverVersion.length() + 1 + 4;
 //        buffers.writeFixString(authPluginDataPartOne);
 //        buffers.writeByte((byte) 0);
-//        buffers.writeFixInt(2, this.capabilities.getLower2Bytes());
+//        buffers.writeFixInt(2, this.getCapabilities.getLower2Bytes());
         size += 8 + 1 + 2;
         if (hasPartTwo) {
 //            buffers.writeByte((byte) characterSet);
 //            buffers.writeFixInt(2, this.statusFlags);
-//            buffers.writeFixInt(2, this.capabilities.getUpper2Bytes());
+//            buffers.writeFixInt(2, this.getCapabilities.getUpper2Bytes());
             size += 1 + 2 + 2;
-//            if (this.capabilities.isPluginAuth()) {
+//            if (this.getCapabilities.isPluginAuth()) {
 //                buffers.writeByte((byte) authPluginDataLen);
 //            } else {
 //                buffers.writeByte((byte) 0);

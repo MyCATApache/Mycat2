@@ -14,6 +14,9 @@
  */
 package io.mycat.proxy.packet;
 
+/**
+ * 报文类型
+ */
 public enum MySQLPayloadType {
   REQUEST,
   LOAD_DATA_REQUEST,

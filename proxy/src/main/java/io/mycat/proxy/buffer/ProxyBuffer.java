@@ -30,10 +30,21 @@ public interface ProxyBuffer {
 
   Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
 
+  /**
+   * 获取ByteBuffer
+   */
   ByteBuffer currentByteBuffer();
 
+  /**
+   * 获取ByteBuffer的容量
+   * @return
+   */
   int capacity();
 
+  /**
+   * 获取Bytebuffer的位置,即channelWritStarteIndex;
+   * @return
+   */
   int position();
 
   int position(int index);
@@ -62,12 +73,27 @@ public interface ProxyBuffer {
 
   void put(byte[] bytes, int offset, int legnth);
 
+  /**
+   * 写入通道时候,数据获取的开始位置
+   * @return
+   */
   int channelWriteStartIndex();
 
+  /**
+   * 写入通道时候,数据获取结束的位置
+   * @return
+   */
   int channelWriteEndIndex();
 
+  /**
+   * 读事件,报文读取类,从该位置开始读取
+   * @return
+   */
   int channelReadStartIndex();
-
+  /**
+   * 读事件,报文读取类,从该位置读取结束
+   * @return
+   */
   int channelReadEndIndex();
 
   void channelWriteStartIndex(int index);
@@ -78,12 +104,31 @@ public interface ProxyBuffer {
 
   void channelReadEndIndex(int index);
 
+  /**
+   * 不改变Proxybuffer的任何下标和数据,扩容bytebuffer
+   * @param length
+   */
   void expendToLength(int length);
 
+  /**
+   * 读事件,从通道读取数据,通道从channelReadStartIndex开始填充数据,直到容量用完
+   * @param channel
+   * @return
+   * @throws IOException
+   */
   boolean readFromChannel(SocketChannel channel) throws IOException;
 
+  /**
+   * 把Proxybuffer的数据写入通道,从channelWriteStartIndex开始写入
+   * @param channel
+   * @throws IOException
+   */
   void writeToChannel(SocketChannel channel) throws IOException;
 
+  /**
+   * 该buffer所在的byteBuffer
+   * @return
+   */
   BufferPool bufferPool();
 
   void reset();

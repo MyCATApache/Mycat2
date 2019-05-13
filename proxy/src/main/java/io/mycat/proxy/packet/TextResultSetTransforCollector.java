@@ -19,6 +19,12 @@ import java.sql.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 文本结果集收集类
+ *
+ * @author jamie12221
+ * @date 2019-05-10 13:21
+ */
 public abstract class TextResultSetTransforCollector implements ResultSetCollector {
 
   static final Logger logger = LoggerFactory.getLogger(TextResultSetTransforCollector.class);

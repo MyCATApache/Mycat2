@@ -1,7 +1,13 @@
 package io.mycat.proxy.command;
 
+import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.command.CommandHandler.AbstractCommandHandler;
+import io.mycat.proxy.packet.MySQLPacketUtil;
+import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+import io.mycat.router.util.RouterUtil;
 import java.util.Map;
 
 /**
@@ -12,10 +18,15 @@ public class AbsCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleQuery(byte[] sql, MycatSessionView session) {
+    MycatSchema defaultSchema = MycatRuntime.INSTANCE
+                                    .getDefaultSchema();
     String dataNode = MycatRuntime.INSTANCE
                           .getDefaultSchema().getDefaultDataNode();
+    String s = new String(sql);
+    String s1 = RouterUtil.removeSchema(s, defaultSchema.getSchemaName());
     session
-        .proxyBackend(dataNode, false, null, false, (session1, sender, success, result, attr) -> {
+        .proxyBackend(MySQLPacketUtil.generateComQuery(s1), dataNode, true, null, false,
+            (session1, sender, success, result, attr) -> {
           if (success) {
             System.out.println("success full");
           } else {
@@ -81,7 +92,25 @@ public class AbsCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleProcessKill(long connectionId, MycatSessionView session) {
-
+    MycatReactorThread[] mycatReactorThreads = MycatRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread currentThread = session.getMycatReactorThread();
+    for (MycatReactorThread mycatReactorThread : mycatReactorThreads) {
+      FrontSessionManager<MycatSession> frontManager = mycatReactorThread.getFrontManager();
+      for (MycatSession allSession : frontManager.getAllSessions()) {
+        if (allSession.sessionId() == connectionId) {
+          if (currentThread == mycatReactorThread) {
+            allSession.close(true, "processKill");
+          } else {
+            mycatReactorThread.addNIOJob(() -> {
+              allSession.close(true, "processKill");
+            });
+          }
+          session.writeOkEndPacket();
+          return;
+        }
+      }
+    }
+    session.writeErrorEndPacket();
   }
 
   @Override

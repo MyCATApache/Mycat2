@@ -22,7 +22,7 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.proxy.task.QueryUtil;
 import io.mycat.replica.MySQLReplica;
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +32,7 @@ public class MySQLDataNodeExecuter {
   public static void getMySQLSessionFromUserThread(String dataNodeName, MySQLIsolation isolation,
       MySQLAutoCommit autoCommit, String charSet,
       boolean runOnSlave, LoadBalanceStrategy strategy,
-      AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+      AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
     MycatReactorThread[] threads = MycatRuntime.INSTANCE.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
     MySQLDataNode dataNode = MycatRuntime.INSTANCE.getDataNodeByName(dataNodeName);
@@ -48,7 +48,7 @@ public class MySQLDataNodeExecuter {
       String charset,
       boolean runOnSlave,
       LoadBalanceStrategy strategy,
-      AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+      AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
     if (dataNode != null) {
       MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
       if (replica == null) {

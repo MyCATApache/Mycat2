@@ -41,7 +41,8 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
     ByteBuffer header;
     private MySQLClientSession mysql;
 
-    public void request(MySQLClientSession mysql, T buffer, int position, int length, AsynTaskCallBack<MySQLClientSession> callBack) {
+  public void request(MySQLClientSession mysql, T buffer, int position, int length,
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
         try {
             this.mysql = mysql;
             this.buffer = buffer;
@@ -144,7 +145,7 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
     }
 
     void onWriteFinished(T fileChannel, boolean success) {
-        AsynTaskCallBack callBackAndReset =mysql.getCallBackAndReset();
+      AsyncTaskCallBack callBackAndReset = mysql.getCallBackAndReset();
         try {
             clearResource(fileChannel);
             callBackAndReset.finished(this.mysql, this, success, null, null);
@@ -242,9 +243,9 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
     }
 
     @Override
-    public void onSocketClosed(MySQLClientSession session, boolean normal, String reasion) {
+    public void onSocketClosed(MySQLClientSession session, boolean normal, String reason) {
         if (!normal) {
-            onError(reasion);
+          onError(reason);
         } else {
             onWriteFinished(buffer, true);
         }

@@ -16,5 +16,20 @@
  */
 package io.mycat.proxy.task;
 
-public class CommandTask implements ResultSetTask {
+import io.mycat.proxy.session.Session;
+
+/**
+ *
+ */
+public interface AsyncTaskCallBack<T extends Session> {
+
+  /**
+   *
+   * @param session
+   * @param sender
+   * @param success 成功或者失败 成功时候 result可能是结果或者是null 失败时候result是异常字符串
+   * @param result
+   * @param attr 用于其他用途的保留参数,暂时为null
+   */
+	void finished(T session, Object sender, boolean success, Object result, Object attr) ;
 }

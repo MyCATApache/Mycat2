@@ -46,8 +46,10 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLPStmtBindValueList;
+import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLPrepareStmtExecuteFlag;
 import io.mycat.beans.mysql.MySQLPreparedStatement;
+import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.ColumnDefPacket;
@@ -55,10 +57,14 @@ import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.ResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;
-import java.io.IOException;
+import java.util.Objects;
 
+/**
+ * @author jamie12221 chen junwen
+ * @date 2019-05-10 21:13 预处理执行类 该任务类具备收集二进制结果集
+ **/
 public class ExecuteTask implements ResultSetTask {
 
   int binaryNullBitMapLength;
@@ -66,6 +72,9 @@ public class ExecuteTask implements ResultSetTask {
   ColumnDefPacket[] currentColumnDefList;
   ResultSetCollector collector;
 
+  /**
+   * 预处理命令nullmap
+   */
   private static void storeNullBitMap(byte[] nullBitMap, int i) {
     int bitMapPos = (i) / 8;
     int bitPos = (i) % 8;
@@ -98,8 +107,8 @@ public class ExecuteTask implements ResultSetTask {
 
   @Override
   public void onColumnDef(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    ColumnDefPacket packet = new ColumnDefPacketImpl();
-    ((ColumnDefPacketImpl) packet).read(mySQLPacket, startPos, endPos);
+    ColumnDefPacketImpl packet = new ColumnDefPacketImpl();
+    packet.read(mySQLPacket, startPos, endPos);
     int i = this.columnCount++;
     this.currentColumnDefList[i] = packet;
   }
@@ -126,9 +135,15 @@ public class ExecuteTask implements ResultSetTask {
             .collectNull(columnIndex, columnDef, mySQLPacket, mySQLPacket.packetReadStartIndex());
         continue;
       }
-      switch (columnDef.getColumnType()) {
+      int columnType = columnDef.getColumnType();
+      /**
+       * 二进制格式,详细看协议,startIndex 是
+       * 字符串类型,长度的开始位置;
+       * 值类型,不带长度
+       */
+      switch (columnType) {
         default: {
-          throw new MycatExpection("");
+          throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
         }
         case FIELD_TYPE_DECIMAL: {
           collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff,
@@ -246,15 +261,18 @@ public class ExecuteTask implements ResultSetTask {
     collector.onRowEnd();
   }
 
+  /**
+   *
+   */
   public void request(MySQLClientSession mysql, MySQLPreparedStatement ps,
       MySQLPrepareStmtExecuteFlag flags, ResultSetCollector collector,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
-    assert mysql.getCurNIOHandler() == null;
-    assert ps != null;
-    assert ps.getLongDataMap() != null;
-    assert collector != null;
-    assert callBack != null;
-    assert flags != null;
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
+    Objects.requireNonNull(ps);
+    Objects.requireNonNull(ps.getLongDataMap());
+    Objects.requireNonNull(collector);
+    Objects.requireNonNull(callBack);
+    Objects.requireNonNull(flags);
+    assert (mysql.currentProxyBuffer() == null);
     if (!ps.getLongDataMap().isEmpty()) {
       new SendLongDataTask()
           .request(mysql, ps, (session, sender, success, result, errorMessage) -> {
@@ -265,69 +283,72 @@ public class ExecuteTask implements ResultSetTask {
     this.collector = collector;
     try {
       final long iteration = 1;
+      assert (mysql.currentProxyBuffer() == null);
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
-      assert (mysql.currentProxyBuffer() == null);
       MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
       mysql.setCurrentProxyBuffer(new ProxyBufferImpl(thread.getBufPool()));
-      MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(8192);//@todo
-      mySQLPacket.writeByte((byte) 0x17);
-      mySQLPacket.writeFixInt(4, ps.getStatementId());
-      mySQLPacket.writeByte(flags.getValue());
-      mySQLPacket.writeFixInt(4, iteration);
-      int parametersNumber = ps.getParametersNumber();
-      if (parametersNumber > 0) {
-        MySQLPStmtBindValueList mySQLPStmtBindValueList = ps.getBindValueList();
-        Object[] valueList = mySQLPStmtBindValueList.getValueList();
-        byte[] nullBitMap = mySQLPStmtBindValueList.getCacheNullBitMap();
-        for (int i = 0; i < valueList.length; i++) {
-          if (valueList[i] == null) {
-            storeNullBitMap(nullBitMap, i);
+      try (MySQLPayloadWriter writer = new MySQLPayloadWriter()) {
+        writer.writeByte((byte) 0x17);
+        writer.writeFixInt(4, ps.getStatementId());
+        writer.writeByte(flags.getValue());
+        writer.writeFixInt(4, iteration);
+        int parametersNumber = ps.getParametersNumber();
+        if (parametersNumber > 0) {
+          MySQLPStmtBindValueList mySQLPStmtBindValueList = ps.getBindValueList();
+          Object[] valueList = mySQLPStmtBindValueList.getValueList();
+          byte[] nullBitMap = mySQLPStmtBindValueList.getCacheNullBitMap();
+          for (int i = 0; i < valueList.length; i++) {
+            if (valueList[i] == null) {
+              storeNullBitMap(nullBitMap, i);
+            }
           }
-        }
-        mySQLPacket.writeBytes(nullBitMap);
-        mySQLPacket.writeByte((byte) (ps.isNewParameterBoundFlag() ? 1 : 0));
-        int[] parameterTypeList = mySQLPStmtBindValueList.getParameterTypeList();
-        if (ps.isNewParameterBoundFlag()) {
-          for (int j = 0; j < parameterTypeList.length; j++) {
-            mySQLPacket.writeByte((byte) parameterTypeList[j]);
-            mySQLPacket.writeByte((byte) BINARY_FLAG);
+          writer.writeBytes(nullBitMap);
+          writer.writeByte((byte) (ps.isNewParameterBoundFlag() ? 1 : 0));
+          int[] parameterTypeList = mySQLPStmtBindValueList.getParameterTypeList();
+          if (ps.isNewParameterBoundFlag()) {
+            for (int j = 0; j < parameterTypeList.length; j++) {
+              writer.writeByte((byte) parameterTypeList[j]);
+              writer.writeByte((byte) BINARY_FLAG);
+            }
           }
-        }
-        for (int j = 0; j < valueList.length; j++) {
-          Object o = valueList[j];
-          if (valueList[j] != null) {
-            switch (parameterTypeList[j]) {
-              case FIELD_TYPE_TINY:
-                mySQLPacket.writeByte((Byte) o);
-                break;
-              case FIELD_TYPE_SHORT:
-                mySQLPacket.writeShort((Short) o);
-                break;
-              case MySQLFieldsType.FIELD_TYPE_LONG:
-                mySQLPacket.writeLong((Long) o);
-                break;
-              case MySQLFieldsType.FIELD_TYPE_FLOAT:
-                mySQLPacket.writeFloat((Float) o);
-                break;
-              case MySQLFieldsType.FIELD_TYPE_DOUBLE:
-                mySQLPacket.writeDouble((Double) o);
-                break;
-              case MySQLFieldsType.FIELD_TYPE_BLOB:
-                break;
-              case MySQLFieldsType.FIELD_TYPE_STRING:
-                mySQLPacket.writeEOFString((String) o);
-                break;
-              default:
-                throw new MycatExpection("");
+          for (int j = 0; j < valueList.length; j++) {
+            Object o = valueList[j];
+            if (valueList[j] != null) {
+              switch (parameterTypeList[j]) {
+                case MySQLFieldsType.FIELD_TYPE_TINY:
+                  writer.writeByte((Byte) o);
+                  break;
+                case MySQLFieldsType.FIELD_TYPE_SHORT:
+                  writer.writeShort((Short) o);
+                  break;
+                case MySQLFieldsType.FIELD_TYPE_LONG:
+                  writer.writeLong((Long) o);
+                  break;
+                case MySQLFieldsType.FIELD_TYPE_FLOAT:
+                  writer.writeFloat((Float) o);
+                  break;
+                case MySQLFieldsType.FIELD_TYPE_DOUBLE:
+                  writer.writeDouble((Double) o);
+                  break;
+                case MySQLFieldsType.FIELD_TYPE_BLOB:
+                  break;
+                case MySQLFieldsType.FIELD_TYPE_STRING:
+                  writer.writeEOFString((String) o);
+                  break;
+                default:
+                  throw new MycatExpection("todo support date");//@todo support date
+              }
             }
           }
         }
+        mysql.prepareReveiceResponse();
+        MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(writer.size());
+        mySQLPacket.writeBytes(writer.toByteArray());
+        mysql.writeCurrentProxyPacket(mySQLPacket, 0);
       }
-      mysql.prepareReveiceResponse();
-      mysql.writeProxyPacket(mySQLPacket, 0);
-    } catch (IOException e) {
-      this.clearAndFinished(mysql, false, e.getMessage());
+    } catch (Exception e) {
+      this.clearAndFinished(mysql, false, mysql.setLastMessage(e));
     }
   }
 }

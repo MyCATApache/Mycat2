@@ -1,14 +1,18 @@
 package io.mycat.beans.mysql;
 
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
+import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.util.ByteArrayOutput;
+import java.io.Closeable;
 
 /**
  * @author jamie12221
  * @date 2019-05-07 21:47
  **/
 public class MySQLPayloadWriter extends ByteArrayOutput implements
-    MySQLPayloadWriteView<MySQLPayloadWriter> {
+    MySQLPayloadWriteView<MySQLPayloadWriter>, Closeable {
+
+  private final PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
 
   public MySQLPayloadWriter() {
   }
@@ -39,21 +43,8 @@ public class MySQLPayloadWriter extends ByteArrayOutput implements
     return this;
   }
 
-  @Override
-  public MySQLPayloadWriter writeLenencInt(long val) {
-    if (val < 251) {
-      writeByte((byte) val);
-    } else if (val >= 251 && val < (1 << 16)) {
-      writeByte((byte) 0xfc);
-      writeFixInt(2,val);
-    } else if (val >= (1 << 16) && val < (1 << 24)) {
-      writeByte((byte) 0xfd);
-      writeFixInt(3,val);
-    } else {
-      writeByte((byte) 0xfe);
-      writeFixInt(8,val);
-    }
-    return this;
+  private static byte short1(short x) {
+    return (byte) (x >> 8);
   }
 
   @Override
@@ -93,6 +84,7 @@ public class MySQLPayloadWriter extends ByteArrayOutput implements
     write(bytes, 0, bytes.length);
     return this;
   }
+
   @Override
   public MySQLPayloadWriter writeBytes(byte[] bytes, int offset, int length) {
     write(bytes, offset, length);
@@ -188,5 +180,59 @@ public class MySQLPayloadWriter extends ByteArrayOutput implements
 
   private static byte long0(long x) {
     return (byte) (x);
+  }
+
+  private static byte short0(short x) {
+    return (byte) (x);
+  }
+
+  private static byte int3(int x) {
+    return (byte) (x >> 24);
+  }
+
+  private static byte int2(int x) {
+    return (byte) (x >> 16);
+  }
+
+  private static byte int1(int x) {
+    return (byte) (x >> 8);
+  }
+
+  private static byte int0(int x) {
+    return (byte) (x);
+  }
+
+  @Override
+  public MySQLPayloadWriter writeLenencInt(long val) {
+    if (val < 251) {
+      writeByte((byte) val);
+    } else if (val >= 251 && val < (1 << 16)) {
+      writeByte((byte) 0xfc);
+      writeFixInt(2, val);
+    } else if (val >= (1 << 16) && val < (1 << 24)) {
+      writeByte((byte) 0xfd);
+      writeFixInt(3, val);
+    } else {
+      writeByte((byte) 0xfe);
+      writeFixInt(8, val);
+    }
+    return this;
+  }
+
+  public void writeShort(short o) {
+    write(short0(o));
+    write(short1(o));
+  }
+
+  public void writeFloat(Float o) {
+    writeInt(Float.floatToIntBits(o));
+  }
+
+  public void writeInt(int o) {
+    write(int0(o));
+    write(int1(o));
+    write(int2(o));
+    write(int3(o));
+
   }
 }

@@ -9,6 +9,7 @@ import java.util.Iterator;
 /**
  * @author jamie12221
  * @date 2019-05-11 14:44
+ * 文本结果集收集类
  **/
 public class QueryResultSetCollector extends TextResultSetTransforCollector implements
     Iterable<Object[]> {

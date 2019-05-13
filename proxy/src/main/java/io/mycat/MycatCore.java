@@ -28,7 +28,7 @@ public class MycatCore {
     runtime.loadProxy();
     runtime.initReactor();
     runtime.initRepliac();
-    runtime.initHeartbeat();
+    // runtime.initHeartbeat();
     runtime.initAcceptor();
     runtime.setCommandHandler();
 

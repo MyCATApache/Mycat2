@@ -26,6 +26,14 @@ public class MySQLPacketUtil {
     }
   }
 
+  public static final byte[] generateComQuery(String sql) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(sql.length() + 5)) {
+      writer.write(0x3);
+      writer.writeEOFString(sql);
+      return writer.toByteArray();
+    }
+  }
+
   public static final byte[] generateComQueryPacket(String sql) {
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(sql.length() + 5)) {
       writer.write(0x3);

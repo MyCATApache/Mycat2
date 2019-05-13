@@ -227,7 +227,7 @@ public class CommandHandlerAdapter {
         Integer characterSet = null;
         String authPluginName = null;
         HashMap<String, String> clientConnectAttrs = new HashMap<>();
-        int capabilities = mycat.capabilities();
+        int capabilities = mycat.getCapabilities();
         if (MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities)) {
           byte len = curPacket.readByte();
           authResponse = curPacket.readFixString(len);

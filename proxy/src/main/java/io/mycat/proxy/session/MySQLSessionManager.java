@@ -14,20 +14,21 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.MycatExpection;
 import io.mycat.proxy.MySQLPacketExchanger.MySQLIdleNIOHandler;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.proxy.task.BackendConCreateTask;
 import io.mycat.replica.MySQLDatasource;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
+ * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象
+ * 该在一个线程单位里,对象生命周期应该是单例的
  *
  * @author jamie12221
  * @date 2019-05-10 13:21
@@ -60,19 +61,22 @@ public final class MySQLSessionManager implements
    */
   @Override
   public final void getIdleSessionsOfKey(MySQLDatasource datasource,
-      AsynTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+      AsyncTaskCallBack<MySQLClientSession> asyncTaskCallBack) {
     assert datasource != null;
     if (!datasource.isAlive()) {
-      asynTaskCallBack.finished(null, this, false, null, datasource.getName() + " is not alive!");
+      asyncTaskCallBack.finished(null, this, false, null, datasource.getName() + " is not alive!");
     } else {
-      LinkedList<MySQLClientSession> mySQLSessions = this.idleDatasourcehMap.get(datasource);
-      if (mySQLSessions == null || mySQLSessions.isEmpty()) {
-        createSession(datasource, asynTaskCallBack);
+      LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
+      if (group == null || group.isEmpty()) {
+        createSession(datasource, asyncTaskCallBack);
       } else {
-        MySQLClientSession mySQLSession =
-            ThreadLocalRandom.current().nextBoolean() ? mySQLSessions.removeFirst()
-                : mySQLSessions.removeLast();
-        asynTaskCallBack.finished(mySQLSession, this, true, null, null);
+        MySQLClientSession mySQLSession = group.iterator().next();
+        group.remove(mySQLSession);
+        assert mySQLSession.getCurNIOHandler() == MySQLIdleNIOHandler.INSTANCE;
+        assert mySQLSession.currentProxyBuffer() == null;
+        mySQLSession.setIdle(false);
+        mySQLSession.switchNioHandler(null);
+        asyncTaskCallBack.finished(mySQLSession, this, true, null, null);
       }
     }
   }
@@ -88,17 +92,22 @@ public final class MySQLSessionManager implements
      * niohandler对应透传以及task类对mysql session的占用
      */
     assert session.getMycatSession() == null;
-    assert session.getCurNIOHandler() == null;
     assert !session.isClosed();
     assert session.isActivated();
-
+    assert session.currentProxyBuffer() == null;
+    assert !session.isIdle();
+    if (session.isMonopolized()) {
+      throw new MycatExpection("Monopolized");
+    }
+    session.resetPacket();
+    session.setIdle(true);
     session.switchNioHandler(MySQLIdleNIOHandler.INSTANCE);
     session.change2ReadOpts();
     idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
       if (l == null) {
         l = new LinkedList<>();
       }
-      l.add(session);
+      l.addLast(session);
       return l;
     });
   }
@@ -119,11 +128,11 @@ public final class MySQLSessionManager implements
    * 1.可能被以下需要调用 a.定时清理某个dataSource的连接 b.强制关闭摸个dataSource的连接
    */
   @Override
-  public final void clearAndDestroyDataSource(MySQLDatasource dsMetaBean, String reason) {
-    assert dsMetaBean != null;
+  public final void clearAndDestroyDataSource(MySQLDatasource key, String reason) {
+    assert key != null;
     assert reason != null;
-    allSessions.removeIf(session -> session.getDatasource().equals(dsMetaBean));
-    LinkedList<MySQLClientSession> sessions = idleDatasourcehMap.get(dsMetaBean);
+    allSessions.removeIf(session -> session.getDatasource().equals(key));
+    LinkedList<MySQLClientSession> sessions = idleDatasourcehMap.get(key);
     if (sessions != null) {
       for (MySQLClientSession session : sessions) {
         try {
@@ -133,7 +142,7 @@ public final class MySQLSessionManager implements
         }
       }
     }
-    idleDatasourcehMap.remove(dsMetaBean);
+    idleDatasourcehMap.remove(key);
   }
 
   /**
@@ -141,13 +150,14 @@ public final class MySQLSessionManager implements
    * 2.错误信息放置在attr
    */
   @Override
-  public void createSession(MySQLDatasource key, AsynTaskCallBack<MySQLClientSession> callBack) {
+  public void createSession(MySQLDatasource key, AsyncTaskCallBack<MySQLClientSession> callBack) {
     assert key != null;
     assert callBack != null;
     try {
       new BackendConCreateTask(key, this,
           (MycatReactorThread) Thread.currentThread(),
           (session, sender, success, result, attr) -> {
+            assert session.currentProxyBuffer() == null;
             if (success) {
               allSessions.add(session);
               callBack.finished(session, sender, success, result, attr);

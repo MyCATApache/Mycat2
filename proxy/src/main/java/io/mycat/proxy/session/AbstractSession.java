@@ -42,7 +42,6 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   protected long startTime;
   protected long lastActiveTime;
   protected NIOHandler nioHandler;
-  protected Throwable lastThrowable;
 
   public AbstractSession(Selector selector, SocketChannel channel, int socketOpt,
       NIOHandler nioHandler, SessionManager<T> sessionManager)
@@ -63,9 +62,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   /**
    *
    */
-  public void switchNioHandler(NIOHandler nioHandler) {
-    this.nioHandler = nioHandler;
-  }
+  abstract public void switchNioHandler(NIOHandler nioHandler);
 
 
   public void updateLastActiveTime() {

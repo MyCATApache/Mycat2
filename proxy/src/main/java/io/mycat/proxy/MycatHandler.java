@@ -48,7 +48,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
    * 1.mycat session 不存在切换 handler的情况 2.onSocketClosed是session的close方法,它完成了整个状态清理与关闭,所以onSocketClosed无需实现
    */
   @Override
-  public void onSocketClosed(MycatSession session, boolean normal, String reasion) {
+  public void onSocketClosed(MycatSession session, boolean normal, String reason) {
 
   }
 

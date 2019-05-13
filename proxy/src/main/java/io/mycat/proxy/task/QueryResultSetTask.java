@@ -43,6 +43,7 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 
 import io.mycat.MycatExpection;
+import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.packet.ColumnDefPacket;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -51,6 +52,12 @@ import io.mycat.proxy.packet.ResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.function.IntPredicate;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-10 21:57 文本结果集任务
+ *
+ * 可以根据字段的下标跳过指定列的数据解析
+ **/
 public class QueryResultSetTask implements ResultSetTask {
 
   int columnCount;
@@ -60,19 +67,22 @@ public class QueryResultSetTask implements ResultSetTask {
 
   public void request(
       MySQLClientSession mysql, String sql, IntPredicate predicate, ResultSetCollector collector,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
     this.collector = collector;
     this.predicate = predicate;
     request(mysql, 3, sql, callBack);
   }
 
+  /**
+   * 字段过滤器
+   */
   protected boolean columnFilter(int columnIndex) {
     return predicate.test(columnIndex);
   }
 
   public void request(
       MySQLClientSession mysql, String sql,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
     this.collector = new QueryResultSetCollector();
     this.predicate = (i) -> true;
     request(mysql, 3, sql, callBack);
@@ -103,7 +113,7 @@ public class QueryResultSetTask implements ResultSetTask {
       int columnType = columnDef.getColumnType();
       switch (columnType) {
         default: {
-          throw new MycatExpection("");
+          throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
         }
         case FIELD_TYPE_DECIMAL: {
           collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff,
@@ -217,10 +227,7 @@ public class QueryResultSetTask implements ResultSetTask {
         }
       }
       int mayBeErrorStartIndex = mySQLPacket.packetReadStartIndex();
-      int shouldEnd = mySQLPacket.skipLenencBytes(startIndex);
-      if (shouldEnd != mayBeErrorStartIndex) {
-        throw new MycatExpection("");
-      }
+      assert (mySQLPacket.skipLenencBytes(startIndex) == mayBeErrorStartIndex);
     }
     collector.onRowEnd();
   }
@@ -242,6 +249,9 @@ public class QueryResultSetTask implements ResultSetTask {
     collector.onResultSetEnd();
   }
 
+  /**
+   * 收集器作为结果
+   */
   @Override
   public Object getResult() {
     return collector;

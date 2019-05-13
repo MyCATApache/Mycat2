@@ -1,6 +1,5 @@
 package io.mycat.proxy.executer;
 
-import io.mycat.proxy.MySQLPacketExchanger;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.ResultRoute;
 import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
@@ -26,7 +25,7 @@ public enum RouteResultExecuter implements ResultRoute.Executer<MycatSession> {
   public void run(OneServerResultRoute dbResultSet, MycatSession mycatSession)
       throws IOException {
     mycatSession.switchDataNode(dbResultSet.getDataNode());
-    MySQLPacketExchanger.INSTANCE.handle(mycatSession, false);
+//    MySQLPacketExchanger.INSTANCE.handle(mycatSession, false);
   }
 
   @Override

@@ -17,11 +17,13 @@ package io.mycat.proxy.session;
 /**
  * @author jamie12221
  * @date 2019-04-30 16:24
+ * mysql session占用类型
  **/
 public enum MySQLSessionMonopolizeType {
   NONE,
   TRANSACTION,
   LOAD_DATA,
   PREPARE_STATEMENT_EXECUTE,
-  CURSOR_EXISTS
+  CURSOR_EXISTS,
+  ;
 }

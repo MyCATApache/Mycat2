@@ -16,39 +16,43 @@
  */
 package io.mycat.beans.mysql.packet;
 
+/**
+ *
+ */
 public class PacketSplitterImpl implements MySQLPacketSplitter {
-    int totalSize;
-    int currentPacketLen;
-    int offset;
-    @Override
-    public int getTotalSizeInPacketSplitter() {
-        return totalSize;
-    }
 
-    @Override
-    public void setTotalSizeInPacketSplitter(int totalSize) {
-        this.totalSize = totalSize;
-    }
+  int totalSize;
+  int currentPacketLen;
+  int offset;
 
-    @Override
-    public int getPacketLenInPacketSplitter() {
-        return currentPacketLen;
-    }
+  @Override
+  public int getTotalSizeInPacketSplitter() {
+    return totalSize;
+  }
 
-    @Override
-    public void setPacketLenInPacketSplitter(int currentPacketLen) {
-        this.currentPacketLen = currentPacketLen;
-    }
+  @Override
+  public void setTotalSizeInPacketSplitter(int totalSize) {
+    this.totalSize = totalSize;
+  }
 
-    @Override
-    public void setOffsetInPacketSplitter(int offset) {
-        this.offset  = offset;
-    }
+  @Override
+  public int getPacketLenInPacketSplitter() {
+    return currentPacketLen;
+  }
+
+  @Override
+  public void setPacketLenInPacketSplitter(int currentPacketLen) {
+    this.currentPacketLen = currentPacketLen;
+  }
+
+  @Override
+  public void setOffsetInPacketSplitter(int offset) {
+    this.offset  = offset;
+  }
 
 
-
-    @Override
-    public int getOffsetInPacketSplitter() {
-        return offset;
-    }
+  @Override
+  public int getOffsetInPacketSplitter() {
+    return offset;
+  }
 }

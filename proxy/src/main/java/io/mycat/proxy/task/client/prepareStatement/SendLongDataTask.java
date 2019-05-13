@@ -20,19 +20,28 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.proxy.task.ResultSetTask;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-10 22:24 向mysq server发送LONG DATA(BLOB)报文
+ **/
 public class SendLongDataTask implements ResultSetTask {
 
   MySQLPreparedStatement preparedStatement;
 
   public void request(MySQLClientSession mysql, MySQLPreparedStatement preparedStatement,
-      AsynTaskCallBack<MySQLClientSession> callBack) {
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
+    Objects.requireNonNull(mysql);
+    Objects.requireNonNull(preparedStatement);
+    Objects.requireNonNull(callBack);
+    assert mysql.currentProxyBuffer() == null;
     MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
     ProxyBufferImpl proxyBuffer = new ProxyBufferImpl(reactorThread.getBufPool());
     proxyBuffer.newBuffer();
@@ -59,7 +68,7 @@ public class SendLongDataTask implements ResultSetTask {
         clearAndFinished(mysql, true, null);
       }
     } catch (Exception e) {
-      clearAndFinished(mysql, false, e.getMessage());
+      clearAndFinished(mysql, false, mysql.setLastMessage(e));
     }
   }
 

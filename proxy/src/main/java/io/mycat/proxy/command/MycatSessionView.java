@@ -12,7 +12,7 @@ import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLProxySession;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import java.io.IOException;
 
 /**
@@ -24,7 +24,7 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
 
   default boolean proxyBackend(byte[] payload, String dataNodeName, boolean runOnSlave,
       LoadBalanceStrategy strategy, boolean noResponse,
-      AsynTaskCallBack<MycatSessionView> finallyCallBack) {
+      AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
     MycatSession mycat = (MycatSession) this;
     mycat.resetProxyBuffer(MySQLPacketUtil.generateMySQLPacket(0, payload));
     return proxyBackend(dataNodeName, runOnSlave, strategy, noResponse, finallyCallBack);
@@ -32,7 +32,7 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
 
   default boolean proxyBackend(String dataNodeName, boolean runOnSlave,
       LoadBalanceStrategy strategy,
-      boolean noResponse, AsynTaskCallBack<MycatSessionView> finallyCallBack) {
+      boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
     assert dataNodeName != null && !"".equals(dataNodeName);
     MycatSession mycat = (MycatSession) this;
     MycatDataNode mycatDataNode = MycatRuntime.INSTANCE

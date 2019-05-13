@@ -48,6 +48,12 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 报文处理类 该类
+ *
+ * @author jamie12221
+ * @date 2019-05-07 21:23
+ **/
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 
   Logger logger = LoggerFactory.getLogger(MySQLPacketResolver.class);
@@ -188,14 +194,14 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
     setOkAffectedRows(0);
     setOkLastInsertId(0);
-    setServerStatus(0);
+    //setServerStatus(0);//后续可能存在事务的查询
     setOkWarningCount(0);
     setOkStatusInfo(null);
     setOkSessionStateInfoType((byte) 0);
     setOkSessionStateInfoTypeData(null);
     setOkMessage(null);
     setEofWarningCount(0);
-    setEofServerStatus(0);
+    //setEofServerStatus(0);
   }
 
   boolean isPayloadFinished();
@@ -271,7 +277,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       setEndPos(endPos);
       logger.debug("packetLength:" + packetLength);
       logger.debug("startPos:" + getStartPos());
-      logger.debug("endPos:" + getEndPos());
+      int endPos1 = getEndPos();
+      if (endPos1 == 9) {
+        logger.debug("endPos:" + getEndPos());
+      }
       if (!isMultiPacket()) {
         if (length > 0) {
           int aByte = mySQLPacket.getByte(startIndex + 4) & 0xff;
@@ -605,7 +614,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     int bpEndIndex = buffer.packetReadEndIndex();
     buffer.packetReadStartIndex(getStartPos());
     buffer.packetReadStartIndex(getEndPos());
-    //7 = packetLength(3) +  packetId（1） +  pkgType（1） + warningCount（2）
+    //7 = packetLength(3) +  packetId（1） +  pkgType（1） + getWarningCount（2）
 //        buffers.skipInReading(7);
     setEofServerStatus((int) buffer.getFixInt(getStartPos() + 5, 2));
     int i = setServerStatus((int) buffer.getFixInt(getStartPos() + 7, 2));//status
@@ -624,7 +633,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     int serverStatus = 0;
 
     setOkAffectedRows(buffer.readLenencInt());//affectedRows
-    setOkLastInsertId(buffer.readLenencInt());//lastInsertId
+    setOkLastInsertId(buffer.readLenencInt());//getLastInsertId
     int capabilityFlags = capabilityFlags();
     if (MySQLServerCapabilityFlags.isClientProtocol41(capabilityFlags) || MySQLServerCapabilityFlags
                                                                               .isKnowsAboutTransactions(

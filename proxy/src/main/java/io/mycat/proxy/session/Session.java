@@ -14,20 +14,31 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatExpection;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
+/**
+ * @author jamie12221 chen junwen
+ * @date 2019-05-10 21:13 Session
+ **/
 public interface Session<T extends Session> {
 
-
+  /**
+   * 通道
+   */
   SocketChannel channel();
 
+  /**
+   * 判断session是否已经关闭,一般采用通道关闭来判断,判断该方法可以实现关闭幂等
+   */
   boolean isClosed();
 
+  /**
+   * 获取1当前session的处理句柄
+   */
   NIOHandler getCurNIOHandler();
 
   /**
@@ -37,34 +48,66 @@ public interface Session<T extends Session> {
     getCurNIOHandler().onSocketClosed(this, normal, hint);
   }
 
+  /**
+   * 该session的标识符,唯一
+   */
   int sessionId();
 
+  /**
+   * 获取该session,最近活跃的时间
+   */
   void updateLastActiveTime();
 
+  /**
+   * 把session内buffer写入通道
+   */
   void writeToChannel() throws IOException;
 
+  /**
+   * session内buffer写入通道,根据一定条件判断数据写入完毕后回调方法
+   */
   default void writeFinished(T session) throws IOException {
     session.getCurNIOHandler().onWriteFinished(session);
   }
 
+  /**
+   * 读事件回调
+   */
   boolean readFromChannel() throws IOException;
 
-  default void setCallBack(AsynTaskCallBack<T> callBack) {
-    throw new MycatExpection("unsupport!");
-  }
+  /**
+   * 设置回调函数,若果设置了回调,则该session的资源释放取决于回调代码什么什么时候结束,
+   */
+  void setCallBack(AsyncTaskCallBack<T> callBack);
 
+  /**
+   * 注册读事件
+   */
   void change2ReadOpts();
 
+  /**
+   * 清除读写事件
+   */
   void clearReadWriteOpts();
 
+  /**
+   * 注册写事件
+   */
   void change2WriteOpts();
 
+  /**
+   * 获取当前线程池
+   * @return
+   */
   default MycatReactorThread getMycatReactorThread() {
     Thread thread = Thread.currentThread();
     return (MycatReactorThread) thread;
   }
 
-  String lastMessage();
+  /**
+   * 获取上下文设置的错误信息
+   */
+  String getLastMessage();
 
   String setLastMessage(String lastMessage);
 

@@ -17,12 +17,16 @@
 package io.mycat.proxy.session;
 
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 
+/**
+ * @author jamie12221 chen junwen
+ * @date 2019-05-10 21:13 Session管理器
+ **/
 public interface SessionManager<T extends Session> {
 
 
@@ -45,21 +49,43 @@ public interface SessionManager<T extends Session> {
 	 */
   void removeSession(T session, boolean normal, String reason);
 
+	/**
+	 * 前端session管理器,前端session管理器,收到的通道就是已经连接的
+	 */
 	interface FrontSessionManager<T extends Session> extends SessionManager<T> {
 
 		T acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool, Selector selector,
 				SocketChannel socketChannel) throws IOException;
 	}
 
-	interface BackendSessionManager<T extends Session, ARG> extends SessionManager<T> {
+	/**
+	 * 后端session管理器
+	 * @param <T> session实现
+	 * @param <KEY> 根据此key查询session
+	 */
+	interface BackendSessionManager<T extends Session, KEY> extends SessionManager<T> {
 
-		void getIdleSessionsOfKey(ARG key, AsynTaskCallBack<T> asynTaskCallBack);
+		/**
+		 * 根据key获取闲置连接,如果没有闲置连接则创建新的连接
+		 */
+		void getIdleSessionsOfKey(KEY key, AsyncTaskCallBack<T> asyncTaskCallBack);
 
+		/**
+		 * 把session放入闲置池
+		 */
 		void addIdleSession(T Session);
 
-		void createSession(ARG key, AsynTaskCallBack<T> callBack);
+		/**
+		 * 创建新的连接,创建新的连接后,该连接必须是立即使用的,所以不会加入到闲置池
+		 * @param key
+		 * @param callBack
+		 */
+		void createSession(KEY key, AsyncTaskCallBack<T> callBack);
 
-    void clearAndDestroyDataSource(ARG dsMetaBean, String reason);
+		/**
+		 * 根据此key关闭连接
+		 */
+		void clearAndDestroyDataSource(KEY key, String reason);
 	}
 
 }

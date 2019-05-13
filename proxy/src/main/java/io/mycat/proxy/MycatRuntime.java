@@ -33,7 +33,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,13 +141,13 @@ public class MycatRuntime extends ConfigReceiverImpl {
     }
   }
 
-  public void initHeartbeat() {
-    this.getMycatScheduler().scheduleAtFixedRate(() -> {
-      for (MySQLReplica replica : this.replicaMap.values()) {
-        replica.doHeartbeat();
-      }
-    }, Integer.MAX_VALUE, TimeUnit.DAYS);
-  }
+//  public void initHeartbeat() {
+//    this.getMycatScheduler().scheduleAtFixedRate(() -> {
+//      for (MySQLReplica replica : this.replicaMap.values()) {
+//        replica.doHeartbeat();
+//      }
+//    }, Integer.MAX_VALUE, TimeUnit.DAYS);
+//  }
 
   public void initAcceptor() throws IOException {
     NIOAcceptor acceptor = new NIOAcceptor(null);

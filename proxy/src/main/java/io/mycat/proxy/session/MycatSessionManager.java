@@ -44,10 +44,13 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
     return mycatSessions.size();
   }
 
+  /**
+   * 调用该方法的时候 mycat session已经关闭了
+   */
   @Override
   public void removeSession(MycatSession mycat, boolean normal, String reason) {
+    assert mycat.isClosed();
     mycatSessions.remove(mycat);
-//    mycat.close(normal, reason);
   }
 
 

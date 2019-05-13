@@ -22,6 +22,8 @@ import io.mycat.proxy.session.Session;
  * 在Reactor线程中传递局部变量
  * @author wuzhihui
  *
+ * 此环境对象指示当前读取事件回调的session
+ * * @author chen junwen
  */
 public class ReactorEnv {
     public Session getCurSession() {

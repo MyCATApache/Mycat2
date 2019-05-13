@@ -97,7 +97,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
   }
 
   @Override
-  public void onSocketClosed(MycatSession session, boolean normal, String reasion) {
+  public void onSocketClosed(MycatSession session, boolean normal, String reason) {
 
   }
 

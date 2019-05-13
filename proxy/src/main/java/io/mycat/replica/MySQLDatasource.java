@@ -16,90 +16,122 @@ package io.mycat.replica;
 
 import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.logTip.DataSourceTip;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.proxy.task.QueryUtil;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MySQLDatasource {
+/**
+ * MySQL Seesion元信息 对外支持线程修改的属性是alive,其他属性只读
+ *
+ * @author jamie12221
+ * @date 2019-05-10 13:21
+ **/
+public final class MySQLDatasource {
 
   private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
   private final int index;
   private final DatasourceConfig datasourceConfig;
-  private boolean master = false;
-  private MySQLReplica replica;
+  private final MySQLReplica replica;
+  private volatile boolean alive = true;
   private MySQLCollationIndex collationIndex = new MySQLCollationIndex();
 
 
-  public MySQLDatasource(int index, boolean master, DatasourceConfig datasourceConfig,
+  public MySQLDatasource(int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
     this.index = index;
-    this.master = master;
     this.datasourceConfig = datasourceConfig;
     this.replica = replica;
   }
 
+  /**
+   * 回调表示获取此数据源的信息成功 信息需要包含字符集内容,如果字符集获取失败,则集群也是启动失败 字符集只有第一个Session获取,此后新建的session就不会获取,因为字符集是集群使用,集群对外应该表现为一个mysql
+   */
   public void init(BiConsumer<MySQLDatasource, Boolean> successCallback) {
+    Objects.requireNonNull(successCallback);
     int minCon = datasourceConfig.getMinCon();
     MycatReactorThread[] threads = MycatRuntime.INSTANCE.getMycatReactorThreads();
+    Objects.requireNonNull(threads);
     MycatReactorThread firstThread = threads[0 % threads.length];
     firstThread.addNIOJob(
-        createMySQLSession(firstThread, (mysql0, sender0, success0, result0, errorMessage0) -> {
+        createMySQLSession(firstThread, (mysql0, sender0, success0, result0, attr) -> {
           if (success0) {
-            logger.info("dataSource create successful!!");
+            logger.info(DataSourceTip.CREATE_DATASOURCE_SUCCESS.getMessage(getName()));
             QueryUtil.collectCharset(mysql0, collationIndex,
                 (mysql1, sender1, success1, result1, errorMessage1) -> {
                   if (success1) {
-                    mysql1.end();
-                    logger.info("dataSource read charset successful!!");
+                    mysql1.getSessionManager().addIdleSession(mysql1);
+                    logger.info(DataSourceTip.READ_CHARSET_SUCCESS.getMessage());
                     for (int index = 1; index < minCon; index++) {
                       MycatReactorThread thread = threads[index % threads.length];
-                      Integer finalIndex = index;
+                      final int finalIndex = index;
                       thread.addNIOJob(createMySQLSession(thread,
-                          (mysql2, sender2, success2, result2, errorMessage2) -> {
+                          (mysql2, sender2, success2, result2, attr2) -> {
+                            assert mysql2.currentProxyBuffer() == null;
                             if (success2) {
-                              logger.info("dataSource {} create successful!!", finalIndex);
+                              mysql2.getSessionManager().addIdleSession(mysql2);
+                              logger.info(DataSourceTip.CREATE_DATASOURCE_SUCCESS.getMessage());
                             } else {
-                              logger.error("dataSource {} create fail!!", finalIndex);
+                              logger.error(DataSourceTip.CREATE_DATASOURCE_FAIL
+                                               .getMessage(getName(), Objects.toString(result2)));
                             }
                           }));
                     }
                     successCallback.accept(this, true);
                   } else {
-                    logger.error("read charset fail", errorMessage1);
+                    logger.error(DataSourceTip.CREATE_DATASOURCE_FAIL.getMessage(getName()),
+                        errorMessage1);
                     successCallback.accept(this, false);
                   }
                 });
           } else {
-            logger.error("dataSource {} create fail!!", 0);
+            logger.error((DataSourceTip.CREATE_DATASOURCE_FAIL
+                              .getMessage(getName(), Objects.toString(result0))));
             successCallback.accept(this, false);
           }
         }));
   }
 
+  /**
+   * 创建session辅助函数
+   */
   private Runnable createMySQLSession(MycatReactorThread thread,
-      AsynTaskCallBack<MySQLClientSession> callback) {
+      AsyncTaskCallBack<MySQLClientSession> callback) {
+    Objects.requireNonNull(thread);
+    Objects.requireNonNull(callback);
     return () -> thread.getMySQLSessionManager()
                      .createSession(this, (mysql, sender, success, result, errorMessage) -> {
                        if (success) {
                          callback.finished(mysql, this, true, null, null);
                        } else {
-                         logger.error("create connection fail", errorMessage);
-                         callback.finished(null, this, false, null, errorMessage);
+                         logger
+                             .error(DataSourceTip.CREATE_DATASOURCE_FAIL.getMessage(errorMessage));
+                         callback.finished(null, this, false, errorMessage, null);
                        }
                      });
   }
 
+  /**
+   * 关闭此dataSource创建的连接
+   */
   public void clearAndDestroyCons(String reason) {
-    for (MycatReactorThread thread : MycatRuntime.INSTANCE.getMycatReactorThreads()) {
+    Objects.requireNonNull(reason);
+    MycatReactorThread[] mycatReactorThreads = MycatRuntime.INSTANCE.getMycatReactorThreads();
+    Objects.requireNonNull(mycatReactorThreads);
+    for (MycatReactorThread thread : mycatReactorThreads) {
       thread.addNIOJob(
           () -> thread.getMySQLSessionManager().clearAndDestroyDataSource(this, reason));
     }
+  }
+
+  public boolean isAlive() {
+    return alive;
   }
 
   public String getName() {
@@ -122,29 +154,10 @@ public class MySQLDatasource {
     return this.datasourceConfig.getPassword();
   }
 
-  public boolean isAlive() {
-    return true;
+  public void setAlive(boolean alive) {
+    this.alive = alive;
   }
 
-  public boolean isActive() {
-    return isAlive() && true;
-  }
-
-  public boolean canSelectAsReadNode() {
-    return canSelectAsReadNode(HeartbeatInfReceiver.identity());
-  }
-
-  public boolean canSelectAsReadNode(HeartbeatInfReceiver receiver) {
-    return true;
-  }
-
-  public boolean isMaster() {
-    return master;
-  }
-
-  public boolean isSlave() {
-    return !isMaster();
-  }
 
   public MySQLReplica getReplica() {
     return replica;
@@ -154,9 +167,6 @@ public class MySQLDatasource {
     return collationIndex;
   }
 
-  public void doHeartbeat() {
-
-  }
 
   @Override
   public boolean equals(Object o) {
@@ -168,7 +178,6 @@ public class MySQLDatasource {
     }
     MySQLDatasource that = (MySQLDatasource) o;
     return index == that.index &&
-               master == that.master &&
                Objects.equals(datasourceConfig, that.datasourceConfig) &&
                Objects.equals(replica, that.replica) &&
                Objects.equals(collationIndex, that.collationIndex);
@@ -176,6 +185,6 @@ public class MySQLDatasource {
 
   @Override
   public int hashCode() {
-    return Objects.hash(index, master, datasourceConfig, replica, collationIndex);
+    return Objects.hash(index, datasourceConfig, replica, collationIndex);
   }
 }

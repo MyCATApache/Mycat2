@@ -20,7 +20,7 @@ import io.mycat.beans.mysql.MySQLPreparedStatement;
 import io.mycat.beans.mysql.MySQLSetOption;
 import io.mycat.proxy.packet.ResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.proxy.task.QueryUtil;
 import io.mycat.proxy.task.client.prepareStatement.ExecuteTask;
 import io.mycat.proxy.task.client.prepareStatement.PrepareStmtUtil;
@@ -31,136 +31,136 @@ public interface MySQLAPI {
 
   MySQLClientSession getThis();
 
-  default void commit(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void commit(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), 3, "commit;", callback);
   }
 
 
   default void execute(MySQLPreparedStatement preparedStatement, MySQLPrepareStmtExecuteFlag flags,
-      ResultSetCollector collector, AsynTaskCallBack<MySQLClientSession> callBack) {
+      ResultSetCollector collector, AsyncTaskCallBack<MySQLClientSession> callBack) {
     new ExecuteTask().request(getThis(), preparedStatement, flags, collector, callBack);
   }
 
 
-  default void prepare(String prepareStatement, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void prepare(String prepareStatement, AsyncTaskCallBack<MySQLClientSession> callback) {
     new PrepareTask().request(getThis(), prepareStatement, callback);
   }
 
-  default void sleep(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void sleep(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_SLEEP, new byte[]{}, callback);
   }
 
-  default void quit(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void quit(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_QUIT, new byte[]{}, callback);
   }
 
-  default void fieldList(String tableName, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void fieldList(String tableName, AsyncTaskCallBack<MySQLClientSession> callback) {
     tableName = tableName + '\0';
     byte[] bytes = tableName.getBytes();
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_FIELD_LIST, bytes, callback);
   }
 
-  default void createDB(String schemaName, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void createDB(String schemaName, AsyncTaskCallBack<MySQLClientSession> callback) {
     byte[] bytes = schemaName.getBytes();
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_CREATE_DB, bytes, callback);
   }
 
-  default void dropDB(String schemaName, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void dropDB(String schemaName, AsyncTaskCallBack<MySQLClientSession> callback) {
     byte[] bytes = schemaName.getBytes();
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_DROP_DB, bytes, callback);
   }
 
-  default void refresh(byte subCommand, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void refresh(byte subCommand, AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND
         .request(getThis(), MySQLCommandType.COM_REFRESH, new byte[]{subCommand}, callback);
   }
 
-  default void shutdown(byte shutdownType, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void shutdown(byte shutdownType, AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND
         .request(getThis(), MySQLCommandType.COM_SHUTDOWN, new byte[]{shutdownType}, callback);
   }
 
-  default void statistics(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void statistics(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_STATISTICS, new byte[]{}, callback);
   }
 
-  default void processInfo(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void processInfo(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_PROCESS_INFO, new byte[]{}, callback);
   }
 
-  default void connect(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void connect(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_CONNECT, new byte[]{}, callback);
   }
 
-  default void processKill(long connectionId, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void processKill(long connectionId, AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_PROCESS_KILL, connectionId, callback);
   }
 
-  default void debug(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void debug(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_DEBUG, new byte[]{}, callback);
   }
 
-  default void ping(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void ping(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_PING, new byte[]{}, callback);
   }
 
 
-  default void time(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void time(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_TIME, new byte[]{}, callback);
   }
 
-  default void delayedInsert(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void delayedInsert(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND
         .request(getThis(), MySQLCommandType.COM_DELAYED_INSERT, new byte[]{}, callback);
   }
 
-  default void resetConnection(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void resetConnection(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND
         .request(getThis(), MySQLCommandType.COM_RESET_CONNECTION, new byte[]{}, callback);
   }
 
-  default void changeUser(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void changeUser(AsyncTaskCallBack<MySQLClientSession> callback) {
     throw new MycatExpection("unsupport!");
   }
 
-  default void daemon(AsynTaskCallBack<MySQLClientSession> callback) {
+  default void daemon(AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_DAEMON, new byte[]{}, callback);
   }
 
   default void sendBlob(MySQLPreparedStatement preparedStatement, int index, byte[] data,
-      AsynTaskCallBack<MySQLClientSession> callback) {
+      AsyncTaskCallBack<MySQLClientSession> callback) {
     preparedStatement.put(index, data);
     new SendLongDataTask().request(getThis(), preparedStatement, callback);
   }
 
 
   default void reset(MySQLPreparedStatement preparedStatement,
-      AsynTaskCallBack<MySQLClientSession> callback) {
+      AsyncTaskCallBack<MySQLClientSession> callback) {
     preparedStatement.resetLongData();
     PrepareStmtUtil.reset(getThis(), preparedStatement.getStatementId(), callback);
   }
 
-  default void setOption(MySQLSetOption option, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void setOption(MySQLSetOption option, AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.setOption(getThis(), option, callback);
   }
 
-  default void fetch(long stmtId, long numRows, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void fetch(long stmtId, long numRows, AsyncTaskCallBack<MySQLClientSession> callback) {
     PrepareStmtUtil.fetch(getThis(), stmtId, numRows, callback);
   }
 
 
-  default void doQuery(String sql, AsynTaskCallBack<MySQLClientSession> callbac) {
+  default void doQuery(String sql, AsyncTaskCallBack<MySQLClientSession> callbac) {
     QueryUtil.COMMAND.request(getThis(), 3, sql, callbac);
   }
 
 
-  default void initDb(String dataBase, AsynTaskCallBack<MySQLClientSession> callback) {
+  default void initDb(String dataBase, AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryUtil.COMMAND.request(getThis(), 2, dataBase, callback);
   }
 
 
   default void close(MySQLPreparedStatement preparedStatement,
-      AsynTaskCallBack<MySQLClientSession> callback) {
+      AsyncTaskCallBack<MySQLClientSession> callback) {
     preparedStatement.resetLongData();
     PrepareStmtUtil.close(getThis(), preparedStatement.getStatementId(), callback);
   }

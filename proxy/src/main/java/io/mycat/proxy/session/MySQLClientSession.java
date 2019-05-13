@@ -18,6 +18,9 @@ import io.mycat.MySQLAPI;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
+import io.mycat.logTip.TaskTip;
+import io.mycat.proxy.MySQLPacketExchanger.MySQLIdleNIOHandler;
 import io.mycat.proxy.MySQLPacketExchanger.MySQLProxyNIOHandler;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -26,15 +29,25 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-07 21:47
+ *
+ * 后端MySQL Session
+ **/
 public class MySQLClientSession extends
     AbstractSession<MySQLClientSession> implements MySQLProxySession<MySQLClientSession>, MySQLAPI {
+
+  protected AsyncTaskCallBack<MySQLClientSession> callBack;
+
 
   protected final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);
   /**
@@ -42,10 +55,52 @@ public class MySQLClientSession extends
    */
   private final MySQLDatasource datasource;
   protected ProxyBuffer proxyBuffer;
-  protected AsynTaskCallBack<MySQLClientSession> callBack;
-  private MycatDataNode dataNode;
+  /**
+   * //在发起请求的时候设置
+   */
   private boolean noResponse = false;
+  private MycatDataNode dataNode;
+  /**
+   * 错误信息
+   */
   private String lastMessage;
+  private boolean isIdle;
+  /**
+   * 与mycat session绑定的信息 monopolizeType 是无法解绑的原因 TRANSACTION,事务 LOAD_DATA,交换过程
+   * PREPARE_STATEMENT_EXECUTE,预处理过程 CURSOR_EXISTS 游标 以上四种情况 mysql客户端的并没有结束对mysql的交互,所以无法解绑
+   */
+  private MySQLSessionMonopolizeType monopolizeType = MySQLSessionMonopolizeType.NONE;
+  /**
+   * 绑定的mycat 与同步的dataNode mycat的解绑 mycat = null即可
+   */
+  private MycatSession mycat;
+
+  /**
+   * 构造函数
+   */
+  public MySQLClientSession(MySQLDatasource datasource, Selector selector, SocketChannel channel,
+      int socketOpt,
+      NIOHandler nioHandler, SessionManager<MySQLClientSession> sessionManager
+  ) throws IOException {
+    super(selector, channel, socketOpt, nioHandler, sessionManager);
+    this.datasource = datasource;
+    Objects.requireNonNull(datasource);
+  }
+
+  /**
+   * 把bytes吸入通道
+   */
+  static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
+      throws IOException {
+    assert bytes != null;
+    assert bytes.length > 0;
+    ProxyBuffer buffer = proxySession.currentProxyBuffer();
+    buffer.reset();
+    buffer.newBuffer(bytes);
+    buffer.channelWriteStartIndex(0);
+    buffer.channelWriteEndIndex(bytes.length);
+    proxySession.writeToChannel();
+  }
 
   /**
    * 0.本方法直接是关闭调用的第一个方法 1.先关闭handler handler仅关闭handler自身的资源,不关闭其他资源 2.然后清理packetResolver(payload
@@ -64,7 +119,7 @@ public class MySQLClientSession extends
       mycat.setLastMessage(hint);
       mycat.writeErrorEndPacket();
     } else {
-      end(true);
+      resetPacket();
     }
 
     getSessionManager().removeSession(this, normal, hint);
@@ -72,42 +127,38 @@ public class MySQLClientSession extends
     try {
       channel.close();
     } catch (Exception e) {
-      e.printStackTrace();
+      LOGGER.error(TaskTip.CLOSE_ERROR.getMessage(e));
     }
   }
 
+  /**
+   * 解除与mycat session的绑定 如果存在事务等状态会解除解除
+   *
+   * @return 解除成功
+   */
   public boolean unbindMycatIfNeed() {
+    assert this.mycat != null;
     return unbindMycatIfNeed(false);
   }
 
-  static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
-      throws IOException {
-    ProxyBuffer buffer = proxySession.currentProxyBuffer();
-    buffer.reset();
-    buffer.newBuffer(bytes);
-    buffer.channelWriteStartIndex(0);
-    buffer.channelWriteEndIndex(bytes.length);
-    proxySession.writeToChannel();
-  }
-
-  public void end() {
-    end(false);
-  }
-
-  private boolean unbindMycatIfNeed(boolean isClose) {
+  /**
+   * 解除与mycat session的绑定 如果遇到事务等状态会解除失败 如果是isCLose = true则强制解除 本函数不实现关闭通道,如果强制解除绑定应该是close方法调用
+   *
+   * @param isClose 是否关闭事件
+   */
+  public boolean unbindMycatIfNeed(boolean isClose) {
     assert this.mycat != null;
     setResponseFinished(false);
-    setRequestFinished(false);
     setNoResponse(false);
     MycatSession mycat = this.mycat;
+    boolean monopolized = isMonopolized();
     try {
-      if (isMonopolized() && !isClose) {
-        System.out.println("can not unbind monopolized mysql LocalInFileSession");
+      if (monopolized && !isClose) {
         return false;
       }
 
       this.resetPacket();
-      this.proxyBuffer = null;
+      setCurrentProxyBuffer(null);
 
       switchNioHandler(null);
 
@@ -129,17 +180,6 @@ public class MySQLClientSession extends
   }
 
 
-  /**
-   * 与mycat session绑定的信息 monopolizeType 是无法解绑的原因 TRANSACTION,事务 LOAD_DATA,交换过程
-   * PREPARE_STATEMENT_EXECUTE,预处理过程 CURSOR_EXISTS 游标 以上四种情况 mysql客户端的并没有结束对mysql的交互,所以无法解绑
-   */
-  private MySQLSessionMonopolizeType monopolizeType = MySQLSessionMonopolizeType.NONE;
-  /**
-   * 绑定的mycat 与同步的dataNode mycat的解绑 mycat = null即可
-   */
-  private MycatSession mycat;
-
-
   public MycatDataNode getDataNode() {
     return dataNode;
   }
@@ -157,23 +197,35 @@ public class MySQLClientSession extends
   }
 
   /**
-   * 实际上mysql默认的NIOhandler只有
+   * 执行透传时候设置
    */
   public void switchProxyNioHandler() {
+    assert this.mycat != null;
+    this.mycat.switchWriteHandler(WriteHandler.INSTANCE);
     this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
   }
 
+  /**
+   * 准备接收响应时候
+   */
   public void prepareReveiceResponse() {
     this.packetResolver.prepareReveiceResponse();
   }
 
+  /**
+   * 准备接收预处理PrepareOk时候
+   */
   public void prepareReveicePrepareOkResponse() {
     this.packetResolver.prepareReveicePrepareOkResponse();
   }
 
+  /**
+   * 与mycat session绑定
+   */
   public void bind(MycatSession mycatSession) {
     this.mycat = mycatSession;
     mycatSession.bind(this);
+    switchProxyNioHandler();
   }
 
   @Override
@@ -181,13 +233,11 @@ public class MySQLClientSession extends
     return this;
   }
 
-
-  public MySQLSessionMonopolizeType getMonopolizeType() {
-    return monopolizeType;
-  }
-
+  /**
+   * 计算mysql session是否被占用
+   */
   public boolean isMonopolized() {
-    MySQLSessionMonopolizeType monopolizeType = getMonopolizeType();
+    MySQLSessionMonopolizeType monopolizeType = this.monopolizeType;
     if (MySQLSessionMonopolizeType.PREPARE_STATEMENT_EXECUTE == monopolizeType ||
             MySQLSessionMonopolizeType.LOAD_DATA == monopolizeType
     ) {
@@ -197,41 +247,45 @@ public class MySQLClientSession extends
     if (
         MySQLServerStatusFlags
             .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)) {
-      setMonopolizeType(MySQLSessionMonopolizeType.TRANSACTION);
+      this.monopolizeType = (MySQLSessionMonopolizeType.TRANSACTION);
       return true;
     } else if (MySQLServerStatusFlags
                    .statusCheck(serverStatus, MySQLServerStatusFlags.CURSOR_EXISTS)) {
-      setMonopolizeType(MySQLSessionMonopolizeType.CURSOR_EXISTS);
+      this.monopolizeType = (MySQLSessionMonopolizeType.CURSOR_EXISTS);
       return true;
     } else {
-      setMonopolizeType(MySQLSessionMonopolizeType.NONE);
+      this.monopolizeType = (MySQLSessionMonopolizeType.NONE);
       return false;
     }
   }
 
+  /**
+   * 被预处理命令占用
+   */
   public boolean isMonopolizedByPrepareStatement() {
-    return getMonopolizeType() == MySQLSessionMonopolizeType.PREPARE_STATEMENT_EXECUTE;
+    return this.monopolizeType == MySQLSessionMonopolizeType.PREPARE_STATEMENT_EXECUTE;
   }
 
+  /**
+   * 被loaddata占用
+   */
   public boolean isMonopolizedByLoadData() {
-    return getMonopolizeType() == MySQLSessionMonopolizeType.LOAD_DATA;
+    return this.monopolizeType == MySQLSessionMonopolizeType.LOAD_DATA;
   }
 
+  /**
+   * 设置占用类型
+   */
   public void setMonopolizeType(MySQLSessionMonopolizeType monopolizeType) {
     this.monopolizeType = monopolizeType;
   }
 
+  /**
+   * 设置Proxybuffer,Proxybuffer只有两种来源 1.来自mycat session 2.来自task类
+   */
   @Override
   public void setCurrentProxyBuffer(ProxyBuffer buffer) {
     this.proxyBuffer = buffer;
-  }
-
-  public MySQLClientSession(MySQLDatasource datasource, Selector selector, SocketChannel channel,
-      int socketOpt,
-      NIOHandler nioHandler, SessionManager<MySQLClientSession> sessionManager
-  ) throws IOException {
-    super(selector, channel, socketOpt, nioHandler, sessionManager);
-    this.datasource = datasource;
   }
 
 
@@ -257,92 +311,119 @@ public class MySQLClientSession extends
     return result;
   }
 
+  /**
+   * 强制设置packetId
+   */
   public byte setPacketId(int packetId) {
     return (byte) this.packetResolver.setPacketId(packetId);
   }
 
+  /**
+   * 获取报文处理器的packetId
+   */
   public byte getPacketId() {
     return (byte) this.packetResolver.getPacketId();
   }
 
+  /**
+   * ++PacketId
+   */
   public byte incrementPacketIdAndGet() {
     return (byte) this.packetResolver.incrementPacketIdAndGet();
   }
 
-  public AsynTaskCallBack<MySQLClientSession> getCallBackAndReset() {
-    AsynTaskCallBack<MySQLClientSession> callBack = this.callBack;
+  /**
+   * 获取callback并把保存的callback设置为null
+   */
+  public AsyncTaskCallBack<MySQLClientSession> getCallBackAndReset() {
+    AsyncTaskCallBack<MySQLClientSession> callBack = this.callBack;
     this.callBack = null;
     return callBack;
   }
 
-  public void setCallBack(AsynTaskCallBack<MySQLClientSession> callBack) {
+  /**
+   * 设置callback,一般是Task类设置
+   */
+  public void setCallBack(AsyncTaskCallBack<MySQLClientSession> callBack) {
     this.callBack = callBack;
   }
 
+  /**
+   * 获取错误的信息 可以为null
+   */
   @Override
-  public String lastMessage() {
+  public String getLastMessage() {
     return this.lastMessage;
   }
 
+  /**
+   * 设置错误信息
+   */
   @Override
   public String setLastMessage(String lastMessage) {
     this.lastMessage = lastMessage;
     return lastMessage;
   }
 
+  /**
+   * 获取报文处理器
+   */
   public MySQLPacketResolver getPacketResolver() {
     return packetResolver;
   }
 
-
+  /**
+   * 获取当前的网络缓冲区
+   */
   public ProxyBuffer currentProxyBuffer() {
     return proxyBuffer;
   }
 
+  /**
+   * 根据报文处理器获取响应是否结束
+   */
   public boolean isResponseFinished() {
     return packetResolver.isResponseFinished();
   }
 
+  /**
+   * 强制设置响应结束,一般在重置mysql session的时候设置
+   */
   public void setResponseFinished(boolean b) {
     packetResolver.setRequestFininshed(b);
   }
 
-  public boolean isRequestFinished() {
-    return packetResolver.isRequestFininshed();
-  }
-
-  public void setRequestFinished(boolean requestFinished) {
-    this.packetResolver.setRequestFininshed(requestFinished);
-  }
-
-
+  /**
+   * 获取报文类型
+   * @return
+   */
   public MySQLPayloadType getPayloadType() {
     return this.packetResolver.getMySQLPayloadType();
   }
 
+  /**
+   * 判断该session是否活跃
+   * @return
+   */
   public boolean isActivated() {
     long timeInterval = System.currentTimeMillis() - this.lastActiveTime;
     return (timeInterval < 60 * 1000);//60 second
   }
 
-  private void end(boolean isClose) {
-    assert mycat == null;
-    assert this.proxyBuffer == null;
-    setResponseFinished(false);
-    setRequestFinished(false);
-    setNoResponse(false);
-    this.resetPacket();
-    switchNioHandler(null);
-    if (!isClose) {
-      getSessionManager().addIdleSession(this);
-    }
-  }
-
+  /**
+   * 把buffer写入通道
+   * @throws IOException
+   */
   public void writeToChannel() throws IOException {
+    assert !isIdle();
     writeProxyBufferToChannel();
   }
 
 
+  /**
+   * 检测buffer是否写入完毕
+   * @throws IOException
+   */
   public void checkWriteFinished() throws IOException {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
     if (!proxyBuffer.channelWriteFinished()) {
@@ -352,12 +433,19 @@ public class MySQLClientSession extends
     }
   }
 
+  /**
+   * 最终把buffer写入通道的方法
+   * @throws IOException
+   */
   void writeProxyBufferToChannel() throws IOException {
     this.currentProxyBuffer().writeToChannel(this.channel());
     this.updateLastActiveTime();
     this.checkWriteFinished();
   }
 
+  /**
+   *把当前的proxybuffer作为报文构造
+   */
   public MySQLPacket newCurrentProxyPacket(int packetLength) {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
     proxyBuffer.reset();
@@ -367,22 +455,24 @@ public class MySQLClientSession extends
     return mySQLPacket;
   }
 
+  /**
+   * 把bytes数据直接写入通道,不做修改
+   * @param bytes
+   * @throws IOException
+   */
   public void writeProxyBufferToChannel(byte[] bytes) throws IOException {
     writeProxyBufferToChannel(this, bytes);
   }
 
-
-  public void writeProxyPacket(MySQLPacket packet) throws IOException {
-    int packetId = getPacketResolver().getAndIncrementPacketId();
-    writeProxyPacket(packet, packetId);
-  }
-
-  public void writeProxyPacket(MySQLPacket ogrin, int packetId) throws IOException {
+  /**
+   * newCurrentProxyPacket的配套方法,把该方法构造的报文写入通道
+   */
+  public void writeCurrentProxyPacket(MySQLPacket ogrin, int packetId) throws IOException {
     ProxyBufferImpl mySQLPacket1 = (ProxyBufferImpl) ogrin;
     ByteBuffer buffer = mySQLPacket1.currentByteBuffer();
     int packetEndPos = buffer.position();
     int payloadLen = buffer.position() - 4;
-    if (payloadLen < 0xffffff) {
+    if (payloadLen < MySQLPacketSplitter.MAX_PACKET_SIZE) {
       ogrin.putFixInt(0, 3, payloadLen);
       ogrin.putByte(3, (byte) packetId);
       ProxyBuffer packet1 = (ProxyBuffer) ogrin;
@@ -390,30 +480,66 @@ public class MySQLClientSession extends
       packet1.channelWriteEndIndex(packetEndPos);
       writeToChannel();
     } else {
-      throw new MycatExpection("unsupport!");
+      throw new MycatExpection(TaskTip.UNSUPPORT_DEF_MAX_PACKET.getMessage(payloadLen));
     }
   }
 
+  /**
+   * 把proxybuffer的内容写入通道,proxybuffer需要保证处于写入状态 即channelWriteStartIndex == 0 channelWriteSEndIndex
+   * 为写入结束位置
+   */
   public void writeProxyBufferToChannel(ProxyBuffer proxyBuffer) throws IOException {
     assert proxyBuffer.channelWriteStartIndex() == 0;
     this.setCurrentProxyBuffer(proxyBuffer);
     this.writeToChannel();
   }
 
+  /**
+   * 清除buffer,每次命令开始之前和结束之后都要保证buffer是空的
+   */
   public void resetPacket() {
     packetResolver.reset();
+    setCurrentProxyBuffer(null);
   }
 
   public boolean isNoResponse() {
     return noResponse;
   }
 
+  /**
+   * 设置响应类型,有些报文是没有响应的
+   */
   public void setNoResponse(boolean noResponse) {
     this.noResponse = noResponse;
+  }
+
+  /**
+   * 切换出来处理器,在闲置状态中不能设置
+   */
+  @Override
+  public void switchNioHandler(NIOHandler nioHandler) {
+    if (isIdle() && this.nioHandler == MySQLIdleNIOHandler.INSTANCE) {
+      throw new MycatExpection("UNKNOWN state");
+    }
+    this.nioHandler = nioHandler;
   }
 
   @Override
   public MySQLSessionManager getSessionManager() {
     return (MySQLSessionManager) sessionManager;
+  }
+
+  /**
+   * 是否在session管理器中的闲置session池
+   */
+  public boolean isIdle() {
+    return isIdle;
+  }
+
+  /**
+   * 该方法只能被sessionManager调用
+   */
+  public void setIdle(boolean idle) {
+    isIdle = idle;
   }
 }

@@ -9,6 +9,7 @@ import java.util.ListIterator;
 /**
  * @author jamie12221
  * @date 2019-05-08 16:39
+ * 结果集构造类
  **/
 public class ResultSet {
   int columnCount;

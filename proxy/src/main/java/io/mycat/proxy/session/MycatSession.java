@@ -38,7 +38,7 @@ import io.mycat.proxy.executer.MySQLDataNodeExecuter;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
-import io.mycat.proxy.task.AsynTaskCallBack;
+import io.mycat.proxy.task.AsyncTaskCallBack;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
@@ -74,7 +74,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private boolean responseFinished = false;//每次在处理请求时候就需要重置
   private MySQLClientSession backend;//unbind
   private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
-  private AsynTaskCallBack finallyCallBack;
+  private AsyncTaskCallBack finallyCallBack;
   /**
    * 路由信息
    */
@@ -96,15 +96,14 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.writeHandler = writeHandler;
   }
 
-  public void onHandlerFinishedClear(boolean success) {
+  public void onHandlerFinishedClear(boolean normal) {
     if (backend != null) {
-      backend.unbindMycatIfNeed();
-    } else {
-      resetPacket();
+      backend.unbindMycatIfNeed(!normal);
     }
+    resetPacket();
     setResponseFinished(false);
     if (finallyCallBack != null) {
-      finallyCallBack.finished(this, this, success, this.lastMessage(), null);
+      finallyCallBack.finished(this, this, normal, this.getLastMessage(), null);
       finallyCallBack = null;
     }
   }
@@ -162,7 +161,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   public void getBackend(boolean runOnSlave, MySQLDataNode dataNode,
-      LoadBalanceStrategy strategy, AsynTaskCallBack<MySQLClientSession> finallyCallBack) {
+      LoadBalanceStrategy strategy, AsyncTaskCallBack<MySQLClientSession> finallyCallBack) {
     this.switchDataNode(dataNode.getName());
     if (this.backend != null) {
       //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
@@ -194,13 +193,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       setLastMessage(hint);
       writeErrorEndPacketBySyncInProcessError();
     }
-    assert hint == null;
+    assert hint != null;
     onHandlerFinishedClear(normal);
     channelKey.cancel();
     try {
-      getSessionManager().removeSession(this, normal, hint);
       channel.close();
-    } catch (IOException e) {
+      getSessionManager().removeSession(this, normal, hint);
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
@@ -242,9 +241,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setAffectedRows(affectedRows);
   }
 
-  public int getServerStatus() {
-    return this.serverStatus.getServerStatus();
-  }
 
   @Override
   public LinkedList<ByteBuffer> writeQueue() {
@@ -284,7 +280,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public String lastMessage() {
+  public String getLastMessage() {
     String lastMessage = this.serverStatus.getLastMessage();
     return lastMessage + "";
   }
@@ -305,7 +301,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public int serverStatus() {
+  public int getServerStatus() {
     return this.serverStatus.getServerStatus();
   }
 
@@ -320,15 +316,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     return this.serverStatus.incrementWarningCount();
   }
 
-  @Override
-  public int warningCount() {
-    return this.serverStatus.getWarningCount();
-  }
-
-  @Override
-  public long lastInsertId() {
-    return this.serverStatus.getWarningCount();
-  }
 
   @Override
   public int setLastInsertId(int s) {
@@ -336,7 +323,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public int lastErrorCode() {
+  public int getLastErrorCode() {
     return this.serverStatus.getWarningCount();
   }
 
@@ -384,7 +371,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public int capabilities() {
+  public int getCapabilities() {
     return this.serverStatus.getServerCapabilities();
   }
 
@@ -467,14 +454,19 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     return 0;
   }
 
-  public AsynTaskCallBack<MycatSessionView> getCallBack() {
-    AsynTaskCallBack<MycatSessionView> finallyCallBack = this.finallyCallBack;
+  public AsyncTaskCallBack<MycatSessionView> getCallBack() {
+    AsyncTaskCallBack<MycatSessionView> finallyCallBack = this.finallyCallBack;
     this.finallyCallBack = null;
     return finallyCallBack;
   }
 
   @Override
-  public void setCallBack(AsynTaskCallBack callBack) {
+  public void setCallBack(AsyncTaskCallBack callBack) {
     this.finallyCallBack = callBack;
+  }
+
+  @Override
+  public void switchNioHandler(NIOHandler nioHandler) {
+    this.nioHandler = nioHandler;
   }
 }
