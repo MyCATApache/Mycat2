@@ -14,7 +14,6 @@
  */
 package io.mycat.proxy.handler;
 
-import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -77,10 +76,14 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     Map<String, String> attrs = auth.getClientConnectAttrs();
     String authPluginName = auth.getAuthPluginName();
 
+    if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
+      mycat.setLastMessage("Can Not Use Compression Protocol!");
+      mycat.writeErrorEndPacket();
+      return;
+    }
+
     mycat.setServerCapabilities(auth.getCapabilities());
     mycat.setAutoCommit(MySQLAutoCommit.ON);
-    MycatSchema defaultSchema = ProxyRuntime.INSTANCE.getDefaultSchema();
-    mycat.setSchema(defaultSchema);
     mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
     int index = characterSet;
     String charset = ProxyRuntime.INSTANCE.getCharsetById(index);

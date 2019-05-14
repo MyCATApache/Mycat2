@@ -34,6 +34,7 @@ public class MycatCore {
     runtime.loadProxy();
     runtime.initReactor(MycatCommandHandler::new);
     runtime.initRepliac(new DefaultMySQLReplicaFactory());
+    runtime.initDataNode();
     runtime.initAcceptor();
 
     ScheduledExecutorService service = Executors.newScheduledThreadPool(1);

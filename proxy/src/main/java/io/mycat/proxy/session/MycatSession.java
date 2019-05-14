@@ -29,7 +29,6 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatSessionView;
 import io.mycat.proxy.NetMonitor;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.CommandHandler;
@@ -149,11 +148,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
   }
 
-
-  public MycatSchema getSchema() {
-    return schema == null ? schema = ProxyRuntime.INSTANCE.getDefaultSchema()
-               : schema;
-  }
 
   public void setSchema(MycatSchema schema) {
     this.schema = schema;

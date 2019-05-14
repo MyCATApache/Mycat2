@@ -52,6 +52,9 @@ public class GlobalConfig {
         return capabilityFlags;
     }
 
+    /**
+     * 向后端mysql创建连接的服务器能力
+     */
     private static int initClientFlags() {
         int flag = 0;
         flag |= MySQLServerCapabilityFlags.CLIENT_LONG_PASSWORD;

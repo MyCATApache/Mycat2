@@ -14,12 +14,12 @@
  */
 package io.mycat.proxy.task.client;
 
-import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.config.GlobalConfig;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
@@ -93,15 +93,12 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
       mysql.getPacketResolver().setCapabilityFlags(serverCapabilities);
 
       HandshakePacket hs = new HandshakePacket();
-      if ((proxyBuffer.get(4) & 0xff) == 0xff) {
-        throw new MycatExpection("receive error packet");
-      }
       hs.readPayload(mysql.currentProxyPayload());
       mysql.resetCurrentProxyPayload();
       int charsetIndex = hs.getCharacterSet();
       AuthPacket packet = new AuthPacket();
       packet.setCapabilities(serverCapabilities);
-      packet.setMaxPacketSize(1024 * 1000);
+      packet.setMaxPacketSize(ProxyRuntime.INSTANCE.getMaxAllowedPacket());
       packet.setCharacterSet((byte) charsetIndex);
       packet.setUsername(datasource.getUsername());
       packet.setPassword(MysqlNativePasswordPluginUtil.scramble411(datasource.getPassword(),

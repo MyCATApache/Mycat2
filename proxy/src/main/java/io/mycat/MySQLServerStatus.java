@@ -98,6 +98,7 @@ public final class MySQLServerStatus {
         this.serverStatus |= MySQLServerStatusFlags.AUTO_COMMIT;
         break;
       case OFF:
+        this.serverStatus &= ~MySQLServerStatusFlags.AUTO_COMMIT;
         break;
     }
   }

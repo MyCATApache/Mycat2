@@ -1,6 +1,5 @@
 package io.mycat;
 
-import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatSessionView;
 import io.mycat.proxy.ProxyRuntime;
@@ -19,14 +18,10 @@ public class MycatCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleQuery(byte[] sql, MycatSessionView session) {
-    MycatSchema defaultSchema = ProxyRuntime.INSTANCE
-                                    .getDefaultSchema();
-    String dataNode = ProxyRuntime.INSTANCE
-                          .getDefaultSchema().getDefaultDataNode();
     String s = new String(sql);
-    String s1 = RouterUtil.removeSchema(s, defaultSchema.getSchemaName());
+    String s1 = RouterUtil.removeSchema(s, "test");
     session
-        .proxyBackend(MySQLPacketUtil.generateComQuery(s1), dataNode, true, null, false,
+        .proxyBackend(MySQLPacketUtil.generateComQuery(s1), "dn1", true, null, false,
             (session1, sender, success, result, attr) -> {
               if (success) {
                 System.out.println("success full");

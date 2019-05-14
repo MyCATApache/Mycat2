@@ -16,7 +16,6 @@ package io.mycat.proxy;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
-import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.BufferPoolImpl;
 import io.mycat.config.ConfigEnum;
@@ -27,12 +26,14 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
+import io.mycat.config.schema.DataNodeConfig;
+import io.mycat.config.schema.DataNodeType;
+import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.replica.MySQLReplicaFactory;
-import io.mycat.router.MycatRouterConfig;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -52,8 +53,9 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   public static final ProxyRuntime INSTANCE = new ProxyRuntime();
   private static final Logger logger = LoggerFactory.getLogger(ProxyRuntime.class);
   private final AtomicInteger sessionIdCounter = new AtomicInteger(0);
-  private final MycatRouterConfig routerConfig = new MycatRouterConfig(getResourcesPath());
-  private Map<String, MySQLReplica> replicaMap = new HashMap<>();
+  private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
+  private final List<MySQLDatasource> datasourceList = new ArrayList<>();
+  private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
 
   public static String getResourcesPath() {
     try {
@@ -66,17 +68,28 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     }
   }
 
-  public MycatRouterConfig getRouterConfig() {
-    return routerConfig;
+
+  public int getMaxAllowedPacket() {
+    return getProxy().getMaxAllowedPacket();
   }
 
-  public MycatSchema getDefaultSchema() {
-    return routerConfig.getDefaultSchema();
+  public void initDataNode() {
+    SchemaRootConfig schemaConfig =
+        getConfig(ConfigEnum.SCHEMA);
+
+    for (DataNodeConfig dataNodeConfig : schemaConfig.getDataNodes()) {
+      DataNodeType dataNodeType =
+          dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
+      if (dataNodeType == DataNodeType.MYSQL) {
+        MySQLDataNode mySQLDataNode = new MySQLDataNode(dataNodeConfig);
+        dataNodeMap.put(dataNodeConfig.getName(), mySQLDataNode);
+        String replicaName = mySQLDataNode.getReplicaName();
+        MySQLReplica mySQLReplica = replicaMap.get(replicaName);
+        mySQLDataNode.setReplica(mySQLReplica);
+      }
+    }
   }
 
-  public MycatSchema getSchemaByName(String name) {
-    return routerConfig.getSchemaBySchemaName(name);
-  }
 
   public void initRepliac(MySQLReplicaFactory factory) {
     DatasourceRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
@@ -87,16 +100,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
       MySQLReplica replica = factory.get(replicaConfig, writeIndex == null ? 0 : writeIndex);
       replicaMap.put(replica.getName(), replica);
       replica.init();
-    }
-    if (routerConfig != null) {
-      for (MycatDataNode dataNode : routerConfig.getDataNodes()) {
-        if (dataNode instanceof MySQLDataNode) {
-          MySQLDataNode mySQLDataNode = (MySQLDataNode) dataNode;
-          MySQLReplica mySQLReplica = replicaMap.get(mySQLDataNode.getReplicaName());
-          mySQLDataNode.setReplica(mySQLReplica);
-        }
-      }
-
+      datasourceList.addAll(replica.getDatasourceList());
     }
   }
 
@@ -179,7 +183,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public <T extends MycatDataNode> T getDataNodeByName(String name) {
-    return (T) routerConfig.getDataNodeByName(name);
+    return (T) dataNodeMap.get(name);
   }
 
   public MySQLReplica getMySQLReplicaByReplicaName(String name) {
@@ -191,12 +195,6 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public <T extends MySQLDatasource> Collection<T> getMySQLDatasourceList() {
-    Map<String, MySQLReplica> replicaMap = this.replicaMap;
-    ArrayList<MySQLDatasource> list = new ArrayList<>();
-    for (MySQLReplica value : replicaMap.values()) {
-      List<MySQLDatasource> datasourceList = value.getDatasourceList();
-      list.addAll(datasourceList);
-    }
-    return (List) list;
+    return (List) datasourceList;
   }
 }

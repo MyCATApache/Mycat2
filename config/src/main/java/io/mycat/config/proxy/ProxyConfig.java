@@ -43,7 +43,7 @@ public class ProxyConfig {
      */
     private int port = 8066;
 
-    private int max_allowed_packet = MAX_ALLOWED_PACKET;
+  private int maxAllowedPacket = MAX_ALLOWED_PACKET;
 
     // a page size
     private int bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
@@ -127,11 +127,11 @@ public class ProxyConfig {
         this.bufferPoolPageNumber = bufferPoolPageNumber;
     }
 
-    public int getMax_allowed_packet() {
-        return max_allowed_packet;
+  public int getMaxAllowedPacket() {
+    return maxAllowedPacket;
     }
 
-    public void setMax_allowed_packet(int max_allowed_packet) {
-        this.max_allowed_packet = max_allowed_packet;
+  public void setMaxAllowedPacket(int maxAllowedPacket) {
+    this.maxAllowedPacket = maxAllowedPacket;
     }
 }
