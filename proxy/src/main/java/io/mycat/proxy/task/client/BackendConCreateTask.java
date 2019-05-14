@@ -98,14 +98,14 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
       }
       hs.readPayload(mysql.currentProxyPayload());
       mysql.resetCurrentProxyPayload();
-      int charsetIndex = hs.characterSet;
+      int charsetIndex = hs.getCharacterSet();
       AuthPacketImpl packet = new AuthPacketImpl();
       packet.setCapabilities(serverCapabilities);
       packet.setMaxPacketSize(1024 * 1000);
       packet.setCharacterSet((byte) charsetIndex);
       packet.setUsername(datasource.getUsername());
       packet.setPassword(MysqlNativePasswordPluginUtil.scramble411(datasource.getPassword(),
-          hs.authPluginDataPartOne + hs.authPluginDataPartTwo));
+          hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo()));
       packet.setAuthPluginName(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
       MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(1024);
       packet.writePayload(mySQLPacket);

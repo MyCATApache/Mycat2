@@ -28,17 +28,18 @@ import io.mycat.config.MySQLServerCapabilityFlags;
  * 作为客户端发送的握手包,是服务器发送的验证包的响应
  */
 public class HandshakePacketImpl {
-    public int protocolVersion;
-    public String serverVersion;
-    public long connectionId;
-    public String authPluginDataPartOne;//salt auth plugin sql part 1
-    public MySQLServerCapabilityFlags capabilities;
-    public boolean hasPartTwo = false;
-    public int characterSet;
-    public int statusFlags;
-    public int authPluginDataLen;
-    public String authPluginDataPartTwo;
-    public String authPluginName;
+
+  private int protocolVersion;
+  private String serverVersion;
+  private long connectionId;
+  private String authPluginDataPartOne;//salt auth plugin sql part 1
+  private MySQLServerCapabilityFlags capabilities;
+  private boolean hasPartTwo = false;
+  private int characterSet;
+  private int statusFlags;
+  private int authPluginDataLen;
+  private String authPluginDataPartTwo;
+  private String authPluginName;
 
   public void readPayload(MySQLPayloadReadView buffer) {
         protocolVersion = buffer.readByte();
@@ -141,4 +142,92 @@ public class HandshakePacketImpl {
         }
         return size;
     }
+
+  public int getProtocolVersion() {
+    return protocolVersion;
+  }
+
+  public void setProtocolVersion(int protocolVersion) {
+    this.protocolVersion = protocolVersion;
+  }
+
+  public String getServerVersion() {
+    return serverVersion;
+  }
+
+  public void setServerVersion(String serverVersion) {
+    this.serverVersion = serverVersion;
+  }
+
+  public long getConnectionId() {
+    return connectionId;
+  }
+
+  public void setConnectionId(long connectionId) {
+    this.connectionId = connectionId;
+  }
+
+  public String getAuthPluginDataPartOne() {
+    return authPluginDataPartOne;
+  }
+
+  public void setAuthPluginDataPartOne(String authPluginDataPartOne) {
+    this.authPluginDataPartOne = authPluginDataPartOne;
+  }
+
+  public MySQLServerCapabilityFlags getCapabilities() {
+    return capabilities;
+  }
+
+  public void setCapabilities(MySQLServerCapabilityFlags capabilities) {
+    this.capabilities = capabilities;
+  }
+
+  public boolean isHasPartTwo() {
+    return hasPartTwo;
+  }
+
+  public void setHasPartTwo(boolean hasPartTwo) {
+    this.hasPartTwo = hasPartTwo;
+  }
+
+  public int getCharacterSet() {
+    return characterSet;
+  }
+
+  public void setCharacterSet(int characterSet) {
+    this.characterSet = characterSet;
+  }
+
+  public int getStatusFlags() {
+    return statusFlags;
+  }
+
+  public void setStatusFlags(int statusFlags) {
+    this.statusFlags = statusFlags;
+  }
+
+  public int getAuthPluginDataLen() {
+    return authPluginDataLen;
+  }
+
+  public void setAuthPluginDataLen(int authPluginDataLen) {
+    this.authPluginDataLen = authPluginDataLen;
+  }
+
+  public String getAuthPluginDataPartTwo() {
+    return authPluginDataPartTwo;
+  }
+
+  public void setAuthPluginDataPartTwo(String authPluginDataPartTwo) {
+    this.authPluginDataPartTwo = authPluginDataPartTwo;
+  }
+
+  public String getAuthPluginName() {
+    return authPluginName;
+  }
+
+  public void setAuthPluginName(String authPluginName) {
+    this.authPluginName = authPluginName;
+  }
 }

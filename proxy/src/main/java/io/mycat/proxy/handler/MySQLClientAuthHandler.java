@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * 服务器发送给客户端的验证处理器
  **/
 public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
+
   private static final Logger logger = LoggerFactory.getLogger(MySQLClientAuthHandler.class);
   public byte[] seed;
   public MycatSession mycat;
@@ -100,25 +101,25 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
 
   public void sendAuthPackge() {
-      byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
-      this.seed = seedParts[2];
-      HandshakePacketImpl hs = new HandshakePacketImpl();
-      hs.protocolVersion = MySQLVersion.PROTOCOL_VERSION;
-      hs.serverVersion = new String(MySQLVersion.SERVER_VERSION);
-      hs.connectionId = mycat.sessionId();
-      hs.authPluginDataPartOne = new String(seedParts[0]);
-      int serverCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
-      mycat.setServerCapabilities(serverCapabilities);
-      hs.capabilities = new MySQLServerCapabilityFlags(serverCapabilities);
-      hs.hasPartTwo = true;
-      hs.characterSet = 8;
-      hs.statusFlags = 2;
-      hs.authPluginDataLen = 21; // 有插件的话，总长度必是21, seed
-      hs.authPluginDataPartTwo = new String(seedParts[1]);
-      hs.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
+    byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
+    this.seed = seedParts[2];
+    HandshakePacketImpl hs = new HandshakePacketImpl();
+    hs.setProtocolVersion(MySQLVersion.PROTOCOL_VERSION);
+    hs.setServerVersion(new String(MySQLVersion.SERVER_VERSION));
+    hs.setConnectionId(mycat.sessionId());
+    hs.setAuthPluginDataPartOne(new String(seedParts[0]));
+    int serverCapabilities = MySQLServerCapabilityFlags.getDefaultServerCapabilities();
+    mycat.setServerCapabilities(serverCapabilities);
+    hs.setCapabilities(new MySQLServerCapabilityFlags(serverCapabilities));
+    hs.setHasPartTwo(true);
+    hs.setCharacterSet(8);
+    hs.setStatusFlags(2);
+    hs.setAuthPluginDataLen(21); // 有插件的话，总长度必是21, seed
+    hs.setAuthPluginDataPartTwo(new String(seedParts[1]));
+    hs.setAuthPluginName(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
     MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
-      hs.writePayload(mySQLPayloadWriter);
-      mycat.setPakcetId(-1);//使用获取的packetId变为0
-      mycat.writeBytes(mySQLPayloadWriter.toByteArray());
+    hs.writePayload(mySQLPayloadWriter);
+    mycat.setPakcetId(-1);//使用获取的packetId变为0
+    mycat.writeBytes(mySQLPayloadWriter.toByteArray());
   }
 }
