@@ -22,5 +22,5 @@ import io.mycat.beans.mycat.MycatSchema;
  **/
 public interface RouteStrategy<A> {
 
-  ResultRoute route(MycatSchema schema, CharSequence sql, A attr);
+  ResultRoute route(MycatSchema schema, String sql, A attr);
 }

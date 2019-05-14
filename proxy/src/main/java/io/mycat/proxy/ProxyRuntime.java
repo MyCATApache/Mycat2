@@ -195,6 +195,10 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public <T extends MySQLDatasource> Collection<T> getMySQLDatasourceList() {
-    return (List) datasourceList;
+    return (Collection) datasourceList;
+  }
+
+  public <T extends MySQLReplica> Collection<T> getMySQLReplicaList() {
+    return (Collection) replicaMap.values();
   }
 }

@@ -26,7 +26,7 @@ import java.util.Objects;
 
 public class OneServerResultRoute extends ResultRoute {
   String dataNode;
-  CharSequence sql;
+  String sql;
   public String getDataNode() {
     return dataNode;
   }
@@ -36,18 +36,18 @@ public class OneServerResultRoute extends ResultRoute {
     return this;
   }
 
-  public CharSequence getSql() {
+  public String getSql() {
     return sql;
   }
 
-  public OneServerResultRoute setSql(CharSequence sql) {
+  public OneServerResultRoute setSql(String sql) {
     this.sql = sql;
     return this;
   }
 
   @Override
   public String toString() {
-    return "OneServerResultRoute{" +
+    return "RESULT_ROUTE_TYPE{" +
                "dataNode='" + dataNode + '\'' +
                ", sql=" + sql +
                '}';
@@ -56,6 +56,11 @@ public class OneServerResultRoute extends ResultRoute {
   @Override
   public <CONTEXT> void accept(Executer<CONTEXT> executer,CONTEXT context) throws IOException {
     executer.run(this,context);
+  }
+
+  @Override
+  public ResultRouteType getType() {
+    return ResultRouteType.ONE_SERVER_RESULT_ROUTE;
   }
 
   @Override

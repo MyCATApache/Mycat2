@@ -58,6 +58,11 @@ public class SubTableResultRoute extends ResultRoute {
     executer.run(this,context);
   }
 
+  @Override
+  public ResultRouteType getType() {
+    return null;
+  }
+
 
   public void setDataNode(String dataNode) {
     this.dataNode = dataNode;

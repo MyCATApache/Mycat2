@@ -27,7 +27,7 @@ import io.mycat.router.routeResult.dbResultSet.DbResultSet;
 public class SqlParseRouteRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public ResultRoute route(MycatSchema schema, CharSequence sql, RouteContext context) {
+  public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
     DbResultSet dbResultSet = null;
     return dbResultSet;
   }

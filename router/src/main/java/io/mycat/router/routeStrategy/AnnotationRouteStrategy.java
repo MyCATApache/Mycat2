@@ -39,7 +39,7 @@ import java.util.List;
 public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public ResultRoute route(MycatSchema schema, CharSequence sql, RouteContext context) {
+  public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
     BufferSQLContext sqlContext = context.getSqlContext();
     if (sqlContext.getTableCount() == 1) {
       String tableName = sqlContext.getTableName(0);

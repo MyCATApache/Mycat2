@@ -86,6 +86,15 @@ public abstract class MySQLReplica implements MycatReplica {
     final BiConsumer<MySQLDatasource, Boolean> defaultCallBack = (datasource, success) -> {
       this.lastInitTime = System.currentTimeMillis();
       this.collationIndex = datasource.getCollationIndex();
+//
+//      MySQLTaskUtil.getMySQLSessionForHeartbeatFromUserThread(datasource,
+//          new AsyncTaskCallBack<MySQLClientSession>() {
+//            @Override
+//            public void finished(MySQLClientSession session, Object sender, boolean success,
+//                Object result, Object attr) {
+//
+//            }
+//          });
     };
     for (MySQLDatasource datasource : datasourceList) {
       datasource.init(defaultCallBack);

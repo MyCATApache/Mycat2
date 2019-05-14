@@ -1,18 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.beans.mysql;
 
@@ -28,139 +26,148 @@ import java.util.Map;
  * mysql 表信息
  **/
 public class MySQLTableInfo {
-    String schemaName;
-    String tableName;
-    MySQLIndexes indexes;
-    MySQLForeignKey foreignKey;
-   final Map<String,MySQLFieldInfo> fieldInfoMap = new HashMap<>();
-    List<Object[]> list = new ArrayList<>();
 
-    public MySQLTableInfo() {
-    }
+  final Map<String, MySQLFieldInfo> fieldInfoMap = new HashMap<>();
+  String schemaName;
+  String tableName;
+  MySQLIndexes indexes;
+  MySQLForeignKey foreignKey;
+  List<Object[]> list = new ArrayList<>();
+  String comment;
+  int incrementStep;
+  int averageRowLength;
+  long maxRowCount;
+  long minRowCount;
+  MySQLRowStoreType rowStoreType;
+  boolean verification;
+  boolean delayKeyWriting;
+  MySQLTableType tableType;
 
+  public MySQLTableInfo() {
+  }
 
-    public void putField(MySQLFieldInfo fieldInfo){
-        fieldInfoMap.put(fieldInfo.getName(),fieldInfo);
-    }
-    public void remove(String columnName){
-        fieldInfoMap.remove(columnName);
-    }
+  public MySQLTableType getTableType() {
+    return tableType;
+  }
 
-    public void setSchemaName(String schemaName) {
-        this.schemaName = schemaName;
-    }
+  public void setTableType(MySQLTableType tableType) {
+    this.tableType = tableType;
+  }
 
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
+  public void putField(MySQLFieldInfo fieldInfo) {
+    fieldInfoMap.put(fieldInfo.getName(), fieldInfo);
+  }
 
-    public Map<String, MySQLFieldInfo> getFieldInfoMap() {
-        return fieldInfoMap;
-    }
+  public void remove(String columnName) {
+    fieldInfoMap.remove(columnName);
+  }
 
-    public List<Object[]> getList() {
-        return list;
-    }
+  public Map<String, MySQLFieldInfo> getFieldInfoMap() {
+    return fieldInfoMap;
+  }
 
-    public void setList(List<Object[]> list) {
-        this.list = list;
-    }
+  public List<Object[]> getList() {
+    return list;
+  }
 
-    public void setComment(String comment) {
-        this.comment = comment;
-    }
+  public void setList(List<Object[]> list) {
+    this.list = list;
+  }
 
-    public void setIncrementStep(int incrementStep) {
-        this.incrementStep = incrementStep;
-    }
+  public String getSchemaName() {
+    return schemaName;
+  }
 
-    public void setAverageRowLength(int averageRowLength) {
-        this.averageRowLength = averageRowLength;
-    }
+  public void setSchemaName(String schemaName) {
+    this.schemaName = schemaName;
+  }
 
-    public void setMaxRowCount(long maxRowCount) {
-        this.maxRowCount = maxRowCount;
-    }
+  public String getTableName() {
+    return tableName;
+  }
 
-    public void setMinRowCount(long minRowCount) {
-        this.minRowCount = minRowCount;
-    }
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
+  }
 
-    public void setRowStoreType(MySQLRowStoreType rowStoreType) {
-        this.rowStoreType = rowStoreType;
-    }
+  public String getComment() {
+    return comment;
+  }
 
-    public void setVerification(boolean verification) {
-        this.verification = verification;
-    }
+  public void setComment(String comment) {
+    this.comment = comment;
+  }
 
-    public void setDelayKeyWriting(boolean delayKeyWriting) {
-        this.delayKeyWriting = delayKeyWriting;
-    }
+  public int getIncrementStep() {
+    return incrementStep;
+  }
 
-    String comment;
-    int incrementStep;
-    int averageRowLength;
-    long maxRowCount;
-    long minRowCount;
-    MySQLRowStoreType rowStoreType;
-    boolean verification;
-    boolean delayKeyWriting;
+  public void setIncrementStep(int incrementStep) {
+    this.incrementStep = incrementStep;
+  }
 
-    public String getSchemaName() {
-        return schemaName;
-    }
+  public int getAverageRowLength() {
+    return averageRowLength;
+  }
 
-    public String getTableName() {
-        return tableName;
-    }
+  public void setAverageRowLength(int averageRowLength) {
+    this.averageRowLength = averageRowLength;
+  }
 
-    public String getComment() {
-        return comment;
-    }
+  public long getMaxRowCount() {
+    return maxRowCount;
+  }
 
-    public int getIncrementStep() {
-        return incrementStep;
-    }
+  public void setMaxRowCount(long maxRowCount) {
+    this.maxRowCount = maxRowCount;
+  }
 
-    public int getAverageRowLength() {
-        return averageRowLength;
-    }
+  public long getMinRowCount() {
+    return minRowCount;
+  }
 
-    public long getMaxRowCount() {
-        return maxRowCount;
-    }
+  public void setMinRowCount(long minRowCount) {
+    this.minRowCount = minRowCount;
+  }
 
-    public long getMinRowCount() {
-        return minRowCount;
-    }
+  public MySQLRowStoreType getRowStoreType() {
+    return rowStoreType;
+  }
 
-    public MySQLRowStoreType getRowStoreType() {
-        return rowStoreType;
-    }
+  public void setRowStoreType(MySQLRowStoreType rowStoreType) {
+    this.rowStoreType = rowStoreType;
+  }
 
-    public boolean isVerification() {
-        return verification;
-    }
+  public boolean isVerification() {
+    return verification;
+  }
 
-    public boolean isDelayKeyWriting() {
-        return delayKeyWriting;
-    }
+  public void setVerification(boolean verification) {
+    this.verification = verification;
+  }
 
-    public MySQLIndexes getIndexes() {
-        return indexes;
-    }
+  public boolean isDelayKeyWriting() {
+    return delayKeyWriting;
+  }
 
-    public void setIndexes(MySQLIndexes indexes) {
-        this.indexes = indexes;
-    }
+  public void setDelayKeyWriting(boolean delayKeyWriting) {
+    this.delayKeyWriting = delayKeyWriting;
+  }
 
-    public MySQLForeignKey getForeignKey() {
-        return foreignKey;
-    }
+  public MySQLIndexes getIndexes() {
+    return indexes;
+  }
 
-    public void setForeignKey(MySQLForeignKey foreignKey) {
-        this.foreignKey = foreignKey;
-    }
+  public void setIndexes(MySQLIndexes indexes) {
+    this.indexes = indexes;
+  }
+
+  public MySQLForeignKey getForeignKey() {
+    return foreignKey;
+  }
+
+  public void setForeignKey(MySQLForeignKey foreignKey) {
+    this.foreignKey = foreignKey;
+  }
 
 }

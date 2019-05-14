@@ -2,6 +2,7 @@ package io.mycat.proxy;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
+import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -123,4 +124,16 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
         });
     return true;
   }
+
+  MycatSchema getSchema();
+
+  void useSchema(MycatSchema schemaName);
+
+  boolean hasResultset();
+
+  boolean hasCursor();
+
+  void countDownResultSet();
+
+  void setResultSetCount(int count);
 }

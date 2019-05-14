@@ -12,6 +12,8 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.client.resultset.QueryResultSetTask;
 import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import io.mycat.proxy.task.client.resultset.TextResultSetTransforCollector;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author jamie12221
@@ -65,6 +67,28 @@ public interface QueryUtil {
                 this.value = (int) value;
               }
             }, callBack);
+  }
+
+  default void showDatabases(MySQLClientSession mysql,
+      AsyncTaskCallBack<MySQLClientSession> callback) {
+    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
+    queryResultSetTask
+        .request(mysql, "show databases;",
+            value -> {
+              switch (value) {
+                case 0:
+                  return true;
+                default:
+                  return false;
+              }
+            }, new TextResultSetTransforCollector() {
+              List<String> databases = new ArrayList<>();
+
+              @Override
+              protected void addValue(int columnIndex, String value) {
+                databases.add(value);
+              }
+            }, callback);
   }
 
   /**

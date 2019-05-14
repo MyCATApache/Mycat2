@@ -35,11 +35,11 @@ import org.slf4j.LoggerFactory;
  **/
 public abstract class MySQLDatasource {
 
-  private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
-  private final int index;
-  private final DatasourceConfig datasourceConfig;
-  private final MySQLReplica replica;
-  private MySQLCollationIndex collationIndex = new MySQLCollationIndex();
+  protected static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
+  protected final int index;
+  protected final DatasourceConfig datasourceConfig;
+  protected final MySQLReplica replica;
+  protected final MySQLCollationIndex collationIndex = new MySQLCollationIndex();
 
 
   public MySQLDatasource(int index, DatasourceConfig datasourceConfig,

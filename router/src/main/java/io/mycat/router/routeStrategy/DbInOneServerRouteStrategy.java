@@ -26,7 +26,7 @@ import io.mycat.router.routeResult.OneServerResultRoute;
  **/
 public class DbInOneServerRouteStrategy implements RouteStrategy<RouteContext> {
   @Override
-  public ResultRoute route(MycatSchema schema, CharSequence sql, RouteContext attr) {
+  public ResultRoute route(MycatSchema schema, String sql, RouteContext attr) {
     OneServerResultRoute routeResult = new OneServerResultRoute();
     routeResult.setDataNode(schema.getDefaultDataNode());
     routeResult.setSql(sql);

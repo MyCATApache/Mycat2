@@ -470,4 +470,36 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public void switchNioHandler(NIOHandler nioHandler) {
     this.nioHandler = nioHandler;
   }
+
+  int resultSetCount;
+
+  @Override
+  public MycatSchema getSchema() {
+    return schema;
+  }
+
+  @Override
+  public void useSchema(MycatSchema schema) {
+    this.schema = schema;
+  }
+
+  @Override
+  public boolean hasResultset() {
+    return resultSetCount > 0;
+  }
+
+  @Override
+  public boolean hasCursor() {
+    return false;
+  }
+
+  @Override
+  public void countDownResultSet() {
+    resultSetCount--;
+  }
+
+  @Override
+  public void setResultSetCount(int count) {
+    resultSetCount = count;
+  }
 }

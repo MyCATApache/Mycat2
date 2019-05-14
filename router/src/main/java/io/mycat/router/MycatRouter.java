@@ -47,7 +47,8 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   }
 
 
-  public ResultRoute enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext, CharSequence sql) {
+  public ResultRoute enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
+      String sql) {
     this.context.setSqlContext(this.sqlContext);
     int sqlType = this.sqlContext.getSQLType();
     //判断有没有schema
@@ -97,7 +98,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
 
   @Override
-  public ResultRoute route(MycatSchema schema, CharSequence sql, RouteContext routeContext) {
+  public ResultRoute route(MycatSchema schema, String sql, RouteContext routeContext) {
     SqlParseRouteRouteStrategy strategy = routeContext.getSqlParseRouteRouteStrategy();
     strategy.route(schema, sql, context);
     return null;
@@ -105,5 +106,9 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
   public MycatRouterConfig getConfig() {
     return config;
+  }
+
+  public MycatSchema getDefaultSchema() {
+    return config.getDefaultSchema();
   }
 }

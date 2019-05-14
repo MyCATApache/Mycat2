@@ -29,7 +29,7 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public ResultRoute route(MycatSchema schema, CharSequence sql, RouteContext context) {
+  public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
     BufferSQLContext sqlContext = context.getSqlContext();
     int sqlCount = sqlContext.getSQLCount();
     if (sqlCount == 1 && sqlContext.getTableCount() == 1) {

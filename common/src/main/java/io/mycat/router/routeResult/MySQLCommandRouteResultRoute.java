@@ -64,6 +64,11 @@ public class MySQLCommandRouteResultRoute extends ResultRoute {
     executer.run(this,context);
   }
 
+  @Override
+  public ResultRouteType getType() {
+    return null;
+  }
+
 
   @Override
   public String toString() {

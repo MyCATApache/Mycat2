@@ -17,6 +17,7 @@ package io.mycat.router;
 import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.MySQLCommandRouteResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;
+import io.mycat.router.routeResult.ResultRouteType;
 import io.mycat.router.routeResult.SubTableResultRoute;
 import io.mycat.router.routeResult.dbResultSet.DbResultSet;
 import java.io.IOException;
@@ -35,6 +36,8 @@ public abstract class ResultRoute {
 
   public abstract <CONTEXT> void accept(Executer<CONTEXT> executer,CONTEXT context)
       throws IOException;
+
+  public abstract ResultRouteType getType();
 
   public interface Executer <CONTEXT>{
     void run(DbResultSet dbResultSet,CONTEXT context);

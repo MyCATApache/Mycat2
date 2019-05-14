@@ -17,6 +17,9 @@ package io.mycat;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.DefaultMySQLReplicaFactory;
 import io.mycat.replica.MySQLDataSourceEx;
+import io.mycat.replica.MySQLReplica;
+import io.mycat.router.MycatRouter;
+import io.mycat.router.MycatRouterConfig;
 import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,9 +35,14 @@ public class MycatCore {
     ProxyRuntime runtime = ProxyRuntime.INSTANCE;
     runtime.loadMycat();
     runtime.loadProxy();
-    runtime.initReactor(MycatCommandHandler::new);
+
+    MycatRouterConfig routerConfig = new MycatRouterConfig(ProxyRuntime.getResourcesPath());
+    MycatRouter router = new MycatRouter(routerConfig);
+    runtime.initReactor(() -> new MycatCommandHandler(router));
     runtime.initRepliac(new DefaultMySQLReplicaFactory());
     runtime.initDataNode();
+    Collection<MySQLReplica> mySQLReplicaList = runtime.getMySQLReplicaList();
+
     runtime.initAcceptor();
 
     ScheduledExecutorService service = Executors.newScheduledThreadPool(1);

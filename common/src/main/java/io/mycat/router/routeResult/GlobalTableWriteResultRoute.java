@@ -63,6 +63,11 @@ public class GlobalTableWriteResultRoute extends ResultRoute {
     executer.run(this,context);
   }
 
+  @Override
+  public ResultRouteType getType() {
+    return null;
+  }
+
 
   public void setSql(CharSequence sql) {
     this.sql = sql;
