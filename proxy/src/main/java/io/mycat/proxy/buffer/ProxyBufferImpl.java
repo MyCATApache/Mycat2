@@ -181,7 +181,6 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
    */
   @Override
   public boolean readFromChannel(SocketChannel channel) throws IOException {
-    try {
       buffer.limit(buffer.capacity());
       int readEndIndex = this.readEndIndex;
       buffer.position(readEndIndex);
@@ -193,9 +192,6 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
       }
       this.channelReadEndIndex(buffer.position());
       return readed > 0;
-    } catch (Exception e) {
-      throw e;
-    }
   }
 
   /**

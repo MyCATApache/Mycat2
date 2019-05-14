@@ -48,118 +48,234 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 报文处理类 该类
+ * 报文处理类 该类实现报文解析
  *
- * @author jamie12221
+ * @author jamie12221 chenjunwen design
+ * 294712221@qq.com
  * @date 2019-05-07 21:23
  **/
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 
   Logger logger = LoggerFactory.getLogger(MySQLPacketResolver.class);
 
-  static boolean hasMulitQuery(int serverStatus) {
-    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MULIT_QUERY);
-  }
-
+  /**
+   * 判断一个结果集结束时候,eof/ok 包 是否后续还有结果集
+   */
   static boolean hasMoreResult(int serverStatus) {
     return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.MORE_RESULTS);
   }
 
-  static boolean hasResult(int serverStatus) {
-    return (hasMoreResult(serverStatus) || hasMulitQuery(serverStatus));
-  }
-
+  /**
+   * 指示当前游标仍有结果
+   * @param serverStatus
+   * @return
+   */
   static boolean hasFatch(int serverStatus) {
     // 检查是否通过fatch执行的语句
     return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.CURSOR_EXISTS);
   }
 
+  /**
+   * A transaction is currently active
+   * @param serverStatus
+   * @return
+   */
   static boolean hasTrans(int serverStatus) {
-    // 检查是否通过fatch执行的语句
-    boolean trans =
-        MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)
-            || MySQLServerStatusFlags
-                   .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANS_READONLY);
-    return trans;
+    return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)
+               || MySQLServerStatusFlags
+                      .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANS_READONLY);
   }
 
+  /**
+   * 获得payload类型
+   * @return
+   */
   MySQLPayloadType getMySQLPayloadType();
 
+  /**
+   * 内部api 设置payload类型
+   * @param type
+   */
   void setMySQLPayloadType(MySQLPayloadType type);
 
+  /**
+   * 设置报文序列号
+   * @param packetId
+   * @return
+   */
   int setPacketId(int packetId);
 
+  /**
+   * 获得报文序列号
+   * @return
+   */
   int getPacketId();
 
+  /**
+   * 未实现
+   * @return
+   * @throws IOException
+   */
   boolean readFromChannel() throws IOException;
 
+  /**
+   * 未实现
+   * @throws IOException
+   */
   void writeToChannel() throws IOException;
 
+  /**
+   * 是否已经识别出payload类型 该标志用于避免重复识别导致一些报文计数错误
+   * @return
+   */
   boolean hasResolvePayloadType();
 
+  /**
+   * 内部api 标记报文已经被识别
+   * @param marked
+   */
   void markedResolvePayloadType(boolean marked);
 
+  /**
+   * 前端请求报文payload的第一个字节,该字节标记了命令类型
+   * @return
+   */
   int getHead();
 
+  /**
+   * 内部api,设置head
+   * @param head
+   * @return
+   */
   int setHead(int head);
-
-  int setCurrentComQuerySQLType(int type);
-
-  int getCurrentSQLType();
-
-  int setStartPos(int i);
 
   int getStartPos();
 
-  int setEndPos(int i);
+  /**
+   * 一些报文类型要用到sql解析的sql类型辅助识别,此api就是提供这个sql类型
+   * @param type
+   * @return
+   */
+  int setCurrentComQuerySQLType(int type);
 
   int getEndPos();
 
+  /**
+   * 内部api 获取当前的sql类型
+   * @return
+   */
+  int getCurrentSQLType();
+
+  /**
+   * 透传的数据,开始下标
+   * @param i
+   * @return
+   */
+  int setStartPos(int i);
+
+  /**
+   * 透传的数据,结束下标
+   * @param i
+   * @return
+   */
+  int setEndPos(int i);
+
+  /**
+   * 报文解析状态
+   * @return
+   */
   ComQueryState getState();
 
+  /**
+   * 内部api.更新解析状态
+   * @param state
+   */
+  void setState(ComQueryState state);
+
+  int getColumnCount();
+
+  /**
+   * 更新语句,结果集,使用此函数使解析器就绪
+   */
   default void prepareReveiceResponse() {
     setState(ComQueryState.FIRST_PACKET);
   }
 
+  /**
+   * 预处理语句Prepare.使用此函数使解析器就绪(处理PrepareOk报文)
+   */
   default void prepareReveicePrepareOkResponse() {
     setState(ComQueryState.FIRST_PACKET);
     setCurrentComQuerySQLType(0x22);
   }
 
-  void setState(ComQueryState state);
-
-  int setColumnCount(int count);
-
-  int getColumnCount();
-
-  boolean clientDeprecateEof();
-
-  int capabilityFlags();
-
   void setCapabilityFlags(int serverCapability);
 
-  int setRemainsBytes(int remainsBytes);
+  /**
+   * 设置字段数量
+   */
+  int setColumnCount(int count);
 
   int getRemainsBytes();
 
-  int getPayloadLength();
+  /**
+   * 客户端是否禁用EOF报文
+   * @return
+   */
+  boolean clientDeprecateEof();
 
   void setPayloadLength(int length);
 
-  boolean setMultiPacket(boolean c);
+  /**
+   * 与客户端协商得到的服务器能力标志
+   * @return
+   */
+  int capabilityFlags();
 
   boolean isMultiPacket();
 
-  default boolean isRequestFininshed() {
-    return getState() != ComQueryState.QUERY_PACKET;
-  }
+  /**
+   * 单个报文使用字数计算时候的剩余字节数
+   * @param remainsBytes
+   * @return
+   */
+  int setRemainsBytes(int remainsBytes);
 
   default void setRequestFininshed(boolean b) {
     setState(b ? ComQueryState.FIRST_PACKET : ComQueryState.QUERY_PACKET);
   }
 
+  /**
+   * 统计的payload长度
+   */
+  int getPayloadLength();
+
+  /**
+   * 是否一个payload对应多个报文
+   * @param c
+   * @return
+   */
+  boolean setMultiPacket(boolean c);
+
+  /**
+   * 是否请求已经结束,使用该函数时候,需要同一个解析器处理请求和响应,以完成整个状态流转
+   * @return
+   */
+  default boolean isRequestFininshed() {
+    return getState() != ComQueryState.QUERY_PACKET;
+  }
+
+  boolean setPayloadFinished(boolean b);
+
+  /**
+   * 重置buffer
+   */
   void resetCurrentMySQLPacket();
 
+  /**
+   * 重置解析器,但是不清除payload类型以及serverStatus,因为后续操作可能用到这些信息
+   * 会清除Proxybuffer内部的buffer,但是不会清除proxybuffer,proxybuffer的引用本身在session里
+   */
   default void reset() {
     resetPayload();
     resetCurrentMySQLPacket();
@@ -203,11 +319,16 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     //setEofServerStatus(0);
   }
 
+  /**
+   * payload是否接收结束
+   * @return
+   */
   boolean isPayloadFinished();
 
-  boolean setPayloadFinished(boolean b);
-
-
+  /**
+   * 把payload读取完整,之后从currentPayload读取,使用resetCurrentPayload释放
+   * @return 是否读取完整
+   */
   default boolean readMySQLPayloadFully() {
     MySQLPacket proxybuffer = currentProxybuffer();
     boolean lastIsMultiPacket = isMultiPacket();
@@ -237,6 +358,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     return true;
   }
 
+  /**
+   * 把报文读取完整
+   * @return
+   */
   default boolean readMySQLPacketFully() {
     MySQLPacket mySQLPacket = currentProxybuffer();
     int startIndex = mySQLPacket.packetReadStartIndex();
@@ -287,6 +412,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     }
   }
 
+  /**
+   * packet++;
+   * @return
+   */
   default int getAndIncrementPacketId() {
     int packetId = getPacketId();
     byte i = (byte) (packetId + 1);
@@ -294,6 +423,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     return packetId;
   }
 
+  /**
+   * ++packet
+   * @return
+   */
   default int incrementPacketIdAndGet() {
     int packetId = getPacketId();
     byte i = (byte) (packetId + 1);
@@ -301,6 +434,11 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     return i;
   }
 
+  /**
+   * 尽可能只要能识别出报文类型,返回值就是true
+   * @return
+   * @throws IOException
+   */
   default boolean readMySQLPacket() throws IOException {
     MySQLPacket mySQLPacket = currentProxybuffer();
     boolean needWholePacket = getState().isNeedFull();
@@ -385,16 +523,45 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     }
   }
 
+  /**
+   * 当前的buffer
+   * @return
+   */
   MySQLPacket currentProxybuffer();
 
+  /**
+   * 把多个报文拼接成完整的Payload
+   * @param mySQLPacket
+   * @param payloadStartIndex
+   * @param payloadEndIndex
+   */
   void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex, int payloadEndIndex);
 
+  /**
+   * 设置Payload
+   * @param mySQLPacket
+   */
   void setPayload(MySQLPacket mySQLPacket);
 
+  /**
+   * 清除保存Payload的数据
+   */
   void resetPayload();
 
+  /**
+   * 当前的Payload
+   * @return
+   */
   MySQLPacket currentPayload();
 
+  /**
+   * 识别报文类型
+   * @param head 可能用到的信息之一,命令报文的第一个字节
+   * @param isPacketFinished 报文是否接收结束
+   * @param parse 是否对报文进行解析,未实现
+   * @param mySQLPacket 报文本身
+   * @param payloadLength Payload长度
+   */
   default void resolvePayloadType(int head, boolean isPacketFinished, boolean parse,
       MySQLPacket mySQLPacket, int payloadLength) {
     if (hasResolvePayloadType()) {
@@ -528,12 +695,17 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         if (!isPacketFinished) {
           throw new RuntimeException("unknown state!");
         } else {
-
+          throw new RuntimeException("unknown state!");
         }
       }
     }
   }
 
+  /**
+   * 识别prepareOk报文
+   * @param buffer
+   * @param isPacketFinished
+   */
   default void resolvePrepareOkPacket(MySQLPacket buffer, boolean isPacketFinished) {
     if (!isPacketFinished) {
       throw new RuntimeException("unknown state!");
@@ -563,14 +735,28 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     throw new RuntimeException("unknown state!");
   }
 
+  /**
+   * 响应是否结束
+   * @return
+   */
   default boolean isResponseFinished() {
     return getState() == ComQueryState.COMMAND_END;
   }
 
+  /**
+   *     setState(b ? ComQueryState.COMMAND_END : ComQueryState.FIRST_PACKET);
+   * @param b
+   */
   default void setResponseFinished(boolean b) {
     setState(b ? ComQueryState.COMMAND_END : ComQueryState.FIRST_PACKET);
   }
 
+  /**
+   * 从eof packet读取服务器状态
+   * 该函数并不会改变buffer内部状态
+   * @param buffer
+   * @return
+   */
   default int eofPacketReadStatus(MySQLPacket buffer) {
     int bpStartIndex = buffer.packetReadStartIndex();
     int bpEndIndex = buffer.packetReadEndIndex();
@@ -585,6 +771,37 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     return i;
   }
 
+  enum ComQueryState {
+    //DO_NOT(false),
+    QUERY_PACKET(true),
+    FIRST_PACKET(true),
+    COLUMN_DEFINITION(false),
+    COLUMN_END_EOF(true),
+    RESULTSET_ROW(false),
+    RESULTSET_ROW_END(true),
+    PREPARE_FIELD(false),
+    PREPARE_FIELD_EOF(true),
+    PREPARE_PARAM(false),
+    PREPARE_PARAM_EOF(true),
+    COMMAND_END(false),
+    //    LOCAL_INFILE_REQUEST(true),
+    LOCAL_INFILE_FILE_CONTENT(true),
+    //    LOCAL_INFILE_EMPTY_PACKET(true),
+    LOCAL_INFILE_OK_PACKET(true);
+    boolean needFull;
+
+    ComQueryState(boolean needFull) {
+      this.needFull = needFull;
+    }
+
+    public boolean isNeedFull() {
+      return needFull;
+    }
+  }
+
+  /**
+   * 从ok packet读取状态 该函数并不会改变buffer内部状态
+   */
   default int okPacketReadServerStatus(MySQLPacket buffer) {
     int bpStartIndex = buffer.packetReadStartIndex();
     int bpEndIndex = buffer.packetReadEndIndex();
@@ -608,6 +825,11 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     throw new java.lang.RuntimeException("OKPacket readServerStatus error ");
   }
 
+  /**
+   * 识别结果集结束的报文
+   * @param mySQLPacket
+   * @param isPacketFinished
+   */
   default void resolveResultsetRowEnd(MySQLPacket mySQLPacket, boolean isPacketFinished) {
     if (!isPacketFinished) {
       throw new RuntimeException("unknown state!");
@@ -629,6 +851,12 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     }
   }
 
+  /**
+   * 处理预处理响应
+   * @param proxyBuf
+   * @param head
+   * @param isPacketFinished
+   */
   default void resolvePrepareResponse(MySQLPacket proxyBuf, int head, boolean isPacketFinished) {
     if (!isPacketFinished) {
       throw new RuntimeException("unknown state!");
@@ -686,31 +914,4 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     throw new RuntimeException("unknown state!");
   }
 
-  enum ComQueryState {
-    //DO_NOT(false),
-    QUERY_PACKET(true),
-    FIRST_PACKET(true),
-    COLUMN_DEFINITION(false),
-    COLUMN_END_EOF(true),
-    RESULTSET_ROW(false),
-    RESULTSET_ROW_END(true),
-    PREPARE_FIELD(false),
-    PREPARE_FIELD_EOF(true),
-    PREPARE_PARAM(false),
-    PREPARE_PARAM_EOF(true),
-    COMMAND_END(false),
-    //    LOCAL_INFILE_REQUEST(true),
-    LOCAL_INFILE_FILE_CONTENT(true),
-    //    LOCAL_INFILE_EMPTY_PACKET(true),
-    LOCAL_INFILE_OK_PACKET(true);
-    boolean needFull;
-
-    ComQueryState(boolean needFull) {
-      this.needFull = needFull;
-    }
-
-    public boolean isNeedFull() {
-      return needFull;
-    }
-  }
 }

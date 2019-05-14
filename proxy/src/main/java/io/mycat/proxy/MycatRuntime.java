@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +49,9 @@ public class MycatRuntime extends ConfigReceiverImpl {
 
   public static String getResourcesPath() {
     try {
-     return Paths.get(MycatRuntime.class.getClassLoader().getResource("").toURI()).toAbsolutePath()
+      return Paths.get(
+          Objects.requireNonNull(MycatRuntime.class.getClassLoader().getResource("")).toURI())
+                 .toAbsolutePath()
           .toString();
     }catch (Exception e){
       throw new RuntimeException(e);
@@ -130,7 +133,7 @@ public class MycatRuntime extends ConfigReceiverImpl {
   public void initReactor() throws IOException {
     int cpus = Runtime.getRuntime().availableProcessors();
     //MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[Math.max(1,cpus-2)];
-    MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[1];
+    MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[cpus];
     this.setMycatReactorThreads(mycatReactorThreads);
     for (int i = 0; i < mycatReactorThreads.length; i++) {
       BufferPool bufferPool = new BufferPoolImpl(getBufferPoolPageSize(), getBufferPoolChunkSize(),

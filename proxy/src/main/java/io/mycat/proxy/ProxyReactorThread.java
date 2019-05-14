@@ -182,7 +182,8 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
               this.processWriteKey(reactorEnv, key);
             }
           } catch (IOException e) {//如果设置为IOException方便调试,避免吞没其他类型异常
-            String message = ReactorTip.PROCESS_NIO_IO_EEROR.getMessage(e);
+            String message = ReactorTip.PROCESS_NIO_IO_EEROR
+                                 .getMessage(reactorEnv.getCurSession(), e);
             if (logger.isErrorEnabled()) {
               logger.error(message);
             }
@@ -202,7 +203,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
         }
         keys.clear();
       } catch (Throwable e) {
-        logger.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(e));
+        logger.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e));
       }
     }
   }
