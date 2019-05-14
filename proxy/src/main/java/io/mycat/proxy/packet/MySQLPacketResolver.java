@@ -247,9 +247,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       return false;
     }
     int length = (int) mySQLPacket.getFixInt(startIndex, 3);
-    if (length > 1000) {
-      System.out.println();
-    }
     int packetId = mySQLPacket.getByte(startIndex + 3) & 0xff;
     int andIncrementPacketId = getPacketId() + 1;
     setPacketId(packetId);
@@ -258,11 +255,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     boolean isFirstPacket = false;
     boolean isEnd = !multiPacket;
     int packetLength = length;
-    if (multiPacket) {
-      packetLength = 0xffffff - 1;
-    } else {
-      packetLength = packetLength + 4;
-    }
+    packetLength = packetLength + 4;
     int endPos = startIndex + packetLength;
     if (mySQLPacket.currentBuffer().capacity() < endPos) {
       ((ProxyBuffer) mySQLPacket).expendToLengthIfNeedInReading(endPos);
@@ -342,23 +335,15 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         if (receiveSize < 5) {
           return false;
         }
-        int aByte;
-        try {
-          aByte = mySQLPacket.getByte(startIndex + 4) & 0xff;
-          setHead(aByte);
-          if (aByte == 0xfe || aByte == 0x00) {
-            return readMySQLPacketFully();
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
+        int aByte = mySQLPacket.getByte(startIndex + 4) & 0xff;
+        setHead(aByte);
+        if (aByte == 0xfe || aByte == 0x00) {
+          return readMySQLPacketFully();
         }
+
         setPayloadLength(packetLength);
-        multiPacket = setMultiPacket(packetLength == 0xffffff);
-        if (multiPacket) {
-          packetLength = 0xffffff;
-        } else {
-          packetLength = packetLength + 4;
-        }
+        multiPacket = setMultiPacket(packetLength == 0xffffff - 1);
+        packetLength = packetLength + 4;
         markedResolvePayloadType(false);
         setPacketId(packetId);
         int andIncrementPacketId = getAndIncrementPacketId();

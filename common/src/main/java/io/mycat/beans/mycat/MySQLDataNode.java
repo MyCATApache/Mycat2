@@ -12,16 +12,16 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat;
+package io.mycat.beans.mycat;
 
-import io.mycat.beans.mycat.MycatDataNode;
-import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.schema.DataNodeConfig;
 import java.util.Objects;
 
 /**
  * @author jamie12221
  * @date 2019-05-04 15:13
+ *
+ * mysql data 节点
  **/
 public class MySQLDataNode extends MycatDataNode {
   public MycatReplica replica;

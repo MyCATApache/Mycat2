@@ -144,7 +144,7 @@ public enum MySQLPacketExchanger {
           MySQLPacketExchanger.MySQLProxyNIOHandler.class);
       @Override
       public void onSocketRead(MySQLClientSession session) throws IOException {
-        // session.close(false, UNKNOWN_IDLE_RESPONSE.getMessage());
+        session.close(false, UNKNOWN_IDLE_RESPONSE.getMessage());
       }
 
       @Override

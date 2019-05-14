@@ -28,15 +28,20 @@ import org.slf4j.LoggerFactory;
 public abstract class TextResultSetTransforCollector implements ResultSetCollector {
 
   static final Logger logger = LoggerFactory.getLogger(TextResultSetTransforCollector.class);
+  static final boolean log = false;
 
   @Override
   public void onResultSetStart() {
-    logger.debug("onResultSetStart");
+    if (log) {
+      logger.debug("onResultSetStart");
+    }
   }
 
   @Override
   public void onResultSetEnd() {
-    logger.debug("onResultSetEnd");
+    if (log) {
+      logger.debug("onResultSetEnd");
+    }
   }
 
 
@@ -72,12 +77,14 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
 
   @Override
   public void onRowStart() {
-    logger.debug("onRowStart");
+    if (log)
+      logger.debug("onRowStart");
   }
 
   @Override
   public void onRowEnd() {
-    logger.debug("onRowEnd");
+    if (log)
+      logger.debug("onRowEnd");
   }
 
   @Override
@@ -85,7 +92,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
       MySQLPacket mySQLPacket, int startIndex) {
     BigDecimal bigDecimal = new BigDecimal(mySQLPacket.readLenencString());
     addValue(columnIndex, bigDecimal);
-    logger.debug("{}:{}", columnDef.getColumnNameString(), bigDecimal);
+    if (log) {
+      logger.debug("{}:{}", columnDef.getColumnNameString(), bigDecimal);
+    }
   }
 
   @Override
@@ -94,7 +103,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       int i = Integer.parseInt(mySQLPacket.readLenencString());
       addValue(columnIndex, i);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), i);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), i);
+      }
     }
   }
 
@@ -104,7 +115,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       String v = mySQLPacket.readLenencString();
       addValue(columnIndex, v);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), v);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), v);
+      }
     }
   }
 
@@ -114,7 +127,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       String lenencBytes = mySQLPacket.readLenencString();
       addValue(columnIndex, lenencBytes);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      }
     }
   }
 
@@ -124,7 +139,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       String lenencBytes = mySQLPacket.readLenencString();
       addValue(columnIndex, lenencBytes);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      }
     }
   }
 
@@ -134,7 +151,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       int lenencInt = Integer.parseInt(mySQLPacket.readLenencString());
       addValue(columnIndex, lenencInt);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      }
     }
   }
 
@@ -144,7 +163,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
       addValue(columnIndex, lenencBytes);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      }
     }
   }
 
@@ -154,7 +175,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
       addValue(columnIndex, lenencBytes);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      }
     }
   }
 
@@ -164,7 +187,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
       addValue(columnIndex, lenencBytes);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      }
     }
   }
 
@@ -174,7 +199,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       double v = Double.parseDouble(mySQLPacket.readLenencString());
       addValue(columnIndex, v);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), v);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), v);
+      }
     }
   }
 
@@ -184,7 +211,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       double v = Double.parseDouble(mySQLPacket.readLenencString());
       addValue(columnIndex, v);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), v);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), v);
+      }
     }
   }
 
@@ -193,7 +222,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
       int startIndex) {
     if (true) {
       addValue(columnIndex);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), null);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), null);
+      }
     }
   }
 
@@ -203,7 +234,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       Date date = Date.valueOf(mySQLPacket.readLenencString());
       addValue(columnIndex, date);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      }
     }
   }
 
@@ -217,7 +250,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       int lenencInt = Integer.parseInt(mySQLPacket.readLenencString());
       addValue(columnIndex, lenencInt);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      }
     }
   }
 
@@ -227,7 +262,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       Date date = Date.valueOf(mySQLPacket.readLenencString());
       addValue(columnIndex, date);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      }
     }
   }
 
@@ -237,7 +274,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       Date date = Date.valueOf(mySQLPacket.readLenencString());
       addValue(columnIndex, date);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      }
     }
   }
 
@@ -247,7 +286,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       Date date = Date.valueOf(mySQLPacket.readLenencString());
       addValue(columnIndex, date);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      }
     }
   }
 
@@ -257,7 +298,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       Date date = Date.valueOf(mySQLPacket.readLenencString());
       addValue(columnIndex, date);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      }
     }
   }
 
@@ -267,7 +310,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       Date date = Date.valueOf(mySQLPacket.readLenencString());
       addValue(columnIndex, date);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+      }
     }
   }
 
@@ -277,7 +322,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       String lenencString = mySQLPacket.readLenencString();
       addValue(columnIndex, lenencString);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      }
     }
   }
 
@@ -287,7 +334,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       String lenencString = mySQLPacket.readLenencString();
       addValue(columnIndex, lenencString);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      }
     }
   }
 
@@ -296,7 +345,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
       MySQLPacket mySQLPacket, int startIndex) {
     if (true) {
       BigDecimal bigDecimal = new BigDecimal(mySQLPacket.readLenencString());
-      logger.debug("{}:{}", columnDef.getColumnNameString(), bigDecimal);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), bigDecimal);
+      }
     }
   }
 
@@ -306,7 +357,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       String lenencString = mySQLPacket.readLenencString();
       addValue(columnIndex, lenencString);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      }
     }
   }
 
@@ -316,7 +369,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       String lenencString = mySQLPacket.readLenencString();
       addValue(columnIndex, lenencString);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      }
     }
   }
 
@@ -326,7 +381,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       long lenencInt = Long.parseLong(mySQLPacket.readLenencString());
       addValue(columnIndex, lenencInt);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      }
     }
   }
 
@@ -336,7 +393,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       long lenencInt = Long.parseLong(mySQLPacket.readLenencString());
       addValue(columnIndex, lenencInt);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencInt);
+      }
     }
   }
 
@@ -346,7 +405,9 @@ public abstract class TextResultSetTransforCollector implements ResultSetCollect
     if (true) {
       byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
       addValue(columnIndex, lenencBytes);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      if (log) {
+        logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
+      }
     }
   }
 

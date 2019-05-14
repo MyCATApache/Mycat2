@@ -175,6 +175,9 @@ public final class DumpUtil {
     	return (dumpAsHex(new ByteBufferGetable(buffer), offset, length));
     }
 
+  public final static void printAsHex(final ByteBuffer buffer, final int offset, final int length) {
+    System.out.println(dumpAsHex(buffer, offset, length));
+  }
     public final static boolean isEmpty(String str) {
     	return str == null || str == "";
     }
@@ -215,8 +218,8 @@ public final class DumpUtil {
 		}
 		return "";
 	}
-    
-    public static void main(String args[]){
+
+  public static void main(String[] args) {
     	final byte[] array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 48, 49, 50, 97, 98, 99};
     	
     	System.out.println("test - byte array");

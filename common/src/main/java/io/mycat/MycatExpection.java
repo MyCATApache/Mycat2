@@ -19,6 +19,10 @@ package io.mycat;
 
 import io.mycat.beans.mysql.MySQLErrorCode;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 23:30 mycat 异常
+ **/
 public class MycatExpection extends RuntimeException {
 
     private final int errorCode;

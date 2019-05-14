@@ -97,7 +97,6 @@ public interface Session<T extends Session> {
 
   /**
    * 获取当前线程池
-   * @return
    */
   default MycatReactorThread getMycatReactorThread() {
     Thread thread = Thread.currentThread();
@@ -125,4 +124,7 @@ public interface Session<T extends Session> {
     return string;
   }
 
+  default long currentTimeMillis() {
+    return getMycatReactorThread().getLastActiveTime();
+  }
 }

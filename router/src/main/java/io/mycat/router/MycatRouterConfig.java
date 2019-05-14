@@ -14,11 +14,11 @@
  */
 package io.mycat.router;
 
-import io.mycat.MySQLDataNode;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.DefaultTable;
 import io.mycat.beans.mycat.ERTable;
 import io.mycat.beans.mycat.GlobalTable;
+import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;

@@ -47,6 +47,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
   //用于管理连接等事件
   protected final ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<>();
   private final ReactorEnv reactorEnv = new ReactorEnv();
+  private static long activeTime = System.currentTimeMillis();
 
   @SuppressWarnings("unchecked")
   public ProxyReactorThread(BufferPool bufPool, FrontSessionManager<T> sessionMan)
@@ -150,6 +151,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
     while (true) {
       try {
         selector.select(SELECTOR_TIMEOUT);
+        updateLastActiveTime();
         final Set<SelectionKey> keys = selector.selectedKeys();
         if (keys.isEmpty()) {
           if (!pendingJobs.isEmpty()) {
@@ -203,5 +205,16 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
         logger.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(e));
       }
     }
+  }
+
+  /**
+   * 获取该session,最近活跃的时间
+   */
+  public void updateLastActiveTime() {
+    activeTime = System.currentTimeMillis();
+  }
+
+  public long getLastActiveTime() {
+    return activeTime;
   }
 }

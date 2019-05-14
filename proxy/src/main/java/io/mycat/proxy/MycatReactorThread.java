@@ -44,4 +44,5 @@ public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
     return mySQLSessionManager;
   }
 
+
 }

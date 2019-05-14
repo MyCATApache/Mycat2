@@ -395,7 +395,6 @@ public class MySQLClientSession extends
 
   /**
    * 获取报文类型
-   * @return
    */
   public MySQLPayloadType getPayloadType() {
     return this.packetResolver.getMySQLPayloadType();
@@ -403,16 +402,14 @@ public class MySQLClientSession extends
 
   /**
    * 判断该session是否活跃
-   * @return
    */
   public boolean isActivated() {
-    long timeInterval = System.currentTimeMillis() - this.lastActiveTime;
+    long timeInterval = currentTimeMillis() - this.lastActiveTime;
     return (timeInterval < 60 * 1000);//60 second
   }
 
   /**
    * 把buffer写入通道
-   * @throws IOException
    */
   public void writeToChannel() throws IOException {
     assert !isIdle();
@@ -422,7 +419,6 @@ public class MySQLClientSession extends
 
   /**
    * 检测buffer是否写入完毕
-   * @throws IOException
    */
   public void checkWriteFinished() throws IOException {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
@@ -435,16 +431,19 @@ public class MySQLClientSession extends
 
   /**
    * 最终把buffer写入通道的方法
-   * @throws IOException
    */
-  void writeProxyBufferToChannel() throws IOException {
-    this.currentProxyBuffer().writeToChannel(this.channel());
+  final void writeProxyBufferToChannel() throws IOException {
+    ProxyBuffer proxyBuffer = this.currentProxyBuffer();
+    int oldIndex = proxyBuffer.channelWriteStartIndex();
+    proxyBuffer.writeToChannel(this.channel());
+    NetMonitor.onBackendWrite(this, proxyBuffer.currentByteBuffer(), oldIndex,
+        proxyBuffer.channelWriteEndIndex());
     this.updateLastActiveTime();
     this.checkWriteFinished();
   }
 
   /**
-   *把当前的proxybuffer作为报文构造
+   * 把当前的proxybuffer作为报文构造
    */
   public MySQLPacket newCurrentProxyPacket(int packetLength) {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
@@ -457,8 +456,6 @@ public class MySQLClientSession extends
 
   /**
    * 把bytes数据直接写入通道,不做修改
-   * @param bytes
-   * @throws IOException
    */
   public void writeProxyBufferToChannel(byte[] bytes) throws IOException {
     writeProxyBufferToChannel(this, bytes);
@@ -541,5 +538,16 @@ public class MySQLClientSession extends
    */
   public void setIdle(boolean idle) {
     isIdle = idle;
+  }
+
+  @Override
+  public boolean readFromChannel() throws IOException {
+    boolean b = MySQLProxySession.super.readFromChannel();
+    ProxyBuffer proxyBuffer = this.proxyBuffer;
+    NetMonitor
+        .onBackendRead(this, proxyBuffer.currentByteBuffer(), proxyBuffer.channelReadStartIndex(),
+            proxyBuffer.channelReadEndIndex()
+        );
+    return b;
   }
 }

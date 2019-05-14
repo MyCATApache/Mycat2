@@ -18,9 +18,7 @@ import java.util.LinkedList;
  * @author jamie12221
  * @date 2019-05-08 00:06
  *
- * mysql server session
- * 该接口实现服务器模式
- *
+ * mysql server session 该接口实现服务器模式
  **/
 public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
@@ -40,6 +38,8 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       ByteBuffer first = byteBuffers.peekFirst();
 
       if (first.position() == 0) {//一个全新的payload
+        NetMonitor.onFrontWrite(
+            session, first, 0, first.limit());
         packetSplitter.init(first.limit());
         packetSplitter.nextPacketInPacketSplitter();
         splitPacket(session, packetContainer, packetSplitter, first);
@@ -86,10 +86,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 生成packet
-   * @param session
-   * @param packetContainer
-   * @param packetSplitter
-   * @param first
    */
   static void splitPacket(MySQLServerSession session, ByteBuffer[] packetContainer,
       MySQLPacketSplitter packetSplitter,
@@ -156,13 +152,11 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * ok packet
-   * @return
    */
   long incrementAffectedRows();
 
   /**
    * ok eof
-   * @return
    */
   int getServerStatus();
 
@@ -187,7 +181,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 连接相关字符集
-   * @return
    */
   Charset charset();
 
@@ -198,7 +191,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 前端写入事件是否结束
-   * @return
    */
   boolean isResponseFinished();
 
@@ -214,7 +206,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 写入文本结果集行
-   * @param row
    */
   default void writeTextRowPacket(byte[][] row) {
     switchMySQLServerWriteHandler();
@@ -224,7 +215,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 写入二进制结果集行
-   * @param row
    */
   default void writeBinaryRowPacket(byte[][] row) {
     switchMySQLServerWriteHandler();
@@ -234,7 +224,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 写入字段数
-   * @param count
    */
   default void writeColumnCount(int count) {
     switchMySQLServerWriteHandler();
@@ -244,8 +233,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 写入字段
-   * @param columnName
-   * @param type
    */
   default void writeColumnDef(String columnName, int type) {
     switchMySQLServerWriteHandler();
@@ -256,7 +243,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 写入payload
-   * @param payload
    */
   default void writeBytes(byte[] payload) {
     switchMySQLServerWriteHandler();
@@ -300,8 +286,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 结果集结束写入该报文,需要指定是否有后续的结果集和是否有游标
-   * @param hasMoreResult
-   * @param hasCursor
    */
   default void writeRowEndPacket(boolean hasMoreResult, boolean hasCursor) {
     switchMySQLServerWriteHandler();
@@ -342,8 +326,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
   }
 
   /**
-   * 同步写入错误包,用于异常处理,一般错误包比较小,一次非阻塞写入就结束了,写入不完整尝试四次,
-   * 之后就会把mycat session关闭,简化错误处理
+   * 同步写入错误包,用于异常处理,一般错误包比较小,一次非阻塞写入就结束了,写入不完整尝试四次, 之后就会把mycat session关闭,简化错误处理
    */
   default void writeErrorEndPacketBySyncInProcessError() {
     switchMySQLServerWriteHandler();

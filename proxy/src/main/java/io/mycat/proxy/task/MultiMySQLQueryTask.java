@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.task;
 
-import io.mycat.MySQLDataNode;
+import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.MycatRuntime;

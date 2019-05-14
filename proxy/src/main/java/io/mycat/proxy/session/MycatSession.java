@@ -14,9 +14,9 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MySQLDataNode;
 import io.mycat.MycatExpection;
 import io.mycat.beans.MySQLServerStatus;
+import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -402,6 +402,14 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public boolean readProxyPayloadFully() {
     return packetResolver.readMySQLPayloadFully();
+  }
+
+  @Override
+  public final boolean readFromChannel() throws IOException {
+    boolean b = MySQLProxySession.super.readFromChannel();
+    NetMonitor.onFrontRead(this, proxyBuffer.currentByteBuffer(),
+        proxyBuffer.channelReadStartIndex(), proxyBuffer.channelReadEndIndex());
+    return b;
   }
 
   public MySQLPacket currentProxyPayload() {

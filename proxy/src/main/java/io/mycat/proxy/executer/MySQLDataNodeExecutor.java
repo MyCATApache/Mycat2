@@ -14,8 +14,8 @@
  */
 package io.mycat.proxy.executer;
 
-import io.mycat.MySQLDataNode;
 import io.mycat.MycatExpection;
+import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;

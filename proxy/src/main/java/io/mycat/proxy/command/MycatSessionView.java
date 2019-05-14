@@ -1,6 +1,6 @@
 package io.mycat.proxy.command;
 
-import io.mycat.MySQLDataNode;
+import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;

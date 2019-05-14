@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.MySQLDataNode;
+import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.buffer.BufferPool;

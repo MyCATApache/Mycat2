@@ -22,7 +22,7 @@ import io.mycat.proxy.session.MySQLProxySession;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public final class MySQLPacketResolverImpl implements MySQLPacketResolver {
+public class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   MySQLPacket mySQLPacket;
   MySQLPacket payload;

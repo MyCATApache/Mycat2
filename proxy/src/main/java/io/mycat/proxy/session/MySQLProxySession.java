@@ -9,8 +9,7 @@ import java.io.IOException;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 23:54
- * mycat session与mysql session 作为代理交换数据的handler
+ * @date 2019-05-07 23:54 mycat session与mysql session 作为代理交换数据的handler
  **/
 public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
@@ -35,16 +34,13 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   /**
    * 读取完整的payload
-   * @return
    */
   default boolean readProxyPayloadFully() {
     return getPacketResolver().readMySQLPayloadFully();
   }
 
   /**
-   * 获取当前的payload,此时下标就是payload的开始位置
-   * 使用该方法后需要调用resetCurrentProxyPayload释放资源
-   * @return
+   * 获取当前的payload,此时下标就是payload的开始位置 使用该方法后需要调用resetCurrentProxyPayload释放资源
    */
   default MySQLPacket currentProxyPayload() {
     return getPacketResolver().currentPayload();
@@ -59,8 +55,6 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   /**
    * 尽可能地读取payload,可能获得的payload并不完整
-   * @return
-   * @throws IOException
    */
   default boolean readPartProxyPayload() throws IOException {
     return getPacketResolver().readMySQLPacket();
@@ -75,7 +69,6 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   /**
    * 使用bytes构造Proxybuffer,此时Proxybuffer处于可读可写状态
-   * @param bytes
    */
   default void resetProxyBuffer(byte[] bytes) {
     ProxyBuffer proxyBuffer = this.currentProxyBuffer();
@@ -91,10 +84,14 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
     @Override
     public void writeToChannel(MycatSession mycat) throws IOException {
-      mycat.currentProxyBuffer().writeToChannel(mycat.channel());
+      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
+      int oldIndex = proxyBuffer.channelWriteStartIndex();
+      proxyBuffer.writeToChannel(mycat.channel());
+
+      NetMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
+          proxyBuffer.channelReadEndIndex());
       mycat.updateLastActiveTime();
 
-      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
       if (!proxyBuffer.channelWriteFinished()) {
         mycat.change2WriteOpts();
       } else {

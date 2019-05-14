@@ -44,7 +44,7 @@ public class ByteArrayOutput implements Closeable {
    * size increases if necessary.
    */
   public ByteArrayOutput() {
-    this(512);
+    this(256);
   }
 
   /**

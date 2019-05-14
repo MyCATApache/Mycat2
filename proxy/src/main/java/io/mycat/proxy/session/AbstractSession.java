@@ -52,7 +52,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     this.sessionManager = sessionManager;
     this.channelKey = channel.register(nioSelector, socketOpt, this);
     this.sessionId = MycatRuntime.INSTANCE.genSessionId();
-    this.startTime = System.currentTimeMillis();
+    this.startTime = currentTimeMillis();
   }
 
   public SelectionKey getChannelKey() {
@@ -66,7 +66,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
 
 
   public void updateLastActiveTime() {
-    lastActiveTime = System.currentTimeMillis();
+    lastActiveTime = currentTimeMillis();
   }
 
   public void change2ReadOpts() {
