@@ -20,6 +20,7 @@ import java.util.Objects;
 /**
  * @author jamie12221
  * @date 2019-05-05 23:09
+ * 单库分表路由结果
  **/
 public class SubTableResultRoute extends ResultRoute {
 

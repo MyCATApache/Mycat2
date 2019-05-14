@@ -23,8 +23,11 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 /**
+ * @author chen junwen
+ * @date 2019-05-09 02:30
  *
- */
+ * 同时实现 实现mysql packet与mysql packet
+ **/
 public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBufferImpl> {
 
   ByteBuffer buffer;
@@ -173,6 +176,9 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     readEndIndex = index;
   }
 
+  /**
+   * 从读通道获取数据
+   */
   @Override
   public boolean readFromChannel(SocketChannel channel) throws IOException {
     try {
@@ -192,12 +198,16 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     }
   }
 
+  /**
+   * 把buffer数据写入通道
+   * @param channel
+   * @throws IOException
+   */
   @Override
   public void writeToChannel(SocketChannel channel) throws IOException {
     applyChannelWritingIndex();
     //System.out.println(DumpUtil.dumpAsHex(buffer,buffer.limit()));
     if (channel.write(buffer) == -1) {
-      logger.warn("Read EOF ,socket closed ");
       throw new ClosedChannelException();
     }
     channelWriteStartIndex(buffer.position());
@@ -264,8 +274,8 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
   }
 
   @Override
-  public void appendLengthIfInReading(int length, boolean c) {
-    if (c && readEndIndex < length + readStartIndex) {
+  public void appendLengthIfInReading(int length, boolean condition) {
+    if (condition && readEndIndex < length + readStartIndex) {
       this.buffer = this.bufferPool.expandBuffer(this.buffer, readEndIndex + length);
     }
   }

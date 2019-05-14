@@ -26,6 +26,8 @@ import java.util.HashMap;
 /**
  * @author jamie12221
  * @date 2019-05-09 02:30
+ *
+ * command 报文解析分发
  **/
 public class CommandHandlerAdapter {
 

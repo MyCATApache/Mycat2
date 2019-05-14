@@ -14,6 +14,12 @@
  */
 package io.mycat.beans.mysql.packet;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * 报文写视图
+ **/
 public interface MySQLPayloadWriteView<T extends MySQLPayloadWriteView<T>> {
 
   T writeLong(long l);

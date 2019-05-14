@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 /**
  * @author chen junwen
  * @date 2019-05-09 02:30
+ *
+ * proxybuffer 用于代理数据交换
  **/
 public interface ProxyBuffer {
 
@@ -90,6 +92,7 @@ public interface ProxyBuffer {
    * @return
    */
   int channelReadStartIndex();
+
   /**
    * 读事件,报文读取类,从该位置读取结束
    * @return
@@ -131,41 +134,114 @@ public interface ProxyBuffer {
    */
   BufferPool bufferPool();
 
+  /**
+   * 回收bytebuffer,重置状态
+   */
   void reset();
 
+  /**
+   * 使用buffer池默认分配大小分配buffer
+   */
   void newBuffer();
 
+  /**
+   * 使用数组构造Proxybuffer,此时buffer处于通读可读可写状态
+   * @param bytes
+   */
   void newBuffer(byte[] bytes);
 
+  /**
+   * 指定大小分配buffer
+   * @param len
+   */
   void newBuffer(int len);
 
+  /**
+   *根据channelReadEndIndex 与 length 比较,扩容
+   * @param length
+   */
   void expendToLengthIfNeedInReading(int length);
 
+  /**
+   *this.buffer.capacity() < length + readStartIndex
+   * @param length
+   */
   void appendLengthIfInReading(int length);
 
-  void appendLengthIfInReading(int length, boolean c);
+  /**
+   * condition && readEndIndex < length + readStartIndex
+   */
+  void appendLengthIfInReading(int length, boolean condition);
 
+  /**
+   * readEndIndex > buffer.capacity() * (1.0 / 3)
+   */
   void compactInChannelReadingIfNeed();
 
 
+  /**
+   * buffer == null newBuffer()
+   * @return
+   */
   ProxyBuffer newBufferIfNeed();
 
 
+  /**
+   * channelWriteStartIndex() == channelWriteEndIndex()
+   * @return
+   */
   default boolean channelWriteFinished() {
     return channelWriteStartIndex() == channelWriteEndIndex();
   }
 
+  /**
+   * channelReadStartIndex() == channelReadEndIndex()
+   * @return
+   */
   default boolean channelReadFinished() {
     return channelReadStartIndex() == channelReadEndIndex();
   }
 
+  /**
+   *     buffer.position(channelWriteStartIndex());
+   *     buffer.limit(channelWriteEndIndex());
+   * @return
+   */
   ProxyBuffer applyChannelWritingIndex();
 
+  /**
+   *
+   * 剪掉指定范围的数据 并更新
+   *
+   *  this.readStartIndex;
+   *  this.readEndIndex;
+   *
+   *  writeStartIndex writeEndIndex可能会被破坏
+   * @param start 剪掉数据开始的下标
+   * @param end 剪掉数据结束的下标
+   */
   void cutRangeBytesInReading(int start, int end);
 
+  /**
+   *   buffer.position(channelReadStartIndex());
+   *   buffer.limit(buffer.capacity());
+   * @return
+   */
   ProxyBuffer applyChannelReadingIndex();
 
+  /**
+   *     channelReadStartIndex(channelWriteStartIndex());
+   *     channelReadEndIndex(channelWriteEndIndex());
+   *
+   *     写入的范围应用到读取范围
+   */
   void applyChannelWritingIndexForChannelReadingIndex();
 
+  /**
+   *     return this.capacity() - readEndIndex;
+   *
+   *     在读取,报文解析时,检查剩余空间,检查bytebuffer能否容纳整个报文
+   * @return
+   */
   int remainsInReading();
 }

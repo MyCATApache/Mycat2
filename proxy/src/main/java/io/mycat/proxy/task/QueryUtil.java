@@ -1,8 +1,8 @@
 package io.mycat.proxy.task;
 
-import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLSetOption;
+import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;

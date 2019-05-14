@@ -3,6 +3,7 @@ package io.mycat.proxy.command;
 /**
  * @author jamie12221
  * @date 2019-05-12 21:30
+ * 实现mysql服务器 预处理相关处理
  **/
 public interface PrepareStatementHandler {
 

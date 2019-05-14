@@ -25,6 +25,7 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 /**
  * cjw
  * 294712221@qq.com
+ * 作为客户端发送的握手包,是服务器发送的验证包的响应
  */
 public class HandshakePacketImpl {
     public int protocolVersion;
@@ -79,7 +80,7 @@ public class HandshakePacketImpl {
         buffer.writeNULString(serverVersion);
         buffer.writeFixInt(4, connectionId);
         if (authPluginDataPartOne.length() != 8) {
-            throw new RuntimeException("authPluginDataPartOne's length must be 8!");
+          throw new MycatExpection("authPluginDataPartOne's length must be 8!");
         }
         buffer.writeFixString(authPluginDataPartOne);
         buffer.writeByte((byte) 0);

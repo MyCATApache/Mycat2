@@ -8,6 +8,8 @@ import java.io.Closeable;
 /**
  * @author jamie12221
  * @date 2019-05-07 21:47
+ * 默认mysql packet 写视图实现
+ * @todo 需要高性能实现
  **/
 public class MySQLPayloadWriter extends ByteArrayOutput implements
     MySQLPayloadWriteView<MySQLPayloadWriter>, Closeable {

@@ -17,6 +17,7 @@ package io.mycat.beans.mysql;
 /**
  * @author jamie12221
  * @date 2019-05-09 11:17
+ * mysql 表类型
  **/
 public enum  MySQLTableType {
   BASE_TABLE(false),VIEW(true),SYSTEM_VIEW(true);

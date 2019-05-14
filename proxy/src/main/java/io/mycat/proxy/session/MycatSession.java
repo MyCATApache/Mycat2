@@ -34,7 +34,7 @@ import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.command.AbsCommandHandler;
 import io.mycat.proxy.command.CommandHandlerAdapter;
 import io.mycat.proxy.command.MycatSessionView;
-import io.mycat.proxy.executer.MySQLDataNodeExecuter;
+import io.mycat.proxy.executer.MySQLDataNodeExecutor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
@@ -171,7 +171,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLIsolation isolation = this.getIsolation();
     MySQLAutoCommit autoCommit = this.getAutoCommit();
     String charsetName = this.getCharsetName();
-    MySQLDataNodeExecuter
+    MySQLDataNodeExecutor
         .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
             runOnSlave,
             strategy, (session, sender, success, result, errorMessage) ->

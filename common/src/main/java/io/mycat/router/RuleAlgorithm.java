@@ -20,6 +20,8 @@ import java.util.Map;
 
 /**
  * @author mycat
+ * @author cjw
+ * 路由算法接口
  */
 public abstract class RuleAlgorithm {
 

@@ -44,7 +44,6 @@ import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import java.io.IOException;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -239,13 +238,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   }
 
   default boolean readMySQLPacketFully() {
-    logger.debug("readMySQLPacketFully");
     MySQLPacket mySQLPacket = currentProxybuffer();
     int startIndex = mySQLPacket.packetReadStartIndex();
     int endIndex = mySQLPacket.packetReadEndIndex();
-    logger.debug("startIndex:" + startIndex);
-    logger.debug("endIndex:" + endIndex);
-    logger.debug(Objects.toString(this.getState()));
+
     int wholePakcetSize = endIndex - startIndex;
     if (wholePakcetSize < 4) {
       return false;
@@ -254,7 +250,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     if (length > 1000) {
       System.out.println();
     }
-    logger.debug("body:" + length);
     int packetId = mySQLPacket.getByte(startIndex + 3) & 0xff;
     int andIncrementPacketId = getPacketId() + 1;
     setPacketId(packetId);
@@ -275,12 +270,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     if (packetLength <= (wholePakcetSize)) {
       setStartPos(startIndex);
       setEndPos(endPos);
-      logger.debug("packetLength:" + packetLength);
-      logger.debug("startPos:" + getStartPos());
-      int endPos1 = getEndPos();
-      if (endPos1 == 9) {
-        logger.debug("endPos:" + getEndPos());
-      }
       if (!isMultiPacket()) {
         if (length > 0) {
           int aByte = mySQLPacket.getByte(startIndex + 4) & 0xff;
@@ -323,14 +312,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     MySQLPacket mySQLPacket = currentProxybuffer();
     boolean needWholePacket = getState().isNeedFull();
     if (needWholePacket && isPayloadFinished()) {
-      System.out.println("readMySQLPacketFully");
       return readMySQLPacketFully();
     } else {
-      System.out.println("readPartProxyPayload");
       int startIndex = mySQLPacket.packetReadStartIndex();
       int endIndex = mySQLPacket.packetReadEndIndex();
-      logger.debug("startIndex:" + startIndex);
-      logger.debug("endIndex:" + endIndex);
       int receiveSize = endIndex - startIndex;
       if (receiveSize == 0) {
         return false;
@@ -345,7 +330,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         }
         int packetLength = (int) mySQLPacket.getFixInt(startIndex, 3);
         int packetId = mySQLPacket.getByte(startIndex + 3) & 0xff;
-        logger.debug("body:" + packetLength);
         if (packetLength == 0 && receiveSize >= 4) {
           setRemainsBytes(0);
           setPayloadLength(0);
@@ -387,18 +371,11 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         if (packetLength < receiveSize) {
           setStartPos(startIndex);
           setEndPos(startIndex + packetLength);
-          logger.debug("packetLength:" + packetLength);
-          logger.debug("startPos:" + getStartPos());
-          logger.debug("endPos:" + getEndPos());
           remains = 0;
         } else {
           remains = packetLength - receiveSize;
           setStartPos(startIndex);
           setEndPos(startIndex + receiveSize);
-          logger.debug("packetLength:" + packetLength);
-          logger.debug("startPos:" + getStartPos());
-          logger.debug("endPos:" + getEndPos());
-          System.out.println("remainsInReading:" + remains);
         }
       } else {
         if (receiveSize >= remains) {
@@ -650,7 +627,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     if (!isPacketFinished) {
       throw new RuntimeException("unknown state!");
     }
-    logger.debug("{}", getPacketId());
     if (clientDeprecateEof()) {
       setServerStatus(okPacketReadServerStatus(mySQLPacket));
       setMySQLPayloadType(ROW_OK);
@@ -660,8 +636,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     }
     int startPos = getStartPos();
     int endPos = getEndPos();
-    logger.debug("{}", endPos - startPos);
-    logger.debug("{}", getPacketId());
     if (hasMoreResult(getServerStatus())) {
       setState(ComQueryState.FIRST_PACKET);
     } else {

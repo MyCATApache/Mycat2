@@ -18,90 +18,97 @@ package io.mycat.proxy.packet;
 
 import java.nio.channels.SocketChannel;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-07 13:58
+ *
+ * 字段包
+ **/
 public interface ColumnDefPacket {
-    static final byte[] DEFAULT_CATALOG = "def".getBytes();
 
-    /**
-     * buffer.skipInReading(4);
-     * byte[] catalog = buffer.readLenencStringBytes();
-     * byte[] schema = buffer.readLenencStringBytes();
-     * byte[] table = buffer.readLenencStringBytes();
-     * byte[] orgTable = buffer.readLenencStringBytes();
-     * byte[] name = buffer.readLenencStringBytes();
-     * byte[] orgName = buffer.readLenencStringBytes();
-     * byte nextLength = buffer.readByte();
-     * int charsetSet = (int) buffer.readFixInt(2);
-     * int columnLength = (int) buffer.readFixInt(4);
-     * byte type = (byte) (buffer.readByte() & 0xff);
-     * int flags = (int) buffer.readFixInt(2);
-     * byte decimals = buffer.readByte();
-     * <p>
-     * buffer.skipInReading(2);
-     * if (buffer.packetReadStartIndex() != endPos) {
-     * int i = buffer.readLenencInt();
-     * byte[] defaultValues = buffer.readFixStringBytes(i);
-     * }
-     *
-     * @return
-     */
-    public byte[] getColumnCatalog();
+  byte[] DEFAULT_CATALOG = "def".getBytes();
 
-    public void setColumnCatalog(byte[] catalog);
+  /**
+   * buffer.skipInReading(4);
+   * byte[] catalog = buffer.readLenencStringBytes();
+   * byte[] schema = buffer.readLenencStringBytes();
+   * byte[] table = buffer.readLenencStringBytes();
+   * byte[] orgTable = buffer.readLenencStringBytes();
+   * byte[] name = buffer.readLenencStringBytes();
+   * byte[] orgName = buffer.readLenencStringBytes();
+   * byte nextLength = buffer.readByte();
+   * int charsetSet = (int) buffer.readFixInt(2);
+   * int columnLength = (int) buffer.readFixInt(4);
+   * byte type = (byte) (buffer.readByte() & 0xff);
+   * int flags = (int) buffer.readFixInt(2);
+   * byte decimals = buffer.readByte();
+   * <p>
+   * buffer.skipInReading(2);
+   * if (buffer.packetReadStartIndex() != endPos) {
+   * int i = buffer.readLenencInt();
+   * byte[] defaultValues = buffer.readFixStringBytes(i);
+   * }
+   *
+   * @return
+   */
+  byte[] getColumnCatalog();
 
-    public byte[] getColumnSchema();
+  void setColumnCatalog(byte[] catalog);
 
-    public void setColumnSchema(byte[] schema);
+  byte[] getColumnSchema();
 
-    public byte[] getColumnTable();
+  void setColumnSchema(byte[] schema);
 
-    public void setColumnTable(byte[] table);
+  byte[] getColumnTable();
 
-    public byte[] getColumnOrgTable();
+  void setColumnTable(byte[] table);
 
-    public void setColumnOrgTable(byte[] orgTable);
+  byte[] getColumnOrgTable();
 
-    public byte[] getColumnName();
+  void setColumnOrgTable(byte[] orgTable);
 
-    default public String getColumnNameString() {
-        return new String(getColumnName());
-    }
+  byte[] getColumnName();
 
-    public void setColumnName(byte[] name);
+  void setColumnName(byte[] name);
 
-    public byte[] getColumnOrgName();
+  default String getColumnNameString() {
+    return new String(getColumnName());
+  }
 
-    public void setColumnOrgName(byte[] orgName);
+  byte[] getColumnOrgName();
 
-    public int getColumnNextLength();
+  void setColumnOrgName(byte[] orgName);
 
-    public void setColumnNextLength(int nextLength);
+  int getColumnNextLength();
 
-    public int getColumnCharsetSet();
+  void setColumnNextLength(int nextLength);
 
-    public void setColumnCharsetSet(int charsetSet);
+  int getColumnCharsetSet();
 
-    public int getColumnLength();
+  void setColumnCharsetSet(int charsetSet);
 
-    public void setColumnLength(int columnLength);
+  int getColumnLength();
 
-    public int getColumnType();
+  void setColumnLength(int columnLength);
 
-    public void setColumnType(int type);
+  int getColumnType();
 
-    public int getColumnFlags();
+  void setColumnType(int type);
 
-    public void setColumnFlags(int flags);
+  int getColumnFlags();
 
-    public byte getColumnDecimals();
+  void setColumnFlags(int flags);
 
-    public void setColumnDecimals(byte decimals);
+  byte getColumnDecimals();
 
-    public byte[] getColumnDefaultValues();
+  void setColumnDecimals(byte decimals);
 
-    public void setColumnDefaultValues(byte[] defaultValues);
+  byte[] getColumnDefaultValues();
 
-    public String toString();
+  void setColumnDefaultValues(byte[] defaultValues);
 
-    public void writeToChannel(SocketChannel channel);
+  String toString();
+
+  void writeToChannel(SocketChannel channel);
 
 }

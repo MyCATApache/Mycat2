@@ -14,10 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.beans.mysql;
+package io.mycat.beans.mysql.charset;
 
 import java.util.Objects;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * mysql 状态 字符集
+ **/
 public class MySQLCharset {
     final String charset;
     final int charsetIndex;
@@ -37,7 +43,7 @@ public class MySQLCharset {
         return Objects.hash(charset, charsetIndex);
     }
 
-    public String getSetCharsetCmd() {
+  public String getCharsetCmd() {
         return setCharsetSQL;
     }
 

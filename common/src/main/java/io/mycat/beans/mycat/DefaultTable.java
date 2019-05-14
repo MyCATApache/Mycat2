@@ -20,6 +20,7 @@ import java.util.List;
 /**
  * @author jamie12221
  * @date 2019-05-09 11:11
+ * 默认table
  **/
 public class DefaultTable extends MycatTable {
 

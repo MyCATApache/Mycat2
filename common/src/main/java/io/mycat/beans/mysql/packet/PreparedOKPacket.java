@@ -14,6 +14,12 @@
  */
 package io.mycat.beans.mysql.packet;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * 预处理PrepareOk报文实现
+ **/
 public interface PreparedOKPacket {
 
   long getPreparedOkStatementId();

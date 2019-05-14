@@ -27,8 +27,25 @@ import io.mycat.proxy.task.QueryUtil;
 import io.mycat.replica.MySQLReplica;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class MySQLDataNodeExecuter {
+/**
+ * @author jamie12221
+ * @date 2019-05-12 22:41 dataNode执行器 该类本意是从路由获得dataNode名字之后,使用该执行器执行, 解耦结果类和实际执行方法
+ **/
+public class MySQLDataNodeExecutor {
 
+  /**
+   * 用户在非mycat reactor 线程获取 session
+   *
+   * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
+   *
+   * @param dataNodeName
+   * @param isolation
+   * @param autoCommit
+   * @param charSet
+   * @param runOnSlave
+   * @param strategy
+   * @param asynTaskCallBack
+   */
   public static void getMySQLSessionFromUserThread(String dataNodeName, MySQLIsolation isolation,
       MySQLAutoCommit autoCommit, String charSet,
       boolean runOnSlave, LoadBalanceStrategy strategy,
@@ -42,6 +59,20 @@ public class MySQLDataNodeExecuter {
     });
   }
 
+  /**
+   * dataNode执行器
+   * 该类本意是从路由获得dataNode名字之后,使用该执行器执行,
+   * 解耦结果类和实际执行方法
+   *
+   * 该函数实现session状态同步的功能
+   * @param dataNode
+   * @param isolation
+   * @param autoCommit
+   * @param charset
+   * @param runOnSlave
+   * @param strategy
+   * @param asynTaskCallBack
+   */
   public static void getMySQLSession(MySQLDataNode dataNode,
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit,

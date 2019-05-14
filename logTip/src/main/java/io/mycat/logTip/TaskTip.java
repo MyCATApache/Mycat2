@@ -3,8 +3,10 @@ package io.mycat.logTip;
 /**
  * @author jamie12221
  * @date 2019-05-13 17:28
+ *
+ * 本类管理所有Task相关的日志或者异常提示
  **/
-public enum TaskTip {
+public enum TaskTip implements LogTip {
   UNSUPPORT_DEF_MAX_PACKET("unsupport max packet %d"),
   CLOSE_ERROR("channel close occur exception: %s"),
   MULTI_OK_REVEIVE_FAIL("can not receive enough multi ok packet"),
@@ -18,9 +20,5 @@ public enum TaskTip {
 
   public String getMessage() {
     return message;
-  }
-
-  public String getMessage(Object... args) {
-    return String.format(this.getMessage(), args);
   }
 }

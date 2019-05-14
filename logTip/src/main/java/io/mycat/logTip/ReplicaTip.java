@@ -3,8 +3,9 @@ package io.mycat.logTip;
 /**
  * @author jamie12221
  * @date 2019-05-13 12:48
+ * 本类管理所有Replica相关的日志或者异常提示
  **/
-public enum ReplicaTip {
+public enum ReplicaTip implements LogTip {
   ERROR_EXECUTION_THREAD("Replica must running in MycatReactorThread"),
   NO_AVAILABLE_DATA_SOURCE("No available Replica %s"),
   INIT_REPLICA("init Replica %s"),
@@ -18,9 +19,5 @@ public enum ReplicaTip {
 
   public String getMessage() {
     return message;
-  }
-
-  public String getMessage(Object... args) {
-    return String.format(this.getMessage(), args);
   }
 }

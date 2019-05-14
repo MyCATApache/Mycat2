@@ -18,6 +18,9 @@ package io.mycat.beans.mysql.packet;
 
 /**
  * copy form com.mysql.cj.protocol.a
+ *
+ *根据mysql协议
+ * 报文大于MAX_PACKET_SIZE将会拆分报文
  */
 public interface MySQLPacketSplitter {
     // static final int MAX_PACKET_SIZE = 256 * 256 * 256 - 1;

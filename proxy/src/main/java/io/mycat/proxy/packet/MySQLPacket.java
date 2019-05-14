@@ -24,12 +24,23 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-
+/**
+ * @author jamie12221
+ * @date 2019-05-07 13:58
+ *
+ * mycat报文基础读写
+ *
+ * get set方法族 不会修改mysql packet,proxybuffer,bytebuffer内部状态 read write方法族 修改内部状态
+ **/
 public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView,
                                                                 MySQLPayloadWriteView {
 
   byte[] EMPTY_BYTE_ARRAY = new byte[]{};
 
+  /**
+   * 在不压缩情况下,报文头部的长度
+   * @return
+   */
   static int getPacketHeaderSize() {
     return 4;
   }
@@ -54,7 +65,14 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     }
   }
 
-  static int getInt(ByteBuffer buffer, int length) {
+  /**
+   * 帮助类
+   * 需要主要的是,开始读取的下标是buffer的position
+   * @param buffer buffer
+   * @param length 长度
+   * @return
+   */
+  static int readInt(ByteBuffer buffer, int length) {
     int rv = 0;
     for (int i = 0; i < length; i++) {
       byte b = buffer.get();
@@ -70,20 +88,32 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     }
   }
 
-  default boolean multiPackets() {
-    return false;
-  }
-
+  /**
+   * 清除 mysql packet的状态,清理bytebuffer
+   */
   void reset();
 
+  /**
+   * read方法开始读取的位置
+   * @return
+   */
   int packetReadStartIndex();
 
   int packetReadStartIndex(int index);
 
+  /**
+   * read方法读取结束的位置
+   * @return
+   */
   int packetReadEndIndex();
 
   int packetReadEndIndex(int endPos);
 
+  /**
+   *packetStartIndex向前移动的长度
+   * @param len
+   * @return
+   */
   default int packetReadStartIndexAdd(int len) {
     return packetReadStartIndex(packetReadStartIndex() + len);
   }
@@ -95,53 +125,54 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   int packetWriteIndex(int index);
 
-  default int skip4() {
-    return packetWriteIndex(packetWriteIndex() + 4);
-  }
-
+  /**
+   * packetWriteIndex向前移动的长度,实际上就是bytebuffer的position
+   * @param len
+   * @return
+   */
   default int packetWriteIndexAdd(int len) {
     return packetWriteIndex(packetWriteIndex() + len);
   }
 
+  /**
+   * 不做任务修改,把bytes写入bytebuffer
+   * @param bytes
+   * @return
+   */
   default MySQLPacket writeBytes(byte[] bytes) {
     this.writeBytes(bytes.length, bytes);
     return this;
   }
 
-  default MySQLPacket writeCharSequence(CharSequence sequence) {
-    this.writeBytes(sequence.toString().getBytes());
-    return this;
-  }
-
   default long readFixInt(int length) {
-    long val = getInt(packetReadStartIndex(), length);
+    long val = readInt(packetReadStartIndex(), length);
     packetReadStartIndexAdd(length);
     return val;
   }
 
   default long getFixInt(int index, int length) {
-    return getInt(index, length);
+    return readInt(index, length);
   }
 
   default int readLenencInt() {
     int index = packetReadStartIndex();
-    long len = getInt(index, 1) & 0xff;
+    long len = readInt(index, 1) & 0xff;
     if (len < 251) {
       packetReadStartIndexAdd(1);
-      return getInt(index, 1);
+      return readInt(index, 1);
     } else if (len == 0xfc) {
       packetReadStartIndexAdd(3);
-      return getInt(index + 1, 2);
+      return readInt(index + 1, 2);
     } else if (len == 0xfd) {
       packetReadStartIndexAdd(4);
-      return getInt(index + 1, 3);
+      return readInt(index + 1, 3);
     } else {
       packetReadStartIndexAdd(9);
-      return getInt(index + 1, 8);
+      return readInt(index + 1, 8);
     }
   }
 
-  default int getInt(int index, int length) {
+  default int readInt(int index, int length) {
     currentBuffer().position(index);
     int rv = 0;
     for (int i = 0; i < length; i++) {
@@ -194,18 +225,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   default byte[] readLenencStringBytes() {
     return readLenencBytes();
-  }
-
-  default String getVarString(int index, int length) {
-    return getFixString(index, length);
-  }
-
-  default String readVarString(int length) {
-    return readFixString(length);
-  }
-
-  default String getNULString(int index) {
-    return new String(getNULStringBytes(index));
   }
 
   default byte[] getNULStringBytes(int index) {
@@ -367,6 +386,14 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     return this;
   }
 
+  /**
+   * 该方法直接对bytebuffer进行操作
+   * @param index
+   * @param bytes
+   * @param offset
+   * @param length
+   * @return
+   */
   default MySQLPacket writeBytes(int index, byte[] bytes, int offset, int length) {
     currentBuffer().position(index);
     currentBuffer().put(bytes, offset, length);
@@ -481,13 +508,13 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
   }
 
   default long getLenencInt(int index) {
-    long len = getInt(index, 1) & 0xff;
+    long len = readInt(index, 1) & 0xff;
     if (len == 0xfc) {
-      return getInt(index + 1, 2);
+      return readInt(index + 1, 2);
     } else if (len == 0xfd) {
-      return getInt(index + 1, 3);
+      return readInt(index + 1, 3);
     } else if (len == 0xfe) {
-      return getInt(index + 1, 8);
+      return readInt(index + 1, 8);
     } else if (len == 0xfb) {
       return len;
     } else {
@@ -513,6 +540,10 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     return this;
   }
 
+  /**
+   * packetReadStartIndex() == packetReadEndIndex()
+   * @return
+   */
   default boolean readFinished() {
     return packetReadStartIndex() == packetReadEndIndex();
   }
@@ -539,6 +570,10 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   void writeShort(short o);
 
+  /**
+   * time读取 binaryResultSet
+   * @return
+   */
   default java.sql.Time readTime() {
     boolean negative;
     int days;
@@ -584,6 +619,10 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     return Time.valueOf(LocalTime.of(days * 24 + hours, minutes, seconds, nanos));
   }
 
+  /**
+   * date 读取 BinaryResultSet
+   * @return
+   */
   default java.util.Date readDate() {
     byte length = readByte();
     if (length == 0) {
@@ -616,6 +655,10 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     }
   }
 
+  /**
+   * Decimal 读取 BinaryResultSet
+   * @return
+   */
   default BigDecimal readBigDecimal() {
     String src = readLenencString();
     return src == null ? null : new BigDecimal(src);

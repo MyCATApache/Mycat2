@@ -16,6 +16,12 @@
  */
 package io.mycat.beans.mysql;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * set option ,命令参数
+ **/
 public enum MySQLSetOption {
     MULTI_STATEMENTS_ON(0),
     MULTI_STATEMENTS_OFF(1);

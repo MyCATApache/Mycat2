@@ -17,10 +17,10 @@ package io.mycat.proxy.handler;
 import io.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.beans.mysql.MySQLCollationIndex;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLVersion;
+import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MycatHandler;
 import io.mycat.proxy.MycatRuntime;
@@ -35,6 +35,12 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-07 13:58
+ *
+ * 服务器发送给客户端的验证处理器
+ **/
 public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
   private static final Logger logger = LoggerFactory.getLogger(MySQLClientAuthHandler.class);
   public byte[] seed;
@@ -73,7 +79,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
     MySQLCollationIndex collationIndex = replica.getCollationIndex();
     int index = auth.characterSet & 0xff;
-    String charset = "UTF8";
+    String charset = collationIndex.getCharsetByIndex(index);
     mycat.setCharset(index, charset);
     finished = true;
 

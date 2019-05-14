@@ -52,6 +52,9 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
 
   }
 
+  /**
+   * mycat session写入处理
+   */
   public interface MycatSessionWriteHandler {
 
     void writeToChannel(MycatSession session) throws IOException;

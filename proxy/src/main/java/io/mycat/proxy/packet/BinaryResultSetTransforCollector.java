@@ -18,6 +18,9 @@ import java.math.BigDecimal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 二进制结果集收集器
+ */
 public abstract class BinaryResultSetTransforCollector implements ResultSetCollector {
 
   static final Logger logger = LoggerFactory.getLogger(BinaryResultSetTransforCollector.class);

@@ -1,12 +1,11 @@
 package io.mycat.logTip;
 
-import java.util.Objects;
-
 /**
  * @author jamie12221
  * @date 2019-05-13 14:45
+ * 本类管理所有Reactor相关的日志或者异常提示
  **/
-public enum ReactorTip {
+public enum ReactorTip implements LogTip {
   REGISTER_NEW_CONNECTION("Register new connection error %s"),
   PROCESS_NIO_JOB_EEROR("Run nio job err:  %s"),
   PROCESS_NIO_IO_EEROR("Socket IO err :  %s"),
@@ -22,12 +21,5 @@ public enum ReactorTip {
 
   public String getMessage() {
     return message;
-  }
-
-  public String getMessage(Object... args) {
-    for (int i = 0; i < args.length; i++) {
-      args[i] = Objects.toString(args[i]);
-    }
-    return String.format(this.getMessage(), args);
   }
 }

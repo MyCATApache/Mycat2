@@ -21,6 +21,7 @@ import java.util.Map;
 
 /**
  * CrazyPig,chenjunwen
+ * 预处理语句信息
  */
 public interface MySQLPreparedStatement {
     long getStatementId();

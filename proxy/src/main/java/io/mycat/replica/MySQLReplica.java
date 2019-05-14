@@ -16,7 +16,7 @@ package io.mycat.replica;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatReplica;
-import io.mycat.beans.mysql.MySQLCollationIndex;
+import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.logTip.ReplicaTip;

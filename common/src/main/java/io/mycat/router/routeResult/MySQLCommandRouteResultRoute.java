@@ -20,6 +20,7 @@ import java.util.Objects;
 /**
  * @author jamie12221
  * @date 2019-05-07 13:26
+ * 非sql命令路由结果
  **/
 public class MySQLCommandRouteResultRoute extends ResultRoute {
   byte cmd;

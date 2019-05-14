@@ -23,6 +23,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import sun.nio.ch.DirectBuffer;
 
+/**
+ * @author Hash Zhang
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * buffer池
+ **/
 public class BufferPoolImpl implements BufferPool {
 
   private final int chunkSize;

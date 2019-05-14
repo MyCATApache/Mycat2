@@ -16,18 +16,24 @@
  */
 package io.mycat.beans.mysql;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * 预处理语句 execute 标记
+ **/
 public enum MySQLPrepareStmtExecuteFlag {
-    CURSOR_TYPE_NO_CURSOR((byte)0x00),
-    CURSOR_TYPE_READ_ONLY((byte)0x01),
-    CURSOR_TYPE_FOR_UPDATE((byte)0x02),
-    CURSOR_TYPE_SCROLLABLE((byte)0x04);
-    byte value;
+  CURSOR_TYPE_NO_CURSOR((byte)0x00),
+  CURSOR_TYPE_READ_ONLY((byte)0x01),
+  CURSOR_TYPE_FOR_UPDATE((byte)0x02),
+  CURSOR_TYPE_SCROLLABLE((byte)0x04);
+  byte value;
 
-    MySQLPrepareStmtExecuteFlag(byte value) {
-        this.value = value;
-    }
+  MySQLPrepareStmtExecuteFlag(byte value) {
+    this.value = value;
+  }
 
-    public byte getValue() {
-        return value;
-    }
+  public byte getValue() {
+    return value;
+  }
 }

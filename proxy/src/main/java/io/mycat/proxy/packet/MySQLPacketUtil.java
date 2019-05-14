@@ -1,6 +1,7 @@
 package io.mycat.proxy.packet;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
@@ -12,6 +13,8 @@ import java.nio.charset.Charset;
 /**
  * @author jamie12221
  * @date 2019-05-07 21:23
+ *
+ * 写入的报文构造工具 注意的是,函数名没有带有packet后缀的,生成的是payload(没有报文头部和拆分报文处理) 带有packet后缀的,会进行报文处理(根据packetid,payload长度进行生成报文)
  **/
 public class MySQLPacketUtil {
 
@@ -95,6 +98,11 @@ public class MySQLPacketUtil {
     }
   }
 
+  /**
+   * 生成简单的错误包
+   *
+   * @param errno 必须正确设置,否则图形化客户端不会显示
+   */
   public static final byte[] generateError(
       int errno,
       String message, int serverCapabilityFlags
@@ -106,6 +114,12 @@ public class MySQLPacketUtil {
       errorPacket.writePayload(writer, serverCapabilityFlags);
       return writer.toByteArray();
     }
+  }
+
+  public static final byte[] generateError(
+      String message, int serverCapabilityFlags
+  ) {
+    return generateError(MySQLErrorCode.ER_UNKNOWN_ERROR, message, serverCapabilityFlags);
   }
 
   public static final byte[] generateProgressInfoErrorPacket(
@@ -248,7 +262,9 @@ public class MySQLPacketUtil {
     return src.getBytes(charset);
   }
 
-
+  /**
+   * 计算字段值存放所需空间大小
+   */
   public static int calcTextRowPayloadSize(byte[][] fieldValues) {
     int size = 0;
     int fieldCount = fieldValues.length;
@@ -259,6 +275,10 @@ public class MySQLPacketUtil {
     return size;
   }
 
+  /**
+   * @param fieldValues 字段值 数组为null就是字段值为null
+   * @param writer 结果
+   */
   public static void writeTextRow(byte[][] fieldValues, MySQLPayloadWriteView writer) {
     int fieldCount = fieldValues.length;
     for (int i = 0; i < fieldCount; i++) {
@@ -273,6 +293,9 @@ public class MySQLPacketUtil {
     }
   }
 
+  /**
+   * @param fieldValues 字段值的数组
+   */
   public static final byte[] generateTextRow(byte[][] fieldValues) {
     int len = calcTextRowPayloadSize(fieldValues);
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(len)) {

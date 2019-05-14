@@ -5,6 +5,7 @@ import java.util.Map;
 /**
  * @author jamie12221
  * @date 2019-05-12 21:36
+ * 供用户提供的命令处理
  **/
 public interface CommandHandler extends LocalInFileRequestHandler, PrepareStatementHandler {
 

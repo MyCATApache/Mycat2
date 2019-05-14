@@ -12,6 +12,8 @@ import java.io.IOException;
 /**
  * @author jamie12221
  * @date 2019-05-07 13:58
+ *
+ * 根据不同的路由结果处理
  **/
 public enum RouteResultExecuter implements ResultRoute.Executer<MycatSession> {
   INSTANCE;

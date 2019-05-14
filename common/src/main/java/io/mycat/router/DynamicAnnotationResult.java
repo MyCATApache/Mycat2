@@ -2,11 +2,15 @@ package io.mycat.router;
 
 import io.mycat.config.route.AnnotationType;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 13:33 动态注解处理结果
+ **/
 public interface DynamicAnnotationResult {
 
-  public void clear();
+  void clear();
 
-  public String get(String key);
+  String get(String key);
 
-  public void put(String key, String value, AnnotationType type);
+  void put(String key, String value, AnnotationType type);
 }

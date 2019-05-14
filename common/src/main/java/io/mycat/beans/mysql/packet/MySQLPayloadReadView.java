@@ -14,6 +14,12 @@
  */
 package io.mycat.beans.mysql.packet;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * 报文读视图
+ **/
 public interface MySQLPayloadReadView<T extends MySQLPayloadReadView<T>> {
 
   int length();

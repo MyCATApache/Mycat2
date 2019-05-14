@@ -14,7 +14,7 @@
  */
 package io.mycat.replica;
 
-import io.mycat.beans.mysql.MySQLCollationIndex;
+import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.logTip.DataSourceTip;
 import io.mycat.proxy.MycatReactorThread;
@@ -67,7 +67,7 @@ public final class MySQLDatasource {
                 (mysql1, sender1, success1, result1, errorMessage1) -> {
                   if (success1) {
                     mysql1.getSessionManager().addIdleSession(mysql1);
-                    logger.info(DataSourceTip.READ_CHARSET_SUCCESS.getMessage());
+                    logger.info(DataSourceTip.READ_CHARSET_SUCCESS.getMessage(getName()));
                     for (int index = 1; index < minCon; index++) {
                       MycatReactorThread thread = threads[index % threads.length];
                       final int finalIndex = index;

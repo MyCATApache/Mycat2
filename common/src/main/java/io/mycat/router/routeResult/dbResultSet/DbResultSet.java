@@ -20,6 +20,7 @@ import java.io.Serializable;
 /**
  * @author jamie12221
  * @date 2019-05-05 23:30
+ * 复杂sql 处理结果
  **/
 public abstract class DbResultSet<Session extends Serializable> extends ResultRoute implements Serializable {
 

@@ -18,7 +18,7 @@ import io.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.executer.MySQLDataNodeExecuter;
+import io.mycat.proxy.executer.MySQLDataNodeExecutor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
@@ -48,7 +48,7 @@ public class MultiMySQLQueryTask implements ResultSetTask {
     String charsetName = mycat.getCharsetName();
     for (String dataNodeName : dataNodeNameList) {
       MySQLDataNode dataNode = MycatRuntime.INSTANCE.getDataNodeByName(dataNodeName);
-      MySQLDataNodeExecuter
+      MySQLDataNodeExecutor
           .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
               false,
               null, (session, sender, success, result, errorMessage) ->

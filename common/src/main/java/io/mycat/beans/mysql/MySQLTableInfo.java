@@ -21,6 +21,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * mysql 表信息
+ **/
 public class MySQLTableInfo {
     String schemaName;
     String tableName;

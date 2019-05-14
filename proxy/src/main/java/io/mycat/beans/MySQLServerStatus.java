@@ -22,9 +22,12 @@ import java.nio.charset.Charset;
 
 
 /**
- * chen junwen
- */
-public class MySQLServerStatus {
+ * 集中处理mysql服务器状态
+ *
+ * @author jamie12221
+ * @date 2019-05-10 13:21
+ **/
+public final class MySQLServerStatus {
   private String lastMessage;
   private long affectedRows;
   private int serverStatus;

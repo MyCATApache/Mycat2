@@ -16,7 +16,12 @@
  */
 package io.mycat.beans.mysql;
 
-
+/**
+ * @author jamie12221
+ * @date 2019-05-05 16:22
+ *
+ * 预处理语句 参数与值得绑定类
+ **/
 public class MySQLPStmtBindValueList {
     Object[] valueList;
     int[] parameterTypeList;

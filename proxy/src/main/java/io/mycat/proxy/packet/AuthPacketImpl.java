@@ -60,7 +60,13 @@ import java.util.Map;
  *
  * @author : zhuqiang
  * @date : 2018/11/14 21:40
- */
+ *
+/**
+ * @author jamie12221
+ * @date 2019-05-07 13:58
+ *
+ * 验证包
+ **/
 public class AuthPacketImpl {
     public int capabilities;
     public int maxPacketSize;

@@ -14,15 +14,20 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
+/**
+ * @author jamie12221
+ * @date 2019-05-07 13:58
+ *
+ * 字段包实现
+ **/
 public class ColumnDefPacketImpl implements ColumnDefPacket {
 
-  //    byte[] columnCatalog;
+  byte[] columnCatalog;
   byte[] columnSchema;
   byte[] columnTable;
   byte[] columnOrgTable;
@@ -232,22 +237,22 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
   }
 
   public void read(MySQLPacket buffer, int startPos, int endPos) {
-    byte[] bytes = buffer.readLenencStringBytes();
+    buffer.packetReadStartIndex(startPos);
+    this.columnCatalog = buffer.readLenencStringBytes();
     this.columnSchema = buffer.readLenencStringBytes();
     this.columnTable = buffer.readLenencStringBytes();
     this.columnOrgTable = buffer.readLenencStringBytes();
     this.columnName = buffer.readLenencStringBytes();
     this.columnOrgName = buffer.readLenencStringBytes();
-    if (0xc != buffer.readByte()) {
-      throw new MycatExpection("");
-    }
+    byte c = buffer.readByte();
+    assert (0xc == c);
     this.columnCharsetSet = (int) buffer.readFixInt(2);
     this.columnLength = (int) buffer.readFixInt(4);
     this.columnType = (buffer.readByte() & 0xff);
     this.columnFlags = (int) buffer.readFixInt(2);
     this.columnDecimals = buffer.readByte();
     buffer.skipInReading(2);
-    if (buffer.packetReadStartIndex() != endPos) {
+    if (buffer.readFinished()) {
       int i = buffer.readLenencInt();
       if (i != 0) {
         this.columnDefaultValues = buffer.readFixStringBytes(i);

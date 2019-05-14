@@ -76,7 +76,7 @@ public interface Session<T extends Session> {
   boolean readFromChannel() throws IOException;
 
   /**
-   * 设置回调函数,若果设置了回调,则该session的资源释放取决于回调代码什么什么时候结束,
+   * 设置回调函数,若果设置了回调,则该session的资源释放取决于回调代码什么时候结束,
    */
   void setCallBack(AsyncTaskCallBack<T> callBack);
 
