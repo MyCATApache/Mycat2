@@ -65,10 +65,14 @@ public class PrepareTask implements ResultSetTask, MySQLPreparedStatement {
 
   @Override
   public void onFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
-    valueList = new MySQLPStmtBindValueList(this);
     MySQLClientSession currentMySQLSession = mysql;
     AsyncTaskCallBack<MySQLClientSession> callBack = currentMySQLSession.getCallBackAndReset();
-    callBack.finished(currentMySQLSession, this, success, this, errorMessage);
+    if (success) {
+      valueList = new MySQLPStmtBindValueList(this);
+      callBack.finished(currentMySQLSession, this, success, this, null);
+    } else {
+      callBack.finished(currentMySQLSession, this, success, errorMessage, null);
+    }
   }
 
   @Override

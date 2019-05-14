@@ -42,6 +42,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   protected long startTime;
   protected long lastActiveTime;
   protected NIOHandler nioHandler;
+  protected boolean closed = false;
 
   public AbstractSession(Selector selector, SocketChannel channel, int socketOpt,
       NIOHandler nioHandler, SessionManager<T> sessionManager)
@@ -89,7 +90,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
 
   @Override
   public boolean isClosed() {
-    return !channel.isOpen();
+    return closed;
   }
 
   @Override

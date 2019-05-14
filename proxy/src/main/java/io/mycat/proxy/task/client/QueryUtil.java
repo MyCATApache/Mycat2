@@ -12,7 +12,6 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.task.client.resultset.QueryResultSetTask;
 import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import io.mycat.proxy.task.client.resultset.TextResultSetTransforCollector;
-import java.io.IOException;
 
 /**
  * @author jamie12221
@@ -109,7 +108,7 @@ public interface QueryUtil {
         mysql.switchNioHandler(this);
         mysql.prepareReveiceResponse();
         mysql.writeCurrentProxyPacket(mySQLPacket, mysql.setPacketId(0));
-      } catch (IOException e) {
+      } catch (Exception e) {
         this.clearAndFinished(mysql, false, mysql.setLastMessage(e.getMessage()));
       }
     }
@@ -153,7 +152,7 @@ public interface QueryUtil {
     public void onFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
       if (counter == 0) {
         AsyncTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
-        callBack.finished(mysql, this, true, null, errorMessage);
+        callBack.finished(mysql, this, true, null, null);
       } else {
         AsyncTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
         callBack.finished(mysql, this, false,

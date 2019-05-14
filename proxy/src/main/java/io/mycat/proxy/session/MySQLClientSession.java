@@ -110,12 +110,15 @@ public class MySQLClientSession extends
    */
   @Override
   public void close(boolean normal, String hint) {
+    if (closed) {
+      return;
+    }
+
     NIOHandler curNIOHandler = getCurNIOHandler();
     if (curNIOHandler != null) {
       curNIOHandler.onSocketClosed(this, normal, hint);
     }
     switchNioHandler(null);
-
     if (this.mycat != null) {
       MycatSession mycat = this.mycat;
       unbindMycatIfNeed(true);
@@ -125,10 +128,10 @@ public class MySQLClientSession extends
       resetPacket();
     }
 
-    getSessionManager().removeSession(this, normal, hint);
     channelKey.cancel();
+    closed = true;
     try {
-      channel.close();
+      getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
       LOGGER.error(TaskTip.CLOSE_ERROR.getMessage(e));
     }

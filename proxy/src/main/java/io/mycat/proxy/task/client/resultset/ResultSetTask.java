@@ -126,7 +126,12 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
    */
   default void onFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
     AsyncTaskCallBack callBack = mysql.getCallBackAndReset();
-    callBack.finished(mysql, this, success, getResult(), errorMessage);
+    assert callBack != null;
+    if (success) {
+      callBack.finished(mysql, this, true, getResult(), null);
+    } else {
+      callBack.finished(mysql, this, false, errorMessage, null);
+    }
   }
 
   /**

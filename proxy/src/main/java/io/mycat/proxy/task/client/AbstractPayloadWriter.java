@@ -57,7 +57,7 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
             mysql.switchNioHandler(this);
             onStart();
         } catch (Exception e) {
-            e.printStackTrace();
+          callBack.finished(mysql, this, false, mysql.setLastMessage(e), null);
         }
     }
 
@@ -96,7 +96,7 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
                 return;
             }
         } catch (Exception e) {
-            onError(e.getMessage());
+          onError(mysql.setLastMessage(e));
         }
     }
 

@@ -8,7 +8,9 @@ package io.mycat.logTip;
 public enum SessionTip implements LogTip {
   CANNOT_SWITCH_DATANODE("cannot switch dataNode  maybe session in transaction"),
   UNKNOWN_IDLE_RESPONSE("mysql session is idle but it receive response"),
-  UNKNOWN_IDLE_CLOSE("mysql session is idle but it closed");
+  UNKNOWN_IDLE_CLOSE("mysql session is idle but it closed"),
+  UNKNOWN_CLOSE_ERROR("mysql session is closing but occur error: %s"),
+  ;
   String message;
 
   SessionTip(String message) {

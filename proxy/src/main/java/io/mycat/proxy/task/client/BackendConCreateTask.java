@@ -18,12 +18,12 @@ import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.config.GlobalConfig;
-import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -73,8 +73,8 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
       mysql.change2ReadOpts();
     } else {
       String message = mysql.setLastMessage(throwable);
-      mysql.close(true, message);
-      callback.finished(null, this, false, message, null);
+      mysql.resetPacket();
+      callback.finished(mysql, this, false, message, null);
     }
   }
 
@@ -116,7 +116,12 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
         mysql.resetPacket();
         callback.finished(mysql, this, true, null, null);
       } else {
-        callback.finished(null, this, false, TaskTip.CREATE_MYSQL_BACKEND_CONNECTION_FAIL, null);
+        MySQLPacket mySQLPacket = mysql.currentProxyPayload();
+        ErrorPacketImpl errorPacket = new ErrorPacketImpl();
+        errorPacket.readPayload(mySQLPacket);
+        String message = new String(errorPacket.getErrorMessage());
+        mysql.resetCurrentProxyPayload();
+        callback.finished(mysql, this, false, message, null);
       }
     }
 
@@ -129,8 +134,7 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
 
   @Override
   public void onSocketClosed(MySQLClientSession session, boolean normal, String reason) {
-    session.resetPacket();
-    callback.finished(session, this, normal, null, reason);
+    callback.finished(session, this, normal, reason, null);
   }
 
 

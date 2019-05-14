@@ -175,16 +175,16 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLAutoCommit autoCommit = this.getAutoCommit();
     String charsetName = this.getCharsetName();
     MySQLTaskUtil
-        .getMySQLSessionForHeatbeat(dataNode, isolation, autoCommit, charsetName,
+        .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
             runOnSlave,
-            strategy, (session, sender, success, result, errorMessage) ->
+            strategy, (session, sender, success, result, attr) ->
             {
               if (success) {
                 this.switchDataNode(dataNode.getName());
                 session.bind(this);
-                finallyCallBack.finished(session, sender, true, result, errorMessage);
+                finallyCallBack.finished(session, sender, true, result, attr);
               } else {
-                finallyCallBack.finished(null, sender, false, result, errorMessage);
+                finallyCallBack.finished(null, sender, false, result, attr);
               }
             });
   }
@@ -199,8 +199,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     assert hint != null;
     onHandlerFinishedClear(normal);
     channelKey.cancel();
+    closed = true;
     try {
-      channel.close();
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
       e.printStackTrace();

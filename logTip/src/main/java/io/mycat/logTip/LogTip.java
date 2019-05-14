@@ -14,6 +14,11 @@ public interface LogTip {
     for (int i = 0; i < args.length; i++) {
       args[i] = Objects.toString(args[i]);
     }
-    return String.format(this.getMessage(), args);
+    try {
+      return String.format(this.getMessage(), args);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return "";
   }
 }

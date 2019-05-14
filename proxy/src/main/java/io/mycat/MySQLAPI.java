@@ -120,7 +120,7 @@ public interface MySQLAPI {
   }
 
   default void changeUser(AsyncTaskCallBack<MySQLClientSession> callback) {
-    throw new MycatExpection("unsupport!");
+    //
   }
 
   default void daemon(AsyncTaskCallBack<MySQLClientSession> callback) {

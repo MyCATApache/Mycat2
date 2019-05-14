@@ -41,7 +41,7 @@ public class MySQLTaskUtil {
    *
    * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
    */
-  public static void getMySQLSessionForHeartbeatFromUserThread(String dataNodeName,
+  public static void getMySQLSessionFromUserThread(String dataNodeName,
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit, String charSet,
       boolean runOnSlave, LoadBalanceStrategy strategy,
@@ -50,7 +50,7 @@ public class MySQLTaskUtil {
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
     MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     threads[i].addNIOJob(() -> {
-      getMySQLSessionForHeatbeat(dataNode, isolation, autoCommit, charSet, runOnSlave, strategy,
+      getMySQLSession(dataNode, isolation, autoCommit, charSet, runOnSlave, strategy,
           asynTaskCallBack);
     });
   }
@@ -60,7 +60,7 @@ public class MySQLTaskUtil {
    *
    * 该函数实现session状态同步的功能
    */
-  public static void getMySQLSessionForHeatbeat(MySQLDataNode dataNode,
+  public static void getMySQLSession(MySQLDataNode dataNode,
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit,
       String charset,

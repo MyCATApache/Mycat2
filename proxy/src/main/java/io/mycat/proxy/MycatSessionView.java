@@ -103,7 +103,7 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
     proxyBuffer.channelWriteStartIndex(0);
     proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
     mycat.getBackend(runOnSlave, (MySQLDataNode) mycatDataNode, strategy,
-        (mysql, sender, success, result, throwable) -> {
+        (mysql, sender, success, result, attr) -> {
           if (success) {
             mycat.clearReadWriteOpts();
             mycat.switchWriteHandler(MySQLProxySession.WriteHandler.INSTANCE);
@@ -117,6 +117,7 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
             }
             return;
           } else {
+            mycat.setLastMessage((String) result);
             writeErrorEndPacket();
           }
         });

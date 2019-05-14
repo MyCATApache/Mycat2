@@ -84,7 +84,8 @@ public abstract class MySQLDatasource {
                     }
                     successCallback.accept(this, true);
                   } else {
-                    logger.error(DataSourceTip.CREATE_DATASOURCE_FAIL.getMessage(getName()),
+                    logger.error(
+                        DataSourceTip.CREATE_DATASOURCE_FAIL.getMessage(getName(), errorMessage1),
                         errorMessage1);
                     successCallback.accept(this, false);
                   }
@@ -105,13 +106,15 @@ public abstract class MySQLDatasource {
     Objects.requireNonNull(thread);
     Objects.requireNonNull(callback);
     return () -> thread.getMySQLSessionManager()
-                     .createSession(this, (mysql, sender, success, result, errorMessage) -> {
+                     .createSession(this, (mysql, sender, success, result, attr) -> {
                        if (success) {
                          callback.finished(mysql, this, true, null, null);
                        } else {
+                         String message = (String) result;
                          logger
-                             .error(DataSourceTip.CREATE_DATASOURCE_FAIL.getMessage(errorMessage));
-                         callback.finished(null, this, false, errorMessage, null);
+                             .error(DataSourceTip.CREATE_DATASOURCE_FAIL
+                                        .getMessage(getName(), message));
+                         callback.finished(null, this, false, message, null);
                        }
                      });
   }

@@ -37,12 +37,13 @@ public class LoadDataUtil {
                       if (success) {
                         loadDataEmptyPacket(session, callback, session.incrementPacketIdAndGet());
                       } else {
-                        callback.finished(session, this, false, packetId, attr);
+                        callback.finished(session, this, false, packetId, null);
                       }
                     }
                   });
             } catch (Exception e) {
-              callback.finished(session, this, false, mysql.setLastMessage(e), attr);
+              String message = session.setLastMessage(e);
+              callback.finished(session, this, false, message, attr);
             }
           }
         });
@@ -70,7 +71,12 @@ public class LoadDataUtil {
     @Override
     public void onFinished(MySQLClientSession mysql, boolean success, String errorMessage) {
       AsyncTaskCallBack<MySQLClientSession> callBack = mysql.getCallBackAndReset();
-      callBack.finished(mysql, this, success, fileName, errorMessage);
+      if (success) {
+        callBack.finished(mysql, this, success, fileName, errorMessage);
+      } else {
+        callBack.finished(mysql, this, success, errorMessage, null);
+      }
+
     }
 
     @Override

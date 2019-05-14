@@ -50,14 +50,14 @@ public class MultiMySQLQueryTask implements ResultSetTask {
     for (String dataNodeName : dataNodeNameList) {
       MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
       MySQLTaskUtil
-          .getMySQLSessionForHeatbeat(dataNode, isolation, autoCommit, charsetName,
+          .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
               false,
-              null, (session, sender, success, result, errorMessage) ->
+              null, (session, sender, success, result, attr) ->
               {
                 if (success) {
                   request(session, packetData, callBack);
                 } else {
-                  callBack.finished(null, sender, false, result, errorMessage);
+                  callBack.finished(null, sender, false, result, null);
                 }
               });
     }

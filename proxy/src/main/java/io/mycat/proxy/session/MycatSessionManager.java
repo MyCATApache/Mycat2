@@ -58,8 +58,12 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
    */
   @Override
   public void removeSession(MycatSession mycat, boolean normal, String reason) {
-    assert mycat.isClosed();
-    mycatSessions.remove(mycat);
+    try {
+      mycatSessions.remove(mycat);
+      mycat.channel().close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
 

@@ -6,9 +6,12 @@ import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
+import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MycatReactorThread;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * @author jamie12221
@@ -300,6 +303,85 @@ public class MySQLPacketUtil {
     int len = calcTextRowPayloadSize(fieldValues);
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(len)) {
       writeTextRow(fieldValues, writer);
+      return writer.toByteArray();
+    }
+  }
+
+  public static final byte[] generateChangeUser(
+      String username,
+      int serverCapabilities,
+      String authenticationResponse,
+      String defaultSchemaName,
+      int clientCharSet,
+      String authenticationPluginName,
+      Map<String, String> attr
+  ) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(512)) {
+      writer.write(0x11);
+      writer.writeNULString(username);
+      if (MySQLServerCapabilityFlags.isCanDo41Anthentication(serverCapabilities)) {
+        byte[] bytes = authenticationResponse.getBytes();
+        writer.write(bytes.length);
+        writer.write(bytes);
+      } else {
+        writer.writeNULString(authenticationResponse);
+      }
+      if (MySQLServerCapabilityFlags.isConnectionWithDatabase(serverCapabilities)) {
+        writer.writeNULString(defaultSchemaName);
+      }
+      writer.writeFixInt(2, clientCharSet);
+      if (MySQLServerCapabilityFlags.isPluginAuth(serverCapabilities)) {
+        writer.writeNULString(authenticationPluginName);
+      }
+      if (MySQLServerCapabilityFlags.isConnectAttrs(serverCapabilities)) {
+        if (attr != null && !attr.isEmpty()) {
+          try (MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(128)) {
+            for (Entry<String, String> entry : attr.entrySet()) {
+              String key = entry.getKey();
+              String value = entry.getValue();
+              mySQLPayloadWriter.writeLenencString(key);
+              mySQLPayloadWriter.writeLenencString(value);
+            }
+            byte[] bytes = mySQLPayloadWriter.toByteArray();
+            writer.writeLenencInt(bytes.length);
+            writer.writeBytes(bytes);
+          }
+        }
+      }
+      return writer.toByteArray();
+    }
+  }
+
+  public static final byte[] generateAuthenticationSwitchRequest(
+      String authenticationPluginName,
+      byte[] authenticationPluginData
+  ) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(512)) {
+      writer.writeFixInt(1, 0xfe);
+      writer.writeNULString(authenticationPluginName);
+      writer.write(authenticationPluginData);
+      return writer.toByteArray();
+    }
+  }
+
+  public static final byte[] generateSSLRequest(
+      int clientCapacities,
+      int maxPacketSize,
+      int characterCollation,
+      String reserved,
+      int extendedClientCapabilitles,
+      String reserved2
+  ) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(512)) {
+      writer.writeFixInt(4, clientCapacities);
+      writer.writeFixInt(4, maxPacketSize);
+      writer.writeFixInt(1, characterCollation);
+      writer.write(reserved.getBytes());
+      if (MySQLServerCapabilityFlags.isLongPassword(clientCapacities)) {
+        writer.writeFixInt(4, extendedClientCapabilitles);
+      } else {
+        writer.write(reserved2.getBytes());
+      }
       return writer.toByteArray();
     }
   }

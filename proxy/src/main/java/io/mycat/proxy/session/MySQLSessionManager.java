@@ -15,6 +15,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
+import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
@@ -138,7 +139,7 @@ public final class MySQLSessionManager implements
         try {
           session.close(true, reason);
         } catch (Exception e) {
-          e.printStackTrace();
+          SessionTip.UNKNOWN_CLOSE_ERROR.getMessage(e);
         }
       }
     }
@@ -167,7 +168,7 @@ public final class MySQLSessionManager implements
           });
     } catch (Exception e) {
       try {
-        callBack.finished(null, this, false, null, e.getMessage());
+        callBack.finished(null, this, false, e.toString(), null);
       } catch (Exception e2) {
         e2.printStackTrace();
       }
@@ -179,14 +180,15 @@ public final class MySQLSessionManager implements
    */
   @Override
   public void removeSession(MySQLClientSession session, boolean normal, String reason) {
-    assert session != null;
-    assert reason != null;
-    allSessions.remove(session);
-    removeIdleSession(session);
     try {
-      session.close(normal, reason);
+      assert session != null;
+      assert reason != null;
+      boolean remove = allSessions.remove(session);
+      removeIdleSession(session);
+      session.channel().close();
     } catch (Exception e) {
       e.printStackTrace();
     }
+
   }
 }
