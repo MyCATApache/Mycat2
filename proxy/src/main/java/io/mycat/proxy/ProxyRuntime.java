@@ -29,12 +29,17 @@ import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.session.MycatSessionManager;
+import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import io.mycat.replica.MySQLReplicaFactory;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -73,13 +78,13 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return routerConfig.getSchemaBySchemaName(name);
   }
 
-  public void initRepliac() {
+  public void initRepliac(MySQLReplicaFactory factory) {
     DatasourceRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     ReplicaIndexRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
     Map<String, Integer> replicaIndexes = replicaIndexConfig.getReplicaIndexes();
     for (ReplicaConfig replicaConfig : dsConfig.getReplicas()) {
       Integer writeIndex = replicaIndexes.get(replicaConfig.getName());
-      MySQLReplica replica = new MySQLReplica(replicaConfig, writeIndex == null ? 0 : writeIndex);
+      MySQLReplica replica = factory.get(replicaConfig, writeIndex == null ? 0 : writeIndex);
       replicaMap.put(replica.getName(), replica);
       replica.init();
     }
@@ -128,6 +133,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   public int getBufferPoolPageNumber() {
     return getProxy().getBufferPoolPageNumber();
   }
+
   private NIOAcceptor acceptor;
   private MycatReactorThread[] reactorThreads;
 
@@ -144,6 +150,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
       mycatReactorThreads[i].start();
     }
   }
+
   public void initAcceptor() throws IOException {
     NIOAcceptor acceptor = new NIOAcceptor(null);
     this.setAcceptor(acceptor);
@@ -181,5 +188,15 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public String getCharsetById(int index) {
     return CharsetUtil.getCharset(index);
+  }
+
+  public <T extends MySQLDatasource> Collection<T> getMySQLDatasourceList() {
+    Map<String, MySQLReplica> replicaMap = this.replicaMap;
+    ArrayList<MySQLDatasource> list = new ArrayList<>();
+    for (MySQLReplica value : replicaMap.values()) {
+      List<MySQLDatasource> datasourceList = value.getDatasourceList();
+      list.addAll(datasourceList);
+    }
+    return (List) list;
   }
 }

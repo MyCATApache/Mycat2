@@ -33,13 +33,12 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221
  * @date 2019-05-10 13:21
  **/
-public final class MySQLDatasource {
+public abstract class MySQLDatasource {
 
   private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
   private final int index;
   private final DatasourceConfig datasourceConfig;
   private final MySQLReplica replica;
-  private volatile boolean alive = true;
   private MySQLCollationIndex collationIndex = new MySQLCollationIndex();
 
 
@@ -101,7 +100,7 @@ public final class MySQLDatasource {
   /**
    * 创建session辅助函数
    */
-  private Runnable createMySQLSession(MycatReactorThread thread,
+  protected Runnable createMySQLSession(MycatReactorThread thread,
       AsyncTaskCallBack<MySQLClientSession> callback) {
     Objects.requireNonNull(thread);
     Objects.requireNonNull(callback);
@@ -130,9 +129,7 @@ public final class MySQLDatasource {
     }
   }
 
-  public boolean isAlive() {
-    return alive;
-  }
+  public abstract boolean isAlive();
 
   public String getName() {
     return this.datasourceConfig.getHostName();
@@ -153,11 +150,6 @@ public final class MySQLDatasource {
   public String getPassword() {
     return this.datasourceConfig.getPassword();
   }
-
-  public void setAlive(boolean alive) {
-    this.alive = alive;
-  }
-
 
   public MySQLReplica getReplica() {
     return replica;

@@ -15,12 +15,16 @@ import java.util.Objects;
  * @date 2019-05-10 21:13
  * 预处理命令帮助类
  **/
-public class PrepareStmtUtil {
+public interface PrepareStmtUtil {
+
+  CloseTask CLOSE = new CloseTask();
+  FetchTask FETCH = new FetchTask();
+  ResetTask RESET = new ResetTask();
 
   /**
    * 该命令清除mysql server中预处理的填充参数
    */
-  public static void reset(
+  static void reset(
       MySQLClientSession mysql, long statementId, AsyncTaskCallBack<MySQLClientSession> callBack) {
     RESET.request(mysql, statementId, callBack);
   }
@@ -31,7 +35,7 @@ public class PrepareStmtUtil {
    * @param statementId
    * @param callBack
    */
-  public static void close(
+  static void close(
       MySQLClientSession mysql, long statementId, AsyncTaskCallBack<MySQLClientSession> callBack) {
     CLOSE.request(mysql, statementId, callBack);
   }
@@ -43,18 +47,13 @@ public class PrepareStmtUtil {
    * @param numRows
    * @param callBack
    */
-  public static void fetch(
+  static void fetch(
       MySQLClientSession mysql, long stmtId, long numRows,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
     FETCH.request(mysql, stmtId, numRows, callBack);
   }
 
-
-  private final static CloseTask CLOSE = new CloseTask();
-  private final static FetchTask FETCH = new FetchTask();
-  private final static ResetTask RESET = new ResetTask();
-
-  private static class ResetTask implements ResultSetTask {
+  class ResetTask implements ResultSetTask {
 
     public void request(
         MySQLClientSession mysql, long statementId, AsyncTaskCallBack<MySQLClientSession> callBack) {
@@ -62,7 +61,7 @@ public class PrepareStmtUtil {
     }
   }
 
-  private static class CloseTask implements ResultSetTask {
+  class CloseTask implements ResultSetTask {
 
     public void request(
         MySQLClientSession mysql, long statementId, AsyncTaskCallBack<MySQLClientSession> callBack) {
@@ -75,7 +74,7 @@ public class PrepareStmtUtil {
     }
   }
 
-  private static class FetchTask implements ResultSetTask {
+  class FetchTask implements ResultSetTask {
 
     public void request(MySQLClientSession mysql, long stmtId, long numRows,
         AsyncTaskCallBack<MySQLClientSession> callBack) {

@@ -19,14 +19,15 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLVersion;
+import io.mycat.beans.mysql.packet.AuthPacket;
+import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.packet.AuthPacketImpl;
-import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import java.io.IOException;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,16 +62,27 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     }
 
     MySQLPacket mySQLPacket = mycat.currentProxyPayload();
-    AuthPacketImpl auth = new AuthPacketImpl();
+    AuthPacket auth = new AuthPacket();
     auth.readPayload(mySQLPacket);
     mycat.resetCurrentProxyPayload();
+
+    String username = auth.getUsername();
+    byte[] password = auth.getPassword();
+
+    int maxPacketSize = auth.getMaxPacketSize();
+    String database = auth.getDatabase();
+
+    int capabilities = auth.getCapabilities();
+    int characterSet = auth.getCharacterSet();
+    Map<String, String> attrs = auth.getClientConnectAttrs();
+    String authPluginName = auth.getAuthPluginName();
 
     mycat.setServerCapabilities(auth.getCapabilities());
     mycat.setAutoCommit(MySQLAutoCommit.ON);
     MycatSchema defaultSchema = ProxyRuntime.INSTANCE.getDefaultSchema();
     mycat.setSchema(defaultSchema);
     mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
-    int index = auth.getCharacterSet();
+    int index = characterSet;
     String charset = ProxyRuntime.INSTANCE.getCharsetById(index);
     mycat.setCharset(index, charset);
     finished = true;
@@ -103,7 +115,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
   public void sendAuthPackge() {
     byte[][] seedParts = MysqlNativePasswordPluginUtil.nextSeedBuild();
     this.seed = seedParts[2];
-    HandshakePacketImpl hs = new HandshakePacketImpl();
+    HandshakePacket hs = new HandshakePacket();
     hs.setProtocolVersion(MySQLVersion.PROTOCOL_VERSION);
     hs.setServerVersion(new String(MySQLVersion.SERVER_VERSION));
     hs.setConnectionId(mycat.sessionId());

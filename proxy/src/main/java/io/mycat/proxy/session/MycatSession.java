@@ -175,7 +175,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLAutoCommit autoCommit = this.getAutoCommit();
     String charsetName = this.getCharsetName();
     MySQLTaskUtil
-        .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
+        .getMySQLSessionForHeatbeat(dataNode, isolation, autoCommit, charsetName,
             runOnSlave,
             strategy, (session, sender, success, result, errorMessage) ->
             {

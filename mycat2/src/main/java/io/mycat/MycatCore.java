@@ -15,6 +15,12 @@
 package io.mycat;
 
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.replica.DefaultMySQLReplicaFactory;
+import io.mycat.replica.MySQLDataSourceEx;
+import java.util.Collection;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author cjw
@@ -27,8 +33,19 @@ public class MycatCore {
     runtime.loadMycat();
     runtime.loadProxy();
     runtime.initReactor(MycatCommandHandler::new);
-    runtime.initRepliac();
+    runtime.initRepliac(new DefaultMySQLReplicaFactory());
     runtime.initAcceptor();
+
+    ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+    service.scheduleAtFixedRate(new Runnable() {
+      @Override
+      public void run() {
+        Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
+        for (MySQLDataSourceEx datasource : datasourceList) {
+          datasource.heartBeat();
+        }
+      }
+    }, 0, 3, TimeUnit.SECONDS);
   }
 
 }

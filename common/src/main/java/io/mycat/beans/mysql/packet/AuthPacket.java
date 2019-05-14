@@ -14,8 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
-
+package io.mycat.beans.mysql.packet;
 
 
 import io.mycat.config.MySQLServerCapabilityFlags;
@@ -67,7 +66,7 @@ import java.util.Map;
  *
  * 验证包
  **/
-public class AuthPacketImpl {
+public class AuthPacket {
 
     private static final byte[] RESERVED = new byte[23];
     private int capabilities;
@@ -79,7 +78,7 @@ public class AuthPacketImpl {
     private String authPluginName;
     private Map<String, String> clientConnectAttrs;
 
-    public void readPayload(MySQLPacket buffer) {
+  public void readPayload(MySQLPayloadReadView buffer) {
         capabilities = (int) buffer.readFixInt(4);
         maxPacketSize = (int) buffer.readFixInt(4);
         characterSet = buffer.readByte();
@@ -121,7 +120,7 @@ public class AuthPacketImpl {
     }
 
 
-    public void writePayload(MySQLPacket buffer) {
+  public void writePayload(MySQLPayloadWriteView buffer) {
         buffer.writeFixInt(4, capabilities);
         buffer.writeFixInt(4, maxPacketSize);
         buffer.writeByte(characterSet);

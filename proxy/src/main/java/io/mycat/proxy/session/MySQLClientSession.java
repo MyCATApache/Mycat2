@@ -111,8 +111,9 @@ public class MySQLClientSession extends
   @Override
   public void close(boolean normal, String hint) {
     NIOHandler curNIOHandler = getCurNIOHandler();
-    assert curNIOHandler != null;
-    curNIOHandler.onSocketClosed(this, normal, hint);
+    if (curNIOHandler != null) {
+      curNIOHandler.onSocketClosed(this, normal, hint);
+    }
     switchNioHandler(null);
 
     if (this.mycat != null) {
@@ -517,7 +518,7 @@ public class MySQLClientSession extends
    */
   @Override
   public void switchNioHandler(NIOHandler nioHandler) {
-    if (isIdle() && this.nioHandler == MySQLIdleNIOHandler.INSTANCE) {
+    if (nioHandler != null && isIdle() && this.nioHandler == MySQLIdleNIOHandler.INSTANCE) {
       throw new MycatExpection("UNKNOWN state");
     }
     this.nioHandler = nioHandler;

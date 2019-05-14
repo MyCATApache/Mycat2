@@ -14,12 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql.packet;
 
 
 import io.mycat.MycatExpection;
-import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.config.MySQLServerCapabilityFlags;
 
 /**
@@ -27,7 +25,7 @@ import io.mycat.config.MySQLServerCapabilityFlags;
  * 294712221@qq.com
  * 作为客户端发送的握手包,是服务器发送的验证包的响应
  */
-public class HandshakePacketImpl {
+public class HandshakePacket {
 
   private int protocolVersion;
   private String serverVersion;

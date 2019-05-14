@@ -315,10 +315,14 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    * 根据session的信息写入错误包,所以错误包的信息要设置session
    */
   default void writeErrorEndPacket() {
+    int lastErrorCode = getLastErrorCode();
+    if (lastErrorCode == 0) {
+      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
+    }
     switchMySQLServerWriteHandler();
     this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
-                       .generateError(getLastErrorCode(), getLastMessage(), this.getCapabilities());
+                       .generateError(lastErrorCode, getLastMessage(), this.getServerStatus());
     writeBytes(bytes);
   }
 

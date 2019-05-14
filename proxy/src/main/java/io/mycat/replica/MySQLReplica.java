@@ -26,6 +26,7 @@ import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -36,7 +37,7 @@ import java.util.function.BiConsumer;
  * @author jamie12221
  * @date 2019-05-10 13:21
  **/
-public final class MySQLReplica implements MycatReplica {
+public abstract class MySQLReplica implements MycatReplica {
 
   private final ReplicaConfig config;
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
@@ -48,7 +49,8 @@ public final class MySQLReplica implements MycatReplica {
   /**
    * 初始化mycat集群管理
    */
-  public MySQLReplica(ReplicaConfig replicaConfig, int writeIndex) {
+  public MySQLReplica(ReplicaConfig replicaConfig,
+      int writeIndex, MySQLDataSourceFactory dataSourceFactory) {
     assert replicaConfig != null;
     assert writeIndex > -1;
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
@@ -60,7 +62,7 @@ public final class MySQLReplica implements MycatReplica {
       DatasourceConfig datasourceConfig = mysqls.get(index);
       assert datasourceConfig != null;
       if (datasourceConfig.getDbType() == null) {
-        datasourceList.add(new MySQLDatasource(index, datasourceConfig, this));
+        datasourceList.add(dataSourceFactory.get(index, datasourceConfig, this));
       }
     }
   }
@@ -163,4 +165,7 @@ public final class MySQLReplica implements MycatReplica {
     return config.getName();
   }
 
+  public List<MySQLDatasource> getDatasourceList() {
+    return Collections.unmodifiableList(datasourceList);
+  }
 }

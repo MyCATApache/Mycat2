@@ -14,8 +14,8 @@
  */
 package io.mycat.proxy.handler;
 
+import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 import static io.mycat.proxy.handler.LocalInFileRequestHandler.EMPTY_PACKET;
-import static io.mycat.proxy.packet.AuthPacketImpl.calcLenencLength;
 
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.config.MySQLServerCapabilityFlags;

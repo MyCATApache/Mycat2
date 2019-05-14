@@ -16,20 +16,19 @@ import java.io.IOException;
 
 /**
  * @author jamie12221
- * @date 2019-05-10 21:57
- * Task请求帮助类
+ * @date 2019-05-10 21:57 Task请求帮助类
  **/
-public class QueryUtil {
+public interface QueryUtil {
 
-  private final static SetOptionTask SET_OPTION = new SetOptionTask();
-  public final static ResultSetTask COMMAND = new ResultSetTask() {
+  SetOptionTask SET_OPTION = new SetOptionTask();
+  ResultSetTask COMMAND = new ResultSetTask() {
 
   };
 
   /**
    * com_query
    */
-  public static void query(
+  static void query(
       MySQLClientSession mysql, String sql,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
     QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
@@ -38,11 +37,8 @@ public class QueryUtil {
 
   /**
    * 获取字符集id,结果在回调的result参数
-   * @param mysql
-   * @param collationIndex
-   * @param callBack
    */
-  public static void collectCharset(
+  static void collectCharset(
       MySQLClientSession mysql, MySQLCollationIndex collationIndex,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
     QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
@@ -74,12 +70,10 @@ public class QueryUtil {
 
   /**
    * 多个修改语句发送
-   * @param mysql
+   *
    * @param count 结果数量,对应语句数量
-   * @param sql
-   * @param callBack
    */
-  public static void mutilOkResultSet(
+  static void mutilOkResultSet(
       MySQLClientSession mysql, int count, String sql,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
     new MultiUpdateCounterTask(count).request(mysql, sql, callBack);
@@ -87,17 +81,14 @@ public class QueryUtil {
 
   /**
    * set option 命令
-   * @param mysql
-   * @param setOption
-   * @param callBack
    */
-  public static void setOption(
+  static void setOption(
       MySQLClientSession mysql, MySQLSetOption setOption,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
     SET_OPTION.request(mysql, setOption, callBack);
   }
 
-  private static class SetOptionTask implements ResultSetTask {
+  class SetOptionTask implements ResultSetTask {
 
     public void request(
         MySQLClientSession mysql, MySQLSetOption setOption,
@@ -129,7 +120,7 @@ public class QueryUtil {
     }
   }
 
-  private static class MultiUpdateCounterTask implements ResultSetTask {
+  class MultiUpdateCounterTask implements ResultSetTask {
 
     private int counter = 0;
 

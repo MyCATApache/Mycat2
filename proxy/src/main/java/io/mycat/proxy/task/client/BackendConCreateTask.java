@@ -15,6 +15,8 @@
 package io.mycat.proxy.task.client;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.AuthPacket;
+import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.AsyncTaskCallBack;
@@ -22,8 +24,6 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
-import io.mycat.proxy.packet.AuthPacketImpl;
-import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -92,14 +92,14 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
       int serverCapabilities = GlobalConfig.getClientCapabilityFlags().value;
       mysql.getPacketResolver().setCapabilityFlags(serverCapabilities);
 
-      HandshakePacketImpl hs = new HandshakePacketImpl();
+      HandshakePacket hs = new HandshakePacket();
       if ((proxyBuffer.get(4) & 0xff) == 0xff) {
         throw new MycatExpection("receive error packet");
       }
       hs.readPayload(mysql.currentProxyPayload());
       mysql.resetCurrentProxyPayload();
       int charsetIndex = hs.getCharacterSet();
-      AuthPacketImpl packet = new AuthPacketImpl();
+      AuthPacket packet = new AuthPacket();
       packet.setCapabilities(serverCapabilities);
       packet.setMaxPacketSize(1024 * 1000);
       packet.setCharacterSet((byte) charsetIndex);
@@ -129,6 +129,7 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
 
   @Override
   public void onSocketClosed(MySQLClientSession session, boolean normal, String reason) {
+    session.resetPacket();
     callback.finished(session, this, normal, null, reason);
   }
 
