@@ -54,6 +54,16 @@ public class ProxyConfig {
     // buffer pool page number 
     private short bufferPoolPageNumber = DEFAULT_BUFFER_POOL_PAGE_NUMBER;
 
+    private int reactorNumber = -1;
+
+    public int getReactorNumber() {
+        return reactorNumber == -1 ? Runtime.getRuntime().availableProcessors() : reactorNumber;
+    }
+
+    public void setReactorNumber(int reactorNumber) {
+        this.reactorNumber = reactorNumber;
+    }
+
     /**
      * 是否使用动态配置的开关
      */

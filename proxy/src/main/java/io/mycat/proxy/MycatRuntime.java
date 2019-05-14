@@ -25,6 +25,7 @@ import io.mycat.config.ConfigReceiverImpl;
 import io.mycat.config.datasource.DatasourceRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
+import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLReplica;
@@ -131,9 +132,9 @@ public class MycatRuntime extends ConfigReceiverImpl {
   private MycatReactorThread[] reactorThreads;
 
   public void initReactor() throws IOException {
-    int cpus = Runtime.getRuntime().availableProcessors();
-    //MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[Math.max(1,cpus-2)];
-    MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[cpus];
+    ProxyConfig proxy = getProxy();
+    int reactorNumber = proxy.getReactorNumber();
+    MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[reactorNumber];
     this.setMycatReactorThreads(mycatReactorThreads);
     for (int i = 0; i < mycatReactorThreads.length; i++) {
       BufferPool bufferPool = new BufferPoolImpl(getBufferPoolPageSize(), getBufferPoolChunkSize(),

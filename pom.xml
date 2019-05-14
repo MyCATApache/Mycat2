@@ -3,7 +3,7 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
-  <artifactId>mycat2</artifactId>
+  <artifactId>parent</artifactId>
   <version>0.1</version>
   <modules>
     <module>config</module>
@@ -16,9 +16,10 @@
     <module>logTip</module>
     <module>rpc</module>
     <module>jdbc</module>
+    <module>mycat2</module>
   </modules>
   <packaging>pom</packaging>
-  <name>mycat2</name>
+  <name>parent</name>
   <description>The project of Mycat2</description>
   <url>http://io.mycat</url>
 
