@@ -18,14 +18,14 @@ import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLPrepareStmtExecuteFlag;
 import io.mycat.beans.mysql.MySQLPreparedStatement;
 import io.mycat.beans.mysql.MySQLSetOption;
-import io.mycat.proxy.packet.ResultSetCollector;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsyncTaskCallBack;
-import io.mycat.proxy.task.QueryUtil;
+import io.mycat.proxy.task.client.QueryUtil;
 import io.mycat.proxy.task.client.prepareStatement.ExecuteTask;
 import io.mycat.proxy.task.client.prepareStatement.PrepareStmtUtil;
 import io.mycat.proxy.task.client.prepareStatement.PrepareTask;
 import io.mycat.proxy.task.client.prepareStatement.SendLongDataTask;
+import io.mycat.proxy.task.client.resultset.ResultSetCollector;
 
 public interface MySQLAPI {
 

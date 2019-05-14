@@ -1,12 +1,12 @@
 package io.mycat.proxy.task.client.prepareStatement;
 
 import io.mycat.beans.mysql.MySQLCommandType;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsyncTaskCallBack;
-import io.mycat.proxy.task.ResultSetTask;
+import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import java.io.IOException;
 import java.util.Objects;
 

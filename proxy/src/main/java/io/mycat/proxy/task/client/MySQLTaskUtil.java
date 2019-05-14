@@ -12,18 +12,17 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.executer;
+package io.mycat.proxy.task.client;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.MycatRuntime;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsyncTaskCallBack;
-import io.mycat.proxy.task.QueryUtil;
 import io.mycat.replica.MySQLReplica;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -31,7 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author jamie12221
  * @date 2019-05-12 22:41 dataNode执行器 该类本意是从路由获得dataNode名字之后,使用该执行器执行, 解耦结果类和实际执行方法
  **/
-public class MySQLDataNodeExecutor {
+public class MySQLTaskUtil {
 
   /**
    * 用户在非mycat reactor 线程获取 session
@@ -50,9 +49,9 @@ public class MySQLDataNodeExecutor {
       MySQLAutoCommit autoCommit, String charSet,
       boolean runOnSlave, LoadBalanceStrategy strategy,
       AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
-    MycatReactorThread[] threads = MycatRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-    MySQLDataNode dataNode = MycatRuntime.INSTANCE.getDataNodeByName(dataNodeName);
+    MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     threads[i].addNIOJob(() -> {
       getMySQLSession(dataNode, isolation, autoCommit, charSet, runOnSlave, strategy,
           asynTaskCallBack);
@@ -83,7 +82,7 @@ public class MySQLDataNodeExecutor {
     if (dataNode != null) {
       MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
       if (replica == null) {
-        replica = MycatRuntime.INSTANCE.getMySQLReplicaByReplicaName(dataNode.getReplicaName());
+        replica = ProxyRuntime.INSTANCE.getMySQLReplicaByReplicaName(dataNode.getReplicaName());
       }
       replica.getMySQLSessionByBalance(runOnSlave, strategy,
           (mysql, sender, success, result, errorMessage) -> {
@@ -104,9 +103,5 @@ public class MySQLDataNodeExecutor {
     } else {
       throw new MycatExpection("unsupport dataNode Type");
     }
-
-
   }
-
-
 }

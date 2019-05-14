@@ -14,7 +14,7 @@
  */
 package io.mycat;
 
-import io.mycat.proxy.MycatRuntime;
+import io.mycat.proxy.ProxyRuntime;
 
 /**
  * @author cjw
@@ -23,7 +23,7 @@ public class MycatCore {
 
 
   public static void main(String[] args) throws Exception {
-    MycatRuntime runtime = MycatRuntime.INSTANCE;
+    ProxyRuntime runtime = ProxyRuntime.INSTANCE;
     runtime.loadMycat();
     runtime.loadProxy();
     runtime.initReactor(MycatCommandHandler::new);

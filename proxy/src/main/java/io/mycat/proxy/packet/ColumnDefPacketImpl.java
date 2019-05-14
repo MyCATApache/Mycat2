@@ -15,8 +15,8 @@
 package io.mycat.proxy.packet;
 
 import io.mycat.beans.mysql.MySQLFieldInfo;
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
-import java.nio.channels.SocketChannel;
 import java.util.Arrays;
 
 /**
@@ -96,10 +96,6 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
                '}';
   }
 
-  @Override
-  public void writeToChannel(SocketChannel channel) {
-
-  }
 
   int columnType;
   int columnFlags;

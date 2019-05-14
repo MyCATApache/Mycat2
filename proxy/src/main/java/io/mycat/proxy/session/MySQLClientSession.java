@@ -15,21 +15,23 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MySQLAPI;
+import io.mycat.MySQLSessionMonopolizeType;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.logTip.TaskTip;
-import io.mycat.proxy.MySQLPacketExchanger.MySQLIdleNIOHandler;
-import io.mycat.proxy.MySQLPacketExchanger.MySQLProxyNIOHandler;
-import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.AsyncTaskCallBack;
+import io.mycat.proxy.NetMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
+import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
+import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
+import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.proxy.task.AsyncTaskCallBack;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
 import java.nio.ByteBuffer;

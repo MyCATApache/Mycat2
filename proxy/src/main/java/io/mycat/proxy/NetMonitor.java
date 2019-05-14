@@ -1,5 +1,6 @@
-package io.mycat.proxy.session;
+package io.mycat.proxy;
 
+import io.mycat.proxy.session.Session;
 import io.mycat.util.DumpUtil;
 import java.nio.ByteBuffer;
 

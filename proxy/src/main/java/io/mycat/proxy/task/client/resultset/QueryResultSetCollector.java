@@ -1,8 +1,8 @@
-package io.mycat.proxy.packet;
+package io.mycat.proxy.task.client.resultset;
 
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -55,8 +55,6 @@ public class QueryResultSetCollector extends TextResultSetTransforCollector impl
 
   public void collectColumnList(ColumnDefPacket[] packets) {
     columns = packets;
-    logger.debug("collectColumnList");
-    logger.debug(Arrays.toString(packets));
     result = new ArrayList[packets.length];
     for (int i = 0; i < packets.length; i++) {
       result[i] = new ArrayList();

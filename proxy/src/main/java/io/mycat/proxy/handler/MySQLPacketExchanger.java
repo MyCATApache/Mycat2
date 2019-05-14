@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy;
+package io.mycat.proxy.handler;
 
 import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_RESPONSE;
 
@@ -36,7 +36,7 @@ public enum MySQLPacketExchanger {
 //    ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
 //    proxyBuffer.channelWriteStartIndex(0);
 //    proxyBuffer.channelWriteEndIndex(proxyBuffer.channelReadEndIndex());
-//    MySQLDataNode dataNode = MycatRuntime.INSTANCE
+//    MySQLDataNode dataNode = ProxyRuntime.INSTANCE
 //                                 .getDataNodeByName(mycat.getDataNode());
 //    writeProxyBufferToDataNode(mycat, proxyBuffer, dataNode, noResponse);
 //    return false;

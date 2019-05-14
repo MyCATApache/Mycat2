@@ -12,16 +12,17 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.task;
+package io.mycat.proxy.task.client;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.executer.MySQLDataNodeExecutor;
+import io.mycat.proxy.AsyncTaskCallBack;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import java.util.List;
 
 /**
@@ -47,8 +48,8 @@ public class MultiMySQLQueryTask implements ResultSetTask {
     MySQLAutoCommit autoCommit = mycat.getAutoCommit();
     String charsetName = mycat.getCharsetName();
     for (String dataNodeName : dataNodeNameList) {
-      MySQLDataNode dataNode = MycatRuntime.INSTANCE.getDataNodeByName(dataNodeName);
-      MySQLDataNodeExecutor
+      MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
+      MySQLTaskUtil
           .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
               false,
               null, (session, sender, success, result, errorMessage) ->

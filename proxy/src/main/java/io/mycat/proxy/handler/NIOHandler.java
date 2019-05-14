@@ -12,8 +12,9 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy;
+package io.mycat.proxy.handler;
 
+import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.session.Session;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;

@@ -12,13 +12,14 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.task;
+package io.mycat.proxy.task.client.resultset;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
+import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketCallback;
@@ -217,7 +218,7 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
             this.onPrepareOkColumnDefEof(resolver);
             break;
           case PREPARE_OK_PARAMER_DEF_EOF:
-            this.onPrepareOkColumnDefEof(resolver);
+            this.onPrepareOkParameterDefEof(resolver);
             break;
         }
         mysql.resetCurrentProxyPayload();

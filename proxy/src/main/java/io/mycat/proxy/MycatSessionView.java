@@ -1,18 +1,16 @@
-package io.mycat.proxy.command;
+package io.mycat.proxy;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.proxy.command.LocalInFileRequestHandler.LocalInFileSession;
-import io.mycat.proxy.command.PrepareStatementHandler.PrepareStatementSession;
+import io.mycat.proxy.handler.LocalInFileRequestHandler.LocalInFileSession;
+import io.mycat.proxy.handler.PrepareStatementHandler.PrepareStatementSession;
 import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLProxySession;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.task.AsyncTaskCallBack;
 import java.io.IOException;
 
 /**
@@ -36,7 +34,7 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
 //      boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
 //    assert dataNodeName != null && !"".equals(dataNodeName);
 //    MycatSession mycat = (MycatSession) this;
-//    MycatDataNode mycatDataNode = MycatRuntime.INSTANCE
+//    MycatDataNode mycatDataNode = ProxyRuntime.INSTANCE
 //                                      .getDataNodeByName(dataNodeName);
 //    mycat.setCallBack(finallyCallBack);
 //    boolean isMySQLDataNode = mycatDataNode instanceof MySQLDataNode;
@@ -83,7 +81,7 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
       boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
     assert dataNodeName != null && !"".equals(dataNodeName);
     MycatSession mycat = (MycatSession) this;
-    MycatDataNode mycatDataNode = MycatRuntime.INSTANCE
+    MycatDataNode mycatDataNode = ProxyRuntime.INSTANCE
                                       .getDataNodeByName(dataNodeName);
     mycat.setCallBack(finallyCallBack);
     boolean isMySQLDataNode = mycatDataNode instanceof MySQLDataNode;

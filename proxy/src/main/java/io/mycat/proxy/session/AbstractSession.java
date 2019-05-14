@@ -14,8 +14,8 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.handler.NIOHandler;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -51,7 +51,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     this.nioHandler = nioHandler;
     this.sessionManager = sessionManager;
     this.channelKey = channel.register(nioSelector, socketOpt, this);
-    this.sessionId = MycatRuntime.INSTANCE.genSessionId();
+    this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
     this.startTime = currentTimeMillis();
   }
 

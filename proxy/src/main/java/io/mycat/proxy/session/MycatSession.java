@@ -14,8 +14,8 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.MySQLServerStatus;
 import io.mycat.MycatExpection;
-import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
@@ -26,19 +26,20 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.MycatHandler.MycatSessionWriteHandler;
-import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.AsyncTaskCallBack;
+import io.mycat.proxy.MycatSessionView;
+import io.mycat.proxy.NetMonitor;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.command.CommandHandler;
-import io.mycat.proxy.command.CommandHandlerAdapter;
-import io.mycat.proxy.command.MycatSessionView;
-import io.mycat.proxy.executer.MySQLDataNodeExecutor;
+import io.mycat.proxy.handler.CommandHandler;
+import io.mycat.proxy.handler.CommandHandlerAdapter;
+import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
-import io.mycat.proxy.task.AsyncTaskCallBack;
+import io.mycat.proxy.task.client.MySQLTaskUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
@@ -150,7 +151,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
   public MycatSchema getSchema() {
-    return schema == null ? schema = MycatRuntime.INSTANCE.getDefaultSchema()
+    return schema == null ? schema = ProxyRuntime.INSTANCE.getDefaultSchema()
                : schema;
   }
 
@@ -173,7 +174,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLIsolation isolation = this.getIsolation();
     MySQLAutoCommit autoCommit = this.getAutoCommit();
     String charsetName = this.getCharsetName();
-    MySQLDataNodeExecutor
+    MySQLTaskUtil
         .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
             runOnSlave,
             strategy, (session, sender, success, result, errorMessage) ->
@@ -348,10 +349,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void setLastInsertId(long lastInsertId) {
     this.serverStatus.setLastInsertId(lastInsertId);
-  }
-
-  public void useSchema(String schema) {
-    this.schema = MycatRuntime.INSTANCE.getSchemaByName(schema);
   }
 
   public void resetSession() {

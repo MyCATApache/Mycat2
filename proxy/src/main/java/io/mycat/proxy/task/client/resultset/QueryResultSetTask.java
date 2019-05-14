@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.task;
+package io.mycat.proxy.task.client.resultset;
 
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_BIT;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_BLOB;
@@ -43,12 +43,11 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.logTip.TaskTip;
-import io.mycat.proxy.packet.ColumnDefPacket;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.QueryResultSetCollector;
-import io.mycat.proxy.packet.ResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.function.IntPredicate;
 

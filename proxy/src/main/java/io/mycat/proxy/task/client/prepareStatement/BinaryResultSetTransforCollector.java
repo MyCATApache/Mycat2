@@ -12,8 +12,11 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.proxy.task.client.prepareStatement;
 
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.proxy.task.client.resultset.ResultSetCollector;
 import java.math.BigDecimal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

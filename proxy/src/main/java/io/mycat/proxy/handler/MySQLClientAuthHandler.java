@@ -14,22 +14,17 @@
  */
 package io.mycat.proxy.handler;
 
-import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLVersion;
-import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.MycatHandler;
-import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.NIOHandler;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.packet.AuthPacketImpl;
 import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.replica.MySQLReplica;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -69,17 +64,13 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     auth.readPayload(mySQLPacket);
     mycat.resetCurrentProxyPayload();
 
-    mycat.setServerCapabilities(auth.capabilities);
+    mycat.setServerCapabilities(auth.getCapabilities());
     mycat.setAutoCommit(MySQLAutoCommit.ON);
-    MycatSchema defaultSchema = MycatRuntime.INSTANCE.getDefaultSchema();
+    MycatSchema defaultSchema = ProxyRuntime.INSTANCE.getDefaultSchema();
     mycat.setSchema(defaultSchema);
     mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
-    MySQLDataNode dataNode = MycatRuntime.INSTANCE.getDataNodeByName(
-        defaultSchema.getDefaultDataNode());
-    MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
-    MySQLCollationIndex collationIndex = replica.getCollationIndex();
-    int index = auth.characterSet & 0xff;
-    String charset = collationIndex.getCharsetByIndex(index);
+    int index = auth.getCharacterSet();
+    String charset = ProxyRuntime.INSTANCE.getCharsetById(index);
     mycat.setCharset(index, charset);
     finished = true;
 

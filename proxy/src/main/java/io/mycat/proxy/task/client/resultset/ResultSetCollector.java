@@ -14,7 +14,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.proxy.task.client.resultset;
+
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.proxy.packet.MySQLPacket;
 
 /**
  * 结果集收集接口 int startIndex的含义应该是根据实际情况而定的

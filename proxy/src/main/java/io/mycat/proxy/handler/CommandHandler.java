@@ -1,5 +1,6 @@
-package io.mycat.proxy.command;
+package io.mycat.proxy.handler;
 
+import io.mycat.proxy.MycatSessionView;
 import java.util.Map;
 
 /**

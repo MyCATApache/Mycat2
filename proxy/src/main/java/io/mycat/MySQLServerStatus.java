@@ -12,12 +12,12 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.beans;
+package io.mycat;
 
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.proxy.command.LocalInFileRequestHandler;
+import io.mycat.proxy.handler.LocalInFileRequestHandler;
 import java.nio.charset.Charset;
 
 

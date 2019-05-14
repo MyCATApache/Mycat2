@@ -1,14 +1,17 @@
-package io.mycat.proxy.task;
+package io.mycat.proxy.task.client;
 
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLSetOption;
 import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.logTip.TaskTip;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.TextResultSetTransforCollector;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.task.client.resultset.QueryResultSetTask;
+import io.mycat.proxy.task.client.resultset.ResultSetTask;
+import io.mycat.proxy.task.client.resultset.TextResultSetTransforCollector;
 import java.io.IOException;
 
 /**

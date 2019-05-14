@@ -1,7 +1,9 @@
-package io.mycat.proxy.task;
+package io.mycat.proxy.task.client;
 
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;

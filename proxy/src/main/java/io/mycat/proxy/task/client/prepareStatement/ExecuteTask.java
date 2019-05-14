@@ -49,16 +49,16 @@ import io.mycat.beans.mysql.MySQLPStmtBindValueList;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLPrepareStmtExecuteFlag;
 import io.mycat.beans.mysql.MySQLPreparedStatement;
+import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.logTip.TaskTip;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.packet.ColumnDefPacket;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.ResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsyncTaskCallBack;
-import io.mycat.proxy.task.ResultSetTask;
+import io.mycat.proxy.task.client.resultset.ResultSetCollector;
+import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import java.util.Objects;
 
 /**

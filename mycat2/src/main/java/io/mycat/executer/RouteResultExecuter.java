@@ -1,4 +1,4 @@
-package io.mycat.proxy.executer;
+package io.mycat.executer;
 
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.ResultRoute;

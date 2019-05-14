@@ -27,10 +27,11 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
-import io.mycat.proxy.command.CommandHandler;
+import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouterConfig;
+import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -41,19 +42,18 @@ import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MycatRuntime extends ConfigReceiverImpl {
+public class ProxyRuntime extends ConfigReceiverImpl {
 
-  public static final MycatRuntime INSTANCE = new MycatRuntime();
-  private static final Logger logger = LoggerFactory.getLogger(MycatRuntime.class);
+  public static final ProxyRuntime INSTANCE = new ProxyRuntime();
+  private static final Logger logger = LoggerFactory.getLogger(ProxyRuntime.class);
   private final AtomicInteger sessionIdCounter = new AtomicInteger(0);
-  private final MycatScheduler mycatScheduler = new MycatScheduler();
   private final MycatRouterConfig routerConfig = new MycatRouterConfig(getResourcesPath());
   private Map<String, MySQLReplica> replicaMap = new HashMap<>();
 
   public static String getResourcesPath() {
     try {
       return Paths.get(
-          Objects.requireNonNull(MycatRuntime.class.getClassLoader().getResource("")).toURI())
+          Objects.requireNonNull(ProxyRuntime.class.getClassLoader().getResource("")).toURI())
                  .toAbsolutePath()
                  .toString();
     } catch (Exception e) {
@@ -128,11 +128,6 @@ public class MycatRuntime extends ConfigReceiverImpl {
   public int getBufferPoolPageNumber() {
     return getProxy().getBufferPoolPageNumber();
   }
-
-  public MycatScheduler getMycatScheduler() {
-    return mycatScheduler;
-  }
-
   private NIOAcceptor acceptor;
   private MycatReactorThread[] reactorThreads;
 
@@ -149,15 +144,6 @@ public class MycatRuntime extends ConfigReceiverImpl {
       mycatReactorThreads[i].start();
     }
   }
-
-//  public void initHeartbeat() {
-//    this.getMycatScheduler().scheduleAtFixedRate(() -> {
-//      for (MySQLReplica replica : this.replicaMap.values()) {
-//        replica.doHeartbeat();
-//      }
-//    }, Integer.MAX_VALUE, TimeUnit.DAYS);
-//  }
-
   public void initAcceptor() throws IOException {
     NIOAcceptor acceptor = new NIOAcceptor(null);
     this.setAcceptor(acceptor);
@@ -191,5 +177,9 @@ public class MycatRuntime extends ConfigReceiverImpl {
 
   public MySQLReplica getMySQLReplicaByReplicaName(String name) {
     return replicaMap.get(name);
+  }
+
+  public String getCharsetById(int index) {
+    return CharsetUtil.getCharset(index);
   }
 }

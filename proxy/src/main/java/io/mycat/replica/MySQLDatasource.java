@@ -17,11 +17,11 @@ package io.mycat.replica;
 import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.logTip.DataSourceTip;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.MycatRuntime;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.AsyncTaskCallBack;
-import io.mycat.proxy.task.QueryUtil;
+import io.mycat.proxy.task.client.QueryUtil;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public final class MySQLDatasource {
   public void init(BiConsumer<MySQLDatasource, Boolean> successCallback) {
     Objects.requireNonNull(successCallback);
     int minCon = datasourceConfig.getMinCon();
-    MycatReactorThread[] threads = MycatRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     Objects.requireNonNull(threads);
     MycatReactorThread firstThread = threads[0 % threads.length];
     firstThread.addNIOJob(
@@ -122,7 +122,7 @@ public final class MySQLDatasource {
    */
   public void clearAndDestroyCons(String reason) {
     Objects.requireNonNull(reason);
-    MycatReactorThread[] mycatReactorThreads = MycatRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread[] mycatReactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     Objects.requireNonNull(mycatReactorThreads);
     for (MycatReactorThread thread : mycatReactorThreads) {
       thread.addNIOJob(

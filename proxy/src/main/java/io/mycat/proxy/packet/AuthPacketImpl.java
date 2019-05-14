@@ -68,15 +68,16 @@ import java.util.Map;
  * 验证包
  **/
 public class AuthPacketImpl {
-    public int capabilities;
-    public int maxPacketSize;
-    public byte characterSet;
-    public static final byte[] RESERVED = new byte[23];
-    public String username;
-    public byte[] password;
-    public String database;
-    public String authPluginName;
-    public Map<String, String> clientConnectAttrs;
+
+    private static final byte[] RESERVED = new byte[23];
+    private int capabilities;
+    private int maxPacketSize;
+    private byte characterSet;
+    private String username;
+    private byte[] password;
+    private String database;
+    private String authPluginName;
+    private Map<String, String> clientConnectAttrs;
 
     public void readPayload(MySQLPacket buffer) {
         capabilities = (int) buffer.readFixInt(4);
@@ -174,5 +175,73 @@ public class AuthPacketImpl {
         } else {
             return 9;
         }
+    }
+
+    public static byte[] getRESERVED() {
+        return RESERVED;
+    }
+
+    public int getCapabilities() {
+        return capabilities;
+    }
+
+    public void setCapabilities(int capabilities) {
+        this.capabilities = capabilities;
+    }
+
+    public int getMaxPacketSize() {
+        return maxPacketSize;
+    }
+
+    public void setMaxPacketSize(int maxPacketSize) {
+        this.maxPacketSize = maxPacketSize;
+    }
+
+    public int getCharacterSet() {
+        return characterSet & 0xff;
+    }
+
+    public void setCharacterSet(byte characterSet) {
+        this.characterSet = characterSet;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public byte[] getPassword() {
+        return password;
+    }
+
+    public void setPassword(byte[] password) {
+        this.password = password;
+    }
+
+    public String getDatabase() {
+        return database;
+    }
+
+    public void setDatabase(String database) {
+        this.database = database;
+    }
+
+    public String getAuthPluginName() {
+        return authPluginName;
+    }
+
+    public void setAuthPluginName(String authPluginName) {
+        this.authPluginName = authPluginName;
+    }
+
+    public Map<String, String> getClientConnectAttrs() {
+        return clientConnectAttrs;
+    }
+
+    public void setClientConnectAttrs(Map<String, String> clientConnectAttrs) {
+        this.clientConnectAttrs = clientConnectAttrs;
     }
 }

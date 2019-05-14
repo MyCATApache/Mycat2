@@ -15,11 +15,11 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
-import io.mycat.proxy.MySQLPacketExchanger.MySQLIdleNIOHandler;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
-import io.mycat.proxy.task.AsyncTaskCallBack;
-import io.mycat.proxy.task.BackendConCreateTask;
+import io.mycat.proxy.task.client.BackendConCreateTask;
 import io.mycat.replica.MySQLDatasource;
 import java.util.Collection;
 import java.util.Collections;

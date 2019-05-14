@@ -14,9 +14,9 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.NIOHandler;
-import io.mycat.proxy.task.AsyncTaskCallBack;
+import io.mycat.proxy.handler.NIOHandler;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 

@@ -2,9 +2,9 @@ package io.mycat;
 
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.MycatRuntime;
-import io.mycat.proxy.command.CommandHandler.AbstractCommandHandler;
-import io.mycat.proxy.command.MycatSessionView;
+import io.mycat.proxy.MycatSessionView;
+import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.handler.CommandHandler.AbstractCommandHandler;
 import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
@@ -19,9 +19,9 @@ public class MycatCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleQuery(byte[] sql, MycatSessionView session) {
-    MycatSchema defaultSchema = MycatRuntime.INSTANCE
+    MycatSchema defaultSchema = ProxyRuntime.INSTANCE
                                     .getDefaultSchema();
-    String dataNode = MycatRuntime.INSTANCE
+    String dataNode = ProxyRuntime.INSTANCE
                           .getDefaultSchema().getDefaultDataNode();
     String s = new String(sql);
     String s1 = RouterUtil.removeSchema(s, defaultSchema.getSchemaName());
@@ -93,7 +93,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleProcessKill(long connectionId, MycatSessionView session) {
-    MycatReactorThread[] mycatReactorThreads = MycatRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread[] mycatReactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     MycatReactorThread currentThread = session.getMycatReactorThread();
     for (MycatReactorThread mycatReactorThread : mycatReactorThreads) {
       FrontSessionManager<MycatSession> frontManager = mycatReactorThread.getFrontManager();

@@ -12,15 +12,16 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.task;
+package io.mycat.proxy.task.client;
 
 import io.mycat.MycatExpection;
 import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.TaskTip;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
-import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
+import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.AuthPacketImpl;
 import io.mycat.proxy.packet.HandshakePacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -99,13 +100,13 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
       mysql.resetCurrentProxyPayload();
       int charsetIndex = hs.characterSet;
       AuthPacketImpl packet = new AuthPacketImpl();
-      packet.capabilities = serverCapabilities;
-      packet.maxPacketSize = 1024 * 1000;
-      packet.characterSet = (byte) charsetIndex;
-      packet.username = datasource.getUsername();
-      packet.password = MysqlNativePasswordPluginUtil.scramble411(datasource.getPassword(),
-          hs.authPluginDataPartOne + hs.authPluginDataPartTwo);
-      packet.authPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
+      packet.setCapabilities(serverCapabilities);
+      packet.setMaxPacketSize(1024 * 1000);
+      packet.setCharacterSet((byte) charsetIndex);
+      packet.setUsername(datasource.getUsername());
+      packet.setPassword(MysqlNativePasswordPluginUtil.scramble411(datasource.getPassword(),
+          hs.authPluginDataPartOne + hs.authPluginDataPartTwo));
+      packet.setAuthPluginName(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME);
       MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(1024);
       packet.writePayload(mySQLPacket);
       welcomePkgReceived = true;
