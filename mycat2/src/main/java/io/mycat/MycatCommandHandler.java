@@ -1,9 +1,10 @@
-package io.mycat.proxy.command;
+package io.mycat;
 
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.command.CommandHandler.AbstractCommandHandler;
+import io.mycat.proxy.command.MycatSessionView;
 import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
@@ -14,7 +15,7 @@ import java.util.Map;
  * @author jamie12221
  * @date 2019-05-13 02:47
  **/
-public class AbsCommandHandler extends AbstractCommandHandler {
+public class MycatCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleQuery(byte[] sql, MycatSessionView session) {
@@ -27,12 +28,12 @@ public class AbsCommandHandler extends AbstractCommandHandler {
     session
         .proxyBackend(MySQLPacketUtil.generateComQuery(s1), dataNode, true, null, false,
             (session1, sender, success, result, attr) -> {
-          if (success) {
-            System.out.println("success full");
-          } else {
-            System.out.println("success fail");
-          }
-        });
+              if (success) {
+                System.out.println("success full");
+              } else {
+                System.out.println("success fail");
+              }
+            });
   }
 
   @Override

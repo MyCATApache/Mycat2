@@ -31,13 +31,7 @@ import java.util.HashMap;
  **/
 public class CommandHandlerAdapter {
 
-  final CommandHandler commandHandler;
-
-  public CommandHandlerAdapter(CommandHandler commandHandler) {
-    this.commandHandler = commandHandler;
-  }
-
-  public void handle(MycatSession mycat) {
+  public final static void handle(MycatSession mycat, CommandHandler commandHandler) {
     MySQLPacket curPacket = mycat.currentProxyPayload();
     if (mycat.getLocalInFileState() == LocalInFileRequestHandler.CONTENT_OF_FILE) {
       byte[] bytes = curPacket.readEOFStringBytes();

@@ -31,7 +31,7 @@ import io.mycat.proxy.MycatRuntime;
 import io.mycat.proxy.NIOHandler;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.command.AbsCommandHandler;
+import io.mycat.proxy.command.CommandHandler;
 import io.mycat.proxy.command.CommandHandlerAdapter;
 import io.mycat.proxy.command.MycatSessionView;
 import io.mycat.proxy.executer.MySQLDataNodeExecutor;
@@ -49,8 +49,16 @@ import java.util.LinkedList;
 public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLProxySession<MycatSession>, MycatSessionView {
 
-  private final CommandHandlerAdapter commandHandler = new CommandHandlerAdapter(
-      new AbsCommandHandler());
+  private final CommandHandler commandHandler;
+
+  public MycatSession(BufferPool bufferPool, Selector selector, SocketChannel channel,
+      int socketOpt, NIOHandler nioHandler, SessionManager<MycatSession> sessionManager,
+      CommandHandler commandHandler)
+      throws IOException {
+    super(selector, channel, socketOpt, nioHandler, sessionManager);
+    proxyBuffer = new ProxyBufferImpl(bufferPool);
+    this.commandHandler = commandHandler;
+  }
 
   /**
    * mysql服务器状态
@@ -80,15 +88,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    */
   private String dataNode;
 
-  public MycatSession(BufferPool bufferPool, Selector selector, SocketChannel channel,
-      int socketOpt, NIOHandler nioHandler, SessionManager<MycatSession> sessionManager)
-      throws IOException {
-    super(selector, channel, socketOpt, nioHandler, sessionManager);
-    proxyBuffer = new ProxyBufferImpl(bufferPool);
-  }
-
   public void handle() throws IOException {
-    commandHandler.handle(this);
+    assert commandHandler != null;
+    CommandHandlerAdapter.handle(this, commandHandler);
   }
 
 

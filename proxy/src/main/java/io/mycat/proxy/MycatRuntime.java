@@ -27,6 +27,7 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
+import io.mycat.proxy.command.CommandHandler;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouterConfig;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,11 +55,12 @@ public class MycatRuntime extends ConfigReceiverImpl {
       return Paths.get(
           Objects.requireNonNull(MycatRuntime.class.getClassLoader().getResource("")).toURI())
                  .toAbsolutePath()
-          .toString();
-    }catch (Exception e){
+                 .toString();
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
+
   public MycatRouterConfig getRouterConfig() {
     return routerConfig;
   }
@@ -65,9 +68,11 @@ public class MycatRuntime extends ConfigReceiverImpl {
   public MycatSchema getDefaultSchema() {
     return routerConfig.getDefaultSchema();
   }
+
   public MycatSchema getSchemaByName(String name) {
     return routerConfig.getSchemaBySchemaName(name);
   }
+
   public void initRepliac() {
     DatasourceRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     ReplicaIndexRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
@@ -131,7 +136,7 @@ public class MycatRuntime extends ConfigReceiverImpl {
   private NIOAcceptor acceptor;
   private MycatReactorThread[] reactorThreads;
 
-  public void initReactor() throws IOException {
+  public void initReactor(Supplier<CommandHandler> commandHandlerFactory) throws IOException {
     ProxyConfig proxy = getProxy();
     int reactorNumber = proxy.getReactorNumber();
     MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[reactorNumber];
@@ -140,7 +145,7 @@ public class MycatRuntime extends ConfigReceiverImpl {
       BufferPool bufferPool = new BufferPoolImpl(getBufferPoolPageSize(), getBufferPoolChunkSize(),
           getBufferPoolPageNumber());
       mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
-          new MycatSessionManager());
+          new MycatSessionManager(commandHandlerFactory));
       mycatReactorThreads[i].start();
     }
   }
@@ -181,14 +186,10 @@ public class MycatRuntime extends ConfigReceiverImpl {
   }
 
   public <T extends MycatDataNode> T getDataNodeByName(String name) {
-    return (T)routerConfig.getDataNodeByName(name);
+    return (T) routerConfig.getDataNodeByName(name);
   }
 
   public MySQLReplica getMySQLReplicaByReplicaName(String name) {
     return replicaMap.get(name);
-  }
-
-  public void setCommandHandler() {
-
   }
 }

@@ -15,6 +15,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.buffer.BufferPool;
+import io.mycat.proxy.command.CommandHandler;
 import io.mycat.proxy.handler.MySQLClientAuthHandler;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import java.io.IOException;
@@ -23,6 +24,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.function.Supplier;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
@@ -33,6 +35,13 @@ import java.util.LinkedList;
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
+  final Supplier<CommandHandler> commandHandlerFactory;
+
+  public MycatSessionManager(
+      Supplier<CommandHandler> commandHandlerFactory) {
+    this.commandHandlerFactory = commandHandlerFactory;
+  }
+
 
   @Override
   public Collection<MycatSession> getAllSessions() {
@@ -59,7 +68,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();
     MycatSession mycat = new MycatSession(bufPool, nioSelector, frontChannel, SelectionKey.OP_READ,
-        mySQLClientAuthHandler, this);
+        mySQLClientAuthHandler, this, commandHandlerFactory.get());
     mySQLClientAuthHandler.setMycatSession(mycat);
     mySQLClientAuthHandler.sendAuthPackge();
     this.mycatSessions.add(mycat);

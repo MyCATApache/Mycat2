@@ -26,15 +26,9 @@ public class MycatCore {
     MycatRuntime runtime = MycatRuntime.INSTANCE;
     runtime.loadMycat();
     runtime.loadProxy();
-    runtime.initReactor();
+    runtime.initReactor(MycatCommandHandler::new);
     runtime.initRepliac();
-    // runtime.initHeartbeat();
     runtime.initAcceptor();
-    runtime.setCommandHandler();
-
-
-
-    //clear(runtime);
   }
 
 }
