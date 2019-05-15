@@ -8,7 +8,7 @@
 //import io.mycat.router.routeResult.ONE_SERVER_RESULT_ROUTE;
 //import io.mycat.router.routeResult.SubTableResultRoute;
 //import io.mycat.router.routeResult.dbResultSet.DbResultSet;
-//import java.io.IOException;
+//import java.io.IO_EXCEPTION;
 //
 ///**
 // * @author jamie12221
@@ -26,7 +26,7 @@
 //
 //  @Override
 //  public void run(ONE_SERVER_RESULT_ROUTE dbResultSet, MycatSessionView mycatSession)
-//      throws IOException {
+//      throws IO_EXCEPTION {
 //    mycatSession.switchDataNode(dbResultSet.getDataNode());
 ////    MySQLPacketExchanger.INSTANCE.handle(mycatSession, false);
 //  }

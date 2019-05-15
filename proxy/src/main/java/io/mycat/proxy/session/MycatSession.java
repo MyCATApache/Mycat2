@@ -16,7 +16,6 @@ package io.mycat.proxy.session;
 
 import io.mycat.MySQLServerStatus;
 import io.mycat.MycatExpection;
-import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -25,7 +24,6 @@ import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatSessionView;
 import io.mycat.proxy.NetMonitor;
@@ -38,7 +36,6 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
-import io.mycat.proxy.task.client.MySQLTaskUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
@@ -81,7 +78,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private final MySQLPacketSplitter packetSplitter = new PacketSplitterImpl();
   private boolean responseFinished = false;//每次在处理请求时候就需要重置
   private MySQLClientSession backend;//unbind
-  private MycatSessionWriteHandler writeHandler = MySQLProxySession.WriteHandler.INSTANCE;
+  private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
   private AsyncTaskCallBack finallyCallBack;
   /**
    * 路由信息
@@ -99,15 +96,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   public void onHandlerFinishedClear(boolean normal) {
-    if (backend != null) {
-      backend.unbindMycatIfNeed(!normal);
-    }
     resetPacket();
     setResponseFinished(false);
-    if (finallyCallBack != null) {
-      finallyCallBack.finished(this, this, normal, this.getLastMessage(), null);
-      finallyCallBack = null;
-    }
   }
 
   public MySQLAutoCommit getAutoCommit() {
@@ -153,35 +143,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.schema = schema;
   }
 
-  public MySQLClientSession currentBackend() {
+  public MySQLClientSession getMySQLSession() {
     return backend;
   }
 
-  public void getBackend(boolean runOnSlave, MySQLDataNode dataNode,
-      LoadBalanceStrategy strategy, AsyncTaskCallBack<MySQLClientSession> finallyCallBack) {
-    this.switchDataNode(dataNode.getName());
-    if (this.backend != null) {
-      //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
-      finallyCallBack.finished(this.backend, this, true, null, null);
-      return;
-    }
-    MySQLIsolation isolation = this.getIsolation();
-    MySQLAutoCommit autoCommit = this.getAutoCommit();
-    String charsetName = this.getCharsetName();
-    MySQLTaskUtil
-        .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
-            runOnSlave,
-            strategy, (session, sender, success, result, attr) ->
-            {
-              if (success) {
-                this.switchDataNode(dataNode.getName());
-                session.bind(this);
-                finallyCallBack.finished(session, sender, true, result, attr);
-              } else {
-                finallyCallBack.finished(null, sender, false, result, attr);
-              }
-            });
-  }
+
 
   @Override
   public void close(boolean normal, String hint) {
@@ -225,7 +191,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     packetResolver.setCapabilityFlags(serverCapabilities);
   }
 
-  public void bind(MySQLClientSession mySQLSession) {
+  public void setMySQLSession(MySQLClientSession mySQLSession) {
     this.backend = mySQLSession;
   }
 

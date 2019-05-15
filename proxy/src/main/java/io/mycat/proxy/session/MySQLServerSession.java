@@ -339,7 +339,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     byte[] bytes = MySQLPacketUtil
                        .generateError(MySQLErrorCode.ER_UNKNOWN_ERROR, getLastMessage(),
                            this.getCapabilities());
-    byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(0, bytes);
+    byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(1, bytes);
     ByteBuffer message = ByteBuffer.wrap(bytes1);
     int counter = 0;
     try {

@@ -1,9 +1,6 @@
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.NetMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.proxy.handler.MySQLPacketExchanger;
-import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import java.io.IOException;
@@ -75,45 +72,5 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
     ProxyBuffer proxyBuffer = this.currentProxyBuffer();
     proxyBuffer.reset();
     proxyBuffer.newBuffer(bytes);
-  }
-
-  /**
-   * 代理模式前端写入处理器
-   */
-  enum WriteHandler implements MycatSessionWriteHandler {
-    INSTANCE;
-
-    @Override
-    public void writeToChannel(MycatSession mycat) throws IOException {
-      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
-      int oldIndex = proxyBuffer.channelWriteStartIndex();
-      proxyBuffer.writeToChannel(mycat.channel());
-
-      NetMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
-          proxyBuffer.channelReadEndIndex());
-      mycat.updateLastActiveTime();
-
-      if (!proxyBuffer.channelWriteFinished()) {
-        mycat.change2WriteOpts();
-      } else {
-        MySQLClientSession mysql = mycat.currentBackend();
-        if (mysql == null) {
-          assert false;
-        } else {
-          boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
-          if (b) {
-            mycat.onHandlerFinishedClear(true);
-          }
-        }
-      }
-    }
-
-    /**
-     * mycat seesion没有重写onWriteFinished方法,所以onWriteFinished调用的是此类的writeToChannel方法
-     */
-    @Override
-    public void onWriteFinished(MycatSession proxySession) throws IOException {
-      proxySession.writeFinished(proxySession);
-    }
   }
 }

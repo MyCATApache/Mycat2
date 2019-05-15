@@ -48,63 +48,75 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     BufferSQLContext sqlContext = router.simpleParse(orgin);
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());
     byte sqlType = sqlContext.getSQLType();
-    switch (sqlType) {
-      case USE_SQL: {
-        String schemaName = sqlContext.getSchemaName(0);
-        useSchema(mycat, schemaName);
-        break;
-      }
-      case SHOW_DB_SQL: {
-        MycatRouterConfig config = router.getConfig();
-        showDb(mycat, config.getSchemaList());
-        break;
-      }
-      case SHOW_TB_SQL: {
-        String schemaName =
-            sqlContext.getSchemaCount() == 1 ? sqlContext.getSchemaName(0)
-                : mycat.getSchema().getSchemaName();
-        showTable(mycat, schemaName);
-        break;
-      }
-      case SELECT_SQL: {
-        if (sqlContext.isSimpleSelect() && sqlContext.getTableCount() == 1) {
-          String tableName = sqlContext.getTableName(0);
-          if (mycat.getSchema().existTable(tableName)) {
-            try {
-              ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
-              switch (resultRoute.getType()) {
-                case ONE_SERVER_RESULT_ROUTE:
-                  OneServerResultRoute route = (OneServerResultRoute) resultRoute;
-                  mycat
-                      .proxyBackend(MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), true, null, false,
-                          (session1, sender, success, result, attr) -> {
-                            if (success) {
-                              System.out.println("success full");
-                            } else {
-                              System.out.println("success fail");
-                            }
-                          });
-                  break;
+    try {
+      switch (sqlType) {
+        case USE_SQL: {
+          String schemaName = sqlContext.getSchemaName(0);
+          useSchema(mycat, schemaName);
+          break;
+        }
+        case SHOW_DB_SQL: {
+          MycatRouterConfig config = router.getConfig();
+          showDb(mycat, config.getSchemaList());
+          break;
+        }
+        case SHOW_TB_SQL: {
+          String schemaName =
+              sqlContext.getSchemaCount() == 1 ? sqlContext.getSchemaName(0)
+                  : mycat.getSchema().getSchemaName();
+          showTable(mycat, schemaName);
+          break;
+        }
+        case SELECT_SQL: {
+          if (sqlContext.isSimpleSelect() && sqlContext.getTableCount() == 1) {
+            String tableName = sqlContext.getTableName(0);
+            if (mycat.getSchema().existTable(tableName)) {
+              try {
+                ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
+                switch (resultRoute.getType()) {
+                  case ONE_SERVER_RESULT_ROUTE:
+                    OneServerResultRoute route = (OneServerResultRoute) resultRoute;
+                    mycat
+                        .proxyBackend(MySQLPacketUtil.generateComQuery(route.getSql()),
+                            route.getDataNode(), true, null, false,
+                            (session1, sender, success, result, attr) -> {
+                              if (success) {
+                                System.out.println("success full");
+                              } else {
+                                session1.writeErrorEndPacketBySyncInProcessError();
+                              }
+                            });
+                    break;
+                }
+                break;//路由出错走默认节点
+              } catch (Exception e) {
+                e.printStackTrace();
               }
-              break;//路由出错走默认节点
-            } catch (Exception e) {
-              e.printStackTrace();
             }
           }
         }
-      }
 
-      default:
-        mycat
-            .proxyBackend(MySQLPacketUtil.generateComQuery(sql), "dn1", true, null, false,
-                (session1, sender, success, result, attr) -> {
-                  if (success) {
-                    System.out.println("success full");
-                  } else {
-                    System.out.println("success fail");
-                  }
-                });
+        default:
+          mycat
+              .proxyBackend(MySQLPacketUtil.generateComQuery(sql), "dn1", true, null, false,
+                  (session1, sender, success, result, attr) -> {
+                    if (success) {
+                      System.out.println("success full");
+                    } else {
+                      session1.writeErrorEndPacket();
+                    }
+                  });
+      }
+    } catch (Exception e) {
+      mycat
+          .proxyBackend(MySQLPacketUtil.generateComQuery(sql), "dn1", true, null, false,
+              (session1, sender, success, result, attr) -> {
+                if (success) {
+                  System.out.println("success full");
+                } else {
+                  session1.writeErrorEndPacket();
+                }
+              });
     }
   }
 

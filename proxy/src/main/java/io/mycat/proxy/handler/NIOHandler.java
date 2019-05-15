@@ -24,6 +24,7 @@ import java.nio.channels.SelectionKey;
  */
 public interface NIOHandler<T extends Session> {
 
+
   /**
    * 只有mycat主动发起连接的handler才实现此方法
    * @param curKey
@@ -59,6 +60,8 @@ public interface NIOHandler<T extends Session> {
    * @throws IOException
    */
   void onWriteFinished(T session) throws IOException;
+
+//  void clearAndFinished(MySQLClientSession mysql, boolean success, String errorMessage);
 
   /**
    * 在session里面回调的关闭事件,关闭事件是读通道或者写入通道发现通道关闭然后首先调用session的close方法,close方法调用onSocketClosed

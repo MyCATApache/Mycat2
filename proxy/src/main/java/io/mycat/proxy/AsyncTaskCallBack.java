@@ -22,7 +22,12 @@ import io.mycat.proxy.session.Session;
  *
  */
 public interface AsyncTaskCallBack<T extends Session> {
-
+//
+//  enum ResultType{
+//    SUCCESS,
+//    IO_EXCEPTION,
+//    ERROR
+//  }
   /**
    *
    * @param session

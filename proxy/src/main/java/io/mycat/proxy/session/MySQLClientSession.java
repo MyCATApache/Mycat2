@@ -27,7 +27,6 @@ import io.mycat.proxy.NetMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
-import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -62,6 +61,7 @@ public class MySQLClientSession extends
    * //在发起请求的时候设置
    */
   private boolean noResponse = false;
+  private boolean requestSuccess = false;
   private MycatDataNode dataNode;
   /**
    * 错误信息
@@ -77,6 +77,14 @@ public class MySQLClientSession extends
    * 绑定的mycat 与同步的dataNode mycat的解绑 mycat = null即可
    */
   private MycatSession mycat;
+
+  public MycatSession getMycatSeesion() {
+    return mycat;
+  }
+
+  public void setMycatSession(MycatSession mycat) {
+    this.mycat = mycat;
+  }
 
   private String charset;
 
@@ -109,83 +117,67 @@ public class MySQLClientSession extends
   }
 
   /**
-   * 0.本方法直接是关闭调用的第一个方法 1.先关闭handler handler仅关闭handler自身的资源,不关闭其他资源 2.然后清理packetResolver(payload
-   * ,packet) 3.与mycat session1解除绑定
+   * 0.本方法直接是关闭调用的第一个方法  1清理packetResolver(payload 2handler handler仅关闭handler自身的资源 ,packet) 3.与mycat
+   * session1解除绑定
    */
   @Override
   public void close(boolean normal, String hint) {
     if (closed) {
       return;
     }
-
-    NIOHandler curNIOHandler = getCurNIOHandler();
-    if (curNIOHandler != null) {
-      curNIOHandler.onSocketClosed(this, normal, hint);
-    }
-    switchNioHandler(null);
-    if (this.mycat != null) {
-      MycatSession mycat = this.mycat;
-      unbindMycatIfNeed(true);
-      mycat.setLastMessage(hint);
-      mycat.writeErrorEndPacket();
-    } else {
-      resetPacket();
-    }
+    resetPacket();
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
       LOGGER.error(TaskTip.CLOSE_ERROR.getMessage(e));
     }
+    NIOHandler curNIOHandler = getCurNIOHandler();
+    if (curNIOHandler != null) {
+      curNIOHandler.onSocketClosed(this, normal, hint);
+    }
+    switchNioHandler(null);
   }
 
-  /**
-   * 解除与mycat session的绑定 如果存在事务等状态会解除解除
-   *
-   * @return 解除成功
-   */
-  public boolean unbindMycatIfNeed() {
-    assert this.mycat != null;
-    return unbindMycatIfNeed(false);
-  }
+
 
   /**
    * 解除与mycat session的绑定 如果遇到事务等状态会解除失败 如果是isCLose = true则强制解除 本函数不实现关闭通道,如果强制解除绑定应该是close方法调用
    *
    * @param isClose 是否关闭事件
    */
-  public boolean unbindMycatIfNeed(boolean isClose) {
-    assert this.mycat != null;
-    setResponseFinished(false);
-    setNoResponse(false);
-    MycatSession mycat = this.mycat;
-    boolean monopolized = isMonopolized();
-    try {
-      if (monopolized && !isClose) {
-        return false;
-      }
-
-      this.resetPacket();
-      setCurrentProxyBuffer(null);
-
-      switchNioHandler(null);
-
-      this.mycat.bind(null);
-      this.mycat.resetPacket();
-      this.mycat.switchWriteHandler(MySQLServerSession.WriteHandler.INSTANCE);
-      this.mycat = null;
-
-      if (!isClose) {
-        getSessionManager().addIdleSession(this);
-      }
-      return true;
-    } catch (Exception e) {
-      mycat.setLastMessage(e.getMessage());
-      mycat.writeErrorEndPacketBySyncInProcessError();
-      mycat.close(false, e.getMessage());
-    }
-    return true;
-  }
+//  public boolean unbindMycatIfNeed(boolean isClose) {
+//    assert this.mycat != null;
+//    setResponseFinished(false);
+//    setNoResponse(false);
+//    MycatSession mycat = this.mycat;
+//    boolean monopolized = isMonopolized();
+//    try {
+//      if (monopolized && !isClose) {
+//        return false;
+//      }
+//
+//      this.resetPacket();
+//      setCurrentProxyBuffer(null);
+//
+//      switchNioHandler(null);
+//
+//      this.mycat.setMySQLSession(null);
+//      this.mycat.resetPacket();
+//      this.mycat.switchWriteHandler(MySQLServerSession.WriteHandler.INSTANCE);
+//      this.mycat = null;
+//
+//      if (!isClose) {
+//        getSessionManager().addIdleSession(this);
+//      }
+//      return true;
+//    } catch (Exception e) {
+//      mycat.setLastMessage(e.getMessage());
+//      mycat.writeErrorEndPacketBySyncInProcessError();
+//      mycat.close(false, e.getMessage());
+//    }
+//    return true;
+//  }
 
 
   public MycatDataNode getDataNode() {
@@ -204,14 +196,14 @@ public class MySQLClientSession extends
     return mycat;
   }
 
-  /**
-   * 执行透传时候设置
-   */
-  public void switchProxyNioHandler() {
-    assert this.mycat != null;
-    this.mycat.switchWriteHandler(WriteHandler.INSTANCE);
-    this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
-  }
+//  /**
+//   * 执行透传时候设置
+//   */
+//  public void switchProxyNioHandler() {
+//    assert this.mycat != null;
+//    this.mycat.switchWriteHandler(WriteHandler.INSTANCE);
+//    this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
+//  }
 
   /**
    * 准备接收响应时候
@@ -227,14 +219,6 @@ public class MySQLClientSession extends
     this.packetResolver.prepareReveicePrepareOkResponse();
   }
 
-  /**
-   * 与mycat session绑定
-   */
-  public void bind(MycatSession mycatSession) {
-    this.mycat = mycatSession;
-    mycatSession.bind(this);
-    switchProxyNioHandler();
-  }
 
   @Override
   public MySQLClientSession getThis() {
@@ -578,5 +562,13 @@ public class MySQLClientSession extends
 
   public void setIsolation(MySQLIsolation isolation) {
     this.isolation = isolation;
+  }
+
+  public boolean isRequestSuccess() {
+    return requestSuccess;
+  }
+
+  public void setRequestSuccess(boolean requestSuccess) {
+    this.requestSuccess = requestSuccess;
   }
 }
