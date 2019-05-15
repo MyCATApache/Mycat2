@@ -86,11 +86,6 @@ public interface Session<T extends Session> {
   void change2ReadOpts();
 
   /**
-   * 清除读写事件
-   */
-  void clearReadWriteOpts();
-
-  /**
    * 注册写事件
    */
   void change2WriteOpts();

@@ -131,7 +131,6 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
     protected abstract int writePayload(T buffer, int writeIndex, int reminsPacketLen, SocketChannel serverSocket) throws IOException ;
 
     public void writeFinishedAndClear(boolean success) {
-        mysql.clearReadWriteOpts();
         getBufferPool().recycle(header);
         header = null;
         setServerSocket(null);

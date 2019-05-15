@@ -42,7 +42,6 @@ public class MultiMySQLQueryTask implements ResultSetTask {
         finalCallBack.finished(mycat, sender, success, result, attr);
       }
     };
-    mycat.clearReadWriteOpts();
 
     MySQLIsolation isolation = mycat.getIsolation();
     MySQLAutoCommit autoCommit = mycat.getAutoCommit();

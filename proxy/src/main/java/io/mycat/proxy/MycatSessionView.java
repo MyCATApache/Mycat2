@@ -105,7 +105,6 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
     mycat.getBackend(runOnSlave, (MySQLDataNode) mycatDataNode, strategy,
         (mysql, sender, success, result, attr) -> {
           if (success) {
-            mycat.clearReadWriteOpts();
             mysql.setNoResponse(noResponse);
             mysql.switchProxyNioHandler();
             try {

@@ -86,13 +86,12 @@ public enum MySQLPacketExchanger {
 
   public boolean onFrontWriteFinished(MycatSession mycat) {
     MySQLClientSession mysql = mycat.currentBackend();
+
     if (mysql.isResponseFinished()) {
       mycat.change2ReadOpts();
-      mysql.clearReadWriteOpts();
       return true;
     } else {
       mysql.change2ReadOpts();
-      mycat.clearReadWriteOpts();
       ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
       int writeEndIndex = proxyBuffer.channelWriteEndIndex();
       proxyBuffer.channelReadStartIndex(writeEndIndex);

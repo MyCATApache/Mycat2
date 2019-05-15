@@ -24,8 +24,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 实际包含运行状态的session实现 本对象封装 1.selector 2.读写通道 4.session创建时间
- * sessionId就是connectionId
+ * 实际包含运行状态的session实现 本对象封装 1.selector 2.读写通道 4.session创建时间 sessionId就是connectionId
+ *
  * @param <T> 子类
  * @author jamie12221
  * @date 2019-05-10 13:21
@@ -71,15 +71,19 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   }
 
   public void change2ReadOpts() {
-    channelKey.interestOps(SelectionKey.OP_READ);
-  }
-
-  public void clearReadWriteOpts() {
-    this.channelKey.interestOps(0);
+    if (!channelKey.isReadable()) {
+      channelKey.interestOps(SelectionKey.OP_READ);
+      return;
+    }
+    if (channelKey.isWritable()) {
+      channelKey.interestOps(SelectionKey.OP_READ);
+    }
   }
 
   public void change2WriteOpts() {
-    channelKey.interestOps(SelectionKey.OP_WRITE);
+    if (!channelKey.isWritable()) {
+      channelKey.interestOps(SelectionKey.OP_READ | SelectionKey.OP_WRITE);
+    }
   }
 
 
