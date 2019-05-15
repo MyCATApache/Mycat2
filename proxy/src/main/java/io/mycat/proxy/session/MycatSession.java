@@ -502,4 +502,10 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public void setResultSetCount(int count) {
     resultSetCount = count;
   }
+
+  @Override
+  public byte[] encode(String text) {
+    return text.getBytes(charset());
+  }
+
 }

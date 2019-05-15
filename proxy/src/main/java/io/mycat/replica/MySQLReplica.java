@@ -77,24 +77,17 @@ public abstract class MySQLReplica implements MycatReplica {
   /**
    * 对于已经运行的集群,首先把原session都关闭再重新创建
    */
-  public void init() {
+  public void init(AsyncTaskCallBack callBack) {
     Objects.requireNonNull(config);
     Objects.requireNonNull(datasourceList);
+    Objects.requireNonNull(callBack);
     for (MySQLDatasource datasource : datasourceList) {
       datasource.clearAndDestroyCons(ReplicaTip.INIT_REPLICA.getMessage(getName()));
     }
     final BiConsumer<MySQLDatasource, Boolean> defaultCallBack = (datasource, success) -> {
       this.lastInitTime = System.currentTimeMillis();
       this.collationIndex = datasource.getCollationIndex();
-//
-//      MySQLTaskUtil.getMySQLSessionForHeartbeatFromUserThread(datasource,
-//          new AsyncTaskCallBack<MySQLClientSession>() {
-//            @Override
-//            public void finished(MySQLClientSession session, Object sender, boolean success,
-//                Object result, Object attr) {
-//
-//            }
-//          });
+      callBack.finished(null, this, success, null, null);
     };
     for (MySQLDatasource datasource : datasourceList) {
       datasource.init(defaultCallBack);

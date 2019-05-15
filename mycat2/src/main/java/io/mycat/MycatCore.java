@@ -14,7 +14,9 @@
  */
 package io.mycat;
 
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.session.Session;
 import io.mycat.replica.DefaultMySQLReplicaFactory;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLReplica;
@@ -38,23 +40,39 @@ public class MycatCore {
 
     MycatRouterConfig routerConfig = new MycatRouterConfig(ProxyRuntime.getResourcesPath());
     MycatRouter router = new MycatRouter(routerConfig);
-    runtime.initReactor(() -> new MycatCommandHandler(router));
-    runtime.initRepliac(new DefaultMySQLReplicaFactory());
-    runtime.initDataNode();
-    Collection<MySQLReplica> mySQLReplicaList = runtime.getMySQLReplicaList();
-
-    runtime.initAcceptor();
-
-    ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
-    service.scheduleAtFixedRate(new Runnable() {
+    runtime.initReactor(() -> new MycatCommandHandler(router), new AsyncTaskCallBack() {
       @Override
-      public void run() {
-        Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
-        for (MySQLDataSourceEx datasource : datasourceList) {
-          datasource.heartBeat();
-        }
+      public void finished(Session session, Object sender, boolean success, Object result,
+          Object attr) {
+        runtime.initRepliac(new DefaultMySQLReplicaFactory(), new AsyncTaskCallBack() {
+          @Override
+          public void finished(Session session, Object sender, boolean success, Object result,
+              Object attr) {
+            try {
+              runtime.initDataNode();
+              Collection<MySQLReplica> mySQLReplicaList = runtime.getMySQLReplicaList();
+
+              runtime.initAcceptor();
+
+              ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+              service.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                  Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
+                  for (MySQLDataSourceEx datasource : datasourceList) {
+                    datasource.heartBeat();
+                  }
+                }
+              }, 0, 3, TimeUnit.SECONDS);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+          }
+        });
       }
-    }, 0, 3, TimeUnit.SECONDS);
+    });
+
+
   }
 
 }

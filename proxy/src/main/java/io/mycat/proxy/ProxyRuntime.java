@@ -31,6 +31,7 @@ import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.session.MycatSessionManager;
+import io.mycat.proxy.session.Session;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.replica.MySQLReplicaFactory;
@@ -91,15 +92,19 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
 
-  public void initRepliac(MySQLReplicaFactory factory) {
+  public void initRepliac(MySQLReplicaFactory factory, AsyncTaskCallBack future) {
     DatasourceRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     ReplicaIndexRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
     Map<String, Integer> replicaIndexes = replicaIndexConfig.getReplicaIndexes();
-    for (ReplicaConfig replicaConfig : dsConfig.getReplicas()) {
+    List<ReplicaConfig> replicas = dsConfig.getReplicas();
+    int size = replicas.size();
+    AsyncTaskCallBack counter = new AsyncTaskCallBackCounter(size, future);
+    for (int i = 0; i < size; i++) {
+      ReplicaConfig replicaConfig = replicas.get(i);
       Integer writeIndex = replicaIndexes.get(replicaConfig.getName());
       MySQLReplica replica = factory.get(replicaConfig, writeIndex == null ? 0 : writeIndex);
       replicaMap.put(replica.getName(), replica);
-      replica.init();
+      replica.init(counter);
       datasourceList.addAll(replica.getDatasourceList());
     }
   }
@@ -141,17 +146,26 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private NIOAcceptor acceptor;
   private MycatReactorThread[] reactorThreads;
 
-  public void initReactor(Supplier<CommandHandler> commandHandlerFactory) throws IOException {
+  public void initReactor(Supplier<CommandHandler> commandHandlerFactory, AsyncTaskCallBack future)
+      throws IOException {
+    Objects.requireNonNull(commandHandlerFactory);
+    Objects.requireNonNull(future);
     ProxyConfig proxy = getProxy();
     int reactorNumber = proxy.getReactorNumber();
     MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[reactorNumber];
     this.setMycatReactorThreads(mycatReactorThreads);
-    for (int i = 0; i < mycatReactorThreads.length; i++) {
-      BufferPool bufferPool = new BufferPoolImpl(getBufferPoolPageSize(), getBufferPoolChunkSize(),
-          getBufferPoolPageNumber());
-      mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
-          new MycatSessionManager(commandHandlerFactory));
-      mycatReactorThreads[i].start();
+    try {
+      for (int i = 0; i < mycatReactorThreads.length; i++) {
+        BufferPool bufferPool = new BufferPoolImpl(getBufferPoolPageSize(),
+            getBufferPoolChunkSize(),
+            getBufferPoolPageNumber());
+        mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
+            new MycatSessionManager(commandHandlerFactory));
+        mycatReactorThreads[i].start();
+      }
+      future.finished(null, this, true, null, null);
+    } catch (Exception e) {
+      future.finished(null, this, false, Session.getString(e), null);
     }
   }
 

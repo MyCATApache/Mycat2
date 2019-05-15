@@ -110,7 +110,7 @@ public interface Session<T extends Session> {
 
   String setLastMessage(String lastMessage);
 
-  default String setLastMessage(Throwable e) {
+  static String getString(Throwable e) {
     StringBuilder sb = new StringBuilder();
     sb.append(e.toString());
     sb.append("\n");
@@ -119,7 +119,11 @@ public interface Session<T extends Session> {
       StackTraceElement element = stackArray[i];
       sb.append(element.toString()).append("\n");
     }
-    String string = sb.toString();
+    return sb.toString();
+  }
+
+  default String setLastMessage(Throwable e) {
+    String string = getString(e);
     setLastMessage(string);
     return string;
   }

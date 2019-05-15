@@ -129,9 +129,9 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     mycat.writeColumnEndPacket();
     MycatRouterConfig config = router.getConfig();
     MycatSchema schema = config.getSchemaBySchemaName(schemaName);
-    byte[] basetable = "BASE TABLE".getBytes(mycat.charset());
+    byte[] basetable = mycat.encode("BASE TABLE");
     for (String name : schema.getMycatTables().keySet()) {
-      mycat.writeTextRowPacket(new byte[][]{name.getBytes(), basetable});
+      mycat.writeTextRowPacket(new byte[][]{mycat.encode(name), basetable});
     }
     mycat.writeRowEndPacket(mycat.hasResultset(), mycat.hasCursor());
   }

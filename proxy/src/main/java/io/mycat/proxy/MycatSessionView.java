@@ -136,4 +136,6 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
   void countDownResultSet();
 
   void setResultSetCount(int count);
+
+  byte[] encode(String text);
 }
