@@ -18,6 +18,7 @@ import io.mycat.MySQLAPI;
 import io.mycat.MySQLSessionMonopolizeType;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatDataNode;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.logTip.TaskTip;
@@ -77,6 +78,10 @@ public class MySQLClientSession extends
    */
   private MycatSession mycat;
 
+  private String charset;
+
+  private MySQLIsolation isolation;
+
   /**
    * 构造函数
    */
@@ -126,8 +131,6 @@ public class MySQLClientSession extends
     } else {
       resetPacket();
     }
-
-    channelKey.cancel();
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);
@@ -554,5 +557,26 @@ public class MySQLClientSession extends
             proxyBuffer.channelReadEndIndex()
         );
     return b;
+  }
+
+  public boolean isAutomCommit() {
+    return (MySQLServerStatusFlags.AUTO_COMMIT & packetResolver.getEofServerStatus()) != 0;
+  }
+
+
+  public String getCharset() {
+    return charset;
+  }
+
+  public void setCharset(String charset) {
+    this.charset = charset;
+  }
+
+  public MySQLIsolation getIsolation() {
+    return isolation;
+  }
+
+  public void setIsolation(MySQLIsolation isolation) {
+    this.isolation = isolation;
   }
 }

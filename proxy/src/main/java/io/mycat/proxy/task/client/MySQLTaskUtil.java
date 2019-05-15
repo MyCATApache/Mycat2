@@ -67,31 +67,49 @@ public class MySQLTaskUtil {
       boolean runOnSlave,
       LoadBalanceStrategy strategy,
       AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+    Objects.requireNonNull(charset);
     assert (Thread.currentThread() instanceof MycatReactorThread);
-    if (dataNode != null) {
-      MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
-      if (replica == null) {
-        replica = ProxyRuntime.INSTANCE.getMySQLReplicaByReplicaName(dataNode.getReplicaName());
-      }
-      replica.getMySQLSessionByBalance(runOnSlave, strategy,
-          (mysql, sender, success, result, errorMessage) -> {
-            if (success) {
-              if (dataNode.equals(mysql.getDataNode())) {
-                asynTaskCallBack.finished(mysql, sender, true, result, errorMessage);
-              } else {
-                String databaseName = dataNode.getDatabaseName();
-                String sql =
-                    isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
-                        + ";" + "SET names " + charset + ";";
-                QueryUtil.mutilOkResultSet(mysql, 4, sql, asynTaskCallBack);
-              }
-            } else {
-              asynTaskCallBack.finished(mysql, sender, success, result, errorMessage);
-            }
-          });
-    } else {
-      throw new MycatExpection("unsupport dataNode Type");
+    Objects.requireNonNull(dataNode);
+    MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
+    if (replica == null) {
+      replica = ProxyRuntime.INSTANCE.getMySQLReplicaByReplicaName(dataNode.getReplicaName());
+      dataNode.setReplica(replica);
     }
+    replica.getMySQLSessionByBalance(runOnSlave, strategy,
+        (mysql, sender, success, result, errorMessage) -> {
+          if (success) {
+            if (dataNode.equals(mysql.getDataNode())) {
+              if (autoCommit == MySQLAutoCommit.ON == mysql.isAutomCommit() &&
+                      charset.equals(mysql.getCharset()) &&
+                      isolation.equals(mysql.getIsolation())
+              ) {
+                asynTaskCallBack.finished(mysql, sender, true, result, errorMessage);
+                return;
+              }
+            }
+            String databaseName = dataNode.getDatabaseName();
+            String sql =
+                isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
+                    + ";" + "SET names " + charset + ";";
+            QueryUtil.mutilOkResultSet(mysql, 4, sql,
+                new AsyncTaskCallBack<MySQLClientSession>() {
+                  @Override
+                  public void finished(MySQLClientSession session, Object sender,
+                      boolean success, Object result, Object attr) {
+                    if (success) {
+                      session.setCharset(charset);
+                      session.setDataNode(dataNode);
+                      session.setIsolation(isolation);
+                      asynTaskCallBack.finished(session, this, success, result, attr);
+                    } else {
+                      asynTaskCallBack.finished(session, this, success, result, attr);
+                    }
+                  }
+                });
+          } else {
+            asynTaskCallBack.finished(mysql, sender, success, result, errorMessage);
+          }
+        });
   }
 
   public static void getMySQLSessionForHeatbeat(MySQLDatasource datasource,
