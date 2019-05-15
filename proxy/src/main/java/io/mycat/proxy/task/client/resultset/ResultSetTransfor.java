@@ -25,7 +25,7 @@ import io.mycat.proxy.packet.MySQLPacket;
  * @author jamie12221
  * @date 2019-05-10 13:21
  */
-public interface ResultSetCollector {
+public interface ResultSetTransfor {
 
     void onResultSetStart();
 

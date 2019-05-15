@@ -61,11 +61,11 @@ public class QueryResultSetTask implements ResultSetTask {
 
   int columnCount;
   ColumnDefPacket[] currentColumnDefList;
-  ResultSetCollector collector;
+  ResultSetTransfor collector;
   IntPredicate predicate;
 
   public void request(
-      MySQLClientSession mysql, String sql, IntPredicate predicate, ResultSetCollector collector,
+      MySQLClientSession mysql, String sql, IntPredicate predicate, ResultSetTransfor collector,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
     this.collector = collector;
     this.predicate = predicate;

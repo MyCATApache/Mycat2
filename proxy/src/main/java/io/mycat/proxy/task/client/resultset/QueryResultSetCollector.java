@@ -8,48 +8,47 @@ import java.util.Iterator;
 
 /**
  * @author jamie12221
- * @date 2019-05-11 14:44
- * 文本结果集收集类
+ * @date 2019-05-11 14:44 文本结果集收集类
  **/
-public class QueryResultSetCollector extends TextResultSetTransforCollector implements
+public class QueryResultSetCollector implements TextResultSetTransforCollector,
     Iterable<Object[]> {
 
-  ArrayList[] result;
-  ColumnDefPacket[] columns;
-  int columnCount = 0;
+  protected ArrayList[] result;
+  protected ColumnDefPacket[] columns;
+  protected int columnCount = 0;
 
   @Override
-  protected void addValue(int columnIndex) {
+  public void addValue(int columnIndex) {
     result[columnIndex].add(null);
   }
 
   @Override
-  protected void addValue(int columnIndex, String value) {
+  public void addValue(int columnIndex, String value) {
     result[columnIndex].add(value);
   }
 
   @Override
-  protected void addValue(int columnIndex, long value) {
+  public void addValue(int columnIndex, long value) {
     result[columnIndex].add(value);
   }
 
   @Override
-  protected void addValue(int columnIndex, double value) {
+  public void addValue(int columnIndex, double value) {
     result[columnIndex].add(value);
   }
 
   @Override
-  protected void addValue(int columnIndex, byte[] value) {
+  public void addValue(int columnIndex, byte[] value) {
     result[columnIndex].add(value);
   }
 
   @Override
-  protected void addValue(int columnIndex, byte value) {
+  public void addValue(int columnIndex, byte value) {
     result[columnIndex].add(value);
   }
 
   @Override
-  protected void addValue(int columnIndex, BigDecimal value) {
+  public void addValue(int columnIndex, BigDecimal value) {
     result[columnIndex].add(value);
   }
 

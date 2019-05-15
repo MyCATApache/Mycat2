@@ -57,8 +57,8 @@ import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.client.resultset.ResultSetCollector;
 import io.mycat.proxy.task.client.resultset.ResultSetTask;
+import io.mycat.proxy.task.client.resultset.ResultSetTransfor;
 import java.util.Objects;
 
 /**
@@ -70,7 +70,7 @@ public class ExecuteTask implements ResultSetTask {
   int binaryNullBitMapLength;
   int columnCount;
   ColumnDefPacket[] currentColumnDefList;
-  ResultSetCollector collector;
+  ResultSetTransfor collector;
 
   /**
    * 预处理命令nullmap
@@ -265,7 +265,7 @@ public class ExecuteTask implements ResultSetTask {
    *
    */
   public void request(MySQLClientSession mysql, MySQLPreparedStatement ps,
-      MySQLPrepareStmtExecuteFlag flags, ResultSetCollector collector,
+      MySQLPrepareStmtExecuteFlag flags, ResultSetTransfor collector,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
     Objects.requireNonNull(ps);
     Objects.requireNonNull(ps.getLongDataMap());

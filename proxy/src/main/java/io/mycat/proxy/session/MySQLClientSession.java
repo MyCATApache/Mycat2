@@ -95,7 +95,6 @@ public class MySQLClientSession extends
   static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
       throws IOException {
     assert bytes != null;
-    assert bytes.length > 0;
     ProxyBuffer buffer = proxySession.currentProxyBuffer();
     buffer.reset();
     buffer.newBuffer(bytes);

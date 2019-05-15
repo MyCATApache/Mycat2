@@ -25,7 +25,7 @@ import io.mycat.proxy.task.client.prepareStatement.ExecuteTask;
 import io.mycat.proxy.task.client.prepareStatement.PrepareStmtUtil;
 import io.mycat.proxy.task.client.prepareStatement.PrepareTask;
 import io.mycat.proxy.task.client.prepareStatement.SendLongDataTask;
-import io.mycat.proxy.task.client.resultset.ResultSetCollector;
+import io.mycat.proxy.task.client.resultset.ResultSetTransfor;
 
 public interface MySQLAPI {
 
@@ -37,7 +37,7 @@ public interface MySQLAPI {
 
 
   default void execute(MySQLPreparedStatement preparedStatement, MySQLPrepareStmtExecuteFlag flags,
-      ResultSetCollector collector, AsyncTaskCallBack<MySQLClientSession> callBack) {
+      ResultSetTransfor collector, AsyncTaskCallBack<MySQLClientSession> callBack) {
     new ExecuteTask().request(getThis(), preparedStatement, flags, collector, callBack);
   }
 

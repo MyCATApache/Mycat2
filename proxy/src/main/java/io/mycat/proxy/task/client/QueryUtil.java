@@ -57,18 +57,44 @@ public interface QueryUtil {
               int value;
 
               @Override
-              protected void addValue(int columnIndex, String value) {
+              public void addValue(int columnIndex, String value) {
                 collationIndex.put(this.value, value);
 
               }
 
               @Override
-              protected void addValue(int columnIndex, long value) {
+              public void addValue(int columnIndex, long value) {
                 this.value = (int) value;
               }
             }, callBack);
   }
 
+  /**
+   * 获取字符集id,结果在回调的result参数
+   */
+  static void showDatabases(
+      MySQLClientSession mysql, MySQLCollationIndex collationIndex,
+      AsyncTaskCallBack<MySQLClientSession> callBack) {
+    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
+    queryResultSetTask
+        .request(mysql, "show databases;",
+            value -> {
+              switch (value) {
+                case 0:
+                  return true;
+                default:
+                  return false;
+              }
+            }, new TextResultSetTransforCollector() {
+              int value;
+
+              @Override
+              public void addValue(int columnIndex, String value) {
+                collationIndex.put(this.value, value);
+
+              }
+            }, callBack);
+  }
   default void showDatabases(MySQLClientSession mysql,
       AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
@@ -85,7 +111,7 @@ public interface QueryUtil {
               List<String> databases = new ArrayList<>();
 
               @Override
-              protected void addValue(int columnIndex, String value) {
+              public void addValue(int columnIndex, String value) {
                 databases.add(value);
               }
             }, callback);

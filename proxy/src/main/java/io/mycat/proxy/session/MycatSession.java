@@ -192,7 +192,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
     assert hint != null;
     onHandlerFinishedClear(normal);
-    channelKey.cancel();
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);

@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象
@@ -68,16 +69,29 @@ public final class MySQLSessionManager implements
       asyncTaskCallBack.finished(null, this, false, null, datasource.getName() + " is not alive!");
     } else {
       LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
-      if (group == null || group.isEmpty()) {
-        createSession(datasource, asyncTaskCallBack);
-      } else {
-        MySQLClientSession mySQLSession = group.iterator().next();
-        group.remove(mySQLSession);
-        assert mySQLSession.getCurNIOHandler() == MySQLIdleNIOHandler.INSTANCE;
-        assert mySQLSession.currentProxyBuffer() == null;
-        mySQLSession.setIdle(false);
-        mySQLSession.switchNioHandler(null);
-        asyncTaskCallBack.finished(mySQLSession, this, true, null, null);
+      for (; ; ) {
+        if (group == null || group.isEmpty()) {
+          createSession(datasource, asyncTaskCallBack);
+          return;
+        } else {
+          boolean random = ThreadLocalRandom.current().nextBoolean();
+          MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
+
+          assert mySQLSession.getCurNIOHandler() == MySQLIdleNIOHandler.INSTANCE;
+          assert mySQLSession.currentProxyBuffer() == null;
+          if (!mySQLSession.channel().isOpen()) {
+            MycatReactorThread mycatReactorThread = mySQLSession.getMycatReactorThread();
+            mycatReactorThread.addNIOJob(() -> {
+              mySQLSession.close(false, "mysql session is close in idle");
+            });
+            continue;
+          } else {
+            mySQLSession.setIdle(false);
+            mySQLSession.switchNioHandler(null);
+            asyncTaskCallBack.finished(mySQLSession, this, true, null, null);
+            return;
+          }
+        }
       }
     }
   }

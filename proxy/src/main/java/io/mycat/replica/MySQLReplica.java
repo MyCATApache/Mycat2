@@ -115,7 +115,7 @@ public abstract class MySQLReplica implements MycatReplica {
       strategy = this.defaultLoadBalanceStrategy;
     }
     datasource = strategy.select(this, writeIndex, this.datasourceList);
-    if (datasource == null || !datasource.isAlive()) {
+    if (datasource == null) {
       getWriteDatasource(asynTaskCallBack);
     } else {
       getDatasource(datasource, asynTaskCallBack);

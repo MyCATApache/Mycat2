@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 /**
  * 二进制结果集收集器
  */
-public abstract class BinaryResultSetTransforCollector implements ResultSetTransfor {
+public abstract class MultiBinaryResultSetTransforCollector implements ResultSetTransfor {
 
-  static final Logger logger = LoggerFactory.getLogger(BinaryResultSetTransforCollector.class);
+  static final Logger logger = LoggerFactory.getLogger(MultiBinaryResultSetTransforCollector.class);
 
   @Override
   public void onResultSetStart() {
