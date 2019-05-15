@@ -65,11 +65,20 @@ public final class MySQLSessionManager implements
   public final void getIdleSessionsOfKey(MySQLDatasource datasource,
       AsyncTaskCallBack<MySQLClientSession> asyncTaskCallBack) {
     assert datasource != null;
-    if (!datasource.isAlive()) {
-      asyncTaskCallBack.finished(null, this, false, null, datasource.getName() + " is not alive!");
-    } else {
+    /**
+     * 1.如果集群不可用,直接回调不可用
+     * 2.如果没有空闲连接,则创建空闲连接
+     * 3.如果有空闲连接,则获取空闲连接,然后查看通道是否已经关闭,如果已经关闭,则继续尝试获取
+     * 4.session管理不保证session一定可用
+     */
+    {
       LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
       for (; ; ) {
+        if (!datasource.isAlive()) {
+          asyncTaskCallBack
+              .finished(null, this, false, datasource.getName() + " is not alive!", null);
+          return;
+        }
         if (group == null || group.isEmpty()) {
           createSession(datasource, asyncTaskCallBack);
           return;
@@ -85,10 +94,22 @@ public final class MySQLSessionManager implements
               mySQLSession.close(false, "mysql session is close in idle");
             });
             continue;
-          } else {
+          } else if (mySQLSession.isActivated()) {
             mySQLSession.setIdle(false);
             mySQLSession.switchNioHandler(null);
             asyncTaskCallBack.finished(mySQLSession, this, true, null, null);
+            return;
+          } else {
+            mySQLSession.ping((session, sender, success, result, attr) -> {
+              if (!success) {
+                getIdleSessionsOfKey(datasource, asyncTaskCallBack);
+              } else {
+                session.getMycatReactorThread().addNIOJob(() -> {
+                  session.close(false, "mysql session is close in idle");
+                });
+                asyncTaskCallBack.finished(session, sender, success, result, attr);
+              }
+            });
             return;
           }
         }

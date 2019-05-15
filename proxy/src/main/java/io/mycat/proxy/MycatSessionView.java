@@ -9,7 +9,6 @@ import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.handler.LocalInFileRequestHandler.LocalInFileSession;
 import io.mycat.proxy.handler.PrepareStatementHandler.PrepareStatementSession;
 import io.mycat.proxy.packet.MySQLPacketUtil;
-import io.mycat.proxy.session.MySQLProxySession;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
@@ -107,7 +106,6 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
         (mysql, sender, success, result, attr) -> {
           if (success) {
             mycat.clearReadWriteOpts();
-            mycat.switchWriteHandler(MySQLProxySession.WriteHandler.INSTANCE);
             mysql.setNoResponse(noResponse);
             mysql.switchProxyNioHandler();
             try {
