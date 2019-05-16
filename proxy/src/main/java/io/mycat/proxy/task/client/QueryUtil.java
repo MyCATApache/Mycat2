@@ -9,11 +9,10 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.task.client.resultset.QueryResultSetCollector;
 import io.mycat.proxy.task.client.resultset.QueryResultSetTask;
 import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import io.mycat.proxy.task.client.resultset.TextResultSetTransforCollector;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author jamie12221
@@ -57,45 +56,20 @@ public interface QueryUtil {
               int value;
 
               @Override
-              public void addValue(int columnIndex, String value) {
+              public void addString(int columnIndex, String value) {
                 collationIndex.put(this.value, value);
 
               }
 
               @Override
-              public void addValue(int columnIndex, long value) {
-                this.value = (int) value;
+              public void addValue(int columnIndex, int value, boolean isNull) {
+                this.value = value;
               }
             }, callBack);
   }
 
-  /**
-   * 获取字符集id,结果在回调的result参数
-   */
-  static void showDatabases(
-      MySQLClientSession mysql, MySQLCollationIndex collationIndex,
-      AsyncTaskCallBack<MySQLClientSession> callBack) {
-    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
-    queryResultSetTask
-        .request(mysql, "show databases;",
-            value -> {
-              switch (value) {
-                case 0:
-                  return true;
-                default:
-                  return false;
-              }
-            }, new TextResultSetTransforCollector() {
-              int value;
 
-              @Override
-              public void addValue(int columnIndex, String value) {
-                collationIndex.put(this.value, value);
-
-              }
-            }, callBack);
-  }
-  default void showDatabases(MySQLClientSession mysql,
+  static void showDatabases(MySQLClientSession mysql,
       AsyncTaskCallBack<MySQLClientSession> callback) {
     QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
     queryResultSetTask
@@ -107,14 +81,36 @@ public interface QueryUtil {
                 default:
                   return false;
               }
-            }, new TextResultSetTransforCollector() {
-              List<String> databases = new ArrayList<>();
+            }, new QueryResultSetCollector(), callback);
+  }
 
-              @Override
-              public void addValue(int columnIndex, String value) {
-                databases.add(value);
+  static void showTables(MySQLClientSession mysql, String schema,
+      AsyncTaskCallBack<MySQLClientSession> callback) {
+    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
+    queryResultSetTask
+        .request(mysql, "show tables from "
+                            + schema
+                            + ";",
+            value -> {
+              switch (value) {
+                case 0:
+                  return true;
+                default:
+                  return false;
               }
-            }, callback);
+            }, new QueryResultSetCollector(), callback);
+  }
+
+  static void showInformationSchemaColumns(MySQLClientSession mysql
+      ,
+      AsyncTaskCallBack<MySQLClientSession> callback) {
+    QueryResultSetTask queryResultSetTask = new QueryResultSetTask();
+    queryResultSetTask
+        .request(mysql,
+            "SELECT * FROM `information_schema`.`COLUMNS` WHERE TABLE_SCHEMA != 'information_schema' and TABLE_SCHEMA !='performance_schema';",
+            value -> {
+              return true;
+            }, new QueryResultSetCollector(), callback);
   }
 
   /**

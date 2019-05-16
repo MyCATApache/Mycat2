@@ -248,10 +248,10 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     this.columnFlags = (int) buffer.readFixInt(2);
     this.columnDecimals = buffer.readByte();
     buffer.skipInReading(2);
-    if (buffer.readFinished()) {
-      int i = buffer.readLenencInt();
-      if (i != 0) {
-        this.columnDefaultValues = buffer.readFixStringBytes(i);
+    if (!buffer.readFinished()) {
+      int len = buffer.readLenencInt();
+      if (len > 0) {
+        this.columnDefaultValues = buffer.readFixStringBytes(len);
       }
     }
   }

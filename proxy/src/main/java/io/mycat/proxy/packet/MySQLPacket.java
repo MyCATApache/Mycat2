@@ -219,8 +219,12 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   default String readLenencString() {
     int startIndex = packetReadStartIndex();
-    String s = new String(readLenencStringBytes());
-    return s;
+    byte[] bytes = readLenencStringBytes();
+    if (bytes == null) {
+      return null;
+    } else {
+      return new String(bytes);
+    }
   }
 
   default byte[] readLenencStringBytes() {
@@ -495,15 +499,21 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     return val;
   }
 
-  default byte[] getLenencBytes(int index) {
-    int len = (int) getLenencInt(index);
-    return getBytes(index + getLenencLength(len), len);
-  }
+//  default byte[] getLenencBytes(int index) {
+//    int len = (int) getLenencInt(index);
+//    return getBytes(index + getLenencLength(len), len);
+//  }
 
   default int skipLenencBytes(int index) {
-    int len = (int) getLenencInt(index);
-    int end = getLenencLength(len) + len;
-    packetReadStartIndex(index + end);
+    int len = (int) getLenencInt(packetReadStartIndex(index));
+    byte[] bytes = null;
+    if ((len & 0xff) == 0xfb) {
+      bytes = EMPTY_BYTE_ARRAY;
+      packetReadStartIndexAdd(1);
+      return packetReadStartIndex();
+    } else {
+    }
+    packetReadStartIndexAdd(getLenencLength(len) + len);
     return packetReadStartIndex();
   }
 
@@ -527,6 +537,8 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     byte[] bytes = null;
     if ((len & 0xff) == 0xfb) {
       bytes = EMPTY_BYTE_ARRAY;
+      packetReadStartIndexAdd(1);
+      return null;
     } else {
       bytes = getBytes(packetReadStartIndex() + getLenencLength(len), len);
     }

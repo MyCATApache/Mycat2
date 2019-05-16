@@ -23,32 +23,32 @@ public class QueryResultSetCollector implements TextResultSetTransforCollector,
   }
 
   @Override
-  public void addValue(int columnIndex, String value) {
+  public void addString(int columnIndex, String value) {
     result[columnIndex].add(value);
   }
 
   @Override
-  public void addValue(int columnIndex, long value) {
+  public void addValue(int columnIndex, long value, boolean isNUll) {
     result[columnIndex].add(value);
   }
 
   @Override
-  public void addValue(int columnIndex, double value) {
+  public void addValue(int columnIndex, double value, boolean isNUll) {
     result[columnIndex].add(value);
   }
 
   @Override
-  public void addValue(int columnIndex, byte[] value) {
+  public void addBlob(int columnIndex, byte[] value) {
     result[columnIndex].add(value);
   }
 
   @Override
-  public void addValue(int columnIndex, byte value) {
+  public void addValue(int columnIndex, byte value, boolean isNUll) {
     result[columnIndex].add(value);
   }
 
   @Override
-  public void addValue(int columnIndex, BigDecimal value) {
+  public void addDecimal(int columnIndex, BigDecimal value) {
     result[columnIndex].add(value);
   }
 
@@ -86,7 +86,7 @@ public class QueryResultSetCollector implements TextResultSetTransforCollector,
       public Object[] next() {
         Object[] objects = new Object[columnCount];
         for (int i = 0; i < columnCount; i++) {
-          objects[i] = result[i].get(i);
+          objects[i] = result[i].get(index);
         }
         index++;
         return objects;

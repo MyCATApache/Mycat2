@@ -32,22 +32,21 @@ public class JdbcDataSource {
   public static void main(String[] args) throws SQLException, IOException {
     ConfigReceiverImpl configReceiver = new ConfigReceiverImpl();
     ConfigLoader.INSTANCE
-        .loadConfig("D:\\newgit\\f2\\proxy\\src\\main\\resources", ConfigEnum.DATASOURCE,
+        .loadConfig("D:\\newgit\\f2\\jdbc\\src\\main\\resources", ConfigEnum.DATASOURCE,
             GlobalConfig.INIT_VERSION, configReceiver);
     DatasourceRootConfig config = configReceiver.getConfig(ConfigEnum.DATASOURCE);
     ReplicaConfig replicaConfig = config.getReplicas().get(0);
     List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
     JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);
 
-
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 2; i++) {
       final int  d = i;
       Thread thread = new Thread( ()->{
         try{
           JdbcDataSourceManager sourceManager = new JdbcDataSourceManager();
           JdbcSession session = sourceManager.createSession(jdbcDataSource);
           while (true){
-            boolean execute = session.query("SHOW COLLATION;");
+            boolean execute = session.query("SELECT * FROM `information_schema`.`COLUMNS`;");
             System.out.println(d);
           }
 

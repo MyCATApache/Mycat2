@@ -26,7 +26,6 @@ import java.util.Map;
  * mysql 表信息
  **/
 public class MySQLTableInfo {
-
   final Map<String, MySQLFieldInfo> fieldInfoMap = new HashMap<>();
   String schemaName;
   String tableName;

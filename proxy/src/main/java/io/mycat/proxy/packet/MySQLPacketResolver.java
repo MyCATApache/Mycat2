@@ -382,7 +382,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     int packetLength = length;
     packetLength = packetLength + 4;
     int endPos = startIndex + packetLength;
-    if (mySQLPacket.currentBuffer().capacity() < endPos) {
+    if (mySQLPacket.currentBuffer().capacity() < packetLength) {
       ((ProxyBuffer) mySQLPacket).expendToLengthIfNeedInReading(endPos);
     }
     if (packetLength <= (wholePakcetSize)) {

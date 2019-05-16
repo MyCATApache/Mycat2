@@ -27,8 +27,12 @@ import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
@@ -169,5 +173,32 @@ public abstract class MySQLReplica implements MycatReplica {
 
   public List<MySQLDatasource> getDatasourceList() {
     return Collections.unmodifiableList(datasourceList);
+  }
+
+  final Map<String, Map<String, Set<String>>> metaData = new HashMap<>();
+
+  public MySQLDatasource getMaster() {
+    return datasourceList.get(writeIndex);
+  }
+
+  public void addMetaData(String schemaName, String tableName, String columnName) {
+    Map<String, Set<String>> schemaMap = metaData.get(schemaName);
+    if (schemaMap == null) {
+      schemaMap = new HashMap<>();
+    }
+    Set<String> table = schemaMap.get(tableName);
+    if (table == null) {
+      table = new HashSet<>();
+    }
+    table.add(columnName);
+
+    schemaMap.put(tableName, table);
+
+    metaData.put(schemaName, schemaMap);
+
+  }
+
+  public Map<String, Map<String, Set<String>>> getMetaData() {
+    return metaData;
   }
 }

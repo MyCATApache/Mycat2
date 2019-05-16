@@ -30,13 +30,13 @@ public class MySQLServerCapabilityFlags {
         flag |= MySQLServerCapabilityFlags.CLIENT_FOUND_ROWS;
         flag |= MySQLServerCapabilityFlags.CLIENT_LONG_FLAG;
         flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_WITH_DB;
-        // flag |= MySQLServerCapabilityFlags.CLIENT_NO_SCHEMA;
+        flag |= MySQLServerCapabilityFlags.CLIENT_NO_SCHEMA;
         // boolean usingCompress = MycatServer.getInstance().getConfig()
         // .getSystem().getUseCompression() == 1;
         // if (usingCompress) {
         // flag |= MySQLServerCapabilityFlags.CLIENT_COMPRESS;
         // }
-        flag |= MySQLServerCapabilityFlags.CLIENT_ODBC;
+//        flag |= MySQLServerCapabilityFlags.CLIENT_ODBC;
         flag |= MySQLServerCapabilityFlags.CLIENT_LOCAL_FILES;
         flag |= MySQLServerCapabilityFlags.CLIENT_IGNORE_SPACE;
         flag |= MySQLServerCapabilityFlags.CLIENT_PROTOCOL_41;
@@ -47,7 +47,7 @@ public class MySQLServerCapabilityFlags {
         // flag |= ServerDefs.CLIENT_RESERVED;
         flag |= MySQLServerCapabilityFlags.CLIENT_SECURE_CONNECTION;
         flag |= MySQLServerCapabilityFlags.CLIENT_PLUGIN_AUTH;
-        flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_ATTRS;
+//        flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_ATTRS;
         return flag;
     }
 

@@ -145,7 +145,7 @@ public abstract class BinaryResultSetTransforCollector implements ResultSetTrans
   public void collectBlob(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
+      byte[] lenencBytes = mySQLPacket.readLenencBytes();
       addValue(columnIndex, lenencBytes);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
     }
@@ -155,7 +155,7 @@ public abstract class BinaryResultSetTransforCollector implements ResultSetTrans
   public void collectMediumBlob(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
+      byte[] lenencBytes = mySQLPacket.readLenencBytes();
       addValue(columnIndex, lenencBytes);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
     }
@@ -165,7 +165,7 @@ public abstract class BinaryResultSetTransforCollector implements ResultSetTrans
   public void collectTinyBlob(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
+      byte[] lenencBytes = mySQLPacket.readLenencBytes();
       addValue(columnIndex, lenencBytes);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
     }
@@ -344,7 +344,7 @@ public abstract class BinaryResultSetTransforCollector implements ResultSetTrans
   public void collectLongBlob(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     if (true) {
-      byte[] lenencBytes = mySQLPacket.getLenencBytes(startIndex);
+      byte[] lenencBytes = mySQLPacket.readLenencBytes();
       addValue(columnIndex, lenencBytes);
       logger.debug("{}:{}", columnDef.getColumnNameString(), lenencBytes);
     }

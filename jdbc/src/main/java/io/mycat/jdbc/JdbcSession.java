@@ -3,6 +3,8 @@ package io.mycat.jdbc;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -48,9 +50,20 @@ public class JdbcSession {
   }
 
   public boolean query(String s) throws SQLException {
-    boolean success;
+    boolean success = true;
     try(Statement statement = connection.createStatement()){
-      success= statement.execute(s);
+      ResultSet resultSet = statement.executeQuery(s);
+      while (resultSet.next()) {
+        ResultSetMetaData metaData = resultSet.getMetaData();
+        int columnCount = metaData.getColumnCount();
+        for (int i = 1; i <= columnCount; i++) {
+          String catalogName = metaData.getColumnName(9);
+          long bytes = resultSet.getLong(9);
+          boolean b = resultSet.wasNull();
+          System.out.println(catalogName);
+          System.out.println(bytes);
+        }
+      }
     }
     return success;
   }

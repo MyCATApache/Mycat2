@@ -226,7 +226,9 @@ public class QueryResultSetTask implements ResultSetTask {
         }
       }
       int mayBeErrorStartIndex = mySQLPacket.packetReadStartIndex();
-      assert (mySQLPacket.skipLenencBytes(startIndex) == mayBeErrorStartIndex);
+      if (mySQLPacket.skipLenencBytes(startIndex) == mayBeErrorStartIndex) {
+        ;
+      }
     }
     collector.onRowEnd();
   }
