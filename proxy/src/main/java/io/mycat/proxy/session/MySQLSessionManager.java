@@ -17,6 +17,7 @@ package io.mycat.proxy.session;
 import io.mycat.MycatExpection;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.AsyncTaskCallBack;
+import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
@@ -97,6 +98,7 @@ public final class MySQLSessionManager implements
           } else if (mySQLSession.isActivated()) {
             mySQLSession.setIdle(false);
             mySQLSession.switchNioHandler(null);
+            MycatMonitor.onGetIdleMysqlSession(mySQLSession);
             asyncTaskCallBack.finished(mySQLSession, this, true, null, null);
             return;
           } else {
@@ -107,6 +109,7 @@ public final class MySQLSessionManager implements
                 session.getMycatReactorThread().addNIOJob(() -> {
                   session.close(false, "mysql session is close in idle");
                 });
+                MycatMonitor.onGetIdleMysqlSession(session);
                 asyncTaskCallBack.finished(session, sender, success, result, attr);
               }
             });
@@ -139,6 +142,7 @@ public final class MySQLSessionManager implements
     session.setIdle(true);
     session.switchNioHandler(MySQLIdleNIOHandler.INSTANCE);
     session.change2ReadOpts();
+    MycatMonitor.onAddIdleMysqlSession(session);
     idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
       if (l == null) {
         l = new LinkedList<>();
@@ -195,6 +199,7 @@ public final class MySQLSessionManager implements
           (session, sender, success, result, attr) -> {
             assert session.currentProxyBuffer() == null;
             if (success) {
+              MycatMonitor.onNewMySQLSession(session);
               allSessions.add(session);
               callBack.finished(session, sender, success, result, attr);
             } else {
@@ -203,7 +208,7 @@ public final class MySQLSessionManager implements
           });
     } catch (Exception e) {
       try {
-        callBack.finished(null, this, false, e.toString(), null);
+        callBack.finished(null, this, false, Session.getString(e), null);
       } catch (Exception e2) {
         e2.printStackTrace();
       }
@@ -219,6 +224,7 @@ public final class MySQLSessionManager implements
       assert session != null;
       assert reason != null;
       boolean remove = allSessions.remove(session);
+      MycatMonitor.onCloseMysqlSession(session);
       removeIdleSession(session);
       session.channel().close();
     } catch (Exception e) {

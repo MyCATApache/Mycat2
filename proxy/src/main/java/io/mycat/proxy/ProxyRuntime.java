@@ -17,7 +17,6 @@ package io.mycat.proxy;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.buffer.BufferPool;
-import io.mycat.buffer.BufferPoolImpl;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiverImpl;
@@ -29,6 +28,7 @@ import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.schema.SchemaRootConfig;
+import io.mycat.proxy.buffer.MycatProxyBufferPoolImpl;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.proxy.session.Session;
@@ -156,7 +156,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     this.setMycatReactorThreads(mycatReactorThreads);
     try {
       for (int i = 0; i < mycatReactorThreads.length; i++) {
-        BufferPool bufferPool = new BufferPoolImpl(getBufferPoolPageSize(),
+        BufferPool bufferPool = new MycatProxyBufferPoolImpl(getBufferPoolPageSize(),
             getBufferPoolChunkSize(),
             getBufferPoolPageNumber());
         mycatReactorThreads[i] = new MycatReactorThread(bufferPool,

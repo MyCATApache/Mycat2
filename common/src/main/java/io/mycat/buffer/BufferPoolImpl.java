@@ -112,11 +112,6 @@ public class BufferPoolImpl implements BufferPool {
   }
 
   @Override
-  public ByteBuffer expandBuffer(ByteBuffer buffer) {
-    return expandBuffer(buffer, buffer.capacity() << 1);
-  }
-
-  @Override
   public ByteBuffer expandBuffer(ByteBuffer old, int len) {
     assert old != null;
     assert len != 0 && len > old.capacity();
@@ -147,7 +142,6 @@ public class BufferPoolImpl implements BufferPool {
     }
 
     final long size = theBuf.capacity();
-
     boolean recycled = false;
     DirectBuffer thisNavBuf = (DirectBuffer) theBuf;
     int chunkCount = theBuf.capacity() / chunkSize;

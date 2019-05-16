@@ -23,7 +23,7 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.NetMonitor;
+import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
@@ -57,6 +57,11 @@ public class MySQLClientSession extends
    */
   private final MySQLDatasource datasource;
   protected ProxyBuffer proxyBuffer;
+
+  /**
+   * 绑定的mycat 与同步的dataNode mycat的解绑 mycat = null即可
+   */
+  private MycatSession mycat;
   /**
    * //在发起请求的时候设置
    */
@@ -68,15 +73,17 @@ public class MySQLClientSession extends
    */
   private String lastMessage;
   private boolean isIdle;
+
+
+  private String charset;
+
+  private MySQLIsolation isolation;
   /**
    * 与mycat session绑定的信息 monopolizeType 是无法解绑的原因 TRANSACTION,事务 LOAD_DATA,交换过程
    * PREPARE_STATEMENT_EXECUTE,预处理过程 CURSOR_EXISTS 游标 以上四种情况 mysql客户端的并没有结束对mysql的交互,所以无法解绑
    */
   private MySQLSessionMonopolizeType monopolizeType = MySQLSessionMonopolizeType.NONE;
-  /**
-   * 绑定的mycat 与同步的dataNode mycat的解绑 mycat = null即可
-   */
-  private MycatSession mycat;
+
 
   public MycatSession getMycatSeesion() {
     return mycat;
@@ -86,9 +93,6 @@ public class MySQLClientSession extends
     this.mycat = mycat;
   }
 
-  private String charset;
-
-  private MySQLIsolation isolation;
 
   /**
    * 构造函数
@@ -428,7 +432,7 @@ public class MySQLClientSession extends
     ProxyBuffer proxyBuffer = this.currentProxyBuffer();
     int oldIndex = proxyBuffer.channelWriteStartIndex();
     proxyBuffer.writeToChannel(this.channel());
-    NetMonitor.onBackendWrite(this, proxyBuffer.currentByteBuffer(), oldIndex,
+    MycatMonitor.onBackendWrite(this, proxyBuffer.currentByteBuffer(), oldIndex,
         proxyBuffer.channelWriteEndIndex());
     this.updateLastActiveTime();
     this.checkWriteFinished();
@@ -536,7 +540,7 @@ public class MySQLClientSession extends
   public boolean readFromChannel() throws IOException {
     boolean b = MySQLProxySession.super.readFromChannel();
     ProxyBuffer proxyBuffer = this.proxyBuffer;
-    NetMonitor
+    MycatMonitor
         .onBackendRead(this, proxyBuffer.currentByteBuffer(), proxyBuffer.channelReadStartIndex(),
             proxyBuffer.channelReadEndIndex()
         );

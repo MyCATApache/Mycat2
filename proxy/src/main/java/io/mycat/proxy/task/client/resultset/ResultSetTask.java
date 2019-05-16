@@ -241,7 +241,7 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
       }
     } catch (Throwable e) {
       e.printStackTrace();
-      clearAndFinished(mysql, false, e.getMessage());
+      clearAndFinished(mysql, false, mysql.setLastMessage(e));
     }
   }
 

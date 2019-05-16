@@ -29,14 +29,11 @@ import java.util.Map;
  */
 public interface BufferPool {
 
-
     ByteBuffer allocate();
 
     ByteBuffer allocate(int size);
 
     ByteBuffer allocate(byte[] bytes);
-
-    ByteBuffer expandBuffer(ByteBuffer buffer);
 
     ByteBuffer expandBuffer(ByteBuffer buffer, int len);
 

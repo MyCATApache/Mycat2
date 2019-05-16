@@ -21,8 +21,8 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.AsyncTaskCallBack;
+import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.MycatSessionView;
-import io.mycat.proxy.NetMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -43,12 +43,12 @@ public enum MySQLPacketExchanger {
   public static void clear(MycatSession mycatSession, MySQLClientSession mysql) {
     mycatSession.resetPacket();
     mysql.resetPacket();
-    mysql.setResponseFinished(false);
     mysql.setNoResponse(false);
 
     if (!mysql.isMonopolized()) {
       mycatSession.setMySQLSession(null);
       mysql.setMycatSession(null);
+      MycatMonitor.onUnBindMySQLSession(mycatSession, mysql);
       mysql.switchNioHandler(null);
       mysql.getSessionManager().addIdleSession(mysql);
     }
@@ -77,8 +77,9 @@ public enum MySQLPacketExchanger {
 
   public boolean onBackendWriteFinished(MySQLClientSession mysql) {
     if (!mysql.isNoResponse()) {
-      mysql.currentProxyBuffer().reset();
-      mysql.currentProxyBuffer().newBuffer();
+      ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
+      proxyBuffer.channelReadStartIndex(0);
+      proxyBuffer.channelReadEndIndex(0);
       mysql.prepareReveiceResponse();
       mysql.change2ReadOpts();
       return false;
@@ -119,9 +120,10 @@ public enum MySQLPacketExchanger {
         boolean runOnSlave,
         LoadBalanceStrategy strategy,
         boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
+      mycat.currentProxyBuffer().reset();
       proxyBackend(mycat, bytes, dataNode, runOnSlave, strategy, noResponse,
           new AsyncTaskCallBack<MycatSessionView>() {
-            int counter = 3;
+            byte counter = 3;
 
             @Override
             public void finished(MycatSessionView session, Object sender, boolean success,
@@ -144,6 +146,7 @@ public enum MySQLPacketExchanger {
         boolean runOnSlave,
         LoadBalanceStrategy strategy,
         boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
+      mycat.currentProxyBuffer().reset();
       mycat.setCallBack(finallyCallBack);
       getBackend(mycat, runOnSlave, dataNode, strategy,
           (mysql, sender, success, result, attr) -> {
@@ -153,12 +156,12 @@ public enum MySQLPacketExchanger {
               mysql.switchNioHandler(this);
               mycat.setMySQLSession(mysql);
               mycat.switchWriteHandler(WriteHandler.INSTANCE);
-              mycat.currentProxyBuffer().reset();
               mycat.currentProxyBuffer().newBuffer(bytes);
               try {
                 mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
                 mycat.setMySQLSession(mysql);
                 mysql.setMycatSession(mycat);
+                MycatMonitor.onBindMySQLSession(mycat, mysql);
               } catch (IOException e) {
                 String message = mycat.setLastMessage(e);
                 mysql.close(false, message);
@@ -167,7 +170,7 @@ public enum MySQLPacketExchanger {
               return;
             } else {
               mycat.setLastMessage((String) result);
-              finallyCallBack.finished(mycat, this, false, ResultType.REQUEST_ERROR, null);
+              callBack.finished(mycat, this, false, ResultType.REQUEST_ERROR, null);
             }
           });
     }
@@ -268,7 +271,7 @@ public enum MySQLPacketExchanger {
       int oldIndex = proxyBuffer.channelWriteStartIndex();
       proxyBuffer.writeToChannel(mycat.channel());
 
-      NetMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
+      MycatMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
           proxyBuffer.channelReadEndIndex());
       mycat.updateLastActiveTime();
 

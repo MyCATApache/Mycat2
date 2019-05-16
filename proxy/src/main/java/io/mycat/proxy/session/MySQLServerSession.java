@@ -5,7 +5,7 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.NetMonitor;
+import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketUtil;
@@ -39,7 +39,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       ByteBuffer first = byteBuffers.peekFirst();
 
       if (first.position() == 0) {//一个全新的payload
-        NetMonitor.onFrontWrite(
+        MycatMonitor.onFrontWrite(
             session, first, 0, first.limit());
         packetSplitter.init(first.limit());
         packetSplitter.nextPacketInPacketSplitter();

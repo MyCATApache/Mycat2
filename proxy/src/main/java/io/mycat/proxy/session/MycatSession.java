@@ -25,8 +25,8 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.AsyncTaskCallBack;
+import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.MycatSessionView;
-import io.mycat.proxy.NetMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.CommandHandler;
@@ -365,7 +365,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public final boolean readFromChannel() throws IOException {
     boolean b = MySQLProxySession.super.readFromChannel();
-    NetMonitor.onFrontRead(this, proxyBuffer.currentByteBuffer(),
+    MycatMonitor.onFrontRead(this, proxyBuffer.currentByteBuffer(),
         proxyBuffer.channelReadStartIndex(), proxyBuffer.channelReadEndIndex());
     return b;
   }

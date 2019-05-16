@@ -70,7 +70,7 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
     public void onStart() {
         try {
             init(onPayloadLength());
-            header = getBufferPool().allocate(4);
+          header = ByteBuffer.allocate(4);
             boolean hasNext = false;
             while (hasNext = nextPacketInPacketSplitter()) {
                 this.writeIndex = startIndex + getOffsetInPacketSplitter();
@@ -131,7 +131,6 @@ public abstract class AbstractPayloadWriter<T> implements NIOHandler<MySQLClient
     protected abstract int writePayload(T buffer, int writeIndex, int reminsPacketLen, SocketChannel serverSocket) throws IOException ;
 
     public void writeFinishedAndClear(boolean success) {
-        getBufferPool().recycle(header);
         header = null;
         setServerSocket(null);
         onWriteFinished(buffer, success);

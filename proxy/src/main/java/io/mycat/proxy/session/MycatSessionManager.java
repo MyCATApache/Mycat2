@@ -15,6 +15,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.buffer.BufferPool;
+import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.handler.MySQLClientAuthHandler;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
@@ -59,6 +60,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   @Override
   public void removeSession(MycatSession mycat, boolean normal, String reason) {
     try {
+      MycatMonitor.onCloseMycatSession(mycat);
       mycatSessions.remove(mycat);
       mycat.channel().close();
     } catch (Exception e) {
@@ -75,6 +77,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
         mySQLClientAuthHandler, this, commandHandlerFactory.get());
     mySQLClientAuthHandler.setMycatSession(mycat);
     mySQLClientAuthHandler.sendAuthPackge();
+    MycatMonitor.onNewMycatSession(mycat);
     this.mycatSessions.add(mycat);
     return mycat;
   }

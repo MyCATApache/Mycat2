@@ -64,13 +64,4 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   default void resetPacket() {
     getPacketResolver().reset();
   }
-
-  /**
-   * 使用bytes构造Proxybuffer,此时Proxybuffer处于可读可写状态
-   */
-  default void resetProxyBuffer(byte[] bytes) {
-    ProxyBuffer proxyBuffer = this.currentProxyBuffer();
-    proxyBuffer.reset();
-    proxyBuffer.newBuffer(bytes);
-  }
 }
