@@ -1,10 +1,15 @@
 package io.mycat.proxy.task.client.resultset;
 
+import com.google.common.collect.Lists;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author jamie12221
@@ -92,5 +97,39 @@ public class QueryResultSetCollector implements TextResultSetTransforCollector,
         return objects;
       }
     };
+  }
+
+  public List<Map<String,Object>> toList() {
+    ArrayList[] res = this.result;
+    if(res.length == 0 || result[0].size() == 0) {
+        return Collections.emptyList();
+    }
+    List<Map<String, Object>> list = Lists.newArrayList();
+    int size = result[0].size();
+    for(int index = 0 ; index < size; index ++){
+      Map<String, Object> map = new HashMap<>();
+      list.add(map);
+    }
+    for (int i = 0; i < columns.length; i++) {
+      String columnNameString = columns[i].getColumnNameString();
+      for(int index = 0 ; index < size; index ++){
+        list.get(index).put(columnNameString, res[i].get(index));
+      }
+    }
+    return list;
+  }
+  @Override
+  public String toString() {
+    if(this.result.length == 0 || result[0].size() == 0) {
+      return "";
+    }
+    for(int index = 0 ; index <  result[0].size(); index ++) {
+      Object[] objects = new Object[columnCount];
+      for (int i = 0; i < columnCount; i++) {
+        objects[i] = result[i].get(index);
+      }
+      logger.info("result[{}] {}" ,index,  Arrays.toString(objects));
+    }
+    return super.toString();
   }
 }

@@ -30,11 +30,11 @@ import io.mycat.replica.MySQLDataSourceEx;
 public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
     protected final ReplicaConfig replicaConfig;
     protected final MySQLDataSourceEx dataSource;
-    protected long lastSendQryTime;
-    protected long lastReceivedQryTime;//    private isCheck
+    protected final HeartbeatManager heartbeatManager;
+    protected volatile long lastSendQryTime;
+    protected volatile long lastReceivedQryTime;//    private isCheck
     protected long heartbeatTimeout ;
-    protected HeartbeatManager heartbeatManager;
-    HeartBeatAsyncTaskCallBack heartBeatAsyncTaskCallBack;
+    protected volatile HeartBeatAsyncTaskCallBack heartBeatAsyncTaskCallBack;
 
 
     public AbstractHeartBeatDetector(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource , HeartbeatManager heartbeatManager) {
