@@ -10,6 +10,7 @@ public class DefaultDataSourceFactory implements MySQLDataSourceFactory {
 
   @Override
   public MySQLDatasource get(int index, DatasourceConfig datasourceConfig, MySQLReplica replica) {
+
     return new MySQLDataSourceEx(index, datasourceConfig, replica);
   }
 }
