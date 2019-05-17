@@ -7,7 +7,7 @@ schemas:
   - name: test2
     schemaType: DB_IN_MULTI_SERVER
     tables:
-      - name: travelrecord
+      - name: travelrecord2
         dataNodes: dn3
       - name: travelrecord
         dataNodes: dn1,dn2,dn3
