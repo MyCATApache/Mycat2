@@ -1,5 +1,7 @@
 package io.mycat.sqlparser.util;
 
+import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLIsolationLevel;
 import java.util.Arrays;
 
 /**
@@ -72,6 +74,7 @@ public class BufferSQLContext {
   public static final byte XA_BEGIN = 41;
   public static final byte XA_END = 42;
 
+
   //admin command
 //    public static final byte MYCAT_SWITCH_REPL = 43;
 //    public static final byte MYCAT_SHOW_CONFIGS = 44;
@@ -120,6 +123,19 @@ public class BufferSQLContext {
   private int preTableResultPos = 0;
   private int hashArrayRealSQLOffset = 0;//记录真实sql开始偏移
   private HashArray myCmdValue;
+  private Boolean autocommit = null;
+  private MySQLIsolation isolation;
+  private MySQLIsolationLevel transactionLevel;
+  private boolean accessMode;
+
+  public Boolean isAutocommit() {
+    return autocommit;
+  }
+
+  public void setAutocommit(boolean autocommit) {
+    this.autocommit = autocommit;
+  }
+
   private int catletNameStart = 0;
   private int catletNameLength = 0;
   private boolean hasBetween;
@@ -547,4 +563,30 @@ public class BufferSQLContext {
     return buffer.getString(catletNameStart, catletNameLength);
   }
 
+  public MySQLIsolation getIsolation() {
+    return isolation;
+  }
+
+  public void setIsolation(MySQLIsolation isolation) {
+
+    this.isolation = isolation;
+  }
+
+  public MySQLIsolationLevel getTransactionLevel() {
+    return transactionLevel;
+  }
+
+  public void setTransactionLevel(MySQLIsolationLevel transactionLevel) {
+
+    this.transactionLevel = transactionLevel;
+  }
+
+  public boolean isAccessMode() {
+    return accessMode;
+  }
+
+  public void setAccessMode(boolean accessMode) {
+
+    this.accessMode = accessMode;
+  }
 }

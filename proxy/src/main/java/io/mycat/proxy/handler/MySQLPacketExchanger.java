@@ -27,10 +27,14 @@ import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
+import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.task.client.MultiMySQLUpdateNoResponseTask;
+import io.mycat.proxy.task.client.MultiMySQLUpdateTask;
 import io.mycat.proxy.task.client.MySQLTaskUtil;
 import java.io.IOException;
+import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,6 +119,30 @@ public enum MySQLPacketExchanger {
     protected final static Logger logger = LoggerFactory.getLogger(MySQLProxyNIOHandler.class);
     static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
+    public void proxyUpdateMultiBackends(MycatSession mycat, byte[] bytes,
+        MySQLDataNode masterDataNode,
+        Collection<MySQLDataNode> otherDataNode,
+        AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
+      new MultiMySQLUpdateTask(mycat, bytes, otherDataNode,
+          (session, sender, success, result, attr) -> {
+            proxyBackend(mycat, bytes,
+                masterDataNode, false, null, false,
+                finallyCallBack);
+          });
+    }
+
+    public void proxyUpdateMultiBackendsNoResponse(MycatSession mycat, byte[] payload,
+        MySQLDataNode masterDataNode,
+        Collection<MySQLDataNode> otherDataNode,
+        AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
+      byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
+      new MultiMySQLUpdateNoResponseTask(mycat, bytes, otherDataNode,
+          (session, sender, success, result, attr) -> {
+            proxyBackend(mycat, bytes,
+                masterDataNode, false, null, false,
+                finallyCallBack);
+          });
+    }
 
     public void proxyHaBackend(MycatSession mycat, byte[] bytes, MySQLDataNode dataNode,
         boolean runOnSlave,

@@ -6,5 +6,5 @@ package io.mycat.router.routeResult;
  **/
 public enum ResultRouteType {
   ONE_SERVER_RESULT_ROUTE,
-
+  GLOBAL_TABLE_WRITE_RESULT_ROUTE
 }

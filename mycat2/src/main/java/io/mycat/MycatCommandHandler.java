@@ -1,12 +1,19 @@
 package io.mycat;
 
+import static io.mycat.sqlparser.util.BufferSQLContext.DESCRIBE_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SET_AUTOCOMMIT_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SET_TRANSACTION_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_TB_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.USE_SQL;
 
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
+import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.MycatSessionView;
 import io.mycat.proxy.ProxyRuntime;
@@ -17,6 +24,7 @@ import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ResultRoute;
+import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.sqlparser.util.BufferSQLContext;
@@ -55,6 +63,34 @@ public class MycatCommandHandler extends AbstractCommandHandler {
           useSchema(mycat, schemaName);
           break;
         }
+        case SET_AUTOCOMMIT_SQL: {
+          Boolean autocommit = sqlContext.isAutocommit();
+          if (autocommit == null) {
+            mycat.setLastMessage("set autocommit fail!");
+            mycat.writeErrorEndPacket();
+            return;
+          } else {
+            mycat.setAutoCommit(autocommit ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF);
+            mycat.writeOkEndPacket();
+            return;
+          }
+        }
+        case SET_TRANSACTION_SQL: {
+          if (sqlContext.isAccessMode()) {
+            mycat.setLastMessage("unsupport access mode");
+            mycat.writeErrorEndPacket();
+            return;
+          }
+          MySQLIsolation isolation = sqlContext.getIsolation();
+          if (isolation == null) {
+            mycat.setLastMessage("set transaction fail!");
+            mycat.writeErrorEndPacket();
+            return;
+          }
+          mycat.setIsolation(isolation);
+          mycat.writeOkEndPacket();
+          return;
+        }
         case SHOW_DB_SQL: {
           MycatRouterConfig config = router.getConfig();
           showDb(mycat, config.getSchemaList());
@@ -63,60 +99,99 @@ public class MycatCommandHandler extends AbstractCommandHandler {
         case SHOW_TB_SQL: {
           String schemaName =
               sqlContext.getSchemaCount() == 1 ? sqlContext.getSchemaName(0)
-                  : mycat.getSchema().getSchemaName();
+                  : useSchema.getSchemaName();
           showTable(mycat, schemaName);
           break;
         }
+        case DESCRIBE_SQL:
+          mycat.setLastMessage("unsupport desc");
+          mycat.writeErrorEndPacket();
+          return;
+        case SHOW_SQL:
+          mycat.setLastMessage("unsupport show");
+          mycat.writeErrorEndPacket();
+          return;
         case SELECT_SQL: {
-          if (sqlContext.isSimpleSelect() && sqlContext.getTableCount() == 1) {
-            String tableName = sqlContext.getTableName(0);
-            if (mycat.getSchema().existTable(tableName)) {
-              try {
-                ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
-                switch (resultRoute.getType()) {
-                  case ONE_SERVER_RESULT_ROUTE:
-                    OneServerResultRoute route = (OneServerResultRoute) resultRoute;
-                    mycat
-                        .proxyBackend(MySQLPacketUtil.generateComQuery(route.getSql()),
-                            route.getDataNode(), true, null, false,
-                            (session1, sender, success, result, attr) -> {
-                              if (success) {
-                                System.out.println("success full");
-                              } else {
-                                session1.writeErrorEndPacketBySyncInProcessError();
-                              }
-                            });
-                    break;
-                }
-                break;//路由出错走默认节点
-              } catch (Exception e) {
-                e.printStackTrace();
+          if (sqlContext.isSimpleSelect()) {
+            ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
+            if (resultRoute != null) {
+              switch (resultRoute.getType()) {
+                case ONE_SERVER_RESULT_ROUTE:
+                  OneServerResultRoute route = (OneServerResultRoute) resultRoute;
+                  mycat
+                      .proxyBackend(MySQLPacketUtil.generateComQuery(route.getSql()),
+                          route.getDataNode(), true, null, false,
+                          (session1, sender, success, result, attr) -> {
+                            if (success) {
+                              System.out.println("success full");
+                            } else {
+                              session1.writeErrorEndPacketBySyncInProcessError();
+                            }
+                          });
+                  return;
               }
             }
+            mycat.setLastMessage("unsupport sql");
+            mycat.writeErrorEndPacket();
+            return;//路由出错走默认节点
           }
         }
 
         default:
-          mycat
-              .proxyBackend(MySQLPacketUtil.generateComQuery(sql), "dn1", true, null, false,
-                  (session1, sender, success, result, attr) -> {
-                    if (success) {
-                      System.out.println("success full");
-                    } else {
-                      session1.writeErrorEndPacket();
+          if (sqlContext.getSQLType() != 0 & sqlContext.getTableCount() != 1) {
+            mycat.setLastMessage("unsupport sql");
+            mycat.writeErrorEndPacket();
+            return;
+          }
+          ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
+          if (resultRoute == null) {
+            mycat.writeOkEndPacket();
+            return;
+          }
+          switch (resultRoute.getType()) {
+            case ONE_SERVER_RESULT_ROUTE: {
+              OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
+              mycat
+                  .proxyBackend(MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
+                      resultRoute1.getDataNode(), false, null, false,
+                      (session1, sender, success, result, attr) -> {
+                        if (success) {
+                          System.out.println("success full");
+                        } else {
+                          session1.writeErrorEndPacket();
+                        }
+                      });
+              break;
+            }
+            case GLOBAL_TABLE_WRITE_RESULT_ROUTE: {
+              GlobalTableWriteResultRoute globalTableWriteResultRoute = (GlobalTableWriteResultRoute) resultRoute;
+              String sql1 = globalTableWriteResultRoute.getSql();
+              String master = globalTableWriteResultRoute.getMaster();
+              Collection<String> dataNodes = globalTableWriteResultRoute.getDataNodes();
+              mycat.proxyUpdateMultiBackends(MySQLPacketUtil.generateComQuery(sql1), master,
+                  dataNodes, new AsyncTaskCallBack<MycatSessionView>() {
+                    @Override
+                    public void finished(MycatSessionView session, Object sender, boolean success,
+                        Object result, Object attr) {
+                      if (success) {
+                        System.out.println("success full");
+                      } else {
+                        session.setLastMessage(result.toString());
+                        session.writeErrorEndPacket();
+                      }
                     }
                   });
+              return;
+            }
+            default:
+              mycat.setLastMessage("unsupport sql");
+              mycat.writeErrorEndPacket();
+          }
+
       }
     } catch (Exception e) {
-      mycat
-          .proxyBackend(MySQLPacketUtil.generateComQuery(sql), "dn1", true, null, false,
-              (session1, sender, success, result, attr) -> {
-                if (success) {
-                  System.out.println("success full");
-                } else {
-                  session1.writeErrorEndPacket();
-                }
-              });
+      mycat.setLastMessage(e);
+      mycat.writeErrorEndPacket();
     }
   }
 

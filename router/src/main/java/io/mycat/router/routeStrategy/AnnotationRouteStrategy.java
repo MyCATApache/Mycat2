@@ -31,6 +31,7 @@ import io.mycat.router.routeResult.SubTableResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.SQLUtil;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author jamie12221
@@ -49,15 +50,17 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
           GlobalTable table = (GlobalTable) o;
           if (sqlContext.isSimpleSelect()) {
             OneServerResultRoute result = new OneServerResultRoute();
-            String dataNode = table.getDataNodes().get(0);//@todo 负载均衡
+            int index = ThreadLocalRandom.current().nextInt(0, table.getDataNodes().size());
+            String dataNode = table.getDataNodes().get(index);//@todo 负载均衡
+            result.setSql(sql);
             result.setDataNode(dataNode);
             return result;
           } else {
             GlobalTableWriteResultRoute result = new GlobalTableWriteResultRoute();
             result.setSql(sql);
             List<String> dataNodes = table.getDataNodes();
-            String[] strings = dataNodes.toArray(new String[dataNodes.size()]);
-            result.setDataNodes(strings);
+            result.setMaster(dataNodes.get(0));
+            result.setDataNodes(dataNodes.subList(1, dataNodes.size()));
             return result;
           }
         }

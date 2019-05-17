@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import net.sf.jsqlparser.JSQLParserException;
 
 /*
 yaml配置
@@ -94,7 +93,7 @@ public interface SingleDataNodeDynamicAnnotation2 {
   }
 
   //SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));
-  static void main(String[] args) throws ParseException, JSQLParserException {
+  static void main(String[] args) throws ParseException {
 
     Pattern compile = Pattern.compile(
         "((?<idExpr>(?:id = )(?<id>[0-9]))|(?<betweenExpr>(?: between )(?<left>[0-9])(?: and )(?<right>[0-9])))*");

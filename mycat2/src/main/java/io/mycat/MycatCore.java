@@ -54,6 +54,7 @@ public class MycatCore {
               Object attr) {
             try {
               runtime.initDataNode();
+
               getReplicaMetaData(runtime, new AsyncTaskCallBack() {
                 @Override
                 public void finished(Session session, Object sender, boolean success, Object result,

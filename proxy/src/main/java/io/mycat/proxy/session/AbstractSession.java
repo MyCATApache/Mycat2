@@ -72,12 +72,14 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
 
   public void change2ReadOpts() {
     if (!channelKey.isReadable()) {
+      LOGGER.debug("change2ReadOpts");
       channelKey.interestOps(SelectionKey.OP_READ);
     }
   }
 
   public void change2WriteOpts() {
     if (!channelKey.isWritable()) {
+      LOGGER.debug("change2WriteOpts");
       channelKey.interestOps(SelectionKey.OP_WRITE);
     }
   }

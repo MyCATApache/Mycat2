@@ -13,6 +13,7 @@ import io.mycat.proxy.task.client.resultset.QueryResultSetCollector;
 import io.mycat.proxy.task.client.resultset.QueryResultSetTask;
 import io.mycat.proxy.task.client.resultset.ResultSetTask;
 import io.mycat.proxy.task.client.resultset.TextResultSetTransforCollector;
+import java.io.IOException;
 
 /**
  * @author jamie12221
@@ -24,7 +25,12 @@ public interface QueryUtil {
   ResultSetTask COMMAND = new ResultSetTask() {
 
   };
-
+  ResultSetTask COMMAND_NO_RESPONSE = new ResultSetTask() {
+    @Override
+    public void onWriteFinished(MySQLClientSession mysql) throws IOException {
+      clearAndFinished(mysql, true, mysql.getLastMessage());
+    }
+  };
   /**
    * com_query
    */

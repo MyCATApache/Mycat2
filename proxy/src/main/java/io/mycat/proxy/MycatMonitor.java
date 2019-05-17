@@ -3,6 +3,7 @@ package io.mycat.proxy;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
+import io.mycat.util.DumpUtil;
 import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +19,7 @@ public final class MycatMonitor {
 
   public final static void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
     if (record) {
-      //  DumpUtil.printAsHex(view, startIndex, len);
+      //DumpUtil.printAsHex(view, startIndex, len);
     }
   }
 
@@ -32,7 +33,7 @@ public final class MycatMonitor {
   public final static void onBackendRead(Session session, ByteBuffer view, int startIndex,
       int len) {
     if (record) {
-      //   DumpUtil.printAsHex(view, startIndex, len);
+      DumpUtil.printAsHex(view, startIndex, len);
     }
   }
 

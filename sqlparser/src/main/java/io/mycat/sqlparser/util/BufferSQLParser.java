@@ -467,7 +467,9 @@ public class BufferSQLParser {
         case IntTokenHash.SET:
           if (hashArray.getHash(pos) == TokenHash.SET) {
             ++pos;
-            //    pos = TCLSQLParser.pickSetAutocommitAndSetTransaction(++pos, arrayCount, context, hashArray, sql);
+            pos = TCLSQLParser
+                      .pickSetAutocommitAndSetTransaction(++pos, arrayCount, context, hashArray,
+                          sql);
           }
           break;
         case IntTokenHash.COMMIT:
@@ -715,7 +717,7 @@ public class BufferSQLParser {
   public void parse(ByteArrayView src, BufferSQLContext context) {
     sql = src;
     hashArray = context.getHashArray();
-    hashArray.init(src.length()-src.getOffset());
+    hashArray.init(src.length() - src.getOffset());
     context.setCurBuffer(src);
     tokenizer.tokenize(src, hashArray);
     firstParse(context);

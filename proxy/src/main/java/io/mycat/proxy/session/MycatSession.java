@@ -473,4 +473,5 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     return text.getBytes(charset());
   }
 
+
 }

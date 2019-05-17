@@ -418,6 +418,7 @@ public class MySQLClientSession extends
    */
   public void checkWriteFinished() throws IOException {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
+    LOGGER.debug("checkWriteFinished");
     if (!proxyBuffer.channelWriteFinished()) {
       this.change2WriteOpts();
     } else {

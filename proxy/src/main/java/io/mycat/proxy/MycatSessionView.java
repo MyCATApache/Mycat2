@@ -3,6 +3,8 @@ package io.mycat.proxy;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.beans.mysql.MySQLAutoCommit;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.handler.LocalInFileRequestHandler.LocalInFileSession;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
@@ -10,11 +12,13 @@ import io.mycat.proxy.handler.PrepareStatementHandler.PrepareStatementSession;
 import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * @author jamie12221
- * @date 2019-05-12 22:41
- * mycat session用户视图,屏蔽proxy复杂性
+ * @date 2019-05-12 22:41 mycat session用户视图,屏蔽proxy复杂性
  **/
 public interface MycatSessionView extends LocalInFileSession, PrepareStatementSession,
                                               MySQLServerSession<MycatSession> {
@@ -31,6 +35,41 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
             finallyCallBack);
   }
 
+  default void proxyUpdateMultiBackends(byte[] payload,
+      String masterDataNode,
+      Collection<String> otherDataNode,
+      AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
+    MycatSession mycat = (MycatSession) this;
+    byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
+    MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(masterDataNode);
+    Iterator<String> iterator = otherDataNode.iterator();
+    Collection<MySQLDataNode> mycatDataNodes = new ArrayList<>();
+    while (iterator.hasNext()) {
+      mycatDataNodes.add(ProxyRuntime.INSTANCE.getDataNodeByName(iterator.next()));
+    }
+    MySQLProxyNIOHandler
+        .INSTANCE
+        .proxyUpdateMultiBackends(mycat, bytes, (MySQLDataNode) dataNode, mycatDataNodes,
+            finallyCallBack);
+  }
+
+  default void proxyUpdateMultiBackendsNoResponse(byte[] payload,
+      String masterDataNode,
+      Collection<String> otherDataNode,
+      AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
+    MycatSession mycat = (MycatSession) this;
+    byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
+    MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(masterDataNode);
+    Iterator<String> iterator = otherDataNode.iterator();
+    Collection<MySQLDataNode> mycatDataNodes = new ArrayList<>();
+    while (iterator.hasNext()) {
+      mycatDataNodes.add(ProxyRuntime.INSTANCE.getDataNodeByName(iterator.next()));
+    }
+    MySQLProxyNIOHandler
+        .INSTANCE
+        .proxyUpdateMultiBackendsNoResponse(mycat, bytes, (MySQLDataNode) dataNode, mycatDataNodes,
+            finallyCallBack);
+  }
 //  default boolean proxyBackend(byte[][] payloadList,String[] dataNodeName, boolean runOnSlaveList,
 //      LoadBalanceStrategy strategy,
 //      boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
@@ -92,4 +131,9 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
   void setResultSetCount(int count);
 
   byte[] encode(String text);
+
+  void setAutoCommit(MySQLAutoCommit b);
+
+
+  void setIsolation(MySQLIsolation isolation);
 }

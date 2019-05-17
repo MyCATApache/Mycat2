@@ -3,7 +3,7 @@
 //import io.mycat.proxy.MycatSessionView;
 //import io.mycat.proxy.session.MycatSession;
 //import io.mycat.router.ResultRoute;
-//import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
+//import io.mycat.router.routeResult.GLOBAL_TABLE_WRITE_RESULT_ROUTE;
 //import io.mycat.router.routeResult.MySQLCommandRouteResultRoute;
 //import io.mycat.router.routeResult.ONE_SERVER_RESULT_ROUTE;
 //import io.mycat.router.routeResult.SubTableResultRoute;
@@ -32,7 +32,7 @@
 //  }
 //
 //  @Override
-//  public void run(GlobalTableWriteResultRoute dbResultSet, MycatSession mycatSession) {
+//  public void run(GLOBAL_TABLE_WRITE_RESULT_ROUTE dbResultSet, MycatSession mycatSession) {
 //
 //  }
 //

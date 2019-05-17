@@ -259,6 +259,10 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
    */
   @Override
   default void onWriteFinished(MySQLClientSession mysql) throws IOException {
+    ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
+    //写入完毕不清理buffer但是要把下标重置
+    proxyBuffer.channelReadStartIndex(0);
+    proxyBuffer.channelReadEndIndex(0);
     mysql.change2ReadOpts();
   }
 

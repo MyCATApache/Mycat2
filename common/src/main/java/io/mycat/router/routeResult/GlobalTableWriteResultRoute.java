@@ -15,8 +15,7 @@
 package io.mycat.router.routeResult;
 
 import io.mycat.router.ResultRoute;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.Collection;
 
 /**
  * @author jamie12221
@@ -24,11 +23,52 @@ import java.util.Objects;
  * 全局表路由结果
  **/
 public class GlobalTableWriteResultRoute extends ResultRoute {
-  CharSequence sql;
-  String[] dataNodes;
 
-  public CharSequence getSql() {
+  String sql;
+  Collection<String> dataNodes;
+  String master;
+
+  public String getMaster() {
+    return master;
+  }
+
+  public void setMaster(String master) {
+    this.master = master;
+  }
+
+  public String getSql() {
     return sql;
+  }
+
+  public void setSql(String sql) {
+    this.sql = sql;
+  }
+
+  @Override
+  public <CONTEXT> void accept(Executer<CONTEXT> executer, CONTEXT context) {
+    executer.run(this, context);
+  }
+
+  @Override
+  public ResultRouteType getType() {
+    return ResultRouteType.GLOBAL_TABLE_WRITE_RESULT_ROUTE;
+  }
+
+  public Collection<String> getDataNodes() {
+    return dataNodes;
+  }
+
+  public void setDataNodes(Collection<String> dataNodes) {
+    this.dataNodes = dataNodes;
+  }
+
+  @Override
+  public String toString() {
+    return "GlobalTableWriteResultRoute{" +
+               "sql='" + sql + '\'' +
+               ", dataNodes=" + dataNodes +
+               ", master='" + master + '\'' +
+               '}';
   }
 
   @Override
@@ -39,45 +79,23 @@ public class GlobalTableWriteResultRoute extends ResultRoute {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+
     GlobalTableWriteResultRoute that = (GlobalTableWriteResultRoute) o;
-    return Objects.equals(sql, that.sql) &&
-               Arrays.equals(dataNodes, that.dataNodes);
+
+    if (sql != null ? !sql.equals(that.sql) : that.sql != null) {
+      return false;
+    }
+    if (dataNodes != null ? !dataNodes.equals(that.dataNodes) : that.dataNodes != null) {
+      return false;
+    }
+    return master != null ? master.equals(that.master) : that.master == null;
   }
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(sql);
-    result = 31 * result + Arrays.hashCode(dataNodes);
+    int result = sql != null ? sql.hashCode() : 0;
+    result = 31 * result + (dataNodes != null ? dataNodes.hashCode() : 0);
+    result = 31 * result + (master != null ? master.hashCode() : 0);
     return result;
-  }
-
-  @Override
-  public String toString() {
-    return "GlobalTableWriteResultRoute{" +
-               "sql=" + sql +
-               ", dataNodes=" + Arrays.toString(dataNodes) +
-               '}';
-  }
-  @Override
-  public <CONTEXT> void accept(Executer<CONTEXT> executer,CONTEXT context) {
-    executer.run(this,context);
-  }
-
-  @Override
-  public ResultRouteType getType() {
-    return null;
-  }
-
-
-  public void setSql(CharSequence sql) {
-    this.sql = sql;
-  }
-
-  public String[] getDataNodes() {
-    return dataNodes;
-  }
-
-  public void setDataNodes(String[] dataNodes) {
-    this.dataNodes = dataNodes;
   }
 }

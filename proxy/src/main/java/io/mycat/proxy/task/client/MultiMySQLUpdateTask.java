@@ -18,24 +18,27 @@ import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.task.client.resultset.ResultSetTask;
-import java.util.List;
+import java.util.Collection;
 
 /**
  * @author jamie12221
  * @date 2019-05-09 15:08
  **/
-public class MultiMySQLQueryTask implements ResultSetTask {
+public class MultiMySQLUpdateTask implements ResultSetTask {
+
   int success = 0;
-  public MultiMySQLQueryTask(MycatSession mycat, byte[] packetData, List<String> dataNodeNameList,
+
+  public MultiMySQLUpdateTask(MycatSession mycat, byte[] packetData,
+      Collection<MySQLDataNode> dataNodeList,
       AsyncTaskCallBack<MycatSession> finalCallBack) {
     final AsyncTaskCallBack<MySQLClientSession> callBack = (session, sender, success, result, attr) -> {
       if (success) {
-        if (++MultiMySQLQueryTask.this.success == dataNodeNameList.size()) {
+        session.getSessionManager().addIdleSession(session);
+        if (++MultiMySQLUpdateTask.this.success == dataNodeList.size()) {
           finalCallBack.finished(mycat, sender, success, result, attr);
         }
       } else {
@@ -46,8 +49,7 @@ public class MultiMySQLQueryTask implements ResultSetTask {
     MySQLIsolation isolation = mycat.getIsolation();
     MySQLAutoCommit autoCommit = mycat.getAutoCommit();
     String charsetName = mycat.getCharsetName();
-    for (String dataNodeName : dataNodeNameList) {
-      MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
+    for (MySQLDataNode dataNode : dataNodeList) {
       MySQLTaskUtil
           .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
               false,

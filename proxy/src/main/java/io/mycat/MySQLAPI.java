@@ -51,7 +51,8 @@ public interface MySQLAPI {
   }
 
   default void quit(AsyncTaskCallBack<MySQLClientSession> callback) {
-    QueryUtil.COMMAND.request(getThis(), MySQLCommandType.COM_QUIT, new byte[]{}, callback);
+    QueryUtil.COMMAND_NO_RESPONSE
+        .request(getThis(), MySQLCommandType.COM_QUIT, new byte[]{}, callback);
   }
 
   default void fieldList(String tableName, AsyncTaskCallBack<MySQLClientSession> callback) {
