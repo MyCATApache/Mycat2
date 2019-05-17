@@ -41,7 +41,6 @@ public abstract class MySQLDatasource {
   protected final MySQLReplica replica;
   protected final MySQLCollationIndex collationIndex = new MySQLCollationIndex();
 
-
   public MySQLDatasource(int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
     this.index = index;
@@ -181,5 +180,9 @@ public abstract class MySQLDatasource {
   @Override
   public int hashCode() {
     return Objects.hash(index, datasourceConfig, replica, collationIndex);
+  }
+
+  public boolean isMaster() {
+    return index == replica.getMasterIndex();
   }
 }

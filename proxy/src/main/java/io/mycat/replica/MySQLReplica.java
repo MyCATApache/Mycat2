@@ -178,7 +178,7 @@ public abstract class MySQLReplica implements MycatReplica {
   final Map<String, Map<String, Set<String>>> metaData = new HashMap<>();
 
   public MySQLDatasource getMaster() {
-    return datasourceList.get(writeIndex);
+    return datasourceList.get(getMasterIndex());
   }
 
   public void addMetaData(String schemaName, String tableName, String columnName) {
@@ -200,5 +200,13 @@ public abstract class MySQLReplica implements MycatReplica {
 
   public Map<String, Map<String, Set<String>>> getMetaData() {
     return metaData;
+  }
+
+  public ReplicaConfig getConfig() {
+    return config;
+  }
+
+  public int getMasterIndex() {
+    return writeIndex;
   }
 }

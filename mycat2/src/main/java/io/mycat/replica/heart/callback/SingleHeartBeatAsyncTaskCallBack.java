@@ -13,7 +13,7 @@ import io.mycat.replica.heart.HeartbeatDetector;
  */
 public class SingleHeartBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack {
 
-    String sql  = "select user()";
+  final String sql = "select user()";
     public SingleHeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
         super(heartbeatDetector);
     }
