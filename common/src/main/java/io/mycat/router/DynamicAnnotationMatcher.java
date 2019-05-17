@@ -21,5 +21,5 @@ package io.mycat.router;
  **/
 public interface DynamicAnnotationMatcher {
 
-  DynamicAnnotationResult match(CharSequence input);
+  DynamicAnnotationResult match(String input);
 }

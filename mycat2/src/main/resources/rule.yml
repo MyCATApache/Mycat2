@@ -1,5 +1,5 @@
 tableRules:
-  - funtion: mpartitionByLong
+  - funtion: partitionByLong
     name: travelrecord
     rules:
       - column: id

@@ -15,7 +15,7 @@ public class ShardingRule {
   String rangeEnd;
 
 
-  public String getEqualKey() {
+  public String getEqualKeys() {
     return equalKey;
   }
 
@@ -63,6 +63,5 @@ public class ShardingRule {
   public void setColumn(String column) {
     this.column = column;
   }
-
 
 }

@@ -8,6 +8,7 @@ import io.mycat.config.route.AnnotationType;
  **/
 public interface DynamicAnnotationResult {
 
+  String getSQL();
   void clear();
 
   String get(String key);

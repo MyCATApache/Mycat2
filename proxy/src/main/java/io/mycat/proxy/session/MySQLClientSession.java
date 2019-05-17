@@ -26,7 +26,6 @@ import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -512,9 +511,6 @@ public class MySQLClientSession extends
    */
   @Override
   public void switchNioHandler(NIOHandler nioHandler) {
-    if (nioHandler != null && isIdle() && this.nioHandler == MySQLIdleNIOHandler.INSTANCE) {
-      throw new MycatExpection("UNKNOWN state");
-    }
     this.nioHandler = nioHandler;
   }
 

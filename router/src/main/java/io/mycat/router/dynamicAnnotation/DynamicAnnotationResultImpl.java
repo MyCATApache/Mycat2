@@ -27,9 +27,16 @@ import java.util.function.BiFunction;
  * @date 2019-05-03 23:50
  **/
 public class DynamicAnnotationResultImpl implements DynamicAnnotationResult {
+
   //final HashMap<String, AnnotationType> lastAnnotationTypeMap = new HashMap<>();
   final HashMap<String, String> result = new HashMap<>();
-  public static DynamicAnnotationResultImpl EMPTY  = new DynamicAnnotationResultImpl();
+  private static final BiConsumer<AnnotationType, List<String>> clearAction = (k, v) -> v.clear();
+  public static DynamicAnnotationResultImpl EMPTY = new DynamicAnnotationResultImpl();
+  String sql;
+
+  public String getSql() {
+    return sql;
+  }
 
   public DynamicAnnotationResultImpl() {
   }
@@ -37,17 +44,27 @@ public class DynamicAnnotationResultImpl implements DynamicAnnotationResult {
   private static void accept(AnnotationType k, List<String> v) {
     v.clear();
   }
-  private static final BiConsumer<AnnotationType, List<String>> clearAction = (k,v)->v.clear();
+
+  public void setSql(String sql) {
+    this.sql = sql;
+  }
+
+  @Override
+  public String getSQL() {
+    return sql;
+  }
+
   public void clear() {
     result.clear();
     checkDup.setValue(null);
+    setSql(null);
   }
 
   public String get(String key) {
     return result.get(key);
   }
 
-  public void put(String key, String value,AnnotationType type) {
+  public void put(String key, String value, AnnotationType type) {
     checkDup.setValue(value);
     result.compute(key, checkDup);
     checkDup.setValue(null);

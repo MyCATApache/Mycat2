@@ -15,56 +15,69 @@
 package io.mycat.router;
 
 import io.mycat.MycatExpection;
+import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 18:09
- * 分片多级路由处理器
+ * @date 2019-05-03 18:09 分片多级路由处理器
  **/
 public class Route {
 
   private final String column;
-  private final String equalKey;
-  private final String rangeStart;
-  private final String rangeEnd;
+  private final Set<String> equalKeys;
+  private final Set<String> rangeStartKeys;
+  private final Set<String> rangeEndKeys;
   Route nextRoute;
 
 
-  public Route(String column, String equalKey, String rangeStart, String rangeEnd) {
-    this.equalKey = equalKey;
-    this.rangeStart = rangeStart;
-    this.rangeEnd = rangeEnd;
+  public Route(String column, Set<String> equalKey, Set<String> rangeStart, Set<String> rangeEnd) {
+    this.equalKeys = equalKey;
+    this.rangeStartKeys = rangeStart;
+    this.rangeEndKeys = rangeEnd;
     this.column = column;
   }
 
-  public interface RouteIndexReceive {
-
-    void addDataNodeIndex(int level,RuleAlgorithm ruleAlgorithm,int index);
-
-    void addDataNodeIndexes(int level,RuleAlgorithm ruleAlgorithm,int[] index);
-  }
-
-  public void route(DynamicAnnotationResult result,int level, RuleAlgorithm ruleAlgorithm,
+  public void route(DynamicAnnotationResult result, int level, RuleAlgorithm ruleAlgorithm,
       RouteIndexReceive receive) {
-    String equal = result.get(equalKey);
-    String columnStart = result.get(rangeStart);
-    String columnEnd = result.get(rangeEnd);
+    String equal = null;
+    for (String equalKey : equalKeys) {
+      equal = result.get(equalKey);
+      if (equal != null) {
+        break;
+      }
+    }
+    String columnStart = null;
+    String columnEnd = null;
+    for (String rangeStartKey : rangeStartKeys) {
+      columnStart = result.get(rangeStartKey);
+      if (columnStart != null) {
+        break;
+      }
+    }
+    for (String rangeEndKey : rangeEndKeys) {
+      columnEnd = result.get(rangeEndKey);
+      if (columnEnd != null) {
+        break;
+      }
+    }
     if (equal != null && columnStart != null) {
-      throw new MycatExpection("");
+      throw new MycatExpection(result.getSQL() + "can not get equal key or rangeKey");
     } else if (equal == null && columnStart == null) {
-      throw new MycatExpection("");
+      expection(equal, columnStart, columnEnd);
+      return;
     } else if (equal != null && columnStart == null) {
       int nodeIndex = ruleAlgorithm.calculate(equal);
       if (nextRoute != null) {
         RuleAlgorithm ruleAlgorithm1 = ruleAlgorithm.getSubRuleAlgorithm().get(nodeIndex);
-        nextRoute.route(result,level+1, ruleAlgorithm1, receive);
+        nextRoute.route(result, level + 1, ruleAlgorithm1, receive);
         return;
       } else {
         if (ruleAlgorithm.getSubRuleAlgorithm() == null) {
-          receive.addDataNodeIndex(nodeIndex,ruleAlgorithm,nodeIndex);
+          receive.addDataNodeIndex(nodeIndex, ruleAlgorithm, nodeIndex);
           return;
         } else {
-          throw new MycatExpection("");
+          throw new MycatExpection("error table rule");
         }
       }
     } else if (equal == null && columnStart != null && columnEnd != null) {
@@ -72,39 +85,40 @@ public class Route {
       if (nextRoute != null) {
         for (int nodeIndex : nodeIndexes) {
           RuleAlgorithm ruleAlgorithm1 = ruleAlgorithm.getSubRuleAlgorithm().get(nodeIndex);
-          nextRoute.route(result,level+1, ruleAlgorithm1, receive);
+          nextRoute.route(result, level + 1, ruleAlgorithm1, receive);
         }
         return;
       } else {
         if (ruleAlgorithm.getSubRuleAlgorithm() == null) {
-          receive.addDataNodeIndexes(level+1,ruleAlgorithm,nodeIndexes);
+          receive.addDataNodeIndexes(level + 1, ruleAlgorithm, nodeIndexes);
+          if (nodeIndexes.length == 1) {
+            receive.addDataNodeIndex(level + 1, ruleAlgorithm, nodeIndexes[0]);
+          }
         } else {
-          throw new MycatExpection("");
+          throw new MycatExpection(result.getSQL() + "meet false tableRule");
         }
       }
     }
+  }
+
+  public void expection(String equal, String columnStart, String columnEnd) {
+    throw new MycatExpection(String
+                                 .format("sql:%s equal:%s start:{} end:%s", Objects.toString(equal),
+                                     Objects.toString(columnStart),
+                                     Objects.toString(columnEnd)));
+  }
+
+  public interface RouteIndexReceive {
+
+    void addDataNodeIndex(int level, RuleAlgorithm ruleAlgorithm, int index);
+
+    void addDataNodeIndexes(int level, RuleAlgorithm ruleAlgorithm, int[] index);
   }
 
   public String getColumn() {
     return column;
   }
 
-  public String getEqualKey() {
-    return equalKey;
-  }
-
-  public String getRangeStart() {
-    return rangeStart;
-  }
-
-  public String getRangeEnd() {
-    return rangeEnd;
-  }
-
-
-  public Route getNextRoute() {
-    return nextRoute;
-  }
 
 
   public void setNextRoute(Route nextRoute) {

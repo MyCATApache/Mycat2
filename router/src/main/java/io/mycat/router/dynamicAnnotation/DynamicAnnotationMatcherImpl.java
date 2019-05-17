@@ -38,16 +38,27 @@ public class DynamicAnnotationMatcherImpl implements DynamicAnnotationMatcher {
   public static final DynamicAnnotationMatcherImpl EMPTY = new DefaultDynamicAnnotationMatcher(
       Collections.EMPTY_LIST);
 
-  private static class DefaultDynamicAnnotationMatcher extends DynamicAnnotationMatcherImpl {
-
-    public DefaultDynamicAnnotationMatcher(List<DynamicAnnotationConfig> config) {
-      super(config);
+  public DynamicAnnotationResult match(String input) {
+    DynamicAnnotationResultImpl result = threadLocal.get();
+    if (result == null) {
+      result = new DynamicAnnotationResultImpl();
+      threadLocal.set(result);
+    } else {
+      result.clear();
     }
-
-    @Override
-    public DynamicAnnotationResult match(CharSequence input) {
-      return DynamicAnnotationResultImpl.EMPTY;
+    Matcher matcher = pattern.matcher(input);
+    int size = groupNameList.size();
+    while (matcher.find()) {
+      for (int i = 0; i < size; i++) {
+        String group = groupNameList.get(i);
+        String value = matcher.group(group);
+        if (value != null) {
+          result.put(group, value, groupNameTypeMap.get(group));
+          result.setSql(input);
+        }
+      }
     }
+    return result;
   }
 
   static final ThreadLocal<DynamicAnnotationResultImpl> threadLocal = new ThreadLocal();
@@ -76,26 +87,16 @@ public class DynamicAnnotationMatcherImpl implements DynamicAnnotationMatcher {
     pattern = Pattern.compile(regex);
   }
 
-  public DynamicAnnotationResult match(CharSequence input) {
-    DynamicAnnotationResultImpl result = threadLocal.get();
-    if (result == null) {
-      result = new DynamicAnnotationResultImpl();
-      threadLocal.set(result);
-    } else {
-      result.clear();
+  private static class DefaultDynamicAnnotationMatcher extends DynamicAnnotationMatcherImpl {
+
+    public DefaultDynamicAnnotationMatcher(List<DynamicAnnotationConfig> config) {
+      super(config);
     }
-    Matcher matcher = pattern.matcher(input);
-    int size = groupNameList.size();
-    while (matcher.find()) {
-      for (int i = 0; i < size; i++) {
-        String group = groupNameList.get(i);
-        String value = matcher.group(group);
-        if (value != null) {
-          result.put(group, value, groupNameTypeMap.get(group));
-        }
-      }
+
+    @Override
+    public DynamicAnnotationResult match(String input) {
+      return DynamicAnnotationResultImpl.EMPTY;
     }
-    return result;
   }
 
   public static void main(String[] args) {

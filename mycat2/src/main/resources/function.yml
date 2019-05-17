@@ -1,12 +1,6 @@
 funtions:
   - clazz: io.mycat.router.function.PartitionByLong
-    name: mpartitionByLong
+    name: partitionByLong
     properties:
-      partitionCount: '8'
-      partitionLength: '128'
-    subFuntion:
-      clazz: io.mycat.router.function.PartitionByLong
-      properties:
-        - partitionCount: '8'
-          partitionLength: '128'
-      subFuntion: null
+      partitionCount: '4'
+      partitionLength: '256'

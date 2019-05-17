@@ -466,7 +466,6 @@ public class BufferSQLParser {
           break;
         case IntTokenHash.SET:
           if (hashArray.getHash(pos) == TokenHash.SET) {
-            ++pos;
             pos = TCLSQLParser
                       .pickSetAutocommitAndSetTransaction(++pos, arrayCount, context, hashArray,
                           sql);

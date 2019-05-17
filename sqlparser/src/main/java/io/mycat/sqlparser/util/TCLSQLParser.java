@@ -32,9 +32,9 @@ public class TCLSQLParser {
         }
         pos++;
       } else if (hashArray.getHash(pos) == TokenHash.ON) {
-        context.getMyCmdValue().set(IntTokenHash.ON, pos, 8, TokenHash.ON);
+        context.setAutocommit(true);
       } else if (hashArray.getHash(pos) == TokenHash.OFF) {
-        context.getMyCmdValue().set(IntTokenHash.OFF, pos, 8, TokenHash.OFF);
+        context.setAutocommit(false);
       }
     }
     return pos;

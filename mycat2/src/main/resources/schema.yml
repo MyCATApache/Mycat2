@@ -3,38 +3,21 @@ schemas:
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
     tables:
-       - name: travelrecord
+      - name: travelrecord
   - name: test2
     schemaType: DB_IN_MULTI_SERVER
-    defaultDataNode: dn1
     tables:
-      - name: hootask1
-        dataNodes: dn1
-      - name: t2
-        dataNodes: dn2
       - name: travelrecord
         dataNodes: dn3
-
-
-#
-#  - name: test
-#    schemaType: DB_IN_ONE_SERVER
-#    defaultDataNode: dn1
-#    tables:
-#      - name: hootask1
-
-#  - name: test
-#    schemaType: DB_IN_MULTI_SERVER
-#    defaultDataNode: dn1
-#    tables:
-#      - name: hootask1
-#        dataNodes: dn1
-#      - name: t2
-#        dataNodes: dn2
-#      - name: travelrecord
-#        dataNodes: dn3
-
-
+      - name: travelrecord
+        dataNodes: dn1,dn2,dn3
+        type: GLOBAL
+  - name: test3
+    schemaType: ANNOTATION_ROUTE
+    tables:
+      - name: travelrecord
+        dataNodes: dn1,dn2,dn3,dn4
+        type: SHARING_DATABASE
 dataNodes:
   - name: dn1
     database: db1
@@ -44,4 +27,7 @@ dataNodes:
     replica: repli
   - name: dn3
     database: db3
+    replica: repli
+  - name: dn4
+    database: db4
     replica: repli

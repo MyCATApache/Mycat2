@@ -58,6 +58,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -381,8 +382,13 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
           list.addAll(getDynamicAnnotationConfigList(range, AnnotationType.SHARDING_RANGE));
         }
         String column = shardingRule.getColumn();
-        Route tmp = new Route(column, shardingRule.getEqualKey(),
-            shardingRule.getRangeStart(), shardingRule.getRangeEnd());
+        HashSet<String> equalsKey = new HashSet<>(
+            Arrays.asList(SplitUtil.split(shardingRule.getEqualKeys(), ",")));
+        HashSet<String> rangeStartKey = new HashSet<>(
+            Arrays.asList(SplitUtil.split(shardingRule.getRangeStart(), ",")));
+        HashSet<String> rangeEndKey = new HashSet<>(
+            Arrays.asList(SplitUtil.split(shardingRule.getRangeEnd(), ",")));
+        Route tmp = new Route(column, equalsKey, rangeStartKey, rangeEndKey);
         if (rootRouteNode == null) {
           String funtion = tableRule.getFuntion();
           algorithm = mycatRouter.getRuleAlgorithm(funtion);
