@@ -62,9 +62,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     if (schemaCount == 1) {
       String schemaName = this.sqlContext.getSchemaName(0);
       MycatSchema schema = config.getSchemaBySchemaName(schemaName);
-      if (schema == null) {
-        schema = config.getDefaultSchema();
-      }
+      RouteNullChecker.CHECK_MYCAT_SCHEMA_EXIST.check(schemaName, schema != null);
       RouteStrategy routeStrategy = schema.getRouteStrategy();
       return routeStrategy.route(schema, sql, this.context);
     } else {
