@@ -78,6 +78,7 @@ public class ConfigLoader {
         return;
       }
     }catch (Exception e){
+      e.printStackTrace();
       LOGGER.error("load config for {} fail",e);
     }
   }

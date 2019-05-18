@@ -32,16 +32,18 @@ public class GlobalTableWriteResultRoute extends ResultRoute {
     return master;
   }
 
-  public void setMaster(String master) {
+  public GlobalTableWriteResultRoute setMaster(String master) {
     this.master = master;
+    return this;
   }
 
   public String getSql() {
     return sql;
   }
 
-  public void setSql(String sql) {
+  public GlobalTableWriteResultRoute setSql(String sql) {
     this.sql = sql;
+    return this;
   }
 
   @Override
@@ -58,8 +60,9 @@ public class GlobalTableWriteResultRoute extends ResultRoute {
     return dataNodes;
   }
 
-  public void setDataNodes(Collection<String> dataNodes) {
+  public GlobalTableWriteResultRoute setDataNodes(Collection<String> dataNodes) {
     this.dataNodes = dataNodes;
+    return this;
   }
 
   @Override
