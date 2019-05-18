@@ -136,4 +136,6 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
 
 
   void setIsolation(MySQLIsolation isolation);
+
+  void setMultiStatementSupport(boolean on);
 }

@@ -14,6 +14,7 @@
  */
 package io.mycat;
 
+import io.mycat.command.MycatCommandHandler;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.AsyncTaskCallBackCounter;
 import io.mycat.proxy.ProxyRuntime;

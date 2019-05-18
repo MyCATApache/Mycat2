@@ -9,15 +9,15 @@ schemas:
     tables:
       - name: travelrecord2
         dataNodes: dn3
-      - name: travelrecord
-        dataNodes: dn1,dn2,dn3
-        type: GLOBAL
   - name: test3
     schemaType: ANNOTATION_ROUTE
     tables:
       - name: travelrecord
         dataNodes: dn1,dn2,dn3,dn4
         type: SHARING_DATABASE
+      - name: travelrecord2
+        dataNodes: dn1,dn2,dn3
+        type: GLOBAL
 dataNodes:
   - name: dn1
     database: db1

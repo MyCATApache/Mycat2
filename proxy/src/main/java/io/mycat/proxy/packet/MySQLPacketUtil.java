@@ -307,6 +307,15 @@ public class MySQLPacketUtil {
     }
   }
 
+  public static final byte[] generateLondData(long statementId, long paramId, byte[] data) {
+    try (MySQLPayloadWriter out = new MySQLPayloadWriter(data.length + 8 + 8)) {
+      out.write(0x18);
+      out.writeFixInt(4, statementId);
+      out.writeFixInt(2, paramId);
+      out.write(data);
+      return out.toByteArray();
+    }
+  }
   public static final byte[] generateChangeUser(
       String username,
       int serverCapabilities,

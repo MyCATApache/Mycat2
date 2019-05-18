@@ -116,6 +116,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setIsolation(readUncommitted);
   }
 
+  @Override
+  public void setMultiStatementSupport(boolean on) {
+
+  }
+
   public void setCharset(int index, String charsetName) {
     this.serverStatus.setCharset(index, charsetName, Charset.forName(charsetName));
   }

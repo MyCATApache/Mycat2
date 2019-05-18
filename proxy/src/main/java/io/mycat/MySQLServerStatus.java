@@ -45,6 +45,16 @@ public final class MySQLServerStatus {
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
   protected int localInFileRequestState = LocalInFileRequestHandler.COM_QUERY;
 
+  public boolean multiStatementSupport = false;
+
+  public boolean isMultiStatementSupport() {
+    return multiStatementSupport;
+  }
+
+  public void setMultiStatementSupport(boolean multiStatementSupport) {
+    this.multiStatementSupport = multiStatementSupport;
+  }
+
   public int getLocalInFileRequestState() {
     return localInFileRequestState;
   }
