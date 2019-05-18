@@ -15,6 +15,7 @@
 package io.mycat.router;
 
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.logTip.RouteNullChecker;
 import io.mycat.router.routeResult.MySQLCommandRouteResultRoute;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
 import io.mycat.sqlparser.util.BufferSQLContext;
@@ -37,12 +38,13 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     context = new RouteContext(config);
   }
 
-  public ResultRoute enterRoute(MycatSchema defaultSchema,String sql) {
+  public ResultRoute enterRoute(MycatSchema defaultSchema, String sql) {
     sqlParser.parse(sql.getBytes(), sqlContext);
     return enterRoute(defaultSchema, sqlContext, sql);
   }
-  public BufferSQLContext simpleParse(String sql){
-    sqlParser.parse(sql.getBytes(),sqlContext);
+
+  public BufferSQLContext simpleParse(String sql) {
+    sqlParser.parse(sql.getBytes(), sqlContext);
     return sqlContext;
   }
 
@@ -55,7 +57,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     int schemaCount = this.sqlContext.getSchemaCount();
     if (schemaCount == 0) {
       RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
-      return routeStrategy.route(defaultSchema, sql,    this.context);
+      return routeStrategy.route(defaultSchema, sql, this.context);
     }
     if (schemaCount == 1) {
       String schemaName = this.sqlContext.getSchemaName(0);
@@ -64,10 +66,10 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
         schema = config.getDefaultSchema();
       }
       RouteStrategy routeStrategy = schema.getRouteStrategy();
-      return routeStrategy.route(schema, sql,    this.context);
+      return routeStrategy.route(schema, sql, this.context);
     } else {
 
-      return this.route(defaultSchema,sql,this.context);
+      return this.route(defaultSchema, sql, this.context);
     }
   }
 
@@ -86,6 +88,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
   public ResultRoute enterRoute(String defaultSchemaName, String sql) {
     MycatSchema defaultSchema = config.getSchemaBySchemaName(defaultSchemaName);
+    RouteNullChecker.CHECK_MYCAT_SCHEMA_EXIST.check(defaultSchemaName, defaultSchema != null);
     return enterRoute(defaultSchema, sql);
   }
 
