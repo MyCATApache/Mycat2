@@ -22,7 +22,7 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
 
 //    private final ReplicaConfig replicaConfig;
     private final MySQLDatasource dataSource;
-    private DatasourceStatus heartBeatStatus;
+    private volatile DatasourceStatus heartBeatStatus;
 
     protected volatile boolean isChecking = false; //是否正在检查
     protected AtomicInteger errorCount = new AtomicInteger(0); //错误计数

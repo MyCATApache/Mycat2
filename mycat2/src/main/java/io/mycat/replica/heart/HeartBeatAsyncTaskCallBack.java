@@ -10,7 +10,7 @@ import io.mycat.proxy.session.MySQLClientSession;
  */
 public abstract class HeartBeatAsyncTaskCallBack  implements AsyncTaskCallBack<MySQLClientSession>{
     protected volatile boolean isQuit = false;
-    protected HeartbeatDetector heartbeatDetector = null;
+    protected final HeartbeatDetector heartbeatDetector ;
     public  HeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
         this.heartbeatDetector = heartbeatDetector;
 

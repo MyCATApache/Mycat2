@@ -209,4 +209,13 @@ public abstract class MySQLReplica implements MycatReplica {
   public int getMasterIndex() {
     return writeIndex;
   }
+
+
+  /**
+   * 切换写节点
+   */
+  public void switchDataSourceIfNeed() {
+
+  }
+
 }

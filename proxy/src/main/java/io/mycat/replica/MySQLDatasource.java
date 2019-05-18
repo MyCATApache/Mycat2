@@ -162,6 +162,7 @@ public abstract class MySQLDatasource {
   }
 
 
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -185,4 +186,9 @@ public abstract class MySQLDatasource {
   public boolean isMaster() {
     return index == replica.getMasterIndex();
   }
+
+  public boolean isSlave(){
+    return index != replica.getMasterIndex();
+  }
+
 }
