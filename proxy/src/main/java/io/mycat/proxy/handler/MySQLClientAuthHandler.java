@@ -130,8 +130,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     mycat.setAutoCommit(MySQLAutoCommit.ON);
     mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
     int index = characterSet;
-    String charset = ProxyRuntime.INSTANCE.getCharsetById(index);
-    mycat.setCharset(index, charset);
+    mycat.setCharset(index);
     finished = true;
 
     mycat.writeOkEndPacket();

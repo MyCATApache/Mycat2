@@ -31,10 +31,15 @@ public class TCLSQLParser {
           context.setAutocommit(false);
         }
         pos++;
+        return pos;
       } else if (hashArray.getHash(pos) == TokenHash.ON) {
         context.setAutocommit(true);
+        pos++;
+        return pos;
       } else if (hashArray.getHash(pos) == TokenHash.OFF) {
         context.setAutocommit(false);
+        pos++;
+        return pos;
       }
     }
     return pos;
@@ -134,7 +139,7 @@ public class TCLSQLParser {
     return pos;
   }
 
-  public static int pickSetAutocommitAndSetTransaction(int pos, final int arrayCount,
+  public static int pickSetAutocommitAndSetTransactionOrCharset(int pos, final int arrayCount,
       BufferSQLContext context, HashArray hashArray, ByteArrayView sql) {
     debug(() -> "SET");
     long hash = hashArray.getHash(pos);
@@ -225,6 +230,14 @@ public class TCLSQLParser {
           }
         }
       }
+    } else if (hash == TokenHash.NAMES) {
+      ++pos;
+      context.setSQLType(BufferSQLContext.SET_CHARSET);
+      context.setCharset(context.getTokenString(pos));
+    } else if (hash == TokenHash.CHARACTER_SET_RESULT) {
+      ++pos;
+      context.setCharsetSetResult(context.getTokenString(pos));
+      context.setSQLType(BufferSQLContext.SET_CHARSET_RESULT);
     } else {
       //TODO 其他SET 命令支持
       context.setSQLType(BufferSQLContext.SET_SQL);

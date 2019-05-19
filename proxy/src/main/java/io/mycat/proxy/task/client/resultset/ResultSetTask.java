@@ -118,7 +118,11 @@ public interface ResultSetTask extends NIOHandler<MySQLClientSession>, MySQLPack
    */
   default void request(MySQLClientSession mysql, int head, String data,
       AsyncTaskCallBack<MySQLClientSession> callBack) {
-    request(mysql, head, data.getBytes(), callBack);
+    try {
+      request(mysql, head, data.getBytes(), callBack);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   /**

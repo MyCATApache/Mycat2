@@ -37,19 +37,19 @@ public class ConfigLoader {
   public static final String DIR_PREPARE = "prepare" + File.separator;
   public static final String DIR_ARCHIVE = "archive" + File.separator;
 
-  public void loadProxy(ConfigReceiver receiver) throws IOException {
-    loadConfig(ConfigEnum.PROXY, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(ConfigEnum.REPLICA_INDEX, GlobalConfig.INIT_VERSION, receiver);
+  public void loadProxy(String root, ConfigReceiver receiver) throws IOException {
+    loadConfig(root, ConfigEnum.PROXY, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.REPLICA_INDEX, GlobalConfig.INIT_VERSION, receiver);
   }
 
-  public void loadMycat(ConfigReceiver receiver) throws IOException {
+  public void loadMycat(String root, ConfigReceiver receiver) throws IOException {
     // 保证文件夹存在
     YamlUtil.createDirectoryIfNotExists(DIR_PREPARE);
     YamlUtil.createDirectoryIfNotExists(DIR_ARCHIVE);
-    loadConfig(ConfigEnum.USER, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(ConfigEnum.DATASOURCE, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(ConfigEnum.DYNAMIC_ANNOTATION, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.USER, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.DATASOURCE, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.DYNAMIC_ANNOTATION, GlobalConfig.INIT_VERSION, receiver);
     // 清空prepare文件夹
     YamlUtil.clearDirectory(DIR_PREPARE, null);
   }
@@ -59,13 +59,6 @@ public class ConfigLoader {
    * @param configEnum 加载的配置枚举值
    * @param version 当前加载的文件版本
    */
-  public void loadConfig(ConfigEnum configEnum, int version, ConfigReceiver receiver)
-      throws IOException {
-    String fileName = configEnum.getFileName();
-    LOGGER.info("load config for {}", configEnum);
-    receiver.putConfig(configEnum, (Configurable) YamlUtil.load(fileName, configEnum.getClazz()),
-        version);
-  }
 
   public void loadConfig(String root, ConfigEnum configEnum, int version, ConfigReceiver receiver) {
     try {
@@ -90,12 +83,13 @@ public class ConfigLoader {
    * @param version
    * @throws IOException
    */
-  public void archiveAndLoadConfig(ConfigEnum configEnum, int version, ConfigReceiver receiver)
+  public void archiveAndLoadConfig(String root, ConfigEnum configEnum, int version,
+      ConfigReceiver receiver)
       throws IOException {
     String fileName = configEnum.getFileName();
     int curVersion = receiver.getConfigVersion(configEnum);
     if (YamlUtil.archive(fileName, curVersion, version)) {
-      loadConfig(configEnum, version, receiver);
+      loadConfig(root, configEnum, version, receiver);
     }
     // 清空prepare下的文件
     YamlUtil.clearDirectory(DIR_PREPARE, fileName);

@@ -28,6 +28,7 @@ import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
+import java.io.IOException;
 import java.util.Collection;
 
 /**
@@ -37,11 +38,25 @@ public class MycatCore {
 
 
   public static void main(String[] args) throws Exception {
-    ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-    runtime.loadMycat();
-    runtime.loadProxy();
+    String resourcesPath = ProxyRuntime.getResourcesPath();
+    startup(resourcesPath, new AsyncTaskCallBack() {
+      @Override
+      public void finished(Session session, Object sender, boolean success, Object result,
+          Object attr) {
 
-    MycatRouterConfig routerConfig = new MycatRouterConfig(ProxyRuntime.getResourcesPath());
+      }
+    });
+    return;
+
+  }
+
+  public static void startup(String resourcesPath, AsyncTaskCallBack startFinished)
+      throws IOException {
+    ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+    runtime.initCharset(resourcesPath);
+    runtime.loadProxy(resourcesPath);
+    runtime.loadMycat(resourcesPath);
+    MycatRouterConfig routerConfig = runtime.initRouterConfig(resourcesPath);
     MycatRouter router = new MycatRouter(routerConfig);
     runtime.initReactor(() -> new MycatCommandHandler(router), new AsyncTaskCallBack() {
       @Override
@@ -55,7 +70,7 @@ public class MycatCore {
               runtime.initDataNode();
               runtime.initSecurityManager();
               runtime.initAcceptor();
-
+              startFinished.finished(null, null, true, null, null);
 //              ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
 //              service.scheduleAtFixedRate(new Runnable() {
 //                @Override
@@ -68,12 +83,12 @@ public class MycatCore {
 //              }, 0, 3, TimeUnit.SECONDS);
             } catch (Exception e) {
               e.printStackTrace();
+              startFinished.finished(null, null, false, null, null);
             }
           }
         });
       }
     });
-
   }
 
   public static void getReplicaMetaData(ProxyRuntime runtime, AsyncTaskCallBack asyncTaskCallBack) {

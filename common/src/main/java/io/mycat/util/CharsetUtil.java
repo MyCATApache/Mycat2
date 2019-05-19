@@ -24,6 +24,7 @@
 package io.mycat.util;
 
 import java.io.FileInputStream;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -40,7 +41,7 @@ public class CharsetUtil {
   private static final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
   private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
-  static {
+  public static void init(String root) {
 
     // index_to_charset.properties
     INDEX_TO_CHARSET.put(1, "big5");
@@ -52,9 +53,8 @@ public class CharsetUtil {
     INDEX_TO_CHARSET.put(33, "utf8");
     INDEX_TO_CHARSET.put(45, "utf8mb4");
 
-    String filePath = Thread.currentThread().getContextClassLoader()
-                          .getResource("").getPath().replaceAll("%20", " ")
-                          + "index_to_charset.properties";
+    String filePath = Paths.get(root).resolve("index_to_charset.properties").toAbsolutePath()
+                          .toString();
     Properties prop = new Properties();
     try {
       prop.load(new FileInputStream(filePath));

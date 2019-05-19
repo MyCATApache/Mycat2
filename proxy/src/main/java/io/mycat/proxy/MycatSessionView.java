@@ -10,6 +10,7 @@ import io.mycat.proxy.handler.LocalInFileRequestHandler.LocalInFileSession;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
 import io.mycat.proxy.handler.PrepareStatementHandler.PrepareStatementSession;
 import io.mycat.proxy.packet.MySQLPacketUtil;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.security.MycatUser;
@@ -141,4 +142,12 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
   void setMultiStatementSupport(boolean on);
 
   MycatUser getUser();
+
+  void setCharset(String charset);
+
+  void setCharsetSetResult(String charsetSetResult);
+
+  boolean isBindMySQLSession();
+
+  MySQLClientSession getMySQLSession();
 }

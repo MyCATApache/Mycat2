@@ -46,6 +46,7 @@ public final class MySQLServerStatus {
   protected int localInFileRequestState = LocalInFileRequestHandler.COM_QUERY;
 
   public boolean multiStatementSupport = false;
+  private String charsetSetResult;
 
   public boolean isMultiStatementSupport() {
     return multiStatementSupport;
@@ -179,5 +180,13 @@ public final class MySQLServerStatus {
 
   public byte[] getSqlState() {
     return SQL_STATE == null ? state : SQL_STATE;
+  }
+
+  public String getCharsetSetResult() {
+    return charsetSetResult;
+  }
+
+  public void setCharsetSetResult(String charsetSetResult) {
+    this.charsetSetResult = charsetSetResult;
   }
 }

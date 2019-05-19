@@ -36,5 +36,5 @@ public interface AsyncTaskCallBack<T extends Session> {
    * @param result
    * @param attr 用于其他用途的保留参数,暂时为null
    */
-	void finished(T session, Object sender, boolean success, Object result, Object attr) ;
+  void finished(T session, Object sender, boolean success, Object result, Object attr);
 }

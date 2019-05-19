@@ -39,6 +39,7 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.security.MycatUser;
+import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
@@ -125,7 +126,22 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   }
 
-  public void setCharset(int index, String charsetName) {
+  public void setCharset(String charsetName) {
+    setCharset(CharsetUtil.getIndex(charsetName), charsetName);
+  }
+
+  @Override
+  public void setCharsetSetResult(String charsetSetResult) {
+    this.serverStatus.setCharsetSetResult(charsetSetResult);
+  }
+
+  @Override
+  public boolean isBindMySQLSession() {
+    return backend != null;
+  }
+
+
+  private void setCharset(int index, String charsetName) {
     this.serverStatus.setCharset(index, charsetName, Charset.forName(charsetName));
   }
 
@@ -506,5 +522,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void setUser(MycatUser user) {
     this.user = user;
+  }
+
+  public void setCharset(int index) {
+    this.setCharset(CharsetUtil.getCharset(index));
+  }
+
+  public String getCharacterSetResults() {
+    return this.serverStatus.getCharsetSetResult();
   }
 }

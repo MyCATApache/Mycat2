@@ -49,9 +49,10 @@ public class MultiMySQLUpdateTask implements ResultSetTask {
     MySQLIsolation isolation = mycat.getIsolation();
     MySQLAutoCommit autoCommit = mycat.getAutoCommit();
     String charsetName = mycat.getCharsetName();
+    String characterSetResults = mycat.getCharacterSetResults();
     for (MySQLDataNode dataNode : dataNodeList) {
       MySQLTaskUtil
-          .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
+          .getMySQLSession(dataNode, isolation, autoCommit, charsetName, characterSetResults,
               false,
               null, (session, sender, success, result, attr) ->
               {

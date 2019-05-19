@@ -43,14 +43,15 @@ public class MySQLTaskUtil {
    */
   public static void getMySQLSessionFromUserThread(String dataNodeName,
       MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit, String charSet,
+      MySQLAutoCommit autoCommit, String charSet, String character_set_results,
       boolean runOnSlave, LoadBalanceStrategy strategy,
       AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
     MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
     MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     threads[i].addNIOJob(() -> {
-      getMySQLSession(dataNode, isolation, autoCommit, charSet, runOnSlave, strategy,
+      getMySQLSession(dataNode, isolation, autoCommit, charSet, character_set_results, runOnSlave,
+          strategy,
           asynTaskCallBack);
     });
   }
@@ -64,6 +65,7 @@ public class MySQLTaskUtil {
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit,
       String charset,
+      String characterSetResult,
       boolean runOnSlave,
       LoadBalanceStrategy strategy,
       AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
@@ -81,7 +83,8 @@ public class MySQLTaskUtil {
             if (dataNode.equals(mysql.getDataNode())) {
               if (autoCommit == MySQLAutoCommit.ON == mysql.isAutomCommit() &&
                       charset.equals(mysql.getCharset()) &&
-                      isolation.equals(mysql.getIsolation())
+                      isolation.equals(mysql.getIsolation()) && Objects.equals(characterSetResult,
+                  mysql.getCharacterSetResult())
               ) {
                 asynTaskCallBack.finished(mysql, sender, true, result, errorMessage);
                 return;
@@ -90,8 +93,9 @@ public class MySQLTaskUtil {
             String databaseName = dataNode.getDatabaseName();
             String sql =
                 isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
-                    + ";" + "SET names " + charset + ";";
-            QueryUtil.mutilOkResultSet(mysql, 4, sql,
+                    + ";" + "SET names " + charset + ";" + "SET character_set_results = " + (
+                    characterSetResult == null ? "NULL" : characterSetResult);
+            QueryUtil.mutilOkResultSet(mysql, 5, sql,
                 new AsyncTaskCallBack<MySQLClientSession>() {
                   @Override
                   public void finished(MySQLClientSession session, Object sender,
@@ -100,6 +104,7 @@ public class MySQLTaskUtil {
                       session.setCharset(charset);
                       session.setDataNode(dataNode);
                       session.setIsolation(isolation);
+                      session.setCharacterSetResult(characterSetResult);
                       asynTaskCallBack.finished(session, this, success, result, attr);
                     } else {
                       asynTaskCallBack.finished(session, this, success, result, attr);

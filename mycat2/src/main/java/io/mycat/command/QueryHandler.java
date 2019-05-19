@@ -3,6 +3,8 @@ package io.mycat.command;
 import static io.mycat.sqlparser.util.BufferSQLContext.DESCRIBE_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_AUTOCOMMIT_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET;
+import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET_RESULT;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_TRANSACTION_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_SQL;
@@ -58,6 +60,19 @@ public interface QueryHandler {
       mycat.writeErrorEndPacket();
       return;
     }
+    if (mycat.isBindMySQLSession()) {
+      mycat
+          .proxyBackend(MySQLPacketUtil.generateComQuery(sql),
+              mycat.getMySQLSession().getDataNode().getName(), false, null, false,
+              (session1, sender, success, result, attr) -> {
+                if (success) {
+                  System.out.println("success full");
+                } else {
+                  session1.writeErrorEndPacket();
+                }
+              });
+      return;
+    }
     try {
       switch (sqlType) {
         case USE_SQL: {
@@ -76,6 +91,18 @@ public interface QueryHandler {
             mycat.writeOkEndPacket();
             return;
           }
+        }
+        case SET_CHARSET: {
+          String charset = sqlContext.getCharset();
+          mycat.setCharset(charset);
+          mycat.writeOkEndPacket();
+          return;
+        }
+        case SET_CHARSET_RESULT: {
+          String charsetSetResult = sqlContext.getCharsetSetResult();
+          mycat.setCharsetSetResult(charsetSetResult);//@todo but do no thing
+          mycat.writeOkEndPacket();
+          return;
         }
         case SET_TRANSACTION_SQL: {
           if (sqlContext.isAccessMode()) {

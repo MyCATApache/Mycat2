@@ -61,7 +61,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
-  private final MycatRouterConfig routerConfig = new MycatRouterConfig(getResourcesPath());
+  private MycatRouterConfig routerConfig;
   private MycatSecurityConfig securityManager;
 
   public static String getResourcesPath() {
@@ -120,12 +120,12 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return proxyRootConfig.getProxy();
   }
 
-  public void loadProxy() throws IOException {
-    ConfigLoader.INSTANCE.loadProxy(this);
+  public void loadProxy(String root) throws IOException {
+    ConfigLoader.INSTANCE.loadProxy(root, this);
   }
 
-  public void loadMycat() throws IOException {
-    ConfigLoader.INSTANCE.loadMycat(this);
+  public void loadMycat(String root) throws IOException {
+    ConfigLoader.INSTANCE.loadMycat(root, this);
   }
 
 
@@ -222,9 +222,10 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return (Collection) replicaMap.values();
   }
 
-  public Object getUserConfig() {
-    return null;
+  public MycatRouterConfig initRouterConfig(String root) {
+    return this.routerConfig = new MycatRouterConfig(root);
   }
+
 
   public void initSecurityManager() {
     UserRootConfig userRootConfig = getConfig(ConfigEnum.USER);
@@ -242,5 +243,9 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public MycatRouterConfig getRouterConfig() {
     return routerConfig;
+  }
+
+  public void initCharset(String resourcesPath) {
+    CharsetUtil.init(resourcesPath);
   }
 }

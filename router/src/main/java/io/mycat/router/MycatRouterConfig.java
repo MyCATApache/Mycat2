@@ -76,7 +76,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
   private final Map<String, MycatDataNode> dataNodes = new HashMap<>();
   private final Map<String, List<MycatDataNode>> replicaNameToDataNodes = new HashMap<>();
   private final MycatSchema defaultSchema;
-  private SQLInterceptor sqlInterceptor;
+  private SQLInterceptor sqlInterceptor = (s) -> s;
 
   public Collection<MycatDataNode> getDataNodes() {
     return dataNodes.values();

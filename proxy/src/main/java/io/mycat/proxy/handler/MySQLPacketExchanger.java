@@ -214,8 +214,9 @@ public enum MySQLPacketExchanger {
       MySQLIsolation isolation = mycat.getIsolation();
       MySQLAutoCommit autoCommit = mycat.getAutoCommit();
       String charsetName = mycat.getCharsetName();
+      String characterSetResult = mycat.getCharacterSetResults();
       MySQLTaskUtil
-          .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
+          .getMySQLSession(dataNode, isolation, autoCommit, charsetName, characterSetResult,
               runOnSlave,
               strategy, finallyCallBack);
     }
