@@ -12,5 +12,5 @@ public interface SQLInterceptor {
    *
    * @return new sql
    */
-  String interceptSQL(String sql, int sqlType);
+  String interceptSQL(String sql);
 }

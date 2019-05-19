@@ -15,6 +15,7 @@ import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatSessionView;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
@@ -36,6 +37,8 @@ public interface QueryHandler {
   MycatRouter router();
 
   default void doQuery(byte[] sqlBytes, MycatSessionView mycat) {
+    MycatRouterConfig routerConfig = ProxyRuntime.INSTANCE.getRouterConfig();
+
     /**
      * 获取默认的schema
      */
@@ -45,6 +48,7 @@ public interface QueryHandler {
     }
     MycatUser user = mycat.getUser();
     String orgin = new String(sqlBytes);
+    orgin = routerConfig.getSqlInterceptor().interceptSQL(orgin);
     BufferSQLContext sqlContext = router().simpleParse(orgin);
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());
     byte sqlType = sqlContext.getSQLType();

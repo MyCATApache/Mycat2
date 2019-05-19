@@ -8,6 +8,8 @@ import java.util.List;
  * @date 2019-05-03 14:18
  **/
 public class ShardingRuleRootConfig implements Configurable {
+
+  String sqlInterceptorClass;
    List<SharingTableRule> tableRules;
 
   public List<SharingTableRule> getTableRules() {
@@ -16,5 +18,13 @@ public class ShardingRuleRootConfig implements Configurable {
 
   public void setTableRules(List<SharingTableRule> tableRules) {
     this.tableRules = tableRules;
+  }
+
+  public String getSqlInterceptorClass() {
+    return sqlInterceptorClass;
+  }
+
+  public void setSqlInterceptorClass(String sqlInterceptorClass) {
+    this.sqlInterceptorClass = sqlInterceptorClass;
   }
 }

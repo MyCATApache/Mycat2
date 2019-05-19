@@ -239,4 +239,8 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   public MycatSchema getSchemaBySchemaName(String schemaName) {
     return this.routerConfig.getSchemaBySchemaName(schemaName);
   }
+
+  public MycatRouterConfig getRouterConfig() {
+    return routerConfig;
+  }
 }
