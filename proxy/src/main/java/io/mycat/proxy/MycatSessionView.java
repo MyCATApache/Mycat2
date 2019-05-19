@@ -12,6 +12,7 @@ import io.mycat.proxy.handler.PrepareStatementHandler.PrepareStatementSession;
 import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLServerSession;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.security.MycatUser;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -138,4 +139,6 @@ public interface MycatSessionView extends LocalInFileSession, PrepareStatementSe
   void setIsolation(MySQLIsolation isolation);
 
   void setMultiStatementSupport(boolean on);
+
+  MycatUser getUser();
 }

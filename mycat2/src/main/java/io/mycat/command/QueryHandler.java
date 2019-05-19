@@ -22,8 +22,10 @@ import io.mycat.router.ResultRoute;
 import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.util.RouterUtil;
+import io.mycat.security.MycatUser;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * @author jamie12221
@@ -41,10 +43,17 @@ public interface QueryHandler {
     if (useSchema == null) {
       useSchema = router().getDefaultSchema();
     }
+    MycatUser user = mycat.getUser();
     String orgin = new String(sqlBytes);
     BufferSQLContext sqlContext = router().simpleParse(orgin);
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());
     byte sqlType = sqlContext.getSQLType();
+
+    if (!user.checkSQL(sqlType, sql, Collections.EMPTY_SET)) {
+      mycat.setLastMessage("Because the security policy is not enforceable");
+      mycat.writeErrorEndPacket();
+      return;
+    }
     try {
       switch (sqlType) {
         case USE_SQL: {
@@ -188,7 +197,7 @@ public interface QueryHandler {
     mycat.writeColumnCount(1);
     mycat.writeColumnDef("Dababase", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     mycat.writeColumnEndPacket();
-    for (MycatSchema schema : schemaList) {
+    for (MycatSchema schema : mycat.getUser().getSchemas().values()) {
       String schemaName = schema.getSchemaName();
       mycat.writeTextRowPacket(new byte[][]{schemaName.getBytes(mycat.charset())});
     }

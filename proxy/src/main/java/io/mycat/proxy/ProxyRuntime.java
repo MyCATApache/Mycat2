@@ -16,6 +16,7 @@ package io.mycat.proxy;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
+import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
@@ -28,6 +29,7 @@ import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.schema.SchemaRootConfig;
+import io.mycat.config.user.UserRootConfig;
 import io.mycat.proxy.buffer.MycatProxyBufferPoolImpl;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.session.MycatSessionManager;
@@ -35,6 +37,8 @@ import io.mycat.proxy.session.Session;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.replica.MySQLReplicaFactory;
+import io.mycat.router.MycatRouterConfig;
+import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -57,6 +61,8 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
+  private final MycatRouterConfig routerConfig = new MycatRouterConfig(getResourcesPath());
+  private MycatSecurityConfig securityManager;
 
   public static String getResourcesPath() {
     try {
@@ -76,7 +82,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public void initDataNode() {
     SchemaRootConfig schemaConfig =
-        getConfig(ConfigEnum.SCHEMA);
+        routerConfig.getConfig(ConfigEnum.SCHEMA);
 
     for (DataNodeConfig dataNodeConfig : schemaConfig.getDataNodes()) {
       DataNodeType dataNodeType =
@@ -214,5 +220,23 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public <T extends MySQLReplica> Collection<T> getMySQLReplicaList() {
     return (Collection) replicaMap.values();
+  }
+
+  public Object getUserConfig() {
+    return null;
+  }
+
+  public void initSecurityManager() {
+    UserRootConfig userRootConfig = getConfig(ConfigEnum.USER);
+    this.securityManager = new MycatSecurityConfig(userRootConfig, routerConfig);
+  }
+
+
+  public MycatSecurityConfig getSecurityManager() {
+    return this.securityManager;
+  }
+
+  public MycatSchema getSchemaBySchemaName(String schemaName) {
+    return this.routerConfig.getSchemaBySchemaName(schemaName);
   }
 }

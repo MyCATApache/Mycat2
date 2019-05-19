@@ -330,16 +330,24 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     writeToChannel(this);
   }
 
+  default void writeErrorEndPacketBySyncInProcessError() {
+    writeErrorEndPacketBySyncInProcessError(MySQLErrorCode.ER_UNKNOWN_ERROR);
+  }
+
+  default void writeErrorEndPacketBySyncInProcessError(int errorCode) {
+    writeErrorEndPacketBySyncInProcessError(1, errorCode);
+  }
   /**
    * 同步写入错误包,用于异常处理,一般错误包比较小,一次非阻塞写入就结束了,写入不完整尝试四次, 之后就会把mycat session关闭,简化错误处理
    */
-  default void writeErrorEndPacketBySyncInProcessError() {
+  default void writeErrorEndPacketBySyncInProcessError(int packetId, int errorCode) {
+    setLastErrorCode(errorCode);
     switchMySQLServerWriteHandler();
     this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
-                       .generateError(MySQLErrorCode.ER_UNKNOWN_ERROR, getLastMessage(),
+                       .generateError(errorCode, getLastMessage(),
                            this.getCapabilities());
-    byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(1, bytes);
+    byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(packetId, bytes);
     ByteBuffer message = ByteBuffer.wrap(bytes1);
     int counter = 0;
     try {

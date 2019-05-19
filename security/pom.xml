@@ -11,5 +11,16 @@
 
   <artifactId>security</artifactId>
 
-
+  <dependencies>
+    <dependency>
+      <groupId>io.mycat</groupId>
+      <artifactId>router</artifactId>
+      <version>0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.mycat</groupId>
+      <artifactId>common</artifactId>
+      <version>0.1</version>
+    </dependency>
+  </dependencies>
 </project>

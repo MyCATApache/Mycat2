@@ -14,6 +14,8 @@
  */
 package io.mycat.proxy.session;
 
+import static io.mycat.beans.mysql.MySQLErrorCode.ER_DBACCESS_DENIED_ERROR;
+
 import io.mycat.MySQLServerStatus;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatSchema;
@@ -36,12 +38,14 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
+import io.mycat.security.MycatUser;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
+import java.util.Map;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLProxySession<MycatSession>, MycatSessionView {
@@ -69,7 +73,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MycatSchema schema;
   private final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();//buffer recycle
   private final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);//reset
-
+  private MycatUser user;
 
   /**
    * 报文写入辅助类
@@ -145,7 +149,21 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
   public void setSchema(MycatSchema schema) {
-    this.schema = schema;
+    Map<String, MycatSchema> schemas = user.getSchemas();
+    if (schema == null) {
+      this.schema = schema;
+      return;
+    }
+    if (schemas.containsKey(schema.getSchemaName())) {
+      this.schema = schema;
+    } else {
+      this.setLastErrorCode(ER_DBACCESS_DENIED_ERROR);
+      String s = "Access denied for user '" + user.getUserName() + "' to database '" + schema
+                                                                                           .getSchemaName()
+                     + "'";
+      this.setLastMessage(s);
+      throw new MycatExpection(s);
+    }
   }
 
   public MySQLClientSession getMySQLSession() {
@@ -153,7 +171,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
 
-
+  public void lazyClose(boolean normal, String hint) {
+    getMycatReactorThread().addNIOJob(() -> {
+      close(normal, hint);
+    });
+  }
   @Override
   public void close(boolean normal, String hint) {
     if (!normal) {
@@ -249,7 +271,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public String getLastMessage() {
     String lastMessage = this.serverStatus.getLastMessage();
-    return lastMessage + "";
+    return " " + lastMessage + "";
   }
 
   public String setLastMessage(String lastMessage) {
@@ -478,5 +500,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     return text.getBytes(charset());
   }
 
+  public MycatUser getUser() {
+    return user;
+  }
 
+  public void setUser(MycatUser user) {
+    this.user = user;
+  }
 }

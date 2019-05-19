@@ -29,8 +29,6 @@ import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * @author cjw
@@ -55,27 +53,8 @@ public class MycatCore {
               Object attr) {
             try {
               runtime.initDataNode();
-
-              getReplicaMetaData(runtime, new AsyncTaskCallBack() {
-                @Override
-                public void finished(Session session, Object sender, boolean success, Object result,
-                    Object attr) {
-                  if (success) {
-                    for (MySQLReplica mySQLReplica : ProxyRuntime.INSTANCE.getMySQLReplicaList()) {
-                      Map<String, Map<String, Set<String>>> metaData = mySQLReplica.getMetaData();
-
-                    }
-
-                    try {
-                      runtime.initAcceptor();
-                    } catch (Exception e) {
-                      e.printStackTrace();
-                    }
-                  } else {
-                    System.out.println("fail");
-                  }
-                }
-              });
+              runtime.initSecurityManager();
+              runtime.initAcceptor();
 
 //              ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
 //              service.scheduleAtFixedRate(new Runnable() {

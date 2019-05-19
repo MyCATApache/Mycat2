@@ -188,6 +188,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
               reactorEnv.setCurSession(null);
             }
           } catch (Throwable t) {
+            t.printStackTrace();
             Session curSession = reactorEnv.getCurSession();
             if (curSession != null) {
               curSession.close(false, curSession.setLastMessage(t));

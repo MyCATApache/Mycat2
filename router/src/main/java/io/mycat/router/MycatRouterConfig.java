@@ -102,11 +102,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     List<DynamicAnnotationConfig> list = new ArrayList<>();
     for (String name : names) {
       DynamicAnnotationConfig dynamicAnnotationConfig = dynamicAnnotations.get(name);
-      try {
         dynamicAnnotationConfig = (DynamicAnnotationConfig) dynamicAnnotationConfig.clone();
-      } catch (Exception e) {
-        dynamicAnnotationConfig = null;// as null
-      }
       dynamicAnnotationConfig.setType(type);// nullexception
       list.add(dynamicAnnotationConfig);
     }

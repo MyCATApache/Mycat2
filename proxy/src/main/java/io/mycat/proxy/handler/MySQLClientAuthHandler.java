@@ -14,6 +14,9 @@
  */
 package io.mycat.proxy.handler;
 
+import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
+import static io.mycat.beans.mysql.MySQLErrorCode.ER_DBACCESS_DENIED_ERROR;
+
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -24,7 +27,10 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.security.MycatSecurityConfig;
+import io.mycat.security.MycatUser;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
+import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -66,8 +72,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     mycat.resetCurrentProxyPayload();
 
     String username = auth.getUsername();
-    byte[] password = auth.getPassword();
-
+    byte[] input = auth.getPassword();
     int maxPacketSize = auth.getMaxPacketSize();
     String database = auth.getDatabase();
 
@@ -76,12 +81,51 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     Map<String, String> attrs = auth.getClientConnectAttrs();
     String authPluginName = auth.getAuthPluginName();
 
-    if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
-      mycat.setLastMessage("Can Not Use Compression Protocol!");
-      mycat.writeErrorEndPacket();
+    MycatSecurityConfig securityManager = ProxyRuntime.INSTANCE.getSecurityManager();
+
+    try {
+      if (!securityManager.isIgnorePassword()) {
+        String password = ProxyRuntime.INSTANCE.getSecurityManager()
+                              .getPasswordByUserName(username);
+        if (!checkPassword(password, input)) {
+          mycat.setLastMessage("password is wrong!");
+          failture(mycat);
+          return;
+        }
+      }
+      MycatUser user = securityManager
+                           .getUser(mycat.channel().socket().getRemoteSocketAddress().toString(),
+                               username, maxPacketSize);
+
+      switch (securityManager.checkSchema(user, database)) {
+        case ER_DBACCESS_DENIED_ERROR: {
+          String meaage =
+              "Access denied for user '" + username + "' to database '" + database + "'";
+          mycat.setLastMessage(meaage);
+          failture(mycat);
+          mycat.lazyClose(true, meaage);
+          return;
+        }
+        default: {
+          mycat.setUser(user);
+          if (!StringUtil.isEmpty(database)) {
+            mycat.setSchema(ProxyRuntime.INSTANCE.getSchemaBySchemaName(database));
+          }
+        }
+      }
+
+      if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
+        mycat.setLastMessage("Can Not Use Compression Protocol!");
+        failture(mycat);
+        mycat.lazyClose(true, "Can Not Use Compression Protocol!");
+        return;
+      }
+    } catch (Exception e) {
+      mycat.setLastMessage(e);
+      failture(mycat);
       return;
     }
-
+    mycat.setSchema(ProxyRuntime.INSTANCE.getSchemaBySchemaName(database));
     mycat.setServerCapabilities(auth.getCapabilities());
     mycat.setAutoCommit(MySQLAutoCommit.ON);
     mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
@@ -91,6 +135,10 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     finished = true;
 
     mycat.writeOkEndPacket();
+  }
+
+  public void failture(MycatSession mycat) {
+    mycat.writeErrorEndPacketBySyncInProcessError(2, ER_ACCESS_DENIED_ERROR);
   }
 
   @Override
@@ -136,5 +184,28 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     hs.writePayload(mySQLPayloadWriter);
     mycat.setPakcetId(-1);//使用获取的packetId变为0
     mycat.writeBytes(mySQLPayloadWriter.toByteArray());
+  }
+
+
+  private boolean checkPassword(String rightPassword, byte[] password) {
+    String pass = rightPassword;
+    if (pass == null || pass.length() == 0) {
+      return (password == null || password.length == 0);
+    }
+    if (password == null || password.length == 0) {
+      return false;
+    }
+    byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(pass, seed);
+    if (encryptPass != null && (encryptPass.length == password.length)) {
+      int i = encryptPass.length;
+      while (i-- != 0) {
+        if (encryptPass[i] != password[i]) {
+          return false;
+        }
+      }
+    } else {
+      return false;
+    }
+    return true;
   }
 }
