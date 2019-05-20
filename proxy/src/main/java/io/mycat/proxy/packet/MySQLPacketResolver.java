@@ -50,8 +50,7 @@ import org.slf4j.LoggerFactory;
 /**
  * 报文处理类 该类实现报文解析
  *
- * @author jamie12221 chenjunwen design
- * 294712221@qq.com
+ * @author jamie12221 chenjunwen design 294712221@qq.com
  * @date 2019-05-07 21:23
  **/
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
@@ -67,8 +66,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 指示当前游标仍有结果
-   * @param serverStatus
-   * @return
    */
   static boolean hasFatch(int serverStatus) {
     // 检查是否通过fatch执行的语句
@@ -77,8 +74,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * A transaction is currently active
-   * @param serverStatus
-   * @return
    */
   static boolean hasTrans(int serverStatus) {
     return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)
@@ -86,66 +81,57 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
                       .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANS_READONLY);
   }
 
+  default boolean isErrorPacket() {
+    return getHead() == 0xff;
+  }
+
   /**
    * 获得payload类型
-   * @return
    */
   MySQLPayloadType getMySQLPayloadType();
 
   /**
    * 内部api 设置payload类型
-   * @param type
    */
   void setMySQLPayloadType(MySQLPayloadType type);
 
   /**
    * 设置报文序列号
-   * @param packetId
-   * @return
    */
   int setPacketId(int packetId);
 
   /**
    * 获得报文序列号
-   * @return
    */
   int getPacketId();
 
   /**
    * 未实现
-   * @return
-   * @throws IOException
    */
   boolean readFromChannel() throws IOException;
 
   /**
    * 未实现
-   * @throws IOException
    */
   void writeToChannel() throws IOException;
 
   /**
    * 是否已经识别出payload类型 该标志用于避免重复识别导致一些报文计数错误
-   * @return
    */
   boolean hasResolvePayloadType();
 
   /**
    * 内部api 标记报文已经被识别
-   * @param marked
    */
   void markedResolvePayloadType(boolean marked);
 
   /**
    * 前端请求报文payload的第一个字节,该字节标记了命令类型
-   * @return
    */
   int getHead();
 
   /**
    * 内部api,设置head
-   * @param head
-   * @return
    */
   int setHead(int head);
 
@@ -153,8 +139,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 一些报文类型要用到sql解析的sql类型辅助识别,此api就是提供这个sql类型
-   * @param type
-   * @return
    */
   int setCurrentComQuerySQLType(int type);
 
@@ -162,33 +146,26 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 内部api 获取当前的sql类型
-   * @return
    */
   int getCurrentSQLType();
 
   /**
    * 透传的数据,开始下标
-   * @param i
-   * @return
    */
   int setStartPos(int i);
 
   /**
    * 透传的数据,结束下标
-   * @param i
-   * @return
    */
   int setEndPos(int i);
 
   /**
    * 报文解析状态
-   * @return
    */
   ComQueryState getState();
 
   /**
    * 内部api.更新解析状态
-   * @param state
    */
   void setState(ComQueryState state);
 
@@ -220,7 +197,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 客户端是否禁用EOF报文
-   * @return
    */
   boolean clientDeprecateEof();
 
@@ -228,7 +204,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 与客户端协商得到的服务器能力标志
-   * @return
    */
   int capabilityFlags();
 
@@ -236,8 +211,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 单个报文使用字数计算时候的剩余字节数
-   * @param remainsBytes
-   * @return
    */
   int setRemainsBytes(int remainsBytes);
 
@@ -252,14 +225,11 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 是否一个payload对应多个报文
-   * @param c
-   * @return
    */
   boolean setMultiPacket(boolean c);
 
   /**
    * 是否请求已经结束,使用该函数时候,需要同一个解析器处理请求和响应,以完成整个状态流转
-   * @return
    */
   default boolean isRequestFininshed() {
     return getState() != ComQueryState.QUERY_PACKET;
@@ -273,8 +243,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   void resetCurrentMySQLPacket();
 
   /**
-   * 重置解析器,但是不清除payload类型以及serverStatus,因为后续操作可能用到这些信息
-   * 会清除Proxybuffer内部的buffer,但是不会清除proxybuffer,proxybuffer的引用本身在session里
+   * 重置解析器,但是不清除payload类型以及serverStatus,因为后续操作可能用到这些信息 会清除Proxybuffer内部的buffer,但是不会清除proxybuffer,proxybuffer的引用本身在session里
    */
   default void reset() {
     resetPayload();
@@ -321,12 +290,12 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * payload是否接收结束
-   * @return
    */
   boolean isPayloadFinished();
 
   /**
    * 把payload读取完整,之后从currentPayload读取,使用resetCurrentPayload释放
+   *
    * @return 是否读取完整
    */
   default boolean readMySQLPayloadFully() {
@@ -360,7 +329,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 把报文读取完整
-   * @return
    */
   default boolean readMySQLPacketFully() {
     MySQLPacket mySQLPacket = currentProxybuffer();
@@ -414,7 +382,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * packet++;
-   * @return
    */
   default int getAndIncrementPacketId() {
     int packetId = getPacketId();
@@ -425,7 +392,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * ++packet
-   * @return
    */
   default int incrementPacketIdAndGet() {
     int packetId = getPacketId();
@@ -436,8 +402,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 尽可能只要能识别出报文类型,返回值就是true
-   * @return
-   * @throws IOException
    */
   default boolean readMySQLPacket() throws IOException {
     MySQLPacket mySQLPacket = currentProxybuffer();
@@ -525,21 +489,16 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 当前的buffer
-   * @return
    */
   MySQLPacket currentProxybuffer();
 
   /**
    * 把多个报文拼接成完整的Payload
-   * @param mySQLPacket
-   * @param payloadStartIndex
-   * @param payloadEndIndex
    */
   void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex, int payloadEndIndex);
 
   /**
    * 设置Payload
-   * @param mySQLPacket
    */
   void setPayload(MySQLPacket mySQLPacket);
 
@@ -550,12 +509,12 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 当前的Payload
-   * @return
    */
   MySQLPacket currentPayload();
 
   /**
    * 识别报文类型
+   *
    * @param head 可能用到的信息之一,命令报文的第一个字节
    * @param isPacketFinished 报文是否接收结束
    * @param parse 是否对报文进行解析,未实现
@@ -703,8 +662,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 识别prepareOk报文
-   * @param buffer
-   * @param isPacketFinished
    */
   default void resolvePrepareOkPacket(MySQLPacket buffer, boolean isPacketFinished) {
     if (!isPacketFinished) {
@@ -737,25 +694,20 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 响应是否结束
-   * @return
    */
   default boolean isResponseFinished() {
     return getState() == ComQueryState.COMMAND_END;
   }
 
   /**
-   *     setState(b ? ComQueryState.COMMAND_END : ComQueryState.FIRST_PACKET);
-   * @param b
+   * setState(b ? ComQueryState.COMMAND_END : ComQueryState.FIRST_PACKET);
    */
   default void setResponseFinished(boolean b) {
     setState(b ? ComQueryState.COMMAND_END : ComQueryState.FIRST_PACKET);
   }
 
   /**
-   * 从eof packet读取服务器状态
-   * 该函数并不会改变buffer内部状态
-   * @param buffer
-   * @return
+   * 从eof packet读取服务器状态 该函数并不会改变buffer内部状态
    */
   default int eofPacketReadStatus(MySQLPacket buffer) {
     int bpStartIndex = buffer.packetReadStartIndex();
@@ -827,8 +779,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 识别结果集结束的报文
-   * @param mySQLPacket
-   * @param isPacketFinished
    */
   default void resolveResultsetRowEnd(MySQLPacket mySQLPacket, boolean isPacketFinished) {
     if (!isPacketFinished) {
@@ -853,9 +803,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
 
   /**
    * 处理预处理响应
-   * @param proxyBuf
-   * @param head
-   * @param isPacketFinished
    */
   default void resolvePrepareResponse(MySQLPacket proxyBuf, int head, boolean isPacketFinished) {
     if (!isPacketFinished) {

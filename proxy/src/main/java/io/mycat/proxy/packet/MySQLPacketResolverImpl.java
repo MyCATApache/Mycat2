@@ -264,6 +264,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   @Override
   public final MySQLPacket currentPayload() {
     MySQLPacket mySQLPacket = currentProxybuffer();
+    int i = mySQLPacket.packetReadStartIndex();
     if (mySQLPacket == payload) {
       return mySQLPacket;
     } else {

@@ -6,7 +6,6 @@ import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.concurrent.ExecutionException;
-import org.junit.Assert;
 import org.junit.Test;
 
 /**
@@ -25,15 +24,21 @@ public class JdbcStartup extends JdbcDao {
 
       }
     }, (session, sender, success, result, future) -> {
-      try (Connection connection = getConnection()) {
-        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-        connection.setAutoCommit(false);
-        connection.createStatement().execute("select 1");
-        connection.commit();
-        compelete(future);
-      } catch (Exception e) {
-        Assert.fail(e.getMessage());
+      for (int i = 0; i < 80; i++) {
+        new Thread(() -> {
+          try (Connection connection = getConnection()) {
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setAutoCommit(false);
+            connection.createStatement().execute("select 1");
+            connection.commit();
+            compelete(future);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }).start();
+
       }
+
     });
   }
 

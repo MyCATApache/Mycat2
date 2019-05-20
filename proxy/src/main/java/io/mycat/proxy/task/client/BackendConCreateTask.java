@@ -25,6 +25,7 @@ import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
@@ -89,11 +90,23 @@ public final class BackendConCreateTask implements NIOHandler<MySQLClientSession
       return;
     }
     if (!welcomePkgReceived) {
+      MySQLPacketResolver packetResolver = mysql.getPacketResolver();
       int serverCapabilities = GlobalConfig.getClientCapabilityFlags().value;
-      mysql.getPacketResolver().setCapabilityFlags(serverCapabilities);
+      packetResolver.setCapabilityFlags(serverCapabilities);
+      MySQLPacket payload = mysql.currentProxyPayload();
+      if (payload.isErrorPacket()) {
+        ErrorPacketImpl errorPacket = new ErrorPacketImpl();
+        errorPacket.readPayload(payload);
+        String errorMessage = new String(errorPacket.getErrorMessage());
+        mysql.setLastMessage(errorMessage);
+        mysql.close(false, errorMessage);
+        callback.finished(mysql, null, false, errorMessage, null);
+        return;
+      }
 
+      payload.getByte(payload.packetReadStartIndex());
       HandshakePacket hs = new HandshakePacket();
-      hs.readPayload(mysql.currentProxyPayload());
+      hs.readPayload(payload);
       mysql.resetCurrentProxyPayload();
       int charsetIndex = hs.getCharacterSet();
       AuthPacket packet = new AuthPacket();

@@ -39,13 +39,27 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * 在不压缩情况下,报文头部的长度
-   * @return
    */
   static int getPacketHeaderSize() {
     return 4;
   }
 
   T currentBuffer();
+
+  /**
+   * 帮助类 需要主要的是,开始读取的下标是buffer的position
+   *
+   * @param buffer buffer
+   * @param length 长度
+   */
+  static int readInt(ByteBuffer buffer, int length) {
+    int rv = 0;
+    for (int i = 0; i < length; i++) {
+      byte b = buffer.get();
+      rv |= (((long) b) & 0xFF) << (i * 8);
+    }
+    return rv;
+  }
 
   /**
    * 获取lenenc占用的字节长度
@@ -65,20 +79,8 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
     }
   }
 
-  /**
-   * 帮助类
-   * 需要主要的是,开始读取的下标是buffer的position
-   * @param buffer buffer
-   * @param length 长度
-   * @return
-   */
-  static int readInt(ByteBuffer buffer, int length) {
-    int rv = 0;
-    for (int i = 0; i < length; i++) {
-      byte b = buffer.get();
-      rv |= (((long) b) & 0xFF) << (i * 8);
-    }
-    return rv;
+  default boolean isErrorPacket() {
+    return (getByte(packetReadStartIndex()) & 0xff) == 0xff;
   }
 
   static void writeFixIntByteBuffer(ByteBuffer buffer, int length, long val) {
@@ -95,7 +97,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * read方法开始读取的位置
-   * @return
    */
   int packetReadStartIndex();
 
@@ -103,16 +104,13 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * read方法读取结束的位置
-   * @return
    */
   int packetReadEndIndex();
 
   int packetReadEndIndex(int endPos);
 
   /**
-   *packetStartIndex向前移动的长度
-   * @param len
-   * @return
+   * packetStartIndex向前移动的长度
    */
   default int packetReadStartIndexAdd(int len) {
     return packetReadStartIndex(packetReadStartIndex() + len);
@@ -127,8 +125,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * packetWriteIndex向前移动的长度,实际上就是bytebuffer的position
-   * @param len
-   * @return
    */
   default int packetWriteIndexAdd(int len) {
     return packetWriteIndex(packetWriteIndex() + len);
@@ -136,8 +132,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * 不做任务修改,把bytes写入bytebuffer
-   * @param bytes
-   * @return
    */
   default MySQLPacket writeBytes(byte[] bytes) {
     this.writeBytes(bytes.length, bytes);
@@ -392,11 +386,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * 该方法直接对bytebuffer进行操作
-   * @param index
-   * @param bytes
-   * @param offset
-   * @param length
-   * @return
    */
   default MySQLPacket writeBytes(int index, byte[] bytes, int offset, int length) {
     currentBuffer().position(index);
@@ -554,7 +543,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * packetReadStartIndex() == packetReadEndIndex()
-   * @return
    */
   default boolean readFinished() {
     return packetReadStartIndex() == packetReadEndIndex();
@@ -584,7 +572,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * time读取 binaryResultSet
-   * @return
    */
   default java.sql.Time readTime() {
     boolean negative;
@@ -633,7 +620,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * date 读取 BinaryResultSet
-   * @return
    */
   default java.util.Date readDate() {
     byte length = readByte();
@@ -669,7 +655,6 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   /**
    * Decimal 读取 BinaryResultSet
-   * @return
    */
   default BigDecimal readBigDecimal() {
     String src = readLenencString();
