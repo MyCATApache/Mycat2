@@ -64,6 +64,7 @@ public class MycatCore {
     runtime.initCharset(resourcesPath);
     runtime.loadProxy(resourcesPath);
     runtime.loadMycat(resourcesPath);
+    runtime.initPlug();
     MycatRouterConfig routerConfig = runtime.initRouterConfig(resourcesPath);
     MycatRouter router = new MycatRouter(routerConfig);
     runtime.initReactor(() -> new MycatCommandHandler(router), new AsyncTaskCallBack() {

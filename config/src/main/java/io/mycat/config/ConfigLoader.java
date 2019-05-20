@@ -39,6 +39,7 @@ public class ConfigLoader {
 
   public void loadProxy(String root, ConfigReceiver receiver) throws IOException {
     loadConfig(root, ConfigEnum.PROXY, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.PLUG, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.REPLICA_INDEX, GlobalConfig.INIT_VERSION, receiver);
   }
 

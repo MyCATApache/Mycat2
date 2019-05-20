@@ -29,9 +29,9 @@ import java.util.List;
  * @author: gaozhiwen
  */
 public class ReplicaConfig {
-    public enum BalanceTypeEnum {
-        BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
-    }
+//    public enum BalanceTypeEnum {
+//        BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
+//    }
 
     public enum RepSwitchTypeEnum {
         NOT_SWITCH, SWITCH
@@ -65,7 +65,7 @@ public class ReplicaConfig {
     private String name;
     private RepTypeEnum repType;
     private RepSwitchTypeEnum switchType;
-    private BalanceTypeEnum balanceType;
+  private String balanceName;
     private List<DatasourceConfig> mysqls;
 
     public String getName() {
@@ -92,12 +92,12 @@ public class ReplicaConfig {
         this.switchType = switchType;
     }
 
-    public BalanceTypeEnum getBalanceType() {
-        return balanceType;
+  public String getBalanceName() {
+    return balanceName;
     }
 
-    public void setBalanceType(BalanceTypeEnum balanceType) {
-        this.balanceType = balanceType;
+  public void setBalanceName(String balanceName) {
+    this.balanceName = balanceName;
     }
 
     public List<DatasourceConfig> getMysqls() {
@@ -110,7 +110,8 @@ public class ReplicaConfig {
 
     @Override
     public String toString() {
-        return "ReplicaConfig{" + "name='" + name + '\'' + ", repType=" + repType + ", switchType=" + switchType + ", balanceType=" + balanceType
+      return "ReplicaConfig{" + "name='" + name + '\'' + ", repType=" + repType + ", switchType="
+                 + switchType + ", balanceName=" + balanceName
                 + ", mysqls=" + mysqls + '}';
     }
 }

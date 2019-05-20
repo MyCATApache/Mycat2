@@ -17,6 +17,7 @@ package io.mycat.config;
 
 import io.mycat.config.datasource.DatasourceRootConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
+import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.route.DynamicAnnotationRootConfig;
 import io.mycat.config.route.ShardingRuleRootConfig;
@@ -38,7 +39,9 @@ public enum ConfigEnum {
   SCHEMA(8, "schema.yml", SchemaRootConfig.class),
   DYNAMIC_ANNOTATION(9, "dynamicAnnotation.yml", DynamicAnnotationRootConfig.class),
   RULE(10, "rule.yml", ShardingRuleRootConfig.class),
-  FUNCTIONS(11, "function.yml", SharingFuntionRootConfig.class);
+  FUNCTIONS(11, "function.yml", SharingFuntionRootConfig.class),
+  PLUG(12, "plug.yml", PlugRootConfig.class),
+  ;
   private byte type;
   private String fileName;
   private Class clazz;

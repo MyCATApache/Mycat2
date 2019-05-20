@@ -20,10 +20,10 @@ import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.logTip.ReplicaTip;
-import io.mycat.plug.loadBalance.BalanceAllRead;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,7 +47,7 @@ public abstract class MySQLReplica implements MycatReplica {
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private volatile int writeIndex = 0; //主节点默认为0
   private long lastInitTime;  //最后一次初始化时间
-  private LoadBalanceStrategy defaultLoadBalanceStrategy = BalanceAllRead.INSTANCE;
+  private LoadBalanceStrategy defaultLoadBalanceStrategy;
   private MySQLCollationIndex collationIndex;
 
   /**
@@ -58,6 +58,8 @@ public abstract class MySQLReplica implements MycatReplica {
     assert replicaConfig != null;
     assert writeIndex > -1;
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
+    defaultLoadBalanceStrategy = ProxyRuntime.INSTANCE
+                                     .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
     assert mysqls != null;
     checkIndex(replicaConfig.getName(), writeIndex, mysqls.size());
     this.config = replicaConfig;

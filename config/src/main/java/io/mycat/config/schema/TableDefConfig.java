@@ -25,14 +25,16 @@ import java.util.List;
  */
 public class TableDefConfig {
 
-  public enum MycatTableType {
-     GLOBAL, SHARING_DATABASE, SHARING_TABLE, SHARING_DATABASE_TABLE, ER;
-  }
+  private String balanceName;
 
   private String name;
   private String dataNodes;
   private String tableRule;
   private String primaryKey;
+
+  public String getBalanceName() {
+    return balanceName;
+  }
 
   public List<String> getSubTables() {
     return subTables;
@@ -110,6 +112,14 @@ public class TableDefConfig {
 
   public List<ERChildTableConfig> getChildTableConfigs() {
     return childTableConfigs;
+  }
+
+  public void setBalanceName(String balanceName) {
+    this.balanceName = balanceName;
+  }
+
+  public enum MycatTableType {
+    GLOBAL, SHARING_DATABASE, SHARING_TABLE, SHARING_DATABASE_TABLE, ER
   }
 
   public void setChildTableConfigs(

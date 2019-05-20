@@ -24,12 +24,15 @@ import io.mycat.config.ConfigReceiverImpl;
 import io.mycat.config.datasource.DatasourceRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
+import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.user.UserRootConfig;
+import io.mycat.plug.loadBalance.LoadBalanceManager;
+import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.MycatProxyBufferPoolImpl;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -63,6 +66,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
+  private final LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
   private MycatRouterConfig routerConfig;
   private MycatSecurityConfig securityManager;
 
@@ -253,5 +257,15 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public void registerMonitor(MycatMonitorCallback callback) {
     MycatMonitor.setCallback(callback);
+  }
+
+  public void initPlug() {
+    PlugRootConfig plugRootConfig = getConfig(ConfigEnum.PLUG);
+    Objects.requireNonNull(plugRootConfig);
+    loadBalanceManager.load(plugRootConfig);
+  }
+
+  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
+    return loadBalanceManager.getLoadBalanceByBalanceName(name);
   }
 }
