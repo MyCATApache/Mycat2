@@ -3,6 +3,7 @@ package io.mycat.test.jdbc;
 import io.mycat.MycatCore;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.session.Session;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -40,14 +41,19 @@ public abstract class JdbcDao {
       }
     }
   }
-
   public static void loadModule(String module, AsyncTaskCallBack task)
+      throws InterruptedException, ExecutionException, IOException {
+    loadModule(module, MycatMonitorCallback.EMPTY, task);
+  }
+
+  public static void loadModule(String module, MycatMonitorCallback callback,
+      AsyncTaskCallBack task)
       throws IOException, ExecutionException, InterruptedException {
     String resourcesPath = ProxyRuntime.getResourcesPath();
     Path resolve = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     final CompletableFuture<String> future = new CompletableFuture<>();
-    MycatCore.startup(resolve.toAbsolutePath().toString(), new AsyncTaskCallBack() {
+    MycatCore.startup(resolve.toAbsolutePath().toString(), callback, new AsyncTaskCallBack() {
       @Override
       public void finished(Session session, Object sender, boolean success, Object result,
           Object attr) {

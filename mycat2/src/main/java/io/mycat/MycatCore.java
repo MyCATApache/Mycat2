@@ -18,6 +18,8 @@ import io.mycat.command.MycatCommandHandler;
 import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.AsyncTaskCallBackCounter;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.Session;
 import io.mycat.proxy.task.client.MySQLTaskUtil;
@@ -49,10 +51,16 @@ public class MycatCore {
     return;
 
   }
-
   public static void startup(String resourcesPath, AsyncTaskCallBack startFinished)
       throws IOException {
+    startup(resourcesPath, MycatMonitorCallback.EMPTY, startFinished);
+  }
+
+  public static void startup(String resourcesPath, MycatMonitorCallback callback,
+      AsyncTaskCallBack startFinished)
+      throws IOException {
     ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+    MycatMonitor.setCallback(callback);
     runtime.initCharset(resourcesPath);
     runtime.loadProxy(resourcesPath);
     runtime.loadMycat(resourcesPath);

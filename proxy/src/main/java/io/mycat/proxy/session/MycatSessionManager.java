@@ -15,9 +15,9 @@
 package io.mycat.proxy.session;
 
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.handler.CommandHandler;
 import io.mycat.proxy.handler.MySQLClientAuthHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;

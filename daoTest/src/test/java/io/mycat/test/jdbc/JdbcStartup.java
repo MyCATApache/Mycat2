@@ -1,5 +1,8 @@
 package io.mycat.test.jdbc;
 
+import io.mycat.proxy.monitor.MycatMonitorCallback;
+import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.sql.Connection;
 import java.util.concurrent.ExecutionException;
@@ -16,7 +19,12 @@ public class JdbcStartup extends JdbcDao {
 
   @Test
   public void startUp() throws IOException, ExecutionException, InterruptedException {
-    loadModule(DB_IN_ONE_SERVER, (session, sender, success, result, future) -> {
+    loadModule(DB_IN_ONE_SERVER, new MycatMonitorCallback() {
+      @Override
+      public void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
+
+      }
+    }, (session, sender, success, result, future) -> {
       try (Connection connection = getConnection()) {
         connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
         connection.setAutoCommit(false);

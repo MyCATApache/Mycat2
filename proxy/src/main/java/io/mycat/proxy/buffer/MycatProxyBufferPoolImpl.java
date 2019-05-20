@@ -1,7 +1,7 @@
 package io.mycat.proxy.buffer;
 
 import io.mycat.buffer.BufferPoolImpl;
-import io.mycat.proxy.MycatMonitor;
+import io.mycat.proxy.monitor.MycatMonitor;
 import java.nio.ByteBuffer;
 
 /**

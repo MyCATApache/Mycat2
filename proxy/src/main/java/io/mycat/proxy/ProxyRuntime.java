@@ -32,6 +32,8 @@ import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.user.UserRootConfig;
 import io.mycat.proxy.buffer.MycatProxyBufferPoolImpl;
 import io.mycat.proxy.handler.CommandHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.proxy.session.Session;
 import io.mycat.replica.MySQLDatasource;
@@ -247,5 +249,9 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public void initCharset(String resourcesPath) {
     CharsetUtil.init(resourcesPath);
+  }
+
+  public void registerMonitor(MycatMonitorCallback callback) {
+    MycatMonitor.setCallback(callback);
   }
 }
