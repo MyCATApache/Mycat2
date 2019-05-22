@@ -364,6 +364,12 @@ public class MySQLPacketUtil {
     }
   }
 
+  public static final byte[] generateAuthenticationSwitchResponse(byte[] authenticationResponseData) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(512)){
+        writer.writeEOFString(new String(authenticationResponseData));
+      return writer.toByteArray();
+    }
+  }
   public static final byte[] generateSSLRequest(
       int clientCapacities,
       int maxPacketSize,

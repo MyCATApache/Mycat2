@@ -46,7 +46,7 @@ public class MySQLServerCapabilityFlags {
         flag |= MySQLServerCapabilityFlags.CLIENT_TRANSACTIONS;
         // flag |= ServerDefs.CLIENT_RESERVED;
         flag |= MySQLServerCapabilityFlags.CLIENT_SECURE_CONNECTION;
-        flag |= MySQLServerCapabilityFlags.CLIENT_PLUGIN_AUTH;
+//        flag |= MySQLServerCapabilityFlags.CLIENT_PLUGIN_AUTH;
 //        flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_ATTRS;
         return flag;
     }

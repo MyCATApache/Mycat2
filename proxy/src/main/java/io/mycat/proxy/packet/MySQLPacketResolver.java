@@ -158,6 +158,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
    */
   int setCurrentComQuerySQLType(int type);
 
+  void setIsClientLoginRequest(boolean flag);
+
+  boolean isClientLogin();
+
   int getEndPos();
 
   /**
@@ -593,6 +597,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           return;
         }
       }
+      case AUTH_SWITCH_REQUEST:
+      case AUTH_SWITCH_RESPONSE:
       case FIRST_PACKET: {
         if (!isPacketFinished) {
           throw new MycatExpection("unknown state!");
@@ -619,12 +625,21 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           setState(ComQueryState.LOCAL_INFILE_FILE_CONTENT);
           setMySQLPayloadType(LOAD_DATA_REQUEST);
           return;
-        } else if (head == 0xfe) {
-          setServerStatus(eofPacketReadStatus(mySQLPacket));
-          setState(ComQueryState.COMMAND_END);
-          setMySQLPayloadType(FIRST_EOF);
+        } else if (head == 0xfe ) {
+          if(isClientLogin()) {
+            setMySQLPayloadType(FIRST_EOF);
+            setState(ComQueryState.AUTH_SWITCH_REQUEST);
+          } else {
+            setServerStatus(eofPacketReadStatus(mySQLPacket));
+            setState(ComQueryState.COMMAND_END);
+            setMySQLPayloadType(FIRST_EOF);
+          }
           return;
         } else {
+          if(isClientLogin()) {
+            setState(ComQueryState.AUTH_SWITCH_RESPONSE);
+            return;
+          }
           int count = (int) mySQLPacket
                                 .getLenencInt(getStartPos() + MySQLPacket.getPacketHeaderSize());
           setColumnCount(count);
@@ -776,6 +791,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     QUERY_PACKET(true),
     FIRST_PACKET(true),
     COLUMN_DEFINITION(false),
+    AUTH_SWITCH_REQUEST(true),
+    AUTH_SWITCH_RESPONSE(true),
     COLUMN_END_EOF(true),
     RESULTSET_ROW(false),
     RESULTSET_ROW_END(true),

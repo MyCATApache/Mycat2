@@ -49,7 +49,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   final MySQLProxySession session;
   int capabilityFlags;
   MySQLPayloadType mySQLPacketProcessType;
-
+  boolean isClientLoginResponse = false;
 
   public MySQLPacketResolverImpl(MySQLProxySession session) {
     this.session = session;
@@ -120,6 +120,17 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   public final int setCurrentComQuerySQLType(int type) {
     return this.currentSqlType = type;
   }
+
+  @Override
+  public void setIsClientLoginRequest(boolean flag) {
+    this.isClientLoginResponse = flag;
+  }
+
+  @Override
+  public boolean isClientLogin() {
+    return isClientLoginResponse;
+  }
+
 
   @Override
   public final int getCurrentSQLType() {

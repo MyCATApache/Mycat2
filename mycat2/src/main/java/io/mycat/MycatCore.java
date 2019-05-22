@@ -23,6 +23,7 @@ import io.mycat.proxy.task.client.MySQLTaskUtil;
 import io.mycat.proxy.task.client.QueryUtil;
 import io.mycat.proxy.task.client.resultset.QueryResultSetCollector;
 import io.mycat.replica.DefaultMySQLReplicaFactory;
+import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouter;
@@ -30,6 +31,9 @@ import io.mycat.router.MycatRouterConfig;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author cjw
@@ -76,16 +80,16 @@ public class MycatCore {
                 }
               });
 
-//              ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
-//              service.scheduleAtFixedRate(new Runnable() {
-//                @Override
-//                public void run() {
-//                  Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
-//                  for (MySQLDataSourceEx datasource : datasourceList) {
-//                    datasource.heartBeat();
-//                  }
-//                }
-//              }, 0, 3, TimeUnit.SECONDS);
+              ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+              service.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                  Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
+                  for (MySQLDataSourceEx datasource : datasourceList) {
+                    datasource.heartBeat();
+                  }
+                }
+              }, 0, 10, TimeUnit.SECONDS);
             } catch (Exception e) {
               e.printStackTrace();
             }
