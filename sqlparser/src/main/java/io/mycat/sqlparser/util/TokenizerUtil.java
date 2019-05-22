@@ -38,77 +38,29 @@ public class TokenizerUtil {
   public static boolean isAlias(int pos, int type, HashArray hashArray) { //需要优化成数组判断
     switch (type) {
       case IntTokenHash.WHERE:
-        if (hashArray.getHash(pos) == TokenHash.WHERE) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.WHERE;
       case IntTokenHash.GROUP:
-        if (hashArray.getHash(pos) == TokenHash.GROUP) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.GROUP;
       case IntTokenHash.ORDER:
-        if (hashArray.getHash(pos) == TokenHash.ORDER) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.ORDER;
       case IntTokenHash.LIMIT:
-        if (hashArray.getHash(pos) == TokenHash.LIMIT) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.LIMIT;
       case IntTokenHash.JOIN:
-        if (hashArray.getHash(pos) == TokenHash.JOIN) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.JOIN;
       case IntTokenHash.LEFT:
-        if (hashArray.getHash(pos) == TokenHash.LEFT) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.LEFT;
       case IntTokenHash.RIGHT:
-        if (hashArray.getHash(pos) == TokenHash.RIGHT) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.RIGHT;
       case IntTokenHash.FOR:
-        if (hashArray.getHash(pos) == TokenHash.FOR) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.FOR;
       case IntTokenHash.LOCK:
-        if (hashArray.getHash(pos) == TokenHash.LOCK) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.LOCK;
       case IntTokenHash.ON:
-        if (hashArray.getHash(pos) == TokenHash.ON) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.ON;
       case IntTokenHash.OFF:
-        if (hashArray.getHash(pos) == TokenHash.OFF) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.OFF;
       case IntTokenHash.FROM:
-        if (hashArray.getHash(pos) == TokenHash.FROM) {
-          return false;
-        } else {
-          return true;
-        }
+        return hashArray.getHash(pos) != TokenHash.FROM;
       default:
         return true;
     }
@@ -159,19 +111,19 @@ public class TokenizerUtil {
 
 
   public static void debug(Supplier<String> msg) {
-    if (LOGGER.isDebugEnabled()) {
+    if (false) {
       LOGGER.debug(msg.get());
     }
   }
 
   public static void debug(int pos, Tokenizer tokenizer, HashArray hashArray) {
-    if (LOGGER.isDebugEnabled()) {
+    if (false) {
       LOGGER.debug(tokenizer.sql.getString(hashArray.getPos(pos), hashArray.getSize(pos)));
     }
   }
 
   public static void debug(int pos, BufferSQLContext context) {
-    if (LOGGER.isDebugEnabled()) {
+    if (false) {
       HashArray hashArray = context.getHashArray();
       LOGGER.debug(context.getBuffer().getString(hashArray.getPos(pos), hashArray.getSize(pos)));
     }

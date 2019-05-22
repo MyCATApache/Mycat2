@@ -1,10 +1,13 @@
 package io.mycat.test.jdbc;
 
+import io.mycat.proxy.callback.AsyncTaskCallBack;
+import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.Statement;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
 
@@ -23,22 +26,60 @@ public class JdbcStartup extends JdbcDao {
       public void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
 
       }
-    }, (session, sender, success, result, future) -> {
-      for (int i = 0; i < 80; i++) {
-        new Thread(() -> {
-          try (Connection connection = getConnection()) {
-            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-            connection.setAutoCommit(false);
-            connection.createStatement().execute("select 1");
-            connection.commit();
-            compelete(future);
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }).start();
+    }, new AsyncTaskCallBack() {
+      @Override
+      public void onFinished(Object sender, Object future, Object attr) {
+        int count = 10000;
+        AsyncTaskCallBackCounter callBackCounter = new AsyncTaskCallBackCounter(count,
+            new AsyncTaskCallBack() {
+              @Override
+              public void onFinished(Object sender, Object result, Object attr) {
+                compelete(future);
+              }
 
+              @Override
+              public void onException(Exception e, Object sender, Object attr) {
+
+              }
+            });
+        for (int i = 0; i < count; i++) {
+          int index = i;
+          new Thread(() -> {
+            try {
+              Thread.sleep(50);
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+            try (Connection connection = getConnection()) {
+              System.out.println("connectId:" + index);
+              for (int j = 0; j < 2; j++) {
+                System.out.println("per:" + j);
+                try (
+                    Statement statement = connection.createStatement()
+                ) {
+                  statement.execute("select 1");
+                }
+//                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+//                connection.setAutoCommit(true);
+//                connection.createStatement().execute("select 1");
+//                connection.commit();
+              }
+
+            } catch (Exception e) {
+              e.printStackTrace();
+              callBackCounter.onCountFail();
+              return;
+            }
+            callBackCounter.onCountSuccess();
+          }).start();
+
+        }
       }
 
+      @Override
+      public void onException(Exception e, Object sender, Object attr) {
+
+      }
     });
   }
 

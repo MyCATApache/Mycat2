@@ -2010,7 +2010,7 @@ public class MyStatementVisitor implements MySqlASTVisitor {
   @Override
   public boolean visit(MySqlDeclareHandlerStatement x) {
 
-    //handler type
+    //command type
      MySqlHandlerType handleType = x.getHandleType();
     //sp statement
      SQLStatement spStatement = x.getSpStatement();
@@ -2021,7 +2021,7 @@ public class MyStatementVisitor implements MySqlASTVisitor {
 
   @Override
   public void endVisit(MySqlDeclareHandlerStatement x) {
-    //handler type
+    //command type
      MySqlHandlerType handleType = x.getHandleType();
     //sp statement
      SQLStatement spStatement = x.getSpStatement();

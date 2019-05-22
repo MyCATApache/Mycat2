@@ -1,8 +1,9 @@
 package io.mycat.replica.heart.callback;
 
+import io.mycat.collector.CollectorUtil;
+import io.mycat.collector.OneResultSetCollector;
 import io.mycat.config.GlobalConfig;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.task.client.resultset.QueryResultSetCollector;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heart.DatasourceStatus;
 import io.mycat.replica.heart.HeartbeatDetector;
@@ -26,11 +27,11 @@ public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCa
         return GlobalConfig.GARELA_CLUSTER_HEARTBEAT_SQL;
     }
 
-    protected void process(MySQLClientSession session, Object sender1, boolean success1,
-        Object result1, Object errorMessage1, QueryResultSetCollector queryResultSetCollector) {
-//        queryResultSetCollector.toString();
+    protected void process(MySQLClientSession session,
+        OneResultSetCollector queryResultSetCollector) {
+        queryResultSetCollector.toString();
         DatasourceStatus datasourceStatus = new DatasourceStatus();
-        List<Map<String, Object>> resultList = queryResultSetCollector.toList();
+        List<Map<String, Object>> resultList = CollectorUtil.toList(queryResultSetCollector);
         Map<String, Object> resultResult = new HashMap<>();
         for(Map<String, Object> map : resultList ) {
             String variableName = (String)map.get("Variable_name");

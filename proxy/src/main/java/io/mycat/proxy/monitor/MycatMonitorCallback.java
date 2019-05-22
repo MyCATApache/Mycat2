@@ -1,6 +1,6 @@
 package io.mycat.proxy.monitor;
 
-import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;

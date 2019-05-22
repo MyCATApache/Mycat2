@@ -14,9 +14,8 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.MycatReactorThread;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
@@ -41,11 +40,16 @@ public interface Session<T extends Session> {
    */
   NIOHandler getCurNIOHandler();
 
-  /**
-   * 会话关闭时候的的动作，需要清理释放资源
-   */
-  default void close(boolean normal, String hint) {
-    getCurNIOHandler().onSocketClosed(this, normal, hint);
+  static String getThrowableString(Throwable e) {
+    StringBuilder sb = new StringBuilder();
+    sb.append(e.toString());
+    sb.append("\n");
+    StackTraceElement[] stackArray = e.getStackTrace();
+    for (int i = 0; i < stackArray.length; i++) {
+      StackTraceElement element = stackArray[i];
+      sb.append(element.toString()).append("\n");
+    }
+    return sb.toString();
   }
 
   /**
@@ -64,21 +68,16 @@ public interface Session<T extends Session> {
   void writeToChannel() throws IOException;
 
   /**
-   * session内buffer写入通道,根据一定条件判断数据写入完毕后回调方法
+   * 会话关闭时候的的动作，需要清理释放资源
    */
-  default void writeFinished(T session) throws IOException {
-    session.getCurNIOHandler().onWriteFinished(session);
-  }
+  void close(boolean normal, String hint);
 
   /**
    * 读事件回调
    */
   boolean readFromChannel() throws IOException;
 
-  /**
-   * 设置回调函数,若果设置了回调,则该session的资源释放取决于回调代码什么时候结束,
-   */
-  void setCallBack(AsyncTaskCallBack<T> callBack);
+
 
   /**
    * 注册读事件
@@ -105,22 +104,31 @@ public interface Session<T extends Session> {
 
   String setLastMessage(String lastMessage);
 
-  static String getString(Throwable e) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(e.toString());
-    sb.append("\n");
-    StackTraceElement[] stackArray = e.getStackTrace();
-    for (int i = 0; i < stackArray.length; i++) {
-      StackTraceElement element = stackArray[i];
-      sb.append(element.toString()).append("\n");
-    }
-    return sb.toString();
+  /**
+   * session内buffer写入通道,根据一定条件判断数据写入完毕后回调方法
+   */
+  default void writeFinished(T session) {
+    session.getCurNIOHandler().onWriteFinished(session);
   }
 
   default String setLastMessage(Throwable e) {
-    String string = getString(e);
+    String string = getThrowableString(e);
     setLastMessage(string);
     return string;
+  }
+
+  /**
+   * 设置回调函数,若果设置了回调,则该session的资源释放取决于回调代码什么时候结束,
+   */
+
+  default void close(boolean normal, Throwable hint) {
+    close(normal, getThrowableString(hint));
+  }
+
+  default void lazyClose(boolean normal, String hint) {
+    getMycatReactorThread().addNIOJob(() -> {
+      close(normal, hint);
+    });
   }
 
   default long currentTimeMillis() {

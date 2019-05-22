@@ -15,10 +15,10 @@ import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.MycatSessionView;
+import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.packet.MySQLPacketUtil;
+import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ResultRoute;
@@ -38,7 +38,7 @@ public interface QueryHandler {
 
   MycatRouter router();
 
-  default void doQuery(byte[] sqlBytes, MycatSessionView mycat) {
+  default void doQuery(byte[] sqlBytes, MycatSession mycat) {
     MycatRouterConfig routerConfig = ProxyRuntime.INSTANCE.getRouterConfig();
 
     /**
@@ -61,16 +61,9 @@ public interface QueryHandler {
       return;
     }
     if (mycat.isBindMySQLSession()) {
-      mycat
-          .proxyBackend(MySQLPacketUtil.generateComQuery(sql),
-              mycat.getMySQLSession().getDataNode().getName(), false, null, false,
-              (session1, sender, success, result, attr) -> {
-                if (success) {
-                  System.out.println("success full");
-                } else {
-                  session1.writeErrorEndPacket();
-                }
-              });
+      MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
+          mycat.getMySQLSession().getDataNode().getName(), false, null, false
+      );
       return;
     }
     try {
@@ -147,16 +140,10 @@ public interface QueryHandler {
               switch (resultRoute.getType()) {
                 case ONE_SERVER_RESULT_ROUTE:
                   OneServerResultRoute route = (OneServerResultRoute) resultRoute;
-                  mycat
-                      .proxyBackend(MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), true, null, false,
-                          (session1, sender, success, result, attr) -> {
-                            if (success) {
-                              System.out.println("success full");
-                            } else {
-                              session1.writeErrorEndPacketBySyncInProcessError();
-                            }
-                          });
+                  MySQLTaskUtil
+                      .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
+                          route.getDataNode(), true, null, false
+                      );
                   return;
               }
             }
@@ -180,16 +167,10 @@ public interface QueryHandler {
           switch (resultRoute.getType()) {
             case ONE_SERVER_RESULT_ROUTE: {
               OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
-              mycat
-                  .proxyBackend(MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-                      resultRoute1.getDataNode(), false, null, false,
-                      (session1, sender, success, result, attr) -> {
-                        if (success) {
-                          System.out.println("success full");
-                        } else {
-                          session1.writeErrorEndPacket();
-                        }
-                      });
+              MySQLTaskUtil
+                  .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
+                      resultRoute1.getDataNode(), false, null, false
+                  );
               break;
             }
             case GLOBAL_TABLE_WRITE_RESULT_ROUTE: {
@@ -197,19 +178,19 @@ public interface QueryHandler {
               String sql1 = globalTableWriteResultRoute.getSql();
               String master = globalTableWriteResultRoute.getMaster();
               Collection<String> dataNodes = globalTableWriteResultRoute.getDataNodes();
-              mycat.proxyUpdateMultiBackends(MySQLPacketUtil.generateComQuery(sql1), master,
-                  dataNodes, new AsyncTaskCallBack<MycatSessionView>() {
-                    @Override
-                    public void finished(MycatSessionView session, Object sender, boolean success,
-                        Object result, Object attr) {
-                      if (success) {
-                        System.out.println("success full");
-                      } else {
-                        session.setLastMessage(result.toString());
-                        session.writeErrorEndPacket();
-                      }
-                    }
-                  });
+//              mycat.proxyUpdateMultiBackends(MySQLPacketUtil.generateComQuery(sql1), master,
+//                  dataNodes, new AsyncTaskCallBack<MycatSessionView>() {
+//                    @Override
+//                    public void finished(MycatSessionView session, Object sender, boolean success,
+//                        Object result, Object attr) {
+//                      if (success) {
+//                        System.out.println("success full");
+//                      } else {
+//                        session.setLastMessage(result.toString());
+//                        session.writeErrorEndPacket();
+//                      }
+//                    }
+//                  });
               return;
             }
             default:
@@ -224,7 +205,7 @@ public interface QueryHandler {
     }
   }
 
-  default void showDb(MycatSessionView mycat, Collection<MycatSchema> schemaList) {
+  default void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
     mycat.writeColumnCount(1);
     mycat.writeColumnDef("Dababase", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     mycat.writeColumnEndPacket();
@@ -236,7 +217,7 @@ public interface QueryHandler {
     mycat.writeRowEndPacket(mycat.hasResultset(), mycat.hasCursor());
   }
 
-  default void showTable(MycatSessionView mycat, String schemaName) {
+  default void showTable(MycatSession mycat, String schemaName) {
     Collection<String> tableName = router().getConfig().getSchemaBySchemaName(schemaName)
                                        .getMycatTables().keySet();
     mycat.writeColumnCount(2);
@@ -252,7 +233,7 @@ public interface QueryHandler {
     mycat.writeRowEndPacket(mycat.hasResultset(), mycat.hasCursor());
   }
 
-  default void useSchema(MycatSessionView mycat, String schemaName) {
+  default void useSchema(MycatSession mycat, String schemaName) {
     MycatSchema schema = router().getConfig().getSchemaBySchemaName(schemaName);
     mycat.useSchema(schema);
     mycat.writeOkEndPacket();

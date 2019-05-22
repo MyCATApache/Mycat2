@@ -15,14 +15,17 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.SessionTip;
-import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.callback.CommandCallBack;
+import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
+import io.mycat.proxy.handler.backend.BackendConCreateTask;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
-import io.mycat.proxy.task.client.BackendConCreateTask;
 import io.mycat.replica.MySQLDatasource;
+import io.mycat.util.nio.NIOUtil;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,7 +67,7 @@ public final class MySQLSessionManager implements
    */
   @Override
   public final void getIdleSessionsOfKey(MySQLDatasource datasource,
-      AsyncTaskCallBack<MySQLClientSession> asyncTaskCallBack) {
+      SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
     assert datasource != null;
     /**
      * 1.如果集群不可用,直接回调不可用
@@ -77,7 +80,7 @@ public final class MySQLSessionManager implements
       for (; ; ) {
         if (!datasource.isAlive()) {
           asyncTaskCallBack
-              .finished(null, this, false, datasource.getName() + " is not alive!", null);
+              .onException(new MycatExpection(datasource.getName() + " is not alive!"), this, null);
           return;
         }
         if (group == null || group.isEmpty()) {
@@ -86,10 +89,10 @@ public final class MySQLSessionManager implements
         } else {
           boolean random = ThreadLocalRandom.current().nextBoolean();
           MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
-
+          mySQLSession.setIdle(false);
           assert mySQLSession.getCurNIOHandler() == MySQLIdleNIOHandler.INSTANCE;
           assert mySQLSession.currentProxyBuffer() == null;
-          if (!mySQLSession.channel().isOpen()) {
+          if (!mySQLSession.isOpen()) {
             MycatReactorThread mycatReactorThread = mySQLSession.getMycatReactorThread();
             mycatReactorThread.addNIOJob(() -> {
               mySQLSession.close(false, "mysql session is close in idle");
@@ -99,20 +102,11 @@ public final class MySQLSessionManager implements
             mySQLSession.setIdle(false);
             mySQLSession.switchNioHandler(null);
             MycatMonitor.onGetIdleMysqlSession(mySQLSession);
-            asyncTaskCallBack.finished(mySQLSession, this, true, null, null);
+            asyncTaskCallBack.onSession(mySQLSession, this, null);
             return;
           } else {
-            mySQLSession.ping((session, sender, success, result, attr) -> {
-              if (!success) {
-                getIdleSessionsOfKey(datasource, asyncTaskCallBack);
-              } else {
-                session.getMycatReactorThread().addNIOJob(() -> {
-                  session.close(false, "mysql session is close in idle");
-                });
-                MycatMonitor.onGetIdleMysqlSession(session);
-                asyncTaskCallBack.finished(session, sender, success, result, attr);
-              }
-            });
+
+            asyncTaskCallBack.onSession(mySQLSession, this, null);
             return;
           }
         }
@@ -190,29 +184,31 @@ public final class MySQLSessionManager implements
    * 2.错误信息放置在attr
    */
   @Override
-  public void createSession(MySQLDatasource key, AsyncTaskCallBack<MySQLClientSession> callBack) {
+  public void createSession(MySQLDatasource key, SessionCallBack<MySQLClientSession> callBack) {
     assert key != null;
     assert callBack != null;
-    try {
-      new BackendConCreateTask(key, this,
-          (MycatReactorThread) Thread.currentThread(),
-          (session, sender, success, result, attr) -> {
-            assert session.currentProxyBuffer() == null;
-            if (success) {
-              MycatMonitor.onNewMySQLSession(session);
-              allSessions.add(session);
-              callBack.finished(session, sender, success, result, attr);
-            } else {
-              callBack.finished(session, sender, success, result, attr);
-            }
-          });
-    } catch (Exception e) {
-      try {
-        callBack.finished(null, this, false, Session.getString(e), null);
-      } catch (Exception e2) {
-        e2.printStackTrace();
+    new BackendConCreateTask(key, this,
+        (MycatReactorThread) Thread.currentThread(), new CommandCallBack() {
+      @Override
+      public void onFinishedOk(int serverStatus, MySQLClientSession session, Object sender,
+          Object attr) {
+        assert session.currentProxyBuffer() == null;
+        MycatMonitor.onNewMySQLSession(session);
+        allSessions.add(session);
+        callBack.onSession(session, sender, attr);
       }
-    }
+
+      @Override
+      public void onFinishedException(Exception exception, Object sender, Object attr) {
+        callBack.onException(exception, sender, attr);
+      }
+
+      @Override
+      public void onFinishedErrorPacket(ErrorPacket errorPacket, int lastServerStatus,
+          MySQLClientSession session, Object sender, Object attr) {
+        callBack.onException(toExpection(errorPacket), sender, attr);
+      }
+    });
   }
 
   /**
@@ -220,16 +216,11 @@ public final class MySQLSessionManager implements
    */
   @Override
   public void removeSession(MySQLClientSession session, boolean normal, String reason) {
-    try {
-      assert session != null;
-      assert reason != null;
-      boolean remove = allSessions.remove(session);
-      MycatMonitor.onCloseMysqlSession(session);
-      removeIdleSession(session);
-      session.channel().close();
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-
+    assert session != null;
+    assert reason != null;
+    allSessions.remove(session);
+    MycatMonitor.onCloseMysqlSession(session);
+    removeIdleSession(session);
+    NIOUtil.close(session.channel());
   }
 }

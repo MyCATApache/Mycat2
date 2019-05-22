@@ -8,7 +8,7 @@ package io.mycat.router;
 public interface SQLInterceptor {
 
   /**
-   * return new sql to handler,ca't modify sql's type
+   * return new sql to command,ca't modify sql's type
    *
    * @return new sql
    */

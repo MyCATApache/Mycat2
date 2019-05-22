@@ -18,7 +18,7 @@ package io.mycat.replica.heart;
 
 
 import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.proxy.task.client.MySQLTaskUtil;
+import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.replica.MySQLDataSourceEx;
 
 /**
@@ -46,7 +46,8 @@ public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
 
     public void heartBeat(){
         heartBeatAsyncTaskCallBack = getAsyncTaskCallback();
-        MySQLTaskUtil.getMySQLSessionForHeartbeatFromUserThread(dataSource, heartBeatAsyncTaskCallBack );
+        MySQLTaskUtil
+            .getMySQLSessionForTryConnectFromUserThread(dataSource, heartBeatAsyncTaskCallBack);
     }
 
 

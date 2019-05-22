@@ -1,7 +1,7 @@
 package io.mycat.replica.heart;
 
+import io.mycat.MycatProxyBeanProviders;
 import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.replica.MySQLDataSourceFactory;
 import io.mycat.replica.MySQLReplica;
 
 /**
@@ -14,7 +14,7 @@ public class MySQLReplicaEx extends MySQLReplica {
    * 初始化mycat集群管理
    */
   public MySQLReplicaEx(ReplicaConfig replicaConfig, int writeIndex,
-      MySQLDataSourceFactory dataSourceFactory) {
+      MycatProxyBeanProviders dataSourceFactory) {
     super(replicaConfig, writeIndex, dataSourceFactory);
   }
 

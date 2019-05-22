@@ -5,13 +5,14 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.MySQLPacketUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 
@@ -351,9 +352,12 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     ByteBuffer message = ByteBuffer.wrap(bytes1);
     int counter = 0;
     try {
-      while (message.hasRemaining() && counter < 4) {
-        channel().write(message);
-        counter++;
+      SocketChannel channel = channel();
+      if (channel.isOpen()) {
+        while (message.hasRemaining() && counter < 4) {
+          channel().write(message);
+          counter++;
+        }
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -373,10 +377,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       MySQLServerSession.writeToChannel(session);
     }
 
-    @Override
-    public void onWriteFinished(MycatSession session) throws IOException {
-
-    }
   }
 
 

@@ -30,7 +30,7 @@ import java.time.LocalTime;
  *
  * mycat报文基础读写
  *
- * get set方法族 不会修改mysql packet,proxybuffer,bytebuffer内部状态 read write方法族 修改内部状态
+ * create set方法族 不会修改mysql packet,proxybuffer,bytebuffer内部状态 read write方法族 修改内部状态
  **/
 public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView,
                                                                 MySQLPayloadWriteView {

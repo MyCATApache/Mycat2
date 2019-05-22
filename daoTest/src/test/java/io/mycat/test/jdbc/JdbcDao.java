@@ -1,10 +1,9 @@
 package io.mycat.test.jdbc;
 
 import io.mycat.MycatCore;
-import io.mycat.proxy.AsyncTaskCallBack;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
-import io.mycat.proxy.session.Session;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,16 +54,17 @@ public abstract class JdbcDao {
     final CompletableFuture<String> future = new CompletableFuture<>();
     MycatCore.startup(resolve.toAbsolutePath().toString(), callback, new AsyncTaskCallBack() {
       @Override
-      public void finished(Session session, Object sender, boolean success, Object result,
-          Object attr) {
-        if (success) {
-          executor.submit(() -> {
-            task.finished(null, null, success, result, future);
-          });
-        } else {
-          Assert.fail(result.toString());
-        }
+      public void onFinished(Object sender, Object result, Object attr) {
+        executor.submit(() -> {
+          task.onFinished(null, future, null);
+        });
       }
+
+      @Override
+      public void onException(Exception e, Object sender, Object attr) {
+        Assert.fail(e.getMessage());
+      }
+
     });
     future.get();
   }

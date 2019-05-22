@@ -14,6 +14,7 @@
  */
 package io.mycat.proxy;
 
+import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
@@ -33,15 +34,16 @@ import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.user.UserRootConfig;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.buffer.MycatProxyBufferPoolImpl;
-import io.mycat.proxy.handler.CommandHandler;
+import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
+import io.mycat.proxy.callback.AsyncTaskCallBack;
+import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
+import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOAcceptor;
 import io.mycat.proxy.session.MycatSessionManager;
-import io.mycat.proxy.session.Session;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
-import io.mycat.replica.MySQLReplicaFactory;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
@@ -54,7 +56,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,17 +105,18 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
 
-  public void initRepliac(MySQLReplicaFactory factory, AsyncTaskCallBack future) {
+  public void initRepliac(ProxyBeanProviders factory, AsyncTaskCallBack future) {
     DatasourceRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     ReplicaIndexRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
     Map<String, Integer> replicaIndexes = replicaIndexConfig.getReplicaIndexes();
     List<ReplicaConfig> replicas = dsConfig.getReplicas();
     int size = replicas.size();
-    AsyncTaskCallBack counter = new AsyncTaskCallBackCounter(size, future);
+    AsyncTaskCallBackCounter counter = new AsyncTaskCallBackCounter(size, future);
     for (int i = 0; i < size; i++) {
       ReplicaConfig replicaConfig = replicas.get(i);
       Integer writeIndex = replicaIndexes.get(replicaConfig.getName());
-      MySQLReplica replica = factory.get(replicaConfig, writeIndex == null ? 0 : writeIndex);
+      MySQLReplica replica = factory
+                                 .createReplica(replicaConfig, writeIndex == null ? 0 : writeIndex);
       replicaMap.put(replica.getName(), replica);
       replica.init(counter);
       datasourceList.addAll(replica.getDatasourceList());
@@ -158,8 +160,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private NIOAcceptor acceptor;
   private MycatReactorThread[] reactorThreads;
 
-  public void initReactor(Supplier<CommandHandler> commandHandlerFactory, AsyncTaskCallBack future)
-      throws IOException {
+  public void initReactor(ProxyBeanProviders commandHandlerFactory, AsyncTaskCallBack future) {
     Objects.requireNonNull(commandHandlerFactory);
     Objects.requireNonNull(future);
     ProxyConfig proxy = getProxy();
@@ -168,16 +169,16 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     this.setMycatReactorThreads(mycatReactorThreads);
     try {
       for (int i = 0; i < mycatReactorThreads.length; i++) {
-        BufferPool bufferPool = new MycatProxyBufferPoolImpl(getBufferPoolPageSize(),
+        BufferPool bufferPool = new ProxyBufferPoolMonitor(getBufferPoolPageSize(),
             getBufferPoolChunkSize(),
             getBufferPoolPageNumber());
         mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
             new MycatSessionManager(commandHandlerFactory));
         mycatReactorThreads[i].start();
       }
-      future.finished(null, this, true, null, null);
+      future.onFinished(null, null, null);
     } catch (Exception e) {
-      future.finished(null, this, false, Session.getString(e), null);
+      future.onFinished(null, null, null);
     }
   }
 

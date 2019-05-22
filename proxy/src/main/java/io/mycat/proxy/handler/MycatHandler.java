@@ -14,52 +14,82 @@
  */
 package io.mycat.proxy.handler;
 
+import com.sun.jdi.connect.spi.ClosedConnectionException;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
+import java.nio.channels.SocketChannel;
 
 public enum MycatHandler implements NIOHandler<MycatSession> {
   INSTANCE;
 
   final
   @Override
-  public void onSocketRead(MycatSession mycat) throws IOException {
-    mycat.currentProxyBuffer().newBufferIfNeed();
-    if (!mycat.readFromChannel()) {
+  public void onSocketRead(MycatSession mycat) {
+    SocketChannel channel = mycat.channel();
+    if (!(channel.isConnected() && channel.isOpen())) {
+      mycat.close(false, "");
       return;
     }
-    if (!mycat.readProxyPayloadFully()) {
+    try {
+      mycat.currentProxyBuffer().newBufferIfNeed();
+      if (!mycat.readFromChannel()) {
+        return;
+      }
+      if (!mycat.readProxyPayloadFully()) {
+        return;
+      }
+      mycat.handle();
       return;
+    } catch (ClosedConnectionException e) {
+      mycat.close(false, e.getMessage());
+      return;
+    } catch (Exception e) {
+      e.printStackTrace();
+      onClear(mycat);
+      mycat.close(false, e);
     }
-    mycat.handle();
-    return;
   }
 
   @Override
-  public void onWriteFinished(MycatSession mycat) throws IOException {
-    if (mycat.isResponseFinished()) {
-      mycat.onHandlerFinishedClear(true);
-      mycat.change2ReadOpts();
-    } else {
+  public void onSocketWrite(MycatSession mycat) {
+    try {
       mycat.writeToChannel();
+    } catch (Exception e) {
+      onClear(mycat);
+      responseError(mycat, e);
     }
   }
 
-  /**
-   * 1.mycat session 不存在切换 handler的情况 2.onSocketClosed是session的close方法,它完成了整个状态清理与关闭,所以onSocketClosed无需实现
-   */
   @Override
-  public void onSocketClosed(MycatSession session, boolean normal, String reason) {
-
+  public void onWriteFinished(MycatSession mycat) {
+    try {
+      if (mycat.isResponseFinished()) {
+        mycat.onHandlerFinishedClear();
+        mycat.change2ReadOpts();
+      } else {
+        mycat.writeToChannel();
+      }
+    } catch (Exception e) {
+      onClear(mycat);
+      responseError(mycat, e);
+    }
   }
+
+  public void onClear(MycatSession session) {
+    session.onHandlerFinishedClear();
+  }
+
+  private void responseError(MycatSession mycat, Exception e) {
+    mycat.setLastMessage(e);
+    mycat.writeErrorEndPacketBySyncInProcessError();
+  }
+
 
   /**
    * mycat session写入处理
    */
   public interface MycatSessionWriteHandler {
-
     void writeToChannel(MycatSession session) throws IOException;
-
-    void onWriteFinished(MycatSession session) throws IOException;
   }
 
 }

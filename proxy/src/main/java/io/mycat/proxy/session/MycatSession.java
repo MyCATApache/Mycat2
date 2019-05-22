@@ -16,22 +16,21 @@ package io.mycat.proxy.session;
 
 import static io.mycat.beans.mysql.MySQLErrorCode.ER_DBACCESS_DENIED_ERROR;
 
-import io.mycat.MySQLServerStatus;
 import io.mycat.MycatExpection;
+import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
+import io.mycat.command.CommandDispatcher;
+import io.mycat.command.LocalInFileRequestHandler.LocalInFileSession;
+import io.mycat.command.PrepareStatementHandler.PrepareStatementSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
-import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.MycatSessionView;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
-import io.mycat.proxy.handler.CommandHandler;
-import io.mycat.proxy.handler.CommandHandlerAdapter;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -42,25 +41,16 @@ import io.mycat.security.MycatUser;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 import java.util.Map;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements
-    MySQLProxySession<MycatSession>, MycatSessionView {
+    MySQLProxySession<MycatSession>, LocalInFileSession, PrepareStatementSession,
+        MySQLServerSession<MycatSession> {
 
-  private final CommandHandler commandHandler;
-
-  public MycatSession(BufferPool bufferPool, Selector selector, SocketChannel channel,
-      int socketOpt, NIOHandler nioHandler, SessionManager<MycatSession> sessionManager,
-      CommandHandler commandHandler)
-      throws IOException {
-    super(selector, channel, socketOpt, nioHandler, sessionManager);
-    proxyBuffer = new ProxyBufferImpl(bufferPool);
-    this.commandHandler = commandHandler;
-  }
+  private final CommandDispatcher commandHandler;
+  int resultSetCount;
 
   /**
    * mysql服务器状态
@@ -72,9 +62,10 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private final ProxyBuffer proxyBuffer;//reset
   private final ByteBuffer header = ByteBuffer.allocate(4);//gc
   private MycatSchema schema;
+  private MycatUser user;
   private final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();//buffer recycle
   private final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);//reset
-  private MycatUser user;
+
 
   /**
    * 报文写入辅助类
@@ -84,15 +75,24 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private boolean responseFinished = false;//每次在处理请求时候就需要重置
   private MySQLClientSession backend;//unbind
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
-  private AsyncTaskCallBack finallyCallBack;
+
+  public MycatSession(BufferPool bufferPool, NIOHandler nioHandler,
+      SessionManager<MycatSession> sessionManager,
+      CommandDispatcher commandHandler) {
+    super(nioHandler, sessionManager);
+    proxyBuffer = new ProxyBufferImpl(bufferPool);
+    this.commandHandler = commandHandler;
+  }
+
+
   /**
    * 路由信息
    */
   private String dataNode;
 
-  public void handle() throws IOException {
+  public void handle() {
     assert commandHandler != null;
-    CommandHandlerAdapter.handle(this, commandHandler);
+    commandHandler.handle(this);
   }
 
 
@@ -100,7 +100,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.writeHandler = writeHandler;
   }
 
-  public void onHandlerFinishedClear(boolean normal) {
+  public void onHandlerFinishedClear() {
     resetPacket();
     setResponseFinished(false);
   }
@@ -121,7 +121,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setIsolation(readUncommitted);
   }
 
-  @Override
+
   public void setMultiStatementSupport(boolean on) {
 
   }
@@ -130,12 +130,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     setCharset(CharsetUtil.getIndex(charsetName), charsetName);
   }
 
-  @Override
+
   public void setCharsetSetResult(String charsetSetResult) {
     this.serverStatus.setCharsetSetResult(charsetSetResult);
   }
 
-  @Override
+
   public boolean isBindMySQLSession() {
     return backend != null;
   }
@@ -187,11 +187,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
 
-  public void lazyClose(boolean normal, String hint) {
-    getMycatReactorThread().addNIOJob(() -> {
-      close(normal, hint);
-    });
-  }
   @Override
   public void close(boolean normal, String hint) {
     if (!normal) {
@@ -200,7 +195,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       writeErrorEndPacketBySyncInProcessError();
     }
     assert hint != null;
-    onHandlerFinishedClear(normal);
+    onHandlerFinishedClear();
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);
@@ -463,55 +458,42 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     return 0;
   }
 
-  public AsyncTaskCallBack<MycatSessionView> getCallBack() {
-    AsyncTaskCallBack<MycatSessionView> finallyCallBack = this.finallyCallBack;
-    this.finallyCallBack = null;
-    return finallyCallBack;
-  }
-
-  @Override
-  public void setCallBack(AsyncTaskCallBack callBack) {
-    this.finallyCallBack = callBack;
-  }
-
   @Override
   public void switchNioHandler(NIOHandler nioHandler) {
     this.nioHandler = nioHandler;
   }
 
-  int resultSetCount;
 
-  @Override
   public MycatSchema getSchema() {
     return schema;
   }
 
-  @Override
+
   public void useSchema(MycatSchema schema) {
     this.schema = schema;
   }
 
-  @Override
+
   public boolean hasResultset() {
     return resultSetCount > 0;
   }
 
-  @Override
+
   public boolean hasCursor() {
     return false;
   }
 
-  @Override
+
   public void countDownResultSet() {
     resultSetCount--;
   }
 
-  @Override
+
   public void setResultSetCount(int count) {
     resultSetCount = count;
   }
 
-  @Override
+
   public byte[] encode(String text) {
     return text.getBytes(charset());
   }

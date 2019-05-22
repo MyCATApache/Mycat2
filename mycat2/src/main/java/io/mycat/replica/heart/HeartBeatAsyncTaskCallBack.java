@@ -1,6 +1,6 @@
 package io.mycat.replica.heart;
 
-import io.mycat.proxy.AsyncTaskCallBack;
+import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.session.MySQLClientSession;
 
 /**
@@ -8,7 +8,7 @@ import io.mycat.proxy.session.MySQLClientSession;
  * @version V1.0
  * @date Date : 2019年05月15日 21:30
  */
-public abstract class HeartBeatAsyncTaskCallBack  implements AsyncTaskCallBack<MySQLClientSession>{
+public abstract class HeartBeatAsyncTaskCallBack implements SessionCallBack<MySQLClientSession> {
     protected volatile boolean isQuit = false;
     protected final HeartbeatDetector heartbeatDetector ;
     public  HeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
@@ -19,4 +19,10 @@ public abstract class HeartBeatAsyncTaskCallBack  implements AsyncTaskCallBack<M
     public void setQuit(boolean quit) {
         isQuit = quit;
     }
+
+  public void onStatus(int errorStatus) {
+    DatasourceStatus datasourceStatus = new DatasourceStatus();
+    heartbeatDetector.getHeartbeatManager()
+        .setStatus(datasourceStatus, errorStatus);
+  }
 }
