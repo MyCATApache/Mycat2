@@ -1,4 +1,4 @@
-package io.mycat.test.jdbc;
+package io.mycat.test;
 
 import io.mycat.MycatCore;
 import io.mycat.ProxyBeanProviders;
@@ -21,9 +21,9 @@ import org.junit.Assert;
 
 /**
  * @author jamie12221
- * @date 2019-05-19 18:08
+ * @date 2019-05-23 16:53
  **/
-public abstract class JdbcDao {
+public abstract class ModualTest {
 
   final static String url = "jdbc:mysql://localhost:8066/test";
   final static String username = "root";
@@ -58,19 +58,19 @@ public abstract class JdbcDao {
     final CompletableFuture<String> future = new CompletableFuture<>();
     MycatCore.startup(resolve.toAbsolutePath().toString(), proxyBeanProviders, callback,
         new AsyncTaskCallBack() {
-      @Override
-      public void onFinished(Object sender, Object result, Object attr) {
-        executor.submit(() -> {
-          task.onFinished(null, future, null);
+          @Override
+          public void onFinished(Object sender, Object result, Object attr) {
+            executor.submit(() -> {
+              task.onFinished(null, future, null);
+            });
+          }
+
+          @Override
+          public void onException(Exception e, Object sender, Object attr) {
+            Assert.fail(e.getMessage());
+          }
+
         });
-      }
-
-      @Override
-      public void onException(Exception e, Object sender, Object attr) {
-        Assert.fail(e.getMessage());
-      }
-
-    });
     future.get();
   }
 

@@ -29,7 +29,7 @@ public class BufferSQLContext {
 
   public static final byte SHOW_DB_SQL = 81;
   public static final byte SHOW_TB_SQL = 82;
-
+  public static final byte SHOW_VARIABLES_SQL = 83;
   public static final byte SET_SQL = 9;     //TODO 进一步细化。区分
   public static final byte PARTITION_SQL = 10;
 

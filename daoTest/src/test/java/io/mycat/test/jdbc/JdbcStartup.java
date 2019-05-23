@@ -6,6 +6,7 @@ import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.test.ModualTest;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -18,7 +19,7 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221
  * @date 2019-05-19 18:23
  **/
-public class JdbcStartup extends JdbcDao {
+public class JdbcStartup extends ModualTest {
 
   final static String DB_IN_ONE_SERVER = "DB_IN_ONE_SERVER";
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcStartup.class);
