@@ -25,6 +25,9 @@ import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
+import java.nio.channels.ClosedChannelException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 任务类接口 该类实现文本结果集的命令发送以及解析处理
@@ -32,9 +35,11 @@ import io.mycat.proxy.session.MySQLClientSession;
  * @author jamie12221
  * @date 2019-05-13 12:48
  */
-public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, MySQLPacketCallback {
+public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
+                                              MySQLPacketCallback {
 
-  ResultSetTask DEFAULT = new ResultSetTask() {
+  Logger logger = LoggerFactory.getLogger(BackendConCreateHandler.class);
+  ResultSetHandler DEFAULT = new ResultSetHandler() {
 
   };
 
@@ -47,7 +52,7 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
     assert (mysql.currentProxyBuffer() == null);
     int chunkSize = mysql.getMycatReactorThread().getBufPool().getChunkSize();
     if (data.length > (chunkSize - 5) || data.length > MySQLPacketSplitter.MAX_PACKET_SIZE) {
-      throw new MycatExpection("ResultSetTask unsupport request length more than 1024 bytes");
+      throw new MycatExpection("ResultSetHandler unsupport request length more than 1024 bytes");
     }
     mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
     MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(data.length + 5);
@@ -68,8 +73,7 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
       mysql.prepareReveiceResponse();
       mysql.writeCurrentProxyPacket(mySQLPacket, packetId);
     } catch (Exception e) {
-      onClear(mysql);
-      close(mysql, e);
+      onException(mysql, e);
       callBack.onFinishedException(e, this, null);
     }
   }
@@ -113,14 +117,13 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
       mysql.prepareReveiceResponse();
       mysql.writeProxyBufferToChannel(packetData);
     } catch (Exception e) {
-      onFinishedCollectException(mysql, e);
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
-      mysql.setCallBack(null);
-      onClear(mysql);
-      close(mysql, e);
+      onFinishedCollectException(mysql, e);
+      onException(mysql, e);
       callBackAndReset.onFinishedException(e, this, null);
     }
   }
+
   /**
    * 一般用于com query
    */
@@ -129,8 +132,7 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
     try {
       request(mysql, head, data.getBytes(), callBack);
     } catch (Exception e) {
-      onClear(mysql);
-      close(mysql, e);
+      onException(mysql, e);
       callBack.onFinishedException(e, this, null);
     }
   }
@@ -154,6 +156,13 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
   @Override
   default void onSocketRead(MySQLClientSession mysql) {
     assert mysql.getCurNIOHandler() == this;
+    if (!mysql.isOpen()) {
+      ResultSetCallBack callBackAndReset = mysql.getCallBack();
+      ClosedChannelException closedChannelException = new ClosedChannelException();
+      onException(mysql, closedChannelException);
+      callBackAndReset.onFinishedException(closedChannelException, this, null);
+      return;
+    }
     try {
       MySQLPacketResolver resolver = mysql.getPacketResolver();
       ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
@@ -253,19 +262,16 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
         return;
       }
     } catch (Exception e) {
-      e.printStackTrace();
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
       mysql.setCallBack(null);
       if (mysql.isRequestSuccess()) {
         onFinishedCollectException(mysql, e);
-        onClear(mysql);
-        close(mysql, e);
+        onException(mysql, e);
         callBackAndReset.onFinishedException(e, this, null);
         return;
       } else {
         onFinishedCollectException(mysql, e);
-        onClear(mysql);
-        close(mysql, e);
+        onException(mysql, e);
         callBackAndReset.onFinishedSendException(e, this, null);
         return;
       }
@@ -303,11 +309,9 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
     try {
       mysql.writeToChannel();
     } catch (Exception e) {
-      onFinishedCollectException(mysql, e);
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
-      mysql.setCallBack(null);
-      onClear(mysql);
-      close(mysql, e);
+      onFinishedCollectException(mysql, e);
+      onException(mysql, e);
       callBackAndReset.onFinishedException(e, this, null);
     }
   }
@@ -315,6 +319,13 @@ public interface ResultSetTask extends BackendNIOHandler<MySQLClientSession>, My
   @Override
   default void onFinishedCollect(MySQLClientSession mysql) {
 
+  }
+
+  @Override
+  default void onException(MySQLClientSession session, Exception e) {
+    logger.error("{}", e);
+    onClear(session);
+    session.close(false, e);
   }
 
   @Override

@@ -43,14 +43,14 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221
  * @date 2019-05-10 22:24 向mysql服务器创建连接
  **/
-public final class BackendConCreateTask implements BackendNIOHandler<MySQLClientSession> {
+public final class BackendConCreateHandler implements BackendNIOHandler<MySQLClientSession> {
 
-  protected final static Logger logger = LoggerFactory.getLogger(BackendConCreateTask.class);
+  protected final static Logger logger = LoggerFactory.getLogger(BackendConCreateHandler.class);
   final MySQLDatasource datasource;
   final CommandCallBack callback;
   boolean welcomePkgReceived = false;
 
-  public BackendConCreateTask(MySQLDatasource datasource, MySQLSessionManager sessionManager,
+  public BackendConCreateHandler(MySQLDatasource datasource, MySQLSessionManager sessionManager,
       MycatReactorThread curThread, CommandCallBack callback) {
     Objects.requireNonNull(datasource);
     Objects.requireNonNull(sessionManager);
@@ -66,8 +66,7 @@ public final class BackendConCreateTask implements BackendNIOHandler<MySQLClient
       mysql.register(curThread.getSelector(), channel, SelectionKey.OP_CONNECT);
       channel.connect(new InetSocketAddress(datasource.getIp(), datasource.getPort()));
     } catch (IOException e) {
-      onClear(mysql);
-      mysql.close(false, e);
+      onException(mysql, e);
       callback.onFinishedException(null, e, null);
       return;
     }
@@ -79,8 +78,7 @@ public final class BackendConCreateTask implements BackendNIOHandler<MySQLClient
     if (success) {
       mysql.change2ReadOpts();
     } else {
-      onClear(mysql);
-      mysql.close(false, e);
+      onException(mysql, e);
       callback.onFinishedException(e, this, null);
     }
   }
@@ -148,8 +146,7 @@ public final class BackendConCreateTask implements BackendNIOHandler<MySQLClient
         }
       }
     } catch (Exception e) {
-      onClear(mysql);
-      mysql.close(false, e);
+      onException(mysql, e);
       callback.onFinishedException(e, this, null);
     }
   }
@@ -159,8 +156,7 @@ public final class BackendConCreateTask implements BackendNIOHandler<MySQLClient
     try {
       session.writeToChannel();
     } catch (Exception e) {
-      onClear(session);
-      session.close(false, e);
+      onException(session, e);
       callback.onFinishedException(e, this, null);
     }
   }
@@ -168,6 +164,13 @@ public final class BackendConCreateTask implements BackendNIOHandler<MySQLClient
   @Override
   public void onWriteFinished(MySQLClientSession mysql) {
     mysql.change2ReadOpts();
+  }
+
+  @Override
+  public void onException(MySQLClientSession session, Exception e) {
+    logger.error("", e);
+    onClear(session);
+    session.close(false, e);
   }
 
   public void onClear(MySQLClientSession session) {

@@ -167,6 +167,13 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     }
   }
 
+  @Override
+  public void onException(MycatSession session, Exception e) {
+    logger.error("{}", e);
+    onClear(mycat);
+    mycat.close(false, e);
+  }
+
   public void onClear(MycatSession session) {
     session.onHandlerFinishedClear();
   }

@@ -377,6 +377,12 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       MySQLServerSession.writeToChannel(session);
     }
 
+    @Override
+    public void onException(MycatSession session, Exception e) {
+      session.resetPacket();
+      session.close(false, e);
+    }
+
   }
 
 

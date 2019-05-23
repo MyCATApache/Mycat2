@@ -17,7 +17,7 @@ package io.mycat.beans;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.command.LocalInFileRequestHandler;
+import io.mycat.command.LocalInFileRequestParseHelper;
 import java.nio.charset.Charset;
 
 
@@ -43,7 +43,7 @@ public final class MySQLServerStatus {
   private String clientUser;
   private MySQLAutoCommit autoCommit;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
-  protected int localInFileRequestState = LocalInFileRequestHandler.COM_QUERY;
+  protected int localInFileRequestState = LocalInFileRequestParseHelper.COM_QUERY;
 
   public boolean multiStatementSupport = false;
   private String charsetSetResult;

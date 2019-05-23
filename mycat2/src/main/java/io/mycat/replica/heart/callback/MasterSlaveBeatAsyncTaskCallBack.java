@@ -6,7 +6,7 @@ import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.config.GlobalConfig;
 import io.mycat.proxy.callback.ResultSetCallBack;
-import io.mycat.proxy.handler.backend.TextResultSetTask;
+import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heart.DatasourceStatus;
@@ -73,7 +73,7 @@ public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
       OneResultSetCollector collector = new OneResultSetCollector();
       TextResultSetTransforCollector transfor = new TextResultSetTransforCollector(
           collector);
-      TextResultSetTask queryResultSetTask = new TextResultSetTask(transfor, (i) -> true);
+      TextResultSetHandler queryResultSetTask = new TextResultSetHandler(transfor, (i) -> true);
       queryResultSetTask.request(session, MySQLCommandType.COM_QUERY, getSql(),
           new ResultSetCallBack<MySQLClientSession>() {
             @Override

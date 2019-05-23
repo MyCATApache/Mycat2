@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2019>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.proxy.handler.backend;
 
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_BIT;
@@ -9,6 +23,7 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_DOUBLE;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_ENUM;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_FLOAT;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_GEOMETRY;
+import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_INT24;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_LONG;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_LONGLONG;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_LONG_BLOB;
@@ -26,59 +41,58 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY_BLOB;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VARCHAR;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
-import static io.mycat.beans.mysql.MySQLType.FIELD_TYPE_INT24;
 
 import io.mycat.MycatExpection;
-import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.collector.ResultSetTransfor;
 import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
+import java.util.function.IntPredicate;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 00:37
+ * @date 2019-05-10 21:57 文本结果集任务
+ *
+ * 可以根据字段的下标跳过指定列的数据解析
  **/
-public class BinaryResultSetTask implements ResultSetTask {
-
-  int binaryNullBitMapLength;
+public class TextResultSetHandler implements ResultSetHandler {
   int columnCount;
   ColumnDefPacket[] currentColumnDefList;
   ResultSetTransfor collector;
+  IntPredicate predicate;
+
+  public TextResultSetHandler(ResultSetTransfor collector) {
+    this.collector = collector;
+    this.predicate = (i) -> true;
+  }
+
+  public TextResultSetHandler(ResultSetTransfor collector, IntPredicate predicate) {
+    this.collector = collector;
+    this.predicate = predicate;
+  }
+//  public void request(
+//      MySQLClientSession mysql, String sql, IntPredicate predicate, ResultSetTransfor collector,
+//      ResultSetCallBack<MySQLClientSession> callBack) {
+//    this.collector = collector;
+//    this.predicate = predicate;
+//    request(mysql, 3, sql, callBack);
+//  }
 
   /**
-   * 预处理命令nullmap
+   * 字段过滤器
    */
-  private static void storeNullBitMap(byte[] nullBitMap, int i) {
-    int bitMapPos = (i) / 8;
-    int bitPos = (i) % 8;
-    nullBitMap[bitMapPos] |= (byte) (1 << bitPos);
+  protected boolean columnFilter(int columnIndex) {
+    return predicate.test(columnIndex);
   }
 
-  @Override
-  public void onColumnCount(int columnCount) {
-    this.columnCount = 0;
-    this.binaryNullBitMapLength = (columnCount + 7 + 2) / 8;
-    this.currentColumnDefList = new ColumnDefPacket[columnCount];
-    collector.onResultSetStart();
-  }
-
-  @Override
-  public void onOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    collector.onResultSetStart();
-    collector.onResultSetEnd();
-  }
-
-  @Override
-  public void onRowEof(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    collector.onResultSetEnd();
-  }
-
-  @Override
-  public void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    collector.onResultSetEnd();
-  }
+//  public void request(
+//      MySQLClientSession mysql, String sql,
+//      ResultSetCallBack<MySQLClientSession> callBack) {
+//    this.collector = new ResultSetCollector();
+//    this.predicate = (i) -> true;
+//    request(mysql, 3, sql, callBack);
+//  }
 
   @Override
   public void onColumnDef(MySQLPacket mySQLPacket, int startPos, int endPos) {
@@ -94,19 +108,17 @@ public class BinaryResultSetTask implements ResultSetTask {
   }
 
   @Override
-  public void onBinaryRow(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    collector.onRowStart();
-    int nullBitMapStartPos = startPos + 4 + 1;
-    int nullBitMapEndPos = nullBitMapStartPos + binaryNullBitMapLength;
-    mySQLPacket.packetReadStartIndex(nullBitMapEndPos);
-    for (int columnIndex = 0; columnIndex < currentColumnDefList.length; columnIndex++) {
-      ColumnDefPacket columnDef = currentColumnDefList[columnIndex];
-      int i = nullBitMapStartPos + (columnIndex + 2) / 8;
-      byte aByte = mySQLPacket.getByte(i);
-      boolean isNull = ((aByte & (1 << (columnIndex & 7))) != 0);
+  public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) {
+    for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
       int startIndex = mySQLPacket.packetReadStartIndex();
+      if (!columnFilter(columnIndex)) {
+        mySQLPacket.skipLenencBytes(startIndex);
+        continue;
+      }
+      ColumnDefPacket columnDef = currentColumnDefList[columnIndex];
       int columnType = columnDef.getColumnType();
-      if (isNull) {
+      if (isNull(mySQLPacket, startIndex)) {
+        mySQLPacket.packetReadStartIndex(startIndex + 1);
         switch (columnType) {
           default: {
             throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
@@ -148,7 +160,7 @@ public class BinaryResultSetTask implements ResultSetTask {
             collector.collectNullLongLong(columnIndex, columnDef);
             break;
           }
-          case MySQLFieldsType.FIELD_TYPE_INT24: {
+          case FIELD_TYPE_INT24: {
             collector.collectNullInt24(columnIndex, columnDef);
             break;
           }
@@ -225,12 +237,6 @@ public class BinaryResultSetTask implements ResultSetTask {
         }
         continue;
       }
-
-      /**
-       * 二进制格式,详细看协议,startIndex 是
-       * 字符串类型,长度的开始位置;
-       * 值类型,不带长度
-       */
       switch (columnType) {
         default: {
           throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
@@ -346,8 +352,32 @@ public class BinaryResultSetTask implements ResultSetTask {
           break;
         }
       }
-
+      int mayBeErrorStartIndex = mySQLPacket.packetReadStartIndex();
+      if (mySQLPacket.skipLenencBytes(startIndex) == mayBeErrorStartIndex) {
+      }
     }
     collector.onRowEnd();
   }
+
+  boolean isNull(MySQLPacket packet, int startIndex) {
+    return (packet.getByte(startIndex) & 0xff) == 0xfb;
+  }
+
+  @Override
+  public void onColumnCount(int columnCount) {
+    this.columnCount = 0;
+    this.currentColumnDefList = new ColumnDefPacket[columnCount];
+    collector.onResultSetStart();
+  }
+
+  @Override
+  public void onRowEof(MySQLPacket mySQLPacket, int startPos, int endPos) {
+    collector.onResultSetEnd();
+  }
+
+  @Override
+  public void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
+    collector.onResultSetEnd();
+  }
+
 }

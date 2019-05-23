@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
 public class ProxyRuntime extends ConfigReceiverImpl {
 
   public static final ProxyRuntime INSTANCE = new ProxyRuntime();
-  private static final Logger logger = LoggerFactory.getLogger(ProxyRuntime.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRuntime.class);
   private final AtomicInteger sessionIdCounter = new AtomicInteger(0);
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();

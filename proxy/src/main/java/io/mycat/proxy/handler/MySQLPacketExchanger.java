@@ -14,8 +14,6 @@
  */
 package io.mycat.proxy.handler;
 
-import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_RESPONSE;
-
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
@@ -43,12 +41,14 @@ import org.slf4j.LoggerFactory;
 public enum MySQLPacketExchanger {
   INSTANCE;
 
+  private static final Logger logger = LoggerFactory.getLogger(MySQLPacketExchanger.class);
   public final static PacketExchangerCallback DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK = (mycat, e, attr) -> {
     mycat.setLastMessage(e.getMessage());
     mycat.writeErrorEndPacketBySyncInProcessError();
   };
 
-  public static void onExceptionClearCloseInResponse(MycatSession mycat, Exception e) {
+  private static void onExceptionClearCloseInResponse(MycatSession mycat, Exception e) {
+    logger.error("{}", e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     mysql.resetPacket();
     mysql.setCallBack(null);
@@ -57,7 +57,8 @@ public enum MySQLPacketExchanger {
     mycat.close(false, e);
   }
 
-  public static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e) {
+  private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e) {
+    logger.error("{}", e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     PacketExchangerCallback callback = mysql.getCallBack();
     mysql.setCallBack(null);
@@ -66,7 +67,7 @@ public enum MySQLPacketExchanger {
     callback.onRequestMySQLException(mycat, e, null);
   }
 
-  public static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
+  private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
     mycatSession.resetPacket();
     mysql.resetPacket();
     mysql.setNoResponse(false);
@@ -100,7 +101,7 @@ public enum MySQLPacketExchanger {
     );
   }
 
-  public void onBackendResponse(MySQLClientSession mysql) throws IOException {
+  private void onBackendResponse(MySQLClientSession mysql) throws IOException {
     if (!mysql.readFromChannel()) {
       return;
     }
@@ -121,7 +122,7 @@ public enum MySQLPacketExchanger {
     return;
   }
 
-  public boolean onBackendWriteFinished(MySQLClientSession mysql) {
+  private boolean onBackendWriteFinished(MySQLClientSession mysql) {
     if (!mysql.isNoResponse()) {
       ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
       proxyBuffer.channelReadStartIndex(0);
@@ -134,7 +135,7 @@ public enum MySQLPacketExchanger {
     }
   }
 
-  public boolean onFrontWriteFinished(MycatSession mycat) {
+  private boolean onFrontWriteFinished(MycatSession mycat) {
     MySQLClientSession mysql = mycat.getMySQLSession();
     if (mysql.isResponseFinished()) {
       mycat.change2ReadOpts();
@@ -148,7 +149,7 @@ public enum MySQLPacketExchanger {
     }
   }
 
-  public enum MySQLProxyNIOHandler implements BackendNIOHandler<MySQLClientSession> {
+  private enum MySQLProxyNIOHandler implements BackendNIOHandler<MySQLClientSession> {
     INSTANCE;
 
 
@@ -239,40 +240,20 @@ public enum MySQLPacketExchanger {
         onClearInNormalResponse(mycatSession, session);
       }
     }
-  }
-
-  public enum ResultType {
-    SUCCESS,
-    REQUEST_ERROR,
-    OTHER_ERROR
-  }
-
-  public enum MySQLIdleNIOHandler implements NIOHandler<MySQLClientSession> {
-    INSTANCE;
-    protected final static Logger logger = LoggerFactory.getLogger(
-        MySQLPacketExchanger.MySQLProxyNIOHandler.class);
 
     @Override
-    public void onSocketRead(MySQLClientSession session) {
-      session.close(false, UNKNOWN_IDLE_RESPONSE.getMessage());
+    public void onException(MySQLClientSession session, Exception e) {
+      MycatSession mycatSeesion = session.getMycatSeesion();
+      onExceptionClearCloseInResponse(mycatSeesion, e);
     }
-
-    @Override
-    public void onSocketWrite(MySQLClientSession session) {
-
-    }
-
-    @Override
-    public void onWriteFinished(MySQLClientSession session) {
-      assert false;
-    }
-
   }
+
+
 
   /**
    * 代理模式前端写入处理器
    */
-  enum WriteHandler implements MycatSessionWriteHandler {
+  private enum WriteHandler implements MycatSessionWriteHandler {
     INSTANCE;
 
     @Override
@@ -302,6 +283,11 @@ public enum MySQLPacketExchanger {
       } catch (Exception e) {
         onExceptionClearCloseInResponse(mycat, e);
       }
+    }
+
+    @Override
+    public void onException(MycatSession session, Exception e) {
+      onExceptionClearCloseInResponse(session, e);
     }
   }
 

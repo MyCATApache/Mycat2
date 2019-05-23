@@ -8,7 +8,7 @@ import io.mycat.proxy.session.MycatSession;
  * @date 2019-05-12 21:30
  * 实现mysql服务器 预处理相关处理
  **/
-public interface PrepareStatementHandler {
+public interface PrepareStatementParserHelper {
 
   void handlePrepareStatement(byte[] sql, MycatSession session);
 

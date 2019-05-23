@@ -8,7 +8,7 @@ import io.mycat.proxy.session.MycatSession;
  * @date 2019-05-12 21:00
  * mysql server 对LocalData 的处理
  **/
-public interface LocalInFileRequestHandler {
+public interface LocalInFileRequestParseHelper {
 
   int COM_QUERY = 0;
   int LOCAL_INFILE_REQUEST = 1;

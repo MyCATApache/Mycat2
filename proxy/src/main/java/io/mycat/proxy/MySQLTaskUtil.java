@@ -24,7 +24,7 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
-import io.mycat.proxy.handler.backend.ResultSetTask;
+import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
@@ -108,7 +108,7 @@ public class MySQLTaskUtil {
                 isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
                     + ";" + "SET names " + charset + ";" + "SET character_set_results = " + (
                     characterSetResult == null ? "NULL" : characterSetResult);
-            ResultSetTask.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
+            ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
                 new ResultSetCallBack<MySQLClientSession>() {
 
                   @Override

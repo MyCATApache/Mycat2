@@ -4,7 +4,7 @@ import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.proxy.callback.ResultSetCallBack;
-import io.mycat.proxy.handler.backend.TextResultSetTask;
+import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.heart.DatasourceStatus;
 import io.mycat.replica.heart.HeartBeatAsyncTaskCallBack;
@@ -27,7 +27,7 @@ public class SingleHeartBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
     if (isQuit == false) {
       OneResultSetCollector collector = new OneResultSetCollector();
       TextResultSetTransforCollector transfor = new TextResultSetTransforCollector(collector);
-      TextResultSetTask queryResultSetTask = new TextResultSetTask(transfor);
+      TextResultSetHandler queryResultSetTask = new TextResultSetHandler(transfor);
 
       queryResultSetTask
           .request(session, MySQLCommandType.COM_QUERY, sql,

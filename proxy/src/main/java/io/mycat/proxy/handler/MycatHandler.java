@@ -17,7 +17,7 @@ package io.mycat.proxy.handler;
 import com.sun.jdi.connect.spi.ClosedConnectionException;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
-import java.nio.channels.SocketChannel;
+import java.nio.channels.ClosedChannelException;
 
 public enum MycatHandler implements NIOHandler<MycatSession> {
   INSTANCE;
@@ -25,9 +25,9 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
   final
   @Override
   public void onSocketRead(MycatSession mycat) {
-    SocketChannel channel = mycat.channel();
-    if (!(channel.isConnected() && channel.isOpen())) {
-      mycat.close(false, "");
+    if (!mycat.isOpen()) {
+      onException(mycat, new ClosedChannelException());
+      mycat.close(false, "mysql session has closed");
       return;
     }
     try {
@@ -56,7 +56,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       mycat.writeToChannel();
     } catch (Exception e) {
       onClear(mycat);
-      responseError(mycat, e);
+      mycat.close(false, e);
     }
   }
 
@@ -71,17 +71,22 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       }
     } catch (Exception e) {
       onClear(mycat);
-      responseError(mycat, e);
+      mycat.close(false, e);
     }
+  }
+
+  @Override
+  public void onException(MycatSession mycat, Exception e) {
+    MycatSessionWriteHandler writeHandler = mycat.getWriteHandler();
+    if (writeHandler != null) {
+      writeHandler.onException(mycat, e);
+    }
+    onClear(mycat);
+    mycat.close(false, "");
   }
 
   public void onClear(MycatSession session) {
     session.onHandlerFinishedClear();
-  }
-
-  private void responseError(MycatSession mycat, Exception e) {
-    mycat.setLastMessage(e);
-    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
 
@@ -89,7 +94,10 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
    * mycat session写入处理
    */
   public interface MycatSessionWriteHandler {
+
     void writeToChannel(MycatSession session) throws IOException;
+
+    void onException(MycatSession session, Exception e);
   }
 
 }

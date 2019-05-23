@@ -187,17 +187,16 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
             } else if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
               this.processWriteKey(reactorEnv, key);
             }
-          } catch (IOException e) {//如果设置为IOException方便调试,避免吞没其他类型异常
+          } catch (Exception e) {//如果设置为IOException方便调试,避免吞没其他类型异常
+            logger.error("{}", e);
             Session curSession = reactorEnv.getCurSession();
             if (curSession != null) {
-              curSession.close(false, curSession.setLastMessage(e));
-              reactorEnv.setCurSession(null);
-            }
-          } catch (Throwable t) {
-            t.printStackTrace();
-            Session curSession = reactorEnv.getCurSession();
-            if (curSession != null) {
-              curSession.close(false, curSession.setLastMessage(t));
+              NIOHandler curNIOHandler = curSession.getCurNIOHandler();
+              if (curNIOHandler != null) {
+                curNIOHandler.onException(curSession, e);
+              } else {
+                curSession.close(false, curSession.setLastMessage(e));
+              }
               reactorEnv.setCurSession(null);
             }
           }

@@ -57,4 +57,6 @@ public interface NIOHandler<T extends Session> {
     Session curSession = thread.getReactorEnv().getCurSession();
     return (T) curSession;
   }
+
+  void onException(T session, Exception e);
 }

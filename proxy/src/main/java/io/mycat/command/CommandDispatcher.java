@@ -29,12 +29,13 @@ import java.util.Map;
  *
  * command 报文解析分发
  **/
-public interface CommandDispatcher extends LocalInFileRequestHandler, PrepareStatementHandler {
+public interface CommandDispatcher extends LocalInFileRequestParseHelper,
+                                               PrepareStatementParserHelper {
 
   default void handle(MycatSession mycat) {
     CommandDispatcher commandHandler = this;
     MySQLPacket curPacket = mycat.currentProxyPayload();
-    if (mycat.getLocalInFileState() == LocalInFileRequestHandler.CONTENT_OF_FILE) {
+    if (mycat.getLocalInFileState() == LocalInFileRequestParseHelper.CONTENT_OF_FILE) {
       byte[] bytes = curPacket.readEOFStringBytes();
       mycat.resetCurrentProxyPayload();
       commandHandler.handleContentOfFilename(bytes, mycat);
@@ -43,7 +44,7 @@ public interface CommandDispatcher extends LocalInFileRequestHandler, PrepareSta
     } else if (mycat.getLocalInFileState() == EMPTY_PACKET) {
       mycat.resetCurrentProxyPayload();
       commandHandler.handleContentOfFilenameEmptyOk();
-      mycat.setLocalInFileState(LocalInFileRequestHandler.COM_QUERY);
+      mycat.setLocalInFileState(LocalInFileRequestParseHelper.COM_QUERY);
       return;
     }
     byte head = curPacket.readByte();

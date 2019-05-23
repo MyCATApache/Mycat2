@@ -25,8 +25,8 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.command.LocalInFileRequestHandler.LocalInFileSession;
-import io.mycat.command.PrepareStatementHandler.PrepareStatementSession;
+import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
+import io.mycat.command.PrepareStatementParserHelper.PrepareStatementSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -512,5 +512,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public String getCharacterSetResults() {
     return this.serverStatus.getCharsetSetResult();
+  }
+
+  public MycatSessionWriteHandler getWriteHandler() {
+    return writeHandler;
   }
 }

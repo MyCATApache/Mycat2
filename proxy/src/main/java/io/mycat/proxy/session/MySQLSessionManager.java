@@ -19,8 +19,8 @@ import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
-import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLIdleNIOHandler;
-import io.mycat.proxy.handler.backend.BackendConCreateTask;
+import io.mycat.proxy.handler.backend.BackendConCreateHandler;
+import io.mycat.proxy.handler.backend.IdleHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
@@ -31,6 +31,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.concurrent.ThreadLocalRandom;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象
@@ -42,6 +44,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class MySQLSessionManager implements
     BackendSessionManager<MySQLClientSession, MySQLDatasource> {
 
+  final static Logger LOGGER = LoggerFactory.getLogger(MySQLSessionManager.class);
   final LinkedList<MySQLClientSession> allSessions = new LinkedList<>();
   final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
 
@@ -90,7 +93,7 @@ public final class MySQLSessionManager implements
           boolean random = ThreadLocalRandom.current().nextBoolean();
           MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
           mySQLSession.setIdle(false);
-          assert mySQLSession.getCurNIOHandler() == MySQLIdleNIOHandler.INSTANCE;
+          assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
           assert mySQLSession.currentProxyBuffer() == null;
           if (!mySQLSession.isOpen()) {
             MycatReactorThread mycatReactorThread = mySQLSession.getMycatReactorThread();
@@ -130,11 +133,12 @@ public final class MySQLSessionManager implements
     assert session.currentProxyBuffer() == null;
     assert !session.isIdle();
     if (session.isMonopolized()) {
+      session.close(false, "session is monopolized ");
       throw new MycatExpection("Monopolized");
     }
     session.resetPacket();
     session.setIdle(true);
-    session.switchNioHandler(MySQLIdleNIOHandler.INSTANCE);
+    session.switchNioHandler(IdleHandler.INSTANCE);
     session.change2ReadOpts();
     MycatMonitor.onAddIdleMysqlSession(session);
     idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
@@ -172,6 +176,7 @@ public final class MySQLSessionManager implements
         try {
           session.close(true, reason);
         } catch (Exception e) {
+          LOGGER.error("", e);
           SessionTip.UNKNOWN_CLOSE_ERROR.getMessage(e);
         }
       }
@@ -187,7 +192,7 @@ public final class MySQLSessionManager implements
   public void createSession(MySQLDatasource key, SessionCallBack<MySQLClientSession> callBack) {
     assert key != null;
     assert callBack != null;
-    new BackendConCreateTask(key, this,
+    new BackendConCreateHandler(key, this,
         (MycatReactorThread) Thread.currentThread(), new CommandCallBack() {
       @Override
       public void onFinishedOk(int serverStatus, MySQLClientSession session, Object sender,

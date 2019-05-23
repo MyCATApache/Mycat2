@@ -33,7 +33,6 @@ import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 /**
@@ -554,8 +553,4 @@ public class MySQLClientSession extends
     this.characterSetResult = characterSetResult;
   }
 
-  public boolean isOpen() {
-    SocketChannel channel = channel();
-    return !isClosed() && channel.isOpen() && channel.isConnected();
-  }
 }
