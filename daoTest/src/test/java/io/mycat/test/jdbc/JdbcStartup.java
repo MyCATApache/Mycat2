@@ -11,6 +11,8 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.util.concurrent.ExecutionException;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
@@ -19,6 +21,7 @@ import org.junit.Test;
 public class JdbcStartup extends JdbcDao {
 
   final static String DB_IN_ONE_SERVER = "DB_IN_ONE_SERVER";
+  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcStartup.class);
 
   @Test
   public void startUp() throws IOException, ExecutionException, InterruptedException {
@@ -30,7 +33,7 @@ public class JdbcStartup extends JdbcDao {
     }, new AsyncTaskCallBack() {
       @Override
       public void onFinished(Object sender, Object future, Object attr) {
-        int count = 100;
+        int count = 80;
         AsyncTaskCallBackCounter callBackCounter = new AsyncTaskCallBackCounter(count,
             new AsyncTaskCallBack() {
               @Override
@@ -46,28 +49,24 @@ public class JdbcStartup extends JdbcDao {
         for (int i = 0; i < count; i++) {
           int index = i;
           new Thread(() -> {
-            try {
-              Thread.sleep(50);
-            } catch (InterruptedException e) {
-              e.printStackTrace();
-            }
             try (Connection connection = getConnection()) {
-              System.out.println("connectId:" + index);
-              for (int j = 0; j < 2; j++) {
-                System.out.println("per:" + j);
+              LOGGER.debug("connectId:{}", index);
+              for (int j = 0; j < 500; j++) {
+                LOGGER.debug("per:{}", j);
                 try (
                     Statement statement = connection.createStatement()
                 ) {
-                  statement.execute("select 1");
+                  connection.setAutoCommit(false);
+                  connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+                  connection.createStatement().execute("select 1");
+                  connection.commit();
                 }
-//                connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-//                connection.setAutoCommit(true);
-//                connection.createStatement().execute("select 1");
-//                connection.commit();
+
               }
 
             } catch (Exception e) {
-              e.printStackTrace();
+              LOGGER.error("{}", e);
               callBackCounter.onCountFail();
               return;
             }
