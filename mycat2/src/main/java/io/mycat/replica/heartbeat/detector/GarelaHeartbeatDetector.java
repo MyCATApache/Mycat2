@@ -14,15 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica.heart.detector;
+package io.mycat.replica.heartbeat.detector;
 
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.replica.MySQLDataSourceEx;
-import io.mycat.replica.heart.DatasourceStatus;
-import io.mycat.replica.heart.HeartBeatAsyncTaskCallBack;
-import io.mycat.replica.heart.HeartbeatDetector;
-import io.mycat.replica.heart.HeartbeatManager;
-import io.mycat.replica.heart.callback.GaleraHeartBeatAsyncTaskCallBack;
+import io.mycat.replica.heartbeat.DatasourceStatus;
+import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
+import io.mycat.replica.heartbeat.HeartbeatDetector;
+import io.mycat.replica.heartbeat.HeartbeatManager;
+import io.mycat.replica.heartbeat.callback.GaleraHeartBeatAsyncTaskCallBack;
 import java.util.List;
 import java.util.Map;
 

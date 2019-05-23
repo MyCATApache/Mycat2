@@ -14,29 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica.heart;
+package io.mycat.replica.heartbeat;
 
-import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.replica.MySQLDataSourceEx;
-
-public interface HeartbeatDetector {
-
-    ReplicaConfig getReplicaConfig();
-
-    MySQLDataSourceEx getDataSource();
-
-    HeartbeatManager getHeartbeatManager();
-
+/**
+ * @author : zhangwy
+ * @version V1.0
+ * @Description: 心跳流程控制
+ */
+public interface HeartbeatManager {
     void heartBeat();
 
-    HeartBeatAsyncTaskCallBack getAsyncTaskCallback();
-
-    boolean isHeartbeatTimeout();
-
-    void updateLastReceivedQryTime();
-
-    void updateLastSendQryTime();
-
-    boolean quitDetector();
-//    HeartbeatInfReceiver<DatasourceStatus> getHeartbeatInfReceiver();
+    void setStatus(DatasourceStatus datasourceStatus, int status) ;
 }

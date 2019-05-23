@@ -1,4 +1,4 @@
-package io.mycat.replica.heart.callback;
+package io.mycat.replica.heartbeat.callback;
 
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.collector.CollectorUtil;
@@ -9,9 +9,9 @@ import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.MySQLDatasource;
-import io.mycat.replica.heart.DatasourceStatus;
-import io.mycat.replica.heart.HeartBeatAsyncTaskCallBack;
-import io.mycat.replica.heart.HeartbeatDetector;
+import io.mycat.replica.heartbeat.DatasourceStatus;
+import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
+import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;

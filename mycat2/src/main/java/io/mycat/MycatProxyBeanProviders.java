@@ -44,4 +44,6 @@ public enum MycatProxyBeanProviders implements ProxyBeanProviders {
     MycatRouter router = new MycatRouter(routerConfig);
     return new MycatCommandHandler(router);
   }
+
+
 }

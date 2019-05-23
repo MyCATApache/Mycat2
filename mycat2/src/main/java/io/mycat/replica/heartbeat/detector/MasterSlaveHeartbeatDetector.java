@@ -14,27 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica.heart.detector;
+package io.mycat.replica.heartbeat.detector;
 
 import io.mycat.config.datasource.ReplicaConfig;
-
 import io.mycat.replica.MySQLDataSourceEx;
-import io.mycat.replica.heart.AbstractHeartBeatDetector;
-import io.mycat.replica.heart.HeartBeatAsyncTaskCallBack;
-import io.mycat.replica.heart.HeartbeatDetector;
-import io.mycat.replica.heart.HeartbeatManager;
-import io.mycat.replica.heart.callback.SingleHeartBeatAsyncTaskCallBack;
+import io.mycat.replica.heartbeat.AbstractHeartBeatDetector;
+import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
+import io.mycat.replica.heartbeat.HeartbeatDetector;
+import io.mycat.replica.heartbeat.HeartbeatManager;
+import io.mycat.replica.heartbeat.callback.MasterSlaveBeatAsyncTaskCallBack;
 
 
-public class SingleNodeHeartbeatDetector extends AbstractHeartBeatDetector implements HeartbeatDetector {
-
-    public SingleNodeHeartbeatDetector(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource, HeartbeatManager heartbeatManager) {
+public class MasterSlaveHeartbeatDetector extends AbstractHeartBeatDetector implements HeartbeatDetector {
+    private final int slaveThreshold = 1000;
+    public MasterSlaveHeartbeatDetector(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource, HeartbeatManager heartbeatManager) {
         super(replicaConfig, dataSource , heartbeatManager);
     }
-
     @Override
     public HeartBeatAsyncTaskCallBack getAsyncTaskCallback() {
-        return new SingleHeartBeatAsyncTaskCallBack(this);
+        return new MasterSlaveBeatAsyncTaskCallBack(this);
     }
-
 }

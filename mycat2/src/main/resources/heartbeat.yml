@@ -1,0 +1,6 @@
+heartbeat:
+  minHeartbeatChecktime: 1200000000 #最小心跳间隔
+  replicaHeartbeatPeriod: 1200000000 #集群心跳周期
+  replicaIdleCheckPeriod: 1200000000 #集群闲置检测周期
+  idleTimeout: 1200000000 #闲置超时时间
+  minSwitchtimeInterval: 1200000000 #

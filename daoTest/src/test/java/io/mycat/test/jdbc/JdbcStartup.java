@@ -1,5 +1,6 @@
 package io.mycat.test.jdbc;
 
+import io.mycat.MycatProxyBeanProviders;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
@@ -21,7 +22,7 @@ public class JdbcStartup extends JdbcDao {
 
   @Test
   public void startUp() throws IOException, ExecutionException, InterruptedException {
-    loadModule(DB_IN_ONE_SERVER, new MycatMonitorCallback() {
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorCallback() {
       @Override
       public void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
 
@@ -29,7 +30,7 @@ public class JdbcStartup extends JdbcDao {
     }, new AsyncTaskCallBack() {
       @Override
       public void onFinished(Object sender, Object future, Object attr) {
-        int count = 10000;
+        int count = 100;
         AsyncTaskCallBackCounter callBackCounter = new AsyncTaskCallBackCounter(count,
             new AsyncTaskCallBack() {
               @Override

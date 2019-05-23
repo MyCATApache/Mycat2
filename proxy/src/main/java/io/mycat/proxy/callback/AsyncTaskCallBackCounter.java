@@ -20,7 +20,6 @@ public class AsyncTaskCallBackCounter {
 
   public void onCountSuccess() {
     if (counter.decrementAndGet() == 0) {
-      System.out.println("->>>" + fail);
       callBack.onFinished(this, null, null);
     }
   }

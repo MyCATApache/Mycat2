@@ -1,7 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.config.datasource.DatasourceConfig;
-import io.mycat.replica.heart.MysqlHeartBeatManager;
+import io.mycat.replica.heartbeat.MysqlHeartBeatManager;
 
 /**
  * @author jamie12221

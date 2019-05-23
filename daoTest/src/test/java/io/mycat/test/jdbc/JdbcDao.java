@@ -1,6 +1,7 @@
 package io.mycat.test.jdbc;
 
 import io.mycat.MycatCore;
+import io.mycat.ProxyBeanProviders;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
@@ -40,19 +41,23 @@ public abstract class JdbcDao {
       }
     }
   }
-  public static void loadModule(String module, AsyncTaskCallBack task)
+
+  public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
+      AsyncTaskCallBack task)
       throws InterruptedException, ExecutionException, IOException {
-    loadModule(module, MycatMonitorCallback.EMPTY, task);
+    loadModule(module, proxyBeanProviders, MycatMonitorCallback.EMPTY, task);
   }
 
-  public static void loadModule(String module, MycatMonitorCallback callback,
+  public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
+      MycatMonitorCallback callback,
       AsyncTaskCallBack task)
       throws IOException, ExecutionException, InterruptedException {
     String resourcesPath = ProxyRuntime.getResourcesPath();
     Path resolve = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     final CompletableFuture<String> future = new CompletableFuture<>();
-    MycatCore.startup(resolve.toAbsolutePath().toString(), callback, new AsyncTaskCallBack() {
+    MycatCore.startup(resolve.toAbsolutePath().toString(), proxyBeanProviders, callback,
+        new AsyncTaskCallBack() {
       @Override
       public void onFinished(Object sender, Object result, Object attr) {
         executor.submit(() -> {

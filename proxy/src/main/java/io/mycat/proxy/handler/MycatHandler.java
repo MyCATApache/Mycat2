@@ -18,10 +18,12 @@ import com.sun.jdi.connect.spi.ClosedConnectionException;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public enum MycatHandler implements NIOHandler<MycatSession> {
   INSTANCE;
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(MycatHandler.class);
   final
   @Override
   public void onSocketRead(MycatSession mycat) {
@@ -41,12 +43,13 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       mycat.handle();
       return;
     } catch (ClosedConnectionException e) {
-      mycat.close(false, e.getMessage());
+      onException(mycat, e);
       return;
     } catch (Exception e) {
-      e.printStackTrace();
       onClear(mycat);
-      mycat.close(false, e);
+      mycat.setLastMessage(e.toString());
+      mycat.writeErrorEndPacketBySyncInProcessError();
+      onException(mycat, e);
     }
   }
 
@@ -77,12 +80,13 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
 
   @Override
   public void onException(MycatSession mycat, Exception e) {
+    LOGGER.error("{}", e);
     MycatSessionWriteHandler writeHandler = mycat.getWriteHandler();
     if (writeHandler != null) {
       writeHandler.onException(mycat, e);
     }
     onClear(mycat);
-    mycat.close(false, "");
+    mycat.close(false, e.toString());
   }
 
   public void onClear(MycatSession session) {

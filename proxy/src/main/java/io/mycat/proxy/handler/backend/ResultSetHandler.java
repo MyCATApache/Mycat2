@@ -176,6 +176,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       boolean isResponseFinished = false;
       while (mysql.getCurNIOHandler() == this && mysql.readProxyPayloadFully()) {
         MySQLPayloadType type = mysql.getPacketResolver().getMySQLPayloadType();
+        System.out.println(type);
         isResponseFinished = mysql.isResponseFinished();
         MySQLPacket payload = mysql.currentProxyPayload();
         int startPos = payload.packetReadStartIndex();

@@ -184,6 +184,8 @@ public final class MySQLSessionManager implements
     idleDatasourcehMap.remove(key);
   }
 
+  final static Exception SESSION_MAX_COUNT_LIMIT = new Exception("session max count limit");
+
   /**
    * 根据dataSource信息创建MySQL LocalInFileSession 1.这个函数并不会把连接加入到闲置的连接池,因为创建的session就是马上使用的,如果创建之后就加入闲置连接池就会发生挣用问题
    * 2.错误信息放置在attr
@@ -192,6 +194,11 @@ public final class MySQLSessionManager implements
   public void createSession(MySQLDatasource key, SessionCallBack<MySQLClientSession> callBack) {
     assert key != null;
     assert callBack != null;
+    int maxCon = key.getSessionLimitCount();
+    if (maxCon == key.getSessionCounter()) {
+      callBack.onException(SESSION_MAX_COUNT_LIMIT, this, null);
+      return;
+    }
     new BackendConCreateHandler(key, this,
         (MycatReactorThread) Thread.currentThread(), new CommandCallBack() {
       @Override
@@ -200,6 +207,7 @@ public final class MySQLSessionManager implements
         assert session.currentProxyBuffer() == null;
         MycatMonitor.onNewMySQLSession(session);
         allSessions.add(session);
+        key.incrementSessionCounter();
         callBack.onSession(session, sender, attr);
       }
 
@@ -223,6 +231,7 @@ public final class MySQLSessionManager implements
   public void removeSession(MySQLClientSession session, boolean normal, String reason) {
     assert session != null;
     assert reason != null;
+    session.getDatasource().decrementSessionCounter();
     allSessions.remove(session);
     MycatMonitor.onCloseMysqlSession(session);
     removeIdleSession(session);

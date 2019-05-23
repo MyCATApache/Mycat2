@@ -1,4 +1,4 @@
-package io.mycat.replica.heart;
+package io.mycat.replica.heartbeat;
 
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.session.MySQLClientSession;

@@ -1,11 +1,11 @@
-package io.mycat.replica.heart;
+package io.mycat.replica.heartbeat;
 
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
-import io.mycat.replica.heart.detector.GarelaHeartbeatDetector;
-import io.mycat.replica.heart.detector.MasterSlaveHeartbeatDetector;
-import io.mycat.replica.heart.detector.SingleNodeHeartbeatDetector;
+import io.mycat.replica.heartbeat.detector.GarelaHeartbeatDetector;
+import io.mycat.replica.heartbeat.detector.MasterSlaveHeartbeatDetector;
+import io.mycat.replica.heartbeat.detector.SingleNodeHeartbeatDetector;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +135,7 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
             logger.error("{} heartStatus {}", dataSource.getName(), heartBeatStatus);
             if(dataSource.isMaster() && heartBeatStatus.isError()) {
                 //replicat 进行选主
-                ((MySQLReplicaEx) dataSource.getReplica()).switchDataSourceIfNeed();
+                dataSource.getReplica().switchDataSourceIfNeed();
             }
         }
     }

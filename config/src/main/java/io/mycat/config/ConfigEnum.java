@@ -17,6 +17,7 @@ package io.mycat.config;
 
 import io.mycat.config.datasource.DatasourceRootConfig;
 import io.mycat.config.datasource.ReplicaIndexRootConfig;
+import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.route.DynamicAnnotationRootConfig;
@@ -41,6 +42,7 @@ public enum ConfigEnum {
   RULE(10, "rule.yml", ShardingRuleRootConfig.class),
   FUNCTIONS(11, "function.yml", SharingFuntionRootConfig.class),
   PLUG(12, "plug.yml", PlugRootConfig.class),
+  HEARTBEAT(12, "heartbeat.yml", HeartbeatRootConfig.class),
   ;
   private byte type;
   private String fileName;

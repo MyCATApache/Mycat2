@@ -1,4 +1,4 @@
-package io.mycat.replica.heart;
+package io.mycat.replica.heartbeat;
 
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.config.datasource.ReplicaConfig;

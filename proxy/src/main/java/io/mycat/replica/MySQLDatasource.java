@@ -22,6 +22,7 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,12 +39,17 @@ public abstract class MySQLDatasource {
   protected final DatasourceConfig datasourceConfig;
   protected final MySQLReplica replica;
   protected final MySQLCollationIndex collationIndex = new MySQLCollationIndex();
+  protected final AtomicInteger connectionCounter = new AtomicInteger(0);
 
   public MySQLDatasource(int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
     this.index = index;
     this.datasourceConfig = datasourceConfig;
     this.replica = replica;
+  }
+
+  public int getSessionLimitCount() {
+    return datasourceConfig.getMaxCon();
   }
 
   /**
@@ -127,7 +133,6 @@ public abstract class MySQLDatasource {
   }
 
 
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -152,8 +157,19 @@ public abstract class MySQLDatasource {
     return index == replica.getMasterIndex();
   }
 
-  public boolean isSlave(){
+  public boolean isSlave() {
     return index != replica.getMasterIndex();
   }
 
+  public int getSessionCounter() {
+    return connectionCounter.get();
+  }
+
+  public int decrementSessionCounter() {
+    return connectionCounter.decrementAndGet();
+  }
+
+  public int incrementSessionCounter() {
+    return connectionCounter.incrementAndGet();
+  }
 }
