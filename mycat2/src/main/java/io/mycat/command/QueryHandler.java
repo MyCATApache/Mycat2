@@ -130,8 +130,10 @@ public interface QueryHandler {
           mycat.writeErrorEndPacket();
           return;
         case SHOW_SQL:
-          mycat.setLastMessage("unsupport show");
-          mycat.writeErrorEndPacket();
+          String defaultDataNode = useSchema.getDefaultDataNode();
+          MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode
+              , false, null, false
+          );
           return;
         case SELECT_SQL: {
           if (sqlContext.isSimpleSelect()) {
