@@ -19,10 +19,10 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221
  * @date 2019-05-19 18:23
  **/
-public class JdbcStartup extends ModualTest {
+public class JdbcDao extends ModualTest {
 
   final static String DB_IN_ONE_SERVER = "DB_IN_ONE_SERVER";
-  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcStartup.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDao.class);
 
   @Test
   public void startUp() throws IOException, ExecutionException, InterruptedException {

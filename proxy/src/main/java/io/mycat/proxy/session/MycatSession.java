@@ -142,7 +142,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
   private void setCharset(int index, String charsetName) {
-    this.serverStatus.setCharset(index, charsetName, Charset.forName(charsetName));
+    this.serverStatus.setCharset(index, charsetName, Charset.defaultCharset());
   }
 
 
