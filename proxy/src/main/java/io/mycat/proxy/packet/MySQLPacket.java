@@ -17,6 +17,7 @@ package io.mycat.proxy.packet;
 import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.proxy.buffer.ProxyBuffer;
+import io.mycat.util.ByteUtil;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Time;
@@ -250,6 +251,9 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   default byte[] getEOFStringBytes(int index) {
     int strLength = packetReadEndIndex() - index;
+    if (strLength < 0) {
+      return new byte[0];
+    }
     return getBytes(index, strLength);
   }
 

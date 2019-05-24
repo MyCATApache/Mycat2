@@ -41,7 +41,7 @@ public class AuthSwitchRequestPacket {
   public void readPayload(MySQLPayloadReadView buffer) {
     status = buffer.readByte();
     authPluginName = buffer.readNULString();
-    authPluginData = buffer.readEOFString();
+    authPluginData = buffer.readNULString();
   }
 
 

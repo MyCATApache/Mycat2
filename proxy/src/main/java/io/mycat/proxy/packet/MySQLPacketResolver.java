@@ -556,8 +556,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           return;
         }
       }
-      case AUTH_SWITCH_REQUEST:
-      case AUTH_SWITCH_RESPONSE:
+      case AUTH_SWITCH_PLUGIN_RESPONSE:
+      case AUTH_SWITCH_OTHER_REQUEST:
       case FIRST_PACKET: {
         if (!isPacketFinished) {
           throw new MycatExpection("unknown state!");
@@ -587,7 +587,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         } else if (head == 0xfe ) {
           if(isClientLogin()) {
             setMySQLPayloadType(FIRST_EOF);
-            setState(ComQueryState.AUTH_SWITCH_REQUEST);
+            setState(ComQueryState.AUTH_SWITCH_PLUGIN_RESPONSE);
           } else {
             setServerStatus(eofPacketReadStatus(mySQLPacket));
             setState(ComQueryState.COMMAND_END);
@@ -596,7 +596,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           return;
         } else {
           if(isClientLogin()) {
-            setState(ComQueryState.AUTH_SWITCH_RESPONSE);
+            setState(ComQueryState.AUTH_SWITCH_OTHER_REQUEST);
             return;
           }
           int count = (int) mySQLPacket
@@ -743,8 +743,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     QUERY_PACKET(true),
     FIRST_PACKET(true),
     COLUMN_DEFINITION(false),
-    AUTH_SWITCH_REQUEST(true),
-    AUTH_SWITCH_RESPONSE(true),
+    AUTH_SWITCH_PLUGIN_RESPONSE(true),
+    AUTH_SWITCH_OTHER_REQUEST(true),
     COLUMN_END_EOF(true),
     RESULTSET_ROW(false),
     RESULTSET_ROW_END(true),
