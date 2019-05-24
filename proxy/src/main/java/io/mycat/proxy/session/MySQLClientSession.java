@@ -14,19 +14,18 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MySQLAPI;
-import io.mycat.MySQLSessionMonopolizeType;
 import io.mycat.MycatExpection;
+import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mycat.MycatDataNode;
+import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.logTip.TaskTip;
-import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.MycatMonitor;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
@@ -34,8 +33,6 @@ import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.Selector;
-import java.nio.channels.SocketChannel;
 import java.util.Objects;
 
 /**
@@ -45,9 +42,7 @@ import java.util.Objects;
  * 后端MySQL Session
  **/
 public class MySQLClientSession extends
-    AbstractSession<MySQLClientSession> implements MySQLProxySession<MySQLClientSession>, MySQLAPI {
-
-  protected AsyncTaskCallBack<MySQLClientSession> callBack;
+    AbstractBackendSession<MySQLClientSession> implements MySQLProxySession<MySQLClientSession> {
 
 
   protected final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);
@@ -77,6 +72,8 @@ public class MySQLClientSession extends
   private String charset;
 
   private MySQLIsolation isolation;
+
+  private String characterSetResult;
   /**
    * 与mycat session绑定的信息 monopolizeType 是无法解绑的原因 TRANSACTION,事务 LOAD_DATA,交换过程
    * PREPARE_STATEMENT_EXECUTE,预处理过程 CURSOR_EXISTS 游标 以上四种情况 mysql客户端的并没有结束对mysql的交互,所以无法解绑
@@ -96,13 +93,12 @@ public class MySQLClientSession extends
   /**
    * 构造函数
    */
-  public MySQLClientSession(MySQLDatasource datasource, Selector selector, SocketChannel channel,
-      int socketOpt,
+  public MySQLClientSession(MySQLDatasource datasource,
       NIOHandler nioHandler, SessionManager<MySQLClientSession> sessionManager
-  ) throws IOException {
-    super(selector, channel, socketOpt, nioHandler, sessionManager);
-    this.datasource = datasource;
+  ) {
+    super(nioHandler, sessionManager);
     Objects.requireNonNull(datasource);
+    this.datasource = datasource;
   }
 
   /**
@@ -135,19 +131,13 @@ public class MySQLClientSession extends
     } catch (Exception e) {
       LOGGER.error(TaskTip.CLOSE_ERROR.getMessage(e));
     }
-    NIOHandler curNIOHandler = getCurNIOHandler();
-    if (curNIOHandler != null) {
-      curNIOHandler.onSocketClosed(this, normal, hint);
-    }
-    switchNioHandler(null);
   }
-
 
 
   /**
    * 解除与mycat session的绑定 如果遇到事务等状态会解除失败 如果是isCLose = true则强制解除 本函数不实现关闭通道,如果强制解除绑定应该是close方法调用
    *
-   * @param isClose 是否关闭事件
+   * //   * @param isClose 是否关闭事件
    */
 //  public boolean unbindMycatIfNeed(boolean isClose) {
 //    assert this.mycat != null;
@@ -181,8 +171,6 @@ public class MySQLClientSession extends
 //    }
 //    return true;
 //  }
-
-
   public MycatDataNode getDataNode() {
     return dataNode;
   }
@@ -222,11 +210,6 @@ public class MySQLClientSession extends
     this.packetResolver.prepareReveicePrepareOkResponse();
   }
 
-
-  @Override
-  public MySQLClientSession getThis() {
-    return this;
-  }
 
   /**
    * 计算mysql session是否被占用
@@ -327,21 +310,6 @@ public class MySQLClientSession extends
     return (byte) this.packetResolver.incrementPacketIdAndGet();
   }
 
-  /**
-   * 获取callback并把保存的callback设置为null
-   */
-  public AsyncTaskCallBack<MySQLClientSession> getCallBackAndReset() {
-    AsyncTaskCallBack<MySQLClientSession> callBack = this.callBack;
-    this.callBack = null;
-    return callBack;
-  }
-
-  /**
-   * 设置callback,一般是Task类设置
-   */
-  public void setCallBack(AsyncTaskCallBack<MySQLClientSession> callBack) {
-    this.callBack = callBack;
-  }
 
   /**
    * 获取错误的信息 可以为null
@@ -417,7 +385,6 @@ public class MySQLClientSession extends
    */
   public void checkWriteFinished() throws IOException {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
-    LOGGER.debug("checkWriteFinished");
     if (!proxyBuffer.channelWriteFinished()) {
       this.change2WriteOpts();
     } else {
@@ -544,8 +511,10 @@ public class MySQLClientSession extends
     return b;
   }
 
-  public boolean isAutomCommit() {
-    return (MySQLServerStatusFlags.AUTO_COMMIT & packetResolver.getEofServerStatus()) != 0;
+
+  public MySQLAutoCommit isAutomCommit() {
+    boolean b = (MySQLServerStatusFlags.AUTO_COMMIT & packetResolver.getServerStatus()) != 0;
+    return b ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF;
   }
 
 
@@ -569,7 +538,19 @@ public class MySQLClientSession extends
     return requestSuccess;
   }
 
+  /**
+   * 非阻塞nio,向mysql服务器通道写入数据后,通道已经关闭的情况下,会在响应得到写入异常,该标记是确认收到响应不是异常
+   */
   public void setRequestSuccess(boolean requestSuccess) {
     this.requestSuccess = requestSuccess;
   }
+
+  public String getCharacterSetResult() {
+    return characterSetResult;
+  }
+
+  public void setCharacterSetResult(String characterSetResult) {
+    this.characterSetResult = characterSetResult;
+  }
+
 }

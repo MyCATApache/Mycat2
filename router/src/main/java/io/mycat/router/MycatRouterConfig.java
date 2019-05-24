@@ -76,6 +76,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
   private final Map<String, MycatDataNode> dataNodes = new HashMap<>();
   private final Map<String, List<MycatDataNode>> replicaNameToDataNodes = new HashMap<>();
   private final MycatSchema defaultSchema;
+  private SQLInterceptor sqlInterceptor = (s) -> s;
 
   public Collection<MycatDataNode> getDataNodes() {
     return dataNodes.values();
@@ -97,20 +98,74 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     return new DynamicAnnotationMatcherImpl(list);
   }
 
-  public DynamicAnnotationMatcherImpl getDynamicAnnotationMatcherAndResetType(List<String> names,
-      AnnotationType type) {
-    List<DynamicAnnotationConfig> list = new ArrayList<>();
-    for (String name : names) {
-      DynamicAnnotationConfig dynamicAnnotationConfig = dynamicAnnotations.get(name);
-      try {
-        dynamicAnnotationConfig = (DynamicAnnotationConfig) dynamicAnnotationConfig.clone();
-      } catch (Exception e) {
-        dynamicAnnotationConfig = null;// as null
-      }
-      dynamicAnnotationConfig.setType(type);// nullexception
-      list.add(dynamicAnnotationConfig);
-    }
-    return new DynamicAnnotationMatcherImpl(list);
+  /**/
+  private static void init() throws CloneNotSupportedException {
+    SchemaRootConfig schemaRootConfig = new SchemaRootConfig();
+
+    SchemaConfig sc = new SchemaConfig();
+    schemaRootConfig.setSchemas(Arrays.asList(sc));
+    sc.setDefaultDataNode("dafault");
+    sc.setName("schemaName");
+    sc.setSchemaType(SchemaType.DB_IN_ONE_SERVER);
+    sc.setSqlMaxLimit("100");
+
+    TableDefConfig table = new TableDefConfig();
+
+    sc.setTables(Arrays.asList(table));
+
+    table.setTableRule("rule1");
+    table.setDataNodes("dn1,dn2");
+
+    ShardingRuleRootConfig src = new ShardingRuleRootConfig();
+
+    SharingTableRule sharingTableRule = new SharingTableRule();
+    src.setTableRules(Collections.singletonList(sharingTableRule));
+
+    ShardingRule s1 = new ShardingRule();
+    ShardingRule s2 = new ShardingRule();
+
+    sharingTableRule.setRules(Arrays.asList(s1, s2));
+
+    sharingTableRule.setFuntion("mpartitionByLong");
+
+    s1.setColumn("id1");
+    s2.setColumn("id2");
+
+    s1.setEqualAnnotations(Arrays.asList("(?:id = )(?<id1>([0-9]))"));
+    s2.setEqualAnnotations(Arrays.asList("(?:id = )(?<id2>([0-9]))"));
+    s1.setEqualKey("id1");
+    s2.setEqualKey("id2");
+
+    s1.setRangeAnnotations(
+        Arrays.asList("(?<between>((?:between )(?<id1s>[0-9])(?: and )(?<id1e>[0-9])))"));
+    s2.setRangeAnnotations(
+        Arrays.asList("(?<between>((?:between )(?<id2s>[0-9])(?: and )(?<id2e>[0-9])))"));
+
+    s1.setRangeStart("id1s");
+    s1.setRangeEnd("id1e");
+
+    s2.setRangeStart("id2s");
+    s2.setRangeEnd("id2e");
+
+    SharingFuntionRootConfig sfrc = new SharingFuntionRootConfig();
+    ShardingFuntion shardingFuntion = new ShardingFuntion();
+    sfrc.setFuntions(Arrays.asList(shardingFuntion));
+    shardingFuntion.setName("partitionByLong");
+    shardingFuntion.setClazz("io.mycat.router.function.PartitionByLong");
+    Map<String, String> properties = new HashMap<>();
+    shardingFuntion.setProperties(properties);
+    properties.put("partitionCount", "8");
+    properties.put("partitionLength", "128");
+
+    SubShardingFuntion subShardingFuntion = new SubShardingFuntion();
+    subShardingFuntion.setClazz("io.mycat.router.function.PartitionByLong");
+    Map<String, String> subProperties = new HashMap<>();
+    subShardingFuntion.setProperties(Arrays.asList(subProperties));
+    subProperties.put("partitionCount", "8");
+    subProperties.put("partitionLength", "128");
+    shardingFuntion.setSubFuntion(subShardingFuntion);
+
+    String dump = YamlUtil.dump(src);
   }
 
   public static List<DynamicAnnotationConfig> getDynamicAnnotationConfigList(List<String> patterns,
@@ -276,6 +331,17 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
 //    sqlContext.setResult(result);
 //    rootRouteNode.enterRoute(result, algorithm, sqlContext);
 
+  public DynamicAnnotationMatcherImpl getDynamicAnnotationMatcherAndResetType(List<String> names,
+      AnnotationType type) {
+    List<DynamicAnnotationConfig> list = new ArrayList<>();
+    for (String name : names) {
+      DynamicAnnotationConfig dynamicAnnotationConfig = dynamicAnnotations.get(name);
+      dynamicAnnotationConfig = (DynamicAnnotationConfig) dynamicAnnotationConfig.clone();
+      dynamicAnnotationConfig.setType(type);// nullexception
+      list.add(dynamicAnnotationConfig);
+    }
+    return new DynamicAnnotationMatcherImpl(list);
+  }
 
   private void iniSchema() {
     SchemaRootConfig schemaConfigs = this.getConfig(ConfigEnum.SCHEMA);
@@ -317,7 +383,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
           List<String> dataNodes = Collections.EMPTY_LIST;
 
           if (!StringUtil.isEmpty(dataNodeText)) {
-            dataNodes = Arrays.asList(SplitUtil.split(dataNodeText,","));
+            dataNodes = Arrays.asList(SplitUtil.split(dataNodeText, ","));
           }
           MycatTable table;
 
@@ -345,10 +411,10 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
               default:
                 throw new MycatExpection("");
             }
-          }else {
+          } else {
             mycatTables
                 .put(tableName,
-                    table = new DefaultTable(tableConfig,dataNodes));
+                    table = new DefaultTable(tableConfig, dataNodes));
           }
 
         }
@@ -364,6 +430,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     if (rule == null) {
       return;
     }
+    initSQLinterceptor(rule);
     for (SharingTableRule tableRule : rule.getTableRules()) {
       String name = tableRule.getName();
       Route rootRouteNode = null;
@@ -421,75 +488,18 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     return (RuleAlgorithm) clz.newInstance();
   }
 
-
-  /**/
-  private static void init() throws CloneNotSupportedException {
-    SchemaRootConfig schemaRootConfig = new SchemaRootConfig();
-
-    SchemaConfig sc = new SchemaConfig();
-    schemaRootConfig.setSchemas(Arrays.asList(sc));
-    sc.setDefaultDataNode("dafault");
-    sc.setName("schemaName");
-    sc.setSchemaType(SchemaType.DB_IN_ONE_SERVER);
-    sc.setSqlMaxLimit("100");
-
-    TableDefConfig table = new TableDefConfig();
-
-    sc.setTables(Arrays.asList(table));
-
-    table.setTableRule("rule1");
-    table.setDataNodes("dn1,dn2");
-
-    ShardingRuleRootConfig src = new ShardingRuleRootConfig();
-
-    SharingTableRule sharingTableRule = new SharingTableRule();
-    src.setTableRules(Arrays.asList(sharingTableRule));
-
-    ShardingRule s1 = new ShardingRule();
-    ShardingRule s2 = new ShardingRule();
-
-    sharingTableRule.setRules(Arrays.asList(s1, s2));
-
-    sharingTableRule.setFuntion("mpartitionByLong");
-
-    s1.setColumn("id1");
-    s2.setColumn("id2");
-
-    s1.setEqualAnnotations(Arrays.asList("(?:id = )(?<id1>([0-9]))"));
-    s2.setEqualAnnotations(Arrays.asList("(?:id = )(?<id2>([0-9]))"));
-    s1.setEqualKey("id1");
-    s2.setEqualKey("id2");
-
-    s1.setRangeAnnotations(
-        Arrays.asList("(?<between>((?:between )(?<id1s>[0-9])(?: and )(?<id1e>[0-9])))"));
-    s2.setRangeAnnotations(
-        Arrays.asList("(?<between>((?:between )(?<id2s>[0-9])(?: and )(?<id2e>[0-9])))"));
-
-    s1.setRangeStart("id1s");
-    s1.setRangeEnd("id1e");
-
-    s2.setRangeStart("id2s");
-    s2.setRangeEnd("id2e");
-
-    SharingFuntionRootConfig sfrc = new SharingFuntionRootConfig();
-    ShardingFuntion shardingFuntion = new ShardingFuntion();
-    sfrc.setFuntions(Arrays.asList(shardingFuntion));
-    shardingFuntion.setName("partitionByLong");
-    shardingFuntion.setClazz("io.mycat.router.function.PartitionByLong");
-    Map<String, String> properties = new HashMap<>();
-    shardingFuntion.setProperties(properties);
-    properties.put("partitionCount", "8");
-    properties.put("partitionLength", "128");
-
-    SubShardingFuntion subShardingFuntion = new SubShardingFuntion();
-    subShardingFuntion.setClazz("io.mycat.router.function.PartitionByLong");
-    Map<String, String> subProperties = new HashMap<>();
-    subShardingFuntion.setProperties(Arrays.asList(subProperties));
-    subProperties.put("partitionCount", "8");
-    subProperties.put("partitionLength", "128");
-    shardingFuntion.setSubFuntion(subShardingFuntion);
-
-    String dump = YamlUtil.dump(src);
+  private void initSQLinterceptor(ShardingRuleRootConfig rule) {
+    String sqlInterceptorClass = rule.getSqlInterceptorClass();
+    if (!(StringUtil.isEmpty(sqlInterceptorClass))) {
+      try {
+        Class<?> clz = Class.forName(sqlInterceptorClass);
+        sqlInterceptor = (SQLInterceptor) clz.newInstance();
+      } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+        e.printStackTrace();
+      }
+    } else {
+      sqlInterceptor = sql -> sql;
+    }
   }
 
   public MycatSchema getSchemaBySchemaName(String name) {
@@ -502,5 +512,9 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
 
   public MycatDataNode getDataNodeByName(String dataNode) {
     return this.dataNodes.get(dataNode);
+  }
+
+  public SQLInterceptor getSqlInterceptor() {
+    return sqlInterceptor;
   }
 }

@@ -31,12 +31,9 @@ import org.slf4j.LoggerFactory;
  * @date 2019-05-10 13:21
  */
 public abstract class AbstractSession<T extends AbstractSession> implements Session<T> {
-
   final static Logger LOGGER = LoggerFactory.getLogger(AbstractSession.class);
-
-  protected final Selector nioSelector;
-  protected final SocketChannel channel;
-  protected final SelectionKey channelKey;
+  protected SocketChannel channel;
+  protected SelectionKey channelKey;
   protected final SessionManager<T> sessionManager;
   protected final int sessionId;
   protected long startTime;
@@ -44,16 +41,18 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   protected NIOHandler nioHandler;
   protected boolean closed = false;
 
-  public AbstractSession(Selector selector, SocketChannel channel, int socketOpt,
-      NIOHandler nioHandler, SessionManager<T> sessionManager)
-      throws ClosedChannelException {
-    this.nioSelector = selector;
-    this.channel = channel;
+  public AbstractSession(
+      NIOHandler nioHandler, SessionManager<T> sessionManager) {
     this.nioHandler = nioHandler;
     this.sessionManager = sessionManager;
-    this.channelKey = channel.register(nioSelector, socketOpt, this);
     this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
     this.startTime = currentTimeMillis();
+  }
+
+  public void register(Selector selector, SocketChannel channel, int socketOpt)
+      throws ClosedChannelException {
+    this.channel = channel;
+    this.channelKey = channel.register(selector, socketOpt, this);
   }
 
   public SelectionKey getChannelKey() {
@@ -109,4 +108,8 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     return sessionManager;
   }
 
+  public boolean isOpen() {
+    SocketChannel channel = channel();
+    return !isClosed() && channel.isOpen() && channel.isConnected();
+  }
 }

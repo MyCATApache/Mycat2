@@ -14,27 +14,24 @@
  */
 package io.mycat.proxy.handler;
 
-import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_RESPONSE;
-
 import io.mycat.beans.mycat.MySQLDataNode;
+import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.MycatMonitor;
-import io.mycat.proxy.MycatSessionView;
+import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.proxy.MySQLTaskUtil;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
+import io.mycat.proxy.callback.SessionCallBack;
+import io.mycat.proxy.callback.TaskCallBack;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
-import io.mycat.proxy.packet.MySQLPacketUtil;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.task.client.MultiMySQLUpdateNoResponseTask;
-import io.mycat.proxy.task.client.MultiMySQLUpdateTask;
-import io.mycat.proxy.task.client.MySQLTaskUtil;
 import java.io.IOException;
-import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +41,33 @@ import org.slf4j.LoggerFactory;
 public enum MySQLPacketExchanger {
   INSTANCE;
 
-  public static void clear(MycatSession mycatSession, MySQLClientSession mysql) {
+  private static final Logger logger = LoggerFactory.getLogger(MySQLPacketExchanger.class);
+  public final static PacketExchangerCallback DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK = (mycat, e, attr) -> {
+    mycat.setLastMessage(e.getMessage());
+    mycat.writeErrorEndPacketBySyncInProcessError();
+  };
+
+  private static void onExceptionClearCloseInResponse(MycatSession mycat, Exception e) {
+    logger.error("{}", e);
+    MySQLClientSession mysql = mycat.getMySQLSession();
+    mysql.resetPacket();
+    mysql.setCallBack(null);
+    mysql.close(false, e);
+    mycat.onHandlerFinishedClear();
+    mycat.close(false, e);
+  }
+
+  private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e) {
+    logger.error("{}", e);
+    MySQLClientSession mysql = mycat.getMySQLSession();
+    PacketExchangerCallback callback = mysql.getCallBack();
+    mysql.setCallBack(null);
+    mysql.resetPacket();
+    mysql.close(false, e);
+    callback.onRequestMySQLException(mycat, e, null);
+  }
+
+  private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
     mycatSession.resetPacket();
     mysql.resetPacket();
     mysql.setNoResponse(false);
@@ -56,12 +79,33 @@ public enum MySQLPacketExchanger {
       mysql.switchNioHandler(null);
       mysql.getSessionManager().addIdleSession(mysql);
     }
+    mycatSession.onHandlerFinishedClear();
   }
 
-  public void onBackendResponse(MySQLClientSession mysql) throws IOException {
+  public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
+      boolean runOnSlave,
+      LoadBalanceStrategy strategy, boolean noResponse) {
+    proxyBackend(mycat, payload, dataNodeName, runOnSlave, strategy, noResponse,
+        DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
+
+  }
+
+  public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
+      boolean runOnSlave,
+      LoadBalanceStrategy strategy, boolean noResponse, PacketExchangerCallback finallyCallBack) {
+    byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
+    MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
+    MySQLProxyNIOHandler
+        .INSTANCE.proxyBackend(mycat, bytes, (MySQLDataNode) dataNode, runOnSlave, strategy,
+        noResponse, finallyCallBack
+    );
+  }
+
+  private void onBackendResponse(MySQLClientSession mysql) throws IOException {
     if (!mysql.readFromChannel()) {
       return;
     }
+    mysql.setRequestSuccess(true);
     ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
     MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
     MySQLPacketResolver packetResolver = mysql.getPacketResolver();
@@ -78,8 +122,7 @@ public enum MySQLPacketExchanger {
     return;
   }
 
-
-  public boolean onBackendWriteFinished(MySQLClientSession mysql) {
+  private boolean onBackendWriteFinished(MySQLClientSession mysql) {
     if (!mysql.isNoResponse()) {
       ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
       proxyBuffer.channelReadStartIndex(0);
@@ -92,7 +135,7 @@ public enum MySQLPacketExchanger {
     }
   }
 
-  public boolean onFrontWriteFinished(MycatSession mycat) {
+  private boolean onFrontWriteFinished(MycatSession mycat) {
     MySQLClientSession mysql = mycat.getMySQLSession();
     if (mysql.isResponseFinished()) {
       mycat.change2ReadOpts();
@@ -106,138 +149,85 @@ public enum MySQLPacketExchanger {
     }
   }
 
-  public enum ResultType {
-    SUCCESS,
-    REQUEST_ERROR,
-    OTHER_ERROR
-  }
-
-  public enum MySQLProxyNIOHandler implements NIOHandler<MySQLClientSession> {
+  private enum MySQLProxyNIOHandler implements BackendNIOHandler<MySQLClientSession> {
     INSTANCE;
 
 
     protected final static Logger logger = LoggerFactory.getLogger(MySQLProxyNIOHandler.class);
     static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
-    public void proxyUpdateMultiBackends(MycatSession mycat, byte[] bytes,
-        MySQLDataNode masterDataNode,
-        Collection<MySQLDataNode> otherDataNode,
-        AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
-      new MultiMySQLUpdateTask(mycat, bytes, otherDataNode,
-          (session, sender, success, result, attr) -> {
-            proxyBackend(mycat, bytes,
-                masterDataNode, false, null, false,
-                finallyCallBack);
-          });
-    }
-
-    public void proxyUpdateMultiBackendsNoResponse(MycatSession mycat, byte[] payload,
-        MySQLDataNode masterDataNode,
-        Collection<MySQLDataNode> otherDataNode,
-        AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
-      byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
-      new MultiMySQLUpdateNoResponseTask(mycat, bytes, otherDataNode,
-          (session, sender, success, result, attr) -> {
-            proxyBackend(mycat, bytes,
-                masterDataNode, false, null, false,
-                finallyCallBack);
-          });
-    }
-
-    public void proxyHaBackend(MycatSession mycat, byte[] bytes, MySQLDataNode dataNode,
-        boolean runOnSlave,
-        LoadBalanceStrategy strategy,
-        boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
-      mycat.currentProxyBuffer().reset();
-      proxyBackend(mycat, bytes, dataNode, runOnSlave, strategy, noResponse,
-          new AsyncTaskCallBack<MycatSessionView>() {
-            byte counter = 3;
-
-            @Override
-            public void finished(MycatSessionView session, Object sender, boolean success,
-                Object result, Object attr) {
-              if (result == ResultType.SUCCESS) {
-                finallyCallBack.finished(session, sender, success, result, attr);
-                return;
-              } else if (--counter != 0) {
-                proxyBackend(mycat, bytes, dataNode, runOnSlave, strategy, noResponse,
-                    this);
-                return;
-              }
-              finallyCallBack.finished(session, sender, success, result, attr);
-            }
-          });
-
-    }
-
-    public void proxyBackend(MycatSession mycat, byte[] bytes, MySQLDataNode dataNode,
-        boolean runOnSlave,
-        LoadBalanceStrategy strategy,
-        boolean noResponse, AsyncTaskCallBack<MycatSessionView> finallyCallBack) {
-      mycat.currentProxyBuffer().reset();
-      mycat.setCallBack(finallyCallBack);
-      getBackend(mycat, runOnSlave, dataNode, strategy,
-          (mysql, sender, success, result, attr) -> {
-            AsyncTaskCallBack<MycatSessionView> callBack = mycat.getCallBack();
-            if (success) {
-              mysql.setNoResponse(noResponse);
-              mysql.switchNioHandler(this);
-              mycat.setMySQLSession(mysql);
-              mycat.switchWriteHandler(WriteHandler.INSTANCE);
-              mycat.currentProxyBuffer().newBuffer(bytes);
-              try {
-                mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
-                mycat.setMySQLSession(mysql);
-                mysql.setMycatSession(mycat);
-                MycatMonitor.onBindMySQLSession(mycat, mysql);
-              } catch (IOException e) {
-                String message = mycat.setLastMessage(e);
-                mysql.close(false, message);
-                callBack.finished(mycat, this, false, ResultType.REQUEST_ERROR, null);
-              }
-              return;
-            } else {
-              mycat.setLastMessage((String) result);
-              callBack.finished(mycat, this, false, ResultType.REQUEST_ERROR, null);
-            }
-          });
-    }
-
-    public void getBackend(MycatSession mycat, boolean runOnSlave, MySQLDataNode dataNode,
-        LoadBalanceStrategy strategy, AsyncTaskCallBack<MySQLClientSession> finallyCallBack) {
+    public static void getBackend(MycatSession mycat, boolean runOnSlave, MySQLDataNode dataNode,
+        LoadBalanceStrategy strategy, SessionCallBack<MySQLClientSession> finallyCallBack) {
       mycat.switchDataNode(dataNode.getName());
       if (mycat.getMySQLSession() != null) {
         //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
-        finallyCallBack.finished(mycat.getMySQLSession(), this, true, null, null);
+        finallyCallBack.onSession(mycat.getMySQLSession(), MySQLPacketExchanger.INSTANCE, null);
         return;
       }
       MySQLIsolation isolation = mycat.getIsolation();
       MySQLAutoCommit autoCommit = mycat.getAutoCommit();
       String charsetName = mycat.getCharsetName();
+      String characterSetResult = mycat.getCharacterSetResults();
       MySQLTaskUtil
-          .getMySQLSession(dataNode, isolation, autoCommit, charsetName,
+          .getMySQLSession(dataNode, isolation, autoCommit, charsetName, characterSetResult,
               runOnSlave,
               strategy, finallyCallBack);
     }
 
+    public void proxyBackend(MycatSession mycat, byte[] bytes, MySQLDataNode dataNode,
+        boolean runOnSlave,
+        LoadBalanceStrategy strategy,
+        boolean noResponse, PacketExchangerCallback finallyCallBack) {
+      mycat.currentProxyBuffer().reset();
+      getBackend(mycat, runOnSlave, dataNode, strategy, new SessionCallBack<MySQLClientSession>() {
+        @Override
+        public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
+          mysql.setNoResponse(noResponse);
+          mysql.switchNioHandler(MySQLProxyNIOHandler.INSTANCE);
+          mycat.setMySQLSession(mysql);
+          mycat.switchWriteHandler(WriteHandler.INSTANCE);
+          mycat.currentProxyBuffer().newBuffer(bytes);
+          try {
+            mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
+          } catch (Exception e) {
+            onExceptionClearCloseInRequest(mycat, e);
+            finallyCallBack.onRequestMySQLException(mycat, e, null);
+            return;
+          }
+          mycat.setMySQLSession(mysql);
+          mysql.setMycatSession(mycat);
+          MycatMonitor.onBindMySQLSession(mycat, mysql);
+        }
+
+        @Override
+        public void onException(Exception exception, Object sender, Object attr) {
+          finallyCallBack.onRequestMySQLException(mycat, exception, attr);
+        }
+      });
+    }
+
     @Override
-    public void onSocketRead(MySQLClientSession mysql) throws IOException {
+    public void onSocketRead(MySQLClientSession mysql) {
       try {
         HANDLER.onBackendResponse(mysql);
-        mysql.setRequestSuccess(true);
-      } catch (Throwable e) {
+      } catch (Exception e) {
         MycatSession mycat = mysql.getMycatSession();
-        AsyncTaskCallBack<MycatSessionView> callBack = mycat.getCallBack();
-        mycat.setCallBack(null);
-        String message = mycat.setLastMessage(e);
-        mysql.close(false, message);
         if (mysql.isRequestSuccess()) {
-          callBack.finished(mycat, this, false, ResultType.OTHER_ERROR, null);
+          onExceptionClearCloseInResponse(mycat, e);
           return;
         } else {
-          callBack.finished(mycat, this, false, ResultType.REQUEST_ERROR, null);
+          onExceptionClearCloseInRequest(mycat, e);
           return;
         }
+      }
+    }
+
+    @Override
+    public void onSocketWrite(MySQLClientSession session) {
+      try {
+        session.writeToChannel();
+      } catch (Exception e) {
+        onExceptionClearCloseInResponse(session.getMycatSeesion(), e);
       }
     }
 
@@ -247,84 +237,62 @@ public enum MySQLPacketExchanger {
       session.setRequestSuccess(false);
       if (b) {
         MycatSession mycatSession = session.getMycatSession();
-        clear(mycatSession, session);
-        mycatSession.onHandlerFinishedClear(true);
-        AsyncTaskCallBack<MycatSessionView> callBack = mycatSession.getCallBack();
-        mycatSession.setCallBack(null);
-        callBack.finished(mycatSession, this, true, ResultType.SUCCESS, null);
+        onClearInNormalResponse(mycatSession, session);
       }
     }
 
-
     @Override
-    public void onSocketClosed(MySQLClientSession session, boolean normal, String reason) {
-      clear(session.getMycatSession(), session);
+    public void onException(MySQLClientSession session, Exception e) {
+      MycatSession mycatSeesion = session.getMycatSeesion();
+      onExceptionClearCloseInResponse(mycatSeesion, e);
     }
   }
 
-  public enum MySQLIdleNIOHandler implements NIOHandler<MySQLClientSession> {
-    INSTANCE;
-    protected final static Logger logger = LoggerFactory.getLogger(
-        MySQLPacketExchanger.MySQLProxyNIOHandler.class);
 
-    @Override
-    public void onSocketRead(MySQLClientSession session) throws IOException {
-      session.close(false, UNKNOWN_IDLE_RESPONSE.getMessage());
-    }
-
-    @Override
-    public void onWriteFinished(MySQLClientSession session) throws IOException {
-      assert false;
-    }
-
-
-    /**
-     * 因为onSocketClosed是被session.close调用,所以不需要重复调用
-     */
-    @Override
-    public void onSocketClosed(MySQLClientSession session, boolean normal, String reason) {
-
-    }
-  }
 
   /**
    * 代理模式前端写入处理器
    */
-  enum WriteHandler implements MycatSessionWriteHandler {
+  private enum WriteHandler implements MycatSessionWriteHandler {
     INSTANCE;
 
     @Override
     public void writeToChannel(MycatSession mycat) throws IOException {
-      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
-      int oldIndex = proxyBuffer.channelWriteStartIndex();
-      proxyBuffer.writeToChannel(mycat.channel());
+      try {
+        ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
+        int oldIndex = proxyBuffer.channelWriteStartIndex();
+        proxyBuffer.writeToChannel(mycat.channel());
 
-      MycatMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
-          proxyBuffer.channelReadEndIndex());
-      mycat.updateLastActiveTime();
+        MycatMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
+            proxyBuffer.channelReadEndIndex());
+        mycat.updateLastActiveTime();
 
-      if (!proxyBuffer.channelWriteFinished()) {
-        mycat.change2WriteOpts();
-      } else {
-        MySQLClientSession mysql = mycat.getMySQLSession();
-        if (mysql == null) {
-          assert false;
+        if (!proxyBuffer.channelWriteFinished()) {
+          mycat.change2WriteOpts();
         } else {
-          boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
-          if (b) {
-            clear(mycat, mysql);
-            mycat.onHandlerFinishedClear(true);
+          MySQLClientSession mysql = mycat.getMySQLSession();
+          if (mysql == null) {
+            assert false;
+          } else {
+            boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
+            if (b) {
+              onClearInNormalResponse(mycat, mysql);
+            }
           }
         }
+      } catch (Exception e) {
+        onExceptionClearCloseInResponse(mycat, e);
       }
     }
 
-    /**
-     * mycat seesion没有重写onWriteFinished方法,所以onWriteFinished调用的是此类的writeToChannel方法
-     */
     @Override
-    public void onWriteFinished(MycatSession proxySession) throws IOException {
-      proxySession.writeFinished(proxySession);
+    public void onException(MycatSession session, Exception e) {
+      onExceptionClearCloseInResponse(session, e);
     }
+  }
+
+  public interface PacketExchangerCallback extends TaskCallBack<PacketExchangerCallback> {
+
+    void onRequestMySQLException(MycatSession mycat, Exception e, Object attr);
   }
 }

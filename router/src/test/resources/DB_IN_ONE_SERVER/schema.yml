@@ -3,15 +3,10 @@ schemas:
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
     tables:
-      - dataNodes: dn1,dn2
-        name: travelrecord
-        tableRule: rule1
-        type: SHARING_DATABASE
+      - name: travelrecord
+
 
 dataNodes:
   - name: dn1
     database: db1
     replica: repli
-  - name: dn2
-    database: db2
-    replica: repli2

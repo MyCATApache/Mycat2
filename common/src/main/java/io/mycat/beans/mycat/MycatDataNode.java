@@ -18,13 +18,14 @@ package io.mycat.beans.mycat;
  * @author jamie12221
  * @date 2019-05-04 15:06
  **/
-public abstract class    MycatDataNode {
+public abstract class MycatDataNode {
 
   public abstract String getName();
 
   public abstract String getNodeID();
 
 
-  public abstract boolean equals(Object o) ;
+  public abstract boolean equals(Object o);
+
   public abstract int hashCode();
 }

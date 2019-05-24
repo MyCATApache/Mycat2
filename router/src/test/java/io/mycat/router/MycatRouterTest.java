@@ -18,6 +18,7 @@ public abstract class MycatRouterTest {
       MycatRouterConfig config = new MycatRouterConfig(rootPath);
       return new MycatRouter(config);
     } catch (Exception e) {
+      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }

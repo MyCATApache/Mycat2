@@ -19,7 +19,7 @@ public class HashArray {
   }
 
   public void init() {
-    while (pos >= 0) {
+    while (pos > 0) {
       hashArray[pos--] = 0;
     }
     pos = 0;
@@ -32,7 +32,7 @@ public class HashArray {
       if (hashArray.length > 1024) {
         hashArray = new long[length];
       }else {
-        while (pos >= 0) {
+        while (pos > 0) {
           hashArray[pos--] = 0;
         }
         pos = 0;

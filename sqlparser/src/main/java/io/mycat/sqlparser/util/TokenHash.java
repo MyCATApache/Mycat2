@@ -385,6 +385,7 @@ public class TokenHash {
     public static final long MYCAT        = 0x4310d15L;
     public static final long MYSQL_ERRNO  = 0x4a33a1b9eef8e80L;
     public static final long NAMES        = 0x443302bL;
+    public static final long CHARACTER_SET_RESULT = 3243786846521863792L;
     public static final long NAME         = 0x1a9d45L;
     public static final long NATIONAL     = 0x47bbd92995eL;
     public static final long NATURAL      = 0x1bfe6dec44L;

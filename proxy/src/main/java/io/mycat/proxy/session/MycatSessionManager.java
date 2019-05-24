@@ -14,10 +14,10 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.ProxyBeanProviders;
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.MycatMonitor;
-import io.mycat.proxy.handler.CommandHandler;
-import io.mycat.proxy.handler.MySQLClientAuthHandler;
+import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
@@ -25,7 +25,6 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.LinkedList;
-import java.util.function.Supplier;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
@@ -36,11 +35,11 @@ import java.util.function.Supplier;
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
-  final Supplier<CommandHandler> commandHandlerFactory;
+  final ProxyBeanProviders providers;
 
   public MycatSessionManager(
-      Supplier<CommandHandler> commandHandlerFactory) {
-    this.commandHandlerFactory = commandHandlerFactory;
+      ProxyBeanProviders commandHandlerFactory) {
+    this.providers = commandHandlerFactory;
   }
 
 
@@ -73,8 +72,9 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   public MycatSession acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();
-    MycatSession mycat = new MycatSession(bufPool, nioSelector, frontChannel, SelectionKey.OP_READ,
-        mySQLClientAuthHandler, this, commandHandlerFactory.get());
+    MycatSession mycat = new MycatSession(bufPool,
+        mySQLClientAuthHandler, this, providers.createCommandDispatcher());
+    mycat.register(nioSelector, frontChannel, SelectionKey.OP_READ);
     mySQLClientAuthHandler.setMycatSession(mycat);
     mySQLClientAuthHandler.sendAuthPackge();
     MycatMonitor.onNewMycatSession(mycat);

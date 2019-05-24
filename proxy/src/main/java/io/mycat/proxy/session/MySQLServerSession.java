@@ -5,13 +5,14 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.MycatMonitor;
+import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.packet.MySQLPacketUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
 
@@ -330,22 +331,33 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     writeToChannel(this);
   }
 
+  default void writeErrorEndPacketBySyncInProcessError() {
+    writeErrorEndPacketBySyncInProcessError(MySQLErrorCode.ER_UNKNOWN_ERROR);
+  }
+
+  default void writeErrorEndPacketBySyncInProcessError(int errorCode) {
+    writeErrorEndPacketBySyncInProcessError(1, errorCode);
+  }
   /**
    * 同步写入错误包,用于异常处理,一般错误包比较小,一次非阻塞写入就结束了,写入不完整尝试四次, 之后就会把mycat session关闭,简化错误处理
    */
-  default void writeErrorEndPacketBySyncInProcessError() {
+  default void writeErrorEndPacketBySyncInProcessError(int packetId, int errorCode) {
+    setLastErrorCode(errorCode);
     switchMySQLServerWriteHandler();
     this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
-                       .generateError(MySQLErrorCode.ER_UNKNOWN_ERROR, getLastMessage(),
+                       .generateError(errorCode, getLastMessage(),
                            this.getCapabilities());
-    byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(1, bytes);
+    byte[] bytes1 = MySQLPacketUtil.generateMySQLPacket(packetId, bytes);
     ByteBuffer message = ByteBuffer.wrap(bytes1);
     int counter = 0;
     try {
-      while (message.hasRemaining() && counter < 4) {
-        channel().write(message);
-        counter++;
+      SocketChannel channel = channel();
+      if (channel.isOpen()) {
+        while (message.hasRemaining() && counter < 4) {
+          channel().write(message);
+          counter++;
+        }
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -366,9 +378,11 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     }
 
     @Override
-    public void onWriteFinished(MycatSession session) throws IOException {
-
+    public void onException(MycatSession session, Exception e) {
+      session.resetPacket();
+      session.close(false, e);
     }
+
   }
 
 

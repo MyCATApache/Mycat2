@@ -15,6 +15,7 @@
 package io.mycat.router;
 
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.logTip.RouteNullChecker;
 import io.mycat.router.routeResult.MySQLCommandRouteResultRoute;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
 import io.mycat.sqlparser.util.BufferSQLContext;
@@ -28,46 +29,52 @@ import java.io.IOException;
 public class MycatRouter implements RouteStrategy<RouteContext> {
 
   final MycatRouterConfig config;
-  final BufferSQLParser sqlParser = new BufferSQLParser();
-  final BufferSQLContext sqlContext = new BufferSQLContext();
   final RouteContext context;
 
+  private BufferSQLParser sqlParser() {
+    return new BufferSQLParser();
+  }
+
+  private BufferSQLContext sqlContext() {
+    return new BufferSQLContext();
+  }
   public MycatRouter(MycatRouterConfig config) {
     this.config = config;
     context = new RouteContext(config);
   }
 
-  public ResultRoute enterRoute(MycatSchema defaultSchema,String sql) {
-    sqlParser.parse(sql.getBytes(), sqlContext);
-    return enterRoute(defaultSchema, sqlContext, sql);
+  public ResultRoute enterRoute(MycatSchema defaultSchema, String sql) {
+    BufferSQLContext bufferSQLContext = sqlContext();
+    sqlParser().parse(sql.getBytes(), bufferSQLContext);
+    return enterRoute(defaultSchema, bufferSQLContext, sql);
   }
-  public BufferSQLContext simpleParse(String sql){
-    sqlParser.parse(sql.getBytes(),sqlContext);
-    return sqlContext;
+
+  public BufferSQLContext simpleParse(String sql) {
+    BufferSQLContext bufferSQLContext = sqlContext();
+    sqlParser().parse(sql.getBytes(), bufferSQLContext);
+    return bufferSQLContext;
   }
 
 
   public ResultRoute enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
       String sql) {
-    this.context.setSqlContext(this.sqlContext);
-    int sqlType = this.sqlContext.getSQLType();
+    this.context.setSqlContext(sqlContext);
+    int sqlType = sqlContext.getSQLType();
     //判断有没有schema
-    int schemaCount = this.sqlContext.getSchemaCount();
+    int schemaCount = sqlContext.getSchemaCount();
     if (schemaCount == 0) {
       RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
-      return routeStrategy.route(defaultSchema, sql,    this.context);
+      return routeStrategy.route(defaultSchema, sql, this.context);
     }
     if (schemaCount == 1) {
-      String schemaName = this.sqlContext.getSchemaName(0);
+      String schemaName = sqlContext.getSchemaName(0);
       MycatSchema schema = config.getSchemaBySchemaName(schemaName);
-      if (schema == null) {
-        schema = config.getDefaultSchema();
-      }
+      RouteNullChecker.CHECK_MYCAT_SCHEMA_EXIST.check(schemaName, schema != null);
       RouteStrategy routeStrategy = schema.getRouteStrategy();
-      return routeStrategy.route(schema, sql,    this.context);
+      return routeStrategy.route(schema, sql, this.context);
     } else {
 
-      return this.route(defaultSchema,sql,this.context);
+      return this.route(defaultSchema, sql, this.context);
     }
   }
 
@@ -86,6 +93,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
   public ResultRoute enterRoute(String defaultSchemaName, String sql) {
     MycatSchema defaultSchema = config.getSchemaBySchemaName(defaultSchemaName);
+    RouteNullChecker.CHECK_MYCAT_SCHEMA_EXIST.check(defaultSchemaName, defaultSchema != null);
     return enterRoute(defaultSchema, sql);
   }
 

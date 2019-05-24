@@ -72,8 +72,9 @@ public interface MySQLPacketCallback {
 
   }
 
-  void onFinished(MySQLClientSession mysql,boolean success, String errorMessage);
+  void onFinishedCollect(MySQLClientSession mysql);
 
+  void onFinishedCollectException(MySQLClientSession mysql, Exception exception);
   default void onRowOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
 
   }

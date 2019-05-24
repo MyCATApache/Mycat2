@@ -15,15 +15,16 @@
 package io.mycat.replica;
 
 import io.mycat.MycatExpection;
+import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MycatReplica;
-import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.logTip.ReplicaTip;
-import io.mycat.plug.loadBalance.BalanceAllRead;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.AsyncTaskCallBack;
-import io.mycat.proxy.MycatReactorThread;
+import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
+import io.mycat.proxy.callback.SessionCallBack;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 /**
  * 集群管理,该类不执行心跳,也不管理jdbc的mysqlsession,只做均衡负载 集群状态在集群相关辅助类实现,辅助类使用定时器分发到执行.辅助类只能更改此类的writeIndex属性,其他属性不是线程安全,初始化之后只读
@@ -47,17 +47,18 @@ public abstract class MySQLReplica implements MycatReplica {
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private volatile int writeIndex = 0; //主节点默认为0
   private long lastInitTime;  //最后一次初始化时间
-  private LoadBalanceStrategy defaultLoadBalanceStrategy = BalanceAllRead.INSTANCE;
-  private MySQLCollationIndex collationIndex;
+  private LoadBalanceStrategy defaultLoadBalanceStrategy;
 
   /**
    * 初始化mycat集群管理
    */
   public MySQLReplica(ReplicaConfig replicaConfig,
-      int writeIndex, MySQLDataSourceFactory dataSourceFactory) {
+      int writeIndex, ProxyBeanProviders dataSourceFactory) {
     assert replicaConfig != null;
     assert writeIndex > -1;
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
+    defaultLoadBalanceStrategy = ProxyRuntime.INSTANCE
+                                     .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
     assert mysqls != null;
     checkIndex(replicaConfig.getName(), writeIndex, mysqls.size());
     this.config = replicaConfig;
@@ -66,7 +67,7 @@ public abstract class MySQLReplica implements MycatReplica {
       DatasourceConfig datasourceConfig = mysqls.get(index);
       assert datasourceConfig != null;
       if (datasourceConfig.getDbType() == null) {
-        datasourceList.add(dataSourceFactory.get(index, datasourceConfig, this));
+        datasourceList.add(dataSourceFactory.createDatasource(index, datasourceConfig, this));
       }
     }
   }
@@ -81,35 +82,24 @@ public abstract class MySQLReplica implements MycatReplica {
   /**
    * 对于已经运行的集群,首先把原session都关闭再重新创建
    */
-  public void init(AsyncTaskCallBack callBack) {
+  public void init(AsyncTaskCallBackCounter callBack) {
     Objects.requireNonNull(config);
     Objects.requireNonNull(datasourceList);
     Objects.requireNonNull(callBack);
     for (MySQLDatasource datasource : datasourceList) {
       datasource.clearAndDestroyCons(ReplicaTip.INIT_REPLICA.getMessage(getName()));
     }
-    final BiConsumer<MySQLDatasource, Boolean> defaultCallBack = (datasource, success) -> {
-      this.lastInitTime = System.currentTimeMillis();
-      this.collationIndex = datasource.getCollationIndex();
-      callBack.finished(null, this, success, null, null);
-    };
     for (MySQLDatasource datasource : datasourceList) {
-      datasource.init(defaultCallBack);
+      datasource.init(callBack);
     }
-  }
-
-  /**
-   * 获取字符集
-   */
-  public MySQLCollationIndex getCollationIndex() {
-    return collationIndex;
+    this.lastInitTime = System.currentTimeMillis();
   }
 
   /**
    * 根据 1.是否读写分离 2.负载均衡策略 获取MySQL Session
    */
   public void getMySQLSessionByBalance(boolean runOnSlave, LoadBalanceStrategy strategy,
-      AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+      SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource;
     if (!runOnSlave) {
       getWriteDatasource(asynTaskCallBack);
@@ -129,11 +119,11 @@ public abstract class MySQLReplica implements MycatReplica {
   /**
    * 获取写入(主)节点,如果主节点已经失效,则失败
    */
-  private void getWriteDatasource(AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+  private void getWriteDatasource(SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource = this.datasourceList.get(writeIndex);
     if (datasource == null || !datasource.isAlive()) {
-      asynTaskCallBack.finished(null, this, false,
-          ReplicaTip.NO_AVAILABLE_DATA_SOURCE.getMessage(this.getName()), null);
+      asynTaskCallBack.onException(new MycatExpection(
+          ReplicaTip.NO_AVAILABLE_DATA_SOURCE.getMessage(this.getName())), this, null);
       return;
     }
     getDatasource(datasource, asynTaskCallBack);
@@ -144,14 +134,17 @@ public abstract class MySQLReplica implements MycatReplica {
    * 根据MySQLDatasource获得MySQL Session 此函数是本类获取MySQL Session中最后一个必经的执行点,检验当前获得Session的线程是否MycatReactorThread
    */
   private void getDatasource(MySQLDatasource datasource,
-      AsyncTaskCallBack<MySQLClientSession> asynTaskCallBack) {
+      SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     Objects.requireNonNull(datasource);
     Objects.requireNonNull(asynTaskCallBack);
     if (Thread.currentThread() instanceof MycatReactorThread) {
       MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
       reactor.getMySQLSessionManager().getIdleSessionsOfKey(datasource, asynTaskCallBack);
     } else {
-      throw new MycatExpection(ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
+      MycatExpection mycatExpection = new MycatExpection(
+          ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
+      asynTaskCallBack.onException(mycatExpection, this, null);
+      return;
     }
   }
 

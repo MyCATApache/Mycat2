@@ -29,7 +29,7 @@ public class BufferSQLContext {
 
   public static final byte SHOW_DB_SQL = 81;
   public static final byte SHOW_TB_SQL = 82;
-
+  public static final byte SHOW_VARIABLES_SQL = 83;
   public static final byte SET_SQL = 9;     //TODO 进一步细化。区分
   public static final byte PARTITION_SQL = 10;
 
@@ -61,6 +61,7 @@ public class BufferSQLContext {
   public static final byte SAVEPOINT_SQL = 29;
   public static final byte ROLLBACK_SQL = 30;
   public static final byte SET_TRANSACTION_SQL = 31;
+
   public static final byte LOCK_SQL = 32;
   public static final byte XA_SQL = 33;
   public static final byte SET_AUTOCOMMIT_SQL = 34;
@@ -73,7 +74,8 @@ public class BufferSQLContext {
   public static final byte XA_START = 40;
   public static final byte XA_BEGIN = 41;
   public static final byte XA_END = 42;
-
+  public static final byte SET_CHARSET = 43;
+  public static final byte SET_CHARSET_RESULT = 44;
 
   //admin command
 //    public static final byte MYCAT_SWITCH_REPL = 43;
@@ -95,6 +97,7 @@ public class BufferSQLContext {
   public static final byte ANNOTATION_CACHE_TIME = 9;
   public static final byte ANNOTATION_REPLICA_NAME = 10;
   public static final byte ANNOTATION_MERGE = 10;
+
 
   private short[] tblResult;  //记录格式：[{mycatSchema hash array index(defaults 0), tbl hash array index}]
   private long[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]
@@ -127,6 +130,8 @@ public class BufferSQLContext {
   private MySQLIsolation isolation;
   private MySQLIsolationLevel transactionLevel;
   private boolean accessMode;
+  private String charset;
+  private String charsetSetResult;
 
   public Boolean isAutocommit() {
     return autocommit;
@@ -144,6 +149,10 @@ public class BufferSQLContext {
   private boolean hasSubQuery;
   private boolean hasJoin;
   private boolean hasWhere;
+
+  public String getTokenString(int pos) {
+    return getBuffer().getStringByHashArray(pos, this.getHashArray());
+  }
 
   public boolean isHasBetween() {
     return hasBetween;
@@ -588,5 +597,21 @@ public class BufferSQLContext {
   public void setAccessMode(boolean accessMode) {
 
     this.accessMode = accessMode;
+  }
+
+  public String getCharset() {
+    return charset;
+  }
+
+  public void setCharset(String stringByHashArray) {
+    this.charset = stringByHashArray;
+  }
+
+  public String getCharsetSetResult() {
+    return this.charsetSetResult;
+  }
+
+  public void setCharsetSetResult(String charsetSetResult) {
+    this.charsetSetResult = charsetSetResult;
   }
 }

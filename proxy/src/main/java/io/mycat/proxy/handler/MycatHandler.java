@@ -14,43 +14,85 @@
  */
 package io.mycat.proxy.handler;
 
+import com.sun.jdi.connect.spi.ClosedConnectionException;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public enum MycatHandler implements NIOHandler<MycatSession> {
   INSTANCE;
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(MycatHandler.class);
   final
   @Override
-  public void onSocketRead(MycatSession mycat) throws IOException {
-    mycat.currentProxyBuffer().newBufferIfNeed();
-    if (!mycat.readFromChannel()) {
+  public void onSocketRead(MycatSession mycat) {
+    if (!mycat.isOpen()) {
+      onException(mycat, new ClosedChannelException());
+      mycat.close(false, "mysql session has closed");
       return;
     }
-    if (!mycat.readProxyPayloadFully()) {
+    try {
+      mycat.currentProxyBuffer().newBufferIfNeed();
+      if (!mycat.readFromChannel()) {
+        return;
+      }
+      if (!mycat.readProxyPayloadFully()) {
+        return;
+      }
+      mycat.handle();
       return;
+    } catch (ClosedConnectionException e) {
+      onException(mycat, e);
+      return;
+    } catch (Exception e) {
+      onClear(mycat);
+      mycat.setLastMessage(e.toString());
+      mycat.writeErrorEndPacketBySyncInProcessError();
+      onException(mycat, e);
     }
-    mycat.handle();
-    return;
   }
 
   @Override
-  public void onWriteFinished(MycatSession mycat) throws IOException {
-    if (mycat.isResponseFinished()) {
-      mycat.onHandlerFinishedClear(true);
-      mycat.change2ReadOpts();
-    } else {
+  public void onSocketWrite(MycatSession mycat) {
+    try {
       mycat.writeToChannel();
+    } catch (Exception e) {
+      onClear(mycat);
+      mycat.close(false, e);
     }
   }
 
-  /**
-   * 1.mycat session 不存在切换 handler的情况 2.onSocketClosed是session的close方法,它完成了整个状态清理与关闭,所以onSocketClosed无需实现
-   */
   @Override
-  public void onSocketClosed(MycatSession session, boolean normal, String reason) {
-
+  public void onWriteFinished(MycatSession mycat) {
+    try {
+      if (mycat.isResponseFinished()) {
+        mycat.onHandlerFinishedClear();
+        mycat.change2ReadOpts();
+      } else {
+        mycat.writeToChannel();
+      }
+    } catch (Exception e) {
+      onClear(mycat);
+      mycat.close(false, e);
+    }
   }
+
+  @Override
+  public void onException(MycatSession mycat, Exception e) {
+    LOGGER.error("{}", e);
+    MycatSessionWriteHandler writeHandler = mycat.getWriteHandler();
+    if (writeHandler != null) {
+      writeHandler.onException(mycat, e);
+    }
+    onClear(mycat);
+    mycat.close(false, e.toString());
+  }
+
+  public void onClear(MycatSession session) {
+    session.onHandlerFinishedClear();
+  }
+
 
   /**
    * mycat session写入处理
@@ -59,7 +101,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
 
     void writeToChannel(MycatSession session) throws IOException;
 
-    void onWriteFinished(MycatSession session) throws IOException;
+    void onException(MycatSession session, Exception e);
   }
 
 }
