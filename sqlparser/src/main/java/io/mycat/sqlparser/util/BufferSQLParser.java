@@ -418,6 +418,9 @@ public class BufferSQLParser {
             if (hashArray.getHash(pos) == TokenHash.WARNINGS) {
               context.setSQLType(BufferSQLContext.SHOW_WARNINGS);
               pos++;
+            } else if (hashArray.getHash(pos) == TokenHash.VARIABLES) {
+              context.setSQLType(BufferSQLContext.SHOW_VARIABLES_SQL);
+              pos++;
             }
           }
           break;

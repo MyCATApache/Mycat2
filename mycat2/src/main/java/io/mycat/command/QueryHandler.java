@@ -9,12 +9,15 @@ import static io.mycat.sqlparser.util.BufferSQLContext.SET_TRANSACTION_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_TB_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_VARIABLES_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_WARNINGS;
 import static io.mycat.sqlparser.util.BufferSQLContext.USE_SQL;
 
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
@@ -30,6 +33,8 @@ import io.mycat.security.MycatUser;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * @author jamie12221
@@ -137,6 +142,29 @@ public interface QueryHandler {
               , false, null, false
           );
           return;
+        case SHOW_VARIABLES_SQL: {
+          mycat.writeColumnCount(2);
+          mycat.writeColumnDef("Variable_name", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+          mycat.writeColumnDef("Value", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+          mycat.writeColumnEndPacket();
+          MySQLVariables variables = new MySQLVariables();
+          Set<Entry<String, String>> entries = variables.entries();
+          for (Entry<String, String> entry : entries) {
+            mycat.writeTextRowPacket(
+                new byte[][]{mycat.encode(entry.getKey()), mycat.encode(entry.getValue())});
+          }
+          mycat.writeRowEndPacket(false, false);
+          return;
+        }
+        case SHOW_WARNINGS: {
+          mycat.writeColumnCount(3);
+          mycat.writeColumnDef("Level", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+          mycat.writeColumnDef("Code", MySQLFieldsType.FIELD_TYPE_LONG_BLOB);
+          mycat.writeColumnDef("CMessage", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+          mycat.writeColumnEndPacket();
+          mycat.writeRowEndPacket(false, false);
+          return;
+        }
         case SELECT_SQL: {
           if (sqlContext.isSimpleSelect()) {
             ResultRoute resultRoute = router().enterRoute(useSchema, sqlContext, sql);

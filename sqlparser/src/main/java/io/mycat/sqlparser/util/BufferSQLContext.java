@@ -378,9 +378,7 @@ public class BufferSQLContext {
   }
 
   public void setSQLType(byte sqlType) {
-    if (this.sqlType == 0 || this.sqlType == SELECT_SQL) {
       this.sqlType = sqlType;
-    }
   }
 
   public void setShowSQLType(byte sqlType) {
