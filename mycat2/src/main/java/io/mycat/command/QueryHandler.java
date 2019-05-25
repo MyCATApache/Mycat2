@@ -18,6 +18,7 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
@@ -50,6 +51,7 @@ public interface QueryHandler {
     }
     MycatUser user = mycat.getUser();
     String orgin = new String(sqlBytes);
+    MycatMonitor.onSQL(mycat, orgin);
     orgin = routerConfig.getSqlInterceptor().interceptSQL(orgin);
     BufferSQLContext sqlContext = router().simpleParse(orgin);
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());
@@ -126,9 +128,9 @@ public interface QueryHandler {
           break;
         }
         case DESCRIBE_SQL:
-          mycat.setLastMessage("unsupport desc");
-          mycat.writeErrorEndPacket();
-          return;
+//          mycat.setLastMessage("unsupport desc");
+//          mycat.writeErrorEndPacket();
+//          return;
         case SHOW_SQL:
           String defaultDataNode = useSchema.getDefaultDataNode();
           MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode

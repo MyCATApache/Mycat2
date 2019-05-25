@@ -1,5 +1,6 @@
 package io.mycat.util.nio;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
@@ -19,4 +20,13 @@ public class NIOUtil {
     }
   }
 
+  public static void close(Closeable closeable) {
+    if (closeable == null) {
+      return;
+    }
+    try {
+      closeable.close();
+    } catch (IOException e) {
+    }
+  }
 }

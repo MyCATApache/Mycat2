@@ -9,7 +9,7 @@
       com.mysql.jdbc.Driver
     </property>
     <property name="hibernate.connection.url">
-      jdbc:mysql://localhost:8066/test
+      jdbc:mysql://localhost:8066/test?serverTimezone=UTC&amp;characterEncoding=utf-8
       <!--  一种简写形式
           jdbc:mysql:///student  -->
     </property>

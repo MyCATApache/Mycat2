@@ -18,6 +18,7 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
+import io.mycat.proxy.session.Session;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
@@ -26,28 +27,36 @@ import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author cjw
  **/
 public class MycatCore {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(MycatCore.class);
 
   public static void main(String[] args) throws Exception {
     String resourcesPath = ProxyRuntime.getResourcesPath();
-    startup(resourcesPath, MycatProxyBeanProviders.INSTANCE, MycatMonitorCallback.EMPTY,
+    startup(resourcesPath, MycatProxyBeanProviders.INSTANCE, new MycatMonitorCallback() {
+          @Override
+          public void onSQL(Session session, String sql) {
+            LOGGER.info("session id:{} \n {} ", session.sessionId(), sql);
+          }
+        },
         new AsyncTaskCallBack() {
           @Override
           public void onFinished(Object sender, Object result, Object attr) {
 
           }
 
-      @Override
-      public void onException(Exception e, Object sender, Object attr) {
+          @Override
+          public void onException(Exception e, Object sender, Object attr) {
 
-      }
+          }
 
-    });
+        });
     return;
 
   }

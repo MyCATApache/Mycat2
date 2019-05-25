@@ -16,6 +16,11 @@ public final class MycatMonitor {
 
   static MycatMonitorCallback callback = EMPTY;
 
+  public final static void onSQL(Session session, String sql) {
+    Objects.requireNonNull(session);
+    Objects.requireNonNull(sql);
+    callback.onSQL(session, sql);
+  }
   public static void setCallback(MycatMonitorCallback callback) {
     Objects.requireNonNull(callback);
     MycatMonitor.callback = callback;

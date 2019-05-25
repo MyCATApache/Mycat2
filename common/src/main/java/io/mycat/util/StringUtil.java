@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class StringUtil {
 	public static final String TABLE_COLUMN_SEPARATOR = ".";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);
 	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 	private static final Random RANDOM = new Random();
 	private static final char[] CHARS = { '1', '2', '3', '4', '5', '6', '7',
@@ -414,7 +414,7 @@ public class StringUtil {
 		int start = 0;
 		int end = 0;
 		while ((end = text.indexOf(repl, start)) != -1) {
-			buf.append(text.substring(start, end)).append(with);
+			buf.append(text, start, end).append(with);
 			start = end + repl.length();
 			if (--max == 0) {
 				break;
@@ -497,10 +497,7 @@ public class StringUtil {
 	}
 
 	public static boolean isNull(String src) {
-		if (src == null || src.trim().equals("") || src.trim().equalsIgnoreCase("undefined")) {
-			return true;
-		}
-		return false;
+		return src == null || src.trim().equals("") || src.trim().equalsIgnoreCase("undefined");
 	}
 
 	public static String sha1(String data) throws NoSuchAlgorithmException {
