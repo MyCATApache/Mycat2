@@ -51,7 +51,7 @@ public interface QueryHandler {
     }
     MycatUser user = mycat.getUser();
     String orgin = new String(sqlBytes);
-    MycatMonitor.onSQL(mycat, orgin);
+    MycatMonitor.onOrginSQL(mycat, orgin);
     orgin = routerConfig.getSqlInterceptor().interceptSQL(orgin);
     BufferSQLContext sqlContext = router().simpleParse(orgin);
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());

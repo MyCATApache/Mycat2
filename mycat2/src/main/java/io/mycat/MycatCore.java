@@ -41,8 +41,13 @@ public class MycatCore {
     String resourcesPath = ProxyRuntime.getResourcesPath();
     startup(resourcesPath, MycatProxyBeanProviders.INSTANCE, new MycatMonitorCallback() {
           @Override
-          public void onSQL(Session session, String sql) {
+          public void onOrginSQL(Session session, String sql) {
             LOGGER.info("session id:{} \n {} ", session.sessionId(), sql);
+          }
+
+          @Override
+          public void onRoute(Session session, byte[] payload) {
+            LOGGER.info("session id:{} \n {} ", session.sessionId(), new String(payload));
           }
         },
         new AsyncTaskCallBack() {

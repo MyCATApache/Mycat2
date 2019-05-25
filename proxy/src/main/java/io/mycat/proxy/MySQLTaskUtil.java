@@ -25,6 +25,7 @@ import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
@@ -44,6 +45,8 @@ public class MySQLTaskUtil {
   public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
       boolean runOnSlave,
       LoadBalanceStrategy strategy, boolean noResponse) {
+
+    MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
         .proxyBackend(mycat, payload, dataNodeName, runOnSlave, strategy, noResponse);
   }

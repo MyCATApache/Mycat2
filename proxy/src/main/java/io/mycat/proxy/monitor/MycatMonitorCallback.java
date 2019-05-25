@@ -14,7 +14,7 @@ public interface MycatMonitorCallback {
 
   MycatMonitorCallback EMPTY = new MycatMonitorCallback() {
     @Override
-    public void onSQL(Session session, String sql) {
+    public void onOrginSQL(Session session, String sql) {
 
     }
     @Override
@@ -126,7 +126,7 @@ public interface MycatMonitorCallback {
     }
   }
 
-  default void onSQL(Session session, String sql) {
+  default void onOrginSQL(Session session, String sql) {
 
   }
   default void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
@@ -180,6 +180,10 @@ public interface MycatMonitorCallback {
   }
 
   default void onCloseMysqlSession(MySQLClientSession session) {
+  }
+
+  default void onRoute(Session session, byte[] payload) {
+
   }
 
 }

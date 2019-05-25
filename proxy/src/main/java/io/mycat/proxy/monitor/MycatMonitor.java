@@ -16,10 +16,17 @@ public final class MycatMonitor {
 
   static MycatMonitorCallback callback = EMPTY;
 
-  public final static void onSQL(Session session, String sql) {
+  public final static void onOrginSQL(Session session, String sql) {
     Objects.requireNonNull(session);
     Objects.requireNonNull(sql);
-    callback.onSQL(session, sql);
+    callback.onOrginSQL(session, sql);
+  }
+
+  public final static void onRoute(Session session, String dataNode, byte[] packet) {
+    Objects.requireNonNull(session);
+    Objects.requireNonNull(dataNode);
+    Objects.requireNonNull(packet);
+    callback.onRoute(session, packet);
   }
   public static void setCallback(MycatMonitorCallback callback) {
     Objects.requireNonNull(callback);
