@@ -182,7 +182,7 @@ public interface MycatMonitorCallback {
   default void onCloseMysqlSession(MySQLClientSession session) {
   }
 
-  default void onRoute(Session session, byte[] payload) {
+  default void onRoute(Session session, String dataNode, byte[] payload) {
 
   }
 

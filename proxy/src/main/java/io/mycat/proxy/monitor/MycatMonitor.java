@@ -26,7 +26,7 @@ public final class MycatMonitor {
     Objects.requireNonNull(session);
     Objects.requireNonNull(dataNode);
     Objects.requireNonNull(packet);
-    callback.onRoute(session, packet);
+    callback.onRoute(session, dataNode, packet);
   }
   public static void setCallback(MycatMonitorCallback callback) {
     Objects.requireNonNull(callback);

@@ -46,8 +46,9 @@ public class MycatCore {
           }
 
           @Override
-          public void onRoute(Session session, byte[] payload) {
-            LOGGER.info("session id:{} \n {} ", session.sessionId(), new String(payload));
+          public void onRoute(Session session, String dataNode, byte[] payload) {
+            LOGGER.info("session id:{} dataNode:{} \n {} ", session.sessionId(), dataNode,
+                new String(payload));
           }
         },
         new AsyncTaskCallBack() {
