@@ -210,6 +210,8 @@ public interface QueryHandler {
               String sql1 = globalTableWriteResultRoute.getSql();
               String master = globalTableWriteResultRoute.getMaster();
               Collection<String> dataNodes = globalTableWriteResultRoute.getDataNodes();
+              mycat.setLastMessage("unsupport sql");
+              mycat.writeErrorEndPacket();
 //              mycat.proxyUpdateMultiBackends(MySQLPacketUtil.generateComQuery(sql1), master,
 //                  dataNodes, new AsyncTaskCallBack<MycatSessionView>() {
 //                    @Override
