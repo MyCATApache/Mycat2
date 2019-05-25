@@ -415,6 +415,10 @@ public class BufferSQLParser {
           if (hashArray.getHash(pos) == TokenHash.SHOW) {
             context.setSQLType(BufferSQLContext.SHOW_SQL);
             pos++;
+            if (hashArray.getHash(pos) == TokenHash.WARNINGS) {
+              context.setSQLType(BufferSQLContext.SHOW_WARNINGS);
+              pos++;
+            }
           }
           break;
         case IntTokenHash.DATABASES:

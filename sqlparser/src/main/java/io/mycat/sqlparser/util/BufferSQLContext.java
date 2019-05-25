@@ -76,6 +76,7 @@ public class BufferSQLContext {
   public static final byte XA_END = 42;
   public static final byte SET_CHARSET = 43;
   public static final byte SET_CHARSET_RESULT = 44;
+  public static final byte SHOW_WARNINGS = 45;
 
   //admin command
 //    public static final byte MYCAT_SWITCH_REPL = 43;
