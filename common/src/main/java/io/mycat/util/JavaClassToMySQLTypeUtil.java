@@ -6,7 +6,7 @@ import java.nio.charset.Charset;
 
 /**
  * @author jamie12221
- * @date 2019-05-08 17:12
+ *  date 2019-05-08 17:12
  **/
 public class JavaClassToMySQLTypeUtil {
   public static int getMySQLType(Class<?> clazz){

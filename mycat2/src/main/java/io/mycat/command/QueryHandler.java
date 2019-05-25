@@ -38,7 +38,7 @@ import java.util.Set;
 
 /**
  * @author jamie12221
- * @date 2019-05-17 17:37
+ *  date 2019-05-17 17:37
  **/
 public interface QueryHandler {
 

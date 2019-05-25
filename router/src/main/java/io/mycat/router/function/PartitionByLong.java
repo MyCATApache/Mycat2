@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * @author jamie12221
- * @date 2019-05-02 23:36
+ *  date 2019-05-02 23:36
  **/
 public class PartitionByLong extends RuleAlgorithm {
 

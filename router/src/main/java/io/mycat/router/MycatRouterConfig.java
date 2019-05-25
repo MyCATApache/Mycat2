@@ -65,7 +65,7 @@ import java.util.function.Supplier;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 00:29
+ *  date 2019-05-03 00:29
  **/
 public class MycatRouterConfig extends ConfigReceiverImpl {
 

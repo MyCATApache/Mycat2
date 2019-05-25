@@ -2,7 +2,7 @@ package io.mycat.logTip;
 
 /**
  * @author jamie12221
- * @date 2019-05-13 17:28
+ *  date 2019-05-13 17:28
  *
  * 本类管理所有Task相关的日志或者异常提示
  **/

@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:25
+ *  date 2019-05-05 16:25
  **/
 public class ShardingDatabseTableTable extends MycatTable {
 

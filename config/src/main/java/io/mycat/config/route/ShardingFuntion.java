@@ -4,7 +4,7 @@ import java.util.Map;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 14:58
+ *  date 2019-05-03 14:58
  **/
 public class ShardingFuntion implements Cloneable{
    String name;

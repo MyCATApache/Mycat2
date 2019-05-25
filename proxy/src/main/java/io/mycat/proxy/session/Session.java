@@ -21,7 +21,7 @@ import java.nio.channels.SocketChannel;
 
 /**
  * @author jamie12221 chen junwen
- * @date 2019-05-10 21:13 Session
+ *  date 2019-05-10 21:13 Session
  **/
 public interface Session<T extends Session> {
 

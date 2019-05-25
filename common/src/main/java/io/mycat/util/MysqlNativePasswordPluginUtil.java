@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 /**
  * mysql 插件工具类
  * @author : zhuqiang
- * @date : 2018/11/25 20:03
+ *  date : 2018/11/25 20:03
  */
 public class MysqlNativePasswordPluginUtil {
     private static Logger logger = LoggerFactory.getLogger(MysqlNativePasswordPluginUtil.class);

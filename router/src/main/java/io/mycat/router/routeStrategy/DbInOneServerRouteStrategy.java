@@ -22,7 +22,7 @@ import io.mycat.router.routeResult.OneServerResultRoute;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 12:41
+ *  date 2019-05-05 12:41
  **/
 public class DbInOneServerRouteStrategy implements RouteStrategy<RouteContext> {
   @Override

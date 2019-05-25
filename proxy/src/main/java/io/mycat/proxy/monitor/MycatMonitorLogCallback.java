@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
- * @date 2019-05-20 11:52
+ *  date 2019-05-20 11:52
  **/
 public class MycatMonitorLogCallback implements MycatMonitorCallback {
 

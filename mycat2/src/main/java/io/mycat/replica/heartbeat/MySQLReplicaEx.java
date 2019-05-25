@@ -6,7 +6,7 @@ import io.mycat.replica.MySQLReplica;
 
 /**
  * @author jamie12221
- * @date 2019-05-17 13:11
+ *  date 2019-05-17 13:11
  **/
 public class MySQLReplicaEx extends MySQLReplica {
 

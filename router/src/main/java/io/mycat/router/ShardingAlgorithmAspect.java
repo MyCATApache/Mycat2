@@ -16,7 +16,7 @@ package io.mycat.router;
 
 /**
  * @author jamie12221
- * @date 2019-05-02 23:51
+ *  date 2019-05-02 23:51
  **/
 public interface  ShardingAlgorithmAspect<T> {
 

@@ -18,7 +18,7 @@ package io.mycat.beans.mysql.packet;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 13:58
+ *  date 2019-05-07 13:58
  *
  * 字段包
  **/

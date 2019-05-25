@@ -8,7 +8,7 @@ import org.hibernate.cfg.Configuration;
 
 /**
  * @author jamie12221
- * @date 2019-05-24 01:27
+ *  date 2019-05-24 01:27
  **/
 public class HibernateDao {
 

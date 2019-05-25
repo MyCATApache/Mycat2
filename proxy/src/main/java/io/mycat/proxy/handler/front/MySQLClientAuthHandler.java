@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 13:58
+ *  date 2019-05-07 13:58
  *
  * 服务器发送给客户端的验证处理器
  **/

@@ -12,7 +12,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author jamie12221
- * @date 2019-05-10 14:46
+ *  date 2019-05-10 14:46
  **/
 public class JdbcDataSourceManager {
   private final LinkedList<JdbcSession> allSessions = new LinkedList<>();

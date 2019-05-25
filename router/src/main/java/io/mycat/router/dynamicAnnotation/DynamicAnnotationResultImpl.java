@@ -24,7 +24,7 @@ import java.util.function.BiFunction;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 23:50
+ *  date 2019-05-03 23:50
  **/
 public class DynamicAnnotationResultImpl implements DynamicAnnotationResult {
 

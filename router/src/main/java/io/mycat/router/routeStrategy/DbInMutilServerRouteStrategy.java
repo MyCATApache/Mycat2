@@ -25,7 +25,7 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:54
+ *  date 2019-05-05 16:54
  **/
 public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext> {
 

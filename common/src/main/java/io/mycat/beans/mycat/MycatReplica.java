@@ -16,7 +16,7 @@ package io.mycat.beans.mycat;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 11:29
+ *  date 2019-05-07 11:29
  * 抽象Mycat集群管理类,它的子类可能是mycat实现的mycat 集群管理以及jdbc实现的集群管理,前者在proxy中运行
  **/
 public interface MycatReplica {

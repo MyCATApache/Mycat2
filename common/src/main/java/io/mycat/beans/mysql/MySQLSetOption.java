@@ -18,7 +18,7 @@ package io.mycat.beans.mysql;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:22
+ *  date 2019-05-05 16:22
  *
  * set option ,命令参数
  **/

@@ -52,7 +52,7 @@ import java.util.function.IntPredicate;
 
 /**
  * @author jamie12221
- * @date 2019-05-10 21:57 文本结果集任务
+ *  date 2019-05-10 21:57 文本结果集任务
  *
  * 可以根据字段的下标跳过指定列的数据解析
  **/

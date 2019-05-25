@@ -9,7 +9,7 @@ import org.junit.Test;
 
 /**
  * @author jamie12221
- * @date 2019-05-18 12:42 使用动态注解对sql中的值提取进行路由,为了防止过多情况,限制sql只能有一个表名 全局表不进行动态注解影响
+ *  date 2019-05-18 12:42 使用动态注解对sql中的值提取进行路由,为了防止过多情况,限制sql只能有一个表名 全局表不进行动态注解影响
  **/
 public class ANNOTATION_ROUTE extends MycatRouterTest {
 

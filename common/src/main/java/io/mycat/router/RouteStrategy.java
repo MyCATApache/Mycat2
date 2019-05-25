@@ -18,7 +18,7 @@ import io.mycat.beans.mycat.MycatSchema;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 13:33 路由接口
+ *  date 2019-05-05 13:33 路由接口
  **/
 public interface RouteStrategy<A> {
 

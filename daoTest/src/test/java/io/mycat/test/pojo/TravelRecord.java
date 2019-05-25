@@ -9,7 +9,7 @@ import javax.persistence.Table;
 
 /**
  * @author jamie12221
- * @date 2019-05-24 00:59
+ *  date 2019-05-24 00:59
  **/
 @Entity
 @Table(name = "travelrecord")

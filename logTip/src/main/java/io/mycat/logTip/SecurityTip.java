@@ -4,7 +4,7 @@ import io.mycat.beans.mysql.MySQLErrorCode;
 
 /**
  * @author jamie12221
- * @date 2019-05-19 12:00
+ *  date 2019-05-19 12:00
  **/
 public enum SecurityTip implements LogTip {
   ACCESS_DENIED_ACCESS_DENIED(

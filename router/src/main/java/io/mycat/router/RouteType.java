@@ -18,7 +18,7 @@ package io.mycat.router;
 
 /**
  * @author jamie12221
- * @date 2019-05-01 20:24
+ *  date 2019-05-01 20:24
  **/
 public enum  RouteType {
   PURE_QUERY_SINGLE_NODE,

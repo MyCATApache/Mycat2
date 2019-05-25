@@ -16,7 +16,7 @@ package io.mycat.beans;
 
 /**
  * @author jamie12221
- * @date 2019-04-30 16:24
+ *  date 2019-04-30 16:24
  * mysql session占用类型
  **/
 public enum MySQLSessionMonopolizeType {

@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 15:28
+ *  date 2019-05-03 15:28
  **/
 public class ConfigReceiverImpl implements ConfigReceiver {
 

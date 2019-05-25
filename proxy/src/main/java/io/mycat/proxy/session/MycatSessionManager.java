@@ -30,7 +30,7 @@ import java.util.LinkedList;
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  **/
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 

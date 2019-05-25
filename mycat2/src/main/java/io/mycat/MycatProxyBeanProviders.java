@@ -15,7 +15,7 @@ import io.mycat.router.MycatRouterConfig;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 22:12
+ *  date 2019-05-22 22:12
  **/
 public enum MycatProxyBeanProviders implements ProxyBeanProviders {
   INSTANCE;

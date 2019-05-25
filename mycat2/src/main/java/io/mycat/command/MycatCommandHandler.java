@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * @author jamie12221
- * @date 2019-05-13 02:47
+ *  date 2019-05-13 02:47
  **/
 public class MycatCommandHandler extends AbstractCommandHandler implements QueryHandler {
 

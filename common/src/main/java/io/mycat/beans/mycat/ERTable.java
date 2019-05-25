@@ -19,7 +19,7 @@ import java.util.List;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:26
+ *  date 2019-05-05 16:26
  **/
 public class ERTable extends MycatTable {
 

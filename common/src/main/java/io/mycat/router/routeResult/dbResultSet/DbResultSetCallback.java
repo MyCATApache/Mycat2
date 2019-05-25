@@ -19,7 +19,7 @@ import java.nio.ByteBuffer;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 23:51
+ *  date 2019-05-05 23:51
  * 复杂sql处理回调
  **/
 public interface DbResultSetCallback<CONTEXT extends Serializable> {

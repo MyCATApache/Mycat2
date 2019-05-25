@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 11:50
+ *  date 2019-05-22 11:50
  **/
 public class AsyncTaskCallBackCounter {
 

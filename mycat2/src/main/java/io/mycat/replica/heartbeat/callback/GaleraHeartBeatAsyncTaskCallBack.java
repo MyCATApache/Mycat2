@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author : zhangwy
- * @date Date : 2019年05月17日 21:34
+ *  date Date : 2019年05月17日 21:34
  */
 public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCallBack {
     private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);

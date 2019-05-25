@@ -39,7 +39,7 @@ import java.util.Set;
  * 集群管理,该类不执行心跳,也不管理jdbc的mysqlsession,只做均衡负载 集群状态在集群相关辅助类实现,辅助类使用定时器分发到执行.辅助类只能更改此类的writeIndex属性,其他属性不是线程安全,初始化之后只读
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  **/
 public abstract class MySQLReplica implements MycatReplica {
 

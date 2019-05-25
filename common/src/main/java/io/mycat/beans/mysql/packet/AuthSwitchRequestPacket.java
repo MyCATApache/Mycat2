@@ -28,7 +28,7 @@ package io.mycat.beans.mysql.packet;
  * </pre>
  *
  * @author : zwy
- * @date : 2019/05/21 1:40
+ *  date : 2019/05/21 1:40
  *
  *
  *

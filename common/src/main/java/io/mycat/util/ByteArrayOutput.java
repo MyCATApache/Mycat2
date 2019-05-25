@@ -22,7 +22,7 @@ import java.util.Arrays;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 21:36
+ *  date 2019-05-07 21:36
  * 堆内数组自动增长类
  * @todo 性能优化
  **/

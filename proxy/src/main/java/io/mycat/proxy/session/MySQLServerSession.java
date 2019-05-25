@@ -18,7 +18,7 @@ import java.util.LinkedList;
 
 /**
  * @author jamie12221
- * @date 2019-05-08 00:06
+ *  date 2019-05-08 00:06
  *
  * mysql server session 该接口实现服务器模式
  **/

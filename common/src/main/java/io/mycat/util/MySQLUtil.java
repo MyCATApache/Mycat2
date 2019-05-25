@@ -2,7 +2,7 @@ package io.mycat.util;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 14:01
+ *  date 2019-05-03 14:01
  **/
 public class MySQLUtil {
 

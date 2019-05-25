@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author chen junwen
- * @date 2019-05-09 02:30
+ *  date 2019-05-09 02:30
  *
  * proxybuffer 用于代理数据交换
  **/

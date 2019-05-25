@@ -21,7 +21,7 @@ import org.junit.Assert;
 
 /**
  * @author jamie12221
- * @date 2019-05-23 16:53
+ *  date 2019-05-23 16:53
  **/
 public abstract class ModualTest {
 

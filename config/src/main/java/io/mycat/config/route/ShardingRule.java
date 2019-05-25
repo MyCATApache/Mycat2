@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 14:22
+ *  date 2019-05-03 14:22
  **/
 public class ShardingRule {
   String column;

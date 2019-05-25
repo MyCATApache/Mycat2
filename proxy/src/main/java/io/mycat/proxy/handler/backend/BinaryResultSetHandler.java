@@ -38,7 +38,7 @@ import io.mycat.proxy.packet.MySQLPacket;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 00:37
+ *  date 2019-05-22 00:37
  **/
 public class BinaryResultSetHandler implements ResultSetHandler {
 

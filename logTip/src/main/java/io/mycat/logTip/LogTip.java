@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /**
  * @author jamie12221
- * @date 2019-05-14 11:04
+ *  date 2019-05-14 11:04
  **/
 public interface LogTip {
 

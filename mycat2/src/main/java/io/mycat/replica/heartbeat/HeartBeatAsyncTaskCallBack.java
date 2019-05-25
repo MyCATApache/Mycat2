@@ -6,7 +6,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 /**
  * @author : zhangwy
  * @version V1.0
- * @date Date : 2019年05月15日 21:30
+ *  date Date : 2019年05月15日 21:30
  */
 public abstract class HeartBeatAsyncTaskCallBack implements SessionCallBack<MySQLClientSession> {
     protected volatile boolean isQuit = false;

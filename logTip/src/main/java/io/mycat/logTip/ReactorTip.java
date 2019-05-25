@@ -2,7 +2,7 @@ package io.mycat.logTip;
 
 /**
  * @author jamie12221
- * @date 2019-05-13 14:45
+ *  date 2019-05-13 14:45
  * 本类管理所有Reactor相关的日志或者异常提示
  **/
 public enum ReactorTip implements LogTip {

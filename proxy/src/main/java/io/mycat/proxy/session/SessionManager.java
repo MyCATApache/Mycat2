@@ -23,7 +23,7 @@ import java.util.Collection;
 
 /**
  * @author jamie12221 chen junwen
- * @date 2019-05-10 21:13 Session管理器
+ *  date 2019-05-10 21:13 Session管理器
  **/
 public interface SessionManager<T extends Session> {
 

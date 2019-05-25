@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * MySQL Seesion元信息 对外支持线程修改的属性是alive,其他属性只读
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  **/
 public abstract class MySQLDatasource {
 

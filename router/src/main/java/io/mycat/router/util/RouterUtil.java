@@ -27,7 +27,7 @@ public class RouterUtil {
 	 * @author mycat
      *
      * @modification 修正移除schema的方法
-     * @date 2016/12/29
+   *  date 2016/12/29
      * @modifiedBy Hash Zhang
      *
 	 */
@@ -51,7 +51,7 @@ public class RouterUtil {
 
         StringBuilder sb = new StringBuilder();
         while (indx > 0) {
-            sb.append(stmt.substring(strtPos, indx));
+          sb.append(stmt, strtPos, indx);
 
             if (flag) {
                 strtPos = indx + upSchema2.length();
@@ -59,7 +59,7 @@ public class RouterUtil {
                 strtPos = indx + upSchema.length();
             }
             if (indx > firstE && indx < endE && countChar(stmt, indx) % 2 == 1) {
-                sb.append(stmt.substring(indx, indx + schema.length() + 1));
+              sb.append(stmt, indx, indx + schema.length() + 1);
             }
             indx1 = upStmt.indexOf(upSchema, strtPos);
             indx2 = upStmt.indexOf(upSchema2, strtPos);
@@ -75,14 +75,12 @@ public class RouterUtil {
 		int count=0;
 		boolean skipChar = false;
 		for (int i = 0; i < end; i++) {
-			if(sql.charAt(i)=='\'' && !skipChar) {
-				count++;
-				skipChar = false;
-			}else if( sql.charAt(i)=='\\'){
-				skipChar = true;
-			}else{
-				skipChar = false;
-			}
+      if (sql.charAt(i) == '\'' && !skipChar) {
+        count++;
+        skipChar = false;
+      } else {
+        skipChar = sql.charAt(i) == '\\';
+      }
 		}
 		return count;
 	}
@@ -172,7 +170,7 @@ public class RouterUtil {
 	 * @author mycat
 	 *
 	 * @modification 修改支持语句中包含“IF NOT EXISTS”的情况
-	 * @date 2016/12/8
+   *  date 2016/12/8
 	 * @modifiedBy Hash Zhang
 	 */
 	public static int[] getCreateTablePos(String upStmt, int start) {
@@ -543,20 +541,17 @@ public class RouterUtil {
 	/**
 	 * 系统表判断,某些sql语句会查询系统表或者跟系统表关联
 	 * @author lian
-	 * @date 2016年12月2日
+   *  date 2016年12月2日
 	 * @param tableName
 	 * @return
 	 */
 	public static boolean isSystemSchema(String tableName) {
 		// 以information_schema， mysql开头的是系统表
-		if (tableName.startsWith("INFORMATION_SCHEMA.")
-				|| tableName.startsWith("MYSQL.")
-				|| tableName.startsWith("PERFORMANCE_SCHEMA.")) {
-			return true;
-		}
+    return tableName.startsWith("INFORMATION_SCHEMA.")
+               || tableName.startsWith("MYSQL.")
+               || tableName.startsWith("PERFORMANCE_SCHEMA.");
 
-		return false;
-	}
+  }
 
 	/**
 	 * 判断条件是否永真
@@ -565,11 +560,8 @@ public class RouterUtil {
 	 */
 	public static boolean isConditionAlwaysTrue(SQLExpr expr) {
 		Object o = WallVisitorUtils.getValue(expr);
-		if(Boolean.TRUE.equals(o)) {
-			return true;
-		}
-		return false;
-	}
+    return Boolean.TRUE.equals(o);
+  }
 
 	/**
 	 * 判断条件是否永假的
@@ -578,11 +570,8 @@ public class RouterUtil {
 	 */
 	public static boolean isConditionAlwaysFalse(SQLExpr expr) {
 		Object o = WallVisitorUtils.getValue(expr);
-		if(Boolean.FALSE.equals(o)) {
-			return true;
-		}
-		return false;
-	}
+    return Boolean.FALSE.equals(o);
+  }
 
 	/**
 	 * 寻找joinKey的索引

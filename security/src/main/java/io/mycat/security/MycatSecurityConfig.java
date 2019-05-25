@@ -14,7 +14,7 @@ import java.util.Set;
 
 /**
  * @author jamie12221
- * @date 2019-05-18 19:40
+ *  date 2019-05-18 19:40
  **/
 public class MycatSecurityConfig {
 

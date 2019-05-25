@@ -24,7 +24,7 @@ import java.nio.channels.SocketChannel;
 
 /**
  * @author chen junwen
- * @date 2019-05-09 02:30
+ *  date 2019-05-09 02:30
  *
  * 同时实现 实现mysql packet与mysql packet
  **/

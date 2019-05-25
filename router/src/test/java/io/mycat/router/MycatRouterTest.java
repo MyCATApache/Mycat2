@@ -6,7 +6,7 @@ import org.junit.rules.ExpectedException;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 23:56
+ *  date 2019-05-05 23:56
  **/
 public abstract class MycatRouterTest {
   @Rule

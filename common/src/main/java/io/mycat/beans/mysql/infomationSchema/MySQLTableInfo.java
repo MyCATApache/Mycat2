@@ -4,7 +4,7 @@ import java.sql.Date;
 
 /**
  * @author jamie12221
- * @date 2019-05-16 16:38
+ *  date 2019-05-16 16:38
  **/
 public class MySQLTableInfo {
 

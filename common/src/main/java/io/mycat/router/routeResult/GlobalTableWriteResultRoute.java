@@ -19,7 +19,7 @@ import java.util.Collection;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 19:25
+ *  date 2019-05-05 19:25
  * 全局表路由结果
  **/
 public class GlobalTableWriteResultRoute extends ResultRoute {

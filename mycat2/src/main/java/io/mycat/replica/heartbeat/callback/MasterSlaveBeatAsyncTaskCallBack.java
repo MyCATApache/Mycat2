@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author : zhangwy
- * @date Date : 2019年05月15日 21:34
+ *  date Date : 2019年05月15日 21:34
  */
 public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack {
 

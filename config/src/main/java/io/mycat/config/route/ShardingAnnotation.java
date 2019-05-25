@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 22:58
+ *  date 2019-05-03 22:58
  **/
 public class ShardingAnnotation {
   String name;

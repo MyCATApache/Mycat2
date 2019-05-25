@@ -18,7 +18,7 @@ package io.mycat.beans.mysql.packet;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:22
+ *  date 2019-05-05 16:22
  *
  * MySQLPacketSplitter 默认实现
  **/

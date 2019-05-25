@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * Reactor 任务调度,内存资源单位 无论是本线程内还是其他的线程,提交任务只能通过pendingQueue
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  **/
 public abstract class ProxyReactorThread<T extends Session> extends Thread {
 

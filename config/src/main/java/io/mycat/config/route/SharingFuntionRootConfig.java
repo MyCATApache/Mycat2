@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 14:54
+ *  date 2019-05-03 14:54
  **/
 public class SharingFuntionRootConfig implements Configurable {
   List<ShardingFuntion> funtions;

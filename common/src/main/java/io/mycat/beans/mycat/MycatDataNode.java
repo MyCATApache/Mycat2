@@ -16,7 +16,7 @@ package io.mycat.beans.mycat;
 
 /**
  * @author jamie12221
- * @date 2019-05-04 15:06
+ *  date 2019-05-04 15:06
  **/
 public abstract class MycatDataNode {
 

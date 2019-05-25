@@ -7,7 +7,7 @@ import org.junit.Test;
 
 /**
  * @author jamie12221
- * @date 2019-05-06 00:22
+ *  date 2019-05-06 00:22
  *
  *
  * 根据当前seesion状态的schema进行路由,对sql没有限制

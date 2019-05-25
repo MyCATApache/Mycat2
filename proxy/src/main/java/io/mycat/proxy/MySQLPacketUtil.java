@@ -18,7 +18,7 @@ import java.util.Map.Entry;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 21:23
+ *  date 2019-05-07 21:23
  *
  * 写入的报文构造工具 注意的是,函数名没有带有packet后缀的,生成的是payload(没有报文头部和拆分报文处理) 带有packet后缀的,会进行报文处理(根据packetid,payload长度进行生成报文)
  **/

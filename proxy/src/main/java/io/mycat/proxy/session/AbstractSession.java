@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <T> 子类
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  */
 public abstract class AbstractSession<T extends AbstractSession> implements Session<T> {
   final static Logger LOGGER = LoggerFactory.getLogger(AbstractSession.class);

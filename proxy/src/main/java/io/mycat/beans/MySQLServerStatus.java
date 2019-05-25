@@ -25,7 +25,7 @@ import java.nio.charset.Charset;
  * 集中处理mysql服务器状态
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  **/
 public final class MySQLServerStatus {
   private String lastMessage;

@@ -5,7 +5,7 @@ import io.mycat.beans.mysql.packet.ErrorPacket;
 
 /**
  * @author jamie12221
- * @date 2019-05-21 01:21
+ *  date 2019-05-21 01:21
  **/
 public interface TaskCallBack<T extends TaskCallBack> {
 

@@ -22,7 +22,7 @@ import io.mycat.router.routeResult.dbResultSet.DbResultSet;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:54
+ *  date 2019-05-05 16:54
  **/
 public class SqlParseRouteRouteStrategy implements RouteStrategy<RouteContext> {
 

@@ -7,7 +7,7 @@ import java.util.Set;
 
 /**
  * @author jamie12221
- * @date 2019-05-23 17:22
+ *  date 2019-05-23 17:22
  **/
 public class MySQLVariables {
 

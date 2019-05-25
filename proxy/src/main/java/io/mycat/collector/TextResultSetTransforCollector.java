@@ -23,7 +23,7 @@ import java.sql.Date;
  * 文本结果集收集类
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  */
 public class TextResultSetTransforCollector implements ResultSetTransfor {
 

@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
- * @date 2019-05-10 22:24 向mysql服务器创建连接
+ *  date 2019-05-10 22:24 向mysql服务器创建连接
  **/
 public final class BackendConCreateHandler implements BackendNIOHandler<MySQLClientSession> {
 

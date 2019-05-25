@@ -12,7 +12,7 @@ import io.mycat.replica.heartbeat.HeartbeatDetector;
 
 /**
  * @author : zhangwy
- * @date Date : 2019年05月15日 21:34
+ *  date Date : 2019年05月15日 21:34
  */
 public class SingleHeartBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack {
 

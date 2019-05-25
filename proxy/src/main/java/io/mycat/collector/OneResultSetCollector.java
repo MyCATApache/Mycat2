@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 01:17
+ *  date 2019-05-22 01:17
  **/
 public class OneResultSetCollector implements ResultSetCollector, Iterable<Object[]> {
 

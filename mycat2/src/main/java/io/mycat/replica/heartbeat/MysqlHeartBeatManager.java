@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author : zhangwy
  * @version V1.0
- * @date Date : 2019年05月14日 22:21
+ *  date Date : 2019年05月14日 22:21
  */
 public class MysqlHeartBeatManager implements HeartbeatManager{
     Logger logger = LoggerFactory.getLogger(MysqlHeartBeatManager.class);

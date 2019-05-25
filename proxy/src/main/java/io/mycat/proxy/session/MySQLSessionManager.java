@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * 该在一个线程单位里,对象生命周期应该是单例的
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  **/
 public final class MySQLSessionManager implements
     BackendSessionManager<MySQLClientSession, MySQLDatasource> {

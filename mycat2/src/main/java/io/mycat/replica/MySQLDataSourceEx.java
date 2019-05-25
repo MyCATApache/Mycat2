@@ -5,7 +5,7 @@ import io.mycat.replica.heartbeat.MysqlHeartBeatManager;
 
 /**
  * @author jamie12221
- * @date 2019-05-14 19:36
+ *  date 2019-05-14 19:36
  **/
 public class MySQLDataSourceEx extends MySQLDatasource {
   final MysqlHeartBeatManager mysqlHeartBeatManager;

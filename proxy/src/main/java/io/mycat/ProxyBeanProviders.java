@@ -10,7 +10,7 @@ import io.mycat.replica.MySQLReplica;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 21:36
+ *  date 2019-05-22 21:36
  **/
 public interface ProxyBeanProviders {
 

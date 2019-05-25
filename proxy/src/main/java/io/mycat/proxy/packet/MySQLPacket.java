@@ -17,7 +17,6 @@ package io.mycat.proxy.packet;
 import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.util.ByteUtil;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Time;
@@ -27,7 +26,7 @@ import java.time.LocalTime;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 13:58
+ *  date 2019-05-07 13:58
  *
  * mycat报文基础读写
  *

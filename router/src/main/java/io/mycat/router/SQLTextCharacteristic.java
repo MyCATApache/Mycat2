@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * @author jamie12221
- * @date 2019-05-02 03:34
+ *  date 2019-05-02 03:34
  **/
 public class SQLTextCharacteristic {
 

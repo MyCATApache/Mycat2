@@ -13,7 +13,6 @@
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.handler;
-
 import com.sun.jdi.connect.spi.ClosedConnectionException;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
@@ -21,9 +20,16 @@ import java.nio.channels.ClosedChannelException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The enum Mycat handler.
+ */
 public enum MycatHandler implements NIOHandler<MycatSession> {
+  /**
+   * Instance mycat handler.
+   */
   INSTANCE;
   private static final Logger LOGGER = LoggerFactory.getLogger(MycatHandler.class);
+
   final
   @Override
   public void onSocketRead(MycatSession mycat) {
@@ -89,6 +95,11 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
     mycat.close(false, e.toString());
   }
 
+  /**
+   * On clear.
+   *
+   * @param session the session
+   */
   public void onClear(MycatSession session) {
     session.onHandlerFinishedClear();
   }
@@ -99,8 +110,20 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
    */
   public interface MycatSessionWriteHandler {
 
+    /**
+     * Write to channel.
+     *
+     * @param session the session
+     * @throws IOException the io exception
+     */
     void writeToChannel(MycatSession session) throws IOException;
 
+    /**
+     * On exception.
+     *
+     * @param session the session
+     * @param e the e
+     */
     void onException(MycatSession session, Exception e);
   }
 

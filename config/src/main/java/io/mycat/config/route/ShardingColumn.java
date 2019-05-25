@@ -2,7 +2,7 @@ package io.mycat.config.route;
 
 /**
  * @author jamie12221
- * @date 2019-05-04 01:03
+ *  date 2019-05-04 01:03
  **/
 public class ShardingColumn {
   String column;

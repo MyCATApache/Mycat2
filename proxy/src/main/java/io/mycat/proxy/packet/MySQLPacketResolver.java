@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * 报文处理类 该类实现报文解析
  *
  * @author jamie12221 chenjunwen design 294712221@qq.com
- * @date 2019-05-07 21:23
+ *  date 2019-05-07 21:23
  **/
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 

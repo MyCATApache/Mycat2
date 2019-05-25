@@ -24,7 +24,7 @@ import java.io.IOException;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 17:04
+ *  date 2019-05-05 17:04
  **/
 public class MycatRouter implements RouteStrategy<RouteContext> {
 

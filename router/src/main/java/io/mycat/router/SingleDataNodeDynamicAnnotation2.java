@@ -44,7 +44,7 @@ annotations:
 
 /**
  * @author jamie12221
- * @date 2019-04-28 21:38
+ *  date 2019-04-28 21:38
  **/
 public interface SingleDataNodeDynamicAnnotation2 {
 

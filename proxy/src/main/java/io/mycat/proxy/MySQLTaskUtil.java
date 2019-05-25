@@ -37,7 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author jamie12221
- * @date 2019-05-12 22:41 dataNode执行器 该类本意是从路由获得dataNode名字之后,使用该执行器执行, 解耦结果类和实际执行方法
+ *  date 2019-05-12 22:41 dataNode执行器 该类本意是从路由获得dataNode名字之后,使用该执行器执行, 解耦结果类和实际执行方法
  **/
 public class MySQLTaskUtil {
 

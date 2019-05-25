@@ -6,7 +6,7 @@ import org.apache.ibatis.session.SqlSession;
 
 /**
  * @author jamie12221
- * @date 2019-05-19 18:02
+ *  date 2019-05-19 18:02
  **/
 public class MybatisDao {
 

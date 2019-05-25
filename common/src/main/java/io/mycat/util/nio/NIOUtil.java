@@ -6,7 +6,7 @@ import java.nio.channels.SocketChannel;
 
 /**
  * @author jamie12221
- * @date 2019-05-20 17:57
+ *  date 2019-05-20 17:57
  **/
 public class NIOUtil {
 

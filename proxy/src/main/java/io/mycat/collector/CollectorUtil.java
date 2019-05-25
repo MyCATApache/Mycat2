@@ -11,7 +11,7 @@ import java.util.Objects;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 23:18
+ *  date 2019-05-22 23:18
  **/
 public class CollectorUtil {
 

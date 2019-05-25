@@ -2,7 +2,7 @@ package io.mycat.config.plug;
 
 /**
  * @author jamie12221
- * @date 2019-05-20 12:13
+ *  date 2019-05-20 12:13
  **/
 public class LoadBalanceConfig {
 

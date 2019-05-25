@@ -23,7 +23,7 @@ import io.mycat.proxy.packet.MySQLPacket;
  * 结果集收集接口 int startIndex的含义应该是根据实际情况而定的
  *
  * @author jamie12221
- * @date 2019-05-10 13:21
+ *  date 2019-05-10 13:21
  */
 public interface ResultSetTransfor {
 

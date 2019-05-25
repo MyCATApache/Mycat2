@@ -20,7 +20,7 @@ import java.util.Objects;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:22
+ *  date 2019-05-05 16:22
  *
  * mysql 状态 字符集
  **/

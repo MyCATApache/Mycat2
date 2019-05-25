@@ -36,7 +36,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 16:54
+ *  date 2019-05-05 16:54
  **/
 public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
 

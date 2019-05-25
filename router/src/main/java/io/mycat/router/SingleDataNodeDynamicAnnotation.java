@@ -24,7 +24,7 @@ annotations:
 
 /**
  * @author jamie12221
- * @date 2019-04-28 21:38
+ *  date 2019-04-28 21:38
  **/
 public interface SingleDataNodeDynamicAnnotation {
 
@@ -68,7 +68,7 @@ public interface SingleDataNodeDynamicAnnotation {
    */
   void reset();
 //SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));
-  public static void main(String[] args) throws ParseException {
+static void main(String[] args) throws ParseException {
     //加载动态注解
     SingleDataNodeDynamicAnnotation sdn = new SingleDataNodeDynamicAnnotation() {
       @Override

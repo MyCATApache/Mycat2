@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * 任务类接口 该类实现文本结果集的命令发送以及解析处理
  *
  * @author jamie12221
- * @date 2019-05-13 12:48
+ *  date 2019-05-13 12:48
  */
 public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
                                               MySQLPacketCallback {

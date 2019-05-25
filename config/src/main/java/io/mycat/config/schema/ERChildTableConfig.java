@@ -2,7 +2,7 @@ package io.mycat.config.schema;
 
 /**
  * @author jamie12221
- * @date 2019-05-02 23:06
+ *  date 2019-05-02 23:06
  **/
 public class ERChildTableConfig {
 

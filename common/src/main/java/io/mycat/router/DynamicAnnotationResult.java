@@ -4,7 +4,7 @@ import io.mycat.config.route.AnnotationType;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 13:33 动态注解处理结果
+ *  date 2019-05-05 13:33 动态注解处理结果
  **/
 public interface DynamicAnnotationResult {
 

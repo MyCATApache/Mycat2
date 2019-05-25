@@ -22,7 +22,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 13:58
+ *  date 2019-05-07 13:58
  *
  * 报文解析按类型回调
  **/

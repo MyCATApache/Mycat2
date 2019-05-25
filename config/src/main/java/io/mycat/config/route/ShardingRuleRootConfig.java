@@ -5,7 +5,7 @@ import java.util.List;
 
 /**
  * @author jamie12221
- * @date 2019-05-03 14:18
+ *  date 2019-05-03 14:18
  **/
 public class ShardingRuleRootConfig implements Configurable {
 

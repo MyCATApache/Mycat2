@@ -2,7 +2,7 @@ package io.mycat.beans.mysql.infomationSchema;
 
 /**
  * @author jamie12221
- * @date 2019-05-16 16:50
+ *  date 2019-05-16 16:50
  **/
 public class MySQLColumnInfo {
 

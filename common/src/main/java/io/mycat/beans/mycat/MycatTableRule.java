@@ -20,7 +20,7 @@ import io.mycat.router.RuleAlgorithm;
 
 /**
  * @author jamie12221
- * @date 2019-05-05 13:16
+ *  date 2019-05-05 13:16
  **/
 public class MycatTableRule {
 

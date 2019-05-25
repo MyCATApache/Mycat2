@@ -5,7 +5,7 @@ import io.mycat.proxy.handler.NIOHandler;
 
 /**
  * @author jamie12221
- * @date 2019-05-22 02:18
+ *  date 2019-05-22 02:18
  **/
 public abstract class AbstractBackendSession<T extends AbstractSession> extends AbstractSession<T> {
 

@@ -7,7 +7,7 @@ import java.io.IOException;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 23:54 mycat session与mysql session 作为代理交换数据的handler
+ *  date 2019-05-07 23:54 mycat session与mysql session 作为代理交换数据的handler
  **/
 public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 

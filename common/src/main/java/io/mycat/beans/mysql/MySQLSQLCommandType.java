@@ -16,7 +16,7 @@ package io.mycat.beans.mysql;
 
 /**
  * @author jamie12221
- * @date 2019-05-07 17:10
+ *  date 2019-05-07 17:10
  * SQL语句分发
  **/
 public interface MySQLSQLCommandType {

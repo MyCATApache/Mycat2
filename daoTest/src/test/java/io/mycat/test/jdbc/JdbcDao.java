@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
- * @date 2019-05-19 18:23
+ *  date 2019-05-19 18:23
  **/
 public class JdbcDao extends ModualTest {
 
