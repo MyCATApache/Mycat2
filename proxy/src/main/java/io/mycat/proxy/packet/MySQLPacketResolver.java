@@ -283,12 +283,12 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     setOkAffectedRows(0);
     setOkLastInsertId(0);
     //setServerStatus(0);//后续可能存在事务的查询
-    setOkWarningCount(0);
+//    setOkWarningCount(0);
     setOkStatusInfo(null);
     setOkSessionStateInfoType((byte) 0);
     setOkSessionStateInfoTypeData(null);
     setOkMessage(null);
-    setEofWarningCount(0);
+//    setWarningCount(0);//存在客户端根据此警告数获取详细的警告信息的情况,所以暂时决定不清除
     //setEofServerStatus(0);
   }
 
@@ -731,7 +731,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     buffer.packetReadStartIndex(getEndPos());
     //7 = packetLength(3) +  packetId（1） +  pkgType（1） + getWarningCount（2）
 //        buffers.skipInReading(7);
-    setEofServerStatus((int) buffer.getFixInt(getStartPos() + 5, 2));
+    setServerStatus((int) buffer.getFixInt(getStartPos() + 5, 2));
     int i = setServerStatus((int) buffer.getFixInt(getStartPos() + 7, 2));//status
     buffer.packetReadStartIndex(bpStartIndex);
     buffer.packetReadEndIndex(bpEndIndex);

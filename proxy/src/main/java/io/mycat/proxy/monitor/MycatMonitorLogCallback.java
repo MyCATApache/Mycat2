@@ -20,16 +20,23 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   final static boolean record = true;
   final static boolean recordDump = false;
 
+  @Override
+  public void onMySQLSessionServerStatus(Session session, int serverStatus) {
+    if (record) {
+      LOGGER.info("session id:{}  serverStatus:{} ", session.sessionId(), serverStatus);
+    }
+  }
+
   public void onOrginSQL(Session session, String sql) {
     if (record) {
-      LOGGER.info("session id:{} \n {} ", session.sessionId(), sql);
+      LOGGER.info("session id:{}  {} ", session.sessionId(), sql);
     }
   }
 
   @Override
   public void onRoute(Session session, String dataNode, byte[] payload) {
     if (record) {
-      LOGGER.info("session id:{} dataNode:{} \n {} ", session.sessionId(), dataNode,
+      LOGGER.info("session id:{} dataNode:{}  {} ", session.sessionId(), dataNode,
           new String(payload));
     }
   }
