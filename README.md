@@ -1,8 +1,20 @@
-# mycat2
+# Mycat 2
+
+## configuration 
+
+### mycat.yaml
+
+| key                  |         |                                                              |
+| -------------------- | ------- | ------------------------------------------------------------ |
+| IP                   | 0.0.0.0 | localhost                                                    |
+| port                 | 8066    | listen port                                                  |
+| bufferPoolPageSize   | 4194304 | a page size of buffer,default:1024*1024*4                    |
+| bufferPoolChunkSize  | 8192    | chunk  size,the base size allocated by bufferBool,not be too small, otherwise, the construction of the message will fail. |
+| bufferPoolPageNumber | 64      | the number of page                                           |
 
 
 
-How to build source code into a jar?
+## package
 
 ```
 cd mycat2
@@ -19,13 +31,17 @@ in your run/debug configuration.
 
 
 
-how to run/debug?
+## run/debug
 
 path to the configuration file(resources) as MYCAT_HOME added to VM options.
 
 ```
 java -Dfile.encoding=UTF-8 -DMYCAT_HOME=D:\xxxxxxx -jar mycat2-0.1.jar 
 ```
+
+
+
+
 
 
 
