@@ -360,7 +360,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
         }
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 

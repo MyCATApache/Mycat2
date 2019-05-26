@@ -192,7 +192,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     if (!normal) {
       assert hint != null;
       setLastMessage(hint);
-      writeErrorEndPacketBySyncInProcessError();
     }
     assert hint != null;
     onHandlerFinishedClear();
