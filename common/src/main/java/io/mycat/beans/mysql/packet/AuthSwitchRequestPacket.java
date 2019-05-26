@@ -48,7 +48,7 @@ public class AuthSwitchRequestPacket {
   public void writePayload(MySQLPayloadWriteView buffer) {
     buffer.writeByte(status);
     buffer.writeNULString(authPluginName);
-    buffer.writeEOFString(authPluginData);
+    buffer.writeNULString(authPluginData);
   }
 
   public byte getStatus() {
