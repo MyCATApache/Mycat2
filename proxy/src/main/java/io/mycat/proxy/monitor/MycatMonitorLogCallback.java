@@ -3,6 +3,7 @@ package io.mycat.proxy.monitor;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
@@ -23,7 +24,12 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public void onMySQLSessionServerStatus(Session session, int serverStatus) {
     if (record) {
-      LOGGER.info("session id:{}  serverStatus:{} ", session.sessionId(), serverStatus);
+
+      boolean hasFatch = MySQLPacketResolver.hasFatch(serverStatus);
+      boolean hasMoreResult = MySQLPacketResolver.hasMoreResult(serverStatus);
+      boolean hasTranscation = MySQLPacketResolver.hasTrans(serverStatus);
+      LOGGER.info("session id:{}  serverStatus:{} hasFatch:{} hasMoreResult:{} hasTranscation:{}",
+          session.sessionId(), serverStatus, hasFatch, hasMoreResult, hasTranscation);
     }
   }
 
