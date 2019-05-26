@@ -40,7 +40,11 @@ public class MycatCore {
   private static final Logger LOGGER = LoggerFactory.getLogger(MycatCore.class);
 
   public static void main(String[] args) throws Exception {
-    String resourcesPath = ProxyRuntime.getResourcesPath();
+    String resourcesPath = System.getProperty("MYCAT_HOME");
+    LOGGER.info("MYCAT_HOME:{}", resourcesPath);
+    if (resourcesPath == null) {
+      resourcesPath = ProxyRuntime.getResourcesPath(MycatCore.class);
+    }
     startup(resourcesPath, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         new AsyncTaskCallBack() {
           @Override
@@ -81,8 +85,9 @@ public class MycatCore {
               runtime.initSecurityManager();
               runtime.initAcceptor();
               ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
-              HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE.getConfig(ConfigEnum.HEARTBEAT);
-              long period =  heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+              HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE
+                                                            .getConfig(ConfigEnum.HEARTBEAT);
+              long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
               service.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {

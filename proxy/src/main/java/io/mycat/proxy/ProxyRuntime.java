@@ -71,10 +71,10 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private MycatRouterConfig routerConfig;
   private MycatSecurityConfig securityManager;
 
-  public static String getResourcesPath() {
+  public static String getResourcesPath(Class clazz) {
     try {
       return Paths.get(
-          Objects.requireNonNull(ProxyRuntime.class.getClassLoader().getResource("")).toURI())
+          Objects.requireNonNull(clazz.getProtectionDomain().getCodeSource().getLocation().toURI()))
                  .toAbsolutePath()
                  .toString();
     } catch (Exception e) {

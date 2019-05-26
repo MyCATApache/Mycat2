@@ -13,7 +13,6 @@
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.handler;
-import com.sun.jdi.connect.spi.ClosedConnectionException;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -48,7 +47,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       }
       mycat.handle();
       return;
-    } catch (ClosedConnectionException e) {
+    } catch (ClosedChannelException e) {
       onException(mycat, e);
       return;
     } catch (Exception e) {

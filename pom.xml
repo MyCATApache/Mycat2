@@ -18,7 +18,6 @@
     <module>jdbc</module>
     <module>mycat2</module>
     <module>security</module>
-    <module>daoTest</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
@@ -176,6 +175,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.2</version>
         <configuration>
           <excludes>
             <exclude>**/.svn/**</exclude>
@@ -185,30 +185,6 @@
           <execution>
             <goals>
               <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-          <appendAssemblyId>false</appendAssemblyId>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-          <archive>
-            <manifest>
-              <mainClass>io.mycat.MycatCore</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>assembly</goal>
             </goals>
           </execution>
         </executions>
