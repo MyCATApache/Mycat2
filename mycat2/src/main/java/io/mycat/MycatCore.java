@@ -18,7 +18,7 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
-import io.mycat.proxy.session.Session;
+import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
@@ -39,18 +39,7 @@ public class MycatCore {
 
   public static void main(String[] args) throws Exception {
     String resourcesPath = ProxyRuntime.getResourcesPath();
-    startup(resourcesPath, MycatProxyBeanProviders.INSTANCE, new MycatMonitorCallback() {
-          @Override
-          public void onOrginSQL(Session session, String sql) {
-            LOGGER.info("session id:{} \n {} ", session.sessionId(), sql);
-          }
-
-          @Override
-          public void onRoute(Session session, String dataNode, byte[] payload) {
-            LOGGER.info("session id:{} dataNode:{} \n {} ", session.sessionId(), dataNode,
-                new String(payload));
-          }
-        },
+    startup(resourcesPath, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         new AsyncTaskCallBack() {
           @Override
           public void onFinished(Object sender, Object result, Object attr) {

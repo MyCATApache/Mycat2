@@ -122,6 +122,7 @@ public class MySQLTaskUtil {
                     mysql.setIsolation(isolation);
                     mysql.setCharacterSetResult(characterSetResult);
                     assert autoCommit == mysql.isAutomCommit();
+                    MycatMonitor.onSynchronizationState(mysql);
                     callBack.onSession(mysql, sender, attr);
                   }
 
