@@ -107,7 +107,7 @@ public class OneResultSetCollector implements ResultSetCollector, Iterable<Objec
       for (int i = 0; i < columnCount; i++) {
         objects[i] = result[i].get(index);
       }
-      LOGGER.info("result[{}] {}", index, Arrays.toString(objects));
+      LOGGER.debug("result[{}] {}", index, Arrays.toString(objects));
     }
     return super.toString();
   }

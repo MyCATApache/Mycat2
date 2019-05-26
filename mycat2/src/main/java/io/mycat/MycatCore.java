@@ -14,6 +14,8 @@
  */
 package io.mycat;
 
+import io.mycat.config.ConfigEnum;
+import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -79,6 +81,8 @@ public class MycatCore {
               runtime.initSecurityManager();
               runtime.initAcceptor();
               ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+              HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE.getConfig(ConfigEnum.HEARTBEAT);
+              long period =  heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
               service.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -87,7 +91,7 @@ public class MycatCore {
                     datasource.heartBeat();
                   }
                 }
-              }, 0, 3, TimeUnit.SECONDS);
+              }, 0, period, TimeUnit.SECONDS);
               startFinished.onFinished(null, null, null);
 
             } catch (Exception e) {

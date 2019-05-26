@@ -1,6 +1,11 @@
 package io.mycat.replica.heartbeat;
 
+import io.mycat.config.ConfigEnum;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.config.datasource.ReplicaConfig.RepSwitchTypeEnum;
+import io.mycat.config.heartbeat.HeartbeatConfig;
+import io.mycat.config.heartbeat.HeartbeatRootConfig;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.detector.GarelaHeartbeatDetector;
@@ -16,24 +21,33 @@ import org.slf4j.LoggerFactory;
  *  date Date : 2019年05月14日 22:21
  */
 public class MysqlHeartBeatManager implements HeartbeatManager{
+
     Logger logger = LoggerFactory.getLogger(MysqlHeartBeatManager.class);
 
     private final HeartbeatDetector heartbeatDetector;
 
-//    private final ReplicaConfig replicaConfig;
     private final MySQLDatasource dataSource;
     private volatile DatasourceStatus heartBeatStatus;
 
+    protected int maxRetry = 3; //错误maxRetry设置为错误
+    private final long minSwitchtimeInterval; //配置最小切换时间
+
     protected volatile boolean isChecking = false; //是否正在检查
     protected AtomicInteger errorCount = new AtomicInteger(0); //错误计数
-    protected int maxRetry = 3;
+
+
+    private long lastSwitchTime;//上次主从切换时间
 
     public MysqlHeartBeatManager(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource){
-//        this.replicaConfig = replicaConfig;
+
         this.dataSource = dataSource;
-
         heartBeatStatus = new DatasourceStatus();
-
+        lastSwitchTime = System.currentTimeMillis();
+        HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE.getConfig(ConfigEnum.HEARTBEAT);
+        HeartbeatConfig heartbeatConfig = heartbeatRootConfig
+                .getHeartbeat();
+        this.maxRetry = heartbeatConfig.getMaxRetry();
+        this.minSwitchtimeInterval = heartbeatConfig.getMinSwitchtimeInterval();
         if(ReplicaConfig.RepTypeEnum.SINGLE_NODE.equals(replicaConfig.getRepType())) {
             this.heartbeatDetector = new SingleNodeHeartbeatDetector(replicaConfig, dataSource, this);
         } else  if(ReplicaConfig.RepTypeEnum.MASTER_SLAVE.equals(replicaConfig.getRepType())){
@@ -133,13 +147,22 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
             //设置状态给 dataSource
             this.heartBeatStatus = currentDatasourceStatus;
             logger.error("{} heartStatus {}", dataSource.getName(), heartBeatStatus);
-            if(dataSource.isMaster() && heartBeatStatus.isError()) {
-                //replicat 进行选主
-                dataSource.getReplica().switchDataSourceIfNeed();
+        }
+        ReplicaConfig conf = this.dataSource.getReplica().getConfig();
+        if(conf.getSwitchType().equals(RepSwitchTypeEnum.SWITCH)
+                && dataSource.isMaster() && heartBeatStatus.isError()
+                && canSwitchDataSource()) {
+            //replicat 进行选主
+            if(dataSource.getReplica().switchDataSourceIfNeed()) {
+                //updataSwitchTime
+                this.lastSwitchTime = System.currentTimeMillis();
             }
         }
     }
 
+    private boolean canSwitchDataSource() {
+        return this.lastSwitchTime + this.minSwitchtimeInterval < System.currentTimeMillis();
+    }
     public DatasourceStatus getHeartBeatStatus() {
         return heartBeatStatus;
     }

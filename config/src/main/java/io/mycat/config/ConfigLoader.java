@@ -51,6 +51,7 @@ public class ConfigLoader {
     loadConfig(root, ConfigEnum.DATASOURCE, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.DYNAMIC_ANNOTATION, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.HEARTBEAT, GlobalConfig.INIT_VERSION, receiver);
     // 清空prepare文件夹
     YamlUtil.clearDirectory(DIR_PREPARE, null);
   }
