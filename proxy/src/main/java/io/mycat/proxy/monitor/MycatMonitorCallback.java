@@ -47,10 +47,6 @@ public interface MycatMonitorCallback {
 
     }
 
-    @Override
-    public void onSynchronizationState(MycatSession mycat, MySQLClientSession session) {
-
-    }
 
     @Override
     public void onRecycleByteBuffer(ByteBuffer buffer) {
@@ -149,7 +145,7 @@ public interface MycatMonitorCallback {
   default void onAllocateByteBuffer(ByteBuffer buffer) {
   }
 
-  default void onSynchronizationState(MycatSession mycat, MySQLClientSession session) {
+  default void onSynchronizationState(MySQLClientSession session) {
   }
 
   default void onRecycleByteBuffer(ByteBuffer buffer) {
@@ -185,5 +181,4 @@ public interface MycatMonitorCallback {
   default void onRoute(Session session, String dataNode, byte[] payload) {
 
   }
-
 }

@@ -55,8 +55,8 @@ public final class MycatMonitor {
     callback.onMySQLSessionServerStatus(session);
   }
 
-  public final static void onSynchronizationState(MycatSession mycat, MySQLClientSession session) {
-    callback.onSynchronizationState(mycat, session);
+  public final static void onSynchronizationState(MySQLClientSession session) {
+    callback.onSynchronizationState(session);
   }
   public final static void onAllocateByteBuffer(ByteBuffer buffer) {
     callback.onAllocateByteBuffer(buffer);
