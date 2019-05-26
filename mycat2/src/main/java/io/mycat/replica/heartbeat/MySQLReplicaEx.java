@@ -18,7 +18,7 @@ public class MySQLReplicaEx extends MySQLReplica {
     super(replicaConfig, writeIndex, dataSourceFactory);
   }
 
-  public void switchDataSourceIfNeed() {
-
+  public boolean switchDataSourceIfNeed() {
+      return super.switchDataSourceIfNeed();
   }
 }

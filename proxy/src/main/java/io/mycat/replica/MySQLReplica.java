@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 集群管理,该类不执行心跳,也不管理jdbc的mysqlsession,只做均衡负载 集群状态在集群相关辅助类实现,辅助类使用定时器分发到执行.辅助类只能更改此类的writeIndex属性,其他属性不是线程安全,初始化之后只读
@@ -42,6 +44,7 @@ import java.util.Set;
  *  date 2019-05-10 13:21
  **/
 public abstract class MySQLReplica implements MycatReplica {
+  static Logger logger = LoggerFactory.getLogger(MySQLReplica.class);
 
   private final ReplicaConfig config;
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
@@ -207,8 +210,15 @@ public abstract class MySQLReplica implements MycatReplica {
   /**
    * 切换写节点
    */
-  public void switchDataSourceIfNeed() {
-
+  public boolean switchDataSourceIfNeed() {
+      for (int i = 0; i < this.datasourceList.size(); i++) {
+          if(datasourceList.get(i).isAlive()) {
+              logger.info("{} switch master to {}", this, i);
+              this.writeIndex = i;
+              return true;
+          }
+      }
+      return false;
   }
 
 }

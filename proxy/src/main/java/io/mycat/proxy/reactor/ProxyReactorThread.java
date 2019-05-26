@@ -100,7 +100,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
       try {
         nioJob.run();
       } catch (Exception e) {
-        logger.error(ReactorTip.PROCESS_NIO_JOB_EEROR.getMessage(e));
+        logger.error(ReactorTip.PROCESS_NIO_JOB_EEROR.getMessage(e) ,e);
       }
     }
   }
@@ -203,7 +203,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
         }
         keys.clear();
       } catch (Throwable e) {
-        logger.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e));
+        logger.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e),e);
       }
     }
   }

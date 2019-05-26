@@ -17,8 +17,12 @@
 package io.mycat.replica.heartbeat;
 
 
+import io.mycat.config.ConfigEnum;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.config.heartbeat.HeartbeatConfig;
+import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.proxy.MySQLTaskUtil;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLDataSourceEx;
 
 /**
@@ -41,7 +45,11 @@ public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
         this.replicaConfig = replicaConfig;
         this.dataSource = dataSource;
         this.heartbeatManager = heartbeatManager;
-        this.heartbeatTimeout = 10000;//10秒
+        HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE.getConfig(
+                ConfigEnum.HEARTBEAT);
+        HeartbeatConfig heartbeatConfig = heartbeatRootConfig
+                .getHeartbeat();
+        this.heartbeatTimeout = heartbeatConfig.getMinHeartbeatChecktime();
     }
 
     public void heartBeat(){
