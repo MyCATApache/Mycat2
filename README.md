@@ -31,4 +31,4 @@ java -Dfile.encoding=UTF-8 -DMYCAT_HOME=D:\xxxxxxx -jar mycat2-0.1.jar
 
 ## License
 
-Apache-2.0 license
+GPLv2
