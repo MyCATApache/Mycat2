@@ -35,14 +35,14 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   public void onOrginSQL(Session session, String sql) {
     if (record) {
-      LOGGER.info("session id:{}  {} ", session.sessionId(), sql);
+      LOGGER.info("session id:{}  orginSQL:{} ", session.sessionId(), sql);
     }
   }
 
   @Override
   public void onRoute(Session session, String dataNode, byte[] payload) {
     if (record) {
-      LOGGER.info("session id:{} dataNode:{}  {} ", session.sessionId(), dataNode,
+      LOGGER.info("session id:{} dataNode:{}  payload:{} ", session.sessionId(), dataNode,
           new String(payload));
     }
   }
@@ -70,12 +70,6 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   public final void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len) {
     if (recordDump) {
       DumpUtil.printAsHex(view, startIndex, len);
-    }
-  }
-
-  public final void onMySQLSessionServerStatus(MySQLClientSession session) {
-    if (record) {
-
     }
   }
 
