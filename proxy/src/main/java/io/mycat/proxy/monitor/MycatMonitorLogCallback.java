@@ -22,7 +22,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   final static boolean recordDump = false;
 
   @Override
-  public void onMySQLSessionServerStatus(Session session, int serverStatus) {
+  public void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
     if (record) {
 
       boolean hasFatch = MySQLPacketResolver.hasFatch(serverStatus);

@@ -379,8 +379,11 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public final int setServerStatus(int serverStatus) {
-    MycatMonitor.onMySQLSessionServerStatus(session, serverStatus);
-    return this.serverStatus = serverStatus;
+    if (this.serverStatus != serverStatus) {
+      MycatMonitor.onMySQLSessionServerStatusChanged(session, serverStatus);
+      return this.serverStatus = serverStatus;
+    }
+    return serverStatus;
   }
 
   @Override

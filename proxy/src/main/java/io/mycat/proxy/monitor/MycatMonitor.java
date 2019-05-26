@@ -51,8 +51,8 @@ public final class MycatMonitor {
     callback.onFrontWrite(session, view, startIndex, len);
   }
 
-  public final static void onMySQLSessionServerStatus(Session session, int serverStatus) {
-    callback.onMySQLSessionServerStatus(session, serverStatus);
+  public final static void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
+    callback.onMySQLSessionServerStatusChanged(session, serverStatus);
   }
 
   public final static void onSynchronizationState(MySQLClientSession session) {
