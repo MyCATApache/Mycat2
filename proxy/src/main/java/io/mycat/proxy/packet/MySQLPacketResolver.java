@@ -377,7 +377,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       if (isEnd) {
         resolvePayloadType(getHead(), true, true, currentProxybuffer(), getPayloadLength());
       }
-      return isEnd;
+      return true;
     } else {
       setPayloadFinished(false);
       return false;
