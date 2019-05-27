@@ -15,6 +15,7 @@
 package io.mycat.proxy.packet;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
@@ -231,7 +232,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   @Override
   public final void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex,
       int payloadEndIndex) {
-    if (length < 0xffffff) {
+    if (length < MySQLPacketSplitter.MAX_PACKET_SIZE) {
       mySQLPacket.packetReadStartIndex(payloadStartIndex);
       mySQLPacket.packetReadEndIndex(getEndPos());
       setPayload(mySQLPacket);
