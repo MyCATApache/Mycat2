@@ -22,9 +22,9 @@ import io.mycat.buffer.BufferPool;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiverImpl;
-import io.mycat.config.datasource.DatasourceRootConfig;
+import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.config.datasource.ReplicaIndexRootConfig;
+import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
@@ -106,9 +106,9 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
 
   public void initRepliac(ProxyBeanProviders factory, AsyncTaskCallBack future) {
-    DatasourceRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
-    ReplicaIndexRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
-    Map<String, Integer> replicaIndexes = replicaIndexConfig.getReplicaIndexes();
+    ReplicasRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
+    MasterIndexesRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
+    Map<String, Integer> replicaIndexes = replicaIndexConfig.getMasterIndexes();
     List<ReplicaConfig> replicas = dsConfig.getReplicas();
     int size = replicas.size();
     AsyncTaskCallBackCounter counter = new AsyncTaskCallBackCounter(size, future);

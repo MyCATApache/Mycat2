@@ -15,8 +15,8 @@
 package io.mycat.config;
 
 
-import io.mycat.config.datasource.DatasourceRootConfig;
-import io.mycat.config.datasource.ReplicaIndexRootConfig;
+import io.mycat.config.datasource.MasterIndexesRootConfig;
+import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.MysqlServerVariablesRootConfig;
@@ -36,8 +36,8 @@ import io.mycat.config.user.UserRootConfig;
 public enum ConfigEnum {
   PROXY(1, "mycat.yml", ProxyRootConfig.class),
   USER(5, "user.yml", UserRootConfig.class),
-  DATASOURCE(6, "datasource.yml", DatasourceRootConfig.class),
-  REPLICA_INDEX(7, "replica-index.yml", ReplicaIndexRootConfig.class),
+  DATASOURCE(6, "replicas.yml", ReplicasRootConfig.class),
+  REPLICA_INDEX(7, "masterIndexes.yml", MasterIndexesRootConfig.class),
   SCHEMA(8, "schema.yml", SchemaRootConfig.class),
   DYNAMIC_ANNOTATION(9, "dynamicAnnotation.yml", DynamicAnnotationRootConfig.class),
   RULE(10, "rule.yml", ShardingRuleRootConfig.class),

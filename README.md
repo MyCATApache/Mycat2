@@ -8,30 +8,97 @@ the kinds of configuration that don't changed frequently.
 
 ### mycat
 
-| key  | default value | explain     |
-| ---- | ------------- | ----------- |
-| IP   | 0.0.0.0       | localhost   |
-| port | 8066          | listen port |
+#### ip
 
-### datasource
+the ip of mycat server 
+
+#### port
+
+the port of mycat server 
+
+### replicas
 
 a replica treated as a consistent mysql internal load balancing.
 
-##### name
+#### replica -name
 
 the the name of replica that can be reference by data node config in schema config
 
-##### repType
+#### repType
 
-type of replica(X)
+type of replica:x:
 
-##### balanceName
+#### balanceName
 
 reference load balance name that be in plug config
 
-##### mysqls
+#### mysqls
 
 configure multiple mysql connection config
+
+#### datasource-mysql
+
+##### name
+
+the the name of mysql connection info
+
+##### ip
+
+the ip of mysql server 
+
+##### port
+
+the port of mysql server 
+
+##### user
+
+username of mysql user
+
+##### password
+
+password of mysql user
+
+##### minCon
+
+the number of init mysql connection
+
+##### maxCon
+
+the number of limit mysql connection
+
+
+
+### masterIndexes
+
+datasource switch record index
+
+```
+masterIndexes:
+  repli: 0
+  repli2: 0
+```
+
+repli is a replica  name that in datasource config
+
+the number 0 is mysqls index  in datasource confg marks as matser mysql server
+
+when the master node switches, the number changes to new master index
+
+
+
+### schema
+
+schema
+
+a logic schema 
+
+table,dataNode
+
+
+
+##### 
+
+
 
 
 
@@ -60,8 +127,8 @@ USE {schema};
 When front client has the following status,proxy should hold the backend client until end of the interaction process.
 
 - transaction
-- prepare statement(according to the specific implementation)(X)
-- loaddata infile(X)
+- prepare statement(according to the specific implementation):x:
+- loaddata infile:x:
 
 ## package
 

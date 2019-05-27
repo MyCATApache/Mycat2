@@ -28,14 +28,15 @@ import java.util.Map;
  * @date: 10/09/2017
  * @author: gaozhiwen
  */
-public class ReplicaIndexRootConfig implements Configurable {
-    private Map<String, Integer> replicaIndexes;
+public class MasterIndexesRootConfig implements Configurable {
 
-    public Map<String, Integer> getReplicaIndexes() {
-        return replicaIndexes;
+    private Map<String, Integer> masterIndexes;
+
+    public Map<String, Integer> getMasterIndexes() {
+        return masterIndexes;
     }
 
-    public void setReplicaIndexes(Map<String, Integer> replicaIndexes) {
-        this.replicaIndexes = replicaIndexes;
+    public void setMasterIndexes(Map<String, Integer> masterIndexes) {
+        this.masterIndexes = masterIndexes;
     }
 }

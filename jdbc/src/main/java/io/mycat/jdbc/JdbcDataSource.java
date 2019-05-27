@@ -5,8 +5,8 @@ import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiverImpl;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.datasource.DatasourceConfig;
-import io.mycat.config.datasource.DatasourceRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.config.datasource.ReplicasRootConfig;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class JdbcDataSource {
     ConfigLoader.INSTANCE
         .loadConfig("D:\\newgit\\f2\\jdbc\\src\\main\\resources", ConfigEnum.DATASOURCE,
             GlobalConfig.INIT_VERSION, configReceiver);
-    DatasourceRootConfig config = configReceiver.getConfig(ConfigEnum.DATASOURCE);
+    ReplicasRootConfig config = configReceiver.getConfig(ConfigEnum.DATASOURCE);
     ReplicaConfig replicaConfig = config.getReplicas().get(0);
     List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
     JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);

@@ -27,7 +27,7 @@ import java.util.List;
  * @date: 10/09/2017
  * @author: gaozhiwen
  */
-public class DatasourceRootConfig implements Configurable {
+public class ReplicasRootConfig implements Configurable {
     private List<ReplicaConfig> replicas;
     private String charset;
 
