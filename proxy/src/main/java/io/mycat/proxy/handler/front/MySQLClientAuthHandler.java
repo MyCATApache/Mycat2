@@ -52,7 +52,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     private boolean finished = false;
     private AuthPacket auth ;
 //    public String clientAuthPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
-    public String clientAuthPluginName = CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME;
+    public String clientAuthPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
     public boolean isChangeAuthPlugin = false;
     public void setMycatSession(MycatSession mycatSession) {
         this.mycat = mycatSession;
