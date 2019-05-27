@@ -50,8 +50,7 @@ import org.slf4j.LoggerFactory;
 /**
  * 报文处理类 该类实现报文解析
  *
- * @author jamie12221 chenjunwen design 294712221@qq.com
- *  date 2019-05-07 21:23
+ * @author jamie12221 chenjunwen design 294712221@qq.com date 2019-05-07 21:23
  **/
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 
@@ -315,20 +314,17 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     if (!multiPacket && !lastIsMultiPacket) {
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       return true;
-    }
-    if (multiPacket && !lastIsMultiPacket) {
+    } else if (multiPacket && !lastIsMultiPacket) {
+      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
+      return false;
+    } else if (!multiPacket && lastIsMultiPacket) {
+      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
+      return true;
+    } else if (multiPacket && lastIsMultiPacket) {
       appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
       return false;
     }
-    if (!multiPacket && lastIsMultiPacket) {
-      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
-      setEndPos(payloadEndIndex);
-    }
-    if (multiPacket && lastIsMultiPacket) {
-      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
-      setEndPos(payloadEndIndex);
-    }
-    return true;
+    throw new MycatExpection("UNKNOWN STATE");
   }
 
   /**
@@ -584,8 +580,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           setState(ComQueryState.LOCAL_INFILE_FILE_CONTENT);
           setMySQLPayloadType(LOAD_DATA_REQUEST);
           return;
-        } else if (head == 0xfe ) {
-          if(isClientLogin()) {
+        } else if (head == 0xfe) {
+          if (isClientLogin()) {
             setMySQLPayloadType(FIRST_EOF);
             setState(ComQueryState.AUTH_SWITCH_PLUGIN_RESPONSE);
           } else {
@@ -595,7 +591,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           }
           return;
         } else {
-          if(isClientLogin()) {
+          if (isClientLogin()) {
             setState(ComQueryState.AUTH_SWITCH_OTHER_REQUEST);
             return;
           }
