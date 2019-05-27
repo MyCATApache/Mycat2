@@ -24,11 +24,11 @@ package io.mycat.beans.mysql.packet;
  **/
 public interface EOFPacket {
 
-    int getEofWarningCount();
+  int getWarningCount();
 
-    void setEofWarningCount(int warningCount);
+  void setWarningCount(int warningCount);
 
-    int getEofServerStatus();
+  int getServerStatus();
 
-    int setEofServerStatus(int status);
+  int setServerStatus(int status);
 }

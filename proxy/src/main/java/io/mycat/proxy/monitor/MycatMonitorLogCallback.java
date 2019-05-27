@@ -3,6 +3,7 @@ package io.mycat.proxy.monitor;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
@@ -20,16 +21,28 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   final static boolean record = true;
   final static boolean recordDump = false;
 
+  @Override
+  public void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
+    if (record) {
+
+      boolean hasFatch = MySQLPacketResolver.hasFatch(serverStatus);
+      boolean hasMoreResult = MySQLPacketResolver.hasMoreResult(serverStatus);
+      boolean hasTranscation = MySQLPacketResolver.hasTrans(serverStatus);
+      LOGGER.info("session id:{}  serverStatus:{} hasFatch:{} hasMoreResult:{} hasTranscation:{}",
+          session.sessionId(), serverStatus, hasFatch, hasMoreResult, hasTranscation);
+    }
+  }
+
   public void onOrginSQL(Session session, String sql) {
     if (record) {
-      LOGGER.info("session id:{} \n {} ", session.sessionId(), sql);
+      LOGGER.info("session id:{}  orginSQL:{} ", session.sessionId(), sql);
     }
   }
 
   @Override
   public void onRoute(Session session, String dataNode, byte[] payload) {
     if (record) {
-      LOGGER.info("session id:{} dataNode:{} \n {} ", session.sessionId(), dataNode,
+      LOGGER.info("session id:{} dataNode:{}  payload:{} ", session.sessionId(), dataNode,
           new String(payload));
     }
   }
@@ -57,12 +70,6 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   public final void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len) {
     if (recordDump) {
       DumpUtil.printAsHex(view, startIndex, len);
-    }
-  }
-
-  public final void onMySQLSessionServerStatus(MySQLClientSession session) {
-    if (record) {
-
     }
   }
 

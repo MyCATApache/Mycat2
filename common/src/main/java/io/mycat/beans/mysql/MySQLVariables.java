@@ -49,4 +49,7 @@ public class MySQLVariables {
     return variables.entrySet();
   }
 
+  public Map<String, String> getVariables() {
+    return variables;
+  }
 }

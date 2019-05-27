@@ -38,7 +38,7 @@ public interface MycatMonitorCallback {
     }
 
     @Override
-    public void onMySQLSessionServerStatus(MySQLClientSession session) {
+    public void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
 
     }
 
@@ -139,7 +139,7 @@ public interface MycatMonitorCallback {
   default void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len) {
   }
 
-  default void onMySQLSessionServerStatus(MySQLClientSession session) {
+  default void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
   }
 
   default void onAllocateByteBuffer(ByteBuffer buffer) {

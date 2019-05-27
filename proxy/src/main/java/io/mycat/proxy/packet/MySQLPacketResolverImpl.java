@@ -18,6 +18,7 @@ import io.mycat.MycatExpection;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLProxySession;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -378,16 +379,20 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public final int setServerStatus(int serverStatus) {
-    return this.serverStatus = serverStatus;
+    if (this.serverStatus != serverStatus) {
+      MycatMonitor.onMySQLSessionServerStatusChanged(session, serverStatus);
+      return this.serverStatus = serverStatus;
+    }
+    return serverStatus;
   }
 
   @Override
-  public final int getOkWarningCount() {
+  public final int getWarningCount() {
     return warningCount;
   }
 
   @Override
-  public final void setOkWarningCount(int warningCount) {
+  public final void setWarningCount(int warningCount) {
     this.warningCount = warningCount;
   }
 
@@ -428,24 +433,14 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   public final void setOkMessage(byte[] message) {
   }
 
-  @Override
-  public final int getEofWarningCount() {
-    return this.warningCount;
-  }
-
-  @Override
-  public final void setEofWarningCount(int warningCount) {
-    this.warningCount = warningCount;
-  }
-
-  @Override
-  public final int getEofServerStatus() {
-    return this.serverStatus;
-  }
-
-  @Override
-  public final int setEofServerStatus(int status) {
-    return this.serverStatus = status;
-  }
+//  @Override
+//  public final int getEofServerStatus() {
+//    return this.serverStatus;
+//  }
+//
+//  @Override
+//  public final int setEofServerStatus(int status) {
+//    return this.serverStatus = status;
+//  }
 
 }

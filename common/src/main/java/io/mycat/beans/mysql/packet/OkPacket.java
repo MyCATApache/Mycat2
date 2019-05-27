@@ -34,9 +34,9 @@ public interface OkPacket {
 
   int setServerStatus(int serverStatus);
 
-  int getOkWarningCount();
+  int getWarningCount();
 
-  void setOkWarningCount(int warningCount);
+  void setWarningCount(int warningCount);
 
   byte[] getOkStatusInfo();
 

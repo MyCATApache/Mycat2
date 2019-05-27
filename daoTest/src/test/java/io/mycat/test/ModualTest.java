@@ -52,7 +52,7 @@ public abstract class ModualTest {
       MycatMonitorCallback callback,
       AsyncTaskCallBack task)
       throws IOException, ExecutionException, InterruptedException {
-    String resourcesPath = ProxyRuntime.getResourcesPath();
+    String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
     Path resolve = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     final CompletableFuture<String> future = new CompletableFuture<>();
