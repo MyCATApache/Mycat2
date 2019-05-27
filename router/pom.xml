@@ -37,6 +37,7 @@
         <groupId>com.yevdo</groupId>
         <artifactId>jwildcard</artifactId>
         <version>1.4</version>
+      <scope>test</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/junit/junit -->
     <dependency>
