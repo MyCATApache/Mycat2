@@ -105,7 +105,7 @@ public abstract class MySQLDatasource {
   public abstract boolean isAlive();
 
   public String getName() {
-    return this.datasourceConfig.getHostName();
+    return this.datasourceConfig.getName();
   }
 
   public String getIp() {

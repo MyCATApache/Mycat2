@@ -27,7 +27,8 @@ import java.util.Objects;
  * @author: gaozhiwen
  */
 public class DatasourceConfig {
-    private String hostName;
+
+    private String name;
     private String ip;
     private int port;
     private String user;
@@ -52,7 +53,7 @@ public class DatasourceConfig {
                    maxCon == that.maxCon &&
                    minCon == that.minCon &&
                    maxRetryCount == that.maxRetryCount &&
-                   Objects.equals(hostName, that.hostName) &&
+                   Objects.equals(name, that.name) &&
                    Objects.equals(ip, that.ip) &&
                    Objects.equals(user, that.user) &&
                    Objects.equals(password, that.password) &&
@@ -63,16 +64,16 @@ public class DatasourceConfig {
     @Override
     public int hashCode() {
         return Objects
-                   .hash(hostName, ip, port, user, password, maxCon, minCon, maxRetryCount, dbType,
+                   .hash(name, ip, port, user, password, maxCon, minCon, maxRetryCount, dbType,
                        url);
     }
 
-    public String getHostName() {
-        return hostName;
+    public String getName() {
+        return name;
     }
 
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getIp() {

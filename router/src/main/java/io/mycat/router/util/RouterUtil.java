@@ -1,8 +1,5 @@
 package io.mycat.router.util;
 
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.druid.wall.spi.WallVisitorUtils;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -552,53 +549,4 @@ public class RouterUtil {
                || tableName.startsWith("PERFORMANCE_SCHEMA.");
 
   }
-
-	/**
-	 * 判断条件是否永真
-	 * @param expr
-	 * @return
-	 */
-	public static boolean isConditionAlwaysTrue(SQLExpr expr) {
-		Object o = WallVisitorUtils.getValue(expr);
-    return Boolean.TRUE.equals(o);
-  }
-
-	/**
-	 * 判断条件是否永假的
-	 * @param expr
-	 * @return
-	 */
-	public static boolean isConditionAlwaysFalse(SQLExpr expr) {
-		Object o = WallVisitorUtils.getValue(expr);
-    return Boolean.FALSE.equals(o);
-  }
-
-	/**
-	 * 寻找joinKey的索引
-	 *
-	 * @param columns
-	 * @param joinKey
-	 * @return -1表示没找到，>=0表示找到了
-	 */
-	private static int getJoinKeyIndex(List<SQLExpr> columns, String joinKey) {
-		for (int i = 0; i < columns.size(); i++) {
-			String col = StringUtil.removeBackquote(columns.get(i).toString()).toUpperCase();
-			if (col.equals(joinKey)) {
-				return i;
-			}
-		}
-		return -1;
-	}
-
-	/**
-	 * 是否为批量插入：insert into ...values (),()...或 insert into ...select.....
-	 *
-	 * @param insertStmt
-	 * @return
-	 */
-	private static boolean isMultiInsert(MySqlInsertStatement insertStmt) {
-		return (insertStmt.getValuesList() != null && insertStmt.getValuesList().size() > 1)
-				|| insertStmt.getQuery() != null;
-	}
-
 }

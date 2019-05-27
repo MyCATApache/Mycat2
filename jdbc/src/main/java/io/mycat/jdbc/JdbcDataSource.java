@@ -107,6 +107,6 @@ public class JdbcDataSource {
   }
 
   public String getName() {
-    return  datasourceConfig.getHostName();
+    return datasourceConfig.getName();
   }
 }

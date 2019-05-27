@@ -3,8 +3,8 @@ replicas:
     repType: MASTER_SLAVE           # 复制类型
     switchType: SWITCH              # 切换类型
     balanceName: BalanceAllRead   # 读写分离类型
-    mysqls:            
-      - hostName: mytest3306              # mysql 主机名
+    mysqls:
+      - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
         port: 3306                  # port
         user: root                  # 用户名
@@ -12,7 +12,7 @@ replicas:
         minCon: 1                   # 最小连接
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
-      - hostName: jdbcMysql              # mysql 主机名
+      - name: jdbcMysql              # mysql 主机名
         ip: 127.0.0.1               # i
         port: 3306                  # port
         user: root                  # 用户名
