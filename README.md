@@ -8,63 +8,71 @@ the kinds of configuration that don't changed frequently.
 
 ### mycat
 
-#### ip
+- #### ip
+
 
 the ip of mycat server 
 
-#### port
+- #### port
+
 
 the port of mycat server 
 
-### replicas
+- ### replicas
+
 
 a replica treated as a consistent mysql internal load balancing.
 
-#### replica -name
+- #### replica -name
+
 
 the the name of replica that can be reference by data node config in schema config
 
-#### repType
+- #### repType
+
 
 type of replica:x:
 
-#### balanceName
+- #### balanceName
+
 
 reference load balance name that be in plug config
 
-#### mysqls
+- #### mysqls
+
 
 configure multiple mysql connection config
 
-#### datasource-mysql
+#### mysqls-mysql
 
-##### name
+- ###### name
 
-the the name of mysql connection info
+  the the name of mysql connection info
 
-##### ip
+- ###### ip
 
-the ip of mysql server 
+  the ip of mysql server 
 
-##### port
+- ###### port
 
-the port of mysql server 
+  the port of mysql server 
 
-##### user
+- ###### user
 
-username of mysql user
+  username of mysql user
 
-##### password
+- ###### password
 
-password of mysql user
+  password of mysql user
 
-##### minCon
+- ###### minCon
 
-the number of init mysql connection
+  the number of init mysql connection
 
-##### maxCon
+- ###### maxCon
 
-the number of limit mysql connection
+  the number of limit mysql connection
+
 
 
 
@@ -88,15 +96,41 @@ when the master node switches, the number changes to new master index
 
 ### schema
 
-schema
+#### abstract
 
-a logic schema 
+- ##### schema
 
-table,dataNode
+A logic schema in mycat that represents how different tables are organized.
+
+NOTE:A client only send sql or initDb command to switch it and mycat do not support SQL that contains schema.
 
 
 
-##### 
+- ###### DB IN ONE SERVER
+
+  All table are in same mysql server.It routes SQL by  current schema in mycat session not based on SQL.
+
+- 
+
+
+
+
+
+- ##### table
+
+a logic table in mycat.
+
+Generally, its name is unique in all schemas. When SQL is received, mycat can route it and process according to that name.
+
+- ##### dataNode
+
+In MySQL connection,a dataNode is a meta data, a connection with a current schema that as session info.
+
+That's why you can only use one schema to access MySQL server once with dataNode by a SQL without schema .
+
+#### cconfiguration 
+
+
 
 
 
