@@ -96,7 +96,7 @@ when the master node switches, the number changes to new master index
 
 ### schema
 
-#### abstract
+#### router abstract
 
 - ##### schema
 
@@ -167,7 +167,7 @@ a logic table in mycat.Corresponding to the table on the mysql server, we call i
 
   - GLOBAL:x:
 
-    Except DB IN ONE SERVER or DB IN MULTI SERVER,it routes a sql to a data node.Global table routes a update SQL to multiple dataNode and query SQL by loading balance.Copy consistency is required here.
+    Except DB IN ONE SERVER or DB IN MULTI SERVER,it routes a sql to a data node.Global table routes a update SQL to multiple dataNode and query SQL by loading balance.Consistency is required here.
 
 
 
@@ -277,9 +277,11 @@ When front client has the following status,proxy should hold the backend client 
 
 Generally,for isolation complexity to test proxy separately.
 
+### Multi packet repsonse
 
+a command request ,a ok packet or error packet
 
-### Multi packet request
+### A Request Payload in Multi packet 
 
 When the length of a SQL is exceeding 16MB,proxy must correctly reveive  it and send it to backend mysql server.Similarly,if proxy support send long (blob)  data command or load data infile,should test them.
 
@@ -289,7 +291,7 @@ so we prepare request as follow
 - a insert sql with blob prepare parameter to send long data
 - load data file 
 
-### Multi packet response
+### A  Response Payload in Multi packet 
 
 When the length of a row packet of result set is exceeding 16MB,proxy must correctly reveive it from backend mysql server and maybe swap it to client during direct exchanging data in a net buffer .
 
@@ -312,8 +314,6 @@ Said above the multi satement SQL,prepare statement execute return multi binary 
 so we prepare request as follow
 
 - a query SQL cantains query multi statement and update statement. by prepare statement.
-
-
 
 ### Session status synchronization
 
@@ -363,63 +363,187 @@ we rename test1,test2,test3...
 
 travelrecord1,travelrecord2,travelrecord3...
 
-### mycat proxy configuration 
 
-```yaml
-#replicas.yaml
-replicas:
-  - name: repli                      # 复制组 名称   必须唯一
-    repType: MASTER_SLAVE           # 复制类型
-    switchType: SWITCH              # 切换类型
-    balanceName: BalanceAllRead   # do not care
-    mysqls:
-      - name: mytest3306              # mysql 主机名
-        ip: 127.0.0.1               # i
-        port: 3306                  # port
-        user: root                  # 用户名
-        password:        123456     # 密码
-        minCon: 1                   # 最小连接
-        maxCon: 1000                  # 最大连接
-        maxRetryCount: 3            # 连接重试次数
-      - name: jdbcMysql              # mysql 主机名
-        ip: 127.0.0.1               # i
-        port: 3306                  # port
-        user: root                  # 用户名
-        password:        123456     # 密码
-        minCon: 1                   # 最小连接
-        maxCon: 1000                  # 最大连接
-        maxRetryCount: 3            # 连接重试次数
-        dbType: jdbcMysql
-        url: jdbc:mysql://localhost:8066/test
+
+maybe set mysql config
+
+```sql
+SET GLOBAL time_zone='xxx';//SET GLOBAL time_zone='+8:00';`
+SET GLOBAL max_connections= 20000;
+SET GLOBAL max_allowed_packet = 2*10*1024*1024;//to test multi packet
 ```
 
 
 
 
 
+### mycat proxy configuration 
+
+the test cares mysql proxy instead of strategy which a function has nothing to do with network data
+
+```yaml
+#replicas.yaml
+replicas:
+  - name: repli                   # 
+    repType: MASTER_SLAVE         # do not care
+    switchType: SWITCH            # do not care
+    balanceName: BalanceAllRead   # do not care
+    mysqls:
+      - name: mytest3306             
+        ip: 127.0.0.1               #
+        port: 3306                  # 
+        user: root                  # 
+        password: 123456     		# 
+        minCon: 1                   # do not care
+        maxCon: 1000                # do not care
+        maxRetryCount: 3            # do not care
+      - name: mytest3307            
+        ip: 127.0.0.1               # 
+        port: 3307                  # 
+        user: root                  # 
+        password: 123456     		# 
+        minCon: 1                   # do not care
+        maxCon: 1000                # do not care
+        maxRetryCount: 3            # do not care
+```
+
+```yaml
+#schema.yml
+schemas:
+  - name: test
+    schemaType: DB_IN_ONE_SERVER
+    defaultDataNode: dn1
+    tables:
+      - name: travelrecord
+dataNodes:
+  - name: dn1
+    database: db1
+    replica: repli
+```
+
+The above is the simplest configuration to test the proxy about router
+
+```yaml
+#users.yaml
+users:
+  - name: root
+    password: 123456
+    schemas:
+      - test
+```
+
+```yaml
+#mycat.yaml
+proxy:
+  ip: 0.0.0.0
+  port: 8066
+  bufferPoolPageSize: 4194304     # do not care
+  bufferPoolChunkSize: 8192       # default
+  bufferPoolPageNumber: 2        # default
+  reactorNumber: 6        # default
+```
+
+### exception 
+
+1. #### reveive data exception from client
+
+   close backend mysql session if it exists
+
+   close mycat session
+
+2. ### write data from proxy to backend mysql server  exception 
+
+   option 1(default):
+
+   close backend mysql session
+
+   send a error packet to client
+
+   
+
+   option 2:
+
+   set a counter 
+
+   close backend mysql session
+
+   get a new backend mysql session
+
+   until write succeessfully or datasource is died or other excpetion
+
+   
+
+   option 3:
+
+   close mycat session(client reveice)
+
+   close mycat session
+
+3. #### reveive data from backend mysql server exception 
+
+   option 1(default):
+
+   close backend mysql session
+
+   send a error packet to client
+
+   
+
+   option 2:
+
+   set a counter 
+
+   close backend mysql session
+
+   get a new backend mysql session
+
+   until write succeessfully or datasource is died or other excpetion
+
+   
+
+   option 3:
+
+   close backend mysql session
+
+   close mycat session
+
+4. #### write data to client exception 
+
+   close backend mysql session
+
+   close mycat session
 
 
-should check the exception in cases:
+
+### Platform validation
+
+mysql client (most jdbc) 
+
+mysql server 5.5/5.6/5.7/8
 
 
 
-these sql should be processed in proxy
+### Testing process(temporary)
 
-SET autocommit = {1|0};
-SET names {charset};
-SET character_set_results  = {charset};
-SET SESSION TRANSACTION ISOLATION LEVEL {isolation};//only support
-USE {schema};
+startup mycat 
 
+client connects mycat and get a connection 
 
+client sends a SQL whose length is  exceeding 16MB
 
+client sends a SQL whitch querys a result set contains a row  exceeding 16MB
 
+client sends multi statements in a SQL contains query statement and update statement
 
-Test on two MySQL physical servers  named mysql3306,mysql3307,so the datasouce configuration  as follow.
+ client sends multi statements in a SQL contains query statement and update statement by preparement
 
+ client sends begin statement,mycat can not unbind the backend mysql session
 
+ client sends any statement,mycat can not unbind the backend mysql session until commit or rollback
 
+ client sends multi result store procedure without parameters (because not support   preparestatement with parameters   yet):x:
 
+ mycat as client sends load data infile:x:
 
 
 
