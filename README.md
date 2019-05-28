@@ -2,24 +2,40 @@
 
 Proxy-centric high-performance MySQL Middleware.
 
-## advantage
+## Advantage
 
-1. exchange data using a fixed-size network buffer as a  streaming proxy from backend to front called passthrough.
+1. exchange data using a fixed-size network buffer as a  streaming proxy from backend to front that called passthrough.
 2. may be as another asynchronous client  of mysql
 3. may be as another mysql server framework
 
-##  some limits of functions
+## Some limits of functions
 
 - passthrough can not run on the backend under compression protocol,because payload  must decompression.
 - still working hard to develop...
 
+## Roadmap
+
+### First stage of development
+
+Develop a mysql high-performance proxy that simply parses the request and forwards the response. 
+
+Mycat proxy does not handle complex requests that will be implemented in the second phase of development.
+
+### Second stage of development
+
+Implement more router and part of the database function in Mycat node. Mycat proxy forwards the response of Mycat node to the client.
 
 
-## configuration 
+
+
+
+
+
+## Configuration 
 
 the kinds of configuration that don't changed frequently.
 
-### mycat
+### mycat config
 
 - #### ip
 
@@ -89,7 +105,7 @@ configure multiple mysql connection config
 
 
 
-### masterIndexes
+### masterIndexes config
 
 datasource switch record index
 
@@ -107,7 +123,7 @@ when the master node switches, the number changes to new master index
 
 
 
-### schema
+### schema config
 
 #### router abstract
 
