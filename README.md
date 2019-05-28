@@ -2,6 +2,19 @@
 
 Proxy-centric high-performance MySQL Middleware.
 
+## advantage
+
+1. exchange data using a fixed-size network buffer as a  streaming proxy from backend to front called passthrough.
+2. may be as another asynchronous client  of mysql
+3. may be as another mysql server framework
+
+##  some limits of functions
+
+- passthrough can not run on the backend under compression protocol,because payload  must decompression.
+- still working hard to develop...
+
+
+
 ## configuration 
 
 the kinds of configuration that don't changed frequently.
@@ -129,7 +142,7 @@ NOTE:A client only send sql or initDb command to switch it and mycat do not supp
    In this case,there are some limitations to simplify the annotation routing.
 
    1. The current schema and only a table name in SQL to determine the table.
-   2. If continuous values on multiple data nodes is not supported in mycat proxy.Because It needs to split SQL and merge to process the return result set of multiple nodes. This is not suitable for processing in the proxy.
+   2. If continuous values on multiple data nodes is not supported in mycat proxy.Because It needs to split SQL and merge to process result set of multiple nodes. This is not suitable for processing in the proxy.
 
    
 
@@ -271,17 +284,15 @@ When front client has the following status,proxy should hold the backend client 
 - prepare statement(according to the specific implementation):x:
 - loaddata infile:x:
 
-
-
 ## Proxy Test
 
 Generally,for isolation complexity to test proxy separately.
 
-### Multi packet repsonse
+### Packet parse
 
-a command request ,a ok packet or error packet
+MySQL packet parse designed for proxy.For the row packet,column def packet,not need to receive the complete packet to pass the message data from the backend to the front.
 
-### A Request Payload in Multi packet 
+#### A payload of request  in multi packet 
 
 When the length of a SQL is exceeding 16MB,proxy must correctly reveive  it and send it to backend mysql server.Similarly,if proxy support send long (blob)  data command or load data infile,should test them.
 
@@ -291,13 +302,41 @@ so we prepare request as follow
 - a insert sql with blob prepare parameter to send long data
 - load data file 
 
-### A  Response Payload in Multi packet 
+#### A  payload  response in multi packet 
 
 When the length of a row packet of result set is exceeding 16MB,proxy must correctly reveive it from backend mysql server and maybe swap it to client during direct exchanging data in a net buffer .
 
 so we prepare some data in backend mysql server as follow
 
 - a row data exceeding 16MB
+
+### Multi packet repsonse
+
+#### COMMAND
+
+a ok packet,error packet or eof packet
+
+#### COM_FIELD_LIST 
+
+a column count ,number of column def ,maybe  a eof packet
+
+#### COM_QUERY|COM_STMT_EXECUTE 
+
+1. if the number of row is 0,repsonse is only a ok packet.otherwise,
+2. a result set contains a column count ,column count number of column def ,maybe a eof packet,multi row and end on ok packet or error packet.
+3. if the last ok packet (head 0xfe),its serverstatus marked more result set,response continues on step 1 .
+
+#### COM_STMT_PREPARE 
+
+COM_STMT_PREPARE_OK,num_params  number of column def and num_columns number of column def 
+
+#### LOCAL INFILE Request (from server send to client)
+
+Client and server interact multiple times.
+
+
+
+if the CLIENT_DEPRECATE_EOF in on ,eof packet will be disappeared,so eof packet should not be used as a basis for processing responses.Counting the number of column def  instead of it.
 
 ### Multi statement SQL(Multi text result set)
 
@@ -451,17 +490,15 @@ proxy:
 
    close mycat session
 
-2. ### write data from proxy to backend mysql server  exception 
+2. #### write data from proxy to backend mysql server  exception 
 
-   option 1(default):
+   ##### option 1 send a error packet(default):
 
    close backend mysql session
 
    send a error packet to client
 
-   
-
-   option 2:
+   ##### option 2 retry:
 
    set a counter 
 
@@ -471,37 +508,13 @@ proxy:
 
    until write succeessfully or datasource is died or other excpetion
 
-   
-
-   option 3:
+   ##### option 3 close:
 
    close mycat session(client reveice)
 
    close mycat session
 
 3. #### reveive data from backend mysql server exception 
-
-   option 1(default):
-
-   close backend mysql session
-
-   send a error packet to client
-
-   
-
-   option 2:
-
-   set a counter 
-
-   close backend mysql session
-
-   get a new backend mysql session
-
-   until write succeessfully or datasource is died or other excpetion
-
-   
-
-   option 3:
 
    close backend mysql session
 
@@ -525,25 +538,27 @@ mysql server 5.5/5.6/5.7/8
 
 ### Testing process(temporary)
 
-startup mycat 
+1. startup mycat 
 
-client connects mycat and get a connection 
+2. client connects mycat and get a connection 
 
-client sends a SQL whose length is  exceeding 16MB
+3. client sends a SQL whose length is  exceeding 16MB
 
-client sends a SQL whitch querys a result set contains a row  exceeding 16MB
+4. client sends a SQL whitch querys a result set contains a row  exceeding 16MB
 
-client sends multi statements in a SQL contains query statement and update statement
+5. client sends multi statements in a SQL contains query statement and update statement
 
- client sends multi statements in a SQL contains query statement and update statement by preparement
+6.  client sends multi statements in a SQL contains query statement and update statement by preparement
 
- client sends begin statement,mycat can not unbind the backend mysql session
+7.  client sends begin statement,mycat can not unbind the backend mysql session
 
- client sends any statement,mycat can not unbind the backend mysql session until commit or rollback
+8.  client sends any statement,mycat can not unbind the backend mysql session until commit or rollback
+9.  client sends loadata infile ,mycat can not unbind the backend mysql session until loaddata infile completed:x:
+10.  client sends query statement with cursor,mycat can not unbind the backend mysql session until close cursor:x:
+11.  client sends multi result store procedure without parameters (because not support   preparestatement with parameters   yet):x:
 
- client sends multi result store procedure without parameters (because not support   preparestatement with parameters   yet):x:
+12.  mycat as client sends load data infile:x:
 
- mycat as client sends load data infile:x:
 
 
 
