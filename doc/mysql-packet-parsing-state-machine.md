@@ -1,5 +1,9 @@
 # parsing state machine of mysql packet 
 
+author:junwen 
+
+<a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+
 When we talk about high performance proxy,we think of  keywords such as stream,forward etc.But we rarely find a mysql proxy is to send data that do not need to receive a complete mysql packet-based as unit to send to the client. For example,although mysql  client provide a way to read row data once time,if a row also large it still a problem as same as proxy.So  proxy  maybe provide a way to passthougth data in incomplete packet.
 
 Firstly,a proxy supports connection reuse should judge whether  response  is end and whether connnection is free.Server status marks cursor,more result set and transcation status in OK packet ,EOF packet and COM_STMT_PREPARE_OK .They should be completed best because they help resolve the problem.And then,  Error packet have meaningful error message and it is also the end of response.Column count packet is also a key to count down the number of column def packet. Althouth proxy only need the server status but because they are small length,it simplified read packet completely.
@@ -91,11 +95,5 @@ read payload completely
 
 ```
 until the end packet data of payload is complete.
-```
-
-
-
-```
-
 ```
 
