@@ -39,6 +39,7 @@ import static io.mycat.proxy.packet.MySQLPayloadType.TEXT_ROW;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.EOFPacket;
+import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.OkPacket;
 import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
@@ -343,7 +344,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     int packetId = mySQLPacket.getByte(startIndex + 3) & 0xff;
     int andIncrementPacketId = getPacketId() + 1;
     setPacketId(packetId);
-    boolean multiPacket = length == 0xffffff - 1;
+    boolean multiPacket = length == MySQLPacketSplitter.MAX_PACKET_SIZE;
 
     boolean isFirstPacket = false;
     boolean isEnd = !multiPacket;
@@ -439,12 +440,14 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         }
         int aByte = mySQLPacket.getByte(startIndex + 4) & 0xff;
         setHead(aByte);
-        if (aByte == 0xfe || aByte == 0x00) {
+        setPayloadLength(packetLength);
+        multiPacket = setMultiPacket(packetLength == MySQLPacketSplitter.MAX_PACKET_SIZE);
+
+
+        if (getState()== ComQueryState.RESULTSET_ROW&&!multiPacket &&(aByte == 0xfe)) {//for row end
           return readMySQLPacketFully();
         }
 
-        setPayloadLength(packetLength);
-        multiPacket = setMultiPacket(packetLength == 0xffffff - 1);
         packetLength = packetLength + 4;
         markedResolvePayloadType(false);
         setPacketId(packetId);
