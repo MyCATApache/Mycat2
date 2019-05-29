@@ -5,6 +5,7 @@ import io.mycat.ProxyBeanProviders;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
+import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -45,7 +46,7 @@ public abstract class ModualTest {
   public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
       AsyncTaskCallBack task)
       throws InterruptedException, ExecutionException, IOException {
-    loadModule(module, proxyBeanProviders, MycatMonitorCallback.EMPTY, task);
+    loadModule(module, proxyBeanProviders, new MycatMonitorLogCallback(), task);
   }
 
   public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,

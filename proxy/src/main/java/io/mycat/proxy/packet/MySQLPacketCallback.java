@@ -17,6 +17,7 @@
 package io.mycat.proxy.packet;
 
 import io.mycat.beans.mysql.packet.EOFPacket;
+import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 
@@ -36,7 +37,7 @@ public interface MySQLPacketCallback {
 
   }
 
-  default void onError(MySQLPacket mySQLPacket, int startPos, int endPos) {
+  default void onError(ErrorPacket mySQLPacket) {
 
   }
 
@@ -79,7 +80,7 @@ public interface MySQLPacketCallback {
 
   }
 
-  default void onRowError(MySQLPacket mySQLPacket, int startPos, int endPos) {
+  default void onRowError(ErrorPacket mySQLPacket, int startPos, int endPos) {
 
   }
 

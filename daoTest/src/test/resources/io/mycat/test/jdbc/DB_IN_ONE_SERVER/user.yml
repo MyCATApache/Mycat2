@@ -1,0 +1,5 @@
+users:
+  - name: root
+    password: 123456
+    schemas:
+      - test

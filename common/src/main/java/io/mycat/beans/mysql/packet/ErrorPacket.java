@@ -52,6 +52,9 @@ public interface ErrorPacket {
     void setErrorSqlState(byte[] sqlState);
 
     byte[] getErrorMessage();
+    default String getErrorMessageString(){
+        return new String(getErrorMessage());
+    }
 
     void setErrorMessage(byte[] message);
 

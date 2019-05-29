@@ -1,5 +1,6 @@
 package io.mycat.proxy.callback;
 
+import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 
@@ -11,6 +12,7 @@ public interface ResultSetCallBack<T> extends TaskCallBack<ResultSetCallBack<T>>
 
   void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender, Object attr);
 
+  void onErrorPacket(ErrorPacket errorPacket,boolean monopolize, MySQLClientSession mysql, Object sender, Object attr);
   interface GetTextResultSetTransforCallBack extends
       ResultSetCallBack<GetTextResultSetTransforCallBack> {
 

@@ -32,7 +32,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
           session.sessionId(), serverStatus, hasFatch, hasMoreResult, hasTranscation);
     }
   }
-
+  @Override
   public void onOrginSQL(Session session, String sql) {
     if (record) {
       LOGGER.info("session id:{}  orginSQL:{} ", session.sessionId(), sql);
@@ -46,40 +46,40 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
           new String(payload));
     }
   }
-
+  @Override
   public final void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
     if (recordDump) {
       DumpUtil.printAsHex(view, startIndex, len);
     }
   }
-
+  @Override
   public final void onBackendWrite(Session session, ByteBuffer view, int startIndex,
       int len) {
     if (recordDump) {
       DumpUtil.printAsHex(view, startIndex, len);
     }
   }
-
+  @Override
   public final void onBackendRead(Session session, ByteBuffer view, int startIndex,
       int len) {
     if (recordDump) {
       DumpUtil.printAsHex(view, startIndex, len);
     }
   }
-
+  @Override
   public final void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len) {
     if (recordDump) {
       DumpUtil.printAsHex(view, startIndex, len);
     }
   }
-
+  @Override
   public final void onAllocateByteBuffer(ByteBuffer buffer) {
     if (record) {
       //    Thread.dumpStack();
       LOGGER.debug("{}  {}", MycatMonitorCallback.getSession(), buffer);
     }
   }
-
+  @Override
   public final void onSynchronizationState(MySQLClientSession session) {
     MySQLAutoCommit automCommit = session.isAutomCommit();
     String characterSetResult = session.getCharacterSetResult();
@@ -94,64 +94,64 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
           isolation, charset, automCommit, characterSetResult);
     }
   }
-
+  @Override
   public final void onRecycleByteBuffer(ByteBuffer buffer) {
     if (record) {
       LOGGER.debug("{}  {}", MycatMonitorCallback.getSession(), buffer);
     }
   }
-
+  @Override
   public final void onExpandByteBuffer(ByteBuffer buffer) {
     if (record) {
       LOGGER.debug("{}  {}", MycatMonitorCallback.getSession(), buffer);
     }
   }
-
+  @Override
   public final void onNewMycatSession(MycatSession session) {
     if (record) {
       LOGGER.debug("{}", session);
     }
   }
-
+  @Override
   public final void onBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
     if (record) {
       LOGGER.debug("{} {}", mycat, session);
     }
   }
-
+  @Override
   public final void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
     if (record) {
       LOGGER.debug("{} {}", mycat, session);
     }
   }
-
+  @Override
   public final void onCloseMycatSession(MycatSession session) {
     if (record) {
       LOGGER.debug("{}", session);
     }
   }
-
+  @Override
   public final void onNewMySQLSession(MySQLClientSession session) {
     if (record) {
       LOGGER.debug("sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
   }
-
+  @Override
   public final void onAddIdleMysqlSession(MySQLClientSession session) {
     if (record) {
       LOGGER.debug("sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
   }
-
+  @Override
   public final void onGetIdleMysqlSession(MySQLClientSession session) {
     if (record) {
       LOGGER.debug("sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
   }
-
+  @Override
   public final void onCloseMysqlSession(MySQLClientSession session) {
     if (record) {
       LOGGER.debug("{}", session);

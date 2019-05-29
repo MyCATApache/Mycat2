@@ -1,23 +1,41 @@
+/**
+ * Copyright (C) <2019>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.test.jdbc;
 
 import io.mycat.MycatProxyBeanProviders;
+import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
+import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.test.ModualTest;
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author jamie12221
- *  date 2019-05-19 18:23
+ * @author jamie12221 date 2019-05-19 18:23
  **/
 public class JdbcDao extends ModualTest {
 
@@ -26,55 +44,22 @@ public class JdbcDao extends ModualTest {
 
   @Test
   public void startUp() throws IOException, ExecutionException, InterruptedException {
-    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorCallback() {
-      @Override
-      public void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
-
-      }
-    }, new AsyncTaskCallBack() {
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(), new AsyncTaskCallBack() {
       @Override
       public void onFinished(Object sender, Object future, Object attr) {
-        int count = 80;
-        AsyncTaskCallBackCounter callBackCounter = new AsyncTaskCallBackCounter(count,
-            new AsyncTaskCallBack() {
-              @Override
-              public void onFinished(Object sender, Object result, Object attr) {
-                compelete(future);
-              }
-
-              @Override
-              public void onException(Exception e, Object sender, Object attr) {
-
-              }
-            });
-        for (int i = 0; i < count; i++) {
-          int index = i;
-          new Thread(() -> {
-            try (Connection connection = getConnection()) {
-              LOGGER.debug("connectId:{}", index);
-              for (int j = 0; j < 500; j++) {
-                LOGGER.debug("per:{}", j);
-                try (
-                    Statement statement = connection.createStatement()
-                ) {
-                  connection.setAutoCommit(false);
-                  connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-
-                  connection.createStatement().execute("select 1");
-                  connection.commit();
-                }
-
-              }
-
-            } catch (Exception e) {
-              LOGGER.error("{}", e);
-              callBackCounter.onCountFail();
-              return;
-            }
-            callBackCounter.onCountSuccess();
-          }).start();
-
+        // successful
+        try (Connection connection = getConnection()) {
+          Statement statement = connection.createStatement();
+          int length = MySQLPacketSplitter.MAX_PACKET_SIZE + 128;
+          StringBuilder largeSQLBuilder = new StringBuilder();
+          String collect = IntStream.range(0, length).mapToObj(i->"1").collect(Collectors.joining());
+         String sql = largeSQLBuilder.append("select ").append(collect).append(";").toString();
+          ResultSet resultSet = statement.executeQuery(sql);
+          System.out.println(resultSet);
+        } catch (Exception e) {
+          e.printStackTrace();
         }
+        System.out.println("+=================");
       }
 
       @Override
@@ -82,6 +67,37 @@ public class JdbcDao extends ModualTest {
 
       }
     });
+  }
+
+  private void perTest(int count, AsyncTaskCallBackCounter callBackCounter) {
+    for (int i = 0; i < count; i++) {
+      int index = i;
+      new Thread(() -> {
+        try (Connection connection = getConnection()) {
+          LOGGER.debug("connectId:{}", index);
+          for (int j = 0; j < 500; j++) {
+            LOGGER.debug("per:{}", j);
+            try (
+                Statement statement = connection.createStatement()
+            ) {
+              connection.setAutoCommit(false);
+              connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+              connection.createStatement().execute("select 1");
+              connection.commit();
+            }
+
+          }
+
+        } catch (Exception e) {
+          LOGGER.error("{}", e);
+          callBackCounter.onCountFail();
+          return;
+        }
+        callBackCounter.onCountSuccess();
+      }).start();
+
+    }
   }
 
 }

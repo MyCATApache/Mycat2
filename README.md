@@ -423,7 +423,7 @@ travelrecord1,travelrecord2,travelrecord3...
 maybe set mysql config
 
 ```sql
-SET GLOBAL time_zone='xxx';//SET GLOBAL time_zone='+8:00';`
+SET GLOBAL time_zone='+8:00';//maybe set time zone
 SET GLOBAL max_connections= 20000;
 SET GLOBAL max_allowed_packet = 2*10*1024*1024;//to test multi packet
 ```

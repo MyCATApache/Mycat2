@@ -88,15 +88,15 @@ public class MycatCore {
               HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE
                                                             .getConfig(ConfigEnum.HEARTBEAT);
               long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
-              service.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
-                  Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
-                  for (MySQLDataSourceEx datasource : datasourceList) {
-                    datasource.heartBeat();
-                  }
-                }
-              }, 0, period, TimeUnit.SECONDS);
+//              service.scheduleAtFixedRate(new Runnable() {
+//                @Override
+//                public void run() {
+//                  Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
+//                  for (MySQLDataSourceEx datasource : datasourceList) {
+//                    datasource.heartBeat();
+//                  }
+//                }
+//              }, 0, period, TimeUnit.SECONDS);
               startFinished.onFinished(null, null, null);
 
             } catch (Exception e) {

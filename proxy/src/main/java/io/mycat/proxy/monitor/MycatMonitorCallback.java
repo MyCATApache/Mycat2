@@ -7,8 +7,7 @@ import io.mycat.proxy.session.Session;
 import java.nio.ByteBuffer;
 
 /**
- * @author jamie12221
- *  date 2019-05-20 11:32
+ * @author jamie12221 date 2019-05-20 11:32
  **/
 public interface MycatMonitorCallback {
 
@@ -17,6 +16,7 @@ public interface MycatMonitorCallback {
     public void onOrginSQL(Session session, String sql) {
 
     }
+
     @Override
     public void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
 
@@ -44,6 +44,11 @@ public interface MycatMonitorCallback {
 
     @Override
     public void onAllocateByteBuffer(ByteBuffer buffer) {
+
+    }
+
+    @Override
+    public void onSynchronizationState(MySQLClientSession session) {
 
     }
 
@@ -97,6 +102,11 @@ public interface MycatMonitorCallback {
     public void onCloseMysqlSession(MySQLClientSession session) {
 
     }
+
+    @Override
+    public void onRoute(Session session, String dataNode, byte[] payload) {
+
+    }
   };
 
   static MycatReactorThread getThread() {
@@ -122,63 +132,37 @@ public interface MycatMonitorCallback {
     }
   }
 
-  default void onOrginSQL(Session session, String sql) {
+  void onOrginSQL(Session session, String sql);
 
-  }
-  default void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
-  }
+  void onFrontRead(Session session, ByteBuffer view, int startIndex, int len);
 
-  default void onBackendWrite(Session session, ByteBuffer view, int startIndex,
-      int len) {
-  }
+  void onBackendWrite(Session session, ByteBuffer view, int startIndex,
+      int len);
 
-  default void onBackendRead(Session session, ByteBuffer view, int startIndex,
-      int len) {
-  }
+  void onBackendRead(Session session, ByteBuffer view, int startIndex,
+      int len);
 
-  default void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len) {
-  }
+  void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len);
 
-  default void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
-  }
+  void onMySQLSessionServerStatusChanged(Session session, int serverStatus);
 
-  default void onAllocateByteBuffer(ByteBuffer buffer) {
-  }
+  void onAllocateByteBuffer(ByteBuffer buffer);
 
-  default void onSynchronizationState(MySQLClientSession session) {
-  }
+  void onSynchronizationState(MySQLClientSession session) ;
+  void onRecycleByteBuffer(ByteBuffer buffer) ;
+  void onExpandByteBuffer(ByteBuffer buffer);
 
-  default void onRecycleByteBuffer(ByteBuffer buffer) {
-  }
+  void onNewMycatSession(MycatSession session);
 
-  default void onExpandByteBuffer(ByteBuffer buffer) {
-  }
+  void onBindMySQLSession(MycatSession mycat, MySQLClientSession session);
 
-  default void onNewMycatSession(MycatSession session) {
-  }
+  void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) ;
+  void onCloseMycatSession(MycatSession session) ;
+  void onNewMySQLSession(MySQLClientSession session) ;
+  void onAddIdleMysqlSession(MySQLClientSession session) ;
+  void onGetIdleMysqlSession(MySQLClientSession session) ;
 
-  default void onBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
-  }
+  void onCloseMysqlSession(MySQLClientSession session);
 
-  default void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
-  }
-
-  default void onCloseMycatSession(MycatSession session) {
-  }
-
-  default void onNewMySQLSession(MySQLClientSession session) {
-  }
-
-  default void onAddIdleMysqlSession(MySQLClientSession session) {
-  }
-
-  default void onGetIdleMysqlSession(MySQLClientSession session) {
-  }
-
-  default void onCloseMysqlSession(MySQLClientSession session) {
-  }
-
-  default void onRoute(Session session, String dataNode, byte[] payload) {
-
-  }
+  void onRoute(Session session, String dataNode, byte[] payload) ;
 }

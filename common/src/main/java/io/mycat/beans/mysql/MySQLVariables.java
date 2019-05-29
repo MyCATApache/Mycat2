@@ -29,7 +29,7 @@ public class MySQLVariables {
     variables.put("init_connect", "");//
     variables.put("interactive_timeout", "172800");//
     variables.put("lower_case_table_names", "1");
-    variables.put("max_allowed_packet", "16777216");
+    variables.put("max_allowed_packet", "524288000");
     variables.put("net_buffer_length", "8192");
     variables.put("net_write_timeout", "60");
     variables.put("query_cache_size", "0");

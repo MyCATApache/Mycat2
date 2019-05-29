@@ -304,28 +304,32 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
    */
   default boolean readMySQLPayloadFully() {
     MySQLPacket proxybuffer = currentProxybuffer();
-    boolean lastIsMultiPacket = isMultiPacket();
-    boolean b = readMySQLPacketFully();
-    if (!b) {
-      return false;
+    while (true) {
+      boolean lastIsMultiPacket = isMultiPacket();
+      boolean b = readMySQLPacketFully();
+      if (!b) {
+        return false;
+      }
+      boolean multiPacket = isMultiPacket();
+      int payloadStartIndex = getStartPos() + 4;
+      int payloadEndIndex = getEndPos();
+      System.out.println(proxybuffer);
+      if (!multiPacket && !lastIsMultiPacket) {
+        appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
+        return true;
+      } else if (multiPacket && !lastIsMultiPacket) {
+        appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
+        proxybuffer.packetReadStartIndex(payloadEndIndex);
+        continue;
+      } else if (!multiPacket && lastIsMultiPacket) {
+        appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
+        return true;
+      } else if (multiPacket && lastIsMultiPacket) {
+        appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
+        proxybuffer.packetReadStartIndex(payloadEndIndex);
+        continue;
+      }
     }
-    boolean multiPacket = isMultiPacket();
-    int payloadStartIndex = getStartPos() + 4;
-    int payloadEndIndex = getEndPos();
-    if (!multiPacket && !lastIsMultiPacket) {
-      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
-      return true;
-    } else if (multiPacket && !lastIsMultiPacket) {
-      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
-      return false;
-    } else if (!multiPacket && lastIsMultiPacket) {
-      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
-      return true;
-    } else if (multiPacket && lastIsMultiPacket) {
-      appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
-      return false;
-    }
-    throw new MycatExpection("UNKNOWN STATE");
   }
 
   /**

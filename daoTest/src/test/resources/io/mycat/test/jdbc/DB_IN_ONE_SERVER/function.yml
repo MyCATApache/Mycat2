@@ -1,0 +1,6 @@
+funtions:
+  - clazz: io.mycat.router.function.PartitionByLong
+    name: partitionByLong
+    properties:
+      partitionCount: '4'
+      partitionLength: '256'

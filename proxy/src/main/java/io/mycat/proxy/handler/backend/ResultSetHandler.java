@@ -15,11 +15,13 @@
 package io.mycat.proxy.handler.backend;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.BackendNIOHandler;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -32,8 +34,7 @@ import org.slf4j.LoggerFactory;
 /**
  * 任务类接口 该类实现文本结果集的命令发送以及解析处理
  *
- * @author jamie12221
- *  date 2019-05-13 12:48
+ * @author jamie12221 date 2019-05-13 12:48
  */
 public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
                                               MySQLPacketCallback {
@@ -174,12 +175,14 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       int totalPacketEndIndex = proxyBuffer.channelReadEndIndex();
       MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
       boolean isResponseFinished = false;
+      ErrorPacket errorPacket = null;
       while (mysql.getCurNIOHandler() == this && mysql.readProxyPayloadFully()) {
         MySQLPayloadType type = mysql.getPacketResolver().getMySQLPayloadType();
         isResponseFinished = mysql.isResponseFinished();
         MySQLPacket payload = mysql.currentProxyPayload();
         int startPos = payload.packetReadStartIndex();
         int endPos = payload.packetReadEndIndex();
+
         switch (type) {
           case REQUEST:
             this.onRequest(mySQLPacket, startPos, endPos);
@@ -193,7 +196,9 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
           case REQUEST_COM_STMT_CLOSE:
             break;
           case FIRST_ERROR: {
-            this.onError(mySQLPacket, startPos, endPos);
+           ErrorPacketImpl packet  = new ErrorPacketImpl();
+            errorPacket = packet;
+            packet.readPayload(mySQLPacket);
             break;
           }
           case FIRST_OK:
@@ -226,7 +231,10 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
             this.onRowOk(mySQLPacket, startPos, endPos);
             break;
           case ROW_ERROR:
-            this.onRowError(mySQLPacket, startPos, endPos);
+            ErrorPacketImpl packet = new ErrorPacketImpl();
+            errorPacket = packet;
+            packet.readPayload(mySQLPacket);
+            this.onRowError(packet, startPos, endPos);
             break;
           case PREPARE_OK:
             this.onPrepareOk(resolver);
@@ -258,7 +266,11 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
         mysql.setCallBack(null);
         onFinishedCollect(mysql);
         onClear(mysql);
-        callBackAndReset.onFinished(mysql.isMonopolized(), mysql, this, null);
+        if (errorPacket == null) {
+          callBackAndReset.onFinished(mysql.isMonopolized(), mysql, this, null);
+        } else {
+          callBackAndReset.onErrorPacket(errorPacket, mysql.isMonopolized(), mysql, this, null);
+        }
         return;
       }
     } catch (Exception e) {

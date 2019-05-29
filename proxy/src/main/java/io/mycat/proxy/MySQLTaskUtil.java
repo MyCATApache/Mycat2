@@ -19,6 +19,7 @@ import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.ReplicaTip;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.callback.ResultSetCallBack;
@@ -26,6 +27,8 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.packet.ErrorPacketImpl;
+import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
@@ -109,9 +112,18 @@ public class MySQLTaskUtil {
             String databaseName = dataNode.getDatabaseName();
             String sql =
                 isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
-                    + ";" + "SET names " + charset + ";" + "SET character_set_results = " + (
-                    characterSetResult == null ? "NULL" : characterSetResult);
-            ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
+                    + ";" + "SET names " + charset + ";"
+//                    + "SET character_set_results = " + (
+//                    characterSetResult == null ? "NULL" : characterSetResult)
+
+                ;
+           new  ResultSetHandler(){
+
+             public void onError(MySQLPacket mySQLPacket) {
+               ErrorPacketImpl errorPacket = new ErrorPacketImpl();
+               errorPacket.readPayload(mySQLPacket);
+             }
+           }.request(mysql, MySQLCommandType.COM_QUERY, sql,
                 new ResultSetCallBack<MySQLClientSession>() {
 
                   @Override
@@ -124,6 +136,20 @@ public class MySQLTaskUtil {
                     assert autoCommit == mysql.isAutomCommit();
                     MycatMonitor.onSynchronizationState(mysql);
                     callBack.onSession(mysql, sender, attr);
+                  }
+
+                  @Override
+                  public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
+                      MySQLClientSession mysql, Object sender, Object attr) {
+                    if (monopolize){
+                      String message = "get a monopolize mysql session";
+                      mysql.close(false,message);
+                      callBack.onException(new MycatExpection(message),this,null);
+                      return;
+                    }else {
+                      callBack.onException(new MycatExpection(errorPacket.getErrorMessageString()),this,null);
+                      return;
+                    }
                   }
 
                   @Override

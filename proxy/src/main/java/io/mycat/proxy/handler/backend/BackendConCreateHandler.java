@@ -114,7 +114,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     public void handle(MySQLClientSession mysql) throws Exception {
         ProxyBuffer proxyBuffer = mysql.currentProxyBuffer().newBufferIfNeed();
         int totalPacketEndIndex = proxyBuffer.channelReadEndIndex();
-        if (!mysql.readProxyPayloadFully()) {
+        if(!mysql.readProxyPayloadFully()){
             return;
         }
         MySQLPayloadType payloadType = mysql.getPayloadType();
