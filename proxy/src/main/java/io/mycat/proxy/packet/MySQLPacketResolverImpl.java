@@ -232,9 +232,9 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   @Override
   public final void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex,
       int payloadEndIndex) {
-    if (length < MySQLPacketSplitter.MAX_PACKET_SIZE) {
+    if (getPayloadLength() < MySQLPacketSplitter.MAX_PACKET_SIZE) {
       mySQLPacket.packetReadStartIndex(payloadStartIndex);
-      mySQLPacket.packetReadEndIndex(getEndPos());
+      mySQLPacket.packetReadEndIndex(payloadEndIndex);
       setPayload(mySQLPacket);
     } else {
       if (this.payload == null) {
@@ -247,15 +247,17 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
         payload.currentByteBuffer().put(append);
       } else {
         ProxyBuffer payload = (ProxyBuffer) this.payload;
-        ByteBuffer byteBuffer = payload.currentByteBuffer().duplicate();
+        ByteBuffer byteBuffer = mySQLPacket.currentBuffer().currentByteBuffer();
         int length = payloadEndIndex - payloadStartIndex;
         if (byteBuffer.remaining() <= length) {
           int newLength = (int) ((payload.capacity() + length) * 1.5);
           payload.expendToLength(newLength);
+          payload.currentByteBuffer().limit(newLength);
         }
         byteBuffer.position(payloadStartIndex);
         byteBuffer.limit(payloadEndIndex);
-        payload.currentByteBuffer().put(byteBuffer);
+        ByteBuffer payloadBuffer = payload.currentByteBuffer();
+        payloadBuffer.put(byteBuffer);
       }
     }
   }

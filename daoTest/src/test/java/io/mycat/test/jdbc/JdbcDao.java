@@ -18,18 +18,16 @@ import io.mycat.MycatProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
-import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
-import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.MycatSession;
 import io.mycat.test.ModualTest;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,29 +42,47 @@ public class JdbcDao extends ModualTest {
 
   @Test
   public void startUp() throws IOException, ExecutionException, InterruptedException {
-    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(), new AsyncTaskCallBack() {
-      @Override
-      public void onFinished(Object sender, Object future, Object attr) {
-        // successful
-        try (Connection connection = getConnection()) {
-          Statement statement = connection.createStatement();
-          int length = MySQLPacketSplitter.MAX_PACKET_SIZE + 128;
-          StringBuilder largeSQLBuilder = new StringBuilder();
-          String collect = IntStream.range(0, length).mapToObj(i->"1").collect(Collectors.joining());
-         String sql = largeSQLBuilder.append("select ").append(collect).append(";").toString();
-          ResultSet resultSet = statement.executeQuery(sql);
-          System.out.println(resultSet);
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-        System.out.println("+=================");
-      }
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+        new AsyncTaskCallBack() {
+          @Override
+          public void onFinished(Object sender, Object future, Object attr) {
+            // successful
+            try (Connection connection = getConnection()) {
+              Statement statement = connection.createStatement();
+              int length = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
+              StringBuilder largeSQLBuilder = new StringBuilder();
+              largeSQLBuilder.append("select ");
+              int count = 0;
+              while (true) {
+                if (largeSQLBuilder.length() == length) {
+                  count = 0;
+                }
+                if (largeSQLBuilder.length() == length+1) {
+                  break;
+                }
+                largeSQLBuilder.append(count);
+              }
+              String sql = largeSQLBuilder.toString();
+              try {
+                Files.write(Paths.get("d:/osql.txt"), sql.getBytes(), StandardOpenOption.CREATE);
+              } catch (Throwable e) {
+                e.printStackTrace();
+              }
+              System.out.println("length:" + sql.length());
+              System.out.println(count);
+              ResultSet resultSet = statement.executeQuery(sql);
+              System.out.println(resultSet);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
+            System.out.println("+=================");
+          }
 
-      @Override
-      public void onException(Exception e, Object sender, Object attr) {
+          @Override
+          public void onException(Exception e, Object sender, Object attr) {
 
-      }
-    });
+          }
+        });
   }
 
   private void perTest(int count, AsyncTaskCallBackCounter callBackCounter) {

@@ -250,7 +250,7 @@ public interface MySQLPacket<T extends ProxyBuffer> extends MySQLPayloadReadView
 
   default byte[] getEOFStringBytes(int index) {
     int strLength = packetReadEndIndex() - index;
-    if (strLength < 0) {
+    if (strLength <= 0) {
       return new byte[0];
     }
     return getBytes(index, strLength);

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   protected final static Logger LOGGER = LoggerFactory.getLogger(MycatMonitor.class);
-  final static boolean record = true;
+  final static boolean record = false;
   final static boolean recordDump = false;
 
   @Override

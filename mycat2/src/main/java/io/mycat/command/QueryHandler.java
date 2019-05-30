@@ -45,6 +45,9 @@ import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.security.MycatUser;
 import io.mycat.sqlparser.util.BufferSQLContext;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map.Entry;
@@ -70,6 +73,13 @@ public interface QueryHandler {
     }
     MycatUser user = mycat.getUser();
     String orgin = new String(sqlBytes);
+    long count = orgin.chars().filter(i -> i == '1').count();
+    System.out.println(count);
+    try {
+      Files.write(Paths.get("d:/sql.txt"),sqlBytes, StandardOpenOption.CREATE);
+    }catch (Throwable e){
+      e.printStackTrace();
+    }
     MycatMonitor.onOrginSQL(mycat, orgin);
     orgin = routerConfig.getSqlInterceptor().interceptSQL(orgin);
     BufferSQLContext sqlContext = router().simpleParse(orgin);

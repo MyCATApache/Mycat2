@@ -304,10 +304,10 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
    */
   default boolean readMySQLPayloadFully() {
     MySQLPacket proxybuffer = currentProxybuffer();
+    int endIndex = proxybuffer.packetReadEndIndex();
     while (true) {
       boolean lastIsMultiPacket = isMultiPacket();
-      boolean b = readMySQLPacketFully();
-      if (!b) {
+      if (!readMySQLPacketFully()) {
         return false;
       }
       boolean multiPacket = isMultiPacket();
@@ -320,13 +320,15 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       } else if (multiPacket && !lastIsMultiPacket) {
         appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
         proxybuffer.packetReadStartIndex(payloadEndIndex);
+        proxybuffer.packetReadEndIndex(endIndex);
         continue;
       } else if (!multiPacket && lastIsMultiPacket) {
         appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
         return true;
       } else if (multiPacket && lastIsMultiPacket) {
         appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
-        proxybuffer.packetReadStartIndex(payloadEndIndex);
+        proxybuffer.packetReadStartIndex( payloadEndIndex);
+        proxybuffer.packetReadEndIndex(endIndex);
         continue;
       }
     }
