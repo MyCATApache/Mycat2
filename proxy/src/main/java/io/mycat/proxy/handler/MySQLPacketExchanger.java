@@ -117,7 +117,8 @@ public enum MySQLPacketExchanger {
     }
     proxyBuffer.channelWriteStartIndex(startIndex);
     proxyBuffer.channelWriteEndIndex(endPos);
-    mysql.getMycatSession().writeToChannel();
+    MycatSession mycatSession = mysql.getMycatSession();
+    mycatSession.writeToChannel();
 
     return;
   }
@@ -137,12 +138,12 @@ public enum MySQLPacketExchanger {
 
   private boolean onFrontWriteFinished(MycatSession mycat) {
     MySQLClientSession mysql = mycat.getMySQLSession();
-    if (mysql.isResponseFinished()) {
+    ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
+    if (proxyBuffer.channelWriteFinished()&&mysql.isResponseFinished()) {
       mycat.change2ReadOpts();
       return true;
     } else {
       mysql.change2ReadOpts();
-      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
       int writeEndIndex = proxyBuffer.channelWriteEndIndex();
       proxyBuffer.channelReadStartIndex(writeEndIndex);
       return false;
@@ -259,12 +260,14 @@ public enum MySQLPacketExchanger {
     @Override
     public void writeToChannel(MycatSession mycat) throws IOException {
       try {
+        mycat.getMySQLSession().clearReadWriteOpts();
         ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
         int oldIndex = proxyBuffer.channelWriteStartIndex();
+        int endIndex = proxyBuffer.channelWriteEndIndex();
         proxyBuffer.writeToChannel(mycat.channel());
 
         MycatMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
-            proxyBuffer.channelReadEndIndex());
+            endIndex-oldIndex);
         mycat.updateLastActiveTime();
 
         if (!proxyBuffer.channelWriteFinished()) {

@@ -1,5 +1,6 @@
 package io.mycat.proxy.monitor;
 
+import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
@@ -21,6 +22,12 @@ public interface MycatMonitorCallback {
     public void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
 
     }
+
+    @Override
+    public void onPayloadType(Session session, MySQLPayloadType type) {
+
+    }
+
 
     @Override
     public void onBackendWrite(Session session, ByteBuffer view, int startIndex, int len) {
@@ -135,7 +142,9 @@ public interface MycatMonitorCallback {
   void onOrginSQL(Session session, String sql);
 
   void onFrontRead(Session session, ByteBuffer view, int startIndex, int len);
-
+  void onPayloadType(Session session, MySQLPayloadType type
+      //,ByteBuffer view, int startIndex, int len
+  );
   void onBackendWrite(Session session, ByteBuffer view, int startIndex,
       int len);
 

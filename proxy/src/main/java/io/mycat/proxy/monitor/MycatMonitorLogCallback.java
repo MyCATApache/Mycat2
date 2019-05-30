@@ -4,11 +4,21 @@ import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.packet.MySQLPacketResolver;
+import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
 import io.mycat.util.DumpUtil;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,8 +28,9 @@ import org.slf4j.LoggerFactory;
 public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   protected final static Logger LOGGER = LoggerFactory.getLogger(MycatMonitor.class);
-  final static boolean record = false;
+  final static boolean record = true;
   final static boolean recordDump = false;
+  final static boolean onSQL = false;
 
   @Override
   public void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
@@ -34,24 +45,46 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   }
   @Override
   public void onOrginSQL(Session session, String sql) {
-    if (record) {
+    if (onSQL) {
       LOGGER.info("session id:{}  orginSQL:{} ", session.sessionId(), sql);
     }
   }
 
   @Override
   public void onRoute(Session session, String dataNode, byte[] payload) {
-    if (record) {
-      LOGGER.info("session id:{} dataNode:{}  payload:{} ", session.sessionId(), dataNode,
-          new String(payload));
+    if (onSQL) {
+      LOGGER.info("session id:{} dataNode:{}  payload:{} ", session.sessionId(), dataNode, new String(payload));
     }
   }
+static SeekableByteChannel bufferedWriter;
+  static {
+    try {
+       bufferedWriter = Files.newByteChannel(new File("d:/sql.txt").toPath(), StandardOpenOption.WRITE);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
   @Override
   public final void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
-    if (recordDump) {
-      DumpUtil.printAsHex(view, startIndex, len);
+//    if (recordDump) {
+//      DumpUtil.printAsHex(view, startIndex, len);
+//    }
+    ByteBuffer duplicate = view.duplicate();
+    duplicate.position(startIndex);
+    duplicate.limit(startIndex+len);
+    try {
+      bufferedWriter.write(duplicate);
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
+
+  @Override
+  public void onPayloadType(Session session, MySQLPayloadType type) {
+    LOGGER.info("session id:{} payload:{} ", session.sessionId(),type);
+  }
+
   @Override
   public final void onBackendWrite(Session session, ByteBuffer view, int startIndex,
       int len) {

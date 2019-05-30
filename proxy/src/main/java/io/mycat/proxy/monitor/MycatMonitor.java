@@ -2,6 +2,7 @@ package io.mycat.proxy.monitor;
 
 import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
 
+import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
@@ -9,8 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
- * @author jamie12221
- *  date 2019-05-14 11:51
+ * @author jamie12221 date 2019-05-14 11:51
  **/
 public final class MycatMonitor {
 
@@ -28,9 +28,19 @@ public final class MycatMonitor {
     Objects.requireNonNull(packet);
     callback.onRoute(session, dataNode, packet);
   }
+
   public static void setCallback(MycatMonitorCallback callback) {
     Objects.requireNonNull(callback);
     MycatMonitor.callback = callback;
+  }
+
+  public static void onPayloadType(Session session, MySQLPayloadType type
+//      , ByteBuffer view,
+//      int startIndex, int len
+  ) {
+    callback.onPayloadType(session,type
+//        , view, startIndex, len
+    );
   }
 
   public final static void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
@@ -58,6 +68,7 @@ public final class MycatMonitor {
   public final static void onSynchronizationState(MySQLClientSession session) {
     callback.onSynchronizationState(session);
   }
+
   public final static void onAllocateByteBuffer(ByteBuffer buffer) {
     callback.onAllocateByteBuffer(buffer);
   }

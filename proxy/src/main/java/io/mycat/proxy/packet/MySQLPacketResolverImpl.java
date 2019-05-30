@@ -65,6 +65,8 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   @Override
   public final void setMySQLPayloadType(MySQLPayloadType type) {
     this.mySQLPacketProcessType = type;
+    MycatMonitor.onPayloadType(session,type);
+
   }
 
   @Override

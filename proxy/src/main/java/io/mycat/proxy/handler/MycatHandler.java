@@ -16,6 +16,7 @@ package io.mycat.proxy.handler;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
+import java.nio.channels.SelectionKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +62,9 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
   @Override
   public void onSocketWrite(MycatSession mycat) {
     try {
-      mycat.writeToChannel();
+      if ((mycat.getChannelKey().interestOps()& SelectionKey.OP_WRITE)!=0){
+        mycat.writeToChannel();
+      }
     } catch (Exception e) {
       onClear(mycat);
       mycat.close(false, e);

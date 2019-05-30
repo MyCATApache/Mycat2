@@ -70,19 +70,27 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   }
 
   public void change2ReadOpts() {
-    if (!channelKey.isReadable()) {
+  //  if ((channelKey.interestOps()&SelectionKey.OP_READ)==0) {
       LOGGER.debug("change2ReadOpts");
       channelKey.interestOps(SelectionKey.OP_READ);
-    }
+  //  }
   }
 
   public void change2WriteOpts() {
-    if (!channelKey.isWritable()) {
+  //  if ((channelKey.interestOps()&SelectionKey.OP_WRITE)==0) {
       LOGGER.debug("change2WriteOpts");
       channelKey.interestOps(SelectionKey.OP_WRITE);
-    }
+   // }
   }
+  public void clearReadWriteOpts() {
+    //  if ((channelKey.interestOps()&SelectionKey.OP_WRITE)==0) {
+    LOGGER.debug("clearReadWriteOpts");
+    if (channelKey.interestOps()!=0){
+      channelKey.interestOps(0);
 
+    }
+    // }
+  }
 
   @Override
   public SocketChannel channel() {

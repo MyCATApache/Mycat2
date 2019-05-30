@@ -412,7 +412,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
    */
   default boolean readMySQLPacket() throws IOException {
     MySQLPacket mySQLPacket = currentProxybuffer();
-    boolean needWholePacket = getState().isNeedFull();
+    ComQueryState state = getState();
+    boolean needWholePacket =state.isNeedFull();
     if (needWholePacket && isPayloadFinished()) {
       return readMySQLPacketFully();
     } else {

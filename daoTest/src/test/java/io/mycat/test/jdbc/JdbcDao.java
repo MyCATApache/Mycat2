@@ -63,11 +63,11 @@ public class JdbcDao extends ModualTest {
                 largeSQLBuilder.append(count);
               }
               String sql = largeSQLBuilder.toString();
-              try {
-                Files.write(Paths.get("d:/osql.txt"), sql.getBytes(), StandardOpenOption.CREATE);
-              } catch (Throwable e) {
-                e.printStackTrace();
-              }
+//              try {
+//                Files.write(Paths.get("d:/osql.txt"), sql.getBytes(), StandardOpenOption.CREATE);
+//              } catch (Throwable e) {
+//                e.printStackTrace();
+//              }
               System.out.println("length:" + sql.length());
               System.out.println(count);
               ResultSet resultSet = statement.executeQuery(sql);
@@ -75,7 +75,6 @@ public class JdbcDao extends ModualTest {
             } catch (Exception e) {
               e.printStackTrace();
             }
-            System.out.println("+=================");
           }
 
           @Override
