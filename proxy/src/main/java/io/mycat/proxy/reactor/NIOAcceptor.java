@@ -36,6 +36,8 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NIOAcceptor extends ProxyReactorThread<Session> {
 
+  ServerSocketChannel serverChannel;
+
   public NIOAcceptor(BufferPool bufPool) throws IOException {
     super(bufPool, null);
   }
@@ -45,7 +47,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
     // 接收通道，设置为非阻塞模式
     final SocketChannel socketChannel = serverSocket.accept();
     socketChannel.configureBlocking(false);
-    logger.info(ReactorTip.CLIENT_CONNECTED.getMessage(socketChannel));
+    LOGGER.info(ReactorTip.CLIENT_CONNECTED.getMessage(socketChannel));
     // Mycat fontchannel connect
     accept(reactorEnv, socketChannel);
 
@@ -78,7 +80,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
         throw new MycatExpection("unsupport!");
       }
     } catch (ConnectException ex) {
-      logger.warn(ReactorTip.CONNECT_ERROR.getMessage(curChannel, ex));
+      LOGGER.warn(ReactorTip.CONNECT_ERROR.getMessage(curChannel, ex));
     }
   }
 
@@ -108,7 +110,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
    */
   private void openServerChannel(Selector selector, String bindIp, int bindPort)
       throws IOException {
-    final ServerSocketChannel serverChannel = ServerSocketChannel.open();
+    serverChannel = ServerSocketChannel.open();
     final InetSocketAddress isa = new InetSocketAddress(bindIp, bindPort);
     serverChannel.bind(isa);
     serverChannel.configureBlocking(false);
@@ -118,5 +120,11 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
 
   public Selector getSelector() {
     return this.selector;
+  }
+
+  @Override
+  public void close() throws IOException {
+    serverChannel.close();
+    super.close();
   }
 }

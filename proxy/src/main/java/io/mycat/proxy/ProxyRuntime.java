@@ -160,6 +160,24 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private NIOAcceptor acceptor;
   private MycatReactorThread[] reactorThreads;
 
+  public void exit() {
+    Objects.requireNonNull(acceptor);
+    Objects.requireNonNull(reactorThreads);
+    try {
+      acceptor.close();
+    } catch (IOException e) {
+      LOGGER.error("{}", e);
+    }
+    for (MycatReactorThread reactorThread : reactorThreads) {
+      try {
+        reactorThread.close();
+      } catch (IOException e) {
+        LOGGER.error("{}", e);
+      }
+    }
+
+  }
+
   public void initReactor(ProxyBeanProviders commandHandlerFactory, AsyncTaskCallBack future) {
     Objects.requireNonNull(commandHandlerFactory);
     Objects.requireNonNull(future);

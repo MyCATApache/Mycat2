@@ -20,6 +20,7 @@ import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.session.Session;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -32,16 +33,15 @@ import org.slf4j.LoggerFactory;
 /**
  * Reactor 任务调度,内存资源单位 无论是本线程内还是其他的线程,提交任务只能通过pendingQueue
  *
- * @author jamie12221
- *  date 2019-05-10 13:21
+ * @author jamie12221 date 2019-05-10 13:21
  **/
-public abstract class ProxyReactorThread<T extends Session> extends Thread {
+public abstract class ProxyReactorThread<T extends Session> extends Thread implements Closeable {
 
   /**
    * 定时唤醒selector的时间 1.防止写入事件得不到处理 2.处理pending队列
    */
   protected final static long SELECTOR_TIMEOUT = 100;
-  protected final static Logger logger = LoggerFactory.getLogger(ProxyReactorThread.class);
+  protected final static Logger LOGGER = LoggerFactory.getLogger(ProxyReactorThread.class);
   protected final FrontSessionManager<T> frontManager;
   protected final Selector selector;
   protected final BufferPool bufPool;
@@ -77,7 +77,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
             .acceptNewSocketChannel(keyAttachement, this.bufPool,
                 selector, socketChannel);
       } catch (Exception e) {
-        logger.warn(ReactorTip.REGISTER_NEW_CONNECTION.getMessage(e));
+        LOGGER.warn(ReactorTip.REGISTER_NEW_CONNECTION.getMessage(e));
       }
     });
   }
@@ -100,7 +100,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
       try {
         nioJob.run();
       } catch (Exception e) {
-        logger.error(ReactorTip.PROCESS_NIO_JOB_EEROR.getMessage(e) ,e);
+        LOGGER.error(ReactorTip.PROCESS_NIO_JOB_EEROR.getMessage(e), e);
       }
     }
   }
@@ -154,7 +154,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
   public void run() {
     long ioTimes = 0;
 
-    while (true) {
+    while (!Thread.interrupted()) {
       try {
         selector.select(SELECTOR_TIMEOUT);
         updateLastActiveTime();
@@ -188,7 +188,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
               this.processWriteKey(reactorEnv, key);
             }
           } catch (Exception e) {//如果设置为IOException方便调试,避免吞没其他类型异常
-            logger.error("{}", e);
+            LOGGER.error("{}", e);
             Session curSession = reactorEnv.getCurSession();
             if (curSession != null) {
               NIOHandler curNIOHandler = curSession.getCurNIOHandler();
@@ -203,7 +203,8 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
         }
         keys.clear();
       } catch (Throwable e) {
-        logger.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e),e);
+        LOGGER.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e),
+            e);
       }
     }
   }
@@ -217,5 +218,21 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread {
 
   public long getLastActiveTime() {
     return activeTime;
+  }
+
+  @Override
+  public void close() throws IOException {
+    this.interrupt();
+    for (T s : frontManager.getAllSessions()) {
+      try {
+        frontManager.removeSession(s, true, "close");
+      } catch (Exception e) {
+        LOGGER.error("{}",e);
+      }
+    }
+
+    selector.close();
+
+    //close buffer
   }
 }

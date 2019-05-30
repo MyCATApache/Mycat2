@@ -21,8 +21,7 @@ import java.util.concurrent.Executors;
 import org.junit.Assert;
 
 /**
- * @author jamie12221
- *  date 2019-05-23 16:53
+ * @author jamie12221 date 2019-05-23 16:53
  **/
 public abstract class ModualTest {
 
@@ -44,14 +43,14 @@ public abstract class ModualTest {
   }
 
   public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
-      AsyncTaskCallBack task)
+      TestCallback task)
       throws InterruptedException, ExecutionException, IOException {
     loadModule(module, proxyBeanProviders, new MycatMonitorLogCallback(), task);
   }
 
   public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
       MycatMonitorCallback callback,
-      AsyncTaskCallBack task)
+      TestCallback task)
       throws IOException, ExecutionException, InterruptedException {
     String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
     Path resolve = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module);
@@ -62,13 +61,20 @@ public abstract class ModualTest {
           @Override
           public void onFinished(Object sender, Object result, Object attr) {
             executor.submit(() -> {
-              task.onFinished(null, future, null);
+              try (Connection connection = getConnection()) {
+                task.test(future, connection);
+              } catch (Exception e) {
+                Assert.fail(e.toString());
+              }finally {
+                ProxyRuntime.INSTANCE.exit();
+              }
             });
           }
 
           @Override
           public void onException(Exception e, Object sender, Object attr) {
-            task.onException(e,sender,future);
+            Assert.fail(e.toString());
+            ProxyRuntime.INSTANCE.exit();
           }
 
         });
