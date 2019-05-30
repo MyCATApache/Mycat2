@@ -116,8 +116,21 @@ public class JdbcDao extends ModualTest {
         });
   }
 
+  /**
+   CREATE TABLE `travelrecord` (
+   `id` bigint(20) NOT NULL,
+   `user_id` varchar(100) DEFAULT NULL,
+   `traveldate` date DEFAULT NULL,
+   `fee` decimal(10,0) DEFAULT NULL,
+   `days` int(11) DEFAULT NULL,
+   `blob` longblob DEFAULT NULL
+   ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+   * @throws IOException
+   * @throws ExecutionException
+   * @throws InterruptedException
+   */
   @Test
-  public void BigResultSet()
+  public void bigResultSet()
       throws IOException, ExecutionException, InterruptedException {
     loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         (future, connection) -> {
@@ -127,7 +140,7 @@ public class JdbcDao extends ModualTest {
           byte[] bytes = new byte[0xffffff];
           Arrays.fill(bytes, (byte) 0xff);
           String blob = new String(bytes);
-          for (int i = 0; i < 1000; i++) {
+          for (int i = 0; i < 10; i++) {
             String s1 =
                 "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
                     + "VALUES ('"
@@ -145,7 +158,7 @@ public class JdbcDao extends ModualTest {
                     + "');";
             statement.execute(s1);
           }
-
+          ResultSet resultSet = statement.executeQuery("select * from travelrecord;select * from travelrecord;");
           compelete(future);
         }
     );

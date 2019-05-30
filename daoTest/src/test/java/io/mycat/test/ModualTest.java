@@ -64,6 +64,7 @@ public abstract class ModualTest {
               try (Connection connection = getConnection()) {
                 task.test(future, connection);
               } catch (Exception e) {
+                e.printStackTrace();
                 Assert.fail(e.toString());
               }finally {
                 ProxyRuntime.INSTANCE.exit();
@@ -73,6 +74,7 @@ public abstract class ModualTest {
 
           @Override
           public void onException(Exception e, Object sender, Object attr) {
+            e.printStackTrace();
             Assert.fail(e.toString());
             ProxyRuntime.INSTANCE.exit();
           }
