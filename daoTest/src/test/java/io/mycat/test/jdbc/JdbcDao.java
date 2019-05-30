@@ -134,7 +134,6 @@ public class JdbcDao extends ModualTest {
       throws IOException, ExecutionException, InterruptedException {
     loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         (future, connection) -> {
-          Thread.sleep(10000);
           Statement statement = connection.createStatement();
           statement.execute("truncate travelrecord;");
           byte[] bytes = new byte[0xffffff];
