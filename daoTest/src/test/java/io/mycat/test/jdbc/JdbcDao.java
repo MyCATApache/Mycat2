@@ -16,17 +16,15 @@ package io.mycat.test.jdbc;
 
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
-import io.mycat.test.TestCallback;
 import io.mycat.test.ModualTest;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -41,53 +39,48 @@ public class JdbcDao extends ModualTest {
   final static String DB_IN_ONE_SERVER = "DB_IN_ONE_SERVER";
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDao.class);
 
-  public interface MycatJdbcTest {
-
-    void test(Object future, Connection connection) throws SQLException;
-  }
-
   @Test
   public void startRequestAndReponseWithSplitingPacketWithMultiSatement()
       throws IOException, ExecutionException, InterruptedException {
     loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         (future, connection) -> {
-            Statement statement = connection.createStatement();
-            int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
-            int columnLength = 0xffffff;
-            StringBuilder columnName = new StringBuilder(columnLength);
-            StringBuilder largeSQLBuilder = new StringBuilder();
+          Statement statement = connection.createStatement();
+          int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
+          int columnLength = 0xffffff;
+          StringBuilder columnName = new StringBuilder(columnLength);
+          StringBuilder largeSQLBuilder = new StringBuilder();
 
-            //生成multi packet
-            largeSQLBuilder.append("select ");
-            int count = 1;
-            while (true) {
-              if (largeSQLBuilder.length() == splitPayloadSize) {
-                count++;
-              }
-              if (columnName.length() == columnLength) {
-                break;
-              }
-              columnName.append(count);
+          //生成multi packet
+          largeSQLBuilder.append("select ");
+          int count = 1;
+          while (true) {
+            if (largeSQLBuilder.length() == splitPayloadSize) {
+              count++;
             }
-            String sql = largeSQLBuilder.append(columnName).toString();
-            String value = columnName.toString();
-            ResultSet resultSet = statement.executeQuery(sql + ";" + sql);
-
-            ResultSetMetaData metaData = resultSet.getMetaData();
-            Assert.assertEquals(metaData.getColumnName(1), value);
-            Assert.assertTrue(resultSet.next());
-            String string = resultSet.getString(1);
-
-            Assert.assertTrue(statement.getMoreResults());
-
-            resultSet = statement.getResultSet();
-            Assert.assertTrue(resultSet.next());
-            metaData = resultSet.getMetaData();
-            Assert.assertEquals(metaData.getColumnName(1), value);
-            string = resultSet.getString(1);
-
-            compelete(future);
+            if (columnName.length() == columnLength) {
+              break;
+            }
+            columnName.append(count);
           }
+          String sql = largeSQLBuilder.append(columnName).toString();
+          String value = columnName.toString();
+          ResultSet resultSet = statement.executeQuery(sql + ";" + sql);
+
+          ResultSetMetaData metaData = resultSet.getMetaData();
+          Assert.assertEquals(metaData.getColumnName(1), value);
+          Assert.assertTrue(resultSet.next());
+          String string = resultSet.getString(1);
+
+          Assert.assertTrue(statement.getMoreResults());
+
+          resultSet = statement.getResultSet();
+          Assert.assertTrue(resultSet.next());
+          metaData = resultSet.getMetaData();
+          Assert.assertEquals(metaData.getColumnName(1), value);
+          string = resultSet.getString(1);
+
+          compelete(future);
+        }
     );
   }
 
@@ -121,6 +114,41 @@ public class JdbcDao extends ModualTest {
           String string = resultSet.getString(1);
           compelete(future);
         });
+  }
+
+  @Test
+  public void BigResultSet()
+      throws IOException, ExecutionException, InterruptedException {
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+        (future, connection) -> {
+          Thread.sleep(10000);
+          Statement statement = connection.createStatement();
+          statement.execute("truncate travelrecord;");
+          byte[] bytes = new byte[0xffffff];
+          Arrays.fill(bytes, (byte) 0xff);
+          String blob = new String(bytes);
+          for (int i = 0; i < 1000; i++) {
+            String s1 =
+                "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
+                    + "VALUES ('"
+                    + i
+                    + "', '"
+                    + "1"
+                    + "', '"
+                    + "2019-05-07"
+                    + "', '"
+                    + "1"
+                    + "', '"
+                    + "1"
+                    + "', '"
+                    + blob
+                    + "');";
+            statement.execute(s1);
+          }
+
+          compelete(future);
+        }
+    );
   }
 
   private void perTest(int count, AsyncTaskCallBackCounter callBackCounter) {

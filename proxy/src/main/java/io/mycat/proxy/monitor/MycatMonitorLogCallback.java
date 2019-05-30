@@ -56,28 +56,12 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       LOGGER.info("session id:{} dataNode:{}  payload:{} ", session.sessionId(), dataNode, new String(payload));
     }
   }
-static SeekableByteChannel bufferedWriter;
-  static {
-    try {
-       bufferedWriter = Files.newByteChannel(new File("d:/sql.txt").toPath(), StandardOpenOption.WRITE);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
 
   @Override
   public final void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
 //    if (recordDump) {
 //      DumpUtil.printAsHex(view, startIndex, len);
 //    }
-    ByteBuffer duplicate = view.duplicate();
-    duplicate.position(startIndex);
-    duplicate.limit(startIndex+len);
-    try {
-      bufferedWriter.write(duplicate);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
   }
 
   @Override

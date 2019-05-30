@@ -4,5 +4,5 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public interface TestCallback {
-  void test(Object future, Connection connection) throws SQLException;
+  void test(Object future, Connection connection) throws SQLException, InterruptedException;
 }

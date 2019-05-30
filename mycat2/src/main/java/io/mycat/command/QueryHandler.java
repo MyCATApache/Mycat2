@@ -211,11 +211,23 @@ public interface QueryHandler {
         }
 
         default:
-          if (sqlContext.getSQLType() != 0 & sqlContext.getTableCount() != 1) {
-            mycat.setLastMessage("unsupport sql");
-            mycat.writeErrorEndPacket();
-            return;
+          switch (useSchema.getSchema()) {
+            case DB_IN_ONE_SERVER:
+              MySQLTaskUtil
+                  .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
+                      useSchema.getDefaultDataNode() , false, null, false
+                  );
+              return;
+            case DB_IN_MULTI_SERVER:
+            case ANNOTATION_ROUTE:
+            case SQL_PARSE_ROUTE:
+              if (sqlContext.getSQLType() != 0 & sqlContext.getTableCount() != 1) {
+                mycat.setLastMessage("unsupport sql");
+                mycat.writeErrorEndPacket();
+                return;
+              }
           }
+
           ResultRoute resultRoute = router().enterRoute(useSchema, sqlContext, sql);
           if (resultRoute == null) {
             mycat.writeOkEndPacket();
