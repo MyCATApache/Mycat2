@@ -32,6 +32,7 @@ import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
+import java.nio.channels.SelectionKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,24 +103,24 @@ public enum MySQLPacketExchanger {
   }
 
   private void onBackendResponse(MySQLClientSession mysql) throws IOException {
+    MycatSession mycatSession = mysql.getMycatSession();
     if (!mysql.readFromChannel()) {
       return;
     }
     mysql.setRequestSuccess(true);
-    ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
-    MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
-    MySQLPacketResolver packetResolver = mysql.getPacketResolver();
-    int startIndex = mySQLPacket.packetReadStartIndex();
-    int endPos = startIndex;
-    while (mysql.readPartProxyPayload()) {
-      endPos = packetResolver.getEndPos();
-      mySQLPacket.packetReadStartIndex(endPos);
-    }
-    proxyBuffer.channelWriteStartIndex(startIndex);
-    proxyBuffer.channelWriteEndIndex(endPos);
-    MycatSession mycatSession = mysql.getMycatSession();
-    mycatSession.writeToChannel();
+      ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
+      MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
+      MySQLPacketResolver packetResolver = mysql.getPacketResolver();
+      int startIndex = mySQLPacket.packetReadStartIndex();
+      int endPos = startIndex;
+      while (mysql.readPartProxyPayload()) {
+        endPos = packetResolver.getEndPos();
+        mySQLPacket.packetReadStartIndex(endPos);
+      }
+      proxyBuffer.channelWriteStartIndex(startIndex);
+      proxyBuffer.channelWriteEndIndex(endPos);
 
+      mycatSession.writeToChannel();
     return;
   }
 

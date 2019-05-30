@@ -68,7 +68,7 @@ public abstract class ModualTest {
 
           @Override
           public void onException(Exception e, Object sender, Object attr) {
-            Assert.fail(e.getMessage());
+            task.onException(e,sender,future);
           }
 
         });

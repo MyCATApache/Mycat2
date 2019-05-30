@@ -231,36 +231,54 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
     return (MySQLPacket) session.currentProxyBuffer();
   }
 
+  /**
+   * 保证这个函数不会更改buffer的下标
+   * @param mySQLPacket
+   * @param payloadStartIndex
+   * @param payloadEndIndex
+   */
   @Override
   public final void appendPayload(MySQLPacket mySQLPacket, int payloadStartIndex,
       int payloadEndIndex) {
-    if (getPayloadLength() < MySQLPacketSplitter.MAX_PACKET_SIZE) {
-      mySQLPacket.packetReadStartIndex(payloadStartIndex);
-      mySQLPacket.packetReadEndIndex(payloadEndIndex);
-      setPayload(mySQLPacket);
-    } else {
-      if (this.payload == null) {
-        ProxyBufferImpl payload = new ProxyBufferImpl(mySQLPacket.currentBuffer().bufferPool());
-        this.payload = payload;
-        payload.newBuffer((int) (0xffffff * 1.5));
-        ByteBuffer append = mySQLPacket.currentBuffer().currentByteBuffer().duplicate();
-        append.position(payloadStartIndex);
-        append.limit(payloadEndIndex);
-        payload.currentByteBuffer().put(append);
+    ByteBuffer byteBuffer = mySQLPacket.currentBuffer().currentByteBuffer();
+    int position = byteBuffer.position();
+    int limit = byteBuffer.limit();
+    try {
+      if (getPayloadLength() < MySQLPacketSplitter.MAX_PACKET_SIZE) {
+        mySQLPacket.packetReadStartIndex(payloadStartIndex);
+        mySQLPacket.packetReadEndIndex(payloadEndIndex);
+        setPayload(mySQLPacket);
       } else {
-        ProxyBuffer payload = (ProxyBuffer) this.payload;
-        ByteBuffer byteBuffer = mySQLPacket.currentBuffer().currentByteBuffer();
-        int length = payloadEndIndex - payloadStartIndex;
-        if (byteBuffer.remaining() <= length) {
-          int newLength = (int) ((payload.capacity() + length) * 1.5);
-          payload.expendToLength(newLength);
-          payload.currentByteBuffer().limit(newLength);
+        if (this.payload == null) {
+          ProxyBufferImpl payload = new ProxyBufferImpl(mySQLPacket.currentBuffer().bufferPool());
+          this.payload = payload;
+          payload.newBuffer((int) (0xffffff * 1.5));
+          ByteBuffer append = mySQLPacket.currentBuffer().currentByteBuffer().duplicate();
+          append.position(payloadStartIndex);
+          append.limit(payloadEndIndex);
+          payload.currentByteBuffer().put(append);
+        } else {
+          ProxyBuffer payload = (ProxyBuffer) this.payload;
+          ByteBuffer append = mySQLPacket.currentBuffer().currentByteBuffer();
+          int length = payloadEndIndex - payloadStartIndex;
+          if (payload.currentByteBuffer().remaining() < length) {
+            int newLength = (int) ((payload.capacity() + length) * 1.5);
+            payload.expendToLength(newLength);
+            payload.currentByteBuffer().limit(payload.capacity());
+          }
+          append.position(payloadStartIndex);
+          append.limit(payloadEndIndex);
+
+          try {
+            payload.put(append);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
         }
-        byteBuffer.position(payloadStartIndex);
-        byteBuffer.limit(payloadEndIndex);
-        ByteBuffer payloadBuffer = payload.currentByteBuffer();
-        payloadBuffer.put(byteBuffer);
       }
+    }finally {
+      byteBuffer.position(position);
+      byteBuffer.limit(limit);
     }
   }
 

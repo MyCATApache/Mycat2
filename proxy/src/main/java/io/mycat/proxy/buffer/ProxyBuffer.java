@@ -244,4 +244,6 @@ public interface ProxyBuffer {
    * @return
    */
   int remainsInReading();
+
+  void put(ByteBuffer append);
 }

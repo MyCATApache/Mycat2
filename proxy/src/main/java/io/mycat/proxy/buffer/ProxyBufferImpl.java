@@ -415,6 +415,11 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
     return this.capacity() - readEndIndex;
   }
 
+  @Override
+  public void put(ByteBuffer append) {
+    this.buffer.put(append);
+  }
+
 //    @Override
 //    public void compactOrExpendIfNeedRemainsBytesInReading(int len) {
 //        this.compactInChannelReadingIfNeed();

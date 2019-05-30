@@ -21,13 +21,12 @@ import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import io.mycat.test.ModualTest;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.concurrent.ExecutionException;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +40,8 @@ public class JdbcDao extends ModualTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDao.class);
 
   @Test
-  public void startUp() throws IOException, ExecutionException, InterruptedException {
+  public void startRequestAndReponseWithSplitingPacketWithMultiSatement()
+      throws IOException, ExecutionException, InterruptedException {
     loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         new AsyncTaskCallBack() {
           @Override
@@ -49,37 +49,101 @@ public class JdbcDao extends ModualTest {
             // successful
             try (Connection connection = getConnection()) {
               Statement statement = connection.createStatement();
-              int length = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
+              int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
+              int columnLength = 0xffffff;
+              StringBuilder columnName = new StringBuilder(columnLength);
               StringBuilder largeSQLBuilder = new StringBuilder();
+
+              //生成multi packet
               largeSQLBuilder.append("select ");
-              int count = 0;
+              int count = 1;
               while (true) {
-                if (largeSQLBuilder.length() == length) {
-                  count = 0;
+                if (largeSQLBuilder.length() == splitPayloadSize) {
+                  count++;
                 }
-                if (largeSQLBuilder.length() == length+1) {
+                if (columnName.length() == columnLength) {
                   break;
                 }
-                largeSQLBuilder.append(count);
+                columnName.append(count);
               }
-              String sql = largeSQLBuilder.toString();
-//              try {
-//                Files.write(Paths.get("d:/osql.txt"), sql.getBytes(), StandardOpenOption.CREATE);
-//              } catch (Throwable e) {
-//                e.printStackTrace();
-//              }
-              System.out.println("length:" + sql.length());
-              System.out.println(count);
-              ResultSet resultSet = statement.executeQuery(sql);
-              System.out.println(resultSet);
+              String sql = largeSQLBuilder.append(columnName).toString();
+              String value = columnName.toString();
+              ResultSet resultSet = statement.executeQuery(sql + ";" + sql);
+
+              ResultSetMetaData metaData = resultSet.getMetaData();
+              Assert.assertEquals(metaData.getColumnName(1), value);
+              Assert.assertTrue(resultSet.next());
+              String string = resultSet.getString(1);
+
+              Assert.assertTrue(statement.getMoreResults());
+
+              resultSet = statement.getResultSet();
+              Assert.assertTrue(resultSet.next());
+              metaData = resultSet.getMetaData();
+              Assert.assertEquals(metaData.getColumnName(1), value);
+              string = resultSet.getString(1);
+
+              compelete(future);
             } catch (Exception e) {
               e.printStackTrace();
+              Assert.fail(e.toString());
+              compelete(future);
             }
           }
 
           @Override
           public void onException(Exception e, Object sender, Object attr) {
+            compelete(attr);
+            e.printStackTrace();
+            Assert.fail(e.toString());
+          }
+        });
+  }
 
+  @Test
+  public void startRequestAndReponseWithSplitingPacket()
+      throws IOException, ExecutionException, InterruptedException {
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+        new AsyncTaskCallBack() {
+          @Override
+          public void onFinished(Object sender, Object future, Object attr) {
+            // successful
+            try (Connection connection = getConnection()) {
+              Statement statement = connection.createStatement();
+              int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
+              int columnLength = 1000;
+              StringBuilder columnName = new StringBuilder(columnLength);
+              StringBuilder largeSQLBuilder = new StringBuilder();
+              largeSQLBuilder.append("select ");
+              int count = 1;
+              while (true) {
+                if (largeSQLBuilder.length() == splitPayloadSize) {
+                  count++;
+                }
+                if (columnName.length() == columnLength) {
+                  break;
+                }
+                columnName.append(count);
+              }
+              String sql = largeSQLBuilder.append(columnName).toString();
+              String value = columnName.toString();
+              ResultSet resultSet = statement.executeQuery(sql);
+              ResultSetMetaData metaData = resultSet.getMetaData();
+              Assert.assertEquals(metaData.getColumnName(1), value);
+              Assert.assertTrue(resultSet.next());
+              String string = resultSet.getString(1);
+              compelete(future);
+            } catch (Exception e) {
+              e.printStackTrace();
+              Assert.fail(e.toString());
+              compelete(future);
+            }
+          }
+
+          @Override
+          public void onException(Exception e, Object sender, Object attr) {
+            e.printStackTrace();
+            Assert.fail(e.toString());
           }
         });
   }
