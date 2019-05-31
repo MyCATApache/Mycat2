@@ -1,12 +1,15 @@
 package io.mycat.collector;
 
+import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import java.math.BigDecimal;
+import org.checkerframework.common.value.qual.IntRangeFromPositive;
 
 /**
  * @author jamie12221
  *  date 2019-05-11 14:44 文本结果集收集类
  **/
+@NoExcept
 public interface ResultSetCollector {
 
   void onResultSetStart();

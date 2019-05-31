@@ -10,6 +10,16 @@ import java.nio.channels.ClosedChannelException;
 public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
 
   @Override
+  public void onPacketExchangerRead(Session session) {
+
+  }
+
+  @Override
+  public void onPacketExchangerWrite(Session session) {
+
+  }
+
+  @Override
   public void onShutdownCommandEnd(MycatSession mycat) {
 
   }
@@ -283,12 +293,6 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   public void onMycatHandlerWriteException(Session session, Exception e) {
 
   }
-
-  @Override
-  public void onMycatHandlerExchangerException(Session session, Exception e) {
-
-  }
-
 
   @Override
   public void onCloseMycatSession(MycatSession mycat, boolean normal, String reason) {

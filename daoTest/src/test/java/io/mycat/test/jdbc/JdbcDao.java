@@ -23,6 +23,7 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.AbstractMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
 import io.mycat.test.ModualTest;
@@ -34,6 +35,9 @@ import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import org.checkerframework.checker.units.qual.A;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -239,6 +243,118 @@ public class JdbcDao extends ModualTest {
         }
     );
   }
+  @Test
+  public void onGetBackendExpection()
+      throws IOException, ExecutionException, InterruptedException {
+    Runnable expectMysqlClose = mock(Runnable.class);
+    AbstractMonitorCallback callback = spy(new AbstractMonitorCallback() {
+
+      @Override
+      public void onBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
+        throw new RuntimeException("test exception");
+      }
+      @Override
+      public void onCloseMysqlSession(MySQLClientSession session, boolean noraml, String reson) {
+        expectMysqlClose.run();
+      }
+    });
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, callback,
+        (future) -> {
+          try (Connection connection = getConnection()) {
+            connection.createStatement().execute("select 1");
+          } catch (Exception e) {
+            e.printStackTrace();
+            verify(expectMysqlClose).run();
+          } finally {
+            compelete(future);
+          }
+        }
+    );
+  }
+
+  @Test
+  public void onGetIdleBackendExpection()
+      throws IOException, ExecutionException, InterruptedException {
+    AtomicInteger expectClear = new AtomicInteger(0);
+    AtomicInteger expectClose = new AtomicInteger(0);
+    AbstractMonitorCallback callback = new AbstractMonitorCallback() {
+      MySQLClientSession session;
+      @Override
+      public void onAddIdleMysqlSession(MySQLClientSession session) {
+        Assert.assertNull(this.session);
+        this.session = session;
+        throw new RuntimeException("test exception");
+      }
+
+      @Override
+      public void onCloseMysqlSession(MySQLClientSession session, boolean noraml, String reson) {
+        if (expectClear.get() == 0){
+          Assert.assertSame(this.session, session);
+          expectClear.incrementAndGet();
+        }
+      }
+    };
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, callback,
+        (future) -> {
+          try (Connection connection = getConnection()) {
+            connection.createStatement().execute("select 1");
+          } catch (Exception e) {
+            Assert.assertTrue(expectClear.get()>0);
+            Assert.assertTrue(expectClose.get()>0);
+          } finally {
+            compelete(future);
+          }
+        }
+    );
+  }
+  @Test
+  public void onProxyBackendReadExpection()
+      throws IOException, ExecutionException, InterruptedException {
+    AtomicInteger expectClear = new AtomicInteger(0);
+    AtomicInteger expectClose = new AtomicInteger(0);
+    AbstractMonitorCallback callback = new AbstractMonitorCallback() {
+      Session session;
+
+      @Override
+      public void onPacketExchangerRead(Session session) {
+        Assert.assertNull(this.session);
+        this.session = session;
+        throw new RuntimeException("test exception");
+      }
+
+      @Override
+      public void onPacketExchangerClear(Session session) {
+        if (expectClear.get() == 0){
+          Assert.assertSame(this.session, session);
+          expectClear.incrementAndGet();
+        }
+      }
+
+      @Override
+      public void onCloseMysqlSession(MySQLClientSession session, boolean noraml, String reson) {
+        Assert.assertSame(this.session, session);
+        expectClose.incrementAndGet();
+      }
+
+      @Override
+      public void onCloseMycatSession(MycatSession mycat, boolean normal, String reason) {
+        super.onCloseMycatSession(mycat, normal, reason);
+      }
+    };
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, callback,
+        (future) -> {
+          try (Connection connection = getConnection()) {
+            connection.createStatement().execute("select 1");
+          } catch (Exception e) {
+            Assert.assertTrue(expectClear.get()>0);
+            Assert.assertTrue(expectClose.get()>0);
+          } finally {
+            compelete(future);
+          }
+        }
+    );
+  }
+
   private void perTest(int count, AsyncTaskCallBackCounter callBackCounter) {
     for (int i = 0; i < count; i++) {
       int index = i;

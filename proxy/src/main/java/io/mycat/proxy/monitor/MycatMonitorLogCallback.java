@@ -26,7 +26,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   final static boolean onException = false;
   final static boolean onClear = false;
   final static boolean onCommand = false;
-
+  final static boolean onBackend = false;
   @Override
   public void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
     if (record) {
@@ -178,13 +178,6 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public void onMycatHandlerWriteException(Session session, Exception e) {
-    if (onException) {
-      LOGGER.info("session id:{} exception:{}", session.sessionId(), e);
-    }
-  }
-
-  @Override
-  public void onMycatHandlerExchangerException(Session session, Exception e) {
     if (onException) {
       LOGGER.info("session id:{} exception:{}", session.sessionId(), e);
     }
@@ -766,6 +759,20 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   public void onStatisticsCommandStart(MycatSession mycat) {
     if (onCommand) {
       LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
+
+  @Override
+  public void onPacketExchangerRead(Session session) {
+    if (onBackend) {
+      LOGGER.debug("sessionId:{}", session.sessionId());
+    }
+  }
+
+  @Override
+  public void onPacketExchangerWrite(Session session) {
+    if (onBackend) {
+      LOGGER.debug("sessionId:{}", session.sessionId());
     }
   }
 }

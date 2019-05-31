@@ -182,6 +182,14 @@ public final class MycatMonitor {
     callback.onPacketExchangerException(session, e);
   }
 
+  public final static void onPacketExchangerRead(Session session) {
+    callback.onPacketExchangerRead(session);
+  }
+
+  public final static void onPacketExchangerWrite(Session session) {
+    callback.onPacketExchangerWrite(session);
+  }
+
   public final static void onPacketExchangerClear(Session session) {
     callback.onPacketExchangerClear(session);
   }
@@ -193,10 +201,6 @@ public final class MycatMonitor {
 
   public final static void onMycatHandlerWriteException(Session session, Exception e) {
     callback.onMycatHandlerWriteException(session, e);
-  }
-
-  public final static void onMycatHandlerExchangerException(Session session, Exception e) {
-    callback.onMycatHandlerExchangerException(session, e);
   }
 
   public final static void onMycatHandlerClear(Session session) {
@@ -244,208 +248,216 @@ public final class MycatMonitor {
     callback.onCommandStart(mycat);
   }
 
-  public static void onCommandEnd(MycatSession mycat){
+  public static void onCommandEnd(MycatSession mycat) {
     callback.onCommandEnd(mycat);
   }
 
-  public static void onSleepCommandStart(MycatSession mycat){
+  public static void onSleepCommandStart(MycatSession mycat) {
     callback.onSleepCommandStart(mycat);
   }
 
-  public static void onSleepCommandEnd(MycatSession mycat){
+  public static void onSleepCommandEnd(MycatSession mycat) {
     callback.onSleepCommandEnd(mycat);
   }
 
-  public static void onQuitCommandStart(MycatSession mycat){
+  public static void onQuitCommandStart(MycatSession mycat) {
     callback.onQuitCommandStart(mycat);
   }
 
-  public static void onQuitCommandEnd(MycatSession mycat){
+  public static void onQuitCommandEnd(MycatSession mycat) {
     callback.onQuitCommandEnd(mycat);
   }
 
-  public static void onQueryCommandStart(MycatSession mycat){
+  public static void onQueryCommandStart(MycatSession mycat) {
     callback.onQueryCommandStart(mycat);
   }
 
-  public static void onQueryCommandEnd(MycatSession mycat){
+  public static void onQueryCommandEnd(MycatSession mycat) {
     callback.onQueryCommandEnd(mycat);
   }
 
-  public static void onInitDbCommandStart(MycatSession mycat){
+  public static void onInitDbCommandStart(MycatSession mycat) {
     callback.onInitDbCommandStart(mycat);
   }
 
-  public static void onInitDbCommandEnd(MycatSession mycat){
+  public static void onInitDbCommandEnd(MycatSession mycat) {
     callback.onInitDbCommandEnd(mycat);
   }
 
-  public static void onPingCommandStart(MycatSession mycat){
+  public static void onPingCommandStart(MycatSession mycat) {
     callback.onPingCommandStart(mycat);
   }
 
-  public static void onPingCommandEnd(MycatSession mycat){
+  public static void onPingCommandEnd(MycatSession mycat) {
     callback.onPingCommandEnd(mycat);
   }
-  public static   void onFieldListCommandStart(MycatSession mycat){
+
+  public static void onFieldListCommandStart(MycatSession mycat) {
     callback.onFieldListCommandStart(mycat);
   }
 
-  public static  void onFieldListCommandEnd(MycatSession mycat){
+  public static void onFieldListCommandEnd(MycatSession mycat) {
     callback.onFieldListCommandEnd(mycat);
   }
-  public static void onSetOptionCommandStart(MycatSession mycat){
+
+  public static void onSetOptionCommandStart(MycatSession mycat) {
     callback.onSetOptionCommandStart(mycat);
   }
 
-  public static void onSetOptionCommandEnd(MycatSession mycat){
+  public static void onSetOptionCommandEnd(MycatSession mycat) {
     callback.onSetOptionCommandEnd(mycat);
   }
 
-  public static void onPrepareCommandStart(MycatSession mycat){
+  public static void onPrepareCommandStart(MycatSession mycat) {
     callback.onPrepareCommandStart(mycat);
   }
 
-  public static void onPrepareCommandEnd(MycatSession mycat){
+  public static void onPrepareCommandEnd(MycatSession mycat) {
     callback.onPrepareCommandEnd(mycat);
   }
 
-  public static void onSendLongDataCommandStart(MycatSession mycat){
+  public static void onSendLongDataCommandStart(MycatSession mycat) {
     callback.onSendLongDataCommandStart(mycat);
   }
 
-  public static void onSendLongDataCommandEnd(MycatSession mycat){
+  public static void onSendLongDataCommandEnd(MycatSession mycat) {
     callback.onSendLongDataCommandEnd(mycat);
   }
 
-  public static void onExecuteCommandStart(MycatSession mycat){
+  public static void onExecuteCommandStart(MycatSession mycat) {
     callback.onExecuteCommandStart(mycat);
   }
 
-  public static void onExecuteCommandEnd(MycatSession mycat){
+  public static void onExecuteCommandEnd(MycatSession mycat) {
     callback.onExecuteCommandEnd(mycat);
   }
 
-  public static void onCloseCommandStart(MycatSession mycat){
+  public static void onCloseCommandStart(MycatSession mycat) {
     callback.onCloseCommandStart(mycat);
   }
 
-  public static void onCloseCommandEnd(MycatSession mycat){
+  public static void onCloseCommandEnd(MycatSession mycat) {
     callback.onCloseCommandEnd(mycat);
   }
 
-  public static void onResetCommandStart(MycatSession mycat){
+  public static void onResetCommandStart(MycatSession mycat) {
     callback.onResetCommandStart(mycat);
   }
 
-  public static void onResetCommandEnd(MycatSession mycat){
+  public static void onResetCommandEnd(MycatSession mycat) {
     callback.onResetCommandEnd(mycat);
   }
 
-  public static void onCreateDbCommandStart(MycatSession mycat){
+  public static void onCreateDbCommandStart(MycatSession mycat) {
     callback.onCreateDbCommandStart(mycat);
   }
 
-  public static void onCreateDbCommandEnd(MycatSession mycat){
+  public static void onCreateDbCommandEnd(MycatSession mycat) {
     callback.onCreateDbCommandEnd(mycat);
   }
 
 
-  public static void onDropDbCommandStart(MycatSession mycat){
+  public static void onDropDbCommandStart(MycatSession mycat) {
     callback.onDropDbCommandStart(mycat);
   }
-  public static void onDropDbCommandEnd(MycatSession mycat){
+
+  public static void onDropDbCommandEnd(MycatSession mycat) {
     callback.onDropDbCommandEnd(mycat);
   }
-  public static void onRefreshCommandStart(MycatSession mycat){
+
+  public static void onRefreshCommandStart(MycatSession mycat) {
     callback.onRefreshCommandStart(mycat);
   }
-  public static void onRefreshCommandEnd(MycatSession mycat){
+
+  public static void onRefreshCommandEnd(MycatSession mycat) {
     callback.onRefreshCommandEnd(mycat);
   }
 
-  public static void onShutdownCommandStart(MycatSession mycat){
+  public static void onShutdownCommandStart(MycatSession mycat) {
     callback.onShutdownCommandStart(mycat);
   }
-  public static void onShutdownCommandEnd(MycatSession mycat){
+
+  public static void onShutdownCommandEnd(MycatSession mycat) {
     callback.onShutdownCommandEnd(mycat);
   }
-  public static void onStatisticsCommandStart(MycatSession mycat){
+
+  public static void onStatisticsCommandStart(MycatSession mycat) {
     callback.onStatisticsCommandStart(mycat);
   }
-  public static void onStatisticsCommandEnd(MycatSession mycat){
+
+  public static void onStatisticsCommandEnd(MycatSession mycat) {
     callback.onStatisticsCommandEnd(mycat);
   }
 
-  public static void onProcessInfoCommandStart(MycatSession mycat){
+  public static void onProcessInfoCommandStart(MycatSession mycat) {
     callback.onProcessInfoCommandStart(mycat);
   }
 
-  public static void onProcessInfoCommandEnd(MycatSession mycat){
+  public static void onProcessInfoCommandEnd(MycatSession mycat) {
     callback.onProcessInfoCommandEnd(mycat);
   }
 
-  public static void onConnectCommandStart(MycatSession mycat){
+  public static void onConnectCommandStart(MycatSession mycat) {
     callback.onConnectCommandStart(mycat);
   }
 
-  public static void onConnectCommandEnd(MycatSession mycat){
+  public static void onConnectCommandEnd(MycatSession mycat) {
     callback.onConnectCommandEnd(mycat);
   }
 
-  public static void onProcessKillCommandStart(MycatSession mycat){
+  public static void onProcessKillCommandStart(MycatSession mycat) {
     callback.onProcessKillCommandStart(mycat);
   }
 
-  public static void onProcessKillCommandEnd(MycatSession mycat){
+  public static void onProcessKillCommandEnd(MycatSession mycat) {
     callback.onProcessKillCommandEnd(mycat);
   }
 
-  public static void onDebugCommandStart(MycatSession mycat){
+  public static void onDebugCommandStart(MycatSession mycat) {
     callback.onDebugCommandStart(mycat);
   }
 
-  public static void onDebugCommandEnd(MycatSession mycat){
+  public static void onDebugCommandEnd(MycatSession mycat) {
     callback.onDebugCommandEnd(mycat);
   }
 
-  public static void onTimeCommandStart(MycatSession mycat){
+  public static void onTimeCommandStart(MycatSession mycat) {
     callback.onTimeCommandStart(mycat);
   }
 
-  public static void onTimeCommandEnd(MycatSession mycat){
+  public static void onTimeCommandEnd(MycatSession mycat) {
     callback.onTimeCommandEnd(mycat);
   }
 
-  public static void onDelayedInsertCommandStart(MycatSession mycat){
+  public static void onDelayedInsertCommandStart(MycatSession mycat) {
     callback.onDelayedInsertCommandStart(mycat);
   }
 
-  public static void onDelayedInsertCommandEnd(MycatSession mycat){
+  public static void onDelayedInsertCommandEnd(MycatSession mycat) {
     callback.onDelayedInsertCommandEnd(mycat);
   }
 
-  public static void onChangeUserCommandStart(MycatSession mycat){
+  public static void onChangeUserCommandStart(MycatSession mycat) {
     callback.onChangeUserCommandStart(mycat);
   }
 
-  public static void onChangeUserCommandEnd(MycatSession mycat){
+  public static void onChangeUserCommandEnd(MycatSession mycat) {
     callback.onChangeUserCommandEnd(mycat);
   }
 
-  public static void onResetConnectionCommandStart(MycatSession mycat){
+  public static void onResetConnectionCommandStart(MycatSession mycat) {
     callback.onResetConnectionCommandStart(mycat);
   }
 
-  public static void onResetConnectionCommandEnd(MycatSession mycat){
+  public static void onResetConnectionCommandEnd(MycatSession mycat) {
     callback.onResetConnectionCommandEnd(mycat);
   }
 
-  public static void onDaemonCommandStart(MycatSession mycat){
+  public static void onDaemonCommandStart(MycatSession mycat) {
     callback.onDaemonCommandStart(mycat);
   }
 
-  public static void onDaemonCommandEnd(MycatSession mycat){
+  public static void onDaemonCommandEnd(MycatSession mycat) {
     callback.onDaemonCommandEnd(mycat);
   }
 }

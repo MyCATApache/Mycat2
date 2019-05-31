@@ -15,6 +15,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
+import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.callback.CommandCallBack;
@@ -51,6 +52,7 @@ public final class MySQLSessionManager implements
   /**
    * 返回不可变集合,防止外部代码错误操作allSessions导致泄漏MySQLSession
    */
+  @NoExcept
   @Override
   public final Collection<MySQLClientSession> getAllSessions() {
     return Collections.unmodifiableCollection(allSessions);
@@ -59,6 +61,7 @@ public final class MySQLSessionManager implements
   /**
    * 获得mysql proxy中,该线程中所有的mysqlSession的数量
    */
+  @NoExcept
   @Override
   public final int currentSessionCount() {
     return allSessions.size();
@@ -68,52 +71,60 @@ public final class MySQLSessionManager implements
    * 根据dataSource的配置信息获得可用的MySQLSession 0.如果dataSource已经失效,则直接回调异常,异常信息在callback的attr
    * 1.首先从空闲的session集合里面尝试获取 若存在空闲的session则随机从头部或者尾部获得session 2.否则创建新的session
    */
+  @NoExcept
   @Override
   public final void getIdleSessionsOfKey(MySQLDatasource datasource,
       SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
-    assert datasource != null;
-    /**
-     * 1.如果集群不可用,直接回调不可用
-     * 2.如果没有空闲连接,则创建空闲连接
-     * 3.如果有空闲连接,则获取空闲连接,然后查看通道是否已经关闭,如果已经关闭,则继续尝试获取
-     * 4.session管理不保证session一定可用
-     */
-    {
-      LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
-      for (; ; ) {
-        if (!datasource.isAlive()) {
-          asyncTaskCallBack
-              .onException(new MycatExpection(datasource.getName() + " is not alive!"), this, null);
-          return;
-        }
-        if (group == null || group.isEmpty()) {
-          createSession(datasource, asyncTaskCallBack);
-          return;
-        } else {
-          boolean random = ThreadLocalRandom.current().nextBoolean();
-          MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
-          mySQLSession.setIdle(false);
-          assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
-          assert mySQLSession.currentProxyBuffer() == null;
-          if (!mySQLSession.isOpen()) {
-            MycatReactorThread mycatReactorThread = mySQLSession.getMycatReactorThread();
-            mycatReactorThread.addNIOJob(() -> {
-              mySQLSession.close(false, "mysql session is close in idle");
-            });
-            continue;
-          } else if (mySQLSession.isActivated()) {
-            mySQLSession.setIdle(false);
-            mySQLSession.switchNioHandler(null);
-            MycatMonitor.onGetIdleMysqlSession(mySQLSession);
-            asyncTaskCallBack.onSession(mySQLSession, this, null);
+    try {
+      assert datasource != null;
+      /**
+       * 1.如果集群不可用,直接回调不可用
+       * 2.如果没有空闲连接,则创建空闲连接
+       * 3.如果有空闲连接,则获取空闲连接,然后查看通道是否已经关闭,如果已经关闭,则继续尝试获取
+       * 4.session管理不保证session一定可用
+       */
+      {
+        LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
+        for (; ; ) {
+          if (!datasource.isAlive()) {
+            asyncTaskCallBack
+                .onException(new MycatExpection(datasource.getName() + " is not alive!"), this,
+                    null);
+            return;
+          }
+          if (group == null || group.isEmpty()) {
+            createSession(datasource, asyncTaskCallBack);
             return;
           } else {
+            boolean random = ThreadLocalRandom.current().nextBoolean();
+            MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
+            mySQLSession.setIdle(false);
+            assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
+            assert mySQLSession.currentProxyBuffer() == null;
+            if (!mySQLSession.isOpen()) {
+              MycatReactorThread mycatReactorThread = mySQLSession.getMycatReactorThread();
+              mycatReactorThread.addNIOJob(() -> {
+                mySQLSession.close(false, "mysql session is close in idle");
+              });
+              continue;
+            } else if (mySQLSession.isActivated()) {
+              mySQLSession.setIdle(false);
+              mySQLSession.switchNioHandler(null);
+              MycatMonitor.onGetIdleMysqlSession(mySQLSession);
+              asyncTaskCallBack.onSession(mySQLSession, this, null);
+              return;
+            } else {
 
-            asyncTaskCallBack.onSession(mySQLSession, this, null);
-            return;
+              asyncTaskCallBack.onSession(mySQLSession, this, null);
+              return;
+            }
           }
         }
       }
+    }catch (Exception e){
+      asyncTaskCallBack
+          .onException(e, this,
+              null);
     }
   }
 
@@ -121,44 +132,56 @@ public final class MySQLSessionManager implements
    * 把使用完毕的mysql session释放到连接池 1.禁止把session多次放入闲置连接池,但是该方法不查重,需要调用方保证
    * 2.在闲置连接池里面,session不对写入事件响应,但对读取事件响应,因为可能收到关闭事件
    */
+  @NoExcept
   @Override
   public final void addIdleSession(MySQLClientSession session) {
-    /**
-     * mycat对应透传模式对mysql session的占用
-     * niohandler对应透传以及task类对mysql session的占用
-     */
-    assert session.getMycatSession() == null;
-    assert !session.isClosed();
-    assert session.isActivated();
-    assert session.currentProxyBuffer() == null;
-    assert !session.isIdle();
-    if (session.isMonopolized()) {
-      session.close(false, "session is monopolized ");
-      throw new MycatExpection("Monopolized");
-    }
-    session.resetPacket();
-    session.setIdle(true);
-    session.switchNioHandler(IdleHandler.INSTANCE);
-    session.change2ReadOpts();
-    MycatMonitor.onAddIdleMysqlSession(session);
-    idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
-      if (l == null) {
-        l = new LinkedList<>();
+    try {
+      /**
+       * mycat对应透传模式对mysql session的占用
+       * niohandler对应透传以及task类对mysql session的占用
+       */
+      assert session.getMycatSession() == null;
+      assert !session.isClosed();
+      assert session.isActivated();
+      assert session.currentProxyBuffer() == null;
+      assert !session.isIdle();
+      if (session.isMonopolized()) {
+        session.close(false, "session is monopolized ");
+        throw new MycatExpection("Monopolized");
       }
-      l.addLast(session);
-      return l;
-    });
+      session.resetPacket();
+      session.setIdle(true);
+      session.switchNioHandler(IdleHandler.INSTANCE);
+      session.change2ReadOpts();
+      idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
+        if (l == null) {
+          l = new LinkedList<>();
+        }
+        l.addLast(session);
+        return l;
+      });
+      MycatMonitor.onAddIdleMysqlSession(session);
+    }catch (Exception e){
+      LOGGER.error("{}",e);
+      session.close(false,e);
+    }
   }
+
 
   /**
    * 1.从闲置池里面移除mysql session 2.该函数不会关闭session 3.该函数可以被子类重写,但是未能遇见这种需要
    */
+  @NoExcept
   protected void removeIdleSession(MySQLClientSession session) {
-    assert session != null;
-    assert session.getDatasource() != null;
-    LinkedList<MySQLClientSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
-    if (mySQLSessions != null) {
-      mySQLSessions.remove(session);
+    try {
+      assert session != null;
+      assert session.getDatasource() != null;
+      LinkedList<MySQLClientSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
+      if (mySQLSessions != null) {
+        mySQLSessions.remove(session);
+      }
+    }catch (Exception e){
+     LOGGER.error("{}",e);
     }
   }
 
@@ -227,14 +250,19 @@ public final class MySQLSessionManager implements
   /**
    * 从连接池移除session 1.移除连接 2.关闭连接 3.关闭原因需要写清楚
    */
+  @NoExcept
   @Override
   public void removeSession(MySQLClientSession session, boolean normal, String reason) {
-    assert session != null;
-    assert reason != null;
-    session.getDatasource().decrementSessionCounter();
-    allSessions.remove(session);
-    MycatMonitor.onCloseMysqlSession(session, normal, reason);
-    removeIdleSession(session);
-    NIOUtil.close(session.channel());
+    try {
+      assert session != null;
+      assert reason != null;
+      session.getDatasource().decrementSessionCounter();
+      allSessions.remove(session);
+      MycatMonitor.onCloseMysqlSession(session, normal, reason);
+      removeIdleSession(session);
+      NIOUtil.close(session.channel());
+    }catch (Exception e){
+      LOGGER.error("{}",e);
+    }
   }
 }

@@ -63,6 +63,8 @@ public abstract class ModualTest {
             executor.submit(() -> {
               try {
                 gettingConnetionCallback.test(future);
+              }catch (Exception e){
+                e.printStackTrace();
               }finally {
                 ProxyRuntime.INSTANCE.exit();
                 future.complete(null);

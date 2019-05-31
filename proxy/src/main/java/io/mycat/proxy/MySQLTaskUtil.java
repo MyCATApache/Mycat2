@@ -113,9 +113,8 @@ public class MySQLTaskUtil {
             String sql =
                 isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
                     + ";" + "SET names " + charset + ";"
-//                    + "SET character_set_results = " + (
-//                    characterSetResult == null ? "NULL" : characterSetResult)
-
+                    + ("SET character_set_results =" + (
+                    characterSetResult == null ||"".equals(characterSetResult)? "NULL" : characterSetResult))
                 ;
             ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
                 new ResultSetCallBack<MySQLClientSession>() {

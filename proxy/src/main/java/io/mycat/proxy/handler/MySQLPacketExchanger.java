@@ -49,7 +49,7 @@ public enum MySQLPacketExchanger {
 
   private static void onExceptionClearCloseInResponse(MycatSession mycat, Exception e) {
     logger.error("{}", e);
-    MycatMonitor.onPacketExchangerException(mycat,e);
+    MycatMonitor.onPacketExchangerException(mycat, e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     mysql.resetPacket();
     mysql.setCallBack(null);
@@ -60,7 +60,7 @@ public enum MySQLPacketExchanger {
 
   private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e) {
     logger.error("{}", e);
-    MycatMonitor.onPacketExchangerWriteException(mycat,e);
+    MycatMonitor.onPacketExchangerWriteException(mycat, e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     PacketExchangerCallback callback = mysql.getCallBack();
     mysql.setCallBack(null);
@@ -110,19 +110,20 @@ public enum MySQLPacketExchanger {
       return;
     }
     mysql.setRequestSuccess(true);
-      ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
-      MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
-      MySQLPacketResolver packetResolver = mysql.getPacketResolver();
-      int startIndex = mySQLPacket.packetReadStartIndex();
-      int endPos = startIndex;
-      while (mysql.readPartProxyPayload()) {
-        endPos = packetResolver.getEndPos();
-        mySQLPacket.packetReadStartIndex(endPos);
-      }
-      proxyBuffer.channelWriteStartIndex(startIndex);
-      proxyBuffer.channelWriteEndIndex(endPos);
+    MycatMonitor.onPacketExchangerRead(mysql);
+    ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
+    MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
+    MySQLPacketResolver packetResolver = mysql.getPacketResolver();
+    int startIndex = mySQLPacket.packetReadStartIndex();
+    int endPos = startIndex;
+    while (mysql.readPartProxyPayload()) {
+      endPos = packetResolver.getEndPos();
+      mySQLPacket.packetReadStartIndex(endPos);
+    }
+    proxyBuffer.channelWriteStartIndex(startIndex);
+    proxyBuffer.channelWriteEndIndex(endPos);
 
-      mycatSession.writeToChannel();
+    mycatSession.writeToChannel();
     return;
   }
 
@@ -142,7 +143,7 @@ public enum MySQLPacketExchanger {
   private boolean onFrontWriteFinished(MycatSession mycat) {
     MySQLClientSession mysql = mycat.getMySQLSession();
     ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
-    if (proxyBuffer.channelWriteFinished()&&mysql.isResponseFinished()) {
+    if (proxyBuffer.channelWriteFinished() && mysql.isResponseFinished()) {
       mycat.change2ReadOpts();
       return true;
     } else {
@@ -186,26 +187,27 @@ public enum MySQLPacketExchanger {
       getBackend(mycat, runOnSlave, dataNode, strategy, new SessionCallBack<MySQLClientSession>() {
         @Override
         public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
-          mysql.setNoResponse(noResponse);
-          mysql.switchNioHandler(MySQLProxyNIOHandler.INSTANCE);
-          mycat.setMySQLSession(mysql);
-          mycat.switchWriteHandler(WriteHandler.INSTANCE);
-          mycat.currentProxyBuffer().newBuffer(bytes);
           try {
+            mysql.setCallBack(finallyCallBack);
+            mysql.setNoResponse(noResponse);
+            mysql.switchNioHandler(MySQLProxyNIOHandler.INSTANCE);
+            mycat.setMySQLSession(mysql);
+            mycat.switchWriteHandler(WriteHandler.INSTANCE);
+            mycat.currentProxyBuffer().newBuffer(bytes);
             mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
+            mycat.setMySQLSession(mysql);
+            mysql.setMycatSession(mycat);
+            MycatMonitor.onBindMySQLSession(mycat, mysql);
           } catch (Exception e) {
             onExceptionClearCloseInRequest(mycat, e);
             finallyCallBack.onRequestMySQLException(mycat, e, null);
             return;
           }
-          mycat.setMySQLSession(mysql);
-          mysql.setMycatSession(mycat);
-          MycatMonitor.onBindMySQLSession(mycat, mysql);
         }
 
         @Override
         public void onException(Exception exception, Object sender, Object attr) {
-          MycatMonitor.onGettingBackendException(mycat,dataNode.getName(),exception);
+          MycatMonitor.onGettingBackendException(mycat, dataNode.getName(), exception);
           finallyCallBack.onRequestMySQLException(mycat, exception, attr);
         }
       });
@@ -231,6 +233,7 @@ public enum MySQLPacketExchanger {
     public void onSocketWrite(MySQLClientSession session) {
       try {
         session.writeToChannel();
+        MycatMonitor.onPacketExchangerWrite(session);
       } catch (Exception e) {
         onExceptionClearCloseInResponse(session.getMycatSeesion(), e);
       }
@@ -254,7 +257,6 @@ public enum MySQLPacketExchanger {
   }
 
 
-
   /**
    * 代理模式前端写入处理器
    */
@@ -268,10 +270,11 @@ public enum MySQLPacketExchanger {
         ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
         int oldIndex = proxyBuffer.channelWriteStartIndex();
         int endIndex = proxyBuffer.channelWriteEndIndex();
+        MycatMonitor.onPacketExchangerWrite(mycat);
         proxyBuffer.writeToChannel(mycat.channel());
 
         MycatMonitor.onFrontWrite(mycat, proxyBuffer.currentByteBuffer(), oldIndex,
-            endIndex-oldIndex);
+            endIndex - oldIndex);
         mycat.updateLastActiveTime();
 
         if (!proxyBuffer.channelWriteFinished()) {

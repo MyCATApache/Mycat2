@@ -15,6 +15,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.ProxyBeanProviders;
+import io.mycat.annotations.NoExcept;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -25,6 +26,8 @@ import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.LinkedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
@@ -33,7 +36,7 @@ import java.util.LinkedList;
  *  date 2019-05-10 13:21
  **/
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
-
+  final static Logger LOGGER = LoggerFactory.getLogger(AbstractSession.class);
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
   final ProxyBeanProviders providers;
 
@@ -44,11 +47,13 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
 
   @Override
+  @NoExcept
   public Collection<MycatSession> getAllSessions() {
     return mycatSessions;
   }
 
   @Override
+  @NoExcept
   public int currentSessionCount() {
     return mycatSessions.size();
   }
@@ -57,18 +62,21 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
    * 调用该方法的时候 mycat session已经关闭了
    */
   @Override
+  @NoExcept
   public void removeSession(MycatSession mycat, boolean normal, String reason) {
     try {
       MycatMonitor.onCloseMycatSession(mycat,normal,reason);
       mycatSessions.remove(mycat);
       mycat.channel().close();
     } catch (Exception e) {
-      e.printStackTrace();
+      LOGGER.error("{}",e);
     }
   }
 
 
+
   @Override
+  @NoExcept
   public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();

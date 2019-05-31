@@ -171,6 +171,9 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
         }
         ioTimes++;
         for (final SelectionKey key : keys) {
+          if (!key.isValid()||!key.channel().isOpen()) {
+            continue;
+          }
           try {
             int readdyOps = key.readyOps();
             reactorEnv.setCurSession(null);
@@ -223,12 +226,12 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
   @Override
   public void close() throws IOException {
     this.interrupt();
-    if (frontManager!=null){
+    if (frontManager != null) {
       for (T s : frontManager.getAllSessions()) {
         try {
           frontManager.removeSession(s, true, "close");
         } catch (Exception e) {
-          LOGGER.error("{}",e);
+          LOGGER.error("{}", e);
         }
       }
     }

@@ -126,7 +126,6 @@ public class MySQLClientSession extends
     }
     resetPacket();
     closed = true;
-    MycatMonitor.onCloseMysqlSession(this,normal,hint);
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {

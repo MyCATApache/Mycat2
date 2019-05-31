@@ -2,8 +2,10 @@ package io.mycat.sqlparser.util;
 
 import static io.mycat.sqlparser.util.TokenizerUtil.debug;
 
+import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -235,6 +237,10 @@ public class TCLSQLParser {
       context.setSQLType(BufferSQLContext.SET_CHARSET);
       context.setCharset(context.getTokenString(pos));
     } else if (hash == TokenHash.CHARACTER_SET_RESULT) {
+      ++pos;
+      if((hashArray.getType(pos)!=Tokenizer.EQUAL)){
+        throw new MycatExpection("unsupport sql:"+sql.getString(0,sql.length()));
+      }
       ++pos;
       context.setCharsetSetResult(context.getTokenString(pos));
       context.setSQLType(BufferSQLContext.SET_CHARSET_RESULT);

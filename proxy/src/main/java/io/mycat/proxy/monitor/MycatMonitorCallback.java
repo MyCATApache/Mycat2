@@ -1,5 +1,6 @@
 package io.mycat.proxy.monitor;
 
+import io.mycat.annotations.NoExcept;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -11,6 +12,7 @@ import java.nio.channels.ClosedChannelException;
 /**
  * @author jamie12221 date 2019-05-20 11:32
  **/
+@NoExcept
 public interface MycatMonitorCallback {
 
   final MycatMonitorCallback EMPTY = new AbstractMonitorCallback() {
@@ -120,7 +122,7 @@ public interface MycatMonitorCallback {
 
   void onMycatHandlerWriteException(Session session, Exception e);
 
-  void onMycatHandlerExchangerException(Session session, Exception e);
+//  void onMycatHandlerExchangerException(Session session, Exception e);
 
   void onMycatHandlerClear(Session session);
 
@@ -256,4 +258,8 @@ public interface MycatMonitorCallback {
   void onShutdownCommandEnd(MycatSession mycat);
 
   void onStatisticsCommandStart(MycatSession mycat);
+
+  void onPacketExchangerRead(Session session);
+
+  void onPacketExchangerWrite(Session session);
 }

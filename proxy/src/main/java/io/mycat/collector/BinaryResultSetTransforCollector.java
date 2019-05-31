@@ -16,6 +16,7 @@ package io.mycat.collector;
 
 import static io.mycat.proxy.packet.MySQLPacketResolver.logger;
 
+import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.proxy.packet.MySQLPacket;
 import java.math.BigDecimal;
@@ -26,6 +27,7 @@ import java.math.BigDecimal;
  * @author jamie12221
  *  date 2019-05-10 13:21
  */
+@NoExcept
 public class BinaryResultSetTransforCollector implements ResultSetTransfor {
 
   final ResultSetCollector collector;
