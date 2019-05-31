@@ -1,6 +1,4 @@
-package io.mycat.test;
-
-import java.sql.SQLException;
+package io.mycat.test.jdbc;
 
 public interface TestGettingConnetionCallback {
   void test(Object future);
