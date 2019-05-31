@@ -117,13 +117,7 @@ public class MySQLTaskUtil {
 //                    characterSetResult == null ? "NULL" : characterSetResult)
 
                 ;
-           new  ResultSetHandler(){
-
-             public void onError(MySQLPacket mySQLPacket) {
-               ErrorPacketImpl errorPacket = new ErrorPacketImpl();
-               errorPacket.readPayload(mySQLPacket);
-             }
-           }.request(mysql, MySQLCommandType.COM_QUERY, sql,
+            ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
                 new ResultSetCallBack<MySQLClientSession>() {
 
                   @Override

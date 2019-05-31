@@ -1,7 +1,9 @@
 package io.mycat.proxy.handler.backend;
 
+import io.mycat.MycatExpection;
 import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
     try {
       session.writeProxyBufferToChannel(packet);
     } catch (Exception e) {
+      MycatMonitor.onRequestException(session,e);
       onException(session, e);
       callback.onFinishedSendException(e, this, null);
     }
@@ -26,12 +29,13 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
 
   @Override
   public void onSocketRead(MySQLClientSession session) {
-    Exception e = null;
+    Exception e = new MycatExpection("unknown read data");
     try {
       session.readFromChannel();
     } catch (Exception e1) {
       e = e1;
     }
+    MycatMonitor.onRequestException(session,e);
     RequestCallback callback = session.getCallBack();
     onException(session, e);
     callback.onFinishedSendException(e, this, null);
@@ -41,7 +45,8 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
   public void onSocketWrite(MySQLClientSession session) {
     try {
       session.writeToChannel();
-    } catch (IOException e) {
+    } catch (Exception e) {
+      MycatMonitor.onRequestException(session,e);
       RequestCallback callback = session.getCallBack();
       onException(session, e);
       callback.onFinishedSendException(e, this, null);
@@ -57,7 +62,8 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
 
   @Override
   public void onException(MySQLClientSession session, Exception e) {
-    logger.error("", e);
+    MycatMonitor.onRequestException(session,e);
+    logger.error("{}", e);
     onClear(session);
     session.setCallBack(null);
     session.close(false, e);
@@ -67,5 +73,6 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
     session.resetPacket();
     session.setCallBack(null);
     session.switchNioHandler(null);
+    MycatMonitor.onRequestClear(session);
   }
 }

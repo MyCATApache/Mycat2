@@ -59,7 +59,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   @Override
   public void removeSession(MycatSession mycat, boolean normal, String reason) {
     try {
-      MycatMonitor.onCloseMycatSession(mycat);
+      MycatMonitor.onCloseMycatSession(mycat,normal,reason);
       mycatSessions.remove(mycat);
       mycat.channel().close();
     } catch (Exception e) {
@@ -69,16 +69,20 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
 
   @Override
-  public MycatSession acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
+  public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();
     MycatSession mycat = new MycatSession(bufPool,
         mySQLClientAuthHandler, this, providers.createCommandDispatcher());
     mycat.register(nioSelector, frontChannel, SelectionKey.OP_READ);
     mySQLClientAuthHandler.setMycatSession(mycat);
-    mySQLClientAuthHandler.sendAuthPackge();
-    MycatMonitor.onNewMycatSession(mycat);
-    this.mycatSessions.add(mycat);
-    return mycat;
+    try {
+      MycatMonitor.onNewMycatSession(mycat);
+      mySQLClientAuthHandler.sendAuthPackge();
+      this.mycatSessions.add(mycat);
+    }catch (Exception e){
+      MycatMonitor.onAuthHandlerWriteException(mycat,e);
+     mycat.close(false,e);
+    }
   }
 }

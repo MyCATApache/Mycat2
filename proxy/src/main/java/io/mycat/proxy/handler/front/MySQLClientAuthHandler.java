@@ -28,6 +28,7 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.security.MycatSecurityConfig;
@@ -159,6 +160,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
             mycat.writeOkEndPacket();
         } catch (Exception e) {
+            MycatMonitor.onAuthHandlerReadException(mycat,e);
             onClear(mycat);
             failture(mycat, e);
         }
@@ -187,7 +189,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         try {
             mycat.writeToChannel();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("{}",e);
             onClear(mycat);
             mycat.close(false, e);
         }
@@ -206,6 +208,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     @Override
     public void onException(MycatSession session, Exception e) {
+        MycatMonitor.onAuthHandlerException(session,e);
         logger.error("{}", e);
         onClear(mycat);
         mycat.close(false, e);
@@ -213,6 +216,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     public void onClear(MycatSession session) {
         session.onHandlerFinishedClear();
+        MycatMonitor.onAuthHandlerClear(session);
     }
 
     public void sendAuthPackge() {

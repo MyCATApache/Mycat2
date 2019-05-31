@@ -381,8 +381,8 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
         @Override
         public void onException(MycatSession session, Exception e) {
+            MycatMonitor.onMycatServerWriteException(session,e);
             session.resetPacket();
-            session.close(false, e);
         }
 
     }

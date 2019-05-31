@@ -51,7 +51,7 @@ public interface SessionManager<T extends Session> {
    */
   interface FrontSessionManager<T extends Session> extends SessionManager<T> {
 
-    T acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool, Selector selector,
+    void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool, Selector selector,
         SocketChannel socketChannel) throws IOException;
   }
 

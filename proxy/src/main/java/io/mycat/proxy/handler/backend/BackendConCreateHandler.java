@@ -24,6 +24,7 @@ import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.handler.BackendNIOHandler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -76,7 +77,8 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             channel.configureBlocking(false);
             mysql.register(curThread.getSelector(), channel, SelectionKey.OP_CONNECT);
             channel.connect(new InetSocketAddress(datasource.getIp(), datasource.getPort()));
-        } catch (IOException e) {
+        } catch (Exception e) {
+            MycatMonitor.onBackendConCreateWriteException(mysql,e);
             onException(mysql, e);
             callback.onFinishedException(null, e, null);
             return;
@@ -89,6 +91,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         if (success) {
             mysql.change2ReadOpts();
         } else {
+            MycatMonitor.onBackendConCreateConnectException(mysql,e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);
         }
@@ -106,6 +109,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
         } catch (Exception e) {
             logger.error("create mysql connection error {} {}", datasource, e);
+            MycatMonitor.onBackendConCreateReadException(mysql,e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);
         }
@@ -272,6 +276,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         try {
             session.writeToChannel();
         } catch (Exception e) {
+            MycatMonitor.onBackendConCreateWriteException(session,e);
             onException(session, e);
             callback.onFinishedException(e, this, null);
         }
@@ -284,7 +289,8 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
     @Override
     public void onException(MySQLClientSession session, Exception e) {
-        logger.error("", e);
+        MycatMonitor.onBackendConCreateException(session,e);
+        logger.error("{}", e);
         onClear(session);
         session.close(false, e);
     }
@@ -292,6 +298,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     public void onClear(MySQLClientSession session) {
         session.resetPacket();
         session.setCallBack(null);
+        MycatMonitor.onBackendConCreateClear(session);
     }
 
 }

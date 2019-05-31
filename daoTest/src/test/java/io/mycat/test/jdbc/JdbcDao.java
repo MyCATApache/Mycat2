@@ -14,12 +14,20 @@
  */
 package io.mycat.test.jdbc;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
+import io.mycat.proxy.monitor.AbstractMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
+import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.Session;
 import io.mycat.test.ModualTest;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -44,42 +52,43 @@ public class JdbcDao extends ModualTest {
       throws IOException, ExecutionException, InterruptedException {
     loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         (future, connection) -> {
-          Statement statement = connection.createStatement();
-          int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
-          int columnLength = 0xffffff;
-          StringBuilder columnName = new StringBuilder(columnLength);
-          StringBuilder largeSQLBuilder = new StringBuilder();
+          try (Statement statement = connection.createStatement()) {
+            int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
+            int columnLength = 0xffffff;
+            StringBuilder columnName = new StringBuilder(columnLength);
+            StringBuilder largeSQLBuilder = new StringBuilder();
 
-          //生成multi packet
-          largeSQLBuilder.append("select ");
-          int count = 1;
-          while (true) {
-            if (largeSQLBuilder.length() == splitPayloadSize) {
-              count++;
+            //生成multi packet
+            largeSQLBuilder.append("select ");
+            int count = 1;
+            while (true) {
+              if (largeSQLBuilder.length() == splitPayloadSize) {
+                count++;
+              }
+              if (columnName.length() == columnLength) {
+                break;
+              }
+              columnName.append(count);
             }
-            if (columnName.length() == columnLength) {
-              break;
-            }
-            columnName.append(count);
+            String sql = largeSQLBuilder.append(columnName).toString();
+            String value = columnName.toString();
+            ResultSet resultSet = statement.executeQuery(sql + ";" + sql);
+
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            Assert.assertEquals(metaData.getColumnName(1), value);
+            Assert.assertTrue(resultSet.next());
+            String string = resultSet.getString(1);
+
+            Assert.assertTrue(statement.getMoreResults());
+
+            resultSet = statement.getResultSet();
+            Assert.assertTrue(resultSet.next());
+            metaData = resultSet.getMetaData();
+            Assert.assertEquals(metaData.getColumnName(1), value);
+            string = resultSet.getString(1);
+          } finally {
+            compelete(future);
           }
-          String sql = largeSQLBuilder.append(columnName).toString();
-          String value = columnName.toString();
-          ResultSet resultSet = statement.executeQuery(sql + ";" + sql);
-
-          ResultSetMetaData metaData = resultSet.getMetaData();
-          Assert.assertEquals(metaData.getColumnName(1), value);
-          Assert.assertTrue(resultSet.next());
-          String string = resultSet.getString(1);
-
-          Assert.assertTrue(statement.getMoreResults());
-
-          resultSet = statement.getResultSet();
-          Assert.assertTrue(resultSet.next());
-          metaData = resultSet.getMetaData();
-          Assert.assertEquals(metaData.getColumnName(1), value);
-          string = resultSet.getString(1);
-
-          compelete(future);
         }
     );
   }
@@ -89,80 +98,147 @@ public class JdbcDao extends ModualTest {
       throws IOException, ExecutionException, InterruptedException {
     loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         (future, connection) -> {
-          Statement statement = connection.createStatement();
-          int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
-          int columnLength = 1000;
-          StringBuilder columnName = new StringBuilder(columnLength);
-          StringBuilder largeSQLBuilder = new StringBuilder();
-          largeSQLBuilder.append("select ");
-          int count = 1;
-          while (true) {
-            if (largeSQLBuilder.length() == splitPayloadSize) {
-              count++;
+          try (Statement statement = connection.createStatement()) {
+            int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
+            int columnLength = 1000;
+            StringBuilder columnName = new StringBuilder(columnLength);
+            StringBuilder largeSQLBuilder = new StringBuilder();
+            largeSQLBuilder.append("select ");
+            int count = 1;
+            while (true) {
+              if (largeSQLBuilder.length() == splitPayloadSize) {
+                count++;
+              }
+              if (columnName.length() == columnLength) {
+                break;
+              }
+              columnName.append(count);
             }
-            if (columnName.length() == columnLength) {
-              break;
-            }
-            columnName.append(count);
+            String sql = largeSQLBuilder.append(columnName).toString();
+            String value = columnName.toString();
+            ResultSet resultSet = statement.executeQuery(sql);
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            Assert.assertEquals(metaData.getColumnName(1), value);
+            Assert.assertTrue(resultSet.next());
+            String string = resultSet.getString(1);
+          } finally {
+            compelete(future);
           }
-          String sql = largeSQLBuilder.append(columnName).toString();
-          String value = columnName.toString();
-          ResultSet resultSet = statement.executeQuery(sql);
-          ResultSetMetaData metaData = resultSet.getMetaData();
-          Assert.assertEquals(metaData.getColumnName(1), value);
-          Assert.assertTrue(resultSet.next());
-          String string = resultSet.getString(1);
-          compelete(future);
         });
   }
 
   /**
-   CREATE TABLE `travelrecord` (
-   `id` bigint(20) NOT NULL,
-   `user_id` varchar(100) DEFAULT NULL,
-   `traveldate` date DEFAULT NULL,
-   `fee` decimal(10,0) DEFAULT NULL,
-   `days` int(11) DEFAULT NULL,
-   `blob` longblob DEFAULT NULL
-   ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-   * @throws IOException
-   * @throws ExecutionException
-   * @throws InterruptedException
+   * CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL, `user_id` varchar(100) DEFAULT NULL,
+   * `traveldate` date DEFAULT NULL, `fee` decimal(10,0) DEFAULT NULL, `days` int(11) DEFAULT NULL,
+   * `blob` longblob DEFAULT NULL ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
    */
   @Test
   public void bigResultSet()
       throws IOException, ExecutionException, InterruptedException {
     loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
         (future, connection) -> {
-          Statement statement = connection.createStatement();
-          statement.execute("truncate travelrecord;");
-          byte[] bytes = new byte[0xffffff];
-          Arrays.fill(bytes, (byte) 0xff);
-          String blob = new String(bytes);
-          for (int i = 0; i < 10; i++) {
-            String s1 =
-                "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
-                    + "VALUES ('"
-                    + i
-                    + "', '"
-                    + "1"
-                    + "', '"
-                    + "2019-05-07"
-                    + "', '"
-                    + "1"
-                    + "', '"
-                    + "1"
-                    + "', '"
-                    + blob
-                    + "');";
-            statement.execute(s1);
+          try (Statement statement = connection.createStatement()) {
+            statement.execute("truncate travelrecord;");
+            byte[] bytes = new byte[0xffffff];
+            Arrays.fill(bytes, (byte) 0xff);
+            String blob = new String(bytes);
+            for (int i = 0; i < 10; i++) {
+              String s1 =
+                  "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
+                      + "VALUES ('"
+                      + i
+                      + "', '"
+                      + "1"
+                      + "', '"
+                      + "2019-05-07"
+                      + "', '"
+                      + "1"
+                      + "', '"
+                      + "1"
+                      + "', '"
+                      + blob
+                      + "');";
+              statement.execute(s1);
+            }
+            ResultSet resultSet = statement.executeQuery(
+                "select * from travelrecord;select * from travelrecord;");
+          } finally {
+            compelete(future);
           }
-          ResultSet resultSet = statement.executeQuery("select * from travelrecord;select * from travelrecord;");
-          compelete(future);
         }
     );
   }
 
+  @Test
+  public void onAuthReadExpection()
+      throws IOException, ExecutionException, InterruptedException {
+    Runnable expectClear = mock(Runnable.class);
+    Runnable expectClose = mock(Runnable.class);
+    AbstractMonitorCallback callback = spy(new AbstractMonitorCallback() {
+      @Override
+      public void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
+        throw new RuntimeException("test exception");
+      }
+
+      @Override
+      public void onAuthHandlerClear(Session session) {
+        expectClear.run();
+      }
+
+      @Override
+      public void onCloseMycatSession(MycatSession mycat, boolean normal, String reason) {
+        expectClose.run();
+      }
+    });
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, callback,
+        (future) -> {
+          try (Connection connection = getConnection()) {
+
+          } catch (Exception e) {
+            e.printStackTrace();
+            verify(expectClear).run();
+            verify(expectClose).run();
+          } finally {
+            compelete(future);
+          }
+
+        }
+    );
+  }
+  @Test
+  public void onMycatHandlerReadExpection()
+      throws IOException, ExecutionException, InterruptedException {
+    Runnable expectClear = mock(Runnable.class);
+    Runnable expectClose = mock(Runnable.class);
+    AbstractMonitorCallback callback = spy(new AbstractMonitorCallback() {
+      @Override
+      public void onCommandStart(MycatSession mycat) {
+        throw new RuntimeException("test exception");
+      }
+      @Override
+      public void onMycatHandlerClear(Session session) {
+        expectClear.run();
+      }
+      @Override
+      public void onCloseMycatSession(MycatSession mycat, boolean normal, String reason) {
+        expectClose.run();
+      }
+    });
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, callback,
+        (future) -> {
+          try (Connection connection = getConnection()) {
+            connection.createStatement().execute("select 1");
+          } catch (Exception e) {
+            e.printStackTrace();
+            verify(expectClear).run();
+            verify(expectClose).run();
+          } finally {
+            compelete(future);
+          }
+
+        }
+    );
+  }
   private void perTest(int count, AsyncTaskCallBackCounter callBackCounter) {
     for (int i = 0; i < count; i++) {
       int index = i;

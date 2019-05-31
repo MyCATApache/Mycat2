@@ -313,7 +313,6 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       boolean multiPacket = isMultiPacket();
       int payloadStartIndex = getStartPos() + 4;
       int payloadEndIndex = getEndPos();
-      System.out.println(proxybuffer);
       if (!multiPacket && !lastIsMultiPacket) {
         appendPayload(currentProxybuffer(), payloadStartIndex, payloadEndIndex);
         return true;

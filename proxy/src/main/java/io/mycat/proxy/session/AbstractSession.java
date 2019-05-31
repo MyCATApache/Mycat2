@@ -27,10 +27,10 @@ import org.slf4j.LoggerFactory;
  * 实际包含运行状态的session实现 本对象封装 1.selector 2.读写通道 4.session创建时间 sessionId就是connectionId
  *
  * @param <T> 子类
- * @author jamie12221
- *  date 2019-05-10 13:21
+ * @author jamie12221 date 2019-05-10 13:21
  */
 public abstract class AbstractSession<T extends AbstractSession> implements Session<T> {
+
   final static Logger LOGGER = LoggerFactory.getLogger(AbstractSession.class);
   protected SocketChannel channel;
   protected SelectionKey channelKey;
@@ -70,26 +70,30 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   }
 
   public void change2ReadOpts() {
-  //  if ((channelKey.interestOps()&SelectionKey.OP_READ)==0) {
-      LOGGER.debug("change2ReadOpts");
+    if ((channelKey.interestOps() & SelectionKey.OP_READ) == 0) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("change2ReadOpts");
+      }
       channelKey.interestOps(SelectionKey.OP_READ);
-  //  }
+    }
   }
 
   public void change2WriteOpts() {
-  //  if ((channelKey.interestOps()&SelectionKey.OP_WRITE)==0) {
-      LOGGER.debug("change2WriteOpts");
+    if ((channelKey.interestOps() & SelectionKey.OP_WRITE) == 0) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("change2WriteOpts");
+      }
       channelKey.interestOps(SelectionKey.OP_WRITE);
-   // }
-  }
-  public void clearReadWriteOpts() {
-    //  if ((channelKey.interestOps()&SelectionKey.OP_WRITE)==0) {
-    LOGGER.debug("clearReadWriteOpts");
-    if (channelKey.interestOps()!=0){
-      channelKey.interestOps(0);
-
     }
-    // }
+  }
+
+  public void clearReadWriteOpts() {
+    if (channelKey.interestOps() != 0) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("clearReadWriteOpts");
+      }
+      channelKey.interestOps(0);
+    }
   }
 
   @Override

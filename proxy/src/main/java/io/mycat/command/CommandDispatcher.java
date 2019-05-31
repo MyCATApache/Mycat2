@@ -18,6 +18,7 @@ import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MycatSession;
 import java.util.HashMap;
@@ -34,246 +35,314 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
 
   default void handle(MycatSession mycat) {
     CommandDispatcher commandHandler = this;
-    MySQLPacket curPacket = mycat.currentProxyPayload();
-    if (mycat.getLocalInFileState() == LocalInFileRequestParseHelper.CONTENT_OF_FILE) {
-      byte[] bytes = curPacket.readEOFStringBytes();
-      mycat.resetCurrentProxyPayload();
-      commandHandler.handleContentOfFilename(bytes, mycat);
-      mycat.setLocalInFileState(EMPTY_PACKET);
-      return;
-    } else if (mycat.getLocalInFileState() == EMPTY_PACKET) {
-      mycat.resetCurrentProxyPayload();
-      commandHandler.handleContentOfFilenameEmptyOk();
-      mycat.setLocalInFileState(LocalInFileRequestParseHelper.COM_QUERY);
-      return;
-    }
-    byte head = curPacket.readByte();
-    switch (head) {
-      case MySQLCommandType.COM_SLEEP: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleSleep(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_QUIT: {
-        commandHandler.handleQuit(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_QUERY: {
+    MycatMonitor.onCommandStart(mycat);
+    try {
+      MySQLPacket curPacket = mycat.currentProxyPayload();
+      if (mycat.getLocalInFileState() == LocalInFileRequestParseHelper.CONTENT_OF_FILE) {
         byte[] bytes = curPacket.readEOFStringBytes();
         mycat.resetCurrentProxyPayload();
-        commandHandler.handleQuery(bytes, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_INIT_DB: {
-        String schema = curPacket.readEOFString();
+        commandHandler.handleContentOfFilename(bytes, mycat);
+        mycat.setLocalInFileState(EMPTY_PACKET);
+        return;
+      } else if (mycat.getLocalInFileState() == EMPTY_PACKET) {
         mycat.resetCurrentProxyPayload();
-        commandHandler.handleInitDb(schema, mycat);
-        break;
+        commandHandler.handleContentOfFilenameEmptyOk();
+        mycat.setLocalInFileState(LocalInFileRequestParseHelper.COM_QUERY);
+        return;
       }
-      case MySQLCommandType.COM_PING: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handlePing(mycat);
-        break;
-      }
-
-      case MySQLCommandType.COM_FIELD_LIST: {
-        String table = curPacket.readNULString();
-        String field = curPacket.readEOFString();
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleFieldList(table, field, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_SET_OPTION: {
-        boolean option = curPacket.readFixInt(2) == 1;
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleSetOption(option, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_STMT_PREPARE: {
-        byte[] bytes = curPacket.readEOFStringBytes();
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handlePrepareStatement(bytes, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_STMT_SEND_LONG_DATA: {
-        long statementId = curPacket.readFixInt(4);
-        long paramId = curPacket.readFixInt(2);
-        byte[] data = curPacket.readEOFStringBytes();
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handlePrepareStatementLongdata(statementId, paramId, data, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_STMT_EXECUTE: {
-        long statementId = curPacket.readFixInt(4);
-        byte flags = curPacket.readByte();
-        long iteration = curPacket.readFixInt(4);
-        assert iteration == 1;
-        int numParams = mycat.getNumParamsByStatementId(statementId);
-        if (numParams > 0) {
-          int length = (numParams + 7) / 8;
-          byte[] nullMap = curPacket.readBytes(length);
-          byte newParamsBoundFlag = curPacket.readByte();
-          if (newParamsBoundFlag == 1) {
-            byte[] typeList = new byte[numParams];
-            byte[] fieldList = new byte[numParams];
-            for (int i = 0; i < numParams; i++) {
-              typeList[i] = curPacket.readByte();
-              fieldList[i] = curPacket.readByte();
-            }
-            mycat.resetCurrentProxyPayload();
-            commandHandler
-                .handlePrepareStatementExecute(statementId, flags, numParams, nullMap, true,
-                    typeList, fieldList,
-                    mycat);
-            break;
-          } else {
-            mycat.resetCurrentProxyPayload();
-            commandHandler
-                .handlePrepareStatementExecute(statementId, flags, numParams, nullMap, false, null,
-                    null, mycat);
-            break;
-          }
-        } else {
+      byte head = curPacket.readByte();
+      switch (head) {
+        case MySQLCommandType.COM_SLEEP: {
+          MycatMonitor.onSleepCommandStart(mycat);
           mycat.resetCurrentProxyPayload();
-          commandHandler
-              .handlePrepareStatementExecute(statementId, flags, numParams, null, false, null, null,
-                  mycat);
+          commandHandler.handleSleep(mycat);
+          MycatMonitor.onSleepCommandEnd(mycat);
           break;
         }
-      }
-      case MySQLCommandType.COM_STMT_CLOSE: {
-        long statementId = curPacket.readFixInt(4);
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handlePrepareStatementClose(statementId, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_STMT_RESET: {
-        long statementId = curPacket.readFixInt(4);
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handlePrepareStatementReset(statementId, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_CREATE_DB: {
-        String schema = curPacket.readEOFString();
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleCreateDb(schema, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_DROP_DB: {
-        String schema = curPacket.readEOFString();
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleDropDb(schema, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_REFRESH: {
-        byte subCommand = curPacket.readByte();
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleRefresh(subCommand, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_SHUTDOWN: {
-        if (!curPacket.readFinished()) {
-          byte shutdownType = curPacket.readByte();
-          mycat.resetCurrentProxyPayload();
-          commandHandler.handleShutdown(shutdownType, mycat);
-        } else {
-          mycat.resetCurrentProxyPayload();
-          commandHandler.handleShutdown(0, mycat);
+        case MySQLCommandType.COM_QUIT: {
+          MycatMonitor.onQuitCommandStart(mycat);
+          commandHandler.handleQuit(mycat);
+          MycatMonitor.onQuitCommandEnd(mycat);
+          break;
         }
-        break;
-      }
-      case MySQLCommandType.COM_STATISTICS: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleStatistics(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_PROCESS_INFO: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleProcessInfo(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_CONNECT: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleConnect(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_PROCESS_KILL: {
-        long connectionId = curPacket.readFixInt(4);
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleProcessKill(connectionId, mycat);
-        break;
-      }
-      case MySQLCommandType.COM_DEBUG: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleDebug(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_TIME: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleTime(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_DELAYED_INSERT: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleTime(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_CHANGE_USER: {
-        String userName = curPacket.readNULString();
-        String authResponse = null;
-        String schemaName = null;
-        Integer characterSet = null;
-        String authPluginName = null;
-        HashMap<String, String> clientConnectAttrs = new HashMap<>();
-        int capabilities = mycat.getCapabilities();
-        if (MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities)) {
-          byte len = curPacket.readByte();
-          authResponse = curPacket.readFixString(len);
-        } else {
-          authResponse = curPacket.readNULString();
+        case MySQLCommandType.COM_QUERY: {
+          MycatMonitor.onQueryCommandStart(mycat);
+          byte[] bytes = curPacket.readEOFStringBytes();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleQuery(bytes, mycat);
+          MycatMonitor.onQueryCommandEnd(mycat);
+          break;
         }
-        schemaName = curPacket.readNULString();
-        if (!curPacket.readFinished()) {
-          characterSet = (int) curPacket.readFixInt(2);
-          if (MySQLServerCapabilityFlags.isPluginAuth(capabilities)) {
-            authPluginName = curPacket.readNULString();
-          }
-          if (MySQLServerCapabilityFlags.isConnectAttrs(capabilities)) {
-            long kvAllLength = curPacket.readLenencInt();
-            if (kvAllLength != 0) {
-              clientConnectAttrs = new HashMap<>();
+        case MySQLCommandType.COM_INIT_DB: {
+          MycatMonitor.onInitDbCommandStart(mycat);
+          String schema = curPacket.readEOFString();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleInitDb(schema, mycat);
+          MycatMonitor.onInitDbCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_PING: {
+          MycatMonitor.onPingCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handlePing(mycat);
+          MycatMonitor.onPingCommandEnd(mycat);
+          break;
+        }
+
+        case MySQLCommandType.COM_FIELD_LIST: {
+          MycatMonitor.onFieldListCommandStart(mycat);
+          String table = curPacket.readNULString();
+          String field = curPacket.readEOFString();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleFieldList(table, field, mycat);
+          MycatMonitor.onFieldListCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_SET_OPTION: {
+          MycatMonitor.onSetOptionCommandStart(mycat);
+          boolean option = curPacket.readFixInt(2) == 1;
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleSetOption(option, mycat);
+          MycatMonitor.onSetOptionCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_STMT_PREPARE: {
+          MycatMonitor.onPrepareCommandStart(mycat);
+          byte[] bytes = curPacket.readEOFStringBytes();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handlePrepareStatement(bytes, mycat);
+          MycatMonitor.onPrepareCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_STMT_SEND_LONG_DATA: {
+          MycatMonitor.onSendLongDataCommandStart(mycat);
+          long statementId = curPacket.readFixInt(4);
+          long paramId = curPacket.readFixInt(2);
+          byte[] data = curPacket.readEOFStringBytes();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handlePrepareStatementLongdata(statementId, paramId, data, mycat);
+          MycatMonitor.onSendLongDataCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_STMT_EXECUTE: {
+          MycatMonitor.onExecuteCommandStart(mycat);
+          try {
+            long statementId = curPacket.readFixInt(4);
+            byte flags = curPacket.readByte();
+            long iteration = curPacket.readFixInt(4);
+            assert iteration == 1;
+            int numParams = mycat.getNumParamsByStatementId(statementId);
+            if (numParams > 0) {
+              int length = (numParams + 7) / 8;
+              byte[] nullMap = curPacket.readBytes(length);
+              byte newParamsBoundFlag = curPacket.readByte();
+              if (newParamsBoundFlag == 1) {
+                byte[] typeList = new byte[numParams];
+                byte[] fieldList = new byte[numParams];
+                for (int i = 0; i < numParams; i++) {
+                  typeList[i] = curPacket.readByte();
+                  fieldList[i] = curPacket.readByte();
+                }
+                mycat.resetCurrentProxyPayload();
+                commandHandler
+                    .handlePrepareStatementExecute(statementId, flags, numParams, nullMap, true,
+                        typeList, fieldList,
+                        mycat);
+                break;
+              } else {
+                mycat.resetCurrentProxyPayload();
+                commandHandler
+                    .handlePrepareStatementExecute(statementId, flags, numParams, nullMap, false,
+                        null,
+                        null, mycat);
+                break;
+              }
+            } else {
+              mycat.resetCurrentProxyPayload();
+              commandHandler
+                  .handlePrepareStatementExecute(statementId, flags, numParams, null, false, null,
+                      null,
+                      mycat);
+              break;
             }
-            int count = 0;
-            while (count < kvAllLength) {
-              String k = curPacket.readLenencString();
-              String v = curPacket.readLenencString();
-              count += k.length();
-              count += v.length();
-              count += calcLenencLength(k.length());
-              count += calcLenencLength(v.length());
-              clientConnectAttrs.put(k, v);
-            }
+          }finally {
+            MycatMonitor.onExecuteCommandEnd(mycat);
           }
         }
-        mycat.resetCurrentProxyPayload();
-        commandHandler
-            .handleChangeUser(userName, authResponse, schemaName, characterSet, authPluginName,
-                clientConnectAttrs, mycat);
-        break;
+        case MySQLCommandType.COM_STMT_CLOSE: {
+          MycatMonitor.onCloseCommandStart(mycat);
+          long statementId = curPacket.readFixInt(4);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handlePrepareStatementClose(statementId, mycat);
+          MycatMonitor.onCloseCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_STMT_RESET: {
+          MycatMonitor.onResetCommandStart(mycat);
+          long statementId = curPacket.readFixInt(4);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handlePrepareStatementReset(statementId, mycat);
+          MycatMonitor.onResetCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_CREATE_DB: {
+          MycatMonitor.onCreateDbCommandStart(mycat);
+          String schema = curPacket.readEOFString();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleCreateDb(schema, mycat);
+          MycatMonitor.onCreateDbCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_DROP_DB: {
+          MycatMonitor.onDropDbCommandStart(mycat);
+          String schema = curPacket.readEOFString();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleDropDb(schema, mycat);
+          MycatMonitor.onDropDbCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_REFRESH: {
+          MycatMonitor.onRefreshCommandStart(mycat);
+          byte subCommand = curPacket.readByte();
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleRefresh(subCommand, mycat);
+          MycatMonitor.onRefreshCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_SHUTDOWN: {
+          MycatMonitor.onShutdownCommandStart(mycat);
+          try {
+            if (!curPacket.readFinished()) {
+              byte shutdownType = curPacket.readByte();
+              mycat.resetCurrentProxyPayload();
+              commandHandler.handleShutdown(shutdownType, mycat);
+            } else {
+              mycat.resetCurrentProxyPayload();
+              commandHandler.handleShutdown(0, mycat);
+            }
+          }finally {
+            MycatMonitor.onShutdownCommandEnd(mycat);
+          }
+          break;
+        }
+        case MySQLCommandType.COM_STATISTICS: {
+          MycatMonitor.onStatisticsCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleStatistics(mycat);
+          MycatMonitor.onStatisticsCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_PROCESS_INFO: {
+          MycatMonitor.onProcessInfoCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleProcessInfo(mycat);
+          MycatMonitor.onProcessInfoCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_CONNECT: {
+          MycatMonitor.onConnectCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleConnect(mycat);
+          MycatMonitor.onConnectCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_PROCESS_KILL: {
+          MycatMonitor.onProcessKillCommandStart(mycat);
+          long connectionId = curPacket.readFixInt(4);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleProcessKill(connectionId, mycat);
+          MycatMonitor.onProcessKillCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_DEBUG: {
+          MycatMonitor.onDebugCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleDebug(mycat);
+          MycatMonitor.onDebugCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_TIME: {
+          MycatMonitor.onTimeCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleTime(mycat);
+          MycatMonitor.onTimeCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_DELAYED_INSERT: {
+          MycatMonitor.onDelayedInsertCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleTime(mycat);
+          MycatMonitor.onDelayedInsertCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_CHANGE_USER: {
+          MycatMonitor.onChangeUserCommandStart(mycat);
+          try {
+            String userName = curPacket.readNULString();
+            String authResponse = null;
+            String schemaName = null;
+            Integer characterSet = null;
+            String authPluginName = null;
+            HashMap<String, String> clientConnectAttrs = new HashMap<>();
+            int capabilities = mycat.getCapabilities();
+            if (MySQLServerCapabilityFlags.isCanDo41Anthentication(capabilities)) {
+              byte len = curPacket.readByte();
+              authResponse = curPacket.readFixString(len);
+            } else {
+              authResponse = curPacket.readNULString();
+            }
+            schemaName = curPacket.readNULString();
+            if (!curPacket.readFinished()) {
+              characterSet = (int) curPacket.readFixInt(2);
+              if (MySQLServerCapabilityFlags.isPluginAuth(capabilities)) {
+                authPluginName = curPacket.readNULString();
+              }
+              if (MySQLServerCapabilityFlags.isConnectAttrs(capabilities)) {
+                long kvAllLength = curPacket.readLenencInt();
+                if (kvAllLength != 0) {
+                  clientConnectAttrs = new HashMap<>();
+                }
+                int count = 0;
+                while (count < kvAllLength) {
+                  String k = curPacket.readLenencString();
+                  String v = curPacket.readLenencString();
+                  count += k.length();
+                  count += v.length();
+                  count += calcLenencLength(k.length());
+                  count += calcLenencLength(v.length());
+                  clientConnectAttrs.put(k, v);
+                }
+              }
+            }
+            mycat.resetCurrentProxyPayload();
+            commandHandler
+                .handleChangeUser(userName, authResponse, schemaName, characterSet, authPluginName,
+                    clientConnectAttrs, mycat);
+          }finally {
+            MycatMonitor.onChangeUserCommandEnd(mycat);
+          }
+          break;
+        }
+        case MySQLCommandType.COM_RESET_CONNECTION: {
+          MycatMonitor.onResetCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleResetConnection(mycat);
+          MycatMonitor.onResetCommandEnd(mycat);
+          break;
+        }
+        case MySQLCommandType.COM_DAEMON: {
+          MycatMonitor.onDaemonCommandStart(mycat);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handleDaemon(mycat);
+          MycatMonitor.onDaemonCommandEnd(mycat);
+          break;
+        }
+        default: {
+          assert false;
+        }
       }
-      case MySQLCommandType.COM_RESET_CONNECTION: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleResetConnection(mycat);
-        break;
-      }
-      case MySQLCommandType.COM_DAEMON: {
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleDaemon(mycat);
-        break;
-      }
-      default: {
-        assert false;
-      }
+    }finally {
+      MycatMonitor.onCommandEnd(mycat);
     }
   }
 

@@ -196,6 +196,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     assert hint != null;
     onHandlerFinishedClear();
     closed = true;
+    MycatMonitor.onCloseMycatSession(this,normal,hint);
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {

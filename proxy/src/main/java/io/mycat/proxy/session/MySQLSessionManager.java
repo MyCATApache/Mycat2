@@ -233,7 +233,7 @@ public final class MySQLSessionManager implements
     assert reason != null;
     session.getDatasource().decrementSessionCounter();
     allSessions.remove(session);
-    MycatMonitor.onCloseMysqlSession(session);
+    MycatMonitor.onCloseMysqlSession(session, normal, reason);
     removeIdleSession(session);
     NIOUtil.close(session.channel());
   }

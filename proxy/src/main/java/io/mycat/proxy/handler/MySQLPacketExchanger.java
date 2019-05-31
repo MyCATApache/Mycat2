@@ -32,7 +32,6 @@ import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
-import java.nio.channels.SelectionKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +49,7 @@ public enum MySQLPacketExchanger {
 
   private static void onExceptionClearCloseInResponse(MycatSession mycat, Exception e) {
     logger.error("{}", e);
+    MycatMonitor.onPacketExchangerException(mycat,e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     mysql.resetPacket();
     mysql.setCallBack(null);
@@ -60,6 +60,7 @@ public enum MySQLPacketExchanger {
 
   private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e) {
     logger.error("{}", e);
+    MycatMonitor.onPacketExchangerWriteException(mycat,e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     PacketExchangerCallback callback = mysql.getCallBack();
     mysql.setCallBack(null);
@@ -81,6 +82,7 @@ public enum MySQLPacketExchanger {
       mysql.getSessionManager().addIdleSession(mysql);
     }
     mycatSession.onHandlerFinishedClear();
+    MycatMonitor.onPacketExchangerClear(mycatSession);
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
@@ -203,6 +205,7 @@ public enum MySQLPacketExchanger {
 
         @Override
         public void onException(Exception exception, Object sender, Object attr) {
+          MycatMonitor.onGettingBackendException(mycat,dataNode.getName(),exception);
           finallyCallBack.onRequestMySQLException(mycat, exception, attr);
         }
       });

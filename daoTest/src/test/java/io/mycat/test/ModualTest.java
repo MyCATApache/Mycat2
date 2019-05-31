@@ -43,14 +43,47 @@ public abstract class ModualTest {
   }
 
   public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
-      TestCallback task)
+      TestConnetionCallback task)
       throws InterruptedException, ExecutionException, IOException {
     loadModule(module, proxyBeanProviders, new MycatMonitorLogCallback(), task);
   }
 
   public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
       MycatMonitorCallback callback,
-      TestCallback task)
+        TestGettingConnetionCallback gettingConnetionCallback)
+      throws IOException, ExecutionException, InterruptedException {
+    String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
+    Path resolve = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module);
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    final CompletableFuture<String> future = new CompletableFuture<>();
+    MycatCore.startup(resolve.toAbsolutePath().toString(), proxyBeanProviders, callback,
+        new AsyncTaskCallBack() {
+          @Override
+          public void onFinished(Object sender, Object result, Object attr) {
+            executor.submit(() -> {
+              try {
+                gettingConnetionCallback.test(future);
+              }finally {
+                ProxyRuntime.INSTANCE.exit();
+                future.complete(null);
+              }
+            });
+          }
+
+          @Override
+          public void onException(Exception e, Object sender, Object attr) {
+            e.printStackTrace();
+            Assert.fail(e.toString());
+            ProxyRuntime.INSTANCE.exit();
+            future.complete(null);
+          }
+
+        });
+    future.get();
+  }
+  public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
+      MycatMonitorCallback callback,
+      TestConnetionCallback task)
       throws IOException, ExecutionException, InterruptedException {
     String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
     Path resolve = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module);
@@ -68,6 +101,7 @@ public abstract class ModualTest {
                 Assert.fail(e.toString());
               }finally {
                 ProxyRuntime.INSTANCE.exit();
+                future.complete(null);
               }
             });
           }
@@ -77,12 +111,13 @@ public abstract class ModualTest {
             e.printStackTrace();
             Assert.fail(e.toString());
             ProxyRuntime.INSTANCE.exit();
+            executor.shutdown();
+            future.complete(null);
           }
 
         });
     future.get();
   }
-
   public static void compelete(Object fulture) {
     CompletableFuture completableFuture = (CompletableFuture) fulture;
     completableFuture.complete(null);

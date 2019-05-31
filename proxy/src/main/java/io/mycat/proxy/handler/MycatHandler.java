@@ -13,6 +13,7 @@
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.handler;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -33,12 +34,12 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
   final
   @Override
   public void onSocketRead(MycatSession mycat) {
-    if (!mycat.isOpen()) {
-      onException(mycat, new ClosedChannelException());
-      mycat.close(false, "mysql session has closed");
-      return;
-    }
     try {
+      if (!mycat.isOpen()) {
+        onException(mycat, new ClosedChannelException());
+        mycat.close(false, "mysql session has closed");
+        return;
+      }
       mycat.currentProxyBuffer().newBufferIfNeed();
       if (!mycat.readFromChannel()) {
         return;
@@ -49,12 +50,11 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       mycat.handle();
       return;
     } catch (ClosedChannelException e) {
+      MycatMonitor.onMycatHandlerCloseException(mycat,e);
       onException(mycat, e);
       return;
     } catch (Exception e) {
-      onClear(mycat);
-      mycat.setLastMessage(e.toString());
-      mycat.writeErrorEndPacketBySyncInProcessError();
+      MycatMonitor.onMycatHandlerReadException(mycat,e);
       onException(mycat, e);
     }
   }
@@ -66,8 +66,8 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
         mycat.writeToChannel();
       }
     } catch (Exception e) {
-      onClear(mycat);
-      mycat.close(false, e);
+      MycatMonitor.onMycatHandlerWriteException(mycat,e);
+      onException(mycat,e);
     }
   }
 
@@ -81,13 +81,14 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
         mycat.writeToChannel();
       }
     } catch (Exception e) {
-      onClear(mycat);
-      mycat.close(false, e);
+      MycatMonitor.onMycatHandlerWriteException(mycat,e);
+      onException(mycat,e);
     }
   }
 
   @Override
   public void onException(MycatSession mycat, Exception e) {
+    MycatMonitor.onMycatHandlerException(mycat,e);
     LOGGER.error("{}", e);
     MycatSessionWriteHandler writeHandler = mycat.getWriteHandler();
     if (writeHandler != null) {
@@ -104,6 +105,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
    */
   public void onClear(MycatSession session) {
     session.onHandlerFinishedClear();
+    MycatMonitor.onMycatHandlerClear(session);
   }
 
 
