@@ -9,6 +9,9 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 - 静态注解可能会覆盖动态注解的结果
 - 设置schema的类型为ANNOTATION_ROUTE,则该schema开启动态注解
+- 为了减少复杂性,ANNOTATION_ROUTE仅支持一个table的sql
+- 不支持SQL改写(仅仅支持移除schema)
+- 一个SQL,仅支持单节点路由,跨节点不支持,不支持跨节点写入与跨节点查询
 - 动态注解依赖schema和function(分片算法)的配置
 
 ## 动态注解配置(rule)
@@ -27,6 +30,8 @@ tableRules:
 在此配置下,使用SQL解析可以分析出字段的查询类型与值,所以不需要使用动态注解提取
 
 ### 使用动态注解的分片
+
+动态注解使用正则表达式(暂时支持)提取分片值,然后使用分片值根据分片算法计算出dataNode
 
 ```yaml
 tableRules:
@@ -90,4 +95,8 @@ rangeAnnotations的正则表达式对应的捕获组的名字,以,分隔可以�
 
 
 
-一般情况下,equalKey与rangeStartKey,rangeEndKey必须一个生效,而且只有一个,但是他们都生效的时候,如果计算得出的DataNode是相同的,则不会抛出异常
+#### 注意事项
+
+1. 一般情况下,equalKey与rangeStartKey,rangeEndKey必须一个生效,而且只有一个.
+2. 但是他们都生效,即一个equalKey,一个rangeStartKey,一个rangeEndKey都存在的时候,如果计算得出的DataNode是相同的,则不会抛出异常.
+3. 范围查询分片范围必须在一个dataNode.
