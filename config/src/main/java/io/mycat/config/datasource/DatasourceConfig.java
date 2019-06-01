@@ -38,7 +38,7 @@ public class DatasourceConfig {
     private int maxRetryCount = GlobalConfig.MAX_RETRY_COUNT;
     private String dbType;
     private String url;
-
+    private int weight = 0;
 
     @Override
     public boolean equals(Object o) {
@@ -146,5 +146,13 @@ public class DatasourceConfig {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public int getWeight() {
+        return weight;
+    }
+
+    public void setWeight(int weight) {
+        this.weight = weight;
     }
 }

@@ -52,8 +52,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     public MycatSession mycat;
     private boolean finished = false;
     private AuthPacket auth ;
-//    public String clientAuthPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
-    public String clientAuthPluginName = MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME;
+    public String clientAuthPluginName = CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME;
     public boolean isChangeAuthPlugin = false;
     public void setMycatSession(MycatSession mycatSession) {
         this.mycat = mycatSession;
@@ -176,12 +175,12 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     public void failture(MycatSession mycat, String message) {
         mycat.setLastMessage(message);
-        mycat.writeErrorEndPacketBySyncInProcessError(2, ER_ACCESS_DENIED_ERROR);
+        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
     }
 
     public void failture(MycatSession mycat, Exception e) {
         mycat.setLastMessage(e);
-        mycat.writeErrorEndPacketBySyncInProcessError(2, ER_ACCESS_DENIED_ERROR);
+        mycat.writeErrorEndPacketBySyncInProcessError(mycat.getNextPacketId(), ER_ACCESS_DENIED_ERROR);
     }
 
     @Override
@@ -251,19 +250,19 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         if (password == null || password.length == 0) {
             return false;
         }
-        if(clientAuthPluginName.equals(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME)) {
+//        if(clientAuthPluginName.equals(MysqlNativePasswordPluginUtil.PROTOCOL_PLUGIN_NAME)) {
             byte[] encryptPass = MysqlNativePasswordPluginUtil.scramble411(rightPassword, seed);
             if (checkBytes(password, encryptPass)) {
                 return true;
             }
-        } else if(clientAuthPluginName.equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)){
-            byte[]  encryptPass = CachingSha2PasswordPlugin.scrambleCachingSha2(rightPassword, seed);
+//        } else if(clientAuthPluginName.equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)){
+            encryptPass = CachingSha2PasswordPlugin.scrambleCachingSha2(rightPassword, seed);
             if (checkBytes(password, encryptPass)) {
                 return true;
             }
-        } else {
-            throw new RuntimeException(String.format("unknow auth plugin %s", clientAuthPluginName));
-        }
+//        } else {
+//            throw new RuntimeException(String.format("unknow auth plugin %s", clientAuthPluginName));
+//        }
         return false;
     }
 

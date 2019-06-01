@@ -20,6 +20,8 @@ import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.logTip.ReplicaTip;
+import io.mycat.plug.loadBalance.LoadBalanceDataSource;
+import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
@@ -27,6 +29,7 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221
  *  date 2019-05-10 13:21
  **/
-public abstract class MySQLReplica implements MycatReplica {
+public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   static Logger logger = LoggerFactory.getLogger(MySQLReplica.class);
 
   private final ReplicaConfig config;
@@ -111,12 +115,29 @@ public abstract class MySQLReplica implements MycatReplica {
     if (strategy == null) {
       strategy = this.defaultLoadBalanceStrategy;
     }
-    datasource = strategy.select(this, writeIndex, this.datasourceList);
+    List<LoadBalanceDataSource> activeDataSource = getDataSourceByLoadBalacneType();
+    datasource = (MySQLDatasource)strategy.select(this,  activeDataSource);
     if (datasource == null) {
       getWriteDatasource(asynTaskCallBack);
     } else {
       getDatasource(datasource, asynTaskCallBack);
     }
+  }
+
+  private List<LoadBalanceDataSource> getDataSourceByLoadBalacneType() {
+    switch (this.getConfig().getBalanceType()){
+      case BALANCE_ALL:
+        return this.datasourceList.stream().filter(MySQLDatasource::isAlive).collect(Collectors.toList());
+      case BALANCE_NONE:
+        return Arrays.asList(getMaster());
+      case BALANCE_ALL_READ:
+        return this.datasourceList.stream()
+                .filter(mySQLDatasource-> mySQLDatasource.isAlive() && mySQLDatasource.isSlave())
+                .collect(Collectors.toList());
+      default:
+        return Collections.EMPTY_LIST;
+    }
+
   }
 
   /**
@@ -163,6 +184,7 @@ public abstract class MySQLReplica implements MycatReplica {
   /**
    * 获取集群名字
    */
+  @Override
   public String getName() {
     return config.getName();
   }

@@ -11,10 +11,7 @@ public interface LoadBalanceStrategy {
 
   /**
    * @param info 全局信息
-   * @param excludeIndex 排斥的下标
    * @param entityList 可选列表
-   * @param <INFO> 全局信息的类型
-   * @param <ENTITY> 结果类型
    */
-  <INFO, ENTITY> ENTITY select(INFO info, int excludeIndex, List<ENTITY> entityList);
+  LoadBalanceDataSource select(LoadBalanceInfo info, List<LoadBalanceDataSource> entityList);
 }

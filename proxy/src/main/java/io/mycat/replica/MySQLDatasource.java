@@ -16,6 +16,7 @@ package io.mycat.replica;
 
 import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.plug.loadBalance.LoadBalanceDataSource;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221
  *  date 2019-05-10 13:21
  **/
-public abstract class MySQLDatasource {
+public abstract class MySQLDatasource implements LoadBalanceDataSource{
 
   protected static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
   protected final int index;
@@ -103,7 +104,7 @@ public abstract class MySQLDatasource {
   }
 
   public abstract boolean isAlive();
-
+  @Override
   public String getName() {
     return this.datasourceConfig.getName();
   }
@@ -153,16 +154,23 @@ public abstract class MySQLDatasource {
     return Objects.hash(index, datasourceConfig, replica, collationIndex);
   }
 
+  @Override
   public boolean isMaster() {
     return index == replica.getMasterIndex();
   }
-
+  @Override
   public boolean isSlave() {
     return index != replica.getMasterIndex();
   }
 
+  @Override
   public int getSessionCounter() {
     return connectionCounter.get();
+  }
+
+  @Override
+  public int getWeight() {
+    return this.datasourceConfig.getWeight();
   }
 
   public int decrementSessionCounter() {

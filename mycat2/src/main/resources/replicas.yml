@@ -1,24 +1,25 @@
 replicas:
   - name: repli                      # 复制组 名称   必须唯一
-    repType: MASTER_SLAVE           # 复制类型
+    repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
-    balanceName: BalanceAllRead   # 读写分离类型
+    balanceName: BalanceLeastActive   # 读写分离类型
+    balanceType: BALANCE_ALL  #balance 0 不开启读写分离机制 2;  所有读操作都随机的在 writeHost、readhost 上分发; 3 所有读请求随机的分发到 wiriterHost 对应的 readhost 执行，writerHost 不负担读压力
     mysqls:
-      - name: mytest3306              # mysql 主机名
+      - name: mytest330              # mysql 主机名
         ip: 127.0.0.1               # i
         port: 3306                  # port
         user: root                  # 用户名
-        password:        123456     # 密码
+        password: 123      # 密码
         minCon: 1                   # 最小连接
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
-      - name: jdbcMysql              # mysql 主机名
+        weight: 3            # 权重
+      - name: mytest3340              # mysql 主机名
         ip: 127.0.0.1               # i
-        port: 3306                  # port
+        port: 3340                  # port
         user: root                  # 用户名
-        password:        123456     # 密码
+        password: 123      # 密码
         minCon: 1                   # 最小连接
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
-        dbType: jdbcMysql
-        url: jdbc:mysql://localhost:8066/test
+        weight: 1            # 权重
