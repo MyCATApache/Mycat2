@@ -61,12 +61,17 @@ public class ReplicaConfig {
             return fetchColms;
         }
     }
+    public enum BalanceTypeEnum {
+        // 单独写节点
+        BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
+    }
 
     private String name;
     private RepTypeEnum repType;
     private RepSwitchTypeEnum switchType;
-  private String balanceName;
+    private String balanceName;
     private List<DatasourceConfig> mysqls;
+    private BalanceTypeEnum balanceType;
 
     public String getName() {
         return name;
@@ -92,12 +97,12 @@ public class ReplicaConfig {
         this.switchType = switchType;
     }
 
-  public String getBalanceName() {
-    return balanceName;
+    public String getBalanceName() {
+        return balanceName;
     }
 
-  public void setBalanceName(String balanceName) {
-    this.balanceName = balanceName;
+    public void setBalanceName(String balanceName) {
+        this.balanceName = balanceName;
     }
 
     public List<DatasourceConfig> getMysqls() {
@@ -106,6 +111,14 @@ public class ReplicaConfig {
 
     public void setMysqls(List<DatasourceConfig> mysqls) {
         this.mysqls = mysqls;
+    }
+
+    public BalanceTypeEnum getBalanceType() {
+        return balanceType;
+    }
+
+    public void setBalanceType(BalanceTypeEnum balanceType) {
+        this.balanceType = balanceType;
     }
 
     @Override
