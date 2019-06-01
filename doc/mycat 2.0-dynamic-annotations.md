@@ -11,7 +11,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 - 设置schema的类型为ANNOTATION_ROUTE,则该schema开启动态注解
 - 为了减少复杂性,ANNOTATION_ROUTE仅支持一个table的sql
 - 不支持SQL改写(仅仅支持移除schema)
-- 一个SQL,仅支持单节点路由,跨节点不支持,不支持跨节点写入与跨节点查询
+- 一个SQL,仅支持单节点路由,跨节点不支持(不支持跨多节点写入与跨多节点查询)
 - 动态注解依赖schema和function(分片算法)的配置
 
 ## 动态注解配置(rule)
