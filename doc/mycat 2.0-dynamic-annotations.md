@@ -100,3 +100,5 @@ rangeAnnotations的正则表达式对应的捕获组的名字,以,分隔可以�
 1. 一般情况下,equalKey与rangeStartKey,rangeEndKey必须一个生效,而且只有一个.
 2. 但是他们都生效,即一个equalKey,一个rangeStartKey,一个rangeEndKey都存在的时候,如果计算得出的DataNode是相同的,则不会抛出异常.
 3. 范围查询分片范围必须在一个dataNode.
+4. 注意正则表达式要匹配正确而且不会因为应用层的生成了动态的SQL导致匹配错误
+5. 可以使用正则来匹配自定义注释的内容,来达到动态注解路由的效果
