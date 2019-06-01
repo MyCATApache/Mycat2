@@ -210,6 +210,24 @@ defaultDataNode
 
 ## 逻辑表配置
 
+name
+
+除分表之外(暂不支持),逻辑表的名字,该名字与物理表的名字对应
+
+dataNodes
+
+引用dataNode配置的名字,以,分隔配置多个
+
+在DB_IN_MULTI_SERVER模式下,只有第一个生效
+
+在分片模式(ANNOTATION_ROUTE)模式下,分片节点的数量应该要符合相应的分片算法的配置
+
+ type
+
+暂时只有ANNOTATION_ROUTE需要指明是SHARING_DATABASE,因为还有全局表等类型(还不支持)
+
+
+
 ##### DB_IN_ONE_SERVER
 
 ```yaml
