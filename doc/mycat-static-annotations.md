@@ -1,5 +1,5 @@
-# mycat 2.0-annotations
-author:junwen 
+# mycat 2.0-static-annotations(静态注解)
+author:junwen 2019-6-1
 
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
 
@@ -22,6 +22,8 @@ author:junwen
 /*!mycat:xxx*/ select * from travelrecord
 /**mycat:xxx*/ select * from travelrecord 
 ```
+
+
 
 ## 参数命名规范
 
@@ -66,6 +68,8 @@ mycat注解有多种类型
 数据源选择类型
 
 一个类型只能配置一次,禁止配置多次
+
+静态注解的参数会覆盖动态注解的参数
 
 
 
