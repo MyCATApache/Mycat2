@@ -141,11 +141,11 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     s2.setRangeAnnotations(
         Arrays.asList("(?<between>((?:between )(?<id2s>[0-9])(?: and )(?<id2e>[0-9])))"));
 
-    s1.setRangeStart("id1s");
-    s1.setRangeEnd("id1e");
+    s1.setRangeStartKey("id1s");
+    s1.setRangeEndKey("id1e");
 
-    s2.setRangeStart("id2s");
-    s2.setRangeEnd("id2e");
+    s2.setRangeStartKey("id2s");
+    s2.setRangeEndKey("id2e");
 
     SharingFuntionRootConfig sfrc = new SharingFuntionRootConfig();
     ShardingFuntion shardingFuntion = new ShardingFuntion();
@@ -452,9 +452,9 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
         HashSet<String> equalsKey = new HashSet<>(
             Arrays.asList(SplitUtil.split(shardingRule.getEqualKeys(), ",")));
         HashSet<String> rangeStartKey = new HashSet<>(
-            Arrays.asList(SplitUtil.split(shardingRule.getRangeStart(), ",")));
+            Arrays.asList(SplitUtil.split(shardingRule.getRangeStartKey(), ",")));
         HashSet<String> rangeEndKey = new HashSet<>(
-            Arrays.asList(SplitUtil.split(shardingRule.getRangeEnd(), ",")));
+            Arrays.asList(SplitUtil.split(shardingRule.getRangeEndKey(), ",")));
         Route tmp = new Route(column, equalsKey, rangeStartKey, rangeEndKey);
         if (rootRouteNode == null) {
           String funtion = tableRule.getFuntion();

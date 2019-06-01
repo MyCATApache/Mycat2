@@ -11,8 +11,8 @@ public class ShardingRule {
   List<String> equalAnnotations;
   List<String> rangeAnnotations;
   String equalKey;
-  String rangeStart;
-  String rangeEnd;
+  String rangeStartKey;
+  String rangeEndKey;
 
 
   public String getEqualKeys() {
@@ -23,20 +23,20 @@ public class ShardingRule {
     this.equalKey = equalKey;
   }
 
-  public String getRangeStart() {
-    return rangeStart;
+  public String getRangeStartKey() {
+    return rangeStartKey;
   }
 
-  public void setRangeStart(String rangeStart) {
-    this.rangeStart = rangeStart;
+  public void setRangeStartKey(String rangeStartKey) {
+    this.rangeStartKey = rangeStartKey;
   }
 
-  public String getRangeEnd() {
-    return rangeEnd;
+  public String getRangeEndKey() {
+    return rangeEndKey;
   }
 
-  public void setRangeEnd(String rangeEnd) {
-    this.rangeEnd = rangeEnd;
+  public void setRangeEndKey(String rangeEndKey) {
+    this.rangeEndKey = rangeEndKey;
   }
 
   public String getColumn() {
