@@ -2,9 +2,9 @@
 
 Proxy-centric high-performance MySQL Middleware.
 
-[中文文档](/doc/mycat-readme.md)
+[中文文档](/doc/00-mycat-readme.md)
 
-[mysql-packet-parsing-state-machine](/doc/mysql-packet-parsing-state-machine.md)
+[mysql-packet-parsing-state-machine](/doc/100-mysql-packet-parsing-state-machine.md)
 
 ## Advantage
 

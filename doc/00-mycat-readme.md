@@ -20,19 +20,25 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [代理配置(mycat.yml)](01-mycat-proxy.md)
 
-[用户配置(user.yml)](01-mycat-user.md)
+[用户配置(user.yml)](02-mycat-user.md)
 
-[mysql集群配置(replicas.yml)](02-mycat-replica.md)
+[mysql集群配置(replicas.yml)](03-mycat-replica.md)
 
-[逻辑库配置(schema.yml)](03-mycat-schema.md)
+[逻辑库配置(schema.yml)](04-mycat-schema.md)
 
-[路由规则配置(rule.yml)](04-mycat-dynamic-annotation.md)
+[路由规则配置(rule.yml)](05-mycat-dynamic-annotation.md)
 
-[分片算法配置(function.yml)](05-mycat-function.md)
+[分片算法配置(function.yml)](06-mycat-function.md)
 
-[心跳配置(heartbeat.yml)](06-mycat-heartbeat.md)
+[心跳配置(heartbeat.yml)](07-mycat-heartbeat.md)
 
-[静态注解说明](07-mycat-static-annotation.md)
+[静态注解说明](08-mycat-static-annotation.md)
+
+[插件说明](09-mycat-plug.md)
+
+## 开发技术列表
+
+[mysql-packet-parsing-state-machine](100-mysql-packet-parsing-state-machine.md)
 
 
 
