@@ -21,19 +21,27 @@ loadBalances:
     clazz: io.mycat.plug.loadBalance.BalanceRandom
 ```
 
-defaultLoadBalance
+#### defaultLoadBalance
 
 当指定的负载均衡算法不存在的时候使用该算法
 
-loadBalances
+#### loadBalances
 
 配置多个负载均衡算法
 
-name
+#### name
 
 负载均衡算法的名字,供外部引用
 
-clazz
+#### clazz
 
 类路径
+
+
+
+------
+
+
+
+
 

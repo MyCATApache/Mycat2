@@ -42,3 +42,10 @@ heartbeat:
   minSwitchTimeInterval: 12000 # 毫秒  主从心跳最小切换时间
   
 ```
+
+
+
+
+
+------
+
