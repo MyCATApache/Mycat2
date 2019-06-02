@@ -9,9 +9,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## 心跳(heartbeat)
 
-mycat启动定时器,定时的对mysql数据源进行定时的发送心跳,用于检测mysql数据源是否可用.如果mysql数据源为master节点,则跟根据replica的switchType类型来决定是否jinxing
-
-主从的切换.
+mycat启动定时器,对mysql数据源发送心跳,用于检测mysql数据源是否可用.如果mysql数据源为master节点,则会根据replica的switchType类型来决定是否进行主从的切换.
 
 
 ## 集群心跳周期(replicaHeartbeatPeriod)
@@ -24,13 +22,13 @@ mycat启动定时器,定时的对mysql数据源进行定时的发送心跳,用�
 
 如果上一个心跳已经正常返回,则正常的发送心跳.
 
-如果上一个心跳发送还未返回,而且间隔小于mineartbeatChecktime,则不再发新的心跳,间隔已经大于mineartbeatChecktime,则说明上一个心跳已经超时,则不接受上一个心跳的结果,而且设置为mysql源为超时.
+如果上一个心跳发送还未返回,而且间隔小于minHeartbeatChecktime,则不再发新的心跳,间隔已经大于mineartbeatChecktime,则说明上一个心跳已经超时,不接受上一个心跳的结果,并设置为mysql源为超时.
 
 单位为毫秒.
 
 ## 错误重试次数(maxRetry)
 
-当心跳返回为错误,或者超时时候,需要连续的3次的错误才能设置为错误,避免因为网络抖动,当值数据源的不正常.
+当心跳返回为错误,或者超时时候,需要连续的3次的错误才能设置为错误,避免因为网络抖动,导致数据源的变成异常状态.
 
 ## 最小心跳切换时间(minSwitchTimeInterval)
 

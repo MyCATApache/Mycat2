@@ -48,7 +48,6 @@ replicas:
         password: 123      # 密码
         minCon: 1                   # 最小连接
         maxCon: 1000                  # 最大连接
-        maxRetryCount: 3            # 连接重试次数
         weight: 3            # 权重
       - name: mytest3340              # mysql 主机名
         ip: 127.0.0.1               # i
@@ -57,6 +56,71 @@ replicas:
         password: 123      # 密码
         minCon: 1                   # 最小连接
         maxCon: 1000                  # 最大连接
-        maxRetryCount: 3            # 连接重试次数
         weight: 1            # 权重
 ```
+## 副本的配置(replicas)
+
+name 
+
+复制组的名称,必须唯一
+
+repType(复制组的类型)
+
+普通的单一节点 SINGLE_NODE 
+
+普通主从 MASTER_SLAVE 
+
+普通基于garela cluster集群 GARELA_CLUSTER 
+
+switchType(切换类型)
+
+不进行主从切换 NOT_SWITCH
+
+进行主从切换 SWITCH
+
+balanceName（负载均衡算法名称）
+
+配置在plug.yml中的loadBalances底下的name的名称,用于选择读节点的选择的算法
+
+balanceType
+
+BALANCE_ALL 所有的mysqls的数据源进行负载均衡 
+
+BALANCE_ALL_READ,  所有的非master节点的mysqls的数据源进行负载均衡
+
+BALANCE_NONE  只有master节点
+
+###mysqls
+
+name
+
+mysqls的名称  同一个replica下必须唯一
+
+ip
+
+mysqls的连接的ip
+        
+port
+
+mysqls的连接的端口
+
+user
+
+mysqls的连接的用户
+
+password
+
+minCon
+                  
+mysqls保持的最小连接
+
+maxCon
+
+mysqls的最大的连接数 
+        
+weight
+
+用于均衡算法时候使用的权重
+
+
+  
