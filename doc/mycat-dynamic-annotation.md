@@ -1,4 +1,4 @@
-# mycat 2.0-dynamic-annotations(动态注解)
+# mycat 2.0-dynamic-annotation(动态注解)
 
 author:junwen 2019-6-1
 

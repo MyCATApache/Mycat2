@@ -2,6 +2,8 @@
 
 Proxy-centric high-performance MySQL Middleware.
 
+中文文档
+
 ## Advantage
 
 1. exchange data using a fixed-size network buffer as a  streaming proxy from backend to front that called passthrough.
