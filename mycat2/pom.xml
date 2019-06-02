@@ -8,7 +8,7 @@
     <version>0.1</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-
+  <packaging>jar</packaging>
   <artifactId>mycat2</artifactId>
 
   <dependencies>
@@ -29,6 +29,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <version>3.1.1</version>
         <configuration>
+          <finalName>mycat2-${project.version}-${timestamp}-single</finalName>
           <appendAssemblyId>false</appendAssemblyId>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -41,13 +42,131 @@
         </configuration>
         <executions>
           <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
+            <id>make-assembly</id> <!-- this is used for inheritance merges -->
+            <phase>package</phase> <!-- 指定在打包节点执行jar包合并操作 -->
             <goals>
-              <goal>assembly</goal>
+              <goal>single</goal>
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>appassembler-maven-plugin</artifactId>
+        <version>2.1.0</version>
+        <configuration>
+          <configurationDirectory>conf</configurationDirectory>
+          <!--配置文件拷贝-->
+          <configurationSourceDirectory>src/main/resources</configurationSourceDirectory>
+          <copyConfigurationDirectory>true</copyConfigurationDirectory>
+          <!--配置文件拷贝-->
+          <repositoryLayout>flat</repositoryLayout>
+          <repositoryName>lib</repositoryName>
+          <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+          <target>${project.build.directory}</target>
+          <useWildcardClassPath>true</useWildcardClassPath>
+          <encoding>UTF-8</encoding>
+          <tempDirectory>tmp</tempDirectory>
+          <daemons>
+            <daemon>
+              <id>mycat</id>
+              <mainClass>io.mycat.MycatCore</mainClass>
+              <commandLineArguments>
+                <commandLineArgument>start</commandLineArgument>
+              </commandLineArguments>
+              <platforms>
+                <platform>jsw</platform>
+              </platforms>
+              <generatorConfigurations>
+                <generatorConfiguration>
+                  <generator>jsw</generator>
+                  <includes>
+                    <!--<include>linux-x86-32</include>-->
+                    <include>linux-x86-64</include>
+                    <!--<include>windows-x86-32</include>-->
+                    <include>windows-x86-64</include>
+                  </includes>
+                  <configuration>
+                    <property>
+                      <name>wrapper.logfile</name>
+                      <value>logs/wrapper.log</value>
+                    </property>
+                  </configuration>
+                </generatorConfiguration>
+              </generatorConfigurations>
+              <jvmSettings>
+                <initialMemorySize>256M</initialMemorySize>
+                <maxMemorySize>512M</maxMemorySize>
+                <extraArguments>
+                  <extraArgument>-server</extraArgument>
+                  <!-- 远程JMX -->
+                  <extraArgument>-Dcom.sun.management.jmxremote</extraArgument>
+                  <extraArgument>-Dcom.sun.management.jmxremote.port=1984</extraArgument>
+                  <extraArgument>-Dcom.sun.management.jmxremote.authenticate=false</extraArgument>
+                  <extraArgument>-Dcom.sun.management.jmxremote.ssl=false</extraArgument>
+                  <extraArgument>-Xmx4G</extraArgument>
+                  <extraArgument>-Xms1G</extraArgument>
+                </extraArguments>
+              </jvmSettings>
+            </daemon>
+          </daemons>
+        </configuration>
+        <executions>
+          <execution>
+            <id>generate-jsw-scripts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>generate-daemons</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.8</version>
+        <executions>
+          <execution>
+            <id>createDistJar</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <target>
+                <echo message="${project.build.directory}"/>
+                <mkdir dir="${project.build.directory}"/>
+                <tar basedir="${project.build.directory}/jsw"
+                  destfile="${project.build.directory}/mycat2-${project.version}-${timestamp}.tar.gz"
+                  includes="mycat/bin/**,mycat/conf/**,mycat/lib/mycat2**">
+                </tar>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>1.4</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <format>{1}</format>
+          <items>
+            <item>timestamp</item>
+          </items>
+          <doCheck>false</doCheck>
+          <doUpdate>false</doUpdate>
+          <timestampFormat>{0,date,yyyyMMddHHmmss}</timestampFormat>
+        </configuration>
       </plugin>
     </plugins>
   </build>

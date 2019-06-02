@@ -44,22 +44,6 @@
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.7.2</version>
     </dependency>
-
-    <!-- jar for test -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
-    <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <!--<version>5.1.34</version>-->
-      <version>8.0.12</version>
-      <scope>test</scope>
-    </dependency>
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
   </dependencies>
 
@@ -82,20 +66,20 @@
   </repositories>
 
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-        <excludes>
-          <exclude>**/.svn/**</exclude>
-        </excludes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
-          <include>${version.file}</include>
-        </includes>
-      </resource>
-    </resources>
+    <!--<resources>-->
+    <!--<resource>-->
+    <!--<directory>src/main/resources</directory>-->
+    <!--<excludes>-->
+    <!--<exclude>**/.svn/**</exclude>-->
+    <!--</excludes>-->
+    <!--</resource>-->
+    <!--<resource>-->
+    <!--<directory>${basedir}</directory>-->
+    <!--<includes>-->
+    <!--<include>${version.file}</include>-->
+    <!--</includes>-->
+    <!--</resource>-->
+    <!--</resources>-->
     <testResources>
       <testResource>
         <directory>src/test/resources</directory>
@@ -116,39 +100,39 @@
         </configuration>
       </plugin>
 
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-source-plugin</artifactId>
-        <version>2.1.2</version>
-        <configuration>
-          <attach>true</attach>
-        </configuration>
-        <executions>
-          <execution>
-            <id>attach-sources</id>
-            <goals>
-              <goal>jar-no-fork</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.2</version>
-        <configuration>
-          <excludes>
-            <exclude>**/.svn/**</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
+      <!--<plugin>-->
+      <!--<groupId>org.apache.maven.plugins</groupId>-->
+      <!--<artifactId>maven-source-plugin</artifactId>-->
+      <!--<version>2.1.2</version>-->
+      <!--<configuration>-->
+      <!--<attach>true</attach>-->
+      <!--</configuration>-->
+      <!--<executions>-->
+      <!--<execution>-->
+      <!--<id>attach-sources</id>-->
+      <!--<goals>-->
+      <!--<goal>jar-no-fork</goal>-->
+      <!--</goals>-->
+      <!--</execution>-->
+      <!--</executions>-->
+      <!--</plugin>-->
+      <!--<plugin>-->
+      <!--<groupId>org.apache.maven.plugins</groupId>-->
+      <!--<artifactId>maven-jar-plugin</artifactId>-->
+      <!--<version>3.1.2</version>-->
+      <!--<configuration>-->
+      <!--<excludes>-->
+      <!--<exclude>**/.svn/**</exclude>-->
+      <!--</excludes>-->
+      <!--</configuration>-->
+      <!--<executions>-->
+      <!--<execution>-->
+      <!--<goals>-->
+      <!--<goal>test-jar</goal>-->
+      <!--</goals>-->
+      <!--</execution>-->
+      <!--</executions>-->
+      <!--</plugin>-->
       <plugin>
         <groupId>com.github.spotbugs</groupId>
         <artifactId>spotbugs-maven-plugin</artifactId>
