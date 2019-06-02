@@ -1,3 +1,5 @@
+
+
 # mycat 2.0-dynamic-annotation(rule.yml,分片规则,动态注解)
 
 author:junwen 2019-6-1

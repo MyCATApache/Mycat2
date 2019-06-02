@@ -1,0 +1,6 @@
+﻿---
+title: Mycat 2 配置手册
+author: Mycat community
+rights:  Creative Commons Attribution-ShareAlike 4.0 International License
+language: en_US
+...
