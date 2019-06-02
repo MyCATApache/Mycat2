@@ -34,7 +34,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [静态注解说明](08-mycat-static-annotation.md)
 
-[插件说明](09-mycat-plug.md)
+[插件说明(plug.md)](09-mycat-plug.md)
 
 ## 开发技术列表
 
