@@ -30,7 +30,7 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
     private volatile DatasourceStatus heartBeatStatus;
 
     protected int maxRetry = 3; //错误maxRetry设置为错误
-    private final long minSwitchtimeInterval; //配置最小切换时间
+    private final long minSwitchTimeInterval; //配置最小切换时间
 
     protected volatile boolean isChecking = false; //是否正在检查
     protected AtomicInteger errorCount = new AtomicInteger(0); //错误计数
@@ -47,7 +47,7 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
         HeartbeatConfig heartbeatConfig = heartbeatRootConfig
                 .getHeartbeat();
         this.maxRetry = heartbeatConfig.getMaxRetry();
-        this.minSwitchtimeInterval = heartbeatConfig.getMinSwitchtimeInterval();
+        this.minSwitchTimeInterval = heartbeatConfig.getMinSwitchTimeInterval();
         if(ReplicaConfig.RepTypeEnum.SINGLE_NODE.equals(replicaConfig.getRepType())) {
             this.heartbeatDetector = new SingleNodeHeartbeatDetector(replicaConfig, dataSource, this);
         } else  if(ReplicaConfig.RepTypeEnum.MASTER_SLAVE.equals(replicaConfig.getRepType())){
@@ -161,7 +161,7 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
     }
 
     private boolean canSwitchDataSource() {
-        return this.lastSwitchTime + this.minSwitchtimeInterval < System.currentTimeMillis();
+        return this.lastSwitchTime + this.minSwitchTimeInterval < System.currentTimeMillis();
     }
     public DatasourceStatus getHeartBeatStatus() {
         return heartBeatStatus;

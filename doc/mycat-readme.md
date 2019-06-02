@@ -30,7 +30,10 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [分片算法配置(function.yml)](mycat-function.md)
 
+[心跳配置(heartbeat.yml)](mycat-heartbeat.md)
+
 [静态注解说明](mycat-static-annotation.md)
+
 
 
 

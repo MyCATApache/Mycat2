@@ -23,7 +23,7 @@ public class HeartbeatConfig {
    */
   private long idleTimeout = 30 * 60 * 1000L;
   private long processorCheckPeriod = 1 * 1000L;
-  private long minSwitchtimeInterval = 30 * 60 * 1000L;
+  private long minSwitchTimeInterval = 30 * 60 * 1000L;
 
 
 
@@ -76,12 +76,12 @@ public class HeartbeatConfig {
     this.processorCheckPeriod = processorCheckPeriod;
   }
 
-  public long getMinSwitchtimeInterval() {
-    return minSwitchtimeInterval;
+  public long getMinSwitchTimeInterval() {
+    return minSwitchTimeInterval;
   }
 
-  public void setMinSwitchtimeInterval(long minSwitchtimeInterval) {
-    this.minSwitchtimeInterval = minSwitchtimeInterval;
+  public void setMinSwitchTimeInterval(long minSwitchTimeInterval) {
+    this.minSwitchTimeInterval = minSwitchTimeInterval;
   }
 
   public int getMaxRetry() {
@@ -97,7 +97,7 @@ public class HeartbeatConfig {
                + replicaHeartbeatPeriod
                + ", replicaIdleCheckPeriod=" + replicaIdleCheckPeriod + ", idleTimeout="
                + idleTimeout + ", processorCheckPeriod="
-               + processorCheckPeriod + ", minSwitchtimeInterval=" + minSwitchtimeInterval
+               + processorCheckPeriod + ", minSwitchTimeInterval=" + minSwitchTimeInterval
               + ", maxRetry=" + maxRetry + '}';
   }
 }
