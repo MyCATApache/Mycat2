@@ -36,10 +36,12 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [插件说明(plug.md)](09-mycat-plug.md)
 
+## [待办事项与开发历史记录](101-todo-history-list.md)
+
 ## 开发技术列表
 
 [mysql-packet-parsing-state-machine](100-mysql-packet-parsing-state-machine.md)
 
 
 
-
+## [文档编辑指南](99-edit-guide.md)
