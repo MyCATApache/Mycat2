@@ -1,4 +1,4 @@
-# 
+# 文档编辑指南
 
 author:junwen 2019-6-2
 
@@ -14,6 +14,3 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
     100-mysql-packet-parsing-state-machine.md ..........
    ```
 
-   
-
-## 
