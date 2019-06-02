@@ -2,7 +2,7 @@
 
 Proxy-centric high-performance MySQL Middleware.
 
-中文文档
+[中文文档](https://github.com/junwen12221/mycat2/blob/master/doc/mycat-readme.md)
 
 ## Advantage
 
