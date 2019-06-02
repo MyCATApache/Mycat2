@@ -90,7 +90,7 @@ BALANCE_ALL_READ,  所有的非master节点的mysqls的数据源进行负载均�
 
 BALANCE_NONE  只有master节点
 
-###mysqls
+### mysqls
 
 name
 
@@ -120,7 +120,7 @@ mysqls的最大的连接数
         
 weight
 
-用于均衡算法时候使用的权重
+权重
 
 
   
