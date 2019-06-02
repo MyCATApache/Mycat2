@@ -1,4 +1,4 @@
-## mycat 2.0-replica
+## mycat 2.0-replica(replicas.yml,masterIndexes.yml,副本,集群)
 
 author:junwen,zhangwy 2019-6-2
 

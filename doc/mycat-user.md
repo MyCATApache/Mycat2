@@ -1,4 +1,4 @@
-## mycat 2.0-user(用户与安全相关配置)
+## mycat 2.0-user(user.yml,用户与安全相关配置)
 
 author:junwen 2019-6-2
 

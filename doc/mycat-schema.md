@@ -1,4 +1,4 @@
-# mycat 2.0-schema(逻辑库)
+# mycat 2.0-schema(schema.yml,逻辑库)
 
 author:junwen 2019-6-1
 

@@ -1,4 +1,4 @@
-# mycat 2.0-proxy(代理)
+# mycat 2.0-proxy(mycat.yml,代理)
 
 author:junwen 2019-6-2
 

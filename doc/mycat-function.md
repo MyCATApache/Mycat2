@@ -1,4 +1,4 @@
-## mycat 2.0-function(分片算法)
+## mycat 2.0-function(function.yml,分片算法)
 
 author:junwen 2019-6-1
 

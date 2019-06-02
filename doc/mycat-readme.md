@@ -18,17 +18,17 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## 配置说明
 
-[代理配置](mycat-proxy.md)
+[代理配置(mycat.yml)](mycat-proxy.md)
 
-[用户配置](mycat-user.md)
+[用户配置(user.yml)](mycat-user.md)
 
-[集群配置](mycat-replica.md)
+[集群配置(replicas.yml)](mycat-replica.md)
 
-[逻辑库配置](mycat-schema.md)
+[逻辑库配置(schema.yml)](mycat-schema.md)
 
-[路由规则配置](mycat-dynamic-annotation.md)
+[路由规则配置(rule.yml)](mycat-dynamic-annotation.md)
 
-[分片算法配置](mycat-function.md)
+[分片算法配置(function.yml)](mycat-function.md)
 
 [静态注解说明](mycat-static-annotation.md)
 
