@@ -29,7 +29,6 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -37,7 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -127,13 +125,23 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   private List<LoadBalanceDataSource> getDataSourceByLoadBalacneType() {
     switch (this.getConfig().getBalanceType()){
       case BALANCE_ALL:
-        return this.datasourceList.stream().filter(MySQLDatasource::isAlive).collect(Collectors.toList());
+        List<LoadBalanceDataSource> list = new ArrayList<>();
+        for (MySQLDatasource datasource : this.datasourceList) {
+          if (datasource.isAlive()) {
+            list.add(datasource);
+          }
+        }
+        return list;
       case BALANCE_NONE:
-        return Arrays.asList(getMaster());
+        return Collections.singletonList(getMaster());
       case BALANCE_ALL_READ:
-        return this.datasourceList.stream()
-                .filter(mySQLDatasource-> mySQLDatasource.isAlive() && mySQLDatasource.isSlave())
-                .collect(Collectors.toList());
+        List<LoadBalanceDataSource> result = new ArrayList<>();
+        for (MySQLDatasource mySQLDatasource : this.datasourceList) {
+          if (mySQLDatasource.isAlive() && mySQLDatasource.isSlave()) {
+            result.add(mySQLDatasource);
+          }
+        }
+        return result;
       default:
         return Collections.EMPTY_LIST;
     }
