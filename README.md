@@ -4,6 +4,8 @@ Proxy-centric high-performance MySQL Middleware.
 
 [中文文档](/doc/mycat-readme.md)
 
+[mysql-packet-parsing-state-machine](/doc/mysql-packet-parsing-state-machine.md)
+
 ## Advantage
 
 1. exchange data using a fixed-size network buffer as a  streaming proxy from backend to front that called passthrough.
