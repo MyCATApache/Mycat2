@@ -98,7 +98,7 @@ web 可进行部分改进,减少手动添加注解的工作：
 
 当使用这个注解之后,mycat 连接当前的schema变成注解中的schema
 
-### SQL路由注解
+### SQL路由注解(暂不支持)
 
 ```sql
 /*! mycat:sql=select * from table where id = 1*/ create table travelrecord(id int);

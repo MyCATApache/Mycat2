@@ -62,6 +62,12 @@ public class Route {
       }
     }
     if (equal != null && columnStart != null) {
+      int nodeIndex = ruleAlgorithm.calculate(equal);
+      int[] nodeIndexes = ruleAlgorithm.calculateRange(columnStart, columnEnd);
+      if (nodeIndexes.length == 1 && nodeIndexes[0] == nodeIndex) {
+        receive.addDataNodeIndex(level, ruleAlgorithm, nodeIndex);
+        return;
+      }
       throw new MycatExpection(result.getSQL() + "can not get equal key or rangeKey");
     } else if (equal == null && columnStart == null) {
       expection(equal, columnStart, columnEnd);
@@ -74,7 +80,7 @@ public class Route {
         return;
       } else {
         if (ruleAlgorithm.getSubRuleAlgorithm() == null) {
-          receive.addDataNodeIndex(nodeIndex, ruleAlgorithm, nodeIndex);
+          receive.addDataNodeIndex(level, ruleAlgorithm, nodeIndex);
           return;
         } else {
           throw new MycatExpection("error table rule");

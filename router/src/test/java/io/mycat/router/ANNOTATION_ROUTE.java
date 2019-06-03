@@ -71,6 +71,19 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
         new OneServerResultRoute().setDataNode(dn1).setSql(sql));
   }
 
+  @Test
+  public void SHARING_DATABASE_EQUAL_RANGE() {
+    MycatRouter router = loadModule(module);
+    String sql;
+    String schema;
+    String dn1;
+    schema = "db1";
+    sql = "SELECT * FROM `travelrecord` WHERE id BETWEEN 1 AND 255 AND id = 5;";
+    dn1 = "dn1";
+    Assert.assertEquals(router.enterRoute(schema, sql),
+        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+  }
+
   /**
    * 全局表
    */
