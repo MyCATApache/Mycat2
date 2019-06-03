@@ -18,6 +18,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## 配置说明
 
+[快速开始](11-mycat-quick-start.md)
+
 [代理配置(mycat.yml)](01-mycat-proxy.md)
 
 [用户配置(user.yml)](02-mycat-user.md)
