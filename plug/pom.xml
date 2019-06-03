@@ -15,6 +15,11 @@
             <artifactId>router</artifactId>
             <version>0.1</version>
         </dependency>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>proxy</artifactId>
+            <version>0.1</version>
+        </dependency>
     </dependencies>
 
 
