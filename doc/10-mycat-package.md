@@ -30,4 +30,11 @@ decompression
 mycat2-${project.version}-${timestamp}.tar.gz
 ```
 
+Set the system environment variable MYCAT_HOME and configure the path of the folder
+
+```bash
+MYCAT_HOME = xxx
+```
+
 Reference Java Service Wrapper
+
