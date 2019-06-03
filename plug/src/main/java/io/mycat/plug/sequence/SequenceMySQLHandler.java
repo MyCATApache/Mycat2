@@ -60,6 +60,11 @@ public class SequenceMySQLHandler implements SequenceHandler {
       } else {
         callback.onException(exception, this, null);
       }
+      pengding(() -> {
+        for (Runnable runnable : queue) {
+          pengding(runnable);
+        }
+      });
     });
   }
 
