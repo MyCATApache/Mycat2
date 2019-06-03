@@ -41,8 +41,8 @@ replicas:
   - name: repli                      # 复制组 名称   必须唯一
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
-    balanceName: BalanceLeastActive   # 读写分离类型
-    balanceType: BALANCE_ALL
+    balanceName: BalanceLeastActive   #负载均衡算法名称
+    balanceType: BALANCE_ALL #负载均衡类型
     mysqls:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
@@ -100,3 +100,10 @@ dataNodes:
     database: db2
     replica: repli
 ```
+
+
+
+
+
+------
+
