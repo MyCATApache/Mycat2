@@ -20,6 +20,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [快速开始](11-mycat-quick-start.md)
 
+[功能测试](13-mycat-function-test.md)
+
 [代理配置(mycat.yml)](01-mycat-proxy.md)
 
 [用户配置(user.yml)](02-mycat-user.md)
@@ -39,6 +41,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 [插件说明(plug.yaml](09-mycat-plug.md)
 
 [打包](10-mycat-package.md)
+
+[合作者](12-collaborators.md)
 
 ## [待办事项与开发历史记录](101-todo-history-list.md)
 
