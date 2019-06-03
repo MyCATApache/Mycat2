@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class SequenceMySQLHandler implements SequenceHandler {
 
-  private final AtomicLong currentValue = new AtomicLong(0);
+  private final AtomicLong currentValue = new AtomicLong(0);//@todo AtomicLongArray
   private final AtomicLong maxSequenceValue = new AtomicLong(-1);
   private final ConcurrentLinkedQueue<Runnable> queue = new ConcurrentLinkedQueue<>();
 
