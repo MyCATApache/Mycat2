@@ -34,7 +34,9 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [静态注解说明](08-mycat-static-annotation.md)
 
-[插件说明(plug.md)](09-mycat-plug.md)
+[插件说明(plug.yaml](09-mycat-plug.md)
+
+[打包](10-mycat-package.md)
 
 ## [待办事项与开发历史记录](101-todo-history-list.md)
 

@@ -581,21 +581,13 @@ mysql server 5.5/5.6/5.7/8
 
 
 
-
 ## package
 
+mycat2 module
+
+```bash
+mvn package
 ```
-cd mycat2
-compile assembly:single
-```
-
-or you can
-
-set the Working directory to mycat2  and
-
-set command line to compile assembly:single
-
-in your run/debug configuration.
 
 
 
