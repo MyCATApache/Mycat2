@@ -36,9 +36,13 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [心跳配置(heartbeat.yml)](07-mycat-heartbeat.md)
 
+[插件配置(plug.yaml](09-mycat-plug.md)
+
 [静态注解说明](08-mycat-static-annotation.md)
 
-[插件说明(plug.yaml](09-mycat-plug.md)
+[负载均衡说明](15-mycat-balance.md)
+
+[全局序列号说明](14-mycat-sequence.md)
 
 [打包](10-mycat-package.md)
 
