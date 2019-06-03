@@ -59,7 +59,7 @@ MAX_PACKET_SIZE = 256 * 256 * 256 - 1
 ## 事务测试
 
 - [ ] 客户端设置autocommit为true,mycat对于每次更新语句都可以解绑后端连接
-- [ ] 客户端设置autocommit为false,除非提交事务,mycat都不能解绑后端连接
+- [ ] 客户端设置autocommit为false,除非提交事务或者回滚,mycat都不能解绑后端连接
 
 
 
