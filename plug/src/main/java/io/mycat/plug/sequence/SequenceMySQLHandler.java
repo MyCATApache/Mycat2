@@ -5,6 +5,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * chenjunwen 2019.6.4
+ *
+ * 1.本类线程安全
+ * 2.异步IO操作,一旦获取多个序列号之后再回调,一次只有一个IO操作运行
+ *
  */
 public class SequenceMySQLHandler implements SequenceHandler {
 
