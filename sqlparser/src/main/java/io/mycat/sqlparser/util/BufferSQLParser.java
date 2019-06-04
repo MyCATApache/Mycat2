@@ -160,116 +160,86 @@ public class BufferSQLParser {
     return pos;
   }
 
-  int pickAnnotation(int pos, final int arrayCount, BufferSQLContext context) {
-    int intHash;
-    long hash;
-    while (pos < arrayCount) {
-      intHash = hashArray.getIntHash(pos);
-      hash = hashArray.getHash(pos);
-      switch (intHash) {
-        case IntTokenHash.ANNOTATION_END:
-          context.setRealSQLOffset(++pos);
-          return pos;
-        case IntTokenHash.DATANODE:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_DATANODE);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-            context
-                .setAnnotationValue(BufferSQLContext.ANNOTATION_DATANODE, hashArray.getHash(++pos));
-          }
-          break;
-        case IntTokenHash.SCHEMA:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_SCHEMA);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-            context
-                .setAnnotationValue(BufferSQLContext.ANNOTATION_SCHEMA, hashArray.getHash(++pos));
-          }
-          break;
-        case IntTokenHash.SQL:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
 
-          }
-          break;
-        case IntTokenHash.CATLET:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_CATLET);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-            int start = hashArray.getPos(++pos);
-            int length = hashArray.getSize(pos);
-            intHash = hashArray.getIntHash(++pos);
-            while (pos < arrayCount && intHash != IntTokenHash.ANNOTATION_END) {
-              length += hashArray.getSize(pos) + 1;//+1是因为前面的 . 没有被收入HashArray
-              intHash = hashArray.getIntHash(++pos);
-            }
-            context.setCatletName(start, length);
-            context.setAnnotationStringValue(BufferSQLContext.ANNOTATION_CATLET,
-                context.getCatletName());
-
-          }
-          break;
-        case IntTokenHash.DB_TYPE:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_DB_TYPE);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-            context
-                .setAnnotationValue(BufferSQLContext.ANNOTATION_DB_TYPE, hashArray.getHash(++pos));
-            ++pos;
-          }
-          break;
-        case IntTokenHash.ACCESS_COUNT:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-            context.setAnnotationValue(BufferSQLContext.ANNOTATION_ACCESS_COUNT,
-                TokenizerUtil.pickNumber(++pos, hashArray, sql));
-            ++pos;
-          }
-          break;
-        case IntTokenHash.AUTO_REFRESH:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-            context.setAnnotationValue(BufferSQLContext.ANNOTATION_AUTO_REFRESH,
-                hashArray.getHash(++pos));
-            ++pos;
-          }
-          break;
-        case IntTokenHash.CACHE_TIME:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
-          if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-            context.setAnnotationValue(BufferSQLContext.ANNOTATION_CACHE_TIME,
-                TokenizerUtil.pickNumber(++pos, hashArray, sql));
-            ++pos;
-          }
-          break;
-        case IntTokenHash.CACHE_RESULT:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_SQL_CACHE);
-          ++pos;
-          break;
-        case IntTokenHash.BALANCE:
-          if (hashArray.getHash(pos) == TokenHash.BALANCE) {
-            context.setAnnotationType(BufferSQLContext.ANNOTATION_BALANCE);
-            if (hashArray.getHash(++pos) == TokenHash.TYPE) {
-              if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-                context.setAnnotationValue(BufferSQLContext.ANNOTATION_BALANCE,
-                    hashArray.getHash(++pos));
-                ++pos;
-              }
-            }
-          }
-          break;
-        case IntTokenHash.REPLICA:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_REPLICA_NAME);
-          if (hashArray.getHash(++pos) == TokenHash.NAME) {
-            if (hashArray.getType(++pos) == Tokenizer.EQUAL) {
-              context.setAnnotationValue(BufferSQLContext.ANNOTATION_REPLICA_NAME,
-                  hashArray.getHash(++pos));
-              ++pos;
-            }
-          }
-          break;
-        default:
-          ++pos;
-      }
-    }
-    return pos;
-  }
+  static String sql3 = "SELECT  'product' as 'P_TYPE' ,\n" +
+      "\t \t\tp.XINSHOUBIAO,\n" +
+      "\t\t\t0 AS TRANSFER_ID,\n" +
+      "\t\t\tp.PRODUCT_ID ,\n" +
+      "\t\t\tp.PRODUCT_NAME,\n" +
+      "\t\t\tp.PRODUCT_CODE,\n" +
+      "\t\t\tROUND(p.APPLY_INTEREST,4) AS APPLY_INTEREST,\n" +
+      "\t\t\tp.BORROW_AMOUNT,\n" +
+      "\t\t\tCASE  WHEN p.FangKuanDate IS NULL THEN\n" +
+      "\t\t\t\tDATEDIFF(\n" +
+      "\t\t\t\t\tp.APPLY_ENDDATE,\n" +
+      "\t\t\t\t\tDATE_ADD(\n" +
+      "\t\t\t\t\t\tp.RAISE_END_TIME,\n" +
+      "\t\t\t\t\t\tINTERVAL 1 DAY\n" +
+      "\t\t\t\t\t)\n" +
+      "\t\t\t\t) +1\n" +
+      "\t\t\tELSE\n" +
+      "\t\t\t\tDATEDIFF(\n" +
+      "\t\t\t\t\tp.APPLY_ENDDATE,\n" +
+      "\t\t\t\t\tDATE_ADD(p.FangKuanDate, INTERVAL 1 DAY)\n" +
+      "\t\t\t\t) +1\n" +
+      "\t\t\tEND\t AS APPLY_ENDDAY,\n" +
+      "\t\t\t'' AS APPLY_ENDDATE,\n" +
+      "\t\t\tp.BORROW_ENDDAY,\n" +
+      "\t\t\t0 AS TRANSFER_HONGLI,\n" +
+      "\t\t\tp.BORROW_MONTH_TYPE,\n" +
+      "\t\t\tIFNULL(p.INVEST_SCHEDUL,0) AS INVEST_SCHEDUL,\n" +
+      "\t\t\tDATE_FORMAT(\n" +
+      "\t\t\t\tp.Product_pub_date,\n" +
+      "\t\t\t\t'%Y-%m-%d %H:%i:%s'\n" +
+      "\t\t\t) AS Product_pub_date,\n" +
+      " \t\t\td.DIZHIYA_TYPE_NAME,\n" +
+      "\t\t\tp.PRODUCT_TYPE_ID,\n" +
+      "\t\t\tp.PRODUCT_STATE,\n" +
+      "\t\t\tp.PRODUCT_LIMIT_TYPE_ID,\n" +
+      "\t\t\tp.PAYBACK_TYPE,\n" +
+      "\t\t\tp.TARGET_TYPE_ID,\n" +
+      "\t\t\tp.COUPONS_TYPE,\n" +
+      "      0 AS TRANSFER_TIME,\n" +
+      "      P.MANBIAODATE AS  MANBIAODATE\n" +
+      "\t\tFROM\n" +
+      "\t\t\tTProduct p\n" +
+      "\t\tJOIN TJieKuanApply j ON p.APPLY_NO = j.APPLY_NO\n" +
+      "\t\tJOIN TDiZhiYaType d ON d.DIZHIYA_TYPE = j.DIZHIYA_TYPE\n" +
+      "\t\tJOIN (\n" +
+      "\t\t\tSELECT\n" +
+      "\t\t\n" +
+      "\t\t\t\tPRODUCT_ID,\n" +
+      "\t\t\t\tCASE\n" +
+      "\t\t\tWHEN APPLY_ENDDATE IS NOT NULL THEN\n" +
+      "\t\t\t\tCASE  WHEN FangKuanDate IS NULL THEN\n" +
+      "\t\t\t\t\tDATEDIFF(\n" +
+      "\t\t\t\t\t\tAPPLY_ENDDATE,\n" +
+      "\t\t\t\t\t\tDATE_ADD(\n" +
+      "\t\t\t\t\t\t\tRAISE_END_TIME,\n" +
+      "\t\t\t\t\t\t\tINTERVAL 1 DAY\n" +
+      "\t\t\t\t\t\t)\n" +
+      "\t\t\t\t\t) +1\n" +
+      "\t\t\t\tELSE\n" +
+      "\t\t\t\t\tDATEDIFF(\n" +
+      "\t\t\t\t\t\tAPPLY_ENDDATE,\n" +
+      "\t\t\t\t\t\tDATE_ADD(FangKuanDate, INTERVAL 1 DAY)\n" +
+      "\t\t\t\t\t) +1\n" +
+      "\t\t\t\tEND\n" +
+      "\t\t\tWHEN BORROW_MONTH_TYPE = 1 THEN\n" +
+      "\t\t\t\tBORROW_ENDDAY\n" +
+      "\t\t\tWHEN BORROW_MONTH_TYPE = 2 THEN\n" +
+      "\t\t\t\tBORROW_ENDDAY * 30\n" +
+      "\t\t\tELSE\n" +
+      "\t\t\t\tBORROW_ENDDAY\n" +
+      "\t\t\tEND AS DAYS\n" +
+      "\t\t\tFROM\n" +
+      "\t\t\t\tTProduct\n" +
+      "\t\t\t) m ON p.PRODUCT_ID = m.PRODUCT_ID\n" +
+      "\t\tWHERE\n" +
+      "\t\t     1 = 1\n" +
+      "\t\t     AND p.PRODUCT_STATE IN(4,5,8) \n" +
+      "\t\t     AND (p.PRODUCT_ID) NOT IN (\n" +
+      "\t\t\t SELECT PRODUCT_ID FROM TProduct WHERE PRODUCT_STATE = 4 ";
 
   int pickSchemaToken(int pos, BufferSQLContext context) {
     context.setTblName(pos);
@@ -322,6 +292,128 @@ public class BufferSQLParser {
     return pos;
   }
 
+  public static void main(String[] args) {
+    BufferSQLParser parser = new BufferSQLParser();
+    BufferSQLContext context = new BufferSQLContext();
+    //parser.init();
+//        byte[] defaultByteArray = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
+//        byte[] defaultByteArray = "INSERT `mycatSchema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = ("select * from tbl_A, -- 单行注释\n" +
+//                "tbl_B b, #另一种单行注释\n" +
+//                "/*\n" +  //69
+//                "tbl_C\n" + //79
+//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = sql3.getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
+//        byte[] defaultByteArray = "insert tbl_A(id, val) valueStartIndex(1, 2);\ninsert tbl_B(id, val) valueStartIndex(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
+
+    ByteArrayView src = new DefaultByteArray(
+        "/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+//        ByteArrayView src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
+//        ByteArrayView src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
+//        long min = 0;
+//        for (int i = 0; i < 50; i++) {
+//            System.out.print("Loop " + i + " : ");
+//            long cur = RunBench(defaultByteArray, parser);//不加分析应该可以进2.6秒
+//            System.out.println(cur);
+//            if (cur < min || min == 0) {
+//                min = cur;
+//            }
+//        }
+//        System.out.print("min time : " + min);
+    parser.parse(src, context);
+    System.out.println(context.getSQLCount());
+//    System.out.println(context.getSelectItem(0));
+//    System.out.println(context.getSelectItem(1));
+    //IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
+    //System.out.print("token count : "+parser.hashArray.getCount());
+  }
+
+  /*
+   * 计划用于第二遍解析，处理分片表分片条件
+   */
+  public void secondParse() {
+
+  }
+
+  public void setOffset(int offset) {
+
+  }
+
+  int pickAnnotation(int pos, final int arrayCount, BufferSQLContext context) {
+    SQLMapAnnotation staticAnnotation = context.getStaticAnnotation();
+    int intHash;
+    boolean key = true;
+    int keyIndex = 0;
+    staticAnnotation.setProcessorPos(pos++);
+    while (pos < arrayCount) {
+      intHash = hashArray.getIntHash(pos);
+      if (intHash == IntTokenHash.ANNOTATION_END) {
+        context.setRealSQLOffset(++pos);
+        return pos;
+      } else if (hashArray.getType(pos) == Tokenizer.EQUAL) {
+        ++pos;
+      } else if (key) {
+        keyIndex = pos;
+        key = false;
+        ++pos;
+      } else {
+        staticAnnotation.addKeyValue(keyIndex, pos);
+        key = true;
+        if (hashArray.getType(pos + 1) == Tokenizer.COMMA) {
+          pos += 2;
+        }
+      }
+    }
+    return pos;
+  }
+
+
+  public void parse(ByteArrayView src, BufferSQLContext context) {
+    sql = src;
+    hashArray = context.getHashArray();
+    hashArray.init(src.length() - src.getOffset());
+    context.setCurBuffer(src);
+    tokenizer.tokenize(src, hashArray);
+    firstParse(context);
+  }
+
+  public void parse(byte[] src, BufferSQLContext context) {
+    this.defaultByteArray.setSrc(src);
+    sql = this.defaultByteArray;
+    hashArray = context.getHashArray();
+    hashArray.init(src.length);
+    context.setCurBuffer(sql);
+    tokenizer.tokenize(sql, hashArray);
+    firstParse(context);
+  }
+
+//    static long RunBench(byte[] defaultByteArray, NewSQLParser parser) {
+//        int count = 0;
+//        long start = System.currentTimeMillis();
+//        do {
+//            parser.tokenize(defaultByteArray);
+//        } while (count++ < 10_000_000);
+//        return System.currentTimeMillis() - start;
+//    }
+
+//    public void parse(ByteBuffer src, int offset, int length, BufferSQLContext context) {
+//        this.byteBufferArray.setSrc(src);
+//        this.byteBufferArray.setOffset(offset);
+//        this.byteBufferArray.setLength(length);
+//        if (logger.isDebugEnabled()) {
+//            logger.debug("Recieved SQL : " + this.byteBufferArray.getString(offset, length));
+//        }
+//        sql = this.byteBufferArray;
+//        hashArray = context.getHashArray();
+//        hashArray.init();
+//        context.setCurBuffer(sql);
+//        tokenizer.tokenize(sql, hashArray);
+//        firstParse(context);
+//        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
+//    }
 
   /**
    * 用于进行第一遍处理，处理sql类型以及提取表名
@@ -474,9 +566,9 @@ public class BufferSQLParser {
         case IntTokenHash.SET:
           if (hashArray.getHash(pos) == TokenHash.SET) {
             pos = TCLSQLParser
-                      .pickSetAutocommitAndSetTransactionOrCharset(++pos, arrayCount, context,
-                          hashArray,
-                          sql);
+                .pickSetAutocommitAndSetTransactionOrCharset(++pos, arrayCount, context,
+                    hashArray,
+                    sql);
           }
           break;
         case IntTokenHash.COMMIT:
@@ -523,7 +615,7 @@ public class BufferSQLParser {
           if (hashArray.getHash(pos) == TokenHash.KILL) {
 
             if (hashArray.getIntHash(++pos) == IntTokenHash.QUERY
-                    && hashArray.getHash(pos) == TokenHash.QUERY) {
+                && hashArray.getHash(pos) == TokenHash.QUERY) {
               context.setSQLType(BufferSQLContext.KILL_QUERY_SQL);
             } else {
               context.setSQLType(BufferSQLContext.KILL_SQL);
@@ -545,7 +637,7 @@ public class BufferSQLParser {
         case IntTokenHash.DESCRIBE:
           long hashValue;
           if (((hashValue = hashArray.getHash(pos)) == TokenHash.DESC) ||
-                  hashValue == TokenHash.DESCRIBE) {
+              hashValue == TokenHash.DESCRIBE) {
             context.setSQLType(BufferSQLContext.DESCRIBE_SQL);
             pos++;
           }
@@ -569,10 +661,6 @@ public class BufferSQLParser {
             //     pos = TCLSQLParser.pickCommitRollback(pos, arrayCount, context, hashArray);
           }
           break;
-        case IntTokenHash.ANNOTATION_BALANCE:
-          context.setAnnotationType(BufferSQLContext.ANNOTATION_BALANCE);
-          pos++;
-          break;
         case IntTokenHash.ANNOTATION_START:
           pos = pickAnnotation(++pos, arrayCount, context);
           break;
@@ -587,7 +675,7 @@ public class BufferSQLParser {
           int next = pos + 1;
           if (context.getCurSQLType() == BufferSQLContext.SELECT_SQL) {
             if (hashArray.getIntHash(next) == IntTokenHash.UPDATE
-                    && hashArray.getHash(next) == TokenHash.UPDATE) {
+                && hashArray.getHash(next) == TokenHash.UPDATE) {
               context.setSQLType(BufferSQLContext.SELECT_FOR_UPDATE_SQL);
             }
           }
@@ -669,179 +757,4 @@ public class BufferSQLParser {
     }
     context.setSQLFinished(pos);//为了确保最后一个没有分号的sql也能正确处理
   }
-
-  /*
-   * 计划用于第二遍解析，处理分片表分片条件
-   */
-  public void secondParse() {
-
-  }
-
-  public void setOffset(int offset) {
-
-  }
-
-  public static void main(String[] args) {
-    BufferSQLParser parser = new BufferSQLParser();
-    BufferSQLContext context = new BufferSQLContext();
-    //parser.init();
-//        byte[] defaultByteArray = "SELECT a FROM ab             , ee.ff AS f,(SELECT a FROM `schema_bb`.`tbl_bb`,(SELECT a FROM ccc AS c, `dddd`));".getBytes(StandardCharsets.UTF_8);//20个token
-//        byte[] defaultByteArray = "INSERT `mycatSchema`.`tbl_A` (`name`) VALUES ('kaiz');".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = ("select * from tbl_A, -- 单行注释\n" +
-//                "tbl_B b, #另一种单行注释\n" +
-//                "/*\n" +  //69
-//                "tbl_C\n" + //79
-//                "*/ tbl_D d;").getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = sql3.getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "SELECT * FROM table LIMIT 95,-1".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "/*balance*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "/*!MyCAT:DB_Type=Master*/select * from tbl_A where id=1;".getBytes(StandardCharsets.UTF_8);
-//        byte[] defaultByteArray = "insert tbl_A(id, val) values(1, 2);\ninsert tbl_B(id, val) values(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
-
-    ByteArrayView src = new DefaultByteArray(
-        "/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
-//        ByteArrayView src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
-//        ByteArrayView src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
-//        long min = 0;
-//        for (int i = 0; i < 50; i++) {
-//            System.out.print("Loop " + i + " : ");
-//            long cur = RunBench(defaultByteArray, parser);//不加分析应该可以进2.6秒
-//            System.out.println(cur);
-//            if (cur < min || min == 0) {
-//                min = cur;
-//            }
-//        }
-//        System.out.print("min time : " + min);
-    parser.parse(src, context);
-    System.out.println(context.getSQLCount());
-    System.out.println(context.getSelectItem(0));
-    System.out.println(context.getSelectItem(1));
-    //IntStream.range(0, context.getTableCount()).forEach(i -> System.out.println(context.getSchemaName(i) + '.' + context.getTableName(i)));
-    //System.out.print("token count : "+parser.hashArray.getCount());
-  }
-
-
-  public void parse(ByteArrayView src, BufferSQLContext context) {
-    sql = src;
-    hashArray = context.getHashArray();
-    hashArray.init(src.length() - src.getOffset());
-    context.setCurBuffer(src);
-    tokenizer.tokenize(src, hashArray);
-    firstParse(context);
-  }
-
-  public void parse(byte[] src, BufferSQLContext context) {
-    this.defaultByteArray.setSrc(src);
-    sql = this.defaultByteArray;
-    hashArray = context.getHashArray();
-    hashArray.init(src.length);
-    context.setCurBuffer(sql);
-    tokenizer.tokenize(sql, hashArray);
-    firstParse(context);
-  }
-
-//    static long RunBench(byte[] defaultByteArray, NewSQLParser parser) {
-//        int count = 0;
-//        long start = System.currentTimeMillis();
-//        do {
-//            parser.tokenize(defaultByteArray);
-//        } while (count++ < 10_000_000);
-//        return System.currentTimeMillis() - start;
-//    }
-
-//    public void parse(ByteBuffer src, int offset, int length, BufferSQLContext context) {
-//        this.byteBufferArray.setSrc(src);
-//        this.byteBufferArray.setOffset(offset);
-//        this.byteBufferArray.setLength(length);
-//        if (logger.isDebugEnabled()) {
-//            logger.debug("Recieved SQL : " + this.byteBufferArray.getString(offset, length));
-//        }
-//        sql = this.byteBufferArray;
-//        hashArray = context.getHashArray();
-//        hashArray.init();
-//        context.setCurBuffer(sql);
-//        tokenizer.tokenize(sql, hashArray);
-//        firstParse(context);
-//        //System.out.println("getRealSQL : "+context.getRealSQL(0)+" #limit count : "+context.getLimitCount());
-//    }
-
-  static String sql3 = "SELECT  'product' as 'P_TYPE' ,\n" +
-                           "\t \t\tp.XINSHOUBIAO,\n" +
-                           "\t\t\t0 AS TRANSFER_ID,\n" +
-                           "\t\t\tp.PRODUCT_ID ,\n" +
-                           "\t\t\tp.PRODUCT_NAME,\n" +
-                           "\t\t\tp.PRODUCT_CODE,\n" +
-                           "\t\t\tROUND(p.APPLY_INTEREST,4) AS APPLY_INTEREST,\n" +
-                           "\t\t\tp.BORROW_AMOUNT,\n" +
-                           "\t\t\tCASE  WHEN p.FangKuanDate IS NULL THEN\n" +
-                           "\t\t\t\tDATEDIFF(\n" +
-                           "\t\t\t\t\tp.APPLY_ENDDATE,\n" +
-                           "\t\t\t\t\tDATE_ADD(\n" +
-                           "\t\t\t\t\t\tp.RAISE_END_TIME,\n" +
-                           "\t\t\t\t\t\tINTERVAL 1 DAY\n" +
-                           "\t\t\t\t\t)\n" +
-                           "\t\t\t\t) +1\n" +
-                           "\t\t\tELSE\n" +
-                           "\t\t\t\tDATEDIFF(\n" +
-                           "\t\t\t\t\tp.APPLY_ENDDATE,\n" +
-                           "\t\t\t\t\tDATE_ADD(p.FangKuanDate, INTERVAL 1 DAY)\n" +
-                           "\t\t\t\t) +1\n" +
-                           "\t\t\tEND\t AS APPLY_ENDDAY,\n" +
-                           "\t\t\t'' AS APPLY_ENDDATE,\n" +
-                           "\t\t\tp.BORROW_ENDDAY,\n" +
-                           "\t\t\t0 AS TRANSFER_HONGLI,\n" +
-                           "\t\t\tp.BORROW_MONTH_TYPE,\n" +
-                           "\t\t\tIFNULL(p.INVEST_SCHEDUL,0) AS INVEST_SCHEDUL,\n" +
-                           "\t\t\tDATE_FORMAT(\n" +
-                           "\t\t\t\tp.Product_pub_date,\n" +
-                           "\t\t\t\t'%Y-%m-%d %H:%i:%s'\n" +
-                           "\t\t\t) AS Product_pub_date,\n" +
-                           " \t\t\td.DIZHIYA_TYPE_NAME,\n" +
-                           "\t\t\tp.PRODUCT_TYPE_ID,\n" +
-                           "\t\t\tp.PRODUCT_STATE,\n" +
-                           "\t\t\tp.PRODUCT_LIMIT_TYPE_ID,\n" +
-                           "\t\t\tp.PAYBACK_TYPE,\n" +
-                           "\t\t\tp.TARGET_TYPE_ID,\n" +
-                           "\t\t\tp.COUPONS_TYPE,\n" +
-                           "      0 AS TRANSFER_TIME,\n" +
-                           "      P.MANBIAODATE AS  MANBIAODATE\n" +
-                           "\t\tFROM\n" +
-                           "\t\t\tTProduct p\n" +
-                           "\t\tJOIN TJieKuanApply j ON p.APPLY_NO = j.APPLY_NO\n" +
-                           "\t\tJOIN TDiZhiYaType d ON d.DIZHIYA_TYPE = j.DIZHIYA_TYPE\n" +
-                           "\t\tJOIN (\n" +
-                           "\t\t\tSELECT\n" +
-                           "\t\t\n" +
-                           "\t\t\t\tPRODUCT_ID,\n" +
-                           "\t\t\t\tCASE\n" +
-                           "\t\t\tWHEN APPLY_ENDDATE IS NOT NULL THEN\n" +
-                           "\t\t\t\tCASE  WHEN FangKuanDate IS NULL THEN\n" +
-                           "\t\t\t\t\tDATEDIFF(\n" +
-                           "\t\t\t\t\t\tAPPLY_ENDDATE,\n" +
-                           "\t\t\t\t\t\tDATE_ADD(\n" +
-                           "\t\t\t\t\t\t\tRAISE_END_TIME,\n" +
-                           "\t\t\t\t\t\t\tINTERVAL 1 DAY\n" +
-                           "\t\t\t\t\t\t)\n" +
-                           "\t\t\t\t\t) +1\n" +
-                           "\t\t\t\tELSE\n" +
-                           "\t\t\t\t\tDATEDIFF(\n" +
-                           "\t\t\t\t\t\tAPPLY_ENDDATE,\n" +
-                           "\t\t\t\t\t\tDATE_ADD(FangKuanDate, INTERVAL 1 DAY)\n" +
-                           "\t\t\t\t\t) +1\n" +
-                           "\t\t\t\tEND\n" +
-                           "\t\t\tWHEN BORROW_MONTH_TYPE = 1 THEN\n" +
-                           "\t\t\t\tBORROW_ENDDAY\n" +
-                           "\t\t\tWHEN BORROW_MONTH_TYPE = 2 THEN\n" +
-                           "\t\t\t\tBORROW_ENDDAY * 30\n" +
-                           "\t\t\tELSE\n" +
-                           "\t\t\t\tBORROW_ENDDAY\n" +
-                           "\t\t\tEND AS DAYS\n" +
-                           "\t\t\tFROM\n" +
-                           "\t\t\t\tTProduct\n" +
-                           "\t\t\t) m ON p.PRODUCT_ID = m.PRODUCT_ID\n" +
-                           "\t\tWHERE\n" +
-                           "\t\t     1 = 1\n" +
-                           "\t\t     AND p.PRODUCT_STATE IN(4,5,8) \n" +
-                           "\t\t     AND (p.PRODUCT_ID) NOT IN (\n" +
-                           "\t\t\t SELECT PRODUCT_ID FROM TProduct WHERE PRODUCT_STATE = 4 ";
 }

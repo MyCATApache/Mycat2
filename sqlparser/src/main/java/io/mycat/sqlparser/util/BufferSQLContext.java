@@ -2,7 +2,6 @@ package io.mycat.sqlparser.util;
 
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
-import io.mycat.router.staticAnnotation.MycatProxyStaticAnnotation;
 import java.util.Arrays;
 
 /**
@@ -78,62 +77,42 @@ public class BufferSQLContext {
   public static final byte SET_CHARSET = 43;
   public static final byte SET_CHARSET_RESULT = 44;
   public static final byte SHOW_WARNINGS = 45;
-
-  //admin command
-//    public static final byte MYCAT_SWITCH_REPL = 43;
-//    public static final byte MYCAT_SHOW_CONFIGS = 44;
   public static final byte MYCAT_SQL = 43;
-
   public static final byte SHUTDOWN_SQL = 44;
 
-  //ANNOTATION TYPE
-  public static final byte ANNOTATION_BALANCE = 1;
-  public static final byte ANNOTATION_SQL = 2;
-  public static final byte ANNOTATION_DB_TYPE = 3;
-  public static final byte ANNOTATION_SCHEMA = 4;
-  public static final byte ANNOTATION_DATANODE = 5;
-  public static final byte ANNOTATION_CATLET = 6;
-  public static final byte ANNOTATION_SQL_CACHE = 7;
-  public static final byte ANNOTATION_ACCESS_COUNT = 7;
-  public static final byte ANNOTATION_AUTO_REFRESH = 8;
-  public static final byte ANNOTATION_CACHE_TIME = 9;
-  public static final byte ANNOTATION_REPLICA_NAME = 10;
-  public static final byte ANNOTATION_MERGE = 10;
-
+  private static int tblResultArraySize = 32;//todo : 测试期先写死，后期考虑从设置参数中读取
+  private final SQLMapAnnotation annotation = new SQLMapAnnotation();
 
   private short[] tblResult;  //记录格式：[{mycatSchema hash array index(defaults 0), tbl hash array index}]
   private long[] sqlInfoArray;  //用于记录sql索引，用于支持sql批量提交，格式 [{hash array start pos, sql type(15-5 hash array real sql offset, 4-0 sql type), tblResult start pos, tblResult count}]
   private byte totalTblCount;
-  private int[] annotationCondition;
-  private int[] selectItemArray;
-  private int selectItemArrayPos;
   private int tblResultPos;
   private byte schemaCount;
-  private int schemaResultPos;
-  private ByteArrayView buffer;
   private long sqlHash;
   private byte sqlType;
-  private int tblResultArraySize = 256;//todo : 测试期先写死，后期考虑从设置参数中读取
-  private byte annotationType;
-  private long[] annotationValue;
-  private String[] annotationStringValue;
+  private ByteArrayView buffer;
   private int totalSQLCount;
   private boolean hasLimit = false;
   private int limitStart = 0;
   private int limitCount = 0;
-  private HashArray hashArray = new HashArray();
   private int curSQLIdx;
   private int curSQLTblCount = 0;
   private int preHashArrayPos = 0;
   private int preTableResultPos = 0;
   private int hashArrayRealSQLOffset = 0;//记录真实sql开始偏移
-  private HashArray myCmdValue;
   private Boolean autocommit = null;
   private MySQLIsolation isolation;
   private MySQLIsolationLevel transactionLevel;
   private boolean accessMode;
   private String charset;
   private String charsetSetResult;
+  private boolean hasBetween;
+  private boolean hasCompare;
+  private boolean hasUnion;
+  private boolean hasSubQuery;
+  private boolean hasJoin;
+  private boolean hasWhere;
+  private HashArray hashArray = new HashArray();
 
   public Boolean isAutocommit() {
     return autocommit;
@@ -143,14 +122,6 @@ public class BufferSQLContext {
     this.autocommit = autocommit;
   }
 
-  private int catletNameStart = 0;
-  private int catletNameLength = 0;
-  private boolean hasBetween;
-  private boolean hasCompare;
-  private boolean hasUnion;
-  private boolean hasSubQuery;
-  private boolean hasJoin;
-  private boolean hasWhere;
 
   public String getTokenString(int pos) {
     return getBuffer().getStringByHashArray(pos, this.getHashArray());
@@ -207,11 +178,6 @@ public class BufferSQLContext {
   public BufferSQLContext() {
     tblResult = new short[tblResultArraySize];
     sqlInfoArray = new long[256];
-    annotationValue = new long[16];
-    annotationStringValue = new String[16];
-    annotationCondition = new int[64];
-    myCmdValue = new HashArray(256);
-    selectItemArray = new int[128];
   }
 
   public void setCurBuffer(ByteArrayView curBuffer) {
@@ -219,15 +185,10 @@ public class BufferSQLContext {
     totalTblCount = 0;
     schemaCount = 0;
     tblResultPos = 0;
-    schemaResultPos = 2;
     Arrays.fill(tblResult, (short) 0);
     Arrays.fill(sqlInfoArray, 0L);
     sqlHash = 0;
     sqlType = 0;
-    annotationType = 0;
-    Arrays.fill(annotationValue, 0);
-    Arrays.fill(selectItemArray, 0);
-    selectItemArrayPos = 0;
     hasLimit = false;
     totalSQLCount = 0;
     limitStart = 0;
@@ -237,15 +198,12 @@ public class BufferSQLContext {
     preHashArrayPos = 0;
     preTableResultPos = 0;
     hashArrayRealSQLOffset = 0;
-    myCmdValue.init();
-    catletNameStart = 0;
-    catletNameLength = 0;
-
     hasBetween = false;
     hasCompare = false;
     hasUnion = false;
     hasSubQuery = false;
     hasJoin = false;
+    annotation.init(hashArray, curBuffer);
   }
 
   public void setTblName(int hashArrayPos) {
@@ -479,25 +437,25 @@ public class BufferSQLContext {
     return limitCount;
   }
 
-  public boolean hasAnnotation() { //by kaiz : 是否包含注解，此处还需要完善
-    return this.annotationType != 0;
-  }
-
-  public void setAnnotationType(byte type) {
-    this.annotationType = type;
-  }
-
-  public void setAnnotationValue(byte typeKey, long value) {
-    this.annotationValue[typeKey] = value;
-  }
-
-  public void setAnnotationStringValue(byte typeKey, String value) {
-    this.annotationStringValue[typeKey] = value;
-  }
-
-  public String getAnnotationStringValue(byte typeKey) {
-    return this.annotationStringValue[typeKey];
-  }
+//  public boolean hasAnnotation() { //by kaiz : 是否包含注解，此处还需要完善
+//    return this.annotationType != 0;
+//  }
+//
+//  public void setAnnotationType(byte type) {
+//    this.annotationType = type;
+//  }
+//
+//  public void setAnnotationValue(byte typeKey, long value) {
+//    this.annotationValue[typeKey] = value;
+//  }
+//
+//  public void setAnnotationStringValue(byte typeKey, String value) {
+//    this.annotationStringValue[typeKey] = value;
+//  }
+//
+//  public String getAnnotationStringValue(byte typeKey) {
+//    return this.annotationStringValue[typeKey];
+//  }
 
   public void setAnnotationStart(int pos) {
   }
@@ -505,21 +463,17 @@ public class BufferSQLContext {
   public void setAnnotationSize(int size) {
   }
 
-  public byte getAnnotationType() {
-    return this.annotationType;
-  }
+//  public byte getAnnotationType() {
+//    return this.annotationType;
+//  }
+//
+//  public long getAnnotationValue(byte typeKey) {
+//    return this.annotationValue[typeKey];
+//  }
 
-  public long getAnnotationValue(byte typeKey) {
-    return this.annotationValue[typeKey];
-  }
-
-  public HashArray getMyCmdValue() {
-    return this.myCmdValue;
-  }
-
-  public String getAnnotationContent() {
-    return null;
-  } //by kaiz : 返回注解等号后面的内容
+//  public HashArray getMyCmdValue() {
+//    return this.myCmdValue;
+//  }
 
   public ByteArrayView getBuffer() {
     return buffer;
@@ -548,32 +502,9 @@ public class BufferSQLContext {
     return intHash;
   }
 
-  public int[] getAnnotationCondition() {
-    return annotationCondition;
-  }
 
   public int getSchemaCount() {
     return schemaCount & 0xff;
-  }
-
-  public void setSelectItem(int functionHash) {
-    selectItemArray[selectItemArrayPos++] = functionHash;
-  }
-
-  public int getSelectItem(int pos) {
-    if (pos > 128) {
-      return 0;
-    }
-    return selectItemArray[pos];
-  }
-
-  public void setCatletName(int start, int length) {
-    catletNameStart = start;
-    catletNameLength = length;
-  }
-
-  public String getCatletName() {
-    return buffer.getString(catletNameStart, catletNameLength);
   }
 
   public MySQLIsolation getIsolation() {
@@ -619,7 +550,7 @@ public class BufferSQLContext {
     this.charsetSetResult = charsetSetResult;
   }
 
-  public MycatProxyStaticAnnotation getStaticAnnotation() {
-    return null;
+  public SQLMapAnnotation getStaticAnnotation() {
+    return annotation;
   }
 }

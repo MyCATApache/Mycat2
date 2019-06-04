@@ -138,7 +138,7 @@ public class MatchMethodGenerator {
         initShrinkCharTbl();
 
         IntStream.range(0, 54).forEach(x -> {
-//            Map<Long, List<Token>> map = Stream.of(Token.values())
+//            Map<Long, List<Token>> map = Stream.of(Token.valueStartIndex())
             Map<Long, List<String>> map = null;
             try {
                 map = Files.lines(Paths.get(fileName))
@@ -163,7 +163,7 @@ public class MatchMethodGenerator {
                 e.printStackTrace();
             }
             Map.Entry<Long, List<String>> maxItem = map.entrySet().stream()
-                    //.filter((k) -> k.getValue().size() < 3)
+                //.filter((k) -> k.getValueStartIndex().size() < 3)
 //                    .count();
                     .max((a, b) -> a.getValue().size()>b.getValue().size()?1:(a.getValue().size()==b.getValue().size()?0:-1))
                     .get();
@@ -176,8 +176,8 @@ public class MatchMethodGenerator {
 
 //            System.out.println("result = "+x+" >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
 //            map.entrySet().stream()
-//                    .filter((k) -> k.getValue().size() > 1)
-//                    .forEach((e) -> System.out.format("%d : %s %n", e.getKey(), e.getValue().toString()));
+//                    .filter((k) -> k.getValueStartIndex().size() > 1)
+//                    .forEach((e) -> System.out.format("%d : %s %n", e.getKeyStartIndex(), e.getValueStartIndex().toString()));
 
         });}
 
@@ -233,9 +233,9 @@ public class MatchMethodGenerator {
 //            else {
 //                final long hash = genHash(str);
 //                sqlKeys.forEach(x -> {
-//                    if (x.getKey() == hash && !cmp(x.getValue(), str)) {
+//                    if (x.getKeyStartIndex() == hash && !cmp(x.getValueStartIndex(), str)) {
 //                        collideCount++;
-//                        System.out.println("Key '"+String.valueOf(x.getValue())+"' collides with '"+String.valueOf(str)+"' with hash : "+hash);
+//                        System.out.println("Key '"+String.valueOf(x.getValueStartIndex())+"' collides with '"+String.valueOf(str)+"' with hash : "+hash);
 //                    }
 //                });
 //                newCount++;
@@ -255,7 +255,7 @@ public class MatchMethodGenerator {
 //        srcArray.add('_');
 //        srcArray.add('-');
 //
-//        List<Pair<Long, char[]>> sqlKeys = Stream.of(Token.values())
+//        List<Pair<Long, char[]>> sqlKeys = Stream.of(Token.valueStartIndex())
 //                .filter(t -> t.name()!=null)
 //                .map(x -> new Pair<>(genHash(x.name().toCharArray()), x.name().toCharArray()))
 //                .collect(Collectors.toList());
@@ -380,5 +380,5 @@ public class MatchMethodGenerator {
 //        System.out.format("0x%xL;%n", genHash("dn1".toCharArray()));
 
     genIntTokenHash( "between");
-  };
+    }
 }
