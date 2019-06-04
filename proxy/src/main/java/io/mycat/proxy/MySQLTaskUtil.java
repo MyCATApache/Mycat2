@@ -27,8 +27,6 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.ErrorPacketImpl;
-import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
@@ -46,12 +44,12 @@ public class MySQLTaskUtil {
 
 
   public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnSlave,
+      boolean runOnMaster,
       LoadBalanceStrategy strategy, boolean noResponse) {
 
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyBackend(mycat, payload, dataNodeName, runOnSlave, strategy, noResponse);
+        .proxyBackend(mycat, payload, dataNodeName, runOnMaster, strategy, noResponse);
   }
 
   /**
@@ -62,13 +60,13 @@ public class MySQLTaskUtil {
   public static void getMySQLSessionFromUserThread(String dataNodeName,
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit, String charSet, String character_set_results,
-      boolean runOnSlave, LoadBalanceStrategy strategy,
+      boolean runOnMaster, LoadBalanceStrategy strategy,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
     MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     threads[i].addNIOJob(() -> {
-      getMySQLSession(dataNode, isolation, autoCommit, charSet, character_set_results, runOnSlave,
+      getMySQLSession(dataNode, isolation, autoCommit, charSet, character_set_results, runOnMaster,
           strategy,
           asynTaskCallBack);
     });
@@ -84,7 +82,7 @@ public class MySQLTaskUtil {
       MySQLAutoCommit autoCommit,
       String charset,
       String characterSetResult,
-      boolean runOnSlave,
+      boolean runOnMaster,
       LoadBalanceStrategy strategy,
       SessionCallBack<MySQLClientSession> callBack) {
     Objects.requireNonNull(charset);
@@ -95,7 +93,7 @@ public class MySQLTaskUtil {
       replica = ProxyRuntime.INSTANCE.getMySQLReplicaByReplicaName(dataNode.getReplicaName());
       dataNode.setReplica(replica);
     }
-    replica.getMySQLSessionByBalance(runOnSlave, strategy,
+    replica.getMySQLSessionByBalance(runOnMaster, strategy,
         new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession mysql, Object sender, Object attr) {

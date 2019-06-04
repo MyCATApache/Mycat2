@@ -17,7 +17,6 @@ package io.mycat.router;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.logTip.RouteNullChecker;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
-import io.mycat.router.staticAnnotation.MycatProxyStaticAnnotation;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
 import java.io.IOException;
@@ -62,38 +61,34 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     this.context.setSqlContext(sqlContext);
     int sqlType = sqlContext.getSQLType();
 
-    MycatProxyStaticAnnotation sa = sqlContext.getStaticAnnotation();
-    if (sa != null) {
-      this.context.setStaticAnnotation(sa);
-    }
+    MycatProxyStaticAnnotation sa = sqlContext.getStaticAnnotation()
+        .toMapAndClear(this.context.getStaticAnnotation());
+    String balance = sa.getBalance();
+    Boolean runOnMaster = sa.getRunOnMaster();
     //判断有没有schema
     if (sa.getSchema() != null) {
       defaultSchema = config.getSchemaBySchemaName(sa.getSchema());
     }
-//    if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() == null
-//        && sa.getShardingRangeKeyEnd() == null) {
-//      defaultSchema.getRouteStrategy().route()
-//    }else if (sa.getShardingKey() == null && sa.getShardingRangeKeyStart() != null
-//        && sa.getShardingRangeKeyEnd() != null){
-//
-//    }else if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() != null
-//        && sa.getShardingRangeKeyEnd() != null){
-//
-//    }
+
     int schemaCount = sqlContext.getSchemaCount();
     if (schemaCount == 0) {
       RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
-      return routeStrategy.route(defaultSchema, sql, this.context);
+      return routeStrategy.route(defaultSchema, sql, this.context)
+          .setBalance(balance).setRunOnMaster(runOnMaster)
+          ;
     }
     if (schemaCount == 1) {
       String schemaName = sqlContext.getSchemaName(0);
       MycatSchema schema = config.getSchemaBySchemaName(schemaName);
       RouteNullChecker.CHECK_MYCAT_SCHEMA_EXIST.check(schemaName, schema != null);
       RouteStrategy routeStrategy = schema.getRouteStrategy();
-      return routeStrategy.route(schema, sql, this.context);
+      return routeStrategy.route(schema, sql, this.context)
+          .setBalance(balance).setRunOnMaster(runOnMaster)
+          ;
     } else {
 
-      return this.route(defaultSchema, sql, this.context);
+      return this.route(defaultSchema, sql, this.context)
+          .setBalance(balance).setRunOnMaster(runOnMaster);
     }
   }
 //

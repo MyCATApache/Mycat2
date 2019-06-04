@@ -2,8 +2,8 @@ package io.mycat.sqlparser.util;
 
 import static org.junit.Assert.assertEquals;
 
+import io.mycat.sqlparser.util.SQLMapAnnotation.PutKeyValueAble;
 import java.util.HashMap;
-import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +30,18 @@ public class BufferSQLParserTest {
     String sql = "/*! mycat:runOnMaster = 1,a='select a.* from customer',b=a*/ select a.* from customer a where a.company_id=1; ";
     parser.parse(sql.getBytes(), context);
     assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
-    Map<String, Object> map = context.getStaticAnnotation().toMapAndClear(new HashMap<>());
+    HashMap<String, Object> map = new HashMap<>();
+    context.getStaticAnnotation().toMapAndClear(new SQLMapAnnotation.PutKeyValueAble() {
+      @Override
+      public void put(String key, long value) {
+        ((PutKeyValueAble) map).put(key, value);
+      }
+
+      @Override
+      public void put(String key, String value) {
+        ((PutKeyValueAble) map).put(key, value);
+      }
+    });
     Assert.assertEquals(map.get("runOnMaster"), 1L);
     Assert.assertEquals(map.get("a"), "'select a.* from customer'");
     Assert.assertEquals(map.get("b"), "a");
@@ -41,7 +52,18 @@ public class BufferSQLParserTest {
     String sql = "/* mycat:runOnMaster = 1,a='select a.* from customer',b=a*/ select a.* from customer a where a.company_id=1; ";
     parser.parse(sql.getBytes(), context);
     assertEquals(BufferSQLContext.SELECT_SQL, context.getSQLType());
-    Map<String, Object> map = context.getStaticAnnotation().toMapAndClear(new HashMap<>());
+    HashMap<String, Object> map = new HashMap<>();
+    context.getStaticAnnotation().toMapAndClear(new SQLMapAnnotation.PutKeyValueAble() {
+      @Override
+      public void put(String key, long value) {
+        ((PutKeyValueAble) map).put(key, value);
+      }
+
+      @Override
+      public void put(String key, String value) {
+        ((PutKeyValueAble) map).put(key, value);
+      }
+    });
     Assert.assertEquals(map.get("runOnMaster"), 1L);
     Assert.assertEquals(map.get("a"), "'select a.* from customer'");
     Assert.assertEquals(map.get("b"), "a");

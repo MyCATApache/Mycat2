@@ -86,20 +86,20 @@ public enum MySQLPacketExchanger {
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnSlave,
+      boolean runOnMaster,
       LoadBalanceStrategy strategy, boolean noResponse) {
-    proxyBackend(mycat, payload, dataNodeName, runOnSlave, strategy, noResponse,
+    proxyBackend(mycat, payload, dataNodeName, runOnMaster, strategy, noResponse,
         DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
 
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnSlave,
+      boolean runOnMaster,
       LoadBalanceStrategy strategy, boolean noResponse, PacketExchangerCallback finallyCallBack) {
     byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
     MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, bytes, (MySQLDataNode) dataNode, runOnSlave, strategy,
+        .INSTANCE.proxyBackend(mycat, bytes, (MySQLDataNode) dataNode, runOnMaster, strategy,
         noResponse, finallyCallBack
     );
   }
@@ -161,7 +161,7 @@ public enum MySQLPacketExchanger {
     protected final static Logger logger = LoggerFactory.getLogger(MySQLProxyNIOHandler.class);
     static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
-    public static void getBackend(MycatSession mycat, boolean runOnSlave, MySQLDataNode dataNode,
+    public static void getBackend(MycatSession mycat, boolean runOnMaster, MySQLDataNode dataNode,
         LoadBalanceStrategy strategy, SessionCallBack<MySQLClientSession> finallyCallBack) {
       mycat.switchDataNode(dataNode.getName());
       if (mycat.getMySQLSession() != null) {
@@ -175,16 +175,16 @@ public enum MySQLPacketExchanger {
       String characterSetResult = mycat.getCharacterSetResults();
       MySQLTaskUtil
           .getMySQLSession(dataNode, isolation, autoCommit, charsetName, characterSetResult,
-              runOnSlave,
+              runOnMaster,
               strategy, finallyCallBack);
     }
 
     public void proxyBackend(MycatSession mycat, byte[] bytes, MySQLDataNode dataNode,
-        boolean runOnSlave,
+        boolean runOnMaster,
         LoadBalanceStrategy strategy,
         boolean noResponse, PacketExchangerCallback finallyCallBack) {
       mycat.currentProxyBuffer().reset();
-      getBackend(mycat, runOnSlave, dataNode, strategy, new SessionCallBack<MySQLClientSession>() {
+      getBackend(mycat, runOnMaster, dataNode, strategy, new SessionCallBack<MySQLClientSession>() {
         @Override
         public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
           try {

@@ -1,8 +1,7 @@
 package io.mycat.sqlparser.util;
 
 import static io.mycat.sqlparser.util.Tokenizer.DIGITS;
-
-import java.util.Map;
+import static io.mycat.sqlparser.util.Tokenizer.STRINGS;
 
 public class SQLMapAnnotation {
 
@@ -55,7 +54,7 @@ public class SQLMapAnnotation {
     this.byteArrayView = byteArrayView;
   }
 
-  public Map<String, Object> toMapAndClear(Map<String, Object> map) {
+  public <T extends PutKeyValueAble> T toMapAndClear(T map) {
     map.put("annotationName", byteArrayView.getStringByHashArray(processorPos, array));
     for (int i = 0; i < keyStartIndex.length && i < index; i++) {
       String key = byteArrayView.getStringByHashArray(keyStartIndex[i], array);
@@ -65,11 +64,23 @@ public class SQLMapAnnotation {
           long hash = array.getHash(value);
           map.put(key, hash);
           break;
+        case STRINGS:
+//          String s = byteArrayView.getStringByHashArray(value, array);
+//          map.put(key, s.substring(1,s.length()-1));
+          map.put(key, byteArrayView.getStringByHashArray(value, array));
+          break;
         default:
           map.put(key, byteArrayView.getStringByHashArray(value, array));
           break;
       }
     }
     return map;
+  }
+
+  public interface PutKeyValueAble {
+
+    void put(String key, long value);
+
+    void put(String key, String value);
   }
 }

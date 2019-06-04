@@ -45,9 +45,6 @@ import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.security.MycatUser;
 import io.mycat.sqlparser.util.BufferSQLContext;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map.Entry;
@@ -192,7 +189,9 @@ public interface QueryHandler {
                   OneServerResultRoute route = (OneServerResultRoute) resultRoute;
                   MySQLTaskUtil
                       .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), true, null, false
+                          route.getDataNode(), resultRoute.isRunOnMaster(true),
+                          ProxyRuntime.INSTANCE
+                              .getLoadBalanceByBalanceName(resultRoute.getBalance()), false
                       );
                   return;
               }

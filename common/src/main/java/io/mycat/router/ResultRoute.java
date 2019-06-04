@@ -28,6 +28,10 @@ import java.io.IOException;
  **/
 public abstract class ResultRoute {
 
+  private String balance;
+
+  private Boolean runOnMaster;
+
   public abstract boolean equals(Object o);
 
   public abstract int hashCode();
@@ -45,5 +49,43 @@ public abstract class ResultRoute {
     void run(GlobalTableWriteResultRoute dbResultSet,CONTEXT context);
     void run(MySQLCommandRouteResultRoute dbResultSet,CONTEXT context);
     void run(SubTableResultRoute dbResultSet,CONTEXT context);
+  }
+
+  /**
+   * Getter for property 'balance'.
+   *
+   * @return Value for property 'balance'.
+   */
+  public String getBalance() {
+    return balance;
+  }
+
+  /**
+   * Setter for property 'balance'.
+   *
+   * @param balance Value to set for property 'balance'.
+   */
+  public ResultRoute setBalance(String balance) {
+    this.balance = balance;
+    return this;
+  }
+
+  /**
+   * Getter for property 'runOnMaster'.
+   *
+   * @return Value for property 'runOnMaster'.
+   */
+  public boolean isRunOnMaster(boolean expectRunOnMaster) {
+    return runOnMaster == null ? expectRunOnMaster : runOnMaster;
+  }
+
+  /**
+   * Setter for property 'runOnMaster'.
+   *
+   * @param runOnMaster Value to set for property 'runOnMaster'.
+   */
+  public ResultRoute setRunOnMaster(Boolean runOnMaster) {
+    this.runOnMaster = runOnMaster;
+    return this;
   }
 }

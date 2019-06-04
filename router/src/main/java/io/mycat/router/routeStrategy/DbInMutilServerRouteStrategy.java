@@ -14,6 +14,7 @@
  */
 package io.mycat.router.routeStrategy;
 
+import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
 import io.mycat.logTip.RouteNullChecker;
@@ -56,10 +57,16 @@ public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext>
       }
     }
     OneServerResultRoute result = new OneServerResultRoute();
-    MycatTable tableByTable = schema.getTableByTableName(tableName);
-    String dataNode = tableByTable.getDataNodes().get(0);
-    result.setDataNode(dataNode);
-    result.setSql(sql);
-    return result;
+    if (schema.existTable(tableName)) {
+      MycatTable tableByTable = schema.getTableByTableName(tableName);
+      String dataNode = tableByTable.getDataNodes().get(0);
+      result.setDataNode(dataNode);
+      result.setSql(sql);
+      return result;
+    } else {
+      throw new MycatExpection("table " + tableName
+          + " is not exist in " + schema.getSchemaName());
+    }
+
   }
 }

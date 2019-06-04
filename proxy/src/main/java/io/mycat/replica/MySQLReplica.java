@@ -103,10 +103,10 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   /**
    * 根据 1.是否读写分离 2.负载均衡策略 获取MySQL Session
    */
-  public void getMySQLSessionByBalance(boolean runOnSlave, LoadBalanceStrategy strategy,
+  public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource;
-    if (!runOnSlave) {
+    if (runOnMaster) {
       getWriteDatasource(asynTaskCallBack);
       return;
     }
