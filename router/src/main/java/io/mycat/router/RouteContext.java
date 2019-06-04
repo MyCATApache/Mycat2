@@ -15,6 +15,7 @@
 package io.mycat.router;
 
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
+import io.mycat.router.staticAnnotation.MycatProxyStaticAnnotation;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.util.Map;
 
@@ -31,6 +32,7 @@ public class RouteContext implements Route.RouteIndexReceive {
   int[] indexes;
   int index;
   MycatRouterConfig config;
+  MycatProxyStaticAnnotation staticAnnotation;
 
   public RouteContext(MycatRouterConfig config) {
     this.config = config;
@@ -48,9 +50,10 @@ public class RouteContext implements Route.RouteIndexReceive {
     this.sqlContext = sqlContext;
   }
 
- public   void clearDataNodeIndexes(){
+  public void clear() {
     this.index = -1;
     this.indexes = null;
+    this.staticAnnotation = null;
  }
 
   public int[] getIndexes() {
@@ -91,5 +94,24 @@ public class RouteContext implements Route.RouteIndexReceive {
   @Override
   public void addDataNodeIndexes(int level, RuleAlgorithm ruleAlgorithm, int[] index) {
     this.indexes = indexes;
+  }
+
+  /**
+   * Getter for property 'staticAnnotation'.
+   *
+   * @return Value for property 'staticAnnotation'.
+   */
+  public MycatProxyStaticAnnotation getStaticAnnotation() {
+    return staticAnnotation;
+  }
+
+  /**
+   * Setter for property 'staticAnnotation'.
+   *
+   * @param staticAnnotation Value to set for property 'staticAnnotation'.
+   */
+  public void setStaticAnnotation(
+      MycatProxyStaticAnnotation staticAnnotation) {
+    this.staticAnnotation = staticAnnotation;
   }
 }

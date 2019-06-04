@@ -25,8 +25,9 @@ public class ShardingTableTable extends MycatTable {
 
   private final MycatTableRule rule;
 
-  public ShardingTableTable(TableDefConfig tableDefConfig, List<String> dataNodes, MycatTableRule rule) {
-    super(tableDefConfig, dataNodes);
+  public ShardingTableTable(MycatSchema schema, TableDefConfig tableDefConfig,
+      List<String> dataNodes, MycatTableRule rule) {
+    super(schema, tableDefConfig, dataNodes);
     this.rule = rule;
   }
 

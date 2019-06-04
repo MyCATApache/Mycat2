@@ -24,7 +24,7 @@ import java.util.List;
  **/
 public class DefaultTable extends MycatTable {
 
-  public DefaultTable(TableDefConfig tableDefConfig, List<String> dataNodes) {
-    super(tableDefConfig, dataNodes);
+  public DefaultTable(MycatSchema schema, TableDefConfig tableDefConfig, List<String> dataNodes) {
+    super(schema, tableDefConfig, dataNodes);
   }
 }

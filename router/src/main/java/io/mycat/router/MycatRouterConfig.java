@@ -390,23 +390,26 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
           if (tableConfig.getType() != null) {
             switch (tableConfig.getType()) {
               case GLOBAL:
-                mycatTables.put(tableName, table = new GlobalTable(tableConfig, dataNodes));
+                mycatTables.put(tableName, table = new GlobalTable(schema, tableConfig, dataNodes));
                 break;
               case SHARING_DATABASE:
                 mycatTables
-                    .put(tableName, table = new ShardingDbTable(tableConfig, dataNodes, tableRule));
+                    .put(tableName,
+                        table = new ShardingDbTable(schema, tableConfig, dataNodes, tableRule));
                 break;
               case SHARING_TABLE:
                 mycatTables.put(tableName,
-                    table = new ShardingTableTable(tableConfig, dataNodes, tableRule));
+                    table = new ShardingTableTable(schema, tableConfig, dataNodes, tableRule));
                 break;
               case SHARING_DATABASE_TABLE:
                 mycatTables
                     .put(tableName,
-                        table = new ShardingDatabseTableTable(tableConfig, dataNodes, tableRule));
+                        table = new ShardingDatabseTableTable(schema, tableConfig, dataNodes,
+                            tableRule));
                 break;
               case ER:
-                mycatTables.put(tableName, table = new ERTable(tableConfig, dataNodes, tableRule));
+                mycatTables
+                    .put(tableName, table = new ERTable(schema, tableConfig, dataNodes, tableRule));
                 break;
               default:
                 throw new MycatExpection("");
@@ -414,7 +417,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
           } else {
             mycatTables
                 .put(tableName,
-                    table = new DefaultTable(tableConfig, dataNodes));
+                    table = new DefaultTable(schema, tableConfig, dataNodes));
           }
 
         }

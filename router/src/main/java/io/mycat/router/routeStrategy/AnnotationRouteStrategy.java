@@ -26,17 +26,18 @@ import io.mycat.router.DynamicAnnotationResult;
 import io.mycat.router.ResultRoute;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
+import io.mycat.router.RuleAlgorithm;
 import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.routeResult.SubTableResultRoute;
+import io.mycat.router.staticAnnotation.MycatProxyStaticAnnotation;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.SQLUtil;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * @author jamie12221
- *  date 2019-05-05 16:54
+ * @author jamie12221 date 2019-05-05 16:54
  **/
 public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
 
@@ -68,8 +69,35 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
         case SHARING_DATABASE: {
           ShardingDbTable table = (ShardingDbTable) o;
           MycatTableRule rule = table.getRule();
+
+          RuleAlgorithm ruleAlgorithm = rule.getRuleAlgorithm();
+          MycatProxyStaticAnnotation sa = context.getStaticAnnotation();
+          if (sa != null) {
+            if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() == null
+                && sa.getShardingRangeKeyEnd() == null) {
+              int calculate = ruleAlgorithm.calculate(sa.getShardingKey());
+              OneServerResultRoute result = new OneServerResultRoute();
+              return result.setSql(sql).setDataNode(table.getDataNodes().get(calculate));
+            } else if (sa.getShardingKey() == null && sa.getShardingRangeKeyStart() != null
+                && sa.getShardingRangeKeyEnd() != null) {
+              int[] keys = ruleAlgorithm
+                  .calculateRange(sa.getShardingRangeKeyStart(), sa.getShardingRangeKeyEnd());
+              if (keys.length == 1) {
+                OneServerResultRoute result = new OneServerResultRoute();
+                return result.setSql(sql).setDataNode(table.getDataNodes().get(keys[0]));
+              }
+            } else if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() != null
+                && sa.getShardingRangeKeyEnd() != null) {
+              int calculate = ruleAlgorithm.calculate(sa.getShardingKey());
+              int[] keys = ruleAlgorithm
+                  .calculateRange(sa.getShardingRangeKeyStart(), sa.getShardingRangeKeyEnd());
+              if (keys.length == 1 && calculate == keys[0]) {
+                OneServerResultRoute result = new OneServerResultRoute();
+                return result.setSql(sql).setDataNode(table.getDataNodes().get(calculate));
+              }
+            }
+          }
           DynamicAnnotationResult matchResult = rule.getMatcher().match(sql);
-          context.clearDataNodeIndexes();
           rule.getRoute().route(matchResult, 0, rule.getRuleAlgorithm(), context);
           int index = context.getIndex();
           int[] indexes = context.getIndexes();
@@ -89,7 +117,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
           ShardingTableTable table = (ShardingTableTable) o;
           MycatTableRule rule = table.getRule();
           DynamicAnnotationResult matchResult = rule.getMatcher().match(sql);
-          context.clearDataNodeIndexes();
+          context.clear();
           rule.getRoute().route(matchResult, 0, rule.getRuleAlgorithm(), context);
           int index = context.getIndex();
           int[] indexes = context.getIndexes();

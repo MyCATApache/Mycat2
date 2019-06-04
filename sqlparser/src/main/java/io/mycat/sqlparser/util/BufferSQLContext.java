@@ -2,6 +2,7 @@ package io.mycat.sqlparser.util;
 
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
+import io.mycat.router.staticAnnotation.MycatProxyStaticAnnotation;
 import java.util.Arrays;
 
 /**
@@ -275,6 +276,7 @@ public class BufferSQLContext {
       return buffer.getString(pos, size);
     }
   }
+
   public int getSchemaNameHashIndex(int index) {
     int hashArrayIdx = tblResult[index << 1];
     return hashArrayIdx;
@@ -296,10 +298,12 @@ public class BufferSQLContext {
       return hashArray.getHash(hashArrayIdx);
     }
   }
+
   public int getTableNameHashIndex(int idx) {
     int hashArrayIdx = tblResult[(idx << 1) + 1];
     return hashArrayIdx;
   }
+
   public String getTableName(int idx) {
     if (totalTblCount == 0) {
       return null;
@@ -378,7 +382,7 @@ public class BufferSQLContext {
   }
 
   public void setSQLType(byte sqlType) {
-      this.sqlType = sqlType;
+    this.sqlType = sqlType;
   }
 
   public void setShowSQLType(byte sqlType) {
@@ -389,15 +393,16 @@ public class BufferSQLContext {
 
   public boolean isDDL() {
     return sqlType == CREATE_SQL || sqlType == ALTER_SQL || sqlType == DROP_SQL
-               || sqlType == TRUNCATE_SQL;
+        || sqlType == TRUNCATE_SQL;
   }
+
   public boolean isSimpleSelect() {
     return this.getSQLType() == SELECT_SQL;
   }
 
   public boolean isSelect() {
     return this.getSQLType() == SELECT_SQL || this.getSQLType() == SELECT_INTO_SQL
-               || this.getSQLType() == SELECT_FOR_UPDATE_SQL;
+        || this.getSQLType() == SELECT_FOR_UPDATE_SQL;
   }
 
   public void setSQLIdx(int sqlIdx) {
@@ -432,7 +437,7 @@ public class BufferSQLContext {
 
   public int getRealSQLSize(int sqlIdx) {
     int hashArrayEndPos = ((int) (sqlInfoArray[sqlIdx] >> 50) & 0x3FFF)
-                              + ((int) (sqlInfoArray[sqlIdx] >> 20) & 0x3FFF) - 1;
+        + ((int) (sqlInfoArray[sqlIdx] >> 20) & 0x3FFF) - 1;
     if (hashArrayEndPos < 0) {
       return 0;
     }
@@ -548,7 +553,7 @@ public class BufferSQLContext {
   }
 
   public int getSchemaCount() {
-    return schemaCount&0xff;
+    return schemaCount & 0xff;
   }
 
   public void setSelectItem(int functionHash) {
@@ -612,5 +617,9 @@ public class BufferSQLContext {
 
   public void setCharsetSetResult(String charsetSetResult) {
     this.charsetSetResult = charsetSetResult;
+  }
+
+  public MycatProxyStaticAnnotation getStaticAnnotation() {
+    return null;
   }
 }

@@ -23,7 +23,7 @@ import java.util.List;
  **/
 public class GlobalTable extends MycatTable {
 
-  public GlobalTable(TableDefConfig tableDefConfig, List<String> dataNodes) {
-    super(tableDefConfig, dataNodes);
+  public GlobalTable(MycatSchema schema, TableDefConfig tableDefConfig, List<String> dataNodes) {
+    super(schema, tableDefConfig, dataNodes);
   }
 }

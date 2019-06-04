@@ -24,8 +24,9 @@ import java.util.List;
 public class ShardingDbTable extends MycatTable {
   MycatTableRule rule;
 
-  public ShardingDbTable(TableDefConfig tableDefConfig, List<String> dataNodes, MycatTableRule rule) {
-    super(tableDefConfig, dataNodes);
+  public ShardingDbTable(MycatSchema schema, TableDefConfig tableDefConfig, List<String> dataNodes,
+      MycatTableRule rule) {
+    super(schema, tableDefConfig, dataNodes);
     this.rule = rule;
   }
 

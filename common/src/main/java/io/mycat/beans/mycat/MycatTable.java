@@ -19,16 +19,19 @@ import io.mycat.config.schema.TableDefConfig.MycatTableType;
 import java.util.List;
 
 public abstract class MycatTable {
+
   final protected TableDefConfig tableDefConfig;
   final protected List<String> dataNodes;
+  final MycatSchema schema;
 
-  public MycatTable(TableDefConfig tableDefConfig, List<String> dataNodes) {
+  public MycatTable(MycatSchema schema, TableDefConfig tableDefConfig, List<String> dataNodes) {
+    this.schema = schema;
     this.tableDefConfig = tableDefConfig;
     this.dataNodes = dataNodes;
   }
 
 
-  public MycatTableType getType(){
+  public MycatTableType getType() {
     MycatTableType type = tableDefConfig.getType();
     return type;
   }
@@ -37,6 +40,11 @@ public abstract class MycatTable {
     return tableDefConfig;
   }
 
+  /**
+   * Getter for property 'dataNodes'.
+   *
+   * @return Value for property 'dataNodes'.
+   */
   public List<String> getDataNodes() {
     return dataNodes;
   }

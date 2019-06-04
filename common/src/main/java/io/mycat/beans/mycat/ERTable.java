@@ -25,8 +25,9 @@ public class ERTable extends MycatTable {
 
   private final MycatTableRule rule;
 
-  public ERTable(TableDefConfig tableDefConfig, List<String> dataNodes, MycatTableRule rule) {
-    super(tableDefConfig, dataNodes);
+  public ERTable(MycatSchema schema, TableDefConfig tableDefConfig, List<String> dataNodes,
+      MycatTableRule rule) {
+    super(schema, tableDefConfig, dataNodes);
     this.rule = rule;
   }
 }

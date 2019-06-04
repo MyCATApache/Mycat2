@@ -16,15 +16,14 @@ package io.mycat.router;
 
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.logTip.RouteNullChecker;
-import io.mycat.router.routeResult.MySQLCommandRouteResultRoute;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
+import io.mycat.router.staticAnnotation.MycatProxyStaticAnnotation;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
 import java.io.IOException;
 
 /**
- * @author jamie12221
- *  date 2019-05-05 17:04
+ * @author jamie12221 date 2019-05-05 17:04
  **/
 public class MycatRouter implements RouteStrategy<RouteContext> {
 
@@ -38,6 +37,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   private BufferSQLContext sqlContext() {
     return new BufferSQLContext();
   }
+
   public MycatRouter(MycatRouterConfig config) {
     this.config = config;
     context = new RouteContext(config);
@@ -58,9 +58,28 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
   public ResultRoute enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
       String sql) {
+    this.context.clear();
     this.context.setSqlContext(sqlContext);
     int sqlType = sqlContext.getSQLType();
+
+    MycatProxyStaticAnnotation sa = sqlContext.getStaticAnnotation();
+    if (sa != null) {
+      this.context.setStaticAnnotation(sa);
+    }
     //判断有没有schema
+    if (sa.getSchema() != null) {
+      defaultSchema = config.getSchemaBySchemaName(sa.getSchema());
+    }
+//    if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() == null
+//        && sa.getShardingRangeKeyEnd() == null) {
+//      defaultSchema.getRouteStrategy().route()
+//    }else if (sa.getShardingKey() == null && sa.getShardingRangeKeyStart() != null
+//        && sa.getShardingRangeKeyEnd() != null){
+//
+//    }else if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() != null
+//        && sa.getShardingRangeKeyEnd() != null){
+//
+//    }
     int schemaCount = sqlContext.getSchemaCount();
     if (schemaCount == 0) {
       RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
@@ -77,19 +96,19 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
       return this.route(defaultSchema, sql, this.context);
     }
   }
-
-  public MySQLCommandRouteResultRoute enterRoute(String defaultSchemaName, int commandPakcet) {
-    MycatSchema defaultSchema = config.getSchemaBySchemaName(defaultSchemaName);
-    return enterRoute(defaultSchema, commandPakcet);
-  }
-
-  public MySQLCommandRouteResultRoute enterRoute(MycatSchema defaultSchema, int commandPakcet) {
-    String defaultDataNode = defaultSchema.getDefaultDataNode();
-    MySQLCommandRouteResultRoute result = new MySQLCommandRouteResultRoute();
-    result.setCmd(commandPakcet);
-    result.setDataNode(defaultDataNode);
-    return result;
-  }
+//
+//  public MySQLCommandRouteResultRoute enterRoute(String defaultSchemaName, int commandPakcet) {
+//    MycatSchema defaultSchema = config.getSchemaBySchemaName(defaultSchemaName);
+//    return enterRoute(defaultSchema, commandPakcet);
+//  }
+//
+//  public MySQLCommandRouteResultRoute enterRoute(MycatSchema defaultSchema, int commandPakcet) {
+//    String defaultDataNode = defaultSchema.getDefaultDataNode();
+//    MySQLCommandRouteResultRoute result = new MySQLCommandRouteResultRoute();
+//    result.setCmd(commandPakcet);
+//    result.setDataNode(defaultDataNode);
+//    return result;
+//  }
 
   public ResultRoute enterRoute(String defaultSchemaName, String sql) {
     MycatSchema defaultSchema = config.getSchemaBySchemaName(defaultSchemaName);

@@ -6,10 +6,21 @@ public class MycatProxyStaticAnnotation {
   String shardingKey;
   String shardingRangeKeyStart;
   String shardingRangeKeyEnd;
-  boolean runOnMaster;
+  Boolean runOnMaster;
   String dataNode;
   String balance;
   String routeSQL;
+
+  public void clear() {
+    this.schema = null;
+    this.shardingKey = null;
+    this.shardingRangeKeyStart = null;
+    this.shardingRangeKeyEnd = null;
+    this.runOnMaster = false;
+    this.dataNode = null;
+    this.balance = null;
+    this.routeSQL = null;
+  }
 
   /**
    * Getter for property 'schema'.
@@ -85,19 +96,21 @@ public class MycatProxyStaticAnnotation {
 
   /**
    * Getter for property 'runOnMaster'.
-   *
+   * no setting ->null
    * @return Value for property 'runOnMaster'.
    */
-  public boolean isRunOnMaster() {
+  public Boolean isRunOnMaster() {
     return runOnMaster;
   }
 
   /**
-   * Setter for property 'runOnMaster'.
+   * Setter for property 'runOnMaster'
+   *
+   * no setting ->null
    *
    * @param runOnMaster Value to set for property 'runOnMaster'.
    */
-  public void setRunOnMaster(boolean runOnMaster) {
+  public void setRunOnMaster(Boolean runOnMaster) {
     this.runOnMaster = runOnMaster;
   }
 
