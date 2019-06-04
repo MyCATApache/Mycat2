@@ -98,14 +98,6 @@ web 可进行部分改进,减少手动添加注解的工作：
 
 当使用这个注解之后,mycat 连接当前的schema变成注解中的schema
 
-### SQL路由注解(暂不支持)
-
-```sql
-/*! mycat:sql=select * from table where id = 1*/ create table travelrecord(id int);
-```
-
-sql=后面的sql是用于路由分析的路由,而非注释sql则是真正发送到mysql服务器执行sql
-
 ```sql
 /*! mycat:schema = test_01,sql=select * from table where id = 1*/ create table travelrecord(id int);
 ```
@@ -177,10 +169,18 @@ dataNode=后面就是最终路由的节点,此sql不经过路由处理,而非注
 ## 自定义路由注解
 
 ```sql
-/*! 路由名字:参数1=值1,参数2=值2*/ create table travelrecord(id int);
+/*!_路由名字:参数1=值1,参数2=值2*/ create table travelrecord(id int);
 ```
 
 mycat读取路由并使用用户提供的路由进行sql进行处理
+
+## 注意事项
+
+注解参数键值对最多8个
+
+参数类型:标识符,整型数字,字符串(''包裹)
+
+暂时多语句SQL最多一次解析256条
 
 
 
