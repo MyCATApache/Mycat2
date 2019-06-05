@@ -66,3 +66,29 @@ funtions:
       partitionLength: 128,128,256
       partitionCount: 2,2,2
       hashSlice: -1:0
+  - clazz: io.mycat.router.function.PartitionByRangeMod
+    name: PartitionByRangeMod
+    properties:
+      defaultNode: -1
+    ranges:
+      0-200M: 5
+      200M-400M: 1
+      400M-600M: 4
+      600M-800M: 4
+      800M1-1000M: 6
+  - clazz: io.mycat.router.function.PartitionByHashMod
+    name: PartitionByHashMod
+    properties:
+      count: 2
+  - clazz: io.mycat.router.function.PartitionByMonth
+    name: PartitionByMonth
+    properties:
+      formatter: yyyy-MM-dd
+      beginDate: 2014-01-01
+      endDate: 2014-12-01
+  - clazz: io.mycat.router.function.PartitionByMonthAndHistory
+    name: PartitionByMonthAndHistory
+    properties:
+      formatter: yyyy-MM-dd
+      beginDate: 2014-01-01
+      endDate: 2014-12-01

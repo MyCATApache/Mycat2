@@ -8,7 +8,7 @@ public class PartitionByPrefixPattern extends RuleAlgorithm {
   private static final int PARTITION_LENGTH = 1024;
   private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值(默认为1024)
   private int prefixLength;// 字符前几位进行ASCII码取和
-  private LongRange[] longRongs;
+  private NodeIndexRange[] longRongs;
   private int nPartition;
 
   @Override
@@ -20,8 +20,8 @@ public class PartitionByPrefixPattern extends RuleAlgorithm {
   public void init(Map<String, String> prot, Map<String, String> ranges) {
     this.patternValue = Integer.parseInt(prot.get("patternValue"));
     this.prefixLength = Integer.parseInt(prot.get("prefixLength"));
-    this.longRongs = LongRange.getLongRanges(ranges);
-    this.nPartition = LongRange.getPartitionCount(this.longRongs);
+    this.longRongs = NodeIndexRange.getLongRanges(ranges);
+    this.nPartition = NodeIndexRange.getPartitionCount(this.longRongs);
   }
 
   @Override
@@ -31,10 +31,10 @@ public class PartitionByPrefixPattern extends RuleAlgorithm {
     for (int i = 0; i < length; i++) {
       sum = sum + columnValue.charAt(i);
     }
-    for (LongRange longRang : this.longRongs) {
+    for (NodeIndexRange longRang : this.longRongs) {
       long hash = sum % patternValue;
       if (hash <= longRang.valueEnd && hash >= longRang.valueStart) {
-        return longRang.nodeIndx;
+        return longRang.nodeIndex;
       }
     }
     return -1;

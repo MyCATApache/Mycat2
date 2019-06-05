@@ -78,13 +78,6 @@ public class PartitionByDate extends RuleAlgorithm {
     return ints(list);
   }
 
-  private int[] ints(ArrayList<Integer> list) {
-    int[] ints = new int[list.size()];
-    for (int i = 0; i < ints.length; i++) {
-      ints[i] = list.get(i);
-    }
-    return ints;
-  }
 
   @Override
   public int getPartitionNum() {

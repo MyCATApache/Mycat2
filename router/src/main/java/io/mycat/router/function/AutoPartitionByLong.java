@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class AutoPartitionByLong extends RuleAlgorithm {
 
-  private LongRange[] longRanges;
+  private NodeIndexRange[] longRanges;
   private int defaultNode = -1;
   private int partitionCount;
 
@@ -17,8 +17,8 @@ public class AutoPartitionByLong extends RuleAlgorithm {
   @Override
   public void init(Map<String, String> prot, Map<String, String> ranges) {
     this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
-    this.longRanges = LongRange.getLongRanges(ranges);
-    this.partitionCount = LongRange.getPartitionCount(this.longRanges);
+    this.longRanges = NodeIndexRange.getLongRanges(ranges);
+    this.partitionCount = NodeIndexRange.getPartitionCount(this.longRanges);
   }
 
 
@@ -26,9 +26,9 @@ public class AutoPartitionByLong extends RuleAlgorithm {
   public int calculate(String columnValue) {
     try {
       long value = Long.parseLong(columnValue);
-      for (LongRange longRang : this.longRanges) {
+      for (NodeIndexRange longRang : this.longRanges) {
         if (value <= longRang.valueEnd && value >= longRang.valueStart) {
-          return longRang.nodeIndx;
+          return longRang.nodeIndex;
         }
       }
       return defaultNode;
