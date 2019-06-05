@@ -89,7 +89,7 @@
                   <configuration>
                     <property>
                       <name>wrapper.logfile</name>
-                      <value>logs/wrapper.log</value>
+                      <valueStartIndex>logs/wrapper.log</valueStartIndex>
                     </property>
                   </configuration>
                 </generatorConfiguration>
@@ -139,7 +139,11 @@
                 <mkdir dir="${project.build.directory}"/>
                 <tar basedir="${project.build.directory}/jsw"
                   destfile="${project.build.directory}/mycat2-${project.version}-${timestamp}.tar.gz"
-                  includes="mycat/bin/**,mycat/conf/**,mycat/lib/mycat2**">
+                  includes="mycat/bin/**,mycat/conf/**,mycat/lib/mycat2**,mycat/lib/wrapper**">
+                </tar>
+                <tar basedir="${project.basedir}/src/main/resources"
+                  destfile="${project.build.directory}/mycat2-${project.version}-${timestamp}-resources.tar.gz"
+                  includes="**">
                 </tar>
               </target>
             </configuration>
