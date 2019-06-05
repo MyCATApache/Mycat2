@@ -92,3 +92,7 @@ funtions:
       formatter: yyyy-MM-dd
       beginDate: 2014-01-01
       endDate: 2014-12-01
+  - clazz: io.mycat.router.function.PartitionByJumpConsistentHash
+    name: PartitionByJumpConsistentHash
+    properties:
+      totalBuckets: 3
