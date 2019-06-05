@@ -40,6 +40,8 @@ public final class PartitionUtil {
     // 分区线段
     private final int[] segment = new int[PARTITION_LENGTH];
 
+    private int partitionNum;
+
     /**
      * <pre>
      * @param count 表示定义的分区数
@@ -56,6 +58,7 @@ public final class PartitionUtil {
         for (int i = 0; i < count.length; i++) {
             segmentLength += count[i];
         }
+        partitionNum = segmentLength;
         int[] ai = new int[segmentLength + 1];
 
         int index = 0;
@@ -74,6 +77,15 @@ public final class PartitionUtil {
                 segment[j] = (i - 1);
             }
         }
+    }
+
+    /**
+     * Getter for property 'partitionNum'.
+     *
+     * @return Value for property 'partitionNum'.
+     */
+    public int getPartitionNum() {
+        return partitionNum;
     }
 
     public int partition(long hash) {

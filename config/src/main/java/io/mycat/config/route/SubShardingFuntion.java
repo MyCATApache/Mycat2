@@ -1,13 +1,12 @@
 package io.mycat.config.route;
 
-import java.util.List;
 import java.util.Map;
 
 /**
- * @author jamie12221
- *  date 2019-05-03 14:58
+ * @author jamie12221 date 2019-05-03 14:58
  **/
-public class SubShardingFuntion implements Cloneable{
+public class SubShardingFuntion implements Cloneable {
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     return super.clone();
@@ -23,15 +22,35 @@ public class SubShardingFuntion implements Cloneable{
 
 
   String clazz;
-  List<Map<String,String>> properties;
+  Map<String, String> properties;
+  Map<String, String> ranges;
 
-  public List<Map<String, String>> getProperties() {
+  public Map<String, String> getProperties() {
     return properties;
   }
 
-  public void setProperties(List<Map<String, String>> properties) {
+  public void setProperties(Map<String, String> properties) {
     this.properties = properties;
   }
+
+  /**
+   * Getter for property 'ranges'.
+   *
+   * @return Value for property 'ranges'.
+   */
+  public Map<String, String> getRanges() {
+    return ranges;
+  }
+
+  /**
+   * Setter for property 'ranges'.
+   *
+   * @param ranges Value to set for property 'ranges'.
+   */
+  public void setRanges(Map<String, String> ranges) {
+    this.ranges = ranges;
+  }
+
   SubShardingFuntion subFuntion;
 
   public SubShardingFuntion getSubFuntion() {
@@ -45,9 +64,9 @@ public class SubShardingFuntion implements Cloneable{
   @Override
   public String toString() {
     return "SubShardingFuntion{" +
-               "clazz='" + clazz + '\'' +
-               ", properties=" + properties +
-               ", subFuntion=" + subFuntion +
-               '}';
+        "clazz='" + clazz + '\'' +
+        ", properties=" + properties +
+        ", subFuntion=" + subFuntion +
+        '}';
   }
 }

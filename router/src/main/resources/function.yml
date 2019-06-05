@@ -1,0 +1,68 @@
+funtions:
+  - clazz: io.mycat.router.function.PartitionByLong
+    name: partitionByLong
+    properties:
+      partitionCount: '4'
+      partitionLength: '256'
+  - clazz: io.mycat.router.function.PartitionByMod
+    name: PartitionByMod
+    properties:
+      count: '4'
+  - clazz: io.mycat.router.function.PartitionByFileMap
+    name: PartitionByFileMap
+    properties:
+      type: Integer
+      defaultNode: -1
+    ranges:
+      10000: 0
+      10010: 1
+  - clazz: io.mycat.router.function.AutoPartitionByLong
+    name: AutoPartitionByLong
+    properties:
+      defaultNode: -1
+    ranges:
+      0-500M: 0
+      500M-1000M: 1
+  - clazz: io.mycat.router.function.PartitionByDate
+    name: PartitionByDate
+    properties:
+      dateFormat: yyyy-MM-dd
+      beginDate: 2014-01-01
+      endDate: 2014-01-02
+      parttionDay: 10
+  - clazz: io.mycat.router.function.PartitionByPattern
+    name: PartitionByPattern
+    properties:
+      patternValue: 256
+      defaultNode: -1
+    ranges:
+      0-32: 0
+      33-64: 1
+  - clazz: io.mycat.router.function.PartitionByPrefixPattern
+    name: PartitionByPrefixPattern
+    properties:
+      patternValue: 256
+      prefixLength: 5
+    ranges:
+      1-4: 0
+      5-8: 1
+      9-12: 2
+      13-16: 3
+      17-20: 4
+      21-24: 5
+      25-28: 6
+      29-32: 7
+      0-0: 7
+  - clazz: io.mycat.router.function.PartitionDirectBySubString
+    name: PartitionDirectBySubString
+    properties:
+      startIndex: 0
+      size: 2
+      partitionCount: 8
+      defaultPartition: 0
+  - clazz: io.mycat.router.function.PartitionByString
+    name: PartitionByString
+    properties:
+      partitionLength: 128,128,256
+      partitionCount: 2,2,2
+      hashSlice: -1:0

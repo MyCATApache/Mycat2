@@ -64,8 +64,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 /**
- * @author jamie12221
- *  date 2019-05-03 00:29
+ * @author jamie12221 date 2019-05-03 00:29
  **/
 public class MycatRouterConfig extends ConfigReceiverImpl {
 
@@ -160,7 +159,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     SubShardingFuntion subShardingFuntion = new SubShardingFuntion();
     subShardingFuntion.setClazz("io.mycat.router.function.PartitionByLong");
     Map<String, String> subProperties = new HashMap<>();
-    subShardingFuntion.setProperties(Arrays.asList(subProperties));
+    subShardingFuntion.setProperties(subProperties);
     subProperties.put("partitionCount", "8");
     subProperties.put("partitionLength", "128");
     shardingFuntion.setSubFuntion(subShardingFuntion);
@@ -201,40 +200,26 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     });
   }
 
+  private static RuleAlgorithm createFunction(String name, String clazz)
+      throws ClassNotFoundException, InstantiationException,
+      IllegalAccessException {
+    Class<?> clz = Class.forName(clazz);
+    //判断是否继承AbstractPartitionAlgorithm
+    if (!RuleAlgorithm.class.isAssignableFrom(clz)) {
+      throw new IllegalArgumentException("rule function must implements "
+          + RuleAlgorithm.class.getName() + ", name=" + name);
+    }
+    return (RuleAlgorithm) clz.newInstance();
+  }
+
   private RuleAlgorithm getRuleAlgorithm(ShardingFuntion funtion)
       throws ClassNotFoundException, InstantiationException, IllegalAccessException {
     Map<String, String> properties = funtion.getProperties();
     properties = (properties == null) ? Collections.emptyMap() : properties;
     funtion.setProperties(properties);
     RuleAlgorithm rootFunction = createFunction(funtion.getName(), funtion.getClazz());
-    rootFunction.init(funtion.getProperties());
+    rootFunction.init(funtion.getProperties(), funtion.getRanges());
     return rootFunction;
-  }
-
-  private List<RuleAlgorithm> getSubRuleAlgorithmList(int partitionNum, String parent,
-      SubShardingFuntion funtion)
-      throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-    List<Map<String, String>> properties = funtion.getProperties();
-    List<RuleAlgorithm> ruleAlgorithms = new ArrayList<>();
-    if (properties == null) {
-      properties = Collections.EMPTY_LIST;
-    }
-    for (int i = 0; i < partitionNum; i++) {
-      RuleAlgorithm function = createFunction(parent + funtion.toString(), funtion.getClazz());
-      if (properties.size() == 1) {
-        function.init(properties.get(0));
-      } else if (properties.isEmpty()) {
-        function.init(Collections.EMPTY_MAP);
-      } else {
-        function.init(properties.get(i));
-      }
-      ruleAlgorithms.add(function);
-      if (funtion.getSubFuntion() != null) {
-        function.setSubRuleAlgorithm(
-            getSubRuleAlgorithmList(function.getPartitionNum(), parent, funtion.getSubFuntion()));
-      }
-    }
-    return ruleAlgorithms;
   }
 
   public RuleAlgorithm getRuleAlgorithm(String name) {
@@ -274,39 +259,38 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     return schemas.get(defaultSchemaName);
   }
 
+  private List<RuleAlgorithm> getSubRuleAlgorithmList(int partitionNum, String parent,
+      SubShardingFuntion funtion)
+      throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+    Map<String, String> properties = funtion.getProperties();
+    Map<String, String> ranges = funtion.getRanges();
+    List<RuleAlgorithm> ruleAlgorithms = new ArrayList<>();
+    if (properties == null) {
+      properties = Collections.EMPTY_MAP;
+    }
+    if (ranges == null) {
+      ranges = Collections.EMPTY_MAP;
+    }
+    for (int i = 0; i < partitionNum; i++) {
+      RuleAlgorithm function = createFunction(parent + funtion.toString(), funtion.getClazz());
+      function.init(properties, ranges);
+      ruleAlgorithms.add(function);
+      if (funtion.getSubFuntion() != null) {
+        function.setSubRuleAlgorithm(
+            getSubRuleAlgorithmList(function.getPartitionNum(), parent, funtion.getSubFuntion()));
+      }
+    }
+    return ruleAlgorithms;
+  }
+
   private void initAnnotations() {
     MycatRouterConfig mycatRouter = this;
     DynamicAnnotationRootConfig config = mycatRouter
-                                             .getConfig(ConfigEnum.DYNAMIC_ANNOTATION);
+        .getConfig(ConfigEnum.DYNAMIC_ANNOTATION);
     if (config != null) {
       List<DynamicAnnotationConfig> annotations = config.getDynamicAnnotations();
       for (DynamicAnnotationConfig a : annotations) {
         mycatRouter.putDynamicAnnotation(a.getName(), a);
-      }
-    }
-  }
-
-  private void initDataNode() {
-    MycatRouterConfig mycatRouter = this;
-    SchemaRootConfig schemaConfig = mycatRouter
-                                        .getConfig(ConfigEnum.SCHEMA);
-
-    for (DataNodeConfig dataNodeConfig : schemaConfig.getDataNodes()) {
-      DataNodeType dataNodeType =
-          dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
-      switch (dataNodeType) {
-        case MYSQL:
-          MySQLDataNode mySQLDataNode = new MySQLDataNode(dataNodeConfig);
-          dataNodes.put(dataNodeConfig.getName(), mySQLDataNode);
-          replicaNameToDataNodes.compute(mySQLDataNode.getReplicaName(),
-              (s, mycatDataNodes) -> {
-                if (mycatDataNodes == null) {
-                  mycatDataNodes = new ArrayList<>();
-                }
-                mycatDataNodes.add(mySQLDataNode);
-                return mycatDataNodes;
-              });
-          break;
       }
     }
   }
@@ -478,17 +462,29 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     }
   }
 
+  private void initDataNode() {
+    MycatRouterConfig mycatRouter = this;
+    SchemaRootConfig schemaConfig = mycatRouter
+        .getConfig(ConfigEnum.SCHEMA);
 
-  private static RuleAlgorithm createFunction(String name, String clazz)
-      throws ClassNotFoundException, InstantiationException,
-                 IllegalAccessException {
-    Class<?> clz = Class.forName(clazz);
-    //判断是否继承AbstractPartitionAlgorithm
-    if (!RuleAlgorithm.class.isAssignableFrom(clz)) {
-      throw new IllegalArgumentException("rule function must implements "
-                                             + RuleAlgorithm.class.getName() + ", name=" + name);
+    for (DataNodeConfig dataNodeConfig : schemaConfig.getDataNodes()) {
+      DataNodeType dataNodeType =
+          dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
+      switch (dataNodeType) {
+        case MYSQL:
+          MySQLDataNode mySQLDataNode = new MySQLDataNode(dataNodeConfig);
+          dataNodes.put(dataNodeConfig.getName(), mySQLDataNode);
+          replicaNameToDataNodes.compute(mySQLDataNode.getReplicaName(),
+              (s, mycatDataNodes) -> {
+                if (mycatDataNodes == null) {
+                  mycatDataNodes = new ArrayList<>();
+                }
+                mycatDataNodes.add(mySQLDataNode);
+                return mycatDataNodes;
+              });
+          break;
+      }
     }
-    return (RuleAlgorithm) clz.newInstance();
   }
 
   private void initSQLinterceptor(ShardingRuleRootConfig rule) {

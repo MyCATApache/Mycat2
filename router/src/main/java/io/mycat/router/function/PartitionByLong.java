@@ -5,44 +5,22 @@ import io.mycat.router.util.PartitionUtil;
 import java.util.Map;
 
 /**
- * @author jamie12221
- *  date 2019-05-02 23:36
+ * @author jamie12221 date 2019-05-02 23:36
  **/
 public class PartitionByLong extends RuleAlgorithm {
 
-  protected int[] count;
-  protected int[] length;
-  protected PartitionUtil partitionUtil;
-
-  private static int[] toIntArray(String string) {
-    String[] strs = io.mycat.util.SplitUtil.split(string, ',', true);
-    int[] ints = new int[strs.length];
-    for (int i = 0; i < strs.length; ++i) {
-      ints[i] = Integer.parseInt(strs[i]);
-    }
-    return ints;
-  }
-
-  public void setPartitionCount(String partitionCount) {
-    this.count = toIntArray(partitionCount);
-  }
-
-  public void setPartitionLength(String partitionLength) {
-    this.length = toIntArray(partitionLength);
-  }
-
+  private PartitionUtil partitionUtil;
   @Override
   public String name() {
-    return this.getClass().getSimpleName();
+    return "PartitionByLong";
   }
 
   @Override
-  public void init(Map<String, String> properties) {
-    setPartitionCount(properties.get("partitionCount"));
-    setPartitionLength(properties.get("partitionLength"));
+  public void init(Map<String, String> properties, Map<String, String> ranges) {
+    int[] count = (toIntArray(properties.get("partitionCount")));
+    int[] length = toIntArray(properties.get("partitionLength"));
     partitionUtil = new PartitionUtil(count, length);
   }
-
 
   @Override
   public int calculate(String columnValue) {
@@ -63,6 +41,6 @@ public class PartitionByLong extends RuleAlgorithm {
 
   @Override
   public int getPartitionNum() {
-    return this.count.length;
+    return partitionUtil.getPartitionNum();
   }
 }

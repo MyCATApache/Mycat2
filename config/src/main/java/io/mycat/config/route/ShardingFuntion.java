@@ -40,6 +40,7 @@ public class ShardingFuntion implements Cloneable{
 
   String clazz;
   Map<String,String>properties;
+  Map<String, String> ranges;
   SubShardingFuntion subFuntion;
 
   public SubShardingFuntion getSubFuntion() {
@@ -48,5 +49,13 @@ public class ShardingFuntion implements Cloneable{
 
   public void setSubFuntion(SubShardingFuntion subFuntion) {
     this.subFuntion = subFuntion;
+  }
+
+  public Map<String, String> getRanges() {
+    return ranges;
+  }
+
+  public void setRanges(Map<String, String> ranges) {
+    this.ranges = ranges;
   }
 }

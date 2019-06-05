@@ -29,10 +29,14 @@ public abstract class RuleAlgorithm {
 
   public abstract String name();
 
-  /**
-   * init
-   */
-  public abstract void init(Map<String, String> prot);
+  public static int[] toIntArray(String string) {
+    String[] strs = io.mycat.util.SplitUtil.split(string, ',', true);
+    int[] ints = new int[strs.length];
+    for (int i = 0; i < strs.length; ++i) {
+      ints[i] = Integer.parseInt(strs[i]);
+    }
+    return ints;
+  }
 
   /**
    * return sharding nodes's id columnValue is column's value
@@ -91,4 +95,9 @@ public abstract class RuleAlgorithm {
   public void setSubRuleAlgorithm(List<RuleAlgorithm> ruleAlgorithm) {
     nextAlgorithm = ruleAlgorithm;
   }
+
+  /**
+   * init
+   */
+  public abstract void init(Map<String, String> prot, Map<String, String> ranges);
 }
