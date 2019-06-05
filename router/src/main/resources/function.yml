@@ -96,3 +96,9 @@ funtions:
     name: PartitionByJumpConsistentHash
     properties:
       totalBuckets: 3
+  - clazz: io.mycat.router.function.PartitionByHotDate
+    name: PartitionByHotDate
+    properties:
+      dateFormat: yyyy-MM-dd
+      lastDay: 10
+      partionDay: 30
