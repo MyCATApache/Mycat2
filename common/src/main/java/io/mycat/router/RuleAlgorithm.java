@@ -100,4 +100,13 @@ public abstract class RuleAlgorithm {
    * init
    */
   public abstract void init(Map<String, String> prot, Map<String, String> ranges);
+
+  protected static int[] ints(List<Integer> list) {
+    int[] ints = new int[list.size()];
+    for (int i = 0; i < ints.length; i++) {
+      ints[i] = list.get(i);
+    }
+    return ints;
+  }
+
 }

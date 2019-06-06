@@ -102,3 +102,22 @@ funtions:
       dateFormat: yyyy-MM-dd
       lastDay: 10
       partionDay: 30
+  - clazz: io.mycat.router.function.PartitionByRangeDateHash
+    name: PartitionByRangeDateHash
+    properties:
+      dateFormat: yyyy-MM-dd HH:mm:ss
+      partionDay: 3
+      groupPartionSize: 6
+  - clazz: io.mycat.router.function.PartitionByLatestMonth
+    name: PartitionByLatestMonth
+    properties:
+      dateFormat: yyyymmddHH
+      splitOneDay: 24
+  - clazz: io.mycat.router.function.PartitionByMurmurHash
+    name: PartitionByMurmurHash
+    properties:
+      seed: 0
+      count: 2
+      virtualBucketTimes: 160
+    ranges:
+      1: 0 # 键:权重
