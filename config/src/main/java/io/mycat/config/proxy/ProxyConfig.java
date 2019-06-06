@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Desc: mycat代理配置类
  *
- * @date: 24/09/2017
+ * date: 24/09/2017
  * @author: gaozhiwen
  */
 public class ProxyConfig {

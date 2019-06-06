@@ -19,7 +19,7 @@ package io.mycat.config;
 /**
  * Desc:
  *
- * @date: 24/09/2017,10/4/2019
+ * date: 24/09/2017,10/4/2019
  * @author: gaozhiwen
  */
 public class GlobalConfig {

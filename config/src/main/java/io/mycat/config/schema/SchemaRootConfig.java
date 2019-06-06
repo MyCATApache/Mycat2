@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Desc: 对应schema.yml文件
  *
- * @date: 10/09/2017
+ * date: 10/09/2017
  * @author: gaozhiwen
  */
 public class SchemaRootConfig implements Configurable {

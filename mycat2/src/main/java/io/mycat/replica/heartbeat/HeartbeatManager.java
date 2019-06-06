@@ -19,7 +19,7 @@ package io.mycat.replica.heartbeat;
 /**
  * @author : zhangwy
  * @version V1.0
- * @Description: 心跳流程控制
+ *  心跳流程控制
  */
 public interface HeartbeatManager {
     void heartBeat();

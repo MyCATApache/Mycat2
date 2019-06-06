@@ -28,7 +28,7 @@ import io.mycat.replica.MySQLDataSourceEx;
 /**
  * @author : zhangwy
  * @version V1.0
- * @Description:
+ *
  *  date Date : 2019年05月06日 23:20
  */
 public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{

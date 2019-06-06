@@ -18,7 +18,7 @@ package io.mycat.config.schema;
 /**
  * Desc:
  *
- * @date: 24/09/2017
+ * date: 24/09/2017
  * @author: gaozhiwen
  */
 public class DataNodeConfig {
@@ -97,13 +97,10 @@ public class DataNodeConfig {
       return false;
     }
     if (replica == null) {
-      if (other.replica != null) {
-        return false;
-      }
-    } else if (!replica.equals(other.replica)) {
-      return false;
+      return other.replica == null;
+    } else {
+      return replica.equals(other.replica);
     }
-    return true;
   }
 
   @Override

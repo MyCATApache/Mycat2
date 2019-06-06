@@ -30,7 +30,7 @@ import io.mycat.config.user.UserRootConfig;
 /**
  * Desc: 用于指定集群配置文件的枚举值
  *
- * @date: 06/09/2017,04/09/2019
+ * date: 06/09/2017,04/09/2019
  * @author: gaozhiwen chenjunwen
  */
 public enum ConfigEnum {

@@ -19,7 +19,7 @@ package io.mycat.replica.heartbeat;
 /**
  * @author : zhangwy
  * @version V1.0
- * @Description:
+ *
  *  date Date : 2019年05月05日 0:05
  */
 public class DatasourceStatus {

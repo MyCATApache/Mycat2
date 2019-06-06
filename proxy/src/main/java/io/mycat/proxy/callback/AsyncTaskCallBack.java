@@ -22,7 +22,6 @@ import io.mycat.proxy.session.Session;
 public interface AsyncTaskCallBack<T extends Session> {
 
   /**
-   * @param success 成功或者失败 成功时候 result可能是结果或者是null 失败时候result是异常字符串
    * @param attr 用于其他用途的保留参数,暂时为null
    */
   void onFinished(Object sender, Object result, Object attr);

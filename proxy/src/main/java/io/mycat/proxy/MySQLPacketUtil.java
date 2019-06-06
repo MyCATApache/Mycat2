@@ -109,6 +109,13 @@ public class MySQLPacketUtil {
    *
    * @param errno 必须正确设置,否则图形化客户端不会显示
    */
+
+  /**
+   * @param errno the error code
+   * @param message the error massage
+   * @param serverCapabilityFlags server capability
+   * @return the data of payload
+   */
   public static final byte[] generateError(
       int errno,
       String message, int serverCapabilityFlags
@@ -263,13 +270,16 @@ public class MySQLPacketUtil {
 
   public static byte[] encode(String src, Charset charset) {
     if (src == null) {
-      return null;
+      return new byte[]{};
     }
     return src.getBytes(charset);
   }
 
+
   /**
    * 计算字段值存放所需空间大小
+   * @param fieldValues
+   * @return
    */
   public static int calcTextRowPayloadSize(byte[][] fieldValues) {
     int size = 0;

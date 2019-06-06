@@ -151,9 +151,10 @@ public final class MySQLServerStatusFlags {
 
     /**
      * cjw
+     *294712221@qq.com
      *
      * @return
-     * @294712221@qq.com
+     *
      */
     public static Builder builder() {
         return new Builder();

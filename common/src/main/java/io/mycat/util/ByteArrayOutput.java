@@ -24,7 +24,7 @@ import java.util.Arrays;
  * @author jamie12221
  *  date 2019-05-07 21:36
  * 堆内数组自动增长类
- * @todo 性能优化
+ * todo 性能优化
  **/
 
 public class ByteArrayOutput implements Closeable {
@@ -164,7 +164,7 @@ public class ByteArrayOutput implements Closeable {
    * currently accumulated output in the output stream is discarded. The output stream can be used
    * again, reusing the already allocated buffer space.
    *
-   * @see java.io.ByteArrayInputStream#
+   *
    */
   public void reset() {
     count = 0;
@@ -186,7 +186,7 @@ public class ByteArrayOutput implements Closeable {
    *
    * @return the value of the <code>count</code> field, which is the number of valid bytes in this
    * output stream.
-   * @see java.io.ByteArrayOutputStream#
+   *
    */
   public int size() {
     return count;

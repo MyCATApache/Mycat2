@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Desc: 黑白名单配置类
  *
- * @date: 29/09/2017
+ * date: 29/09/2017
  * @author: gaul
  */
 public class FireWallConfig {

@@ -4,7 +4,7 @@ import io.mycat.plug.sequence.SequenceCallback;
 import io.mycat.plug.sequence.SequenceHandler;
 
 /**
- * @todo enhance
+ * //todo enhance
  */
 public class SequenceTimeHandler implements SequenceHandler {
 

@@ -163,18 +163,18 @@ public interface ProxyBuffer {
   void expendToLengthIfNeedInReading(int length);
 
   /**
-   *this.buffer.capacity() < length + readStartIndex
+   *this.buffer.capacity() &lt; length + readStartIndex
    * @param length
    */
   void appendLengthIfInReading(int length);
 
   /**
-   * condition && readEndIndex < length + readStartIndex
+   * condition &amp;&amp; readEndIndex &lt; length + readStartIndex
    */
   void appendLengthIfInReading(int length, boolean condition);
 
   /**
-   * readEndIndex > buffer.capacity() * (1.0 / 3)
+   * readEndIndex &gt; buffer.capacity() * (1.0 / 3)
    */
   void compactInChannelReadingIfNeed();
 

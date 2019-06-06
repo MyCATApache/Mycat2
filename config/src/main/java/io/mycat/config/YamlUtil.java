@@ -43,7 +43,7 @@ import org.yaml.snakeyaml.representer.Representer;
 /**
  * Desc: yml文件的工具类
  *
- * @date: 09/09/2017
+ * date: 09/09/2017
  * @author: gaozhiwen
  */
 public class YamlUtil {
@@ -69,10 +69,18 @@ public class YamlUtil {
     }
 
     /**
-     * 从指定的文件中加载配置
+     *
      *
      * @param fileName 需要加载的文件名
      * @param clazz    加载后需要转换成的类对象
+     * @return
+     * @throws FileNotFoundException
+     */
+    /**
+     * 从指定的文件中加载配置
+     * @param fileName
+     * @param clazz
+     * @param <T>
      * @return
      * @throws FileNotFoundException
      */
@@ -201,7 +209,7 @@ public class YamlUtil {
      * 创建指定的文件夹
      *
      * @param directoryName
-     * @return 返回创建的文件夹路径
+     *
      */
     public static void createDirectoryIfNotExists(String directoryName) throws IOException {
         String dirPath = ROOT_PATH + directoryName;

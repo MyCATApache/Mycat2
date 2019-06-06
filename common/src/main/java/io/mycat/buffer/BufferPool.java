@@ -25,7 +25,7 @@ import java.util.Map;
  *
  * @author Hash Zhang
  * @version 1.0
- * @time 12:19 2016/5/23
+ * time 12:19 2016/5/23
  */
 public interface BufferPool {
 

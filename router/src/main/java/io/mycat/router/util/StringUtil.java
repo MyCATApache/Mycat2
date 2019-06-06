@@ -48,9 +48,9 @@ public class StringUtil {
 			'B', 'N', 'M' };
 
 	/**
-	 * 字符串hash算法：s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1] <br>
-	 * 其中s[]为字符串的字符数组，换算成程序的表达式为：<br>
-	 * h = 31*h + s.charAt(i); => h = (h << 5) - h + s.charAt(i); <br>
+	 * 字符串hash算法：s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
+	 * 其中s[]为字符串的字符数组，换算成程序的表达式为：
+	 * h = 31*h + s.charAt(i); =&gt; h = (h &lt;&lt; 5) - h + s.charAt(i);
 	 *
 	 * @param start
 	 *            hash for s.substring(start, end)
@@ -414,7 +414,7 @@ public class StringUtil {
 		int start = 0;
 		int end = 0;
 		while ((end = text.indexOf(repl, start)) != -1) {
-			buf.append(text.substring(start, end)).append(with);
+			buf.append(text, start, end).append(with);
 			start = end + repl.length();
 			if (--max == 0) {
 				break;
@@ -497,10 +497,7 @@ public class StringUtil {
 	}
 
 	public static boolean isNull(String src) {
-		if (src == null || src.trim().equals("") || src.trim().equalsIgnoreCase("undefined")) {
-			return true;
-		}
-		return false;
+		return src == null || src.trim().equals("") || src.trim().equalsIgnoreCase("undefined");
 	}
 
 	public static String sha1(String data) throws NoSuchAlgorithmException {

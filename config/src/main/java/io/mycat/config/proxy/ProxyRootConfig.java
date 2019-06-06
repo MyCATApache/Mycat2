@@ -23,7 +23,7 @@ import io.mycat.config.Configurable;
 /**
  * Desc: 对应mycat.yml文件
  *
- * @date: 19/09/2017
+ * date: 19/09/2017
  * @author: gaozhiwen
  */
 public class ProxyRootConfig implements Configurable {

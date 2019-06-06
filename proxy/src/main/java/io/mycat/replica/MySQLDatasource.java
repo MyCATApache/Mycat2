@@ -53,8 +53,10 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
     return datasourceConfig.getMaxCon();
   }
 
+
   /**
    * 回调表示获取此数据源的信息成功 信息需要包含字符集内容,如果字符集获取失败,则集群也是启动失败 字符集只有第一个Session获取,此后新建的session就不会获取,因为字符集是集群使用,集群对外应该表现为一个mysql
+   * @param callback 回调函数
    */
   public void init(AsyncTaskCallBackCounter callback) {
     Objects.requireNonNull(callback);
@@ -77,8 +79,12 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
     }
   }
 
+
   /**
    * 创建session辅助函数
+   * @param thread 执行的线程
+   * @param callback 回调函数
+   * @return
    */
   protected Runnable createMySQLSession(MycatReactorThread thread,
       SessionCallBack<MySQLClientSession> callback) {
@@ -88,8 +94,10 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
                      .createSession(this, callback);
   }
 
+
   /**
    * 关闭此dataSource创建的连接
+   * @param reason 关闭原因
    */
   public void clearAndDestroyCons(String reason) {
     Objects.requireNonNull(reason);

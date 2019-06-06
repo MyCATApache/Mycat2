@@ -89,18 +89,16 @@ public final class DumpUtil {
 	public final static String dumpAsHex(final byte[] buffer, final int offset, final int length) {
 		return dumpAsHex(new ByteArrayGetable(buffer), offset, length);
 	}
-	
+
 	/**
-     * Dumps the given bytes as a hex dump (from offset up to length bytes).
-     * 
-     * @param
-     * @param offset the begin index of bytes to print
-     * @param length the number of bytes to print
-     * @param g the get a byte interface from buffer such as byte array etc
-     * 
-     * @return hex string
-     */
-    public final static String dumpAsHex(final ByteGetable g, final int offset, final int length) {
+   * Dumps the given bytes as a hex dump (from offset up to length bytes).
+   * @param byteGetable
+   * @param offset
+   * @param length
+   * @return
+   */
+  public final static String dumpAsHex(final ByteGetable byteGetable, final int offset,
+      final int length) {
         final StringBuilder out = new StringBuilder(length * 4);
         final int end = offset + length;
         int p    = offset;
@@ -111,7 +109,7 @@ public final class DumpUtil {
         for (int i = 0; (i < rows) && (p < end); i++) {
             // - hex string in a line
             for (int j = 0, k = p; j < wide; j++, k++) {
-                final String hexs = Integer.toHexString(g.get(k) & 0xff);
+              final String hexs = Integer.toHexString(byteGetable.get(k) & 0xff);
                 if (hexs.length() == 1) {
                 	out.append('0');
                 }
@@ -120,7 +118,7 @@ public final class DumpUtil {
             out.append("    ");
             // - ascii char in a line
             for (int j = 0; j < wide; j++, p++) {
-                final int b = 0xff & g.get(p);
+              final int b = 0xff & byteGetable.get(p);
                 if (b > 32 && b < 127) {
                 	out.append((char) b);
                 } else {
@@ -134,7 +132,7 @@ public final class DumpUtil {
         // remain bytes
         int n = 0;
         for (int i = p; i < end; i++, n++) {
-            final String hexs = Integer.toHexString(g.get(i) & 0xff);
+          final String hexs = Integer.toHexString(byteGetable.get(i) & 0xff);
             if (hexs.length() == 1) {
             	out.append('0');
             }
@@ -148,7 +146,7 @@ public final class DumpUtil {
         out.append("    ");
         
         for (int i = p; i < end; i++) {
-            final int b = 0xff & g.get(i);
+          final int b = 0xff & byteGetable.get(i);
             if (b > 32 && b < 127) {
             	out.append((char) b);
             } else {

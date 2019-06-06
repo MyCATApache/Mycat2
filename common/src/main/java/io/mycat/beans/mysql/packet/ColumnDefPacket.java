@@ -37,7 +37,7 @@ public interface ColumnDefPacket {
    * byte nextLength = buffer.readByte();
    * int charsetSet = (int) buffer.readFixInt(2);
    * int columnLength = (int) buffer.readFixInt(4);
-   * byte type = (byte) (buffer.readByte() & 0xff);
+   * byte type = (byte) (buffer.readByte() &amp; 0xff);
    * int flags = (int) buffer.readFixInt(2);
    * byte decimals = buffer.readByte();
    * <p>

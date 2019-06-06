@@ -10,8 +10,12 @@ import io.mycat.replica.MySQLReplica;
  **/
 public class MySQLReplicaEx extends MySQLReplica {
 
+
   /**
    * 初始化mycat集群管理
+   * @param replicaConfig
+   * @param writeIndex
+   * @param dataSourceFactory
    */
   public MySQLReplicaEx(ReplicaConfig replicaConfig, int writeIndex,
       MycatProxyBeanProviders dataSourceFactory) {

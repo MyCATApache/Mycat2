@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Desc: 配置文件加载类
  *
- * @date: 13/09/2017
+ * date: 13/09/2017
  * @author: gaozhiwen
  */
 public class ConfigLoader {

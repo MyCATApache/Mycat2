@@ -8,7 +8,7 @@ import java.util.Calendar;
 import java.util.Map;
 
 /**
- * @todo check
+ * todo check
  */
 public class PartitionByHotDate extends RuleAlgorithm {
 

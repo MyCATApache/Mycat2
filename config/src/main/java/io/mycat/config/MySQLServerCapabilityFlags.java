@@ -56,13 +56,13 @@ public class MySQLServerCapabilityFlags {
     /**
      * server value
      *
-     * <pre>
+     *
      * server:        11110111 11111111
      * client_cmd: 11 10100110 10000101
      * client_jdbc:10 10100010 10001111
      *
-     * @see http://dev.mysql.com/doc/refman/5.1/en/mysql-real-connect.html
-     * </pre>
+     * see  'http://dev.mysql.com/doc/refman/5.1/en/mysql-real-connect.html'
+     *
      */
     // new more secure passwords
     public static final int CLIENT_LONG_PASSWORD = 1;

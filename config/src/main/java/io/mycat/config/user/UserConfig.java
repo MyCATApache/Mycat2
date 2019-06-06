@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * Desc: user配置类
  *
- * @date: 24/09/2017
+ * date: 24/09/2017
  * @author: gaozhiwen
  */
 public class UserConfig {

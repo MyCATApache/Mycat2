@@ -12,10 +12,7 @@ public class PartitionByString extends RuleAlgorithm {
   private int hashSliceEnd;
   private PartitionUtil partitionUtil;
 
-  /**
-   * "2" -&gt; (0,2)<br/> "1:2" -&gt; (1,2)<br/> "1:" -&gt; (1,0)<br/> "-1:" -&gt; (-1,0)<br/> ":-1"
-   * -&gt; (0,-1)<br/> ":" -&gt; (0,0)<br/>
-   */
+
   public static Pair<Integer, Integer> sequenceSlicing(String slice) {
     int ind = slice.indexOf(':');
     if (ind < 0) {

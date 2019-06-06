@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * Desc: 加载replica-index.yml文件配置
  *
- * @date: 10/09/2017
+ * date: 10/09/2017
  * @author: gaozhiwen
  */
 public class MasterIndexesRootConfig implements Configurable {

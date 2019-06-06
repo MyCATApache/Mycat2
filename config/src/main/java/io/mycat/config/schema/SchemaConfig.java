@@ -20,7 +20,7 @@ import java.util.List;
 /**
  * Desc:
  *
- * @date: 24/09/2017  02/05/2019
+ * date: 24/09/2017  02/05/2019
  * @author: gaozhiwen chenjunwen
  */
 public class SchemaConfig {

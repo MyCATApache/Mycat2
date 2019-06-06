@@ -5,7 +5,7 @@ import java.util.Map;
 
 /**
  * @author jamie12221
- * @date 2019-05-26 23:58
+ * date 2019-05-26 23:58
  **/
 public class MysqlServerVariablesRootConfig implements Configurable {
 

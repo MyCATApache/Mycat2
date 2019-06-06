@@ -50,8 +50,8 @@ public abstract class RuleAlgorithm {
   /**
    * 分片表所跨的节点数与分片算法分区数一致性校验
    *
-   * @return -1 if table datanode size < rule function partition size 0 if table datanode size ==
-   * rule function partition size 1 if table datanode size > rule function partition size
+   * @return -1 if table datanode size &lt; rule function partition size 0 if table datanode size ==
+   * rule function partition size 1 if table datanode size &gt; rule function partition size
    */
   public int suitableFor(MycatTable tableConf) {
     int nPartition = getPartitionNum();

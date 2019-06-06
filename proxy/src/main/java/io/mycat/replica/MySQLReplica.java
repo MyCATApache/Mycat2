@@ -54,8 +54,12 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   private long lastInitTime;  //最后一次初始化时间
   private LoadBalanceStrategy defaultLoadBalanceStrategy;
 
+
   /**
    * 初始化mycat集群管理
+   * @param replicaConfig the config of replica
+   * @param writeIndex master index
+   * @param dataSourceFactory a factory to create dataSource
    */
   public MySQLReplica(ReplicaConfig replicaConfig,
       int writeIndex, ProxyBeanProviders dataSourceFactory) {
@@ -78,7 +82,8 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   }
 
   /**
-   * 获取最后一次初始化时间
+   *
+   * @return 获取最后一次初始化时间
    */
   public long getLastInitTime() {
     return lastInitTime;
@@ -86,6 +91,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
 
   /**
    * 对于已经运行的集群,首先把原session都关闭再重新创建
+   * @param callBack callback function
    */
   public void init(AsyncTaskCallBackCounter callBack) {
     Objects.requireNonNull(config);
@@ -102,6 +108,9 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
 
   /**
    * 根据 1.是否读写分离 2.负载均衡策略 获取MySQL Session
+   * @param runOnMaster is runOnMaster
+   * @param strategy balanceStrategy
+   * @param asynTaskCallBack callback function
    */
   public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
@@ -239,6 +248,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
 
   /**
    * 切换写节点
+   * @return is switch successful
    */
   public boolean switchDataSourceIfNeed() {
       for (int i = 0; i < this.datasourceList.size(); i++) {

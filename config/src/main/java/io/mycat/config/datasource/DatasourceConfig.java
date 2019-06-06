@@ -23,7 +23,7 @@ import java.util.Objects;
 /**
  * dataSource
  *
- * @date: 24/09/2017
+ *  date: 24/09/2017
  * @author: gaozhiwen
  */
 public class DatasourceConfig {

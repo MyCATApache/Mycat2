@@ -34,7 +34,7 @@ public class ByteUtil {
 	 * 
 	 * @param b1
 	 * @param b2
-	 * @return -1 means b1 < b2, or 0 means b1=b2 else return 1
+	 * @return -1 means b1 &lt; b2, or 0 means b1=b2 else return 1
 	 */
 	public static int compareNumberByte(byte[] b1, byte[] b2) {
 		if(b1 == null || b1.length == 0) {
