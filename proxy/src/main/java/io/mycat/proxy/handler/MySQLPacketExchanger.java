@@ -51,22 +51,26 @@ public enum MySQLPacketExchanger {
     logger.error("{}", e);
     MycatMonitor.onPacketExchangerException(mycat, e);
     MySQLClientSession mysql = mycat.getMySQLSession();
-    mysql.resetPacket();
-    mysql.setCallBack(null);
-    mysql.close(false, e);
-    mycat.onHandlerFinishedClear();
+    if (mysql != null) {
+      mysql.resetPacket();
+      mysql.setCallBack(null);
+      mysql.close(false, e);
+      mycat.onHandlerFinishedClear();
+    }
     mycat.close(false, e);
   }
 
-  private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e) {
+  private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e,
+      PacketExchangerCallback callbac) {
     logger.error("{}", e);
     MycatMonitor.onPacketExchangerWriteException(mycat, e);
     MySQLClientSession mysql = mycat.getMySQLSession();
-    PacketExchangerCallback callback = mysql.getCallBack();
-    mysql.setCallBack(null);
-    mysql.resetPacket();
-    mysql.close(false, e);
-    callback.onRequestMySQLException(mycat, e, null);
+    if (mysql != null) {
+      mysql.setCallBack(null);
+      mysql.resetPacket();
+      mysql.close(false, e);
+    }
+    callbac.onRequestMySQLException(mycat, e, null);
   }
 
   private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
@@ -199,8 +203,7 @@ public enum MySQLPacketExchanger {
             mysql.setMycatSession(mycat);
             MycatMonitor.onBindMySQLSession(mycat, mysql);
           } catch (Exception e) {
-            onExceptionClearCloseInRequest(mycat, e);
-            finallyCallBack.onRequestMySQLException(mycat, e, null);
+            onExceptionClearCloseInRequest(mycat, e, finallyCallBack);
             return;
           }
         }
@@ -223,7 +226,7 @@ public enum MySQLPacketExchanger {
           onExceptionClearCloseInResponse(mycat, e);
           return;
         } else {
-          onExceptionClearCloseInRequest(mycat, e);
+          onExceptionClearCloseInRequest(mycat, e, mysql.getCallBack());
           return;
         }
       }
