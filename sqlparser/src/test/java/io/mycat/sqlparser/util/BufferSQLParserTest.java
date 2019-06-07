@@ -2,7 +2,6 @@ package io.mycat.sqlparser.util;
 
 import static org.junit.Assert.assertEquals;
 
-import io.mycat.sqlparser.util.SQLMapAnnotation.PutKeyValueAble;
 import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Before;
@@ -34,12 +33,12 @@ public class BufferSQLParserTest {
     context.getStaticAnnotation().toMapAndClear(new SQLMapAnnotation.PutKeyValueAble() {
       @Override
       public void put(String key, long value) {
-        ((PutKeyValueAble) map).put(key, value);
+        (map).put(key, value);
       }
 
       @Override
       public void put(String key, String value) {
-        ((PutKeyValueAble) map).put(key, value);
+        (map).put(key, value);
       }
     });
     Assert.assertEquals(map.get("runOnMaster"), 1L);
@@ -56,12 +55,12 @@ public class BufferSQLParserTest {
     context.getStaticAnnotation().toMapAndClear(new SQLMapAnnotation.PutKeyValueAble() {
       @Override
       public void put(String key, long value) {
-        ((PutKeyValueAble) map).put(key, value);
+        (map).put(key, value);
       }
 
       @Override
       public void put(String key, String value) {
-        ((PutKeyValueAble) map).put(key, value);
+        (map).put(key, value);
       }
     });
     Assert.assertEquals(map.get("runOnMaster"), 1L);
