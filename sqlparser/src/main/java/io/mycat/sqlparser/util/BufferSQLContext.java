@@ -204,6 +204,7 @@ public class BufferSQLContext {
     hasSubQuery = false;
     hasJoin = false;
     annotation.init(hashArray, curBuffer);
+    setAccessMode(false);
   }
 
   public void setTblName(int hashArrayPos) {

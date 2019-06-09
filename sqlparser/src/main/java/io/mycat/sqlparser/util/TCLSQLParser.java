@@ -169,14 +169,17 @@ public class TCLSQLParser {
         while (pos < arrayCount) {
           hash = hashArray.getHash(pos);
           if (hash == TokenHash.READ) {
+
             debug(pos, context);
             ++pos;
             hash = hashArray.getHash(pos);
             if (hash == TokenHash.WRITE) {
+              context.setAccessMode(true);
               debug(pos, context);
               //todo READ WRITE 记录SQL TYPE
               ++pos;
             } else if (hash == TokenHash.ONLY) {
+              context.setAccessMode(true);
               debug(pos, context);
               //todo READ ONLY 记录SQL TYPE
               ++pos;
@@ -190,7 +193,7 @@ public class TCLSQLParser {
               hash = hashArray.getHash(pos);
               if (hash == TokenHash.REPEATABLE) {
                 debug(pos, context);
-                context.setAccessMode(true);
+
                 ++pos;
                 hash = hashArray.getHash(pos);
                 if (hash == TokenHash.READ) {
