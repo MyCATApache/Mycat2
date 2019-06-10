@@ -1,9 +1,6 @@
 package io.mycat.rpc.publisher;
 
-import io.mycat.rpc.RpcHandler;
-import io.mycat.rpc.RpcSession;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
@@ -19,8 +16,11 @@ public class Publisher {
   private final Poller poller;
   private long timeout;
   private final ConcurrentLinkedQueue<BiConsumer<Poller, ZContext>> pending = new ConcurrentLinkedQueue<>();
-  private final ArrayList<RpcSession> sessions = new ArrayList<>();
+  private final ArrayList<PublisherSession> sessions = new ArrayList<>();
 
+  /**
+   * @param timeout microseconds
+   */
   public Publisher(long timeout, ZContext context) {
     this.timeout = timeout;
     this.context = context;
@@ -40,7 +40,7 @@ public class Publisher {
     return poller;
   }
 
-  void addSession(int index, RpcSession session) {
+  void addSession(int index, PublisherSession session) {
     sessions.add(index, session);
   }
 
@@ -53,10 +53,31 @@ public class Publisher {
     return context;
   }
 
-  public void start() {
+  public void process(boolean loop) {
     Thread thread = Thread.currentThread();
+    int errno;
     try {
       while (!thread.isInterrupted()) {
+        int size = poller.getNext();
+        int events = poller.poll(timeout);
+        for (int i = 0; i < size; i++) {
+
+          Socket socket = poller.getSocket(i);
+          if (socket != null) {
+            PublisherSession rpcSession = sessions.get(i);
+            PublisherHandler rpcHandler = rpcSession.getHandler();
+            if (poller.pollin(i)) {
+              rpcHandler.pollIn(rpcSession, socket, this);
+            }
+            if (poller.pollout(i)) {
+              rpcHandler.pollOut(rpcSession, socket, this);
+            }
+            if (poller.pollerr(i) || (errno = socket.errno()) != 0) {
+              rpcHandler.pollErr(rpcSession, socket, this);
+              continue;
+            }
+          }
+        }
         if (!pending.isEmpty()) {
           Iterator<BiConsumer<Poller, ZContext>> iterator = pending.iterator();
           while (iterator.hasNext()) {
@@ -65,66 +86,52 @@ public class Publisher {
           }
           continue;
         }
-        int size = poller.getNext();
-        int events = poller.poll(timeout);
-        for (int i = 0; i < size; i++) {
-
-          Socket socket = poller.getSocket(i);
-          if (socket != null) {
-            RpcSession rpcSession = sessions.get(i);
-            RpcHandler rpcHandler = rpcSession.getRpcHandler();
-            if (poller.pollin(i)) {
-              rpcHandler.pollIn(rpcSession, socket, this);
-            }
-            if (poller.pollout(i)) {
-              rpcHandler.pollOut(rpcSession, socket, this);
-            }
-            if (poller.pollerr(i)) {
-              rpcHandler.pollErr(rpcSession, socket, this);
-            }
-          }
-
+        if (!loop) {
+          break;
         }
       }
     } finally {
-      context.destroy();
+
     }
   }
+
   public static void main(String[] args) {
-    Publisher context = new Publisher(100,new ZContext());
-    int publisher = context.createPublisher("tcp://localhost:5555", new RpcHandler() {
+    Publisher context = new Publisher(1000000, new ZContext());
+    int publisher = context.createPublisher("tcp://localhost:5555", new PublisherHandler() {
       @Override
-      public void pollOut(RpcSession session, Socket socket, Publisher rpc) {
+      public void pollOut(PublisherSession session, Socket socket, Publisher rpc) {
         boolean send = socket.send("123", ZMQ.NOBLOCK);
+        ZMQ.sleep(1000);
       }
 
       @Override
-      public void pollErr(RpcSession session, Socket socket, Publisher rpc) {
+      public void pollErr(PublisherSession session, Socket socket, Publisher rpc) {
         System.out.println(socket.errno());
       }
     });
-    context.start();
+    context.process(true);
 
   }
 
 
-  public int createPublisher(String addr, RpcHandler handler) {
+  public int createPublisher(String addr, PublisherHandler handler) {
     PublisherImpl mycatPublisher = new PublisherImpl();
     return mycatPublisher.connect(addr, this, handler);
   }
 
 
-  public int createReceiver(String addr, RpcHandler handler) {
+  public int createReceiver(String addr, PublisherHandler handler) {
     ReceiverImpl mycatReceiver = new ReceiverImpl();
     return mycatReceiver.connect(addr, this, handler);
   }
 
   @Override
-  protected void finalize() throws Throwable {
+  public void finalize() throws Throwable {
     super.finalize();
     poller.close();
-    Collections.unmodifiableCollection(context.getSockets()).forEach(i -> i.close());
-    context.close();
+    for (PublisherSession session : sessions) {
+      session.getSocket().close();
+    }
   }
 
 }
