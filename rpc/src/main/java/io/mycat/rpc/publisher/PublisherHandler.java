@@ -1,12 +1,18 @@
 package io.mycat.rpc.publisher;
 
-import org.zeromq.ZMQ.Socket;
+import io.mycat.rpc.Handler;
+import io.mycat.rpc.RpcSocket;
 
-public interface PublisherHandler {
+/**
+ * The interface Publisher handler.
+ */
+public interface PublisherHandler extends Handler<PublisherProvider> {
 
-  public default void pollIn(PublisherSession session, Socket socket, Publisher rpc){}
-
-  public default void pollOut(PublisherSession session, Socket socket, Publisher rpc){}
-
-  public  void pollErr(PublisherSession session, Socket socket, Publisher rpc);
+  /**
+   * Poll out.
+   *
+   * @param socket the socket
+   * @param rpc the rpc
+   */
+  public  void pollOut(RpcSocket socket, PublisherProvider rpc);
 }

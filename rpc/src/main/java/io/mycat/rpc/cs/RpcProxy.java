@@ -1,8 +1,4 @@
-package io.mycat.rpc.cs;  //This is our server task.
-//It uses the multithreaded server model to deal requests out to a pool
-//of workers and route replies back to clients. One worker can handle
-//one request at a time but one client can talk to multiple workers at
-//once.
+package io.mycat.rpc.cs;
 
 import java.util.List;
 import java.util.Objects;
@@ -11,13 +7,30 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
 
-public class ServerTask implements Runnable {
+/**
+ * The type Rpc proxy.
+ */
+public class RpcProxy implements Runnable {
+
+  /**
+   * The Name.
+   */
   String name;
+  /**
+   * The Ctx.
+   */
   ZContext ctx;
   private List<String> serverAddrList;
   private List<String> backendAddrList;
 
-  public ServerTask(ZContext ctx, List<String> serverAddrList,List<String> backendAddrList) {
+  /**
+   * Instantiates a new Rpc proxy.
+   *
+   * @param ctx the ctx
+   * @param serverAddrList the server addr list
+   * @param backendAddrList the backend addr list
+   */
+  public RpcProxy(ZContext ctx, List<String> serverAddrList,List<String> backendAddrList) {
     Objects.requireNonNull(ctx);
     Objects.requireNonNull(serverAddrList);
     Objects.requireNonNull(backendAddrList);
