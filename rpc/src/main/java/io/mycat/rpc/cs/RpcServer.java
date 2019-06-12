@@ -1,9 +1,29 @@
+/**
+ * Copyright (C) <2019>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.mycat.rpc.cs;
 
 import java.io.Closeable;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
+import org.zeromq.ZFrame;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
 import org.zeromq.ZMsg;
@@ -21,7 +41,7 @@ public class RpcServer implements Closeable {
   private long timeout;
   private RpcServerSessionHandler handler;
   private long lastActiveTime;
-  private RpcSocketImpl rpcSocket = new RpcSocketImpl();
+  private final LinkedList<Runnable> pending = new LinkedList<>();
 
   /**
    * Instantiates a new Rpc server.
@@ -60,6 +80,14 @@ public class RpcServer implements Closeable {
       int poll = poller.poll(pollTime);
       lastActiveTime = System.currentTimeMillis();
       processRequest(worker);
+      if (!pending.isEmpty()) {
+        Iterator<Runnable> iterator = pending.iterator();
+        while (iterator.hasNext()) {
+          Runnable runnable = iterator.next();
+          iterator.remove();
+          runnable.run();
+        }
+      }
     }
   }
 
@@ -68,18 +96,27 @@ public class RpcServer implements Closeable {
     ZMsg msg = ZMsg.recvMsg(worker);
     handler.onUpdateActiveTime(this.lastActiveTime);
     byte[] data = msg.getLast().getData();
+    if (data.length==0){
+      msg.send(worker,true);
+      return;
+    }
+    RpcSocketImpl rpcSocket = new RpcSocketImpl();
     rpcSocket.setFrames(msg);
     rpcSocket.setSocket(worker);
-    handler.onRevc(data,rpcSocket);
+    handler.onRevc(data, rpcSocket, this);
   }
 
   @Override
   public void close() {
-    if (handler!=null){
+    if (handler != null) {
       handler.clear();
     }
     poller.unregister(worker);
     worker.setLinger(0);
     worker.close();
+  }
+
+  public void pending(Runnable runnable) {
+    pending.addLast(runnable);
   }
 }

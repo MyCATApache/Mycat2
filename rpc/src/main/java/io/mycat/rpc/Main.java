@@ -1,8 +1,26 @@
+/**
+ * Copyright (C) <2019>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.mycat.rpc;
 
 import io.mycat.rpc.cs.RpcClientHandler;
 import io.mycat.rpc.cs.RpcConnectionPool;
 import io.mycat.rpc.cs.RpcProvider;
+import io.mycat.rpc.cs.RpcServer;
 import io.mycat.rpc.cs.RpcServerSessionHandler;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
@@ -16,11 +34,12 @@ public class Main {
     ZContext context = new ZContext();
     RpcProvider provider = new RpcProvider(context);
     String serverAddress = "inproc://localhost:5570";
-//    provider.startProxy(Arrays.asList(serverAddress), Arrays.asList("tcp://localhost:backend"));
-    provider.startServer(serverAddress, true, 1, new RpcServerSessionHandler() {
+    provider.startProxy(Arrays.asList(serverAddress), Arrays.asList("inproc://localhost:backend"));
+    provider.startServer("inproc://localhost:backend", false, 1, new RpcServerSessionHandler() {
       @Override
-      public void onRevc(byte[] data, RpcSocket worker) {
+      public void onRevc(byte[] data, RpcSocket worker, RpcServer server) {
         worker.send(data);
+        worker.destory();
       }
 
       @Override

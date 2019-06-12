@@ -14,7 +14,7 @@ public class RpcProvider {
   /**
    * The Thread pool.
    */
-  final  ExecutorService threadPool = Executors.newCachedThreadPool();
+  final ExecutorService threadPool = Executors.newCachedThreadPool();
   private ZContext context;
   /**
    * The Id provider.
@@ -56,7 +56,7 @@ public class RpcProvider {
         serverWorker.process(timeout);
       } catch (Exception e) {
         e.printStackTrace();
-      }finally {
+      } finally {
         sessionHandler.clear();
       }
     });
