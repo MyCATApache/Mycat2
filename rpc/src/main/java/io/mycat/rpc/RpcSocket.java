@@ -19,7 +19,7 @@ package io.mycat.rpc;
 
 /**
  * The interface Rpc socket.
- *
+ *@author jamie12221
  *
  */
 public interface RpcSocket  {

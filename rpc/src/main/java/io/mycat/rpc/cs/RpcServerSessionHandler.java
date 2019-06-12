@@ -22,6 +22,7 @@ import io.mycat.rpc.RpcSocket;
 
 /**
  * The type Rpc server session handler.
+ * @author jamie12221
  */
 public abstract class RpcServerSessionHandler {
 

@@ -31,6 +31,7 @@ import org.zeromq.ZMsg;
 
 /**
  * The type Rpc connection.
+ * @author cjw
  */
 public class RpcConnection {
 

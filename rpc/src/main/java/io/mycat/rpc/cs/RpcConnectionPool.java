@@ -27,6 +27,7 @@ import org.zeromq.ZMQ.Poller;
 
 /**
  * The type Rpc connection pool.
+ * @author cjw
  */
 public class RpcConnectionPool {
 

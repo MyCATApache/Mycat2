@@ -21,6 +21,7 @@ import io.mycat.rpc.Handler;
 
 /**
  * The interface Consumer handler.
+ * @author jamie12221
  */
 public interface ConsumerHandler extends Handler<PublisherProvider> {
 

@@ -32,6 +32,7 @@ import org.zeromq.ZMQ.Socket;
 
 /**
  * The type Publisher provider.
+ * @author jamie12221
  */
 public class PublisherProvider {
 

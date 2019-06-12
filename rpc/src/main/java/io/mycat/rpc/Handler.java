@@ -21,7 +21,7 @@ import io.mycat.rpc.publisher.PublisherProvider;
 
 /**
  * The interface Handler.
- *
+ * @author jamie12221
  * @param <T> the type parameter
  */
 public interface Handler<T> {

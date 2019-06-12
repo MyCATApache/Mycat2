@@ -26,6 +26,7 @@ import org.zeromq.ZMQ.Socket;
 
 /**
  * The type Rpc proxy.
+ * @author jamie12221
  */
 public class RpcProxy implements Runnable {
 

@@ -22,6 +22,7 @@ import io.mycat.rpc.RpcSocket;
 
 /**
  * The interface Publisher handler.
+ * @author jamie12221
  */
 public interface PublisherHandler extends Handler<PublisherProvider> {
 

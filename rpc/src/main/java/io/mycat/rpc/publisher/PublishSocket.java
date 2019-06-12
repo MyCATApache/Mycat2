@@ -23,6 +23,7 @@ import org.zeromq.ZMQ.Socket;
 
 /**
  * The type Publish socket.
+ * @author jamie12221
  */
 public class PublishSocket implements RpcSocket {
 

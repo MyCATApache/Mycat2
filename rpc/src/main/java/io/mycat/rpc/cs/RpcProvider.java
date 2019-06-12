@@ -8,6 +8,7 @@ import org.zeromq.ZContext;
 
 /**
  * The type Rpc provider.
+ * @author jamie12221
  */
 public class RpcProvider {
 

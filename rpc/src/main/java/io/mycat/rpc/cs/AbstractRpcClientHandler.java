@@ -19,6 +19,7 @@ package io.mycat.rpc.cs;
 
 /**
  * The type Abstract rpc client handler.
+ * @author cjw
  */
 public abstract class AbstractRpcClientHandler {
 

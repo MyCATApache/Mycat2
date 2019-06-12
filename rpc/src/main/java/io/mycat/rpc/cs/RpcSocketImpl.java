@@ -23,6 +23,7 @@ import org.zeromq.ZMsg;
 
 /**
  * The type Rpc socket.
+ * @author jamie12221
  */
 public class RpcSocketImpl implements RpcSocket {
 
