@@ -56,6 +56,8 @@ public class RpcProvider {
         serverWorker.process(timeout);
       } catch (Exception e) {
         e.printStackTrace();
+      }finally {
+        sessionHandler.clear();
       }
     });
   }

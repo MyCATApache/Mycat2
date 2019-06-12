@@ -75,6 +75,9 @@ public class RpcServer implements Closeable {
 
   @Override
   public void close() {
+    if (handler!=null){
+      handler.clear();
+    }
     poller.unregister(worker);
     worker.setLinger(0);
     worker.close();
