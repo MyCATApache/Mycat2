@@ -185,7 +185,13 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
     return connectionCounter.decrementAndGet();
   }
 
-  public int incrementSessionCounter() {
-    return connectionCounter.incrementAndGet();
+  public boolean tryIncrementSessionCounter() {
+   return connectionCounter.get()==connectionCounter.updateAndGet(operand -> {
+     if(operand< datasourceConfig.getMaxCon()){
+       return ++operand;
+     }else {
+       return operand;
+     }
+   });
   }
 }

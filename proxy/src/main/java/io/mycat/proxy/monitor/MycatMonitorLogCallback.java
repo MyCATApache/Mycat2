@@ -22,7 +22,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   protected final static Logger LOGGER = LoggerFactory.getLogger(MycatMonitor.class);
   final static boolean record = true;
   final static boolean recordDump = false;
-  final static boolean onSQL = false;
+  final static boolean onSQL = true;
   final static boolean onException = false;
   final static boolean onClear = false;
   final static boolean onCommand = false;

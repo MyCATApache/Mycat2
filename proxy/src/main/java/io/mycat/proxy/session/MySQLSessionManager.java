@@ -39,8 +39,7 @@ import org.slf4j.LoggerFactory;
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象
  * 该在一个线程单位里,对象生命周期应该是单例的
  *
- * @author jamie12221
- *  date 2019-05-10 13:21
+ * @author jamie12221 date 2019-05-10 13:21
  **/
 public final class MySQLSessionManager implements
     BackendSessionManager<MySQLClientSession, MySQLDatasource> {
@@ -121,7 +120,7 @@ public final class MySQLSessionManager implements
           }
         }
       }
-    }catch (Exception e){
+    } catch (Exception e) {
       asyncTaskCallBack
           .onException(e, this,
               null);
@@ -161,9 +160,9 @@ public final class MySQLSessionManager implements
         return l;
       });
       MycatMonitor.onAddIdleMysqlSession(session);
-    }catch (Exception e){
-      LOGGER.error("{}",e);
-      session.close(false,e);
+    } catch (Exception e) {
+      LOGGER.error("{}", e);
+      session.close(false, e);
     }
   }
 
@@ -176,12 +175,13 @@ public final class MySQLSessionManager implements
     try {
       assert session != null;
       assert session.getDatasource() != null;
-      LinkedList<MySQLClientSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
+      LinkedList<MySQLClientSession> mySQLSessions = idleDatasourcehMap
+          .get(session.getDatasource());
       if (mySQLSessions != null) {
         mySQLSessions.remove(session);
       }
-    }catch (Exception e){
-     LOGGER.error("{}",e);
+    } catch (Exception e) {
+      LOGGER.error("{}", e);
     }
   }
 
@@ -217,8 +217,7 @@ public final class MySQLSessionManager implements
   public void createSession(MySQLDatasource key, SessionCallBack<MySQLClientSession> callBack) {
     assert key != null;
     assert callBack != null;
-    int maxCon = key.getSessionLimitCount();
-    if (maxCon == key.getSessionCounter()) {
+    if (!key.tryIncrementSessionCounter()) {
       callBack.onException(SESSION_MAX_COUNT_LIMIT, this, null);
       return;
     }
@@ -230,18 +229,19 @@ public final class MySQLSessionManager implements
         assert session.currentProxyBuffer() == null;
         MycatMonitor.onNewMySQLSession(session);
         allSessions.add(session);
-        key.incrementSessionCounter();
         callBack.onSession(session, sender, attr);
       }
 
       @Override
       public void onFinishedException(Exception exception, Object sender, Object attr) {
+        key.decrementSessionCounter();
         callBack.onException(exception, sender, attr);
       }
 
       @Override
       public void onFinishedErrorPacket(ErrorPacket errorPacket, int lastServerStatus,
           MySQLClientSession session, Object sender, Object attr) {
+        key.decrementSessionCounter();
         callBack.onException(toExpection(errorPacket), sender, attr);
       }
     });
@@ -261,8 +261,8 @@ public final class MySQLSessionManager implements
       MycatMonitor.onCloseMysqlSession(session, normal, reason);
       removeIdleSession(session);
       NIOUtil.close(session.channel());
-    }catch (Exception e){
-      LOGGER.error("{}",e);
+    } catch (Exception e) {
+      LOGGER.error("{}", e);
     }
   }
 }
