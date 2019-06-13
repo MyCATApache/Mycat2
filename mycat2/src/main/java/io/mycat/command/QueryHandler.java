@@ -49,12 +49,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * @author jamie12221
- *  date 2019-05-17 17:37
+ * @author jamie12221 date 2019-05-17 17:37
  **/
 public interface QueryHandler {
+
+  static final Logger LOGGER = LoggerFactory.getLogger(QueryHandler.class);
 
   MycatRouter router();
 
@@ -121,8 +124,8 @@ public interface QueryHandler {
         }
         case SET_TRANSACTION_SQL: {
           if (sqlContext.isAccessMode()) {
-            mycat.setLastMessage("unsupport access mode");
-            mycat.writeErrorEndPacket();
+            LOGGER.warn("ignore {} and send ok",sql);
+            mycat.writeOkEndPacket();
             return;
           }
           MySQLIsolation isolation = sqlContext.getIsolation();
@@ -207,7 +210,7 @@ public interface QueryHandler {
             case DB_IN_ONE_SERVER:
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-                      useSchema.getDefaultDataNode() , false, null, false
+                      useSchema.getDefaultDataNode(), false, null, false
                   );
               return;
             case DB_IN_MULTI_SERVER:
@@ -282,7 +285,7 @@ public interface QueryHandler {
 
   default void showTable(MycatSession mycat, String schemaName) {
     Collection<String> tableName = router().getConfig().getSchemaBySchemaName(schemaName)
-                                       .getMycatTables().keySet();
+        .getMycatTables().keySet();
     mycat.writeColumnCount(2);
     mycat.writeColumnDef("Tables in " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     mycat.writeColumnDef("Table_type " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
