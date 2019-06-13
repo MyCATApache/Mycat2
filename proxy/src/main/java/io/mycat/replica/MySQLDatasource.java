@@ -30,10 +30,9 @@ import org.slf4j.LoggerFactory;
 /**
  * MySQL Seesion元信息 对外支持线程修改的属性是alive,其他属性只读
  *
- * @author jamie12221
- *  date 2019-05-10 13:21
+ * @author jamie12221 date 2019-05-10 13:21
  **/
-public abstract class MySQLDatasource implements LoadBalanceDataSource{
+public abstract class MySQLDatasource implements LoadBalanceDataSource {
 
   protected static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
   protected final int index;
@@ -56,6 +55,7 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
 
   /**
    * 回调表示获取此数据源的信息成功 信息需要包含字符集内容,如果字符集获取失败,则集群也是启动失败 字符集只有第一个Session获取,此后新建的session就不会获取,因为字符集是集群使用,集群对外应该表现为一个mysql
+   *
    * @param callback 回调函数
    */
   public void init(AsyncTaskCallBackCounter callback) {
@@ -82,21 +82,22 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
 
   /**
    * 创建session辅助函数
+   *
    * @param thread 执行的线程
    * @param callback 回调函数
-   * @return
    */
   protected Runnable createMySQLSession(MycatReactorThread thread,
       SessionCallBack<MySQLClientSession> callback) {
     Objects.requireNonNull(thread);
     Objects.requireNonNull(callback);
     return () -> thread.getMySQLSessionManager()
-                     .createSession(this, callback);
+        .createSession(this, callback);
   }
 
 
   /**
    * 关闭此dataSource创建的连接
+   *
    * @param reason 关闭原因
    */
   public void clearAndDestroyCons(String reason) {
@@ -112,6 +113,7 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
   }
 
   public abstract boolean isAlive();
+
   @Override
   public String getName() {
     return this.datasourceConfig.getName();
@@ -152,9 +154,9 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
     }
     MySQLDatasource that = (MySQLDatasource) o;
     return index == that.index &&
-               Objects.equals(datasourceConfig, that.datasourceConfig) &&
-               Objects.equals(replica, that.replica) &&
-               Objects.equals(collationIndex, that.collationIndex);
+        Objects.equals(datasourceConfig, that.datasourceConfig) &&
+        Objects.equals(replica, that.replica) &&
+        Objects.equals(collationIndex, that.collationIndex);
   }
 
   @Override
@@ -166,6 +168,7 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
   public boolean isMaster() {
     return index == replica.getMasterIndex();
   }
+
   @Override
   public boolean isSlave() {
     return index != replica.getMasterIndex();
@@ -186,12 +189,13 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource{
   }
 
   public boolean tryIncrementSessionCounter() {
-   return connectionCounter.get()==connectionCounter.updateAndGet(operand -> {
-     if(operand< datasourceConfig.getMaxCon()){
-       return ++operand;
-     }else {
-       return operand;
-     }
-   });
+    int current = connectionCounter.get();
+    return current < connectionCounter.updateAndGet(operand -> {
+      if (operand < this.datasourceConfig.getMaxCon()) {
+        return ++operand;
+      } else {
+        return operand;
+      }
+    });
   }
 }
