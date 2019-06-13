@@ -1,4 +1,4 @@
-## mycat 2.0-heart(heart.yml,心跳)
+## mycat 2.0-heartbeat(heartbeat.yml,心跳)
 
 author:junwen,zhangwy 2019-6-2
 
