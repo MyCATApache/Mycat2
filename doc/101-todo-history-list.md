@@ -24,7 +24,7 @@
 - [ ] 数据源初始化SQL
 - [ ] 预处理命令
 - [ ] loaddata命令
-- [ ] 完善jdbc内部sql处理
+- [ ] 完善mycat对jdbc内部sql处理
 - [ ] 监控bufferpool
 - [ ] 监控sessionManager
 
