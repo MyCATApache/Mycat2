@@ -40,7 +40,5 @@ public interface RpcSocket  {
     send(data.getBytes());
   }
 
-  public default void destory(){
-
-  }
+  public void destory();
 }

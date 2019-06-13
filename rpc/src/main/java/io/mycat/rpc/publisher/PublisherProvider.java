@@ -1,18 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 
 package io.mycat.rpc.publisher;
@@ -29,6 +27,7 @@ import org.zeromq.ZContext;
 import org.zeromq.ZMQ.Error;
 import org.zeromq.ZMQ.Poller;
 import org.zeromq.ZMQ.Socket;
+import zmq.socket.pubsub.Pub;
 
 /**
  * The type Publisher provider.
@@ -100,7 +99,7 @@ public class PublisherProvider {
           socket.setLinger(0);
           socket.close();
           wrapRpcSocket.setSocket(socket);
-          hanlder.pollErr(wrapRpcSocket, this,byCode.getMessage());
+          hanlder.pollErr(wrapRpcSocket, this, byCode.getMessage());
           continue;
         }
         if (poller.pollin(i)) {
@@ -157,10 +156,9 @@ public class PublisherProvider {
       @Override
       public void pollErr(RpcSocket wrapRpcSocket, PublisherProvider publisherLoop,
           String message) {
-
       }
-    },true);
-    loop.addReceiver("tcp://localhost:5555",new byte[]{},new ConsumerHandler(){
+    }, true);
+    loop.addReceiver("tcp://localhost:5555", false, new byte[]{}, new ConsumerHandler() {
 
       @Override
       public void pollErr(RpcSocket wrapRpcSocket, PublisherProvider publisherLoop,
@@ -172,15 +170,15 @@ public class PublisherProvider {
       public void pollIn(byte[] bytes, PublisherProvider rpc) {
         System.out.println(new String(bytes));
       }
-    },false);
+    });
     loop.loop();
   }
 
-  private static RpcSocket createPublisher(ZContext context,String addr, boolean bind) {
+  public RpcSocket createPublisher(ZContext context, String addr, boolean bind) {
     Socket socket = context.createSocket(SocketType.PUB); //subscribe类型
-    if (bind){
+    if (bind) {
       socket.bind(addr);
-    }else {
+    } else {
       socket.connect(addr);
     }
     PublishSocket publishSocket = new PublishSocket();
@@ -197,16 +195,16 @@ public class PublisherProvider {
    * @param bind the bind
    * @return the int
    */
-  public int addPublisher(String addr, PublisherHandler handler,boolean bind) {
+  public int addPublisher(String addr, PublisherHandler handler, boolean bind) {
     Objects.requireNonNull(addr);
     Objects.requireNonNull(handler);
     Socket socket = context.createSocket(SocketType.PUB); //subscribe类型
-    if (bind){
+    if (bind) {
       String[] strings = addr.split(",");
       for (String s : strings) {
         socket.bind(s);
       }
-    }else {
+    } else {
       socket.connect(addr);
     }
     int register = poller.register(socket, Poller.POLLERR);
@@ -224,11 +222,11 @@ public class PublisherProvider {
    * @param bind the bind
    * @return the int
    */
-  public int addReceiver(String addr, byte[] topic, ConsumerHandler handler,boolean bind) {
+  public int addReceiver(String addr, boolean bind, byte[] topic, ConsumerHandler handler) {
     Socket socket = context.createSocket(SocketType.SUB); //subscribe类型
-    if (bind){
+    if (bind) {
       socket.bind(addr);
-    }else {
+    } else {
       socket.connect(addr);
     }
     int register = poller.register(socket, Poller.POLLIN | Poller.POLLERR);

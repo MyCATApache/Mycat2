@@ -76,4 +76,9 @@ public class RpcSocketImpl implements RpcSocket {
     frames.addLast(data);
     frames.send(socket,true);
   }
+
+  @Override
+  public void destory() {
+
+  }
 }

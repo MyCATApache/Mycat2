@@ -54,4 +54,10 @@ public class PublishSocket implements RpcSocket {
   public void send(byte[] data) {
     this.socket.send(data, ZMQ.NOBLOCK);
   }
+
+  @Override
+  public void destory() {
+    socket.setLinger(0);
+    socket.close();
+  }
 }
