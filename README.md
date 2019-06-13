@@ -4,7 +4,7 @@ Proxy-centric high-performance MySQL Middleware.
 
 [中文文档](/doc/00-mycat-readme.md)
 
-[todo](/doc/101-todo-history-list.md)
+[任务](/doc/101-todo-history-list.md)
 
 [mysql-packet-parsing-state-machine](/doc/100-mysql-packet-parsing-state-machine.md)
 
