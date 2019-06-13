@@ -12,7 +12,7 @@ public class PartitionDirectBySubString extends RuleAlgorithm {
   // 分区数量
   private int partitionCount;
   // 默认分区（在分区数量定义时，字串标示的分区编号不在分区数量内时，使用默认分区）
-  private int defaultPartition;
+  private int defaultNode;
 
   @Override
   public String name() {
@@ -24,7 +24,7 @@ public class PartitionDirectBySubString extends RuleAlgorithm {
     this.startIndex = Integer.parseInt(prot.get("startIndex"));
     this.size = Integer.parseInt(prot.get("size"));
     this.partitionCount = Integer.parseInt(prot.get("partitionCount"));
-    this.defaultPartition = Integer.parseInt(prot.get("defaultNode"));
+    this.defaultNode = Integer.parseInt(prot.get("defaultNode"));
   }
 
   @Override
@@ -32,7 +32,7 @@ public class PartitionDirectBySubString extends RuleAlgorithm {
     String partitionSubString = columnValue.substring(startIndex, startIndex + size);
     int partition = Integer.parseInt(partitionSubString, 10);
     return partitionCount > 0 && partition >= partitionCount
-        ? defaultPartition : partition;
+        ? defaultNode : partition;
   }
 
   @Override
