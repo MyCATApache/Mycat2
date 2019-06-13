@@ -2,8 +2,8 @@ funtions:
   - clazz: io.mycat.router.function.PartitionByLong
     name: partitionByLong
     properties:
-      partitionCount: '4'
-      partitionLength: '256'
+      partitionCount: 2,1
+      partitionLength: 256,512
   - clazz: io.mycat.router.function.PartitionByMod
     name: PartitionByMod
     properties:
@@ -36,7 +36,7 @@ funtions:
       patternValue: 256
       defaultNode: -1
     ranges:
-      0-32: 0
+      1-32: 0
       33-64: 1
   - clazz: io.mycat.router.function.PartitionByPrefixPattern
     name: PartitionByPrefixPattern
@@ -59,7 +59,7 @@ funtions:
       startIndex: 0
       size: 2
       partitionCount: 8
-      defaultPartition: 0
+      defaultNode: 0
   - clazz: io.mycat.router.function.PartitionByString
     name: PartitionByString
     properties:

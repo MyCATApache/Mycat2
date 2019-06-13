@@ -24,7 +24,7 @@ public class PartitionDirectBySubString extends RuleAlgorithm {
     this.startIndex = Integer.parseInt(prot.get("startIndex"));
     this.size = Integer.parseInt(prot.get("size"));
     this.partitionCount = Integer.parseInt(prot.get("partitionCount"));
-    this.defaultPartition = Integer.parseInt(prot.get("defaultPartition"));
+    this.defaultPartition = Integer.parseInt(prot.get("defaultNode"));
   }
 
   @Override
