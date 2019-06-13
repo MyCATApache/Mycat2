@@ -40,7 +40,11 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 [静态注解说明](08-mycat-static-annotation.md)
 
+[分片算法说明](17-partitioning-algorithm.md)
+
 [负载均衡说明](15-mycat-balance.md)
+
+[负载均衡算法](16-load-balancing-algorithm.md)
 
 [全局序列号说明](14-mycat-sequence.md)
 
