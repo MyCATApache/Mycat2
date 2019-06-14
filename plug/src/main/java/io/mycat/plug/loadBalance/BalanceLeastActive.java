@@ -18,7 +18,9 @@
 package io.mycat.plug.loadBalance;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * 最小连接数优先
@@ -31,15 +33,24 @@ public enum BalanceLeastActive implements LoadBalanceStrategy{
         return null;
       }
       int len = entityList.size();
-      int leastIndex = 0 ;
-      int leastActive = entityList.get(0).getSessionCounter();
+      List<LoadBalanceDataSource> balanceList = new ArrayList<>();
+
+      int leastActive = Integer.MAX_VALUE;
       for (int i = 0; i < len; i++) {
         if(leastActive > entityList.get(i).getSessionCounter()) {
-           leastActive = entityList.get(i).getSessionCounter();
-           leastIndex = i;
+          leastActive = entityList.get(i).getSessionCounter();
+          balanceList.clear();
+          balanceList.add(entityList.get(i));
+        } else if(leastActive == entityList.get(i).getSessionCounter()){
+          balanceList.add(entityList.get(i));
         }
       }
-      return entityList.get(leastIndex);
+      int size = balanceList.size();
+      if(1 == size) {
+        return balanceList.get(0);
+      }
+      Integer i = ThreadLocalRandom.current().nextInt(size);
+      return balanceList.get(i);
     }
   };
 }
