@@ -17,15 +17,25 @@
 package io.mycat.beans.mysql;
 
 public enum MySQLIsolation {
-    READ_UNCOMMITTED("SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;"),
-    READ_COMMITTED("SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;"),
-    REPEATED_READ("SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;"),
-    SERIALIZABLE("SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
-
+    READ_UNCOMMITTED("READ-UNCOMMITTED", "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;"),
+    READ_COMMITTED("READ-COMMITTED", "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;"),
+    REPEATED_READ("REPEATABLE-READ", "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;"),
+    SERIALIZABLE("SERIALIZABLE", "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;");
+    private String text;
     private String cmd;
 
-    MySQLIsolation(String cmd) {
+    MySQLIsolation(String text, String cmd) {
+        this.text = text;
         this.cmd = cmd;
+    }
+
+    /**
+     * Getter for property 'text'.
+     *
+     * @return Value for property 'text'.
+     */
+    public String getText() {
+        return text;
     }
 
     public String getCmd() {

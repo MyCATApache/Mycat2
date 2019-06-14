@@ -16,6 +16,7 @@ package io.mycat.command;
 
 import static io.mycat.sqlparser.util.BufferSQLContext.DESCRIBE_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_VARIABLES;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_AUTOCOMMIT_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET_RESULT;
@@ -182,6 +183,31 @@ public interface QueryHandler {
           mycat.writeColumnEndPacket();
           mycat.writeRowEndPacket(false, false);
           return;
+        }
+        case SELECT_VARIABLES:{
+          if (sqlContext.isSelectAutocommit()){
+            mycat.writeColumnCount(1);
+            mycat.writeColumnDef("@@session.autocommit", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+            mycat.writeColumnEndPacket();
+            mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getAutoCommit().getText())});
+            mycat.writeRowEndPacket(false,false);
+            return;
+          }else if (sqlContext.isSelectTxIsolation()){
+            mycat.writeColumnCount(1);
+            mycat.writeColumnDef("@@session.tx_isolation", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+            mycat.writeColumnEndPacket();
+            mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getIsolation().getText())});
+            mycat.writeRowEndPacket(false,false);
+            return;
+          }else if (sqlContext.isSelectTranscationReadOnly()){
+            mycat.writeColumnCount(1);
+            mycat.writeColumnDef("@@session.transaction_read_only", MySQLFieldsType.FIELD_TYPE_LONGLONG);
+            mycat.writeColumnEndPacket();
+            mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getIsolation().getText())});
+            mycat.writeRowEndPacket(false,false);
+            return;
+          }
+          LOGGER.warn("maybe unsupported  sql:{}",sql);
         }
         case SELECT_SQL: {
           if (sqlContext.isSimpleSelect()) {

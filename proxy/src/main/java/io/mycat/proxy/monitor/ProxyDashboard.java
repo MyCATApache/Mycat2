@@ -30,6 +30,7 @@ public enum ProxyDashboard {
   protected final static Logger LOGGER = LoggerFactory.getLogger(ProxyDashboard.class);
   public void collectInfo( ) {
     ProxyRuntime runtime = ProxyRuntime.INSTANCE;
+    LOGGER.info("---------------------------dashboard---------------------------");
     for (MycatReactorThread thread : runtime.getMycatReactorThreads()) {
       BufferPool bufPool = thread.getBufPool();
       Map<Long, Long> memoryUsage = bufPool.getNetDirectMemoryUsage();
