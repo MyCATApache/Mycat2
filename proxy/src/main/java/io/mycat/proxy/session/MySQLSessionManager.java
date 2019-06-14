@@ -95,13 +95,13 @@ public final class MySQLSessionManager implements
             createSession(datasource, asyncTaskCallBack);
             return;
           } else {
+            MycatReactorThread mycatReactorThread = (MycatReactorThread) Thread.currentThread();
             boolean random = ThreadLocalRandom.current().nextBoolean();
             MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
             mySQLSession.setIdle(false);
             assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
             assert mySQLSession.currentProxyBuffer() == null;
             if (!mySQLSession.isOpen()) {
-              MycatReactorThread mycatReactorThread = mySQLSession.getMycatReactorThread();
               mycatReactorThread.addNIOJob(() -> {
                 mySQLSession.close(false, "mysql session is close in idle");
               });
@@ -113,9 +113,11 @@ public final class MySQLSessionManager implements
               asyncTaskCallBack.onSession(mySQLSession, this, null);
               return;
             } else {
-
-              asyncTaskCallBack.onSession(mySQLSession, this, null);
-              return;
+              //todo ping request
+              mycatReactorThread.addNIOJob(() -> {
+                mySQLSession.close(false, "not actived");
+              });
+              continue;
             }
           }
         }
