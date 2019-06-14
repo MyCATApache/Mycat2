@@ -400,11 +400,11 @@ two MySQL servers(no proxy) with account with
 
 password {123456}
 
-one server  listens{localhost:3306}
+one server  listens{localhost:3307}
 
-the other  listens{localhost:3307} 
+the other  listens{localhost:3308} 
 
-with a schema named {test}
+with a schema named {db1}
 
 Generally,we test proxy by a table named travelrecord .
 
@@ -420,7 +420,7 @@ CREATE TABLE `travelrecord` (
 
 when we need more schema or table,
 
-we rename test1,test2,test3... 
+we rename db1,db2,db3... 
 
 travelrecord1,travelrecord2,travelrecord3...
 
