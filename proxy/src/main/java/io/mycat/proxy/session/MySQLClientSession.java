@@ -553,4 +553,12 @@ public class MySQLClientSession extends
     this.characterSetResult = characterSetResult;
   }
 
+  /**
+   * Getter for property 'monopolizeType'.
+   *
+   * @return Value for property 'monopolizeType'.
+   */
+  public MySQLSessionMonopolizeType getMonopolizeType() {
+    return monopolizeType;
+  }
 }

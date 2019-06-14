@@ -118,7 +118,7 @@ public interface QueryHandler {
         }
         case SET_CHARSET_RESULT: {
           String charsetSetResult = sqlContext.getCharsetSetResult();
-          mycat.setCharsetSetResult(charsetSetResult);//@todo but do no thing
+          mycat.setCharsetSetResult(charsetSetResult);
           mycat.writeOkEndPacket();
           return;
         }
@@ -192,7 +192,7 @@ public interface QueryHandler {
                   OneServerResultRoute route = (OneServerResultRoute) resultRoute;
                   MySQLTaskUtil
                       .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), resultRoute.isRunOnMaster(true),
+                          route.getDataNode(), resultRoute.isRunOnMaster(false),
                           ProxyRuntime.INSTANCE
                               .getLoadBalanceByBalanceName(resultRoute.getBalance()), false
                       );

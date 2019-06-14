@@ -1,5 +1,6 @@
 package io.mycat.proxy.monitor;
 
+import io.mycat.MycatExpection;
 import io.mycat.annotations.NoExcept;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -38,7 +39,7 @@ public interface MycatMonitorCallback {
         return mycatSession;
       }
     } else {
-      return null;
+      throw new MycatExpection("unknown session");
     }
   }
 
