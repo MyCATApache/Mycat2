@@ -78,7 +78,6 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             mysql.register(curThread.getSelector(), channel, SelectionKey.OP_CONNECT);
             channel.connect(new InetSocketAddress(datasource.getIp(), datasource.getPort()));
         } catch (Exception e) {
-            MycatMonitor.onBackendConCreateWriteException(mysql,e);
             onException(mysql, e);
             callback.onFinishedException(null, e, null);
             return;
@@ -276,7 +275,6 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         try {
             session.writeToChannel();
         } catch (Exception e) {
-            MycatMonitor.onBackendConCreateWriteException(session,e);
             onException(session, e);
             callback.onFinishedException(e, this, null);
         }
