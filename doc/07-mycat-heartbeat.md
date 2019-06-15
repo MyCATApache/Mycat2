@@ -34,12 +34,19 @@ mycat启动定时器,对mysql数据源发送心跳,用于检测mysql数据源是
 
 上一次主从的切换与当前需要切换的时间的间隔必须要超过minSwitchTimeInterval,才允许发生切换.
 
+## 空闲连接超时阈值(idleTimeout)
+
+启动定时器进行定时检活,定时器检查周期为 idleTimeout /2,会对部分空闲的连接发送检活的sql语句,如果空闲连接已经超过空闲的阈值，最进行关闭，
+如果空闲的连接数量超过了mysqls数据源的最小连接数，则会进行关闭。若果空闲的连接数小于mysqls数据源的最小连接数，则会进行创建。
+
 ```yaml
 heartbeat:
   replicaHeartbeatPeriod: 120 #集群心跳周期 秒         心跳定时器的时间.
-  minHeartbeatChecktime: 12000 #最小心跳间隔 毫秒      超过这个阈值的间隔的时间 判定为心跳超时,如果上一个心跳还未返回而且小于这个阈值不发送心跳继续等待心跳结果.
+  minHeartbeatChecktime: 12000 #最小心跳间隔 毫秒      
   maxRetry: 3 #错误重试次数
   minSwitchTimeInterval: 12000 # 毫秒  主从心跳最小切换时间
+  idleTimeout: 30000 #闲置超时时间 毫秒 集群闲置检测周期 =  idleTimeout /2
+
   
 ```
 
