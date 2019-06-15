@@ -194,12 +194,20 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       setLastMessage(hint);
     }
     assert hint != null;
+    try{
+      MySQLClientSession sqlSession = getMySQLSession();
+      if (sqlSession!=null){
+        sqlSession.close(false,hint);
+      }
+    }catch (Exception e){
+      LOGGER.error("{}",e);
+    }
     onHandlerFinishedClear();
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
-      e.printStackTrace();
+      LOGGER.error("{}",e);
     }
   }
 
