@@ -32,6 +32,7 @@ import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLIsolationLevel;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
@@ -127,6 +128,12 @@ public interface QueryHandler {
           if (sqlContext.isAccessMode()) {
             LOGGER.warn("ignore {} and send ok",sql);
             mycat.writeOkEndPacket();
+            return;
+          }
+          if (sqlContext.getTransactionLevel() == MySQLIsolationLevel.GLOBAL){
+            LOGGER.warn("unsupport global send error",sql);
+            mycat.setLastMessage("unsupport global level");
+            mycat.writeErrorEndPacket();
             return;
           }
           MySQLIsolation isolation = sqlContext.getIsolation();
