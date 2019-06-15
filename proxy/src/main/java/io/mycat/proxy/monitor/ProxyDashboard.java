@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public enum ProxyDashboard {
   INSTANCE;
-  protected final static Logger LOGGER = LoggerFactory.getLogger(ProxyDashboard.class);
+  protected final static Logger LOGGER = LoggerFactory.getLogger("resourceLogger");
   public void collectInfo( ) {
     ProxyRuntime runtime = ProxyRuntime.INSTANCE;
     LOGGER.info("---------------------------dashboard---------------------------");

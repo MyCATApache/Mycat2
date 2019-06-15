@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   protected final static Logger LOGGER = LoggerFactory.getLogger(MycatMonitor.class);
+  protected final static Logger SQL_LOGGER = LoggerFactory.getLogger("sqlLogger");
   final static boolean record = true;
   final static boolean recordDump = false;
   final static boolean onSQL = true;
@@ -42,14 +43,14 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public void onOrginSQL(Session session, String sql) {
     if (onSQL) {
-      LOGGER.info("sessionId:{}  orginSQL:{} ", session.sessionId(), sql);
+      SQL_LOGGER.info("sessionId:{}  orginSQL:{} ", session.sessionId(), sql);
     }
   }
 
   @Override
   public void onRoute(Session session, String dataNode, byte[] payload) {
     if (onSQL) {
-      LOGGER.info("sessionId:{} dataNode:{}  payload:{} ", session.sessionId(), dataNode,
+      SQL_LOGGER.info("sessionId:{} dataNode:{}  payload:{} ", session.sessionId(), dataNode,
           new String(payload));
     }
   }
