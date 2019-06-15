@@ -193,7 +193,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public void onCloseMysqlSession(MySQLClientSession session, boolean normal, String reason) {
-    if (onException) {
+    if (record) {
       LOGGER.info("sessionId:{} normal:{} reason:{}", session.sessionId(), normal, reason);
     }
   }

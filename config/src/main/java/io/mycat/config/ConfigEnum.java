@@ -43,8 +43,8 @@ public enum ConfigEnum {
   RULE(10, "rule.yml", ShardingRuleRootConfig.class),
   FUNCTIONS(11, "function.yml", SharingFuntionRootConfig.class),
   PLUG(12, "plug.yml", PlugRootConfig.class),
-  HEARTBEAT(12, "heartbeat.yml", HeartbeatRootConfig.class),
-  VARIABLES(13, "variables.yml", MysqlServerVariablesRootConfig.class),
+  HEARTBEAT(13, "heartbeat.yml", HeartbeatRootConfig.class),
+  VARIABLES(14, "variables.yaml", MysqlServerVariablesRootConfig.class),
   ;
   private byte type;
   private String fileName;

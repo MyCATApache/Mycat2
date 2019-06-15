@@ -166,8 +166,8 @@ public interface QueryHandler {
           mycat.writeColumnDef("Variable_name", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
           mycat.writeColumnDef("Value", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
           mycat.writeColumnEndPacket();
-          MySQLVariables variables = new MySQLVariables();
-          Set<Entry<String, String>> entries = variables.entries();
+
+          Set<Entry<String, String>> entries = ProxyRuntime.INSTANCE.getVariables().entries();
           for (Entry<String, String> entry : entries) {
             mycat.writeTextRowPacket(
                 new byte[][]{mycat.encode(entry.getKey()), mycat.encode(entry.getValue())});

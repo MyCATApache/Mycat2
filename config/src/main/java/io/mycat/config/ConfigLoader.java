@@ -38,6 +38,7 @@ public class ConfigLoader {
   public static final String DIR_ARCHIVE = "archive" + File.separator;
 
   public void loadProxy(String root, ConfigReceiver receiver) throws IOException {
+    loadConfig(root, ConfigEnum.VARIABLES, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.PROXY, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.PLUG, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.REPLICA_INDEX, GlobalConfig.INIT_VERSION, receiver);
@@ -76,6 +77,7 @@ public class ConfigLoader {
       e.printStackTrace();
       LOGGER.error("load config for {} fail",e);
     }
+    throw new IllegalArgumentException(root +"/"+configEnum.getFileName()+"not exist");
   }
 
   /**

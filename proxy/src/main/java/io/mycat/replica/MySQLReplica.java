@@ -19,6 +19,7 @@ import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
 import io.mycat.logTip.ReplicaTip;
 import io.mycat.plug.loadBalance.LoadBalanceDataSource;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
@@ -132,9 +133,11 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   }
 
   private List<LoadBalanceDataSource> getDataSourceByLoadBalacneType() {
-    switch (this.getConfig().getBalanceType()){
+    BalanceTypeEnum balanceType = this.getConfig().getBalanceType();
+    Objects.requireNonNull(balanceType,"balanceType is null");
+    switch (balanceType){
       case BALANCE_ALL:
-        List<LoadBalanceDataSource> list = new ArrayList<>();
+        List<LoadBalanceDataSource> list = new ArrayList<>(this.datasourceList.size());
         for (MySQLDatasource datasource : this.datasourceList) {
           if (datasource.isAlive()) {
             list.add(datasource);
@@ -144,7 +147,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
       case BALANCE_NONE:
         return Collections.singletonList(getMaster());
       case BALANCE_ALL_READ:
-        List<LoadBalanceDataSource> result = new ArrayList<>();
+        List<LoadBalanceDataSource> result = new ArrayList<>(this.datasourceList.size());
         for (MySQLDatasource mySQLDatasource : this.datasourceList) {
           if (mySQLDatasource.isAlive() && mySQLDatasource.isSlave()) {
             result.add(mySQLDatasource);

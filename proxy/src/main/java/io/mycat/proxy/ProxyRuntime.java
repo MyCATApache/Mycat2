@@ -18,6 +18,7 @@ import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
@@ -26,6 +27,7 @@ import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.plug.PlugRootConfig;
+import io.mycat.config.proxy.MysqlServerVariablesRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
@@ -70,6 +72,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private final LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
   private MycatRouterConfig routerConfig;
   private MycatSecurityConfig securityManager;
+  private MySQLVariables variables;
 
   public static String getResourcesPath(Class clazz) {
     try {
@@ -82,6 +85,20 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     }
   }
 
+  public void initMySQLVariables(){
+    MysqlServerVariablesRootConfig config = getConfig(ConfigEnum.VARIABLES);
+    Objects.requireNonNull(config.getVariables());
+    variables = new MySQLVariables(config.getVariables());
+  }
+
+  /**
+   * Getter for property 'variables'.
+   *
+   * @return Value for property 'variables'.
+   */
+  public MySQLVariables getVariables() {
+    return variables;
+  }
 
   public int getMaxAllowedPacket() {
     return getProxy().getMaxAllowedPacket();

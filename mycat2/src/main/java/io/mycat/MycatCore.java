@@ -69,6 +69,7 @@ public class MycatCore {
     MycatMonitor.setCallback(callback);
     runtime.initCharset(resourcesPath);
     runtime.loadProxy(resourcesPath);
+    runtime.initMySQLVariables();
     runtime.loadMycat(resourcesPath);
     runtime.initPlug();
     MycatRouterConfig routerConfig = runtime.initRouterConfig(resourcesPath);
@@ -98,7 +99,7 @@ public class MycatCore {
                   }
 
                 }
-              }, 0, 5, TimeUnit.SECONDS);
+              }, 0, 5000, TimeUnit.SECONDS);
 
               startFinished.onFinished(null, null, null);
 

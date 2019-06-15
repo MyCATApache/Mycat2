@@ -22,6 +22,7 @@ import io.mycat.proxy.session.Session;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.channels.ClosedSelectorException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
@@ -205,7 +206,10 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
           }
         }
         keys.clear();
-      } catch (Throwable e) {
+      }catch (ClosedSelectorException e){
+        LOGGER.warn("selector is closed");
+        break;
+      }catch (Throwable e) {
         LOGGER.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e),
             e);
       }
