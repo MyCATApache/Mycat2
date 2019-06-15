@@ -216,7 +216,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public void onBackendConCreateException(Session session, Exception e) {
     if (onException && session != null) {
-      LOGGER.info("session id:{}", session.sessionId());
+      LOGGER.info("sessionId:{}", session.sessionId());
     }
   }
 
