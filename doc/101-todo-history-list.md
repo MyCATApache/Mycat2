@@ -6,8 +6,8 @@
 
 ##### 进行中
 
-- [ ] 添加嵌入的mysql数据库用于测试(junwen12221-2019-6-14)
-- [ ] 负载均衡算法说明文档(zwy-2019-6-13)
+- [ ] 
+- [ ] 
 
 
 
@@ -25,8 +25,8 @@
 - [ ] 预处理命令
 - [ ] loaddata命令
 - [ ] 完善mycat对jdbc内部sql处理
-- [ ] 监控bufferpool
-- [ ] 监控sessionManager
+- [ ] NIO空轮训问题
+- [ ] 自定义mysql变量配置文件(show variables以及相应配置在mycat里生效,比如报文大小限制)
 
 
 
@@ -37,6 +37,10 @@
 ##### 已完成
 
 - [x] 静态注解实现([junwen12221](https://github.com/junwen12221)-2019-6-5)
+- [x] 添加嵌入的mysql数据库用于测试(junwen12221-2019-6-14)
+- [x] 负载均衡算法说明文档(zwy-2019-6-13)
+- [x] 监控bufferpool
+- [x] 监控sessionManager
 
 ------
 

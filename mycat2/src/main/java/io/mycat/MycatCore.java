@@ -16,12 +16,17 @@ package io.mycat;
 
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
+<<<<<<< HEAD
 import io.mycat.logTip.ReplicaTip;
+=======
+import io.mycat.proxy.monitor.ProxyDashboard;
+>>>>>>> 63f087a06557178ca690aede971448230ed521df
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
+<<<<<<< HEAD
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.MySQLDataSourceEx;
@@ -32,6 +37,11 @@ import io.mycat.router.MycatRouterConfig;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+=======
+import io.mycat.router.MycatRouter;
+import io.mycat.router.MycatRouterConfig;
+import java.io.IOException;
+>>>>>>> 63f087a06557178ca690aede971448230ed521df
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -108,6 +118,19 @@ public class MycatCore {
 //                  }
 //                }
 //              }, 0, period, TimeUnit.SECONDS);
+              service.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+
+                  try {
+                    ProxyDashboard.INSTANCE.collectInfo();
+                  }catch (Exception e){
+                    e.printStackTrace();
+                  }
+
+                }
+              }, 0, 5, TimeUnit.SECONDS);
+
               startFinished.onFinished(null, null, null);
 
             } catch (Exception e) {

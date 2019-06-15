@@ -23,14 +23,25 @@ package io.mycat.beans.mysql;
  * mysql 状态 autocommit
  **/
 public enum MySQLAutoCommit {
-    ON("SET autocommit = 1;"),
-    OFF("SET autocommit = 0;");
+    ON("1", "SET autocommit = 1;"),
+    OFF("0", "SET autocommit = 0;");
 
-    MySQLAutoCommit(String cmd) {
+    MySQLAutoCommit(String text, String cmd) {
+        this.text = text;
         this.cmd = cmd;
     }
 
+    private String text;
     private String cmd;
+
+    /**
+     * Getter for property 'text'.
+     *
+     * @return Value for property 'text'.
+     */
+    public String getText() {
+        return text;
+    }
 
     public String getCmd() {
         return cmd;

@@ -1,0 +1,321 @@
+2019-06-15 23:12:21,346----------------------------dashboard---------------------------
+2019-06-15 23:12:21,346-threadId:18  buffer size:8192
+2019-06-15 23:12:21,346----------------------------mysql---------------------------
+2019-06-15 23:12:21,348-automCommit:ON isolation:null
+2019-06-15 23:12:21,348-charset:null characterSetResult:null
+2019-06-15 23:12:21,348-lastMessage:null
+2019-06-15 23:12:21,349-open:true isClose:false
+2019-06-15 23:12:21,349-proxyBuffer:null
+2019-06-15 23:12:21,349-idle:true,monopolizeType:NONE
+2019-06-15 23:12:26,346----------------------------dashboard---------------------------
+2019-06-15 23:12:26,346-threadId:18  buffer size:0
+2019-06-15 23:12:26,346----------------------------mysql---------------------------
+2019-06-15 23:12:26,346-automCommit:ON isolation:null
+2019-06-15 23:12:26,346-charset:null characterSetResult:null
+2019-06-15 23:12:26,346-lastMessage:null
+2019-06-15 23:12:26,346-open:true isClose:false
+2019-06-15 23:12:26,346-proxyBuffer:null
+2019-06-15 23:12:26,346-idle:true,monopolizeType:NONE
+2019-06-15 23:12:26,346----------------------------mysql---------------------------
+2019-06-15 23:12:26,346-automCommit:ON isolation:null
+2019-06-15 23:12:26,346-charset:null characterSetResult:null
+2019-06-15 23:12:26,346-lastMessage:null
+2019-06-15 23:12:26,347-open:true isClose:false
+2019-06-15 23:12:26,347-proxyBuffer:null
+2019-06-15 23:12:26,347-idle:true,monopolizeType:NONE
+2019-06-15 23:12:26,347----------------------------mysql---------------------------
+2019-06-15 23:12:26,347-automCommit:ON isolation:null
+2019-06-15 23:12:26,347-charset:null characterSetResult:null
+2019-06-15 23:12:26,347-lastMessage:null
+2019-06-15 23:12:26,347-open:true isClose:false
+2019-06-15 23:12:26,347-proxyBuffer:null
+2019-06-15 23:12:26,347-idle:true,monopolizeType:NONE
+2019-06-15 23:12:26,347----------------------------mysql---------------------------
+2019-06-15 23:12:26,347-automCommit:ON isolation:null
+2019-06-15 23:12:26,347-charset:null characterSetResult:null
+2019-06-15 23:12:26,348-lastMessage:null
+2019-06-15 23:12:26,348-open:true isClose:false
+2019-06-15 23:12:26,348-proxyBuffer:null
+2019-06-15 23:12:26,348-idle:true,monopolizeType:NONE
+2019-06-15 23:12:26,348----------------------------datasource---------------------------
+2019-06-15 23:12:26,348-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:12:26,348-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:12:31,346----------------------------dashboard---------------------------
+2019-06-15 23:12:31,346-threadId:18  buffer size:0
+2019-06-15 23:12:31,346----------------------------mysql---------------------------
+2019-06-15 23:12:31,346-automCommit:ON isolation:null
+2019-06-15 23:12:31,347-charset:null characterSetResult:null
+2019-06-15 23:12:31,347-lastMessage:null
+2019-06-15 23:12:31,347-open:true isClose:false
+2019-06-15 23:12:31,347-proxyBuffer:null
+2019-06-15 23:12:31,347-idle:true,monopolizeType:NONE
+2019-06-15 23:12:31,347----------------------------mysql---------------------------
+2019-06-15 23:12:31,347-automCommit:ON isolation:null
+2019-06-15 23:12:31,347-charset:null characterSetResult:null
+2019-06-15 23:12:31,347-lastMessage:null
+2019-06-15 23:12:31,348-open:true isClose:false
+2019-06-15 23:12:31,348-proxyBuffer:null
+2019-06-15 23:12:31,348-idle:true,monopolizeType:NONE
+2019-06-15 23:12:31,348----------------------------mysql---------------------------
+2019-06-15 23:12:31,348-automCommit:ON isolation:null
+2019-06-15 23:12:31,348-charset:null characterSetResult:null
+2019-06-15 23:12:31,348-lastMessage:null
+2019-06-15 23:12:31,348-open:true isClose:false
+2019-06-15 23:12:31,348-proxyBuffer:null
+2019-06-15 23:12:31,349-idle:true,monopolizeType:NONE
+2019-06-15 23:12:31,349----------------------------mysql---------------------------
+2019-06-15 23:12:31,349-automCommit:ON isolation:null
+2019-06-15 23:12:31,349-charset:null characterSetResult:null
+2019-06-15 23:12:31,349-lastMessage:null
+2019-06-15 23:12:31,349-open:true isClose:false
+2019-06-15 23:12:31,349-proxyBuffer:null
+2019-06-15 23:12:31,350-idle:true,monopolizeType:NONE
+2019-06-15 23:12:31,350----------------------------datasource---------------------------
+2019-06-15 23:12:31,350-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:12:31,350-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:12:36,347----------------------------dashboard---------------------------
+2019-06-15 23:12:36,347-threadId:18  buffer size:0
+2019-06-15 23:12:36,347----------------------------mysql---------------------------
+2019-06-15 23:12:36,347-automCommit:ON isolation:null
+2019-06-15 23:12:36,348-charset:null characterSetResult:null
+2019-06-15 23:12:36,348-lastMessage:null
+2019-06-15 23:12:36,348-open:true isClose:false
+2019-06-15 23:12:36,348-proxyBuffer:null
+2019-06-15 23:12:36,348-idle:true,monopolizeType:NONE
+2019-06-15 23:12:36,348----------------------------mysql---------------------------
+2019-06-15 23:12:36,348-automCommit:ON isolation:null
+2019-06-15 23:12:36,348-charset:null characterSetResult:null
+2019-06-15 23:12:36,348-lastMessage:null
+2019-06-15 23:12:36,349-open:true isClose:false
+2019-06-15 23:12:36,349-proxyBuffer:null
+2019-06-15 23:12:36,349-idle:true,monopolizeType:NONE
+2019-06-15 23:12:36,349----------------------------mysql---------------------------
+2019-06-15 23:12:36,349-automCommit:ON isolation:null
+2019-06-15 23:12:36,349-charset:null characterSetResult:null
+2019-06-15 23:12:36,349-lastMessage:null
+2019-06-15 23:12:36,349-open:true isClose:false
+2019-06-15 23:12:36,349-proxyBuffer:null
+2019-06-15 23:12:36,349-idle:true,monopolizeType:NONE
+2019-06-15 23:12:36,350----------------------------mysql---------------------------
+2019-06-15 23:12:36,350-automCommit:ON isolation:null
+2019-06-15 23:12:36,350-charset:null characterSetResult:null
+2019-06-15 23:12:36,350-lastMessage:null
+2019-06-15 23:12:36,350-open:true isClose:false
+2019-06-15 23:12:36,350-proxyBuffer:null
+2019-06-15 23:12:36,350-idle:true,monopolizeType:NONE
+2019-06-15 23:12:36,350----------------------------datasource---------------------------
+2019-06-15 23:12:36,351-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:12:36,351-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:12:41,346----------------------------dashboard---------------------------
+2019-06-15 23:12:41,346-threadId:18  buffer size:0
+2019-06-15 23:12:41,346----------------------------mysql---------------------------
+2019-06-15 23:12:41,346-automCommit:ON isolation:null
+2019-06-15 23:12:41,347-charset:null characterSetResult:null
+2019-06-15 23:12:41,347-lastMessage:null
+2019-06-15 23:12:41,347-open:true isClose:false
+2019-06-15 23:12:41,347-proxyBuffer:null
+2019-06-15 23:12:41,347-idle:true,monopolizeType:NONE
+2019-06-15 23:12:41,347----------------------------mysql---------------------------
+2019-06-15 23:12:41,347-automCommit:ON isolation:null
+2019-06-15 23:12:41,347-charset:null characterSetResult:null
+2019-06-15 23:12:41,348-lastMessage:null
+2019-06-15 23:12:41,348-open:true isClose:false
+2019-06-15 23:12:41,348-proxyBuffer:null
+2019-06-15 23:12:41,348-idle:true,monopolizeType:NONE
+2019-06-15 23:12:41,348----------------------------mysql---------------------------
+2019-06-15 23:12:41,349-automCommit:ON isolation:null
+2019-06-15 23:12:41,349-charset:null characterSetResult:null
+2019-06-15 23:12:41,349-lastMessage:null
+2019-06-15 23:12:41,349-open:true isClose:false
+2019-06-15 23:12:41,349-proxyBuffer:null
+2019-06-15 23:12:41,349-idle:true,monopolizeType:NONE
+2019-06-15 23:12:41,349----------------------------mysql---------------------------
+2019-06-15 23:12:41,349-automCommit:ON isolation:null
+2019-06-15 23:12:41,349-charset:null characterSetResult:null
+2019-06-15 23:12:41,349-lastMessage:null
+2019-06-15 23:12:41,349-open:true isClose:false
+2019-06-15 23:12:41,349-proxyBuffer:null
+2019-06-15 23:12:41,349-idle:true,monopolizeType:NONE
+2019-06-15 23:12:41,349----------------------------datasource---------------------------
+2019-06-15 23:12:41,349-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:12:41,349-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:12:46,345----------------------------dashboard---------------------------
+2019-06-15 23:12:46,345-threadId:18  buffer size:0
+2019-06-15 23:12:46,346----------------------------mysql---------------------------
+2019-06-15 23:12:46,346-automCommit:ON isolation:null
+2019-06-15 23:12:46,346-charset:null characterSetResult:null
+2019-06-15 23:12:46,346-lastMessage:null
+2019-06-15 23:12:46,347-open:true isClose:false
+2019-06-15 23:12:46,347-proxyBuffer:null
+2019-06-15 23:12:46,347-idle:true,monopolizeType:NONE
+2019-06-15 23:12:46,347----------------------------mysql---------------------------
+2019-06-15 23:12:46,347-automCommit:ON isolation:null
+2019-06-15 23:12:46,347-charset:null characterSetResult:null
+2019-06-15 23:12:46,348-lastMessage:null
+2019-06-15 23:12:46,348-open:true isClose:false
+2019-06-15 23:12:46,348-proxyBuffer:null
+2019-06-15 23:12:46,348-idle:true,monopolizeType:NONE
+2019-06-15 23:12:46,348----------------------------mysql---------------------------
+2019-06-15 23:12:46,349-automCommit:ON isolation:null
+2019-06-15 23:12:46,349-charset:null characterSetResult:null
+2019-06-15 23:12:46,349-lastMessage:null
+2019-06-15 23:12:46,349-open:true isClose:false
+2019-06-15 23:12:46,349-proxyBuffer:null
+2019-06-15 23:12:46,350-idle:true,monopolizeType:NONE
+2019-06-15 23:12:46,350----------------------------mysql---------------------------
+2019-06-15 23:12:46,350-automCommit:ON isolation:null
+2019-06-15 23:12:46,350-charset:null characterSetResult:null
+2019-06-15 23:12:46,350-lastMessage:null
+2019-06-15 23:12:46,350-open:true isClose:false
+2019-06-15 23:12:46,351-proxyBuffer:null
+2019-06-15 23:12:46,351-idle:true,monopolizeType:NONE
+2019-06-15 23:12:46,351----------------------------datasource---------------------------
+2019-06-15 23:12:46,351-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:12:46,351-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:12:51,345----------------------------dashboard---------------------------
+2019-06-15 23:12:51,345-threadId:18  buffer size:0
+2019-06-15 23:12:51,345----------------------------mysql---------------------------
+2019-06-15 23:12:51,345-automCommit:ON isolation:null
+2019-06-15 23:12:51,345-charset:null characterSetResult:null
+2019-06-15 23:12:51,345-lastMessage:null
+2019-06-15 23:12:51,346-open:true isClose:false
+2019-06-15 23:12:51,346-proxyBuffer:null
+2019-06-15 23:12:51,346-idle:true,monopolizeType:NONE
+2019-06-15 23:12:51,346----------------------------mysql---------------------------
+2019-06-15 23:12:51,346-automCommit:ON isolation:null
+2019-06-15 23:12:51,346-charset:null characterSetResult:null
+2019-06-15 23:12:51,346-lastMessage:null
+2019-06-15 23:12:51,346-open:true isClose:false
+2019-06-15 23:12:51,346-proxyBuffer:null
+2019-06-15 23:12:51,346-idle:true,monopolizeType:NONE
+2019-06-15 23:12:51,347----------------------------mysql---------------------------
+2019-06-15 23:12:51,347-automCommit:ON isolation:null
+2019-06-15 23:12:51,347-charset:null characterSetResult:null
+2019-06-15 23:12:51,347-lastMessage:null
+2019-06-15 23:12:51,347-open:true isClose:false
+2019-06-15 23:12:51,347-proxyBuffer:null
+2019-06-15 23:12:51,347-idle:true,monopolizeType:NONE
+2019-06-15 23:12:51,347----------------------------mysql---------------------------
+2019-06-15 23:12:51,347-automCommit:ON isolation:null
+2019-06-15 23:12:51,347-charset:null characterSetResult:null
+2019-06-15 23:12:51,348-lastMessage:null
+2019-06-15 23:12:51,348-open:true isClose:false
+2019-06-15 23:12:51,348-proxyBuffer:null
+2019-06-15 23:12:51,348-idle:true,monopolizeType:NONE
+2019-06-15 23:12:51,348----------------------------datasource---------------------------
+2019-06-15 23:12:51,348-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:12:51,348-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:12:56,345----------------------------dashboard---------------------------
+2019-06-15 23:12:56,345-threadId:18  buffer size:0
+2019-06-15 23:12:56,345----------------------------mysql---------------------------
+2019-06-15 23:12:56,346-automCommit:ON isolation:null
+2019-06-15 23:12:56,346-charset:null characterSetResult:null
+2019-06-15 23:12:56,346-lastMessage:null
+2019-06-15 23:12:56,346-open:true isClose:false
+2019-06-15 23:12:56,346-proxyBuffer:null
+2019-06-15 23:12:56,347-idle:true,monopolizeType:NONE
+2019-06-15 23:12:56,347----------------------------mysql---------------------------
+2019-06-15 23:12:56,347-automCommit:ON isolation:null
+2019-06-15 23:12:56,348-charset:null characterSetResult:null
+2019-06-15 23:12:56,348-lastMessage:null
+2019-06-15 23:12:56,348-open:true isClose:false
+2019-06-15 23:12:56,348-proxyBuffer:null
+2019-06-15 23:12:56,348-idle:true,monopolizeType:NONE
+2019-06-15 23:12:56,349----------------------------mysql---------------------------
+2019-06-15 23:12:56,349-automCommit:ON isolation:null
+2019-06-15 23:12:56,349-charset:null characterSetResult:null
+2019-06-15 23:12:56,349-lastMessage:null
+2019-06-15 23:12:56,349-open:true isClose:false
+2019-06-15 23:12:56,349-proxyBuffer:null
+2019-06-15 23:12:56,350-idle:true,monopolizeType:NONE
+2019-06-15 23:12:56,350----------------------------mysql---------------------------
+2019-06-15 23:12:56,350-automCommit:ON isolation:null
+2019-06-15 23:12:56,350-charset:null characterSetResult:null
+2019-06-15 23:12:56,350-lastMessage:null
+2019-06-15 23:12:56,350-open:true isClose:false
+2019-06-15 23:12:56,351-proxyBuffer:null
+2019-06-15 23:12:56,351-idle:true,monopolizeType:NONE
+2019-06-15 23:12:56,351----------------------------datasource---------------------------
+2019-06-15 23:12:56,351-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:12:56,351-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:13:01,346----------------------------dashboard---------------------------
+2019-06-15 23:13:01,346-threadId:18  buffer size:0
+2019-06-15 23:13:01,346----------------------------mysql---------------------------
+2019-06-15 23:13:01,347-automCommit:ON isolation:null
+2019-06-15 23:13:01,347-charset:null characterSetResult:null
+2019-06-15 23:13:01,347-lastMessage:null
+2019-06-15 23:13:01,347-open:true isClose:false
+2019-06-15 23:13:01,347-proxyBuffer:null
+2019-06-15 23:13:01,348-idle:true,monopolizeType:NONE
+2019-06-15 23:13:01,348----------------------------mysql---------------------------
+2019-06-15 23:13:01,348-automCommit:ON isolation:null
+2019-06-15 23:13:01,348-charset:null characterSetResult:null
+2019-06-15 23:13:01,349-lastMessage:null
+2019-06-15 23:13:01,349-open:true isClose:false
+2019-06-15 23:13:01,349-proxyBuffer:null
+2019-06-15 23:13:01,349-idle:true,monopolizeType:NONE
+2019-06-15 23:13:01,349----------------------------mysql---------------------------
+2019-06-15 23:13:01,349-automCommit:ON isolation:null
+2019-06-15 23:13:01,350-charset:null characterSetResult:null
+2019-06-15 23:13:01,350-lastMessage:null
+2019-06-15 23:13:01,350-open:true isClose:false
+2019-06-15 23:13:01,350-proxyBuffer:null
+2019-06-15 23:13:01,350-idle:true,monopolizeType:NONE
+2019-06-15 23:13:01,350----------------------------mysql---------------------------
+2019-06-15 23:13:01,350-automCommit:ON isolation:null
+2019-06-15 23:13:01,351-charset:null characterSetResult:null
+2019-06-15 23:13:01,351-lastMessage:null
+2019-06-15 23:13:01,351-open:true isClose:false
+2019-06-15 23:13:01,351-proxyBuffer:null
+2019-06-15 23:13:01,351-idle:true,monopolizeType:NONE
+2019-06-15 23:13:01,351----------------------------datasource---------------------------
+2019-06-15 23:13:01,351-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:13:01,352-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:13:06,346----------------------------dashboard---------------------------
+2019-06-15 23:13:06,346-threadId:18  buffer size:0
+2019-06-15 23:13:06,346----------------------------mysql---------------------------
+2019-06-15 23:13:06,346-automCommit:ON isolation:null
+2019-06-15 23:13:06,346-charset:null characterSetResult:null
+2019-06-15 23:13:06,346-lastMessage:null
+2019-06-15 23:13:06,346-open:true isClose:false
+2019-06-15 23:13:06,346-proxyBuffer:null
+2019-06-15 23:13:06,347-idle:true,monopolizeType:NONE
+2019-06-15 23:13:06,347----------------------------mysql---------------------------
+2019-06-15 23:13:06,347-automCommit:ON isolation:null
+2019-06-15 23:13:06,347-charset:null characterSetResult:null
+2019-06-15 23:13:06,347-lastMessage:null
+2019-06-15 23:13:06,347-open:true isClose:false
+2019-06-15 23:13:06,347-proxyBuffer:null
+2019-06-15 23:13:06,348-idle:true,monopolizeType:NONE
+2019-06-15 23:13:06,348----------------------------mysql---------------------------
+2019-06-15 23:13:06,348-automCommit:ON isolation:null
+2019-06-15 23:13:06,348-charset:null characterSetResult:null
+2019-06-15 23:13:06,348-lastMessage:null
+2019-06-15 23:13:06,348-open:true isClose:false
+2019-06-15 23:13:06,348-proxyBuffer:null
+2019-06-15 23:13:06,349-idle:true,monopolizeType:NONE
+2019-06-15 23:13:06,349----------------------------mysql---------------------------
+2019-06-15 23:13:06,349-automCommit:ON isolation:null
+2019-06-15 23:13:06,349-charset:null characterSetResult:null
+2019-06-15 23:13:06,349-lastMessage:null
+2019-06-15 23:13:06,349-open:true isClose:false
+2019-06-15 23:13:06,349-proxyBuffer:null
+2019-06-15 23:13:06,350-idle:true,monopolizeType:NONE
+2019-06-15 23:13:06,350----------------------------datasource---------------------------
+2019-06-15 23:13:06,350-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:13:06,350-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:13:11,346----------------------------dashboard---------------------------
+2019-06-15 23:13:11,346-threadId:18  buffer size:0
+2019-06-15 23:13:11,346----------------------------datasource---------------------------
+2019-06-15 23:13:11,346-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:13:11,346-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:13:16,345----------------------------dashboard---------------------------
+2019-06-15 23:13:16,345-threadId:18  buffer size:0
+2019-06-15 23:13:16,345----------------------------datasource---------------------------
+2019-06-15 23:13:16,345-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:13:16,345-dataSourceName:mytest3340 sessionCounter
+2019-06-15 23:13:21,346----------------------------dashboard---------------------------
+2019-06-15 23:13:21,346-threadId:18  buffer size:0
+2019-06-15 23:13:21,346----------------------------datasource---------------------------
+2019-06-15 23:13:21,347-dataSourceName:mytest330 sessionCounter
+2019-06-15 23:13:21,347-dataSourceName:mytest3340 sessionCounter

@@ -502,6 +502,30 @@ public class BufferSQLParser {
 //                        pos = SelectItemsParser.pickItemList(++pos, arrayCount, hashArray, context);
           }
           pos++;
+
+          if(hashArray.getType(pos)==Tokenizer.AT){
+            ++pos;
+            if(hashArray.getHash(pos)==TokenHash.SESSION){
+              ++pos;
+              if(hashArray.getType(pos)==Tokenizer.DOT){
+                context.setSQLType(BufferSQLContext.SELECT_VARIABLES);
+                ++pos;
+                long hash = hashArray.getHash(pos);
+                if(hash==TokenHash.TX_READ_ONLY) {
+                  ++pos;
+                }else if(hash == TokenHash.AUTOCOMMIT){
+                  context.setSelectAutocommit();
+                }else if(hash == TokenHash.TRANSACTION_READ_ONLY){
+                  context.setSelectTranscationReadOnly();
+                }else if(hash == TokenHash.TX_ISOLATION){
+                  context.setSelectTxIsolation();
+                }else if(hash == TokenHash.TIME_ZONE){
+                  context.setSelectTimeZone();
+                }
+                ++pos;
+              }
+            }
+          }
           break;
         case IntTokenHash.SHOW:
           if (hashArray.getHash(pos) == TokenHash.SHOW) {

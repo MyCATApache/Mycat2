@@ -21,6 +21,7 @@ import static org.mockito.Mockito.verify;
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
+import io.mycat.embeddedDB.DbStartUp;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.AbstractMonitorCallback;
@@ -151,7 +152,7 @@ public class JdbcDao extends ModualTest {
             byte[] bytes = new byte[0xffffff];
             Arrays.fill(bytes, (byte) 0xff);
             String blob = new String(bytes);
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 2; i++) {
               String s1 =
                   "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
                       + "VALUES ('"

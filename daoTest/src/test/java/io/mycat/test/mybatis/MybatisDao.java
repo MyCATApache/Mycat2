@@ -14,26 +14,43 @@
  */
 package io.mycat.test.mybatis;
 
+import io.mycat.MycatProxyBeanProviders;
+import io.mycat.proxy.monitor.MycatMonitorLogCallback;
+import io.mycat.test.ModualTest;
+import io.mycat.test.jdbc.TestGettingConnetionCallback;
 import io.mycat.test.pojo.TravelRecord;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 import org.apache.ibatis.session.SqlSession;
+import org.junit.Test;
 
 /**
- * @author jamie12221
- *  date 2019-05-19 18:02
+ * @author jamie12221 date 2019-05-19 18:02
  **/
-public class MybatisDao {
+public class MybatisDao extends ModualTest {
 
+  final static String DB_IN_ONE_SERVER = "DB_IN_ONE_SERVER";
   public static DataConnection dataConn = new DataConnection();
 
-  public static void main(String[] args) throws IOException {
-    try (SqlSession sqlSession = dataConn.getSqlSession()) {
-      while (true) {
-        sqlSession.insert("test.insertTravelRecord", new TravelRecord());
-        Object o = sqlSession.selectOne("test.findTravelRecordById", 1);
-        sqlSession.commit();
-      }
-    }
-  }
+  @Test
+  public void simplePass()
+      throws IOException, ExecutionException, InterruptedException {
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+        new TestGettingConnetionCallback() {
+          @Override
+          public void test(Object future) throws IOException {
+            try (SqlSession sqlSession = dataConn.getSqlSession()) {
+              int i = 0;
+              while (i < 10) {
+                sqlSession.insert("test.insertTravelRecord", new TravelRecord());
+                Object o = sqlSession.selectOne("test.findTravelRecordById", 1);
+                sqlSession.commit();
+                ++i;
+              }
+            }
+            compelete(future);
+          }
+        });
 
+  }
 }

@@ -79,7 +79,7 @@ public class BufferSQLContext {
   public static final byte SHOW_WARNINGS = 45;
   public static final byte MYCAT_SQL = 43;
   public static final byte SHUTDOWN_SQL = 44;
-
+  public static final byte SELECT_VARIABLES = 46;
   private static int tblResultArraySize = 32;//todo : 测试期先写死，后期考虑从设置参数中读取
   private final SQLMapAnnotation annotation = new SQLMapAnnotation();
 
@@ -205,6 +205,10 @@ public class BufferSQLContext {
     hasJoin = false;
     annotation.init(hashArray, curBuffer);
     setAccessMode(false);
+    selectAutocommit = false;
+    selectTranscationReadOnly = false;
+    selectTxIsolation = false;
+
   }
 
   public void setTblName(int hashArrayPos) {
@@ -553,5 +557,55 @@ public class BufferSQLContext {
 
   public SQLMapAnnotation getStaticAnnotation() {
     return annotation;
+  }
+
+  boolean selectAutocommit;
+
+  public void setSelectAutocommit() {
+    selectAutocommit = true;
+  }
+
+  boolean selectTranscationReadOnly;
+
+  public void setSelectTranscationReadOnly() {
+    selectTranscationReadOnly = true;
+  }
+
+  boolean selectTxIsolation;
+
+  public void setSelectTxIsolation() {
+    selectTxIsolation = true;
+  }
+
+  public void setSelectTimeZone() {
+
+  }
+
+  public static byte getAlterSql() {
+    return ALTER_SQL;
+  }
+
+  public boolean isSelectAutocommit() {
+    return selectAutocommit;
+  }
+
+  public void setSelectAutocommit(boolean selectAutocommit) {
+    this.selectAutocommit = selectAutocommit;
+  }
+
+  public boolean isSelectTranscationReadOnly() {
+    return selectTranscationReadOnly;
+  }
+
+  public void setSelectTranscationReadOnly(boolean selectTranscationReadOnly) {
+    this.selectTranscationReadOnly = selectTranscationReadOnly;
+  }
+
+  public boolean isSelectTxIsolation() {
+    return selectTxIsolation;
+  }
+
+  public void setSelectTxIsolation(boolean selectTxIsolation) {
+    this.selectTxIsolation = selectTxIsolation;
   }
 }

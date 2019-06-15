@@ -16,6 +16,7 @@ package io.mycat.command;
 
 import static io.mycat.sqlparser.util.BufferSQLContext.DESCRIBE_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_VARIABLES;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_AUTOCOMMIT_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET_RESULT;
@@ -49,12 +50,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * @author jamie12221
- *  date 2019-05-17 17:37
+ * @author jamie12221 date 2019-05-17 17:37
  **/
 public interface QueryHandler {
+
+  static final Logger LOGGER = LoggerFactory.getLogger(QueryHandler.class);
 
   MycatRouter router();
 
@@ -115,14 +119,14 @@ public interface QueryHandler {
         }
         case SET_CHARSET_RESULT: {
           String charsetSetResult = sqlContext.getCharsetSetResult();
-          mycat.setCharsetSetResult(charsetSetResult);//@todo but do no thing
+          mycat.setCharsetSetResult(charsetSetResult);
           mycat.writeOkEndPacket();
           return;
         }
         case SET_TRANSACTION_SQL: {
           if (sqlContext.isAccessMode()) {
-            mycat.setLastMessage("unsupport access mode");
-            mycat.writeErrorEndPacket();
+            LOGGER.warn("ignore {} and send ok",sql);
+            mycat.writeOkEndPacket();
             return;
           }
           MySQLIsolation isolation = sqlContext.getIsolation();
@@ -180,6 +184,31 @@ public interface QueryHandler {
           mycat.writeRowEndPacket(false, false);
           return;
         }
+        case SELECT_VARIABLES:{
+          if (sqlContext.isSelectAutocommit()){
+            mycat.writeColumnCount(1);
+            mycat.writeColumnDef("@@session.autocommit", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+            mycat.writeColumnEndPacket();
+            mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getAutoCommit().getText())});
+            mycat.writeRowEndPacket(false,false);
+            return;
+          }else if (sqlContext.isSelectTxIsolation()){
+            mycat.writeColumnCount(1);
+            mycat.writeColumnDef("@@session.tx_isolation", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+            mycat.writeColumnEndPacket();
+            mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getIsolation().getText())});
+            mycat.writeRowEndPacket(false,false);
+            return;
+          }else if (sqlContext.isSelectTranscationReadOnly()){
+            mycat.writeColumnCount(1);
+            mycat.writeColumnDef("@@session.transaction_read_only", MySQLFieldsType.FIELD_TYPE_LONGLONG);
+            mycat.writeColumnEndPacket();
+            mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getIsolation().getText())});
+            mycat.writeRowEndPacket(false,false);
+            return;
+          }
+          LOGGER.warn("maybe unsupported  sql:{}",sql);
+        }
         case SELECT_SQL: {
           if (sqlContext.isSimpleSelect()) {
             ResultRoute resultRoute = router().enterRoute(useSchema, sqlContext, sql);
@@ -207,7 +236,7 @@ public interface QueryHandler {
             case DB_IN_ONE_SERVER:
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-                      useSchema.getDefaultDataNode() , false, null, false
+                      useSchema.getDefaultDataNode(), false, null, false
                   );
               return;
             case DB_IN_MULTI_SERVER:
@@ -282,7 +311,7 @@ public interface QueryHandler {
 
   default void showTable(MycatSession mycat, String schemaName) {
     Collection<String> tableName = router().getConfig().getSchemaBySchemaName(schemaName)
-                                       .getMycatTables().keySet();
+        .getMycatTables().keySet();
     mycat.writeColumnCount(2);
     mycat.writeColumnDef("Tables in " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     mycat.writeColumnDef("Table_type " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
