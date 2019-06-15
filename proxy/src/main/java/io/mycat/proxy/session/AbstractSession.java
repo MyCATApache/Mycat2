@@ -69,6 +69,10 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
     lastActiveTime = currentTimeMillis();
   }
 
+  public long getLastActiveTime() {
+    return lastActiveTime;
+  }
+
   public void change2ReadOpts() {
     if ((channelKey.interestOps() & SelectionKey.OP_READ) == 0) {
       if (LOGGER.isDebugEnabled()) {

@@ -195,6 +195,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
     assert hint != null;
     onHandlerFinishedClear();
+    if(this.getMySQLSession() != null) {
+      this.getMySQLSession().close(normal, hint);
+    }
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);

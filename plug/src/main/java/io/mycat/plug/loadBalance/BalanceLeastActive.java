@@ -44,6 +44,7 @@ public enum BalanceLeastActive implements LoadBalanceStrategy{
         } else if(leastActive == entityList.get(i).getSessionCounter()){
           balanceList.add(entityList.get(i));
         }
+
       }
       int size = balanceList.size();
       if(1 == size) {

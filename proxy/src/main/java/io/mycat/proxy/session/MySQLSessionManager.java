@@ -16,21 +16,35 @@ package io.mycat.proxy.session;
 
 import io.mycat.MycatExpection;
 import io.mycat.annotations.NoExcept;
+import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.ErrorPacket;
+import io.mycat.collector.OneResultSetCollector;
+import io.mycat.collector.TextResultSetTransforCollector;
+import io.mycat.config.ConfigEnum;
+import io.mycat.config.GlobalConfig;
+import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.SessionTip;
+import io.mycat.proxy.MySQLTaskUtil;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
+import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.backend.BackendConCreateHandler;
 import io.mycat.proxy.handler.backend.IdleHandler;
+import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
 import io.mycat.replica.MySQLDatasource;
+import io.mycat.replica.MySQLReplica;
 import io.mycat.util.nio.NIOUtil;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,7 +112,7 @@ public final class MySQLSessionManager implements
             boolean random = ThreadLocalRandom.current().nextBoolean();
             MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
             mySQLSession.setIdle(false);
-            assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
+              assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
             assert mySQLSession.currentProxyBuffer() == null;
             if (!mySQLSession.isOpen()) {
               MycatReactorThread mycatReactorThread = mySQLSession.getMycatReactorThread();
@@ -205,6 +219,145 @@ public final class MySQLSessionManager implements
       }
     }
     idleDatasourcehMap.remove(key);
+  }
+  /*
+    1.给持有的连接发送心跳
+    2.关闭事务超时的连接
+    3.超过了最小的连接数, 关闭多余的连接
+    4.创建连接 保持最小的连接数
+   */
+  @Override
+  public void idleConnectCheck() {
+    Collection<MySQLReplica> mysqlReplicaList = ProxyRuntime.INSTANCE
+            .getMySQLReplicaList();
+    HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE
+            .getConfig(ConfigEnum.HEARTBEAT);
+    long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
+    long hearBeatTime = System.currentTimeMillis() - idleTimeout;
+    long hearBeatTime2 = System.currentTimeMillis() - 2 * idleTimeout;
+
+    for (MySQLReplica mySQLReplica : mysqlReplicaList) {
+      List<MySQLDatasource> dataSourceList = mySQLReplica
+              .getDatasourceList();
+
+      for (MySQLDatasource mySQLDatasource : dataSourceList) {
+        int maxConsInOneCheck = Math.min(10, mySQLDatasource.getSessionMinCount());
+        LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource);
+        List<MySQLClientSession> checkList = new ArrayList<>();
+        //发送心跳
+        if(null != group) {
+          checkIfNeedHeartBeat(hearBeatTime, hearBeatTime2, maxConsInOneCheck, group, checkList);
+          for (MySQLClientSession mySQLClientSession : checkList) {
+            sendPing(mySQLClientSession);
+          }
+        }
+        int idleCount = group == null ? 0 : group.size();
+        int createCount = 0;
+        if( mySQLDatasource.getSessionMinCount() > (idleCount + checkList.size())) {
+          createCount = (mySQLDatasource.getSessionMinCount() - idleCount) / 3 ;
+        }
+        if(createCount > 0 && idleCount < mySQLDatasource.getSessionMinCount()) {
+          createByLittle(mySQLDatasource, createCount);
+        } else if(idleCount -  checkList.size() > mySQLDatasource.getSessionMinCount() && group != null) {
+          //关闭多余连接
+          closeByMany(mySQLDatasource,idleCount - checkList.size() - mySQLDatasource.getSessionMinCount() );
+        }
+      }
+    }
+  }
+
+  private void closeByMany(MySQLDatasource mySQLDatasource, int closeCount) {
+    LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource);
+    for (int i = 0; i < closeCount; i++) {
+      MySQLClientSession mySQLClientSession = group.removeFirst();
+      if(mySQLClientSession != null) {
+        closeSession(mySQLClientSession , "mysql session  close because of idle");
+      }
+    }
+  }
+
+  private void createByLittle(MySQLDatasource mySQLDatasource, int createCount) {
+    for (int i = 0; i < createCount; i++) {
+      //创建连接
+      createSession(mySQLDatasource, new SessionCallBack<MySQLClientSession>() {
+        @Override
+        public void onSession(MySQLClientSession session, Object sender, Object attr) {
+          session.getSessionManager().addIdleSession(session);
+        }
+
+        @Override
+        public void onException(Exception exception, Object sender, Object attr) {
+          //创建异常
+          MycatMonitor.onBackendConCreateException(null, exception);
+        }
+      });
+    }
+  }
+
+  private void sendPing(MySQLClientSession session) {
+    OneResultSetCollector collector = new OneResultSetCollector();
+    TextResultSetTransforCollector transfor = new TextResultSetTransforCollector(collector);
+    TextResultSetHandler queryResultSetTask = new TextResultSetHandler(transfor);
+    queryResultSetTask
+            .request(session, MySQLCommandType.COM_QUERY, GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL,
+                  new ResultSetCallBack<MySQLClientSession>() {
+                    @Override
+                    public void onFinishedSendException(Exception exception, Object sender,
+                            Object attr) {
+                      closeSession(session, "send Ping error");
+                    }
+
+                    @Override
+                    public void onFinishedException(Exception exception, Object sender, Object attr) {
+                      closeSession(session, "send Ping error");
+                    }
+
+                    @Override
+                    public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender,
+                            Object attr) {
+                      mysql.getSessionManager().addIdleSession(mysql);
+                    }
+
+                    @Override
+                    public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
+                            MySQLClientSession mysql, Object sender, Object attr) {
+                      closeSession(session, "send Ping error ");
+                    }
+            });
+  }
+
+  private void checkIfNeedHeartBeat(long hearBeatTime, long hearBeatTime2, int maxConsInOneCheck,
+          LinkedList<MySQLClientSession> group, List<MySQLClientSession> checkList) {
+    Iterator<MySQLClientSession> iterator = group.iterator();
+    while(iterator.hasNext()) {
+      MySQLClientSession mySQLClientSession = iterator.next();
+      //移除
+      if(!mySQLClientSession.isOpen()) {
+        closeSession(mySQLClientSession ,"mysql session  close because of idle");
+        iterator.remove();
+        continue;
+      }
+      long lastActiveTime  = mySQLClientSession.getLastActiveTime();
+      if(lastActiveTime < hearBeatTime
+              && checkList.size() < maxConsInOneCheck) {
+        mySQLClientSession.setIdle(false);
+        checkList.add(mySQLClientSession); //发送ping命令
+        MycatMonitor.onGetIdleMysqlSession(mySQLClientSession);
+        iterator.remove();
+
+      } else if(lastActiveTime < hearBeatTime2 ){
+        closeSession(mySQLClientSession, "mysql session is close in idle");
+        iterator.remove();
+      }
+    }
+  }
+
+  private void closeSession(MySQLClientSession mySQLClientSession , String hint) {
+    mySQLClientSession.setIdle(false);
+    MycatReactorThread mycatReactorThread = mySQLClientSession.getMycatReactorThread();
+    mycatReactorThread.addNIOJob(() -> {
+      mySQLClientSession.close(false, hint);
+    });
   }
 
   final static Exception SESSION_MAX_COUNT_LIMIT = new Exception("session max count limit");
