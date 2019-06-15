@@ -3,6 +3,7 @@ replicas:
     repType: MASTER_SLAVE           # 复制类型
     switchType: SWITCH              # 切换类型
     balanceName: BalanceAllRead   # 读写分离类型
+    balanceType: BALANCE_ALL
     mysqls:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
