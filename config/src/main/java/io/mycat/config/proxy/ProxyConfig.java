@@ -32,7 +32,6 @@ public class ProxyConfig {
     private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 1024 * 1024 * 4;
     private static final short DEFAULT_BUFFER_POOL_PAGE_NUMBER = 64;
     private static final Logger logger = LoggerFactory.getLogger(ProxyConfig.class);
-    private static final int MAX_ALLOWED_PACKET = 16 * 1024 * 1024*2;
 
     /**
      * 绑定的数据传输IP地址
@@ -42,8 +41,6 @@ public class ProxyConfig {
      * 绑定的数据传输端口
      */
     private int port = 8066;
-
-  private int maxAllowedPacket = MAX_ALLOWED_PACKET;
 
     // a page size
     private int bufferPoolPageSize = DEFAULT_BUFFER_POOL_PAGE_SIZE;
@@ -127,11 +124,4 @@ public class ProxyConfig {
         this.bufferPoolPageNumber = bufferPoolPageNumber;
     }
 
-  public int getMaxAllowedPacket() {
-    return maxAllowedPacket;
-    }
-
-  public void setMaxAllowedPacket(int maxAllowedPacket) {
-    this.maxAllowedPacket = maxAllowedPacket;
-    }
 }

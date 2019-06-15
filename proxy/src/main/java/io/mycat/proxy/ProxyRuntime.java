@@ -101,7 +101,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public int getMaxAllowedPacket() {
-    return getProxy().getMaxAllowedPacket();
+    return variables.getMaxAllowedPacket();
   }
 
   public void initDataNode() {

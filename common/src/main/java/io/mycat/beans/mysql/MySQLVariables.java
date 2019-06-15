@@ -19,7 +19,7 @@ public class MySQLVariables {
   private Map<String, String> variables;
   long net_write_timeout = 0;
   String character_set_connection = "utf8";
-  long max_allowed_packet = 16777216;
+  int max_allowed_packet = 16777216;
   String lower_case_table_names = "1";
   String collation_server = "";
   String tx_isolation = "REPEATABLE-READ";
@@ -51,7 +51,7 @@ public class MySQLVariables {
     character_set_server = variables.getOrDefault("character_set_server", "utf8");
     init_connect = variables.getOrDefault("init_connect", "");
     interactive_timeout = Long.parseLong(variables.getOrDefault("interactive_timeout", "172800"));
-    max_allowed_packet = Long.parseLong(variables.getOrDefault("max_allowed_packet", "524288000"));
+    max_allowed_packet = Integer.parseInt(variables.getOrDefault("max_allowed_packet", "524288000"));
     net_buffer_length = Long.parseLong(variables.getOrDefault("net_buffer_length", "8192"));
     query_cache_size = Long.parseLong(variables.getOrDefault("query_cache_size", "0"));
     query_cache_type = variables.getOrDefault("query_cache_size", "OFF");
@@ -129,7 +129,7 @@ public class MySQLVariables {
     return character_set_connection;
   }
 
-  public long getMaxAllowedPacket() {
+  public int getMaxAllowedPacket() {
     return max_allowed_packet;
   }
 
