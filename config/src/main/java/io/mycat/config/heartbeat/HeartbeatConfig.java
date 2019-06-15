@@ -52,13 +52,13 @@ public class HeartbeatConfig {
     this.replicaHeartbeatPeriod = replicaHeartbeatPeriod;
   }
 
-  public long getReplicaIdleCheckPeriod() {
-    return replicaIdleCheckPeriod;
-  }
-
-  public void setReplicaIdleCheckPeriod(long replicaIdleCheckPeriod) {
-    this.replicaIdleCheckPeriod = replicaIdleCheckPeriod;
-  }
+//  public long getReplicaIdleCheckPeriod() {
+//    return replicaIdleCheckPeriod;
+//  }
+//
+//  public void setReplicaIdleCheckPeriod(long replicaIdleCheckPeriod) {
+//    this.replicaIdleCheckPeriod = replicaIdleCheckPeriod;
+//  }
 
   public long getIdleTimeout() {
     return idleTimeout;

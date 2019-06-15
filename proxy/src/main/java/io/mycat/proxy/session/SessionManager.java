@@ -82,6 +82,11 @@ public interface SessionManager<T extends Session> {
      * 根据此key关闭连接
      */
     void clearAndDestroyDataSource(KEY key, String reason);
+
+      /**
+       * 空闲连接检查与关闭
+       */
+    void idleConnectCheck();
   }
 
 }

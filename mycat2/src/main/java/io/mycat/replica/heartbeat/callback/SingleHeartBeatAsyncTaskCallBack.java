@@ -61,7 +61,6 @@ public class SingleHeartBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
                 @Override
                 public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender,
                     Object attr) {
-                    collector.toString();
                   onStatus(DatasourceStatus.OK_STATUS);
                   mysql.getSessionManager().addIdleSession(mysql);
                 }

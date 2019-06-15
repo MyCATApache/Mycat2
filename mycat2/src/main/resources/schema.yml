@@ -4,6 +4,7 @@ schemas:
     defaultDataNode: dn1
     tables:
       - name: travelrecord
+      - name: company
   - name: test2
     schemaType: DB_IN_MULTI_SERVER
     tables:

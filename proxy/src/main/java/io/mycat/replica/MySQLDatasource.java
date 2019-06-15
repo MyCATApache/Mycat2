@@ -52,6 +52,10 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource {
     return datasourceConfig.getMaxCon();
   }
 
+  public int getSessionMinCount() {
+    return datasourceConfig.getMinCon();
+  }
+
 
   /**
    * 回调表示获取此数据源的信息成功 信息需要包含字符集内容,如果字符集获取失败,则集群也是启动失败 字符集只有第一个Session获取,此后新建的session就不会获取,因为字符集是集群使用,集群对外应该表现为一个mysql
@@ -68,6 +72,7 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource {
       thread.addNIOJob(createMySQLSession(thread, new SessionCallBack<MySQLClientSession>() {
         @Override
         public void onSession(MySQLClientSession session, Object sender, Object attr) {
+          session.getSessionManager().addIdleSession(session);
           callback.onCountSuccess();
         }
 

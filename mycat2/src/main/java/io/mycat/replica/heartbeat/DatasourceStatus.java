@@ -53,8 +53,8 @@ public class DatasourceStatus {
         isSlaveBehindMaster = slaveBehindMaster;
     }
 
-    public int getDbSynStatus() {
-        return dbSynStatus;
+    public boolean isDbSynStatusNormal() {
+        return dbSynStatus == DB_SYN_NORMAL;
     }
 
     public void setDbSynStatus(int dbSynStatus) {

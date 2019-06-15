@@ -16,12 +16,23 @@ package io.mycat;
 
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
+import io.mycat.logTip.ReplicaTip;
 import io.mycat.proxy.monitor.ProxyDashboard;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
+import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.session.MySQLSessionManager;
+import io.mycat.replica.MySQLDataSourceEx;
+import io.mycat.replica.MySQLDatasource;
+import io.mycat.replica.MySQLReplica;
+import io.mycat.router.MycatRouter;
+import io.mycat.router.MycatRouterConfig;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import java.io.IOException;
@@ -87,7 +98,20 @@ public class MycatCore {
               ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
               HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE
                                                             .getConfig(ConfigEnum.HEARTBEAT);
-              long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+
+              long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
+              long replicaIdleCheckPeriod = idleTimeout / 2;
+              service.scheduleAtFixedRate(idleConnectCheck(), 0, replicaIdleCheckPeriod, TimeUnit.SECONDS);
+                long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+//              service.scheduleAtFixedRate(new Runnable() {
+//                @Override
+//                public void run() {
+//                  Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
+//                  for (MySQLDataSourceEx datasource : datasourceList) {
+//                    datasource.heartBeat();
+//                  }
+//                }
+//              }, 0, period, TimeUnit.SECONDS);
               service.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {
@@ -123,6 +147,8 @@ public class MycatCore {
 
       }
     });
+
+
 //
 //  public static void getReplicaMetaData(ProxyRuntime runtime, AsyncTaskCallBack asyncTaskCallBack) {
 //    Collection<MySQLReplica> mySQLReplicaList = runtime.getMySQLReplicaList();
@@ -164,5 +190,24 @@ public class MycatCore {
 //    }
 //  }
 //
+  }
+
+
+  private static Runnable idleConnectCheck() {
+    return () -> {
+      MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
+      for (MycatReactorThread mycatReactorThread : threads) {
+        mycatReactorThread.addNIOJob(() -> {
+          Thread thread = Thread.currentThread();
+          if (thread instanceof MycatReactorThread) {
+              MySQLSessionManager manager = ((MycatReactorThread) thread)
+                    .getMySQLSessionManager();
+            manager.idleConnectCheck();
+          } else {
+            throw new MycatExpection(ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
+          }
+        });
+      }
+    };
   }
 }

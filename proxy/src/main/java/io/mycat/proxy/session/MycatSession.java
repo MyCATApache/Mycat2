@@ -203,6 +203,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       LOGGER.error("{}",e);
     }
     onHandlerFinishedClear();
+    if(this.getMySQLSession() != null) {
+      this.getMySQLSession().close(normal, hint);
+    }
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);

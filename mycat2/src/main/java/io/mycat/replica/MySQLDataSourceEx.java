@@ -22,7 +22,13 @@ public class MySQLDataSourceEx extends MySQLDatasource {
 
   @Override
   public boolean isAlive() {
-    return mysqlHeartBeatManager.getHeartBeatStatus().isAlive();
+    if(isMaster()) {
+      return mysqlHeartBeatManager.getHeartBeatStatus().isAlive();
+    } else {
+      return mysqlHeartBeatManager.getHeartBeatStatus().isAlive()
+              && mysqlHeartBeatManager.getHeartBeatStatus().isSlaveBehindMaster() == false
+              && mysqlHeartBeatManager.getHeartBeatStatus().isDbSynStatusNormal();
+    }
   }
 
 }
