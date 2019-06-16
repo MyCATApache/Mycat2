@@ -191,21 +191,7 @@ public enum MySQLPacketExchanger {
       getBackend(mycat, runOnMaster, dataNode, strategy, new SessionCallBack<MySQLClientSession>() {
         @Override
         public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
-          try {
-            mysql.setCallBack(finallyCallBack);
-            mysql.setNoResponse(noResponse);
-            mysql.switchNioHandler(MySQLProxyNIOHandler.INSTANCE);
-            mycat.setMySQLSession(mysql);
-            mycat.switchWriteHandler(WriteHandler.INSTANCE);
-            mycat.currentProxyBuffer().newBuffer(bytes);
-            mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
-            mycat.setMySQLSession(mysql);
-            mysql.setMycatSession(mycat);
-            MycatMonitor.onBindMySQLSession(mycat, mysql);
-          } catch (Exception e) {
-            onExceptionClearCloseInRequest(mycat, e, finallyCallBack);
-            return;
-          }
+          MySQLProxyNIOHandler.this.proxyBackend(mysql, finallyCallBack, noResponse, mycat, bytes);
         }
 
         @Override
@@ -214,6 +200,25 @@ public enum MySQLPacketExchanger {
           finallyCallBack.onRequestMySQLException(mycat, exception, attr);
         }
       });
+    }
+
+    public void proxyBackend(MySQLClientSession mysql, PacketExchangerCallback finallyCallBack,
+        boolean noResponse, MycatSession mycat, byte[] bytes) {
+      try {
+        mysql.setCallBack(finallyCallBack);
+        mysql.setNoResponse(noResponse);
+        mysql.switchNioHandler(MySQLProxyNIOHandler.INSTANCE);
+        mycat.setMySQLSession(mysql);
+        mycat.switchWriteHandler(WriteHandler.INSTANCE);
+        mycat.currentProxyBuffer().newBuffer(bytes);
+        mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
+        mycat.setMySQLSession(mysql);
+        mysql.setMycatSession(mycat);
+        MycatMonitor.onBindMySQLSession(mycat, mysql);
+      } catch (Exception e) {
+        onExceptionClearCloseInRequest(mycat, e, finallyCallBack);
+        return;
+      }
     }
 
     @Override
