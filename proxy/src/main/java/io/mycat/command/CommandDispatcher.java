@@ -143,6 +143,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
           }finally {
             MycatMonitor.onExecuteCommandEnd(mycat);
           }
+          break;
         }
         case MySQLCommandType.COM_STMT_CLOSE: {
           MycatMonitor.onCloseCommandStart(mycat);
