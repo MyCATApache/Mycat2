@@ -210,6 +210,16 @@ public class MySQLPacketUtil {
     }
   }
 
+  public static byte[] generatePreparePayloadRequest(byte[] sql) {
+    try (MySQLPayloadWriter byteArrayOutput = new MySQLPayloadWriter(1+sql.length)) {
+      byteArrayOutput.writeByte(0x16);
+      byteArrayOutput.write(sql);
+      byte[] bytes = byteArrayOutput.toByteArray();
+      return bytes;
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
   public static byte[] generateMySQLPacket(int packetId, MySQLPayloadWriter writer) {
     byte[] bytes = writer.toByteArray();
     try {

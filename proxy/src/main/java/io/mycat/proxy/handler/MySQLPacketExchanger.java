@@ -211,9 +211,9 @@ public enum MySQLPacketExchanger {
         mycat.setMySQLSession(mysql);
         mycat.switchWriteHandler(WriteHandler.INSTANCE);
         mycat.currentProxyBuffer().newBuffer(bytes);
-        mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
         mycat.setMySQLSession(mysql);
         mysql.setMycatSession(mycat);
+        mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
         MycatMonitor.onBindMySQLSession(mycat, mysql);
       } catch (Exception e) {
         onExceptionClearCloseInRequest(mycat, e, finallyCallBack);

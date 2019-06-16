@@ -15,9 +15,7 @@ public interface PrepareStatementParserHelper {
   void handlePrepareStatementLongdata(long statementId, long paramId, byte[] data,
       MycatSession session);
 
-  void handlePrepareStatementExecute(long statementId, byte flags, int numParams, byte[] nullMap,
-      boolean newParamsBound
-      , byte[] typeList, byte[] fieldList, MycatSession session);
+  void handlePrepareStatementExecute(byte[] bytes, MycatSession session);
 
   void handlePrepareStatementClose(long statementId, MycatSession session);
 

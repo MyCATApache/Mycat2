@@ -27,8 +27,7 @@ import io.mycat.router.MycatRouter;
 import java.util.Map;
 
 /**
- * @author jamie12221
- *  date 2019-05-13 02:47
+ * @author jamie12221 date 2019-05-13 02:47
  **/
 public class MycatCommandHandler extends AbstractCommandHandler implements QueryHandler {
 
@@ -156,8 +155,10 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
     if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
       String defaultDataNode = schema.getDefaultDataNode();
-      MySQLTaskUtil.proxyBackend(mycat, sql, defaultDataNode, false, null, false
-      );
+      MySQLTaskUtil
+          .proxyBackend(mycat, MySQLPacketUtil.generatePreparePayloadRequest(sql), defaultDataNode, false,
+              null, false
+          );
       return;
     } else {
       mycat.setLastMessage(
@@ -180,7 +181,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
       String defaultDataNode = schema.getDefaultDataNode();
       byte[] bytes = MySQLPacketUtil.generateLondData(statementId, paramId, data);
-      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, false, null, false
+      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, false, null, true
       );
       return;
     } else {
@@ -191,11 +192,26 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
   }
 
   @Override
-  public void handlePrepareStatementExecute(long statementId, byte flags, int numParams,
-      byte[] nullMap,
-      boolean newParamsBound, byte[] typeList, byte[] fieldList, MycatSession session) {
+  public void handlePrepareStatementExecute(byte[] bytes, MycatSession mycat) {
+    MycatSchema schema = mycat.getSchema();
+    if (schema == null) {
+      mycat.setLastMessage("not select schema");
+      mycat.writeErrorEndPacket();
+      return;
+    }
 
+    if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
+      String defaultDataNode = schema.getDefaultDataNode();
+      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, false, null, false
+      );
+      return;
+    } else {
+      mycat.setLastMessage(
+          "PrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
+      mycat.writeErrorEndPacket();
+    }
   }
+
 
   @Override
   public void handlePrepareStatementClose(long statementId, MycatSession session) {

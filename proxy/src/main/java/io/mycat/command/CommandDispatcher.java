@@ -127,44 +127,9 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         case MySQLCommandType.COM_STMT_EXECUTE: {
           MycatMonitor.onExecuteCommandStart(mycat);
           try {
-            long statementId = curPacket.readFixInt(4);
-            byte flags = curPacket.readByte();
-            long iteration = curPacket.readFixInt(4);
-            assert iteration == 1;
-            int numParams = mycat.getNumParamsByStatementId(statementId);
-            if (numParams > 0) {
-              int length = (numParams + 7) / 8;
-              byte[] nullMap = curPacket.readBytes(length);
-              byte newParamsBoundFlag = curPacket.readByte();
-              if (newParamsBoundFlag == 1) {
-                byte[] typeList = new byte[numParams];
-                byte[] fieldList = new byte[numParams];
-                for (int i = 0; i < numParams; i++) {
-                  typeList[i] = curPacket.readByte();
-                  fieldList[i] = curPacket.readByte();
-                }
-                mycat.resetCurrentProxyPayload();
-                commandHandler
-                    .handlePrepareStatementExecute(statementId, flags, numParams, nullMap, true,
-                        typeList, fieldList,
-                        mycat);
-                break;
-              } else {
-                mycat.resetCurrentProxyPayload();
-                commandHandler
-                    .handlePrepareStatementExecute(statementId, flags, numParams, nullMap, false,
-                        null,
-                        null, mycat);
-                break;
-              }
-            } else {
-              mycat.resetCurrentProxyPayload();
-              commandHandler
-                  .handlePrepareStatementExecute(statementId, flags, numParams, null, false, null,
-                      null,
-                      mycat);
-              break;
-            }
+            byte[] bytes = curPacket.readEOFStringBytes();
+            mycat.resetCurrentProxyPayload();
+            commandHandler.handlePrepareStatementExecute(bytes,mycat);
           }finally {
             MycatMonitor.onExecuteCommandEnd(mycat);
           }
