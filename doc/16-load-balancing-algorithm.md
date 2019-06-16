@@ -10,16 +10,16 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 对于一条查询语句，可以从几个mysql数据源进行选取，选取的时候会根据不同的策略进行选取。
 
-###BalanceLeastActive
+##BalanceLeastActive
 
 最少正在使用的连接数的mysql数据源被选中，如果连接数相同,则从连接数相同的数据源中的随机，使慢的机器收到更少。
 
 
-###BalanceRandom
+##BalanceRandom
 
 利用随机算法产生随机数，然后从活跃的mysql数据源中进行选取。
 
-###BalanceRoundRobin
+##BalanceRoundRobin
 
 加权轮训算法，记录轮训的权值，每次访问加一，得到n，然后对mysql数据源进行轮训，如果权值已经为零，则跳过，如果非零则减一，n减1，直n为零则选中的节点就是需要访问的mysql数据源节点。
 

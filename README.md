@@ -611,4 +611,4 @@ QQ:294712221
 
 ## License
 
-GPLv2
+GPLv3
