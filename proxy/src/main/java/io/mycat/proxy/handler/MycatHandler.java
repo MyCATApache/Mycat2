@@ -44,10 +44,10 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       if (!mycat.readFromChannel()) {
         return;
       }
-      if (!mycat.readProxyPayloadFully()) {
+      while (mycat.readProxyPayloadFully()) {
+        mycat.handle();
         return;
       }
-      mycat.handle();
       return;
     } catch (ClosedChannelException e) {
       MycatMonitor.onMycatHandlerCloseException(mycat,e);

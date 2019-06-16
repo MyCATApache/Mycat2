@@ -39,6 +39,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
     try {
       MySQLPacket curPacket = mycat.currentProxyPayload();
       if (mycat.getLocalInFileState() == LocalInFileRequestParseHelper.CONTENT_OF_FILE) {
+        curPacket.readByte();
         byte[] bytes = curPacket.readEOFStringBytes();
         mycat.resetCurrentProxyPayload();
         commandHandler.handleContentOfFilename(bytes, mycat);
@@ -50,10 +51,11 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         mycat.setLocalInFileState(LocalInFileRequestParseHelper.COM_QUERY);
         return;
       }
-      byte head = curPacket.readByte();
+      byte head = curPacket.getByte(curPacket.packetReadStartIndex());
       switch (head) {
         case MySQLCommandType.COM_SLEEP: {
           MycatMonitor.onSleepCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleSleep(mycat);
           MycatMonitor.onSleepCommandEnd(mycat);
@@ -61,12 +63,14 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_QUIT: {
           MycatMonitor.onQuitCommandStart(mycat);
+          curPacket.readByte();
           commandHandler.handleQuit(mycat);
           MycatMonitor.onQuitCommandEnd(mycat);
           break;
         }
         case MySQLCommandType.COM_QUERY: {
           MycatMonitor.onQueryCommandStart(mycat);
+          curPacket.readByte();
           byte[] bytes = curPacket.readEOFStringBytes();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleQuery(bytes, mycat);
@@ -75,6 +79,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_INIT_DB: {
           MycatMonitor.onInitDbCommandStart(mycat);
+          curPacket.readByte();
           String schema = curPacket.readEOFString();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleInitDb(schema, mycat);
@@ -83,6 +88,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_PING: {
           MycatMonitor.onPingCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handlePing(mycat);
           MycatMonitor.onPingCommandEnd(mycat);
@@ -91,6 +97,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
 
         case MySQLCommandType.COM_FIELD_LIST: {
           MycatMonitor.onFieldListCommandStart(mycat);
+          curPacket.readByte();
           String table = curPacket.readNULString();
           String field = curPacket.readEOFString();
           mycat.resetCurrentProxyPayload();
@@ -100,6 +107,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_SET_OPTION: {
           MycatMonitor.onSetOptionCommandStart(mycat);
+          curPacket.readByte();
           boolean option = curPacket.readFixInt(2) == 1;
           mycat.resetCurrentProxyPayload();
           commandHandler.handleSetOption(option, mycat);
@@ -108,6 +116,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_STMT_PREPARE: {
           MycatMonitor.onPrepareCommandStart(mycat);
+          curPacket.readByte();
           byte[] bytes = curPacket.readEOFStringBytes();
           mycat.resetCurrentProxyPayload();
           commandHandler.handlePrepareStatement(bytes, mycat);
@@ -116,6 +125,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_STMT_SEND_LONG_DATA: {
           MycatMonitor.onSendLongDataCommandStart(mycat);
+          curPacket.readByte();
           long statementId = curPacket.readFixInt(4);
           long paramId = curPacket.readFixInt(2);
           byte[] data = curPacket.readEOFStringBytes();
@@ -136,6 +146,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_STMT_CLOSE: {
           MycatMonitor.onCloseCommandStart(mycat);
+          curPacket.readByte();
           long statementId = curPacket.readFixInt(4);
           mycat.resetCurrentProxyPayload();
           commandHandler.handlePrepareStatementClose(statementId, mycat);
@@ -144,6 +155,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_STMT_RESET: {
           MycatMonitor.onResetCommandStart(mycat);
+          curPacket.readByte();
           long statementId = curPacket.readFixInt(4);
           mycat.resetCurrentProxyPayload();
           commandHandler.handlePrepareStatementReset(statementId, mycat);
@@ -152,6 +164,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_CREATE_DB: {
           MycatMonitor.onCreateDbCommandStart(mycat);
+          curPacket.readByte();
           String schema = curPacket.readEOFString();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleCreateDb(schema, mycat);
@@ -160,6 +173,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_DROP_DB: {
           MycatMonitor.onDropDbCommandStart(mycat);
+          curPacket.readByte();
           String schema = curPacket.readEOFString();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleDropDb(schema, mycat);
@@ -168,6 +182,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_REFRESH: {
           MycatMonitor.onRefreshCommandStart(mycat);
+          curPacket.readByte();
           byte subCommand = curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleRefresh(subCommand, mycat);
@@ -176,6 +191,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_SHUTDOWN: {
           MycatMonitor.onShutdownCommandStart(mycat);
+          curPacket.readByte();
           try {
             if (!curPacket.readFinished()) {
               byte shutdownType = curPacket.readByte();
@@ -192,6 +208,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_STATISTICS: {
           MycatMonitor.onStatisticsCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleStatistics(mycat);
           MycatMonitor.onStatisticsCommandEnd(mycat);
@@ -199,6 +216,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_PROCESS_INFO: {
           MycatMonitor.onProcessInfoCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleProcessInfo(mycat);
           MycatMonitor.onProcessInfoCommandEnd(mycat);
@@ -206,6 +224,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_CONNECT: {
           MycatMonitor.onConnectCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleConnect(mycat);
           MycatMonitor.onConnectCommandEnd(mycat);
@@ -213,6 +232,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_PROCESS_KILL: {
           MycatMonitor.onProcessKillCommandStart(mycat);
+          curPacket.readByte();
           long connectionId = curPacket.readFixInt(4);
           mycat.resetCurrentProxyPayload();
           commandHandler.handleProcessKill(connectionId, mycat);
@@ -221,6 +241,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_DEBUG: {
           MycatMonitor.onDebugCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleDebug(mycat);
           MycatMonitor.onDebugCommandEnd(mycat);
@@ -228,6 +249,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_TIME: {
           MycatMonitor.onTimeCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleTime(mycat);
           MycatMonitor.onTimeCommandEnd(mycat);
@@ -235,6 +257,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_DELAYED_INSERT: {
           MycatMonitor.onDelayedInsertCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleTime(mycat);
           MycatMonitor.onDelayedInsertCommandEnd(mycat);
@@ -242,6 +265,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_CHANGE_USER: {
           MycatMonitor.onChangeUserCommandStart(mycat);
+          curPacket.readByte();
           try {
             String userName = curPacket.readNULString();
             String authResponse = null;
@@ -290,6 +314,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_RESET_CONNECTION: {
           MycatMonitor.onResetCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleResetConnection(mycat);
           MycatMonitor.onResetCommandEnd(mycat);
@@ -297,6 +322,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         }
         case MySQLCommandType.COM_DAEMON: {
           MycatMonitor.onDaemonCommandStart(mycat);
+          curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleDaemon(mycat);
           MycatMonitor.onDaemonCommandEnd(mycat);

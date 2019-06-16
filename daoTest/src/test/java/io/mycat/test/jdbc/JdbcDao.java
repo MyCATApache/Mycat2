@@ -18,10 +18,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
+import com.sun.xml.internal.messaging.saaj.util.ByteInputStream;
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.embeddedDB.DbStartUp;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.AbstractMonitorCallback;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -44,6 +46,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -216,7 +221,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/test";
+  final static String url = "jdbc:mysql://localhost:8066/test?useServerPrepStmts=true";
   final static String username = "root";
   final static String password = "123456";
 
@@ -267,8 +272,8 @@ public class JdbcDao extends ModualTest {
   public static Connection getConnection() throws SQLException {
     Connection connection = null;
     connection = DriverManager
-                     .getConnection(getUrl(), getUsername(),
-                         getPassword());
+        .getConnection(getUrl(), getUsername(),
+            getPassword());
     return connection;
   }
 
@@ -453,5 +458,42 @@ public class JdbcDao extends ModualTest {
           }
         }
     );
+  }
+
+  @Test
+  public void prepareStatement()
+      throws IOException, ExecutionException, InterruptedException {
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+        (future, connection) -> {
+          String sql =
+              "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
+                  + "VALUES ("
+                  + "?"
+                  + ", '"
+                  + "1"
+                  + "', '"
+                  + "2019-05-07"
+                  + "', '"
+                  + "1"
+                  + "', '"
+                  + "1"
+                  + "', "
+                  + "1"
+                  + ");";
+          try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setInt(1, 1);
+            ByteOutputStream out = new ByteOutputStream();
+            out.write(IntStream.range(0,18193).mapToObj(i->String.valueOf(i)).collect(
+                Collectors.joining()).getBytes());
+            ByteInputStream inputStream = out.newInputStream();
+//            statement.setBlob(2, inputStream);
+            statement.execute();
+            System.out.println("---------------");
+          } catch (Exception e) {
+            e.printStackTrace();
+          } finally {
+            compelete(future);
+          }
+        });
   }
 }
