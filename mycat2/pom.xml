@@ -22,6 +22,11 @@
       <artifactId>common</artifactId>
       <version>0.1</version>
     </dependency>
+    <dependency>
+      <groupId>io.mycat</groupId>
+      <artifactId>rpc</artifactId>
+      <version>0.1</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

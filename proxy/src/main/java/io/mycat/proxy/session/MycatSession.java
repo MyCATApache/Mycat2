@@ -36,6 +36,7 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
+import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.security.MycatUser;
 import io.mycat.util.CharsetUtil;
@@ -428,6 +429,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void resetPacket() {
     packetResolver.reset();
+    packetResolver.setState(ComQueryState.QUERY_PACKET);
     for (ByteBuffer byteBuffer : writeQueue) {
       getMycatReactorThread().getBufPool().recycle(byteBuffer);
     }

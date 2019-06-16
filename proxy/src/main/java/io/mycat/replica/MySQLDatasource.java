@@ -158,15 +158,12 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource {
       return false;
     }
     MySQLDatasource that = (MySQLDatasource) o;
-    return index == that.index &&
-        Objects.equals(datasourceConfig, that.datasourceConfig) &&
-        Objects.equals(replica, that.replica) &&
-        Objects.equals(collationIndex, that.collationIndex);
+    return getName().equals(that.getName());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(index, datasourceConfig, replica, collationIndex);
+    return getName().hashCode();
   }
 
   @Override

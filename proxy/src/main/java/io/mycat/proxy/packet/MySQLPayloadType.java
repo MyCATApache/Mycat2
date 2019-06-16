@@ -20,7 +20,9 @@ package io.mycat.proxy.packet;
 public enum MySQLPayloadType {
   REQUEST,
   LOAD_DATA_REQUEST,
+  REQUEST_COM_QUERY,
   REQUEST_SEND_LONG_DATA,
+  REQUEST_PREPARE,
   REQUEST_COM_STMT_CLOSE,
   FIRST_ERROR,
   FIRST_OK,

@@ -156,7 +156,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
       String defaultDataNode = schema.getDefaultDataNode();
       MySQLTaskUtil
-          .proxyBackend(mycat, MySQLPacketUtil.generatePreparePayloadRequest(sql), defaultDataNode, false,
+          .proxyBackend(mycat, MySQLPacketUtil.generatePreparePayloadRequest(sql), defaultDataNode, true,
               null, false
           );
       return;
@@ -181,7 +181,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
       String defaultDataNode = schema.getDefaultDataNode();
       byte[] bytes = MySQLPacketUtil.generateLondData(statementId, paramId, data);
-      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, false, null, true
+      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, true, null, true
       );
       return;
     } else {
@@ -202,7 +202,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
     if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
       String defaultDataNode = schema.getDefaultDataNode();
-      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, false, null, false
+      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, true, null, false
       );
       return;
     } else {
