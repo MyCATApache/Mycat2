@@ -37,9 +37,9 @@ public interface MySQLPacketCallback {
 
   }
 
-  default void onError(ErrorPacket mySQLPacket) {
-
-  }
+//  default void onError(ErrorPacket mySQLPacket) {
+//
+//  }
 
   default void onOk(MySQLPacket mySQLPacket, int startPos, int endPos) {
 
@@ -80,7 +80,7 @@ public interface MySQLPacketCallback {
 
   }
 
-  default void onRowError(ErrorPacket mySQLPacket, int startPos, int endPos) {
+  default void onRowError(ErrorPacketImpl mySQLPacket, int startPos, int endPos) {
 
   }
 
@@ -105,6 +105,27 @@ public interface MySQLPacketCallback {
   }
 
   default void onLoadDataRequest(MySQLPacket mySQLPacket, int startPos, int endPos) {
+
+  }
+
+  default void onRequestComQuery(MySQLPacket mySQLPacket, int start, int end){
+
+  }
+
+  default void onSendLongData(MySQLPacket mySQLPacket, int start, int end){
+
+  }
+
+  default void onRequestComStmtClose(MySQLPacket mySQLPacket, int startPos, int endPos){
+
+  }
+
+  default void onReqeustPrepareStatement(MySQLPacket mySQLPacket, int startPos, int endPos){
+
+  }
+
+
+  default void onFirstError(ErrorPacketImpl packet){
 
   }
 }

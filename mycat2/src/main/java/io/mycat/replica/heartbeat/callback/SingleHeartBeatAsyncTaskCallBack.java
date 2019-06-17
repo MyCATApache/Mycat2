@@ -20,6 +20,7 @@ import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
@@ -66,7 +67,7 @@ public class SingleHeartBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
                 }
 
                 @Override
-                public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
+                public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
                     MySQLClientSession mysql, Object sender, Object attr) {
 
                 }

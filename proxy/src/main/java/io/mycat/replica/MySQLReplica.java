@@ -113,11 +113,11 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
    * @param strategy balanceStrategy
    * @param asynTaskCallBack callback function
    */
-  public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,
+  public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,int[] ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource;
     if (runOnMaster) {
-      getWriteDatasource(asynTaskCallBack);
+      getWriteDatasource(ids,asynTaskCallBack);
       return;
     }
     if (strategy == null) {
@@ -126,9 +126,9 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
     List<LoadBalanceDataSource> activeDataSource = getDataSourceByLoadBalacneType();
     datasource = (MySQLDatasource)strategy.select(this,  activeDataSource);
     if (datasource == null) {
-      getWriteDatasource(asynTaskCallBack);
+      getWriteDatasource(ids,asynTaskCallBack);
     } else {
-      getDatasource(datasource, asynTaskCallBack);
+      getDatasource(datasource,ids, asynTaskCallBack);
     }
   }
 
@@ -163,27 +163,27 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   /**
    * 获取写入(主)节点,如果主节点已经失效,则失败
    */
-  private void getWriteDatasource(SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+  private void getWriteDatasource(int[] ids,SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource = this.datasourceList.get(writeIndex);
     if (datasource == null || !datasource.isAlive()) {
       asynTaskCallBack.onException(new MycatExpection(
           ReplicaTip.NO_AVAILABLE_DATA_SOURCE.getMessage(this.getName())), this, null);
       return;
     }
-    getDatasource(datasource, asynTaskCallBack);
+    getDatasource(datasource,ids, asynTaskCallBack);
     return;
   }
 
   /**
    * 根据MySQLDatasource获得MySQL Session 此函数是本类获取MySQL Session中最后一个必经的执行点,检验当前获得Session的线程是否MycatReactorThread
    */
-  private void getDatasource(MySQLDatasource datasource,
+  private void getDatasource(MySQLDatasource datasource,int[] ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     Objects.requireNonNull(datasource);
     Objects.requireNonNull(asynTaskCallBack);
     if (Thread.currentThread() instanceof MycatReactorThread) {
       MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
-      reactor.getMySQLSessionManager().getIdleSessionsOfKey(datasource, asynTaskCallBack);
+      reactor.getMySQLSessionManager().getIdleSessionsOfIds(datasource,ids, asynTaskCallBack);
     } else {
       MycatExpection mycatExpection = new MycatExpection(
           ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());

@@ -12,10 +12,12 @@ public interface PrepareStatementParserHelper {
 
   void handlePrepareStatement(byte[] sql, MycatSession session);
 
-  void handlePrepareStatementLongdata(long statementId, long paramId, byte[] data,
+  void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
       MycatSession session);
 
-  void handlePrepareStatementExecute(byte[] bytes, MycatSession session);
+  void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int numParams,
+      byte[] nullMap,
+      boolean newParamsBound, byte[] typeList, byte[] fieldList, MycatSession session);
 
   void handlePrepareStatementClose(long statementId, MycatSession session);
 

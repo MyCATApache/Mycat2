@@ -1,13 +1,16 @@
 package io.mycat.proxy.session;
 
 import io.mycat.beans.mysql.MySQLErrorCode;
+import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -326,6 +329,23 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
         byte[] bytes = MySQLPacketUtil
                 .generateError(lastErrorCode, getLastMessage(), this.getServerStatus());
         writeBytes(bytes);
+    }
+    default void writeErrorEndPacket(ErrorPacketImpl packet) {
+        int lastErrorCode = packet.getErrorCode();
+        if (lastErrorCode == 0) {
+            lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
+        }
+        switchMySQLServerWriteHandler();
+        this.setResponseFinished(true);
+        try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
+            packet.writePayload(writer,getCapabilities());
+            writeBytes(writer.toByteArray());
+        }
+    }
+
+    default void writeEnd(){
+        switchMySQLServerWriteHandler();
+        this.setResponseFinished(true);
     }
 
     default void writeToChannel() throws IOException {

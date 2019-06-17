@@ -25,13 +25,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author jamie12221
- *  date 2019-05-09 02:30
+ * @author jamie12221 date 2019-05-09 02:30
  *
  * command 报文解析分发
  **/
 public interface CommandDispatcher extends LocalInFileRequestParseHelper,
-                                               PrepareStatementParserHelper {
+    PrepareStatementParserHelper {
 
   default void handle(MycatSession mycat) {
     CommandDispatcher commandHandler = this;
@@ -127,7 +126,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
           MycatMonitor.onSendLongDataCommandStart(mycat);
           curPacket.readByte();
           long statementId = curPacket.readFixInt(4);
-          long paramId = curPacket.readFixInt(2);
+          int paramId = (int)curPacket.readFixInt(2);
           byte[] data = curPacket.readEOFStringBytes();
           mycat.resetCurrentProxyPayload();
           commandHandler.handlePrepareStatementLongdata(statementId, paramId, data, mycat);
@@ -137,13 +136,49 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
         case MySQLCommandType.COM_STMT_EXECUTE: {
           MycatMonitor.onExecuteCommandStart(mycat);
           try {
-            byte[] bytes = curPacket.readEOFStringBytes();
-            mycat.resetCurrentProxyPayload();
-            commandHandler.handlePrepareStatementExecute(bytes,mycat);
-          }finally {
+            byte[] rawPayload = curPacket.getEOFStringBytes(curPacket.packetReadStartIndex());
+            curPacket.readByte();
+            long statementId = curPacket.readFixInt(4);
+            byte flags = curPacket.readByte();
+            long iteration = curPacket.readFixInt(4);
+            assert iteration == 1;
+            int numParams = mycat.getNumParamsByStatementId(statementId);
+            if (numParams > 0) {
+              int length = (numParams + 7) / 8;
+              byte[] nullMap = curPacket.readBytes(length);
+              byte newParamsBoundFlag = curPacket.readByte();
+              if (newParamsBoundFlag == 1) {
+                byte[] typeList = new byte[numParams];
+                byte[] fieldList = new byte[numParams];
+                for (int i = 0; i < numParams; i++) {
+                  typeList[i] = curPacket.readByte();
+                  fieldList[i] = curPacket.readByte();
+                }
+                mycat.resetCurrentProxyPayload();
+                commandHandler
+                    .handlePrepareStatementExecute(rawPayload,statementId, flags, numParams, nullMap, true,
+                        typeList, fieldList,
+                        mycat);
+                break;
+              } else {
+                mycat.resetCurrentProxyPayload();
+                commandHandler
+                    .handlePrepareStatementExecute(rawPayload,statementId, flags, numParams, nullMap, false,
+                        null,
+                        null, mycat);
+                break;
+              }
+            } else {
+              mycat.resetCurrentProxyPayload();
+              commandHandler
+                  .handlePrepareStatementExecute(rawPayload, statementId, flags, numParams, null, false, null,
+                      null,
+                      mycat);
+              break;
+            }
+          } finally {
             MycatMonitor.onExecuteCommandEnd(mycat);
           }
-          break;
         }
         case MySQLCommandType.COM_STMT_CLOSE: {
           MycatMonitor.onCloseCommandStart(mycat);
@@ -202,7 +237,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
               mycat.resetCurrentProxyPayload();
               commandHandler.handleShutdown(0, mycat);
             }
-          }finally {
+          } finally {
             MycatMonitor.onShutdownCommandEnd(mycat);
           }
           break;
@@ -308,7 +343,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
             commandHandler
                 .handleChangeUser(userName, authResponse, schemaName, characterSet, authPluginName,
                     clientConnectAttrs, mycat);
-          }finally {
+          } finally {
             MycatMonitor.onChangeUserCommandEnd(mycat);
           }
           break;
@@ -333,7 +368,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
           assert false;
         }
       }
-    }finally {
+    } finally {
       MycatMonitor.onCommandEnd(mycat);
     }
   }

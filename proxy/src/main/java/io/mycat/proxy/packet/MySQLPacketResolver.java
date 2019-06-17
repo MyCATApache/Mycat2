@@ -548,7 +548,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           setState(ComQueryState.QUERY_PACKET);
           setMySQLPayloadType(REQUEST_COM_QUERY);
           return;
-        } else  if (head == 18) {
+        } else  if (head == 24) {
           int statementId = (int) mySQLPacket.readFixInt(4);
           int paramId = (int) mySQLPacket.readFixInt(2);
           setState(ComQueryState.QUERY_PACKET);
@@ -582,7 +582,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
           setState(ComQueryState.COMMAND_END);
           setMySQLPayloadType(FIRST_ERROR);
         } else if (head == 0x00) {
-          if (getCurrentSQLType() == 0x22 && payloadLength == 12 && getPacketId() == 2) {
+          if (getCurrentSQLType() == 0x22 && payloadLength == 12 && getPacketId() == 1) {
             resolvePrepareOkPacket(mySQLPacket, isPacketFinished);
             setMySQLPayloadType(PREPARE_OK);
             return;

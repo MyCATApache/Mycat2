@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221 date 2019-05-13 12:48
  */
 public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
-                                              MySQLPacketCallback {
+    MySQLPacketCallback {
 
   Logger logger = LoggerFactory.getLogger(BackendConCreateHandler.class);
   ResultSetHandler DEFAULT = new ResultSetHandler() {
@@ -76,7 +76,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       mysql.prepareReveiceResponse();
       mysql.writeCurrentProxyPacket(mySQLPacket, packetId);
     } catch (Exception e) {
-      MycatMonitor.onResultSetWriteException(mysql,e);
+      MycatMonitor.onResultSetWriteException(mysql, e);
       onException(mysql, e);
       callBack.onFinishedException(e, this, null);
     }
@@ -121,7 +121,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       mysql.prepareReveiceResponse();
       mysql.writeProxyBufferToChannel(packetData);
     } catch (Exception e) {
-      MycatMonitor.onResultSetWriteException(mysql,e);
+      MycatMonitor.onResultSetWriteException(mysql, e);
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
       onFinishedCollectException(mysql, e);
       onException(mysql, e);
@@ -137,7 +137,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
     try {
       request(mysql, head, data.getBytes(), callBack);
     } catch (Exception e) {
-      MycatMonitor.onResultSetWriteException(mysql,e);
+      MycatMonitor.onResultSetWriteException(mysql, e);
       onException(mysql, e);
       callBack.onFinishedException(e, this, null);
     }
@@ -180,7 +180,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       int totalPacketEndIndex = proxyBuffer.channelReadEndIndex();
       MySQLPacket mySQLPacket = (MySQLPacket) proxyBuffer;
       boolean isResponseFinished = false;
-      ErrorPacket errorPacket = null;
+      ErrorPacketImpl errorPacket = null;
       while (mysql.getCurNIOHandler() == this && mysql.readProxyPayloadFully()) {
         MySQLPayloadType type = mysql.getPacketResolver().getMySQLPayloadType();
         isResponseFinished = mysql.isResponseFinished();
@@ -195,15 +195,24 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
           case LOAD_DATA_REQUEST:
             this.onLoadDataRequest(mySQLPacket, startPos, endPos);
             break;
+          case REQUEST_COM_QUERY:
+            this.onRequestComQuery(mySQLPacket, startPos, endPos);
+            break;
           case REQUEST_SEND_LONG_DATA:
             this.onPrepareLongData(mySQLPacket, startPos, endPos);
             break;
+          case REQUEST_PREPARE:
+            this.onReqeustPrepareStatement(mySQLPacket, startPos, endPos);
+            break;
           case REQUEST_COM_STMT_CLOSE:
+            this.onRequestComStmtClose(mySQLPacket, startPos, endPos);
             break;
           case FIRST_ERROR: {
-           ErrorPacketImpl packet  = new ErrorPacketImpl();
+
+            ErrorPacketImpl packet = new ErrorPacketImpl();
             errorPacket = packet;
             packet.readPayload(mySQLPacket);
+            this.onFirstError(packet);
             break;
           }
           case FIRST_OK:
@@ -283,13 +292,13 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       Objects.requireNonNull(callBackAndReset);
       mysql.setCallBack(null);
       if (mysql.isRequestSuccess()) {
-        MycatMonitor.onResultSetReadException(mysql,e);
+        MycatMonitor.onResultSetReadException(mysql, e);
         onFinishedCollectException(mysql, e);
         onException(mysql, e);
         callBackAndReset.onFinishedException(e, this, null);
         return;
       } else {
-        MycatMonitor.onResultSetWriteException(mysql,e);
+        MycatMonitor.onResultSetWriteException(mysql, e);
         onFinishedCollectException(mysql, e);
         onException(mysql, e);
         callBackAndReset.onFinishedSendException(e, this, null);
@@ -330,7 +339,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
     try {
       mysql.writeToChannel();
     } catch (Exception e) {
-      MycatMonitor.onResultSetWriteException(mysql,e);
+      MycatMonitor.onResultSetWriteException(mysql, e);
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
       onFinishedCollectException(mysql, e);
       onException(mysql, e);
@@ -345,7 +354,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
 
   @Override
   default void onException(MySQLClientSession session, Exception e) {
-    MycatMonitor.onResultSetException(session,e);
+    MycatMonitor.onResultSetException(session, e);
     logger.error("{}", e);
     onClear(session);
     session.close(false, e);

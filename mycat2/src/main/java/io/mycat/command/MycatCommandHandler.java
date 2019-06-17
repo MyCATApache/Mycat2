@@ -14,16 +14,26 @@
  */
 package io.mycat.command;
 
+import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
+import io.mycat.command.prepareStatement.PrepareStmtProxy;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.callback.RequestCallback;
+import io.mycat.proxy.callback.ResultSetCallBack;
+import io.mycat.proxy.callback.SessionCallBack;
+import io.mycat.proxy.handler.backend.PrepareStmtTask;
+import io.mycat.proxy.handler.backend.RequestHandler;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.router.MycatRouter;
+import io.mycat.sqlparser.util.BufferSQLContext;
 import java.util.Map;
 
 /**
@@ -36,6 +46,8 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
   public MycatCommandHandler(MycatRouter router) {
     this.router = router;
   }
+
+  final PrepareStmtProxy psp = new PrepareStmtProxy();
 
   @Override
   public void handleQuery(byte[] sqlBytes, MycatSession mycat) {
@@ -145,31 +157,92 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
   }
 
   @Override
-  public void handlePrepareStatement(byte[] sql, MycatSession mycat) {
+  public void handlePrepareStatement(byte[] bytes, MycatSession mycat) {
     MycatSchema schema = mycat.getSchema();
     if (schema == null) {
       mycat.setLastMessage("not select schema");
       mycat.writeErrorEndPacket();
       return;
     }
+    String sql = new String(bytes);
+
+    BufferSQLContext bufferSQLContext = router().simpleParse(sql);
+    boolean runOnMaster = bufferSQLContext.isSimpleSelect();
 
     if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
-      String defaultDataNode = schema.getDefaultDataNode();
-      MySQLTaskUtil
-          .proxyBackend(mycat, MySQLPacketUtil.generatePreparePayloadRequest(sql), defaultDataNode, true,
-              null, false
-          );
+      String dataNode = schema.getDefaultDataNode();
+      MySQLDataNode node = ProxyRuntime.INSTANCE.getDataNodeByName(dataNode);
+      if (!psp.existPrepareResponse(sql)) {
+        MySQLTaskUtil.withBackend(mycat, runOnMaster, node, null,
+            new SessionCallBack<MySQLClientSession>() {
+              @Override
+              public void onSession(MySQLClientSession session, Object sender, Object attr) {
+
+                PrepareStmtTask prepareStmtHanlder = new PrepareStmtTask(mycat, psp);
+                prepareStmtHanlder.requestPrepareStatement(session, sql,
+                    new ResultSetCallBack<MySQLClientSession>() {
+                      @Override
+                      public void onFinishedSendException(Exception exception, Object sender,
+                          Object attr) {
+                        String message = exception.toString();
+                        mycat.setLastMessage(message);
+                        mycat.writeErrorEndPacketBySyncInProcessError();
+                        mycat.close(false, message);
+                      }
+
+                      @Override
+                      public void onFinishedException(Exception exception, Object sender,
+                          Object attr) {
+                        String message = exception.toString();
+                        mycat.setLastMessage(message);
+                        mycat.writeErrorEndPacketBySyncInProcessError();
+                        mycat.close(false, message);
+                      }
+
+                      @Override
+                      public void onFinished(boolean monopolize, MySQLClientSession mysql,
+                          Object sender, Object attr) {
+                        psp.record(mysql.getDatasource(), sql, prepareStmtHanlder.getStatementId(),
+                            mysql.sessionId());
+                        if (!monopolize) {
+                          mycat.getMycatReactorThread().getMySQLSessionManager()
+                              .addIdleSession(mysql);
+                        }
+                      }
+
+                      @Override
+                      public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+                          MySQLClientSession mysql, Object sender, Object attr) {
+                        mycat.writeErrorEndPacket(errorPacket);
+                      }
+                    });
+              }
+
+              @Override
+              public void onException(Exception exception, Object sender, Object attr) {
+                String message = exception.toString();
+                mycat.setLastMessage(message);
+                mycat.writeErrorEndPacketBySyncInProcessError();
+                mycat.close(false, message);
+              }
+            });
+      } else {
+        mycat.setLastMessage(
+            "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
+        mycat.writeErrorEndPacket();
+      }
+
       return;
     } else {
       mycat.setLastMessage(
-          "PrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
+          "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
       mycat.writeErrorEndPacket();
     }
 
   }
 
   @Override
-  public void handlePrepareStatementLongdata(long statementId, long paramId, byte[] data,
+  public void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
       MycatSession mycat) {
     MycatSchema schema = mycat.getSchema();
     if (schema == null) {
@@ -179,36 +252,68 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     }
 
     if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
-      String defaultDataNode = schema.getDefaultDataNode();
-      byte[] bytes = MySQLPacketUtil.generateLondData(statementId, paramId, data);
-      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, true, null, true
-      );
-      return;
+      psp.appendLongData(statementId, paramId, data);
     } else {
       mycat.setLastMessage(
-          "PrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
+          "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
       mycat.writeErrorEndPacket();
     }
   }
 
   @Override
-  public void handlePrepareStatementExecute(byte[] bytes, MycatSession mycat) {
-    MycatSchema schema = mycat.getSchema();
-    if (schema == null) {
-      mycat.setLastMessage("not select schema");
-      mycat.writeErrorEndPacket();
-      return;
-    }
+  public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags,
+      int numParams,
+      byte[] nullMap, boolean newParamsBound, byte[] typeList, byte[] fieldList,
+      MycatSession mycat) {
+    if (mycat.isBindMySQLSession()) {
+      prepareStatementExecute(rawPayload, statementId, mycat, mycat.getMySQLSession());
+    }else {
+      String defaultDataNode = mycat.getSchema().getDefaultDataNode();
+      MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(defaultDataNode);
+      MySQLTaskUtil.withBackend(mycat, false, dataNode, null,
+          new SessionCallBack<MySQLClientSession>() {
+            @Override
+            public void onSession(MySQLClientSession session, Object sender, Object attr) {
+              prepareStatementExecute(rawPayload, statementId, mycat,session);
+            }
 
-    if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
-      String defaultDataNode = schema.getDefaultDataNode();
-      MySQLTaskUtil.proxyBackend(mycat, bytes, defaultDataNode, true, null, false
-      );
-      return;
+            @Override
+            public void onException(Exception exception, Object sender, Object attr) {
+              exception.printStackTrace();
+              String message = exception.getMessage();
+              mycat.setLastMessage(message);
+              mycat.writeErrorEndPacketBySyncInProcessError();
+            }
+          });
+
+    }
+  }
+
+  private void prepareStatementExecute(byte[] rawPayload, long statementId, MycatSession mycat,
+      MySQLClientSession mySQLSession) {
+    mycat.setMySQLSession(mySQLSession);
+    if (psp.existLongDataPacket(statementId)) {
+      RequestHandler.INSTANCE.request(mySQLSession,
+          psp.generateAllLongDataPacket(statementId), new RequestCallback() {
+            @Override
+            public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
+              MySQLTaskUtil
+                  .proxyBackend(mycat, rawPayload, mycat.getDataNode(), false, null, false);
+            }
+
+            @Override
+            public void onFinishedSendException(Exception e, Object sender, Object attr) {
+              String message = e.toString();
+              mycat.setMySQLSession(null);
+              mycat.setLastMessage(message);
+              mycat.writeErrorEndPacketBySyncInProcessError();
+              mycat.close(false, message);
+            }
+          });
     } else {
-      mycat.setLastMessage(
-          "PrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
-      mycat.writeErrorEndPacket();
+      MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateMySQLPacket(0, rawPayload),
+          mycat.getMySQLSession().getDataNode().getName(), false, null, false
+      );
     }
   }
 

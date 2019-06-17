@@ -22,6 +22,7 @@ import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.config.GlobalConfig;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.DatasourceStatus;
@@ -120,7 +121,7 @@ public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
             }
 
             @Override
-            public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
+            public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
                 MySQLClientSession mysql, Object sender, Object attr) {
               if (isQuit == false) {
                 onStatus(DatasourceStatus.ERROR_STATUS);

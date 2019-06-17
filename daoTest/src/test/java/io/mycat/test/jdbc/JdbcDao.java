@@ -478,7 +478,7 @@ public class JdbcDao extends ModualTest {
                   + "', '"
                   + "1"
                   + "', "
-                  + "1"
+                  + "?"
                   + ");";
           try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, 1);
@@ -486,7 +486,7 @@ public class JdbcDao extends ModualTest {
             out.write(IntStream.range(0,18193).mapToObj(i->String.valueOf(i)).collect(
                 Collectors.joining()).getBytes());
             ByteInputStream inputStream = out.newInputStream();
-//            statement.setBlob(2, inputStream);
+            statement.setBlob(2, inputStream);
             statement.execute();
             System.out.println("---------------");
           } catch (Exception e) {

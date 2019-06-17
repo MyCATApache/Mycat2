@@ -6,6 +6,7 @@ import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
+import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.packet.ErrorPacketImpl;
@@ -420,6 +421,22 @@ public class MySQLPacketUtil {
       } else {
         writer.write(reserved2.getBytes());
       }
+      return writer.toByteArray();
+    }
+  }
+
+  public static byte[] generatePrepareOk(PreparedOKPacket preparedOKPacket) {
+    long statementId = preparedOKPacket.getPreparedOkStatementId();
+    int columnsCount = preparedOKPacket.getPrepareOkColumnsCount();
+    int warningCount = preparedOKPacket.getPreparedOkWarningCount();
+    int parametersCount = preparedOKPacket.getPrepareOkParametersCount();
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(512)) {
+      writer.writeByte(0);
+      writer.writeFixInt(4, statementId);
+      writer.writeFixInt(2, columnsCount);
+      writer.writeFixInt(2, parametersCount);
+      writer.writeByte(0);
+      writer.writeFixInt(2, warningCount);
       return writer.toByteArray();
     }
   }

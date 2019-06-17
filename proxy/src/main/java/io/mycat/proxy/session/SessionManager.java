@@ -22,8 +22,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Collection;
 
 /**
- * @author jamie12221 chen junwen
- *  date 2019-05-10 21:13 Session管理器
+ * @author jamie12221 chen junwen date 2019-05-10 21:13 Session管理器
  **/
 public interface SessionManager<T extends Session> {
 
@@ -42,7 +41,6 @@ public interface SessionManager<T extends Session> {
 
   /**
    * 从管理器中移除Session
-   * @param session
    */
   void removeSession(T session, boolean normal, String reason);
 
@@ -62,6 +60,8 @@ public interface SessionManager<T extends Session> {
    * @param <KEY> 根据此key查询session
    */
   interface BackendSessionManager<T extends Session, KEY> extends SessionManager<T> {
+
+    void getIdleSessionsOfIds(KEY key,int[] ids, SessionCallBack<T> asyncTaskCallBack);
 
     /**
      * 根据key获取闲置连接,如果没有闲置连接则创建新的连接
@@ -83,9 +83,9 @@ public interface SessionManager<T extends Session> {
      */
     void clearAndDestroyDataSource(KEY key, String reason);
 
-      /**
-       * 空闲连接检查与关闭
-       */
+    /**
+     * 空闲连接检查与关闭
+     */
     void idleConnectCheck();
   }
 

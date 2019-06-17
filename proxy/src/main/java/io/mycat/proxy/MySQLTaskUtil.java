@@ -27,6 +27,8 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.packet.ErrorPacketImpl;
+import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
@@ -51,6 +53,45 @@ public class MySQLTaskUtil {
     MySQLPacketExchanger.INSTANCE
         .proxyBackend(mycat, payload, dataNodeName, runOnMaster, strategy, noResponse);
   }
+  public static void proxyBackendWithCollector(MycatSession mycat, byte[] payload,
+      String dataNodeName,
+      boolean runOnMaster,
+      LoadBalanceStrategy strategy,
+      MySQLPacketCallback callback) {
+
+    MycatMonitor.onRoute(mycat, dataNodeName, payload);
+    MySQLPacketExchanger.INSTANCE
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, runOnMaster, strategy, callback);
+  }
+  public static void withBackend(MycatSession mycat, byte[] payload,
+      String dataNodeName,
+      boolean runOnMaster,
+      LoadBalanceStrategy strategy,
+      MySQLPacketCallback callback) {
+
+    MycatMonitor.onRoute(mycat, dataNodeName, payload);
+    MySQLPacketExchanger.INSTANCE
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, runOnMaster, strategy, callback);
+  }
+
+  public static void withBackend(MycatSession mycat, boolean runOnMaster, MySQLDataNode dataNode,
+      LoadBalanceStrategy strategy, SessionCallBack<MySQLClientSession> finallyCallBack) {
+    mycat.currentProxyBuffer().reset();
+    mycat.switchDataNode(dataNode.getName());
+    if (mycat.getMySQLSession() != null) {
+      //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
+      finallyCallBack.onSession(mycat.getMySQLSession(), MySQLPacketExchanger.INSTANCE, null);
+      return;
+    }
+    MySQLIsolation isolation = mycat.getIsolation();
+    MySQLAutoCommit autoCommit = mycat.getAutoCommit();
+    String charsetName = mycat.getCharsetName();
+    String characterSetResult = mycat.getCharacterSetResults();
+    MySQLTaskUtil
+        .getMySQLSession(dataNode, isolation, autoCommit, charsetName, characterSetResult,
+            runOnMaster,
+            strategy,null, finallyCallBack);
+  }
 
   /**
    * 用户在非mycat reactor 线程获取 session
@@ -67,7 +108,7 @@ public class MySQLTaskUtil {
     MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     threads[i].addNIOJob(() -> {
       getMySQLSession(dataNode, isolation, autoCommit, charSet, character_set_results, runOnMaster,
-          strategy,
+          strategy,null,
           asynTaskCallBack);
     });
   }
@@ -84,6 +125,7 @@ public class MySQLTaskUtil {
       String characterSetResult,
       boolean runOnMaster,
       LoadBalanceStrategy strategy,
+      int[] ids,
       SessionCallBack<MySQLClientSession> callBack) {
     Objects.requireNonNull(charset);
     assert (Thread.currentThread() instanceof MycatReactorThread);
@@ -93,7 +135,7 @@ public class MySQLTaskUtil {
       replica = ProxyRuntime.INSTANCE.getMySQLReplicaByReplicaName(dataNode.getReplicaName());
       dataNode.setReplica(replica);
     }
-    replica.getMySQLSessionByBalance(runOnMaster, strategy,
+    replica.getMySQLSessionByBalance(runOnMaster, strategy,ids,
         new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
@@ -130,7 +172,7 @@ public class MySQLTaskUtil {
                   }
 
                   @Override
-                  public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
+                  public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
                       MySQLClientSession mysql, Object sender, Object attr) {
                     if (monopolize){
                       String message = "get a monopolize mysql session";

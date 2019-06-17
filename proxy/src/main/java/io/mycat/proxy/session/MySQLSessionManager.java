@@ -17,14 +17,12 @@ package io.mycat.proxy.session;
 import io.mycat.MycatExpection;
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.SessionTip;
-import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.callback.ResultSetCallBack;
@@ -33,12 +31,14 @@ import io.mycat.proxy.handler.backend.BackendConCreateHandler;
 import io.mycat.proxy.handler.backend.IdleHandler;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.util.nio.NIOUtil;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -80,13 +80,9 @@ public final class MySQLSessionManager implements
     return allSessions.size();
   }
 
-  /**
-   * 根据dataSource的配置信息获得可用的MySQLSession 0.如果dataSource已经失效,则直接回调异常,异常信息在callback的attr
-   * 1.首先从空闲的session集合里面尝试获取 若存在空闲的session则随机从头部或者尾部获得session 2.否则创建新的session
-   */
-  @NoExcept
+
   @Override
-  public final void getIdleSessionsOfKey(MySQLDatasource datasource,
+  public void getIdleSessionsOfIds(MySQLDatasource datasource, int[] ids,
       SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
     try {
       assert datasource != null;
@@ -96,43 +92,41 @@ public final class MySQLSessionManager implements
        * 3.如果有空闲连接,则获取空闲连接,然后查看通道是否已经关闭,如果已经关闭,则继续尝试获取
        * 4.session管理不保证session一定可用
        */
-      {
-        LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
-        for (; ; ) {
-          if (!datasource.isAlive()) {
-            asyncTaskCallBack
-                .onException(new MycatExpection(datasource.getName() + " is not alive!"), this,
-                    null);
-            return;
-          }
-          if (group == null || group.isEmpty()) {
-            createSession(datasource, asyncTaskCallBack);
+      LinkedList<MySQLClientSession> group = getIdleMySQLClientSessionsByIds(datasource, ids);
+      for (; ; ) {
+        if (!datasource.isAlive()) {
+          asyncTaskCallBack
+              .onException(new MycatExpection(datasource.getName() + " is not alive!"), this,
+                  null);
+          return;
+        }
+        if (group == null || group.isEmpty()) {
+          createSession(datasource, asyncTaskCallBack);
+          return;
+        } else {
+          MycatReactorThread mycatReactorThread = (MycatReactorThread) Thread.currentThread();
+          boolean random = ThreadLocalRandom.current().nextBoolean();
+          MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
+          mySQLSession.setIdle(false);
+          assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
+          assert mySQLSession.currentProxyBuffer() == null;
+          if (!mySQLSession.isOpen()) {
+            mycatReactorThread.addNIOJob(() -> {
+              mySQLSession.close(false, "mysql session is close in idle");
+            });
+            continue;
+          } else if (mySQLSession.isActivated()) {
+            mySQLSession.setIdle(false);
+            mySQLSession.switchNioHandler(null);
+            MycatMonitor.onGetIdleMysqlSession(mySQLSession);
+            asyncTaskCallBack.onSession(mySQLSession, this, null);
             return;
           } else {
-            MycatReactorThread mycatReactorThread = (MycatReactorThread) Thread.currentThread();
-            boolean random = ThreadLocalRandom.current().nextBoolean();
-            MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
-            mySQLSession.setIdle(false);
-              assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
-            assert mySQLSession.currentProxyBuffer() == null;
-            if (!mySQLSession.isOpen()) {
-              mycatReactorThread.addNIOJob(() -> {
-                mySQLSession.close(false, "mysql session is close in idle");
-              });
-              continue;
-            } else if (mySQLSession.isActivated()) {
-              mySQLSession.setIdle(false);
-              mySQLSession.switchNioHandler(null);
-              MycatMonitor.onGetIdleMysqlSession(mySQLSession);
-              asyncTaskCallBack.onSession(mySQLSession, this, null);
-              return;
-            } else {
-              //todo ping request
-              mycatReactorThread.addNIOJob(() -> {
-                mySQLSession.close(false, "not actived");
-              });
-              continue;
-            }
+            //todo ping request
+            mycatReactorThread.addNIOJob(() -> {
+              mySQLSession.close(false, "not actived");
+            });
+            continue;
           }
         }
       }
@@ -141,6 +135,36 @@ public final class MySQLSessionManager implements
           .onException(e, this,
               null);
     }
+  }
+
+  private LinkedList<MySQLClientSession> getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
+      int[] ids) {
+    LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
+    if (ids == null || (ids != null && ids.length == 0)) {
+      group = group;
+    } else {
+      Arrays.sort(ids);
+      LinkedList<MySQLClientSession> newGroup = new LinkedList<>();
+      for (MySQLClientSession session : group) {
+        int id = session.sessionId();
+        if (-1 != Arrays.binarySearch(ids, session.sessionId())) {
+          newGroup.add(session);
+        }
+      }
+      group = newGroup;
+    }
+    return group;
+  }
+
+  /**
+   * 根据dataSource的配置信息获得可用的MySQLSession 0.如果dataSource已经失效,则直接回调异常,异常信息在callback的attr
+   * 1.首先从空闲的session集合里面尝试获取 若存在空闲的session则随机从头部或者尾部获得session 2.否则创建新的session
+   */
+  @NoExcept
+  @Override
+  public final void getIdleSessionsOfKey(MySQLDatasource datasource,
+      SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
+    getIdleSessionsOfIds(datasource, null, asyncTaskCallBack);
   }
 
   /**
@@ -222,6 +246,7 @@ public final class MySQLSessionManager implements
     }
     idleDatasourcehMap.remove(key);
   }
+
   /*
     1.给持有的连接发送心跳
     2.关闭事务超时的连接
@@ -231,23 +256,23 @@ public final class MySQLSessionManager implements
   @Override
   public void idleConnectCheck() {
     Collection<MySQLReplica> mysqlReplicaList = ProxyRuntime.INSTANCE
-            .getMySQLReplicaList();
+        .getMySQLReplicaList();
     HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE
-            .getConfig(ConfigEnum.HEARTBEAT);
+        .getConfig(ConfigEnum.HEARTBEAT);
     long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
     long hearBeatTime = System.currentTimeMillis() - idleTimeout;
     long hearBeatTime2 = System.currentTimeMillis() - 2 * idleTimeout;
 
     for (MySQLReplica mySQLReplica : mysqlReplicaList) {
       List<MySQLDatasource> dataSourceList = mySQLReplica
-              .getDatasourceList();
+          .getDatasourceList();
 
       for (MySQLDatasource mySQLDatasource : dataSourceList) {
         int maxConsInOneCheck = Math.min(10, mySQLDatasource.getSessionMinCount());
         LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource);
         List<MySQLClientSession> checkList = new ArrayList<>();
         //发送心跳
-        if(null != group) {
+        if (null != group) {
           checkIfNeedHeartBeat(hearBeatTime, hearBeatTime2, maxConsInOneCheck, group, checkList);
           for (MySQLClientSession mySQLClientSession : checkList) {
             sendPing(mySQLClientSession);
@@ -255,14 +280,16 @@ public final class MySQLSessionManager implements
         }
         int idleCount = group == null ? 0 : group.size();
         int createCount = 0;
-        if( mySQLDatasource.getSessionMinCount() > (idleCount + checkList.size())) {
-          createCount = (mySQLDatasource.getSessionMinCount() - idleCount) / 3 ;
+        if (mySQLDatasource.getSessionMinCount() > (idleCount + checkList.size())) {
+          createCount = (mySQLDatasource.getSessionMinCount() - idleCount) / 3;
         }
-        if(createCount > 0 && idleCount < mySQLDatasource.getSessionMinCount()) {
+        if (createCount > 0 && idleCount < mySQLDatasource.getSessionMinCount()) {
           createByLittle(mySQLDatasource, createCount);
-        } else if(idleCount -  checkList.size() > mySQLDatasource.getSessionMinCount() && group != null) {
+        } else if (idleCount - checkList.size() > mySQLDatasource.getSessionMinCount()
+            && group != null) {
           //关闭多余连接
-          closeByMany(mySQLDatasource,idleCount - checkList.size() - mySQLDatasource.getSessionMinCount() );
+          closeByMany(mySQLDatasource,
+              idleCount - checkList.size() - mySQLDatasource.getSessionMinCount());
         }
       }
     }
@@ -272,8 +299,8 @@ public final class MySQLSessionManager implements
     LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource);
     for (int i = 0; i < closeCount; i++) {
       MySQLClientSession mySQLClientSession = group.removeFirst();
-      if(mySQLClientSession != null) {
-        closeSession(mySQLClientSession , "mysql session  close because of idle");
+      if (mySQLClientSession != null) {
+        closeSession(mySQLClientSession, "mysql session  close because of idle");
       }
     }
   }
@@ -301,60 +328,60 @@ public final class MySQLSessionManager implements
     TextResultSetTransforCollector transfor = new TextResultSetTransforCollector(collector);
     TextResultSetHandler queryResultSetTask = new TextResultSetHandler(transfor);
     queryResultSetTask
-            .request(session, MySQLCommandType.COM_QUERY, GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL,
-                  new ResultSetCallBack<MySQLClientSession>() {
-                    @Override
-                    public void onFinishedSendException(Exception exception, Object sender,
-                            Object attr) {
-                      closeSession(session, "send Ping error");
-                    }
+        .request(session, MySQLCommandType.COM_QUERY, GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL,
+            new ResultSetCallBack<MySQLClientSession>() {
+              @Override
+              public void onFinishedSendException(Exception exception, Object sender,
+                  Object attr) {
+                closeSession(session, "send Ping error");
+              }
 
-                    @Override
-                    public void onFinishedException(Exception exception, Object sender, Object attr) {
-                      closeSession(session, "send Ping error");
-                    }
+              @Override
+              public void onFinishedException(Exception exception, Object sender, Object attr) {
+                closeSession(session, "send Ping error");
+              }
 
-                    @Override
-                    public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender,
-                            Object attr) {
-                      mysql.getSessionManager().addIdleSession(mysql);
-                    }
+              @Override
+              public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender,
+                  Object attr) {
+                mysql.getSessionManager().addIdleSession(mysql);
+              }
 
-                    @Override
-                    public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
-                            MySQLClientSession mysql, Object sender, Object attr) {
-                      closeSession(session, "send Ping error ");
-                    }
+              @Override
+              public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+                  MySQLClientSession mysql, Object sender, Object attr) {
+                closeSession(session, "send Ping error ");
+              }
             });
   }
 
   private void checkIfNeedHeartBeat(long hearBeatTime, long hearBeatTime2, int maxConsInOneCheck,
-          LinkedList<MySQLClientSession> group, List<MySQLClientSession> checkList) {
+      LinkedList<MySQLClientSession> group, List<MySQLClientSession> checkList) {
     Iterator<MySQLClientSession> iterator = group.iterator();
-    while(iterator.hasNext()) {
+    while (iterator.hasNext()) {
       MySQLClientSession mySQLClientSession = iterator.next();
       //移除
-      if(!mySQLClientSession.isOpen()) {
-        closeSession(mySQLClientSession ,"mysql session  close because of idle");
+      if (!mySQLClientSession.isOpen()) {
+        closeSession(mySQLClientSession, "mysql session  close because of idle");
         iterator.remove();
         continue;
       }
-      long lastActiveTime  = mySQLClientSession.getLastActiveTime();
-      if(lastActiveTime < hearBeatTime
-              && checkList.size() < maxConsInOneCheck) {
+      long lastActiveTime = mySQLClientSession.getLastActiveTime();
+      if (lastActiveTime < hearBeatTime
+          && checkList.size() < maxConsInOneCheck) {
         mySQLClientSession.setIdle(false);
         checkList.add(mySQLClientSession); //发送ping命令
         MycatMonitor.onGetIdleMysqlSession(mySQLClientSession);
         iterator.remove();
 
-      } else if(lastActiveTime < hearBeatTime2 ){
+      } else if (lastActiveTime < hearBeatTime2) {
         closeSession(mySQLClientSession, "mysql session is close in idle");
         iterator.remove();
       }
     }
   }
 
-  private void closeSession(MySQLClientSession mySQLClientSession , String hint) {
+  private void closeSession(MySQLClientSession mySQLClientSession, String hint) {
     mySQLClientSession.setIdle(false);
     MycatReactorThread mycatReactorThread = mySQLClientSession.getMycatReactorThread();
     mycatReactorThread.addNIOJob(() -> {
@@ -394,7 +421,7 @@ public final class MySQLSessionManager implements
       }
 
       @Override
-      public void onFinishedErrorPacket(ErrorPacket errorPacket, int lastServerStatus,
+      public void onFinishedErrorPacket(ErrorPacketImpl errorPacket, int lastServerStatus,
           MySQLClientSession session, Object sender, Object attr) {
         key.decrementSessionCounter();
         callBack.onException(toExpection(errorPacket), sender, attr);

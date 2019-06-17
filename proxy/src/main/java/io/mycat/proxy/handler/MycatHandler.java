@@ -13,7 +13,14 @@
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.proxy.handler;
+import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_SEND_LONG_DATA;
+
+import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.proxy.packet.MySQLPacketResolver;
+import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
+import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -44,9 +51,25 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       if (!mycat.readFromChannel()) {
         return;
       }
-      while (mycat.readProxyPayloadFully()) {
-        mycat.handle();
-        return;
+      MySQLPacketResolver packetResolver = mycat.getPacketResolver();
+      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
+      int startIndex = proxyBuffer.channelReadStartIndex();
+      int endIndex = proxyBuffer.channelReadEndIndex();
+      //loop for prepare statement multi payload
+      packetResolver.setState(ComQueryState.QUERY_PACKET);
+      try {
+        while (mycat.readProxyPayloadFully()) {
+          MySQLPayloadType mySQLPayloadType = packetResolver.getMySQLPayloadType();
+          mycat.handle();
+          if (mySQLPayloadType == REQUEST_SEND_LONG_DATA){
+            proxyBuffer.channelReadEndIndex(packetResolver.getEndPos());
+            proxyBuffer.channelReadEndIndex(endIndex);
+          }else {
+            break;
+          }
+        }
+      }catch (Exception e){
+        e.printStackTrace();
       }
       return;
     } catch (ClosedChannelException e) {

@@ -1,9 +1,11 @@
 package io.mycat.proxy.handler.backend;
 
 import io.mycat.MycatExpection;
+import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.io.IOException;
 import org.slf4j.Logger;
@@ -19,6 +21,10 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
   public void request(MySQLClientSession session, byte[] packet, RequestCallback callback) {
     session.setCallBack(callback);
     try {
+      session.setCallBack(callback);
+      session.switchNioHandler(this);
+      MycatReactorThread thread = (MycatReactorThread)Thread.currentThread();
+      session.setCurrentProxyBuffer(new ProxyBufferImpl(thread.getBufPool()));
       session.writeProxyBufferToChannel(packet);
     } catch (Exception e) {
       MycatMonitor.onRequestException(session,e);
