@@ -151,7 +151,7 @@ public final class MySQLSessionManager implements
                     mysql.close(false,errorMessageString);
                   }
                 });
-            continue;
+            break;
           }
         }
       }
