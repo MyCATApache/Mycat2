@@ -29,6 +29,7 @@ import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.backend.BackendConCreateHandler;
 import io.mycat.proxy.handler.backend.IdleHandler;
+import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.ErrorPacketImpl;
@@ -122,10 +123,34 @@ public final class MySQLSessionManager implements
             asyncTaskCallBack.onSession(mySQLSession, this, null);
             return;
           } else {
-            //todo ping request
-            mycatReactorThread.addNIOJob(() -> {
-              mySQLSession.close(false, "not actived");
-            });
+            LOGGER.error("because mysql sessionId:{} is not isActivated,so ping",mySQLSession.sessionId());
+            ResultSetHandler.DEFAULT.request(mySQLSession, MySQLCommandType.COM_PING, new byte[]{},
+                new ResultSetCallBack<MySQLClientSession>() {
+                  @Override
+                  public void onFinishedSendException(Exception exception, Object sender,
+                      Object attr) {
+                    LOGGER.error("",exception);
+                  }
+
+                  @Override
+                  public void onFinishedException(Exception exception, Object sender, Object attr) {
+                    LOGGER.error("",exception);
+                  }
+
+                  @Override
+                  public void onFinished(boolean monopolize, MySQLClientSession mysql,
+                      Object sender, Object attr) {
+                    asyncTaskCallBack.onSession(mySQLSession, this, null);
+                  }
+
+                  @Override
+                  public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+                      MySQLClientSession mysql, Object sender, Object attr) {
+                    String errorMessageString = errorPacket.getErrorMessageString();
+                    LOGGER.error(" {}");
+                    mysql.close(false,errorMessageString);
+                  }
+                });
             continue;
           }
         }
