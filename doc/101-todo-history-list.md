@@ -20,7 +20,6 @@
 ##### 待办事项
 
 - [ ] 数据源初始化SQL
-- [ ] 
 - [ ] loaddata命令
 - [ ] 完善mycat对jdbc内部sql处理
 - [ ] NIO空轮训问题
