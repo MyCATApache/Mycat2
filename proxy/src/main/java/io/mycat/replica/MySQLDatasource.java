@@ -67,6 +67,9 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource {
     int minCon = datasourceConfig.getMinCon();
     MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     Objects.requireNonNull(threads);
+    if (minCon < 1) {
+      callback.onCountSuccess();
+    }
     for (int index = 0; index < minCon; index++) {
       MycatReactorThread thread = threads[index % threads.length];
       thread.addNIOJob(createMySQLSession(thread, new SessionCallBack<MySQLClientSession>() {
@@ -78,6 +81,7 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource {
 
         @Override
         public void onException(Exception exception, Object sender, Object attr) {
+          logger.error(exception.getMessage());
           callback.onCountFail();
         }
       }));

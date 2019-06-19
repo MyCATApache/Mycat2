@@ -36,6 +36,7 @@ public class MySQLSessionSyncTask {
     String characterSetResult = context.getCharacterSetResult();
     String charset = context.getCharset();
     MySQLIsolation isolation = context.getIsolation();
+    long sqlSelectLimit = context.getSqlSelectLimit();
     if (dataNode.equals(mysql.getDataNode())) {
       if (autoCommit == mysql.isAutomCommit() &&
           charset.equals(mysql.getCharset()) &&
@@ -52,7 +53,8 @@ public class MySQLSessionSyncTask {
             + ";" + "SET names " + charset + ";"
             + ("SET character_set_results =" + (
             characterSetResult == null || "".equals(characterSetResult) ? "NULL"
-                : characterSetResult));
+                : characterSetResult))+";"
+        +("SET SQL_SELECT_LIMIT="+((sqlSelectLimit==-1)?"DEFAULT":sqlSelectLimit));
     ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
         new ResultSetCallBack<MySQLClientSession>() {
 
@@ -63,6 +65,7 @@ public class MySQLSessionSyncTask {
             mysql.setDataNode(dataNode);
             mysql.setIsolation(isolation);
             mysql.setCharacterSetResult(characterSetResult);
+            mysql.setSelectLimit(sqlSelectLimit);
             assert autoCommit == mysql.isAutomCommit();
             MycatMonitor.onSynchronizationState(mysql);
             callBack.onSession(mysql, sender, attr);

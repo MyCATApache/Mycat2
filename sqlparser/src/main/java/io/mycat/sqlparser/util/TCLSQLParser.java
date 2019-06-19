@@ -5,7 +5,6 @@ import static io.mycat.sqlparser.util.TokenizerUtil.debug;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +25,7 @@ public class TCLSQLParser {
     if (hashArray.getType(pos) == Tokenizer.EQUAL) {
       pos++;
       if (hashArray.getType(pos) == Tokenizer.DIGITS) {
-        int n = TokenizerUtil.pickNumber(pos, hashArray, sql);
+        long n = TokenizerUtil.pickNumber(pos, hashArray, sql);
         if (n == 1) {
           context.setAutocommit(true);
         } else {
@@ -149,7 +148,7 @@ public class TCLSQLParser {
       pos = TCLSQLParser.pickSetAutocommit(++pos, arrayCount, context, hashArray, sql);
       return pos;
     } else if (hash == TokenHash.GLOBAL || hash == TokenHash.SESSION
-                   || hash == TokenHash.TRANSACTION) {
+        || hash == TokenHash.TRANSACTION) {
       context.setSQLType(BufferSQLContext.SET_TRANSACTION_SQL);
       if (hash == TokenHash.GLOBAL || hash == TokenHash.SESSION) {
         //todo 记录SQL TYPE
@@ -241,13 +240,24 @@ public class TCLSQLParser {
       context.setCharset(context.getTokenString(pos));
     } else if (hash == TokenHash.CHARACTER_SET_RESULT) {
       ++pos;
-      if((hashArray.getType(pos)!=Tokenizer.EQUAL)){
-        throw new MycatExpection("unsupport sql:"+sql.getString(0,sql.length()));
+      if ((hashArray.getType(pos) != Tokenizer.EQUAL)) {
+        throw new MycatExpection("unsupport sql:" + sql.getString(0, sql.length()));
       }
       ++pos;
       context.setCharsetSetResult(context.getTokenString(pos));
       context.setSQLType(BufferSQLContext.SET_CHARSET_RESULT);
-    } else {
+    }
+    else if (hashArray.getHash(pos)==TokenHash.SQL_SELECT_LIMIT) {
+      ++pos;context.setSQLType(BufferSQLContext.SET_SQL_SELECT_LIMIT);
+      if(hashArray.getHash(pos)==TokenHash.DEFAULT){
+        context.setSqlSelectLimit(-1);
+      }else {
+        long l = TokenizerUtil.pickNumber(pos, hashArray, context.getBuffer());
+        context.setSqlSelectLimit(l);
+      }
+    }
+
+    else {
       //TODO 其他SET 命令支持
       context.setSQLType(BufferSQLContext.SET_SQL);
     }

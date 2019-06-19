@@ -20,6 +20,7 @@ import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_VARIABLES;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_AUTOCOMMIT_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET_RESULT;
+import static io.mycat.sqlparser.util.BufferSQLContext.SET_SQL_SELECT_LIMIT;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_TRANSACTION_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_SQL;
@@ -114,6 +115,11 @@ public interface QueryHandler {
         case SET_CHARSET: {
           String charset = sqlContext.getCharset();
           mycat.setCharset(charset);
+          mycat.writeOkEndPacket();
+          return;
+        }
+        case SET_SQL_SELECT_LIMIT: {
+          mycat.setSelectLimit(sqlContext.getSqlSelectLimit());
           mycat.writeOkEndPacket();
           return;
         }

@@ -14,7 +14,7 @@ public class TokenizerUtil {
   /**
    * 获取数字
    */
-  public static int pickNumber(int pos, HashArray hashArray, ByteArrayView buffer) {
+  public static long pickNumber(int pos, HashArray hashArray, ByteArrayView buffer) {
     int value = 0;
     int start = hashArray.getPos(pos);
     int end = start + hashArray.getSize(pos);

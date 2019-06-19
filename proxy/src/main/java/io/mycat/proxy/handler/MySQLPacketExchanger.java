@@ -442,7 +442,10 @@ public enum MySQLPacketExchanger {
           } else {
             boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
             if (b) {
-              onClearInNormalResponse(mycat, mysql);
+              MySQLPayloadType payloadType = mysql.getPayloadType();
+              if (payloadType != MySQLPayloadType.LOAD_DATA_REQUEST) {
+                onClearInNormalResponse(mycat, mysql);
+              }
             }
           }
         }

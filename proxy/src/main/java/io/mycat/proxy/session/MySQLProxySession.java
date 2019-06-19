@@ -64,4 +64,6 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
   default void resetPacket() {
     getPacketResolver().reset();
   }
+
+  long getSelectLimit();
 }

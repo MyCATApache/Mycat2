@@ -80,6 +80,7 @@ public class BufferSQLContext {
   public static final byte MYCAT_SQL = 43;
   public static final byte SHUTDOWN_SQL = 44;
   public static final byte SELECT_VARIABLES = 46;
+  public static final byte SET_SQL_SELECT_LIMIT = 47;
   private static int tblResultArraySize = 32;//todo : 测试期先写死，后期考虑从设置参数中读取
   private final SQLMapAnnotation annotation = new SQLMapAnnotation();
 
@@ -93,8 +94,8 @@ public class BufferSQLContext {
   private ByteArrayView buffer;
   private int totalSQLCount;
   private boolean hasLimit = false;
-  private int limitStart = 0;
-  private int limitCount = 0;
+  private long limitStart = 0;
+  private long limitCount = 0;
   private int curSQLIdx;
   private int curSQLTblCount = 0;
   private int preHashArrayPos = 0;
@@ -113,6 +114,7 @@ public class BufferSQLContext {
   private boolean hasJoin;
   private boolean hasWhere;
   private HashArray hashArray = new HashArray();
+  private long sqlSelectLimit = -1;
 
   public Boolean isAutocommit() {
     return autocommit;
@@ -422,7 +424,7 @@ public class BufferSQLContext {
     return this.hasLimit;
   }
 
-  public void setLimitCount(int count) {
+  public void setLimitCount(long count) {
     limitCount = count;
   }
 
@@ -430,15 +432,15 @@ public class BufferSQLContext {
     limitStart = limitCount;
   }
 
-  public void setLimitStart(int start) {
+  public void setLimitStart(long start) {
     limitStart = start;
   }
 
-  public int getLimitStart() {
+  public long getLimitStart() {
     return limitStart;
   }
 
-  public int getLimitCount() {
+  public long getLimitCount() {
     return limitCount;
   }
 
@@ -607,5 +609,23 @@ public class BufferSQLContext {
 
   public void setSelectTxIsolation(boolean selectTxIsolation) {
     this.selectTxIsolation = selectTxIsolation;
+  }
+
+  /**
+   * Getter for property 'sqlSelectLimit'.
+   *
+   * @return Value for property 'sqlSelectLimit'.
+   */
+  public long getSqlSelectLimit() {
+    return sqlSelectLimit;
+  }
+
+  /**
+   * Setter for property 'sqlSelectLimit'.
+   *
+   * @param sqlSelectLimit Value to set for property 'sqlSelectLimit'.
+   */
+  public void setSqlSelectLimit(long sqlSelectLimit) {
+    this.sqlSelectLimit = sqlSelectLimit;
   }
 }

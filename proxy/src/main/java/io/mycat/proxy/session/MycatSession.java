@@ -444,6 +444,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
+  public long getSelectLimit() {
+    return serverStatus.getSelectLimit();
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -531,5 +536,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public MycatSessionWriteHandler getWriteHandler() {
     return writeHandler;
+  }
+
+  public void setSelectLimit(long sqlSelectLimit) {
+    this.serverStatus.setSelectLimit(sqlSelectLimit);
   }
 }

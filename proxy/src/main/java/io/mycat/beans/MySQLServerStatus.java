@@ -44,6 +44,7 @@ public final class MySQLServerStatus {
   private MySQLAutoCommit autoCommit;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
   protected int localInFileRequestState = LocalInFileRequestParseHelper.COM_QUERY;
+  private long selectLimit = -1;
 
   public boolean multiStatementSupport = false;
   private String charsetSetResult;
@@ -188,5 +189,13 @@ public final class MySQLServerStatus {
 
   public void setCharsetSetResult(String charsetSetResult) {
     this.charsetSetResult = charsetSetResult;
+  }
+
+  public long getSelectLimit() {
+    return selectLimit;
+  }
+
+  public void setSelectLimit(long selectLimit) {
+    this.selectLimit = selectLimit;
   }
 }

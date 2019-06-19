@@ -15,7 +15,9 @@ public class MySQLSynContext {
   MySQLAutoCommit autoCommit;
   String charset;
   String characterSetResult;
-  ;
+
+  //Statement: SET sqlSelectLimit=99
+  long sqlSelectLimit = -1;
 
   public MySQLSynContext(MycatSession session) {
     this.dataNodeName = session.getDataNode();
@@ -24,6 +26,7 @@ public class MySQLSynContext {
     this.autoCommit = session.getAutoCommit();
     this.charset = session.getCharsetName();
     this.characterSetResult = session.getCharacterSetResults();
+    this.sqlSelectLimit = session.getSelectLimit();
   }
 
   public MySQLSynContext(MySQLDataNode dataNode, MySQLIsolation isolation,
@@ -158,5 +161,9 @@ public class MySQLSynContext {
    */
   public void setCharacterSetResult(String characterSetResult) {
     this.characterSetResult = characterSetResult;
+  }
+
+  public long getSqlSelectLimit() {
+    return sqlSelectLimit;
   }
 }

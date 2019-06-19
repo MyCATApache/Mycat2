@@ -723,6 +723,7 @@ public class TokenHash {
   public static final long TX_ISOLATION = -904144833807263259L;
   public static final long TRANSACTION_READ_ONLY = 1655568686967279321L;
   public static final long TIME_ZONE = 251543733755113L;
+  public static final long SQL_SELECT_LIMIT = 7824238270431656501L;
 
   public static void main(String[] args) {
     MatchMethodGenerator.initShrinkCharTbl();

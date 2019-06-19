@@ -55,7 +55,6 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
       int startIndex = proxyBuffer.channelReadStartIndex();
       int endIndex = proxyBuffer.channelReadEndIndex();
-      //loop for prepare statement multi payload
       packetResolver.setState(ComQueryState.QUERY_PACKET);
         while (mycat.readProxyPayloadFully()) {
           int endPos = packetResolver.getEndPos();

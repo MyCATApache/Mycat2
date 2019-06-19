@@ -114,7 +114,11 @@ public final class MySQLSessionManager implements
           boolean random = ThreadLocalRandom.current().nextBoolean();
           MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
           mySQLSession.setIdle(false);
-          assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
+          try {
+            assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
+          }catch (java.lang.AssertionError e){
+            e.printStackTrace();
+          }
           assert mySQLSession.currentProxyBuffer() == null;
           /////////////////////////////////////////
           if (shouldClear(mySQLSession)) {
