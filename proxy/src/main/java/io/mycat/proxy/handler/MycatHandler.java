@@ -58,13 +58,12 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       //loop for prepare statement multi payload
       packetResolver.setState(ComQueryState.QUERY_PACKET);
         while (mycat.readProxyPayloadFully()) {
-          MySQLPayloadType mySQLPayloadType = packetResolver.getMySQLPayloadType();
+          int endPos = packetResolver.getEndPos();
           mycat.handle();
-          if (mySQLPayloadType == REQUEST_SEND_LONG_DATA){
-            proxyBuffer.channelReadEndIndex(packetResolver.getEndPos());
+          if (endPos<endIndex){
+            proxyBuffer.channelReadEndIndex();
             proxyBuffer.channelReadEndIndex(endIndex);
-          }else {
-            break;
+            continue;
           }
         }
       return;
