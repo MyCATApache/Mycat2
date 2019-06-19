@@ -33,10 +33,10 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
-import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.handler.backend.MySQLQuery;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
@@ -89,8 +89,7 @@ public interface QueryHandler {
     }
     if (mycat.isBindMySQLSession()) {
       MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-          mycat.getMySQLSession().getDataNode().getName(), false, null, false
-      );
+          mycat.getMySQLSession().getDataNode().getName(), null);
       return;
     }
     try {
@@ -126,12 +125,12 @@ public interface QueryHandler {
         }
         case SET_TRANSACTION_SQL: {
           if (sqlContext.isAccessMode()) {
-            LOGGER.warn("ignore {} and send ok",sql);
+            LOGGER.warn("ignore {} and send ok", sql);
             mycat.writeOkEndPacket();
             return;
           }
-          if (sqlContext.getTransactionLevel() == MySQLIsolationLevel.GLOBAL){
-            LOGGER.warn("unsupport global send error",sql);
+          if (sqlContext.getTransactionLevel() == MySQLIsolationLevel.GLOBAL) {
+            LOGGER.warn("unsupport global send error", sql);
             mycat.setLastMessage("unsupport global level");
             mycat.writeErrorEndPacket();
             return;
@@ -164,9 +163,8 @@ public interface QueryHandler {
 //          return;
         case SHOW_SQL:
           String defaultDataNode = useSchema.getDefaultDataNode();
-          MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode
-              , false, null, false
-          );
+          MySQLTaskUtil
+              .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode, null);
           return;
         case SHOW_VARIABLES_SQL: {
           mycat.writeColumnCount(2);
@@ -191,30 +189,31 @@ public interface QueryHandler {
           mycat.writeRowEndPacket(false, false);
           return;
         }
-        case SELECT_VARIABLES:{
-          if (sqlContext.isSelectAutocommit()){
+        case SELECT_VARIABLES: {
+          if (sqlContext.isSelectAutocommit()) {
             mycat.writeColumnCount(1);
             mycat.writeColumnDef("@@session.autocommit", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
             mycat.writeColumnEndPacket();
             mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getAutoCommit().getText())});
-            mycat.writeRowEndPacket(false,false);
+            mycat.writeRowEndPacket(false, false);
             return;
-          }else if (sqlContext.isSelectTxIsolation()){
+          } else if (sqlContext.isSelectTxIsolation()) {
             mycat.writeColumnCount(1);
             mycat.writeColumnDef("@@session.tx_isolation", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
             mycat.writeColumnEndPacket();
             mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getIsolation().getText())});
-            mycat.writeRowEndPacket(false,false);
+            mycat.writeRowEndPacket(false, false);
             return;
-          }else if (sqlContext.isSelectTranscationReadOnly()){
+          } else if (sqlContext.isSelectTranscationReadOnly()) {
             mycat.writeColumnCount(1);
-            mycat.writeColumnDef("@@session.transaction_read_only", MySQLFieldsType.FIELD_TYPE_LONGLONG);
+            mycat.writeColumnDef("@@session.transaction_read_only",
+                MySQLFieldsType.FIELD_TYPE_LONGLONG);
             mycat.writeColumnEndPacket();
             mycat.writeTextRowPacket(new byte[][]{mycat.encode(mycat.getIsolation().getText())});
-            mycat.writeRowEndPacket(false,false);
+            mycat.writeRowEndPacket(false, false);
             return;
           }
-          LOGGER.warn("maybe unsupported  sql:{}",sql);
+          LOGGER.warn("maybe unsupported  sql:{}", sql);
         }
         case SELECT_SQL: {
           if (sqlContext.isSimpleSelect()) {
@@ -223,12 +222,14 @@ public interface QueryHandler {
               switch (resultRoute.getType()) {
                 case ONE_SERVER_RESULT_ROUTE:
                   OneServerResultRoute route = (OneServerResultRoute) resultRoute;
+                  MySQLQuery query = new MySQLQuery();
+                  query.setIds(null);
+                  query.setRunOnMaster(resultRoute.isRunOnMaster(false));
+                  query.setStrategy(ProxyRuntime.INSTANCE
+                      .getLoadBalanceByBalanceName(resultRoute.getBalance()));
                   MySQLTaskUtil
                       .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), resultRoute.isRunOnMaster(false),
-                          ProxyRuntime.INSTANCE
-                              .getLoadBalanceByBalanceName(resultRoute.getBalance()), false
-                      );
+                          route.getDataNode(), query);
                   return;
               }
             }
@@ -243,8 +244,7 @@ public interface QueryHandler {
             case DB_IN_ONE_SERVER:
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-                      useSchema.getDefaultDataNode(), false, null, false
-                  );
+                      useSchema.getDefaultDataNode(), null);
               return;
             case DB_IN_MULTI_SERVER:
             case ANNOTATION_ROUTE:
@@ -266,8 +266,7 @@ public interface QueryHandler {
               OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-                      resultRoute1.getDataNode(), false, null, false
-                  );
+                      resultRoute1.getDataNode(), null);
               break;
             }
             case GLOBAL_TABLE_WRITE_RESULT_ROUTE: {

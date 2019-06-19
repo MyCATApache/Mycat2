@@ -16,15 +16,12 @@ public interface PrepareStatementParserHelper {
       MycatSession session);
 
   void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags, int numParams,
-      byte[] nullMap,
-      boolean newParamsBound, byte[] typeList, byte[] fieldList, MycatSession session);
+      byte[] rest,
+      MycatSession session);
 
   void handlePrepareStatementClose(long statementId, MycatSession session);
 
   void handlePrepareStatementReset(long statementId, MycatSession session);
 
-  interface PrepareStatementSession {
-
-    int getNumParamsByStatementId(long statementId);
-  }
+  int getNumParamsByStatementId(long statementId);
 }

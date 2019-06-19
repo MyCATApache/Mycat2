@@ -17,6 +17,8 @@ package io.mycat.proxy.session;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.annotations.NoExcept;
 import io.mycat.buffer.BufferPool;
+import io.mycat.command.CommandDispatcher;
+import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -82,7 +84,10 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();
     MycatSession mycat = new MycatSession(bufPool,
-        mySQLClientAuthHandler, this, providers.createCommandDispatcher());
+        mySQLClientAuthHandler, this);
+    CommandDispatcher commandDispatcher = providers
+        .createCommandDispatcher(mycat);
+    mycat.setCommandHandler(commandDispatcher);
 
     //用于monitor监控获取session
     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();

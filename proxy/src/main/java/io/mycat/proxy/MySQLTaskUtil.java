@@ -16,81 +16,71 @@ package io.mycat.proxy;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
-import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.ReplicaTip;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
-import io.mycat.proxy.handler.backend.ResultSetHandler;
+import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.handler.backend.MySQLSessionSyncTask;
+import io.mycat.proxy.handler.backend.MySQLSynContext;
+import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * @author jamie12221
- *  date 2019-05-12 22:41 dataNode执行器 该类本意是从路由获得dataNode名字之后,使用该执行器执行, 解耦结果类和实际执行方法
+ * @author jamie12221 date 2019-05-12 22:41 dataNode执行器 该类本意是从路由获得dataNode名字之后,使用该执行器执行,
+ * 解耦结果类和实际执行方法
  **/
 public class MySQLTaskUtil {
 
 
   public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy, boolean noResponse) {
-
+      MySQLQuery query) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyBackend(mycat, payload, dataNodeName, runOnMaster, strategy, noResponse);
+        .proxyBackend(mycat, payload, dataNodeName, query);
   }
+
   public static void proxyBackendWithCollector(MycatSession mycat, byte[] payload,
       String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy,
+      MySQLQuery query,
       MySQLPacketCallback callback) {
-
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyWithCollectorCallback(mycat, payload, dataNodeName, runOnMaster, strategy, callback);
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, callback);
   }
+
   public static void withBackend(MycatSession mycat, byte[] payload,
       String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy,
+      MySQLQuery query,
       MySQLPacketCallback callback) {
 
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyWithCollectorCallback(mycat, payload, dataNodeName, runOnMaster, strategy, callback);
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, callback);
   }
 
-  public static void withBackend(MycatSession mycat, boolean runOnMaster, MySQLDataNode dataNode,
-      LoadBalanceStrategy strategy, SessionCallBack<MySQLClientSession> finallyCallBack) {
+  public static void withBackend(MycatSession mycat, String dataNodeName, MySQLQuery query,
+      SessionSyncCallback finallyCallBack) {
     mycat.currentProxyBuffer().reset();
-    mycat.switchDataNode(dataNode.getName());
+    mycat.switchDataNode(dataNodeName);
     if (mycat.getMySQLSession() != null) {
       //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
       finallyCallBack.onSession(mycat.getMySQLSession(), MySQLPacketExchanger.INSTANCE, null);
       return;
     }
-    MySQLIsolation isolation = mycat.getIsolation();
-    MySQLAutoCommit autoCommit = mycat.getAutoCommit();
-    String charsetName = mycat.getCharsetName();
-    String characterSetResult = mycat.getCharacterSetResults();
     MySQLTaskUtil
-        .getMySQLSession(dataNode, isolation, autoCommit, charsetName, characterSetResult,
-            runOnMaster,
-            strategy,null, finallyCallBack);
+        .getMySQLSession(new MySQLSynContext(mycat), query, finallyCallBack);
   }
 
   /**
@@ -98,18 +88,13 @@ public class MySQLTaskUtil {
    *
    * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
    */
-  public static void getMySQLSessionFromUserThread(String dataNodeName,
-      MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit, String charSet, String character_set_results,
-      boolean runOnMaster, LoadBalanceStrategy strategy,
-      SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+  public static void getMySQLSessionFromUserThread(MySQLSynContext synContext,
+      MySQLQuery query,
+      SessionSyncCallback asynTaskCallBack) {
     MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-    MySQLDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     threads[i].addNIOJob(() -> {
-      getMySQLSession(dataNode, isolation, autoCommit, charSet, character_set_results, runOnMaster,
-          strategy,null,
-          asynTaskCallBack);
+      getMySQLSession(synContext, query, asynTaskCallBack);
     });
   }
 
@@ -118,85 +103,30 @@ public class MySQLTaskUtil {
    *
    * 该函数实现session状态同步的功能
    */
-  public static void getMySQLSession(MySQLDataNode dataNode,
-      MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit,
-      String charset,
-      String characterSetResult,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy,
-      int[] ids,
-      SessionCallBack<MySQLClientSession> callBack) {
-    Objects.requireNonNull(charset);
+  public static void getMySQLSession(
+      MySQLSynContext synContext,
+      MySQLQuery query,
+      SessionSyncCallback callBack) {
+
     assert (Thread.currentThread() instanceof MycatReactorThread);
-    Objects.requireNonNull(dataNode);
+    Objects.requireNonNull(synContext.getDataNode());
+    Objects.requireNonNull(synContext.getCharset());
+    MySQLDataNode dataNode = synContext.getDataNode();
     MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
-    if (replica == null) {
-      replica = ProxyRuntime.INSTANCE.getMySQLReplicaByReplicaName(dataNode.getReplicaName());
-      dataNode.setReplica(replica);
+
+    boolean isRunOnMaster = true;
+    LoadBalanceStrategy lbs = null;
+    List<SessionIdAble> ids = null;
+    if (query != null){
+      isRunOnMaster = query.isRunOnMaster();
+      lbs =  query.getStrategy();
+      ids =  query.getIds();
     }
-    replica.getMySQLSessionByBalance(runOnMaster, strategy,ids,
+    replica.getMySQLSessionByBalance(isRunOnMaster,lbs,ids,
         new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
-            if (dataNode.equals(mysql.getDataNode())) {
-              if (autoCommit == mysql.isAutomCommit() &&
-                      charset.equals(mysql.getCharset()) &&
-                      isolation.equals(mysql.getIsolation()) && Objects.equals(characterSetResult,
-                  mysql.getCharacterSetResult())
-              ) {
-                callBack.onSession(mysql, sender, null);
-                return;
-              }
-            }
-            String databaseName = dataNode.getDatabaseName();
-            String sql =
-                isolation.getCmd() + autoCommit.getCmd() + "USE " + databaseName
-                    + ";" + "SET names " + charset + ";"
-                    + ("SET character_set_results =" + (
-                    characterSetResult == null ||"".equals(characterSetResult)? "NULL" : characterSetResult))
-                ;
-            ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
-                new ResultSetCallBack<MySQLClientSession>() {
-
-                  @Override
-                  public void onFinished(boolean monopolize, MySQLClientSession mysql,
-                      Object sender, Object attr) {
-                    mysql.setCharset(charset);
-                    mysql.setDataNode(dataNode);
-                    mysql.setIsolation(isolation);
-                    mysql.setCharacterSetResult(characterSetResult);
-                    assert autoCommit == mysql.isAutomCommit();
-                    MycatMonitor.onSynchronizationState(mysql);
-                    callBack.onSession(mysql, sender, attr);
-                  }
-
-                  @Override
-                  public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                      MySQLClientSession mysql, Object sender, Object attr) {
-                    if (monopolize){
-                      String message = "get a monopolize mysql session";
-                      mysql.close(false,message);
-                      callBack.onException(new MycatExpection(message),this,null);
-                      return;
-                    }else {
-                      callBack.onException(new MycatExpection(errorPacket.getErrorMessageString()),this,null);
-                      return;
-                    }
-                  }
-
-                  @Override
-                  public void onFinishedSendException(Exception exception, Object sender,
-                      Object attr) {
-                    callBack.onException(exception, sender, attr);
-                  }
-
-                  @Override
-                  public void onFinishedException(Exception exception, Object sender, Object attr) {
-                    callBack.onException(exception, sender, attr);
-                  }
-
-                });
+            new MySQLSessionSyncTask(synContext, mysql, this, callBack).run();
           }
 
           @Override
@@ -214,7 +144,7 @@ public class MySQLTaskUtil {
     Thread thread = Thread.currentThread();
     if (thread instanceof MycatReactorThread) {
       MySQLSessionManager manager = ((MycatReactorThread) thread)
-                                        .getMySQLSessionManager();
+          .getMySQLSessionManager();
       if (datasource.isAlive()) {
         manager.getIdleSessionsOfKey(
             datasource

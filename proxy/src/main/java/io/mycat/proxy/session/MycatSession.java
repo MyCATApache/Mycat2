@@ -26,7 +26,6 @@ import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
-import io.mycat.command.PrepareStatementParserHelper.PrepareStatementSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -47,10 +46,10 @@ import java.util.LinkedList;
 import java.util.Map;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements
-    MySQLProxySession<MycatSession>, LocalInFileSession, PrepareStatementSession,
+    MySQLProxySession<MycatSession>, LocalInFileSession,
         MySQLServerSession<MycatSession> {
 
-  private final CommandDispatcher commandHandler;
+  private CommandDispatcher commandHandler;
   int resultSetCount;
 
   /**
@@ -78,13 +77,19 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
 
   public MycatSession(BufferPool bufferPool, NIOHandler nioHandler,
-      SessionManager<MycatSession> sessionManager,
-      CommandDispatcher commandHandler) {
+      SessionManager<MycatSession> sessionManager) {
     super(nioHandler, sessionManager);
     proxyBuffer = new ProxyBufferImpl(bufferPool);
-    this.commandHandler = commandHandler;
   }
 
+  /**
+   * Setter for property 'commandHandler'.
+   *
+   * @param commandHandler Value to set for property 'commandHandler'.
+   */
+  public void setCommandHandler(CommandDispatcher commandHandler) {
+    this.commandHandler = commandHandler;
+  }
 
   /**
    * 路由信息
@@ -414,8 +419,10 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public final boolean readFromChannel() throws IOException {
     boolean b = MySQLProxySession.super.readFromChannel();
-    MycatMonitor.onFrontRead(this, proxyBuffer.currentByteBuffer(),
-        proxyBuffer.channelReadStartIndex(), proxyBuffer.channelReadEndIndex());
+    if (b){
+      MycatMonitor.onFrontRead(this, proxyBuffer.currentByteBuffer(),
+          proxyBuffer.channelReadStartIndex(), proxyBuffer.channelReadEndIndex());
+    }
     return b;
   }
 
@@ -465,10 +472,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setLocalInFileRequestState(value);
   }
 
-  @Override
-  public int getNumParamsByStatementId(long statementId) {
-    return 0;
-  }
 
   @Override
   public void switchNioHandler(NIOHandler nioHandler) {

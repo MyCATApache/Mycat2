@@ -1,152 +1,96 @@
 package io.mycat.command.prepareStatement;
 
+import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
-import io.mycat.beans.mysql.MySQLPayloadWriter;
-import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.beans.mysql.packet.PacketSplitterImpl;
-import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.SessionCallBack;
-import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.replica.MySQLDatasource;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import io.mycat.replica.MySQLReplica;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map.Entry;
-import java.util.Objects;
 
 public class PrepareStmtProxy {
+  long stmtId = 0L;
+  private MycatSession mycat;
+  private final HashMap<Long, PrepareInfo> prepareMap  = new HashMap<>();
 
-  private HashMap<String, Long> clientStatementId = new HashMap<>();
-  private HashMap<Long, ArrayList<PrepareMySQLSessionInfo>> stmtIdMap = new HashMap<>();
-  private HashMap<Long, HashMap<Integer, MySQLPayloadWriter>> longDataMap = new HashMap<>();
-  private HashMap<String, List<byte[]>> prepareResponse = new HashMap<>();
-
-  private void getPrepareMySQLSession(MycatSession session, MySQLDataNode dataNode, long stmtId,
-      SessionCallBack<MySQLClientSession> callBack) {
-    ArrayList<PrepareMySQLSessionInfo> items = stmtIdMap.get(stmtId);
-    Objects.requireNonNull(items);
-    session.switchDataNode(dataNode.getName());
-
-    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-
-
+  public PrepareStmtProxy(MycatSession mycat) {
+    this.mycat = mycat;
   }
 
-  public void recordPrepareResponse(String sql, List<byte[]> payloadList) {
-    Objects.requireNonNull(payloadList);
-    prepareResponse.put(sql, payloadList);
+
+  public int getNumOfParams(long statementId){
+    PrepareInfo prepareInfo = prepareMap.get(statementId);
+    return  prepareInfo.getNumOfParams();
   }
 
-  public Iterator<byte[]> getPrepareResponse(String sql) {
-    List<byte[]> bytes = prepareResponse.get(sql);
-    Objects.requireNonNull(bytes);
-    return bytes.iterator();
-  }
+  public void newReadyPrepareStmt(String sql, String dataNode, MySQLQuery query,
+      PrepareSessionCallback callback) {
+    final long currentStmtId = stmtId++;
+    MySQLDataNode node = ProxyRuntime.INSTANCE.getDataNodeByName(dataNode);
+    MySQLReplica replica = (MySQLReplica) node.getReplica();
 
-  public boolean existPrepareResponse(String sql) {
-    return clientStatementId.containsKey(sql);
-  }
 
-  public void record(MySQLDatasource datasource,String sql, long statementId, int mysqlSessionId) {
-    Long clientStmtId = clientStatementId.get(sql);
-    if (clientStmtId == null) {
-      clientStatementId.put(sql, statementId);
-      stmtIdMap.compute(statementId, (aLong, items) -> {
-        if (items == null) {
-          items = new ArrayList<>();
-        }
-        items.add(new PrepareMySQLSessionInfo(datasource,aLong, mysqlSessionId));
-        return items;
-      });
-    } else {
-      stmtIdMap.compute(statementId, (aLong, items) -> {
-        if (items == null) {
-          items = new ArrayList<>();
-        }
-        items.add(new PrepareMySQLSessionInfo(datasource,clientStmtId, mysqlSessionId));
-        return items;
-      });
-    }
-  }
 
-  public void appendLongData(long clientStatementId, int paramId, byte[] data) {
-    longDataMap.compute(clientStatementId,
-        (aLong, parmaMap) -> {
-          if (parmaMap == null) {
-            parmaMap = new HashMap<>();
+    replica.getMySQLSessionByBalance(query.isRunOnMaster(), query.getStrategy(),
+        null, new SessionCallBack<MySQLClientSession>() {
+          @Override
+          public void onSession(MySQLClientSession session, Object sender, Object attr) {
+            mycat.getMycatReactorThread().getMySQLSessionManager().addIdleSession(session);
+            PrepareInfo prepareInfo = new PrepareInfo(currentStmtId, sql, dataNode,
+                session.getDatasource(), mycat,
+                mycat.getMycatReactorThread().getMySQLSessionManager());
+            prepareInfo.getPrepareSession(new PrepareSessionCallback() {
+              @Override
+              public void onPrepare(long actualStatementId, MySQLClientSession session) {
+
+              }
+
+              @Override
+              public void onException(Exception exception, Object sender, Object attr) {
+
+              }
+
+              @Override
+              public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+                  MySQLClientSession mysql, Object sender, Object attr) {
+
+              }
+            },true);
+            prepareMap.put(currentStmtId,prepareInfo);
           }
-          parmaMap.compute(paramId,
-              (integer, writer) -> {
-                if (writer == null) {
-                  writer = new MySQLPayloadWriter();
-                }
-                writer.writeBytes(data);
-                return writer;
-              });
-          return parmaMap;
+
+          @Override
+          public void onException(Exception exception, Object sender, Object attr) {
+            callback.onException(exception, sender, attr);
+          }
         });
   }
 
-  public void reset(long clientStatementId) {
-    longDataMap.remove(clientStatementId);
+  public void execute(long statementId, byte flags, int numParams,
+      byte[] rest) {
+    PrepareInfo prepareInfo = prepareMap.get(statementId);
+    prepareInfo.execute(statementId, flags, numParams, rest);
+
+  }
+  public void reset(long statementId) {
+    PrepareInfo prepareInfo = prepareMap.get(statementId);
+    prepareInfo.reset();
   }
 
-  public void close(long clientStatementId) {
-    String key = null;
-    for (Entry<String, Long> entry : this.clientStatementId.entrySet()) {
-      if (entry.getValue() == clientStatementId) {
-        key = entry.getKey();
-        break;
-      }
-    }
-    if (key != null) {
-      this.clientStatementId.remove(key);
-      this.stmtIdMap.remove(clientStatementId);
-      this.longDataMap.remove(clientStatementId);
-    }
+  public void close(long statementId) {
+    PrepareInfo prepareInfo = prepareMap.get(statementId);
+    prepareInfo.close();
+  }
+  public void fetch(long statementId,long numOfRows) {
+    PrepareInfo prepareInfo = prepareMap.get(statementId);
+    prepareInfo.fetch(numOfRows);
   }
 
-  public boolean existLongDataPacket(long clientStatementId) {
-    HashMap<Integer, MySQLPayloadWriter> map = longDataMap
-        .get(clientStatementId);
-    return (map != null && !map.isEmpty());
-  }
-
-  public byte[] generateAllLongDataPacket(long clientStatementId) {
-    HashMap<Integer, MySQLPayloadWriter> map = longDataMap
-        .get(clientStatementId);
-    MySQLPacketSplitter packetSplitter = new PacketSplitterImpl();
-    int packetId = 0;
-
-    int sum = 0;
-    for (Entry<Integer, MySQLPayloadWriter> entry : map.entrySet()) {
-      sum += MySQLPacketSplitter.caculWholePacketSize(entry.getValue().size());
-    }
-
-    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(sum)) {
-      for (Entry<Integer, MySQLPayloadWriter> entry : map.entrySet()) {
-        Integer key = entry.getKey();
-        byte[] data = entry.getValue().toByteArray();
-        packetSplitter.init(data.length);
-        while (packetSplitter.nextPacketInPacketSplitter()) {
-          byte[] payload = MySQLPacketUtil.generateLondData(clientStatementId, key, data);
-          byte[] packet = MySQLPacketUtil.generateMySQLPacket(packetId, payload);
-          writer.writeBytes(packet);
-          ++packetId;
-        }
-      }
-      return writer.toByteArray();
-    }
-  }
-
-  public Collection<PrepareMySQLSessionInfo> getMySQLSessionInfoByStatementId(long statementId) {
-    Collection<PrepareMySQLSessionInfo> res = Collections
-        .unmodifiableCollection(this.stmtIdMap.get(statementId));
-    return res;
+  public void appendLongData(long statementId, int paramId, byte[] data) {
+    PrepareInfo prepareInfo = this.prepareMap.get(statementId);
+    prepareInfo.appendLongData(paramId,data);
   }
 }

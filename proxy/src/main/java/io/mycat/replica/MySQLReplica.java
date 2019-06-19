@@ -29,6 +29,7 @@ import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -113,7 +114,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
    * @param strategy balanceStrategy
    * @param asynTaskCallBack callback function
    */
-  public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,int[] ids,
+  public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource;
     if (runOnMaster) {
@@ -163,7 +164,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   /**
    * 获取写入(主)节点,如果主节点已经失效,则失败
    */
-  private void getWriteDatasource(int[] ids,SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+  private void getWriteDatasource(List<SessionIdAble> ids,SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource = this.datasourceList.get(writeIndex);
     if (datasource == null || !datasource.isAlive()) {
       asynTaskCallBack.onException(new MycatExpection(
@@ -177,7 +178,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   /**
    * 根据MySQLDatasource获得MySQL Session 此函数是本类获取MySQL Session中最后一个必经的执行点,检验当前获得Session的线程是否MycatReactorThread
    */
-  private void getDatasource(MySQLDatasource datasource,int[] ids,
+  private void getDatasource(MySQLDatasource datasource,List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     Objects.requireNonNull(datasource);
     Objects.requireNonNull(asynTaskCallBack);

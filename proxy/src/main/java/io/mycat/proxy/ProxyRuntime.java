@@ -65,7 +65,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public static final ProxyRuntime INSTANCE = new ProxyRuntime();
   private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRuntime.class);
-  private final AtomicInteger sessionIdCounter = new AtomicInteger(0);
+  private final AtomicInteger sessionIdCounter = new AtomicInteger(1);
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
@@ -237,7 +237,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public int genSessionId() {
-    return sessionIdCounter.incrementAndGet();
+    return sessionIdCounter.getAndIncrement();
   }
 
   public MycatReactorThread[] getMycatReactorThreads() {

@@ -1,7 +1,13 @@
 package io.mycat.proxy;
 
+import static io.mycat.beans.mysql.MySQLFieldsType.BINARY_FLAG;
+import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_SHORT;
+import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY;
+
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLErrorCode;
+import io.mycat.beans.mysql.MySQLFieldsType;
+import io.mycat.beans.mysql.MySQLPStmtBindValueList;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
@@ -51,7 +57,32 @@ public class MySQLPacketUtil {
       return generateMySQLPacket(0, writer.toByteArray());
     }
   }
-
+  public static final byte[] generateResetPacket(long statementId) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(5)) {
+      writer.write(0x1a);
+      writer.writeFixInt(4,statementId);
+      return generateMySQLPacket(0, writer.toByteArray());
+    }
+  }
+  public static final byte[] generateClosePacket(long statementId) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(5)) {
+      writer.write(0x19);
+      writer.writeFixInt(4,statementId);
+      return generateMySQLPacket(0, writer.toByteArray());
+    }
+  }
+  public static final byte[] generateExecutePayload(long statementId, byte flags, int numParams,
+      byte[] rest) {
+    final long iteration = 1;
+    try (MySQLPayloadWriter mySQLPacket = new MySQLPayloadWriter(64)) {
+      mySQLPacket.writeByte((byte) 0x17);
+      mySQLPacket.writeFixInt(4,statementId);
+      mySQLPacket.writeByte(flags);
+      mySQLPacket.writeFixInt(4, iteration);
+      mySQLPacket.writeBytes(rest);
+      return mySQLPacket.toByteArray();
+    }
+  }
   public static final byte[] generateRequestPacket(int head, byte[] data) {
     byte[] bytes = generateRequest(head, data);
     return generateMySQLPacket(0, bytes);
@@ -438,6 +469,15 @@ public class MySQLPacketUtil {
       writer.writeByte(0);
       writer.writeFixInt(2, warningCount);
       return writer.toByteArray();
+    }
+  }
+
+  public static byte[] generateFetchPacket(long cursorStatementId, long numOfRows) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(9)) {
+      writer.writeByte(0x1c);
+      writer.writeFixInt(4, cursorStatementId);
+      writer.writeFixInt(4, numOfRows);
+      return  MySQLPacketUtil.generateMySQLPacket(0,writer.toByteArray());
     }
   }
 }

@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  */
 public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
     MySQLPacketCallback {
-
+  static final byte[] EMPTY = new byte[]{};
   Logger logger = LoggerFactory.getLogger(BackendConCreateHandler.class);
   ResultSetHandler DEFAULT = new ResultSetHandler() {
 
@@ -52,6 +52,9 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
    */
   default void request(MySQLClientSession mysql, int head, byte[] data,
       ResultSetCallBack<MySQLClientSession> callBack) {
+    if (data == null){
+      data = EMPTY;
+    }
     assert (mysql.currentProxyBuffer() == null);
     int chunkSize = mysql.getMycatReactorThread().getBufPool().getChunkSize();
     if (data.length > (chunkSize - 5) || data.length > MySQLPacketSplitter.MAX_PACKET_SIZE) {

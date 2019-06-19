@@ -62,6 +62,7 @@ public class MySQLClientSession extends
   private boolean noResponse = false;
   private boolean requestSuccess = false;
   private MycatDataNode dataNode;
+  private long cursorStatementId;
   /**
    * 错误信息
    */
@@ -560,5 +561,23 @@ public class MySQLClientSession extends
    */
   public MySQLSessionMonopolizeType getMonopolizeType() {
     return monopolizeType;
+  }
+
+  /**
+   * Getter for property 'cursorStatementId'.
+   *
+   * @return Value for property 'cursorStatementId'.
+   */
+  public long getCursorStatementId() {
+    return cursorStatementId;
+  }
+
+  /**
+   * Setter for property 'cursorStatementId'.
+   *
+   * @param cursorStatementId Value to set for property 'cursorStatementId'.
+   */
+  public void setCursorStatementId(long cursorStatementId) {
+    this.cursorStatementId = cursorStatementId;
   }
 }

@@ -544,32 +544,38 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         if (!isPacketFinished) {
           throw new RuntimeException("unknown state!");
         }
-        if (head == 3) {
-          setState(ComQueryState.QUERY_PACKET);
-          setMySQLPayloadType(REQUEST_COM_QUERY);
-          return;
-        } else  if (head == 24) {
-          int statementId = (int) mySQLPacket.readFixInt(4);
-          int paramId = (int) mySQLPacket.readFixInt(2);
-          setState(ComQueryState.QUERY_PACKET);
-          setMySQLPayloadType(REQUEST_SEND_LONG_DATA);
-          return;
-        } else if (head == 25) {
-          setState(ComQueryState.QUERY_PACKET);
-          setRequestFininshed(true);
-          setMySQLPayloadType(REQUEST_COM_STMT_CLOSE);
-          return;
-        } else if (head == 22) {
-          setState(ComQueryState.FIRST_PACKET);
-          setRequestFininshed(true);
-          setMySQLPayloadType(REQUEST_PREPARE);
-          return;
-        } else {
-          setCurrentComQuerySQLType(head);
-          setState(ComQueryState.FIRST_PACKET);
-          setRequestFininshed(true);
-          setMySQLPayloadType(REQUEST);
-          return;
+        switch (head){
+          case 3:{
+            setState(ComQueryState.FIRST_PACKET);
+            setMySQLPayloadType(REQUEST_COM_QUERY);
+            return;
+          }
+          case 24:{
+            int statementId = (int) mySQLPacket.readFixInt(4);
+            int paramId = (int) mySQLPacket.readFixInt(2);
+            setState(ComQueryState.QUERY_PACKET);
+            setMySQLPayloadType(REQUEST_SEND_LONG_DATA);
+            return;
+          }
+          case 25:{
+            setState(ComQueryState.QUERY_PACKET);
+            setRequestFininshed(true);
+            setMySQLPayloadType(REQUEST_COM_STMT_CLOSE);
+            return;
+          }
+          case 22:{
+            setState(ComQueryState.FIRST_PACKET);
+            setRequestFininshed(true);
+            setMySQLPayloadType(REQUEST_PREPARE);
+            return;
+          }
+          default:{
+            setCurrentComQuerySQLType(head);
+            setState(ComQueryState.FIRST_PACKET);
+            setRequestFininshed(true);
+            setMySQLPayloadType(REQUEST);
+            return;
+          }
         }
       }
       case AUTH_SWITCH_PLUGIN_RESPONSE:

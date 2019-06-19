@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author jamie12221 chen junwen date 2019-05-10 21:13 Session管理器
@@ -61,7 +62,7 @@ public interface SessionManager<T extends Session> {
    */
   interface BackendSessionManager<T extends Session, KEY> extends SessionManager<T> {
 
-    void getIdleSessionsOfIds(KEY key,int[] ids, SessionCallBack<T> asyncTaskCallBack);
+    void getIdleSessionsOfIds(KEY key, List<SessionIdAble> ids, SessionCallBack<T> asyncTaskCallBack);
 
     /**
      * 根据key获取闲置连接,如果没有闲置连接则创建新的连接
@@ -87,6 +88,15 @@ public interface SessionManager<T extends Session> {
      * 空闲连接检查与关闭
      */
     void idleConnectCheck();
-  }
 
+
+  }
+  public interface SessionIdAble{
+    int getSessionId();
+  }
+  public enum CheckResult {
+    NOT_EXIST,
+    IDLE,
+    BUSY
+  }
 }

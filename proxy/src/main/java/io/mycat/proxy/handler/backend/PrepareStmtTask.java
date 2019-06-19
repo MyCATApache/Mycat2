@@ -2,39 +2,39 @@ package io.mycat.proxy.handler.backend;
 
 import io.mycat.beans.mysql.packet.EOFPacket;
 import io.mycat.beans.mysql.packet.PreparedOKPacket;
-import io.mycat.command.prepareStatement.PrepareStmtProxy;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import java.util.ArrayList;
 
 public class PrepareStmtTask implements ResultSetHandler {
 
-  final MycatSession mycat;
-  long statementId;
-  ArrayList<byte[]> payloadList = new ArrayList<>();
-  PrepareStmtProxy prepareStmtProxy;
-  String sql;
+  private final MycatSession mycat;
+  private  long mysqlStatementId;
+  private final  long mycatStatementId;
+  private final String sql;
+  private final boolean proxy;
+  private int numOdParmas;
+
   /**
-   * Getter for property 'statementId'.
+   * Getter for property 'mysqlStatementId'.
    *
-   * @return Value for property 'statementId'.
+   * @return Value for property 'mysqlStatementId'.
    */
-  public long getStatementId() {
-    return statementId;
+  public long getMysqlStatementId() {
+    return mysqlStatementId;
   }
 
-  public PrepareStmtTask(MycatSession mycat,PrepareStmtProxy prepareStmtProxy) {
+  public PrepareStmtTask(MycatSession mycat, long mycatStatementId, String sql, boolean proxy) {
     this.mycat = mycat;
-    this.prepareStmtProxy = prepareStmtProxy;
+    this.mycatStatementId = mycatStatementId;
+    this.sql = sql;
+    this.proxy = proxy;
   }
 
-  public void requestPrepareStatement(MySQLClientSession mysql, String sql,
-      ResultSetCallBack<MySQLClientSession> callBack) {
-    this.sql = sql;
+  public void requestPrepareStatement(MySQLClientSession mysql, ResultSetCallBack<MySQLClientSession> callBack) {
     byte[] payload = MySQLPacketUtil.generatePreparePayloadRequest(sql.getBytes());
     byte[] packet = MySQLPacketUtil.generateMySQLPacket(0, payload);
     request(mysql, packet, callBack);
@@ -43,50 +43,69 @@ public class PrepareStmtTask implements ResultSetHandler {
 
   @Override
   public void onPrepareOk(PreparedOKPacket preparedOKPacket) {
-    this.statementId = preparedOKPacket.getPreparedOkStatementId();
-    byte[] payload = MySQLPacketUtil.generatePrepareOk(preparedOKPacket);
-    payloadList.add(payload);
-    mycat.writeBytes(payload);
+    this.mysqlStatementId = preparedOKPacket.getPreparedOkStatementId();
+    this.numOdParmas = preparedOKPacket.getPrepareOkParametersCount();
+    preparedOKPacket.setPreparedOkStatementId(mycatStatementId);
+    if (proxy) {
+      byte[] payload = MySQLPacketUtil.generatePrepareOk(preparedOKPacket);
+      mycat.writeBytes(payload);
+    }
   }
 
   @Override
   public void onPrepareOkParameterDef(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    byte[] payload = mySQLPacket.getBytes(startPos, endPos);
-    payloadList.add(payload);
-    mycat.writeBytes(payload);
+    if (proxy) {
+      byte[] payload = mySQLPacket.getBytes(startPos, endPos);
+      mycat.writeBytes(payload);
+    }
   }
 
   @Override
   public void onPrepareOkColumnDef(MySQLPacket mySQLPacket, int startPos, int endPos) {
-    byte[] payload = mySQLPacket.getBytes(startPos, endPos);
-    payloadList.add(payload);
-    mycat.writeBytes(payload);
+    if (proxy) {
+      byte[] payload = mySQLPacket.getBytes(startPos, endPos);
+      mycat.writeBytes(payload);
+    }
   }
 
   @Override
   public void onPrepareOkColumnDefEof(EOFPacket packet) {
-    byte[] payload = MySQLPacketUtil
-        .generateEof(packet.getWarningCount(), packet.getServerStatus());
-    payloadList.add(payload);
-    mycat.writeBytes(payload);
+    if (proxy) {
+      byte[] payload = MySQLPacketUtil
+          .generateEof(packet.getWarningCount(), packet.getServerStatus());
+      mycat.writeBytes(payload);
+    }
   }
 
   @Override
   public void onPrepareOkParameterDefEof(EOFPacket packet) {
-    byte[] payload = MySQLPacketUtil
-        .generateEof(packet.getWarningCount(), packet.getServerStatus());
-    payloadList.add(payload);
-    mycat.writeBytes(payload);
+    if (proxy) {
+      byte[] payload = MySQLPacketUtil
+          .generateEof(packet.getWarningCount(), packet.getServerStatus());
+      mycat.writeBytes(payload);
+    }
   }
 
   @Override
   public void onFirstError(ErrorPacketImpl packet) {
-    mycat.writeErrorEndPacket(packet);
+    if (proxy) {
+      mycat.writeErrorEndPacket(packet);
+    }
   }
 
   @Override
   public void onFinishedCollect(MySQLClientSession mysql) {
-    this.prepareStmtProxy.recordPrepareResponse(sql,payloadList);
-    mycat.writeEnd();
+    if (proxy) {
+      mycat.writeEnd();
+    }
+  }
+
+  /**
+   * Getter for property 'numOdParmas'.
+   *
+   * @return Value for property 'numOdParmas'.
+   */
+  public int getNumOdParmas() {
+    return numOdParmas;
   }
 }

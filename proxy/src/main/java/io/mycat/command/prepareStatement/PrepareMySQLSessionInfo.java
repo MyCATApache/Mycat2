@@ -1,29 +1,20 @@
 package io.mycat.command.prepareStatement;
 
-import io.mycat.replica.MySQLDatasource;
 
-public class PrepareMySQLSessionInfo {
+import io.mycat.proxy.session.SessionManager.SessionIdAble;
 
-  MySQLDatasource datasource;
-  long id;
+public final class PrepareMySQLSessionInfo implements SessionIdAble {
+  long statementId;
   int sessionId;
 
-  public long getId() {
-    return id;
+  public long getStatementId() {
+    return statementId;
   }
 
   public int getSessionId() {
     return sessionId;
   }
 
-  /**
-   * Getter for property 'datasource'.
-   *
-   * @return Value for property 'datasource'.
-   */
-  public MySQLDatasource getDatasource() {
-    return datasource;
-  }
 
   @Override
   public boolean equals(Object o) {
@@ -36,7 +27,7 @@ public class PrepareMySQLSessionInfo {
 
     PrepareMySQLSessionInfo item = (PrepareMySQLSessionInfo) o;
 
-    if (id != item.id) {
+    if (statementId != item.statementId) {
       return false;
     }
     return sessionId == item.sessionId;
@@ -44,15 +35,13 @@ public class PrepareMySQLSessionInfo {
 
   @Override
   public int hashCode() {
-    int result = (int) (id ^ (id >>> 32));
+    int result = (int) (statementId ^ (statementId >>> 32));
     result = 31 * result + sessionId;
     return result;
   }
 
-
-  public PrepareMySQLSessionInfo(MySQLDatasource datasource, long id, int sessionId) {
-    this.datasource = datasource;
-    this.id = id;
+  public PrepareMySQLSessionInfo(long statementId, int sessionId) {
+    this.statementId = statementId;
     this.sessionId = sessionId;
   }
 

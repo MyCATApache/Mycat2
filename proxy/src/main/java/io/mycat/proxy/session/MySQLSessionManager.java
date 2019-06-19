@@ -17,6 +17,7 @@ package io.mycat.proxy.session;
 import io.mycat.MycatExpection;
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.MySQLCommandType;
+import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.config.ConfigEnum;
@@ -25,10 +26,12 @@ import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
+import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.backend.BackendConCreateHandler;
 import io.mycat.proxy.handler.backend.IdleHandler;
+import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -39,13 +42,14 @@ import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.util.nio.NIOUtil;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,8 +64,9 @@ public final class MySQLSessionManager implements
     BackendSessionManager<MySQLClientSession, MySQLDatasource> {
 
   final static Logger LOGGER = LoggerFactory.getLogger(MySQLSessionManager.class);
-  final LinkedList<MySQLClientSession> allSessions = new LinkedList<>();
+  final HashMap<Integer, MySQLClientSession> allSessions = new HashMap<>();
   final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
+  final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
 
   /**
    * 返回不可变集合,防止外部代码错误操作allSessions导致泄漏MySQLSession
@@ -69,7 +74,7 @@ public final class MySQLSessionManager implements
   @NoExcept
   @Override
   public final Collection<MySQLClientSession> getAllSessions() {
-    return Collections.unmodifiableCollection(allSessions);
+    return Collections.unmodifiableCollection(allSessions.values());
   }
 
   /**
@@ -83,10 +88,10 @@ public final class MySQLSessionManager implements
 
 
   @Override
-  public void getIdleSessionsOfIds(MySQLDatasource datasource, int[] ids,
+  public void getIdleSessionsOfIds(MySQLDatasource datasource, List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
+    Objects.requireNonNull(datasource);
     try {
-      assert datasource != null;
       /**
        * 1.如果集群不可用,直接回调不可用
        * 2.如果没有空闲连接,则创建空闲连接
@@ -111,6 +116,11 @@ public final class MySQLSessionManager implements
           mySQLSession.setIdle(false);
           assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
           assert mySQLSession.currentProxyBuffer() == null;
+          /////////////////////////////////////////
+          if (shouldClear(mySQLSession)) {
+            continue;
+          }
+          //////////////////////////////////////////////////
           if (!mySQLSession.isOpen()) {
             mycatReactorThread.addNIOJob(() -> {
               mySQLSession.close(false, "mysql session is close in idle");
@@ -123,18 +133,19 @@ public final class MySQLSessionManager implements
             asyncTaskCallBack.onSession(mySQLSession, this, null);
             return;
           } else {
-            LOGGER.error("because mysql sessionId:{} is not isActivated,so ping",mySQLSession.sessionId());
+            LOGGER.error("because mysql sessionId:{} is not isActivated,so ping",
+                mySQLSession.sessionId());
             ResultSetHandler.DEFAULT.request(mySQLSession, MySQLCommandType.COM_PING, new byte[]{},
                 new ResultSetCallBack<MySQLClientSession>() {
                   @Override
                   public void onFinishedSendException(Exception exception, Object sender,
                       Object attr) {
-                    LOGGER.error("",exception);
+                    LOGGER.error("", exception);
                   }
 
                   @Override
                   public void onFinishedException(Exception exception, Object sender, Object attr) {
-                    LOGGER.error("",exception);
+                    LOGGER.error("", exception);
                   }
 
                   @Override
@@ -148,7 +159,7 @@ public final class MySQLSessionManager implements
                       MySQLClientSession mysql, Object sender, Object attr) {
                     String errorMessageString = errorPacket.getErrorMessageString();
                     LOGGER.error(" {}");
-                    mysql.close(false,errorMessageString);
+                    mysql.close(false, errorMessageString);
                   }
                 });
             break;
@@ -162,24 +173,44 @@ public final class MySQLSessionManager implements
     }
   }
 
-  private LinkedList<MySQLClientSession> getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
-      int[] ids) {
-    LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
-    if (ids == null || (ids != null && ids.length == 0)) {
-      group = group;
-    } else {
-      Arrays.sort(ids);
-      LinkedList<MySQLClientSession> newGroup = new LinkedList<>();
-      for (MySQLClientSession session : group) {
-        int id = session.sessionId();
-        if (-1 != Arrays.binarySearch(ids, session.sessionId())) {
-          newGroup.add(session);
-        }
-      }
-      group = newGroup;
+  /**
+   * @param ids 如果id失效 设置为-id
+   */
+  public LinkedList<MySQLClientSession> getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
+      List<SessionIdAble> ids) {
+    //dataSource
+    if (datasource != null && (ids == null || ids.size() == 0)) {
+      return this.idleDatasourcehMap.get(datasource);
     }
-    return group;
+    //dataSource ids
+    if (datasource != null) {
+      return searchMap(ids, this.allSessions);
+    }
+    //ids
+    if (ids != null && ids.size() > 0) {
+      return searchMap(ids, this.allSessions);
+    }
+    throw new IllegalArgumentException("mysql session search argument");
   }
+
+
+  private static LinkedList<MySQLClientSession> searchMap(List<SessionIdAble> ids,
+      Map<Integer, MySQLClientSession> source) {
+    LinkedList<MySQLClientSession> sessions = new LinkedList<>();
+    int size = ids.size();
+    for (int i = 0; i < size; i++) {
+      int id = ids.get(i).getSessionId();
+      if (1 > id) {
+        continue;
+      }
+      MySQLClientSession mySQLClientSession = source.get(id);
+      if (mySQLClientSession.isIdle()) {
+        sessions.addLast(mySQLClientSession);
+      }
+    }
+    return sessions;
+  }
+
 
   /**
    * 根据dataSource的配置信息获得可用的MySQLSession 0.如果dataSource已经失效,则直接回调异常,异常信息在callback的attr
@@ -209,10 +240,13 @@ public final class MySQLSessionManager implements
       assert session.isActivated();
       assert session.currentProxyBuffer() == null;
       assert !session.isIdle();
-      if (session.isMonopolized()) {
-        session.close(false, "session is monopolized ");
-        throw new MycatExpection("Monopolized");
+      /////////////////////////////////////////
+
+      if (shouldClear(session)) {
+        return;
       }
+      //////////////////////////////////////////////////
+
       session.resetPacket();
       session.setIdle(true);
       session.switchNioHandler(IdleHandler.INSTANCE);
@@ -229,6 +263,46 @@ public final class MySQLSessionManager implements
       LOGGER.error("{}", e);
       session.close(false, e);
     }
+  }
+
+  private boolean shouldClear(MySQLClientSession session) {
+    MySQLPayloadWriter clearPayload = clearTask.remove(session.sessionId());
+    if (clearPayload != null) {
+      RequestHandler.INSTANCE.request(session, clearPayload.toByteArray(), new RequestCallback() {
+        @Override
+        public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
+          addIdleSession(session);
+        }
+
+        @Override
+        public void onFinishedSendException(Exception e, Object sender, Object attr) {
+        }
+      });
+      return true;
+    }
+    if (session.isMonopolized()) {
+      LOGGER.error("sessionId {} is monopolized", session.sessionId());
+      session.close(false, "isMonopolized");
+      return true;
+    }
+    return false;
+  }
+
+  public void appendClearRequest(int sessionId, byte[] packet) {
+    CheckResult check = check(sessionId);
+    switch (check) {
+      case NOT_EXIST:
+        break;
+      case IDLE:
+      case BUSY:
+        MySQLPayloadWriter writer = this.clearTask.get(sessionId);
+        if (writer == null) {
+          writer = new MySQLPayloadWriter();
+        }
+        writer.writeBytes(packet);
+        break;
+    }
+
   }
 
 
@@ -252,12 +326,18 @@ public final class MySQLSessionManager implements
 
   /**
    * 1.可能被以下需要调用 a.定时清理某个dataSource的连接 b.强制关闭摸个dataSource的连接
-   */
+   *//**/
   @Override
   public final void clearAndDestroyDataSource(MySQLDatasource key, String reason) {
     assert key != null;
     assert reason != null;
-    allSessions.removeIf(session -> session.getDatasource().equals(key));
+    Collection<MySQLClientSession> allSessions = Collections
+        .unmodifiableCollection(this.allSessions.values());
+    for (MySQLClientSession s : allSessions) {
+      if (s.getDatasource().equals(key)) {
+        this.allSessions.remove(s.sessionId());
+      }
+    }
     LinkedList<MySQLClientSession> sessions = idleDatasourcehMap.get(key);
     if (sessions != null) {
       for (MySQLClientSession session : sessions) {
@@ -435,7 +515,7 @@ public final class MySQLSessionManager implements
           Object attr) {
         assert session.currentProxyBuffer() == null;
         MycatMonitor.onNewMySQLSession(session);
-        allSessions.add(session);
+        allSessions.put(session.sessionId(), session);
         callBack.onSession(session, sender, attr);
       }
 
@@ -464,7 +544,7 @@ public final class MySQLSessionManager implements
       assert session != null;
       assert reason != null;
       session.getDatasource().decrementSessionCounter();
-      allSessions.remove(session);
+      allSessions.remove(session.sessionId());
       MycatMonitor.onCloseMysqlSession(session, normal, reason);
       removeIdleSession(session);
       NIOUtil.close(session.channel());
@@ -472,4 +552,17 @@ public final class MySQLSessionManager implements
       LOGGER.error("{}", e);
     }
   }
+
+  public CheckResult check(int sessionId) {
+    MySQLClientSession session = allSessions.get(sessionId);
+    if (session == null) {
+      return CheckResult.NOT_EXIST;
+    }
+    if (session.isIdle()) {
+      return CheckResult.IDLE;
+    } else {
+      return CheckResult.BUSY;
+    }
+  }
+
 }

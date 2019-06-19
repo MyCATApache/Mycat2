@@ -16,6 +16,7 @@ package io.mycat.proxy.handler;
 
 import static io.mycat.proxy.MySQLTaskUtil.withBackend;
 
+import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -26,6 +27,8 @@ import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.callback.TaskCallBack;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
+import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.packet.MySQLPacket;
@@ -93,57 +96,37 @@ public enum MySQLPacketExchanger {
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy, boolean noResponse) {
-    proxyBackend(mycat, payload, dataNodeName, runOnMaster, strategy, noResponse,
+      MySQLQuery query) {
+    proxyBackend(mycat, payload, dataNodeName,query,
         DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
 
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy, boolean noResponse, PacketExchangerCallback finallyCallBack) {
+      MySQLQuery query, PacketExchangerCallback finallyCallBack) {
     byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
-    MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, bytes, (MySQLDataNode) dataNode, runOnMaster, strategy,
-        noResponse, MySQLProxyNIOHandler.INSTANCE, finallyCallBack
+        .INSTANCE.proxyBackend(mycat, bytes,dataNodeName,query, MySQLProxyNIOHandler.INSTANCE, finallyCallBack
     );
   }
   public void proxyBackendWithRawPacket(MycatSession mycat, byte[] packet, String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy, boolean noResponse) {
-    MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
+      MySQLQuery query) {
     MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, packet, (MySQLDataNode) dataNode, runOnMaster, strategy,
-        noResponse, MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
-    );
-  }
-  public void proxyBackendWithRawPacket(MycatSession mycat, byte[] packet, String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy, boolean noResponse, PacketExchangerCallback finallyCallBack) {
-    MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
-    MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, packet, (MySQLDataNode) dataNode, runOnMaster, strategy,
-        noResponse, MySQLProxyNIOHandler.INSTANCE, finallyCallBack
+        .INSTANCE.proxyBackend(mycat, packet,dataNodeName,query, MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
     );
   }
   public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy, MySQLPacketCallback callback) {
-    proxyWithCollectorCallback(mycat, payload, dataNodeName, runOnMaster, strategy, callback,
+      MySQLQuery query, MySQLPacketCallback callback) {
+    proxyWithCollectorCallback(mycat, payload, dataNodeName, query, callback,
         DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
   }
 
   public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String dataNodeName,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy, MySQLPacketCallback callback,
+      MySQLQuery query, MySQLPacketCallback callback,
       PacketExchangerCallback finallyCallBack) {
     byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
-    MycatDataNode dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
     MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, bytes, (MySQLDataNode) dataNode, runOnMaster, strategy,
-        false, new MySQLCollectorExchanger(callback), finallyCallBack
+        .INSTANCE.proxyBackend(mycat, bytes, dataNodeName,query, new MySQLCollectorExchanger(callback), finallyCallBack
     );
   }
 
@@ -204,21 +187,25 @@ public enum MySQLPacketExchanger {
     static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
 
-    public void proxyBackend(MycatSession mycat, byte[] packetData, MySQLDataNode dataNode,
-        boolean runOnMaster,
-        LoadBalanceStrategy strategy,
-        boolean noResponse, MySQLProxyNIOHandler proxyNIOHandler,
+    public void proxyBackend(MycatSession mycat, byte[] packetData, String dataNodeName,
+        MySQLQuery query, MySQLProxyNIOHandler proxyNIOHandler,
         PacketExchangerCallback finallyCallBack) {
-      MySQLTaskUtil.withBackend(mycat, runOnMaster, dataNode, strategy, new SessionCallBack<MySQLClientSession>() {
+      MySQLTaskUtil.withBackend(mycat, dataNodeName,query, new SessionSyncCallback (){
         @Override
         public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
-          proxyNIOHandler.proxyBackend(mysql, finallyCallBack, noResponse, mycat, packetData);
+          proxyNIOHandler.proxyBackend(mysql, finallyCallBack, false, mycat, packetData);
         }
 
         @Override
         public void onException(Exception exception, Object sender, Object attr) {
-          MycatMonitor.onGettingBackendException(mycat, dataNode.getName(), exception);
+          MycatMonitor.onGettingBackendException(mycat, dataNodeName, exception);
           finallyCallBack.onRequestMySQLException(mycat, exception, attr);
+        }
+
+        @Override
+        public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+            MySQLClientSession mysql, Object sender, Object attr) {
+          finallyCallBack.onRequestMySQLException(mycat, new MycatExpection(errorPacket.getErrorMessageString()), attr);
         }
       });
     }

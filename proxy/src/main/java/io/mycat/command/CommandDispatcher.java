@@ -126,7 +126,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
           MycatMonitor.onSendLongDataCommandStart(mycat);
           curPacket.readByte();
           long statementId = curPacket.readFixInt(4);
-          int paramId = (int)curPacket.readFixInt(2);
+          int paramId = (int) curPacket.readFixInt(2);
           byte[] data = curPacket.readEOFStringBytes();
           mycat.resetCurrentProxyPayload();
           commandHandler.handlePrepareStatementLongdata(statementId, paramId, data, mycat);
@@ -142,40 +142,13 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
             byte flags = curPacket.readByte();
             long iteration = curPacket.readFixInt(4);
             assert iteration == 1;
-            int numParams = mycat.getNumParamsByStatementId(statementId);
-            if (numParams > 0) {
-              int length = (numParams + 7) / 8;
-              byte[] nullMap = curPacket.readBytes(length);
-              byte newParamsBoundFlag = curPacket.readByte();
-              if (newParamsBoundFlag == 1) {
-                byte[] typeList = new byte[numParams];
-                byte[] fieldList = new byte[numParams];
-                for (int i = 0; i < numParams; i++) {
-                  typeList[i] = curPacket.readByte();
-                  fieldList[i] = curPacket.readByte();
-                }
-                mycat.resetCurrentProxyPayload();
-                commandHandler
-                    .handlePrepareStatementExecute(rawPayload,statementId, flags, numParams, nullMap, true,
-                        typeList, fieldList,
-                        mycat);
-                break;
-              } else {
-                mycat.resetCurrentProxyPayload();
-                commandHandler
-                    .handlePrepareStatementExecute(rawPayload,statementId, flags, numParams, nullMap, false,
-                        null,
-                        null, mycat);
-                break;
-              }
-            } else {
-              mycat.resetCurrentProxyPayload();
-              commandHandler
-                  .handlePrepareStatementExecute(rawPayload, statementId, flags, numParams, null, false, null,
-                      null,
-                      mycat);
-              break;
-            }
+            int numParams = getNumParamsByStatementId(statementId);
+            byte[] rest = curPacket.readEOFStringBytes();
+            mycat.resetCurrentProxyPayload();
+            commandHandler
+                .handlePrepareStatementExecute(rawPayload, statementId, flags, numParams, rest,
+                    mycat);
+            break;
           } finally {
             MycatMonitor.onExecuteCommandEnd(mycat);
           }

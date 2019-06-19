@@ -7,6 +7,7 @@ import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
@@ -37,13 +38,15 @@ public enum MycatProxyBeanProviders implements ProxyBeanProviders {
     return new MySQLDataNode(config);
   }
 
-
   @Override
-  public CommandDispatcher createCommandDispatcher() {
+  public MycatCommandHandler createCommandDispatcher(MycatSession session) {
     MycatRouterConfig routerConfig = ProxyRuntime.INSTANCE.getRouterConfig();
     MycatRouter router = new MycatRouter(routerConfig);
-    return new MycatCommandHandler(router);
+    return new MycatCommandHandler(router,session);
   }
+
+
+
 
 
 }
