@@ -496,4 +496,44 @@ public class JdbcDao extends ModualTest {
           }
         });
   }
+
+  @Test
+  public void cursor()
+      throws IOException, ExecutionException, InterruptedException {
+    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+        (future, connection) -> {
+          try (Statement statement = connection.createStatement()) {
+            statement.execute("truncate travelrecord;");
+            for (int i = 0; i <10; i++) {
+              String s1 =
+                  "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
+                      + "VALUES ('"
+                      + i
+                      + "', '"
+                      + "1"
+                      + "', '"
+                      + "2019-05-07"
+                      + "', '"
+                      + "1"
+                      + "', '"
+                      + "1"
+                      + "', '"
+                      + '1'
+                      + "');";
+              statement.execute(s1);
+            }
+            String sql = "select * from travelrecord;";
+            PreparedStatement pstat = connection.prepareStatement(sql,ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+            //最大查询到第几条记录
+            pstat.setMaxRows(99);
+            ResultSet rs = pstat.executeQuery();
+            //将游标移动到第一条记录
+            boolean first = rs.first();
+          }catch (Exception e){
+            e.printStackTrace();
+          }finally {
+            compelete(future);
+          }
+        });
+  }
 }

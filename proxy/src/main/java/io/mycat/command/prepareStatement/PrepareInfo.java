@@ -219,7 +219,7 @@ public class PrepareInfo {
     }
   }
 
-  public void execute(long statementId, byte flags, int numParams,
+  public void execute(byte flags, int numParams,
       byte[] rest) {
     getPrepareSession(new PrepareSessionCallback() {
       @Override
@@ -241,7 +241,8 @@ public class PrepareInfo {
                 }
               });
         }else {
-          innerExecute(statementId, flags, numParams, rest);
+          mycat.setMySQLSession(session);
+          innerExecute(actualStatementId, flags, numParams, rest);
         }
         return;
       }

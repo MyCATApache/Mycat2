@@ -91,6 +91,7 @@ public final class MySQLSessionManager implements
   public void getIdleSessionsOfIds(MySQLDatasource datasource, List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
     Objects.requireNonNull(datasource);
+    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
     try {
       /**
        * 1.如果集群不可用,直接回调不可用
@@ -98,7 +99,7 @@ public final class MySQLSessionManager implements
        * 3.如果有空闲连接,则获取空闲连接,然后查看通道是否已经关闭,如果已经关闭,则继续尝试获取
        * 4.session管理不保证session一定可用
        */
-      LinkedList<MySQLClientSession> group = getIdleMySQLClientSessionsByIds(datasource, ids);
+      MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids);
       for (; ; ) {
         if (!datasource.isAlive()) {
           asyncTaskCallBack
@@ -106,34 +107,27 @@ public final class MySQLSessionManager implements
                   null);
           return;
         }
-        if (group == null || group.isEmpty()) {
+        if (mySQLSession == null) {
           createSession(datasource, asyncTaskCallBack);
           return;
         } else {
-          MycatReactorThread mycatReactorThread = (MycatReactorThread) Thread.currentThread();
-          boolean random = ThreadLocalRandom.current().nextBoolean();
-          MySQLClientSession mySQLSession = random ? group.removeFirst() : group.removeLast();
-          mySQLSession.setIdle(false);
-          try {
-            assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
-          }catch (java.lang.AssertionError e){
-            e.printStackTrace();
-          }
+          assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
           assert mySQLSession.currentProxyBuffer() == null;
-          /////////////////////////////////////////
-          if (shouldClear(mySQLSession)) {
-            continue;
-          }
-          //////////////////////////////////////////////////
+
           if (!mySQLSession.isOpen()) {
-            mycatReactorThread.addNIOJob(() -> {
+            thread.addNIOJob(() -> {
               mySQLSession.close(false, "mysql session is close in idle");
             });
             continue;
-          } else if (mySQLSession.isActivated()) {
-            mySQLSession.setIdle(false);
-            mySQLSession.switchNioHandler(null);
-            MycatMonitor.onGetIdleMysqlSession(mySQLSession);
+          }
+          mySQLSession.setIdle(false);
+          mySQLSession.switchNioHandler(null);
+          MycatMonitor.onGetIdleMysqlSession(mySQLSession);
+          if (shouldClear(mySQLSession)) {
+            continue;
+          }
+
+          if (mySQLSession.isActivated()) {
             asyncTaskCallBack.onSession(mySQLSession, this, null);
             return;
           } else {
@@ -171,6 +165,7 @@ public final class MySQLSessionManager implements
         }
       }
     } catch (Exception e) {
+      LOGGER.error("",e);
       asyncTaskCallBack
           .onException(e, this,
               null);
@@ -180,11 +175,16 @@ public final class MySQLSessionManager implements
   /**
    * @param ids 如果id失效 设置为-id
    */
-  public LinkedList<MySQLClientSession> getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
+  public MySQLClientSession getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
       List<SessionIdAble> ids) {
+    boolean random = ThreadLocalRandom.current().nextBoolean();
     //dataSource
     if (datasource != null && (ids == null || ids.size() == 0)) {
-      return this.idleDatasourcehMap.get(datasource);
+      LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
+      if (group==null||group.isEmpty()){
+        return null;
+      }
+      return random ? group.removeFirst() : group.removeLast();
     }
     //dataSource ids
     if (datasource != null) {
@@ -198,9 +198,8 @@ public final class MySQLSessionManager implements
   }
 
 
-  private static LinkedList<MySQLClientSession> searchMap(List<SessionIdAble> ids,
+  private MySQLClientSession searchMap(List<SessionIdAble> ids,
       Map<Integer, MySQLClientSession> source) {
-    LinkedList<MySQLClientSession> sessions = new LinkedList<>();
     int size = ids.size();
     for (int i = 0; i < size; i++) {
       int id = ids.get(i).getSessionId();
@@ -209,10 +208,13 @@ public final class MySQLSessionManager implements
       }
       MySQLClientSession mySQLClientSession = source.get(id);
       if (mySQLClientSession.isIdle()) {
-        sessions.addLast(mySQLClientSession);
+        LinkedList<MySQLClientSession> sessions = this.idleDatasourcehMap
+            .get(mySQLClientSession.getDatasource());
+        sessions.remove(mySQLClientSession);
+        return mySQLClientSession;
       }
     }
-    return sessions;
+    return null;
   }
 
 
@@ -250,7 +252,7 @@ public final class MySQLSessionManager implements
         return;
       }
       //////////////////////////////////////////////////
-
+      session.setCursorStatementId(-1);
       session.resetPacket();
       session.setIdle(true);
       session.switchNioHandler(IdleHandler.INSTANCE);

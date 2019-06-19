@@ -1,6 +1,5 @@
 package io.mycat.command.prepareStatement;
 
-import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.SessionCallBack;
@@ -72,7 +71,7 @@ public class PrepareStmtProxy {
   public void execute(long statementId, byte flags, int numParams,
       byte[] rest) {
     PrepareInfo prepareInfo = prepareMap.get(statementId);
-    prepareInfo.execute(statementId, flags, numParams, rest);
+    prepareInfo.execute(flags, numParams, rest);
 
   }
   public void reset(long statementId) {
