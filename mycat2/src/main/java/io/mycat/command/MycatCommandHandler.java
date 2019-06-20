@@ -70,8 +70,8 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
   @Override
   public void handleInitDb(String db, MycatSession mycat) {
-    mycat.setLastMessage("mycat unsupport  handleInitDb");
-    mycat.writeErrorEndPacket();
+    mycat.useSchema(ProxyRuntime.INSTANCE.getSchemaBySchemaName(db));
+    mycat.writeOkEndPacket();
   }
 
   @Override

@@ -96,7 +96,7 @@ public class MySQLPacketUtil {
 
   public static final byte[] generateColumnDef(String name, int type, int charsetIndex,
       Charset charset) {
-    return generateColumnDef(name, name, type, 0, 0, charsetIndex, charset);
+    return generateColumnDef("","","",name, name, type, 0, 0, charsetIndex,192, charset);
   }
 
   public static final byte[] generateEof(
@@ -216,12 +216,16 @@ public class MySQLPacketUtil {
     return payloayEstimateMaxSize;
   }
 
-  public static final byte[] generateColumnDef(String name, String orgName, int type,
+  public static final byte[] generateColumnDef(String database,String table,String originalTable,String columnName, String orgName, int type,
       int columnFlags,
-      int columnDecimals, int charsetIndex, Charset charset) {
+      int columnDecimals, int charsetIndex,int length, Charset charset) {
     ColumnDefPacketImpl c = new ColumnDefPacketImpl();
+    c.setColumnSchema(database.getBytes(charset));
+    c.setColumnOrgTable(originalTable.getBytes(charset));
+    c.setColumnTable(table.getBytes(charset));
     c.setColumnCharsetSet(charsetIndex);
-    c.setColumnName(encode(name, charset));
+    c.setColumnLength(length);
+    c.setColumnName(encode(columnName, charset));
     c.setColumnOrgName(encode(orgName, charset));
     c.setColumnType(type);
     c.setColumnFlags(columnFlags);

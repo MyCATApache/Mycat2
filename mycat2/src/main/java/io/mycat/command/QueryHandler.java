@@ -50,6 +50,7 @@ import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.security.MycatUser;
 import io.mycat.sqlparser.util.BufferSQLContext;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map.Entry;
@@ -318,7 +319,10 @@ public interface QueryHandler {
 
   default void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
     mycat.writeColumnCount(1);
-    mycat.writeColumnDef("Dababase", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+    byte[] bytes = MySQLPacketUtil
+        .generateColumnDef("information_schema","SCHEMATA","SCHEMATA","Database","SCHEMA_NAME",MySQLFieldsType.FIELD_TYPE_VAR_STRING,
+            0x1,0,mycat.charsetIndex(),192, Charset.defaultCharset());
+    mycat.writeBytes(bytes);
     mycat.writeColumnEndPacket();
     for (MycatSchema schema : mycat.getUser().getSchemas().values()) {
       String schemaName = schema.getSchemaName();
