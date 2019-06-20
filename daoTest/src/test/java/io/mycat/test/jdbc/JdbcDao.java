@@ -46,7 +46,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Assert;
@@ -221,7 +220,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/test?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC";
+  final static String url = "jdbc:mysql://localhost:3306/db1?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=true";
   final static String username = "root";
   final static String password = "123456";
 
@@ -447,7 +446,7 @@ public class JdbcDao extends ModualTest {
           try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, 1);
             ByteOutputStream out = new ByteOutputStream();
-            out.write(IntStream.range(0,18193).mapToObj(i->String.valueOf(i)).collect(
+            out.write(IntStream.range(0, 18193).mapToObj(i -> String.valueOf(i)).collect(
                 Collectors.joining()).getBytes());
             ByteInputStream inputStream = out.newInputStream();
             statement.setBlob(2, inputStream);
@@ -469,7 +468,7 @@ public class JdbcDao extends ModualTest {
         (future, connection) -> {
           try (Statement statement = connection.createStatement()) {
             statement.execute("truncate travelrecord;");
-            for (int i = 0; i <10; i++) {
+            for (int i = 0; i < 10; i++) {
               String s1 =
                   "INSERT INTO `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`) "
                       + "VALUES ('"
@@ -489,24 +488,46 @@ public class JdbcDao extends ModualTest {
             }
             String sql = "select * from travelrecord;";
 
-            PreparedStatement pstat = connection.prepareStatement(sql,java.sql.ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
+            PreparedStatement pstat = connection
+                .prepareStatement(sql, java.sql.ResultSet.TYPE_FORWARD_ONLY,
+                    ResultSet.CONCUR_READ_ONLY);
             //最大查询到第几条记录
             pstat.setMaxRows(4);
             pstat.setFetchSize(1);
 
-
             ResultSet resultSet = pstat.executeQuery();
 
-            while (resultSet.next()){
+            while (resultSet.next()) {
               System.out.println("------------------");
               System.out.println(resultSet.getString(1));
               System.out.println("------------------");
             }
-          }catch (Exception e){
+          } catch (Exception e) {
             e.printStackTrace();
-          }finally {
+          } finally {
             compelete(future);
           }
         });
   }
+
+
+//  @Test
+//  public void loadata()
+//      throws IOException, ExecutionException, InterruptedException {
+//    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+//        (future, connection) -> {
+//          String loadDataSql = "LOAD DATA LOCAL INFILE 'd:/sql.csv' IGNORE INTO TABLE travelrecord (id,user_id,traveldate,fee,days,`blob`)";
+//          try (PreparedStatement statement = connection.prepareStatement(loadDataSql)) {
+//            ClientPreparedStatement preparedStatement = (ClientPreparedStatement) statement;
+//            ByteInputStream inputStream = new ByteInputStream();
+//            inputStream.setBuf("3,121,2011-02-03,123,2,1".getBytes());
+//            preparedStatement.setLocalInfileInputStream(inputStream);
+//            preparedStatement.execute();
+//          }catch (Exception e){
+//            e.printStackTrace();
+//          }finally {
+//            compelete(future);
+//          }
+//        });
+//  }
 }
