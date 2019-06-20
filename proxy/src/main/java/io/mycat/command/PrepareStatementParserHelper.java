@@ -20,7 +20,7 @@ public interface PrepareStatementParserHelper {
       MycatSession session);
 
   void handlePrepareStatementClose(long statementId, MycatSession session);
-
+  void handlePrepareStatementFetch(long statementId, long row);
   void handlePrepareStatementReset(long statementId, MycatSession session);
 
   int getNumParamsByStatementId(long statementId);

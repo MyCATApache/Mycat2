@@ -18,6 +18,7 @@ public class MySQLSynContext {
 
   //Statement: SET sqlSelectLimit=99
   long sqlSelectLimit = -1;
+  long netWriteTimeout = -1;
 
   public MySQLSynContext(MycatSession session) {
     this.dataNodeName = session.getDataNode();
@@ -165,5 +166,13 @@ public class MySQLSynContext {
 
   public long getSqlSelectLimit() {
     return sqlSelectLimit;
+  }
+
+  public long getNetWriteTimeout() {
+    return netWriteTimeout;
+  }
+
+  public void setNetWriteTimeout(long netWriteTimeout) {
+    this.netWriteTimeout = netWriteTimeout;
   }
 }

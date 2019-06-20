@@ -45,6 +45,7 @@ public final class MySQLServerStatus {
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
   protected int localInFileRequestState = LocalInFileRequestParseHelper.COM_QUERY;
   private long selectLimit = -1;
+  private long netWriteTimeout;
 
   public boolean multiStatementSupport = false;
   private String charsetSetResult;
@@ -197,5 +198,18 @@ public final class MySQLServerStatus {
 
   public void setSelectLimit(long selectLimit) {
     this.selectLimit = selectLimit;
+  }
+
+  public void setNetWriteTimeout(long netWriteTimeout) {
+    this.netWriteTimeout = netWriteTimeout;
+  }
+
+  /**
+   * Getter for property 'netWriteTimeout'.
+   *
+   * @return Value for property 'netWriteTimeout'.
+   */
+  public long getNetWriteTimeout() {
+    return netWriteTimeout;
   }
 }

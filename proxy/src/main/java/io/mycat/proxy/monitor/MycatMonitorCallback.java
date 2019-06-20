@@ -263,4 +263,8 @@ public interface MycatMonitorCallback {
   void onPacketExchangerRead(Session session);
 
   void onPacketExchangerWrite(Session session);
+
+  void onFetchCommandStart(MycatSession mycat);
+
+  void onFetchCommandEnd(MycatSession mycat);
 }

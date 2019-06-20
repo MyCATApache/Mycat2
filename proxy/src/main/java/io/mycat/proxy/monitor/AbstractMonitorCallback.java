@@ -10,6 +10,16 @@ import java.nio.channels.ClosedChannelException;
 public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
 
   @Override
+  public void onFetchCommandStart(MycatSession mycat) {
+
+  }
+
+  @Override
+  public void onFetchCommandEnd(MycatSession mycat) {
+
+  }
+
+  @Override
   public void onPacketExchangerRead(Session session) {
 
   }

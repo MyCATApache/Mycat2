@@ -291,6 +291,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
         return;
       }
     } catch (Exception e) {
+      logger.error("",e);
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
       Objects.requireNonNull(callBackAndReset);
       mysql.setCallBack(null);

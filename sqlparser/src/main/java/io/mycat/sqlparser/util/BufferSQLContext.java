@@ -81,6 +81,7 @@ public class BufferSQLContext {
   public static final byte SHUTDOWN_SQL = 44;
   public static final byte SELECT_VARIABLES = 46;
   public static final byte SET_SQL_SELECT_LIMIT = 47;
+  public static final byte SET_NET_WRITE_TIMEOUT = 48;
   private static int tblResultArraySize = 32;//todo : 测试期先写死，后期考虑从设置参数中读取
   private final SQLMapAnnotation annotation = new SQLMapAnnotation();
 
@@ -115,6 +116,7 @@ public class BufferSQLContext {
   private boolean hasWhere;
   private HashArray hashArray = new HashArray();
   private long sqlSelectLimit = -1;
+  private long netWriteTimeout = 0;
 
   public Boolean isAutocommit() {
     return autocommit;
@@ -627,5 +629,14 @@ public class BufferSQLContext {
    */
   public void setSqlSelectLimit(long sqlSelectLimit) {
     this.sqlSelectLimit = sqlSelectLimit;
+  }
+
+
+  public void setNetWriteTimeout(long l) {
+    netWriteTimeout = l;
+  }
+
+  public long getNetWriteTimeout() {
+    return netWriteTimeout;
   }
 }

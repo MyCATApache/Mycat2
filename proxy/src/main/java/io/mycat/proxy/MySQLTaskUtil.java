@@ -20,6 +20,7 @@ import io.mycat.logTip.ReplicaTip;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
+import io.mycat.proxy.handler.ProxyResponseType;
 import io.mycat.proxy.handler.backend.MySQLQuery;
 import io.mycat.proxy.handler.backend.MySQLSessionSyncTask;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
@@ -45,29 +46,30 @@ public class MySQLTaskUtil {
 
 
   public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query) {
+      MySQLQuery query,ProxyResponseType responseType) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyBackend(mycat, payload, dataNodeName, query);
+        .proxyBackend(mycat, payload, dataNodeName, query,responseType);
   }
 
   public static void proxyBackendWithCollector(MycatSession mycat, byte[] payload,
       String dataNodeName,
-      MySQLQuery query,
+      MySQLQuery query,ProxyResponseType responseType,
       MySQLPacketCallback callback) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, callback);
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query,responseType, callback);
   }
 
   public static void withBackend(MycatSession mycat, byte[] payload,
       String dataNodeName,
       MySQLQuery query,
+      ProxyResponseType responseType,
       MySQLPacketCallback callback) {
 
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, callback);
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType,callback);
   }
 
   public static void withBackend(MycatSession mycat, String dataNodeName, MySQLQuery query,

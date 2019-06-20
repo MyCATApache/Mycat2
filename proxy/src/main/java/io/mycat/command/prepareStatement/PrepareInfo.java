@@ -8,6 +8,8 @@ import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
+import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
+import io.mycat.proxy.handler.ProxyResponseType;
 import io.mycat.proxy.handler.backend.MySQLSessionSyncTask;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.handler.backend.PrepareStmtTask;
@@ -195,7 +197,7 @@ public class PrepareInfo {
       MySQLClientSession session = mycat.getMySQLSession();
       long statementId = session.getCursorStatementId();
       MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateResetPacket(statementId),
-          session.getDataNode().getName(), null);
+          session.getDataNode().getName(), null, ProxyResponseType.QUERY);
       return;
     }
   }
@@ -266,7 +268,7 @@ public class PrepareInfo {
   private void innerExecute(long statementId, byte flags, int numParams, byte[] rest) {
     MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
             .generateExecutePayload(statementId, flags, numParams, rest),
-        mycat.getDataNode(), null);
+        mycat.getDataNode(), null,ProxyResponseType.QUERY);
   }
 
   /**
@@ -280,9 +282,14 @@ public class PrepareInfo {
 
   public void fetch(long numOfRows) {
     MySQLClientSession mySQLSession = mycat.getMySQLSession();
+    if (mySQLSession == null){
+      mycat.setLastMessage("not fetch");
+      mycat.writeErrorEndPacket();
+      return;
+    }
     MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
-            .generateFetchPacket(mySQLSession.getCursorStatementId(), numOfRows),
-        mycat.getDataNode(), null);
+            .generateFetchPayload(mySQLSession.getCursorStatementId(), numOfRows),
+        mycat.getDataNode(), null,ProxyResponseType.MULTI_RESULTSET);
   }
 
   public boolean existLongData() {

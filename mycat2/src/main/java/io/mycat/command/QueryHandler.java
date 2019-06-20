@@ -20,6 +20,7 @@ import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_VARIABLES;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_AUTOCOMMIT_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_CHARSET_RESULT;
+import static io.mycat.sqlparser.util.BufferSQLContext.SET_NET_WRITE_TIMEOUT;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_SQL_SELECT_LIMIT;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_TRANSACTION_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
@@ -37,6 +38,7 @@ import io.mycat.beans.mysql.MySQLIsolationLevel;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.handler.ProxyResponseType;
 import io.mycat.proxy.handler.backend.MySQLQuery;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
@@ -90,7 +92,7 @@ public interface QueryHandler {
     }
     if (mycat.isBindMySQLSession()) {
       MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-          mycat.getMySQLSession().getDataNode().getName(), null);
+          mycat.getMySQLSession().getDataNode().getName(), null, ProxyResponseType.QUERY);
       return;
     }
     try {
@@ -120,6 +122,11 @@ public interface QueryHandler {
         }
         case SET_SQL_SELECT_LIMIT: {
           mycat.setSelectLimit(sqlContext.getSqlSelectLimit());
+          mycat.writeOkEndPacket();
+          return;
+        }
+        case SET_NET_WRITE_TIMEOUT: {
+          mycat.setNetWriteTimeout(sqlContext.getNetWriteTimeout());
           mycat.writeOkEndPacket();
           return;
         }
@@ -170,7 +177,7 @@ public interface QueryHandler {
         case SHOW_SQL:
           String defaultDataNode = useSchema.getDefaultDataNode();
           MySQLTaskUtil
-              .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode, null);
+              .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode, null,ProxyResponseType.QUERY);
           return;
         case SHOW_VARIABLES_SQL: {
           mycat.writeColumnCount(2);
@@ -235,7 +242,7 @@ public interface QueryHandler {
                       .getLoadBalanceByBalanceName(resultRoute.getBalance()));
                   MySQLTaskUtil
                       .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), query);
+                          route.getDataNode(), query,ProxyResponseType.QUERY);
                   return;
               }
             }
@@ -250,7 +257,7 @@ public interface QueryHandler {
             case DB_IN_ONE_SERVER:
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-                      useSchema.getDefaultDataNode(), null);
+                      useSchema.getDefaultDataNode(), null,ProxyResponseType.QUERY);
               return;
             case DB_IN_MULTI_SERVER:
             case ANNOTATION_ROUTE:
@@ -272,7 +279,7 @@ public interface QueryHandler {
               OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-                      resultRoute1.getDataNode(), null);
+                      resultRoute1.getDataNode(), null,ProxyResponseType.QUERY);
               break;
             }
             case GLOBAL_TABLE_WRITE_RESULT_ROUTE: {

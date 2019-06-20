@@ -460,4 +460,12 @@ public final class MycatMonitor {
   public static void onDaemonCommandEnd(MycatSession mycat) {
     callback.onDaemonCommandEnd(mycat);
   }
+
+  public static void onFetchCommandStart(MycatSession mycat) {
+    callback.onFetchCommandStart(mycat);
+  }
+
+  public static void onFetchCommandEnd(MycatSession mycat) {
+    callback.onFetchCommandEnd(mycat);
+  }
 }

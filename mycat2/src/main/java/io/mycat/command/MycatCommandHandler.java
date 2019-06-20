@@ -233,6 +233,11 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
   }
 
   @Override
+  public void handlePrepareStatementFetch(long statementId, long row) {
+    prepareStmtProxy.fetch(statementId,row);
+  }
+
+  @Override
   public void handlePrepareStatementReset(long statementId, MycatSession session) {
     prepareStmtProxy.reset(statementId);
   }

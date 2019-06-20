@@ -6,7 +6,6 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.callback.ResultSetCallBack;
-import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -15,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class MySQLSessionSyncTask {
+
   protected final static Logger LOGGER = LoggerFactory.getLogger(
       MySQLSessionSyncTask.class);
   private MySQLClientSession mysql;
@@ -22,7 +22,7 @@ public class MySQLSessionSyncTask {
   MySQLSynContext context;
   SessionSyncCallback callBack;
 
-  public MySQLSessionSyncTask(MySQLSynContext context,MySQLClientSession mysql, Object sender,
+  public MySQLSessionSyncTask(MySQLSynContext context, MySQLClientSession mysql, Object sender,
       SessionSyncCallback callBack) {
     this.context = context;
     this.mysql = mysql;
@@ -37,11 +37,14 @@ public class MySQLSessionSyncTask {
     String charset = context.getCharset();
     MySQLIsolation isolation = context.getIsolation();
     long sqlSelectLimit = context.getSqlSelectLimit();
+    long netWriteTimeout = context.getNetWriteTimeout();
     if (dataNode.equals(mysql.getDataNode())) {
       if (autoCommit == mysql.isAutomCommit() &&
           charset.equals(mysql.getCharset()) &&
           isolation.equals(mysql.getIsolation()) && Objects.equals(characterSetResult,
-          mysql.getCharacterSetResult())
+          mysql.getCharacterSetResult()) &&
+          mysql.getSelectLimit() == sqlSelectLimit &&
+          mysql.getNetWriteTimeout() == netWriteTimeout
       ) {
         callBack.onSession(mysql, sender, null);
         return;
@@ -53,8 +56,9 @@ public class MySQLSessionSyncTask {
             + ";" + "SET names " + charset + ";"
             + ("SET character_set_results =" + (
             characterSetResult == null || "".equals(characterSetResult) ? "NULL"
-                : characterSetResult))+";"
-        +("SET SQL_SELECT_LIMIT="+((sqlSelectLimit==-1)?"DEFAULT":sqlSelectLimit));
+                : characterSetResult)) + ";"
+            + ("SET SQL_SELECT_LIMIT=" + ((sqlSelectLimit == -1) ? "DEFAULT" : sqlSelectLimit) + ";"
+            + ("SET net_write_timeout=" + (netWriteTimeout == -1 ? "default" : netWriteTimeout)));
     ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, sql,
         new ResultSetCallBack<MySQLClientSession>() {
 
@@ -66,6 +70,7 @@ public class MySQLSessionSyncTask {
             mysql.setIsolation(isolation);
             mysql.setCharacterSetResult(characterSetResult);
             mysql.setSelectLimit(sqlSelectLimit);
+            mysql.setNetWriteTimeout(netWriteTimeout);
             assert autoCommit == mysql.isAutomCommit();
             MycatMonitor.onSynchronizationState(mysql);
             callBack.onSession(mysql, sender, attr);
@@ -80,7 +85,7 @@ public class MySQLSessionSyncTask {
               callBack.onException(new MycatExpection(messageString), this, null);
               return;
             } else {
-              callBack.onErrorPacket(errorPacket, false,mysql, this,null);
+              callBack.onErrorPacket(errorPacket, false, mysql, this, null);
               return;
             }
           }

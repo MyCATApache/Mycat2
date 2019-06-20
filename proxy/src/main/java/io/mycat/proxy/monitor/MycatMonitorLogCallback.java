@@ -776,4 +776,18 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       LOGGER.debug("sessionId:{}", session.sessionId());
     }
   }
+
+  @Override
+  public void onFetchCommandStart(MycatSession mycat) {
+    if (onCommand) {
+      LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
+
+  @Override
+  public void onFetchCommandEnd(MycatSession mycat) {
+    if (onCommand) {
+      LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
 }

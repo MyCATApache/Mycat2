@@ -191,7 +191,13 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     setState(ComQueryState.FIRST_PACKET);
     setCurrentComQuerySQLType(0x22);
   }
+  /**
+   * 处理 multi  resultset
+   */
+  default void prepareReveiceMultiResultSetResponse() {
+    setState(ComQueryState.RESULTSET_ROW);
 
+  }
   void setCapabilityFlags(int serverCapability);
 
   /**
@@ -834,6 +840,8 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     int endPos = getEndPos();
     if (hasMoreResult(getServerStatus())) {
       setState(ComQueryState.FIRST_PACKET);
+    }else  if (hasFatch(getServerStatus())){
+      setState(ComQueryState.RESULTSET_ROW);
     } else {
       setState(ComQueryState.COMMAND_END);
       setMySQLPayloadType(ROW_FINISHED);

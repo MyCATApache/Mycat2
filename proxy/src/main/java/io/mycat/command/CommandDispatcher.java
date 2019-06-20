@@ -162,6 +162,16 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
           MycatMonitor.onCloseCommandEnd(mycat);
           break;
         }
+        case MySQLCommandType.COM_STMT_FETCH: {
+          MycatMonitor.onFetchCommandStart(mycat);
+          curPacket.readByte();
+          long statementId = curPacket.readFixInt(4);
+          long row = curPacket.readFixInt(4);
+          mycat.resetCurrentProxyPayload();
+          commandHandler.handlePrepareStatementFetch(statementId, row);
+          MycatMonitor.onFetchCommandEnd(mycat);
+          break;
+        }
         case MySQLCommandType.COM_STMT_RESET: {
           MycatMonitor.onResetCommandStart(mycat);
           curPacket.readByte();

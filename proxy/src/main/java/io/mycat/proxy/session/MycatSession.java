@@ -541,4 +541,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public void setSelectLimit(long sqlSelectLimit) {
     this.serverStatus.setSelectLimit(sqlSelectLimit);
   }
+
+  public void setNetWriteTimeout(long netWriteTimeout) {
+    this.serverStatus.setNetWriteTimeout(netWriteTimeout);
+  }
 }

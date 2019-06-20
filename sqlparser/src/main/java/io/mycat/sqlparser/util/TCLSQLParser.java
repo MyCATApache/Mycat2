@@ -246,18 +246,21 @@ public class TCLSQLParser {
       ++pos;
       context.setCharsetSetResult(context.getTokenString(pos));
       context.setSQLType(BufferSQLContext.SET_CHARSET_RESULT);
-    }
-    else if (hashArray.getHash(pos)==TokenHash.SQL_SELECT_LIMIT) {
-      ++pos;context.setSQLType(BufferSQLContext.SET_SQL_SELECT_LIMIT);
-      if(hashArray.getHash(pos)==TokenHash.DEFAULT){
+    } else if (hashArray.getHash(pos) == TokenHash.SQL_SELECT_LIMIT) {
+      ++pos;
+      context.setSQLType(BufferSQLContext.SET_SQL_SELECT_LIMIT);
+      if (hashArray.getHash(pos) == TokenHash.DEFAULT) {
         context.setSqlSelectLimit(-1);
-      }else {
+      } else {
         long l = TokenizerUtil.pickNumber(pos, hashArray, context.getBuffer());
         context.setSqlSelectLimit(l);
       }
-    }
-
-    else {
+    } else if (hashArray.getHash(pos) == TokenHash.NET_WRITE_TIMEOUT) {
+      ++pos;
+      long l = TokenizerUtil.pickNumber(pos, hashArray, context.getBuffer());
+      context.setNetWriteTimeout(l);
+      context.setSQLType(BufferSQLContext.SET_NET_WRITE_TIMEOUT);
+    } else {
       //TODO 其他SET 命令支持
       context.setSQLType(BufferSQLContext.SET_SQL);
     }

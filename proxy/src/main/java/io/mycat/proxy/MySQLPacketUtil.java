@@ -472,12 +472,12 @@ public class MySQLPacketUtil {
     }
   }
 
-  public static byte[] generateFetchPacket(long cursorStatementId, long numOfRows) {
+  public static byte[] generateFetchPayload(long cursorStatementId, long numOfRows) {
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(9)) {
       writer.writeByte(0x1c);
       writer.writeFixInt(4, cursorStatementId);
       writer.writeFixInt(4, numOfRows);
-      return  MySQLPacketUtil.generateMySQLPacket(0,writer.toByteArray());
+      return  writer.toByteArray();
     }
   }
 }
