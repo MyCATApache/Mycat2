@@ -64,8 +64,8 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     buffer.writeLenencBytesWithNullable(columnOrgTable);
     buffer.writeLenencBytesWithNullable(columnName);
     buffer.writeLenencBytesWithNullable(columnOrgName);
-    buffer.writeByte(columnNextLength);
-    buffer.writeFixInt(2, columnNextLength);
+    buffer.writeLenencInt(0x0c);
+    buffer.writeFixInt(2, columnCharsetSet);
     buffer.writeFixInt(4, columnLength);
     buffer.writeByte(columnType);
     buffer.writeFixInt(2, columnFlags);
