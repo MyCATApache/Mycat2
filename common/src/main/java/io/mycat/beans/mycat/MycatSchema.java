@@ -27,7 +27,7 @@ public class MycatSchema {
   private long sqlMaxLimit = -1;
 
 
-  public SchemaType getSchema() {
+  public SchemaType getSchemaType() {
     return getSchemaConfig().getSchemaType();
   }
 

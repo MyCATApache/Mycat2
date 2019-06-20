@@ -37,17 +37,14 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
     MycatMonitor.onCommandStart(mycat);
     try {
       MySQLPacket curPacket = mycat.currentProxyPayload();
-      if (mycat.getLocalInFileState() == LocalInFileRequestParseHelper.CONTENT_OF_FILE) {
-        curPacket.readByte();
-        byte[] bytes = curPacket.readEOFStringBytes();
-        mycat.resetCurrentProxyPayload();
-        commandHandler.handleContentOfFilename(bytes, mycat);
-        mycat.setLocalInFileState(EMPTY_PACKET);
-        return;
-      } else if (mycat.getLocalInFileState() == EMPTY_PACKET) {
-        mycat.resetCurrentProxyPayload();
+      boolean isEmptyPayload = curPacket.readFinished();
+      if (isEmptyPayload){
         commandHandler.handleContentOfFilenameEmptyOk();
-        mycat.setLocalInFileState(LocalInFileRequestParseHelper.COM_QUERY);
+        mycat.resetCurrentProxyPayload();
+        return;
+      }else if (mycat.shouldHandleContentOfFilename()){
+        handleContentOfFilename(curPacket.readEOFStringBytes(),mycat);
+        mycat.resetCurrentProxyPayload();
         return;
       }
       byte head = curPacket.getByte(curPacket.packetReadStartIndex());
@@ -348,6 +345,7 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
           break;
         }
         default: {
+
           assert false;
         }
       }

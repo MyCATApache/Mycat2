@@ -478,6 +478,8 @@ public enum MySQLPacketExchanger {
               MySQLPayloadType payloadType = mysql.getPayloadType();
               if (payloadType != MySQLPayloadType.LOAD_DATA_REQUEST) {
                 onClearInNormalResponse(mycat, mysql);
+              }else {
+                System.out.println();
               }
             }
           }

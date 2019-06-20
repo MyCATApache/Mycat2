@@ -15,7 +15,9 @@
 package io.mycat.router;
 
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.config.schema.SchemaType;
 import io.mycat.logTip.RouteNullChecker;
+import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
@@ -65,10 +67,20 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
         .toMapAndClear(this.context.getStaticAnnotation());
     String balance = sa.getBalance();
     Boolean runOnMaster = sa.getRunOnMaster();
+
+
     //判断有没有schema
     if (sa.getSchema() != null) {
       defaultSchema = config.getSchemaBySchemaName(sa.getSchema());
+      if (defaultSchema.getSchemaType()== SchemaType.DB_IN_ONE_SERVER){
+        OneServerResultRoute routeResult = new OneServerResultRoute();
+        routeResult.setDataNode(defaultSchema.getDefaultDataNode());
+        routeResult.setSql(sql);
+        return routeResult
+            .setBalance(balance).setRunOnMaster(runOnMaster);
+      }
     }
+
 
     int schemaCount = sqlContext.getSchemaCount();
     if (schemaCount == 0) {

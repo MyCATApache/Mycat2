@@ -468,13 +468,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public int getLocalInFileState() {
+  public boolean shouldHandleContentOfFilename() {
     return this.serverStatus.getLocalInFileRequestState();
   }
 
   @Override
-  public void setLocalInFileState(int value) {
-    this.serverStatus.setLocalInFileRequestState(value);
+  public void setHandleContentOfFilename(boolean need) {
+    this.serverStatus.setLocalInFileRequestState(need);
   }
 
 

@@ -10,24 +10,17 @@ import io.mycat.proxy.session.MycatSession;
  **/
 public interface LocalInFileRequestParseHelper {
 
-  int COM_QUERY = 0;
-  int LOCAL_INFILE_REQUEST = 1;
-  int CONTENT_OF_FILE = 2;
-  int EMPTY_PACKET = 3;
-
   void handleQuery(byte[] sql, MycatSession seesion);
 
   void handleContentOfFilename(byte[] sql, MycatSession seesion);
-
-//  void writeLocalInFileRequestEndPacket(byte[] fileName,MycatSession seesion);
 
   void handleContentOfFilenameEmptyOk();
 
   interface LocalInFileSession {
 
-    int getLocalInFileState();
+    boolean shouldHandleContentOfFilename();
 
-    void setLocalInFileState(int value);
+    void setHandleContentOfFilename(boolean need);
   }
 
 }

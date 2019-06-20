@@ -255,21 +255,21 @@ public interface QueryHandler {
         }
 
         default:
-          switch (useSchema.getSchema()) {
-            case DB_IN_ONE_SERVER:
-              MySQLTaskUtil
-                  .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-                      useSchema.getDefaultDataNode(), null, ResponseType.QUERY);
-              return;
-            case DB_IN_MULTI_SERVER:
-            case ANNOTATION_ROUTE:
-            case SQL_PARSE_ROUTE:
-              if (sqlContext.getSQLType() != 0 & sqlContext.getTableCount() != 1) {
-                mycat.setLastMessage("unsupport sql");
-                mycat.writeErrorEndPacket();
-                return;
-              }
-          }
+//          switch (useSchema.getSchemaType()) {
+//            case DB_IN_ONE_SERVER:
+//              MySQLTaskUtil
+//                  .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
+//                      useSchema.getDefaultDataNode(), null, ResponseType.QUERY);
+//              return;
+//            case DB_IN_MULTI_SERVER:
+//            case ANNOTATION_ROUTE:
+//            case SQL_PARSE_ROUTE:
+//              if (sqlContext.getSQLType() != 0 & sqlContext.getTableCount() != 1) {
+//                mycat.setLastMessage("unsupport sql");
+//                mycat.writeErrorEndPacket();
+//                return;
+//              }
+//          }
 
           ResultRoute resultRoute = router().enterRoute(useSchema, sqlContext, sql);
           if (resultRoute == null) {

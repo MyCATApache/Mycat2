@@ -168,7 +168,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     boolean runOnMaster = bufferSQLContext.isSimpleSelect();
     MySQLQuery mySQLQuery = new MySQLQuery();
     mySQLQuery.setRunOnMaster(runOnMaster);
-    if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
+    if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
       String dataNode = schema.getDefaultDataNode();
       mycat.switchDataNode(dataNode);
       prepareStmtProxy.newReadyPrepareStmt(sql,dataNode,mySQLQuery,new PrepareSessionCallback(){
@@ -209,7 +209,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
       return;
     }
 
-    if (schema.getSchema() == SchemaType.DB_IN_ONE_SERVER) {
+    if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
       prepareStmtProxy.appendLongData(statementId, paramId, data);
     } else {
       mycat.setLastMessage(

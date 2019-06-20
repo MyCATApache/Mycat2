@@ -43,7 +43,7 @@ public final class MySQLServerStatus {
   private String clientUser;
   private MySQLAutoCommit autoCommit;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
-  protected int localInFileRequestState = LocalInFileRequestParseHelper.COM_QUERY;
+  protected boolean localInFileRequestState = false;
   private long selectLimit = -1;
   private long netWriteTimeout;
 
@@ -58,11 +58,11 @@ public final class MySQLServerStatus {
     this.multiStatementSupport = multiStatementSupport;
   }
 
-  public int getLocalInFileRequestState() {
+  public boolean getLocalInFileRequestState() {
     return localInFileRequestState;
   }
 
-  public void setLocalInFileRequestState(int localInFileRequestState) {
+  public void setLocalInFileRequestState(boolean localInFileRequestState) {
     this.localInFileRequestState = localInFileRequestState;
   }
 
