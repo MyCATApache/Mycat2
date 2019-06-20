@@ -221,7 +221,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/test?useServerPrepStmts=true";
+  final static String url = "jdbc:mysql://localhost:8066/test?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC";
   final static String username = "root";
   final static String password = "123456";
 
@@ -375,42 +375,6 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  @Test
-  public void onGetIdleBackendExpection()
-      throws IOException, ExecutionException, InterruptedException {
-    AtomicInteger expectClear = new AtomicInteger(0);
-    AtomicInteger expectClose = new AtomicInteger(0);
-    AbstractMonitorCallback callback = new AbstractMonitorCallback() {
-      MySQLClientSession session;
-
-      @Override
-      public void onAddIdleMysqlSession(MySQLClientSession session) {
-        Assert.assertNull(this.session);
-        this.session = session;
-        throw new RuntimeException("test exception");
-      }
-
-      @Override
-      public void onCloseMysqlSession(MySQLClientSession session, boolean noraml, String reson) {
-        if (expectClear.get() == 0) {
-          Assert.assertSame(this.session, session);
-          expectClear.incrementAndGet();
-        }
-      }
-    };
-    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, callback,
-        (future) -> {
-          try (Connection connection = getConnection()) {
-            connection.createStatement().execute("select 1");
-          } catch (Exception e) {
-            Assert.assertTrue(expectClear.get() > 0);
-            Assert.assertTrue(expectClose.get() > 0);
-          } finally {
-            compelete(future);
-          }
-        }
-    );
-  }
 
   @Test
   public void onProxyBackendReadExpection()
@@ -497,6 +461,7 @@ public class JdbcDao extends ModualTest {
         });
   }
 
+
   @Test
   public void cursor()
       throws IOException, ExecutionException, InterruptedException {
@@ -510,7 +475,7 @@ public class JdbcDao extends ModualTest {
                       + "VALUES ('"
                       + i
                       + "', '"
-                      + "1"
+                      + "1999999999999999"
                       + "', '"
                       + "2019-05-07"
                       + "', '"
@@ -523,12 +488,20 @@ public class JdbcDao extends ModualTest {
               statement.execute(s1);
             }
             String sql = "select * from travelrecord;";
-            PreparedStatement pstat = connection.prepareStatement(sql,ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
+
+            PreparedStatement pstat = connection.prepareStatement(sql,java.sql.ResultSet.TYPE_FORWARD_ONLY,ResultSet.CONCUR_READ_ONLY);
             //最大查询到第几条记录
-            pstat.setMaxRows(99);
-            ResultSet rs = pstat.executeQuery();
-            //将游标移动到第一条记录
-            boolean first = rs.first();
+            pstat.setMaxRows(4);
+            pstat.setFetchSize(1);
+
+
+            ResultSet resultSet = pstat.executeQuery();
+
+            while (resultSet.next()){
+              System.out.println("------------------");
+              System.out.println(resultSet.getString(1));
+              System.out.println("------------------");
+            }
           }catch (Exception e){
             e.printStackTrace();
           }finally {

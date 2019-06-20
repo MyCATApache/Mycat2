@@ -14,17 +14,10 @@
  */
 package io.mycat.proxy.handler;
 
-import static io.mycat.proxy.MySQLTaskUtil.withBackend;
-
 import io.mycat.MycatExpection;
-import io.mycat.beans.mycat.MySQLDataNode;
-import io.mycat.beans.mycat.MycatDataNode;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.callback.TaskCallBack;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.backend.MySQLQuery;
@@ -83,7 +76,6 @@ public enum MySQLPacketExchanger {
   private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
     mycatSession.resetPacket();
     mysql.resetPacket();
-    mysql.setNoResponse(false);
 
     if (!mysql.isMonopolized()) {
       mycatSession.setMySQLSession(null);
@@ -97,37 +89,42 @@ public enum MySQLPacketExchanger {
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query,ProxyResponseType responseType) {
-    proxyBackend(mycat, payload, dataNodeName,query,responseType,
+      MySQLQuery query, ResponseType responseType) {
+    proxyBackend(mycat, payload, dataNodeName, query, responseType,
         DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
 
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query,ProxyResponseType responseType, PacketExchangerCallback finallyCallBack) {
+      MySQLQuery query, ResponseType responseType, PacketExchangerCallback finallyCallBack) {
     byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
     MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, bytes,dataNodeName,query,responseType, MySQLProxyNIOHandler.INSTANCE, finallyCallBack
+        .INSTANCE.proxyBackend(mycat, bytes, dataNodeName, query, responseType,
+        MySQLProxyNIOHandler.INSTANCE, finallyCallBack
     );
   }
+
   public void proxyBackendWithRawPacket(MycatSession mycat, byte[] packet, String dataNodeName,
-      MySQLQuery query,ProxyResponseType responseType) {
+      MySQLQuery query, ResponseType responseType) {
     MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, packet,dataNodeName,query,responseType, MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
+        .INSTANCE.proxyBackend(mycat, packet, dataNodeName, query, responseType,
+        MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
     );
   }
+
   public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query,ProxyResponseType responseType, MySQLPacketCallback callback) {
-    proxyWithCollectorCallback(mycat, payload, dataNodeName, query,responseType, callback,
+      MySQLQuery query, ResponseType responseType, MySQLPacketCallback callback) {
+    proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType, callback,
         DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
   }
 
   public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query,ProxyResponseType responseType, MySQLPacketCallback callback,
+      MySQLQuery query, ResponseType responseType, MySQLPacketCallback callback,
       PacketExchangerCallback finallyCallBack) {
     byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
     MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, bytes, dataNodeName,query,responseType, new MySQLCollectorExchanger(callback), finallyCallBack
+        .INSTANCE.proxyBackend(mycat, bytes, dataNodeName, query, responseType,
+        new MySQLCollectorExchanger(callback), finallyCallBack
     );
   }
 
@@ -155,16 +152,34 @@ public enum MySQLPacketExchanger {
   }
 
   private boolean onBackendWriteFinished(MySQLClientSession mysql) {
-    if (!mysql.isNoResponse()) {
+    ResponseType responseType = mysql.getResponseType();
+    if (responseType == ResponseType.NO_RESPONSE) {
+
+      return true;
+    } else {
       ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
       proxyBuffer.channelReadStartIndex(0);
       proxyBuffer.channelReadEndIndex(0);
-      mysql.prepareReveiceResponse();
       mysql.change2ReadOpts();
-      return false;
-    } else {
-      return true;
     }
+    switch (mysql.getResponseType()) {
+      case NO_RESPONSE: {
+        throw new MycatExpection("unknown state");
+      }
+      case MULTI_RESULTSET: {
+        mysql.prepareReveiceMultiResultSetResponse();
+        break;
+      }
+      case PREPARE_OK:{
+        mysql.prepareReveicePrepareOkResponse();
+        break;
+      }
+      case QUERY: {
+        mysql.prepareReveiceResponse();
+        break;
+      }
+    }
+    return false;
   }
 
   private boolean onFrontWriteFinished(MycatSession mycat) {
@@ -189,9 +204,9 @@ public enum MySQLPacketExchanger {
 
 
     public void proxyBackend(MycatSession mycat, byte[] packetData, String dataNodeName,
-        MySQLQuery query,ProxyResponseType responseType, MySQLProxyNIOHandler proxyNIOHandler,
+        MySQLQuery query, ResponseType responseType, MySQLProxyNIOHandler proxyNIOHandler,
         PacketExchangerCallback finallyCallBack) {
-      MySQLTaskUtil.withBackend(mycat, dataNodeName,query, new SessionSyncCallback (){
+      MySQLTaskUtil.withBackend(mycat, dataNodeName, query, new SessionSyncCallback() {
         @Override
         public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
           proxyNIOHandler.proxyBackend(mysql, finallyCallBack, responseType, mycat, packetData);
@@ -206,30 +221,30 @@ public enum MySQLPacketExchanger {
         @Override
         public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
             MySQLClientSession mysql, Object sender, Object attr) {
-          finallyCallBack.onRequestMySQLException(mycat, new MycatExpection(errorPacket.getErrorMessageString()), attr);
+          finallyCallBack.onRequestMySQLException(mycat,
+              new MycatExpection(errorPacket.getErrorMessageString()), attr);
         }
       });
     }
 
     public void proxyBackend(MySQLClientSession mysql, PacketExchangerCallback finallyCallBack,
-        ProxyResponseType responseType, MycatSession mycat, byte[] bytes) {
+        ResponseType responseType, MycatSession mycat, byte[] bytes) {
       try {
         mysql.setCallBack(finallyCallBack);
         Objects.requireNonNull(responseType);
+
+        mysql.setResponseType(responseType);
         switch (responseType) {
           case NO_RESPONSE:
-            mysql.setNoResponse(true);
             break;
           case MULTI_RESULTSET:
-            mysql.setNoResponse(false);
+            mysql.setResponseType(responseType);
             mysql.prepareReveiceMultiResultSetResponse();
             break;
           case PREPARE_OK:
-            mysql.setNoResponse(false);
             mysql.prepareReveicePrepareOkResponse();
             break;
           case QUERY:
-            mysql.setNoResponse(false);
             mysql.prepareReveiceResponse();
             break;
         }
@@ -416,7 +431,7 @@ public enum MySQLPacketExchanger {
       proxyBuffer.channelWriteStartIndex(startIndex);
       proxyBuffer.channelWriteEndIndex(endPos);
 
-      if (packetResolver.isResponseFinished()){
+      if (packetResolver.isResponseFinished()) {
         callback.onFinishedCollect(mysql);
       }
 

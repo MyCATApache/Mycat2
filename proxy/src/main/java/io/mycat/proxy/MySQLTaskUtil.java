@@ -20,7 +20,7 @@ import io.mycat.logTip.ReplicaTip;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
-import io.mycat.proxy.handler.ProxyResponseType;
+import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.MySQLQuery;
 import io.mycat.proxy.handler.backend.MySQLSessionSyncTask;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
@@ -46,7 +46,7 @@ public class MySQLTaskUtil {
 
 
   public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query,ProxyResponseType responseType) {
+      MySQLQuery query, ResponseType responseType) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
         .proxyBackend(mycat, payload, dataNodeName, query,responseType);
@@ -54,7 +54,7 @@ public class MySQLTaskUtil {
 
   public static void proxyBackendWithCollector(MycatSession mycat, byte[] payload,
       String dataNodeName,
-      MySQLQuery query,ProxyResponseType responseType,
+      MySQLQuery query, ResponseType responseType,
       MySQLPacketCallback callback) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
@@ -64,7 +64,7 @@ public class MySQLTaskUtil {
   public static void withBackend(MycatSession mycat, byte[] payload,
       String dataNodeName,
       MySQLQuery query,
-      ProxyResponseType responseType,
+      ResponseType responseType,
       MySQLPacketCallback callback) {
 
     MycatMonitor.onRoute(mycat, dataNodeName, payload);

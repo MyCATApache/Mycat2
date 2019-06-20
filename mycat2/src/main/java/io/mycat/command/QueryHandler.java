@@ -38,7 +38,7 @@ import io.mycat.beans.mysql.MySQLIsolationLevel;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.handler.ProxyResponseType;
+import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.MySQLQuery;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
@@ -93,7 +93,7 @@ public interface QueryHandler {
     }
     if (mycat.isBindMySQLSession()) {
       MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-          mycat.getMySQLSession().getDataNode().getName(), null, ProxyResponseType.QUERY);
+          mycat.getMySQLSession().getDataNode().getName(), null, ResponseType.QUERY);
       return;
     }
     try {
@@ -178,7 +178,8 @@ public interface QueryHandler {
         case SHOW_SQL:
           String defaultDataNode = useSchema.getDefaultDataNode();
           MySQLTaskUtil
-              .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode, null,ProxyResponseType.QUERY);
+              .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode, null,
+                  ResponseType.QUERY);
           return;
         case SHOW_VARIABLES_SQL: {
           mycat.writeColumnCount(2);
@@ -243,7 +244,7 @@ public interface QueryHandler {
                       .getLoadBalanceByBalanceName(resultRoute.getBalance()));
                   MySQLTaskUtil
                       .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), query,ProxyResponseType.QUERY);
+                          route.getDataNode(), query, ResponseType.QUERY);
                   return;
               }
             }
@@ -258,7 +259,7 @@ public interface QueryHandler {
             case DB_IN_ONE_SERVER:
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-                      useSchema.getDefaultDataNode(), null,ProxyResponseType.QUERY);
+                      useSchema.getDefaultDataNode(), null, ResponseType.QUERY);
               return;
             case DB_IN_MULTI_SERVER:
             case ANNOTATION_ROUTE:
@@ -280,7 +281,7 @@ public interface QueryHandler {
               OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
               MySQLTaskUtil
                   .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-                      resultRoute1.getDataNode(), null,ProxyResponseType.QUERY);
+                      resultRoute1.getDataNode(), null, ResponseType.QUERY);
               break;
             }
             case GLOBAL_TABLE_WRITE_RESULT_ROUTE: {

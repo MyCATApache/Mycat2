@@ -25,6 +25,7 @@ import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -83,6 +84,7 @@ public class MySQLClientSession extends
    * PREPARE_STATEMENT_EXECUTE,预处理过程 CURSOR_EXISTS 游标 以上四种情况 mysql客户端的并没有结束对mysql的交互,所以无法解绑
    */
   private MySQLSessionMonopolizeType monopolizeType = MySQLSessionMonopolizeType.NONE;
+  private ResponseType responseType;
 
 
   public MycatSession getMycatSeesion() {
@@ -475,12 +477,6 @@ public class MySQLClientSession extends
     return noResponse;
   }
 
-  /**
-   * 设置响应类型,有些报文是没有响应的
-   */
-  public void setNoResponse(boolean noResponse) {
-    this.noResponse = noResponse;
-  }
 
   /**
    * 切换出来处理器,在闲置状态中不能设置
@@ -608,5 +604,12 @@ public class MySQLClientSession extends
 
   public void prepareReveiceMultiResultSetResponse() {
     this.getPacketResolver().prepareReveiceMultiResultSetResponse();
+  }
+
+  public ResponseType getResponseType(){
+    return this.responseType;
+  }
+  public void setResponseType(ResponseType responseType) {
+    this.responseType = responseType;
   }
 }
