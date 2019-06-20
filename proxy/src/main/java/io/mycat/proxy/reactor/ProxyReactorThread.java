@@ -20,6 +20,7 @@ import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.session.Session;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+import io.mycat.util.nio.SelectorUtil;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.ClosedSelectorException;
@@ -44,12 +45,18 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
   protected final static long SELECTOR_TIMEOUT = 100;
   protected final static Logger LOGGER = LoggerFactory.getLogger(ProxyReactorThread.class);
   protected final FrontSessionManager<T> frontManager;
-  protected final Selector selector;
+  protected Selector selector;
   protected final BufferPool bufPool;
   //用于管理连接等事件
   protected final ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<>();
   private final ReactorEnv reactorEnv = new ReactorEnv();
   private static long activeTime = System.currentTimeMillis();
+
+  long ioTimes = 0;
+  boolean pendingJobsEmpty = true;
+  ///////////////////////
+  int invalidSelectCount = 0;
+  /////////////////////////
 
   @SuppressWarnings("unchecked")
   public ProxyReactorThread(BufferPool bufPool, FrontSessionManager<T> sessionMan)
@@ -153,26 +160,38 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
   }
 
   public void run() {
-    long ioTimes = 0;
-
     while (!this.isInterrupted()) {
       try {
-        selector.select(SELECTOR_TIMEOUT);
+        pendingJobsEmpty = pendingJobs.isEmpty();
+        long startTime = updateLastActiveTime();
+        if (pendingJobsEmpty) {
+          //////////////////////////////////
+          int numOfKeys = selector.select(SELECTOR_TIMEOUT);
+          //////////////////////////////////
+          if (numOfKeys == 0) {
+            if ((updateLastActiveTime() - startTime) < (SELECTOR_TIMEOUT / 2)) {
+              invalidSelectCount++;
+            }
+          }
+          ///////////////////
+        } else {
+          selector.selectNow();
+        }
         updateLastActiveTime();
         final Set<SelectionKey> keys = selector.selectedKeys();
         if (keys.isEmpty()) {
-          if (!pendingJobs.isEmpty()) {
+          if (!pendingJobsEmpty) {
             ioTimes = 0;
             this.processNIOJob();
           }
           continue;
-        } else if ((ioTimes > 5) & !pendingJobs.isEmpty()) {
+        } else if ((ioTimes > 5) & !pendingJobsEmpty) {
           ioTimes = 0;
           this.processNIOJob();
         }
         ioTimes++;
         for (final SelectionKey key : keys) {
-          if (!key.isValid()||!key.channel().isOpen()) {
+          if (!key.isValid() || !key.channel().isOpen()) {
             continue;
           }
           try {
@@ -206,10 +225,19 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
           }
         }
         keys.clear();
-      }catch (ClosedSelectorException e){
+        ///////////////////
+        if (invalidSelectCount > 512) {
+          Selector newSelector = SelectorUtil.rebuildSelector(this.selector);
+          if (newSelector != null) {
+            this.selector = newSelector;
+          }
+          invalidSelectCount = 0;
+        }
+        ///////////////////
+      } catch (ClosedSelectorException e) {
         LOGGER.warn("selector is closed");
         break;
-      }catch (Throwable e) {
+      } catch (Throwable e) {
         LOGGER.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e),
             e);
       }
@@ -219,8 +247,8 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
   /**
    * 获取该session,最近活跃的时间
    */
-  public void updateLastActiveTime() {
-    activeTime = System.currentTimeMillis();
+  public long updateLastActiveTime() {
+    return activeTime = System.currentTimeMillis();
   }
 
   public long getLastActiveTime() {
