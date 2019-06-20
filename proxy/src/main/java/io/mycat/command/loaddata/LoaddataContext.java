@@ -2,6 +2,7 @@ package io.mycat.command.loaddata;
 
 import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK;
 
+import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
@@ -41,7 +42,8 @@ public class LoaddataContext {
     int emptyPacketId = packetId;
 
     mycat.setHandleContentOfFilename(false);
-
+    MySQLClientSession mySQLSession = mycat.getMySQLSession();
+    mySQLSession.setMonopolizeType(MySQLSessionMonopolizeType.NONE);
     RequestHandler.INSTANCE.request(mycat.getMySQLSession(), bytes, new RequestCallback() {
       @Override
       public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
@@ -54,7 +56,7 @@ public class LoaddataContext {
 
       @Override
       public void onFinishedSendException(Exception e, Object sender, Object attr) {
-
+        mycat.setMySQLSession(null);
         mycat.setLastMessage(e.toString());
         mycat.writeErrorEndPacket();
       }

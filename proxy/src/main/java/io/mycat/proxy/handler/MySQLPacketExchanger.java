@@ -481,8 +481,6 @@ public enum MySQLPacketExchanger {
                 if (!mycat.shouldHandleContentOfFilename()){
                   mysql.setMonopolizeType(MySQLSessionMonopolizeType.LOAD_DATA);
                   mycat.setHandleContentOfFilename(true);
-                }else {
-                  mycat.setHandleContentOfFilename(false);
                 }
               }
               onClearInNormalResponse(mycat, mysql);
