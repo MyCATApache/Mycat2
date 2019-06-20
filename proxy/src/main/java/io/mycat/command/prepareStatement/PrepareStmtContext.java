@@ -10,12 +10,12 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLReplica;
 import java.util.HashMap;
 
-public class PrepareStmtProxy {
+public class PrepareStmtContext {
   long stmtId = 0L;
   private MycatSession mycat;
   private final HashMap<Long, PrepareInfo> prepareMap  = new HashMap<>();
 
-  public PrepareStmtProxy(MycatSession mycat) {
+  public PrepareStmtContext(MycatSession mycat) {
     this.mycat = mycat;
   }
 
@@ -25,8 +25,7 @@ public class PrepareStmtProxy {
     return  prepareInfo.getNumOfParams();
   }
 
-  public void newReadyPrepareStmt(String sql, String dataNode, MySQLQuery query,
-      PrepareSessionCallback callback) {
+  public void newReadyPrepareStmt(String sql, String dataNode, MySQLQuery query) {
     final long currentStmtId = stmtId++;
     MySQLDataNode node = ProxyRuntime.INSTANCE.getDataNodeByName(dataNode);
     MySQLReplica replica = (MySQLReplica) node.getReplica();
@@ -63,7 +62,8 @@ public class PrepareStmtProxy {
 
           @Override
           public void onException(Exception exception, Object sender, Object attr) {
-            callback.onException(exception, sender, attr);
+            mycat.setLastMessage(exception.toString());
+            mycat.writeErrorEndPacket();
           }
         });
   }

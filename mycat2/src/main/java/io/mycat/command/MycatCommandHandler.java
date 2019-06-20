@@ -16,14 +16,12 @@ package io.mycat.command;
 
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
-import io.mycat.command.prepareStatement.PrepareSessionCallback;
-import io.mycat.command.prepareStatement.PrepareStmtProxy;
+import io.mycat.command.loaddata.LoaddataContext;
+import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.backend.MySQLQuery;
-import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.reactor.MycatReactorThread;
-import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.router.MycatRouter;
@@ -37,12 +35,13 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
   private final MycatRouter router;
   private final MycatSession mycat;
-  private final PrepareStmtProxy prepareStmtProxy;
+  private final PrepareStmtContext prepareContext;
+  private final LoaddataContext loadDataContext = new LoaddataContext();
 
   public MycatCommandHandler(MycatRouter router, MycatSession mycat) {
     this.router = router;
     this.mycat = mycat;
-    this.prepareStmtProxy =new PrepareStmtProxy(mycat);
+    this.prepareContext =new PrepareStmtContext(mycat);
   }
 
 
@@ -55,12 +54,12 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
   @Override
   public void handleContentOfFilename(byte[] sql, MycatSession seesion) {
-
+    this.loadDataContext.append(sql);
   }
 
   @Override
   public void handleContentOfFilenameEmptyOk() {
-
+    this.loadDataContext.proxy(mycat);
   }
 
   @Override
@@ -171,25 +170,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
       String dataNode = schema.getDefaultDataNode();
       mycat.switchDataNode(dataNode);
-      prepareStmtProxy.newReadyPrepareStmt(sql,dataNode,mySQLQuery,new PrepareSessionCallback(){
-
-        @Override
-        public void onPrepare(long actualStatementId, MySQLClientSession session) {
-
-        }
-
-        @Override
-        public void onException(Exception exception, Object sender, Object attr) {
-
-        }
-
-        @Override
-        public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-            MySQLClientSession mysql, Object sender, Object attr) {
-
-        }
-      });
-
+      prepareContext.newReadyPrepareStmt(sql,dataNode,mySQLQuery);
       return;
     } else {
       mycat.setLastMessage(
@@ -210,7 +191,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     }
 
     if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
-      prepareStmtProxy.appendLongData(statementId, paramId, data);
+      prepareContext.appendLongData(statementId, paramId, data);
     } else {
       mycat.setLastMessage(
           "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
@@ -223,28 +204,28 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
       int numParams,
       byte[] rest,
       MycatSession mycat) {
-    prepareStmtProxy.execute(statementId, flags, numParams,rest);
+    prepareContext.execute(statementId, flags, numParams,rest);
   }
 
 
   @Override
   public void handlePrepareStatementClose(long statementId, MycatSession session) {
-    prepareStmtProxy.close(statementId);
+    prepareContext.close(statementId);
   }
 
   @Override
   public void handlePrepareStatementFetch(long statementId, long row) {
-    prepareStmtProxy.fetch(statementId,row);
+    prepareContext.fetch(statementId,row);
   }
 
   @Override
   public void handlePrepareStatementReset(long statementId, MycatSession session) {
-    prepareStmtProxy.reset(statementId);
+    prepareContext.reset(statementId);
   }
 
   @Override
   public int getNumParamsByStatementId(long statementId) {
-    return prepareStmtProxy.getNumOfParams(statementId);
+    return prepareContext.getNumOfParams(statementId);
   }
 
   @Override

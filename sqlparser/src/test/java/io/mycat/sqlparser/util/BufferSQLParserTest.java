@@ -67,4 +67,22 @@ public class BufferSQLParserTest {
     Assert.assertEquals(map.get("a"), "'select a.* from customer'");
     Assert.assertEquals(map.get("b"), "a");
   }
+  @Test
+  public void testAnnotation3() {
+    String sql = "/* mycat:schema = test2 */ select * from travelrecord; ";
+    parser.parse(sql.getBytes(), context);
+    HashMap<String, Object> map = new HashMap<>();
+    context.getStaticAnnotation().toMapAndClear(new SQLMapAnnotation.PutKeyValueAble() {
+      @Override
+      public void put(String key, long value) {
+        (map).put(key, value);
+      }
+
+      @Override
+      public void put(String key, String value) {
+        (map).put(key, value);
+      }
+    });
+    System.out.println();
+  }
 }

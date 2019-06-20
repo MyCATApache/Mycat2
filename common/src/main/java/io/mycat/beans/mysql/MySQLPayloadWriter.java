@@ -14,7 +14,7 @@ import java.io.Closeable;
 public class MySQLPayloadWriter extends ByteArrayOutput implements
     MySQLPayloadWriteView<MySQLPayloadWriter>, Closeable {
 
-  private final PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
+  //private final PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
 
   public MySQLPayloadWriter() {
   }

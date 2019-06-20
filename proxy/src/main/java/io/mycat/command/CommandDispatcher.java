@@ -345,7 +345,6 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
           break;
         }
         default: {
-
           assert false;
         }
       }

@@ -15,6 +15,7 @@
 package io.mycat.proxy.handler;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.buffer.ProxyBuffer;
@@ -228,7 +229,7 @@ public enum MySQLPacketExchanger {
     }
 
     public void proxyBackend(MySQLClientSession mysql, PacketExchangerCallback finallyCallBack,
-        ResponseType responseType, MycatSession mycat, byte[] bytes) {
+        ResponseType responseType, MycatSession mycat, byte[] packetData) {
       try {
         mysql.setCallBack(finallyCallBack);
         Objects.requireNonNull(responseType);
@@ -251,7 +252,7 @@ public enum MySQLPacketExchanger {
         mysql.switchNioHandler(INSTANCE);
         mycat.setMySQLSession(mysql);
         mycat.switchWriteHandler(WriteHandler.INSTANCE);
-        mycat.currentProxyBuffer().newBuffer(bytes);
+        mycat.currentProxyBuffer().newBuffer(packetData);
         mycat.setMySQLSession(mysql);
         mysql.setMycatSession(mycat);
         mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
@@ -476,11 +477,15 @@ public enum MySQLPacketExchanger {
             boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
             if (b) {
               MySQLPayloadType payloadType = mysql.getPayloadType();
-              if (payloadType != MySQLPayloadType.LOAD_DATA_REQUEST) {
-                onClearInNormalResponse(mycat, mysql);
-              }else {
-                System.out.println();
+              if (payloadType == MySQLPayloadType.LOAD_DATA_REQUEST) {
+                if (!mycat.shouldHandleContentOfFilename()){
+                  mysql.setMonopolizeType(MySQLSessionMonopolizeType.LOAD_DATA);
+                  mycat.setHandleContentOfFilename(true);
+                }else {
+                  mycat.setHandleContentOfFilename(false);
+                }
               }
+              onClearInNormalResponse(mycat, mysql);
             }
           }
         }

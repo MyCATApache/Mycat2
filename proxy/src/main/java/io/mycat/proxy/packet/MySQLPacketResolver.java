@@ -609,7 +609,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
             return;
           }
         } else if (head == 0xfb) {
-          setState(ComQueryState.LOCAL_INFILE_FILE_CONTENT);
+          setState(ComQueryState.COMMAND_END);
           setMySQLPayloadType(LOAD_DATA_REQUEST);
           return;
         } else if (head == 0xfe) {
@@ -675,14 +675,14 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       case PREPARE_PARAM_EOF:
         resolvePrepareResponse(mySQLPacket, head, isPacketFinished);
         return;
-      case LOCAL_INFILE_FILE_CONTENT:
-        if (payloadLength == 4) {
-          setState(ComQueryState.LOCAL_INFILE_OK_PACKET);
-          return;
-        } else {
-          setState(ComQueryState.LOCAL_INFILE_FILE_CONTENT);
-          return;
-        }
+//      case LOCAL_INFILE_FILE_CONTENT:
+//        if (payloadLength == 4) {
+//          setState(ComQueryState.LOCAL_INFILE_OK_PACKET);
+//          return;
+//        } else {
+//          setState(ComQueryState.LOCAL_INFILE_FILE_CONTENT);
+//          return;
+//        }
       case LOCAL_INFILE_OK_PACKET:
         if (!isPacketFinished) {
           throw new RuntimeException("unknown state!");
@@ -782,7 +782,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
     PREPARE_PARAM_EOF(true),
     COMMAND_END(false),
     //    LOCAL_INFILE_REQUEST(true),
-    LOCAL_INFILE_FILE_CONTENT(true),
+//    LOCAL_INFILE_FILE_CONTENT(true),
     //    LOCAL_INFILE_EMPTY_PACKET(true),
     LOCAL_INFILE_OK_PACKET(true);
     boolean needFull;

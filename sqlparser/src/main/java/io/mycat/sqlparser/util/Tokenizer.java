@@ -229,24 +229,24 @@ public class Tokenizer {
     final int sqlLength = sql.length() + pos;
     this.sql = sql;
     this.hashArray = hashArray;
-    byte c;
+    int c;
     byte cType;
     byte next;
     while (pos < sqlLength) {
-      c = sql.getByte(pos);
+      c = sql.getByte(pos)&0xff;
       cType = charType[c << 1];
       switch (cType) {
         case 0:
           pos++;
           break;
         case CHARS:
-          pos = parseToken(sql, pos, sqlLength, c);
+          pos = parseToken(sql, pos, sqlLength, (byte) c);
           break;
         case DIGITS:
-          pos = parseDigits(sql, pos, sqlLength, c);
+          pos = parseDigits(sql, pos, sqlLength, (byte) c);
           break;
         case STRINGS:
-          pos = parseString(sql, pos, sqlLength, c);
+          pos = parseString(sql, pos, sqlLength,(byte)  c);
           break;
         case MINUS:
           if (sql.getByte(++pos) != '-') {
