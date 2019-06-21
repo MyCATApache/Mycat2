@@ -165,7 +165,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
         pendingJobsEmpty = pendingJobs.isEmpty();
         long startTime = updateLastActiveTime();
         if (pendingJobsEmpty) {
-          //////////////////////////////////
+          ///////////////epoll///////////////////
           int numOfKeys = selector.select(SELECTOR_TIMEOUT);
           //////////////////////////////////
           if (numOfKeys == 0) {
@@ -173,11 +173,10 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
               invalidSelectCount++;
             }
           }
-          ///////////////////
+          ////////epoll///////////
         } else {
           selector.selectNow();
         }
-        updateLastActiveTime();
         final Set<SelectionKey> keys = selector.selectedKeys();
         if (keys.isEmpty()) {
           if (!pendingJobsEmpty) {
@@ -191,10 +190,10 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
         }
         ioTimes++;
         for (final SelectionKey key : keys) {
-          if (!key.isValid() || !key.channel().isOpen()) {
-            continue;
-          }
           try {
+            if (!key.isValid() || !key.channel().isOpen()) {
+              continue;
+            }
             int readdyOps = key.readyOps();
             reactorEnv.setCurSession(null);
             // 如果当前收到连接请求
@@ -225,7 +224,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
           }
         }
         keys.clear();
-        ///////////////////
+        /////////epoll //////////
         if (invalidSelectCount > 512) {
           Selector newSelector = SelectorUtil.rebuildSelector(this.selector);
           if (newSelector != null) {
@@ -233,7 +232,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
           }
           invalidSelectCount = 0;
         }
-        ///////////////////
+        /////////epoll//////////
       } catch (ClosedSelectorException e) {
         LOGGER.warn("selector is closed");
         break;
