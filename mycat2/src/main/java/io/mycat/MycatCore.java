@@ -79,9 +79,9 @@ public class MycatCore {
     ProxyRuntime runtime = ProxyRuntime.INSTANCE;
     MycatMonitor.setCallback(callback);
     runtime.initCharset(resourcesPath);
-    runtime.loadProxy(resourcesPath);
+    runtime.loadProxyConfig(resourcesPath);
     runtime.initMySQLVariables();
-    runtime.loadMycat(resourcesPath);
+    runtime.loadMycatConfig(resourcesPath);
     runtime.initPlug();
     MycatRouterConfig routerConfig = runtime.initRouterConfig(resourcesPath);
     MycatRouter router = new MycatRouter(routerConfig);
