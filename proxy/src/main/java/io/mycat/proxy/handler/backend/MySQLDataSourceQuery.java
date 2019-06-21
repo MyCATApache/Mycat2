@@ -5,7 +5,7 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import java.util.List;
 
-public class MySQLQuery {
+public class MySQLDataSourceQuery {
   boolean runOnMaster = false;
   LoadBalanceStrategy strategy = null;
   List<SessionIdAble> ids = null;

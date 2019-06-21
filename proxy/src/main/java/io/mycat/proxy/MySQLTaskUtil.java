@@ -21,7 +21,7 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.ResponseType;
-import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.handler.backend.MySQLSessionSyncTask;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.handler.backend.SessionSyncCallback;
@@ -46,7 +46,7 @@ public class MySQLTaskUtil {
 
 
   public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query, ResponseType responseType) {
+      MySQLDataSourceQuery query, ResponseType responseType) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
         .proxyBackend(mycat, payload, dataNodeName, query,responseType);
@@ -54,7 +54,7 @@ public class MySQLTaskUtil {
 
   public static void proxyBackendWithCollector(MycatSession mycat, byte[] payload,
       String dataNodeName,
-      MySQLQuery query, ResponseType responseType,
+      MySQLDataSourceQuery query, ResponseType responseType,
       MySQLPacketCallback callback) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
@@ -63,7 +63,7 @@ public class MySQLTaskUtil {
 
   public static void withBackend(MycatSession mycat, byte[] payload,
       String dataNodeName,
-      MySQLQuery query,
+      MySQLDataSourceQuery query,
       ResponseType responseType,
       MySQLPacketCallback callback) {
 
@@ -72,7 +72,7 @@ public class MySQLTaskUtil {
         .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType,callback);
   }
 
-  public static void withBackend(MycatSession mycat, String dataNodeName, MySQLQuery query,
+  public static void withBackend(MycatSession mycat, String dataNodeName, MySQLDataSourceQuery query,
       SessionSyncCallback finallyCallBack) {
     mycat.currentProxyBuffer().reset();
     mycat.switchDataNode(dataNodeName);
@@ -91,7 +91,7 @@ public class MySQLTaskUtil {
    * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
    */
   public static void getMySQLSessionFromUserThread(MySQLSynContext synContext,
-      MySQLQuery query,
+      MySQLDataSourceQuery query,
       SessionSyncCallback asynTaskCallBack) {
     MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
@@ -107,7 +107,7 @@ public class MySQLTaskUtil {
    */
   public static void getMySQLSession(
       MySQLSynContext synContext,
-      MySQLQuery query,
+      MySQLDataSourceQuery query,
       SessionSyncCallback callBack) {
 
     assert (Thread.currentThread() instanceof MycatReactorThread);

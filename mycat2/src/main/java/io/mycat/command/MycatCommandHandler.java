@@ -20,7 +20,7 @@ import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
@@ -165,7 +165,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
     BufferSQLContext bufferSQLContext = router().simpleParse(sql);
     boolean runOnMaster = bufferSQLContext.isSimpleSelect();
-    MySQLQuery mySQLQuery = new MySQLQuery();
+    MySQLDataSourceQuery mySQLQuery = new MySQLDataSourceQuery();
     mySQLQuery.setRunOnMaster(runOnMaster);
     if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
       String dataNode = schema.getDefaultDataNode();

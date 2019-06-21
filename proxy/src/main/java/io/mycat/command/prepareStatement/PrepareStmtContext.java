@@ -3,7 +3,7 @@ package io.mycat.command.prepareStatement;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.SessionCallBack;
-import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
@@ -25,7 +25,7 @@ public class PrepareStmtContext {
     return  prepareInfo.getNumOfParams();
   }
 
-  public void newReadyPrepareStmt(String sql, String dataNode, MySQLQuery query) {
+  public void newReadyPrepareStmt(String sql, String dataNode, MySQLDataSourceQuery query) {
     final long currentStmtId = stmtId++;
     MySQLDataNode node = ProxyRuntime.INSTANCE.getDataNodeByName(dataNode);
     MySQLReplica replica = (MySQLReplica) node.getReplica();

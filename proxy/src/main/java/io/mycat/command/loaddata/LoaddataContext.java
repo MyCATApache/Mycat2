@@ -7,12 +7,10 @@ import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.proxy.MySQLPacketUtil;
-import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.callback.RequestCallback;
 import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
 import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.RequestHandler;
-import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 

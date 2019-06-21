@@ -21,7 +21,7 @@ import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.callback.TaskCallBack;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
-import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.ErrorPacketImpl;
@@ -90,14 +90,14 @@ public enum MySQLPacketExchanger {
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query, ResponseType responseType) {
+      MySQLDataSourceQuery query, ResponseType responseType) {
     proxyBackend(mycat, payload, dataNodeName, query, responseType,
         DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
 
   }
 
   public void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query, ResponseType responseType, PacketExchangerCallback finallyCallBack) {
+      MySQLDataSourceQuery query, ResponseType responseType, PacketExchangerCallback finallyCallBack) {
     byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
     MySQLProxyNIOHandler
         .INSTANCE.proxyBackend(mycat, bytes, dataNodeName, query, responseType,
@@ -106,7 +106,7 @@ public enum MySQLPacketExchanger {
   }
 
   public void proxyBackendWithRawPacket(MycatSession mycat, byte[] packet, String dataNodeName,
-      MySQLQuery query, ResponseType responseType) {
+      MySQLDataSourceQuery query, ResponseType responseType) {
     MySQLProxyNIOHandler
         .INSTANCE.proxyBackend(mycat, packet, dataNodeName, query, responseType,
         MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
@@ -114,13 +114,13 @@ public enum MySQLPacketExchanger {
   }
 
   public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query, ResponseType responseType, MySQLPacketCallback callback) {
+      MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketCallback callback) {
     proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType, callback,
         DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
   }
 
   public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String dataNodeName,
-      MySQLQuery query, ResponseType responseType, MySQLPacketCallback callback,
+      MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketCallback callback,
       PacketExchangerCallback finallyCallBack) {
     byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
     MySQLProxyNIOHandler
@@ -205,7 +205,7 @@ public enum MySQLPacketExchanger {
 
 
     public void proxyBackend(MycatSession mycat, byte[] packetData, String dataNodeName,
-        MySQLQuery query, ResponseType responseType, MySQLProxyNIOHandler proxyNIOHandler,
+        MySQLDataSourceQuery query, ResponseType responseType, MySQLProxyNIOHandler proxyNIOHandler,
         PacketExchangerCallback finallyCallBack) {
       MySQLTaskUtil.withBackend(mycat, dataNodeName, query, new SessionSyncCallback() {
         @Override

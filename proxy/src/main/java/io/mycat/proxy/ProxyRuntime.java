@@ -69,23 +69,39 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
-  private final LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
+  private LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
   private MycatRouterConfig routerConfig;
   private MycatSecurityConfig securityManager;
   private MySQLVariables variables;
+  private NIOAcceptor acceptor;
+  private MycatReactorThread[] reactorThreads;
+
+
+  public void reset() {
+    assert acceptor == null;
+    this.sessionIdCounter.set(1);
+    this.replicaMap.clear();
+    this.datasourceList.clear();
+    this.dataNodeMap.clear();
+    this.loadBalanceManager = new LoadBalanceManager();
+    this.routerConfig = null;
+    this.securityManager = null;
+    this.variables = null;
+    this.reactorThreads = null;
+  }
 
   public static String getResourcesPath(Class clazz) {
     try {
       return Paths.get(
           Objects.requireNonNull(clazz.getProtectionDomain().getCodeSource().getLocation().toURI()))
-                 .toAbsolutePath()
-                 .toString();
+          .toAbsolutePath()
+          .toString();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  public void initMySQLVariables(){
+  public void initMySQLVariables() {
     MysqlServerVariablesRootConfig config = getConfig(ConfigEnum.VARIABLES);
     Objects.requireNonNull(config.getVariables());
     variables = new MySQLVariables(config.getVariables());
@@ -133,7 +149,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
       ReplicaConfig replicaConfig = replicas.get(i);
       Integer writeIndex = replicaIndexes.get(replicaConfig.getName());
       MySQLReplica replica = factory
-                                 .createReplica(replicaConfig, writeIndex == null ? 0 : writeIndex);
+          .createReplica(replicaConfig, writeIndex == null ? 0 : writeIndex);
       replicaMap.put(replica.getName(), replica);
       replica.init(counter);
       datasourceList.addAll(replica.getDatasourceList());
@@ -174,8 +190,6 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return getProxy().getBufferPoolPageNumber();
   }
 
-  private NIOAcceptor acceptor;
-  private MycatReactorThread[] reactorThreads;
 
   public void exit() {
     Objects.requireNonNull(acceptor);
@@ -218,7 +232,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public void initAcceptor() throws IOException {
-    if (acceptor == null || !acceptor.isAlive()){
+    if (acceptor == null || !acceptor.isAlive()) {
       NIOAcceptor acceptor = new NIOAcceptor(null);
       this.setAcceptor(acceptor);
       acceptor.start();

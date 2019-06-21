@@ -39,7 +39,7 @@ import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.ResponseType;
-import io.mycat.proxy.handler.backend.MySQLQuery;
+import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
@@ -237,7 +237,7 @@ public interface QueryHandler {
               switch (resultRoute.getType()) {
                 case ONE_SERVER_RESULT_ROUTE:
                   OneServerResultRoute route = (OneServerResultRoute) resultRoute;
-                  MySQLQuery query = new MySQLQuery();
+                  MySQLDataSourceQuery query = new MySQLDataSourceQuery();
                   query.setIds(null);
                   query.setRunOnMaster(resultRoute.isRunOnMaster(false));
                   query.setStrategy(ProxyRuntime.INSTANCE
