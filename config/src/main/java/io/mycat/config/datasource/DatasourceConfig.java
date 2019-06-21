@@ -39,6 +39,7 @@ public class DatasourceConfig {
     private String dbType;
     private String url;
     private int weight = 0;
+    private String initSQL;
 
     @Override
     public boolean equals(Object o) {
@@ -154,5 +155,13 @@ public class DatasourceConfig {
 
     public void setWeight(int weight) {
         this.weight = weight;
+    }
+
+    public String getInitSQL() {
+        return initSQL;
+    }
+
+    public void setInitSQL(String initSQL) {
+        this.initSQL = initSQL;
     }
 }

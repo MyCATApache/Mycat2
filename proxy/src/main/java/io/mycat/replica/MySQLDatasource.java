@@ -204,4 +204,8 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource {
       }
     });
   }
+
+  public String getInitSQL() {
+   return datasourceConfig.getInitSQL();
+  }
 }

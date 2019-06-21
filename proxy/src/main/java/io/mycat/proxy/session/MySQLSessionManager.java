@@ -14,6 +14,8 @@
  */
 package io.mycat.proxy.session;
 
+import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
+
 import io.mycat.MycatExpection;
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.MySQLCommandType;
@@ -24,6 +26,7 @@ import io.mycat.config.ConfigEnum;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.SessionTip;
+import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.callback.RequestCallback;
@@ -40,6 +43,7 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import io.mycat.util.StringUtil;
 import io.mycat.util.nio.NIOUtil;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -165,7 +169,7 @@ public final class MySQLSessionManager implements
         }
       }
     } catch (Exception e) {
-      LOGGER.error("",e);
+      LOGGER.error("", e);
       asyncTaskCallBack
           .onException(e, this,
               null);
@@ -181,7 +185,7 @@ public final class MySQLSessionManager implements
     //dataSource
     if (datasource != null && (ids == null || ids.size() == 0)) {
       LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
-      if (group==null||group.isEmpty()){
+      if (group == null || group.isEmpty()) {
         return null;
       }
       return random ? group.removeFirst() : group.removeLast();
@@ -439,7 +443,7 @@ public final class MySQLSessionManager implements
     TextResultSetTransforCollector transfor = new TextResultSetTransforCollector(collector);
     TextResultSetHandler queryResultSetTask = new TextResultSetHandler(transfor);
     queryResultSetTask
-        .request(session, MySQLCommandType.COM_QUERY, GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL,
+        .request(session, COM_QUERY, GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL,
             new ResultSetCallBack<MySQLClientSession>() {
               @Override
               public void onFinishedSendException(Exception exception, Object sender,
@@ -521,9 +525,56 @@ public final class MySQLSessionManager implements
           Object attr) {
         assert session.currentProxyBuffer() == null;
         MycatMonitor.onNewMySQLSession(session);
+        MySQLDatasource datasource = session.getDatasource();
+        String sql = datasource.getInitSQL();
         allSessions.put(session.sessionId(), session);
-        callBack.onSession(session, sender, attr);
+        if (!StringUtil.isEmpty(sql)) {
+          executeInitSQL(session, sql);
+        } else {
+          callBack.onSession(session, sender, attr);
+        }
       }
+
+      public void executeInitSQL(MySQLClientSession session, String sql) {
+        ResultSetHandler.DEFAULT.request(session, COM_QUERY,
+         sql.getBytes(),
+            new ResultSetCallBack<MySQLClientSession>() {
+              @Override
+              public void onFinishedSendException(Exception exception, Object sender,
+                  Object attr) {
+                LOGGER.error("{}", exception);
+                callBack.onException(exception, sender, attr);
+              }
+
+              @Override
+              public void onFinishedException(Exception exception, Object sender, Object attr) {
+                LOGGER.error("{}", exception);
+                callBack.onException(exception, sender, attr);
+              }
+
+              @Override
+              public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender,
+                  Object attr) {
+                if (monopolize) {
+                  String message = "mysql session is monopolized";
+                  mysql.close(false, message);
+                  callBack.onException(new MycatExpection(message), this, attr);
+                } else {
+                  callBack.onSession(mysql, this, attr);
+                }
+              }
+
+              @Override
+              public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+                  MySQLClientSession mysql, Object sender, Object attr) {
+                String message = errorPacket.getErrorMessageString();
+                LOGGER.error("", message);
+                mysql.close(false, message);
+                callBack.onException(new MycatExpection(message), sender, attr);
+              }
+            });
+      }
+
 
       @Override
       public void onFinishedException(Exception exception, Object sender, Object attr) {
