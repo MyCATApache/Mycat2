@@ -145,11 +145,11 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return proxyRootConfig.getProxy();
   }
 
-  public void loadProxy(String root) throws IOException {
+  public void loadProxyConfig(String root) throws IOException {
     ConfigLoader.INSTANCE.loadProxy(root, this);
   }
 
-  public void loadMycat(String root) throws IOException {
+  public void loadMycatConfig(String root) throws IOException {
     ConfigLoader.INSTANCE.loadMycat(root, this);
   }
 
@@ -218,10 +218,12 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public void initAcceptor() throws IOException {
-    NIOAcceptor acceptor = new NIOAcceptor(null);
-    this.setAcceptor(acceptor);
-    acceptor.start();
-    acceptor.startServerChannel(getIP(), getPort());
+    if (acceptor == null || !acceptor.isAlive()){
+      NIOAcceptor acceptor = new NIOAcceptor(null);
+      this.setAcceptor(acceptor);
+      acceptor.start();
+      acceptor.startServerChannel(getIP(), getPort());
+    }
   }
 
   public NIOAcceptor getAcceptor() {
