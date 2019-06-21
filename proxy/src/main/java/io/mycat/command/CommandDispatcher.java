@@ -39,12 +39,16 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
       MySQLPacket curPacket = mycat.currentProxyPayload();
       boolean isEmptyPayload = curPacket.readFinished();
       if (isEmptyPayload){
+        MycatMonitor.onLoadDataLocalInFileEmptyPacketStart(mycat);
         commandHandler.handleContentOfFilenameEmptyOk();
         mycat.resetCurrentProxyPayload();
+        MycatMonitor.onLoadDataLocalInFileEmptyPacketEnd(mycat);
         return;
       }else if (mycat.shouldHandleContentOfFilename()){
+        MycatMonitor.onLoadDataLocalInFileContextStart(mycat);
         handleContentOfFilename(curPacket.readEOFStringBytes(),mycat);
         mycat.resetCurrentProxyPayload();
+        MycatMonitor.onLoadDataLocalInFileContextEnd(mycat);
         return;
       }
       byte head = curPacket.getByte(curPacket.packetReadStartIndex());

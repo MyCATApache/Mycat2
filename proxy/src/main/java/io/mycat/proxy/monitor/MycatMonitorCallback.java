@@ -267,4 +267,12 @@ public interface MycatMonitorCallback {
   void onFetchCommandStart(MycatSession mycat);
 
   void onFetchCommandEnd(MycatSession mycat);
+
+  void onLoadDataLocalInFileEmptyPacketStart(MycatSession mycat);
+
+  void onLoadDataLocalInFileEmptyPacketEnd(MycatSession mycat);
+
+  void onLoadDataLocalInFileContextStart(MycatSession mycat);
+
+  void onLoadDataLocalInFileContextEnd(MycatSession mycat);
 }

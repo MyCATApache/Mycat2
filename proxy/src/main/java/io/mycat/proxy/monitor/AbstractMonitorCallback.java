@@ -20,6 +20,26 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   }
 
   @Override
+  public void onLoadDataLocalInFileEmptyPacketStart(MycatSession mycat) {
+
+  }
+
+  @Override
+  public void onLoadDataLocalInFileEmptyPacketEnd(MycatSession mycat) {
+
+  }
+
+  @Override
+  public void onLoadDataLocalInFileContextStart(MycatSession mycat) {
+
+  }
+
+  @Override
+  public void onLoadDataLocalInFileContextEnd(MycatSession mycat) {
+
+  }
+
+  @Override
   public void onPacketExchangerRead(Session session) {
 
   }

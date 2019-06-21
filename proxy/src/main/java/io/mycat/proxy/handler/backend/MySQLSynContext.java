@@ -4,6 +4,7 @@ import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import java.util.Objects;
 
@@ -27,6 +28,15 @@ public class MySQLSynContext {
     this.autoCommit = session.getAutoCommit();
     this.charset = session.getCharsetName();
     this.characterSetResult = session.getCharacterSetResults();
+    this.sqlSelectLimit = session.getSelectLimit();
+  }
+  public MySQLSynContext(MySQLClientSession session) {
+    this.dataNodeName = session.getDataNode().getName();
+    this.dataNode = (MySQLDataNode) session.getDataNode();
+    this.isolation = session.getIsolation();
+    this.autoCommit = session.isAutomCommit();
+    this.charset = session.getCharset();
+    this.characterSetResult = session.getCharacterSetResult();
     this.sqlSelectLimit = session.getSelectLimit();
   }
 
@@ -175,4 +185,5 @@ public class MySQLSynContext {
   public void setNetWriteTimeout(long netWriteTimeout) {
     this.netWriteTimeout = netWriteTimeout;
   }
+
 }

@@ -3,6 +3,7 @@ package io.mycat.proxy.monitor;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -307,17 +308,14 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public final void onSynchronizationState(MySQLClientSession session) {
-    MySQLAutoCommit automCommit = session.isAutomCommit();
-    String characterSetResult = session.getCharacterSetResult();
-    String charset = session.getCharset();
-    MySQLIsolation isolation = session.getIsolation();
-    MycatDataNode dataNode = session.getDataNode();
     if (record) {
       //    Thread.dumpStack();
+      MySQLSynContext c = new MySQLSynContext(session);
       LOGGER.debug(
-          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{}",
-          session.sessionId(), dataNode,
-          isolation, charset, automCommit, characterSetResult);
+          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
+          session.sessionId(), c.getDataNode(),
+          c.getIsolation(), c.getCharset(), c.getAutoCommit(),
+          c.getCharacterSetResult(),c.getSqlSelectLimit(),c.getNetWriteTimeout());
     }
   }
 
@@ -786,6 +784,34 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public void onFetchCommandEnd(MycatSession mycat) {
+    if (onCommand) {
+      LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
+
+  @Override
+  public void onLoadDataLocalInFileEmptyPacketStart(MycatSession mycat) {
+    if (onCommand) {
+      LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
+
+  @Override
+  public void onLoadDataLocalInFileEmptyPacketEnd(MycatSession mycat) {
+    if (onCommand) {
+      LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
+
+  @Override
+  public void onLoadDataLocalInFileContextStart(MycatSession mycat) {
+    if (onCommand) {
+      LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
+
+  @Override
+  public void onLoadDataLocalInFileContextEnd(MycatSession mycat) {
     if (onCommand) {
       LOGGER.debug("sessionId:{}", mycat.sessionId());
     }

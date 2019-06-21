@@ -468,4 +468,20 @@ public final class MycatMonitor {
   public static void onFetchCommandEnd(MycatSession mycat) {
     callback.onFetchCommandEnd(mycat);
   }
+
+  public static void onLoadDataLocalInFileEmptyPacketStart(MycatSession mycat) {
+    callback.onLoadDataLocalInFileEmptyPacketStart(mycat);
+  }
+
+  public static void onLoadDataLocalInFileEmptyPacketEnd(MycatSession mycat) {
+    callback.onLoadDataLocalInFileEmptyPacketEnd(mycat);
+  }
+
+  public static void onLoadDataLocalInFileContextStart(MycatSession mycat) {
+    callback.onLoadDataLocalInFileContextStart(mycat);
+  }
+
+  public static void onLoadDataLocalInFileContextEnd(MycatSession mycat) {
+    callback.onLoadDataLocalInFileContextEnd(mycat);
+  }
 }
