@@ -9,17 +9,8 @@ replicas:
         ip: 127.0.0.1               # i
         port: 3306                  # port
         user: root                  # 用户名
-        password: 123      # 密码
+        password: 123456      # 密码
         minCon: 4                   # 最小连接
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
         weight: 3            # 权重
-      - name: mytest3340              # mysql 主机名
-        ip: 127.0.0.1               # i
-        port: 3340                  # port
-        user: root                  # 用户名
-        password: 123      # 密码
-        minCon: 4                   # 最小连接
-        maxCon: 1000                  # 最大连接
-        maxRetryCount: 3            # 连接重试次数
-        weight: 1            # 权重

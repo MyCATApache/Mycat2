@@ -53,6 +53,8 @@ public class ProxyConfig {
 
     private int reactorNumber = -1;
 
+    private String commandDispatcherClass;
+
     public int getReactorNumber() {
         return reactorNumber == -1 ? Runtime.getRuntime().availableProcessors() : reactorNumber;
     }
@@ -108,10 +110,10 @@ public class ProxyConfig {
     }
 
     public void setBufferPoolChunkSize(short bufferPoolChunkSize) {
-        if (bufferPoolChunkSize < 86) {
+        if (bufferPoolChunkSize < 1024) {
             ///cjw  2018.4.6 fix the HandshakePacket write proxybuffer which is low than 86 lead to error
-            logger.warn("bufferPoolChunkSize should be greater than 86,and will be updated to 128;");
-            bufferPoolChunkSize = 128;
+            logger.warn("bufferPoolChunkSize should be greater than 86,and will be updated to 1024;");
+            bufferPoolChunkSize = 1024;
         }
         this.bufferPoolChunkSize = bufferPoolChunkSize;
     }
@@ -124,4 +126,21 @@ public class ProxyConfig {
         this.bufferPoolPageNumber = bufferPoolPageNumber;
     }
 
+    /**
+     * Getter for property 'commandDispatcherClass'.
+     *
+     * @return Value for property 'commandDispatcherClass'.
+     */
+    public String getCommandDispatcherClass() {
+        return commandDispatcherClass;
+    }
+
+    /**
+     * Setter for property 'commandDispatcherClass'.
+     *
+     * @param commandDispatcherClass Value to set for property 'commandDispatcherClass'.
+     */
+    public void setCommandDispatcherClass(String commandDispatcherClass) {
+        this.commandDispatcherClass = commandDispatcherClass;
+    }
 }
