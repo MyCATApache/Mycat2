@@ -13,6 +13,8 @@ import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author jamie12221
@@ -28,7 +30,7 @@ public enum MycatProxyBeanProviders implements ProxyBeanProviders {
   }
 
   @Override
-  public MySQLReplica createReplica(ReplicaConfig replicaConfig, int writeIndex) {
+  public MySQLReplica createReplica(ReplicaConfig replicaConfig, Set<Integer> writeIndex) {
     return new MySQLReplica(replicaConfig, writeIndex, this) {
     };
   }

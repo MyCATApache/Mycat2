@@ -29,7 +29,7 @@ public interface LoadBalanceELement {
 
     boolean isMaster();
 
-    boolean isSlave();
+    boolean asSelectRead();
 
     int getSessionCounter();
 

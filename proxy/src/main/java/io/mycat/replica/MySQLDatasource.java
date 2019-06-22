@@ -172,13 +172,10 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
 
   @Override
   public boolean isMaster() {
-    return index == replica.getMasterIndex();
+    return  replica.isMaster(this);
   }
 
-  @Override
-  public boolean isSlave() {
-    return index != replica.getMasterIndex();
-  }
+
 
   @Override
   public int getSessionCounter() {

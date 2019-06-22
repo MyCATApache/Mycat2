@@ -15,7 +15,6 @@
 package io.mycat.replica.heartbeat.callback;
 
 import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.collector.CollectorUtil;
 import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
@@ -71,7 +70,7 @@ public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
         } else {
           datasourceStatus.setSlaveBehindMaster(false);
         }
-      } else if (heartbeatDetector.getDataSource().isSlave()) {
+      } else if (heartbeatDetector.getDataSource().asSelectRead()) {
         String Last_IO_Error =
             resultResult != null ? (String) resultResult.get("Last_IO_Error") : null;
         System.out.println("found MySQL master/slave Replication err !!! "

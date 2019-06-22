@@ -21,7 +21,6 @@ import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
 import io.mycat.logTip.ReplicaTip;
-import io.mycat.plug.loadBalance.LoadBalanceELement;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
@@ -38,53 +37,57 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * 集群管理,该类不执行心跳,也不管理jdbc的mysqlsession,只做均衡负载 集群状态在集群相关辅助类实现,辅助类使用定时器分发到执行.辅助类只能更改此类的writeIndex属性,其他属性不是线程安全,初始化之后只读
  *
- * @author jamie12221
- *  date 2019-05-10 13:21
+ * @author jamie12221 date 2019-05-10 13:21
  **/
-public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
+public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
+
   static Logger logger = LoggerFactory.getLogger(MySQLReplica.class);
 
   private final ReplicaConfig config;
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
-  private volatile int writeIndex = 0; //主节点默认为0
+  private final CopyOnWriteArrayList<MySQLDatasource> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
   private long lastInitTime;  //最后一次初始化时间
   private LoadBalanceStrategy defaultLoadBalanceStrategy;
 
 
   /**
    * 初始化mycat集群管理
+   *
    * @param replicaConfig the config of replica
    * @param writeIndex master index
    * @param dataSourceFactory a factory to create dataSource
    */
   public MySQLReplica(ReplicaConfig replicaConfig,
-      int writeIndex, ProxyBeanProviders dataSourceFactory) {
+      Set<Integer> writeIndex, ProxyBeanProviders dataSourceFactory) {
     assert replicaConfig != null;
-    assert writeIndex > -1;
+    assert writeIndex.size() > 0;
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
     defaultLoadBalanceStrategy = ProxyRuntime.INSTANCE
-                                     .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
+        .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
     assert mysqls != null;
-    checkIndex(replicaConfig.getName(), writeIndex, mysqls.size());
     this.config = replicaConfig;
     for (int index = 0; index < mysqls.size(); index++) {
-      boolean master = index == writeIndex;
       DatasourceConfig datasourceConfig = mysqls.get(index);
       assert datasourceConfig != null;
       if (datasourceConfig.getDbType() == null) {
-        datasourceList.add(dataSourceFactory.createDatasource(index, datasourceConfig, this));
+        MySQLDatasource datasource = dataSourceFactory
+            .createDatasource(index, datasourceConfig, this);
+        datasourceList.add(datasource);
+        if (writeIndex.contains(index)) {
+          writeDataSource.add(datasource);
+        }
       }
     }
   }
 
   /**
-   *
    * @return 获取最后一次初始化时间
    */
   public long getLastInitTime() {
@@ -93,6 +96,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
 
   /**
    * 对于已经运行的集群,首先把原session都关闭再重新创建
+   *
    * @param callBack callback function
    */
   public void init(AsyncTaskCallBackCounter callBack) {
@@ -111,35 +115,37 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
 
   /**
    * 根据 1.是否读写分离 2.负载均衡策略 获取MySQL Session
+   *
    * @param runOnMaster is runOnMaster
    * @param strategy balanceStrategy
    * @param asynTaskCallBack callback function
    */
-  public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,List<SessionIdAble> ids,
+  public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,
+      List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MySQLDatasource datasource;
     if (runOnMaster) {
-      getWriteDatasource(ids,asynTaskCallBack);
+      getWriteDatasource(ids, strategy, asynTaskCallBack);
       return;
     }
     if (strategy == null) {
       strategy = this.defaultLoadBalanceStrategy;
     }
-    List<LoadBalanceELement> activeDataSource = getDataSourceByLoadBalacneType();
-    datasource = (MySQLDatasource)strategy.select(this,  activeDataSource);
+    List activeDataSource = getDataSourceByLoadBalacneType();
+    datasource = (MySQLDatasource) strategy.select(this, activeDataSource);
     if (datasource == null) {
-      getWriteDatasource(ids,asynTaskCallBack);
+      getWriteDatasource(ids, strategy, asynTaskCallBack);
     } else {
-      getDatasource(datasource,ids, asynTaskCallBack);
+      getDatasource(datasource, ids, asynTaskCallBack);
     }
   }
 
-  private List<LoadBalanceELement> getDataSourceByLoadBalacneType() {
+  private List<MySQLDatasource> getDataSourceByLoadBalacneType() {
     BalanceTypeEnum balanceType = this.getConfig().getBalanceType();
-    Objects.requireNonNull(balanceType,"balanceType is null");
-    switch (balanceType){
+    Objects.requireNonNull(balanceType, "balanceType is null");
+    switch (balanceType) {
       case BALANCE_ALL:
-        List<LoadBalanceELement> list = new ArrayList<>(this.datasourceList.size());
+        List<MySQLDatasource> list = new ArrayList<>(this.datasourceList.size());
         for (MySQLDatasource datasource : this.datasourceList) {
           if (datasource.isAlive()) {
             list.add(datasource);
@@ -147,11 +153,11 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
         }
         return list;
       case BALANCE_NONE:
-        return Collections.singletonList(getMaster());
+        return getMaster();
       case BALANCE_ALL_READ:
-        List<LoadBalanceELement> result = new ArrayList<>(this.datasourceList.size());
+        List<MySQLDatasource> result = new ArrayList<>(this.datasourceList.size());
         for (MySQLDatasource mySQLDatasource : this.datasourceList) {
-          if (mySQLDatasource.isAlive() && mySQLDatasource.isSlave()) {
+          if (mySQLDatasource.isAlive() && mySQLDatasource.asSelectRead()) {
             result.add(mySQLDatasource);
           }
         }
@@ -165,41 +171,39 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
   /**
    * 获取写入(主)节点,如果主节点已经失效,则失败
    */
-  private void getWriteDatasource(List<SessionIdAble> ids,SessionCallBack<MySQLClientSession> asynTaskCallBack) {
-    MySQLDatasource datasource = this.datasourceList.get(writeIndex);
+  private void getWriteDatasource(List<SessionIdAble> ids,
+      LoadBalanceStrategy strategy,
+      SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+    if (strategy==null){
+      strategy = this.defaultLoadBalanceStrategy;
+    }
+    List writeDataSource = this.writeDataSource;
+    MySQLDatasource datasource = (MySQLDatasource) strategy
+        .select(this, writeDataSource);
     if (datasource == null || !datasource.isAlive()) {
       asynTaskCallBack.onException(new MycatExpection(
           ReplicaTip.NO_AVAILABLE_DATA_SOURCE.getMessage(this.getName())), this, null);
       return;
     }
-    getDatasource(datasource,ids, asynTaskCallBack);
+    getDatasource(datasource, ids, asynTaskCallBack);
     return;
   }
 
   /**
    * 根据MySQLDatasource获得MySQL Session 此函数是本类获取MySQL Session中最后一个必经的执行点,检验当前获得Session的线程是否MycatReactorThread
    */
-  private void getDatasource(MySQLDatasource datasource,List<SessionIdAble> ids,
+  private void getDatasource(MySQLDatasource datasource, List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     Objects.requireNonNull(datasource);
     Objects.requireNonNull(asynTaskCallBack);
     if (Thread.currentThread() instanceof MycatReactorThread) {
       MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
-      reactor.getMySQLSessionManager().getIdleSessionsOfIds(datasource,ids, asynTaskCallBack);
+      reactor.getMySQLSessionManager().getIdleSessionsOfIds(datasource, ids, asynTaskCallBack);
     } else {
       MycatExpection mycatExpection = new MycatExpection(
           ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
       asynTaskCallBack.onException(mycatExpection, this, null);
       return;
-    }
-  }
-
-  /**
-   *
-   */
-  private void checkIndex(String name, int newIndex, int size) {
-    if (newIndex < 0 || newIndex >= size) {
-      throw new MycatExpection(ReplicaTip.ILLEGAL_REPLICA_INDEX.getMessage(name));
     }
   }
 
@@ -217,8 +221,22 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
 
   final Map<String, Map<String, Set<String>>> metaData = new HashMap<>();
 
-  public MySQLDatasource getMaster() {
-    return datasourceList.get(getMasterIndex());
+  public List<MySQLDatasource> getMaster() {
+    int size = writeDataSource.size();
+    MySQLDatasource datasource = writeDataSource.get(0);
+    if (size == 1) {
+      return datasource.isAlive() ? Collections.singletonList(datasource) : Collections.emptyList();
+    }
+    ArrayList<MySQLDatasource> datasources = new ArrayList<>(writeDataSource.size());
+    for (int i = 0; i < size; i++) {
+      datasource = (writeDataSource.get(i));
+      if (datasource.isAlive()) {
+        datasources.add(datasource);
+      } else {
+        //writeDataSource.remove(i);
+      }
+    }
+    return datasources;
   }
 
   public void addMetaData(String schemaName, String tableName, String columnName) {
@@ -246,24 +264,38 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
     return config;
   }
 
-  public int getMasterIndex() {
-    return writeIndex;
+  public boolean isMaster(MySQLDatasource datasource) {
+    return writeDataSource.contains(datasource);
   }
 
 
   /**
    * 切换写节点
+   *
    * @return is switch successful
    */
   public boolean switchDataSourceIfNeed() {
-      for (int i = 0; i < this.datasourceList.size(); i++) {
-          if(datasourceList.get(i).isAlive()) {
-              logger.info("{} switch master to {}", this, i);
-              this.writeIndex = i;
-              return true;
+    switch (this.getConfig().getRepType()) {
+      case SINGLE_NODE:
+      case MASTER_SLAVE: {
+        for (int i = 0; i < this.datasourceList.size(); i++) {
+          if (datasourceList.get(i).isAlive()) {
+            logger.info("{} switch master to {}", this, i);
+            return true;
           }
+        }
       }
-      return false;
+      case GARELA_CLUSTER:
+        List<MySQLDatasource> remove = new ArrayList<>();
+        for (int i = 0; i < writeDataSource.size(); i++) {
+          MySQLDatasource datasource = writeDataSource.get(i);
+          if (!datasource.isAlive()) {
+            remove.add(datasource);
+          }
+        }
+        writeDataSource.removeAll(remove);
+        break;
+    }
+    return false;
   }
-
 }

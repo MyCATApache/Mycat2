@@ -30,13 +30,13 @@ import java.util.Map;
  */
 public class MasterIndexesRootConfig implements Configurable {
 
-    private Map<String, Integer> masterIndexes;
+    private Map<String, String> masterIndexes;
 
-    public Map<String, Integer> getMasterIndexes() {
+    public Map<String, String> getMasterIndexes() {
         return masterIndexes;
     }
 
-    public void setMasterIndexes(Map<String, Integer> masterIndexes) {
+    public void setMasterIndexes(Map<String, String> masterIndexes) {
         this.masterIndexes = masterIndexes;
     }
 }

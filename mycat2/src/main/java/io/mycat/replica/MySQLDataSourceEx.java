@@ -25,10 +25,14 @@ public class MySQLDataSourceEx extends MySQLDatasource {
     if(isMaster()) {
       return mysqlHeartBeatManager.getHeartBeatStatus().isAlive();
     } else {
-      return mysqlHeartBeatManager.getHeartBeatStatus().isAlive()
-              && mysqlHeartBeatManager.getHeartBeatStatus().isSlaveBehindMaster() == false
-              && mysqlHeartBeatManager.getHeartBeatStatus().isDbSynStatusNormal();
+      return mysqlHeartBeatManager.getHeartBeatStatus().isAlive()&& asSelectRead();
     }
   }
 
+  @Override
+  public boolean asSelectRead() {
+    return mysqlHeartBeatManager.getHeartBeatStatus().isAlive()
+        && mysqlHeartBeatManager.getHeartBeatStatus().isSlaveBehindMaster() == false
+        && mysqlHeartBeatManager.getHeartBeatStatus().isDbSynStatusNormal();
+  }
 }

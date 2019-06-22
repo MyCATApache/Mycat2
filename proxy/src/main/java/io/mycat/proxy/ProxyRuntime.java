@@ -33,7 +33,6 @@ import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.config.schema.DataNodeType;
-import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.user.UserRootConfig;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -50,15 +49,20 @@ import io.mycat.replica.MySQLReplica;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
+import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,15 +145,27 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   public void initRepliac(ProxyBeanProviders factory, AsyncTaskCallBack future) {
     ReplicasRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
-    Map<String, Integer> replicaIndexes = replicaIndexConfig.getMasterIndexes();
+    Map<String, String> replicaIndexes = replicaIndexConfig.getMasterIndexes();
     List<ReplicaConfig> replicas = dsConfig.getReplicas();
     int size = replicas.size();
     AsyncTaskCallBackCounter counter = new AsyncTaskCallBackCounter(size, future);
     for (int i = 0; i < size; i++) {
       ReplicaConfig replicaConfig = replicas.get(i);
-      Integer writeIndex = replicaIndexes.get(replicaConfig.getName());
+      String writeIndexText = replicaIndexes.get(replicaConfig.getName());
+      Set<Integer> writeIndex;
+      if (StringUtil.isEmpty(writeIndexText)) {
+        writeIndex = Collections.singleton(0);
+      }else {
+        if (writeIndexText.contains(",")) {
+          List<String> strings = Arrays.asList(writeIndexText.split(","));
+          writeIndex = strings.stream().map(Integer::parseInt).collect(Collectors.toSet());
+        } else {
+          writeIndex = Collections.singleton(Integer.parseInt(writeIndexText));
+        }
+      }
+
       MySQLReplica replica = factory
-          .createReplica(replicaConfig, writeIndex == null ? 0 : writeIndex);
+          .createReplica(replicaConfig, writeIndex);
       replicaMap.put(replica.getName(), replica);
       replica.init(counter);
       datasourceList.addAll(replica.getDatasourceList());
