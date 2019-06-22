@@ -4,9 +4,3 @@ schemas:
     defaultDataNode: dn1
     tables:
       - name: travelrecord
-
-
-dataNodes:
-  - name: dn1
-    database: db1
-    replica: repli

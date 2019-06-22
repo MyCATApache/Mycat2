@@ -24,6 +24,7 @@ import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.route.DynamicAnnotationRootConfig;
 import io.mycat.config.route.ShardingRuleRootConfig;
 import io.mycat.config.route.SharingFuntionRootConfig;
+import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.user.UserRootConfig;
 
@@ -45,6 +46,7 @@ public enum ConfigEnum {
   PLUG(12, "plug.yml", PlugRootConfig.class),
   HEARTBEAT(13, "heartbeat.yml", HeartbeatRootConfig.class),
   VARIABLES(14, "variables.yaml", MysqlServerVariablesRootConfig.class),
+  DATANODE(15, "dataNode.yml", DataNodeRootConfig.class),
   ;
   private byte type;
   private String fileName;

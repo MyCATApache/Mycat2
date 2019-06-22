@@ -50,6 +50,7 @@ public class ConfigLoader {
     YamlUtil.createDirectoryIfNotExists(DIR_ARCHIVE);
     loadConfig(root, ConfigEnum.USER, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.DATASOURCE, GlobalConfig.INIT_VERSION, receiver);
+    loadConfig(root, ConfigEnum.DATANODE, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.DYNAMIC_ANNOTATION, GlobalConfig.INIT_VERSION, receiver);
     loadConfig(root, ConfigEnum.HEARTBEAT, GlobalConfig.INIT_VERSION, receiver);
@@ -77,7 +78,7 @@ public class ConfigLoader {
       e.printStackTrace();
       LOGGER.error("load config for {} fail",e);
     }
-    throw new IllegalArgumentException(root +"/"+configEnum.getFileName()+"not exist");
+   LOGGER.warn(root +"/"+configEnum.getFileName()+"not exist");
   }
 
   /**

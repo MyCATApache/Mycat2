@@ -31,6 +31,7 @@ import io.mycat.config.proxy.MysqlServerVariablesRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
+import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.user.UserRootConfig;
@@ -121,10 +122,9 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
   public void initDataNode() {
-    SchemaRootConfig schemaConfig =
-        routerConfig.getConfig(ConfigEnum.SCHEMA);
+    DataNodeRootConfig dataNodeRootConfig = getConfig(ConfigEnum.DATANODE);
 
-    for (DataNodeConfig dataNodeConfig : schemaConfig.getDataNodes()) {
+    for (DataNodeConfig dataNodeConfig : dataNodeRootConfig.getDataNodes()) {
       DataNodeType dataNodeType =
           dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
       if (dataNodeType == DataNodeType.MYSQL) {

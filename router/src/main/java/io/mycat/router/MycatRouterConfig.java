@@ -41,6 +41,7 @@ import io.mycat.config.route.SharingFuntionRootConfig;
 import io.mycat.config.route.SharingTableRule;
 import io.mycat.config.route.SubShardingFuntion;
 import io.mycat.config.schema.DataNodeConfig;
+import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.schema.SchemaConfig;
 import io.mycat.config.schema.SchemaRootConfig;
@@ -229,6 +230,8 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
 
   public MycatRouterConfig(String root) {
     //init();
+//    ConfigLoader.INSTANCE
+//        .loadConfig(root, ConfigEnum.DATANODE, GlobalConfig.INIT_VERSION, this);
     ConfigLoader.INSTANCE
         .loadConfig(root, ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION, this);
     ConfigLoader.INSTANCE.loadConfig(root, ConfigEnum.RULE, GlobalConfig.INIT_VERSION, this);
@@ -242,7 +245,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     initTableRule();
     iniSchema();
     this.defaultSchema = initDefaultSchema();
-    initDataNode();
+    //initDataNode();
 
   }
 
@@ -464,10 +467,10 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
 
   private void initDataNode() {
     MycatRouterConfig mycatRouter = this;
-    SchemaRootConfig schemaConfig = mycatRouter
-        .getConfig(ConfigEnum.SCHEMA);
+    DataNodeRootConfig dataNode = mycatRouter
+        .getConfig(ConfigEnum.DATANODE);
 
-    for (DataNodeConfig dataNodeConfig : schemaConfig.getDataNodes()) {
+    for (DataNodeConfig dataNodeConfig : dataNode.getDataNodes()) {
       DataNodeType dataNodeType =
           dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
       switch (dataNodeType) {

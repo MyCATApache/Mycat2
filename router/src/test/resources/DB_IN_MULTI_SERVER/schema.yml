@@ -6,12 +6,3 @@ schemas:
         dataNodes: dn1
       - name: travelrecord2
         dataNodes: dn2
-
-
-dataNodes:
-  - name: dn1
-    database: db1
-    replica: repli
-  - name: dn2
-    database: db2
-    replica: repli

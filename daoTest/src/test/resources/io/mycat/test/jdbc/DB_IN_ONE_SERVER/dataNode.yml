@@ -1,0 +1,13 @@
+dataNodes:
+  - name: dn1
+    database: db1
+    replica: repli
+  - name: dn2
+    database: db2
+    replica: repli
+  - name: dn3
+    database: db3
+    replica: repli
+  - name: dn4
+    database: db4
+    replica: repli
