@@ -25,6 +25,7 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
+import io.mycat.command.CommandResolver;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
@@ -98,7 +99,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void handle() {
     assert commandHandler != null;
-    commandHandler.handle(this);
+    CommandResolver.handle(this,commandHandler);
   }
 
 

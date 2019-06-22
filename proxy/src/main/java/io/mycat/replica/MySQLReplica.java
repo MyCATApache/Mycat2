@@ -99,9 +99,10 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
     Objects.requireNonNull(config);
     Objects.requireNonNull(datasourceList);
     Objects.requireNonNull(callBack);
-    for (MySQLDatasource datasource : datasourceList) {
-      datasource.clearAndDestroyCons(ReplicaTip.INIT_REPLICA.getMessage(getName()));
-    }
+
+//    for (MySQLDatasource datasource : datasourceList) {
+//      datasource.clearAndDestroyCons(ReplicaTip.INIT_REPLICA.getMessage(getName()));
+//    }
     for (MySQLDatasource datasource : datasourceList) {
       datasource.init(callBack);
     }

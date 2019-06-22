@@ -104,22 +104,22 @@ public abstract class MySQLDatasource implements LoadBalanceDataSource {
   }
 
 
-  /**
-   * 关闭此dataSource创建的连接
-   *
-   * @param reason 关闭原因
-   */
-  public void clearAndDestroyCons(String reason) {
-    Objects.requireNonNull(reason);
-    MycatReactorThread[] mycatReactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
-    Objects.requireNonNull(mycatReactorThreads);
-    for (MycatReactorThread thread : mycatReactorThreads) {
-      thread.addNIOJob(
-          () -> {
-            thread.getMySQLSessionManager().clearAndDestroyDataSource(this, reason);
-          });
-    }
-  }
+//  /**
+//   * 关闭此dataSource创建的连接
+//   *
+//   * @param reason 关闭原因
+//   */
+//  public void clearAndDestroyCons(String reason) {
+//    Objects.requireNonNull(reason);
+//    MycatReactorThread[] mycatReactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
+//    Objects.requireNonNull(mycatReactorThreads);
+//    for (MycatReactorThread thread : mycatReactorThreads) {
+//      thread.addNIOJob(
+//          () -> {
+//            thread.getMySQLSessionManager().clearAndDestroyDataSource(this, reason);
+//          });
+//    }
+//  }
 
   public abstract boolean isAlive();
 
