@@ -68,13 +68,11 @@ import java.util.function.Supplier;
  * @author jamie12221 date 2019-05-03 00:29
  **/
 public class MycatRouterConfig extends ConfigReceiverImpl {
-
   private final Map<String, Supplier<RuleAlgorithm>> functions = new HashMap<>();
   private final Map<String, DynamicAnnotationConfig> dynamicAnnotations = new HashMap<>();
   private final Map<String, MycatTableRule> tableRules = new HashMap<>();
   private final Map<String, MycatSchema> schemas = new HashMap<>();
   private final Map<String, MycatDataNode> dataNodes = new HashMap<>();
-  private final Map<String, List<MycatDataNode>> replicaNameToDataNodes = new HashMap<>();
   private final MycatSchema defaultSchema;
   private SQLInterceptor sqlInterceptor = (s) -> s;
 
@@ -477,14 +475,6 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
         case MYSQL:
           MySQLDataNode mySQLDataNode = new MySQLDataNode(dataNodeConfig);
           dataNodes.put(dataNodeConfig.getName(), mySQLDataNode);
-          replicaNameToDataNodes.compute(mySQLDataNode.getReplicaName(),
-              (s, mycatDataNodes) -> {
-                if (mycatDataNodes == null) {
-                  mycatDataNodes = new ArrayList<>();
-                }
-                mycatDataNodes.add(mySQLDataNode);
-                return mycatDataNodes;
-              });
           break;
       }
     }
