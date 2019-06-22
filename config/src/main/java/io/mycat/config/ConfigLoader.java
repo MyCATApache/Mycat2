@@ -71,7 +71,7 @@ public class ConfigLoader {
       if (Files.exists(fileName)) {
         LOGGER.info("load config for {}", configEnum);
         receiver.putConfig(configEnum,
-            (Configurable) YamlUtil.load(fileName.toString(), configEnum.getClazz()), version);
+            (ConfigurableRoot) YamlUtil.load(fileName.toString(), configEnum.getClazz()), version);
         return;
       }
     }catch (Exception e){

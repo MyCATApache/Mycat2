@@ -18,7 +18,7 @@
 package io.mycat.config.proxy;
 
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 
 /**
  * Desc: 对应mycat.yml文件
@@ -26,7 +26,7 @@ import io.mycat.config.Configurable;
  * date: 19/09/2017
  * @author: gaozhiwen
  */
-public class ProxyRootConfig implements Configurable {
+public class ProxyRootConfig implements ConfigurableRoot {
     private ProxyConfig proxy;
 
     public ProxyConfig getProxy() {

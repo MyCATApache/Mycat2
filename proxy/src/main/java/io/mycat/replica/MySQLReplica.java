@@ -123,10 +123,16 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
   public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,
       List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+    MySQLDatasource datasource = getMySQLSessionByBalance(runOnMaster, strategy);
+    getSessionCallback(datasource, ids, asynTaskCallBack);
+  }
+
+  public MySQLDatasource getMySQLSessionByBalance(boolean runOnMaster,
+      LoadBalanceStrategy strategy) {
     MySQLDatasource datasource;
     if (runOnMaster) {
-      getWriteDatasource(ids, strategy, asynTaskCallBack);
-      return;
+      datasource = getWriteDatasource(strategy);
+      return datasource;
     }
     if (strategy == null) {
       strategy = this.defaultLoadBalanceStrategy;
@@ -134,10 +140,10 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
     List activeDataSource = getDataSourceByLoadBalacneType();
     datasource = (MySQLDatasource) strategy.select(this, activeDataSource);
     if (datasource == null) {
-      getWriteDatasource(ids, strategy, asynTaskCallBack);
-    } else {
-      getDatasource(datasource, ids, asynTaskCallBack);
+      datasource = getWriteDatasource(strategy);
+      return datasource;
     }
+    return datasource;
   }
 
   private List<MySQLDatasource> getDataSourceByLoadBalacneType() {
@@ -171,28 +177,23 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
   /**
    * 获取写入(主)节点,如果主节点已经失效,则失败
    */
-  private void getWriteDatasource(List<SessionIdAble> ids,
-      LoadBalanceStrategy strategy,
-      SessionCallBack<MySQLClientSession> asynTaskCallBack) {
-    if (strategy==null){
+  private MySQLDatasource getWriteDatasource(LoadBalanceStrategy strategy) {
+    if (strategy == null) {
       strategy = this.defaultLoadBalanceStrategy;
     }
     List writeDataSource = this.writeDataSource;
     MySQLDatasource datasource = (MySQLDatasource) strategy
         .select(this, writeDataSource);
     if (datasource == null || !datasource.isAlive()) {
-      asynTaskCallBack.onException(new MycatExpection(
-          ReplicaTip.NO_AVAILABLE_DATA_SOURCE.getMessage(this.getName())), this, null);
-      return;
+      return null;
     }
-    getDatasource(datasource, ids, asynTaskCallBack);
-    return;
+    return datasource;
   }
 
   /**
    * 根据MySQLDatasource获得MySQL Session 此函数是本类获取MySQL Session中最后一个必经的执行点,检验当前获得Session的线程是否MycatReactorThread
    */
-  private void getDatasource(MySQLDatasource datasource, List<SessionIdAble> ids,
+  private void getSessionCallback(MySQLDatasource datasource, List<SessionIdAble> ids,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     Objects.requireNonNull(datasource);
     Objects.requireNonNull(asynTaskCallBack);

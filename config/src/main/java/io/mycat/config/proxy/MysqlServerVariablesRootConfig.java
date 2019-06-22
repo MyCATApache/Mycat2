@@ -1,13 +1,13 @@
 package io.mycat.config.proxy;
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.Map;
 
 /**
  * @author jamie12221
  * date 2019-05-26 23:58
  **/
-public class MysqlServerVariablesRootConfig implements Configurable {
+public class MysqlServerVariablesRootConfig implements ConfigurableRoot {
 
   Map<String, String> variables;
 

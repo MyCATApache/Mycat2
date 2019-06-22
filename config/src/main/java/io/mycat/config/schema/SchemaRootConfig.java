@@ -14,7 +14,7 @@
  */
 package io.mycat.config.schema;
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.List;
 
 /**
@@ -23,7 +23,7 @@ import java.util.List;
  * date: 10/09/2017
  * @author: gaozhiwen
  */
-public class SchemaRootConfig implements Configurable {
+public class SchemaRootConfig implements ConfigurableRoot {
 
   private List<SchemaConfig> schemas;
   public String defaultSchemaName;

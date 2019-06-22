@@ -17,7 +17,7 @@
 
 package io.mycat.config.user;
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.List;
 
 /**
@@ -26,7 +26,7 @@ import java.util.List;
  * date: 19/09/2017
  * @author: gaozhiwen
  */
-public class UserRootConfig implements Configurable {
+public class UserRootConfig implements ConfigurableRoot {
     private List<UserConfig> users;
     private FireWallConfig firewall;
 

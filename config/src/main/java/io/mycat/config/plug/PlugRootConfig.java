@@ -1,6 +1,6 @@
 package io.mycat.config.plug;
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +8,7 @@ import java.util.List;
  * @author jamie12221
  *  date 2019-05-20 12:12
  **/
-public class PlugRootConfig implements Configurable {
+public class PlugRootConfig implements ConfigurableRoot {
 
   String defaultLoadBalance;
   List<LoadBalanceConfig> loadBalances = new ArrayList<>();

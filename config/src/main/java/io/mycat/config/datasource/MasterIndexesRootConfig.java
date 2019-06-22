@@ -19,7 +19,7 @@
 package io.mycat.config.datasource;
 
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.Map;
 
 /**
@@ -28,7 +28,7 @@ import java.util.Map;
  * date: 10/09/2017
  * @author: gaozhiwen
  */
-public class MasterIndexesRootConfig implements Configurable {
+public class MasterIndexesRootConfig implements ConfigurableRoot {
 
     private Map<String, String> masterIndexes;
 

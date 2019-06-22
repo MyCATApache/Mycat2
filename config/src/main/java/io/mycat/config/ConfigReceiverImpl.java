@@ -11,7 +11,7 @@ public class ConfigReceiverImpl implements ConfigReceiver {
 
   // 当前节点所用的配置文件的版本
   private Map<ConfigEnum, Integer> configVersionMap = new EnumMap<>(ConfigEnum.class);
-  private Map<ConfigEnum, Configurable> configMap = new EnumMap<>(ConfigEnum.class);
+  private Map<ConfigEnum, ConfigurableRoot> configMap = new EnumMap<>(ConfigEnum.class);
   private Map<ConfigEnum, Long> configUpdateTimeMap = new EnumMap<>(ConfigEnum.class);
   @Override
   public int getConfigVersion(ConfigEnum configEnum) {
@@ -20,7 +20,7 @@ public class ConfigReceiverImpl implements ConfigReceiver {
   }
 
   @Override
-  public void putConfig(ConfigEnum configEnum, Configurable config, int version) {
+  public void putConfig(ConfigEnum configEnum, ConfigurableRoot config, int version) {
     configMap.put(configEnum, config);
     configVersionMap.put(configEnum, version);
     configUpdateTimeMap.put(configEnum, System.currentTimeMillis());
@@ -33,7 +33,7 @@ public class ConfigReceiverImpl implements ConfigReceiver {
   }
 
   @Override
-  public <T extends Configurable> T getConfig(ConfigEnum configEnum) {
+  public <T extends ConfigurableRoot> T getConfig(ConfigEnum configEnum) {
     return (T) configMap.get(configEnum);
   }
 }

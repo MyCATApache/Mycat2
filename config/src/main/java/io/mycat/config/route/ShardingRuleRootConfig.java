@@ -1,13 +1,13 @@
 package io.mycat.config.route;
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.List;
 
 /**
  * @author jamie12221
  *  date 2019-05-03 14:18
  **/
-public class ShardingRuleRootConfig implements Configurable {
+public class ShardingRuleRootConfig implements ConfigurableRoot {
 
   String sqlInterceptorClass;
    List<SharingTableRule> tableRules;

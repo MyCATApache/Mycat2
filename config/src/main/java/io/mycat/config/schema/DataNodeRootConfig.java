@@ -1,10 +1,10 @@
 package io.mycat.config.schema;
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DataNodeRootConfig implements Configurable {
+public class DataNodeRootConfig implements ConfigurableRoot {
 
   private List<DataNodeConfig> dataNodes = new ArrayList<DataNodeConfig>();
 

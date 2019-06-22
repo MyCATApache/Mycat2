@@ -22,6 +22,5 @@ package io.mycat.config;
  * date: 16/09/2017
  * @author: gaozhiwen
  */
-public interface Configurable {
-
+public interface ConfigurableRoot extends ConfigurableNode{
 }

@@ -18,7 +18,7 @@
 
 package io.mycat.config.datasource;
 
-import io.mycat.config.Configurable;
+import io.mycat.config.ConfigurableRoot;
 import java.util.List;
 
 /**
@@ -27,7 +27,7 @@ import java.util.List;
  * date: 10/09/2017
  * @author: gaozhiwen
  */
-public class ReplicasRootConfig implements Configurable {
+public class ReplicasRootConfig implements ConfigurableRoot {
     private List<ReplicaConfig> replicas;
     private String charset;
 

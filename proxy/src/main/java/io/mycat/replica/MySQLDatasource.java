@@ -38,7 +38,6 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
   protected final int index;
   protected final DatasourceConfig datasourceConfig;
   protected final MySQLReplica replica;
-  protected final MySQLCollationIndex collationIndex = new MySQLCollationIndex();
   protected final AtomicInteger connectionCounter = new AtomicInteger(0);
 
   public MySQLDatasource(int index, DatasourceConfig datasourceConfig,
@@ -147,11 +146,6 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
   public MySQLReplica getReplica() {
     return replica;
   }
-
-  public MySQLCollationIndex getCollationIndex() {
-    return collationIndex;
-  }
-
 
   @Override
   public boolean equals(Object o) {

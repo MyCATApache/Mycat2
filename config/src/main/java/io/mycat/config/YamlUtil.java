@@ -184,7 +184,7 @@ public class YamlUtil {
      * @param configName
      * @param curVersion
      */
-    public static void archiveAndDumpToFile(Configurable configBean, String configName, int curVersion) throws IOException {
+    public static void archiveAndDumpToFile(ConfigurableRoot configBean, String configName, int curVersion) throws IOException {
             String archivePath = ROOT_PATH + ConfigLoader.DIR_ARCHIVE;
             try {
                 Files.move(Paths.get(ROOT_PATH + configName), Paths.get(archivePath + getFileName(configName, curVersion)), StandardCopyOption.REPLACE_EXISTING);
