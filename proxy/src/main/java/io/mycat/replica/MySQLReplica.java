@@ -21,7 +21,7 @@ import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
 import io.mycat.logTip.ReplicaTip;
-import io.mycat.plug.loadBalance.LoadBalanceDataSource;
+import io.mycat.plug.loadBalance.LoadBalanceELement;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
@@ -125,7 +125,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
     if (strategy == null) {
       strategy = this.defaultLoadBalanceStrategy;
     }
-    List<LoadBalanceDataSource> activeDataSource = getDataSourceByLoadBalacneType();
+    List<LoadBalanceELement> activeDataSource = getDataSourceByLoadBalacneType();
     datasource = (MySQLDatasource)strategy.select(this,  activeDataSource);
     if (datasource == null) {
       getWriteDatasource(ids,asynTaskCallBack);
@@ -134,12 +134,12 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
     }
   }
 
-  private List<LoadBalanceDataSource> getDataSourceByLoadBalacneType() {
+  private List<LoadBalanceELement> getDataSourceByLoadBalacneType() {
     BalanceTypeEnum balanceType = this.getConfig().getBalanceType();
     Objects.requireNonNull(balanceType,"balanceType is null");
     switch (balanceType){
       case BALANCE_ALL:
-        List<LoadBalanceDataSource> list = new ArrayList<>(this.datasourceList.size());
+        List<LoadBalanceELement> list = new ArrayList<>(this.datasourceList.size());
         for (MySQLDatasource datasource : this.datasourceList) {
           if (datasource.isAlive()) {
             list.add(datasource);
@@ -149,7 +149,7 @@ public abstract class MySQLReplica implements MycatReplica,LoadBalanceInfo {
       case BALANCE_NONE:
         return Collections.singletonList(getMaster());
       case BALANCE_ALL_READ:
-        List<LoadBalanceDataSource> result = new ArrayList<>(this.datasourceList.size());
+        List<LoadBalanceELement> result = new ArrayList<>(this.datasourceList.size());
         for (MySQLDatasource mySQLDatasource : this.datasourceList) {
           if (mySQLDatasource.isAlive() && mySQLDatasource.isSlave()) {
             result.add(mySQLDatasource);

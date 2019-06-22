@@ -16,7 +16,7 @@ package io.mycat.replica;
 
 import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
-import io.mycat.plug.loadBalance.LoadBalanceDataSource;
+import io.mycat.plug.loadBalance.LoadBalanceELement;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public abstract class MySQLDatasource implements LoadBalanceDataSource {
+public abstract class MySQLDatasource implements LoadBalanceELement {
 
   protected static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
   protected final int index;

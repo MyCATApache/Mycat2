@@ -30,5 +30,5 @@ public interface LoadBalanceStrategy {
    * @param info 全局信息
    * @param entityList 可选列表
    */
-  LoadBalanceDataSource select(LoadBalanceInfo info, List<LoadBalanceDataSource> entityList);
+  LoadBalanceELement select(LoadBalanceInfo info, List<LoadBalanceELement> entityList);
 }

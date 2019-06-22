@@ -28,12 +28,12 @@ import java.util.concurrent.ThreadLocalRandom;
 public enum BalanceLeastActive implements LoadBalanceStrategy{
   INSTANCE {
     @Override
-    public  LoadBalanceDataSource select(LoadBalanceInfo info, List<LoadBalanceDataSource> entityList) {
+    public LoadBalanceELement select(LoadBalanceInfo info, List<LoadBalanceELement> entityList) {
       if(null == entityList && entityList.size() == 0) {
         return null;
       }
       int len = entityList.size();
-      List<LoadBalanceDataSource> balanceList = new ArrayList<>();
+      List<LoadBalanceELement> balanceList = new ArrayList<>();
 
       int leastActive = Integer.MAX_VALUE;
       for (int i = 0; i < len; i++) {

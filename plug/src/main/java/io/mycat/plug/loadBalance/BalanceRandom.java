@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public enum BalanceRandom implements LoadBalanceStrategy{
   INSTANCE {
     @Override
-    public  LoadBalanceDataSource select(LoadBalanceInfo info, List<LoadBalanceDataSource> entityList) {
+    public LoadBalanceELement select(LoadBalanceInfo info, List<LoadBalanceELement> entityList) {
       if(null == entityList && entityList.size() == 0) {
           return null;
       }
