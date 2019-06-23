@@ -4,36 +4,37 @@ import java.util.EnumMap;
 import java.util.Map;
 
 /**
- * @author jamie12221
- *  date 2019-05-03 15:28
+ * @author jamie12221 date 2019-05-03 15:28
  **/
 public class ConfigReceiverImpl implements ConfigReceiver {
 
-  // 当前节点所用的配置文件的版本
-  private Map<ConfigEnum, Integer> configVersionMap = new EnumMap<>(ConfigEnum.class);
-  private Map<ConfigEnum, ConfigurableRoot> configMap = new EnumMap<>(ConfigEnum.class);
-  private Map<ConfigEnum, Long> configUpdateTimeMap = new EnumMap<>(ConfigEnum.class);
-  @Override
-  public int getConfigVersion(ConfigEnum configEnum) {
-    Integer oldVersion = configVersionMap.get(configEnum);
-    return oldVersion == null ? GlobalConfig.INIT_VERSION : oldVersion;
+  private String resourcePath;
+  private final int version;
+  private final Map<ConfigEnum, ConfigurableRoot> configMap = new EnumMap<>(ConfigEnum.class);
+
+  public ConfigReceiverImpl(String resourcePath,int version) {
+    this.resourcePath = resourcePath;
+    this.version = version;
   }
 
   @Override
-  public void putConfig(ConfigEnum configEnum, ConfigurableRoot config, int version) {
+  public String getResourcePath() {
+    return resourcePath;
+  }
+
+  @Override
+  public int getConfigVersion() {
+    return version;
+  }
+
+  @Override
+  public void putConfig(ConfigEnum configEnum, ConfigurableRoot config) {
     configMap.put(configEnum, config);
-    configVersionMap.put(configEnum, version);
-    configUpdateTimeMap.put(configEnum, System.currentTimeMillis());
-  }
-
-  @Override
-  public void setConfigVersion(ConfigEnum configEnum, int version) {
-    configVersionMap.put(configEnum, version);
-    configUpdateTimeMap.put(configEnum, System.currentTimeMillis());
   }
 
   @Override
   public <T extends ConfigurableRoot> T getConfig(ConfigEnum configEnum) {
     return (T) configMap.get(configEnum);
   }
+
 }

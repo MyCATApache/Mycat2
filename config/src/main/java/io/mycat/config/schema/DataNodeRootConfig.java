@@ -4,7 +4,7 @@ import io.mycat.config.ConfigurableRoot;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DataNodeRootConfig implements ConfigurableRoot {
+public class DataNodeRootConfig extends ConfigurableRoot {
 
   private List<DataNodeConfig> dataNodes = new ArrayList<DataNodeConfig>();
 

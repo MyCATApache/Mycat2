@@ -26,77 +26,51 @@ import org.slf4j.LoggerFactory;
  * Desc: 配置文件加载类
  *
  * date: 13/09/2017
- * @author: gaozhiwen
+ *
+ * @author: gaozhiwen junwen
  */
 public class ConfigLoader {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ConfigLoader.class);
-  public static final ConfigLoader INSTANCE = new ConfigLoader();
-
   public static final String DIR_CONF = "conf" + File.separator;
   public static final String DIR_PREPARE = "prepare" + File.separator;
   public static final String DIR_ARCHIVE = "archive" + File.separator;
 
-  public void loadProxy(String root, ConfigReceiver receiver) throws IOException {
-    loadConfig(root, ConfigEnum.VARIABLES, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.PROXY, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.PLUG, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.REPLICA_INDEX, GlobalConfig.INIT_VERSION, receiver);
+  public static ConfigReceiver load(String root) throws IOException {
+    return load(root, GlobalConfig.genVersion());
   }
 
-  public void loadMycat(String root, ConfigReceiver receiver) throws IOException {
-    // 保证文件夹存在
-    YamlUtil.createDirectoryIfNotExists(DIR_PREPARE);
-    YamlUtil.createDirectoryIfNotExists(DIR_ARCHIVE);
-    loadConfig(root, ConfigEnum.USER, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.DATASOURCE, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.DATANODE, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.DYNAMIC_ANNOTATION, GlobalConfig.INIT_VERSION, receiver);
-    loadConfig(root, ConfigEnum.HEARTBEAT, GlobalConfig.INIT_VERSION, receiver);
-    // 清空prepare文件夹
-    YamlUtil.clearDirectory(DIR_PREPARE, null);
+  public static ConfigReceiver load(String root, int version) throws IOException {
+    ConfigReceiver cr = new ConfigReceiverImpl(root,version);
+    for (ConfigEnum value : ConfigEnum.values()) {
+      loadConfig(root, value, cr);
+    }
+    return cr;
   }
 
   /**
    * 加载指定的配置文件
+   *
    * @param configEnum 加载的配置枚举值
-   * @param version 当前加载的文件版本
    */
 
-  public void loadConfig(String root, ConfigEnum configEnum, int version, ConfigReceiver receiver) {
+  public static void loadConfig(String root, ConfigEnum configEnum, ConfigReceiver receiver) {
     try {
       Path fileName = Paths.get(root).resolve(configEnum.getFileName()).toAbsolutePath();
 
       if (Files.exists(fileName)) {
         LOGGER.info("load config for {}", configEnum);
-        receiver.putConfig(configEnum,
-            (ConfigurableRoot) YamlUtil.load(fileName.toString(), configEnum.getClazz()), version);
+        String path = fileName.toString();
+        ConfigurableRoot load = (ConfigurableRoot) YamlUtil
+            .load(path, configEnum.getClazz());
+        load.setFilePath(path);
+        receiver.putConfig(configEnum,load);
         return;
       }
-    }catch (Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
-      LOGGER.error("load config for {} fail",e);
+      LOGGER.error("load config for {} fail", e);
     }
-   LOGGER.warn(root +"/"+configEnum.getFileName()+"not exist");
-  }
-
-  /**
-   * 将当前的配置文件归档，并从prepare中获取指定版本的配置文件作为当前的配置文件，同时清空prepare文件夹
-   *
-   * @param configEnum
-   * @param version
-   * @throws IOException
-   */
-  public void archiveAndLoadConfig(String root, ConfigEnum configEnum, int version,
-      ConfigReceiver receiver)
-      throws IOException {
-    String fileName = configEnum.getFileName();
-    int curVersion = receiver.getConfigVersion(configEnum);
-    if (YamlUtil.archive(fileName, curVersion, version)) {
-      loadConfig(root, configEnum, version, receiver);
-    }
-    // 清空prepare下的文件
-    YamlUtil.clearDirectory(DIR_PREPARE, fileName);
+    LOGGER.warn(root + "/" + configEnum.getFileName() + "not exist");
   }
 }

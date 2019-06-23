@@ -71,6 +71,11 @@ public final class MySQLSessionManager implements
   final HashMap<Integer, MySQLClientSession> allSessions = new HashMap<>();
   final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
   final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
+  private ProxyRuntime runtime;
+
+  public MySQLSessionManager(ProxyRuntime runtime) {
+    this.runtime = runtime;
+  }
 
   /**
    * 返回不可变集合,防止外部代码错误操作allSessions导致泄漏MySQLSession
@@ -370,9 +375,8 @@ public final class MySQLSessionManager implements
    */
   @Override
   public void idleConnectCheck() {
-    Collection<MySQLReplica> mysqlReplicaList = ProxyRuntime.INSTANCE
-        .getMySQLReplicaList();
-    HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE
+    Collection<MySQLReplica> mysqlReplicaList = this.runtime.getMySQLReplicaList();
+    HeartbeatRootConfig heartbeatRootConfig = this.runtime
         .getConfig(ConfigEnum.HEARTBEAT);
     long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
     long hearBeatTime = System.currentTimeMillis() - idleTimeout;

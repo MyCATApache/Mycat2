@@ -30,7 +30,7 @@ public class JdbcDataSource {
 
 
   public static void main(String[] args) throws SQLException, IOException {
-    ConfigReceiverImpl configReceiver = new ConfigReceiverImpl();
+    ConfigReceiverImpl configReceiver = new ConfigReceiverImpl(version);
     ConfigLoader.INSTANCE
         .loadConfig("D:\\newgit\\f2\\jdbc\\src\\main\\resources", ConfigEnum.DATASOURCE,
             GlobalConfig.INIT_VERSION, configReceiver);

@@ -39,13 +39,15 @@ public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
     protected volatile long lastReceivedQryTime;//    private isCheck
     protected long heartbeatTimeout ;
     protected volatile HeartBeatAsyncTaskCallBack heartBeatAsyncTaskCallBack;
+    protected final ProxyRuntime runtime;
 
 
-    public AbstractHeartBeatDetector(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource , HeartbeatManager heartbeatManager) {
+    public AbstractHeartBeatDetector(ProxyRuntime runtime,ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource , HeartbeatManager heartbeatManager) {
         this.replicaConfig = replicaConfig;
         this.dataSource = dataSource;
         this.heartbeatManager = heartbeatManager;
-        HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE.getConfig(
+        this.runtime = runtime;
+        HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(
                 ConfigEnum.HEARTBEAT);
         HeartbeatConfig heartbeatConfig = heartbeatRootConfig
                 .getHeartbeat();
@@ -55,7 +57,7 @@ public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
     public void heartBeat(){
         heartBeatAsyncTaskCallBack = getAsyncTaskCallback();
         MySQLTaskUtil
-            .getMySQLSessionForTryConnectFromUserThread(dataSource, heartBeatAsyncTaskCallBack);
+            .getMySQLSessionForTryConnectFromUserThread(runtime,dataSource, heartBeatAsyncTaskCallBack);
     }
 
 

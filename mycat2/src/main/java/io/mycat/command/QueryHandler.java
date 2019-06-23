@@ -61,36 +61,32 @@ import org.slf4j.LoggerFactory;
 /**
  * @author jamie12221 date 2019-05-17 17:37
  **/
-public interface QueryHandler {
+public class QueryHandler {
 
   static final Logger LOGGER = LoggerFactory.getLogger(QueryHandler.class);
+  final MycatRouter router;
+  final private ProxyRuntime runtime;
 
-  MycatRouter router();
+  public QueryHandler(MycatRouter router,ProxyRuntime runtime) {
+    this.router = router;
+    this.runtime = runtime;
+  }
 
-  default void doQuery(byte[] sqlBytes, MycatSession mycat) {
-    MycatRouterConfig routerConfig = ProxyRuntime.INSTANCE.getRouterConfig();
-
+  public void doQuery(byte[] sqlBytes, MycatSession mycat) {
     /**
      * 获取默认的schema
      */
-    MycatSchema useSchema = mycat.getSchema();
+    MycatSchema useSchema = router.getSchemaBySchemaName(mycat.getSchema());
     if (useSchema == null) {
-      useSchema = router().getDefaultSchema();
+      useSchema = router.getDefaultSchema();
     }
     MycatUser user = mycat.getUser();
     String orgin = new String(sqlBytes);
     MycatMonitor.onOrginSQL(mycat, orgin);
-    orgin = routerConfig.getSqlInterceptor().interceptSQL(orgin);
-    BufferSQLContext sqlContext = router().simpleParse(orgin);
+    BufferSQLContext sqlContext = router.simpleParse(orgin);
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());
     sql = sql.trim();
     byte sqlType = sqlContext.getSQLType();
-
-    if (!user.checkSQL(sqlType, sql, Collections.EMPTY_SET)) {
-      mycat.setLastMessage("Because the security policy is not enforceable");
-      mycat.writeErrorEndPacket();
-      return;
-    }
     if (mycat.isBindMySQLSession()) {
       MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
           mycat.getMySQLSession().getDataNode().getName(), null, ResponseType.QUERY);
@@ -160,7 +156,7 @@ public interface QueryHandler {
           return;
         }
         case SHOW_DB_SQL: {
-          MycatRouterConfig config = router().getConfig();
+          MycatRouterConfig config = router.getConfig();
           showDb(mycat, config.getSchemaList());
           break;
         }
@@ -187,7 +183,7 @@ public interface QueryHandler {
           mycat.writeColumnDef("Value", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
           mycat.writeColumnEndPacket();
 
-          Set<Entry<String, String>> entries = ProxyRuntime.INSTANCE.getVariables().entries();
+          Set<Entry<String, String>> entries = runtime.getVariables().entries();
           for (Entry<String, String> entry : entries) {
             mycat.writeTextRowPacket(
                 new byte[][]{mycat.encode(entry.getKey()), mycat.encode(entry.getValue())});
@@ -232,7 +228,7 @@ public interface QueryHandler {
         }
         case SELECT_SQL: {
           if (sqlContext.isSimpleSelect()) {
-            ResultRoute resultRoute = router().enterRoute(useSchema, sqlContext, sql);
+            ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
             if (resultRoute != null) {
               switch (resultRoute.getType()) {
                 case ONE_SERVER_RESULT_ROUTE:
@@ -240,7 +236,7 @@ public interface QueryHandler {
                   MySQLDataSourceQuery query = new MySQLDataSourceQuery();
                   query.setIds(null);
                   query.setRunOnMaster(resultRoute.isRunOnMaster(false));
-                  query.setStrategy(ProxyRuntime.INSTANCE
+                  query.setStrategy(runtime
                       .getLoadBalanceByBalanceName(resultRoute.getBalance()));
                   MySQLTaskUtil
                       .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
@@ -271,7 +267,7 @@ public interface QueryHandler {
 //              }
 //          }
 
-          ResultRoute resultRoute = router().enterRoute(useSchema, sqlContext, sql);
+          ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
           if (resultRoute == null) {
             mycat.writeOkEndPacket();
             return;
@@ -318,14 +314,14 @@ public interface QueryHandler {
     }
   }
 
-  default void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
+  public void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
     mycat.writeColumnCount(1);
     byte[] bytes = MySQLPacketUtil
         .generateColumnDef("information_schema","SCHEMATA","SCHEMATA","Database","SCHEMA_NAME",MySQLFieldsType.FIELD_TYPE_VAR_STRING,
             0x1,0,mycat.charsetIndex(),192, Charset.defaultCharset());
     mycat.writeBytes(bytes);
     mycat.writeColumnEndPacket();
-    for (MycatSchema schema : mycat.getUser().getSchemas().values()) {
+    for (MycatSchema schema : schemaList) {
       String schemaName = schema.getSchemaName();
       mycat.writeTextRowPacket(new byte[][]{schemaName.getBytes(mycat.charset())});
     }
@@ -333,14 +329,14 @@ public interface QueryHandler {
     mycat.writeRowEndPacket(mycat.hasResultset(), mycat.hasCursor());
   }
 
-  default void showTable(MycatSession mycat, String schemaName) {
-    Collection<String> tableName = router().getConfig().getSchemaBySchemaName(schemaName)
+  public void showTable(MycatSession mycat, String schemaName) {
+    Collection<String> tableName = router.getConfig().getSchemaBySchemaName(schemaName)
         .getMycatTables().keySet();
     mycat.writeColumnCount(2);
     mycat.writeColumnDef("Tables in " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     mycat.writeColumnDef("Table_type " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     mycat.writeColumnEndPacket();
-    MycatRouterConfig config = router().getConfig();
+    MycatRouterConfig config = router.getConfig();
     MycatSchema schema = config.getSchemaBySchemaName(schemaName);
     byte[] basetable = mycat.encode("BASE TABLE");
     for (String name : schema.getMycatTables().keySet()) {
@@ -349,9 +345,8 @@ public interface QueryHandler {
     mycat.writeRowEndPacket(mycat.hasResultset(), mycat.hasCursor());
   }
 
-  default void useSchema(MycatSession mycat, String schemaName) {
-    MycatSchema schema = router().getConfig().getSchemaBySchemaName(schemaName);
-    mycat.useSchema(schema);
+  public void useSchema(MycatSession mycat, String schemaName) {
+    mycat.useSchema(schemaName);
     mycat.writeOkEndPacket();
   }
 }

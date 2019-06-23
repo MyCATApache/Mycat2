@@ -19,6 +19,7 @@ import io.mycat.annotations.NoExcept;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -41,11 +42,13 @@ import org.slf4j.LoggerFactory;
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   final static Logger LOGGER = LoggerFactory.getLogger(AbstractSession.class);
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
-  final ProxyBeanProviders providers;
+  final  ProxyRuntime  runtime;
+  private final ProxyBeanProviders providers;
 
-  public MycatSessionManager(
-      ProxyBeanProviders commandHandlerFactory) {
-    this.providers = commandHandlerFactory;
+  public MycatSessionManager(ProxyRuntime  runtime,
+      ProxyBeanProviders providers) {
+    this.runtime = runtime;
+    this.providers = providers;
   }
 
 
@@ -83,10 +86,10 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();
-    MycatSession mycat = new MycatSession(bufPool,
+    MycatSession mycat = new MycatSession(runtime.genSessionId(),bufPool,
         mySQLClientAuthHandler, this);
     CommandDispatcher commandDispatcher = providers
-        .createCommandDispatcher(mycat);
+        .createCommandDispatcher(runtime,mycat);
     mycat.setCommandHandler(commandDispatcher);
 
     //用于monitor监控获取session

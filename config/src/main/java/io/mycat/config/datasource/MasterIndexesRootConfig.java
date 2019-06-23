@@ -28,7 +28,7 @@ import java.util.Map;
  * date: 10/09/2017
  * @author: gaozhiwen
  */
-public class MasterIndexesRootConfig implements ConfigurableRoot {
+public class MasterIndexesRootConfig extends ConfigurableRoot {
 
     private Map<String, String> masterIndexes;
 

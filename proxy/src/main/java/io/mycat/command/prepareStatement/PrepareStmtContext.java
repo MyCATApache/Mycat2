@@ -27,7 +27,8 @@ public class PrepareStmtContext {
 
   public void newReadyPrepareStmt(String sql, String dataNode, MySQLDataSourceQuery query) {
     final long currentStmtId = stmtId++;
-    MySQLDataNode node = ProxyRuntime.INSTANCE.getDataNodeByName(dataNode);
+    ProxyRuntime runtime = mycat.getRuntime();
+    MySQLDataNode node = runtime.getDataNodeByName(dataNode);
     MySQLReplica replica = (MySQLReplica) node.getReplica();
 
 

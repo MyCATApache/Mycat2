@@ -17,12 +17,12 @@ package io.mycat.proxy;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
-import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.ConfigEnum;
-import io.mycat.config.ConfigLoader;
-import io.mycat.config.ConfigReceiverImpl;
+import io.mycat.config.ConfigReceiver;
+import io.mycat.config.ConfigurableRoot;
+import io.mycat.config.YamlUtil;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
@@ -37,8 +37,6 @@ import io.mycat.config.user.UserRootConfig;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
-import io.mycat.proxy.callback.AsyncTaskCallBack;
-import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -46,7 +44,6 @@ import io.mycat.proxy.reactor.NIOAcceptor;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
-import io.mycat.router.MycatRouterConfig;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.StringUtil;
@@ -66,30 +63,48 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProxyRuntime extends ConfigReceiverImpl {
+public class ProxyRuntime {
 
-  public static final ProxyRuntime INSTANCE = new ProxyRuntime();
   private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRuntime.class);
   private final AtomicInteger sessionIdCounter = new AtomicInteger(1);
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
   private LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
-  private MycatRouterConfig routerConfig;
   private MycatSecurityConfig securityManager;
   private MySQLVariables variables;
   private NIOAcceptor acceptor;
   private MycatReactorThread[] reactorThreads;
+  private final ConfigReceiver config;
+  private ProxyBeanProviders providers;
+
+  public ProxyRuntime(ConfigReceiver configReceiver, ProxyBeanProviders providers) {
+    this.config = configReceiver;
+    this.providers = providers;
+    this.initCharset(configReceiver.getResourcePath());
+    this.initMySQLVariables();
+    this.initPlug();
+    this.initSecurityManager();
+    this.initRepliac(this, providers);
+    this.initDataNode(providers, configReceiver.getConfig(ConfigEnum.DATANODE));
+  }
+
+  public void startReactor() throws IOException {
+    initReactor(providers, this);
+  }
+
+  public void startAcceptor() throws IOException {
+    initAcceptor();
+  }
 
 
   public void reset() {
-    assert acceptor == null;
+    acceptor = null;
     this.sessionIdCounter.set(1);
     this.replicaMap.clear();
     this.datasourceList.clear();
     this.dataNodeMap.clear();
     this.loadBalanceManager = new LoadBalanceManager();
-    this.routerConfig = null;
     this.securityManager = null;
     this.variables = null;
     this.reactorThreads = null;
@@ -106,10 +121,15 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     }
   }
 
-  public void initMySQLVariables() {
+  private void initMySQLVariables() {
     MysqlServerVariablesRootConfig config = getConfig(ConfigEnum.VARIABLES);
     Objects.requireNonNull(config.getVariables());
     variables = new MySQLVariables(config.getVariables());
+  }
+
+  public <T extends ConfigurableRoot> T getConfig(ConfigEnum configEnum) {
+    ConfigurableRoot config = this.config.getConfig(configEnum);
+    return (T) config;
   }
 
   /**
@@ -125,14 +145,12 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return variables.getMaxAllowedPacket();
   }
 
-  public void initDataNode() {
-    DataNodeRootConfig dataNodeRootConfig = getConfig(ConfigEnum.DATANODE);
-
+  private void initDataNode(ProxyBeanProviders providers, DataNodeRootConfig dataNodeRootConfig) {
     for (DataNodeConfig dataNodeConfig : dataNodeRootConfig.getDataNodes()) {
       DataNodeType dataNodeType =
           dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
       if (dataNodeType == DataNodeType.MYSQL) {
-        MySQLDataNode mySQLDataNode = new MySQLDataNode(dataNodeConfig);
+        MySQLDataNode mySQLDataNode = providers.createMySQLDataNode(this, dataNodeConfig);
         dataNodeMap.put(dataNodeConfig.getName(), mySQLDataNode);
         String replicaName = mySQLDataNode.getReplicaName();
         MySQLReplica mySQLReplica = replicaMap.get(replicaName);
@@ -142,20 +160,19 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   }
 
 
-  public void initRepliac(ProxyBeanProviders factory, AsyncTaskCallBack future) {
+  private void initRepliac(ProxyRuntime runtime, ProxyBeanProviders factory) {
     ReplicasRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
     Map<String, String> replicaIndexes = replicaIndexConfig.getMasterIndexes();
     List<ReplicaConfig> replicas = dsConfig.getReplicas();
     int size = replicas.size();
-    AsyncTaskCallBackCounter counter = new AsyncTaskCallBackCounter(size, future);
     for (int i = 0; i < size; i++) {
       ReplicaConfig replicaConfig = replicas.get(i);
       String writeIndexText = replicaIndexes.get(replicaConfig.getName());
       Set<Integer> writeIndex;
       if (StringUtil.isEmpty(writeIndexText)) {
         writeIndex = Collections.singleton(0);
-      }else {
+      } else {
         if (writeIndexText.contains(",")) {
           List<String> strings = Arrays.asList(writeIndexText.split(","));
           writeIndex = strings.stream().map(Integer::parseInt).collect(Collectors.toSet());
@@ -163,11 +180,9 @@ public class ProxyRuntime extends ConfigReceiverImpl {
           writeIndex = Collections.singleton(Integer.parseInt(writeIndexText));
         }
       }
-
       MySQLReplica replica = factory
-          .createReplica(replicaConfig, writeIndex);
+          .createReplica(runtime, replicaConfig, writeIndex);
       replicaMap.put(replica.getName(), replica);
-      replica.init(counter);
       datasourceList.addAll(replica.getDatasourceList());
     }
   }
@@ -175,14 +190,6 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   private io.mycat.config.proxy.ProxyConfig getProxy() {
     ProxyRootConfig proxyRootConfig = getConfig(ConfigEnum.PROXY);
     return proxyRootConfig.getProxy();
-  }
-
-  public void loadProxyConfig(String root) throws IOException {
-    ConfigLoader.INSTANCE.loadProxy(root, this);
-  }
-
-  public void loadMycatConfig(String root) throws IOException {
-    ConfigLoader.INSTANCE.loadMycat(root, this);
   }
 
 
@@ -210,61 +217,48 @@ public class ProxyRuntime extends ConfigReceiverImpl {
   public void exit() {
     Objects.requireNonNull(acceptor);
     Objects.requireNonNull(reactorThreads);
-    try {
-      acceptor.close();
-    } catch (IOException e) {
-      LOGGER.error("{}", e);
-    }
-    for (MycatReactorThread reactorThread : reactorThreads) {
-      try {
-        reactorThread.close();
-      } catch (IOException e) {
-        LOGGER.error("{}", e);
-      }
-    }
 
+    acceptor.close();
+    for (MycatReactorThread reactorThread : reactorThreads) {
+      reactorThread.close();
+    }
+    reset();
   }
 
-  public void initReactor(ProxyBeanProviders commandHandlerFactory, AsyncTaskCallBack future) {
-    Objects.requireNonNull(commandHandlerFactory);
-    Objects.requireNonNull(future);
+  private void initReactor(ProxyBeanProviders providers, ProxyRuntime runtime) throws IOException {
+    Objects.requireNonNull(providers);
     ProxyConfig proxy = getProxy();
     int reactorNumber = proxy.getReactorNumber();
     MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[reactorNumber];
     this.setMycatReactorThreads(mycatReactorThreads);
-    try {
-      for (int i = 0; i < mycatReactorThreads.length; i++) {
-        BufferPool bufferPool = new ProxyBufferPoolMonitor(getBufferPoolPageSize(),
-            getBufferPoolChunkSize(),
-            getBufferPoolPageNumber());
-        mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
-            new MycatSessionManager(commandHandlerFactory));
-        mycatReactorThreads[i].start();
-      }
-      future.onFinished(null, null, null);
-    } catch (Exception e) {
-      future.onFinished(null, null, null);
+    for (int i = 0; i < mycatReactorThreads.length; i++) {
+      BufferPool bufferPool = new ProxyBufferPoolMonitor(getBufferPoolPageSize(),
+          getBufferPoolChunkSize(),
+          getBufferPoolPageNumber());
+      mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
+          new MycatSessionManager(runtime, providers), runtime);
+      mycatReactorThreads[i].start();
     }
   }
 
-  public void initAcceptor() throws IOException {
+  private void initAcceptor() throws IOException {
     if (acceptor == null || !acceptor.isAlive()) {
-      NIOAcceptor acceptor = new NIOAcceptor(null);
+      NIOAcceptor acceptor = new NIOAcceptor(null, this);
       this.setAcceptor(acceptor);
       acceptor.start();
       acceptor.startServerChannel(getIP(), getPort());
     }
   }
 
-  public NIOAcceptor getAcceptor() {
+  private NIOAcceptor getAcceptor() {
     return acceptor;
   }
 
-  public void setAcceptor(NIOAcceptor acceptor) {
+  private void setAcceptor(NIOAcceptor acceptor) {
     this.acceptor = acceptor;
   }
 
-  public void setMycatReactorThreads(MycatReactorThread[] reactorThreads) {
+  private void setMycatReactorThreads(MycatReactorThread[] reactorThreads) {
     this.reactorThreads = reactorThreads;
   }
 
@@ -296,14 +290,10 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return (Collection) replicaMap.values();
   }
 
-  public MycatRouterConfig initRouterConfig(String root) {
-    return this.routerConfig = new MycatRouterConfig(root);
-  }
 
-
-  public void initSecurityManager() {
+  private void initSecurityManager() {
     UserRootConfig userRootConfig = getConfig(ConfigEnum.USER);
-    this.securityManager = new MycatSecurityConfig(userRootConfig, routerConfig);
+    this.securityManager = new MycatSecurityConfig(userRootConfig);
   }
 
 
@@ -311,15 +301,8 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     return this.securityManager;
   }
 
-  public MycatSchema getSchemaBySchemaName(String schemaName) {
-    return this.routerConfig.getSchemaBySchemaName(schemaName);
-  }
 
-  public MycatRouterConfig getRouterConfig() {
-    return routerConfig;
-  }
-
-  public void initCharset(String resourcesPath) {
+  private void initCharset(String resourcesPath) {
     CharsetUtil.init(resourcesPath);
   }
 
@@ -327,7 +310,7 @@ public class ProxyRuntime extends ConfigReceiverImpl {
     MycatMonitor.setCallback(callback);
   }
 
-  public void initPlug() {
+  private void initPlug() {
     PlugRootConfig plugRootConfig = getConfig(ConfigEnum.PLUG);
     Objects.requireNonNull(plugRootConfig);
     loadBalanceManager.load(plugRootConfig);
@@ -335,5 +318,43 @@ public class ProxyRuntime extends ConfigReceiverImpl {
 
   public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
     return loadBalanceManager.getLoadBalanceByBalanceName(name);
+  }
+
+  /**
+   * Getter for property 'config'.
+   *
+   * @return Value for property 'config'.
+   */
+  public ConfigReceiver getConfig() {
+    return config;
+  }
+
+  private static final Logger REPLICA_MASTER_INDEXES_LOGGER = LoggerFactory
+      .getLogger("replicaIndexesLogger");
+
+  public void updateReplicaMasterIndexesConfig(final MySQLReplica replica,
+      List<MySQLDatasource> writeDataSource) {
+
+    synchronized (REPLICA_MASTER_INDEXES_LOGGER) {
+      final MasterIndexesRootConfig config = getConfig(ConfigEnum.REPLICA_INDEX);
+      Map<String, String> masterIndexes = new HashMap<>(config.getMasterIndexes());
+      String name = replica.getName();
+      String old = masterIndexes.get(name);
+      String switchRes = writeDataSource.stream().map(i -> String.valueOf(i.getIndex()))
+          .collect(Collectors.joining(","));
+      if (old.equalsIgnoreCase(switchRes)) {
+        return;
+      }
+      String backup = YamlUtil.dump(config);
+      YamlUtil.dumpBackupToFile(config.getFilePath(), config.getVersion(), backup);
+      masterIndexes.put(name, switchRes);
+      config.setMasterIndexes(masterIndexes);
+      config.setVersion(config.getVersion() + 1);
+      String newContext = YamlUtil.dump(config);
+      YamlUtil.dumpToFile(config.getFilePath(), newContext);
+      REPLICA_MASTER_INDEXES_LOGGER.info("switchRes from:{}", old, switchRes);
+    }
+
+
   }
 }

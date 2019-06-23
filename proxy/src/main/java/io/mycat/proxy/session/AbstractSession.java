@@ -41,11 +41,11 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   protected NIOHandler nioHandler;
   protected boolean closed = false;
 
-  public AbstractSession(
+  public AbstractSession(int sessionId,
       NIOHandler nioHandler, SessionManager<T> sessionManager) {
     this.nioHandler = nioHandler;
     this.sessionManager = sessionManager;
-    this.sessionId = ProxyRuntime.INSTANCE.genSessionId();
+    this.sessionId = sessionId;
     this.startTime = currentTimeMillis();
   }
 

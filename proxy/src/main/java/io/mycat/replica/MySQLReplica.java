@@ -24,7 +24,6 @@ import io.mycat.logTip.ReplicaTip;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -47,14 +46,12 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221 date 2019-05-10 13:21
  **/
 public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
-
-  static Logger logger = LoggerFactory.getLogger(MySQLReplica.class);
-
+  static final Logger logger = LoggerFactory.getLogger(MySQLReplica.class);
   private final ReplicaConfig config;
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final CopyOnWriteArrayList<MySQLDatasource> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
-  private long lastInitTime;  //最后一次初始化时间
   private LoadBalanceStrategy defaultLoadBalanceStrategy;
+  protected ProxyRuntime runtime;
 
 
   /**
@@ -64,12 +61,13 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
    * @param writeIndex master index
    * @param dataSourceFactory a factory to create dataSource
    */
-  public MySQLReplica(ReplicaConfig replicaConfig,
+  public MySQLReplica(ProxyRuntime runtime,ReplicaConfig replicaConfig,
       Set<Integer> writeIndex, ProxyBeanProviders dataSourceFactory) {
+    this.runtime = runtime;
     assert replicaConfig != null;
     assert writeIndex.size() > 0;
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
-    defaultLoadBalanceStrategy = ProxyRuntime.INSTANCE
+    defaultLoadBalanceStrategy = runtime
         .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
     assert mysqls != null;
     this.config = replicaConfig;
@@ -78,39 +76,13 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
       assert datasourceConfig != null;
       if (datasourceConfig.getDbType() == null) {
         MySQLDatasource datasource = dataSourceFactory
-            .createDatasource(index, datasourceConfig, this);
+            .createDatasource(runtime,index, datasourceConfig, this);
         datasourceList.add(datasource);
         if (writeIndex.contains(index)) {
           writeDataSource.add(datasource);
         }
       }
     }
-  }
-
-  /**
-   * @return 获取最后一次初始化时间
-   */
-  public long getLastInitTime() {
-    return lastInitTime;
-  }
-
-  /**
-   * 对于已经运行的集群,首先把原session都关闭再重新创建
-   *
-   * @param callBack callback function
-   */
-  public void init(AsyncTaskCallBackCounter callBack) {
-    Objects.requireNonNull(config);
-    Objects.requireNonNull(datasourceList);
-    Objects.requireNonNull(callBack);
-
-//    for (MySQLDatasource datasource : datasourceList) {
-//      datasource.clearAndDestroyCons(ReplicaTip.INIT_REPLICA.getMessage(getName()));
-//    }
-    for (MySQLDatasource datasource : datasourceList) {
-      datasource.init(callBack);
-    }
-    this.lastInitTime = System.currentTimeMillis();
   }
 
   /**
@@ -282,6 +254,9 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
         for (int i = 0; i < this.datasourceList.size(); i++) {
           if (datasourceList.get(i).isAlive()) {
             logger.info("{} switch master to {}", this, i);
+            ///////////////////////////////
+              runtime.updateReplicaMasterIndexesConfig(this, writeDataSource);
+            //////////////////////////////
             return true;
           }
         }

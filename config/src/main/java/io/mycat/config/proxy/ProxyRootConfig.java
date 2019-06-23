@@ -26,7 +26,7 @@ import io.mycat.config.ConfigurableRoot;
  * date: 19/09/2017
  * @author: gaozhiwen
  */
-public class ProxyRootConfig implements ConfigurableRoot {
+public class ProxyRootConfig extends ConfigurableRoot {
     private ProxyConfig proxy;
 
     public ProxyConfig getProxy() {

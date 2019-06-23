@@ -16,6 +16,8 @@
  */
 package io.mycat.config;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Desc:
  *
@@ -23,6 +25,8 @@ package io.mycat.config;
  * @author: gaozhiwen
  */
 public class GlobalConfig {
+
+    static final AtomicInteger VERSION = new AtomicInteger(0);
 
     public static final String SINGLE_NODE_HEARTBEAT_SQL = "select 1";
     public static final String MASTER_SLAVE_HEARTBEAT_SQL = "show slave status";
@@ -84,5 +88,14 @@ public class GlobalConfig {
         // flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_STATEMENTS;
         // flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_RESULTS;
         return flag;
+    }
+
+    /**
+     * Getter for property 'VERSION'.
+     *
+     * @return Value for property 'VERSION'.
+     */
+    public static int genVersion() {
+        return VERSION.getAndIncrement();
     }
 }

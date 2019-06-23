@@ -1,6 +1,7 @@
 package io.mycat.replica;
 
 import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.heartbeat.MysqlHeartBeatManager;
 
 /**
@@ -10,10 +11,10 @@ import io.mycat.replica.heartbeat.MysqlHeartBeatManager;
 public class MySQLDataSourceEx extends MySQLDatasource {
   final MysqlHeartBeatManager mysqlHeartBeatManager;
 
-  public MySQLDataSourceEx(int index, DatasourceConfig datasourceConfig,
+  public MySQLDataSourceEx(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
     super(index, datasourceConfig, replica);
-    mysqlHeartBeatManager = new MysqlHeartBeatManager(replica.getConfig(), this);
+    mysqlHeartBeatManager = new MysqlHeartBeatManager(runtime,replica.getConfig(), this);
   }
 
   public void heartBeat() {

@@ -7,7 +7,7 @@ import java.util.Map;
  * @author jamie12221
  * date 2019-05-26 23:58
  **/
-public class MysqlServerVariablesRootConfig implements ConfigurableRoot {
+public class MysqlServerVariablesRootConfig extends ConfigurableRoot {
 
   Map<String, String> variables;
 

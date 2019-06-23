@@ -1,5 +1,8 @@
 package io.mycat.router;
 
+import io.mycat.config.ConfigLoader;
+import io.mycat.config.ConfigReceiver;
+import io.mycat.config.ConfigReceiverImpl;
 import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -15,7 +18,8 @@ public abstract class MycatRouterTest {
     try {
       String rootPath = Paths.get(this.getClass().getClassLoader().getResource(module).toURI())
                             .toAbsolutePath().toString();
-      MycatRouterConfig config = new MycatRouterConfig(rootPath);
+      ConfigReceiver cr = ConfigLoader.load(rootPath, 0);
+      MycatRouterConfig config = new MycatRouterConfig(cr);
       return new MycatRouter(config);
     } catch (Exception e) {
       e.printStackTrace();

@@ -8,7 +8,7 @@ import java.util.List;
  * @author jamie12221
  *  date 2019-05-20 12:12
  **/
-public class PlugRootConfig implements ConfigurableRoot {
+public class PlugRootConfig extends ConfigurableRoot {
 
   String defaultLoadBalance;
   List<LoadBalanceConfig> loadBalances = new ArrayList<>();

@@ -11,9 +11,9 @@ public abstract class AbstractBackendSession<T extends AbstractSession> extends 
 
   protected TaskCallBack callBack;
 
-  public AbstractBackendSession(NIOHandler nioHandler,
+  public AbstractBackendSession(int sessionId,NIOHandler nioHandler,
       SessionManager<T> sessionManager) {
-    super(nioHandler, sessionManager);
+    super(sessionId,nioHandler, sessionManager);
   }
 
   public <T> T getCallBack() {

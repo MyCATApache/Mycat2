@@ -26,6 +26,7 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
 
     private final HeartbeatDetector heartbeatDetector;
 
+    private ProxyRuntime runtime;
     private final MySQLDatasource dataSource;
     private volatile DatasourceStatus heartBeatStatus;
 
@@ -38,22 +39,22 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
 
     private long lastSwitchTime;//上次主从切换时间
 
-    public MysqlHeartBeatManager(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource){
-
+    public MysqlHeartBeatManager(ProxyRuntime runtime,ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource){
+        this.runtime = runtime;
         this.dataSource = dataSource;
-        heartBeatStatus = new DatasourceStatus();
-        lastSwitchTime = System.currentTimeMillis();
-        HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE.getConfig(ConfigEnum.HEARTBEAT);
+        this.heartBeatStatus = new DatasourceStatus();
+        this.lastSwitchTime = System.currentTimeMillis();
+        HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(ConfigEnum.HEARTBEAT);
         HeartbeatConfig heartbeatConfig = heartbeatRootConfig
                 .getHeartbeat();
         this.maxRetry = heartbeatConfig.getMaxRetry();
         this.minSwitchTimeInterval = heartbeatConfig.getMinSwitchTimeInterval();
         if(ReplicaConfig.RepTypeEnum.SINGLE_NODE.equals(replicaConfig.getRepType())) {
-            this.heartbeatDetector = new SingleNodeHeartbeatDetector(replicaConfig, dataSource, this);
+            this.heartbeatDetector = new SingleNodeHeartbeatDetector(runtime,replicaConfig, dataSource, this);
         } else  if(ReplicaConfig.RepTypeEnum.MASTER_SLAVE.equals(replicaConfig.getRepType())){
-            this.heartbeatDetector = new MasterSlaveHeartbeatDetector(replicaConfig, dataSource, this);
+            this.heartbeatDetector = new MasterSlaveHeartbeatDetector(runtime,replicaConfig, dataSource, this);
         } else if(ReplicaConfig.RepTypeEnum.GARELA_CLUSTER.equals(replicaConfig.getRepType())){
-            this.heartbeatDetector = new GarelaHeartbeatDetector(replicaConfig, dataSource, this);
+            this.heartbeatDetector = new GarelaHeartbeatDetector(runtime,replicaConfig, dataSource, this);
         } else {
             this.heartbeatDetector = null;
         }

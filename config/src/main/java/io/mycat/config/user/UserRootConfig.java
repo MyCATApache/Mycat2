@@ -26,7 +26,7 @@ import java.util.List;
  * date: 19/09/2017
  * @author: gaozhiwen
  */
-public class UserRootConfig implements ConfigurableRoot {
+public class UserRootConfig extends ConfigurableRoot {
     private List<UserConfig> users;
     private FireWallConfig firewall;
 

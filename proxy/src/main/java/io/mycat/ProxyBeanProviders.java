@@ -6,6 +6,7 @@ import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.schema.DataNodeConfig;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
@@ -17,13 +18,12 @@ import java.util.Set;
  **/
 public interface ProxyBeanProviders {
 
-  MySQLDatasource createDatasource(int index, DatasourceConfig datasourceConfig,
+  MySQLDatasource createDatasource(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica);
 
-  MySQLReplica createReplica(ReplicaConfig replicaConfig, Set<Integer> writeIndex);
+  MySQLReplica createReplica(ProxyRuntime runtime,ReplicaConfig replicaConfig, Set<Integer> writeIndex);
 
-  MySQLDataNode createMySQLDataNode(DataNodeConfig config);
+  MySQLDataNode createMySQLDataNode(ProxyRuntime runtime,DataNodeConfig config);
 
-  CommandDispatcher createCommandDispatcher(MycatSession session);
-
+  CommandDispatcher createCommandDispatcher(ProxyRuntime runtime,MycatSession session);
 }

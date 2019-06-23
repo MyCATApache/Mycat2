@@ -14,11 +14,8 @@
  */
 package io.mycat.proxy.session;
 
-import static io.mycat.beans.mysql.MySQLErrorCode.ER_DBACCESS_DENIED_ERROR;
-
 import io.mycat.MycatExpection;
 import io.mycat.beans.MySQLServerStatus;
-import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -44,11 +41,10 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.LinkedList;
-import java.util.Map;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLProxySession<MycatSession>, LocalInFileSession,
-        MySQLServerSession<MycatSession> {
+    MySQLServerSession<MycatSession> {
 
   private CommandDispatcher commandHandler;
   int resultSetCount;
@@ -62,7 +58,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    */
   private final ProxyBuffer proxyBuffer;//reset
   private final ByteBuffer header = ByteBuffer.allocate(4);//gc
-  private MycatSchema schema;
+  private String schema;
   private MycatUser user;
   private final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();//buffer recycle
   private final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);//reset
@@ -77,9 +73,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MySQLClientSession backend;//unbind
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
 
-  public MycatSession(BufferPool bufferPool, NIOHandler nioHandler,
+  public MycatSession(int sessionId,BufferPool bufferPool, NIOHandler nioHandler,
       SessionManager<MycatSession> sessionManager) {
-    super(nioHandler, sessionManager);
+    super(sessionId,nioHandler, sessionManager);
     proxyBuffer = new ProxyBufferImpl(bufferPool);
   }
 
@@ -99,7 +95,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void handle() {
     assert commandHandler != null;
-    CommandResolver.handle(this,commandHandler);
+    CommandResolver.handle(this, commandHandler);
   }
 
 
@@ -171,22 +167,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
 
-  public void setSchema(MycatSchema schema) {
-    Map<String, MycatSchema> schemas = user.getSchemas();
-    if (schema == null) {
-      this.schema = schema;
-      return;
-    }
-    if (schemas.containsKey(schema.getSchemaName())) {
-      this.schema = schema;
-    } else {
-      this.setLastErrorCode(ER_DBACCESS_DENIED_ERROR);
-      String s = "Access denied for user '" + user.getUserName() + "' to database '" + schema
-                                                                                           .getSchemaName()
-                     + "'";
-      this.setLastMessage(s);
-      throw new MycatExpection(s);
-    }
+  public void setSchema(String schema) {
+    this.schema = schema;
   }
 
   public MySQLClientSession getMySQLSession() {
@@ -201,23 +183,23 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       setLastMessage(hint);
     }
     assert hint != null;
-    try{
+    try {
       MySQLClientSession sqlSession = getMySQLSession();
-      if (sqlSession!=null){
-        sqlSession.close(false,hint);
+      if (sqlSession != null) {
+        sqlSession.close(false, hint);
       }
-    }catch (Exception e){
-      LOGGER.error("{}",e);
+    } catch (Exception e) {
+      LOGGER.error("{}", e);
     }
     onHandlerFinishedClear();
-    if(this.getMySQLSession() != null) {
+    if (this.getMySQLSession() != null) {
       this.getMySQLSession().close(normal, hint);
     }
     closed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
-      LOGGER.error("{}",e);
+      LOGGER.error("{}", e);
     }
   }
 
@@ -420,7 +402,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public final boolean readFromChannel() throws IOException {
     boolean b = MySQLProxySession.super.readFromChannel();
-    if (b){
+    if (b) {
       MycatMonitor.onFrontRead(this, proxyBuffer.currentByteBuffer(),
           proxyBuffer.channelReadStartIndex(), proxyBuffer.channelReadEndIndex());
     }
@@ -485,12 +467,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
 
-  public MycatSchema getSchema() {
+  public String getSchema() {
     return schema;
   }
 
 
-  public void useSchema(MycatSchema schema) {
+  public void useSchema(String schema) {
     this.schema = schema;
   }
 

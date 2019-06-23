@@ -15,26 +15,18 @@
 package io.mycat;
 
 import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigLoader;
+import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.ReplicaTip;
-import io.mycat.proxy.monitor.ProxyDashboard;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
+import io.mycat.proxy.monitor.ProxyDashboard;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLSessionManager;
-import io.mycat.replica.MySQLDataSourceEx;
-import io.mycat.replica.MySQLDatasource;
-import io.mycat.replica.MySQLReplica;
-import io.mycat.router.MycatRouter;
-import io.mycat.router.MycatRouterConfig;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import io.mycat.router.MycatRouter;
-import io.mycat.router.MycatRouterConfig;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -49,16 +41,28 @@ public class MycatCore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MycatCore.class);
 
+  private static ProxyRuntime runtime;
+
   public static void main(String[] args) throws Exception {
     String resourcesPath = System.getProperty("MYCAT_HOME");
     LOGGER.info("MYCAT_HOME:{}", resourcesPath);
     if (resourcesPath == null) {
       resourcesPath = ProxyRuntime.getResourcesPath(MycatCore.class);
     }
-    startup(resourcesPath, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+    MycatProxyBeanProviders proxyBeanProviders = new MycatProxyBeanProviders();
+    runtime = new ProxyRuntime(
+        ConfigLoader.load(resourcesPath, GlobalConfig.genVersion()), proxyBeanProviders);
+    startup(resourcesPath, runtime, new MycatMonitorLogCallback(),
         new AsyncTaskCallBack() {
           @Override
           public void onFinished(Object sender, Object result, Object attr) {
+            try {
+              Thread.sleep(TimeUnit.SECONDS.toMillis(60));
+              exit();
+              main(null);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
 
           }
 
@@ -72,37 +76,21 @@ public class MycatCore {
 
   }
 
-  public static void startup(String resourcesPath, ProxyBeanProviders proxyBeanProviders,
+  public static void startup(String resourcesPath, ProxyRuntime runtime,
       MycatMonitorCallback callback,
       AsyncTaskCallBack startFinished)
       throws IOException {
-    ProxyRuntime runtime = ProxyRuntime.INSTANCE;
-    MycatMonitor.setCallback(callback);
-    runtime.initCharset(resourcesPath);
-    runtime.loadProxyConfig(resourcesPath);
-    runtime.initMySQLVariables();
-    runtime.loadMycatConfig(resourcesPath);
-    runtime.initPlug();
-    MycatRouterConfig routerConfig = runtime.initRouterConfig(resourcesPath);
-    MycatRouter router = new MycatRouter(routerConfig);
-    runtime.initReactor(proxyBeanProviders, new AsyncTaskCallBack() {
-      @Override
-      public void onFinished(Object sender, Object result, Object attr) {
-        runtime.initRepliac(proxyBeanProviders, new AsyncTaskCallBack() {
-          @Override
-          public void onFinished(Object sender, Object result, Object attr) {
-            try {
-              runtime.initDataNode();
-              runtime.initSecurityManager();
-              runtime.initAcceptor();
-              ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
-              HeartbeatRootConfig heartbeatRootConfig = ProxyRuntime.INSTANCE
-                                                            .getConfig(ConfigEnum.HEARTBEAT);
-
-              long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
-              long replicaIdleCheckPeriod = idleTimeout / 2;
-              service.scheduleAtFixedRate(idleConnectCheck(), 0, replicaIdleCheckPeriod, TimeUnit.SECONDS);
-                long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+    try {
+      MycatMonitor.setCallback(callback);
+      runtime.startReactor();
+      ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+      HeartbeatRootConfig heartbeatRootConfig = runtime
+          .getConfig(ConfigEnum.HEARTBEAT);
+      long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
+      long replicaIdleCheckPeriod = idleTimeout / 2;
+      service.scheduleAtFixedRate(idleConnectCheck(runtime), 0, replicaIdleCheckPeriod,
+          TimeUnit.SECONDS);
+      long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
 //              service.scheduleAtFixedRate(new Runnable() {
 //                @Override
 //                public void run() {
@@ -112,42 +100,24 @@ public class MycatCore {
 //                  }
 //                }
 //              }, 0, period, TimeUnit.SECONDS);
-              service.scheduleAtFixedRate(new Runnable() {
-                @Override
-                public void run() {
+      service.scheduleAtFixedRate(new Runnable() {
+        @Override
+        public void run() {
 
-                  try {
-                    ProxyDashboard.INSTANCE.collectInfo();
-                  }catch (Exception e){
-                    e.printStackTrace();
-                  }
-
-                }
-              }, 0, 5000, TimeUnit.SECONDS);
-
-              startFinished.onFinished(null, null, null);
-
-            } catch (Exception e) {
-              e.printStackTrace();
-              startFinished.onException(e, null, null);
-            }
+          try {
+            ProxyDashboard.INSTANCE.collectInfo(runtime);
+          } catch (Exception e) {
+            e.printStackTrace();
           }
 
-          @Override
-          public void onException(Exception e, Object sender, Object attr) {
+        }
+      }, 0, 5000, TimeUnit.SECONDS);
 
-          }
-
-
-        });
-      }
-
-      @Override
-      public void onException(Exception e, Object sender, Object attr) {
-
-      }
-    });
-
+      runtime.startAcceptor();
+      startFinished.onFinished(null, null, null);
+    } catch (Exception e) {
+      startFinished.onException(e, null, null);
+    }
 
 //
 //  public static void getReplicaMetaData(ProxyRuntime runtime, AsyncTaskCallBack asyncTaskCallBack) {
@@ -193,15 +163,15 @@ public class MycatCore {
   }
 
 
-  private static Runnable idleConnectCheck() {
+  private static Runnable idleConnectCheck(ProxyRuntime runtime) {
     return () -> {
-      MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
+      MycatReactorThread[] threads = runtime.getMycatReactorThreads();
       for (MycatReactorThread mycatReactorThread : threads) {
         mycatReactorThread.addNIOJob(() -> {
           Thread thread = Thread.currentThread();
           if (thread instanceof MycatReactorThread) {
-              MySQLSessionManager manager = ((MycatReactorThread) thread)
-                    .getMySQLSessionManager();
+            MySQLSessionManager manager = ((MycatReactorThread) thread)
+                .getMySQLSessionManager();
             manager.idleConnectCheck();
           } else {
             throw new MycatExpection(ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
@@ -209,5 +179,11 @@ public class MycatCore {
         });
       }
     };
+  }
+
+  public static void exit() {
+    if (runtime != null) {
+      runtime.exit();
+    }
   }
 }

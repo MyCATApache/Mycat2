@@ -15,7 +15,6 @@
 package io.mycat.proxy.handler.front;
 
 import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
-import static io.mycat.beans.mysql.MySQLErrorCode.ER_DBACCESS_DENIED_ERROR;
 
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -30,6 +29,7 @@ import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.security.MycatUser;
@@ -60,6 +60,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     @Override
     public void onSocketRead(MycatSession mycat) {
+        ProxyRuntime runtime = getRuntime();
         try {
             mycat.currentProxyBuffer().newBufferIfNeed();
             if (mycat.getCurNIOHandler() != this) {
@@ -71,7 +72,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             if (!mycat.readProxyPayloadFully()) {
                 return;
             }
-            MycatSecurityConfig securityManager = ProxyRuntime.INSTANCE.getSecurityManager();
+            MycatSecurityConfig securityManager = runtime.getSecurityManager();
             byte[] input = null;
             if(!isChangeAuthPlugin) {
                 //密码读取与验证
@@ -113,7 +114,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
 
             if (!securityManager.isIgnorePassword()) {
-                String password = ProxyRuntime.INSTANCE.getSecurityManager()
+                String password = runtime.getSecurityManager()
                         .getPasswordByUserName(username);
 
                 if (!checkPassword(password, input)) {
@@ -124,24 +125,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             }
             MycatUser user = securityManager
                     .getUser(mycat.channel().socket().getRemoteSocketAddress().toString(),
-                            username, maxPacketSize);
-
-            switch (securityManager.checkSchema(user, database)) {
-                case ER_DBACCESS_DENIED_ERROR: {
-                    String message =
-                            "Access denied for user '" + username + "' to database '" + database
-                                    + "'";
-                    failture(mycat, message);
-                    mycat.lazyClose(true, message);
-                    return;
-                }
-                default: {
-                    mycat.setUser(user);
-                    if (!StringUtil.isEmpty(database)) {
-                        mycat.setSchema(ProxyRuntime.INSTANCE.getSchemaBySchemaName(database));
-                    }
-                }
-            }
+                            username);
             int capabilities = auth.getCapabilities();
             if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
                 String message = "Can Not Use Compression Protocol!";
@@ -149,8 +133,8 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 mycat.lazyClose(true, message);
                 return;
             }
-
-            mycat.setSchema(ProxyRuntime.INSTANCE.getSchemaBySchemaName(database));
+            mycat.setUser(user);
+            mycat.setSchema(database);
             mycat.setServerCapabilities(auth.getCapabilities());
             mycat.setAutoCommit(MySQLAutoCommit.ON);
             mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);

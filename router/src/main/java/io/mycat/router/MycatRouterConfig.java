@@ -27,9 +27,7 @@ import io.mycat.beans.mycat.ShardingDatabseTableTable;
 import io.mycat.beans.mycat.ShardingDbTable;
 import io.mycat.beans.mycat.ShardingTableTable;
 import io.mycat.config.ConfigEnum;
-import io.mycat.config.ConfigLoader;
-import io.mycat.config.ConfigReceiverImpl;
-import io.mycat.config.GlobalConfig;
+import io.mycat.config.ConfigReceiver;
 import io.mycat.config.YamlUtil;
 import io.mycat.config.route.AnnotationType;
 import io.mycat.config.route.DynamicAnnotationConfig;
@@ -67,18 +65,13 @@ import java.util.function.Supplier;
 /**
  * @author jamie12221 date 2019-05-03 00:29
  **/
-public class MycatRouterConfig extends ConfigReceiverImpl {
+public class MycatRouterConfig {
+
   private final Map<String, Supplier<RuleAlgorithm>> functions = new HashMap<>();
   private final Map<String, DynamicAnnotationConfig> dynamicAnnotations = new HashMap<>();
   private final Map<String, MycatTableRule> tableRules = new HashMap<>();
   private final Map<String, MycatSchema> schemas = new HashMap<>();
-  private final Map<String, MycatDataNode> dataNodes = new HashMap<>();
   private final MycatSchema defaultSchema;
-  private SQLInterceptor sqlInterceptor = (s) -> s;
-
-  public Collection<MycatDataNode> getDataNodes() {
-    return dataNodes.values();
-  }
 
   public MycatTableRule getTableRuleByTableName(String name) {
     return tableRules.get(name);
@@ -226,33 +219,26 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
   }
 
 
-  public MycatRouterConfig(String root) {
-    //init();
-//    ConfigLoader.INSTANCE
-//        .loadConfig(root, ConfigEnum.DATANODE, GlobalConfig.INIT_VERSION, this);
-    ConfigLoader.INSTANCE
-        .loadConfig(root, ConfigEnum.SCHEMA, GlobalConfig.INIT_VERSION, this);
-    ConfigLoader.INSTANCE.loadConfig(root, ConfigEnum.RULE, GlobalConfig.INIT_VERSION, this);
-    ConfigLoader.INSTANCE
-        .loadConfig(root, ConfigEnum.FUNCTIONS, GlobalConfig.INIT_VERSION, this);
-    ConfigLoader.INSTANCE
-        .loadConfig(root, ConfigEnum.DYNAMIC_ANNOTATION, GlobalConfig.INIT_VERSION, this);
-
-    initFunctions();
-    initAnnotations();
-    initTableRule();
-    iniSchema();
-    this.defaultSchema = initDefaultSchema();
-    //initDataNode();
-
+  public MycatRouterConfig(ConfigReceiver cr) {
+    this(cr.getConfig(ConfigEnum.SCHEMA)
+        ,cr.getConfig(ConfigEnum.FUNCTIONS),cr.getConfig(ConfigEnum.DYNAMIC_ANNOTATION),cr.getConfig(ConfigEnum.RULE));
+  }
+  public MycatRouterConfig(SchemaRootConfig config,
+      SharingFuntionRootConfig funtions,
+      DynamicAnnotationRootConfig dynamicAnnotationConfig,
+      ShardingRuleRootConfig rule) {
+    initFunctions(funtions);
+    initAnnotations(dynamicAnnotationConfig);
+    initTableRule(rule);
+    iniSchema(config);
+    this.defaultSchema = initDefaultSchema(config);
   }
 
   public MycatSchema getDefaultSchema() {
     return defaultSchema;
   }
 
-  private MycatSchema initDefaultSchema() {
-    SchemaRootConfig schemaConfigs = this.getConfig(ConfigEnum.SCHEMA);
+  private MycatSchema initDefaultSchema(SchemaRootConfig schemaConfigs) {
     String defaultSchemaName = schemaConfigs.getDefaultSchemaName();
     if (defaultSchemaName == null || "".equals(defaultSchemaName)) {
       defaultSchemaName = schemaConfigs.getSchemas().get(0).getName();
@@ -284,10 +270,8 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     return ruleAlgorithms;
   }
 
-  private void initAnnotations() {
+  private void initAnnotations(DynamicAnnotationRootConfig config) {
     MycatRouterConfig mycatRouter = this;
-    DynamicAnnotationRootConfig config = mycatRouter
-        .getConfig(ConfigEnum.DYNAMIC_ANNOTATION);
     if (config != null) {
       List<DynamicAnnotationConfig> annotations = config.getDynamicAnnotations();
       for (DynamicAnnotationConfig a : annotations) {
@@ -296,9 +280,8 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     }
   }
 
-  private void initFunctions() {
+  private void initFunctions(SharingFuntionRootConfig funtions) {
     MycatRouterConfig mycatRouter = this;
-    SharingFuntionRootConfig funtions = mycatRouter.getConfig(ConfigEnum.FUNCTIONS);
     if (funtions != null) {
       for (ShardingFuntion funtion : funtions.getFuntions()) {
         mycatRouter.putRuleAlgorithm(funtion);
@@ -328,8 +311,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     return new DynamicAnnotationMatcherImpl(list);
   }
 
-  private void iniSchema() {
-    SchemaRootConfig schemaConfigs = this.getConfig(ConfigEnum.SCHEMA);
+  private void iniSchema(SchemaRootConfig schemaConfigs) {
     for (SchemaConfig schemaConfig : schemaConfigs.getSchemas()) {
       String defaultDataNode = schemaConfig.getDefaultDataNode();
       String sqlMaxLimit = schemaConfig.getSqlMaxLimit();
@@ -412,13 +394,11 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     }
   }
 
-  private void initTableRule() {
+  private void initTableRule(ShardingRuleRootConfig rule) {
     MycatRouterConfig mycatRouter = this;
-    ShardingRuleRootConfig rule = getConfig(ConfigEnum.RULE);
     if (rule == null) {
       return;
     }
-    initSQLinterceptor(rule);
     for (SharingTableRule tableRule : rule.getTableRules()) {
       String name = tableRule.getName();
       Route rootRouteNode = null;
@@ -463,36 +443,34 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     }
   }
 
-  private void initDataNode() {
-    MycatRouterConfig mycatRouter = this;
-    DataNodeRootConfig dataNode = mycatRouter
-        .getConfig(ConfigEnum.DATANODE);
+//  private void initDataNode(DataNodeRootConfig dataNode) {
+//    MycatRouterConfig mycatRouter = this;
+//
+//    for (DataNodeConfig dataNodeConfig : dataNode.getDataNodes()) {
+//      DataNodeType dataNodeType =
+//          dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
+//      switch (dataNodeType) {
+//        case MYSQL:
+//          MySQLDataNode mySQLDataNode = new MySQLDataNode(dataNodeConfig);
+//          dataNodes.put(dataNodeConfig.getName(), mySQLDataNode);
+//          break;
+//      }
+//    }
+//  }
 
-    for (DataNodeConfig dataNodeConfig : dataNode.getDataNodes()) {
-      DataNodeType dataNodeType =
-          dataNodeConfig.getType() == null ? DataNodeType.MYSQL : dataNodeConfig.getType();
-      switch (dataNodeType) {
-        case MYSQL:
-          MySQLDataNode mySQLDataNode = new MySQLDataNode(dataNodeConfig);
-          dataNodes.put(dataNodeConfig.getName(), mySQLDataNode);
-          break;
-      }
-    }
-  }
-
-  private void initSQLinterceptor(ShardingRuleRootConfig rule) {
-    String sqlInterceptorClass = rule.getSqlInterceptorClass();
-    if (!(StringUtil.isEmpty(sqlInterceptorClass))) {
-      try {
-        Class<?> clz = Class.forName(sqlInterceptorClass);
-        sqlInterceptor = (SQLInterceptor) clz.newInstance();
-      } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-        e.printStackTrace();
-      }
-    } else {
-      sqlInterceptor = sql -> sql;
-    }
-  }
+//  private void initSQLinterceptor(ShardingRuleRootConfig rule) {
+//    String sqlInterceptorClass = rule.getSqlInterceptorClass();
+//    if (!(StringUtil.isEmpty(sqlInterceptorClass))) {
+//      try {
+//        Class<?> clz = Class.forName(sqlInterceptorClass);
+//        sqlInterceptor = (SQLInterceptor) clz.newInstance();
+//      } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+//        e.printStackTrace();
+//      }
+//    } else {
+//      sqlInterceptor = sql -> sql;
+//    }
+//  }
 
   public MycatSchema getSchemaBySchemaName(String name) {
     return schemas.get(name);
@@ -502,11 +480,7 @@ public class MycatRouterConfig extends ConfigReceiverImpl {
     return schemas.values();
   }
 
-  public MycatDataNode getDataNodeByName(String dataNode) {
-    return this.dataNodes.get(dataNode);
-  }
-
-  public SQLInterceptor getSqlInterceptor() {
-    return sqlInterceptor;
-  }
+//  public SQLInterceptor getSqlInterceptor() {
+//    return sqlInterceptor;
+//  }
 }

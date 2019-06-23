@@ -2,6 +2,7 @@ package io.mycat.test;
 
 import io.mycat.MycatCore;
 import io.mycat.ProxyBeanProviders;
+import io.mycat.config.ConfigReceiverImpl;
 import io.mycat.embeddedDB.DbStartUp;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
@@ -35,10 +36,12 @@ public abstract class ModualTest {
         TestGettingConnetionCallback gettingConnetionCallback)
       throws IOException, ExecutionException, InterruptedException {
     String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
-    Path resolve = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module);
+    String rootResourcePath = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module).toAbsolutePath().toString();
+    ConfigReceiverImpl cr = new ConfigReceiverImpl(rootResourcePath,0);
+    ProxyRuntime runtime = new ProxyRuntime(cr,proxyBeanProviders);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     final CompletableFuture<String> future = new CompletableFuture<>();
-    MycatCore.startup(resolve.toAbsolutePath().toString(), proxyBeanProviders, callback,
+    MycatCore.startup(rootResourcePath, runtime, callback,
         new AsyncTaskCallBack() {
           @Override
           public void onFinished(Object sender, Object result, Object attr) {
@@ -48,7 +51,7 @@ public abstract class ModualTest {
               }catch (Exception e){
                 e.printStackTrace();
               }finally {
-                ProxyRuntime.INSTANCE.exit();
+                MycatCore.exit();
                 future.complete(null);
               }
             });
@@ -58,7 +61,7 @@ public abstract class ModualTest {
           public void onException(Exception e, Object sender, Object attr) {
             e.printStackTrace();
             Assert.fail(e.toString());
-            ProxyRuntime.INSTANCE.exit();
+            MycatCore.exit();
             future.complete(null);
           }
 

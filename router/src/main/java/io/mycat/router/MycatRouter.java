@@ -15,6 +15,9 @@
 package io.mycat.router;
 
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigLoader;
+import io.mycat.config.ConfigReceiverImpl;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.logTip.RouteNullChecker;
 import io.mycat.router.routeResult.OneServerResultRoute;
@@ -123,14 +126,6 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     return enterRoute(defaultSchema, sql);
   }
 
-  public static void main(String[] args) throws CloneNotSupportedException, IOException {
-    String root = "D:\\newgit\\f2\\proxy\\src\\main\\resources";
-    MycatRouterConfig config = new MycatRouterConfig(root);
-    MycatRouter router = new MycatRouter(config);
-    router.enterRoute("db1", "select * from travelrecord;");
-  }
-
-
   @Override
   public ResultRoute route(MycatSchema schema, String sql, RouteContext routeContext) {
     SqlParseRouteRouteStrategy strategy = routeContext.getSqlParseRouteRouteStrategy();
@@ -144,5 +139,9 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
   public MycatSchema getDefaultSchema() {
     return config.getDefaultSchema();
+  }
+
+  public MycatSchema getSchemaBySchemaName(String db) {
+   return config.getSchemaBySchemaName(db);
   }
 }

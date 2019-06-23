@@ -17,6 +17,7 @@
 package io.mycat.replica.heartbeat.detector;
 
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.heartbeat.AbstractHeartBeatDetector;
 import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
@@ -27,8 +28,8 @@ import io.mycat.replica.heartbeat.callback.SingleHeartBeatAsyncTaskCallBack;
 
 public class SingleNodeHeartbeatDetector extends AbstractHeartBeatDetector implements HeartbeatDetector {
 
-    public SingleNodeHeartbeatDetector(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource, HeartbeatManager heartbeatManager) {
-        super(replicaConfig, dataSource , heartbeatManager);
+    public SingleNodeHeartbeatDetector(ProxyRuntime runtime,ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource, HeartbeatManager heartbeatManager) {
+        super(runtime,replicaConfig, dataSource , heartbeatManager);
     }
 
     @Override

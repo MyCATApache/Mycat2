@@ -99,10 +99,10 @@ public class MySQLClientSession extends
   /**
    * 构造函数
    */
-  public MySQLClientSession(MySQLDatasource datasource,
+  public MySQLClientSession(int sessionId,MySQLDatasource datasource,
       NIOHandler nioHandler, SessionManager<MySQLClientSession> sessionManager
   ) {
-    super(nioHandler, sessionManager);
+    super(sessionId,nioHandler, sessionManager);
     Objects.requireNonNull(datasource);
     this.datasource = datasource;
   }

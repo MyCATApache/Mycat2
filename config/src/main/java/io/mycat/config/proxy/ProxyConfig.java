@@ -17,6 +17,8 @@
 
 package io.mycat.config.proxy;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +56,7 @@ public class ProxyConfig {
     private int reactorNumber = -1;
 
     private String commandDispatcherClass;
+
 
     public int getReactorNumber() {
         return reactorNumber == -1 ? Runtime.getRuntime().availableProcessors() : reactorNumber;

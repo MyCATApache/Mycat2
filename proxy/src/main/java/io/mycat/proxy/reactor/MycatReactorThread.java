@@ -16,6 +16,7 @@ package io.mycat.proxy.reactor;
 
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
@@ -30,12 +31,16 @@ import java.util.Objects;
  */
 public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
 
-  private final MySQLSessionManager mySQLSessionManager = new MySQLSessionManager();
+  private final MySQLSessionManager mySQLSessionManager;
   private final PacketSplitterImpl packetSplitter = new PacketSplitterImpl();
+  private final ProxyRuntime runtime;
 
-  public MycatReactorThread(BufferPool bufPool, FrontSessionManager<MycatSession> sessionManager)
+  public MycatReactorThread(BufferPool bufPool, FrontSessionManager<MycatSession> sessionManager,
+      ProxyRuntime runtime)
       throws IOException {
     super(bufPool, sessionManager);
+    this.runtime = runtime;
+    this.mySQLSessionManager  = new MySQLSessionManager(runtime);
   }
 
   public PacketSplitterImpl getPacketSplitter() {
@@ -46,8 +51,17 @@ public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
     return mySQLSessionManager;
   }
 
+  /**
+   * Getter for property 'runtime'.
+   *
+   * @return Value for property 'runtime'.
+   */
+  public ProxyRuntime getRuntime() {
+    return runtime;
+  }
+
   @Override
-  public void close() throws IOException {
+  public void close() {
     try{
       Objects.requireNonNull(mySQLSessionManager);
       for (MySQLClientSession s : mySQLSessionManager.getAllSessions()) {

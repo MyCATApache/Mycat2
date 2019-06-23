@@ -1,6 +1,7 @@
 package io.mycat.proxy.handler.backend;
 
 import io.mycat.beans.mycat.MySQLDataNode;
+import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.ProxyRuntime;
@@ -16,6 +17,7 @@ public class MySQLSynContext {
   MySQLAutoCommit autoCommit;
   String charset;
   String characterSetResult;
+  ProxyRuntime runtime;
 
   //Statement: SET sqlSelectLimit=99
   long sqlSelectLimit = -1;
@@ -23,39 +25,37 @@ public class MySQLSynContext {
 
   public MySQLSynContext(MycatSession session) {
     this.dataNodeName = session.getDataNode();
-    this.dataNode = getDataNode();
     this.isolation = session.getIsolation();
     this.autoCommit = session.getAutoCommit();
     this.charset = session.getCharsetName();
     this.characterSetResult = session.getCharacterSetResults();
     this.sqlSelectLimit = session.getSelectLimit();
-  }
-  public MySQLSynContext(MySQLClientSession session) {
-    this.dataNodeName = session.getDataNode().getName();
-    this.dataNode = (MySQLDataNode) session.getDataNode();
-    this.isolation = session.getIsolation();
-    this.autoCommit = session.isAutomCommit();
-    this.charset = session.getCharset();
-    this.characterSetResult = session.getCharacterSetResult();
-    this.sqlSelectLimit = session.getSelectLimit();
+    this.runtime = session.getRuntime();
+    Objects.requireNonNull(runtime);
+    this.dataNode = getDataNode();
   }
 
-  public MySQLSynContext(MySQLDataNode dataNode, MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit, String charset, String characterSetResult) {
+  public MySQLSynContext(MySQLClientSession session) {
+    this(session.getDataNode().getName(),
+        (MySQLDataNode)session.getDataNode(),
+        session.getIsolation(),
+        session.isAutomCommit(),
+        session.getCharset(),
+        session.getCharacterSetResult(),
+        session.getRuntime());
+  }
+
+
+  public MySQLSynContext(String dataNodeName,MySQLDataNode dataNode, MySQLIsolation isolation,
+      MySQLAutoCommit autoCommit, String charset, String characterSetResult, ProxyRuntime runtime) {
+    this.dataNodeName = dataNodeName;
     this.dataNode = dataNode;
     this.isolation = isolation;
     this.autoCommit = autoCommit;
     this.charset = charset;
     this.characterSetResult = characterSetResult;
-  }
-
-  public MySQLSynContext(String dataNodeName, MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit, String charset, String characterSetResult) {
-    this.dataNodeName = dataNodeName;
-    this.isolation = isolation;
-    this.autoCommit = autoCommit;
-    this.charset = charset;
-    this.characterSetResult = characterSetResult;
+    this.runtime = runtime;
+    Objects.requireNonNull(runtime);
   }
 
   /**
@@ -64,7 +64,7 @@ public class MySQLSynContext {
    * @return Value for property 'dataNodeName'.
    */
   public String getDataNodeName() {
-    if (dataNodeName==null){
+    if (dataNodeName == null) {
       Objects.requireNonNull(this.dataNode);
       dataNodeName = this.dataNode.getName();
     }
@@ -88,7 +88,7 @@ public class MySQLSynContext {
   public MySQLDataNode getDataNode() {
     if (dataNode == null) {
       Objects.requireNonNull(dataNodeName);
-      this.dataNode = ProxyRuntime.INSTANCE.getDataNodeByName(dataNodeName);
+      this.dataNode = runtime.getDataNodeByName(dataNodeName);
     }
     return dataNode;
   }

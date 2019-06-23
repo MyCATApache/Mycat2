@@ -23,7 +23,7 @@ import java.util.List;
  * date: 10/09/2017
  * @author: gaozhiwen
  */
-public class SchemaRootConfig implements ConfigurableRoot {
+public class SchemaRootConfig extends ConfigurableRoot {
 
   private List<SchemaConfig> schemas;
   public String defaultSchemaName;

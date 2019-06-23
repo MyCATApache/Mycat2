@@ -14,10 +14,8 @@
  */
 package io.mycat.replica;
 
-import io.mycat.beans.mysql.charset.MySQLCollationIndex;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.plug.loadBalance.LoadBalanceELement;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -61,10 +59,9 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
    *
    * @param callback 回调函数
    */
-  public void init(AsyncTaskCallBackCounter callback) {
+  public void init(MycatReactorThread[] threads, AsyncTaskCallBackCounter callback) {
     Objects.requireNonNull(callback);
     int minCon = datasourceConfig.getMinCon();
-    MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
     Objects.requireNonNull(threads);
     if (minCon < 1) {
       callback.onCountSuccess();
@@ -101,7 +98,6 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
     return () -> thread.getMySQLSessionManager()
         .createSession(this, callback);
   }
-
 
 //  /**
 //   * 关闭此dataSource创建的连接
@@ -166,9 +162,8 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
 
   @Override
   public boolean isMaster() {
-    return  replica.isMaster(this);
+    return replica.isMaster(this);
   }
-
 
 
   @Override
@@ -197,6 +192,10 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
   }
 
   public String getInitSQL() {
-   return datasourceConfig.getInitSQL();
+    return datasourceConfig.getInitSQL();
+  }
+
+  public int getIndex() {
+    return index;
   }
 }

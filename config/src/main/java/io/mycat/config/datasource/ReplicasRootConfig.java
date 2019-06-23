@@ -27,7 +27,7 @@ import java.util.List;
  * date: 10/09/2017
  * @author: gaozhiwen
  */
-public class ReplicasRootConfig implements ConfigurableRoot {
+public class ReplicasRootConfig extends ConfigurableRoot {
     private List<ReplicaConfig> replicas;
     private String charset;
 

@@ -25,30 +25,33 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.router.MycatRouter;
+import io.mycat.router.MycatRouterConfig;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.util.Map;
 
 /**
  * @author jamie12221 date 2019-05-13 02:47
  **/
-public class MycatCommandHandler extends AbstractCommandHandler implements QueryHandler {
+public class MycatCommandHandler extends AbstractCommandHandler {
 
-  private final MycatRouter router;
-  private final MycatSession mycat;
-  private final PrepareStmtContext prepareContext;
+  private MycatRouter router;
+  private MycatSession mycat;
+  private PrepareStmtContext prepareContext;
   private final LoaddataContext loadDataContext = new LoaddataContext();
+  private QueryHandler queryHandler ;
 
-  public MycatCommandHandler(MycatRouter router, MycatSession mycat) {
-    this.router = router;
+  @Override
+  public void initRuntime(MycatSession mycat,ProxyRuntime runtime) {
     this.mycat = mycat;
-    this.prepareContext =new PrepareStmtContext(mycat);
+    MycatRouterConfig routerConfig = new MycatRouterConfig(runtime.getConfig());
+    this.router = new MycatRouter(routerConfig);
+    this.prepareContext = new PrepareStmtContext(mycat);
+    this.queryHandler = new QueryHandler(router,runtime);
   }
-
-
 
   @Override
   public void handleQuery(byte[] sqlBytes, MycatSession mycat) {
-    doQuery(sqlBytes, mycat);
+    queryHandler. doQuery(sqlBytes, mycat);
   }
 
 
@@ -69,7 +72,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
   @Override
   public void handleInitDb(String db, MycatSession mycat) {
-    mycat.useSchema(ProxyRuntime.INSTANCE.getSchemaBySchemaName(db));
+    mycat.useSchema(db);
     mycat.writeOkEndPacket();
   }
 
@@ -117,7 +120,8 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
   @Override
   public void handleProcessKill(long connectionId, MycatSession mycat) {
-    MycatReactorThread[] mycatReactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
+    ProxyRuntime runtime = mycat.getMycatReactorThread().getRuntime();
+    MycatReactorThread[] mycatReactorThreads = runtime.getMycatReactorThreads();
     MycatReactorThread currentThread = mycat.getMycatReactorThread();
     for (MycatReactorThread mycatReactorThread : mycatReactorThreads) {
       FrontSessionManager<MycatSession> frontManager = mycatReactorThread.getFrontManager();
@@ -155,7 +159,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
   @Override
   public void handlePrepareStatement(byte[] bytes, MycatSession mycat) {
-    MycatSchema schema = mycat.getSchema();
+    MycatSchema schema = router.getSchemaBySchemaName(mycat.getSchema());
     if (schema == null) {
       mycat.setLastMessage("not select schema");
       mycat.writeErrorEndPacket();
@@ -163,14 +167,14 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
     }
     String sql = new String(bytes);
 
-    BufferSQLContext bufferSQLContext = router().simpleParse(sql);
+    BufferSQLContext bufferSQLContext = router.simpleParse(sql);
     boolean runOnMaster = bufferSQLContext.isSimpleSelect();
     MySQLDataSourceQuery mySQLQuery = new MySQLDataSourceQuery();
     mySQLQuery.setRunOnMaster(runOnMaster);
     if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
       String dataNode = schema.getDefaultDataNode();
       mycat.switchDataNode(dataNode);
-      prepareContext.newReadyPrepareStmt(sql,dataNode,mySQLQuery);
+      prepareContext.newReadyPrepareStmt(sql, dataNode, mySQLQuery);
       return;
     } else {
       mycat.setLastMessage(
@@ -183,7 +187,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
   @Override
   public void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
       MycatSession mycat) {
-    MycatSchema schema = mycat.getSchema();
+    MycatSchema schema = router.getSchemaBySchemaName(mycat.getSchema());
     if (schema == null) {
       mycat.setLastMessage("not select schema");
       mycat.writeErrorEndPacket();
@@ -204,7 +208,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
       int numParams,
       byte[] rest,
       MycatSession mycat) {
-    prepareContext.execute(statementId, flags, numParams,rest);
+    prepareContext.execute(statementId, flags, numParams, rest);
   }
 
 
@@ -215,7 +219,7 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
 
   @Override
   public void handlePrepareStatementFetch(long statementId, long row) {
-    prepareContext.fetch(statementId,row);
+    prepareContext.fetch(statementId, row);
   }
 
   @Override
@@ -226,10 +230,5 @@ public class MycatCommandHandler extends AbstractCommandHandler implements Query
   @Override
   public int getNumParamsByStatementId(long statementId) {
     return prepareContext.getNumOfParams(statementId);
-  }
-
-  @Override
-  public MycatRouter router() {
-    return router;
   }
 }

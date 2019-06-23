@@ -2,6 +2,7 @@ package io.mycat.replica.heartbeat;
 
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLReplica;
 import java.util.List;
 import java.util.Set;
@@ -19,9 +20,9 @@ public class MySQLReplicaEx extends MySQLReplica {
    * @param writeIndex
    * @param dataSourceFactory
    */
-  public MySQLReplicaEx(ReplicaConfig replicaConfig, Set<Integer> writeIndex,
+  public MySQLReplicaEx(ProxyRuntime runtime,ReplicaConfig replicaConfig, Set<Integer> writeIndex,
       MycatProxyBeanProviders dataSourceFactory) {
-    super(replicaConfig, writeIndex, dataSourceFactory);
+    super(runtime,replicaConfig, writeIndex, dataSourceFactory);
   }
 
   public boolean switchDataSourceIfNeed() {

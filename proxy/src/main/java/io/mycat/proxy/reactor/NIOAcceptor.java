@@ -37,9 +37,11 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class NIOAcceptor extends ProxyReactorThread<Session> {
 
   ServerSocketChannel serverChannel;
+  final ProxyRuntime runtime;
 
-  public NIOAcceptor(BufferPool bufPool) throws IOException {
+  public NIOAcceptor(BufferPool bufPool,ProxyRuntime runtime) throws IOException {
     super(bufPool, null);
+    this.runtime = runtime;
   }
 
   protected void processAcceptKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
@@ -55,7 +57,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
 
   private void accept(ReactorEnv reactorEnv, SocketChannel socketChannel) throws IOException {
     // 找到一个可用的NIO Reactor Thread，交付托管
-    MycatReactorThread[] reactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread[] reactorThreads = runtime.getMycatReactorThreads();
     MycatReactorThread nioReactor = reactorThreads[ThreadLocalRandom.current()
                                                        .nextInt(reactorThreads.length)];
     // 将通道注册到reactor对象上
@@ -123,8 +125,12 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
   }
 
   @Override
-  public void close() throws IOException {
-    serverChannel.close();
-    super.close();
+  public void close()  {
+    try {
+      serverChannel.close();
+      super.close();
+    }catch (Exception e){
+      LOGGER.warn("",e);
+    }
   }
 }

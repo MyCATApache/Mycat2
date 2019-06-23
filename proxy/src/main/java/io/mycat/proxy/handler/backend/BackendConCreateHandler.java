@@ -69,7 +69,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         Objects.requireNonNull(callback);
         this.datasource = datasource;
         this.callback = callback;
-        MySQLClientSession mysql = new MySQLClientSession(datasource, this, sessionManager);
+        MySQLClientSession mysql = new MySQLClientSession(getRuntime().genSessionId(),datasource, this, sessionManager);
         mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
         SocketChannel channel = null;
         try {
@@ -222,7 +222,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         this.charsetIndex = hs.getCharacterSet();
         AuthPacket packet = new AuthPacket();
         packet.setCapabilities(serverCapabilities);
-        packet.setMaxPacketSize(ProxyRuntime.INSTANCE.getMaxAllowedPacket());
+        packet.setMaxPacketSize(getRuntime().getMaxAllowedPacket());
         packet.setCharacterSet((byte) charsetIndex);
         packet.setUsername(datasource.getUsername());
         this.seed = hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo();

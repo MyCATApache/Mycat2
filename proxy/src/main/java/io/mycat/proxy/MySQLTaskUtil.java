@@ -90,10 +90,10 @@ public class MySQLTaskUtil {
    *
    * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
    */
-  public static void getMySQLSessionFromUserThread(MySQLSynContext synContext,
+  public static void getMySQLSessionFromUserThread(ProxyRuntime runtime,MySQLSynContext synContext,
       MySQLDataSourceQuery query,
       SessionSyncCallback asynTaskCallBack) {
-    MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread[] threads = runtime.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
     threads[i].addNIOJob(() -> {
       getMySQLSession(synContext, query, asynTaskCallBack);
@@ -115,7 +115,7 @@ public class MySQLTaskUtil {
     Objects.requireNonNull(synContext.getCharset());
     MySQLDataNode dataNode = synContext.getDataNode();
     MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
-
+    Objects.requireNonNull(replica);
     boolean isRunOnMaster = true;
     LoadBalanceStrategy lbs = null;
     List<SessionIdAble> ids = null;
@@ -161,9 +161,9 @@ public class MySQLTaskUtil {
     }
   }
 
-  public static void getMySQLSessionForTryConnectFromUserThread(MySQLDatasource datasource,
+  public static void getMySQLSessionForTryConnectFromUserThread(ProxyRuntime runtime,MySQLDatasource datasource,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
-    MycatReactorThread[] threads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
+    MycatReactorThread[] threads = runtime.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
     threads[i].addNIOJob(() -> {
       getMySQLSessionForTryConnect(datasource, asynTaskCallBack);

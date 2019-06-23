@@ -17,6 +17,7 @@
 package io.mycat.replica.heartbeat.detector;
 
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
@@ -29,8 +30,8 @@ import java.util.Map;
 
 public class GarelaHeartbeatDetector extends MasterSlaveHeartbeatDetector implements HeartbeatDetector {
     private final int slaveThreshold = 1000;
-    public GarelaHeartbeatDetector(ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource, HeartbeatManager heartbeatManager) {
-        super(replicaConfig, dataSource , heartbeatManager);
+    public GarelaHeartbeatDetector(ProxyRuntime runtime,ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource, HeartbeatManager heartbeatManager) {
+        super(runtime,replicaConfig, dataSource , heartbeatManager);
 
     }
 

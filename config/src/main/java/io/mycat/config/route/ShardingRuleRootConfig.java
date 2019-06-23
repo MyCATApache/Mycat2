@@ -7,7 +7,7 @@ import java.util.List;
  * @author jamie12221
  *  date 2019-05-03 14:18
  **/
-public class ShardingRuleRootConfig implements ConfigurableRoot {
+public class ShardingRuleRootConfig extends ConfigurableRoot {
 
   String sqlInterceptorClass;
    List<SharingTableRule> tableRules;

@@ -7,7 +7,7 @@ import java.util.List;
  * @author jamie12221
  *  date 2019-05-03 14:54
  **/
-public class SharingFuntionRootConfig implements ConfigurableRoot {
+public class SharingFuntionRootConfig extends ConfigurableRoot {
   List<ShardingFuntion> funtions;
 
   public List<ShardingFuntion> getFuntions() {

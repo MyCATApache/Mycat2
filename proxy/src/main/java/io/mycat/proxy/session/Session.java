@@ -14,14 +14,14 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
 /**
- * @author jamie12221 chen junwen
- *  date 2019-05-10 21:13 Session
+ * @author jamie12221 chen junwen date 2019-05-10 21:13 Session
  **/
 public interface Session<T extends Session> {
 
@@ -78,7 +78,6 @@ public interface Session<T extends Session> {
   boolean readFromChannel() throws IOException;
 
 
-
   /**
    * 注册读事件
    */
@@ -95,6 +94,11 @@ public interface Session<T extends Session> {
   default MycatReactorThread getMycatReactorThread() {
     Thread thread = Thread.currentThread();
     return (MycatReactorThread) thread;
+  }
+
+  default ProxyRuntime getRuntime() {
+    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+    return thread.getRuntime();
   }
 
   /**
