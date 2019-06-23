@@ -15,6 +15,7 @@
 package io.mycat.command;
 
 import static io.mycat.sqlparser.util.BufferSQLContext.DESCRIBE_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.LOAD_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_VARIABLES;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_AUTOCOMMIT_SQL;
@@ -191,6 +192,7 @@ public class QueryHandler {
           mycat.writeRowEndPacket(false, false);
           return;
         }
+
         case SHOW_WARNINGS: {
           mycat.writeColumnCount(3);
           mycat.writeColumnDef("Level", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
@@ -249,7 +251,9 @@ public class QueryHandler {
             return;//路由出错走默认节点
           }
         }
-
+        case LOAD_SQL:{
+          LOGGER.warn("Use annotations to specify laodata data nodes whenever possible !");
+        }
         default:
 //          switch (useSchema.getSchemaType()) {
 //            case DB_IN_ONE_SERVER:
