@@ -119,6 +119,7 @@ public class RpcConnection {
           }
         }
       } catch (Exception e) {
+        e.printStackTrace();
         waitForRecv.onWaitForResponseErr(e.toString());
         waitForRecv = null;
       } finally {
@@ -127,7 +128,7 @@ public class RpcConnection {
     }
 
     if (waitForRecv == null && poll <= 0) {
-      client.send(new byte[]{}, ZMQ.NOBLOCK);
+      //client.send(new byte[]{}, ZMQ.NOBLOCK);
     }
 
     if (waitForRecv != null) {
