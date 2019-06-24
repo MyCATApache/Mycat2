@@ -77,6 +77,7 @@ public class ProxyRuntime {
   private MycatReactorThread[] reactorThreads;
   private final ConfigReceiver config;
   private ProxyBeanProviders providers;
+  private final Map<String,Object> defContext = new HashMap<>();
 
   public ProxyRuntime(ConfigReceiver configReceiver, ProxyBeanProviders providers) {
     this.config = configReceiver;
@@ -87,6 +88,8 @@ public class ProxyRuntime {
     this.initSecurityManager();
     this.initRepliac(this, providers);
     this.initDataNode(providers, configReceiver.getConfig(ConfigEnum.DATANODE));
+
+    providers.initRuntime(this,defContext);
   }
 
   public void startReactor() throws IOException {
@@ -132,11 +135,6 @@ public class ProxyRuntime {
     return (T) config;
   }
 
-  /**
-   * Getter for property 'variables'.
-   *
-   * @return Value for property 'variables'.
-   */
   public MySQLVariables getVariables() {
     return variables;
   }
@@ -320,17 +318,18 @@ public class ProxyRuntime {
     return loadBalanceManager.getLoadBalanceByBalanceName(name);
   }
 
-  /**
-   * Getter for property 'config'.
-   *
-   * @return Value for property 'config'.
-   */
+
   public ConfigReceiver getConfig() {
     return config;
   }
 
   private static final Logger REPLICA_MASTER_INDEXES_LOGGER = LoggerFactory
       .getLogger("replicaIndexesLogger");
+
+
+  public Map<String, Object> getDefContext() {
+    return defContext;
+  }
 
   public void updateReplicaMasterIndexesConfig(final MySQLReplica replica,
       List<MySQLDatasource> writeDataSource) {

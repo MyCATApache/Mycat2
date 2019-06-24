@@ -11,12 +11,16 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
  * @author jamie12221 date 2019-05-22 21:36
  **/
 public interface ProxyBeanProviders {
+
+  public void initRuntime(ProxyRuntime runtime, Map<String,Object> defContext);
+
 
   MySQLDatasource createDatasource(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica);

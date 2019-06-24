@@ -12,6 +12,8 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import io.mycat.router.MycatRouterConfig;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -19,6 +21,11 @@ import java.util.Set;
  * @author jamie12221 date 2019-05-22 22:12
  **/
 public class MycatProxyBeanProviders implements ProxyBeanProviders {
+
+  @Override
+  public void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext) {
+    defContext.put("routeConfig",new MycatRouterConfig(runtime.getConfig()));
+  }
 
   @Override
   public MySQLDatasource createDatasource(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,

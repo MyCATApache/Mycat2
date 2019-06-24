@@ -73,11 +73,11 @@ public class QueryHandler {
     this.runtime = runtime;
   }
 
-  public void doQuery(byte[] sqlBytes, MycatSession mycat) {
+  public void doQuery(MycatSchema schema, byte[] sqlBytes, MycatSession mycat) {
     /**
      * 获取默认的schema
      */
-    MycatSchema useSchema = router.getSchemaBySchemaName(mycat.getSchema());
+    MycatSchema useSchema = schema;
     if (useSchema == null) {
       useSchema = router.getDefaultSchema();
     }
