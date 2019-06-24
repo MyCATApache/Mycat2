@@ -122,7 +122,11 @@ public class CommandResolver {
             long iteration = curPacket.readFixInt(4);
             assert iteration == 1;
             int numParams = commandHandler.getNumParamsByStatementId(statementId);
+
+            int startIndex = curPacket.packetReadStartIndex();
             byte[] rest = curPacket.readEOFStringBytes();
+            curPacket.packetReadStartIndex(startIndex);
+            boolean newParameterBoundFlag = false;
             mycat.resetCurrentProxyPayload();
             commandHandler
                 .handlePrepareStatementExecute(rawPayload, statementId, flags, numParams, rest,

@@ -24,4 +24,6 @@ public interface PrepareStatementParserHelper {
   void handlePrepareStatementReset(long statementId, MycatSession session);
 
   int getNumParamsByStatementId(long statementId);
+
+
 }
