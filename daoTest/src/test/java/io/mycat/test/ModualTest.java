@@ -2,6 +2,8 @@ package io.mycat.test;
 
 import io.mycat.MycatCore;
 import io.mycat.ProxyBeanProviders;
+import io.mycat.config.ConfigLoader;
+import io.mycat.config.ConfigReceiver;
 import io.mycat.config.ConfigReceiverImpl;
 import io.mycat.embeddedDB.DbStartUp;
 import io.mycat.proxy.ProxyRuntime;
@@ -37,7 +39,7 @@ public abstract class ModualTest {
       throws IOException, ExecutionException, InterruptedException {
     String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
     String rootResourcePath = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module).toAbsolutePath().toString();
-    ConfigReceiverImpl cr = new ConfigReceiverImpl(rootResourcePath,0);
+    ConfigReceiver cr = ConfigLoader.load(rootResourcePath);
     ProxyRuntime runtime = new ProxyRuntime(cr,proxyBeanProviders);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     final CompletableFuture<String> future = new CompletableFuture<>();

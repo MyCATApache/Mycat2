@@ -25,6 +25,7 @@ import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.SessionCallBack;
+import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
  * @author jamie12221 date 2019-05-10 13:21
  **/
 public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
+
   static final Logger logger = LoggerFactory.getLogger(MySQLReplica.class);
   private final ReplicaConfig config;
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
@@ -61,7 +63,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
    * @param writeIndex master index
    * @param dataSourceFactory a factory to create dataSource
    */
-  public MySQLReplica(ProxyRuntime runtime,ReplicaConfig replicaConfig,
+  public MySQLReplica(ProxyRuntime runtime, ReplicaConfig replicaConfig,
       Set<Integer> writeIndex, ProxyBeanProviders dataSourceFactory) {
     this.runtime = runtime;
     assert replicaConfig != null;
@@ -76,13 +78,27 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
       assert datasourceConfig != null;
       if (datasourceConfig.getDbType() == null) {
         MySQLDatasource datasource = dataSourceFactory
-            .createDatasource(runtime,index, datasourceConfig, this);
+            .createDatasource(runtime, index, datasourceConfig, this);
         datasourceList.add(datasource);
         if (writeIndex.contains(index)) {
           writeDataSource.add(datasource);
         }
       }
     }
+  }
+
+  public void getMySQLSessionByBalance(MySQLDataSourceQuery query,
+      SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+    boolean isRunOnMaster = true;
+    LoadBalanceStrategy lbs = null;
+    List<SessionIdAble> ids = null;
+    if (query != null) {
+      isRunOnMaster = query.isRunOnMaster();
+      lbs = query.getStrategy();
+      ids = query.getIds();
+    }
+    MySQLDatasource datasource = getMySQLSessionByBalance(isRunOnMaster, lbs);
+    getSessionCallback(datasource, ids, asynTaskCallBack);
   }
 
   /**
@@ -255,7 +271,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
           if (datasourceList.get(i).isAlive()) {
             logger.info("{} switch master to {}", this, i);
             ///////////////////////////////
-              runtime.updateReplicaMasterIndexesConfig(this, writeDataSource);
+            runtime.updateReplicaMasterIndexesConfig(this, writeDataSource);
             //////////////////////////////
             return true;
           }

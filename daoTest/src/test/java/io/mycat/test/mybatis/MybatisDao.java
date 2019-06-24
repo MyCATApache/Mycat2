@@ -35,7 +35,7 @@ public class MybatisDao extends ModualTest {
   @Test
   public void simplePass()
       throws IOException, ExecutionException, InterruptedException {
-    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
+    loadModule(DB_IN_ONE_SERVER,new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
         new TestGettingConnetionCallback() {
           @Override
           public void test(Object future) throws IOException {

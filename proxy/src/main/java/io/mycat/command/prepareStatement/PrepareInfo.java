@@ -1,8 +1,11 @@
 package io.mycat.command.prepareStatement;
 
+import io.mycat.beans.mycat.MySQLDataNode;
+import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
+import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.callback.RequestCallback;
@@ -22,6 +25,7 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.CheckResult;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import io.mycat.replica.MySQLDatasource;
+import io.mycat.replica.MySQLReplica;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,27 +36,26 @@ public class PrepareInfo {
 
   private long mycatStmtId;
   private String sql;
-  private String dataNodeName;
-  private MySQLDatasource datasource;
   private ArrayList<PrepareMySQLSessionInfo> sessionInfos = new ArrayList<>();
   private MycatSession mycat;
   private MySQLSessionManager manager;
   private HashMap<Integer, MySQLPayloadWriter> parmaMap = new HashMap<>();
   private int numOfParams = Integer.MIN_VALUE;
 
-  public PrepareInfo(long mycatStmtId, String sql, String dataNodeName, MySQLDatasource datasource,
+  public PrepareInfo(long mycatStmtId, String sql,
       MycatSession mycat, MySQLSessionManager manager) {
     this.mycatStmtId = mycatStmtId;
     this.sql = sql;
-    this.dataNodeName = dataNodeName;
-    this.datasource = datasource;
     this.mycat = mycat;
     this.manager = manager;
   }
 
-  public void getPrepareSession(PrepareSessionCallback callBack, boolean proxyPrepareResponse) {
+  public void getPrepareSession(String dataNodeName,boolean runOnMaster, LoadBalanceStrategy strategy,PrepareSessionCallback callBack, boolean proxyPrepareResponse) {
     List<PrepareMySQLSessionInfo> prepareMySQLSessionInfos = checkVaildAndGetIdleMySQLSessionIds();
     List<SessionIdAble> ids = (List) prepareMySQLSessionInfos;
+    MySQLDataNode node = mycat.getRuntime().getDataNodeByName(dataNodeName);
+    MySQLReplica replica = (MySQLReplica) node.getReplica();
+    MySQLDatasource datasource = replica.getMySQLSessionByBalance(runOnMaster,strategy);
     manager.getIdleSessionsOfIds(datasource, ids,
         new SessionCallBack<MySQLClientSession>() {
           @Override
@@ -221,8 +224,8 @@ public class PrepareInfo {
   }
 
   public void execute(byte flags, int numParams,
-      byte[] rest) {
-    getPrepareSession(new PrepareSessionCallback() {
+      byte[] rest,String dataNodeName,boolean runOnMaster, LoadBalanceStrategy strategy) {
+    getPrepareSession(dataNodeName,runOnMaster,strategy,new PrepareSessionCallback() {
       @Override
       public void onPrepare(long actualStatementId, MySQLClientSession session) {
         session.setCursorStatementId(actualStatementId);

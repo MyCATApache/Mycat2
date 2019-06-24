@@ -17,7 +17,6 @@ package io.mycat.proxy;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.logTip.ReplicaTip;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.ResponseType;
@@ -31,10 +30,8 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -116,15 +113,7 @@ public class MySQLTaskUtil {
     MySQLDataNode dataNode = synContext.getDataNode();
     MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
     Objects.requireNonNull(replica);
-    boolean isRunOnMaster = true;
-    LoadBalanceStrategy lbs = null;
-    List<SessionIdAble> ids = null;
-    if (query != null){
-      isRunOnMaster = query.isRunOnMaster();
-      lbs =  query.getStrategy();
-      ids =  query.getIds();
-    }
-    replica.getMySQLSessionByBalance(isRunOnMaster,lbs,ids,
+    replica.getMySQLSessionByBalance(query,
         new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession mysql, Object sender, Object attr) {

@@ -174,7 +174,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
       String dataNode = schema.getDefaultDataNode();
       mycat.switchDataNode(dataNode);
-      prepareContext.newReadyPrepareStmt(sql, dataNode, mySQLQuery);
+      prepareContext.newReadyPrepareStmt(sql, dataNode, true,null);
       return;
     } else {
       mycat.setLastMessage(
@@ -208,7 +208,13 @@ public class MycatCommandHandler extends AbstractCommandHandler {
       int numParams,
       byte[] rest,
       MycatSession mycat) {
-    prepareContext.execute(statementId, flags, numParams, rest);
+
+    /////////////////route//////////////////
+
+
+
+    //////////////////////////////////
+    prepareContext.execute(statementId, flags, numParams, rest,mycat.getDataNode(),true,null);
   }
 
 
