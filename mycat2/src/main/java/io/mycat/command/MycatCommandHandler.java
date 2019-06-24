@@ -40,21 +40,29 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   private MycatSession mycat;
   private PrepareStmtContext prepareContext;
   private final LoaddataContext loadDataContext = new LoaddataContext();
-  private QueryHandler queryHandler;
-
+  private ProxyQueryHandler proxyQueryHandler;
+  private ServerQueryHandler serverQueryHandler;
 
   @Override
   public void initRuntime(MycatSession mycat, ProxyRuntime runtime) {
     this.mycat = mycat;
     this.router = new MycatRouter((MycatRouterConfig) runtime.getDefContext().get("routeConfig"));
     this.prepareContext = new PrepareStmtContext(mycat);
-    this.queryHandler = new QueryHandler(router, runtime);
+    this.proxyQueryHandler = new ProxyQueryHandler(router, runtime);
+    this.serverQueryHandler = new ServerQueryHandler(runtime);
   }
 
   @Override
   public void handleQuery(byte[] sqlBytes, MycatSession mycat) {
     MycatSchema schema = router.getSchemaBySchemaName(mycat.getSchema());
-    queryHandler.doQuery(schema, sqlBytes, mycat);
+    if (schema == null) {
+      schema = router.getDefaultSchema();
+    }
+    if (schema.getSchemaType() == SchemaType.SQL_PARSE_ROUTE) {
+      serverQueryHandler.doQuery(sqlBytes,mycat);
+      return;
+    }
+    proxyQueryHandler.doQuery(schema, sqlBytes, mycat);
   }
 
 

@@ -53,7 +53,6 @@ import io.mycat.security.MycatUser;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map.Entry;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -62,13 +61,13 @@ import org.slf4j.LoggerFactory;
 /**
  * @author jamie12221 date 2019-05-17 17:37
  **/
-public class QueryHandler {
+public class ProxyQueryHandler {
 
-  static final Logger LOGGER = LoggerFactory.getLogger(QueryHandler.class);
+  static final Logger LOGGER = LoggerFactory.getLogger(ProxyQueryHandler.class);
   final MycatRouter router;
   final private ProxyRuntime runtime;
 
-  public QueryHandler(MycatRouter router,ProxyRuntime runtime) {
+  public ProxyQueryHandler(MycatRouter router,ProxyRuntime runtime) {
     this.router = router;
     this.runtime = runtime;
   }

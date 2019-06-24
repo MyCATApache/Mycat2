@@ -57,7 +57,6 @@ public class RpcServer implements Closeable {
     this.addr = addr;
     this.bind = bind;
     this.handler = handler;
-    this.timeout = timeout;
     worker = ctx.createSocket(SocketType.DEALER);
     if (bind) {
       String[] addrList = addr.split(",");

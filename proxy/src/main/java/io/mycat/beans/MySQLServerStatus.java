@@ -40,7 +40,6 @@ public final class MySQLServerStatus {
   private String charsetName;
   private Charset charset;
   private int charsetIndex;
-  private String clientUser;
   private MySQLAutoCommit autoCommit;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
   protected boolean localInFileRequestState = false;
@@ -91,15 +90,6 @@ public final class MySQLServerStatus {
     this.charsetName = charsetName;
     this.charset = charset;
   }
-
-  public String getClientUser() {
-    return clientUser;
-  }
-
-  public void setClientUser(String clientUser) {
-    this.clientUser = clientUser;
-  }
-
   public MySQLAutoCommit getAutoCommit() {
     return autoCommit;
   }
