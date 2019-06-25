@@ -360,7 +360,7 @@ public enum MySQLPacketExchanger {
             callback.onRequestComQuery(mySQLPacket, sIndex, eIndex);
             break;
           case REQUEST_SEND_LONG_DATA:
-            callback.onRequestComQuery(mySQLPacket, sIndex, eIndex);
+            callback.onLoadDataRequest(mySQLPacket, sIndex, eIndex);
             break;
           case REQUEST_PREPARE:
             callback.onReqeustPrepareStatement(mySQLPacket, sIndex, eIndex);
