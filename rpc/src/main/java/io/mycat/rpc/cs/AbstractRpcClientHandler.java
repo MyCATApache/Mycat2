@@ -72,4 +72,6 @@ public abstract class AbstractRpcClientHandler {
    * On before send data error.
    */
   abstract void onBeforeSendDataError();
+
+  protected abstract boolean prepareReceive();
 }

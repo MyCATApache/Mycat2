@@ -25,6 +25,7 @@ import io.mycat.rpc.cs.RpcServerSessionHandler;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.zeromq.ZContext;
 
@@ -95,6 +96,12 @@ public class Main {
       @Override
       public long getTimeout() {
         return 1000000000;
+      }
+
+      @Override
+      protected boolean prepareReceive() {
+        boolean prepareReceive = ThreadLocalRandom.current().nextBoolean();
+        return prepareReceive;
       }
     };
   }

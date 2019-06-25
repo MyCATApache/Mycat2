@@ -1,18 +1,16 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
  */
 
 package io.mycat.rpc.cs;
@@ -31,6 +29,7 @@ import org.zeromq.ZMsg;
 
 /**
  * The type Rpc connection.
+ *
  * @author cjw
  */
 public class RpcConnection {
@@ -39,6 +38,7 @@ public class RpcConnection {
   private String addr;
   private ZContext ctx;
   private Poller poller;
+  private boolean unregisterRead = false;
   private RpcConnectionPool rpcConnectionPool;
   private Socket client;
   private int pollId;
@@ -100,30 +100,41 @@ public class RpcConnection {
    * @param poll the poll
    */
   void process(long poll) {
+    if (unregisterRead) {
+      pollId = poller.register(client, Poller.POLLIN | Poller.POLLERR);
+      unregisterRead = false;
+      pendingCount.incrementAndGet();
+    }
     if (poller.pollerr(pollId)) {
       globalLastActiveTime.set(Long.MAX_VALUE);
       close(ZMQ.Error.findByCode(this.client.errno()).getMessage());
       return;
     }
     long now = System.currentTimeMillis();
+
     if (poller.pollin(pollId)) {
       globalLastActiveTime.set(now);
-
-      ZMsg msg = ZMsg.recvMsg(client);
-      try {
-        byte[] data = msg.getLast().getData();
-        if (data.length != 0) {
-          boolean b = waitForRecv.onRevc(data);
-          if (b) {
-            waitForRecv = null;
+      if (waitForRecv.prepareReceive()) {
+        ZMsg msg = ZMsg.recvMsg(client);
+        try {
+          byte[] data = msg.getLast().getData();
+          if (data.length != 0) {
+            boolean b = waitForRecv.onRevc(data);
+            if (b) {
+              waitForRecv = null;
+            }
           }
+        } catch (Exception e) {
+          e.printStackTrace();
+          waitForRecv.onWaitForResponseErr(e.toString());
+          waitForRecv = null;
+        } finally {
+          msg.destroy();
         }
-      } catch (Exception e) {
-        e.printStackTrace();
-        waitForRecv.onWaitForResponseErr(e.toString());
-        waitForRecv = null;
-      } finally {
-        msg.destroy();
+      } else {
+        poller.unregister(client);
+        unregisterRead = true;
+        pendingCount.decrementAndGet();
       }
     }
 
@@ -138,7 +149,7 @@ public class RpcConnection {
         handler.onWaitForResponseTimeout();
       }
     }
-    while (this.waitForRecv == null&&!pending.isEmpty()) {
+    while (this.waitForRecv == null && !pending.isEmpty()) {
       AbstractRpcClientHandler handler = pending.poll();
       if (now - globalLastActiveTime.get() < handler.getTimeout()) {
         pendingCount.decrementAndGet();
