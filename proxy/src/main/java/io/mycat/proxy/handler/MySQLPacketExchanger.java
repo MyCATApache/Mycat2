@@ -378,25 +378,25 @@ public enum MySQLPacketExchanger {
             callback.onOk(mySQLPacket, sIndex, endPos);
             break;
           case FIRST_EOF:
-            callback.onRowOk(mySQLPacket, sIndex, eIndex);
+            callback.onEof(mySQLPacket, sIndex, eIndex);
             break;
           case COLUMN_COUNT:
-            callback.onRowOk(mySQLPacket, sIndex, eIndex);
+            callback.onColumnCount(packetResolver.getColumnCount());
             break;
           case COLUMN_DEF:
-            callback.onRowOk(mySQLPacket, sIndex, eIndex);
+            callback.onColumnDef(mySQLPacket, sIndex, eIndex);
             break;
           case COLUMN_EOF:
-            callback.onRowOk(mySQLPacket, sIndex, eIndex);
+            callback.onColumnDefEof(mySQLPacket, sIndex, eIndex);
             break;
           case TEXT_ROW:
-            callback.onRowOk(mySQLPacket, sIndex, eIndex);
+            callback.onTextRow(mySQLPacket, sIndex, eIndex);
             break;
           case BINARY_ROW:
-            callback.onRowOk(mySQLPacket, sIndex, eIndex);
+            callback.onBinaryRow(mySQLPacket, sIndex, eIndex);
             break;
           case ROW_EOF:
-            callback.onRowOk(mySQLPacket, sIndex, eIndex);
+            callback.onRowEof(mySQLPacket, sIndex, eIndex);
             break;
           case ROW_FINISHED:
             break;
