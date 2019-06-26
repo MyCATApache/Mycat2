@@ -62,7 +62,7 @@ public enum MySQLPacketExchanger {
   }
 
   private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e,
-      PacketExchangerCallback callbac) {
+      PacketExchangerCallback callback) {
     logger.error("{}", e);
     MycatMonitor.onPacketExchangerWriteException(mycat, e);
     MySQLClientSession mysql = mycat.getMySQLSession();
@@ -71,7 +71,7 @@ public enum MySQLPacketExchanger {
       mysql.resetPacket();
       mysql.close(false, e);
     }
-    callbac.onRequestMySQLException(mycat, e, null);
+    callback.onRequestMySQLException(mycat, e, null);
   }
 
   private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
