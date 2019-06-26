@@ -1,13 +1,7 @@
 package io.mycat.proxy;
 
-import static io.mycat.beans.mysql.MySQLFieldsType.BINARY_FLAG;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_SHORT;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY;
-
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLErrorCode;
-import io.mycat.beans.mysql.MySQLFieldsType;
-import io.mycat.beans.mysql.MySQLPStmtBindValueList;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
@@ -24,8 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 /**
- * @author jamie12221
- *  date 2019-05-07 21:23
+ * @author jamie12221 date 2019-05-07 21:23
  *
  * 写入的报文构造工具 注意的是,函数名没有带有packet后缀的,生成的是payload(没有报文头部和拆分报文处理) 带有packet后缀的,会进行报文处理(根据packetid,payload长度进行生成报文)
  **/
@@ -57,32 +50,36 @@ public class MySQLPacketUtil {
       return generateMySQLPacket(0, writer.toByteArray());
     }
   }
+
   public static final byte[] generateResetPacket(long statementId) {
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(5)) {
       writer.write(0x1a);
-      writer.writeFixInt(4,statementId);
+      writer.writeFixInt(4, statementId);
       return generateMySQLPacket(0, writer.toByteArray());
     }
   }
+
   public static final byte[] generateClosePacket(long statementId) {
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(5)) {
       writer.write(0x19);
-      writer.writeFixInt(4,statementId);
+      writer.writeFixInt(4, statementId);
       return generateMySQLPacket(0, writer.toByteArray());
     }
   }
+
   public static final byte[] generateExecutePayload(long statementId, byte flags, int numParams,
       byte[] rest) {
     final long iteration = 1;
     try (MySQLPayloadWriter mySQLPacket = new MySQLPayloadWriter(64)) {
       mySQLPacket.writeByte((byte) 0x17);
-      mySQLPacket.writeFixInt(4,statementId);
+      mySQLPacket.writeFixInt(4, statementId);
       mySQLPacket.writeByte(flags);
       mySQLPacket.writeFixInt(4, iteration);
       mySQLPacket.writeBytes(rest);
       return mySQLPacket.toByteArray();
     }
   }
+
   public static final byte[] generateRequestPacket(int head, byte[] data) {
     byte[] bytes = generateRequest(head, data);
     return generateMySQLPacket(0, bytes);
@@ -96,7 +93,7 @@ public class MySQLPacketUtil {
 
   public static final byte[] generateColumnDef(String name, int type, int charsetIndex,
       Charset charset) {
-    return generateColumnDef("","","",name, name, type, 0, 0, charsetIndex,192, charset);
+    return generateColumnDef("", "", "", name, name, type, 0, 0, charsetIndex, 192, charset);
   }
 
   public static final byte[] generateEof(
@@ -216,9 +213,10 @@ public class MySQLPacketUtil {
     return payloayEstimateMaxSize;
   }
 
-  public static final byte[] generateColumnDef(String database,String table,String originalTable,String columnName, String orgName, int type,
+  public static final byte[] generateColumnDef(String database, String table, String originalTable,
+      String columnName, String orgName, int type,
       int columnFlags,
-      int columnDecimals, int charsetIndex,int length, Charset charset) {
+      int columnDecimals, int charsetIndex, int length, Charset charset) {
     ColumnDefPacketImpl c = new ColumnDefPacketImpl();
     c.setColumnSchema(database.getBytes(charset));
     c.setColumnOrgTable(originalTable.getBytes(charset));
@@ -247,7 +245,7 @@ public class MySQLPacketUtil {
   }
 
   public static byte[] generatePreparePayloadRequest(byte[] sql) {
-    try (MySQLPayloadWriter byteArrayOutput = new MySQLPayloadWriter(1+sql.length)) {
+    try (MySQLPayloadWriter byteArrayOutput = new MySQLPayloadWriter(1 + sql.length)) {
       byteArrayOutput.writeByte(0x16);
       byteArrayOutput.write(sql);
       byte[] bytes = byteArrayOutput.toByteArray();
@@ -256,11 +254,18 @@ public class MySQLPacketUtil {
       throw new RuntimeException(e);
     }
   }
+
   public static byte[] generateMySQLPacket(int packetId, MySQLPayloadWriter writer) {
     byte[] bytes = writer.toByteArray();
     try {
-      MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
-      PacketSplitterImpl packetSplitter = reactorThread.getPacketSplitter();
+      Thread thread = Thread.currentThread();
+      PacketSplitterImpl packetSplitter;
+      if (thread instanceof MycatReactorThread) {
+        MycatReactorThread reactorThread = (MycatReactorThread) thread;
+        packetSplitter = reactorThread.getPacketSplitter();
+      } else {
+        packetSplitter = new PacketSplitterImpl();
+      }
       int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(bytes.length);
       try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
           wholePacketSize)) {
@@ -324,8 +329,6 @@ public class MySQLPacketUtil {
 
   /**
    * 计算字段值存放所需空间大小
-   * @param fieldValues
-   * @return
    */
   public static int calcTextRowPayloadSize(byte[][] fieldValues) {
     int size = 0;
@@ -375,6 +378,7 @@ public class MySQLPacketUtil {
       return out.toByteArray();
     }
   }
+
   public static final byte[] generateChangeUser(
       String username,
       int serverCapabilities,
@@ -432,12 +436,14 @@ public class MySQLPacketUtil {
     }
   }
 
-  public static final byte[] generateAuthenticationSwitchResponse(byte[] authenticationResponseData) {
-    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(512)){
-        writer.writeEOFString(new String(authenticationResponseData));
+  public static final byte[] generateAuthenticationSwitchResponse(
+      byte[] authenticationResponseData) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(512)) {
+      writer.writeEOFString(new String(authenticationResponseData));
       return writer.toByteArray();
     }
   }
+
   public static final byte[] generateSSLRequest(
       int clientCapacities,
       int maxPacketSize,
@@ -481,7 +487,7 @@ public class MySQLPacketUtil {
       writer.writeByte(0x1c);
       writer.writeFixInt(4, cursorStatementId);
       writer.writeFixInt(4, numOfRows);
-      return  writer.toByteArray();
+      return writer.toByteArray();
     }
   }
 }
