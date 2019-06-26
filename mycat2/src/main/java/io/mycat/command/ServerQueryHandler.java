@@ -43,6 +43,11 @@ public class ServerQueryHandler {
       public long getTimeout() {
         return 1000000000;
       }
+
+      @Override
+      protected boolean prepareReceive() {
+        return true;
+      }
     });
   }
 }
