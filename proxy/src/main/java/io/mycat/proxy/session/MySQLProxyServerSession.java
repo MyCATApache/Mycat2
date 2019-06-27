@@ -51,11 +51,12 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
   /**
    * 写入payload
    */
-  default void writeBytes(byte[] payload) {
+  default void writeBytes(byte[] payload,boolean end) {
     try {
       switchMySQLServerWriteHandler();
       ByteBuffer buffer = writeBufferPool().allocate(payload);
       writeQueue().offer(buffer);//todo 如果队列过长是否希望抛出异常
+      setResponseFinished(end);
       if (Thread.currentThread() == getIOThread()) {
         writeToChannel();
       }else {

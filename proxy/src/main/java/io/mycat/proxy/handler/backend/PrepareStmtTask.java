@@ -48,7 +48,7 @@ public class PrepareStmtTask implements ResultSetHandler {
     preparedOKPacket.setPreparedOkStatementId(mycatStatementId);
     if (proxy) {
       byte[] payload = MySQLPacketUtil.generatePrepareOk(preparedOKPacket);
-      mycat.writeBytes(payload);
+      mycat.writeBytes(payload,false);
     }
   }
 
@@ -56,7 +56,7 @@ public class PrepareStmtTask implements ResultSetHandler {
   public void onPrepareOkParameterDef(MySQLPacket mySQLPacket, int startPos, int endPos) {
     if (proxy) {
       byte[] payload = mySQLPacket.getBytes(startPos, endPos);
-      mycat.writeBytes(payload);
+      mycat.writeBytes(payload,false);
     }
   }
 
@@ -64,7 +64,7 @@ public class PrepareStmtTask implements ResultSetHandler {
   public void onPrepareOkColumnDef(MySQLPacket mySQLPacket, int startPos, int endPos) {
     if (proxy) {
       byte[] payload = mySQLPacket.getBytes(startPos, endPos);
-      mycat.writeBytes(payload);
+      mycat.writeBytes(payload,false);
     }
   }
 
@@ -73,7 +73,7 @@ public class PrepareStmtTask implements ResultSetHandler {
     if (proxy) {
       byte[] payload = MySQLPacketUtil
           .generateEof(packet.getWarningCount(), packet.getServerStatus());
-      mycat.writeBytes(payload);
+      mycat.writeBytes(payload,false);
     }
   }
 
@@ -82,7 +82,7 @@ public class PrepareStmtTask implements ResultSetHandler {
     if (proxy) {
       byte[] payload = MySQLPacketUtil
           .generateEof(packet.getWarningCount(), packet.getServerStatus());
-      mycat.writeBytes(payload);
+      mycat.writeBytes(payload,false);
     }
   }
 

@@ -99,14 +99,14 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    */
   default void writeTextRowPacket(byte[][] row) {
     byte[] bytes = MySQLPacketUtil.generateTextRow(row);
-    writeBytes(bytes);
+    writeBytes(bytes,false);
   }
   /**
    * 写入二进制结果集行
    */
   default void writeBinaryRowPacket(byte[][] row) {
     byte[] bytes = MySQLPacketUtil.generateBinaryRow(row);
-    writeBytes(bytes);
+    writeBytes(bytes,false);
   }
 
   /**
@@ -114,7 +114,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    */
   default void writeColumnCount(int count) {
     byte[] bytes = MySQLPacketUtil.generateResultSetCount(count);
-    writeBytes(bytes);
+    writeBytes(bytes,false);
   }
 
 
@@ -124,10 +124,10 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
   default void writeColumnDef(String columnName, int type) {
     byte[] bytes = MySQLPacketUtil
         .generateColumnDef(columnName, type, charsetIndex(), charset());
-    writeBytes(bytes);
+    writeBytes(bytes,false);
   }
 
-  void writeBytes(byte[] payload);
+  void writeBytes(byte[] payload,boolean end);
 
   /**
    * 写入ok包,调用该方法,就指定响应已经结束
@@ -142,7 +142,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
         );
     this.setResponseFinished(true);
-    writeBytes(bytes);
+    writeBytes(bytes,true);
   }
 
   /**
@@ -153,7 +153,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     if (isDeprecateEOF()) {
     } else {
       byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
-      writeBytes(bytes);
+      writeBytes(bytes,true);
     }
   }
 
@@ -181,7 +181,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
     }
     this.setResponseFinished(true);
-    writeBytes(bytes);
+    writeBytes(bytes,true);
   }
 
   /**
@@ -195,7 +195,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     byte[] bytes = MySQLPacketUtil
         .generateError(lastErrorCode, getLastMessage(), this.getServerStatus());
     this.setResponseFinished(true);
-    writeBytes(bytes);
+    writeBytes(bytes,true);
   }
   default void writeErrorEndPacket(ErrorPacketImpl packet) {
     int lastErrorCode = packet.getErrorCode();
@@ -205,7 +205,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
       packet.writePayload(writer,getCapabilities());
       this.setResponseFinished(true);
-      writeBytes(writer.toByteArray());
+      writeBytes(writer.toByteArray(),true);
     }
   }
 

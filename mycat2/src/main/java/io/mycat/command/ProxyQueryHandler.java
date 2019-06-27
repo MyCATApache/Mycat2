@@ -322,7 +322,7 @@ public class ProxyQueryHandler {
     byte[] bytes = MySQLPacketUtil
         .generateColumnDef("information_schema","SCHEMATA","SCHEMATA","Database","SCHEMA_NAME",MySQLFieldsType.FIELD_TYPE_VAR_STRING,
             0x1,0,mycat.charsetIndex(),192, Charset.defaultCharset());
-    mycat.writeBytes(bytes);
+    mycat.writeBytes(bytes,false);
     mycat.writeColumnEndPacket();
     for (MycatSchema schema : schemaList) {
       String schemaName = schema.getSchemaName();

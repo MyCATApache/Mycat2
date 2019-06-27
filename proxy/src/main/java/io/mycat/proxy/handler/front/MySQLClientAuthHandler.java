@@ -94,7 +94,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(1024);
                         authSwitchRequestPacket.writePayload(mySQLPayloadWriter);
                         mycat.setResponseFinished(true);
-                        mycat.writeBytes(mySQLPayloadWriter.toByteArray());
+                        mycat.writeBytes(mySQLPayloadWriter.toByteArray(),true);
                         return;
                     }
                     //握手包中的加密密码
@@ -223,7 +223,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
         hs.writePayload(mySQLPayloadWriter);
         mycat.setPakcetId(-1);//使用获取的packetId变为0
-        mycat.writeBytes(mySQLPayloadWriter.toByteArray());
+        mycat.writeBytes(mySQLPayloadWriter.toByteArray(),true);
     }
 
 
