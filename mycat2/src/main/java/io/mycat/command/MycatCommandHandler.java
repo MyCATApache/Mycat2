@@ -131,9 +131,9 @@ public class MycatCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleProcessKill(long connectionId, MycatSession mycat) {
-    ProxyRuntime runtime = mycat.getMycatReactorThread().getRuntime();
+    ProxyRuntime runtime = mycat.getIOThread().getRuntime();
     MycatReactorThread[] mycatReactorThreads = runtime.getMycatReactorThreads();
-    MycatReactorThread currentThread = mycat.getMycatReactorThread();
+    MycatReactorThread currentThread = mycat.getIOThread();
     for (MycatReactorThread mycatReactorThread : mycatReactorThreads) {
       FrontSessionManager<MycatSession> frontManager = mycatReactorThread.getFrontManager();
       for (MycatSession allSession : frontManager.getAllSessions()) {

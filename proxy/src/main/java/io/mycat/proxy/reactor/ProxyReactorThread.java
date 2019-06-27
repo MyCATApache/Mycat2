@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public abstract class ProxyReactorThread<T extends Session> extends Thread implements Closeable {
+public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvThread implements Closeable {
 
   /**
    * 定时唤醒selector的时间 1.防止写入事件得不到处理 2.处理pending队列
@@ -49,7 +49,7 @@ public abstract class ProxyReactorThread<T extends Session> extends Thread imple
   protected final BufferPool bufPool;
   //用于管理连接等事件
   protected final ConcurrentLinkedQueue<Runnable> pendingJobs = new ConcurrentLinkedQueue<>();
-  private final ReactorEnv reactorEnv = new ReactorEnv();
+
   private static long activeTime = System.currentTimeMillis();
 
   long ioTimes = 0;

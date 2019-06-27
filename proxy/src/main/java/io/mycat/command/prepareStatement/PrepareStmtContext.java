@@ -24,7 +24,7 @@ public class PrepareStmtContext {
   public void newReadyPrepareStmt(String sql, String dataNode, boolean runOnMaster, LoadBalanceStrategy strategy) {
     final long currentStmtId = stmtId++;
     PrepareInfo prepareInfo = new PrepareInfo(currentStmtId, sql,mycat,
-        mycat.getMycatReactorThread().getMySQLSessionManager());
+        mycat.getIOThread().getMySQLSessionManager());
     prepareInfo.getPrepareSession(dataNode,runOnMaster,strategy,new PrepareSessionCallback() {
       @Override
       public void onPrepare(long actualStatementId, MySQLClientSession session) {

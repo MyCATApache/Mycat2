@@ -14,8 +14,8 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.NIOHandler;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -40,9 +40,11 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   protected long lastActiveTime;
   protected NIOHandler nioHandler;
   protected boolean closed = false;
+  private final MycatReactorThread ioThread;
 
   public AbstractSession(int sessionId,
       NIOHandler nioHandler, SessionManager<T> sessionManager) {
+    this.ioThread = (MycatReactorThread) Thread.currentThread();
     this.nioHandler = nioHandler;
     this.sessionManager = sessionManager;
     this.sessionId = sessionId;
@@ -127,5 +129,10 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
   public boolean isOpen() {
     SocketChannel channel = channel();
     return !isClosed() && channel.isOpen() && channel.isConnected();
+  }
+
+  @Override
+  public MycatReactorThread getIOThread() {
+    return ioThread;
   }
 }

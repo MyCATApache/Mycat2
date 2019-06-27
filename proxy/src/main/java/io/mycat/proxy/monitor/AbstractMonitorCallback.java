@@ -170,7 +170,7 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   }
 
 
-  public void onAllocateByteBuffer(ByteBuffer buffer) {
+  public void onAllocateByteBuffer(ByteBuffer buffer, Session session) {
 
   }
 
@@ -181,12 +181,12 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
 
 
 
-  public void onRecycleByteBuffer(ByteBuffer buffer) {
+  public void onRecycleByteBuffer(ByteBuffer buffer, Session session) {
 
   }
 
 
-  public void onExpandByteBuffer(ByteBuffer buffer) {
+  public void onExpandByteBuffer(ByteBuffer buffer, Session session) {
 
   }
 

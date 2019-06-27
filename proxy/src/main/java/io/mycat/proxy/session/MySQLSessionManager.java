@@ -26,7 +26,6 @@ import io.mycat.config.ConfigEnum;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.SessionTip;
-import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.callback.RequestCallback;
@@ -502,7 +501,7 @@ public final class MySQLSessionManager implements
 
   private void closeSession(MySQLClientSession mySQLClientSession, String hint) {
     mySQLClientSession.setIdle(false);
-    MycatReactorThread mycatReactorThread = mySQLClientSession.getMycatReactorThread();
+    MycatReactorThread mycatReactorThread = mySQLClientSession.getIOThread();
     mycatReactorThread.addNIOJob(() -> {
       mySQLClientSession.close(false, hint);
     });

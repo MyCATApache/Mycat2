@@ -61,13 +61,13 @@ public interface MycatMonitorCallback {
 
   void onMySQLSessionServerStatusChanged(Session session, int serverStatus);
 
-  void onAllocateByteBuffer(ByteBuffer buffer);
+  void onAllocateByteBuffer(ByteBuffer buffer, Session session);
 
   void onSynchronizationState(MySQLClientSession session);
 
-  void onRecycleByteBuffer(ByteBuffer buffer);
+  void onRecycleByteBuffer(ByteBuffer buffer, Session session);
 
-  void onExpandByteBuffer(ByteBuffer buffer);
+  void onExpandByteBuffer(ByteBuffer buffer, Session session);
 
   void onNewMycatSession(MycatSession session);
 

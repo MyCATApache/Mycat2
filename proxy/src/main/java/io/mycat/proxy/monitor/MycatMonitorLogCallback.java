@@ -1,8 +1,5 @@
 package io.mycat.proxy.monitor;
 
-import io.mycat.beans.mycat.MycatDataNode;
-import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
@@ -299,10 +296,10 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   }
 
   @Override
-  public final void onAllocateByteBuffer(ByteBuffer buffer) {
+  public final void onAllocateByteBuffer(ByteBuffer buffer, Session session) {
     if (record) {
       //    Thread.dumpStack();
-      LOGGER.debug("session id{}  {}", MycatMonitorCallback.getSession().sessionId(), buffer);
+      LOGGER.debug("session id{}  {}", session.sessionId(), buffer);
     }
   }
 
@@ -320,14 +317,14 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   }
 
   @Override
-  public final void onRecycleByteBuffer(ByteBuffer buffer) {
+  public final void onRecycleByteBuffer(ByteBuffer buffer, Session session) {
     if (record) {
       LOGGER.debug("sessionId:{}  {}", MycatMonitorCallback.getSession().sessionId(), buffer);
     }
   }
 
   @Override
-  public final void onExpandByteBuffer(ByteBuffer buffer) {
+  public final void onExpandByteBuffer(ByteBuffer buffer, Session session) {
     if (record) {
       LOGGER.debug("sessionId:{}  {}", MycatMonitorCallback.getSession().sessionId(), buffer);
     }

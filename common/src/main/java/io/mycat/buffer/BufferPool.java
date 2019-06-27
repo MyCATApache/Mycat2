@@ -45,6 +45,6 @@ public interface BufferPool {
 
 
     int getChunkSize();
-
-    Map<Long, Long> getNetDirectMemoryUsage();
+//
+//    Map<Long, Long> getNetDirectMemoryUsage();
 }

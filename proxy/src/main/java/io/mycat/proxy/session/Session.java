@@ -91,10 +91,7 @@ public interface Session<T extends Session> {
   /**
    * 获取当前线程池
    */
-  default MycatReactorThread getMycatReactorThread() {
-    Thread thread = Thread.currentThread();
-    return (MycatReactorThread) thread;
-  }
+  public MycatReactorThread getIOThread();
 
   default ProxyRuntime getRuntime() {
     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
@@ -130,12 +127,12 @@ public interface Session<T extends Session> {
   }
 
   default void lazyClose(boolean normal, String hint) {
-    getMycatReactorThread().addNIOJob(() -> {
+    getIOThread().addNIOJob(() -> {
       close(normal, hint);
     });
   }
 
   default long currentTimeMillis() {
-    return getMycatReactorThread().getLastActiveTime();
+    return getIOThread().getLastActiveTime();
   }
 }

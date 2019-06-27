@@ -355,10 +355,10 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
 //    public void expend(int len) {
 //        int position = buffer.position();
 //        buffer.position(0);
-//        ByteBuffer allocate = bufferPool().allocate(len);
+//        ByteBuffer allocate = writeBufferPool().allocate(len);
 //        allocate.put(buffer);
 //        allocate.position(position);
-//        bufferPool().recycle(buffer);
+//        writeBufferPool().recycle(buffer);
 //        this.buffer = allocate;
 //    }
 

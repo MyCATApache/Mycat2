@@ -70,16 +70,16 @@ public final class MycatMonitor {
     callback.onSynchronizationState(session);
   }
 
-  public final static void onAllocateByteBuffer(ByteBuffer buffer) {
-    callback.onAllocateByteBuffer(buffer);
+  public final static void onAllocateByteBuffer(ByteBuffer buffer,Session session) {
+    callback.onAllocateByteBuffer(buffer,session);
   }
 
-  public final static void onRecycleByteBuffer(ByteBuffer buffer) {
-    callback.onRecycleByteBuffer(buffer);
+  public final static void onRecycleByteBuffer(ByteBuffer buffer,Session session) {
+    callback.onRecycleByteBuffer(buffer,session);
   }
 
-  public final static void onExpandByteBuffer(ByteBuffer buffer) {
-    callback.onExpandByteBuffer(buffer);
+  public final static void onExpandByteBuffer(ByteBuffer buffer,Session session) {
+    callback.onExpandByteBuffer(buffer,session);
   }
 
   public final static void onNewMycatSession(MycatSession session) {

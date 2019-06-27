@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,17 +31,18 @@ public enum ProxyDashboard {
     LOGGER.info("---------------------------dashboard---------------------------");
     for (MycatReactorThread thread : runtime.getMycatReactorThreads()) {
       BufferPool bufPool = thread.getBufPool();
-      Map<Long, Long> memoryUsage = bufPool.getNetDirectMemoryUsage();
-      for (Entry<Long, Long> entry : memoryUsage.entrySet()) {
-        LOGGER.info("threadId:{}  buffer size:{}", entry.getKey(), entry.getValue());
-      }
+      //todo
+//      Map<Long, Long> memoryUsage = bufPool.getNetDirectMemoryUsage();
+//      for (Entry<Long, Long> entry : memoryUsage.entrySet()) {
+//        LOGGER.info("threadId:{}  buffer size:{}", entry.getKey(), entry.getValue());
+//      }
       FrontSessionManager<MycatSession> frontManager = thread.getFrontManager();
       for (MycatSession mycat : frontManager.getAllSessions()) {
         MycatUser user = mycat.getUser();
         LOGGER.info("---------------------------mycat---------------------------");
         LOGGER.info("mycat id:{}  username:{}", mycat.sessionId(), user.getUserName());
         ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
-        LinkedList<ByteBuffer> writeQueue = mycat.writeQueue();
+        Queue<ByteBuffer> writeQueue = mycat.writeQueue();
         LOGGER.info("byteBuffer:{} in proxyBuffer,writeQueue size:{}",
             proxyBuffer.currentByteBuffer(), writeQueue);
         boolean open = mycat.isOpen();
@@ -82,7 +84,7 @@ public enum ProxyDashboard {
         LOGGER.info("lastMessage:{}", lastMessage);
         MycatSession mycatSeesion = mysql.getMycatSeesion();
         if (mycatSeesion != null) {
-          LOGGER.info("bind mycat session:{}", mycatSeesion.sessionId());
+          LOGGER.info("bindSource mycat session:{}", mycatSeesion.sessionId());
         }
         LOGGER.info("open:{} isClose:{}", mysql.isOpen(), mysql.isClosed());
         ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();

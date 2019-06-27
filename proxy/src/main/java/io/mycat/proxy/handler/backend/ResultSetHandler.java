@@ -15,7 +15,6 @@
 package io.mycat.proxy.handler.backend;
 
 import io.mycat.MycatExpection;
-import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
@@ -56,11 +55,11 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       data = EMPTY;
     }
     assert (mysql.currentProxyBuffer() == null);
-    int chunkSize = mysql.getMycatReactorThread().getBufPool().getChunkSize();
+    int chunkSize = mysql.getIOThread().getBufPool().getChunkSize();
     if (data.length > (chunkSize - 5) || data.length > MySQLPacketSplitter.MAX_PACKET_SIZE) {
       throw new MycatExpection("ResultSetHandler unsupport request length more than 1024 bytes");
     }
-    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
+    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getIOThread().getBufPool()));
     MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(data.length + 5);
     mySQLPacket.writeByte((byte) head);
     mySQLPacket.writeBytes(data);
@@ -91,7 +90,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
   default void request(MySQLClientSession mysql, int head, long data,
       ResultSetCallBack<MySQLClientSession> callBack) {
     assert (mysql.currentProxyBuffer() == null);
-    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
+    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getIOThread().getBufPool()));
     MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(12);
     mySQLPacket.writeByte((byte) head);
     mySQLPacket.writeFixInt(4, data);
@@ -106,7 +105,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
   default void requestEmptyPacket(MySQLClientSession mysql, byte nextPacketId,
       ResultSetCallBack<MySQLClientSession> callBack) {
     assert (mysql.currentProxyBuffer() == null);
-    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
+    mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getIOThread().getBufPool()));
     MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(4);
     request(mysql, mySQLPacket, nextPacketId, callBack);
   }
@@ -120,7 +119,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       mysql.setCallBack(callBack);
       mysql.switchNioHandler(this);
       assert (mysql.currentProxyBuffer() == null);
-      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getMycatReactorThread().getBufPool()));
+      mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getIOThread().getBufPool()));
       mysql.prepareReveiceResponse();
       mysql.writeProxyBufferToChannel(packetData);
     } catch (Exception e) {

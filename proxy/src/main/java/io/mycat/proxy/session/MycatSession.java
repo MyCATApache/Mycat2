@@ -21,6 +21,7 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
+import io.mycat.buffer.CrossSwapThreadBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.CommandResolver;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
@@ -35,16 +36,18 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.security.MycatUser;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.LinkedTransferQueue;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements
     MySQLProxySession<MycatSession>, LocalInFileSession,
-    MySQLServerSession<MycatSession> {
+    MySQLProxyServerSession<MycatSession> {
 
   private CommandDispatcher commandHandler;
   int resultSetCount;
@@ -60,8 +63,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private final ByteBuffer header = ByteBuffer.allocate(4);//gc
   private String schema;
   private MycatUser user;
-  private final LinkedList<ByteBuffer> writeQueue = new LinkedList<>();//buffer recycle
+  private final LinkedTransferQueue<ByteBuffer> writeQueue = new LinkedTransferQueue<>();//buffer recycle
   private final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);//reset
+  private final CrossSwapThreadBufferPool crossSwapThreadBufferPool;
 
 
   /**
@@ -69,14 +73,15 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    */
   private final ByteBuffer[] packetContainer = new ByteBuffer[2];
   private final MySQLPacketSplitter packetSplitter = new PacketSplitterImpl();
-  private boolean responseFinished = false;//每次在处理请求时候就需要重置
-  private MySQLClientSession backend;//unbind
+  private volatile boolean responseFinished = false;//每次在处理请求时候就需要重置
+  private MySQLClientSession backend;//unbindSource
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
 
   public MycatSession(int sessionId,BufferPool bufferPool, NIOHandler nioHandler,
       SessionManager<MycatSession> sessionManager) {
     super(sessionId,nioHandler, sessionManager);
-    proxyBuffer = new ProxyBufferImpl(bufferPool);
+    this.proxyBuffer = new ProxyBufferImpl(bufferPool);
+    this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(Thread.currentThread(),bufferPool);
   }
 
   /**
@@ -242,13 +247,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
   @Override
-  public LinkedList<ByteBuffer> writeQueue() {
+  public Queue<ByteBuffer> writeQueue() {
     return writeQueue;
   }
 
   @Override
-  public BufferPool bufferPool() {
-    return getMycatReactorThread().getBufPool();
+  public CrossSwapThreadBufferPool writeBufferPool() {
+    return this.crossSwapThreadBufferPool;
   }
 
   @Override
@@ -387,7 +392,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   @Override
   public void switchMySQLServerWriteHandler() {
-    this.writeHandler = MySQLServerSession.WriteHandler.INSTANCE;
+    this.writeHandler = MySQLProxyServerSession.WriteHandler.INSTANCE;
   }
 
   @Override
@@ -421,7 +426,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     packetResolver.reset();
     packetResolver.setState(ComQueryState.QUERY_PACKET);
     for (ByteBuffer byteBuffer : writeQueue) {
-      getMycatReactorThread().getBufPool().recycle(byteBuffer);
+      this.getIOThread().getBufPool().recycle(byteBuffer);
     }
     writeQueue.clear();
   }
@@ -527,5 +532,16 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void setNetWriteTimeout(long netWriteTimeout) {
     this.serverStatus.setNetWriteTimeout(netWriteTimeout);
+  }
+
+  public void deliverWorkerThread(Thread thread){
+    crossSwapThreadBufferPool.bindSource(thread);
+    ReactorEnvThread reactorEnvThread = (ReactorEnvThread) Thread.currentThread();
+    reactorEnvThread.getReactorEnv().setCurSession(this);
+  }
+  public void backFromWorkerThread(Thread thread){
+    crossSwapThreadBufferPool.unbindSource(thread);
+    ReactorEnvThread reactorEnvThread = (ReactorEnvThread) Thread.currentThread();
+    reactorEnvThread.getReactorEnv().setCurSession(null);
   }
 }

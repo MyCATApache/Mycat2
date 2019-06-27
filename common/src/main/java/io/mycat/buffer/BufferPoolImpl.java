@@ -35,13 +35,13 @@ public class BufferPoolImpl implements BufferPool {
   private final int chunkSize;
   private final int pageSize;
   private final int pageCount;
-  /**
-   * 记录对线程ID->该线程的所使用Direct Buffer的size
-   */
-  private final HashMap<Long, Long> memoryUsage;
-  private ByteBufferPage[] allPages;
+//  /**
+//   * 记录对线程ID->该线程的所使用Direct Buffer的size
+//   */
+//  private final HashMap<Long, Long> memoryUsage;
+  private final ByteBufferPage[] allPages;
   // private int prevAllocatedPage = 0;
-  private AtomicInteger prevAllocatedPage;
+  private final AtomicInteger prevAllocatedPage;
 
   public BufferPoolImpl(int pageSize, int chunkSize, int pageCount) {
     allPages = new ByteBufferPage[pageCount];
@@ -52,7 +52,7 @@ public class BufferPoolImpl implements BufferPool {
     for (int i = 0; i < pageCount; i++) {
       allPages[i] = new ByteBufferPage(ByteBuffer.allocateDirect(pageSize), chunkSize);
     }
-    memoryUsage = new HashMap<>();
+//    memoryUsage = new HashMap<>();
   }
 
 
@@ -76,11 +76,11 @@ public class BufferPoolImpl implements BufferPool {
     final long threadId = Thread.currentThread().getId();
 
     if (byteBuf != null) {
-      if (memoryUsage.containsKey(threadId)) {
-        memoryUsage.put(threadId, memoryUsage.get(threadId) + byteBuf.capacity());
-      } else {
-        memoryUsage.put(threadId, (long) byteBuf.capacity());
-      }
+//      if (memoryUsage.containsKey(threadId)) {
+//        memoryUsage.put(threadId, memoryUsage.get(threadId) + byteBuf.capacity());
+//      } else {
+//        memoryUsage.put(threadId, (long) byteBuf.capacity());
+//      }
     }
 
     //如果堆外内存，没有可用空间,分配 堆内内存,一段时间后,还在使用,看情况再转成堆外内存
@@ -155,9 +155,9 @@ public class BufferPoolImpl implements BufferPool {
     }
     final long threadId = Thread.currentThread().getId();
 
-    if (memoryUsage.containsKey(threadId)) {
-      memoryUsage.put(threadId, memoryUsage.get(threadId) - size);
-    }
+//    if (memoryUsage.containsKey(threadId)) {
+//      memoryUsage.put(threadId, memoryUsage.get(threadId) - size);
+//    }
     assert (recycled == true);
   }
 
@@ -176,11 +176,11 @@ public class BufferPoolImpl implements BufferPool {
   public int getChunkSize() {
     return chunkSize;
   }
-
-  @Override
-  public Map<Long, Long> getNetDirectMemoryUsage() {
-    return this.memoryUsage;
-  }
+//
+//  @Override
+//  public Map<Long, Long> getNetDirectMemoryUsage() {
+//    return this.memoryUsage;
+//  }
 
   /*
    * 用来保存一个一个ByteBuffer为底层存储的内存页

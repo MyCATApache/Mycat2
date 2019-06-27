@@ -163,7 +163,7 @@ public class MySQLClientSession extends
 //
 //      this.mycat.setMySQLSession(null);
 //      this.mycat.resetPacket();
-//      this.mycat.switchWriteHandler(MySQLServerSession.WriteHandler.INSTANCE);
+//      this.mycat.switchWriteHandler(MySQLProxyServerSession.WriteHandler.INSTANCE);
 //      this.mycat = null;
 //
 //      if (!isClose) {
