@@ -1,6 +1,6 @@
 schemas:
   - name: test
-    schemaType: DB_IN_ONE_SERVER
+    schemaType: SQL_PARSE_ROUTE
     defaultDataNode: dn1
     tables:
       - name: travelrecord
