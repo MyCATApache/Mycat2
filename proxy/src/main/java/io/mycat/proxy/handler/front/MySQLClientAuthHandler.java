@@ -93,7 +93,6 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
                         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter(1024);
                         authSwitchRequestPacket.writePayload(mySQLPayloadWriter);
-                        mycat.setResponseFinished(true);
                         mycat.writeBytes(mySQLPayloadWriter.toByteArray(),true);
                         return;
                     }

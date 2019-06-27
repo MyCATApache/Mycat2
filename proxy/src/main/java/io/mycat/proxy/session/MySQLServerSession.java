@@ -3,19 +3,10 @@ package io.mycat.proxy.session;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MySQLPacketUtil;
-import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.ErrorPacketImpl;
-import io.mycat.proxy.packet.MySQLPacket;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.Queue;
 
 public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
@@ -141,7 +132,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
             false, ""
 
         );
-    this.setResponseFinished(true);
     writeBytes(bytes,true);
   }
 
@@ -149,7 +139,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    * 写入字段阶段技术报文,即字段包都写入后调用此方法
    */
   default void writeColumnEndPacket() {
-    setResponseFinished(true);
     if (isDeprecateEOF()) {
     } else {
       byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
@@ -180,7 +169,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     } else {
       bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
     }
-    this.setResponseFinished(true);
     writeBytes(bytes,true);
   }
 
@@ -194,7 +182,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     }
     byte[] bytes = MySQLPacketUtil
         .generateError(lastErrorCode, getLastMessage(), this.getServerStatus());
-    this.setResponseFinished(true);
     writeBytes(bytes,true);
   }
   default void writeErrorEndPacket(ErrorPacketImpl packet) {
@@ -204,7 +191,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     }
     try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
       packet.writePayload(writer,getCapabilities());
-      this.setResponseFinished(true);
       writeBytes(writer.toByteArray(),true);
     }
   }
