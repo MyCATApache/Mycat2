@@ -130,6 +130,10 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
 
   /**
+   *
+   * 该函数实现Payload到packet的转化
+   * 所以队列里面都是Payload
+   *
    * 把队列的buffer写入通道,一个buffer是一个payload,写入时候转化成packet
    * 写入的
    * clearReadWriteOpts
@@ -137,6 +141,8 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
    * isResponseFinished
    *
    * 与另外一个线程的
+   * io.mycat.proxy.session.MySQLProxyServerSession#writeBytes(byte[])
+   *
    * change2WriteOpts
    * byteBuffers
    * isResponseFinished设置
