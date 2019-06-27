@@ -131,6 +131,18 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
   /**
    * 把队列的buffer写入通道,一个buffer是一个payload,写入时候转化成packet
+   * 写入的
+   * clearReadWriteOpts
+   * byteBuffers
+   * isResponseFinished
+   *
+   * 与另外一个线程的
+   * change2WriteOpts
+   * byteBuffers
+   * isResponseFinished设置
+   *
+   * 应该互斥
+   *
    */
   static void writeToChannel(MySQLProxyServerSession session) throws IOException {
     Queue<ByteBuffer> byteBuffers = session.writeQueue();
@@ -140,6 +152,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
     do {
       writed = 0;
       if (byteBuffers.isEmpty()) {
+        session.clearReadWriteOpts();
         break;
       }
       ByteBuffer first = byteBuffers.peek();

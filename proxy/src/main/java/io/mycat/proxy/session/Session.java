@@ -135,4 +135,6 @@ public interface Session<T extends Session> {
   default long currentTimeMillis() {
     return getIOThread().getLastActiveTime();
   }
+
+ public void clearReadWriteOpts();
 }

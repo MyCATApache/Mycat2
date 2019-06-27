@@ -133,7 +133,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    * 写入ok包,调用该方法,就指定响应已经结束
    */
   default void writeOkEndPacket() {
-    this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
         .generateOk(0, getWarningCount(), getServerStatus(), affectedRows(),
             getLastInsertId(),
@@ -142,6 +141,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
             false, ""
 
         );
+    this.setResponseFinished(true);
     writeBytes(bytes);
   }
 
@@ -149,6 +149,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    * 写入字段阶段技术报文,即字段包都写入后调用此方法
    */
   default void writeColumnEndPacket() {
+    setResponseFinished(true);
     if (isDeprecateEOF()) {
     } else {
       byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
@@ -160,7 +161,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    * 结果集结束写入该报文,需要指定是否有后续的结果集和是否有游标
    */
   default void writeRowEndPacket(boolean hasMoreResult, boolean hasCursor) {
-    this.setResponseFinished(true);
     byte[] bytes;
     int serverStatus = getServerStatus();
     if (hasMoreResult) {
@@ -180,6 +180,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     } else {
       bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
     }
+    this.setResponseFinished(true);
     writeBytes(bytes);
   }
 
@@ -191,9 +192,9 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     if (lastErrorCode == 0) {
       lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
     }
-    this.setResponseFinished(true);
     byte[] bytes = MySQLPacketUtil
         .generateError(lastErrorCode, getLastMessage(), this.getServerStatus());
+    this.setResponseFinished(true);
     writeBytes(bytes);
   }
   default void writeErrorEndPacket(ErrorPacketImpl packet) {
@@ -201,15 +202,11 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     if (lastErrorCode == 0) {
       lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
     }
-    this.setResponseFinished(true);
     try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
       packet.writePayload(writer,getCapabilities());
+      this.setResponseFinished(true);
       writeBytes(writer.toByteArray());
     }
-  }
-
-  default void writeEnd(){
-    this.setResponseFinished(true);
   }
 
   void writeErrorEndPacketBySyncInProcessError();

@@ -77,11 +77,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MySQLClientSession backend;//unbindSource
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
 
-  public MycatSession(int sessionId,BufferPool bufferPool, NIOHandler nioHandler,
+  public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
       SessionManager<MycatSession> sessionManager) {
-    super(sessionId,nioHandler, sessionManager);
+    super(sessionId, nioHandler, sessionManager);
     this.proxyBuffer = new ProxyBufferImpl(bufferPool);
-    this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(Thread.currentThread(),bufferPool);
+    this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(Thread.currentThread(),
+        bufferPool);
   }
 
   /**
@@ -534,14 +535,15 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setNetWriteTimeout(netWriteTimeout);
   }
 
-  public void deliverWorkerThread(Thread thread){
+  public void deliverWorkerThread(ReactorEnvThread thread) {
     crossSwapThreadBufferPool.bindSource(thread);
-    ReactorEnvThread reactorEnvThread = (ReactorEnvThread) Thread.currentThread();
-    reactorEnvThread.getReactorEnv().setCurSession(this);
+    assert thread == Thread.currentThread();
+    thread.getReactorEnv().setCurSession(this);
   }
-  public void backFromWorkerThread(Thread thread){
+
+  public void backFromWorkerThread(ReactorEnvThread thread) {
     crossSwapThreadBufferPool.unbindSource(thread);
-    ReactorEnvThread reactorEnvThread = (ReactorEnvThread) Thread.currentThread();
-    reactorEnvThread.getReactorEnv().setCurSession(null);
+    assert thread == Thread.currentThread();
+    thread.getReactorEnv().setCurSession(null);
   }
 }

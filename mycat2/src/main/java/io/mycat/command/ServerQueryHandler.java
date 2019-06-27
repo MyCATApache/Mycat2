@@ -1,21 +1,13 @@
 package io.mycat.command;
 
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.reactor.MycatReactorThread;
-import io.mycat.proxy.reactor.ReactorEnv;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MycatSession;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 
 public class ServerQueryHandler {
-  final static ExecutorService service = Executors.newCachedThreadPool(new ThreadFactory() {
-    @Override
-    public Thread newThread(Runnable r) {
-      return new ReactorEnvThread(r) {
-      };
-    }
+  final static ExecutorService service = Executors.newCachedThreadPool(r -> new ReactorEnvThread(r) {
   });
   public ServerQueryHandler(ProxyRuntime runtime) {
 

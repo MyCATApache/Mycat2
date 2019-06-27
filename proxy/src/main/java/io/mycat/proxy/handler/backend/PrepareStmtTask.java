@@ -96,7 +96,7 @@ public class PrepareStmtTask implements ResultSetHandler {
   @Override
   public void onFinishedCollect(MySQLClientSession mysql) {
     if (proxy) {
-      mycat.writeEnd();
+      mycat.setResponseFinished(true);
     }
   }
 
