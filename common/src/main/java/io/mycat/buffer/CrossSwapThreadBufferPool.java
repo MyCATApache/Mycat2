@@ -3,6 +3,10 @@ package io.mycat.buffer;
 import io.mycat.MycatExpection;
 import java.nio.ByteBuffer;
 
+/**
+ * 封装,记录buffer在跨线程的工具类
+ * junwen12221
+ */
 public class CrossSwapThreadBufferPool {
   private volatile Thread source;
   private final Thread target;

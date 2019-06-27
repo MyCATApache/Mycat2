@@ -535,12 +535,20 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setNetWriteTimeout(netWriteTimeout);
   }
 
+  /**
+   * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
+   * @param thread
+   */
   public void deliverWorkerThread(ReactorEnvThread thread) {
     crossSwapThreadBufferPool.bindSource(thread);
     assert thread == Thread.currentThread();
     thread.getReactorEnv().setCurSession(this);
   }
 
+  /**
+   * 业务线程执行结束,清除业务线程的session,并代表处理结束
+   * @param thread
+   */
   public void backFromWorkerThread(ReactorEnvThread thread) {
     crossSwapThreadBufferPool.unbindSource(thread);
     assert thread == Thread.currentThread();
