@@ -55,6 +55,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -309,6 +310,7 @@ public class MycatRouterConfig {
   }
 
   private void iniSchema(SchemaRootConfig schemaConfigs) {
+    Objects.requireNonNull(schemaConfigs);
     for (SchemaConfig schemaConfig : schemaConfigs.getSchemas()) {
       String defaultDataNode = schemaConfig.getDefaultDataNode();
       String sqlMaxLimit = schemaConfig.getSqlMaxLimit();

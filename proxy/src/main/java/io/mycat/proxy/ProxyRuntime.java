@@ -331,6 +331,15 @@ public class ProxyRuntime {
     return defContext;
   }
 
+  /**
+   * Getter for property 'providers'.
+   *
+   * @return Value for property 'providers'.
+   */
+  public ProxyBeanProviders getProviders() {
+    return providers;
+  }
+
   public void updateReplicaMasterIndexesConfig(final MySQLReplica replica,
       List<MySQLDatasource> writeDataSource) {
 
@@ -353,7 +362,6 @@ public class ProxyRuntime {
       YamlUtil.dumpToFile(config.getFilePath(), newContext);
       REPLICA_MASTER_INDEXES_LOGGER.info("switchRes from:{}", old, switchRes);
     }
-
 
   }
 }

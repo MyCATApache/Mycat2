@@ -27,9 +27,12 @@ public enum ProxyDashboard {
 
   public void collectInfo(ProxyRuntime runtime) {
     LOGGER.info("---------------------------dashboard---------------------------");
+    Runtime rt = Runtime.getRuntime();
+    long used = rt.totalMemory() - rt.freeMemory();
+    LOGGER.info("heap memory used:{}", JavaUtils.bytesToString(used));
     for (MycatReactorThread thread : runtime.getMycatReactorThreads()) {
       BufferPool bufPool = thread.getBufPool();
-      LOGGER.info("threadId:{}  buffer capacity:{}", thread.getId(),
+      LOGGER.info("threadId:{} io off heap buffer capacity:{}", thread.getId(),
           JavaUtils.bytesToString(bufPool.capacity()));
       FrontSessionManager<MycatSession> frontManager = thread.getFrontManager();
       for (MycatSession mycat : frontManager.getAllSessions()) {

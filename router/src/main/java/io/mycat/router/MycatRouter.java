@@ -15,16 +15,12 @@
 package io.mycat.router;
 
 import io.mycat.beans.mycat.MycatSchema;
-import io.mycat.config.ConfigEnum;
-import io.mycat.config.ConfigLoader;
-import io.mycat.config.ConfigReceiverImpl;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.logTip.RouteNullChecker;
 import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
-import java.io.IOException;
 
 /**
  * @author jamie12221 date 2019-05-05 17:04
@@ -33,18 +29,20 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
   final MycatRouterConfig config;
   final RouteContext context;
+  final BufferSQLContext sqlContext;
 
   private BufferSQLParser sqlParser() {
     return new BufferSQLParser();
   }
 
-  private BufferSQLContext sqlContext() {
-    return new BufferSQLContext();
-  }
-
   public MycatRouter(MycatRouterConfig config) {
     this.config = config;
-    context = new RouteContext(config);
+    this.context = new RouteContext(config);
+    this.sqlContext = new BufferSQLContext();
+  }
+
+  private BufferSQLContext sqlContext() {
+    return sqlContext;
   }
 
   public ResultRoute enterRoute(MycatSchema defaultSchema, String sql) {
@@ -59,7 +57,6 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     return bufferSQLContext;
   }
 
-
   public ResultRoute enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
       String sql) {
     this.context.clear();
@@ -71,11 +68,10 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     String balance = sa.getBalance();
     Boolean runOnMaster = sa.getRunOnMaster();
 
-
     //判断有没有schema
     if (sa.getSchema() != null) {
       defaultSchema = config.getSchemaBySchemaName(sa.getSchema());
-      if (defaultSchema.getSchemaType()== SchemaType.DB_IN_ONE_SERVER){
+      if (defaultSchema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
         OneServerResultRoute routeResult = new OneServerResultRoute();
         routeResult.setDataNode(defaultSchema.getDefaultDataNode());
         routeResult.setSql(sql);
@@ -83,7 +79,6 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
             .setBalance(balance).setRunOnMaster(runOnMaster);
       }
     }
-
 
     int schemaCount = sqlContext.getSchemaCount();
     if (schemaCount == 0) {
@@ -142,6 +137,6 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   }
 
   public MycatSchema getSchemaBySchemaName(String db) {
-   return config.getSchemaBySchemaName(db);
+    return config.getSchemaBySchemaName(db);
   }
 }

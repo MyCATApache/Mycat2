@@ -39,6 +39,7 @@ public class SimpleCommandHandler extends AbstractCommandHandler {
     }
     try {
       MycatSchema schema = config.getSchemaOrDefaultBySchemaName(session.getSchema());
+      session.useSchema(schema.getSchemaName());
       MySQLDataSourceQuery query = new MySQLDataSourceQuery();
       query.setRunOnMaster(!simpleSelect);
       MySQLTaskUtil.proxyBackend(session,

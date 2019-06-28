@@ -46,8 +46,8 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ResultRoute;
-import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;
+import io.mycat.router.routeResult.ResultRouteType;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.security.MycatUser;
 import io.mycat.sqlparser.util.BufferSQLContext;
@@ -231,18 +231,17 @@ public class ProxyQueryHandler {
           if (sqlContext.isSimpleSelect()) {
             ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
             if (resultRoute != null) {
-              switch (resultRoute.getType()) {
-                case ONE_SERVER_RESULT_ROUTE:
-                  OneServerResultRoute route = (OneServerResultRoute) resultRoute;
-                  MySQLDataSourceQuery query = new MySQLDataSourceQuery();
-                  query.setIds(null);
-                  query.setRunOnMaster(resultRoute.isRunOnMaster(false));
-                  query.setStrategy(runtime
-                      .getLoadBalanceByBalanceName(resultRoute.getBalance()));
-                  MySQLTaskUtil
-                      .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
-                          route.getDataNode(), query, ResponseType.QUERY);
-                  return;
+              if (resultRoute.getType() == ResultRouteType.ONE_SERVER_RESULT_ROUTE) {
+                OneServerResultRoute route = (OneServerResultRoute) resultRoute;
+                MySQLDataSourceQuery query = new MySQLDataSourceQuery();
+                query.setIds(null);
+                query.setRunOnMaster(resultRoute.isRunOnMaster(false));
+                query.setStrategy(runtime
+                    .getLoadBalanceByBalanceName(resultRoute.getBalance()));
+                MySQLTaskUtil
+                    .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
+                        route.getDataNode(), query, ResponseType.QUERY);
+                return;
               }
             }
             mycat.setLastMessage("unsupport sql");
@@ -254,60 +253,19 @@ public class ProxyQueryHandler {
           LOGGER.warn("Use annotations to specify laodata data nodes whenever possible !");
         }
         default:
-//          switch (useSchema.getSchemaType()) {
-//            case DB_IN_ONE_SERVER:
-//              MySQLTaskUtil
-//                  .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-//                      useSchema.getDefaultDataNode(), null, ResponseType.QUERY);
-//              return;
-//            case DB_IN_MULTI_SERVER:
-//            case ANNOTATION_ROUTE:
-//            case SQL_PARSE_ROUTE:
-//              if (sqlContext.getSQLType() != 0 & sqlContext.getTableCount() != 1) {
-//                mycat.setLastMessage("unsupport sql");
-//                mycat.writeErrorEndPacket();
-//                return;
-//              }
-//          }
-
           ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
           if (resultRoute == null) {
             mycat.writeOkEndPacket();
             return;
           }
-          switch (resultRoute.getType()) {
-            case ONE_SERVER_RESULT_ROUTE: {
-              OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
-              MySQLTaskUtil
-                  .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-                      resultRoute1.getDataNode(), null, ResponseType.QUERY);
-              break;
-            }
-            case GLOBAL_TABLE_WRITE_RESULT_ROUTE: {
-              GlobalTableWriteResultRoute globalTableWriteResultRoute = (GlobalTableWriteResultRoute) resultRoute;
-              String sql1 = globalTableWriteResultRoute.getSql();
-              String master = globalTableWriteResultRoute.getMaster();
-              Collection<String> dataNodes = globalTableWriteResultRoute.getDataNodes();
-              mycat.setLastMessage("unsupport sql");
-              mycat.writeErrorEndPacket();
-//              mycat.proxyUpdateMultiBackends(MySQLPacketUtil.generateComQuery(sql1), master,
-//                  dataNodes, new AsyncTaskCallBack<MycatSessionView>() {
-//                    @Override
-//                    public void finished(MycatSessionView session, Object sender, boolean success,
-//                        Object result, Object attr) {
-//                      if (success) {
-//                        System.out.println("success full");
-//                      } else {
-//                        session.setLastMessage(result.toString());
-//                        session.writeErrorEndPacket();
-//                      }
-//                    }
-//                  });
-              return;
-            }
-            default:
-              mycat.setLastMessage("unsupport sql");
-              mycat.writeErrorEndPacket();
+          if (resultRoute.getType() == ResultRouteType.ONE_SERVER_RESULT_ROUTE) {
+            OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
+            MySQLTaskUtil
+                .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
+                    resultRoute1.getDataNode(), null, ResponseType.QUERY);
+          } else {
+            mycat.setLastMessage("unsupport sql");
+            mycat.writeErrorEndPacket();
           }
 
       }

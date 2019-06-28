@@ -31,7 +31,7 @@ public class MySQLDataNode extends MycatDataNode {
     this.dataNodeConfig = dataNodeConfig;
   }
 
-  public String getDatabaseName() {
+  public String getSchemaName() {
     return dataNodeConfig.getDatabase();
   }
 

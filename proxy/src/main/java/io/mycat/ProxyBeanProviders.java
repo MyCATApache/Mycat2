@@ -6,6 +6,8 @@ import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.handler.backend.MySQLSynContext;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
@@ -20,12 +22,18 @@ public interface ProxyBeanProviders {
   void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext);
 
 
-  MySQLDatasource createDatasource(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,
+  MySQLDatasource createDatasource(ProxyRuntime runtime, int index,
+      DatasourceConfig datasourceConfig,
       MySQLReplica replica);
 
-  MySQLReplica createReplica(ProxyRuntime runtime,ReplicaConfig replicaConfig, Set<Integer> writeIndex);
+  MySQLReplica createReplica(ProxyRuntime runtime, ReplicaConfig replicaConfig,
+      Set<Integer> writeIndex);
 
-  MySQLDataNode createMySQLDataNode(ProxyRuntime runtime,DataNodeConfig config);
+  MySQLDataNode createMySQLDataNode(ProxyRuntime runtime, DataNodeConfig config);
 
-  CommandDispatcher createCommandDispatcher(ProxyRuntime runtime,MycatSession session);
+  CommandDispatcher createCommandDispatcher(ProxyRuntime runtime, MycatSession session);
+
+  MySQLSynContext createMySQLSynContext(MycatSession mycat);
+
+  MySQLSynContext createMySQLSynContext(MySQLClientSession mysql);
 }
