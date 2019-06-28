@@ -61,7 +61,7 @@ public class MycatCore {
 
           @Override
           public void onException(Exception e, Object sender, Object attr) {
-
+            e.printStackTrace();
           }
 
         });

@@ -4,9 +4,7 @@ package io.mycat.command;
 import io.mycat.proxy.session.MycatSession;
 
 /**
- * @author jamie12221
- *  date 2019-05-12 21:30
- * 实现mysql服务器 预处理相关处理
+ * @author jamie12221 date 2019-05-12 21:30 实现mysql服务器 预处理相关处理
  **/
 public interface PrepareStatementParserHelper {
 
@@ -20,10 +18,12 @@ public interface PrepareStatementParserHelper {
       MycatSession session);
 
   void handlePrepareStatementClose(long statementId, MycatSession session);
-  void handlePrepareStatementFetch(long statementId, long row);
+
+  void handlePrepareStatementFetch(long statementId, long row, MycatSession session);
+
   void handlePrepareStatementReset(long statementId, MycatSession session);
 
-  int getNumParamsByStatementId(long statementId);
+  int getNumParamsByStatementId(long statementId, MycatSession session);
 
 
 }

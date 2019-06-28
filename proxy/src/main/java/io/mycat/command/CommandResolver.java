@@ -18,7 +18,7 @@ public class CommandResolver {
       boolean isEmptyPayload = curPacket.readFinished();
       if (isEmptyPayload) {
         MycatMonitor.onLoadDataLocalInFileEmptyPacketStart(mycat);
-        commandHandler.handleContentOfFilenameEmptyOk();
+        commandHandler.handleContentOfFilenameEmptyOk(mycat);
         mycat.resetCurrentProxyPayload();
         MycatMonitor.onLoadDataLocalInFileEmptyPacketEnd(mycat);
         return;
@@ -121,7 +121,7 @@ public class CommandResolver {
             byte flags = curPacket.readByte();
             long iteration = curPacket.readFixInt(4);
             assert iteration == 1;
-            int numParams = commandHandler.getNumParamsByStatementId(statementId);
+            int numParams = commandHandler.getNumParamsByStatementId(statementId, mycat);
 
             int startIndex = curPacket.packetReadStartIndex();
             byte[] rest = curPacket.readEOFStringBytes();
@@ -151,7 +151,7 @@ public class CommandResolver {
           long statementId = curPacket.readFixInt(4);
           long row = curPacket.readFixInt(4);
           mycat.resetCurrentProxyPayload();
-          commandHandler.handlePrepareStatementFetch(statementId, row);
+          commandHandler.handlePrepareStatementFetch(statementId, row, mycat);
           MycatMonitor.onFetchCommandEnd(mycat);
           break;
         }

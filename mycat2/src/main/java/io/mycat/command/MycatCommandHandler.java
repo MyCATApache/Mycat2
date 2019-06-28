@@ -19,6 +19,7 @@ import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
 import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.config.schema.SchemaType;
+import io.mycat.grid.BlockCommandHandler;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -41,7 +42,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   private PrepareStmtContext prepareContext;
   private final LoaddataContext loadDataContext = new LoaddataContext();
   private ProxyQueryHandler proxyQueryHandler;
-  private ServerQueryHandler serverQueryHandler;
+  private BlockCommandHandler serverQueryHandler;
 
   @Override
   public void initRuntime(MycatSession mycat, ProxyRuntime runtime) {
@@ -49,7 +50,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     this.router = new MycatRouter((MycatRouterConfig) runtime.getDefContext().get("routeConfig"));
     this.prepareContext = new PrepareStmtContext(mycat);
     this.proxyQueryHandler = new ProxyQueryHandler(router, runtime);
-    this.serverQueryHandler = new ServerQueryHandler(runtime);
+    this.serverQueryHandler = new BlockCommandHandler(router, runtime);
   }
 
   @Override
@@ -59,7 +60,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
       schema = router.getDefaultSchema();
     }
     if (schema.getSchemaType() == SchemaType.SQL_PARSE_ROUTE) {
-      serverQueryHandler.doQuery(sqlBytes,mycat);
+      serverQueryHandler.handleQuery(sqlBytes, mycat);
       return;
     }
     proxyQueryHandler.doQuery(schema, sqlBytes, mycat);
@@ -72,7 +73,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   }
 
   @Override
-  public void handleContentOfFilenameEmptyOk() {
+  public void handleContentOfFilenameEmptyOk(MycatSession mycat) {
     this.loadDataContext.proxy(mycat);
   }
 
@@ -233,7 +234,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   }
 
   @Override
-  public void handlePrepareStatementFetch(long statementId, long row) {
+  public void handlePrepareStatementFetch(long statementId, long row, MycatSession mycat) {
     prepareContext.fetch(statementId, row);
   }
 
@@ -243,7 +244,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   }
 
   @Override
-  public int getNumParamsByStatementId(long statementId) {
+  public int getNumParamsByStatementId(long statementId, MycatSession mycat) {
     return prepareContext.getNumOfParams(statementId);
   }
 }

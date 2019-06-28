@@ -14,7 +14,7 @@ public interface LocalInFileRequestParseHelper {
 
   void handleContentOfFilename(byte[] sql, MycatSession seesion);
 
-  void handleContentOfFilenameEmptyOk();
+  void handleContentOfFilenameEmptyOk(MycatSession session);
 
   interface LocalInFileSession {
 
