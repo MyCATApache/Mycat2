@@ -1,6 +1,8 @@
-package io.mycat.buffer;
+package io.mycat.proxy.buffer;
 
 import io.mycat.MycatExpection;
+import io.mycat.buffer.BufferPool;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import java.nio.ByteBuffer;
 
 /**
@@ -8,11 +10,12 @@ import java.nio.ByteBuffer;
  * junwen12221
  */
 public class CrossSwapThreadBufferPool {
-  private volatile Thread source;
-  private final Thread target;
+
+  private final ReactorEnvThread target;
+  private volatile ReactorEnvThread source;
   private BufferPool bufferPool;
 
-  public CrossSwapThreadBufferPool(Thread target,
+  public CrossSwapThreadBufferPool(ReactorEnvThread target,
       BufferPool bufferPool) {
     this.target = target;
     this.bufferPool = bufferPool;
@@ -39,7 +42,7 @@ public class CrossSwapThreadBufferPool {
     bufferPool.recycle(theBuf);
   }
 
-  public void bindSource(Thread source) {
+  public void bindSource(ReactorEnvThread source) {
     if (this.source ==null) {
       this.source = source;
     } else {
@@ -47,11 +50,15 @@ public class CrossSwapThreadBufferPool {
     }
   }
 
-  public void unbindSource(Thread source) {
+  public void unbindSource(ReactorEnvThread source) {
     if (this.source == source) {
       this.source = null;
     } else {
       throw new MycatExpection("unsupport operation");
     }
+  }
+
+  public ReactorEnvThread getSource() {
+    return source;
   }
 }

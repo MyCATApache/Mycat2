@@ -36,4 +36,7 @@ public class ReactorEnv {
 
     private Session curSession;
 
+    public void close() {
+
+    }
 }

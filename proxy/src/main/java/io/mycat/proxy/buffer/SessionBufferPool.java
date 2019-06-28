@@ -17,8 +17,5 @@ public interface SessionBufferPool {
 
   long capacity();
 
-  long size();
-
-
-  int getChunkSize();
+  int chunkSize();
 }

@@ -17,8 +17,6 @@ package io.mycat.buffer;
 
 import java.nio.ByteBuffer;
 import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import sun.nio.ch.DirectBuffer;
@@ -58,7 +56,7 @@ public class BufferPoolImpl implements BufferPool {
 
   @Override
   public ByteBuffer allocate() {
-    return allocate(getChunkSize());
+    return allocate(chunkSize());
   }
 
   @Override
@@ -166,14 +164,10 @@ public class BufferPoolImpl implements BufferPool {
     return (long) pageSize * pageCount;
   }
 
-  @Override
-  public long size() {
-    return (long) pageSize * chunkSize * pageCount;
-  }
 
 
   @Override
-  public int getChunkSize() {
+  public int chunkSize() {
     return chunkSize;
   }
 //

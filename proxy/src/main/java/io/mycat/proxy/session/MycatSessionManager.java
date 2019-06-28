@@ -18,7 +18,6 @@ import io.mycat.ProxyBeanProviders;
 import io.mycat.annotations.NoExcept;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;

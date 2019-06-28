@@ -21,12 +21,12 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
-import io.mycat.buffer.CrossSwapThreadBufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.CommandResolver;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.SessionTip;
+import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
@@ -36,6 +36,7 @@ import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
 import io.mycat.proxy.packet.MySQLPacketResolverImpl;
+import io.mycat.proxy.reactor.ReactorEnv;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.security.MycatUser;
 import io.mycat.util.CharsetUtil;
@@ -81,7 +82,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       SessionManager<MycatSession> sessionManager) {
     super(sessionId, nioHandler, sessionManager);
     this.proxyBuffer = new ProxyBufferImpl(bufferPool);
-    this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(Thread.currentThread(),
+    this.crossSwapThreadBufferPool = new CrossSwapThreadBufferPool(
+        (ReactorEnvThread) Thread.currentThread(),
         bufferPool);
   }
 
@@ -190,12 +192,23 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
     assert hint != null;
     try {
+      if (crossSwapThreadBufferPool != null) {
+        ReactorEnvThread source = crossSwapThreadBufferPool.getSource();
+        if (source != null) {
+          ReactorEnv reactorEnv = source.getReactorEnv();
+          reactorEnv.close();
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.error("", e);
+    }
+    try {
       MySQLClientSession sqlSession = getMySQLSession();
       if (sqlSession != null) {
         sqlSession.close(false, hint);
       }
     } catch (Exception e) {
-      LOGGER.error("{}", e);
+      LOGGER.error("", e);
     }
     onHandlerFinishedClear();
     if (this.getMySQLSession() != null) {

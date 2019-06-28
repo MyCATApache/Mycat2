@@ -53,12 +53,7 @@ public class SessionBufferPoolImpl implements SessionBufferPool {
   }
 
   @Override
-  public long size() {
-    return this.bufferPool.size();
-  }
-
-  @Override
-  public int getChunkSize() {
-    return this.bufferPool.getChunkSize();
+  public int chunkSize() {
+    return this.bufferPool.chunkSize();
   }
 }

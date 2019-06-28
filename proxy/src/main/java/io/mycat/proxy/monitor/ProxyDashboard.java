@@ -13,12 +13,10 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.security.MycatUser;
+import io.mycat.util.JavaUtils;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Queue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +29,8 @@ public enum ProxyDashboard {
     LOGGER.info("---------------------------dashboard---------------------------");
     for (MycatReactorThread thread : runtime.getMycatReactorThreads()) {
       BufferPool bufPool = thread.getBufPool();
-      //todo
-//      Map<Long, Long> memoryUsage = bufPool.getNetDirectMemoryUsage();
-//      for (Entry<Long, Long> entry : memoryUsage.entrySet()) {
-//        LOGGER.info("threadId:{}  buffer size:{}", entry.getKey(), entry.getValue());
-//      }
+      LOGGER.info("threadId:{}  buffer capacity:{}", thread.getId(),
+          JavaUtils.bytesToString(bufPool.capacity()));
       FrontSessionManager<MycatSession> frontManager = thread.getFrontManager();
       for (MycatSession mycat : frontManager.getAllSessions()) {
         MycatUser user = mycat.getUser();
@@ -103,7 +98,7 @@ public enum ProxyDashboard {
     for (MySQLDatasource datasource : datasourceList) {
       String name = datasource.getName();
       int sessionCounter = datasource.getSessionCounter();
-      LOGGER.info("dataSourceName:{} sessionCounter", name, sessionCounter);
+      LOGGER.info("dataSourceName:{} sessionCounter:{}", name, sessionCounter);
     }
   }
 }

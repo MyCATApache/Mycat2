@@ -36,7 +36,7 @@ public final class ProxyBufferPoolMonitor extends BufferPoolImpl {
 
   @Override
   public ByteBuffer expandBuffer(ByteBuffer old, int len) {
-    int chunkSize = getChunkSize();
+    int chunkSize = chunkSize();
     ByteBuffer byteBuffer = super.expandBuffer(old, (len / chunkSize + 1) * chunkSize);
     MycatMonitor.onExpandByteBuffer(byteBuffer,getSession());
     return byteBuffer;

@@ -2,7 +2,6 @@ package io.mycat;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.schema.DataNodeConfig;
@@ -10,7 +9,6 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,7 +17,7 @@ import java.util.Set;
  **/
 public interface ProxyBeanProviders {
 
-  public void initRuntime(ProxyRuntime runtime, Map<String,Object> defContext);
+  void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext);
 
 
   MySQLDatasource createDatasource(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,

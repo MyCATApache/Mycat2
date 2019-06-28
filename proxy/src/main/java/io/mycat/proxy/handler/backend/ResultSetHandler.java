@@ -39,7 +39,8 @@ import org.slf4j.LoggerFactory;
  */
 public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
     MySQLPacketCallback {
-  static final byte[] EMPTY = new byte[]{};
+
+  byte[] EMPTY = new byte[]{};
   Logger logger = LoggerFactory.getLogger(BackendConCreateHandler.class);
   ResultSetHandler DEFAULT = new ResultSetHandler() {
 
@@ -55,7 +56,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       data = EMPTY;
     }
     assert (mysql.currentProxyBuffer() == null);
-    int chunkSize = mysql.getIOThread().getBufPool().getChunkSize();
+    int chunkSize = mysql.getIOThread().getBufPool().chunkSize();
     if (data.length > (chunkSize - 5) || data.length > MySQLPacketSplitter.MAX_PACKET_SIZE) {
       throw new MycatExpection("ResultSetHandler unsupport request length more than 1024 bytes");
     }

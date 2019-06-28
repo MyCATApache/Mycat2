@@ -18,7 +18,6 @@ package io.mycat.buffer;
  */
 
 import java.nio.ByteBuffer;
-import java.util.Map;
 
 /**
  * 缓冲池
@@ -41,10 +40,7 @@ public interface BufferPool {
 
     long capacity();
 
-    long size();
-
-
-    int getChunkSize();
+  int chunkSize();
 //
 //    Map<Long, Long> getNetDirectMemoryUsage();
 }
