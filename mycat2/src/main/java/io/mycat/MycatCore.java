@@ -56,13 +56,6 @@ public class MycatCore {
         new AsyncTaskCallBack() {
           @Override
           public void onFinished(Object sender, Object result, Object attr) {
-            try {
-              Thread.sleep(TimeUnit.SECONDS.toMillis(60));
-              exit();
-              main(null);
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
 
           }
 
