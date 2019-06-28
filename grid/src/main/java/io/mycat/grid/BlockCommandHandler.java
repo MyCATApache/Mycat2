@@ -1,6 +1,6 @@
 package io.mycat.grid;
 
-import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
+import io.mycat.command.AbstractCommandHandler;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MycatSession;

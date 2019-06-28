@@ -12,7 +12,7 @@ public interface LocalInFileRequestParseHelper {
 
   void handleQuery(byte[] sql, MycatSession seesion);
 
-  void handleContentOfFilename(byte[] sql, MycatSession seesion);
+  void handleContentOfFilename(byte[] sql, MycatSession session);
 
   void handleContentOfFilenameEmptyOk(MycatSession session);
 

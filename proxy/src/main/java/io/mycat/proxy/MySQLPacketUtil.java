@@ -44,13 +44,16 @@ public class MySQLPacketUtil {
   }
 
   public static final byte[] generateComQueryPacket(String sql) {
-    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(sql.length() + 5)) {
-      writer.write(0x3);
-      writer.writeEOFString(sql);
-      return generateMySQLPacket(0, writer.toByteArray());
-    }
+    return generateMySQLPacket(0, generateComQuery(sql));
   }
 
+  public static final byte[] generateComQueryPayload(byte[] sql) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(sql.length + 5)) {
+      writer.write(0x3);
+      writer.writeEOFStringBytes(sql);
+      return writer.toByteArray();
+    }
+  }
   public static final byte[] generateResetPacket(long statementId) {
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(5)) {
       writer.write(0x1a);

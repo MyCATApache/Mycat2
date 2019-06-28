@@ -18,8 +18,6 @@ import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.DefaultTable;
 import io.mycat.beans.mycat.ERTable;
 import io.mycat.beans.mycat.GlobalTable;
-import io.mycat.beans.mycat.MySQLDataNode;
-import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
 import io.mycat.beans.mycat.MycatTableRule;
@@ -38,9 +36,6 @@ import io.mycat.config.route.ShardingRuleRootConfig;
 import io.mycat.config.route.SharingFuntionRootConfig;
 import io.mycat.config.route.SharingTableRule;
 import io.mycat.config.route.SubShardingFuntion;
-import io.mycat.config.schema.DataNodeConfig;
-import io.mycat.config.schema.DataNodeRootConfig;
-import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.schema.SchemaConfig;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.schema.SchemaType;
@@ -221,8 +216,10 @@ public class MycatRouterConfig {
 
   public MycatRouterConfig(ConfigReceiver cr) {
     this(cr.getConfig(ConfigEnum.SCHEMA)
-        ,cr.getConfig(ConfigEnum.FUNCTIONS),cr.getConfig(ConfigEnum.DYNAMIC_ANNOTATION),cr.getConfig(ConfigEnum.RULE));
+        , cr.getConfig(ConfigEnum.FUNCTIONS), cr.getConfig(ConfigEnum.DYNAMIC_ANNOTATION),
+        cr.getConfig(ConfigEnum.RULE));
   }
+
   public MycatRouterConfig(SchemaRootConfig config,
       SharingFuntionRootConfig funtions,
       DynamicAnnotationRootConfig dynamicAnnotationConfig,
@@ -474,6 +471,15 @@ public class MycatRouterConfig {
 
   public MycatSchema getSchemaBySchemaName(String name) {
     return schemas.get(name);
+  }
+
+  public MycatSchema getSchemaOrDefaultBySchemaName(String name) {
+    MycatSchema schema = getSchemaBySchemaName(name);
+    if (schema == null) {
+      return defaultSchema;
+    } else {
+      return schema;
+    }
   }
 
   public Collection<MycatSchema> getSchemaList() {

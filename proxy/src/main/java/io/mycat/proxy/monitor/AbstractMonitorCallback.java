@@ -568,4 +568,19 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   public void onDaemonCommandEnd(MycatSession mycat) {
 
   }
+
+  @Override
+  public void onChange2ReadOpts(Session session) {
+
+  }
+
+  @Override
+  public void onChange2WriteOpts(Session session) {
+
+  }
+
+  @Override
+  public void onClearReadWriteOpts(Session session) {
+
+  }
 }

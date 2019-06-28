@@ -19,16 +19,20 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   protected final static Logger LOGGER = LoggerFactory.getLogger(MycatMonitor.class);
   protected final static Logger SQL_LOGGER = LoggerFactory.getLogger("sqlLogger");
-  final static boolean record = true;
-  final static boolean recordDump = true;
+  final static boolean onBind = false;
+  final static boolean onSessionPool = true;
+  final static boolean onBuffer = false;
+  final static boolean recordDump = false;
   final static boolean onSQL = true;
-  final static boolean onException = false;
+  final static boolean onException = true;
   final static boolean onClear = false;
   final static boolean onCommand = false;
   final static boolean onBackend = false;
+  final static boolean onPayload = false;
+  final static boolean readWriteOpts = false;
   @Override
   public void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
-    if (record) {
+    if (onBind) {
 
       boolean hasFatch = MySQLPacketResolver.hasFatch(serverStatus);
       boolean hasMoreResult = MySQLPacketResolver.hasMoreResult(serverStatus);
@@ -191,7 +195,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public void onCloseMysqlSession(MySQLClientSession session, boolean normal, String reason) {
-    if (record) {
+    if (onSessionPool) {
       LOGGER.info("sessionId:{} normal:{} reason:{}", session.sessionId(), normal, reason);
     }
   }
@@ -269,7 +273,9 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public void onPayloadType(Session session, MySQLPayloadType type) {
-    LOGGER.info("sessionId:{} payload:{} ", session.sessionId(), type);
+    if (onPayload) {
+      LOGGER.debug("sessionId:{} payload:{} ", session.sessionId(), type);
+    }
   }
 
   @Override
@@ -297,7 +303,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public final void onAllocateByteBuffer(ByteBuffer buffer, Session session) {
-    if (record) {
+    if (onBuffer) {
       //    Thread.dumpStack();
       LOGGER.debug("session id{}  {}", session.sessionId(), buffer);
     }
@@ -305,7 +311,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public final void onSynchronizationState(MySQLClientSession session) {
-    if (record) {
+    if (onBind) {
       //    Thread.dumpStack();
       MySQLSynContext c = new MySQLSynContext(session);
       LOGGER.debug(
@@ -318,49 +324,49 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public final void onRecycleByteBuffer(ByteBuffer buffer, Session session) {
-    if (record) {
+    if (onBuffer) {
       LOGGER.debug("sessionId:{}  {}", MycatMonitorCallback.getSession().sessionId(), buffer);
     }
   }
 
   @Override
   public final void onExpandByteBuffer(ByteBuffer buffer, Session session) {
-    if (record) {
+    if (onBuffer) {
       LOGGER.debug("sessionId:{}  {}", MycatMonitorCallback.getSession().sessionId(), buffer);
     }
   }
 
   @Override
   public final void onNewMycatSession(MycatSession session) {
-    if (record) {
+    if (onSessionPool) {
       LOGGER.debug("sessionId:{}", session.sessionId());
     }
   }
 
   @Override
   public final void onBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
-    if (record) {
+    if (onBind) {
       LOGGER.debug("sessionId:{} sessionId:{}", mycat.sessionId(), session.sessionId());
     }
   }
 
   @Override
   public final void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session) {
-    if (record) {
+    if (onBind) {
       LOGGER.debug("sessionId:{} sessionId:{}", mycat.sessionId(), session.sessionId());
     }
   }
 
   @Override
   public final void onCloseMycatSession(MycatSession session, boolean normal, String reason) {
-    if (record) {
+    if (onSessionPool) {
       LOGGER.debug("sessionId:{} normal:{} reason:{}", session.sessionId(), normal, reason);
     }
   }
 
   @Override
   public final void onNewMySQLSession(MySQLClientSession session) {
-    if (record) {
+    if (onSessionPool) {
       LOGGER.debug("sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
@@ -368,7 +374,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public final void onAddIdleMysqlSession(MySQLClientSession session) {
-    if (record) {
+    if (onSessionPool) {
       LOGGER.debug("sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
@@ -376,7 +382,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   @Override
   public final void onGetIdleMysqlSession(MySQLClientSession session) {
-    if (record) {
+    if (onSessionPool) {
       LOGGER.debug("sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
@@ -811,6 +817,27 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   public void onLoadDataLocalInFileContextEnd(MycatSession mycat) {
     if (onCommand) {
       LOGGER.debug("sessionId:{}", mycat.sessionId());
+    }
+  }
+
+  @Override
+  public void onChange2ReadOpts(Session session) {
+    if (readWriteOpts) {
+      LOGGER.debug("sessionId:{}", session.sessionId());
+    }
+  }
+
+  @Override
+  public void onChange2WriteOpts(Session session) {
+    if (readWriteOpts) {
+      LOGGER.debug("sessionId:{}", session.sessionId());
+    }
+  }
+
+  @Override
+  public void onClearReadWriteOpts(Session session) {
+    if (readWriteOpts) {
+      LOGGER.debug("sessionId:{}", session.sessionId());
     }
   }
 }

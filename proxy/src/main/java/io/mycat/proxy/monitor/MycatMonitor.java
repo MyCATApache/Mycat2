@@ -484,4 +484,18 @@ public final class MycatMonitor {
   public static void onLoadDataLocalInFileContextEnd(MycatSession mycat) {
     callback.onLoadDataLocalInFileContextEnd(mycat);
   }
+
+
+  public static void onChange2ReadOpts(Session session) {
+    callback.onChange2ReadOpts(session);
+  }
+
+
+  public static void onChange2WriteOpts(Session session) {
+    callback.onChange2WriteOpts(session);
+  }
+
+  public static void onClearReadWriteOpts(Session session) {
+    callback.onClearReadWriteOpts(session);
+  }
 }

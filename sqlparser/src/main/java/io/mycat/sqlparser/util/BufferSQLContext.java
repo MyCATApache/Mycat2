@@ -186,6 +186,7 @@ public class BufferSQLContext {
 
   public void setCurBuffer(ByteArrayView curBuffer) {
     buffer = curBuffer;
+    annotation.init(hashArray, curBuffer);
     totalTblCount = 0;
     schemaCount = 0;
     tblResultPos = 0;
@@ -207,7 +208,7 @@ public class BufferSQLContext {
     hasUnion = false;
     hasSubQuery = false;
     hasJoin = false;
-    annotation.init(hashArray, curBuffer);
+
     setAccessMode(false);
     selectAutocommit = false;
     selectTranscationReadOnly = false;

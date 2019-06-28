@@ -16,7 +16,7 @@ import java.nio.channels.ClosedChannelException;
 @NoExcept
 public interface MycatMonitorCallback {
 
-  final MycatMonitorCallback EMPTY = new AbstractMonitorCallback() {
+  MycatMonitorCallback EMPTY = new AbstractMonitorCallback() {
 
   };
 
@@ -275,4 +275,10 @@ public interface MycatMonitorCallback {
   void onLoadDataLocalInFileContextStart(MycatSession mycat);
 
   void onLoadDataLocalInFileContextEnd(MycatSession mycat);
+
+  void onChange2ReadOpts(Session session);
+
+  void onChange2WriteOpts(Session session);
+
+  void onClearReadWriteOpts(Session session);
 }

@@ -15,22 +15,18 @@
 package io.mycat.command;
 
 import io.mycat.beans.mycat.MycatSchema;
-import io.mycat.command.CommandDispatcher.AbstractCommandHandler;
 import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.grid.BlockCommandHandler;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
-import java.util.Map;
 
 /**
  * @author jamie12221 date 2019-05-13 02:47
@@ -59,7 +55,8 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     if (schema == null) {
       schema = router.getDefaultSchema();
     }
-    if (schema.getSchemaType() == SchemaType.SQL_PARSE_ROUTE) {
+    SchemaType schemaType = schema.getSchemaType();
+    if (schemaType == SchemaType.SQL_PARSE_ROUTE) {
       serverQueryHandler.handleQuery(sqlBytes, mycat);
       return;
     }
@@ -75,98 +72,6 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   @Override
   public void handleContentOfFilenameEmptyOk(MycatSession mycat) {
     this.loadDataContext.proxy(mycat);
-  }
-
-  @Override
-  public void handleQuit(MycatSession mycat) {
-    mycat.close(true, "quit");
-  }
-
-  @Override
-  public void handleInitDb(String db, MycatSession mycat) {
-    mycat.useSchema(db);
-    mycat.writeOkEndPacket();
-  }
-
-  @Override
-  public void handlePing(MycatSession mycat) {
-    mycat.writeOkEndPacket();
-  }
-
-  @Override
-  public void handleFieldList(String table, String filedWildcard, MycatSession mycat) {
-    mycat.setLastMessage("mycat unsupport  handleFieldList");
-    mycat.writeErrorEndPacket();
-  }
-
-  @Override
-  public void handleSetOption(boolean on, MycatSession mycat) {
-    mycat.setMultiStatementSupport(on);
-    mycat.writeOkEndPacket();
-    return;
-  }
-
-  @Override
-  public void handleCreateDb(String schemaName, MycatSession mycat) {
-    mycat.setLastMessage("mycat unsupport handleCreateDb");
-    mycat.writeErrorEndPacket();
-  }
-
-  @Override
-  public void handleDropDb(String schemaName, MycatSession mycat) {
-    mycat.setLastMessage("mycat unsupport  handleDropDb");
-    mycat.writeErrorEndPacket();
-  }
-
-  @Override
-  public void handleStatistics(MycatSession mycat) {
-    mycat.setLastMessage("mycat unsupport  handleStatistics");
-    mycat.writeErrorEndPacket();
-  }
-
-  @Override
-  public void handleProcessInfo(MycatSession mycat) {
-    mycat.setLastMessage("mycat unsupport  handleProcessInfo");
-    mycat.writeErrorEndPacket();
-  }
-
-  @Override
-  public void handleProcessKill(long connectionId, MycatSession mycat) {
-    ProxyRuntime runtime = mycat.getIOThread().getRuntime();
-    MycatReactorThread[] mycatReactorThreads = runtime.getMycatReactorThreads();
-    MycatReactorThread currentThread = mycat.getIOThread();
-    for (MycatReactorThread mycatReactorThread : mycatReactorThreads) {
-      FrontSessionManager<MycatSession> frontManager = mycatReactorThread.getFrontManager();
-      for (MycatSession allSession : frontManager.getAllSessions()) {
-        if (allSession.sessionId() == connectionId) {
-          if (currentThread == mycatReactorThread) {
-            allSession.close(true, "processKill");
-          } else {
-            mycatReactorThread.addNIOJob(() -> {
-              allSession.close(true, "processKill");
-            });
-          }
-          mycat.writeOkEndPacket();
-          return;
-        }
-      }
-    }
-    mycat.writeErrorEndPacket();
-  }
-
-  @Override
-  public void handleChangeUser(String userName, String authResponse, String schemaName,
-      int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
-      MycatSession mycat) {
-    mycat.setLastMessage("mycat unsupport  handleChangeUser");
-    mycat.writeErrorEndPacket();
-  }
-
-  @Override
-  public void handleResetConnection(MycatSession mycat) {
-    mycat.resetSession();
-    mycat.setLastMessage("mycat unsupport  handleResetConnection");
-    mycat.writeErrorEndPacket();
   }
 
   @Override

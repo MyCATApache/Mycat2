@@ -70,48 +70,4 @@ public interface CommandDispatcher extends LocalInFileRequestParseHelper,
 
   void handleDaemon(MycatSession session);
 
-  abstract class AbstractCommandHandler implements CommandDispatcher {
-
-
-    public void handleSleep(MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-    public void handleRefresh(int subCommand, MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-    public void handleShutdown(int shutdownType, MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-    public void handleConnect(MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-    public void handleDebug(MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-    public void handleTime(MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-    public void handleDelayedInsert(MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-    public void handleDaemon(MycatSession session) {
-      session.writeErrorEndPacket();
-    }
-
-
-  }
 }

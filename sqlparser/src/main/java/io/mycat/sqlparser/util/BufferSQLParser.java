@@ -372,10 +372,10 @@ public class BufferSQLParser {
 
 
   public void parse(ByteArrayView src, BufferSQLContext context) {
+    context.setCurBuffer(src);
     sql = src;
     hashArray = context.getHashArray();
     hashArray.init(src.length() - src.getOffset());
-    context.setCurBuffer(src);
     tokenizer.tokenize(src, hashArray);
     firstParse(context);
   }

@@ -315,11 +315,11 @@ public class CommandResolver {
           break;
         }
         case MySQLCommandType.COM_RESET_CONNECTION: {
-          MycatMonitor.onResetCommandStart(mycat);
+          MycatMonitor.onResetConnectionCommandStart(mycat);
           curPacket.readByte();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleResetConnection(mycat);
-          MycatMonitor.onResetCommandEnd(mycat);
+          MycatMonitor.onResetConnectionCommandEnd(mycat);
           break;
         }
         case MySQLCommandType.COM_DAEMON: {
