@@ -14,7 +14,6 @@
     <module>expression</module>
     <module>common</module>
     <module>logTip</module>
-    <module>rpc</module>
     <module>jdbc</module>
     <module>mycat2</module>
     <module>security</module>
