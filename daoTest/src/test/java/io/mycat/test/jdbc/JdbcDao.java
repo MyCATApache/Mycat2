@@ -24,7 +24,6 @@ import io.mycat.MycatCore;
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.AbstractMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
@@ -45,6 +44,7 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -279,35 +279,37 @@ public class JdbcDao extends ModualTest {
     return connection;
   }
 
-  private void perTest(int count, AsyncTaskCallBackCounter callBackCounter) {
-    for (int i = 0; i < count; i++) {
-      int index = i;
-      new Thread(() -> {
-        try (Connection connection = getConnection()) {
-          LOGGER.debug("connectId:{}", index);
-          for (int j = 0; j < 500; j++) {
-            LOGGER.debug("per:{}", j);
-            try (
-                Statement statement = connection.createStatement()
-            ) {
-              connection.setAutoCommit(false);
-              connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-
-              connection.createStatement().execute("select 1");
-              connection.commit();
-            }
-
+  @Test
+  public void perTest() throws InterruptedException, ExecutionException, IOException {
+    loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
+        (future) -> {
+          int count = 100;
+          AtomicInteger atomicInteger = new AtomicInteger(0);
+          for (int i = 0; i < count; i++) {
+            int index = i;
+            new Thread(() -> {
+              try (Connection connection = getConnection()) {
+                for (int j = 0; j < 10000; j++) {
+                  connection.setAutoCommit(false);
+                  connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+                  connection.createStatement().execute("select 1");
+                  connection.commit();
+                }
+                atomicInteger.incrementAndGet();
+                LOGGER.info("connectId:{} end", index);
+              } catch (Exception e) {
+                LOGGER.error("{}", e);
+                return;
+              }
+            }).start();
           }
-
-        } catch (Exception e) {
-          LOGGER.error("{}", e);
-          callBackCounter.onCountFail();
-          return;
+          while (atomicInteger.get() != count) {
+            Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+          }
+          LOGGER.info("success!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
-        callBackCounter.onCountSuccess();
-      }).start();
+    );
 
-    }
   }
 
   @Test

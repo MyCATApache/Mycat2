@@ -4,14 +4,11 @@ import io.mycat.MycatCore;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiver;
-import io.mycat.config.ConfigReceiverImpl;
-import io.mycat.embeddedDB.DbStartUp;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.test.jdbc.TestGettingConnetionCallback;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -23,16 +20,15 @@ import org.junit.Assert;
  * @author jamie12221 date 2019-05-23 16:53
  **/
 public abstract class ModualTest {
-  static {
-    new Thread(()->{
-      try {
-        DbStartUp.start();
-      }finally {
-        DbStartUp.stop();
-      }
-    }).start();
 
-  }
+  //  static {
+//    new Thread(()->{
+//      try {
+//        DbStartUp.start();
+//      }finally {
+//        DbStartUp.stop();
+//      }
+//    }).start();
   public static void loadModule(String module, ProxyBeanProviders proxyBeanProviders,
       MycatMonitorCallback callback,
         TestGettingConnetionCallback gettingConnetionCallback)
