@@ -8,6 +8,8 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.handler.backend.MySQLSynContext;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
@@ -59,6 +61,16 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
     } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public MySQLSynContext createMySQLSynContext(MycatSession mycat) {
+    return new MySQLSynContext(mycat);
+  }
+
+  @Override
+  public MySQLSynContext createMySQLSynContext(MySQLClientSession mysql) {
+    return new MySQLSynContext(mysql);
   }
 
 

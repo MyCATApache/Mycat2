@@ -21,7 +21,7 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
-import io.mycat.proxy.handler.backend.MySQLSessionSyncTask;
+import io.mycat.proxy.handler.backend.MySQLSessionSyncUtil;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -46,7 +46,7 @@ public class MySQLTaskUtil {
       MySQLDataSourceQuery query, ResponseType responseType) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyBackend(mycat, payload, dataNodeName, query,responseType);
+        .proxyBackend(mycat, payload, dataNodeName, query, responseType);
   }
 
   public static void proxyBackendWithCollector(MycatSession mycat, byte[] payload,
@@ -55,7 +55,7 @@ public class MySQLTaskUtil {
       MySQLPacketCallback callback) {
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query,responseType, callback);
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType, callback);
   }
 
   public static void withBackend(MycatSession mycat, byte[] payload,
@@ -66,10 +66,11 @@ public class MySQLTaskUtil {
 
     MycatMonitor.onRoute(mycat, dataNodeName, payload);
     MySQLPacketExchanger.INSTANCE
-        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType,callback);
+        .proxyWithCollectorCallback(mycat, payload, dataNodeName, query, responseType, callback);
   }
 
-  public static void withBackend(MycatSession mycat, String dataNodeName, MySQLDataSourceQuery query,
+  public static void withBackend(MycatSession mycat, String dataNodeName,
+      MySQLDataSourceQuery query,
       SessionSyncCallback finallyCallBack) {
     mycat.currentProxyBuffer().reset();
     mycat.switchDataNode(dataNodeName);
@@ -78,8 +79,10 @@ public class MySQLTaskUtil {
       finallyCallBack.onSession(mycat.getMySQLSession(), MySQLPacketExchanger.INSTANCE, null);
       return;
     }
+    MySQLSynContext mycatSynContext = mycat.getRuntime().getProviders()
+        .createMySQLSynContext(mycat);
     MySQLTaskUtil
-        .getMySQLSession(new MySQLSynContext(mycat), query, finallyCallBack);
+        .getMySQLSession(mycatSynContext, query, finallyCallBack);
   }
 
   /**
@@ -87,7 +90,7 @@ public class MySQLTaskUtil {
    *
    * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
    */
-  public static void getMySQLSessionFromUserThread(ProxyRuntime runtime,MySQLSynContext synContext,
+  public static void getMySQLSessionFromUserThread(ProxyRuntime runtime, MySQLSynContext synContext,
       MySQLDataSourceQuery query,
       SessionSyncCallback asynTaskCallBack) {
     MycatReactorThread[] threads = runtime.getMycatReactorThreads();
@@ -117,7 +120,7 @@ public class MySQLTaskUtil {
         new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
-            new MySQLSessionSyncTask(synContext, mysql, this, callBack).run();
+            MySQLSessionSyncUtil.sync(synContext, mysql, this, callBack);
           }
 
           @Override
@@ -150,7 +153,8 @@ public class MySQLTaskUtil {
     }
   }
 
-  public static void getMySQLSessionForTryConnectFromUserThread(ProxyRuntime runtime,MySQLDatasource datasource,
+  public static void getMySQLSessionForTryConnectFromUserThread(ProxyRuntime runtime,
+      MySQLDatasource datasource,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MycatReactorThread[] threads = runtime.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);

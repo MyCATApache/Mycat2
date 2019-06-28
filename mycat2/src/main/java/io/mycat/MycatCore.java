@@ -27,7 +27,9 @@ import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import io.mycat.proxy.monitor.ProxyDashboard;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLSessionManager;
+import io.mycat.replica.MySQLDataSourceEx;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -84,15 +86,15 @@ public class MycatCore {
       service.scheduleAtFixedRate(idleConnectCheck(runtime), 0, replicaIdleCheckPeriod,
           TimeUnit.SECONDS);
       long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
-//              service.scheduleAtFixedRate(new Runnable() {
-//                @Override
-//                public void run() {
-//                  Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
-//                  for (MySQLDataSourceEx datasource : datasourceList) {
-//                    datasource.heartBeat();
-//                  }
-//                }
-//              }, 0, period, TimeUnit.SECONDS);
+      service.scheduleAtFixedRate(new Runnable() {
+        @Override
+        public void run() {
+          Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
+          for (MySQLDataSourceEx datasource : datasourceList) {
+            datasource.heartBeat();
+          }
+        }
+      }, 0, period, TimeUnit.SECONDS);
       service.scheduleAtFixedRate(new Runnable() {
         @Override
         public void run() {
@@ -104,7 +106,7 @@ public class MycatCore {
           }
 
         }
-      }, 0, 5000, TimeUnit.SECONDS);
+      }, 0, 5, TimeUnit.SECONDS);
 
       runtime.startAcceptor();
       startFinished.onFinished(null, null, null);

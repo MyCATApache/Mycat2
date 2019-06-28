@@ -196,6 +196,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         ReactorEnvThread source = crossSwapThreadBufferPool.getSource();
         if (source != null) {
           ReactorEnv reactorEnv = source.getReactorEnv();
+          source.interrupt();
           reactorEnv.close();
         }
       }
