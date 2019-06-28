@@ -95,11 +95,11 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     String sql = new String(bytes);
     BufferSQLContext bufferSQLContext = router.simpleParse(sql);
     ResultRoute resultRoute = router.enterRoute(schema, bufferSQLContext, sql);
-    if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
-    } else {
+    if (schema.getSchemaType() != SchemaType.DB_IN_ONE_SERVER) {
       mycat.setLastMessage(
           "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER");
       mycat.writeErrorEndPacket();
+      return;
     }
     switch (resultRoute.getType()) {
       case ONE_SERVER_RESULT_ROUTE:
