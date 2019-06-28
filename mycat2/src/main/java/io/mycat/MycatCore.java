@@ -71,10 +71,11 @@ public class MycatCore {
 
   }
 
-  public static void startup(String resourcesPath, ProxyRuntime runtime,
+  public static void startup(String resourcesPath, ProxyRuntime rt,
       MycatMonitorCallback callback,
       AsyncTaskCallBack startFinished)
       throws IOException {
+    runtime = rt;
     try {
       MycatMonitor.setCallback(callback);
       runtime.startReactor();

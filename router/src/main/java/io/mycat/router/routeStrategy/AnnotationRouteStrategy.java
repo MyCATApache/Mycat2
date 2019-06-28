@@ -47,6 +47,9 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
     if (sqlContext.getTableCount() == 1) {
       String tableName = sqlContext.getTableName(0);
       MycatTable o = schema.getTableByTableName(tableName);
+      if (o == null) {
+        throw new MycatExpection(tableName + " table is nor existed!");
+      }
       switch (o.getType()) {
         case GLOBAL: {
           GlobalTable table = (GlobalTable) o;

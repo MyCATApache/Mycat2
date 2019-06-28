@@ -65,8 +65,18 @@ public class MycatCommandHandler extends AbstractCommandHandler {
 
 
   @Override
-  public void handleContentOfFilename(byte[] sql, MycatSession seesion) {
-    this.loadDataContext.append(sql);
+  public void handleContentOfFilename(byte[] sql, MycatSession session) {
+    MycatSchema schema = router.getSchemaOrDefaultBySchemaName(mycat.getSchema());
+    if (schema == null) {
+      schema = router.getDefaultSchema();
+    }
+    if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
+      this.loadDataContext.append(sql);
+    } else {
+      mycat.setLastMessage(
+          "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER");
+      mycat.writeErrorEndPacket();
+    }
   }
 
   @Override
@@ -85,6 +95,12 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     String sql = new String(bytes);
     BufferSQLContext bufferSQLContext = router.simpleParse(sql);
     ResultRoute resultRoute = router.enterRoute(schema, bufferSQLContext, sql);
+    if (schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
+    } else {
+      mycat.setLastMessage(
+          "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER");
+      mycat.writeErrorEndPacket();
+    }
     switch (resultRoute.getType()) {
       case ONE_SERVER_RESULT_ROUTE:
         OneServerResultRoute route = (OneServerResultRoute) resultRoute;
@@ -92,7 +108,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
             .getLoadBalanceByBalanceName(resultRoute.getBalance());
         String dataNode = schema.getDefaultDataNode();
         mycat.switchDataNode(dataNode);
-        prepareContext.newReadyPrepareStmt(sql, dataNode, route.isRunOnMaster(false), balance);
+        prepareContext.newReadyPrepareStmt(sql, dataNode, route.isRunOnMaster(true), balance);
         return;
       default:
         mycat.setLastMessage(
@@ -115,7 +131,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
       prepareContext.appendLongData(statementId, paramId, data);
     } else {
       mycat.setLastMessage(
-          "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER or DB_IN_MULTI_SERVER");
+          "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER");
       mycat.writeErrorEndPacket();
     }
   }
@@ -125,10 +141,6 @@ public class MycatCommandHandler extends AbstractCommandHandler {
       int numParams,
       byte[] rest,
       MycatSession mycat) {
-
-    /////////////////route//////////////////
-
-    //////////////////////////////////
     prepareContext.execute(statementId, flags, numParams, rest, mycat.getDataNode(), true, null);
   }
 

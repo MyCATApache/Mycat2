@@ -78,6 +78,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MySQLClientSession backend;//unbindSource
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
 
+
   public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
       SessionManager<MycatSession> sessionManager) {
     super(sessionId, nioHandler, sessionManager);
@@ -407,7 +408,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   @Override
   public void switchMySQLServerWriteHandler() {
-    this.writeHandler = MySQLProxyServerSession.WriteHandler.INSTANCE;
+    this.writeHandler = WriteHandler.INSTANCE;
   }
 
   @Override
@@ -549,9 +550,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.serverStatus.setNetWriteTimeout(netWriteTimeout);
   }
 
+  public long getNetWriteTimeout() {
+    return this.serverStatus.getNetWriteTimeout();
+  }
+
   /**
    * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
-   * @param thread
    */
   public void deliverWorkerThread(ReactorEnvThread thread) {
     crossSwapThreadBufferPool.bindSource(thread);
@@ -561,11 +565,19 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   /**
    * 业务线程执行结束,清除业务线程的session,并代表处理结束
-   * @param thread
    */
   public void backFromWorkerThread(ReactorEnvThread thread) {
     crossSwapThreadBufferPool.unbindSource(thread);
     assert thread == Thread.currentThread();
     thread.getReactorEnv().setCurSession(null);
   }
+
+  public boolean isAccessModeReadOnly() {
+    return this.serverStatus.isAccessModeReadOnly();
+  }
+
+  public void setAccessModeReadOnly(boolean accessModeReadOnly) {
+    this.serverStatus.setAccessModeReadOnly(accessModeReadOnly);
+  }
+
 }

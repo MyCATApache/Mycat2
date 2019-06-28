@@ -67,7 +67,7 @@ public class ProxyQueryHandler {
   final MycatRouter router;
   final private ProxyRuntime runtime;
 
-  public ProxyQueryHandler(MycatRouter router,ProxyRuntime runtime) {
+  public ProxyQueryHandler(MycatRouter router, ProxyRuntime runtime) {
     this.router = router;
     this.runtime = runtime;
   }
@@ -135,7 +135,7 @@ public class ProxyQueryHandler {
         }
         case SET_TRANSACTION_SQL: {
           if (sqlContext.isAccessMode()) {
-            LOGGER.warn("ignore {} and send ok", sql);
+            mycat.setAccessModeReadOnly(true);
             mycat.writeOkEndPacket();
             return;
           }
@@ -249,7 +249,7 @@ public class ProxyQueryHandler {
             return;//路由出错走默认节点
           }
         }
-        case LOAD_SQL:{
+        case LOAD_SQL: {
           LOGGER.warn("Use annotations to specify laodata data nodes whenever possible !");
         }
         default:
@@ -278,9 +278,10 @@ public class ProxyQueryHandler {
   public void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
     mycat.writeColumnCount(1);
     byte[] bytes = MySQLPacketUtil
-        .generateColumnDef("information_schema","SCHEMATA","SCHEMATA","Database","SCHEMA_NAME",MySQLFieldsType.FIELD_TYPE_VAR_STRING,
-            0x1,0,mycat.charsetIndex(),192, Charset.defaultCharset());
-    mycat.writeBytes(bytes,false);
+        .generateColumnDef("information_schema", "SCHEMATA", "SCHEMATA", "Database", "SCHEMA_NAME",
+            MySQLFieldsType.FIELD_TYPE_VAR_STRING,
+            0x1, 0, mycat.charsetIndex(), 192, Charset.defaultCharset());
+    mycat.writeBytes(bytes, false);
     mycat.writeColumnEndPacket();
     for (MycatSchema schema : schemaList) {
       String schemaName = schema.getSchemaName();

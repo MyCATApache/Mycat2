@@ -35,9 +35,9 @@ public class HashArray {
         while (pos > 0) {
           hashArray[pos--] = 0;
         }
-        pos = 0;
       }
     }
+    pos = 0;
   }
 
   public void set(int type, int start, int size) {
@@ -46,10 +46,14 @@ public class HashArray {
 
   public void set(int type, int start, int size, long hash) {
     size = size < 0xFF ? size : 0xFF;
-    hashArray[pos++] =
-        (((long) start) << 40) & 0xFFFFFF0000000000L | ((long) type << 8) & 0xFFFFFFFF00L
-            | (long) size;
-    hashArray[pos++] = hash;
+    try {
+      hashArray[pos++] =
+          (((long) start) << 40) & 0xFFFFFF0000000000L | ((long) type << 8) & 0xFFFFFFFF00L
+              | (long) size;
+      hashArray[pos++] = hash;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   public int getPos(int idx) {

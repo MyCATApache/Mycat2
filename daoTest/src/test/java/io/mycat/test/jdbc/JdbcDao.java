@@ -24,7 +24,6 @@ import io.mycat.MycatCore;
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.AbstractMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
@@ -111,7 +110,7 @@ public class JdbcDao extends ModualTest {
   @Test
   public void startRequestAndReponseWithSplitingPacket()
       throws IOException, ExecutionException, InterruptedException {
-    loadModule(DB_IN_ONE_SERVER,new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
+    loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
         (future, connection) -> {
           try (Statement statement = connection.createStatement()) {
             int splitPayloadSize = MySQLPacketSplitter.MAX_PACKET_SIZE - 1;
@@ -150,7 +149,7 @@ public class JdbcDao extends ModualTest {
   @Test
   public void bigResultSet()
       throws IOException, ExecutionException, InterruptedException {
-    loadModule(DB_IN_ONE_SERVER,new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
+    loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
         (future, connection) -> {
           try (Statement statement = connection.createStatement()) {
             statement.execute("truncate travelrecord;");
@@ -177,6 +176,9 @@ public class JdbcDao extends ModualTest {
             }
             ResultSet resultSet = statement.executeQuery(
                 "select * from travelrecord;select * from travelrecord;");
+          } catch (Exception e) {
+            e.printStackTrace();
+            Assert.fail();
           } finally {
             compelete(future);
           }
@@ -205,7 +207,7 @@ public class JdbcDao extends ModualTest {
         expectClose.run();
       }
     });
-    loadModule(DB_IN_ONE_SERVER,new MycatProxyBeanProviders(), callback,
+    loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), callback,
         (future) -> {
           try (Connection connection = getConnection()) {
 
@@ -361,7 +363,7 @@ public class JdbcDao extends ModualTest {
         expectMysqlClose.run();
       }
     });
-    loadModule(DB_IN_ONE_SERVER,new MycatProxyBeanProviders(), callback,
+    loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), callback,
         (future) -> {
           try (Connection connection = getConnection()) {
             connection.createStatement().execute("select 1");
@@ -510,7 +512,6 @@ public class JdbcDao extends ModualTest {
           }
         });
   }
-
 
 //  @Test
 //  public void loadata()

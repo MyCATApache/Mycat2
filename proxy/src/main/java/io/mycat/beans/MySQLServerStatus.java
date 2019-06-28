@@ -17,7 +17,6 @@ package io.mycat.beans;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.command.LocalInFileRequestParseHelper;
 import java.nio.charset.Charset;
 
 
@@ -45,6 +44,7 @@ public final class MySQLServerStatus {
   protected boolean localInFileRequestState = false;
   private long selectLimit = -1;
   private long netWriteTimeout;
+  private boolean accessModeReadOnly = false;
 
   public boolean multiStatementSupport = false;
   private String charsetSetResult;
@@ -194,12 +194,16 @@ public final class MySQLServerStatus {
     this.netWriteTimeout = netWriteTimeout;
   }
 
-  /**
-   * Getter for property 'netWriteTimeout'.
-   *
-   * @return Value for property 'netWriteTimeout'.
-   */
   public long getNetWriteTimeout() {
     return netWriteTimeout;
   }
+
+  public boolean isAccessModeReadOnly() {
+    return accessModeReadOnly;
+  }
+
+  public void setAccessModeReadOnly(boolean accessModeReadOnly) {
+    this.accessModeReadOnly = accessModeReadOnly;
+  }
+
 }

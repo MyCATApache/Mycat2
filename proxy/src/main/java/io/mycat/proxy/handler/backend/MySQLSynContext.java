@@ -1,5 +1,6 @@
 package io.mycat.proxy.handler.backend;
 
+import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -9,16 +10,18 @@ import io.mycat.proxy.session.MycatSession;
 import java.util.Objects;
 
 public class MySQLSynContext {
+
   MySQLDataNode dataNode;
   MySQLIsolation isolation;
   MySQLAutoCommit autoCommit;
   String charset;
   String characterSetResult;
-  ProxyRuntime runtime;
-
   //Statement: SET sqlSelectLimit=99
   long sqlSelectLimit = -1;
   long netWriteTimeout = -1;
+  boolean readOnly;
+  ProxyRuntime runtime;
+
 
   public MySQLSynContext(MycatSession session) {
     this.runtime = session.getRuntime();
@@ -27,8 +30,10 @@ public class MySQLSynContext {
     this.autoCommit = session.getAutoCommit();
     this.charset = session.getCharsetName();
     this.characterSetResult = session.getCharacterSetResults();
-    this.sqlSelectLimit = session.getSelectLimit();
     this.dataNode = runtime.getDataNodeByName(session.getDataNode());
+    this.sqlSelectLimit = session.getSelectLimit();
+    this.netWriteTimeout = session.getNetWriteTimeout();
+    this.readOnly = session.isAccessModeReadOnly();
   }
 
   public MySQLSynContext(MySQLClientSession session) {
@@ -36,19 +41,27 @@ public class MySQLSynContext {
         session.getIsolation(),
         session.isAutomCommit(),
         session.getCharset(),
-        session.getCharacterSetResult(),
+        session.getCharacterSetResult(), session.getSelectLimit(), session.getNetWriteTimeout(),
+        session.isReadOnly(),
         session.getRuntime());
 
   }
 
 
   public MySQLSynContext(MySQLDataNode dataNode, MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit, String charset, String characterSetResult, ProxyRuntime runtime) {
+      MySQLAutoCommit autoCommit, String charset, String characterSetResult,
+      long sqlSelectLimit,
+      long netWriteTimeout,
+      boolean readOnly,
+      ProxyRuntime runtime) {
     this.dataNode = dataNode;
     this.isolation = isolation;
     this.autoCommit = autoCommit;
     this.charset = charset;
     this.characterSetResult = characterSetResult;
+    this.sqlSelectLimit = sqlSelectLimit;
+    this.netWriteTimeout = netWriteTimeout;
+    this.readOnly = readOnly;
     this.runtime = runtime;
     Objects.requireNonNull(runtime);
   }
@@ -60,7 +73,10 @@ public class MySQLSynContext {
     mysql.setCharacterSetResult(characterSetResult);
     mysql.setSelectLimit(sqlSelectLimit);
     mysql.setNetWriteTimeout(netWriteTimeout);
-    assert autoCommit == mysql.isAutomCommit();
+    mysql.setReadOnly(readOnly);
+    if (autoCommit != mysql.isAutomCommit()) {
+      throw new MycatExpection("sync " + mysql.sessionId() + " fail");
+    }
   }
 
   public MySQLDataNode getDataNode() {
@@ -130,7 +146,8 @@ public class MySQLSynContext {
         characterSetResult == null || "".equals(characterSetResult) ? "NULL"
             : characterSetResult)) + ";"
         + ("SET SQL_SELECT_LIMIT=" + ((sqlSelectLimit == -1) ? "DEFAULT" : sqlSelectLimit) + ";"
-        + ("SET net_write_timeout=" + (netWriteTimeout == -1 ? "default" : netWriteTimeout)));
+        + ("SET net_write_timeout=" + (netWriteTimeout == -1 ? "default" : netWriteTimeout)) + ";" +
+        "set session transaction " + (readOnly ? "read only" : "read write"));
   }
 
   @Override
@@ -148,6 +165,9 @@ public class MySQLSynContext {
       return false;
     }
     if (netWriteTimeout != that.netWriteTimeout) {
+      return false;
+    }
+    if (readOnly != that.readOnly) {
       return false;
     }
     if (dataNode != null ? !dataNode.equals(that.dataNode) : that.dataNode != null) {
@@ -171,14 +191,15 @@ public class MySQLSynContext {
 
   @Override
   public int hashCode() {
-    int result = (dataNode != null ? dataNode.hashCode() : 0);
+    int result = dataNode != null ? dataNode.hashCode() : 0;
     result = 31 * result + (isolation != null ? isolation.hashCode() : 0);
     result = 31 * result + (autoCommit != null ? autoCommit.hashCode() : 0);
     result = 31 * result + (charset != null ? charset.hashCode() : 0);
     result = 31 * result + (characterSetResult != null ? characterSetResult.hashCode() : 0);
-    result = 31 * result + (runtime != null ? runtime.hashCode() : 0);
     result = 31 * result + (int) (sqlSelectLimit ^ (sqlSelectLimit >>> 32));
     result = 31 * result + (int) (netWriteTimeout ^ (netWriteTimeout >>> 32));
+    result = 31 * result + (readOnly ? 1 : 0);
+    result = 31 * result + (runtime != null ? runtime.hashCode() : 0);
     return result;
   }
 }

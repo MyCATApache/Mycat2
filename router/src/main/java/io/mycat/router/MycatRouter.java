@@ -139,4 +139,8 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   public MycatSchema getSchemaBySchemaName(String db) {
     return config.getSchemaBySchemaName(db);
   }
+
+  public MycatSchema getSchemaOrDefaultBySchemaName(String name) {
+    return config.getSchemaOrDefaultBySchemaName(name);
+  }
 }
