@@ -82,7 +82,7 @@ public final class MySQLSessionManager implements
   @NoExcept
   @Override
   public final Collection<MySQLClientSession> getAllSessions() {
-    return Collections.unmodifiableCollection(allSessions.values());
+    return new ArrayList<>(allSessions.values());
   }
 
   /**
@@ -540,7 +540,7 @@ public final class MySQLSessionManager implements
 
       public void executeInitSQL(MySQLClientSession session, String sql) {
         ResultSetHandler.DEFAULT.request(session, COM_QUERY,
-         sql.getBytes(),
+            sql.getBytes(),
             new ResultSetCallBack<MySQLClientSession>() {
               @Override
               public void onFinishedSendException(Exception exception, Object sender,

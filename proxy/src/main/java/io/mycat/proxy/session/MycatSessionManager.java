@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import org.slf4j.Logger;
@@ -54,7 +55,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   @Override
   @NoExcept
   public Collection<MycatSession> getAllSessions() {
-    return mycatSessions;
+    return new ArrayList<>(mycatSessions);
   }
 
   @Override

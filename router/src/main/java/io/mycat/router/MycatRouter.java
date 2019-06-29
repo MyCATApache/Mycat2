@@ -30,15 +30,17 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   final MycatRouterConfig config;
   final RouteContext context;
   final BufferSQLContext sqlContext;
-
-  private BufferSQLParser sqlParser() {
-    return new BufferSQLParser();
-  }
+  final BufferSQLParser parser;
 
   public MycatRouter(MycatRouterConfig config) {
     this.config = config;
     this.context = new RouteContext(config);
     this.sqlContext = new BufferSQLContext();
+    this.parser = new BufferSQLParser();
+  }
+
+  private BufferSQLParser sqlParser() {
+    return parser;
   }
 
   private BufferSQLContext sqlContext() {

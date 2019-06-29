@@ -283,16 +283,19 @@ public class JdbcDao extends ModualTest {
   public void perTest() throws InterruptedException, ExecutionException, IOException {
     loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
         (future) -> {
-          int count = 100;
+          Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+          int count = 2;
           AtomicInteger atomicInteger = new AtomicInteger(0);
           for (int i = 0; i < count; i++) {
             int index = i;
             new Thread(() -> {
               try (Connection connection = getConnection()) {
-                for (int j = 0; j < 10000; j++) {
+                for (int j = 0; j < 100000; j++) {
                   connection.setAutoCommit(false);
                   connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-                  connection.createStatement().execute("select 1");
+                  try (Statement statement = connection.createStatement()) {
+                    statement.execute("select 1");
+                  }
                   connection.commit();
                 }
                 atomicInteger.incrementAndGet();
