@@ -23,7 +23,6 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
-import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.handler.ResponseType;
@@ -136,7 +135,7 @@ public class MySQLClientSession extends
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
-      LOGGER.error(TaskTip.CLOSE_ERROR.getMessage(e));
+      LOGGER.error("channel close occur exception:{}", e);
     }
   }
 
@@ -447,7 +446,7 @@ public class MySQLClientSession extends
       packet1.channelWriteEndIndex(packetEndPos);
       writeToChannel();
     } else {
-      throw new MycatExpection(TaskTip.UNSUPPORT_DEF_MAX_PACKET.getMessage(payloadLen));
+      throw new MycatExpection("unsupport max packet {}", MySQLPacketSplitter.MAX_PACKET_SIZE);
     }
   }
 

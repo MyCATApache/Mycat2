@@ -21,7 +21,6 @@ import io.mycat.beans.mycat.MycatTable;
 import io.mycat.beans.mycat.MycatTableRule;
 import io.mycat.beans.mycat.ShardingDbTable;
 import io.mycat.beans.mycat.ShardingTableTable;
-import io.mycat.logTip.RouteNullChecker;
 import io.mycat.router.DynamicAnnotationResult;
 import io.mycat.router.MycatProxyStaticAnnotation;
 import io.mycat.router.ResultRoute;
@@ -142,8 +141,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
         default:
       }
     }
-    throw new MycatExpection(
-        RouteNullChecker.CHECK_MYCAT_UNSUPPORT_TABLE_IN_ANNOTATION_ROUTE.getMessage());
+    throw new MycatExpection("unsupport sql in annotation route");
 
   }
 

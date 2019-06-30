@@ -16,7 +16,6 @@ package io.mycat.proxy.reactor;
 
 import io.mycat.MycatExpection;
 import io.mycat.buffer.BufferPool;
-import io.mycat.logTip.ReactorTip;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.Session;
 import java.io.IOException;
@@ -49,7 +48,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
     // 接收通道，设置为非阻塞模式
     final SocketChannel socketChannel = serverSocket.accept();
     socketChannel.configureBlocking(false);
-    LOGGER.info(ReactorTip.CLIENT_CONNECTED.getMessage(socketChannel));
+    LOGGER.info("New Client connected:{}", socketChannel);
     // Mycat fontchannel connect
     accept(reactorEnv, socketChannel);
 
@@ -82,7 +81,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
         throw new MycatExpection("unsupport!");
       }
     } catch (ConnectException ex) {
-      LOGGER.warn(ReactorTip.CONNECT_ERROR.getMessage(curChannel, ex));
+      LOGGER.warn("Connect failed:{}  reason:{}", curChannel, ex);
     }
   }
 

@@ -27,7 +27,6 @@ import io.mycat.command.CommandDispatcher;
 import io.mycat.command.CommandResolver;
 import io.mycat.command.LocalInFileRequestParseHelper.LocalInFileSession;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
@@ -170,7 +169,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       if (dataNode.equals(this.dataNode)) {
         return;
       } else {
-        throw new MycatExpection(SessionTip.CANNOT_SWITCH_DATANODE.getMessage());
+        throw new MycatExpection("cannot switch dataNode  maybe session in transaction");
       }
     }
   }

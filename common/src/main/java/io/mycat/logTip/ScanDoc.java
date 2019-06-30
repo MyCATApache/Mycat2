@@ -12,7 +12,7 @@ public class ScanDoc {
 
   public static void main(String[] args) throws IOException {
     Pattern pattern = Pattern.compile(
-        "((warn|info|error|debug|errorPacket)\\((\"[\\s\\S]+?\\\")+?)|errorPacket\\([0-9],(\"[\\s\\S]+?\\\")+?"
+        "((warn|info|error|debug|errorPacket)\\((\"[\\s\\S]+?\\\")+?)|((errorPacket|MycatException)\\([0-9],(\"[\\s\\S]+?\\\")+?)"
     );
     Files.walk(Paths.get("D:\\newgit\\f")).filter(i -> i.getFileName().toString().endsWith(".java"))
         .forEach(i -> {

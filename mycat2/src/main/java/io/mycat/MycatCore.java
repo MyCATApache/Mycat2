@@ -20,7 +20,6 @@ import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.logTip.ReplicaTip;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -170,7 +169,7 @@ public class MycatCore {
                 .getMySQLSessionManager();
             manager.idleConnectCheck();
           } else {
-            throw new MycatExpection(ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
+            throw new MycatExpection("Replica must running in MycatReactorThread");
           }
         });
       }

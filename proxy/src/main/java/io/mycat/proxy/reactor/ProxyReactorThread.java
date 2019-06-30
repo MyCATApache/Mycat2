@@ -17,7 +17,6 @@ package io.mycat.proxy.reactor;
 import io.mycat.buffer.BufferPool;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.logTip.ReactorTip;
 import io.mycat.proxy.handler.BackendNIOHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.session.Session;
@@ -86,7 +85,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
             .acceptNewSocketChannel(keyAttachement, this.bufPool,
                 selector, socketChannel);
       } catch (Exception e) {
-        LOGGER.warn(ReactorTip.REGISTER_NEW_CONNECTION.getMessage(e));
+        LOGGER.warn("Register new connection error", e);
       }
     });
   }
@@ -109,7 +108,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
       try {
         nioJob.run();
       } catch (Exception e) {
-        LOGGER.error(ReactorTip.PROCESS_NIO_JOB_EEROR.getMessage(e), e);
+        LOGGER.error("Run nio job err:{}", e);
       }
     }
   }
@@ -238,8 +237,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
         LOGGER.warn("selector is closed");
         break;
       } catch (Throwable e) {
-        LOGGER.warn(ReactorTip.PROCESS_NIO_UNKNOWN_EEROR.getMessage(reactorEnv.getCurSession(), e),
-            e);
+        LOGGER.warn("Unknown session:{}", reactorEnv.getCurSession(), e);
       }
     }
   }

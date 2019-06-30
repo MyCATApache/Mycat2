@@ -46,7 +46,6 @@ import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.collector.ResultSetTransfor;
-import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import java.util.function.IntPredicate;
 
@@ -108,7 +107,7 @@ public class TextResultSetHandler implements ResultSetHandler {
   }
 
   @Override
-  public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) {
+  public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) throws MycatExpection {
     for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
       int startIndex = mySQLPacket.packetReadStartIndex();
       if (!columnFilter(columnIndex)) {
@@ -121,7 +120,7 @@ public class TextResultSetHandler implements ResultSetHandler {
         mySQLPacket.packetReadStartIndex(startIndex + 1);
         switch (columnType) {
           default: {
-            throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
+            throw new MycatExpection("unknown field type:{}", (columnType));
           }
           case FIELD_TYPE_DECIMAL: {
             collector
@@ -239,7 +238,7 @@ public class TextResultSetHandler implements ResultSetHandler {
       }
       switch (columnType) {
         default: {
-          throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
+          throw new MycatExpection("unknown field type:{}", (columnType));
         }
         case FIELD_TYPE_DECIMAL: {
           collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff,

@@ -7,11 +7,11 @@ import io.mycat.MycatExpection;
  *  date 2019-05-06 00:38 本类管理所有Router相关的日志或者异常提示
  **/
 public enum RouteNullChecker implements LogTip {
-  CHECK_MYCAT_SCHEMA_EXIST(0, "%s schema is not exist "),
+  CHECK_MYCAT_SCHEMA_EXIST(0, ),
   CHECK_MYCAT_TABLE_EXIST(1, "%s table is not exist "),
   CHECK_MYCAT_MULTI_TABLE_IN_DB_IN_MULTI_SERVER(2, "%s tables is diff "),
   CHECK_MYCAT_UNSUPPORT_WITH_SCHEMA(3, "sql can not with schema"),
-  CHECK_MYCAT_UNSUPPORT_TABLE_IN_ANNOTATION_ROUTE(4, "unsupport sql in annotation route"),
+  CHECK_MYCAT_UNSUPPORT_TABLE_IN_ANNOTATION_ROUTE(4, ),
   ;
   String format;
   int errorCode;

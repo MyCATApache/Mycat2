@@ -22,7 +22,6 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.logTip.ReplicaTip;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
@@ -190,7 +189,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
       reactor.getMySQLSessionManager().getIdleSessionsOfIds(datasource, ids, asynTaskCallBack);
     } else {
       MycatExpection mycatExpection = new MycatExpection(
-          ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
+          "Replica must running in MycatReactorThread");
       asynTaskCallBack.onException(mycatExpection, this, null);
       return;
     }

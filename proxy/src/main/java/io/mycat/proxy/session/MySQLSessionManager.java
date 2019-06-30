@@ -28,7 +28,6 @@ import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.callback.RequestCallback;
@@ -358,8 +357,7 @@ public final class MySQLSessionManager implements
         try {
           session.close(true, reason);
         } catch (Exception e) {
-          LOGGER.error("", e);
-          SessionTip.UNKNOWN_CLOSE_ERROR.getMessage(e);
+          LOGGER.error("mysql session is closing but occur error", e);
         }
       }
     }

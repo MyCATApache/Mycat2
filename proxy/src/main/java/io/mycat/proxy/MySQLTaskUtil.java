@@ -16,7 +16,6 @@ package io.mycat.proxy;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MySQLDataNode;
-import io.mycat.logTip.ReplicaTip;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
 import io.mycat.proxy.handler.ResponseType;
@@ -149,7 +148,7 @@ public class MySQLTaskUtil {
             , asynTaskCallBack);
       }
     } else {
-      throw new MycatExpection(ReplicaTip.ERROR_EXECUTION_THREAD.getMessage());
+      throw new MycatExpection("Replica must running in MycatReactorThread");
     }
   }
 

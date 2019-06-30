@@ -17,7 +17,6 @@ package io.mycat.router.routeStrategy;
 import io.mycat.MycatExpection;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
-import io.mycat.logTip.RouteNullChecker;
 import io.mycat.router.ResultRoute;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
@@ -25,8 +24,7 @@ import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
 
 /**
- * @author jamie12221
- *  date 2019-05-05 16:54
+ * @author jamie12221 date 2019-05-05 16:54
  **/
 public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext> {
 
@@ -36,24 +34,22 @@ public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext>
     int sqlCount = sqlContext.getSQLCount();
     int tableCount = sqlContext.getTableCount();
     if (sqlContext.getSchemaCount() > 0) {
-      RouteNullChecker.CHECK_MYCAT_TABLE_EXIST.check("unknown ", false);
+      throw new MycatExpection("sql:{} should not contain schema", sql);
     }
     if (tableCount < 1) {
-      RouteNullChecker.CHECK_MYCAT_TABLE_EXIST.check("unknown ", false);
+      throw new MycatExpection("sql:{} should contain table", sql);
     }
     String tableName = sqlContext.getTableName(0);
     for (int i = 0; i < sqlContext.getSchemaCount(); i++) {
       String otherTableName = sqlContext.getTableName(i);
       if (!tableName.equals(otherTableName)) {
-        RouteNullChecker.CHECK_MYCAT_MULTI_TABLE_IN_DB_IN_MULTI_SERVER
-            .check(tableName, otherTableName, false);
+        throw new MycatExpection(" tables:{} {} is diff ", tableName, otherTableName);
       }
     }
     for (int i = 1; i < tableCount; i++) {
       String otherTableName = sqlContext.getTableName(i);
       if (!tableName.equals(otherTableName)) {
-        RouteNullChecker.CHECK_MYCAT_MULTI_TABLE_IN_DB_IN_MULTI_SERVER
-            .check(tableName, otherTableName, false);
+        throw new MycatExpection(" tables:{} {} is diff ", tableName, otherTableName);
       }
     }
     OneServerResultRoute result = new OneServerResultRoute();
@@ -64,8 +60,7 @@ public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext>
       result.setSql(sql);
       return result;
     } else {
-      throw new MycatExpection("table " + tableName
-          + " is not exist in " + schema.getSchemaName());
+      throw new MycatExpection("table {} is not exist in {}", tableName, schema.getSchemaName());
     }
 
   }

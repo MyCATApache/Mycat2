@@ -33,7 +33,6 @@ import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.collector.ResultSetTransfor;
-import io.mycat.logTip.TaskTip;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 
 /**
@@ -109,7 +108,7 @@ public class BinaryResultSetHandler implements ResultSetHandler {
       if (isNull) {
         switch (columnType) {
           default: {
-            throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
+            throw new MycatExpection("unknown field type:{}", columnType);
           }
           case FIELD_TYPE_DECIMAL: {
             collector
@@ -233,7 +232,7 @@ public class BinaryResultSetHandler implements ResultSetHandler {
        */
       switch (columnType) {
         default: {
-          throw new MycatExpection(TaskTip.UNKNOWN_FIELD_TYPE.getMessage(columnType));
+          throw new MycatExpection("unknown field type {}", (columnType));
         }
         case FIELD_TYPE_DECIMAL: {
           collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff,
