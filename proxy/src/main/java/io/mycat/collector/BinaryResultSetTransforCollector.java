@@ -18,7 +18,7 @@ import static io.mycat.proxy.packet.MySQLPacketResolver.logger;
 
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import java.math.BigDecimal;
 
 /**

@@ -18,7 +18,7 @@ package io.mycat.collector;
 
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 
 /**
  * 结果集收集接口 int startIndex的含义应该是根据实际情况而定的

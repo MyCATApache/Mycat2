@@ -16,6 +16,7 @@ package io.mycat.proxy.packet;
 
 import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import java.util.Arrays;
 

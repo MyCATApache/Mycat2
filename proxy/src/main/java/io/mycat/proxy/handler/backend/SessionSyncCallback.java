@@ -1,6 +1,6 @@
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.proxy.packet.ErrorPacketImpl;
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 
 public interface SessionSyncCallback {

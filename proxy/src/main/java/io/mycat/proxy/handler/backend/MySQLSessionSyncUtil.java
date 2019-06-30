@@ -2,9 +2,9 @@ package io.mycat.proxy.handler.backend;
 
 import io.mycat.MycatExpection;
 import io.mycat.beans.mysql.MySQLCommandType;
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 
 public class MySQLSessionSyncUtil {

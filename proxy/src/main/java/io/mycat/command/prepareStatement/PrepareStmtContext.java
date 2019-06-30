@@ -1,7 +1,7 @@
 package io.mycat.command.prepareStatement;
 
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import java.util.HashMap;

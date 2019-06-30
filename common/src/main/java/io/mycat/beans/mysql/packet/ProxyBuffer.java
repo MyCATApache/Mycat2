@@ -12,10 +12,9 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.buffer;
+package io.mycat.beans.mysql.packet;
 
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.packet.MySQLPacket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -30,7 +29,7 @@ import org.slf4j.LoggerFactory;
  **/
 public interface ProxyBuffer {
 
-  Logger logger = LoggerFactory.getLogger(ProxyBuffer.class);
+  Logger LOGGER = LoggerFactory.getLogger(ProxyBuffer.class);
 
   /**
    * 获取ByteBuffer

@@ -15,7 +15,7 @@
 package io.mycat.collector;
 
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import java.math.BigDecimal;
 import java.sql.Date;
 

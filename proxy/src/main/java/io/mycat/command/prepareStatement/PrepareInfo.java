@@ -2,6 +2,7 @@ package io.mycat.command.prepareStatement;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -16,7 +17,6 @@ import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.handler.backend.PrepareStmtTask;
 import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.handler.backend.SessionSyncCallback;
-import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;

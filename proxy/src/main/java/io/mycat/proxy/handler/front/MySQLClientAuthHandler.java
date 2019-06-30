@@ -23,13 +23,12 @@ import io.mycat.beans.mysql.MySQLVersion;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.beans.mysql.packet.HandshakePacket;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.MySQLPacket;
-import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.security.MycatUser;
@@ -240,13 +239,10 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             }
 //        } else if(clientAuthPluginName.equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)){
             encryptPass = CachingSha2PasswordPlugin.scrambleCachingSha2(rightPassword, seed);
-            if (checkBytes(password, encryptPass)) {
-                return true;
-            }
+      return checkBytes(password, encryptPass);
 //        } else {
 //            throw new RuntimeException(String.format("unknow auth plugin %s", clientAuthPluginName));
 //        }
-        return false;
     }
 
     private boolean checkBytes(byte[] encryptPass, byte[] password) {

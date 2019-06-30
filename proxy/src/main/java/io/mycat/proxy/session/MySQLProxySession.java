@@ -1,7 +1,7 @@
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.buffer.ProxyBuffer;
-import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import java.io.IOException;
 

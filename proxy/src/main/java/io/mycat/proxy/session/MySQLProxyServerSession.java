@@ -1,12 +1,12 @@
 package io.mycat.proxy.session;
 
 import io.mycat.beans.mysql.MySQLErrorCode;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import java.io.IOException;
 import java.nio.ByteBuffer;

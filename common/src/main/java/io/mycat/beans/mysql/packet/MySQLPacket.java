@@ -12,11 +12,8 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.proxy.packet;
+package io.mycat.beans.mysql.packet;
 
-import io.mycat.beans.mysql.packet.MySQLPayloadReadView;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
-import io.mycat.proxy.buffer.ProxyBuffer;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.sql.Time;

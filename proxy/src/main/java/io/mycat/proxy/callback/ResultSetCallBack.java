@@ -1,8 +1,7 @@
 package io.mycat.proxy.callback;
 
-import io.mycat.beans.mysql.packet.ErrorPacket;
-import io.mycat.proxy.packet.ErrorPacketImpl;
-import io.mycat.proxy.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 
 public interface ResultSetCallBack<T> extends TaskCallBack<ResultSetCallBack<T>> {

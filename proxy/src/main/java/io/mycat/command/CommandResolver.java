@@ -3,9 +3,9 @@ package io.mycat.command;
 import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 import io.mycat.beans.mysql.MySQLCommandType;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MycatSession;
 import java.util.HashMap;
 

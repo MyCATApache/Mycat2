@@ -1,11 +1,11 @@
 package io.mycat.proxy.handler.backend;
 
 import io.mycat.beans.mysql.packet.EOFPacket;
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.callback.ResultSetCallBack;
-import io.mycat.proxy.packet.ErrorPacketImpl;
-import io.mycat.proxy.packet.MySQLPacket;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 

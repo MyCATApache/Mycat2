@@ -15,9 +15,10 @@
 package io.mycat.proxy.packet;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
+import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.buffer.ProxyBuffer;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLProxySession;

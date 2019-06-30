@@ -15,12 +15,11 @@
 package io.mycat.replica.heartbeat.callback;
 
 import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.beans.mysql.packet.ErrorPacket;
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
-import io.mycat.proxy.packet.ErrorPacketImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;

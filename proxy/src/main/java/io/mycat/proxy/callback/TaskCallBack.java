@@ -1,8 +1,7 @@
 package io.mycat.proxy.callback;
 
 import io.mycat.MycatExpection;
-import io.mycat.beans.mysql.packet.ErrorPacket;
-import io.mycat.proxy.packet.ErrorPacketImpl;
+import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 
 /**
  * @author jamie12221

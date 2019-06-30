@@ -15,8 +15,9 @@
 package io.mycat.proxy.buffer;
 
 import io.mycat.MycatExpection;
+import io.mycat.beans.mysql.packet.MySQLPacket;
+import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.packet.MySQLPacket;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
