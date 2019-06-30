@@ -18,6 +18,8 @@ import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.logTip.ReplicaTip;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
@@ -33,15 +35,13 @@ import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author cjw
  **/
 public class MycatCore {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MycatCore.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatCore.class);
 
   private static ProxyRuntime runtime;
 

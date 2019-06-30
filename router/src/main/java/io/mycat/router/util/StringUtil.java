@@ -23,13 +23,13 @@
  */
 package io.mycat.router.util;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author mycat
@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 public class StringUtil {
 	public static final String TABLE_COLUMN_SEPARATOR = ".";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);
+	private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(StringUtil.class);
 	private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 	private static final Random RANDOM = new Random();
 	private static final char[] CHARS = { '1', '2', '3', '4', '5', '6', '7',

@@ -19,6 +19,8 @@ import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.callback.TaskCallBack;
@@ -33,8 +35,6 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -42,14 +42,15 @@ import org.slf4j.LoggerFactory;
 public enum MySQLPacketExchanger {
   INSTANCE;
 
-  private static final Logger logger = LoggerFactory.getLogger(MySQLPacketExchanger.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(MySQLPacketExchanger.class);
   public final static PacketExchangerCallback DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK = (mycat, e, attr) -> {
     mycat.setLastMessage(e.getMessage());
     mycat.writeErrorEndPacketBySyncInProcessError();
   };
 
   private static void onExceptionClearCloseInResponse(MycatSession mycat, Exception e) {
-    logger.error("{}", e);
+    LOGGER.error("{}", e);
     MycatMonitor.onPacketExchangerException(mycat, e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     if (mysql != null) {
@@ -63,7 +64,7 @@ public enum MySQLPacketExchanger {
 
   private static void onExceptionClearCloseInRequest(MycatSession mycat, Exception e,
       PacketExchangerCallback callback) {
-    logger.error("{}", e);
+    LOGGER.error("{}", e);
     MycatMonitor.onPacketExchangerWriteException(mycat, e);
     MySQLClientSession mysql = mycat.getMySQLSession();
     if (mysql != null) {
@@ -200,7 +201,8 @@ public enum MySQLPacketExchanger {
   public static class MySQLProxyNIOHandler implements BackendNIOHandler<MySQLClientSession> {
 
     public static final MySQLProxyNIOHandler INSTANCE = new MySQLProxyNIOHandler();
-    protected final static Logger logger = LoggerFactory.getLogger(MySQLProxyNIOHandler.class);
+    protected final static MycatLogger LOGGER = MycatLoggerFactory
+        .getLogger(MySQLProxyNIOHandler.class);
     static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
 

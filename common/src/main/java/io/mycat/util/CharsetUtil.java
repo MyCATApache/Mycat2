@@ -23,20 +23,20 @@
  */
 package io.mycat.util;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.io.FileInputStream;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author mycat
  */
 public class CharsetUtil {
 
-  public static final Logger logger = LoggerFactory
+  public static final MycatLogger LOGGER = MycatLoggerFactory
                                           .getLogger(CharsetUtil.class);
   private static final Map<Integer, String> INDEX_TO_CHARSET = new HashMap<>();
   private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
@@ -62,7 +62,7 @@ public class CharsetUtil {
         INDEX_TO_CHARSET.put(Integer.parseInt((String) index), prop.getProperty((String) index));
       }
     } catch (Exception e) {
-      logger.error("error:", e);
+      LOGGER.error("error:", e);
     }
 
     // charset --> index

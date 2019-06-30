@@ -47,9 +47,9 @@ import io.mycat.beans.mysql.packet.OkPacket;
 import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.io.IOException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 报文处理类 该类实现报文解析
@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  **/
 public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPacket {
 
-  Logger logger = LoggerFactory.getLogger(MySQLPacketResolver.class);
+  MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLPacketResolver.class);
 
   /**
    * 判断一个结果集结束时候,eof/ok 包 是否后续还有结果集

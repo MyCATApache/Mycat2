@@ -1,15 +1,15 @@
 package io.mycat.sqlparser.util;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Created by jamie on 2017/8/31.
  */
 public class TokenizerUtil {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TokenizerUtil.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(TokenizerUtil.class);
 
   /**
    * 获取数字

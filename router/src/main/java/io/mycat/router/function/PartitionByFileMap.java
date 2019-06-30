@@ -1,6 +1,8 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatExpection;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.router.RuleAlgorithm;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -9,12 +11,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PartitionByFileMap extends RuleAlgorithm {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(PartitionByFileMap.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(PartitionByFileMap.class);
   /**
    * 默认节点在map中的key
    */

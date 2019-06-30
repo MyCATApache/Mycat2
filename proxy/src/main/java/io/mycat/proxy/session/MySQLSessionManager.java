@@ -26,6 +26,8 @@ import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.logTip.SessionTip;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
@@ -54,8 +56,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象
@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
 public final class MySQLSessionManager implements
     BackendSessionManager<MySQLClientSession, MySQLDatasource> {
 
-  final static Logger LOGGER = LoggerFactory.getLogger(MySQLSessionManager.class);
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLSessionManager.class);
   final HashMap<Integer, MySQLClientSession> allSessions = new HashMap<>();
   final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
   final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
@@ -571,7 +571,7 @@ public final class MySQLSessionManager implements
               public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
                   MySQLClientSession mysql, Object sender, Object attr) {
                 String message = errorPacket.getErrorMessageString();
-                LOGGER.error("", message);
+                LOGGER.error(message);
                 mysql.close(false, message);
                 callBack.onException(new MycatExpection(message), sender, attr);
               }

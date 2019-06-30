@@ -1,5 +1,7 @@
 package io.mycat.proxy.monitor;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
@@ -9,16 +11,14 @@ import io.mycat.proxy.session.Session;
 import io.mycat.util.DumpUtil;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221 date 2019-05-20 11:52
  **/
 public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
-  protected final static Logger LOGGER = LoggerFactory.getLogger(MycatMonitor.class);
-  protected final static Logger SQL_LOGGER = LoggerFactory.getLogger("sqlLogger");
+  protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatMonitor.class);
+  protected final static MycatLogger SQL_LOGGER = MycatLoggerFactory.getLogger("sqlLogger");
   final static boolean onBind = false;
   final static boolean onSessionPool = false;
   final static boolean onBuffer = false;

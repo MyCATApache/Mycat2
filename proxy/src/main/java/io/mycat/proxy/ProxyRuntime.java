@@ -34,6 +34,8 @@ import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.user.UserRootConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
@@ -65,7 +67,7 @@ import org.slf4j.LoggerFactory;
 
 public class ProxyRuntime {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ProxyRuntime.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ProxyRuntime.class);
   private final AtomicInteger sessionIdCounter = new AtomicInteger(1);
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();

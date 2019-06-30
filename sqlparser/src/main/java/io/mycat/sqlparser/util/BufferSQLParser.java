@@ -1,7 +1,7 @@
 package io.mycat.sqlparser.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 
 /**
  * Created by Kaiz on 2017/2/6.
@@ -28,7 +28,7 @@ public class BufferSQLParser {
   Tokenizer tokenizer = new Tokenizer();
   DefaultByteArray defaultByteArray = new DefaultByteArray();
 
-  private static final Logger logger = LoggerFactory.getLogger(BufferSQLParser.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(BufferSQLParser.class);
 
   int pickTableNames(int pos, final int arrayCount, BufferSQLContext context) {
     int type;

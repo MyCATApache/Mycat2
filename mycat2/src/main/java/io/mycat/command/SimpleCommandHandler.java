@@ -1,6 +1,8 @@
 package io.mycat.command;
 
 import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
@@ -10,12 +12,10 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SimpleCommandHandler extends AbstractCommandHandler {
 
-  static final Logger LOGGER = LoggerFactory.getLogger(SimpleCommandHandler.class);
+  static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(SimpleCommandHandler.class);
   final static String UNSUPPORT_MESSAGE = "mycat default command handler is unsupport this command";
   BufferSQLContext sqlContext;
   BufferSQLParser sqlParser;

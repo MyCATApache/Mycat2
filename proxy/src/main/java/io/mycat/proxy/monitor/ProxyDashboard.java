@@ -5,6 +5,8 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.buffer.BufferPool;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -18,12 +20,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Queue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public enum ProxyDashboard {
   INSTANCE;
-  protected final static Logger LOGGER = LoggerFactory.getLogger("resourceLogger");
+  protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger("resourceLogger");
 
   public void collectInfo(ProxyRuntime runtime) {
     LOGGER.info("---------------------------dashboard---------------------------");

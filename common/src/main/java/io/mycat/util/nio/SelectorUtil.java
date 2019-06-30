@@ -1,18 +1,19 @@
 package io.mycat.util.nio;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.ConcurrentModificationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Selector工具类
  * Created by Hash Zhang on 2017/7/24.
  */
 public class SelectorUtil {
-    private static final Logger logger = LoggerFactory.getLogger(SelectorUtil.class);
+
+    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(SelectorUtil.class);
 
     public static final int REBUILD_COUNT_THRESHOLD = 512;
 
@@ -23,7 +24,7 @@ public class SelectorUtil {
         try {
             newSelector = Selector.open();
         } catch (Exception e) {
-            logger.warn("Failed to create a new Selector.", e);
+            LOGGER.warn("Failed to create a new Selector.", e);
             return null;
         }
 
@@ -41,7 +42,7 @@ public class SelectorUtil {
                         key.channel().register(newSelector, interestOps, a);
                         nChannels ++;
                     } catch (Exception e) {
-                        logger.warn("Failed to re-register a Channel to the new Selector.", e);
+                        LOGGER.warn("Failed to re-register a Channel to the new Selector.", e);
                     }
                 }
             } catch (ConcurrentModificationException e) {

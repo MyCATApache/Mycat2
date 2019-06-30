@@ -36,6 +36,8 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
@@ -55,15 +57,13 @@ import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221 date 2019-05-17 17:37
  **/
 public class ProxyQueryHandler {
 
-  static final Logger LOGGER = LoggerFactory.getLogger(ProxyQueryHandler.class);
+  static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ProxyQueryHandler.class);
   final MycatRouter router;
   final private ProxyRuntime runtime;
 

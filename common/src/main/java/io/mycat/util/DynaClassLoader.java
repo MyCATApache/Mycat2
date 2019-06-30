@@ -1,5 +1,7 @@
 package io.mycat.util;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -8,8 +10,6 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * used for mycat's catlet class loader ,catlet's class file is stored in Mycat_home/catlet dir
@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DynaClassLoader {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger("DynaClassLoader");
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger("DynaClassLoader");
   /**
    * key- class full name
    */
@@ -216,11 +216,7 @@ class DynaClass {
   public boolean isJar = false;
 
   public boolean needReloadClass(long classCheckMilis) {
-    if (lastModified + classCheckMilis < System.currentTimeMillis()) {
-      return true;
-    } else {
-      return false;
-    }
+    return lastModified + classCheckMilis < System.currentTimeMillis();
   }
 
   public void clear() {

@@ -25,6 +25,8 @@ import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
@@ -36,8 +38,6 @@ import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.util.StringUtil;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221 date 2019-05-07 13:58
@@ -46,7 +46,8 @@ import org.slf4j.LoggerFactory;
  **/
 public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
-    private static final Logger logger = LoggerFactory.getLogger(MySQLClientAuthHandler.class);
+    private static final MycatLogger LOGGER = MycatLoggerFactory
+        .getLogger(MySQLClientAuthHandler.class);
     public byte[] seed;
     public MycatSession mycat;
     private boolean finished = false;
@@ -170,7 +171,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         try {
             mycat.writeToChannel();
         } catch (Exception e) {
-            logger.error("{}",e);
+            LOGGER.error("{}", e);
             onClear(mycat);
             mycat.close(false, e);
         }
@@ -190,7 +191,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     @Override
     public void onException(MycatSession session, Exception e) {
         MycatMonitor.onAuthHandlerException(session,e);
-        logger.error("{}", e);
+        LOGGER.error("{}", e);
         onClear(mycat);
         mycat.close(false, e);
     }

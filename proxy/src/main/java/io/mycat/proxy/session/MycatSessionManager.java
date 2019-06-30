@@ -18,6 +18,8 @@ import io.mycat.ProxyBeanProviders;
 import io.mycat.annotations.NoExcept;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.front.MySQLClientAuthHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -30,8 +32,6 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象 该在一个线程单位里,对象生命周期应该是单例的
@@ -40,7 +40,8 @@ import org.slf4j.LoggerFactory;
  *  date 2019-05-10 13:21
  **/
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
-  final static Logger LOGGER = LoggerFactory.getLogger(AbstractSession.class);
+
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
   final  ProxyRuntime  runtime;
   private final ProxyBeanProviders providers;

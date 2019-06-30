@@ -1,6 +1,8 @@
 package io.mycat.collector;
 
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.util.StringUtil;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -9,8 +11,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
  **/
 public class OneResultSetCollector implements ResultSetCollector, Iterable<Object[]> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(StringUtil.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(StringUtil.class);
   ArrayList[] result;
   Map<String, Integer> columns;
   int columnCount = 0;

@@ -3,15 +3,15 @@ package io.mycat.proxy.handler.backend;
 import static io.mycat.logTip.SessionTip.UNKNOWN_IDLE_RESPONSE;
 
 import io.mycat.MycatExpection;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLClientSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public enum IdleHandler implements NIOHandler<MySQLClientSession> {
   INSTANCE;
-  protected final static Logger logger = LoggerFactory.getLogger(
+  protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(
       IdleHandler.class);
 
   @Override
@@ -33,7 +33,7 @@ public enum IdleHandler implements NIOHandler<MySQLClientSession> {
 
   @Override
   public void onException(MySQLClientSession session, Exception e) {
-    logger.error("{}", e);
+    LOGGER.error("{}", e);
     session.close(false, e);
   }
 

@@ -17,8 +17,6 @@
 
 package io.mycat.config.proxy;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +31,7 @@ public class ProxyConfig {
     private static final short DEFAULT_BUFFER_CHUNK_SIZE = 1024 * 4 * 2;
     private static final int DEFAULT_BUFFER_POOL_PAGE_SIZE = 1024 * 1024 * 4;
     private static final short DEFAULT_BUFFER_POOL_PAGE_NUMBER = 64;
-    private static final Logger logger = LoggerFactory.getLogger(ProxyConfig.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProxyConfig.class);
 
     /**
      * 绑定的数据传输IP地址
@@ -115,7 +113,8 @@ public class ProxyConfig {
     public void setBufferPoolChunkSize(short bufferPoolChunkSize) {
         if (bufferPoolChunkSize < 1024) {
             ///cjw  2018.4.6 fix the HandshakePacket write proxybuffer which is low than 86 lead to error
-            logger.warn("bufferPoolChunkSize should be greater than 86,and will be updated to 1024;");
+            LOGGER
+                .warn("bufferPoolChunkSize should be greater than 86,and will be updated to 1024;");
             bufferPoolChunkSize = 1024;
         }
         this.bufferPoolChunkSize = bufferPoolChunkSize;

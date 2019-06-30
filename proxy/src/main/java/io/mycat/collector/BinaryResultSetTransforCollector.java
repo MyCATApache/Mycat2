@@ -14,11 +14,12 @@
  */
 package io.mycat.collector;
 
-import static io.mycat.proxy.packet.MySQLPacketResolver.logger;
 
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.math.BigDecimal;
 
 /**
@@ -29,6 +30,9 @@ import java.math.BigDecimal;
  */
 @NoExcept
 public class BinaryResultSetTransforCollector implements ResultSetTransfor {
+
+  final static MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(BinaryResultSetTransforCollector.class);
 
   final ResultSetCollector collector;
 
@@ -159,7 +163,7 @@ public class BinaryResultSetTransforCollector implements ResultSetTransfor {
       int startIndex) {
     java.util.Date date = mySQLPacket.readDate();
     collector.addDate(columnIndex, date);
-    logger.debug("{}:{}", columnDef.getColumnNameString(), date);
+    LOGGER.debug("{}:{}", columnDef.getColumnNameString(), date);
   }
 
   @Override
@@ -196,7 +200,7 @@ public class BinaryResultSetTransforCollector implements ResultSetTransfor {
     if (true) {
       String lenencString = mySQLPacket.readLenencString();
       collector.addString(columnIndex, lenencString);
-      logger.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+      LOGGER.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
     }
   }
 

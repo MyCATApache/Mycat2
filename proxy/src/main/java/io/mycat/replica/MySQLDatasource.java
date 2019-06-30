@@ -15,6 +15,8 @@
 package io.mycat.replica;
 
 import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceELement;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
@@ -22,8 +24,6 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * MySQL Seesion元信息 对外支持线程修改的属性是alive,其他属性只读
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  **/
 public abstract class MySQLDatasource implements LoadBalanceELement {
 
-  protected static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
+  protected static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
   protected final int index;
   protected final DatasourceConfig datasourceConfig;
   protected final MySQLReplica replica;
@@ -77,7 +77,7 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
 
         @Override
         public void onException(Exception exception, Object sender, Object attr) {
-          logger.error(exception.getMessage());
+          LOGGER.error(exception.getMessage());
           callback.onCountFail();
         }
       }));

@@ -17,9 +17,9 @@
 package io.mycat.util;
 
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.security.NoSuchAlgorithmException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * mysql 插件工具类
@@ -27,18 +27,20 @@ import org.slf4j.LoggerFactory;
  *  date : 2018/11/25 20:03
  */
 public class MysqlNativePasswordPluginUtil {
-    private static Logger logger = LoggerFactory.getLogger(MysqlNativePasswordPluginUtil.class);
+
+    private static MycatLogger LOGGER = MycatLoggerFactory
+        .getLogger(MysqlNativePasswordPluginUtil.class);
     public static final String PROTOCOL_PLUGIN_NAME = "mysql_native_password";
 
     public static byte[] scramble411(String password, byte[] seed) {
         if (password == null || password.length() == 0) {
-            logger.warn("password is empty");
+            LOGGER.warn("password is empty");
             return new byte[0];
         }
         try {
             return SecurityUtil.scramble411(password.getBytes(), seed);
         } catch (NoSuchAlgorithmException e) {
-            logger.warn("no such algorithm", e);
+            LOGGER.warn("no such algorithm", e);
             return null;
         }
     }

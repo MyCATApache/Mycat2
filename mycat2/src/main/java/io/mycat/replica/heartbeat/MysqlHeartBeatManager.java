@@ -5,6 +5,8 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.RepSwitchTypeEnum;
 import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
@@ -12,8 +14,6 @@ import io.mycat.replica.heartbeat.detector.GarelaHeartbeatDetector;
 import io.mycat.replica.heartbeat.detector.MasterSlaveHeartbeatDetector;
 import io.mycat.replica.heartbeat.detector.SingleNodeHeartbeatDetector;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author : zhangwy
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MysqlHeartBeatManager implements HeartbeatManager{
 
-    Logger logger = LoggerFactory.getLogger(MysqlHeartBeatManager.class);
+    MycatLogger LOGGER = MycatLoggerFactory.getLogger(MysqlHeartBeatManager.class);
 
     private final HeartbeatDetector heartbeatDetector;
 
@@ -147,7 +147,7 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
         if(!this.heartBeatStatus.equals(currentDatasourceStatus)) {
             //设置状态给 dataSource
             this.heartBeatStatus = currentDatasourceStatus;
-            logger.error("{} heartStatus {}", dataSource.getName(), heartBeatStatus);
+            LOGGER.error("{} heartStatus {}", dataSource.getName(), heartBeatStatus);
         }
         ReplicaConfig conf = this.dataSource.getReplica().getConfig();
         if(conf.getSwitchType().equals(RepSwitchTypeEnum.SWITCH)

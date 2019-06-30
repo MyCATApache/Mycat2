@@ -19,6 +19,8 @@ import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.BackendNIOHandler;
@@ -29,8 +31,6 @@ import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 任务类接口 该类实现文本结果集的命令发送以及解析处理
@@ -41,7 +41,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
     MySQLPacketCallback {
 
   byte[] EMPTY = new byte[]{};
-  Logger logger = LoggerFactory.getLogger(BackendConCreateHandler.class);
+  MycatLogger LOGGER = MycatLoggerFactory.getLogger(BackendConCreateHandler.class);
   ResultSetHandler DEFAULT = new ResultSetHandler() {
 
   };
@@ -291,7 +291,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
         return;
       }
     } catch (Exception e) {
-      logger.error("",e);
+      LOGGER.error("", e);
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
       Objects.requireNonNull(callBackAndReset);
       mysql.setCallBack(null);
@@ -359,7 +359,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
   @Override
   default void onException(MySQLClientSession session, Exception e) {
     MycatMonitor.onResultSetException(session, e);
-    logger.error("{}", e);
+    LOGGER.error("{}", e);
     onClear(session);
     session.close(false, e);
   }

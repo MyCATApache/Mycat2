@@ -24,6 +24,8 @@ import io.mycat.MycatCore;
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.monitor.AbstractMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
@@ -50,8 +52,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Assert;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221 date 2019-05-19 18:23
@@ -59,7 +59,7 @@ import org.slf4j.LoggerFactory;
 public class JdbcDao extends ModualTest {
 
   final static String DB_IN_ONE_SERVER = "DB_IN_ONE_SERVER";
-  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcDao.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcDao.class);
 
   @Test
   public void startRequestAndReponseWithSplitingPacketWithMultiSatement()
@@ -283,8 +283,8 @@ public class JdbcDao extends ModualTest {
   public void perTest() throws InterruptedException, ExecutionException, IOException {
     loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
         (future) -> {
-          Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-          int count = 2;
+//          Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+          int count = 1;
           AtomicInteger atomicInteger = new AtomicInteger(0);
           for (int i = 0; i < count; i++) {
             int index = i;

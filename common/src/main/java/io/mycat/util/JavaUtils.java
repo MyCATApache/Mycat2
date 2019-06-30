@@ -19,6 +19,8 @@ package io.mycat.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -26,8 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility class,
@@ -40,7 +40,7 @@ public class JavaUtils {
    * base and nearly all files already use Utils.scala
    */
   public static final long DEFAULT_DRIVER_MEM_MB = 1024;
-  private static final Logger logger = LoggerFactory.getLogger(JavaUtils.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JavaUtils.class);
   private static final ImmutableMap<String, TimeUnit> timeSuffixes =
       ImmutableMap.<String, TimeUnit>builder()
           .put("us", TimeUnit.MICROSECONDS)
@@ -76,7 +76,7 @@ public class JavaUtils {
         closeable.close();
       }
     } catch (IOException e) {
-      logger.error("IOException should not have been thrown.", e);
+      LOGGER.error("IOException should not have been thrown.", e);
     }
   }
 
@@ -333,7 +333,7 @@ public class JavaUtils {
           dir = null;
         }
       } catch (Exception e) {
-        logger.error(e.getMessage());
+        LOGGER.error(e.getMessage());
       }
     }
 

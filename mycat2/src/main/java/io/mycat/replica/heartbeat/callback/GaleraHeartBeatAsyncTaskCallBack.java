@@ -17,6 +17,8 @@ package io.mycat.replica.heartbeat.callback;
 import io.mycat.collector.CollectorUtil;
 import io.mycat.collector.OneResultSetCollector;
 import io.mycat.config.GlobalConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.DatasourceStatus;
@@ -24,15 +26,14 @@ import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author : zhangwy
  *  date Date : 2019年05月17日 21:34
  */
 public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCallBack {
-    private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
+
+    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
     public GaleraHeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
         super(heartbeatDetector);
     }
@@ -62,7 +63,7 @@ public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCa
                 datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_NORMAL);
                 datasourceStatus.setStatus(DatasourceStatus.OK_STATUS);
             } else {
-                logger.info("found MySQL  cluster status err !!! "
+                LOGGER.info("found MySQL  cluster status err !!! "
                     + " wsrep_cluster_status: "+ wsrep_cluster_status
                     + " wsrep_connected: "+ wsrep_connected
                     + " wsrep_ready: "+ wsrep_ready

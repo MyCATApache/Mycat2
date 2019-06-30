@@ -20,6 +20,8 @@ import io.mycat.collector.CollectorUtil;
 import io.mycat.collector.OneResultSetCollector;
 import io.mycat.collector.TextResultSetTransforCollector;
 import io.mycat.config.GlobalConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -29,8 +31,6 @@ import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author : zhangwy
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack {
 
-  private static final Logger logger = LoggerFactory.getLogger(MySQLDatasource.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
   final int slaveThreshold = 1000; //延迟阈值
 
   public MasterSlaveBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {

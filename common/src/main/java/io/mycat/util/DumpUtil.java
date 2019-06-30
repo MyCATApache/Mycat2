@@ -16,9 +16,9 @@
  */
 package io.mycat.util;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.nio.ByteBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * String utils.
@@ -28,8 +28,8 @@ import org.slf4j.LoggerFactory;
  *
  */
 public final class DumpUtil {
-	
-	final static Logger LOGGER = LoggerFactory.getLogger(DumpUtil.class);
+
+	final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(DumpUtil.class);
 	
 	private DumpUtil(){
 		

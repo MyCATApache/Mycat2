@@ -15,6 +15,8 @@
 package io.mycat.proxy.handler;
 
 import io.mycat.beans.mysql.packet.ProxyBuffer;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
@@ -22,8 +24,6 @@ import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The enum Mycat handler.
@@ -33,7 +33,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
    * Instance mycat handler.
    */
   INSTANCE;
-  private static final Logger LOGGER = LoggerFactory.getLogger(MycatHandler.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatHandler.class);
 
   final
   @Override

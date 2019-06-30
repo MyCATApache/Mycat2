@@ -15,11 +15,11 @@
 package io.mycat.beans.mysql.packet;
 
 import io.mycat.buffer.BufferPool;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author chen junwen
@@ -29,7 +29,11 @@ import org.slf4j.LoggerFactory;
  **/
 public interface ProxyBuffer {
 
-  Logger LOGGER = LoggerFactory.getLogger(ProxyBuffer.class);
+  MycatLogger LOGGER = MycatLoggerFactory.getLogger(ProxyBuffer.class);
+
+  static void main(String[] args) {
+    LOGGER.error("1");
+  }
 
   /**
    * 获取ByteBuffer

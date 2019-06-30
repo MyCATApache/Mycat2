@@ -221,6 +221,21 @@ public class MycatLogger {
     return logger.isErrorEnabled();
   }
 
+  public void error(String message) {
+    logger.error(message);
+  }
+
+  public void error(String message, Object o, Object o2) {
+    logger.error(message, o, o2);
+  }
+
+  public void error(String message, Object... os) {
+    logger.error(message, os);
+  }
+
+  public void error(String message, Throwable e) {
+    logger.error(message, e);
+  }
   public ErrorPacketImpl errorPacket(String message) {
     logger.error(message);
     int defaultErrorCode = ER_UNKNOWN_ERROR;
