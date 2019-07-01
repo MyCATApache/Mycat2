@@ -39,6 +39,8 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
+import io.mycat.proxy.callback.AsyncTaskCallBack;
+import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -96,6 +98,7 @@ public class ProxyRuntime {
 
   public void startReactor() throws IOException {
     initReactor(providers, this);
+    initMinCon();
   }
 
   public void startAcceptor() throws IOException {
@@ -239,6 +242,26 @@ public class ProxyRuntime {
           new MycatSessionManager(runtime, providers), runtime);
       mycatReactorThreads[i].start();
     }
+  }
+
+  private void initMinCon() {
+    Objects.requireNonNull(reactorThreads);
+    Objects.requireNonNull(datasourceList);
+    for (MySQLDatasource datasource : datasourceList) {
+      datasource.init(reactorThreads, new AsyncTaskCallBackCounter(datasourceList.size(),
+          new AsyncTaskCallBack() {
+            @Override
+            public void onFinished(Object sender, Object result, Object attr) {
+
+            }
+
+            @Override
+            public void onException(Exception e, Object sender, Object attr) {
+
+            }
+          }));
+    }
+
   }
 
   private void initAcceptor() throws IOException {

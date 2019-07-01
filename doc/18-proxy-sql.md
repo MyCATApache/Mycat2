@@ -56,7 +56,7 @@ access_mode: {
 
 GLOBAL级别 返回错误
 
-带有access_mode,忽略并返回ok
+带有access_mode会被记录,在sql
 
 多于一个transaction_characteristic,返回错误,即带有,
 

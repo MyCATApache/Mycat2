@@ -12,9 +12,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 ## 限制
 
 - 暂不支持MySQL压缩协议
-- 暂不支持预处理,LOAD DATA infile
-- 暂不支持跨节点修改SQL和查询SQL
-- 有限的SQL路由支持
+- 有限的SQL路由支持(需要指定dataNode)
+- 暂不支持跨节点修改SQL和查询SQL(计划中)
 
 ## 配置说明
 
@@ -37,6 +36,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 [心跳配置(heartbeat.yml)](07-mycat-heartbeat.md)
 
 [插件配置(plug.yaml](09-mycat-plug.md)
+
+[日志](19-mycat-log.md)
 
 [静态注解说明](08-mycat-static-annotation.md)
 

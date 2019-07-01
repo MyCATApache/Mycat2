@@ -1,6 +1,6 @@
 
 
-# mycat 2.0-schema(schema.yml,逻辑库)
+# mycat 2.0-schema(schema.yml,逻辑库,dataNode.yml,数据分片)
 
 author:junwen 2019-6-1
 
@@ -162,7 +162,7 @@ SQL中的逻辑表必须在mycat proxy session中的当前的逻辑库
 
 ## 配置
 
-### 分片节点配置
+### 分片节点配置(dataNode.yaml)
 
 ```yaml
 dataNodes:
@@ -185,7 +185,7 @@ database
 
 
 
-## 逻辑库配置
+## 逻辑库配置(schema.yaml)
 
 ```yaml
 schemas:
@@ -210,7 +210,7 @@ defaultDataNode
 
 
 
-## 逻辑表配置
+## 逻辑表配置(schema.yaml)
 
 name
 

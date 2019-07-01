@@ -20,6 +20,7 @@ import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
+import io.mycat.config.datasource.ReplicaConfig.RepTypeEnum;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
@@ -80,7 +81,24 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
             .createDatasource(runtime, index, datasourceConfig, this);
         datasourceList.add(datasource);
         if (writeIndex.contains(index)) {
-          writeDataSource.add(datasource);
+          RepTypeEnum repType = replicaConfig.getRepType();
+          Objects.requireNonNull(repType);
+          switch (repType) {
+            case SINGLE_NODE:
+            case MASTER_SLAVE: {
+              if (writeDataSource.isEmpty()) {
+                writeDataSource.add(datasource);
+              } else {
+                throw new MycatException(
+                    "replica:{} SINGLE_NODE and MASTER_SLAVE only support one master index.",
+                    replicaConfig.getName());
+              }
+              break;
+            }
+            case GARELA_CLUSTER:
+              writeDataSource.add(datasource);
+              break;
+          }
         }
       }
     }

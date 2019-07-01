@@ -50,8 +50,8 @@ replicas:
   - name: repli                      # 复制组 名称   必须唯一
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
-    balanceName: BalanceLeastActive   # 读写分离类型
-    balanceType: BALANCE_ALL  #balance 0 不开启读写分离机制 2;  所有读操作都随机的在 writeHost、readhost 上分发; 3 所有读请求随机的分发到 wiriterHost 对应的 readhost 执行，writerHost 不负担读压力
+    balanceName: BalanceRoundRobin   # 负载均衡算法名字
+    balanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
     mysqls:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
@@ -71,6 +71,7 @@ replicas:
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
         weight: 1            # 权重
+        initSQL: select 1; #该属性一般不写,作用是创建连接后马上执行一段初始化SQL,支持多语句
 ```
 
 ### 复制组属性
@@ -80,8 +81,8 @@ replicas:
   - name: repli                      # 复制组 名称   必须唯一
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
-    balanceName: BalanceLeastActive   # 读写分离类型
-    balanceType: BALANCE_ALL  #balance 0 不开启读写分离机制 2;  所有读操作都随机的在 writeHost、readhost 上分发; 3 所有读请求随机的分发到 wiriterHost 对应的 readhost 执行，writerHost 不负担读压力
+  	balanceName: BalanceRoundRobin   # 负载均衡算法名字
+    balanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
 ```
 
 #### name
@@ -194,7 +195,9 @@ mysql连接登录用户名
 
 权重
 
+#### initSQL
 
+ 该属性一般不写,作用是创建连接后马上执行一段初始化SQL,支持多语句
 
 ## 数据源主节点下标记录(masterIndexes.yml)
 
@@ -206,9 +209,29 @@ masterIndexes:
 
 repli是复制组名字
 
-0是主节点的下标(暂时支持一个)
+0是主节点的下标
+
+在对应的集群是GARELA_CLUSTER才可以配置多个下标,SINGLE_NODE和MASTER_SLAVE只能配置一个下标
+
+```yaml
+masterIndexes:
+  repli: 0,1 #GARELA_CLUSTER
+  repli2: 0
+```
+
+
+
+在集群是SINGLE_NODE和MASTER_SLAVE类型下
 
 当发生主从切换的时候,主节点的下标会改变并更新该文件
+
+但是在GARELA_CLUSTER下,并不会更新该文件,仅仅是不再把请求发送到无法访问的主节点
+
+
+
+主从切换记录也会作为日志记录在mycat-replica-indexes.log文件之中
+
+
 
 ------
 
