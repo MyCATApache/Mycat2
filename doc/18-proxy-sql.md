@@ -10,11 +10,11 @@ author:junwen 2019-6-14,7-1
 
 在mycat的mysql session是可以被多个mycat session重复使用.
 
-而一个客户端连接对应一个mycat session,mycat session保存了客户端设置的变量.mycat作为代理需要把这些属性与进行代理的mysqlsession状态对应才可以发送真正的SQL.因为proxy不进行复杂的SQL解析处理,所以仅处理以下SQL.
+而一个客户端连接对应一个mycat session,mycat session保存了客户端设置的变量.mycat作为代理需要把这些属性与进行代理的mysqlsession状态对应,所以mysql session设置mycat保存的变量的过程,称之为同步.才可以发送真正的SQL.因为proxy不进行复杂的SQL解析处理,所以仅处理以下SQL.
 
 
 
-同步属性schema
+##### schema
 
 ```sql
 use {schema}
@@ -24,7 +24,7 @@ use {schema}
 
 
 
-同步属性autocommit
+##### 同步属性autocommit
 
 ```sql
 set autocommit = 1;
@@ -37,7 +37,7 @@ set autocommit off;
 
 
 
-同步属性charset
+##### 同步属性charset
 
 ```sql
 set names {charset}
@@ -47,7 +47,7 @@ set names {charset}
 
 
 
-同步属性character_set_results
+##### 同步属性character_set_results
 
 ```sql
 SET character_set_results {charset}
@@ -65,7 +65,7 @@ GLOBAL级别 返回错误
 
 
 
-同步属性asscess mode
+##### 同步属性asscess mode
 
 ```
 set session transaction {read only|read write}
@@ -75,7 +75,7 @@ set session transaction {read only|read write}
 
 
 
-同步属性isolation
+##### 同步属性isolation
 
 ```
 SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
@@ -88,7 +88,7 @@ SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 
 
 
-同步属性SET_SQL_SELECT_LIMIT
+##### 同步属性SET_SQL_SELECT_LIMIT
 
 ```sql
 SET SQL_SELECT_LIMIT= {dafault|数字}
@@ -98,7 +98,7 @@ SET SQL_SELECT_LIMIT= {dafault|数字}
 
 
 
-同步属性net_write_timeout
+##### 同步属性net_write_timeout
 
 ```sql
 SET net_write_timeout= {dafault|数字}
@@ -108,6 +108,8 @@ SET net_write_timeout= {dafault|数字}
 
 
 
+##### show tables
+
 ```sql
 show tables
 ```
@@ -116,11 +118,13 @@ show tables
 
 
 
-describe与show语句
+##### describe与show语句
 
 转发到当前schema的defaultDataNode
 
 
+
+##### show variables
 
 ```sql
 show variables
@@ -130,13 +134,33 @@ show variables
 
 
 
+##### show warnings
+
 ```sql
-show warnnings
+show warnings
 ```
 
 发送mycat会话中的lastMessage信息,一般是空的
 
 
+
+##### session变量
+
+```sql
+select @@session.transaction_isolation;
+
+select @@session.tx_isolation;
+
+select @@session.autocommit;
+
+select @@session.transaction_read_only;
+
+select @@session.tx_read_only;
+```
+
+路由到一个随机mysql session即可
+
+查询结果是是mysql服务器发出的,因为获取mysql session后会进行同步,所以结果是正确的
 
 [![Creative Commons License](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
