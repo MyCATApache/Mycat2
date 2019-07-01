@@ -1,6 +1,6 @@
 package io.mycat.proxy.callback;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 
 /**
@@ -11,6 +11,6 @@ public interface TaskCallBack<T extends TaskCallBack> {
 
   default Exception toExpection(ErrorPacketImpl errorPacket) {
     byte[] errorMessage = errorPacket.getErrorMessage();
-    return new MycatExpection(new String(errorMessage));
+    return new MycatException(new String(errorMessage));
   }
 }

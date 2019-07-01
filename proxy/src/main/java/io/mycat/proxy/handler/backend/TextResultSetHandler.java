@@ -42,7 +42,7 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VARCHAR;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.collector.ResultSetTransfor;
@@ -107,7 +107,7 @@ public class TextResultSetHandler implements ResultSetHandler {
   }
 
   @Override
-  public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) throws MycatExpection {
+  public void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) throws MycatException {
     for (int columnIndex = 0; columnIndex < columnCount; columnIndex++) {
       int startIndex = mySQLPacket.packetReadStartIndex();
       if (!columnFilter(columnIndex)) {
@@ -120,7 +120,7 @@ public class TextResultSetHandler implements ResultSetHandler {
         mySQLPacket.packetReadStartIndex(startIndex + 1);
         switch (columnType) {
           default: {
-            throw new MycatExpection("unknown field type:{}", (columnType));
+            throw new MycatException("unknown field type:{}", (columnType));
           }
           case FIELD_TYPE_DECIMAL: {
             collector
@@ -238,7 +238,7 @@ public class TextResultSetHandler implements ResultSetHandler {
       }
       switch (columnType) {
         default: {
-          throw new MycatExpection("unknown field type:{}", (columnType));
+          throw new MycatException("unknown field type:{}", (columnType));
         }
         case FIELD_TYPE_DECIMAL: {
           collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff,

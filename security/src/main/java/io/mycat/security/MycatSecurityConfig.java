@@ -1,7 +1,6 @@
 package io.mycat.security;
 
-import io.mycat.MycatExpection;
-import io.mycat.beans.mycat.MycatSchema;
+import io.mycat.MycatException;
 import io.mycat.config.user.UserConfig;
 import io.mycat.config.user.UserRootConfig;
 import java.util.HashMap;
@@ -27,7 +26,7 @@ public class MycatSecurityConfig {
   public String getPasswordByUserName(String userName) {
     UserConfig userConfig = users.get(userName);
     if (userConfig == null) {
-      throw new MycatExpection("not exist user name" + userName);
+      throw new MycatException("not exist user name" + userName);
     }
     String password = users.get(userName).getPassword();
     if (password == null) {
@@ -42,7 +41,7 @@ public class MycatSecurityConfig {
   }
 
 
-  public MycatUser getUser(String host, String userName) throws MycatExpection {
+  public MycatUser getUser(String host, String userName) throws MycatException {
     UserConfig userConfig = users.get(userName);
     return new UserImpl(userName, host);
   }

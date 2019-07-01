@@ -1,6 +1,6 @@
 package io.mycat.proxy;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
@@ -126,7 +126,7 @@ public class MySQLPacketUtil {
         writer.writeFixInt(2, serverStatus);
       }
       if (sessionVariableTracking) {
-        throw new MycatExpection("unsupport!!");
+        throw new MycatException("unsupport!!");
       } else {
         if (message != null) {
           writer.writeBytes(message.getBytes());

@@ -28,7 +28,7 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 import static io.mycat.beans.mysql.MySQLType.FIELD_TYPE_INT24;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
@@ -108,7 +108,7 @@ public class BinaryResultSetHandler implements ResultSetHandler {
       if (isNull) {
         switch (columnType) {
           default: {
-            throw new MycatExpection("unknown field type:{}", columnType);
+            throw new MycatException("unknown field type:{}", columnType);
           }
           case FIELD_TYPE_DECIMAL: {
             collector
@@ -232,7 +232,7 @@ public class BinaryResultSetHandler implements ResultSetHandler {
        */
       switch (columnType) {
         default: {
-          throw new MycatExpection("unknown field type {}", (columnType));
+          throw new MycatException("unknown field type {}", (columnType));
         }
         case FIELD_TYPE_DECIMAL: {
           collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff,

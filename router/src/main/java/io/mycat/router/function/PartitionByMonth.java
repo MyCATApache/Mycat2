@@ -1,6 +1,6 @@
 package io.mycat.router.function;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.router.RuleAlgorithm;
 import io.mycat.router.util.StringUtil;
 import java.time.LocalDate;
@@ -40,7 +40,7 @@ public class PartitionByMonth extends RuleAlgorithm {
         }
         return targetPartition;
       default:
-        throw new MycatExpection("unsupport type");
+        throw new MycatException("unsupport type");
     }
   }
 

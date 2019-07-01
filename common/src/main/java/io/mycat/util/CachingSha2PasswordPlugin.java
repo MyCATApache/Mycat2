@@ -29,7 +29,7 @@
 
 package io.mycat.util;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.ServerVersion;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -113,7 +113,7 @@ public class CachingSha2PasswordPlugin  {
     public static RSAPublicKey decodeRSAPublicKey(String key) throws Exception {
 
         if (key == null) {
-            throw new MycatExpection("Key parameter is null\"");
+            throw new MycatException("Key parameter is null\"");
         }
 
         int offset = key.indexOf("\n") + 1;

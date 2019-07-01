@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
@@ -92,12 +92,12 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public final boolean readFromChannel() throws IOException {
-    throw new MycatExpection("");
+    throw new MycatException("");
   }
 
   @Override
   public final void writeToChannel() throws IOException {
-    throw new MycatExpection("");
+    throw new MycatException("");
   }
 
 
@@ -160,7 +160,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   @Override
   public final int getEndPos() {
     if (endPos < 0) {
-      throw new MycatExpection("");
+      throw new MycatException("");
     }
     return endPos;
   }
@@ -206,7 +206,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   @Override
   public final int setRemainsBytes(int remainsBytes) {
     if (remainsBytes < 0) {
-      throw new MycatExpection("");
+      throw new MycatException("");
     }
     return this.remainsBytes = remainsBytes;
   }
@@ -422,7 +422,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public final byte[] getOkStatusInfo() {
-    throw new MycatExpection("");
+    throw new MycatException("");
   }
 
   @Override
@@ -441,7 +441,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public final byte[] getOkSessionStateInfoTypeData() {
-    throw new MycatExpection("");
+    throw new MycatException("");
   }
 
   @Override
@@ -450,7 +450,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
 
   @Override
   public final byte[] getOkMessage() {
-    throw new MycatExpection("");
+    throw new MycatException("");
   }
 
   @Override

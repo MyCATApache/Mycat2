@@ -1,6 +1,6 @@
 package io.mycat.proxy.buffer;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import java.nio.ByteBuffer;
@@ -23,21 +23,21 @@ public class CrossSwapThreadBufferPool {
 
   public ByteBuffer allocate(int size) {
     if (source != null && source != Thread.currentThread()) {
-      throw new MycatExpection("Illegal state");
+      throw new MycatException("Illegal state");
     }
     return bufferPool.allocate(size);
   }
 
   public ByteBuffer allocate(byte[] bytes) {
     if (source != null && source != Thread.currentThread()) {
-      throw new MycatExpection("Illegal state");
+      throw new MycatException("Illegal state");
     }
     return bufferPool.allocate(bytes);
   }
 
   public void recycle(ByteBuffer theBuf) {
     if (Thread.currentThread()== source) {
-      throw new MycatExpection("Illegal state");
+      throw new MycatException("Illegal state");
     }
     bufferPool.recycle(theBuf);
   }
@@ -46,7 +46,7 @@ public class CrossSwapThreadBufferPool {
     if (this.source ==null) {
       this.source = source;
     } else {
-      throw new MycatExpection("unsupport operation");
+      throw new MycatException("unsupport operation");
     }
   }
 
@@ -54,7 +54,7 @@ public class CrossSwapThreadBufferPool {
     if (this.source == source) {
       this.source = null;
     } else {
-      throw new MycatExpection("unsupport operation");
+      throw new MycatException("unsupport operation");
     }
   }
 

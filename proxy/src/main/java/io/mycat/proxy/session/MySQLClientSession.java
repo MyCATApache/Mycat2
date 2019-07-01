@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
@@ -446,7 +446,7 @@ public class MySQLClientSession extends
       packet1.channelWriteEndIndex(packetEndPos);
       writeToChannel();
     } else {
-      throw new MycatExpection("unsupport max packet {}", MySQLPacketSplitter.MAX_PACKET_SIZE);
+      throw new MycatException("unsupport max packet {}", MySQLPacketSplitter.MAX_PACKET_SIZE);
     }
   }
 

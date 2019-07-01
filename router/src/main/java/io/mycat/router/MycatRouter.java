@@ -14,7 +14,7 @@
  */
 package io.mycat.router;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.router.routeResult.OneServerResultRoute;
@@ -93,7 +93,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
       String schemaName = sqlContext.getSchemaName(0);
       MycatSchema schema = config.getSchemaBySchemaName(schemaName);
       if (schema == null) {
-        throw new MycatExpection("can not find schema:{}", schemaName);
+        throw new MycatException("can not find schema:{}", schemaName);
       }
       RouteStrategy routeStrategy = schema.getRouteStrategy();
       return routeStrategy.route(schema, sql, this.context)
@@ -122,7 +122,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   public ResultRoute enterRoute(String defaultSchemaName, String sql) {
     MycatSchema defaultSchema = config.getSchemaBySchemaName(defaultSchemaName);
     if (defaultSchema == null) {
-      throw new MycatExpection("can not find schema:{}", defaultSchemaName);
+      throw new MycatException("can not find schema:{}", defaultSchemaName);
     }
     return enterRoute(defaultSchema, sql);
   }

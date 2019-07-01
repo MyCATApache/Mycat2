@@ -1,6 +1,6 @@
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -75,7 +75,7 @@ public class MySQLSynContext {
     mysql.setNetWriteTimeout(netWriteTimeout);
     mysql.setReadOnly(readOnly);
     if (autoCommit != mysql.isAutomCommit()) {
-      throw new MycatExpection("sync " + mysql.sessionId() + " fail");
+      throw new MycatException("sync " + mysql.sessionId() + " fail");
     }
   }
 

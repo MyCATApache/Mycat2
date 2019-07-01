@@ -1,6 +1,6 @@
 package io.mycat.router;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.router.routeResult.OneServerResultRoute;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,7 +28,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
 
   @Test
   public void butSchema() {
-    thrown.expect(MycatExpection.class);
+    thrown.expect(MycatException.class);
     String sql = "select * from travelrecord;";
     String schema = "errorDb";
     String dn1 = "dn1";
@@ -52,7 +52,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
    */
   @Test
   public void butSQLOtherSchema() {
-    thrown.expect(MycatExpection.class);
+    thrown.expect(MycatException.class);
     String sql = "select * from db2.travelrecord";
     String schema = "db1";
     String dn1 = "dn1";

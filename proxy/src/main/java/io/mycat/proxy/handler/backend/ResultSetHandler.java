@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -58,7 +58,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
     assert (mysql.currentProxyBuffer() == null);
     int chunkSize = mysql.getIOThread().getBufPool().chunkSize();
     if (data.length > (chunkSize - 5) || data.length > MySQLPacketSplitter.MAX_PACKET_SIZE) {
-      throw new MycatExpection("ResultSetHandler unsupport request length more than 1024 bytes");
+      throw new MycatException("ResultSetHandler unsupport request length more than 1024 bytes");
     }
     mysql.setCurrentProxyBuffer(new ProxyBufferImpl(mysql.getIOThread().getBufPool()));
     MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(data.length + 5);

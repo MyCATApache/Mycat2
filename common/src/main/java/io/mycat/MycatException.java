@@ -22,26 +22,26 @@ import org.slf4j.helpers.MessageFormatter;
  * @author jamie12221
  *  date 2019-05-05 23:30 mycat 异常
  **/
-public class MycatExpection extends RuntimeException {
+public class MycatException extends RuntimeException {
 
   private int errorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
 
-  public MycatExpection(String message) {
+  public MycatException(String message) {
     super(message);
     this.errorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
   }
 
-  public MycatExpection(int errorCode, String message) {
+  public MycatException(int errorCode, String message) {
     super(message);
     this.errorCode = errorCode;
   }
 
-  public MycatExpection(String message, Throwable cause) {
+  public MycatException(String message, Throwable cause) {
     super(message, cause);
     this.errorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
   }
 
-  public MycatExpection(String message, Object... args) {
+  public MycatException(String message, Object... args) {
     super(MessageFormatter.format(message, args).getMessage());
   }
 

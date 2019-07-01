@@ -14,7 +14,7 @@
  */
 package io.mycat.router.routeStrategy;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
 import io.mycat.router.ResultRoute;
@@ -34,22 +34,22 @@ public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext>
     int sqlCount = sqlContext.getSQLCount();
     int tableCount = sqlContext.getTableCount();
     if (sqlContext.getSchemaCount() > 0) {
-      throw new MycatExpection("sql:{} should not contain schema", sql);
+      throw new MycatException("sql:{} should not contain schema", sql);
     }
     if (tableCount < 1) {
-      throw new MycatExpection("sql:{} should contain table", sql);
+      throw new MycatException("sql:{} should contain table", sql);
     }
     String tableName = sqlContext.getTableName(0);
     for (int i = 0; i < sqlContext.getSchemaCount(); i++) {
       String otherTableName = sqlContext.getTableName(i);
       if (!tableName.equals(otherTableName)) {
-        throw new MycatExpection(" tables:{} {} is diff ", tableName, otherTableName);
+        throw new MycatException(" tables:{} {} is diff ", tableName, otherTableName);
       }
     }
     for (int i = 1; i < tableCount; i++) {
       String otherTableName = sqlContext.getTableName(i);
       if (!tableName.equals(otherTableName)) {
-        throw new MycatExpection(" tables:{} {} is diff ", tableName, otherTableName);
+        throw new MycatException(" tables:{} {} is diff ", tableName, otherTableName);
       }
     }
     OneServerResultRoute result = new OneServerResultRoute();
@@ -60,7 +60,7 @@ public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext>
       result.setSql(sql);
       return result;
     } else {
-      throw new MycatExpection("table {} is not exist in {}", tableName, schema.getSchemaName());
+      throw new MycatException("table {} is not exist in {}", tableName, schema.getSchemaName());
     }
 
   }

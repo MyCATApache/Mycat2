@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.handler;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
@@ -166,7 +166,7 @@ public enum MySQLPacketExchanger {
     }
     switch (mysql.getResponseType()) {
       case NO_RESPONSE: {
-        throw new MycatExpection("unknown state");
+        throw new MycatException("unknown state");
       }
       case MULTI_RESULTSET: {
         mysql.prepareReveiceMultiResultSetResponse();
@@ -225,7 +225,7 @@ public enum MySQLPacketExchanger {
         public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
             MySQLClientSession mysql, Object sender, Object attr) {
           finallyCallBack.onRequestMySQLException(mycat,
-              new MycatExpection(errorPacket.getErrorMessageString()), attr);
+              new MycatException(errorPacket.getErrorMessageString()), attr);
         }
       });
     }

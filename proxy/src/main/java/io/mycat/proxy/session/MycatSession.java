@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -169,7 +169,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       if (dataNode.equals(this.dataNode)) {
         return;
       } else {
-        throw new MycatExpection("cannot switch dataNode  maybe session in transaction");
+        throw new MycatException("cannot switch dataNode  maybe session in transaction");
       }
     }
   }
@@ -236,7 +236,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   @Override
   public void setCurrentProxyBuffer(ProxyBuffer buffer) {
-    throw new MycatExpection("unsupport!");
+    throw new MycatException("unsupport!");
   }
 
   public int getServerCapabilities() {
@@ -368,7 +368,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   public void resetSession() {
-    throw new MycatExpection("unsupport!");
+    throw new MycatException("unsupport!");
   }
 
   @Override

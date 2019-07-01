@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.buffer;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.buffer.BufferPool;
@@ -189,7 +189,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
       if (readed == -1) {
         throw new ClosedChannelException();
       } else if (readed == 0) {
-        throw new MycatExpection("readed zero bytes ,Maybe a bug ,please fix it !!!!");
+        throw new MycatException("readed zero bytes ,Maybe a bug ,please fix it !!!!");
       }
       this.channelReadEndIndex(buffer.position());
       return readed > 0;

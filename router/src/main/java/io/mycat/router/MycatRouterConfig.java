@@ -14,7 +14,7 @@
  */
 package io.mycat.router;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.DefaultTable;
 import io.mycat.beans.mycat.ERTable;
 import io.mycat.beans.mycat.GlobalTable;
@@ -378,7 +378,7 @@ public class MycatRouterConfig {
                     .put(tableName, table = new ERTable(schema, tableConfig, dataNodes, tableRule));
                 break;
               default:
-                throw new MycatExpection("");
+                throw new MycatException("");
             }
           } else {
             mycatTables

@@ -1,7 +1,7 @@
 package io.mycat.proxy.handler.backend;
 
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
@@ -16,7 +16,7 @@ public enum IdleHandler implements NIOHandler<MySQLClientSession> {
   @Override
   public void onSocketRead(MySQLClientSession session) {
     MycatMonitor.onIdleReadException(session,
-        new MycatExpection("mysql session:{} is idle but it receive response", session));
+        new MycatException("mysql session:{} is idle but it receive response", session));
     session.close(false, "mysql session  is idle but it receive response");
   }
 

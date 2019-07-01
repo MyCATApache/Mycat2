@@ -169,7 +169,7 @@ public class MycatCore {
                 .getMySQLSessionManager();
             manager.idleConnectCheck();
           } else {
-            throw new MycatExpection("Replica must running in MycatReactorThread");
+            throw new MycatException("Replica must running in MycatReactorThread");
           }
         });
       }

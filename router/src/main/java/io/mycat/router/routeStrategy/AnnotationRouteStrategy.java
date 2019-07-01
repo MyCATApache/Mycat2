@@ -14,7 +14,7 @@
  */
 package io.mycat.router.routeStrategy;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.GlobalTable;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
@@ -47,7 +47,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
       String tableName = sqlContext.getTableName(0);
       MycatTable o = schema.getTableByTableName(tableName);
       if (o == null) {
-        throw new MycatExpection(tableName + " table is nor existed!");
+        throw new MycatException(tableName + " table is nor existed!");
       }
       switch (o.getType()) {
         case GLOBAL: {
@@ -112,7 +112,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
             result.setSql(sql);
             return result;
           } else {
-            throw new MycatExpection("unknown state!");
+            throw new MycatException("unknown state!");
           }
         }
         case SHARING_TABLE: {
@@ -134,14 +134,14 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
             result.setDataNode(table.getDataNodes().get(0));
             return result;
           } else {
-            throw new MycatExpection("unknown state!");
+            throw new MycatException("unknown state!");
           }
         }
         case SHARING_DATABASE_TABLE:
         default:
       }
     }
-    throw new MycatExpection("unsupport sql in annotation route");
+    throw new MycatException("unsupport sql in annotation route");
 
   }
 

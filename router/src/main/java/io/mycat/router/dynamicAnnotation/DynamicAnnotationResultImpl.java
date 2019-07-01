@@ -14,7 +14,7 @@
  */
 package io.mycat.router.dynamicAnnotation;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.config.route.AnnotationType;
 import io.mycat.router.DynamicAnnotationResult;
 import java.util.HashMap;
@@ -88,7 +88,7 @@ public class DynamicAnnotationResultImpl implements DynamicAnnotationResult {
     @Override
     public String apply(String s, String s2) {
       if (s2 != null) {
-        throw new MycatExpection("duplicated key!");
+        throw new MycatException("duplicated key!");
       }
       return value;
     }

@@ -1,6 +1,6 @@
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.proxy.callback.ResultSetCallBack;
@@ -34,7 +34,7 @@ public class MySQLSessionSyncUtil {
               String messageString = errorPacket.getErrorMessageString();
               mysql.close(false, messageString);
               if (monopolize) {
-                callBack.onException(new MycatExpection(messageString), this, null);
+                callBack.onException(new MycatException(messageString), this, null);
                 return;
               } else {
                 callBack.onErrorPacket(errorPacket, false, mysql, this, null);

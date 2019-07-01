@@ -14,7 +14,7 @@
  */
 package io.mycat.replica;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
@@ -188,7 +188,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
       MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
       reactor.getMySQLSessionManager().getIdleSessionsOfIds(datasource, ids, asynTaskCallBack);
     } else {
-      MycatExpection mycatExpection = new MycatExpection(
+      MycatException mycatExpection = new MycatException(
           "Replica must running in MycatReactorThread");
       asynTaskCallBack.onException(mycatExpection, this, null);
       return;

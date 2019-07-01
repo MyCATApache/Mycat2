@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.MySQLPacketExchanger;
@@ -148,7 +148,7 @@ public class MySQLTaskUtil {
             , asynTaskCallBack);
       }
     } else {
-      throw new MycatExpection("Replica must running in MycatReactorThread");
+      throw new MycatException("Replica must running in MycatReactorThread");
     }
   }
 

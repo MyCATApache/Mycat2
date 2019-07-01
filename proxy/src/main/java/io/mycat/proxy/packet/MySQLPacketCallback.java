@@ -16,7 +16,7 @@
  */
 package io.mycat.proxy.packet;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.EOFPacket;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
@@ -63,7 +63,7 @@ public interface MySQLPacketCallback {
 
   }
 
-  default void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) throws MycatExpection {
+  default void onTextRow(MySQLPacket mySQLPacket, int startPos, int endPos) throws MycatException {
 
   }
 

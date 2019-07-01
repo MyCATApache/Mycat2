@@ -1,6 +1,6 @@
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
@@ -35,7 +35,7 @@ public enum RequestHandler implements NIOHandler<MySQLClientSession> {
 
   @Override
   public void onSocketRead(MySQLClientSession session) {
-    Exception e = new MycatExpection("unknown read data");
+    Exception e = new MycatException("unknown read data");
     try {
       session.readFromChannel();
     } catch (Exception e1) {

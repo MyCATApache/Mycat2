@@ -38,7 +38,7 @@ import static io.mycat.proxy.packet.MySQLPayloadType.ROW_FINISHED;
 import static io.mycat.proxy.packet.MySQLPayloadType.ROW_OK;
 import static io.mycat.proxy.packet.MySQLPayloadType.TEXT_ROW;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.EOFPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
@@ -468,7 +468,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
         setPacketId(packetId);
         int andIncrementPacketId = getAndIncrementPacketId();
         if (packetId != andIncrementPacketId) {
-          throw new MycatExpection(
+          throw new MycatException(
               "packetId :" + packetId + " andIncrementPacketId:" + andIncrementPacketId);
         }
 
@@ -589,7 +589,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       case AUTH_SWITCH_OTHER_REQUEST:
       case FIRST_PACKET: {
         if (!isPacketFinished) {
-          throw new MycatExpection("unknown state!");
+          throw new MycatException("unknown state!");
         }
         if (head == 0xff) {
           setState(ComQueryState.COMMAND_END);

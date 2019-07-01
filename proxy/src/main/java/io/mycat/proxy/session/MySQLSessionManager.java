@@ -16,7 +16,7 @@ package io.mycat.proxy.session;
 
 import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -110,7 +110,7 @@ public final class MySQLSessionManager implements
       for (; ; ) {
         if (!datasource.isAlive()) {
           asyncTaskCallBack
-              .onException(new MycatExpection(datasource.getName() + " is not alive!"), this,
+              .onException(new MycatException(datasource.getName() + " is not alive!"), this,
                   null);
           return;
         }
@@ -559,7 +559,7 @@ public final class MySQLSessionManager implements
                 if (monopolize) {
                   String message = "mysql session is monopolized";
                   mysql.close(false, message);
-                  callBack.onException(new MycatExpection(message), this, attr);
+                  callBack.onException(new MycatException(message), this, attr);
                 } else {
                   callBack.onSession(mysql, this, attr);
                 }
@@ -571,7 +571,7 @@ public final class MySQLSessionManager implements
                 String message = errorPacket.getErrorMessageString();
                 LOGGER.error(message);
                 mysql.close(false, message);
-                callBack.onException(new MycatExpection(message), sender, attr);
+                callBack.onException(new MycatException(message), sender, attr);
               }
             });
       }

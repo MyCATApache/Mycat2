@@ -14,7 +14,7 @@
  */
 package io.mycat.router;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import java.util.Objects;
 import java.util.Set;
 
@@ -68,7 +68,7 @@ public class Route {
         receive.addDataNodeIndex(level, ruleAlgorithm, nodeIndex);
         return;
       }
-      throw new MycatExpection(result.getSQL() + "can not get equal key or rangeKey");
+      throw new MycatException(result.getSQL() + "can not get equal key or rangeKey");
     } else if (equal == null && columnStart == null) {
       expection(equal, columnStart, columnEnd);
       return;
@@ -83,7 +83,7 @@ public class Route {
           receive.addDataNodeIndex(level, ruleAlgorithm, nodeIndex);
           return;
         } else {
-          throw new MycatExpection("error table rule");
+          throw new MycatException("error table rule");
         }
       }
     } else if (equal == null && columnStart != null && columnEnd != null) {
@@ -101,14 +101,14 @@ public class Route {
             receive.addDataNodeIndex(level + 1, ruleAlgorithm, nodeIndexes[0]);
           }
         } else {
-          throw new MycatExpection(result.getSQL() + "meet false tableRule");
+          throw new MycatException(result.getSQL() + "meet false tableRule");
         }
       }
     }
   }
 
   public void expection(String equal, String columnStart, String columnEnd) {
-    throw new MycatExpection(String
+    throw new MycatException(String
                                  .format("sql:%s equal:%s start:{} end:%s", Objects.toString(equal),
                                      Objects.toString(columnStart),
                                      Objects.toString(columnEnd)));

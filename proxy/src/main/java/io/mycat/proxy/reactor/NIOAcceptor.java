@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.reactor;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.Session;
@@ -78,7 +78,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
     Object obj = curKey.attachment();
     try {
       if (curChannel.finishConnect()) {
-        throw new MycatExpection("unsupport!");
+        throw new MycatException("unsupport!");
       }
     } catch (ConnectException ex) {
       LOGGER.warn("Connect failed:{}  reason:{}", curChannel, ex);

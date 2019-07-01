@@ -1,6 +1,6 @@
 package io.mycat.router.function;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.router.RuleAlgorithm;
@@ -76,7 +76,7 @@ public class PartitionByFileMap extends RuleAlgorithm {
         transformation = BigDecimal::new;
         break;
       default:
-        throw new MycatExpection("unsupport type!!");
+        throw new MycatException("unsupport type!!");
     }
     for (Entry<String, String> entry : prot.entrySet()) {
       Object key = transformation.apply(entry.getKey());

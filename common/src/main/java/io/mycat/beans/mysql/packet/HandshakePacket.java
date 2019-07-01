@@ -17,7 +17,7 @@
 package io.mycat.beans.mysql.packet;
 
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.config.MySQLServerCapabilityFlags;
 
 /**
@@ -42,7 +42,7 @@ public class HandshakePacket {
   public void readPayload(MySQLPayloadReadView buffer) {
         protocolVersion = buffer.readByte();
         if (protocolVersion != 0x0a) {
-            throw new MycatExpection("unsupport HandshakeV9");
+          throw new MycatException("unsupport HandshakeV9");
         }
         serverVersion = buffer.readNULString();
         connectionId = buffer.readFixInt(4);
@@ -79,7 +79,7 @@ public class HandshakePacket {
         buffer.writeNULString(serverVersion);
         buffer.writeFixInt(4, connectionId);
         if (authPluginDataPartOne.length() != 8) {
-          throw new MycatExpection("authPluginDataPartOne's length must be 8!");
+          throw new MycatException("authPluginDataPartOne's length must be 8!");
         }
         buffer.writeFixString(authPluginDataPartOne);
         buffer.writeByte((byte) 0);

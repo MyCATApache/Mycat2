@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.packet.AuthPacket;
 import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
@@ -265,7 +265,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             return CachingSha2PasswordPlugin.scrambleCachingSha2(datasource.getPassword(),
                     seed);
         } else {
-            throw new MycatExpection(String.format("unknown auth plugin %s!", authPluginName));
+            throw new MycatException(String.format("unknown auth plugin %s!", authPluginName));
         }
     }
 

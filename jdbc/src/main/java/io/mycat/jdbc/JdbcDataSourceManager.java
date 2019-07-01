@@ -1,6 +1,6 @@
 package io.mycat.jdbc;
 
-import io.mycat.MycatExpection;
+import io.mycat.MycatException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -38,7 +38,7 @@ public class JdbcDataSourceManager {
 
   public JdbcSession getIdleSessionsOfKey(JdbcDataSource datasource) throws SQLException {
     if (!datasource.isAlive()) {
-      throw new MycatExpection(datasource.getName() + " is not alive!");
+      throw new MycatException(datasource.getName() + " is not alive!");
     } else {
       LinkedList<JdbcSession> mySQLSessions = this.idleDatasourcehMap.get(datasource);
       if (mySQLSessions == null || mySQLSessions.isEmpty()) {
@@ -72,14 +72,14 @@ public class JdbcDataSourceManager {
 
   }
 
-  public JdbcSession createSession(JdbcDataSource key) throws MycatExpection {
+  public JdbcSession createSession(JdbcDataSource key) throws MycatException {
     Connection connection = null;
     try {
       connection = DriverManager
                        .getConnection(key.getUrl(), key.getUsername(),
                            key.getPassword());
     } catch (SQLException e) {
-      throw new MycatExpection(e.getLocalizedMessage());
+      throw new MycatException(e.getLocalizedMessage());
     }
     JdbcSession jdbcSession = new JdbcSession(connection, key);
     count++;
