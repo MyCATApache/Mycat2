@@ -15,25 +15,19 @@
 package io.mycat.router.routeStrategy;
 
 import io.mycat.MycatException;
-import io.mycat.beans.mycat.GlobalTable;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
 import io.mycat.beans.mycat.MycatTableRule;
 import io.mycat.beans.mycat.ShardingDbTable;
-import io.mycat.beans.mycat.ShardingTableTable;
 import io.mycat.router.DynamicAnnotationResult;
 import io.mycat.router.MycatProxyStaticAnnotation;
 import io.mycat.router.ResultRoute;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
 import io.mycat.router.RuleAlgorithm;
-import io.mycat.router.routeResult.GlobalTableWriteResultRoute;
 import io.mycat.router.routeResult.OneServerResultRoute;
-import io.mycat.router.routeResult.SubTableResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
-import io.mycat.sqlparser.util.SQLUtil;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Objects;
 
 /**
  * @author jamie12221 date 2019-05-05 16:54
@@ -49,24 +43,26 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
       if (o == null) {
         throw new MycatException(tableName + " table is nor existed!");
       }
+      Objects.requireNonNull(o.getType());
       switch (o.getType()) {
         case GLOBAL: {
-          GlobalTable table = (GlobalTable) o;
-          if (sqlContext.isSimpleSelect()) {
-            OneServerResultRoute result = new OneServerResultRoute();
-            int index = ThreadLocalRandom.current().nextInt(0, table.getDataNodes().size());
-            String dataNode = table.getDataNodes().get(index);//@todo 负载均衡
-            result.setSql(sql);
-            result.setDataNode(dataNode);
-            return result;
-          } else {
-            GlobalTableWriteResultRoute result = new GlobalTableWriteResultRoute();
-            result.setSql(sql);
-            List<String> dataNodes = table.getDataNodes();
-            result.setMaster(dataNodes.get(0));
-            result.setDataNodes(dataNodes.subList(1, dataNodes.size()));
-            return result;
-          }
+          throw new MycatException("unsupport global table");
+//          GlobalTable table = (GlobalTable) o;
+//          if (sqlContext.isSimpleSelect()) {
+//            OneServerResultRoute result = new OneServerResultRoute();
+//            int index = ThreadLocalRandom.current().nextInt(0, table.getDataNodes().size());
+//            String dataNode = table.getDataNodes().get(index);//@todo 负载均衡
+//            result.setSql(sql);
+//            result.setDataNode(dataNode);
+//            return result;
+//          } else {
+//            GlobalTableWriteResultRoute result = new GlobalTableWriteResultRoute();
+//            result.setSql(sql);
+//            List<String> dataNodes = table.getDataNodes();
+//            result.setMaster(dataNodes.get(0));
+//            result.setDataNodes(dataNodes.subList(1, dataNodes.size()));
+//            return result;
+//          }
         }
         case SHARING_DATABASE: {
           ShardingDbTable table = (ShardingDbTable) o;
@@ -116,26 +112,27 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
           }
         }
         case SHARING_TABLE: {
-          ShardingTableTable table = (ShardingTableTable) o;
-          MycatTableRule rule = table.getRule();
-          DynamicAnnotationResult matchResult = rule.getMatcher().match(sql);
-          context.clear();
-          rule.getRoute().route(matchResult, 0, rule.getRuleAlgorithm(), context);
-          int index = context.getIndex();
-          int[] indexes = context.getIndexes();
-          if (index == -1) {
-            return context.getSqlParseRouteRouteStrategy().route(schema, sql, context);
-          } else if (index > -1) {
-            String actTableName = table.getSubTable(index);
-            CharSequence actSQL = SQLUtil.adjustmentSQL(sqlContext, true, tableName,
-                actTableName);
-            SubTableResultRoute result = new SubTableResultRoute();
-            result.setSql(actSQL);
-            result.setDataNode(table.getDataNodes().get(0));
-            return result;
-          } else {
-            throw new MycatException("unknown state!");
-          }
+          throw new MycatException("unsupport subtable table");
+//          ShardingTableTable table = (ShardingTableTable) o;
+//          MycatTableRule rule = table.getRule();
+//          DynamicAnnotationResult matchResult = rule.getMatcher().match(sql);
+//          context.clear();
+//          rule.getRoute().route(matchResult, 0, rule.getRuleAlgorithm(), context);
+//          int index = context.getIndex();
+//          int[] indexes = context.getIndexes();
+//          if (index == -1) {
+//            return context.getSqlParseRouteRouteStrategy().route(schema, sql, context);
+//          } else if (index > -1) {
+//            String actTableName = table.getSubTable(index);
+//            CharSequence actSQL = SQLUtil.adjustmentSQL(sqlContext, true, tableName,
+//                actTableName);
+//            SubTableResultRoute result = new SubTableResultRoute();
+//            result.setSql(actSQL);
+//            result.setDataNode(table.getDataNodes().get(0));
+//            return result;
+//          } else {
+//            throw new MycatException("unknown state!");
+//          }
         }
         case SHARING_DATABASE_TABLE:
         default:

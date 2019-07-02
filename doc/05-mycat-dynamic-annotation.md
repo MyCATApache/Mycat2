@@ -38,7 +38,7 @@ tableRules:
 ```yaml
 tableRules:
   - funtion: partitionByLong
-    name: travelrecord
+    tableName: travelrecord
     rules:
       - column: id
         equalAnnotations:

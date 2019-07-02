@@ -14,11 +14,11 @@
  */
 package io.mycat.router.routeStrategy;
 
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.router.ResultRoute;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
-import io.mycat.router.routeResult.dbResultSet.DbResultSet;
 
 /**
  * @author jamie12221
@@ -28,7 +28,6 @@ public class SqlParseRouteRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
   public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
-    DbResultSet dbResultSet = null;
-    return dbResultSet;
+    throw new MycatException("unsupport sql parse");
   }
 }

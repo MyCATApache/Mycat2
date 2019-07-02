@@ -13,6 +13,7 @@ import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.detector.GarelaHeartbeatDetector;
 import io.mycat.replica.heartbeat.detector.MasterSlaveHeartbeatDetector;
 import io.mycat.replica.heartbeat.detector.SingleNodeHeartbeatDetector;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -40,12 +41,19 @@ public class MysqlHeartBeatManager implements HeartbeatManager{
     private long lastSwitchTime;//上次主从切换时间
 
     public MysqlHeartBeatManager(ProxyRuntime runtime,ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource){
+      HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(ConfigEnum.HEARTBEAT);
+      ////////////////////////////////////check/////////////////////////////////////////////////
+      Objects.requireNonNull(heartbeatRootConfig, "heartbeat config can not found");
+      Objects
+          .requireNonNull(heartbeatRootConfig.getHeartbeat(), "heartbeat config can not be empty");
+      ////////////////////////////////////check/////////////////////////////////////////////////
+
         this.runtime = runtime;
         this.dataSource = dataSource;
         this.heartBeatStatus = new DatasourceStatus();
         this.lastSwitchTime = System.currentTimeMillis();
-        HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(ConfigEnum.HEARTBEAT);
-        HeartbeatConfig heartbeatConfig = heartbeatRootConfig
+
+      HeartbeatConfig heartbeatConfig = heartbeatRootConfig
                 .getHeartbeat();
         this.maxRetry = heartbeatConfig.getMaxRetry();
         this.minSwitchTimeInterval = heartbeatConfig.getMinSwitchTimeInterval();

@@ -73,6 +73,9 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     //判断有没有schema
     if (sa.getSchema() != null) {
       defaultSchema = config.getSchemaBySchemaName(sa.getSchema());
+      if (defaultSchema == null) {
+        throw new MycatException("can not find schema:{}", sa.getSchema());
+      }
       if (defaultSchema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
         OneServerResultRoute routeResult = new OneServerResultRoute();
         routeResult.setDataNode(defaultSchema.getDefaultDataNode());
@@ -86,8 +89,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     if (schemaCount == 0) {
       RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
       return routeStrategy.route(defaultSchema, sql, this.context)
-          .setBalance(balance).setRunOnMaster(runOnMaster)
-          ;
+          .setBalance(balance).setRunOnMaster(runOnMaster);
     }
     if (schemaCount == 1) {
       String schemaName = sqlContext.getSchemaName(0);

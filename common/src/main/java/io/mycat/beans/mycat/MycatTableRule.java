@@ -24,16 +24,16 @@ import io.mycat.router.RuleAlgorithm;
  **/
 public class MycatTableRule {
 
+  final String tableName;
+
+  final RuleAlgorithm ruleAlgorithm;
   public MycatTableRule(String name, Route route, RuleAlgorithm ruleAlgorithm,
       DynamicAnnotationMatcher matcher) {
     this.ruleAlgorithm = ruleAlgorithm;
-    this.name = name;
+    this.tableName = name;
     this.route = route;
     this.matcher = matcher;
   }
-
-  final RuleAlgorithm ruleAlgorithm;
-  final String name;
   final Route route;
   final DynamicAnnotationMatcher matcher;
 
@@ -41,8 +41,8 @@ public class MycatTableRule {
     return ruleAlgorithm;
   }
 
-  public String getName() {
-    return name;
+  public String getTableName() {
+    return tableName;
   }
 
   public Route getRoute() {

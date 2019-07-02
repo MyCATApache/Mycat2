@@ -6,6 +6,8 @@ import io.mycat.config.user.UserRootConfig;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author jamie12221
@@ -14,11 +16,17 @@ import java.util.Objects;
 public class MycatSecurityConfig {
   private UserRootConfig config;
   private Map<String, UserConfig> users = new HashMap<>();
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(MycatSecurityConfig.class);
   public MycatSecurityConfig(UserRootConfig config) {
     this.config = config;
+    Objects.requireNonNull(config);
+    ////////////////////////////////////check/////////////////////////////////////////////////
+    Objects.requireNonNull(config.getUsers(), "user config can not be empty");
+    ////////////////////////////////////check/////////////////////////////////////////////////
     for (UserConfig user : config.getUsers()) {
-      Objects.requireNonNull(user);
+      ////////////////////////////////////check/////////////////////////////////////////////////
+      Objects.requireNonNull(user.getName(), "user name can not be empty");
+      ////////////////////////////////////check/////////////////////////////////////////////////
       users.put(user.getName(), user);
     }
   }
