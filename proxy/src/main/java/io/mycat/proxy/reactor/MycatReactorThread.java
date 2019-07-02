@@ -60,8 +60,9 @@ public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
     return runtime;
   }
 
-  @Override
-  public void close() {
+
+  public void close(Exception throwable) {
+    super.close(throwable);
     try{
       Objects.requireNonNull(mySQLSessionManager);
       for (MySQLClientSession s : mySQLSessionManager.getAllSessions()) {
@@ -70,6 +71,5 @@ public final class MycatReactorThread extends ProxyReactorThread<MycatSession> {
     }catch (Exception e){
       LOGGER.error("{}",e);
     }
-    super.close();
   }
 }

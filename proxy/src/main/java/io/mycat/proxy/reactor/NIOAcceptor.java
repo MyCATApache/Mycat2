@@ -124,12 +124,16 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
   }
 
   @Override
-  public void close()  {
+  public void close(Exception e) {
     try {
       serverChannel.close();
-      super.close();
-    }catch (Exception e){
+    } catch (Exception e1) {
       LOGGER.warn("",e);
+    }
+    try {
+      super.close(e);
+    } catch (Exception e2) {
+      LOGGER.warn("", e2);
     }
   }
 }

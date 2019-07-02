@@ -21,6 +21,8 @@ import io.mycat.plug.loadBalance.LoadBalanceELement;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -91,12 +93,23 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
    * @param thread 执行的线程
    * @param callback 回调函数
    */
-  protected Runnable createMySQLSession(MycatReactorThread thread,
+  protected NIOJob createMySQLSession(MycatReactorThread thread,
       SessionCallBack<MySQLClientSession> callback) {
     Objects.requireNonNull(thread);
     Objects.requireNonNull(callback);
-    return () -> thread.getMySQLSessionManager()
-        .createSession(this, callback);
+    MySQLDatasource datasource = this;
+    return new NIOJob() {
+      @Override
+      public void run(ReactorEnvThread reactor) throws Exception {
+        thread.getMySQLSessionManager()
+            .createSession(datasource, callback);
+      }
+
+      @Override
+      public void stop(ReactorEnvThread reactor, Exception reason) {
+        callback.onException(reason, this, null);
+      }
+    };
   }
 
 //  /**

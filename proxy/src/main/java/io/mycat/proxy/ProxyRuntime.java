@@ -217,13 +217,13 @@ public class ProxyRuntime {
   }
 
 
-  public void exit() {
+  public void exit(Exception message) {
     Objects.requireNonNull(acceptor);
     Objects.requireNonNull(reactorThreads);
 
-    acceptor.close();
+    acceptor.close(message);
     for (MycatReactorThread reactorThread : reactorThreads) {
-      reactorThread.close();
+      reactorThread.close(message);
     }
     reset();
   }

@@ -27,6 +27,8 @@ import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import io.mycat.proxy.monitor.ProxyDashboard;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.MySQLDataSourceEx;
 import java.io.IOException;
@@ -162,23 +164,31 @@ public class MycatCore {
     return () -> {
       MycatReactorThread[] threads = runtime.getMycatReactorThreads();
       for (MycatReactorThread mycatReactorThread : threads) {
-        mycatReactorThread.addNIOJob(() -> {
-          Thread thread = Thread.currentThread();
-          if (thread instanceof MycatReactorThread) {
-            MySQLSessionManager manager = ((MycatReactorThread) thread)
-                .getMySQLSessionManager();
-            manager.idleConnectCheck();
-          } else {
-            throw new MycatException("Replica must running in MycatReactorThread");
+        mycatReactorThread.addNIOJob(new NIOJob() {
+          @Override
+          public void run(ReactorEnvThread reactor) throws Exception {
+            Thread thread = Thread.currentThread();
+            if (thread instanceof MycatReactorThread) {
+              MySQLSessionManager manager = ((MycatReactorThread) thread)
+                  .getMySQLSessionManager();
+              manager.idleConnectCheck();
+            } else {
+              throw new MycatException("Replica must running in MycatReactorThread");
+            }
+          }
+
+          @Override
+          public void stop(ReactorEnvThread reactor, Exception reason) {
+            LOGGER.error("", reason);
           }
         });
       }
     };
   }
 
-  public static void exit() {
+  public static void exit(Exception e) {
     if (runtime != null) {
-      runtime.exit();
+      runtime.exit(e);
     }
   }
 }

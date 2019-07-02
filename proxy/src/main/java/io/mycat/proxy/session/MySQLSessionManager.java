@@ -40,6 +40,8 @@ import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
@@ -122,8 +124,16 @@ public final class MySQLSessionManager implements
           assert mySQLSession.currentProxyBuffer() == null;
 
           if (!mySQLSession.isOpen()) {
-            thread.addNIOJob(() -> {
-              mySQLSession.close(false, "mysql session is close in idle");
+            thread.addNIOJob(new NIOJob() {
+              @Override
+              public void run(ReactorEnvThread reactor) throws Exception {
+                mySQLSession.close(false, "mysql session is close in idle");
+              }
+
+              @Override
+              public void stop(ReactorEnvThread reactor, Exception reason) {
+                mySQLSession.close(false, "mysql session is close in idle");
+              }
             });
             continue;
           }
@@ -500,8 +510,16 @@ public final class MySQLSessionManager implements
   private void closeSession(MySQLClientSession mySQLClientSession, String hint) {
     mySQLClientSession.setIdle(false);
     MycatReactorThread mycatReactorThread = mySQLClientSession.getIOThread();
-    mycatReactorThread.addNIOJob(() -> {
-      mySQLClientSession.close(false, hint);
+    mycatReactorThread.addNIOJob(new NIOJob() {
+      @Override
+      public void run(ReactorEnvThread reactor) throws Exception {
+        mySQLClientSession.close(false, hint);
+      }
+
+      @Override
+      public void stop(ReactorEnvThread reactor, Exception reason) {
+        mySQLClientSession.close(false, hint);
+      }
     });
   }
 

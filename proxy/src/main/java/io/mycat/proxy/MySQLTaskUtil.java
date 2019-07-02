@@ -26,6 +26,8 @@ import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
@@ -94,8 +96,16 @@ public class MySQLTaskUtil {
       SessionSyncCallback asynTaskCallBack) {
     MycatReactorThread[] threads = runtime.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-    threads[i].addNIOJob(() -> {
-      getMySQLSession(synContext, query, asynTaskCallBack);
+    threads[i].addNIOJob(new NIOJob() {
+      @Override
+      public void run(ReactorEnvThread reactor) throws Exception {
+        getMySQLSession(synContext, query, asynTaskCallBack);
+      }
+
+      @Override
+      public void stop(ReactorEnvThread reactor, Exception reason) {
+        asynTaskCallBack.onException(reason, this, null);
+      }
     });
   }
 
@@ -157,8 +167,16 @@ public class MySQLTaskUtil {
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MycatReactorThread[] threads = runtime.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
-    threads[i].addNIOJob(() -> {
-      getMySQLSessionForTryConnect(datasource, asynTaskCallBack);
+    threads[i].addNIOJob(new NIOJob() {
+      @Override
+      public void run(ReactorEnvThread reactor) throws Exception {
+        getMySQLSessionForTryConnect(datasource, asynTaskCallBack);
+      }
+
+      @Override
+      public void stop(ReactorEnvThread reactor, Exception reason) {
+        asynTaskCallBack.onException(reason, this, null);
+      }
     });
   }
 }

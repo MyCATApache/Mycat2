@@ -17,6 +17,8 @@ package io.mycat.proxy.session;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
@@ -91,7 +93,7 @@ public interface Session<T extends Session> {
   /**
    * 获取当前线程池
    */
-  public MycatReactorThread getIOThread();
+  MycatReactorThread getIOThread();
 
   default ProxyRuntime getRuntime() {
     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
@@ -122,13 +124,21 @@ public interface Session<T extends Session> {
    * 设置回调函数,若果设置了回调,则该session的资源释放取决于回调代码什么时候结束,
    */
 
-  default void close(boolean normal, Throwable hint) {
+  default void close(boolean normal, Exception hint) {
     close(normal, getThrowableString(hint));
   }
 
   default void lazyClose(boolean normal, String hint) {
-    getIOThread().addNIOJob(() -> {
-      close(normal, hint);
+    getIOThread().addNIOJob(new NIOJob() {
+      @Override
+      public void run(ReactorEnvThread reactor) throws Exception {
+        close(normal, hint);
+      }
+
+      @Override
+      public void stop(ReactorEnvThread reactor, Exception reason) {
+        close(normal, hint);
+      }
     });
   }
 
@@ -136,5 +146,5 @@ public interface Session<T extends Session> {
     return getIOThread().getLastActiveTime();
   }
 
- public void clearReadWriteOpts();
+  void clearReadWriteOpts();
 }

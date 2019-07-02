@@ -188,11 +188,16 @@ database
 ## 逻辑库配置(schema.yaml)
 
 ```yaml
+defaultSchemaName: db1
 schemas:
   - name: db1
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
 ```
+
+defaultSchemaName
+
+默认的schema名字,如果没有设置当前schema,就会使用该schema
 
 name
 
@@ -295,6 +300,12 @@ dataNodes:
     database: db4
     replica: repli
 ```
+
+
+
+proxy router对sql路由的处理方式
+
+
 
 
 
