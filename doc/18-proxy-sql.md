@@ -10,7 +10,7 @@ author:junwen 2019-6-14,7-1
 
 在mycat的mysql session是可以被多个mycat session重复使用.
 
-而一个客户端连接对应一个mycat session,mycat session保存了客户端设置的变量.mycat作为代理需要把这些属性与进行代理的mysqlsession状态设置,使之一致,mysql session设置mycat保存的变量的过程,称之为同步.在同步之后,mycat session才可以往mysql session发送真正的SQL.因为proxy不进行复杂的SQL解析处理,所以仅处理以下SQL.
+而一个客户端连接对应一个mycat session,mycat session保存了客户端设置的变量.mycat作为代理需要把这些属性与进行代理的mysqlsession状态一致,mysql session设置mycat保存的变量的过程,称之为同步.在同步之后,mycat session才可以往mysql session发送真正的SQL.因为proxy不进行复杂的SQL解析处理,所以仅处理以下SQL.
 
 
 
