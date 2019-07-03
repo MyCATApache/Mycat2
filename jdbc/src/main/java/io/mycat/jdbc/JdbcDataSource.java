@@ -1,12 +1,7 @@
 package io.mycat.jdbc;
 
-import io.mycat.config.ConfigEnum;
-import io.mycat.config.ConfigLoader;
-import io.mycat.config.ConfigReceiverImpl;
-import io.mycat.config.GlobalConfig;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.config.datasource.ReplicasRootConfig;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -30,32 +25,32 @@ public class JdbcDataSource {
 
 
   public static void main(String[] args) throws SQLException, IOException {
-    ConfigReceiverImpl configReceiver = new ConfigReceiverImpl(version);
-    ConfigLoader.INSTANCE
-        .loadConfig("D:\\newgit\\f2\\jdbc\\src\\main\\resources", ConfigEnum.DATASOURCE,
-            GlobalConfig.INIT_VERSION, configReceiver);
-    ReplicasRootConfig config = configReceiver.getConfig(ConfigEnum.DATASOURCE);
-    ReplicaConfig replicaConfig = config.getReplicas().get(0);
-    List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
-    JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);
-
-    for (int i = 0; i < 2; i++) {
-      final int  d = i;
-      Thread thread = new Thread( ()->{
-        try{
-          JdbcDataSourceManager sourceManager = new JdbcDataSourceManager();
-          JdbcSession session = sourceManager.createSession(jdbcDataSource);
-          while (true){
-            boolean execute = session.query("SELECT * FROM `information_schema`.`COLUMNS`;");
-            System.out.println(d);
-          }
-
-        }catch (Exception e){
-          e.printStackTrace();
-        }
-      });thread.start();
-
-    }
+//    ConfigReceiverImpl configReceiver = new ConfigReceiverImpl(version);
+//    ConfigLoader.INSTANCE
+//        .loadConfig("D:\\newgit\\f2\\jdbc\\src\\main\\resources", ConfigEnum.DATASOURCE,
+//            GlobalConfig.INIT_VERSION, configReceiver);
+//    ReplicasRootConfig config = configReceiver.getConfig(ConfigEnum.DATASOURCE);
+//    ReplicaConfig replicaConfig = config.getReplicas().get(0);
+//    List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
+//    JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);
+//
+//    for (int i = 0; i < 2; i++) {
+//      final int  d = i;
+//      Thread thread = new Thread( ()->{
+//        try{
+//          JdbcDataSourceManager sourceManager = new JdbcDataSourceManager();
+//          JdbcSession session = sourceManager.createSession(jdbcDataSource);
+//          while (true){
+//            boolean execute = session.query("SELECT * FROM `information_schema`.`COLUMNS`;");
+//            System.out.println(d);
+//          }
+//
+//        }catch (Exception e){
+//          e.printStackTrace();
+//        }
+//      });thread.start();
+//
+//    }
 
   }
 
