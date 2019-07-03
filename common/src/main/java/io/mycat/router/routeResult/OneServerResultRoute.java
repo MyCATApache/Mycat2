@@ -19,22 +19,20 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * @author jamie12221
- *  date 2019-05-05 12:54
- * 只涉及一个服务器分发的路由结果
+ * @author jamie12221 date 2019-05-05 12:54 只涉及一个服务器分发的路由结果
  **/
 
 public class OneServerResultRoute extends ResultRoute {
+
   String dataNode;
   String sql;
+
   public String getDataNode() {
     return dataNode;
   }
 
-  public OneServerResultRoute setDataNodeOnce(String dataNode) {
-    if (this.dataNode == null) {
+  public OneServerResultRoute setDataNode(String dataNode) {
       this.dataNode = dataNode;
-    }
     return this;
   }
 
@@ -42,24 +40,22 @@ public class OneServerResultRoute extends ResultRoute {
     return sql;
   }
 
-  public OneServerResultRoute setSqlOnce(String sql) {
-    if (this.sql == null) {
-      this.sql = sql;
-    }
+  public OneServerResultRoute setSql(String sql) {
+    this.sql = sql;
     return this;
   }
 
   @Override
   public String toString() {
     return "RESULT_ROUTE_TYPE{" +
-               "dataNode='" + dataNode + '\'' +
-               ", sql=" + sql +
-               '}';
+        "dataNode='" + dataNode + '\'' +
+        ", sql=" + sql +
+        '}';
   }
 
   @Override
-  public <CONTEXT> void accept(Executer<CONTEXT> executer,CONTEXT context) throws IOException {
-    executer.run(this,context);
+  public <CONTEXT> void accept(Executer<CONTEXT> executer, CONTEXT context) throws IOException {
+    executer.run(this, context);
   }
 
   @Override
@@ -77,7 +73,7 @@ public class OneServerResultRoute extends ResultRoute {
     }
     OneServerResultRoute result = (OneServerResultRoute) o;
     return Objects.equals(dataNode, result.dataNode) &&
-               Objects.equals(sql, result.sql);
+        Objects.equals(sql, result.sql);
   }
 
   @Override

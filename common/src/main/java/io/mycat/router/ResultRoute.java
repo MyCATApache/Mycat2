@@ -23,8 +23,7 @@ import io.mycat.router.routeResult.dbResultSet.DbResultSet;
 import java.io.IOException;
 
 /**
- * @author jamie12221
- *  date 2019-05-05 13:33 路由结果接口
+ * @author jamie12221 date 2019-05-05 13:33 路由结果接口
  **/
 public abstract class ResultRoute {
 
@@ -38,17 +37,19 @@ public abstract class ResultRoute {
 
   public abstract String toString();
 
-  public abstract <CONTEXT> void accept(Executer<CONTEXT> executer,CONTEXT context)
+  public abstract <CONTEXT> void accept(Executer<CONTEXT> executer, CONTEXT context)
       throws IOException;
 
   public abstract ResultRouteType getType();
 
-  public interface Executer <CONTEXT>{
-    void run(DbResultSet dbResultSet,CONTEXT context);
-    void run(OneServerResultRoute dbResultSet,CONTEXT context) throws IOException;
-    void run(GlobalTableWriteResultRoute dbResultSet,CONTEXT context);
-    void run(MySQLCommandRouteResultRoute dbResultSet,CONTEXT context);
-    void run(SubTableResultRoute dbResultSet,CONTEXT context);
+  /**
+   * Setter for property 'balance'.
+   *
+   * @param balance Value to set for property 'balance'.
+   */
+  public ResultRoute setBalance(String balance) {
+    this.balance = balance;
+    return this;
   }
 
   /**
@@ -61,14 +62,12 @@ public abstract class ResultRoute {
   }
 
   /**
-   * Setter for property 'balance'.
+   * Setter for property 'runOnMaster'.
    *
-   * @param balance Value to set for property 'balance'.
+   * @param runOnMaster Value to set for property 'runOnMaster'.
    */
-  public ResultRoute setBalanceOnce(String balance) {
-    if (this.balance == null) {
-      this.balance = balance;
-    }
+  public ResultRoute setRunOnMaster(Boolean runOnMaster) {
+    this.runOnMaster = runOnMaster;
     return this;
   }
 
@@ -81,15 +80,16 @@ public abstract class ResultRoute {
     return runOnMaster == null ? expectRunOnMaster : runOnMaster;
   }
 
-  /**
-   * Setter for property 'runOnMaster'.
-   *
-   * @param runOnMaster Value to set for property 'runOnMaster'.
-   */
-  public ResultRoute setRunOnMasterOnce(Boolean runOnMaster) {
-    if (this.runOnMaster == null) {
-      this.runOnMaster = runOnMaster;
-    }
-    return this;
+  public interface Executer<CONTEXT> {
+
+    void run(DbResultSet dbResultSet, CONTEXT context);
+
+    void run(OneServerResultRoute dbResultSet, CONTEXT context) throws IOException;
+
+    void run(GlobalTableWriteResultRoute dbResultSet, CONTEXT context);
+
+    void run(MySQLCommandRouteResultRoute dbResultSet, CONTEXT context);
+
+    void run(SubTableResultRoute dbResultSet, CONTEXT context);
   }
 }

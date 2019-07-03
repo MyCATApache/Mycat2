@@ -28,9 +28,9 @@ public class DbInOneServerRouteStrategy implements RouteStrategy<RouteContext> {
   @Override
   public ResultRoute route(MycatSchema schema, String sql, RouteContext attr) {
     OneServerResultRoute routeResult = new OneServerResultRoute();
-    routeResult.setDataNodeOnce(schema.getDefaultDataNode());
-    routeResult.setSqlOnce(sql);
-    routeResult.setRunOnMasterOnce(!attr.getSqlContext().isSimpleSelect());
+    routeResult.setDataNode(schema.getDefaultDataNode());
+    routeResult.setSql(sql);
+    routeResult.setRunOnMaster(!attr.getSqlContext().isSimpleSelect());
     return routeResult;
   }
 }
