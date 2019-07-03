@@ -51,7 +51,7 @@ MySQL语句处理可以分为三类
 
 ##### 读写分离
 
-路由使用该判断方式 非SELECT FOR UPDATE , SELECT INTO 语句路由到mysql集群的主数据源
+路由使用该判断方式 SELECT FOR UPDATE , SELECT INTO 语句路由到mysql集群的主数据源
 
 
 
