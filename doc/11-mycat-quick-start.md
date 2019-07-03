@@ -66,6 +66,8 @@ dataNode的database是mysql物理库的名称
 
 replica是上述的复制组的名字
 
+schema.yaml
+
 ```yaml
 schemas:
   - name: db1
@@ -74,15 +76,19 @@ schemas:
     tables:
 ```
 
-  - ```yaml
-    dataNodes:
-    
-    - name: dn1
-      database: db1
-      replica: repli
-    ```
+dataNode.yaml
+
+```yaml
+dataNodes:
+
+- name: dn1
+  database: db1
+  replica: repli
+```
 
 #### 在逻辑库聚合多个mysql服务器的物理表
+
+schema.yaml
 
 ```yaml
 schemas:
@@ -93,7 +99,7 @@ schemas:
         dataNodes: dn1
       - name: travelrecord2
         dataNodes: dn2
-
+dataNode.yaml
 
 dataNodes:
   - name: dn1
