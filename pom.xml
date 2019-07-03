@@ -19,7 +19,7 @@
     <module>grid</module>
   </modules>
   <packaging>pom</packaging>
-  <tableName>parent</tableName>
+  <name>parent</name>
   <description>The project of Mycat2</description>
   <url>http://io.mycat</url>
 
@@ -49,13 +49,13 @@
   <repositories>
     <repository>
       <id>nexus-aliyun</id>
-      <tableName>nexus-aliyun</tableName>
+      <name>nexus-aliyun</name>
       <url>http://maven.aliyun.com/nexus/content/groups/public</url>
       <layout>default</layout>
     </repository>
     <repository>
       <id>mvnrepository</id>
-      <tableName>mvnrepository</tableName>
+      <name>mvnrepository</name>
       <url>http://www.mvnrepository.com/</url>
     </repository>
     <repository>
