@@ -37,6 +37,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
   @Override
   public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
     BufferSQLContext sqlContext = context.getSqlContext();
+    boolean runOnMaster = !sqlContext.isSimpleSelect();
     if (sqlContext.getTableCount() == 1) {
       String tableName = sqlContext.getTableName(0);
       MycatTable o = schema.getTableByTableName(tableName);
@@ -52,12 +53,12 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
 //            OneServerResultRoute result = new OneServerResultRoute();
 //            int index = ThreadLocalRandom.current().nextInt(0, table.getDataNodes().size());
 //            String dataNode = table.getDataNodes().get(index);//@todo 负载均衡
-//            result.setSql(sql);
-//            result.setDataNode(dataNode);
+//            result.setSqlOnce(sql);
+//            result.setDataNodeOnce(dataNode);
 //            return result;
 //          } else {
 //            GlobalTableWriteResultRoute result = new GlobalTableWriteResultRoute();
-//            result.setSql(sql);
+//            result.setSqlOnce(sql);
 //            List<String> dataNodes = table.getDataNodes();
 //            result.setMaster(dataNodes.get(0));
 //            result.setDataNodes(dataNodes.subList(1, dataNodes.size()));
@@ -75,14 +76,15 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
                 && sa.getShardingRangeKeyEnd() == null) {
               int calculate = ruleAlgorithm.calculate(sa.getShardingKey());
               OneServerResultRoute result = new OneServerResultRoute();
-              return result.setSql(sql).setDataNode(table.getDataNodes().get(calculate));
+              return result.setSqlOnce(sql).setDataNodeOnce(table.getDataNodes().get(calculate));
             } else if (sa.getShardingKey() == null && sa.getShardingRangeKeyStart() != null
                 && sa.getShardingRangeKeyEnd() != null) {
               int[] keys = ruleAlgorithm
                   .calculateRange(sa.getShardingRangeKeyStart(), sa.getShardingRangeKeyEnd());
               if (keys.length == 1) {
                 OneServerResultRoute result = new OneServerResultRoute();
-                return result.setSql(sql).setDataNode(table.getDataNodes().get(keys[0]));
+                return result.setSqlOnce(sql).setDataNodeOnce(table.getDataNodes().get(keys[0]))
+                    .setRunOnMasterOnce(runOnMaster);
               }
             } else if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() != null
                 && sa.getShardingRangeKeyEnd() != null) {
@@ -91,7 +93,8 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
                   .calculateRange(sa.getShardingRangeKeyStart(), sa.getShardingRangeKeyEnd());
               if (keys.length == 1 && calculate == keys[0]) {
                 OneServerResultRoute result = new OneServerResultRoute();
-                return result.setSql(sql).setDataNode(table.getDataNodes().get(calculate));
+                return result.setSqlOnce(sql).setDataNodeOnce(table.getDataNodes().get(calculate))
+                    .setRunOnMasterOnce(runOnMaster);
               }
             }
           }
@@ -104,8 +107,9 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
           } else if (index > -1) {
             String dataNode = table.getDataNodes().get(index);
             OneServerResultRoute result = new OneServerResultRoute();
-            result.setDataNode(dataNode);
-            result.setSql(sql);
+            result.setDataNodeOnce(dataNode);
+            result.setSqlOnce(sql);
+            result.setRunOnMasterOnce(runOnMaster);
             return result;
           } else {
             throw new MycatException("unknown state!");
@@ -127,8 +131,8 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
 //            CharSequence actSQL = SQLUtil.adjustmentSQL(sqlContext, true, tableName,
 //                actTableName);
 //            SubTableResultRoute result = new SubTableResultRoute();
-//            result.setSql(actSQL);
-//            result.setDataNode(table.getDataNodes().get(0));
+//            result.setSqlOnce(actSQL);
+//            result.setDataNodeOnce(table.getDataNodes().get(0));
 //            return result;
 //          } else {
 //            throw new MycatException("unknown state!");

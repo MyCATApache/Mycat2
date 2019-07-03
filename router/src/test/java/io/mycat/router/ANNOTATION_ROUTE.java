@@ -25,22 +25,22 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     sql = "SELECT * FROM `travelrecord` WHERE id = 0";
     dn1 = "dn1";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
 
     sql = "SELECT * FROM `travelrecord` WHERE id = 256";
     dn1 = "dn2";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
 
     sql = "SELECT * FROM `travelrecord` WHERE id = 512";
     dn1 = "dn3";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
 
     sql = "SELECT * FROM `travelrecord` WHERE id = 1023";
     dn1 = "dn4";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   @Test
@@ -53,22 +53,22 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     sql = "SELECT * FROM `travelrecord` WHERE id BETWEEN 1 AND 255;";
     dn1 = "dn1";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
 
     sql = "SELECT * FROM `travelrecord` WHERE id BETWEEN 256 AND 511;";
     dn1 = "dn2";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
 
     sql = "SELECT * FROM `travelrecord` WHERE id BETWEEN 512 AND 767;";
     dn1 = "dn3";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
 
     sql = "SELECT * FROM `travelrecord` WHERE id BETWEEN 768 AND 1023;";
     dn1 = "dn4";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   @Test
@@ -81,7 +81,7 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     sql = "SELECT * FROM `travelrecord` WHERE id BETWEEN 1 AND 255 AND id = 5;";
     dn1 = "dn1";
     Assert.assertEquals(router.enterRoute(schema, sql),
-        new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+        new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   /**
@@ -117,7 +117,7 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   @Test
@@ -128,7 +128,7 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   @Test
@@ -148,7 +148,7 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   @Test
@@ -159,8 +159,8 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     String dn2 = "dn2";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode("dn1").setSql(sql));
-    Assert.assertNotEquals(result, new OneServerResultRoute().setDataNode(dn2).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce("dn1").setSqlOnce(sql));
+    Assert.assertNotEquals(result, new OneServerResultRoute().setDataNodeOnce(dn2).setSqlOnce(sql));
   }
 
   @Test
@@ -171,7 +171,7 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   @Test
@@ -182,7 +182,7 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
   @Test
@@ -193,6 +193,6 @@ public class ANNOTATION_ROUTE extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 }

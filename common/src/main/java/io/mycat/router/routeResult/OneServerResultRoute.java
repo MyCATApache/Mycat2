@@ -31,8 +31,10 @@ public class OneServerResultRoute extends ResultRoute {
     return dataNode;
   }
 
-  public OneServerResultRoute setDataNode(String dataNode) {
-    this.dataNode = dataNode;
+  public OneServerResultRoute setDataNodeOnce(String dataNode) {
+    if (this.dataNode == null) {
+      this.dataNode = dataNode;
+    }
     return this;
   }
 
@@ -40,8 +42,10 @@ public class OneServerResultRoute extends ResultRoute {
     return sql;
   }
 
-  public OneServerResultRoute setSql(String sql) {
-    this.sql = sql;
+  public OneServerResultRoute setSqlOnce(String sql) {
+    if (this.sql == null) {
+      this.sql = sql;
+    }
     return this;
   }
 

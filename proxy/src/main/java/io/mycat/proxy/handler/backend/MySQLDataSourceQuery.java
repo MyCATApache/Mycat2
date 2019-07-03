@@ -1,6 +1,5 @@
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import java.util.List;
@@ -9,7 +8,6 @@ public class MySQLDataSourceQuery {
   boolean runOnMaster = false;
   LoadBalanceStrategy strategy = null;
   List<SessionIdAble> ids = null;
-  MycatReplica replica;
   public boolean isRunOnMaster() {
     return runOnMaster;
   }
@@ -34,12 +32,4 @@ public class MySQLDataSourceQuery {
     this.ids = ids;
   }
 
-  /**
-   * Getter for property 'replica'.
-   *
-   * @return Value for property 'replica'.
-   */
-  public MycatReplica getReplica() {
-    return replica;
-  }
 }

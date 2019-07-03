@@ -61,6 +61,7 @@ public class JdbcDao extends ModualTest {
   final static String DB_IN_ONE_SERVER = "DB_IN_ONE_SERVER";
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcDao.class);
 
+
   @Test
   public void startRequestAndReponseWithSplitingPacketWithMultiSatement()
       throws IOException, ExecutionException, InterruptedException {
@@ -223,7 +224,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/test?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false";
+  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false";
   final static String username = "root";
   final static String password = "123456";
 
@@ -257,6 +258,21 @@ public class JdbcDao extends ModualTest {
         }
       }
     });
+  }
+
+  public static void main(String[] args) {
+    try (Connection connection = getConnection()) {
+      connection.setAutoCommit(false);
+      Statement statement = connection.createStatement();
+      ResultSet resultSet = statement.executeQuery("SELECT `id`, `topid` FROM `test` FOR UPDATE;");
+      connection.commit();
+    } catch (Exception e) {
+      e.printStackTrace();
+      Assert.fail(e.toString());
+    } finally {
+      MycatCore.exit();
+
+    }
   }
 
   public static String getUrl() {

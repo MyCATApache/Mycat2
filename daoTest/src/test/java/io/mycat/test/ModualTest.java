@@ -1,6 +1,7 @@
 package io.mycat.test;
 
 import io.mycat.MycatCore;
+import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiver;
@@ -49,7 +50,7 @@ public abstract class ModualTest {
               }catch (Exception e){
                 e.printStackTrace();
               }finally {
-                MycatCore.exit();
+                MycatCore.exit(new MycatException("normal"));
                 future.complete(null);
               }
             });
@@ -59,7 +60,7 @@ public abstract class ModualTest {
           public void onException(Exception e, Object sender, Object attr) {
             e.printStackTrace();
             Assert.fail(e.toString());
-            MycatCore.exit();
+            MycatCore.exit(e);
             future.complete(null);
           }
 

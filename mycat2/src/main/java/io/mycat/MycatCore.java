@@ -186,6 +186,11 @@ public class MycatCore {
     };
   }
 
+  public static void exit() {
+    if (runtime != null) {
+      runtime.exit(new MycatException("normal"));
+    }
+  }
   public static void exit(Exception e) {
     if (runtime != null) {
       runtime.exit(e);

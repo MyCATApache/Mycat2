@@ -158,7 +158,7 @@ select @@session.transaction_read_only;
 select @@session.tx_read_only;
 ```
 
-路由到一个随机mysql session即可
+默认路由到schema的默认节点(可以自定义路由到随机的节点)
 
 查询结果是是mysql服务器发出的,因为获取mysql session后会进行同步,所以结果是正确的
 

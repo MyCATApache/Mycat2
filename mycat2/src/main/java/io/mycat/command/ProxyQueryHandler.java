@@ -227,42 +227,28 @@ public class ProxyQueryHandler {
           }
           LOGGER.warn("maybe unsupported  sql:{}", sql);
         }
-        case SELECT_SQL: {
-          if (sqlContext.isSimpleSelect()) {
-            ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
-            if (resultRoute != null) {
-              if (resultRoute.getType() == ResultRouteType.ONE_SERVER_RESULT_ROUTE) {
-                OneServerResultRoute route = (OneServerResultRoute) resultRoute;
-                MySQLDataSourceQuery query = new MySQLDataSourceQuery();
-                query.setIds(null);
-                query.setRunOnMaster(resultRoute.isRunOnMaster(false));
-                query.setStrategy(runtime
-                    .getLoadBalanceByBalanceName(resultRoute.getBalance()));
-                MySQLTaskUtil
-                    .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(route.getSql()),
-                        route.getDataNode(), query, ResponseType.QUERY);
-                return;
-              }
-            }
-            mycat.setLastMessage("unsupport sql");
-            mycat.writeErrorEndPacket();
-            return;//路由出错走默认节点
-          }
-        }
         case LOAD_SQL: {
-          LOGGER.warn("Use annotations to specify laodata data nodes whenever possible !");
+          LOGGER.warn("Use annotations to specify loadata data nodes whenever possible !");
         }
+        case SELECT_SQL:
         default:
+          boolean simpleSelect = sqlContext.isSimpleSelect() && sqlType == SELECT_SQL;
           ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
           if (resultRoute == null) {
-            mycat.writeOkEndPacket();
+            mycat.setLastMessage("can not route:" + sql);
+            mycat.writeErrorEndPacket();
             return;
           }
           if (resultRoute.getType() == ResultRouteType.ONE_SERVER_RESULT_ROUTE) {
             OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
+            MySQLDataSourceQuery query = new MySQLDataSourceQuery();
+            query.setIds(null);
+            query.setRunOnMaster(resultRoute.isRunOnMaster(!simpleSelect));
+            query.setStrategy(runtime
+                .getLoadBalanceByBalanceName(resultRoute.getBalance()));
             MySQLTaskUtil
                 .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-                    resultRoute1.getDataNode(), null, ResponseType.QUERY);
+                    resultRoute1.getDataNode(), query, ResponseType.QUERY);
           } else {
             mycat.setLastMessage("unsupport sql");
             mycat.writeErrorEndPacket();

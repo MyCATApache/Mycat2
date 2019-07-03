@@ -23,7 +23,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(new OneServerResultRoute().setDataNode(dn1).setSql(sql), result);
+    Assert.assertEquals(new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql), result);
   }
 
   @Test
@@ -34,7 +34,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(new OneServerResultRoute().setDataNode(dn1).setSql(sql), result);
+    Assert.assertEquals(new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql), result);
   }
 
   @Test
@@ -44,7 +44,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(new OneServerResultRoute().setDataNode(dn1).setSql(sql), result);
+    Assert.assertEquals(new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql), result);
   }
 
   /**
@@ -58,7 +58,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(new OneServerResultRoute().setDataNode(dn1).setSql(sql), result);
+    Assert.assertEquals(new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql), result);
   }
 
 
@@ -69,7 +69,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
     String dn1 = "dn1";
     ResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new OneServerResultRoute().setDataNodeOnce(dn1).setSqlOnce(sql));
   }
 
 }

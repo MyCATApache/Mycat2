@@ -65,8 +65,10 @@ public abstract class ResultRoute {
    *
    * @param balance Value to set for property 'balance'.
    */
-  public ResultRoute setBalance(String balance) {
-    this.balance = balance;
+  public ResultRoute setBalanceOnce(String balance) {
+    if (this.balance == null) {
+      this.balance = balance;
+    }
     return this;
   }
 
@@ -84,8 +86,10 @@ public abstract class ResultRoute {
    *
    * @param runOnMaster Value to set for property 'runOnMaster'.
    */
-  public ResultRoute setRunOnMaster(Boolean runOnMaster) {
-    this.runOnMaster = runOnMaster;
+  public ResultRoute setRunOnMasterOnce(Boolean runOnMaster) {
+    if (this.runOnMaster == null) {
+      this.runOnMaster = runOnMaster;
+    }
     return this;
   }
 }

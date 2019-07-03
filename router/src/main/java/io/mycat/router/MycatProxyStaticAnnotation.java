@@ -21,7 +21,7 @@ public class MycatProxyStaticAnnotation implements SQLMapAnnotation.PutKeyValueA
   Boolean runOnMaster;
   String balance;
   String routeSQL;
-
+  String dataNode;
 
   public void clear() {
     schema = null;
@@ -31,6 +31,7 @@ public class MycatProxyStaticAnnotation implements SQLMapAnnotation.PutKeyValueA
     runOnMaster = null;
     balance = null;
     routeSQL = null;
+    dataNode = null;
   }
 
   @Override
@@ -65,6 +66,10 @@ public class MycatProxyStaticAnnotation implements SQLMapAnnotation.PutKeyValueA
         routeSQL = value;
         break;
       }
+      case "dataNode": {
+        dataNode = value;
+        break;
+      }
     }
   }
 
@@ -97,6 +102,10 @@ public class MycatProxyStaticAnnotation implements SQLMapAnnotation.PutKeyValueA
       }
       case "routeSQL": {
         routeSQL = value;
+        break;
+      }
+      case "dataNode": {
+        dataNode = value;
         break;
       }
     }
@@ -163,5 +172,14 @@ public class MycatProxyStaticAnnotation implements SQLMapAnnotation.PutKeyValueA
    */
   public String getRouteSQL() {
     return routeSQL;
+  }
+
+  /**
+   * Getter for property 'dataNode'.
+   *
+   * @return Value for property 'dataNode'.
+   */
+  public String getDataNode() {
+    return dataNode;
   }
 }
