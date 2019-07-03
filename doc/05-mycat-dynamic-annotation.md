@@ -23,7 +23,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 ```yaml
 tableRules:
   - funtion: partitionByLong
-    name: travelrecord
+    tableName: travelrecord
     rules:
       - column: id
 
@@ -58,6 +58,10 @@ tableRules:
 #### tableRules
 
 配置多个tableRule,其中name属性在配置中唯一并与schema中的table对应
+
+#### tableName
+
+对应的表名
 
 #### function
 
