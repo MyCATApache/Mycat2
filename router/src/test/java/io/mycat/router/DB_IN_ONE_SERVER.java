@@ -52,7 +52,7 @@ public class DB_IN_ONE_SERVER extends MycatRouterTest {
    */
   @Test
   public void butSQLOtherSchema() {
-//    thrown.expect(MycatException.class);
+    thrown.expect(MycatException.class);
     String sql = "select * from db2.travelrecord";
     String schema = "db1";
     String dn1 = "dn1";

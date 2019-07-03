@@ -42,7 +42,7 @@ import io.mycat.config.schema.SchemaType;
 import io.mycat.config.schema.TableDefConfig;
 import io.mycat.router.dynamicAnnotation.DynamicAnnotationMatcherImpl;
 import io.mycat.router.routeStrategy.AnnotationRouteStrategy;
-import io.mycat.router.routeStrategy.DbInMutilServerRouteStrategy;
+import io.mycat.router.routeStrategy.DbInMultiServerRouteStrategy;
 import io.mycat.router.routeStrategy.DbInOneServerRouteStrategy;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
 import io.mycat.util.SplitUtil;
@@ -341,7 +341,7 @@ public class MycatRouterConfig {
           routeStrategy = new DbInOneServerRouteStrategy();
           break;
         case DB_IN_MULTI_SERVER:
-          routeStrategy = new DbInMutilServerRouteStrategy();
+          routeStrategy = new DbInMultiServerRouteStrategy();
           break;
         case ANNOTATION_ROUTE:
           routeStrategy = new AnnotationRouteStrategy();

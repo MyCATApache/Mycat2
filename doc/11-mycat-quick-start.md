@@ -56,7 +56,7 @@ replicas:
 
 ### 步骤3
 
-修改schema.yaml,以下两个个架构选一个配置
+修改schema.yaml,dataNode.yaml,以下两个架构选一个配置
 
 #### 负载均衡
 
@@ -72,12 +72,15 @@ schemas:
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
     tables:
-
-dataNodes:
-  - name: dn1
-    database: db1
-    replica: repli
 ```
+
+  - ```yaml
+    dataNodes:
+    
+    - name: dn1
+      database: db1
+      replica: repli
+    ```
 
 #### 在逻辑库聚合多个mysql服务器的物理表
 

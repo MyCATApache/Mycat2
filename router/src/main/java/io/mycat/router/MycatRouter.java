@@ -16,7 +16,6 @@ package io.mycat.router;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
-import io.mycat.config.schema.SchemaType;
 import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
 import io.mycat.sqlparser.util.BufferSQLContext;
@@ -82,12 +81,6 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
         if (defaultSchema == null) {
           throw new MycatException("can not find schema:{}", sa.getSchema());
         }
-      }
-      if (defaultSchema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
-        OneServerResultRoute osr = new OneServerResultRoute();
-        osr.setDataNode(defaultSchema.getDefaultDataNode());
-        osr.setSql(sql);
-        return routeResult = osr;
       }
       int schemaCount = sqlContext.getSchemaCount();
       if (schemaCount == 0) {

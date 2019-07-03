@@ -26,7 +26,7 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 /**
  * @author jamie12221 date 2019-05-05 16:54
  **/
-public class DbInMutilServerRouteStrategy implements RouteStrategy<RouteContext> {
+public class DbInMultiServerRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
   public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
