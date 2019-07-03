@@ -109,22 +109,27 @@ public abstract class MySQLDatasource implements LoadBalanceELement {
       public void stop(ReactorEnvThread reactor, Exception reason) {
         callback.onException(reason, this, null);
       }
+
+      @Override
+      public String message() {
+        return "createMySQLSession";
+      }
     };
   }
 
 //  /**
 //   * 关闭此dataSource创建的连接
 //   *
-//   * @param reason 关闭原因
+//   * @param message 关闭原因
 //   */
-//  public void clearAndDestroyCons(String reason) {
-//    Objects.requireNonNull(reason);
+//  public void clearAndDestroyCons(String message) {
+//    Objects.requireNonNull(message);
 //    MycatReactorThread[] mycatReactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
 //    Objects.requireNonNull(mycatReactorThreads);
 //    for (MycatReactorThread thread : mycatReactorThreads) {
 //      thread.addNIOJob(
 //          () -> {
-//            thread.getMySQLSessionManager().clearAndDestroyDataSource(this, reason);
+//            thread.getMySQLSessionManager().clearAndDestroyDataSource(this, message);
 //          });
 //    }
 //  }

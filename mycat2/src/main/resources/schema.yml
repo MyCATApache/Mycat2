@@ -1,21 +1,36 @@
+defaultSchemaName: db12
 schemas:
-  - name: test
-    schemaType: SQL_PARSE_ROUTE
+  - name: db12
+    schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
-    tables:
-      - name: travelrecord
-      - name: company
+  - name: db22
+    schemaType: DB_IN_ONE_SERVER
+    defaultDataNode: dn1
   - name: test2
     schemaType: DB_IN_MULTI_SERVER
+    defaultDataNode: dn1
     tables:
       - name: travelrecord2
+        dataNodes: dn2
+      - name: travelrecord3
         dataNodes: dn3
   - name: test3
     schemaType: ANNOTATION_ROUTE
+    defaultDataNode: dn1
     tables:
       - name: travelrecord
-        dataNodes: dn1,dn2,dn3,dn4
         type: SHARING_DATABASE
-      - name: travelrecord2
         dataNodes: dn1,dn2,dn3
-        type: GLOBAL
+#      - name: company
+#  - name: test2
+#    schemaType: DB_IN_MULTI_SERVER
+#    tables:
+#      - name: travelrecord2
+#        dataNodes: dn3
+#  - name: test3
+#    schemaType: ANNOTATION_ROUTE
+#    tables:
+#      - name: travelrecord
+#        dataNodes: dn1,dn2,dn3,dn4
+#        message: SHARING_DATABASE
+

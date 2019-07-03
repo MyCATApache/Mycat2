@@ -125,14 +125,20 @@ public final class MySQLSessionManager implements
 
           if (!mySQLSession.isOpen()) {
             thread.addNIOJob(new NIOJob() {
+              static final String MESSAGE = "mysql session is close in idle";
               @Override
               public void run(ReactorEnvThread reactor) throws Exception {
-                mySQLSession.close(false, "mysql session is close in idle");
+                mySQLSession.close(false, MESSAGE);
               }
 
               @Override
               public void stop(ReactorEnvThread reactor, Exception reason) {
-                mySQLSession.close(false, "mysql session is close in idle");
+                mySQLSession.close(false, MESSAGE);
+              }
+
+              @Override
+              public String message() {
+                return MESSAGE;
               }
             });
             continue;
@@ -519,6 +525,11 @@ public final class MySQLSessionManager implements
       @Override
       public void stop(ReactorEnvThread reactor, Exception reason) {
         mySQLClientSession.close(false, hint);
+      }
+
+      @Override
+      public String message() {
+        return hint;
       }
     });
   }

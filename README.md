@@ -58,20 +58,20 @@ the port of mycat server
 
 a replica treated as a consistent mysql internal load balancing.
 
-- #### replica -name
+- #### replica -tableName
 
 
-the the name of replica that can be reference by data node config in schema config
+the the tableName of replica that can be reference by data node config in schema config
 
 - #### repType
 
 
-type of replica:x:
+message of replica:x:
 
 - #### balanceName
 
 
-reference load balance name that be in plug config
+reference load balance tableName that be in plug config
 
 - #### mysqls
 
@@ -80,9 +80,9 @@ configure multiple mysql connection config
 
 #### mysqls-mysql
 
-- ###### name
+- ###### tableName
 
-  the the name of mysql connection info
+  the the tableName of mysql connection info
 
 - ###### ip
 
@@ -121,7 +121,7 @@ masterIndexes:
   repli2: 0
 ```
 
-repli is a replica  name that in datasource config
+repli is a replica  tableName that in datasource config
 
 the number 0 is mysqls index  in datasource confg marks as matser mysql server
 
@@ -149,7 +149,7 @@ NOTE:A client only send sql or initDb command to switch it and mycat do not supp
 
 2. ###### DB IN MULTI SERVER
 
-   A table corresponds to a data node.It routes SQL by a table name in sql.And this table must exist in the current schema.It means mysql client can switch data node by a table name in SQL.It supports only one table operation.
+   A table corresponds to a data node.It routes SQL by a table tableName in sql.And this table must exist in the current schema.It means mysql client can switch data node by a table tableName in SQL.It supports only one table operation.
 
 3. ###### ANNOTATION ROUTE
 
@@ -163,7 +163,7 @@ NOTE:A client only send sql or initDb command to switch it and mycat do not supp
 
    In this case,there are some limitations to simplify the annotation routing.
 
-   1. The current schema and only a table name in SQL to determine the table.
+   1. The current schema and only a table tableName in SQL to determine the table.
    2. If continuous values on multiple data nodes is not supported in mycat proxy.Because It needs to split SQL and merge to process result set of multiple nodes. This is not suitable for processing in the proxy.
 
    
@@ -178,23 +178,23 @@ NOTE:A client only send sql or initDb command to switch it and mycat do not supp
 
 a logic table in mycat.Corresponding to the table on the mysql server, we call it the physical table.
 
-- Generally, its name is unique in all schemas. When SQL is received, mycat can route it and process according to that name.
+- Generally, its tableName is unique in all schemas. When SQL is received, mycat can route it and process according to that tableName.
 
-- The logic table name must correspond to the name of the physical table name(Although tablename can be rewritten to support it).
+- The logic table tableName must correspond to the tableName of the physical table tableName(Although tablename can be rewritten to support it).
 
-- For SQL without a table name, Mycat responds to the SQL itself or sends it to the default data node.
+- For SQL without a table tableName, Mycat responds to the SQL itself or sends it to the default data node.
 
   
 
-  ###### table type
+  ###### table message
 
   - DEFAULT 
 
-    when schema type is DB IN ONE SERVER,the  type of table in the schema is dafault.The router select 
+    when schema message is DB IN ONE SERVER,the  message of table in the schema is dafault.The router select 
 
     data node by the property 'dafaultDataNode' of schema.
 
-    when schema type is DB IN MULTI SERVER,the  type of table in the schema also is dafault.The router select data node by first data node name in the property 'dataNodes' of table.
+    when schema message is DB IN MULTI SERVER,the  message of table in the schema also is dafault.The router select data node by first data node tableName in the property 'dataNodes' of table.
 
   - SHARING DATABASE
 
@@ -220,15 +220,15 @@ That's why you can only use one schema to access MySQL server once with dataNode
 
 ```yaml
 schemas:
-  - name: db1
+  - tableName: db1
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
     tables:
-      - name: travelrecord
+      - tableName: travelrecord
 
 
 dataNodes:
-  - name: dn1
+  - tableName: dn1
     database: db1
     replica: repli
 ```
@@ -237,20 +237,20 @@ dataNodes:
 
 ```yaml
 schemas:
-  - name: db1
+  - tableName: db1
     schemaType: DB_IN_MULTI_SERVER
     tables:
-      - name: travelrecord
+      - tableName: travelrecord
         dataNodes: dn1
-      - name: travelrecord2
+      - tableName: travelrecord2
         dataNodes: dn2
 
 
 dataNodes:
-  - name: dn1
+  - tableName: dn1
     database: db1
     replica: repli
-  - name: dn2
+  - tableName: dn2
     database: db2
     replica: repli
 ```
@@ -259,23 +259,23 @@ dataNodes:
 
 ```yaml
 schemas:
-  - name: db1
+  - tableName: db1
     schemaType: ANNOTATION_ROUTE
     tables:
-      - name: travelrecord
+      - tableName: travelrecord
         dataNodes: dn1,dn2,dn3,dn4
-        type: SHARING_DATABASE
+        message: SHARING_DATABASE
 dataNodes:
-  - name: dn1
+  - tableName: dn1
     database: db1
     replica: repli
-  - name: dn2
+  - tableName: dn2
     database: db2
     replica: repli
-  - name: dn3
+  - tableName: dn3
     database: db3
     replica: repli
-  - name: dn4
+  - tableName: dn4
     database: db4
     replica: repli
 ```
@@ -396,7 +396,7 @@ Interested in the following status:
 
 two MySQL servers(no proxy) with account with 
 
- user name {root} and 
+ user tableName {root} and 
 
 password {123456}
 
@@ -445,12 +445,12 @@ the test cares mysql proxy instead of strategy which a function has nothing to d
 ```yaml
 #replicas.yaml
 replicas:
-  - name: repli                   # 
+  - tableName: repli                   # 
     repType: MASTER_SLAVE         # do not care
     switchType: SWITCH            # do not care
     balanceName: BalanceAllRead   # do not care
     mysqls:
-      - name: mytest3306             
+      - tableName: mytest3306             
         ip: 127.0.0.1               #
         port: 3306                  # 
         user: root                  # 
@@ -458,7 +458,7 @@ replicas:
         minCon: 1                   # do not care
         maxCon: 1000                # do not care
         maxRetryCount: 3            # do not care
-      - name: mytest3307            
+      - tableName: mytest3307            
         ip: 127.0.0.1               # 
         port: 3307                  # 
         user: root                  # 
@@ -471,13 +471,13 @@ replicas:
 ```yaml
 #schema.yml
 schemas:
-  - name: test
+  - tableName: test
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
     tables:
-      - name: travelrecord
+      - tableName: travelrecord
 dataNodes:
-  - name: dn1
+  - tableName: dn1
     database: db1
     replica: repli
 ```
@@ -487,7 +487,7 @@ The above is the simplest configuration to test the proxy about router
 ```yaml
 #users.yaml
 users:
-  - name: root
+  - tableName: root
     password: 123456
     schemas:
       - test

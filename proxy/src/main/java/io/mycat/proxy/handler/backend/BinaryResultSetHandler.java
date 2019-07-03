@@ -108,7 +108,7 @@ public class BinaryResultSetHandler implements ResultSetHandler {
       if (isNull) {
         switch (columnType) {
           default: {
-            throw new MycatException("unknown field type:{}", columnType);
+            throw new MycatException("unknown field message:{}", columnType);
           }
           case FIELD_TYPE_DECIMAL: {
             collector
@@ -232,7 +232,7 @@ public class BinaryResultSetHandler implements ResultSetHandler {
        */
       switch (columnType) {
         default: {
-          throw new MycatException("unknown field type {}", (columnType));
+          throw new MycatException("unknown field message {}", (columnType));
         }
         case FIELD_TYPE_DECIMAL: {
           collector.collectDecimal(columnIndex, columnDef, columnDef.getColumnDecimals() & 0xff,

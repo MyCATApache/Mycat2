@@ -139,6 +139,11 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
               public void stop(ReactorEnvThread reactor, Exception reason) {
                 allSession.close(true, "processKill");
               }
+
+              @Override
+              public String message() {
+                return "processKill";
+              }
             });
           }
           mycat.writeOkEndPacket();

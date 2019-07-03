@@ -7,25 +7,26 @@ import java.util.List;
  *  date 2019-05-03 14:19
  **/
 public class SharingTableRule {
-  String name;
-  String funtion;
 
-  public String getFuntion() {
-    return funtion;
+  String tableName;
+  String function;
+
+  public String getFunction() {
+    return function;
   }
 
-  public void setFuntion(String funtion) {
-    this.funtion = funtion;
+  public void setFunction(String function) {
+    this.function = function;
   }
 
   List<ShardingRule> rules;
 
-  public String getName() {
-    return name;
+  public String getTableName() {
+    return tableName;
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public void setTableName(String tableName) {
+    this.tableName = tableName;
   }
 
 

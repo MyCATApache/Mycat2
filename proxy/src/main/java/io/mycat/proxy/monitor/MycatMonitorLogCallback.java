@@ -196,7 +196,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public void onCloseMysqlSession(MySQLClientSession session, boolean normal, String reason) {
     if (onSessionPool) {
-      LOGGER.info("sessionId:{} normal:{} reason:{}", session.sessionId(), normal, reason);
+      LOGGER.info("sessionId:{} normal:{} message:{}", session.sessionId(), normal, reason);
     }
   }
 
@@ -360,7 +360,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public final void onCloseMycatSession(MycatSession session, boolean normal, String reason) {
     if (onSessionPool) {
-      LOGGER.debug("sessionId:{} normal:{} reason:{}", session.sessionId(), normal, reason);
+      LOGGER.debug("sessionId:{} normal:{} message:{}", session.sessionId(), normal, reason);
     }
   }
 

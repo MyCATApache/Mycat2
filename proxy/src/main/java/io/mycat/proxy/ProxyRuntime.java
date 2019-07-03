@@ -188,12 +188,14 @@ public class ProxyRuntime {
       ReplicaConfig replicaConfig = replicas.get(i);
       ////////////////////////////////////check/////////////////////////////////////////////////
       Objects.requireNonNull(replicaConfig.getName(), "replica name can not be empty");
-      Objects.requireNonNull(replicaConfig.getRepType(), "replica type can not be empty");
-      Objects.requireNonNull(replicaConfig.getSwitchType(), "replica switch type can not be empty");
+      Objects.requireNonNull(replicaConfig.getRepType(), "replica message can not be empty");
+      Objects
+          .requireNonNull(replicaConfig.getSwitchType(), "replica switch message can not be empty");
       Objects
           .requireNonNull(replicaConfig.getBalanceName(), "replica balance name can not be empty");
       Objects
-          .requireNonNull(replicaConfig.getBalanceType(), "replica balance type can not be empty");
+          .requireNonNull(replicaConfig.getBalanceType(),
+              "replica balance message can not be empty");
       Objects.requireNonNull(replicaConfig.getMysqls(), "mysql list can not be empty");
       ////////////////////////////////////check/////////////////////////////////////////////////
       String writeIndexText = replicaIndexes.get(replicaConfig.getName());

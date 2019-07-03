@@ -81,7 +81,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
         throw new MycatException("unsupport!");
       }
     } catch (ConnectException ex) {
-      LOGGER.warn("Connect failed:{}  reason:{}", curChannel, ex);
+      LOGGER.warn("Connect failed:{}  message:{}", curChannel, ex);
     }
   }
 

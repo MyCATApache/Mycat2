@@ -114,7 +114,7 @@ public class MycatRouterConfig {
 
     sharingTableRule.setRules(Arrays.asList(s1, s2));
 
-    sharingTableRule.setFuntion("mpartitionByLong");
+    sharingTableRule.setFunction("mpartitionByLong");
 
     s1.setColumn("id1");
     s2.setColumn("id2");
@@ -137,7 +137,7 @@ public class MycatRouterConfig {
 
     SharingFuntionRootConfig sfrc = new SharingFuntionRootConfig();
     ShardingFuntion shardingFuntion = new ShardingFuntion();
-    sfrc.setFuntions(Arrays.asList(shardingFuntion));
+    sfrc.setFunctions(Arrays.asList(shardingFuntion));
     shardingFuntion.setName("partitionByLong");
     shardingFuntion.setClazz("io.mycat.router.function.PartitionByLong");
     Map<String, String> properties = new HashMap<>();
@@ -295,8 +295,8 @@ public class MycatRouterConfig {
   private void initFunctions(SharingFuntionRootConfig funtions) {
     MycatRouterConfig mycatRouter = this;
     if (funtions != null) {
-      if (funtions.getFuntions() != null) {
-        for (ShardingFuntion funtion : funtions.getFuntions()) {
+      if (funtions.getFunctions() != null) {
+        for (ShardingFuntion funtion : funtions.getFunctions()) {
           ////////////////////////////////////check/////////////////////////////////////////////////
           Objects.requireNonNull(funtion.getName(), "name of function can not be empty");
           Objects.requireNonNull(funtion.getClazz(), "clazz of function can not be empty");
@@ -420,7 +420,7 @@ public class MycatRouterConfig {
     }
     if (rule.getTableRules() != null) {
       for (SharingTableRule tableRule : rule.getTableRules()) {
-        String name = tableRule.getName();
+        String name = tableRule.getTableName();
         ////////////////////////////////////check/////////////////////////////////////////////////
         Objects.requireNonNull(name, "name of table can not be empty");
         Objects.requireNonNull(tableRule.getRules(), "rule of table can not be empty");
@@ -465,7 +465,7 @@ public class MycatRouterConfig {
 
           Route tmp = new Route(column, equalsKey, rangeStartKey, rangeEndKey);
           if (rootRouteNode == null) {
-            String funtion = tableRule.getFuntion();
+            String funtion = tableRule.getFunction();
             algorithm = mycatRouter.getRuleAlgorithm(funtion);
             routeNode = rootRouteNode = tmp;
           } else {

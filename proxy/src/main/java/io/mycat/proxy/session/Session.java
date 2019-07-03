@@ -139,6 +139,11 @@ public interface Session<T extends Session> {
       public void stop(ReactorEnvThread reactor, Exception reason) {
         close(normal, hint);
       }
+
+      @Override
+      public String message() {
+        return hint;
+      }
     });
   }
 

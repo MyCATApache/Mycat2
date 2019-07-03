@@ -8,13 +8,14 @@ import java.util.List;
  *  date 2019-05-03 14:54
  **/
 public class SharingFuntionRootConfig extends ConfigurableRoot {
-  List<ShardingFuntion> funtions;
 
-  public List<ShardingFuntion> getFuntions() {
-    return funtions;
+  List<ShardingFuntion> functions;
+
+  public List<ShardingFuntion> getFunctions() {
+    return functions;
   }
 
-  public void setFuntions(List<ShardingFuntion> funtions) {
-    this.funtions = funtions;
+  public void setFunctions(List<ShardingFuntion> functions) {
+    this.functions = functions;
   }
 }

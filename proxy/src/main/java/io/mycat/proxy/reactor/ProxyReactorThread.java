@@ -93,6 +93,11 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
       public void stop(ReactorEnvThread reactor, Exception reason) {
         LOGGER.warn("Register new connection error", reason);
       }
+
+      @Override
+      public String message() {
+        return "acceptNewSocketChannel";
+      }
     });
   }
 

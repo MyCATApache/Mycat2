@@ -181,6 +181,11 @@ public class MycatCore {
           public void stop(ReactorEnvThread reactor, Exception reason) {
             LOGGER.error("", reason);
           }
+
+          @Override
+          public String message() {
+            return "idleConnectCheck";
+          }
         });
       }
     };

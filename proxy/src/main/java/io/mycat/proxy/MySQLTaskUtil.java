@@ -106,6 +106,11 @@ public class MySQLTaskUtil {
       public void stop(ReactorEnvThread reactor, Exception reason) {
         asynTaskCallBack.onException(reason, this, null);
       }
+
+      @Override
+      public String message() {
+        return "getMySQLSessionFromUserThread";
+      }
     });
   }
 
@@ -176,6 +181,11 @@ public class MySQLTaskUtil {
       @Override
       public void stop(ReactorEnvThread reactor, Exception reason) {
         asynTaskCallBack.onException(reason, this, null);
+      }
+
+      @Override
+      public String message() {
+        return "getMySQLSessionForTryConnectFromUserThread";
       }
     });
   }
