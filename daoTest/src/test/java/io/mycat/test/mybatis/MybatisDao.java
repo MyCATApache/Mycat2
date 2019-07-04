@@ -43,7 +43,7 @@ public class MybatisDao extends ModualTest {
               int i = 0;
               while (i < 10) {
                 sqlSession.insert("test.insertTravelRecord", new TravelRecord());
-                Object o = sqlSession.selectOne("test.findTravelRecordById", 1);
+                Object o = sqlSession.selectList("test.findTravelRecordById", 1);
                 sqlSession.commit();
                 ++i;
               }
