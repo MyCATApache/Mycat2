@@ -83,8 +83,8 @@ public class ProxyQueryHandler {
     MycatUser user = mycat.getUser();
     String orgin = new String(sqlBytes);
     MycatMonitor.onOrginSQL(mycat, orgin);
-    BufferSQLContext sqlContext = router.simpleParse(orgin);
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());
+    BufferSQLContext sqlContext = router.simpleParse(sql);
     sql = sql.trim();
     byte sqlType = sqlContext.getSQLType();
     if (mycat.isBindMySQLSession()) {

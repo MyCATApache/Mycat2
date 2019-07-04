@@ -3,7 +3,6 @@ package io.mycat.embeddedDB;
 import ch.vorburger.exec.ManagedProcessException;
 import ch.vorburger.mariadb4j.DB;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class DbStartUp {
 
@@ -37,6 +36,7 @@ public class DbStartUp {
     try {
       startMySQLServer(3308);
       startMySQLServer(3309);
+      startMySQLServer(3310);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -47,7 +47,6 @@ public class DbStartUp {
   public static void startMySQLServer(int port) throws ManagedProcessException {
     if (db == null) {
       DBConfigurationBuilder builder = DBConfigurationBuilder.newBuilder();
-      builder.setDataDir("d:/tmp/" + ThreadLocalRandom.current().nextInt());
       builder.setPort(port);
       builder.addArg("--user=root");
       db = DB.newEmbeddedDB(builder.build());

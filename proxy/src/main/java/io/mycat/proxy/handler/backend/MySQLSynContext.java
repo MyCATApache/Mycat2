@@ -148,8 +148,9 @@ public class MySQLSynContext {
         characterSetResult == null || "".equals(characterSetResult) ? "NULL"
             : characterSetResult)) + ";"
         + ("SET SQL_SELECT_LIMIT=" + ((sqlSelectLimit == -1) ? "DEFAULT" : sqlSelectLimit) + ";"
-        + ("SET net_write_timeout=" + (netWriteTimeout == -1 ? "default" : netWriteTimeout)) + ";" +
-        "set session transaction " + (readOnly ? "read only" : "read write"));
+        + ("SET net_write_timeout=" + (netWriteTimeout == -1 ? "default" : netWriteTimeout)) + ";"
+//        + "SET TRANSACTION " + (readOnly ? "read only" : "read write")+";"
+    );
   }
 
   @Override

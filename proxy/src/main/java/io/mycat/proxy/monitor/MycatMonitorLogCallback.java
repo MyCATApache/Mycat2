@@ -19,17 +19,17 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
 
   protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatMonitor.class);
   protected final static MycatLogger SQL_LOGGER = MycatLoggerFactory.getLogger("sqlLogger");
-  final static boolean onBind = false;
-  final static boolean onSessionPool = false;
-  final static boolean onBuffer = false;
-  final static boolean recordDump = false;
-  final static boolean onSQL = false;
-  final static boolean onException = false;
-  final static boolean onClear = false;
-  final static boolean onCommand = false;
-  final static boolean onBackend = false;
-  final static boolean onPayload = false;
-  final static boolean readWriteOpts = false;
+  final static boolean onBind = true;
+  final static boolean onSessionPool = true;
+  final static boolean onBuffer = true;
+  final static boolean recordDump = true;
+  final static boolean onSQL = true;
+  final static boolean onException = true;
+  final static boolean onClear = true;
+  final static boolean onCommand = true;
+  final static boolean onBackend = true;
+  final static boolean onPayload = true;
+  final static boolean readWriteOpts = true;
   @Override
   public void onMySQLSessionServerStatusChanged(Session session, int serverStatus) {
     if (onBind) {
@@ -306,6 +306,14 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
     if (onBuffer) {
       //    Thread.dumpStack();
       LOGGER.debug("session id{}  {}", session.sessionId(), buffer);
+    }
+  }
+
+  @Override
+  public void onSyncSQL(MySQLSynContext context, String sql, MySQLClientSession session) {
+    if (onSQL) {
+      //    Thread.dumpStack();
+      SQL_LOGGER.debug("sync mysql session:{} sql:{}", session.sessionId(), sql);
     }
   }
 

@@ -42,7 +42,7 @@ public class MycatException extends RuntimeException {
   }
 
   public MycatException(String message, Object... args) {
-    super(MessageFormatter.format(message, args).getMessage());
+    super(MessageFormatter.arrayFormat(message, args).getMessage());
   }
 
   public int getErrorCode() {

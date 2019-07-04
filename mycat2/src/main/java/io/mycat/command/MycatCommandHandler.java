@@ -14,6 +14,7 @@
  */
 package io.mycat.command;
 
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
@@ -53,7 +54,11 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   public void handleQuery(byte[] sqlBytes, MycatSession mycat) {
     MycatSchema schema = router.getSchemaBySchemaName(mycat.getSchema());
     if (schema == null) {
-      schema = router.getDefaultSchema();
+      MycatSchema defaultSchema = router.getDefaultSchema();
+      if (defaultSchema == null) {
+        throw new MycatException("default schema {} is not existed", defaultSchema);
+      }
+      schema = defaultSchema;
     }
     SchemaType schemaType = schema.getSchemaType();
     if (schemaType == SchemaType.SQL_PARSE_ROUTE) {

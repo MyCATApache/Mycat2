@@ -2,6 +2,7 @@ package io.mycat.proxy.monitor;
 
 import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
 
+import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
@@ -497,5 +498,10 @@ public final class MycatMonitor {
 
   public static void onClearReadWriteOpts(Session session) {
     callback.onClearReadWriteOpts(session);
+  }
+
+  public static void onSyncSQL(MySQLSynContext mycatContext, String syncSQL,
+      MySQLClientSession mysql) {
+    callback.onSyncSQL(mycatContext, syncSQL, mysql);
   }
 }

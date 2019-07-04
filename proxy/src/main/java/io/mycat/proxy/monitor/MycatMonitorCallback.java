@@ -2,6 +2,7 @@ package io.mycat.proxy.monitor;
 
 import io.mycat.MycatException;
 import io.mycat.annotations.NoExcept;
+import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -62,6 +63,8 @@ public interface MycatMonitorCallback {
   void onMySQLSessionServerStatusChanged(Session session, int serverStatus);
 
   void onAllocateByteBuffer(ByteBuffer buffer, Session session);
+
+  void onSyncSQL(MySQLSynContext mycatSession, String sql, MySQLClientSession session);
 
   void onSynchronizationState(MySQLClientSession session);
 

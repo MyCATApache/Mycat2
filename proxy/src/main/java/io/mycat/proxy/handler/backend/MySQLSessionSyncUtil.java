@@ -3,11 +3,16 @@ package io.mycat.proxy.handler.backend;
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLClientSession;
 
 public class MySQLSessionSyncUtil {
+
+  private static final MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(MySQLSessionSyncUtil.class);
 
   public static void sync(MySQLSynContext mycatContext, MySQLClientSession mysql, Object sender,
       SessionSyncCallback callBack) {
@@ -17,6 +22,7 @@ public class MySQLSessionSyncUtil {
       callBack.onSession(mysql, sender, null);
     } else {
       String syncSQL = mycatContext.getSyncSQL();
+      MycatMonitor.onSyncSQL(mycatContext, syncSQL, mysql);
       ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, syncSQL,
           new ResultSetCallBack<MySQLClientSession>() {
 
@@ -32,6 +38,7 @@ public class MySQLSessionSyncUtil {
             public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
                 MySQLClientSession mysql, Object sender, Object attr) {
               String messageString = errorPacket.getErrorMessageString();
+              LOGGER.error(messageString);
               mysql.close(false, messageString);
               if (monopolize) {
                 callBack.onException(new MycatException(messageString), this, null);

@@ -1,5 +1,6 @@
 package io.mycat.proxy.monitor;
 
+import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
@@ -581,6 +582,11 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
 
   @Override
   public void onClearReadWriteOpts(Session session) {
+
+  }
+
+  @Override
+  public void onSyncSQL(MySQLSynContext mycatSession, String sql, MySQLClientSession session) {
 
   }
 }
