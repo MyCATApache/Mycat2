@@ -1,4 +1,4 @@
-funtions:
+functions:
   - clazz: io.mycat.router.function.PartitionByLong
     name: partitionByLong
     properties:

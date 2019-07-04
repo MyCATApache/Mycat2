@@ -108,7 +108,7 @@ public class MycatCore {
           }
 
         }
-      }, 0, 5, TimeUnit.SECONDS);
+      }, 0, 30, TimeUnit.SECONDS);
 
       runtime.startAcceptor();
       startFinished.onFinished(null, null, null);

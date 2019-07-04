@@ -142,7 +142,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
         default:
       }
     }
-    throw new MycatException("unsupport sql in annotation route");
+    throw new MycatException("unsupport sql:{} in annotation route", sql);
 
   }
 
