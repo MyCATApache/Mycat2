@@ -73,9 +73,11 @@ public class MySQLSynContext {
     mysql.setCharacterSetResult(characterSetResult);
     mysql.setSelectLimit(sqlSelectLimit);
     mysql.setNetWriteTimeout(netWriteTimeout);
-    mysql.setReadOnly(readOnly);
     if (autoCommit != mysql.isAutomCommit()) {
-      throw new MycatException("sync " + mysql.sessionId() + " fail");
+      throw new MycatException("sync autocommit " + mysql.sessionId() + " fail");
+    }
+    if (readOnly != mysql.isReadOnly()) {
+      throw new MycatException("sync readonly" + mysql.sessionId() + " fail");
     }
   }
 

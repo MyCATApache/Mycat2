@@ -58,6 +58,7 @@ mysql全局序列号
 - [x] 支持IO线程或者worker线程写入响应报文(cjw-2019-6-29)
 - [x] 替换logger类为mycat专用logger,编写收集代码中的日志字符串初步的工具,移除logtip模块(cjw-2019-6-30)
 - [x] 添加proxy 路由说明文档,jdbc内部sql说明文档,添加NIO JOB异常处理,路由重构(cjw-2019-7-3)
+- [x] 根据报文标志判断只读事务(cjw-2019-7-4)
 
 
 

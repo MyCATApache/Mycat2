@@ -522,6 +522,10 @@ public class MySQLClientSession extends
     return b ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF;
   }
 
+  public boolean isReadOnly() {
+    return (MySQLServerStatusFlags.IN_TRANS_READONLY & packetResolver.getServerStatus()) != 0;
+  }
+
 
   public String getCharset() {
     return charset;
@@ -613,11 +617,4 @@ public class MySQLClientSession extends
     this.responseType = responseType;
   }
 
-  public boolean isReadOnly() {
-    return isReadOnly;
-  }
-
-  public void setReadOnly(boolean readOnly) {
-    isReadOnly = readOnly;
-  }
 }
