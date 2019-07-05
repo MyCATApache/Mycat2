@@ -32,7 +32,7 @@ import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
-import io.mycat.collector.ResultSetTransfor;
+import io.mycat.mysqlapi.collector.ResultSetTransfor;
 import io.mycat.proxy.packet.ColumnDefPacketImpl;
 
 /**

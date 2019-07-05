@@ -78,7 +78,6 @@ public class MySQLClientSession extends
 
   private long selectLimit = -1;
   private long netWriteTimeout = -1;
-  private boolean isReadOnly = false;
   /**
    * 与mycat session绑定的信息 monopolizeType 是无法解绑的原因 TRANSACTION,事务 LOAD_DATA,交换过程
    * PREPARE_STATEMENT_EXECUTE,预处理过程 CURSOR_EXISTS 游标 以上四种情况 mysql客户端的并没有结束对mysql的交互,所以无法解绑

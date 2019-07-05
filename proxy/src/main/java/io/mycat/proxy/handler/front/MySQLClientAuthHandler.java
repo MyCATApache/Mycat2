@@ -132,6 +132,10 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 mycat.lazyClose(true, message);
                 return;
             }
+          if (user == null) {
+            String message = "user name is not existed";
+            failture(mycat, message);
+          }
             mycat.setUser(user);
             mycat.setSchema(database);
             mycat.setServerCapabilities(auth.getCapabilities());

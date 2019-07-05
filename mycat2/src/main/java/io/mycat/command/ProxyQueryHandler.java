@@ -31,6 +31,7 @@ import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_VARIABLES_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_WARNINGS;
 import static io.mycat.sqlparser.util.BufferSQLContext.USE_SQL;
 
+import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
@@ -86,6 +87,7 @@ public class ProxyQueryHandler {
     String sql = RouterUtil.removeSchema(orgin, useSchema.getSchemaName());
     BufferSQLContext sqlContext = router.simpleParse(sql);
     sql = sql.trim();
+
     byte sqlType = sqlContext.getSQLType();
     if (mycat.isBindMySQLSession()) {
       MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
@@ -173,6 +175,9 @@ public class ProxyQueryHandler {
 //          return;
         case SHOW_SQL:
           String defaultDataNode = useSchema.getDefaultDataNode();
+          if (defaultDataNode == null) {
+            throw new MycatException("show sql:{} can not route", sql);
+          }
           MySQLTaskUtil
               .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode, null,
                   ResponseType.QUERY);

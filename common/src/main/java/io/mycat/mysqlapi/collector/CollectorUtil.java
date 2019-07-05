@@ -1,4 +1,4 @@
-package io.mycat.collector;
+package io.mycat.mysqlapi.collector;
 
 import java.util.ArrayList;
 import java.util.Collections;

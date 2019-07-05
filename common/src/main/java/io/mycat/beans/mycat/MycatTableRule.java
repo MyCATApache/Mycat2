@@ -17,6 +17,7 @@ package io.mycat.beans.mycat;
 import io.mycat.router.DynamicAnnotationMatcher;
 import io.mycat.router.Route;
 import io.mycat.router.RuleAlgorithm;
+import io.mycat.sequenceModifier.SequenceModifier;
 
 /**
  * @author jamie12221
@@ -25,10 +26,13 @@ import io.mycat.router.RuleAlgorithm;
 public class MycatTableRule {
 
   final String tableName;
-
+  final SequenceModifier modifier;
   final RuleAlgorithm ruleAlgorithm;
-  public MycatTableRule(String name, Route route, RuleAlgorithm ruleAlgorithm,
+
+  public MycatTableRule(String name, SequenceModifier modifier,
+      Route route, RuleAlgorithm ruleAlgorithm,
       DynamicAnnotationMatcher matcher) {
+    this.modifier = modifier;
     this.ruleAlgorithm = ruleAlgorithm;
     this.tableName = name;
     this.route = route;
@@ -53,4 +57,7 @@ public class MycatTableRule {
     return matcher;
   }
 
+  public SequenceModifier getModifier() {
+    return modifier;
+  }
 }

@@ -1,9 +1,8 @@
-package io.mycat.collector;
+package io.mycat.mysqlapi.collector;
 
 import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import java.math.BigDecimal;
-import org.checkerframework.common.value.qual.IntRangeFromPositive;
 
 /**
  * @author jamie12221

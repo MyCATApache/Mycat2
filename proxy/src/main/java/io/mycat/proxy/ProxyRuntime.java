@@ -14,6 +14,7 @@
  */
 package io.mycat.proxy;
 
+import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
@@ -34,6 +35,7 @@ import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.config.schema.DataNodeType;
 import io.mycat.config.user.UserRootConfig;
+import io.mycat.ext.MySQLAPIRuntimeImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -53,7 +55,6 @@ import io.mycat.util.CharsetUtil;
 import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -72,7 +73,7 @@ public class ProxyRuntime {
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ProxyRuntime.class);
   private final AtomicInteger sessionIdCounter = new AtomicInteger(1);
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
-  private final List<MySQLDatasource> datasourceList = new ArrayList<>();
+  private final Map<String, MySQLDatasource> datasourceMap = new HashMap<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
   private LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
   private MycatSecurityConfig securityManager;
@@ -82,6 +83,7 @@ public class ProxyRuntime {
   private final ConfigReceiver config;
   private ProxyBeanProviders providers;
   private final Map<String, Object> defContext = new HashMap<>();
+  private MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
 
   public ProxyRuntime(ConfigReceiver configReceiver, ProxyBeanProviders providers) {
     this.config = configReceiver;
@@ -110,7 +112,7 @@ public class ProxyRuntime {
     acceptor = null;
     this.sessionIdCounter.set(1);
     this.replicaMap.clear();
-    this.datasourceList.clear();
+    this.datasourceMap.clear();
     this.dataNodeMap.clear();
     this.loadBalanceManager = new LoadBalanceManager();
     this.securityManager = null;
@@ -215,7 +217,16 @@ public class ProxyRuntime {
       MySQLReplica replica = factory
           .createReplica(runtime, replicaConfig, writeIndex);
       replicaMap.put(replica.getName(), replica);
-      datasourceList.addAll(replica.getDatasourceList());
+      List<MySQLDatasource> datasourceList = replica.getDatasourceList();
+      if (datasourceList != null) {
+        for (MySQLDatasource datasource : datasourceList) {
+          if (this.datasourceMap.containsKey(datasource.getName())) {
+            throw new MycatException("dataSource name:{} can noy duplicate", datasource.getName());
+          } else {
+            this.datasourceMap.put(datasource.getName(), datasource);
+          }
+        }
+      }
     }
   }
 
@@ -287,9 +298,9 @@ public class ProxyRuntime {
 
   private void initMinCon() {
     Objects.requireNonNull(reactorThreads);
-    Objects.requireNonNull(datasourceList);
-    for (MySQLDatasource datasource : datasourceList) {
-      datasource.init(reactorThreads, new AsyncTaskCallBackCounter(datasourceList.size(),
+    Objects.requireNonNull(datasourceMap);
+    for (MySQLDatasource datasource : datasourceMap.values()) {
+      datasource.init(reactorThreads, new AsyncTaskCallBackCounter(datasourceMap.size(),
           new AsyncTaskCallBack() {
             @Override
             public void onFinished(Object sender, Object result, Object attr) {
@@ -342,14 +353,26 @@ public class ProxyRuntime {
     return replicaMap.get(name);
   }
 
+  public MySQLDatasource getDataSourceByDataSourceName(String name) {
+    return datasourceMap.get(name);
+  }
+
   public String getCharsetById(int index) {
     return CharsetUtil.getCharset(index);
   }
 
+  /**
+   * not thread safe
+   */
   public <T extends MySQLDatasource> Collection<T> getMySQLDatasourceList() {
-    return (Collection) datasourceList;
+    return (Collection) datasourceMap.values();
   }
 
+  /**
+   * not thread safe
+   * @param <T>
+   * @return
+   */
   public <T extends MySQLReplica> Collection<T> getMySQLReplicaList() {
     return (Collection) replicaMap.values();
   }
@@ -429,6 +452,9 @@ public class ProxyRuntime {
       YamlUtil.dumpToFile(config.getFilePath(), newContext);
       REPLICA_MASTER_INDEXES_LOGGER.info("switchRes from:{}", old, switchRes);
     }
+  }
 
+  public MySQLAPIRuntimeImpl getMySQLAPIRuntime() {
+    return mySQLAPIRuntime;
   }
 }

@@ -14,11 +14,11 @@
  */
 package io.mycat.replica.heartbeat.callback;
 
-import io.mycat.collector.CollectorUtil;
-import io.mycat.collector.OneResultSetCollector;
 import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.mysqlapi.collector.CollectorUtil;
+import io.mycat.mysqlapi.collector.OneResultSetCollector;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.DatasourceStatus;

@@ -45,6 +45,7 @@ import io.mycat.router.routeStrategy.AnnotationRouteStrategy;
 import io.mycat.router.routeStrategy.DbInMultiServerRouteStrategy;
 import io.mycat.router.routeStrategy.DbInOneServerRouteStrategy;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
+import io.mycat.sequenceModifier.SequenceModifier;
 import io.mycat.util.SplitUtil;
 import io.mycat.util.StringUtil;
 import java.util.ArrayList;
@@ -201,6 +202,18 @@ public class MycatRouterConfig {
     return (RuleAlgorithm) clz.newInstance();
   }
 
+  private static SequenceModifier createSequenceModifier(String clazz)
+      throws ClassNotFoundException, InstantiationException,
+      IllegalAccessException {
+    Class<?> clz = Class.forName(clazz);
+    //判断是否继承AbstractPartitionAlgorithm
+    if (!SequenceModifier.class.isAssignableFrom(clz)) {
+      throw new IllegalArgumentException("rule function must implements "
+          + SequenceModifier.class.getName() + ", clazz=" + clazz);
+    }
+    return (SequenceModifier) clz.newInstance();
+  }
+
   private RuleAlgorithm getRuleAlgorithm(ShardingFuntion funtion)
       throws ClassNotFoundException, InstantiationException, IllegalAccessException {
     Map<String, String> properties = funtion.getProperties();
@@ -209,6 +222,23 @@ public class MycatRouterConfig {
     RuleAlgorithm rootFunction = createFunction(funtion.getName(), funtion.getClazz());
     rootFunction.init(funtion.getProperties(), funtion.getRanges());
     return rootFunction;
+  }
+
+  private SequenceModifier getSequenceModifier(SharingTableRule rule) {
+    String sequenceClass = rule.getSequenceClass();
+    if (sequenceClass != null) {
+      try {
+        SequenceModifier sequenceModifier = createSequenceModifier(sequenceClass);
+        Map<String, String> properties = rule.getSequenceProperties();
+        properties = (properties == null) ? Collections.emptyMap() : properties;
+        rule.setSequenceProperties(properties);
+        sequenceModifier.init(rule.getSequenceProperties());
+        return sequenceModifier;
+      } catch (Exception e) {
+        throw new MycatException("can not init {}", sequenceClass, e);
+      }
+    }
+    return null;
   }
 
   public RuleAlgorithm getRuleAlgorithm(String name) {
@@ -479,7 +509,9 @@ public class MycatRouterConfig {
         } else {
           matcher = DynamicAnnotationMatcherImpl.EMPTY;
         }
-        tableRules.put(name, new MycatTableRule(name, rootRouteNode, algorithm, matcher));
+        tableRules.put(name,
+            new MycatTableRule(name, getSequenceModifier(tableRule), rootRouteNode, algorithm,
+                matcher));
       }
     }
 
