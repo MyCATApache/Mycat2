@@ -171,8 +171,14 @@ public class MySQLSequenceHandlerImpl implements SequenceHandler {
   private void init(String key, String value) {
     if (key != null && key.startsWith("mysqlSeqSource-")) {
       String[] keys = key.split("-");
+      if (keys.length != 3) {
+        throw new MycatException("error format:{}", key);
+      }
       SeqInfoKey seqInfoKey = new SeqInfoKey(keys[1], keys[2]);
       String[] values = value.split("-");
+      if (values.length != 3) {
+        throw new MycatException("error format:{}", key);
+      }
       SeqInfoValue seqInfoValue = new SeqInfoValue(seqInfoKey, values[0], values[1], values[2]);
       map.put(seqInfoKey, seqInfoValue);
     }
@@ -233,8 +239,6 @@ public class MySQLSequenceHandlerImpl implements SequenceHandler {
 
     private final SeqInfoKey seqInfoKey;
     private final String dataSourceName;
-    private final String sequenceSchema;
-    private final String sequenceName;
     private final String sql;
 
     private final AtomicBoolean fetch = new AtomicBoolean(false);
@@ -245,8 +249,6 @@ public class MySQLSequenceHandlerImpl implements SequenceHandler {
         String sequenceName) {
       this.seqInfoKey = seqInfoKey;
       this.dataSourceName = dataSourceName;
-      this.sequenceSchema = sequenceSchema;
-      this.sequenceName = sequenceName;
       this.sql = String
           .format("SELECT %s.mycat_seq_nextval('%s');", sequenceSchema, sequenceName);
     }
