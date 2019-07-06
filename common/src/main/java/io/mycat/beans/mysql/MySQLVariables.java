@@ -17,7 +17,7 @@ public class MySQLVariables {
   long query_cache_size = 0;
   String performance_schema = "";
   private Map<String, String> variables;
-  long net_write_timeout = 0;
+  long net_write_timeout = -1;
   String character_set_connection = "utf8";
   int max_allowed_packet = 16777216;
   String lower_case_table_names = "1";

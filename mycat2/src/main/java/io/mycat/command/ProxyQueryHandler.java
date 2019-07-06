@@ -37,6 +37,7 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
+import io.mycat.config.schema.SchemaType;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
@@ -53,6 +54,8 @@ import io.mycat.router.routeResult.OneServerResultRoute;
 import io.mycat.router.routeResult.ResultRouteType;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.security.MycatUser;
+import io.mycat.sequenceModifier.ModifyCallback;
+import io.mycat.sequenceModifier.SequenceModifier;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.nio.charset.Charset;
 import java.util.Collection;
@@ -236,29 +239,28 @@ public class ProxyQueryHandler {
           LOGGER.warn("Use annotations to specify loadata data nodes whenever possible !");
         }
         case SELECT_SQL:
-        default:
-          boolean simpleSelect = sqlContext.isSimpleSelect() && sqlType == SELECT_SQL;
-          ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
-          if (resultRoute == null) {
-            mycat.setLastMessage("can not route:" + sql);
-            mycat.writeErrorEndPacket();
-            return;
-          }
-          if (resultRoute.getType() == ResultRouteType.ONE_SERVER_RESULT_ROUTE) {
-            OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
-            MySQLDataSourceQuery query = new MySQLDataSourceQuery();
-            query.setIds(null);
-            query.setRunOnMaster(resultRoute.isRunOnMaster(!simpleSelect));
-            query.setStrategy(runtime
-                .getLoadBalanceByBalanceName(resultRoute.getBalance()));
-            MySQLTaskUtil
-                .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-                    resultRoute1.getDataNode(), query, ResponseType.QUERY);
-          } else {
-            mycat.setLastMessage("unsupport sql");
-            mycat.writeErrorEndPacket();
-          }
+        default: {
+          MycatSchema fSchema = useSchema;
+          if (useSchema.getSchemaType() == SchemaType.ANNOTATION_ROUTE) {
+            SequenceModifier modifier = useSchema.getModifier();
+            if (modifier != null) {
+              modifier.modify(fSchema.getSchemaName(), sql, new ModifyCallback() {
+                @Override
+                public void onSuccessCallback(String sql) {
+                  execute(mycat, fSchema, sql, sqlContext, sqlType);
+                }
 
+                @Override
+                public void onException(Exception e) {
+                  mycat.setLastMessage(e);
+                  mycat.writeErrorEndPacket();
+                }
+              });
+              return;
+            }
+          }
+          execute(mycat, fSchema, sql, sqlContext, sqlType);
+        }
       }
     } catch (Exception e) {
       mycat.setLastMessage(e);
@@ -266,10 +268,34 @@ public class ProxyQueryHandler {
     }
   }
 
+  public void execute(MycatSession mycat, MycatSchema useSchema, String sql,
+      BufferSQLContext sqlContext, byte sqlType) {
+    boolean simpleSelect = sqlContext.isSimpleSelect() && sqlType == SELECT_SQL;
+    ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
+    if (resultRoute == null) {
+      mycat.setLastMessage("can not route:" + sql);
+      mycat.writeErrorEndPacket();
+    } else if (resultRoute.getType() == ResultRouteType.ONE_SERVER_RESULT_ROUTE) {
+      OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
+      MySQLDataSourceQuery query = new MySQLDataSourceQuery();
+      query.setIds(null);
+      query.setRunOnMaster(resultRoute.isRunOnMaster(!simpleSelect));
+      query.setStrategy(runtime
+          .getLoadBalanceByBalanceName(resultRoute.getBalance()));
+      MySQLTaskUtil
+          .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
+              resultRoute1.getDataNode(), query, ResponseType.QUERY);
+    } else {
+      mycat.setLastMessage("unsupport sql");
+      mycat.writeErrorEndPacket();
+    }
+  }
+
   public void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
     mycat.writeColumnCount(1);
     byte[] bytes = MySQLPacketUtil
-        .generateColumnDef("information_schema", "SCHEMATA", "SCHEMATA", "Database", "SCHEMA_NAME",
+        .generateColumnDef("information_schema", "SCHEMATA", "SCHEMATA", "Database",
+            "SCHEMA_NAME",
             MySQLFieldsType.FIELD_TYPE_VAR_STRING,
             0x1, 0, mycat.charsetIndex(), 192, Charset.defaultCharset());
     mycat.writeBytes(bytes, false);

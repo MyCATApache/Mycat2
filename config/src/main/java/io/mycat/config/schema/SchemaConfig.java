@@ -16,19 +16,24 @@ package io.mycat.config.schema;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Desc:
  *
  * date: 24/09/2017  02/05/2019
+ *
  * @author: gaozhiwen chenjunwen
  */
 public class SchemaConfig {
+
   public String name;
   public SchemaType schemaType;
   private String defaultDataNode;
   private String sqlMaxLimit;
   private List<TableDefConfig> tables = new ArrayList<TableDefConfig>();
+  private String sequenceModifierClazz;
+  private Map<String, String> sequenceModifierProperties;
 
   public String getName() {
     return name;
@@ -70,9 +75,36 @@ public class SchemaConfig {
     this.sqlMaxLimit = sqlMaxLimit;
   }
 
+
+  public String getSequenceModifierClazz() {
+    return sequenceModifierClazz;
+  }
+
+
+  public void setSequenceModifierClazz(String sequenceModifierClazz) {
+    this.sequenceModifierClazz = sequenceModifierClazz;
+  }
+
+
+  public Map<String, String> getSequenceModifierProperties() {
+    return sequenceModifierProperties;
+  }
+
+
+  public void setSequenceModifierProperties(Map<String, String> sequenceModifierProperties) {
+    this.sequenceModifierProperties = sequenceModifierProperties;
+  }
+
   @Override
   public String toString() {
-    return "SchemaBean{" + "name='" + name + '\'' + ", schemaType=" + schemaType + ", tables="
-               + tables + '}';
+    return "SchemaConfig{" +
+        "name='" + name + '\'' +
+        ", schemaType=" + schemaType +
+        ", defaultDataNode='" + defaultDataNode + '\'' +
+        ", sqlMaxLimit='" + sqlMaxLimit + '\'' +
+        ", tables=" + tables +
+        ", sequenceModifierClazz='" + sequenceModifierClazz + '\'' +
+        ", sequenceModifierProperties=" + sequenceModifierProperties +
+        '}';
   }
 }

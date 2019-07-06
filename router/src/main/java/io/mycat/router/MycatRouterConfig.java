@@ -30,6 +30,8 @@ import io.mycat.config.YamlUtil;
 import io.mycat.config.route.AnnotationType;
 import io.mycat.config.route.DynamicAnnotationConfig;
 import io.mycat.config.route.DynamicAnnotationRootConfig;
+import io.mycat.config.route.SchemaSequenceModifierRootConfig;
+import io.mycat.config.route.SequenceModifierConfig;
 import io.mycat.config.route.ShardingFuntion;
 import io.mycat.config.route.ShardingRule;
 import io.mycat.config.route.ShardingRuleRootConfig;
@@ -40,6 +42,7 @@ import io.mycat.config.schema.SchemaConfig;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.config.schema.TableDefConfig;
+import io.mycat.mysqlapi.MySQLAPIRuntime;
 import io.mycat.router.dynamicAnnotation.DynamicAnnotationMatcherImpl;
 import io.mycat.router.routeStrategy.AnnotationRouteStrategy;
 import io.mycat.router.routeStrategy.DbInMultiServerRouteStrategy;
@@ -56,6 +59,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -69,7 +73,10 @@ public class MycatRouterConfig {
   private final Map<String, DynamicAnnotationConfig> dynamicAnnotations = new HashMap<>();
   private final Map<String, MycatTableRule> tableRules = new HashMap<>();
   private final Map<String, MycatSchema> schemas = new HashMap<>();
+  private final Map<String, SequenceModifier> sequenceModifiers = new HashMap<>();
   private final MycatSchema defaultSchema;
+  private ConfigReceiver cr;
+  private MySQLAPIRuntime mySQLAPIRuntime;
 
   public MycatTableRule getTableRuleByTableName(String name) {
     return tableRules.get(name);
@@ -202,16 +209,12 @@ public class MycatRouterConfig {
     return (RuleAlgorithm) clz.newInstance();
   }
 
-  private static SequenceModifier createSequenceModifier(String clazz)
-      throws ClassNotFoundException, InstantiationException,
-      IllegalAccessException {
-    Class<?> clz = Class.forName(clazz);
-    //判断是否继承AbstractPartitionAlgorithm
-    if (!SequenceModifier.class.isAssignableFrom(clz)) {
-      throw new IllegalArgumentException("rule function must implements "
-          + SequenceModifier.class.getName() + ", clazz=" + clazz);
-    }
-    return (SequenceModifier) clz.newInstance();
+  public MycatRouterConfig(ConfigReceiver cr, MySQLAPIRuntime runtime) {
+    this(cr.getConfig(ConfigEnum.SCHEMA)
+        , cr.getConfig(ConfigEnum.FUNCTIONS),
+        cr.getConfig(ConfigEnum.DYNAMIC_ANNOTATION),
+        cr.getConfig(ConfigEnum.SEQUENCE_MODIFIER),
+        cr.getConfig(ConfigEnum.RULE), runtime);
   }
 
   private RuleAlgorithm getRuleAlgorithm(ShardingFuntion funtion)
@@ -224,38 +227,12 @@ public class MycatRouterConfig {
     return rootFunction;
   }
 
-  private SequenceModifier getSequenceModifier(SharingTableRule rule) {
-    String sequenceClass = rule.getSequenceClass();
-    if (sequenceClass != null) {
-      try {
-        SequenceModifier sequenceModifier = createSequenceModifier(sequenceClass);
-        Map<String, String> properties = rule.getSequenceProperties();
-        properties = (properties == null) ? Collections.emptyMap() : properties;
-        rule.setSequenceProperties(properties);
-        sequenceModifier.init(rule.getSequenceProperties());
-        return sequenceModifier;
-      } catch (Exception e) {
-        throw new MycatException("can not init {}", sequenceClass, e);
-      }
-    }
-    return null;
-  }
-
-  public RuleAlgorithm getRuleAlgorithm(String name) {
-    return functions.get(name).get();
-  }
-
-
-  public MycatRouterConfig(ConfigReceiver cr) {
-    this(cr.getConfig(ConfigEnum.SCHEMA)
-        , cr.getConfig(ConfigEnum.FUNCTIONS), cr.getConfig(ConfigEnum.DYNAMIC_ANNOTATION),
-        cr.getConfig(ConfigEnum.RULE));
-  }
-
   public MycatRouterConfig(SchemaRootConfig schemaConfig,
       SharingFuntionRootConfig funtionsConfig,
       DynamicAnnotationRootConfig dynamicAnnotationConfig,
-      ShardingRuleRootConfig ruleConfig) {
+      SchemaSequenceModifierRootConfig sequenceModifierRootConfig,
+      ShardingRuleRootConfig ruleConfig, MySQLAPIRuntime mySQLAPIRuntime) {
+    this.mySQLAPIRuntime = mySQLAPIRuntime;
     ////////////////////////////////////check/////////////////////////////////////////////////
 //    Objects.requireNonNull(schemaConfig, "schema config can not be empty");
 //    Objects.requireNonNull(funtionsConfig, "function config can not be empty");
@@ -264,9 +241,60 @@ public class MycatRouterConfig {
     ////////////////////////////////////check/////////////////////////////////////////////////
     initFunctions(funtionsConfig);
     initAnnotations(dynamicAnnotationConfig);
+    initModifiers(sequenceModifierRootConfig);
     initTableRule(ruleConfig);
     iniSchema(schemaConfig);
     this.defaultSchema = initDefaultSchema(schemaConfig);
+    this.mySQLAPIRuntime = mySQLAPIRuntime;
+  }
+
+  public RuleAlgorithm getRuleAlgorithm(String name) {
+    return functions.get(name).get();
+  }
+
+  private static SequenceModifier createSequenceModifier(String clazz)
+      throws ClassNotFoundException, InstantiationException,
+      IllegalAccessException {
+    Class<?> clz = Class.forName(clazz);
+    //判断是否继承AbstractPartitionAlgorithm
+    if (!SequenceModifier.class.isAssignableFrom(clz)) {
+      throw new IllegalArgumentException("SequenceModifierConfig must implements "
+          + SequenceModifier.class.getName() + ", clazz=" + clazz);
+    }
+    return (SequenceModifier) clz.newInstance();
+  }
+
+  private SequenceModifier getSequenceModifier(MySQLAPIRuntime mySQLAPIRuntime,
+      String sequenceClass, Map<String, String> properties) {
+    if (sequenceClass != null) {
+      try {
+        SequenceModifier sequenceModifier = createSequenceModifier(sequenceClass);
+        properties = (properties == null) ? Collections.emptyMap() : properties;
+        sequenceModifier.init(mySQLAPIRuntime, properties);
+        return sequenceModifier;
+      } catch (Exception e) {
+        throw new MycatException("can not init {}", sequenceClass, e);
+      }
+    }
+    return null;
+  }
+
+  private void initModifiers(SchemaSequenceModifierRootConfig config) {
+    if (config != null) {
+      Map<String, SequenceModifierConfig> modifiers = config
+          .getModifiers();
+      if (modifiers != null) {
+        for (Entry<String, SequenceModifierConfig> entry : modifiers
+            .entrySet()) {
+          String key = entry.getKey();
+          SequenceModifierConfig value = entry.getValue();
+          SequenceModifier sequenceModifier = getSequenceModifier(this.mySQLAPIRuntime,
+              value.getSequenceModifierClazz(),
+              value.getSequenceModifierProperties());
+          this.sequenceModifiers.put(key, sequenceModifier);
+        }
+      }
+    }
   }
 
   public MycatSchema getDefaultSchema() {
@@ -380,7 +408,8 @@ public class MycatRouterConfig {
           routeStrategy = new SqlParseRouteRouteStrategy();
           break;
       }
-      MycatSchema schema = new MycatSchema(schemaConfig, routeStrategy);
+      MycatSchema schema = new MycatSchema(schemaConfig, routeStrategy,
+          this.sequenceModifiers.get(schemaConfig.getName()));
       if (sqlMaxLimit != null && !"".equals(sqlMaxLimit)) {
         schema.setSqlMaxLimit(Long.parseLong(sqlMaxLimit));
       }
@@ -438,6 +467,7 @@ public class MycatRouterConfig {
 
         }
         schema.setTables(mycatTables);
+
         schemas.put(schemaConfig.getName(), schema);
       }
     }
@@ -510,7 +540,9 @@ public class MycatRouterConfig {
           matcher = DynamicAnnotationMatcherImpl.EMPTY;
         }
         tableRules.put(name,
-            new MycatTableRule(name, getSequenceModifier(tableRule), rootRouteNode, algorithm,
+            new MycatTableRule(name,
+                getSequenceModifier(this.mySQLAPIRuntime, tableRule.getSequenceClass(),
+                    tableRule.getSequenceProperties()), rootRouteNode, algorithm,
                 matcher));
       }
     }

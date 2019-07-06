@@ -50,31 +50,36 @@ public class SQLMapAnnotation {
 
   public void init(HashArray array,
       ByteArrayView byteArrayView) {
+    clear();
     this.array = array;
     this.byteArrayView = byteArrayView;
   }
 
   public <T extends PutKeyValueAble> T toMapAndClear(T map) {
-    map.put("annotationName", byteArrayView.getStringByHashArray(processorPos, array));
-    for (int i = 0; i < keyStartIndex.length && i < index; i++) {
-      String key = byteArrayView.getStringByHashArray(keyStartIndex[i], array);
-      short value = valueStartIndex[i];
-      switch (array.getType(value)) {
-        case DIGITS:
-          long hash = array.getHash(value);
-          map.put(key, hash);
-          break;
-        case STRINGS:
+    try {
+      map.put("annotationName", byteArrayView.getStringByHashArray(processorPos, array));
+      for (int i = 0; i < keyStartIndex.length && i < index; i++) {
+        String key = byteArrayView.getStringByHashArray(keyStartIndex[i], array);
+        short value = valueStartIndex[i];
+        switch (array.getType(value)) {
+          case DIGITS:
+            long hash = array.getHash(value);
+            map.put(key, hash);
+            break;
+          case STRINGS:
 //          String s = byteArrayView.getStringByHashArray(value, array);
 //          map.put(key, s.substring(1,s.length()-1));
-          map.put(key, byteArrayView.getStringByHashArray(value, array));
-          break;
-        default:
-          map.put(key, byteArrayView.getStringByHashArray(value, array));
-          break;
+            map.put(key, byteArrayView.getStringByHashArray(value, array));
+            break;
+          default:
+            map.put(key, byteArrayView.getStringByHashArray(value, array));
+            break;
+        }
       }
+      return map;
+    } finally {
+      clear();
     }
-    return map;
   }
 
   public interface PutKeyValueAble {

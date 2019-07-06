@@ -88,13 +88,15 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
         return routeResult = routeStrategy.route(defaultSchema, sql, this.context);
       }
       if (schemaCount == 1) {
-        String schemaName = sqlContext.getSchemaName(0);
-        MycatSchema schema = config.getSchemaBySchemaName(schemaName);
-        if (schema == null) {
-          throw new MycatException("can not find schema:{}", schemaName);
-        }
-        RouteStrategy routeStrategy = schema.getRouteStrategy();
-        return routeResult = routeStrategy.route(schema, sql, this.context);
+//        String schemaName = sqlContext.getSchemaName(0);
+//        MycatSchema schema = config.getSchemaBySchemaName(schemaName);
+//        if (schema == null) {
+//          throw new MycatException("can not find schema:{}", schemaName);
+//        }
+//        RouteStrategy routeStrategy = schema.getRouteStrategy();
+//        return routeResult = routeStrategy.route(schema, sql, this.context);
+        throw new MycatException("sql:{} should not contains schema:{}", sql,
+            sqlContext.getSchemaName(0));
       } else {
         return routeResult = this.route(defaultSchema, sql, this.context);
       }

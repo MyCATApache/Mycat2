@@ -1,22 +1,29 @@
-defaultSchemaName: db12
+defaultSchemaName: DB_IN_ONE_SERVER_3306
 schemas:
-  - name: db12
+  - name: DB_IN_ONE_SERVER_3306
     schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
-  - name: db22
+  - name: DB_IN_ONE_SERVER_3307
     schemaType: DB_IN_ONE_SERVER
-    defaultDataNode: dn1
-  - name: test2
-    schemaType: DB_IN_MULTI_SERVER
-    defaultDataNode: dn1
+    defaultDataNode: dn2
     tables:
-      - name: travelrecord2
+      - name: travelrecord
+  - name: DB_IN_ONE_SERVER_3308
+    schemaType: DB_IN_ONE_SERVER
+    defaultDataNode: dn3
+    tables:
+      - name: travelrecord
+  - name: DB_IN_MULTI_SERVER
+    schemaType: DB_IN_MULTI_SERVER
+    tables:
+      - name: travelrecord3306
+        dataNodes: dn1
+      - name: travelrecord3307
         dataNodes: dn2
-      - name: travelrecord3
+      - name: travelrecord3308
         dataNodes: dn3
-  - name: test3
+  - name: ANNOTATION_ROUTE
     schemaType: ANNOTATION_ROUTE
-    defaultDataNode: dn1
     tables:
       - name: travelrecord
         type: SHARING_DATABASE

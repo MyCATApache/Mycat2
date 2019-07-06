@@ -10,7 +10,12 @@ import io.mycat.mysqlapi.callback.MySQLAPIExceptionCallback;
 import io.mycat.mysqlapi.callback.MySQLAPISessionCallback;
 import io.mycat.mysqlapi.callback.MySQLJobCallback;
 import io.mycat.mysqlapi.collector.OneResultSetCollector;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -18,53 +23,135 @@ public class MySQLSequenceHandlerImpl implements SequenceHandler {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(MySQLSequenceHandlerImpl.class);
-  private final AtomicBoolean fetch = new AtomicBoolean(false);
-  private final String dataSourceName;
   private MySQLAPIRuntime mySQLAPIRuntime;
-  private volatile AtomicLong currentValue = null;
-  private volatile long maxValue = Long.MIN_VALUE;
-  private String fetchSQL;
   private long timeout;
+  private final Map<SeqInfoKey, SeqInfoValue> map = new HashMap<>();
 
-  public MySQLSequenceHandlerImpl(MySQLAPIRuntime mySQLAPIRuntime, String dataSourceName,
-      String fetchSQL, long timeout) {
-    this.mySQLAPIRuntime = mySQLAPIRuntime;
-    this.dataSourceName = dataSourceName;
-    this.fetchSQL = fetchSQL;
-    this.timeout = timeout;
-  }
-
-  public void nextId(SequenceCallback callback) {
-    if (currentValue == null) {
-      if (fetch.compareAndSet(false, true)) {
-        updateSeqFromDb(callback);
-        return;
+  @Override
+  public void nextId(String schema, String seqName, SequenceCallback callback) {
+    try {
+      SeqInfoValue seqInfoValue = getSeqInfoValue(schema, seqName);
+      AtomicLong valueBox = seqInfoValue.getValueBox();
+      if (valueBox == null) {
+        if (seqInfoValue.getFetchLock().compareAndSet(false, true)) {
+          updateSeqFromDb(seqInfoValue, callback);
+          return;
+        } else {
+          pending(schema, seqName, callback);
+          return;
+        }
       } else {
-        pending(callback);
-        return;
+        long cur = valueBox.get();
+        long inc = seqInfoValue.tryIncrement();
+        if (inc > cur) {
+          callback.onSequence(inc);
+          return;
+        } else {
+          seqInfoValue.setValueBox(null);
+          nextId(schema, seqName, callback);
+          return;
+        }
       }
-    } else {
-      long value = currentValue.incrementAndGet();
-      if (value < maxValue) {
-        callback.onSequence(value);
-        return;
-      } else {
-        currentValue = null;
-        nextId(callback);
-      }
+    } catch (Exception e) {
+      LOGGER.error("", e);
+      callback.onException(e);
     }
   }
 
-  public void pending(SequenceCallback callback) {
+  private void updateSeqFromDb(SeqInfoValue seqInfoValue,
+      SequenceCallback callback) {
+    String dataSourceName = seqInfoValue.getDataSourceName();
+    mySQLAPIRuntime.create(dataSourceName, new
+        MySQLAPISessionCallback() {
+          @Override
+          public void onSession(MySQLAPI mySQLAPI) {
+            OneResultSetCollector collector = new OneResultSetCollector();
+            String sql = seqInfoValue.getSql();
+            mySQLAPI.query(sql, collector,
+                new MySQLAPIExceptionCallback() {
+
+                  @Override
+                  public void onException(Exception exception, MySQLAPI mySQLAPI) {
+                    seqInfoValue.getFetchLock().set(false);
+                    callback.onException(exception);
+                  }
+
+                  @Override
+                  public void onFinished(boolean monopolize, MySQLAPI mySQLAPI) {
+                    try {
+                      mySQLAPI.close();
+                    } catch (Exception e) {
+                      LOGGER.error("", e);
+                    }
+                    try {
+                      Iterator<Object[]> iterator = collector.iterator();
+                      String seqText = (String) iterator.next()[0];
+                      String[] values = seqText.split(",");
+                      long currentValue = Long.parseLong(values[0]);
+                      long increment = Long.parseLong(values[1]);
+                      seqInfoValue.setValueBox(new AtomicLong(currentValue));
+                      seqInfoValue.setMaxValue(currentValue + increment);
+                    } catch (Exception e) {
+                      callback.onException(e);
+                      return;
+                    } finally {
+                      seqInfoValue.getFetchLock().set(false);
+                    }
+                    SeqInfoKey seqInfoKey = seqInfoValue.getSeqInfoKey();
+                    nextId(seqInfoKey.getSchema(), seqInfoKey.getTable(), callback);
+                  }
+
+                  @Override
+                  public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
+                      MySQLAPI mySQLAPI) {
+                    seqInfoValue.getFetchLock().set(false);
+                    try {
+                      mySQLAPI.close();
+                    } catch (Exception e) {
+                      LOGGER.error("", e);
+                    }
+                    callback.onException(new MycatException(errorPacket.getErrorMessageString()));
+                  }
+                });
+          }
+
+          @Override
+          public void onException(Exception exception) {
+            seqInfoValue.getFetchLock().set(false);
+            callback.onException(exception);
+          }
+        });
+  }
+
+
+  @Override
+  public void init(MySQLAPIRuntime mySQLAPIRuntime,
+      Map<String, String> properties) {
+    Objects.requireNonNull(mySQLAPIRuntime);
+    this.mySQLAPIRuntime = mySQLAPIRuntime;
+
+    for (Entry<String, String> entry : properties.entrySet()) {
+      String key = entry.getKey();
+      if (key.startsWith("mysqlSeqSource-")) {
+        init(key, entry.getValue());
+      }
+    }
+
+    this.timeout = Long.parseLong(
+        properties.getOrDefault("mysqlSeqTimeout", Long.toString(TimeUnit.SECONDS.toMillis(1))));
+
+  }
+
+  public void pending(String schema, String table, SequenceCallback callback) {
     mySQLAPIRuntime.addPengdingJob(new MySQLJobCallback() {
       long startTime = System.currentTimeMillis();
 
       @Override
       public void run() throws Exception {
-        if (System.currentTimeMillis() - startTime > timeout) {
+        if (System.currentTimeMillis() - startTime > MySQLSequenceHandlerImpl.this.timeout) {
           stop(new Exception("seq timeout"));
         } else {
-          nextId(callback);
+          nextId(schema, table, callback);
         }
       }
 
@@ -80,62 +167,132 @@ public class MySQLSequenceHandlerImpl implements SequenceHandler {
     });
   }
 
-  public void updateSeqFromDb(SequenceCallback callback) {
-    mySQLAPIRuntime.create(dataSourceName, new
-        MySQLAPISessionCallback() {
-          @Override
-          public void onSession(MySQLAPI mySQLAPI) {
-            OneResultSetCollector collector = new OneResultSetCollector();
-            mySQLAPI.query(fetchSQL, collector, new MySQLAPIExceptionCallback() {
 
-              @Override
-              public void onException(Exception exception, MySQLAPI mySQLAPI) {
-                fetch.set(false);
-                callback.onException(exception);
-              }
+  private void init(String key, String value) {
+    if (key != null && key.startsWith("mysqlSeqSource-")) {
+      String[] keys = key.split("-");
+      SeqInfoKey seqInfoKey = new SeqInfoKey(keys[1], keys[2]);
+      String[] values = value.split("-");
+      SeqInfoValue seqInfoValue = new SeqInfoValue(seqInfoKey, values[0], values[1], values[2]);
+      map.put(seqInfoKey, seqInfoValue);
+    }
+  }
 
-              @Override
-              public void onFinished(boolean monopolize, MySQLAPI mySQLAPI) {
-                try {
-                  mySQLAPI.close();
-                } catch (Exception e) {
-                  LOGGER.error("", e);
-                }
-                try {
-                  Iterator<Object[]> iterator = collector.iterator();
-                  Object[] next = iterator.next();
-                  Long currentValue = (Long) next[1];
-                  Long increment = (Long) next[2];
-                  MySQLSequenceHandlerImpl.this.currentValue = new AtomicLong(currentValue);
-                  MySQLSequenceHandlerImpl.this.maxValue = currentValue + increment;
-                } catch (Exception e) {
-                  callback.onException(e);
-                  return;
-                } finally {
-                  fetch.set(false);
-                }
-                nextId(callback);
-              }
+  private SeqInfoValue getSeqInfoValue(String schema, String seqName) {
+    SeqInfoValue seqInfoValue = map.get(new SeqInfoKey(schema, seqName));
+    if (seqInfoValue == null) {
+      throw new MycatException("seq name/table :{}   not found", seqName);
+    }
+    return seqInfoValue;
+  }
 
-              @Override
-              public void onErrorPacket(ErrorPacket errorPacket, boolean monopolize,
-                  MySQLAPI mySQLAPI) {
-                fetch.set(false);
-                try {
-                  mySQLAPI.close();
-                } catch (Exception e) {
-                  LOGGER.error("", e);
-                }
-                callback.onException(new MycatException(errorPacket.getErrorMessageString()));
-              }
-            });
-          }
+  static class SeqInfoKey {
 
-          @Override
-          public void onException(Exception exception) {
-            fetch.set(false);
-            callback.onException(exception);
-          }
-        });
+    private final String schema;
+    private final String table;
+
+    public SeqInfoKey(String schema, String table) {
+      this.schema = schema;
+      this.table = table;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      SeqInfoKey that = (SeqInfoKey) o;
+
+      if (schema != null ? !schema.equals(that.schema) : that.schema != null) {
+        return false;
+      }
+      return table != null ? table.equals(that.table) : that.table == null;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = schema != null ? schema.hashCode() : 0;
+      result = 31 * result + (table != null ? table.hashCode() : 0);
+      return result;
+    }
+
+    public String getSchema() {
+      return schema;
+    }
+
+    public String getTable() {
+      return table;
+    }
+  }
+
+  static class SeqInfoValue {
+
+    private final SeqInfoKey seqInfoKey;
+    private final String dataSourceName;
+    private final String sequenceSchema;
+    private final String sequenceName;
+    private final String sql;
+
+    private final AtomicBoolean fetch = new AtomicBoolean(false);
+    private volatile AtomicLong currentValue = null;
+    private volatile long maxValue = Long.MIN_VALUE;
+
+    public SeqInfoValue(SeqInfoKey seqInfoKey, String dataSourceName, String sequenceSchema,
+        String sequenceName) {
+      this.seqInfoKey = seqInfoKey;
+      this.dataSourceName = dataSourceName;
+      this.sequenceSchema = sequenceSchema;
+      this.sequenceName = sequenceName;
+      this.sql = String
+          .format("SELECT %s.mycat_seq_nextval('%s');", sequenceSchema, sequenceName);
+    }
+
+    public long tryIncrement() {
+      return currentValue.updateAndGet(this::applyAsLong);
+    }
+
+    private long applyAsLong(long operand) {
+      if (operand < maxValue) {
+        return ++operand;
+      } else {
+        return operand;
+      }
+    }
+
+    public String getDataSourceName() {
+      return dataSourceName;
+    }
+
+    public String getSql() {
+      return sql;
+    }
+
+    public AtomicBoolean getFetchLock() {
+      return fetch;
+    }
+
+    public AtomicLong getValueBox() {
+      return currentValue;
+    }
+
+    public void setValueBox(AtomicLong currentValue) {
+      this.currentValue = currentValue;
+    }
+
+    public long getMaxValue() {
+      return maxValue;
+    }
+
+    public void setMaxValue(long l) {
+      this.maxValue = l;
+    }
+
+    public SeqInfoKey getSeqInfoKey() {
+      return seqInfoKey;
+    }
   }
 }

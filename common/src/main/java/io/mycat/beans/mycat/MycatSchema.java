@@ -17,14 +17,17 @@ package io.mycat.beans.mycat;
 import io.mycat.config.schema.SchemaConfig;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.router.RouteStrategy;
+import io.mycat.sequenceModifier.SequenceModifier;
 import java.util.Map;
 
 public class MycatSchema {
+
   final SchemaConfig schemaConfig;
   String defaultDataNode;
   final RouteStrategy routeStrategy;
   private Map<String, MycatTable> mycatTables;
   private long sqlMaxLimit = -1;
+  private SequenceModifier modifier;
 
 
   public SchemaType getSchemaType() {
@@ -35,10 +38,13 @@ public class MycatSchema {
     return schemaConfig;
   }
 
-  public MycatSchema(SchemaConfig schemaConfig, RouteStrategy routeStrategy) {
+  public MycatSchema(SchemaConfig schemaConfig, RouteStrategy routeStrategy,
+      SequenceModifier modifier) {
     this.schemaConfig = schemaConfig;
     this.routeStrategy = routeStrategy;
+    this.modifier = modifier;
   }
+
   public MycatTable getTableByTableName(String name) {
     return mycatTables.get(name);
   }
@@ -76,7 +82,11 @@ public class MycatSchema {
     return sqlMaxLimit;
   }
 
-  public boolean existTable(String table){
-  return   this.mycatTables.containsKey(table);
+  public boolean existTable(String table) {
+    return this.mycatTables.containsKey(table);
+  }
+
+  public SequenceModifier getModifier() {
+    return modifier;
   }
 }

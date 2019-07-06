@@ -1,10 +1,11 @@
 package io.mycat.sequenceModifier;
 
+import io.mycat.mysqlapi.MySQLAPIRuntime;
 import java.util.Map;
 
 public interface SequenceModifier {
 
-  void modify(String sql, ModifyCallback callback);
+  void modify(String schema, String sql, ModifyCallback callback);
 
-  void init(Map<String, String> properties);
+  void init(MySQLAPIRuntime mySQLAPIRuntime, Map<String, String> properties);
 }

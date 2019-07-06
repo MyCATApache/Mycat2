@@ -43,7 +43,7 @@ public final class MySQLServerStatus {
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
   protected boolean localInFileRequestState = false;
   private long selectLimit = -1;
-  private long netWriteTimeout;
+  private long netWriteTimeout = -1;
   private boolean accessModeReadOnly = false;
 
   public boolean multiStatementSupport = false;

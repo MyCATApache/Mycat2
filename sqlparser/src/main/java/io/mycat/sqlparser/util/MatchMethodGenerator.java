@@ -93,7 +93,7 @@ public class MatchMethodGenerator {
 //        map.put("UPDATE", Token.UPDATE);
 //        map.put("VALUES", Token.VALUES);
 //        map.put("VIEW", Token.VIEW);
-//        map.put("SEQUENCE", Token.SEQUENCE);
+//        map.put("SEQUENCE_MODIFIER", Token.SEQUENCE_MODIFIER);
 //        map.put("TRIGGER", Token.TRIGGER);
 //        map.put("USER", Token.USER);
 //        map.put("WHEN", Token.WHEN);

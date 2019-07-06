@@ -336,7 +336,7 @@ public class StringUtil {
 							hiByte += 256; // adjust for signedness/wrap-around
 						}
 						out.write(hiByte);// write the high byte here, and
-											// increment the index for the high
+            // tryIncrement the index for the high
 											// byte
 						bufIndex++;
 						if (hiByte == 0x5C) {
