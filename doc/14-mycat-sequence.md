@@ -154,7 +154,31 @@ MySQLSequenceHandlerImpl实现的全局序列号的创建脚本与1.6所用的�
 
 
 
+##### 使用例子
 
+```sql
+/*指定当前schema类型是ANNOTATION_ROUTE的schema,例子这里只是名字恰好是ANNOTATION_ROUTE*/
+USE ANNOTATION_ROUTE;
+
+/* mycat: shardingKey = 1*/SELECT NEXT VALUE FOR MYCATSEQ_GLOBAL FROM travelrecord;
+
+/* mycat: shardingKey = 1*/
+INSERT INTO `travelrecord` (`id`,`user_id`) VALUES (NEXT VALUE FOR MYCATSEQ_GLOBAL ,2);
+
+/*table rule中的equalAnnotations正则应该在序列号替换之后能对应 VALUES \( (?<id2>([0-9]*))*/
+INSERT INTO `travelrecord` (`id`,`user_id`) VALUES (NEXT VALUE FOR MYCATSEQ_GLOBAL ,2);
+
+```
+
+因为ANNOTATION_ROUTE的路由策略要求sql中带有表的名字,所以像
+
+SELECT NEXT VALUE FOR MYCATSEQ_GLOBAL;
+
+需要改成
+
+/* mycat: shardingKey = 1*/SELECT NEXT VALUE FOR MYCATSEQ_GLOBAL FROM travelrecord;
+
+sql带有表,而且使用注解指定节点
 
 [![Creative Commons License](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
