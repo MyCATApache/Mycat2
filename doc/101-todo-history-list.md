@@ -5,9 +5,8 @@
 3. 如果代码功能完成并有相应的修改说明,就可以记录到此文件,并留下指向github账户的链接和完成日期
 
 ##### 进行中
-整体功能测试
+- [ ] JDBC连接池(jdbc模块)
 
-mysql全局序列号
 
 
 
@@ -23,10 +22,10 @@ mysql全局序列号
 - [ ] proxy内实现SQL限流的功能(mycat2模块)
 - [ ] proxy内实现响应流量写入本地文件(mycat2模块)
 - [ ] proxy内实现本地文件作为响应(mycat2模块)
+- [ ] proxy内本地文件全局序列号(router模块)
 - [ ] 在新建的连接中使用负载均衡算法(proxy模块)
 - [ ] 结果集对象池(common模块)
 - [ ] 路由提供HTTP的测试接口(router模块)
-- [ ] JDBC连接池(jdbc模块)
 - [ ] mycat2配置集群配置同步(新模块)
 - [ ] change user 命令
 - [ ] 报文生成工具优化
@@ -59,6 +58,7 @@ mysql全局序列号
 - [x] 替换logger类为mycat专用logger,编写收集代码中的日志字符串初步的工具,移除logtip模块(cjw-2019-6-30)
 - [x] 添加proxy 路由说明文档,jdbc内部sql说明文档,添加NIO JOB异常处理,路由重构(cjw-2019-7-3)
 - [x] 根据报文标志判断只读事务(cjw-2019-7-4)
+- [x] 在mysql proxy中实现mysql数据库全局序列号(cjw-2019-7-6)
 
 
 
