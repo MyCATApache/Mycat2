@@ -219,6 +219,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
             break;
           }
           case FIRST_OK:
+            MycatMonitor.onResultSetEnd(mysql);
             this.onOk(mySQLPacket, startPos, endPos);
             break;
           case FIRST_EOF:
@@ -240,11 +241,13 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
             this.onBinaryRow(mySQLPacket, startPos, endPos);
             break;
           case ROW_EOF:
+            MycatMonitor.onResultSetEnd(mysql);
             this.onRowEof(mySQLPacket, startPos, endPos);
             break;
-          case ROW_FINISHED:
-            break;
+//          case ROW_FINISHED:
+//            break;
           case ROW_OK:
+            MycatMonitor.onResultSetEnd(mysql);
             this.onRowOk(mySQLPacket, startPos, endPos);
             break;
           case ROW_ERROR:

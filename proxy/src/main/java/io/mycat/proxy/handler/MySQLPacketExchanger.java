@@ -400,8 +400,8 @@ public enum MySQLPacketExchanger {
           case ROW_EOF:
             callback.onRowEof(mySQLPacket, sIndex, eIndex);
             break;
-          case ROW_FINISHED:
-            break;
+//          case ROW_FINISHED:
+//            break;
           case ROW_OK: {
             callback.onRowOk(mySQLPacket, sIndex, eIndex);
             break;

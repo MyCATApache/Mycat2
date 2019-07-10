@@ -34,7 +34,6 @@ import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_PREPARE;
 import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_SEND_LONG_DATA;
 import static io.mycat.proxy.packet.MySQLPayloadType.ROW_EOF;
 import static io.mycat.proxy.packet.MySQLPayloadType.ROW_ERROR;
-import static io.mycat.proxy.packet.MySQLPayloadType.ROW_FINISHED;
 import static io.mycat.proxy.packet.MySQLPayloadType.ROW_OK;
 import static io.mycat.proxy.packet.MySQLPayloadType.TEXT_ROW;
 
@@ -50,6 +49,8 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.io.IOException;
+
+//import static io.mycat.proxy.packet.MySQLPayloadType.ROW_FINISHED;
 
 /**
  * 报文处理类 该类实现报文解析
@@ -845,7 +846,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
       setState(ComQueryState.RESULTSET_ROW);
     } else {
       setState(ComQueryState.COMMAND_END);
-      setMySQLPayloadType(ROW_FINISHED);
+//      setMySQLPayloadType(ROW_FINISHED);
     }
   }
 

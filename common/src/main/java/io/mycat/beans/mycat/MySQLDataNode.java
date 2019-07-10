@@ -55,7 +55,7 @@ public class MySQLDataNode extends MycatDataNode {
 
   @Override
   public String getNodeID() {
-    return getReplicaName();
+    return getName();
   }
 
 
@@ -67,9 +67,8 @@ public class MySQLDataNode extends MycatDataNode {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    MySQLDataNode that = (MySQLDataNode) o;
-    return Objects.equals(replica, that.replica) &&
-               Objects.equals(dataNodeConfig, that.dataNodeConfig);
+    MySQLDataNode o1 = (MySQLDataNode) o;
+    return dataNodeConfig.getName().equals(o1.dataNodeConfig.getName());
   }
 
   @Override

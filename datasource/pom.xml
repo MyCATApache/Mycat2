@@ -9,7 +9,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>jdbc</artifactId>
+  <artifactId>datasource</artifactId>
 
 <dependencies>
   <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
@@ -34,6 +34,15 @@
     <artifactId>plug</artifactId>
     <version>0.1</version>
   </dependency>
-
+  <dependency>
+    <groupId>io.mycat</groupId>
+    <artifactId>proxy</artifactId>
+    <version>0.1</version>
+  </dependency>
+  <dependency>
+    <groupId>io.mycat</groupId>
+    <artifactId>plug</artifactId>
+    <version>0.1</version>
+  </dependency>
 </dependencies>
 </project>

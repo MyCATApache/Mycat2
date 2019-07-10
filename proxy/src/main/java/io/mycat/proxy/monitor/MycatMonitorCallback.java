@@ -23,8 +23,7 @@ public interface MycatMonitorCallback {
 
   static MycatReactorThread getThread() {
     Thread thread = Thread.currentThread();
-    MycatReactorThread thread1 = (MycatReactorThread) thread;
-    return thread1;
+    return (MycatReactorThread) thread;
   }
 
   static Session getSession() {
@@ -284,4 +283,6 @@ public interface MycatMonitorCallback {
   void onChange2WriteOpts(Session session);
 
   void onClearReadWriteOpts(Session session);
+
+  void onResultSetEnd(MySQLClientSession mysql);
 }

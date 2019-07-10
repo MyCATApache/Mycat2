@@ -31,8 +31,11 @@ import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.SessionManager.PartialType;
+import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -146,6 +149,8 @@ public class MySQLTaskUtil {
   }
 
   public static void getMySQLSessionForTryConnect(MySQLDatasource datasource,
+      List<SessionIdAble> ids,
+      PartialType partialType,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     Objects.requireNonNull(datasource);
     Objects.requireNonNull(asynTaskCallBack);
@@ -154,8 +159,8 @@ public class MySQLTaskUtil {
       MySQLSessionManager manager = ((MycatReactorThread) thread)
           .getMySQLSessionManager();
       if (datasource.isAlive()) {
-        manager.getIdleSessionsOfKey(
-            datasource
+        manager.getIdleSessionsOfIdsOrPartial(
+            datasource, ids, partialType
             , asynTaskCallBack);
       } else {
         manager.createSession(
@@ -169,13 +174,15 @@ public class MySQLTaskUtil {
 
   public static void getMySQLSessionForTryConnectFromUserThread(ProxyRuntime runtime,
       MySQLDatasource datasource,
+      List<SessionIdAble> ids,
+      PartialType partialType,
       SessionCallBack<MySQLClientSession> asynTaskCallBack) {
     MycatReactorThread[] threads = runtime.getMycatReactorThreads();
     int i = ThreadLocalRandom.current().nextInt(0, threads.length);
     threads[i].addNIOJob(new NIOJob() {
       @Override
       public void run(ReactorEnvThread reactor) throws Exception {
-        getMySQLSessionForTryConnect(datasource, asynTaskCallBack);
+        getMySQLSessionForTryConnect(datasource, ids, partialType, asynTaskCallBack);
       }
 
       @Override
@@ -189,4 +196,30 @@ public class MySQLTaskUtil {
       }
     });
   }
+
+  public static void getMySQLSessionForTryConnectFromUserThreadByPartialSessionId(
+      ProxyRuntime runtime,
+      PartialType partialType,
+      MySQLDatasource datasource,
+      SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+    MycatReactorThread[] threads = runtime.getMycatReactorThreads();
+    int i = ThreadLocalRandom.current().nextInt(0, threads.length);
+    threads[i].addNIOJob(new NIOJob() {
+      @Override
+      public void run(ReactorEnvThread reactor) throws Exception {
+        getMySQLSessionForTryConnect(datasource, null, partialType, asynTaskCallBack);
+      }
+
+      @Override
+      public void stop(ReactorEnvThread reactor, Exception reason) {
+        asynTaskCallBack.onException(reason, this, null);
+      }
+
+      @Override
+      public String message() {
+        return "getMySQLSessionForTryConnectFromUserThread";
+      }
+    });
+  }
+
 }

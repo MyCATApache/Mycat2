@@ -8,6 +8,7 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.session.SessionManager.PartialType;
 import java.util.Collections;
 
 public class MySQLAPIRuntimeImpl implements io.mycat.mysqlapi.MySQLAPIRuntime {
@@ -16,9 +17,9 @@ public class MySQLAPIRuntimeImpl implements io.mycat.mysqlapi.MySQLAPIRuntime {
   public void create(String dataSourceName, MySQLAPISessionCallback callback) {
     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
     ProxyRuntime runtime = thread.getRuntime();
-    thread.getMySQLSessionManager().getIdleSessionsOfIds(
+    thread.getMySQLSessionManager().getIdleSessionsOfIdsOrPartial(
         runtime.getDataSourceByDataSourceName(dataSourceName),
-        Collections.emptyList(), new SessionCallBack<MySQLClientSession>() {
+        Collections.emptyList(), PartialType.RANDOM_ID, new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession session, Object sender, Object attr) {
             MySQLAPIImpl mySQLAPI = new MySQLAPIImpl(session);

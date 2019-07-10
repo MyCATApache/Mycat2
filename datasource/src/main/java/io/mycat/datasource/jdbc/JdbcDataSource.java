@@ -1,7 +1,13 @@
-package io.mycat.jdbc;
+package io.mycat.datasource.jdbc;
 
+import io.mycat.compute.RowBaseIterator;
+import io.mycat.compute.RowMetaData;
+import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigLoader;
+import io.mycat.config.ConfigReceiver;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.config.datasource.ReplicasRootConfig;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -25,33 +31,28 @@ public class JdbcDataSource {
 
 
   public static void main(String[] args) throws SQLException, IOException {
-//    ConfigReceiverImpl configReceiver = new ConfigReceiverImpl(version);
-//    ConfigLoader.INSTANCE
-//        .loadConfig("D:\\newgit\\f2\\jdbc\\src\\main\\resources", ConfigEnum.DATASOURCE,
-//            GlobalConfig.INIT_VERSION, configReceiver);
-//    ReplicasRootConfig config = configReceiver.getConfig(ConfigEnum.DATASOURCE);
-//    ReplicaConfig replicaConfig = config.getReplicas().get(0);
-//    List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
-//    JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);
-//
-//    for (int i = 0; i < 2; i++) {
-//      final int  d = i;
-//      Thread thread = new Thread( ()->{
-//        try{
-//          JdbcDataSourceManager sourceManager = new JdbcDataSourceManager();
-//          JdbcSession session = sourceManager.createSession(jdbcDataSource);
-//          while (true){
-//            boolean execute = session.query("SELECT * FROM `information_schema`.`COLUMNS`;");
-//            System.out.println(d);
-//          }
-//
-//        }catch (Exception e){
-//          e.printStackTrace();
-//        }
-//      });thread.start();
-//
-//    }
+    RowBaseIterator query = getSimple();
 
+    RowMetaData rowMetaData = query.metaData();
+    while (query.next()) {
+      String string = query.getString(1);
+      System.out.println(string);
+    }
+
+    System.out.println();
+  }
+
+  public static RowBaseIterator getSimple() throws IOException, SQLException {
+    ConfigReceiver configReceiver = ConfigLoader
+        .load("D:\\newgit\\f\\mycat2\\src\\main\\resources");
+    ReplicasRootConfig config = configReceiver.getConfig(ConfigEnum.DATASOURCE);
+    ReplicaConfig replicaConfig = config.getReplicas().get(0);
+    List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
+    JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);
+
+    JdbcDataSourceManager sourceManager = new JdbcDataSourceManager();
+    JdbcSession session = sourceManager.createSession(jdbcDataSource);
+    return session.query("SELECT * FROM `information_schema`.`COLUMNS`;");
   }
 
 

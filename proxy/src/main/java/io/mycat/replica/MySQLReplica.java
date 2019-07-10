@@ -30,6 +30,7 @@ import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -204,7 +205,8 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
     Objects.requireNonNull(asynTaskCallBack);
     if (Thread.currentThread() instanceof MycatReactorThread) {
       MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
-      reactor.getMySQLSessionManager().getIdleSessionsOfIds(datasource, ids, asynTaskCallBack);
+      reactor.getMySQLSessionManager()
+          .getIdleSessionsOfIdsOrPartial(datasource, ids, PartialType.RANDOM_ID, asynTaskCallBack);
     } else {
       MycatException mycatExpection = new MycatException(
           "Replica must running in MycatReactorThread");

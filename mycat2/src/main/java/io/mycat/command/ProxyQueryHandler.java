@@ -271,6 +271,14 @@ public class ProxyQueryHandler {
   public void execute(MycatSession mycat, MycatSchema useSchema, String sql,
       BufferSQLContext sqlContext, byte sqlType) {
     boolean simpleSelect = sqlContext.isSimpleSelect() && sqlType == SELECT_SQL;
+    if (useSchema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
+      MySQLDataSourceQuery query = new MySQLDataSourceQuery();
+      query.setRunOnMaster(!simpleSelect);
+      MySQLTaskUtil.proxyBackend(mycat,
+          MySQLPacketUtil.generateComQuery(sql),
+          useSchema.getDefaultDataNode(), query, ResponseType.QUERY);
+      return;
+    }
     ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
     if (resultRoute == null) {
       mycat.setLastMessage("can not route:" + sql);

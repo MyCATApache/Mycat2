@@ -1,0 +1,17 @@
+java -Dfile.encoding=UTF-8 -DMYCAT_HOME=D:\newgit\f\mycat2\target\mycat2-0.1-20190605051031-resources.tar -jar D:\newgit\f\mycat2\target\mycat2-0.1-20190610233303-single.jar
+
+java -Dfile.encoding=UTF-8 -DMYCAT_HOME=/home/mycat/resources -jar /home/mycat/mycat2.jar >> mycat.log
+
+路径和jar包名字自行修改(注意日期)
+
+其中D:\newgit\f\mycat2\target\mycat2-0.1-20190605051031-resources.tar是tar.gz解压后的文件夹,内含配置
+
+USE DB_IN_MULTI_SERVER;
+/* mycat:dataNode = dn1*/SELECT * FROM travelrecord;
+/* mycat:dataNode = dn2*/SELECT * FROM travelrecord;
+/* mycat:dataNode = dn3*/SELECT * FROM travelrecord;
+/* mycat:schema = DB_IN_ONE_SERVER_3308*/SELECT * FROM travelrecord;
+INSERT INTO `travelrecord` (`id`,`user_id`) VALUES (512,2);
+SELECT * FROM `travelrecord` WHERE id BETWEEN 1 AND 128 ;
+SELECT * FROM travelrecord3306;
+INSERT INTO `travelrecord3306` (`id`,`user_id`) VALUES (3,2);

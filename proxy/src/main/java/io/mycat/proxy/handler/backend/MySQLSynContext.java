@@ -142,8 +142,9 @@ public class MySQLSynContext {
   }
 
   public String getSyncSQL() {
-    return isolation.getCmd() + autoCommit.getCmd() + "USE " + dataNode.getSchemaName()
-        + ";" + "SET names " + charset + ";"
+    return "USE " + dataNode.getSchemaName() + ";"
+        + isolation.getCmd() + autoCommit.getCmd()
+        + "SET names " + charset + ";"
         + ("SET character_set_results =" + (
         characterSetResult == null || "".equals(characterSetResult) ? "NULL"
             : characterSetResult)) + ";"

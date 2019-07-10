@@ -1,16 +1,15 @@
-package io.mycat.jdbc;
+package io.mycat.datasource.jdbc;
 
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.compute.RowBaseIterator;
 import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * @author jamie12221
- *  date 2019-05-10 14:51
+ * @author jamie12221 date 2019-05-10 14:51
  **/
 public class JdbcSession {
 
@@ -28,7 +27,7 @@ public class JdbcSession {
   }
 
   public void sync(String schema, MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit,String charset) throws SQLException {
+      MySQLAutoCommit autoCommit, String charset) throws SQLException {
     switch (isolation) {
       case READ_UNCOMMITTED:
         connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
@@ -45,26 +44,16 @@ public class JdbcSession {
     }
     connection.setSchema(schema);
     connection.setAutoCommit(autoCommit == MySQLAutoCommit.ON);
-    connection.setClientInfo("characterEncoding",charset);
+    connection.setClientInfo("characterEncoding", charset);
 
   }
 
-  public boolean query(String s) throws SQLException {
-    boolean success = true;
-    try(Statement statement = connection.createStatement()){
-      ResultSet resultSet = statement.executeQuery(s);
-      while (resultSet.next()) {
-        ResultSetMetaData metaData = resultSet.getMetaData();
-        int columnCount = metaData.getColumnCount();
-        for (int i = 1; i <= columnCount; i++) {
-          String catalogName = metaData.getColumnName(9);
-          long bytes = resultSet.getLong(9);
-          boolean b = resultSet.wasNull();
-          System.out.println(catalogName);
-          System.out.println(bytes);
-        }
-      }
+  public RowBaseIterator query(String s) throws MycatException {
+    try {
+      Statement statement = connection.createStatement();
+      return new JdbcRowBaseIteratorImpl(statement.executeQuery(s));
+    } catch (Exception e) {
+      throw new MycatException(e);
     }
-    return success;
   }
 }

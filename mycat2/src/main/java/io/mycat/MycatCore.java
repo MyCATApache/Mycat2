@@ -32,6 +32,7 @@ import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.MySQLDataSourceEx;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -47,9 +48,14 @@ public class MycatCore {
   private static ProxyRuntime runtime;
 
   public static void main(String[] args) throws Exception {
-    String resourcesPath = System.getProperty("MYCAT_HOME");
-    LOGGER.info("MYCAT_HOME:{}", resourcesPath);
+    String configResourceKeyName = "MYCAT_HOME";
+    String resourcesPath = System.getProperty(configResourceKeyName);
     if (resourcesPath == null) {
+      resourcesPath = Paths.get("").toAbsolutePath().toString();
+    }
+    LOGGER.info("config folder path:{}", resourcesPath);
+    LOGGER.info(configResourceKeyName, resourcesPath);
+    if (resourcesPath == null || Boolean.getBoolean("DEBUG")) {
       resourcesPath = ProxyRuntime.getResourcesPath(MycatCore.class);
     }
     MycatProxyBeanProviders proxyBeanProviders = new MycatProxyBeanProviders();
@@ -196,6 +202,7 @@ public class MycatCore {
       runtime.exit(new MycatException("normal"));
     }
   }
+
   public static void exit(Exception e) {
     if (runtime != null) {
       runtime.exit(e);

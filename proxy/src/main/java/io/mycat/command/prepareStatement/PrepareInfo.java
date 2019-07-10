@@ -22,6 +22,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.CheckResult;
+import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
@@ -55,7 +56,7 @@ public class PrepareInfo {
     MySQLDataNode node = mycat.getRuntime().getDataNodeByName(dataNodeName);
     MySQLReplica replica = (MySQLReplica) node.getReplica();
     MySQLDatasource datasource = replica.getMySQLSessionByBalance(runOnMaster,strategy);
-    manager.getIdleSessionsOfIds(datasource, ids,
+    manager.getIdleSessionsOfIdsOrPartial(datasource, ids, PartialType.RANDOM_ID,
         new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession session, Object sender, Object attr) {

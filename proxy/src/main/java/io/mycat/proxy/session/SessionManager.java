@@ -19,7 +19,6 @@ import io.mycat.proxy.callback.SessionCallBack;
 import java.io.IOException;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -31,7 +30,7 @@ public interface SessionManager<T extends Session> {
   /**
    * 返回所有的Session，此方法可能会消耗性能，如果仅仅统计数量，不建议调用此方法
    */
-  Collection<T> getAllSessions();
+  List<T> getAllSessions();
 
   /**
    * 获取当前Session数量
@@ -54,6 +53,17 @@ public interface SessionManager<T extends Session> {
         SocketChannel socketChannel) throws IOException;
   }
 
+  enum CheckResult {
+    NOT_EXIST,
+    IDLE,
+    BUSY
+  }
+
+  enum PartialType {
+    SMALL_ID,
+    LARGE_ID,
+    RANDOM_ID
+  }
   /**
    * 后端session管理器
    *
@@ -62,7 +72,8 @@ public interface SessionManager<T extends Session> {
    */
   interface BackendSessionManager<T extends Session, KEY> extends SessionManager<T> {
 
-    void getIdleSessionsOfIds(KEY key, List<SessionIdAble> ids, SessionCallBack<T> asyncTaskCallBack);
+    void getIdleSessionsOfIdsOrPartial(KEY key, List<SessionIdAble> ids, PartialType type,
+        SessionCallBack<T> asyncTaskCallBack);
 
     /**
      * 根据key获取闲置连接,如果没有闲置连接则创建新的连接
@@ -91,12 +102,8 @@ public interface SessionManager<T extends Session> {
 
 
   }
-  public interface SessionIdAble{
+
+  interface SessionIdAble {
     int getSessionId();
-  }
-  public enum CheckResult {
-    NOT_EXIST,
-    IDLE,
-    BUSY
   }
 }

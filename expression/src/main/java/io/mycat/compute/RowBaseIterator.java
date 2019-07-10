@@ -1,6 +1,8 @@
-package io.mycat.expression;
+package io.mycat.compute;
 
 public interface RowBaseIterator {
+
+//  Session session();
 
   RowMetaData metaData();
 

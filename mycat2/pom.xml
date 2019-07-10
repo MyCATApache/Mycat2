@@ -102,6 +102,9 @@
               <jvmSettings>
                 <initialMemorySize>256M</initialMemorySize>
                 <maxMemorySize>512M</maxMemorySize>
+                <systemProperties>
+                  <systemProperty>MYCAT_HOME=./conf</systemProperty>
+                </systemProperties>
                 <extraArguments>
                   <extraArgument>-server</extraArgument>
                   <!-- 远程JMX -->
@@ -142,9 +145,10 @@
               <target>
                 <echo message="${project.build.directory}"/>
                 <mkdir dir="${project.build.directory}"/>
+                <mkdir dir="${project.build.directory}/jsw/mycat/logs"/>
                 <tar basedir="${project.build.directory}/jsw"
                   destfile="${project.build.directory}/mycat2-${project.version}-${timestamp}.tar.gz"
-                  includes="mycat/bin/**,mycat/conf/**,mycat/lib/mycat2**,mycat/lib/wrapper**">
+                  includes="mycat/bin/**,mycat/conf/**,mycat/logs,mycat/lib/mycat2**,mycat/lib/wrapper**">
                 </tar>
                 <tar basedir="${project.basedir}/src/main/resources"
                   destfile="${project.build.directory}/mycat2-${project.version}-${timestamp}-resources.tar.gz"

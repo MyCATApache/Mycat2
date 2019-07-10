@@ -13,7 +13,7 @@
     <module>sqlparser</module>
     <module>expression</module>
     <module>common</module>
-    <module>jdbc</module>
+    <module>datasource</module>
     <module>mycat2</module>
     <module>security</module>
     <module>grid</module>

@@ -33,7 +33,7 @@ public enum MySQLPayloadType {
   TEXT_ROW,
   BINARY_ROW,
   ROW_EOF,
-  ROW_FINISHED,
+  //  ROW_FINISHED,
   ROW_OK,
   ROW_ERROR,
   PREPARE_OK,

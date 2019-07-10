@@ -504,4 +504,8 @@ public final class MycatMonitor {
       MySQLClientSession mysql) {
     callback.onSyncSQL(mycatContext, syncSQL, mysql);
   }
+
+  public static void onResultSetEnd(MySQLClientSession mysql) {
+    callback.onResultSetEnd(mysql);
+  }
 }

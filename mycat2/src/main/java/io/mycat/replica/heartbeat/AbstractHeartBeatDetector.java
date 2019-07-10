@@ -23,6 +23,7 @@ import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.replica.MySQLDataSourceEx;
 
 /**
@@ -57,7 +58,8 @@ public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
     public void heartBeat(){
         heartBeatAsyncTaskCallBack = getAsyncTaskCallback();
         MySQLTaskUtil
-            .getMySQLSessionForTryConnectFromUserThread(runtime,dataSource, heartBeatAsyncTaskCallBack);
+            .getMySQLSessionForTryConnectFromUserThread(runtime, dataSource, null,
+                PartialType.SMALL_ID, heartBeatAsyncTaskCallBack);
     }
 
 

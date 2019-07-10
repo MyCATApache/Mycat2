@@ -589,4 +589,9 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   public void onSyncSQL(MySQLSynContext mycatSession, String sql, MySQLClientSession session) {
 
   }
+
+  @Override
+  public void onResultSetEnd(MySQLClientSession mysql) {
+
+  }
 }

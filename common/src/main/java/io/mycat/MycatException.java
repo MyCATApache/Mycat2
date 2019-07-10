@@ -31,6 +31,11 @@ public class MycatException extends RuntimeException {
     this.errorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
   }
 
+  public MycatException(Exception message) {
+    super(message);
+    this.errorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
+  }
+
   public MycatException(int errorCode, String message) {
     super(message);
     this.errorCode = errorCode;

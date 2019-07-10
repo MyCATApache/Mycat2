@@ -50,6 +50,7 @@ import io.mycat.util.nio.NIOUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -82,7 +83,7 @@ public final class MySQLSessionManager implements
    */
   @NoExcept
   @Override
-  public final Collection<MySQLClientSession> getAllSessions() {
+  public final List<MySQLClientSession> getAllSessions() {
     return new ArrayList<>(allSessions.values());
   }
 
@@ -97,7 +98,8 @@ public final class MySQLSessionManager implements
 
 
   @Override
-  public void getIdleSessionsOfIds(MySQLDatasource datasource, List<SessionIdAble> ids,
+  public void getIdleSessionsOfIdsOrPartial(MySQLDatasource datasource, List<SessionIdAble> ids,
+      PartialType partialType,
       SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
     Objects.requireNonNull(datasource);
     MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
@@ -108,7 +110,8 @@ public final class MySQLSessionManager implements
        * 3.如果有空闲连接,则获取空闲连接,然后查看通道是否已经关闭,如果已经关闭,则继续尝试获取
        * 4.session管理不保证session一定可用
        */
-      MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids);
+      MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids,
+          partialType);
       for (; ; ) {
         if (!datasource.isAlive()) {
           asyncTaskCallBack
@@ -154,7 +157,7 @@ public final class MySQLSessionManager implements
             asyncTaskCallBack.onSession(mySQLSession, this, null);
             return;
           } else {
-            LOGGER.error("because mysql sessionId:{} is not isActivated,so ping",
+            LOGGER.debug("because mysql sessionId:{} is not isActivated,so ping",
                 mySQLSession.sessionId());
             ResultSetHandler.DEFAULT.request(mySQLSession, MySQLCommandType.COM_PING, new byte[]{},
                 new ResultSetCallBack<MySQLClientSession>() {
@@ -198,16 +201,27 @@ public final class MySQLSessionManager implements
   /**
    * @param ids 如果id失效 设置为-id
    */
-  private MySQLClientSession getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
-      List<SessionIdAble> ids) {
-    boolean random = ThreadLocalRandom.current().nextBoolean();
+  public MySQLClientSession getIdleMySQLClientSessionsByIds(MySQLDatasource datasource,
+      List<SessionIdAble> ids, PartialType partialType) {
+
     //dataSource
-    if (datasource != null && (ids == null || ids.size() == 0)) {
+    if (datasource != null && (ids == null || ids.isEmpty())) {
       LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(datasource);
       if (group == null || group.isEmpty()) {
         return null;
       }
-      return random ? group.removeFirst() : group.removeLast();
+      if (partialType == PartialType.RANDOM_ID || partialType == null) {
+        boolean random = ThreadLocalRandom.current().nextBoolean();
+        return random ? group.removeFirst() : group.removeLast();
+      } else {
+        group.sort(Comparator.comparing(AbstractSession::sessionId));
+        switch (partialType) {
+          case SMALL_ID:
+            return group.removeFirst();
+          case LARGE_ID:
+            return group.removeLast();
+        }
+      }
     }
     //dataSource ids
     if (datasource != null) {
@@ -249,7 +263,7 @@ public final class MySQLSessionManager implements
   @Override
   public final void getIdleSessionsOfKey(MySQLDatasource datasource,
       SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
-    getIdleSessionsOfIds(datasource, null, asyncTaskCallBack);
+    getIdleSessionsOfIdsOrPartial(datasource, null, PartialType.RANDOM_ID, asyncTaskCallBack);
   }
 
   /**

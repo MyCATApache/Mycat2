@@ -30,8 +30,8 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象
@@ -55,7 +55,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
   @Override
   @NoExcept
-  public Collection<MycatSession> getAllSessions() {
+  public List<MycatSession> getAllSessions() {
     return new ArrayList<>(mycatSessions);
   }
 
