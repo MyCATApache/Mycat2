@@ -13,8 +13,8 @@ public class JdbcReplica implements MycatReplica {
 
   static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcReplica.class);
   private final ReplicaConfig config;
-  private final List<JdbcSession> datasourceList = new ArrayList<>();
-  private final CopyOnWriteArrayList<JdbcSession> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
+  private final List<JdbcDataSource> datasourceList = new ArrayList<>();
+  private final CopyOnWriteArrayList<JdbcDataSource> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
   private LoadBalanceStrategy defaultLoadBalanceStrategy;
 
   public JdbcReplica(ReplicaConfig config) {

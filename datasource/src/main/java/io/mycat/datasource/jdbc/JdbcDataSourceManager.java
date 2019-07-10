@@ -1,36 +1,36 @@
 package io.mycat.datasource.jdbc;
 
-import static io.mycat.datasource.jdbc.JdbcDataSource.AVAILABLE_JDBC_DATA_SOURCE;
 
 import io.mycat.MycatException;
-import io.mycat.proxy.session.SessionManager.CheckResult;
-import io.mycat.proxy.session.SessionManager.PartialType;
-import io.mycat.proxy.session.SessionManager.SessionIdAble;
-import io.mycat.replica.MySQLDatasource;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.sql.DataSource;
 
 /**
- * @author jamie12221
- *  date 2019-05-10 14:46
- *  该类型需要并发处理
+ * @author jamie12221 date 2019-05-10 14:46 该类型需要并发处理
  **/
 public class JdbcDataSourceManager implements SessionManager {
-  private final LinkedList<JdbcSession> allSessions = new LinkedList<>();
-  private final HashMap<JdbcDataSource, LinkedList<JdbcSession>> idleDatasourcehMap = new HashMap<>();
+
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcDataSourceManager.class);
+  private final static Set<String> AVAILABLE_JDBC_DATA_SOURCE = new HashSet<>();
+  private final SessionProvider sessionProvider;
+  private final ConcurrentHashMap<Integer, JdbcSession> allSessions = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<JdbcDataSource, DataSource> dataSourceMap = new ConcurrentHashMap<>();
+  private DatasourceProvider datasourceProvider;
 
   static {
     // 加载可能的驱动
     List<String> drivers = Arrays.asList(
         "com.mysql.jdbc.Driver");
-
     for (String driver : drivers) {
       try {
         Class.forName(driver);
@@ -40,8 +40,15 @@ public class JdbcDataSourceManager implements SessionManager {
     }
   }
 
+  public JdbcDataSourceManager(
+      SessionProvider sessionProvider,
+      DatasourceProvider provider) {
+    this.sessionProvider = sessionProvider;
+    this.datasourceProvider = provider;
+  }
+
   public List<JdbcSession> getAllSessions() {
-    return new ArrayList<>(allSessions);
+    return new ArrayList<>(allSessions.values());
   }
 
   @Override
@@ -49,96 +56,67 @@ public class JdbcDataSourceManager implements SessionManager {
     return allSessions.size();
   }
 
-  @Override
-  public JdbcSession getIdleSessionsOfIdsOrPartial(JdbcDataSource datasource,
-      List<SessionIdAble> ids, PartialType partialType) {
-    return null;
+
+  private DataSource getPool(JdbcDataSource datasource) {
+    return dataSourceMap.compute(datasource,
+        (jdbcDataSource, dataSource) -> {
+          if (dataSource == null) {
+            dataSource = datasourceProvider
+                .createDataSource(datasource.getUrl(), datasource.getUsername(),
+                    datasource.getPassword());
+          }
+          return dataSource;
+        });
   }
 
   @Override
-  public JdbcSession getIdleMySQLClientSessionsByIds(JdbcDataSource datasource,
-      List<SessionIdAble> ids, PartialType partialType) {
-    return null;
-  }
-
-  public JdbcSession getIdleSessionsOfKey(JdbcDataSource datasource) {
-    if (!datasource.isAlive()) {
-      throw new MycatException(datasource.getName() + " is not alive!");
-    } else {
-      LinkedList<JdbcSession> mySQLSessions = this.idleDatasourcehMap.get(datasource);
-      if (mySQLSessions == null || mySQLSessions.isEmpty()) {
-        return createSession(datasource);
-      } else {
-     return
-            ThreadLocalRandom.current().nextBoolean() ? mySQLSessions.removeFirst()
-                : mySQLSessions.removeLast();
+  public void clearAndDestroyDataSource(boolean normal, JdbcDataSource key, String reason) {
+    for (Entry<Integer, JdbcSession> entry : allSessions.entrySet()) {
+      JdbcSession session = entry.getValue();
+      if (session.getDatasource().equals(key)) {
+        session.close(normal, reason);
       }
     }
   }
 
-
-  @Override
-  public void clearAndDestroyDataSource(MySQLDatasource key, String reason) {
-
-  }
-
-  @Override
-  public void idleConnectCheck() {
-
-  }
-
-  @Override
-  public JdbcSession createSession(MySQLDatasource key) {
-    return null;
-  }
-
-  @Override
-  public void removeSession(JdbcSession session, boolean normal, String reason) {
-
-  }
-
-
-  @Override
-  public CheckResult check(int sessionId) {
-    return null;
-  }
-
-
-  public void addIdleSession(JdbcSession session) {
-    idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
-      if (l == null) {
-        l = new LinkedList<>();
-      }
-      l.add(session);
-      return l;
-    });
-  }
-
-
-  public void removeIdleSession(JdbcSession session) {
-    LinkedList<JdbcSession> mySQLSessions = idleDatasourcehMap.get(session.getDatasource());
-    if (mySQLSessions == null) {
-
-    }
-  }
-
-  public void clearAndDestroyMySQLSession(JdbcSession dsMetaBean, String reason) {
-
-  }
 
   public JdbcSession createSession(JdbcDataSource key) throws MycatException {
     Connection connection = null;
     try {
-      String url = key.getUrl();
-      String username = key.getUsername();
-      String password = key.getPassword();
-      connection = DriverManager
-          .getConnection(url, username, password);
+      connection = getConnection(key);
     } catch (SQLException e) {
-      throw new MycatException(e.getLocalizedMessage());
+      throw new MycatException(e);
     }
-    JdbcSession jdbcSession = new JdbcSession(connection, key);
-    allSessions.add(jdbcSession);
+    int sessionId = sessionProvider.sessionId();
+    JdbcSession jdbcSession = new JdbcSession(sessionId, key);
+    jdbcSession.wrap(connection);
+    allSessions.put(sessionId, jdbcSession);
     return jdbcSession;
+  }
+
+  @Override
+  public void closeSession(JdbcSession session, boolean normal, String reason) {
+    try {
+      session.connection.close();
+    } catch (Exception e) {
+      LOGGER.error("{}", e);
+    }
+    allSessions.remove(session.sessionId());
+  }
+
+
+  public Connection getConnection(JdbcDataSource key) throws SQLException {
+    DataSource pool = getPool(key);
+    return pool.getConnection();
+  }
+
+  interface SessionProvider {
+
+    int sessionId();
+  }
+
+  interface DatasourceProvider {
+
+    DataSource createDataSource(String url, String username, String password);
   }
 }

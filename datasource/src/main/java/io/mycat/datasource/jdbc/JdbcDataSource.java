@@ -11,20 +11,18 @@ import io.mycat.config.datasource.ReplicasRootConfig;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
- * @author jamie12221
- *  date 2019-05-10 13:21
+ * @author jamie12221 date 2019-05-10 13:21
  **/
 public class JdbcDataSource {
+
   private final int index;
   private final DatasourceConfig datasourceConfig;
+  private volatile boolean isAlive = false;
 
-  public JdbcDataSource(int index, DatasourceConfig datasourceConfig) throws SQLException {
+  public JdbcDataSource(int index, DatasourceConfig datasourceConfig) {
     this.index = index;
     this.datasourceConfig = datasourceConfig;
   }
@@ -50,7 +48,8 @@ public class JdbcDataSource {
     List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
     JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);
 
-    JdbcDataSourceManager sourceManager = new JdbcDataSourceManager();
+    JdbcDataSourceManager sourceManager = new JdbcDataSourceManager(SessionProviderImpl.INSYANCE,
+        DatasourceProviderImpl.INSTANCE);
     JdbcSession session = sourceManager.createSession(jdbcDataSource);
     return session.query("SELECT * FROM `information_schema`.`COLUMNS`;");
   }
@@ -69,23 +68,6 @@ public class JdbcDataSource {
     return datasourceList;
   }
 
-
-  final static Set<String> AVAILABLE_JDBC_DATA_SOURCE = new HashSet<>();
-
-  static {
-    // 加载可能的驱动
-    List<String> drivers = Arrays.asList(
-        "com.mysql.jdbc.Driver");
-
-    for (String driver : drivers) {
-      try {
-        Class.forName(driver);
-        AVAILABLE_JDBC_DATA_SOURCE.add(driver);
-      } catch (ClassNotFoundException ignored) {
-      }
-    }
-  }
-
   public String getUrl() {
     return datasourceConfig.getUrl();
   }
@@ -95,14 +77,39 @@ public class JdbcDataSource {
   }
 
   public String getPassword() {
-    return  datasourceConfig.getPassword();
+    return datasourceConfig.getPassword();
   }
 
   public boolean isAlive() {
-    return true;
+    return isAlive;
   }
 
   public String getName() {
     return datasourceConfig.getName();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    JdbcDataSource that = (JdbcDataSource) o;
+
+    if (index != that.index) {
+      return false;
+    }
+    return datasourceConfig != null ? datasourceConfig.equals(that.datasourceConfig)
+        : that.datasourceConfig == null;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = index;
+    result = 31 * result + (datasourceConfig != null ? datasourceConfig.hashCode() : 0);
+    return result;
   }
 }

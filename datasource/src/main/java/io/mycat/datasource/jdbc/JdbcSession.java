@@ -4,6 +4,8 @@ import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.compute.RowBaseIterator;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -13,13 +15,18 @@ import java.sql.Statement;
  **/
 public class JdbcSession {
 
-  private final Connection connection;
-  private final JdbcDataSource key;
+  protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcSession.class);
+  protected final int sessionId;
+  protected final JdbcDataSource key;
+  protected volatile Connection connection;
 
-  public JdbcSession(Connection connection, JdbcDataSource key) {
-
-    this.connection = connection;
+  public JdbcSession(int sessionId, JdbcDataSource key) {
+    this.sessionId = sessionId;
     this.key = key;
+  }
+
+  public void wrap(Connection connection) {
+    this.connection = connection;
   }
 
   public JdbcDataSource getDatasource() {
@@ -45,7 +52,6 @@ public class JdbcSession {
     connection.setSchema(schema);
     connection.setAutoCommit(autoCommit == MySQLAutoCommit.ON);
     connection.setClientInfo("characterEncoding", charset);
-
   }
 
   public RowBaseIterator query(String s) throws MycatException {
@@ -55,5 +61,22 @@ public class JdbcSession {
     } catch (Exception e) {
       throw new MycatException(e);
     }
+  }
+
+  public void close(boolean normal, String reason) {
+    LOGGER.debug("jdbc sessionId:{} normal:{} reason:{}", sessionId, normal, reason);
+    try {
+      connection.close();
+    } catch (Exception e) {
+      LOGGER.debug("", e);
+    }
+  }
+
+  public int sessionId() {
+    return sessionId;
+  }
+
+  public boolean isIdle() {
+    return connection == null;
   }
 }

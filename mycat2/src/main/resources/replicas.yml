@@ -23,3 +23,5 @@ replicas:
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
         weight: 3            # 权重
+        dbType: jdbcMysql
+        url: jdbc:mysql://localhost:3306/test?useLegacyDatetimeCode=false&serverTimezone=UTC

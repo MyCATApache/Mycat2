@@ -240,9 +240,6 @@ public final class MySQLSessionManager implements
     int size = ids.size();
     for (int i = 0; i < size; i++) {
       int id = ids.get(i).getSessionId();
-      if (1 > id) {
-        continue;
-      }
       MySQLClientSession mySQLClientSession = source.get(id);
       if (mySQLClientSession.isIdle()) {
         LinkedList<MySQLClientSession> sessions = this.idleDatasourcehMap
@@ -353,7 +350,7 @@ public final class MySQLSessionManager implements
    * 1.从闲置池里面移除mysql session 2.该函数不会关闭session 3.该函数可以被子类重写,但是未能遇见这种需要
    */
   @NoExcept
-  protected void removeIdleSession(MySQLClientSession session) {
+  private void removeIdleSession(MySQLClientSession session) {
     try {
       assert session != null;
       assert session.getDatasource() != null;

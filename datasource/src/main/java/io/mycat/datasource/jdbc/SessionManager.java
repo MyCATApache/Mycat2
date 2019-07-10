@@ -1,9 +1,5 @@
 package io.mycat.datasource.jdbc;
 
-import io.mycat.proxy.session.SessionManager.CheckResult;
-import io.mycat.proxy.session.SessionManager.PartialType;
-import io.mycat.proxy.session.SessionManager.SessionIdAble;
-import io.mycat.replica.MySQLDatasource;
 import java.util.List;
 
 public interface SessionManager {
@@ -12,26 +8,11 @@ public interface SessionManager {
 
   int currentSessionCount();
 
-  JdbcSession getIdleSessionsOfIdsOrPartial(JdbcDataSource datasource, List<SessionIdAble> ids,
-      PartialType partialType);
 
-  JdbcSession getIdleMySQLClientSessionsByIds(JdbcDataSource datasource,
-      List<SessionIdAble> ids, PartialType partialType);
+  void clearAndDestroyDataSource(boolean normal, JdbcDataSource key, String reason);
 
-  JdbcSession getIdleSessionsOfKey(JdbcDataSource datasource);
+  JdbcSession createSession(JdbcDataSource key);
 
-  void addIdleSession(JdbcSession session);
-
-  void removeIdleSession(JdbcSession session);
-
-  void clearAndDestroyDataSource(MySQLDatasource key, String reason);
-
-  void idleConnectCheck();
-
-  JdbcSession createSession(MySQLDatasource key);
-
-  void removeSession(JdbcSession session, boolean normal, String reason);
-
-  CheckResult check(int sessionId);
+  void closeSession(JdbcSession session, boolean normal, String reason);
 
 }
