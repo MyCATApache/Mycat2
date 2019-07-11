@@ -119,11 +119,6 @@ public class JdbcDataSourceManager implements SessionManager {
     return pool.getConnection();
   }
 
-  interface SessionProvider {
-
-    int sessionId();
-  }
-
   interface DatasourceProvider {
 
     DataSource createDataSource(String url, String username, String password);

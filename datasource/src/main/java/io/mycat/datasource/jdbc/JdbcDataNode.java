@@ -5,18 +5,19 @@ import io.mycat.config.schema.DataNodeConfig;
 
 public class JdbcDataNode extends MycatDataNode {
 
-  public JdbcReplicaDatasourceSelector replica;
-  private DataNodeConfig dataNodeConfig;
+  public final JdbcReplica replica;
+  private final DataNodeConfig dataNodeConfig;
+
+  public JdbcDataNode(JdbcReplica replica, DataNodeConfig dataNodeConfig) {
+    this.replica = replica;
+    this.dataNodeConfig = dataNodeConfig;
+  }
 
   @Override
   public String getName() {
     return dataNodeConfig.getName();
   }
 
-  @Override
-  public String getNodeID() {
-    return getName();
-  }
 
   @Override
   public boolean equals(Object o) {
@@ -43,12 +44,11 @@ public class JdbcDataNode extends MycatDataNode {
     return result;
   }
 
-  /**
-   * Getter for property 'replica'.
-   *
-   * @return Value for property 'replica'.
-   */
-  public JdbcReplicaDatasourceSelector getReplica() {
+  public JdbcReplica getReplica() {
     return replica;
+  }
+
+  public String getDatabase() {
+    return dataNodeConfig.getDatabase();
   }
 }

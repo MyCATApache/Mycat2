@@ -7,7 +7,6 @@ import io.mycat.compute.RowBaseIterator;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -34,24 +33,28 @@ public class JdbcSession {
   }
 
   public void sync(String schema, MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit, String charset) throws SQLException {
-    switch (isolation) {
-      case READ_UNCOMMITTED:
-        connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
-        break;
-      case READ_COMMITTED:
-        connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-        break;
-      case REPEATED_READ:
-        connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
-        break;
-      case SERIALIZABLE:
-        connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-        break;
+      MySQLAutoCommit autoCommit, String charset) {
+    try {
+      switch (isolation) {
+        case READ_UNCOMMITTED:
+          connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+          break;
+        case READ_COMMITTED:
+          connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+          break;
+        case REPEATED_READ:
+          connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+          break;
+        case SERIALIZABLE:
+          connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+          break;
+      }
+      connection.setSchema(schema);
+      connection.setAutoCommit(autoCommit == MySQLAutoCommit.ON);
+      connection.setClientInfo("characterEncoding", charset);
+    } catch (Exception e) {
+      throw new MycatException(e);
     }
-    connection.setSchema(schema);
-    connection.setAutoCommit(autoCommit == MySQLAutoCommit.ON);
-    connection.setClientInfo("characterEncoding", charset);
   }
 
   public RowBaseIterator query(String s) throws MycatException {

@@ -1,7 +1,7 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
-import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
 import io.mycat.logTip.MycatLogger;
@@ -9,7 +9,6 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.replica.MySQLDatasource;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -17,18 +16,18 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
+public class ReplicaDatasourceSelector<T extends MycatDataSource> implements LoadBalanceInfo {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(
-      JdbcReplicaDatasourceSelector.class);
+      ReplicaDatasourceSelector.class);
   protected final ReplicaConfig config;
-  protected final List<JdbcDataSource> datasourceList;
-  protected final CopyOnWriteArrayList<JdbcDataSource> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
+  protected final List<T> datasourceList;
+  protected final CopyOnWriteArrayList<T> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
   protected final ProxyRuntime runtime;
   protected LoadBalanceStrategy defaultLoadBalanceStrategy;
 
-  public JdbcReplicaDatasourceSelector(ProxyRuntime runtime, ReplicaConfig replicaConfig,
-      Set<Integer> writeIndex) {
+  public ReplicaDatasourceSelector(ProxyRuntime runtime, ReplicaConfig replicaConfig,
+      Set<Integer> writeIndex, List<T> datasourceList) {
     this.runtime = runtime;
     this.config = replicaConfig;
     Objects.requireNonNull(runtime);
@@ -36,9 +35,8 @@ public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
 
     defaultLoadBalanceStrategy = runtime
         .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
-
-    datasourceList = getJdbcDatasourceList(replicaConfig);
-    for (JdbcDataSource jdbcDataSource : datasourceList) {
+    this.datasourceList = datasourceList;
+    for (T jdbcDataSource : datasourceList) {
       int index = jdbcDataSource.getIndex();
       if (writeIndex.contains(index)) {
         switch (config.getRepType()) {
@@ -62,54 +60,14 @@ public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
     }
   }
 
-  public static List<JdbcDataSource> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
-    List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
-    if (mysqls == null) {
-      return Collections.emptyList();
-    }
-    List<JdbcDataSource> datasourceList = new ArrayList<>();
-    for (int index = 0; index < mysqls.size(); index++) {
-      DatasourceConfig datasourceConfig = mysqls.get(index);
-      if (datasourceConfig.getDbType() != null) {
-        datasourceList.add(new JdbcDataSource(index, datasourceConfig));
-      }
-    }
-    return datasourceList;
-  }
 
-  public JdbcDataSource getDataSourceByBalance(JdbcDataSourceQuery query) {
-    boolean runOnMaster = false;
-    LoadBalanceStrategy strategy = null;
-
-    if (query != null) {
-      runOnMaster = query.isRunOnMaster();
-      strategy = query.getStrategy();
-    }
-
-    if (strategy == null) {
-      strategy = this.defaultLoadBalanceStrategy;
-    }
-
-    if (runOnMaster) {
-      return getWriteDatasource(strategy);
-    }
-    JdbcDataSource datasource;
-    List activeDataSource = getDataSourceByLoadBalacneType();
-    datasource = (JdbcDataSource) strategy.select(this, activeDataSource);
-    if (datasource == null) {
-      datasource = getWriteDatasource(strategy);
-      return datasource;
-    }
-    return datasource;
-  }
-
-  private List getDataSourceByLoadBalacneType() {
+  public List getDataSourceByLoadBalacneType() {
     BalanceTypeEnum balanceType = this.config.getBalanceType();
     Objects.requireNonNull(balanceType, "balanceType is null");
     switch (balanceType) {
       case BALANCE_ALL:
-        List<JdbcDataSource> list = new ArrayList<>(this.datasourceList.size());
-        for (JdbcDataSource datasource : this.datasourceList) {
+        List<T> list = new ArrayList<>(this.datasourceList.size());
+        for (T datasource : this.datasourceList) {
           if (datasource.isAlive()) {
             list.add(datasource);
           }
@@ -118,8 +76,8 @@ public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
       case BALANCE_NONE:
         return getMaster();
       case BALANCE_ALL_READ:
-        List<JdbcDataSource> result = new ArrayList<>(this.datasourceList.size());
-        for (JdbcDataSource mySQLDatasource : this.datasourceList) {
+        List<T> result = new ArrayList<>(this.datasourceList.size());
+        for (T mySQLDatasource : this.datasourceList) {
           if (mySQLDatasource.isAlive() && mySQLDatasource.asSelectRead()) {
             result.add(mySQLDatasource);
           }
@@ -130,12 +88,12 @@ public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
     }
   }
 
-  private JdbcDataSource getWriteDatasource(LoadBalanceStrategy strategy) {
+  public T getWriteDatasource(LoadBalanceStrategy strategy) {
     if (strategy == null) {
       strategy = this.defaultLoadBalanceStrategy;
     }
     List writeDataSource = this.writeDataSource;
-    JdbcDataSource datasource = (JdbcDataSource) strategy
+    T datasource = (T) strategy
         .select(this, writeDataSource);
     if (datasource == null || !datasource.isAlive()) {
       return null;
@@ -149,7 +107,7 @@ public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
   }
 
   private List getMaster() {
-    JdbcDataSource datasource;
+    T datasource;
     if (writeDataSource.isEmpty()) {
       return Collections.emptyList();
     }
@@ -158,7 +116,7 @@ public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
       datasource = writeDataSource.get(0);
       return datasource.isAlive() ? Collections.singletonList(datasource) : Collections.emptyList();
     }
-    ArrayList<JdbcDataSource> datasources = new ArrayList<>(size);
+    ArrayList<MycatDataSource> datasources = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
       datasource = (writeDataSource.get(i));
       if (datasource.isAlive()) {
@@ -170,7 +128,7 @@ public class JdbcReplicaDatasourceSelector implements LoadBalanceInfo {
     return datasources;
   }
 
-  public boolean isMaster(MySQLDatasource datasource) {
+  public boolean isMaster(MycatDataSource datasource) {
     return writeDataSource.contains(datasource);
   }
 }

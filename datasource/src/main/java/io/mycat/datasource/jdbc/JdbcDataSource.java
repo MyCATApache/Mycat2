@@ -1,5 +1,6 @@
 package io.mycat.datasource.jdbc;
 
+import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.compute.RowBaseIterator;
 import io.mycat.compute.RowMetaData;
 import io.mycat.config.datasource.DatasourceConfig;
@@ -9,7 +10,7 @@ import java.sql.SQLException;
 /**
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public class JdbcDataSource {
+public class JdbcDataSource implements MycatDataSource {
 
   private final int index;
   private final DatasourceConfig datasourceConfig;

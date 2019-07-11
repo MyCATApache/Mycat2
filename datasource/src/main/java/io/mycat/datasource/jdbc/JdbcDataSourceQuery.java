@@ -4,7 +4,7 @@ import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 
 public class JdbcDataSourceQuery {
 
-  boolean runOnMaster = false;
+  boolean runOnMaster = true;
   LoadBalanceStrategy strategy = null;
 
   public boolean isRunOnMaster() {
