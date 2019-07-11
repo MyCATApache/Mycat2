@@ -8,5 +8,6 @@ public interface MySQLAPI {
   void query(String sql, ResultSetCollector resultSetCollector,
       MySQLAPIExceptionCallback exceptionCollector);
 
+
   void close();
 }

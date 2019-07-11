@@ -23,7 +23,7 @@ public class SessionActionImpl implements PersistenceAction {
       Command command) throws MycatException {
     String dataNodeName = command.getDataNodeName();
     JdbcDataNode jdbcDataNode = manager.get(dataNodeName);
-    JdbcReplica replica = jdbcDataNode.getReplica();
+    JdbcReplicaDatasourceSelector replica = jdbcDataNode.getReplica();
     JdbcSession jdbcSession = replica.getJdbcSessionByBalance();
     return jdbcSession.query(command.querySQL());
   }

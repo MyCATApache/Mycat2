@@ -5,7 +5,7 @@ import io.mycat.config.schema.DataNodeConfig;
 
 public class JdbcDataNode extends MycatDataNode {
 
-  public JdbcReplica replica;
+  public JdbcReplicaDatasourceSelector replica;
   private DataNodeConfig dataNodeConfig;
 
   @Override
@@ -48,7 +48,7 @@ public class JdbcDataNode extends MycatDataNode {
    *
    * @return Value for property 'replica'.
    */
-  public JdbcReplica getReplica() {
+  public JdbcReplicaDatasourceSelector getReplica() {
     return replica;
   }
 }

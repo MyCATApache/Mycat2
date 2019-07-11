@@ -370,8 +370,6 @@ public class ProxyRuntime {
 
   /**
    * not thread safe
-   * @param <T>
-   * @return
    */
   public <T extends MySQLReplica> Collection<T> getMySQLReplicaList() {
     return (Collection) replicaMap.values();

@@ -4,13 +4,16 @@ package io.mycat.datasource.jdbc;
 import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.proxy.ProxyRuntime;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.sql.DataSource;
@@ -20,12 +23,13 @@ import javax.sql.DataSource;
  **/
 public class JdbcDataSourceManager implements SessionManager {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcDataSourceManager.class);
+  private final static MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(JdbcDataSourceManager.class);
   private final static Set<String> AVAILABLE_JDBC_DATA_SOURCE = new HashSet<>();
-  private final SessionProvider sessionProvider;
-  private final ConcurrentHashMap<Integer, JdbcSession> allSessions = new ConcurrentHashMap<>();
-  private final ConcurrentHashMap<JdbcDataSource, DataSource> dataSourceMap = new ConcurrentHashMap<>();
-  private DatasourceProvider datasourceProvider;
+  private final ConcurrentHashMap<Integer, JdbcSession> allSessions = new ConcurrentHashMap<>(8192);
+  private final HashMap<JdbcDataSource, DataSource> dataSourceMap = new HashMap<>();
+  private final DatasourceProvider datasourceProvider;
+  private final ProxyRuntime runtime;
 
   static {
     // 加载可能的驱动
@@ -40,11 +44,21 @@ public class JdbcDataSourceManager implements SessionManager {
     }
   }
 
-  public JdbcDataSourceManager(
-      SessionProvider sessionProvider,
-      DatasourceProvider provider) {
-    this.sessionProvider = sessionProvider;
+  public JdbcDataSourceManager(ProxyRuntime runtime,
+      DatasourceProvider provider, List<JdbcDataSource> dataSources) {
+    Objects.requireNonNull(runtime);
+    Objects.requireNonNull(provider);
+    Objects.requireNonNull(dataSources);
+    this.runtime = runtime;
     this.datasourceProvider = provider;
+
+    for (JdbcDataSource dataSource : dataSources) {
+      DataSource pool = datasourceProvider
+          .createDataSource(dataSource.getUrl(), dataSource.getUsername(),
+              dataSource.getPassword());
+      dataSourceMap.put(dataSource, pool);
+    }
+
   }
 
   public List<JdbcSession> getAllSessions() {
@@ -58,15 +72,7 @@ public class JdbcDataSourceManager implements SessionManager {
 
 
   private DataSource getPool(JdbcDataSource datasource) {
-    return dataSourceMap.compute(datasource,
-        (jdbcDataSource, dataSource) -> {
-          if (dataSource == null) {
-            dataSource = datasourceProvider
-                .createDataSource(datasource.getUrl(), datasource.getUsername(),
-                    datasource.getPassword());
-          }
-          return dataSource;
-        });
+    return dataSourceMap.get(datasource);
   }
 
   @Override
@@ -81,13 +87,16 @@ public class JdbcDataSourceManager implements SessionManager {
 
 
   public JdbcSession createSession(JdbcDataSource key) throws MycatException {
+    if (!key.isAlive()) {
+      throw new MycatException("{} is not alive!", key.getName());
+    }
     Connection connection = null;
     try {
       connection = getConnection(key);
     } catch (SQLException e) {
       throw new MycatException(e);
     }
-    int sessionId = sessionProvider.sessionId();
+    int sessionId = runtime.genSessionId();
     JdbcSession jdbcSession = new JdbcSession(sessionId, key);
     jdbcSession.wrap(connection);
     allSessions.put(sessionId, jdbcSession);
@@ -105,7 +114,7 @@ public class JdbcDataSourceManager implements SessionManager {
   }
 
 
-  public Connection getConnection(JdbcDataSource key) throws SQLException {
+  private Connection getConnection(JdbcDataSource key) throws SQLException {
     DataSource pool = getPool(key);
     return pool.getConnection();
   }

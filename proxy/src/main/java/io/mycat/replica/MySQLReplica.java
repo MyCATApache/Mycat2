@@ -51,7 +51,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
   private final CopyOnWriteArrayList<MySQLDatasource> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
   private LoadBalanceStrategy defaultLoadBalanceStrategy;
-  protected ProxyRuntime runtime;
+  protected final ProxyRuntime runtime;
 
 
   /**
@@ -133,12 +133,12 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
   public MySQLDatasource getMySQLSessionByBalance(boolean runOnMaster,
       LoadBalanceStrategy strategy) {
     MySQLDatasource datasource;
+    if (strategy == null) {
+      strategy = this.defaultLoadBalanceStrategy;
+    }
     if (runOnMaster) {
       datasource = getWriteDatasource(strategy);
       return datasource;
-    }
-    if (strategy == null) {
-      strategy = this.defaultLoadBalanceStrategy;
     }
     List activeDataSource = getDataSourceByLoadBalacneType();
     datasource = (MySQLDatasource) strategy.select(this, activeDataSource);
@@ -226,12 +226,16 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
 
 
   public List<MySQLDatasource> getMaster() {
+    MySQLDatasource datasource;
+    if (writeDataSource.isEmpty()) {
+      return Collections.emptyList();
+    }
     int size = writeDataSource.size();
-    MySQLDatasource datasource = writeDataSource.get(0);
-    if (size == 1) {
+    if (writeDataSource.size() == 1) {
+      datasource = writeDataSource.get(0);
       return datasource.isAlive() ? Collections.singletonList(datasource) : Collections.emptyList();
     }
-    ArrayList<MySQLDatasource> datasources = new ArrayList<>(writeDataSource.size());
+    ArrayList<MySQLDatasource> datasources = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
       datasource = (writeDataSource.get(i));
       if (datasource.isAlive()) {
