@@ -5,11 +5,11 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 /**
- * @author jamie12221
- *  date 2019-05-08 17:12
+ * @author jamie12221 date 2019-05-08 17:12
  **/
 public class JavaClassToMySQLTypeUtil {
-  public static int getMySQLType(Class<?> clazz){
+
+  public static int getMySQLType(Class<?> clazz) {
     int actuallyType;
     if (clazz == Integer.class) {
       actuallyType = MySQLFieldsType.FIELD_TYPE_LONG;
@@ -32,20 +32,21 @@ public class JavaClassToMySQLTypeUtil {
     }
     return actuallyType;
   }
-  public static byte[] getMySQLValue(Object object, Charset charset){
+
+  public static byte[] getMySQLValue(Object object, Charset charset) {
     Class<?> clazz = object.getClass();
     if (clazz == Long.class) {
       return LongUtil.toBytes((Long) object);
     } else if (clazz == Byte.class) {
-      return  ByteUtil.getBytes((Byte)object);
+      return ByteUtil.getBytes((Byte) object);
     } else if (clazz == Short.class) {
-      return  ByteUtil.getBytes((Short) object);
+      return ByteUtil.getBytes((Short) object);
     } else if (clazz == String.class) {
-      return  ((String) object).getBytes(charset);
+      return ((String) object).getBytes(charset);
     } else if (clazz == Double.class) {
-      return ByteBuffer.allocate(8).putDouble((Double)object).array();
+      return ByteBuffer.allocate(8).putDouble((Double) object).array();
     } else if (clazz == Float.class) {
-      return ByteBuffer.allocate(8).putDouble((Float)object).array();
+      return ByteBuffer.allocate(8).putDouble((Float) object).array();
     } else if (clazz == byte[].class) {
       return (byte[]) object;
     } else {

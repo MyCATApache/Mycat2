@@ -14,15 +14,17 @@
  */
 package io.mycat.proxy.packet;
 
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLFieldInfo;
+import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
+import java.sql.ResultSetMetaData;
 import java.util.Arrays;
 
 /**
- * @author jamie12221
- *  date 2019-05-07 13:58
+ * @author jamie12221 date 2019-05-07 13:58
  *
  * 字段包实现
  **/
@@ -34,9 +36,32 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
   byte[] columnOrgTable;
   byte[] columnName;
   byte[] columnOrgName;
-  final int columnNextLength = 256;//经验值
+  int columnNextLength = 0xC;
   int columnCharsetSet;
-  int columnLength;
+  int columnLength = 256;
+  int columnType;
+  int columnFlags;
+  byte columnDecimals;
+  byte[] columnDefaultValues;
+
+  public ColumnDefPacketImpl() {
+  }
+
+  public ColumnDefPacketImpl(final ResultSetMetaData resultSetMetaData, int columnIndex) {
+    try {
+      this.columnSchema = resultSetMetaData.getSchemaName(columnIndex).getBytes();
+      this.columnName = resultSetMetaData.getColumnLabel(columnIndex).getBytes();
+      this.columnOrgName = resultSetMetaData.getColumnName(columnIndex).getBytes();
+      this.columnNextLength = 0xC;
+      this.columnLength = resultSetMetaData.getColumnDisplaySize(columnIndex);
+      this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
+      this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
+      this.columnCharsetSet = 0x21;
+    } catch (Exception e) {
+      throw new MycatException(e);
+    }
+
+  }
 
   public ColumnDefPacket toColumnDefPacket(MySQLFieldInfo def, String alias) {
     ColumnDefPacket columnDefPacket = new ColumnDefPacketImpl();
@@ -81,27 +106,22 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
   @Override
   public String toString() {
     return "ColumnDefPacketImpl{" +
-               "columnCatalog=" + new String(ColumnDefPacket.DEFAULT_CATALOG) +
-               ", columnSchema=" + new String(columnSchema) +
-               ", columnTable=" + new String(columnTable) +
-               ", columnOrgTable=" + new String(columnOrgTable) +
-               ", columnName=" + new String(columnName) +
-               ", columnOrgName=" + new String(columnOrgName) +
-               ", columnNextLength=" + columnNextLength +
-               ", columnCharsetSet=" + columnCharsetSet +
-               ", columnLength=" + columnLength +
-               ", columnType=" + columnType +
-               ", columnFlags=" + columnFlags +
-               ", columnDecimals=" + columnDecimals +
-               ", columnDefaultValues=" + Arrays.toString(columnDefaultValues) +
-               '}';
+        "columnCatalog=" + new String(ColumnDefPacket.DEFAULT_CATALOG) +
+        ", columnSchema=" + new String(columnSchema) +
+        ", columnTable=" + new String(columnTable) +
+        ", columnOrgTable=" + new String(columnOrgTable) +
+        ", columnName=" + new String(columnName) +
+        ", columnOrgName=" + new String(columnOrgName) +
+        ", columnNextLength=" + columnNextLength +
+        ", columnCharsetSet=" + columnCharsetSet +
+        ", columnLength=" + columnLength +
+        ", columnType=" + columnType +
+        ", columnFlags=" + columnFlags +
+        ", columnDecimals=" + columnDecimals +
+        ", columnDefaultValues=" + Arrays.toString(columnDefaultValues) +
+        '}';
   }
 
-
-  int columnType;
-  int columnFlags;
-  byte columnDecimals;
-  byte[] columnDefaultValues;
 
   @Override
   public byte[] getColumnCatalog() {
@@ -110,7 +130,7 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
 
   @Override
   public void setColumnCatalog(byte[] catalog) {
-
+    this.columnCatalog = catalog;
   }
 
   @Override

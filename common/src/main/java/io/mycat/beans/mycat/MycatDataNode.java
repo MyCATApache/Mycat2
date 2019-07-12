@@ -22,8 +22,6 @@ public abstract class MycatDataNode {
 
   public abstract String getName();
 
-  public abstract String getNodeID();
-
 
   public abstract boolean equals(Object o);
 

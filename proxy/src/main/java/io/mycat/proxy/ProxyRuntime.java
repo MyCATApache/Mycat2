@@ -173,6 +173,25 @@ public class ProxyRuntime {
   }
 
 
+  public static Set<Integer> getReplicaIndexes(Map<String, String> replicaIndexes,
+      ReplicaConfig replicaConfig) {
+    String writeIndexText = replicaIndexes.get(replicaConfig.getName());
+    Set<Integer> writeIndex;
+    if (StringUtil.isEmpty(writeIndexText)) {
+      writeIndex = Collections.singleton(0);
+      LOGGER.warn("master indexes is empty and set  master of {} is 0 index",
+          replicaConfig.getName());
+    } else {
+      if (writeIndexText.contains(",")) {
+        List<String> strings = Arrays.asList(writeIndexText.split(","));
+        writeIndex = strings.stream().map(Integer::parseInt).collect(Collectors.toSet());
+      } else {
+        writeIndex = Collections.singleton(Integer.parseInt(writeIndexText));
+      }
+    }
+    return writeIndex;
+  }
+
   private void initRepliac(ProxyRuntime runtime, ProxyBeanProviders factory) {
     ReplicasRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
@@ -200,20 +219,7 @@ public class ProxyRuntime {
               "replica balance message can not be empty");
       Objects.requireNonNull(replicaConfig.getMysqls(), "mysql list can not be empty");
       ////////////////////////////////////check/////////////////////////////////////////////////
-      String writeIndexText = replicaIndexes.get(replicaConfig.getName());
-      Set<Integer> writeIndex;
-      if (StringUtil.isEmpty(writeIndexText)) {
-        writeIndex = Collections.singleton(0);
-        LOGGER.warn("master indexes is empty and set  master of {} is 0 index",
-            replicaConfig.getName());
-      } else {
-        if (writeIndexText.contains(",")) {
-          List<String> strings = Arrays.asList(writeIndexText.split(","));
-          writeIndex = strings.stream().map(Integer::parseInt).collect(Collectors.toSet());
-        } else {
-          writeIndex = Collections.singleton(Integer.parseInt(writeIndexText));
-        }
-      }
+      Set<Integer> writeIndex = getReplicaIndexes(replicaIndexes, replicaConfig);
       MySQLReplica replica = factory
           .createReplica(runtime, replicaConfig, writeIndex);
       replicaMap.put(replica.getName(), replica);

@@ -37,9 +37,9 @@ public class PrepareInfo {
   private long mycatStmtId;
   private String sql;
   private ArrayList<PrepareMySQLSessionInfo> sessionInfos = new ArrayList<>();
+  private HashMap<Integer, MySQLPayloadWriter> parmaMap = new HashMap<>();
   private MycatSession mycat;
   private MySQLSessionManager manager;
-  private HashMap<Integer, MySQLPayloadWriter> parmaMap = new HashMap<>();
   private int numOfParams = Integer.MIN_VALUE;
 
   public PrepareInfo(long mycatStmtId, String sql,

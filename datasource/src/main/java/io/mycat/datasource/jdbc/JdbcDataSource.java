@@ -4,13 +4,14 @@ import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.compute.RowBaseIterator;
 import io.mycat.compute.RowMetaData;
 import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.plug.loadBalance.LoadBalanceELement;
 import java.io.IOException;
 import java.sql.SQLException;
 
 /**
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public class JdbcDataSource implements MycatDataSource {
+public class JdbcDataSource implements MycatDataSource, LoadBalanceELement {
 
   private final int index;
   private final DatasourceConfig datasourceConfig;
@@ -74,6 +75,11 @@ public class JdbcDataSource implements MycatDataSource {
   }
 
   @Override
+  public boolean isMaster() {
+    return false;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -99,10 +105,20 @@ public class JdbcDataSource implements MycatDataSource {
   }
 
   public int getIndex() {
-    return 0;
+    return index;
   }
 
   public boolean asSelectRead() {
     return false;
+  }
+
+  @Override
+  public int getSessionCounter() {
+    return 0;
+  }
+
+  @Override
+  public int getWeight() {
+    return 0;
   }
 }

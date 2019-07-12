@@ -48,6 +48,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     this.prepareContext = new PrepareStmtContext(mycat);
     this.proxyQueryHandler = new ProxyQueryHandler(router, runtime);
     this.serverQueryHandler = new BlockCommandHandler(router, runtime);
+    this.serverQueryHandler.initRuntime(mycat, runtime);
   }
 
   @Override

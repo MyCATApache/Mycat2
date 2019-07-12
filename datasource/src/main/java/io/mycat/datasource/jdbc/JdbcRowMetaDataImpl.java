@@ -8,7 +8,7 @@ import java.sql.SQLException;
 
 public class JdbcRowMetaDataImpl implements RowMetaData {
 
-  ResultSetMetaData resultSetMetaData;
+  final ResultSetMetaData resultSetMetaData;
 
   public JdbcRowMetaDataImpl(ResultSetMetaData resultSetMetaData) {
     this.resultSetMetaData = resultSetMetaData;
@@ -123,5 +123,19 @@ public class JdbcRowMetaDataImpl implements RowMetaData {
     } catch (SQLException e) {
       throw new MycatException(toMessage(e));
     }
+  }
+
+  @Override
+  public String getColumnLabel(int i) {
+    try {
+      return resultSetMetaData.getColumnLabel(i);
+    } catch (SQLException e) {
+      throw new MycatException(toMessage(e));
+    }
+  }
+
+  @Override
+  public ResultSetMetaData metaData() {
+    return resultSetMetaData;
   }
 }

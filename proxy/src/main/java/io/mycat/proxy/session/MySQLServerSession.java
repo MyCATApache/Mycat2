@@ -114,7 +114,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    */
   default void writeColumnDef(String columnName, int type) {
     byte[] bytes = MySQLPacketUtil
-        .generateColumnDef(columnName, type, charsetIndex(), charset());
+        .generateColumnDefPayload(columnName, type, charsetIndex(), charset());
     writeBytes(bytes,false);
   }
 

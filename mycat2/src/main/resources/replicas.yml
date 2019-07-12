@@ -24,4 +24,15 @@ replicas:
         maxRetryCount: 3            # 连接重试次数
         weight: 3            # 权重
         dbType: jdbcMysql
-        url: jdbc:mysql://localhost:3306/test?useLegacyDatetimeCode=false&serverTimezone=UTC
+        url: jdbc:mysql://localhost:3306/db1?useLegacyDatetimeCode=false&serverTimezone=UTC
+      - name: mytest3307b              # mysql 主机名
+        ip: 127.0.0.1               # i
+        port: 3306                  # port
+        user: root                  # 用户名
+        password: 123456      # 密码
+        minCon: 1                   # 最小连接
+        maxCon: 1000                  # 最大连接
+        maxRetryCount: 3            # 连接重试次数
+        weight: 3            # 权重
+        dbType: jdbcMysql
+        url: jdbc:mysql://localhost:3306/db1?useLegacyDatetimeCode=false&serverTimezone=UTC

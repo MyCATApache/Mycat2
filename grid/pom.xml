@@ -17,6 +17,11 @@
       <artifactId>proxy</artifactId>
       <version>0.1</version>
     </dependency>
+    <dependency>
+      <groupId>io.mycat</groupId>
+      <artifactId>datasource</artifactId>
+      <version>0.1</version>
+    </dependency>
   </dependencies>
 
 </project>

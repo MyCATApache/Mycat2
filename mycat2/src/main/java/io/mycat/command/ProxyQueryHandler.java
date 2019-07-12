@@ -302,7 +302,7 @@ public class ProxyQueryHandler {
   public void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
     mycat.writeColumnCount(1);
     byte[] bytes = MySQLPacketUtil
-        .generateColumnDef("information_schema", "SCHEMATA", "SCHEMATA", "Database",
+        .generateColumnDefPayload("information_schema", "SCHEMATA", "SCHEMATA", "Database",
             "SCHEMA_NAME",
             MySQLFieldsType.FIELD_TYPE_VAR_STRING,
             0x1, 0, mycat.charsetIndex(), 192, Charset.defaultCharset());

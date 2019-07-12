@@ -54,12 +54,6 @@ public class MySQLDataNode extends MycatDataNode {
   }
 
   @Override
-  public String getNodeID() {
-    return getName();
-  }
-
-
-  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;

@@ -23,7 +23,7 @@ schemas:
       - name: travelrecord3308
         dataNodes: dn3
   - name: ANNOTATION_ROUTE
-    schemaType: ANNOTATION_ROUTE
+    schemaType: SQL_PARSE_ROUTE
     tables:
       - name: travelrecord
         type: SHARING_DATABASE

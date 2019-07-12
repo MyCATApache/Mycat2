@@ -55,6 +55,12 @@
     <artifactId>mariadb-java-client</artifactId>
     <version>2.4.2</version>
   </dependency>
+  <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+  <dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid</artifactId>
+    <version>1.1.18</version>
+  </dependency>
 
 </dependencies>
 </project>

@@ -540,12 +540,12 @@ public class JdbcDao extends ModualTest {
 //    loadModule(DB_IN_ONE_SERVER, MycatProxyBeanProviders.INSTANCE, new MycatMonitorLogCallback(),
 //        (future, connection) -> {
 //          String loadDataSql = "LOAD DATA LOCAL INFILE 'd:/sql.csv' IGNORE INTO TABLE travelrecord (id,user_id,traveldate,fee,days,`blob`)";
-//          try (PreparedStatement statement = connection.prepareStatement(loadDataSql)) {
+//          try (PreparedStatement statement = connection.PREPARE_STATEMENT(loadDataSql)) {
 //            ClientPreparedStatement preparedStatement = (ClientPreparedStatement) statement;
 //            ByteInputStream inputStream = new ByteInputStream();
 //            inputStream.setBuf("3,121,2011-02-03,123,2,1".getBytes());
 //            preparedStatement.setLocalInfileInputStream(inputStream);
-//            preparedStatement.execute();
+//            preparedStatement.EXECUTE();
 //          }catch (Exception e){
 //            e.printStackTrace();
 //          }finally {

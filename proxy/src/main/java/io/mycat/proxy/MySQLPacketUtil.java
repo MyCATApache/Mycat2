@@ -14,6 +14,7 @@ import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.sql.ResultSetMetaData;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -94,9 +95,17 @@ public class MySQLPacketUtil {
     return writer.toByteArray();
   }
 
-  public static final byte[] generateColumnDef(String name, int type, int charsetIndex,
+  public static final byte[] generateColumnDefPayload(String name, int type, int charsetIndex,
       Charset charset) {
-    return generateColumnDef("", "", "", name, name, type, 0, 0, charsetIndex, 192, charset);
+    return generateColumnDefPayload("", "", "", name, name, type, 0, 0, charsetIndex, 192, charset);
+  }
+
+  public static final byte[] generateColumnDefPayload(ResultSetMetaData metaData, int columnIndex) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
+      ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
+      columnDefPacket.writePayload(writer);
+      return writer.toByteArray();
+    }
   }
 
   public static final byte[] generateEof(
@@ -216,7 +225,8 @@ public class MySQLPacketUtil {
     return payloayEstimateMaxSize;
   }
 
-  public static final byte[] generateColumnDef(String database, String table, String originalTable,
+  public static final byte[] generateColumnDefPayload(String database, String table,
+      String originalTable,
       String columnName, String orgName, int type,
       int columnFlags,
       int columnDecimals, int charsetIndex, int length, Charset charset) {

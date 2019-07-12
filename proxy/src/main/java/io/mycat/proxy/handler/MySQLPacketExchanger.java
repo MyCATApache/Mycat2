@@ -313,7 +313,7 @@ public enum MySQLPacketExchanger {
 
   private static class MySQLCollectorExchanger extends MySQLProxyNIOHandler {
 
-    MySQLPacketCallback callback;
+    final MySQLPacketCallback callback;
 
     public MySQLCollectorExchanger(MySQLPacketCallback resultSetCollector) {
       this.callback = resultSetCollector;

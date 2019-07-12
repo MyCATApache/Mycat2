@@ -1,5 +1,7 @@
 package io.mycat.compute;
 
+import java.sql.ResultSetMetaData;
+
 public interface RowMetaData {
 
   int getColumnCount();
@@ -25,4 +27,8 @@ public interface RowMetaData {
   String getTableName(int column);
 
   int getColumnType(int column);
+
+  String getColumnLabel(int i);
+
+  ResultSetMetaData metaData();
 }

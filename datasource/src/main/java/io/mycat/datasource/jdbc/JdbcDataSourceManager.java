@@ -96,10 +96,9 @@ public class JdbcDataSourceManager implements SessionManager {
     } catch (SQLException e) {
       throw new MycatException(e);
     }
-    int sessionId = runtime.genSessionId();
-    JdbcSession jdbcSession = new JdbcSession(sessionId, key);
+    JdbcSession jdbcSession = new JdbcSession(runtime.genSessionId(), key);
     jdbcSession.wrap(connection);
-    allSessions.put(sessionId, jdbcSession);
+    allSessions.put(jdbcSession.sessionId(), jdbcSession);
     return jdbcSession;
   }
 

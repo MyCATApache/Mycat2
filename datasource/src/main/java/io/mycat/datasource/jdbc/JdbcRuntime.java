@@ -9,20 +9,19 @@ import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.session.MycatSession;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class GridRuntime {
+public class JdbcRuntime {
 
   final ProxyRuntime proxyRuntime;
   final Map<String, JdbcReplica> jdbcReplicaMap = new HashMap<>();
   final Map<String, JdbcDataNode> jdbcDataNodeMap = new HashMap<>();
 
 
-  public GridRuntime(ProxyRuntime proxyRuntime) {
+  public JdbcRuntime(ProxyRuntime proxyRuntime) {
     this.proxyRuntime = proxyRuntime;
     ReplicasRootConfig dsConfig = proxyRuntime.getConfig(ConfigEnum.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = proxyRuntime.getConfig(ConfigEnum.REPLICA_INDEX);
@@ -33,37 +32,15 @@ public class GridRuntime {
   }
 
   public JdbcSession getJdbcSessionByDataNodeName(String dataNodeName,
-      String schema, MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit, String charset,
+      MySQLIsolation isolation,
+      MySQLAutoCommit autoCommit,
       JdbcDataSourceQuery query) {
     JdbcSession session = jdbcDataNodeMap.get(dataNodeName).getReplica()
         .getJdbcSessionByBalance(query);
-    session.sync(schema, isolation, autoCommit, charset);
+    session.sync(isolation, autoCommit);
     return session;
   }
 
-  public JdbcSession getJdbcSessionByDataNodeName(String dataNodeName,
-      JdbcSyncContext context,
-      JdbcDataSourceQuery query) {
-    JdbcDataNode jdbcDataNode = jdbcDataNodeMap.get(dataNodeName);
-    JdbcReplica replica = jdbcDataNode.getReplica();
-    JdbcSession session = replica
-        .getJdbcSessionByBalance(query);
-    session.sync(jdbcDataNode.getDatabase(), context.getIsolation(), context.getAutoCommit(),
-        context.getCharset());
-    return session;
-  }
-
-  public JdbcSession getJdbcSessionByDataNodeName(MycatSession mycat, String dataNodeName,
-      JdbcDataSourceQuery query) {
-    JdbcDataNode jdbcDataNode = jdbcDataNodeMap.get(dataNodeName);
-    JdbcReplica replica = jdbcDataNode.getReplica();
-    JdbcSession session = replica
-        .getJdbcSessionByBalance(query);
-    session.sync(jdbcDataNode.getDatabase(), mycat.getIsolation(), mycat.getAutoCommit(),
-        mycat.getCharsetName());
-    return session;
-  }
 
   private void initJdbcReplica(ReplicasRootConfig replicasRootConfig,
       MasterIndexesRootConfig replicaIndexConfig) {

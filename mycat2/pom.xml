@@ -27,6 +27,11 @@
       <artifactId>grid</artifactId>
       <version>0.1</version>
     </dependency>
+    <dependency>
+      <groupId>io.mycat</groupId>
+      <artifactId>grid</artifactId>
+      <version>0.1</version>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

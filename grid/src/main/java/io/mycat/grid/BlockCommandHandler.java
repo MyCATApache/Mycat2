@@ -1,6 +1,8 @@
 package io.mycat.grid;
 
 import io.mycat.command.AbstractCommandHandler;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MycatSession;
@@ -12,18 +14,21 @@ import java.util.function.Consumer;
 
 public class BlockCommandHandler extends AbstractCommandHandler {
 
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockCommandHandler.class);
   final static ExecutorService service = Executors
       .newCachedThreadPool(r -> new ReactorEnvThread(r) {
       });
+
   GridCommandHandler handler;
 
   public BlockCommandHandler(MycatRouter router, ProxyRuntime runtime) {
     handler = new GridCommandHandler();
+
   }
 
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
-
+    handler.initRuntime(session, runtime);
   }
 
   @Override
@@ -41,6 +46,7 @@ public class BlockCommandHandler extends AbstractCommandHandler {
         session.deliverWorkerThread(thread);
         consumer.accept(session);
       } catch (Exception e) {
+        LOGGER.error("", e);
         session.setLastMessage(e.toString());
         session.writeErrorEndPacket();
       } finally {
