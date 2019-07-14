@@ -2,7 +2,6 @@ package io.mycat.grid;
 
 
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.compute.RowBaseIterator;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -13,24 +12,22 @@ import java.util.Map;
 public class GridCommandHandler extends AbstractCommandHandler {
 
   private final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(GridCommandHandler.class);
-  private JdbcRuntime jdbcRuntime;
-
+  ExecutionPlan executionPlan;
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     Map<String, Object> defContext = runtime.getDefContext();
-    jdbcRuntime = (JdbcRuntime) defContext.get("jdbcRuntime");
+    JdbcRuntime jdbcRuntime = (JdbcRuntime) defContext.get("jdbcRuntime");
+    executionPlan = new ExecutionPlan(session, jdbcRuntime);
   }
 
   @Override
   public void handleQuery(byte[] sqlBytes, MycatSession session) {
     String sql = new String(sqlBytes).toUpperCase();
     LOGGER.info(sql);
-    RowBaseIterator iterator = null;
     if (sql.contains("SELECT")) {
-      SQLExecuterWriter.writeToMycatSession(new SQLExecuter(sql, session, jdbcRuntime));
+      SQLExecuter[] executer = executionPlan.generate(sqlBytes);
+      SQLExecuterWriter.writeToMycatSession(executer);
     } else {
-      //  JDBCResponse jdbcResponse = jdbcSession.update(sql);
-      //  System.out.println(jdbcResponse);
       session.writeOkEndPacket();
     }
   }
