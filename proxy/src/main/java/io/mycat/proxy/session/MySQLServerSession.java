@@ -174,9 +174,9 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
               MySQLServerCapabilityFlags.isSessionVariableTracking(getCapabilities()),
               getLastMessage());
     } else {
-      bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
+      bytes = MySQLPacketUtil.generateEof(getWarningCount(), serverStatus);
     }
-    writeBytes(bytes,true);
+    writeBytes(bytes, !hasMoreResult);
   }
 
   /**

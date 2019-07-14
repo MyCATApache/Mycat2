@@ -12,7 +12,7 @@ public class SQLExecuterWriter {
     writeToMycatSession(new SQLExecuter[]{sqlExecuters});
   }
 
-  public static void writeToMycatSession(final SQLExecuter[] sqlExecuters) {
+  public static void writeToMycatSession(final SQLExecuter... sqlExecuters) {
     final SQLExecuter endSqlExecuter = sqlExecuters[sqlExecuters.length - 1];
     MycatSession session = endSqlExecuter.getMycatSession();
     try {
@@ -32,7 +32,7 @@ public class SQLExecuterWriter {
               while (rowIterator.hasNext()) {
                 session.writeTextRowPacket(rowIterator.next());
               }
-              session.writeRowEndPacket(endSqlExecuter == sqlExecuter, false);
+              session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
               break;
             case UPDATEOK:
               MycatUpdateResponse currentUpdateResponse = (MycatUpdateResponse) resultSet;
@@ -40,7 +40,7 @@ public class SQLExecuterWriter {
               long lastInsertId1 = currentUpdateResponse.getLastInsertId();
               session.setWarningCount(updateCount);
               session.setLastInsertId(lastInsertId1);
-              session.writeRowEndPacket(endSqlExecuter == sqlExecuter, false);
+              session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
               break;
           }
         }
