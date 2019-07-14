@@ -1,6 +1,7 @@
 package io.mycat.proxy;
 
 import io.mycat.MycatException;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
@@ -101,6 +102,14 @@ public class MySQLPacketUtil {
   }
 
   public static final byte[] generateColumnDefPayload(ResultSetMetaData metaData, int columnIndex) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
+      ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
+      columnDefPacket.writePayload(writer);
+      return writer.toByteArray();
+    }
+  }
+
+  public static final byte[] generateColumnDefPayload(MycatRowMetaData metaData, int columnIndex) {
     try (MySQLPayloadWriter writer = new MySQLPayloadWriter(128)) {
       ColumnDefPacketImpl columnDefPacket = new ColumnDefPacketImpl(metaData, columnIndex);
       columnDefPacket.writePayload(writer);

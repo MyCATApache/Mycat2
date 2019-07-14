@@ -6,6 +6,7 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MySQLPacketUtil;
+import io.mycat.proxy.packet.ColumnDefPacketImpl;
 import java.nio.charset.Charset;
 
 public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
@@ -34,7 +35,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   int setServerStatus(int s);
 
-  int incrementWarningCount();
+  long incrementWarningCount();
 
   /**
    * ok packet
@@ -46,7 +47,6 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    */
   int getServerStatus();
 
-  int setLastInsertId(int s);
 
   int getWarningCount();
 
@@ -116,6 +116,13 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     byte[] bytes = MySQLPacketUtil
         .generateColumnDefPayload(columnName, type, charsetIndex(), charset());
     writeBytes(bytes,false);
+  }
+
+  default void writeColumnDef(ColumnDefPacketImpl columnDefPacket) {
+    try (MySQLPayloadWriter writer = new MySQLPayloadWriter(64)) {
+      columnDefPacket.writePayload(writer);
+      writeBytes(writer.toByteArray(), false);
+    }
   }
 
   void writeBytes(byte[] payload,boolean end);

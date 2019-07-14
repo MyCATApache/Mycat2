@@ -1,12 +1,11 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
-import io.mycat.compute.NullableType;
-import io.mycat.compute.RowMetaData;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
-public class JdbcRowMetaDataImpl implements RowMetaData {
+public class JdbcRowMetaDataImpl implements MycatRowMetaData {
 
   final ResultSetMetaData resultSetMetaData;
 
@@ -45,9 +44,9 @@ public class JdbcRowMetaDataImpl implements RowMetaData {
   }
 
   @Override
-  public NullableType isNullable(int column) {
+  public int isNullable(int column) {
     try {
-      return NullableType.valueOf(resultSetMetaData.isNullable(column));
+      return resultSetMetaData.isNullable(column);
     } catch (SQLException e) {
       throw new MycatException(toMessage(e));
     }

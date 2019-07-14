@@ -1,8 +1,8 @@
-package io.mycat.compute;
+package io.mycat.beans.mycat;
 
 import java.sql.ResultSetMetaData;
 
-public interface RowMetaData {
+public interface MycatRowMetaData {
 
   int getColumnCount();
 
@@ -10,7 +10,7 @@ public interface RowMetaData {
 
   boolean isCaseSensitive(int column);
 
-  NullableType isNullable(int column);
+  int isNullable(int column);
 
   boolean isSigned(int column);
 

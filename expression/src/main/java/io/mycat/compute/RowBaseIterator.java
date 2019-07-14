@@ -1,10 +1,13 @@
 package io.mycat.compute;
 
-public interface RowBaseIterator {
+import io.mycat.beans.mycat.MycatRowMetaData;
+import java.io.Closeable;
+
+public interface RowBaseIterator extends Closeable {
 
 //  Session session();
 
-  RowMetaData metaData();
+  MycatRowMetaData metaData();
 
   boolean next();
 

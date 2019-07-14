@@ -331,14 +331,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
 
   @Override
-  public int incrementWarningCount() {
+  public long incrementWarningCount() {
     return this.serverStatus.incrementWarningCount();
   }
 
 
-  @Override
-  public int setLastInsertId(int s) {
-    return this.serverStatus.getWarningCount();
+  public void setLastInsertId(long s) {
+    this.serverStatus.setLastInsertId(s);
   }
 
   @Override
@@ -361,10 +360,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public long getLastInsertId() {
     return this.serverStatus.getLastInsertId();
-  }
-
-  public void setLastInsertId(long lastInsertId) {
-    this.serverStatus.setLastInsertId(lastInsertId);
   }
 
   public void resetSession() {

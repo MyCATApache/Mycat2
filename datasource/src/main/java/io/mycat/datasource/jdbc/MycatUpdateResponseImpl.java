@@ -1,22 +1,29 @@
-package io.mycat.grid;
+package io.mycat.datasource.jdbc;
+
+import java.io.IOException;
 
 public class MycatUpdateResponseImpl implements MycatUpdateResponse {
 
-  final long updateCount;
+  final int updateCount;
   final long lastInsertId;
 
-  public MycatUpdateResponseImpl(long updateCount, long lastInsertId) {
+  public MycatUpdateResponseImpl(int updateCount, long lastInsertId) {
     this.updateCount = updateCount;
     this.lastInsertId = lastInsertId;
   }
 
   @Override
-  public long getUpdateCount() {
+  public int getUpdateCount() {
     return updateCount;
   }
 
   @Override
   public long getLastInsertId() {
     return lastInsertId;
+  }
+
+  @Override
+  public void close() throws IOException {
+
   }
 }

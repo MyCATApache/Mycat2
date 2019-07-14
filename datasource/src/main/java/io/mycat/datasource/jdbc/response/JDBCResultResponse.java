@@ -1,13 +1,16 @@
 package io.mycat.datasource.jdbc.response;
 
+import io.mycat.datasource.jdbc.MycatResponse;
+import io.mycat.datasource.jdbc.MycatResultSetType;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.session.MycatSession;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class JDBCResultResponse implements JDBCResponse {
+public class JDBCResultResponse implements MycatResponse {
 
   private final Statement statement;
   private final ResultSet resultSet;
@@ -41,4 +44,13 @@ public class JDBCResultResponse implements JDBCResponse {
     }
   }
 
+  @Override
+  public MycatResultSetType getType() {
+    return null;
+  }
+
+  @Override
+  public void close() throws IOException {
+
+  }
 }

@@ -15,6 +15,7 @@
 package io.mycat.proxy.packet;
 
 import io.mycat.MycatException;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLFieldInfo;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
@@ -60,8 +61,23 @@ public class ColumnDefPacketImpl implements ColumnDefPacket {
     } catch (Exception e) {
       throw new MycatException(e);
     }
-
   }
+
+  public ColumnDefPacketImpl(final MycatRowMetaData resultSetMetaData, int columnIndex) {
+    try {
+      this.columnSchema = resultSetMetaData.getSchemaName(columnIndex).getBytes();
+      this.columnName = resultSetMetaData.getColumnLabel(columnIndex).getBytes();
+      this.columnOrgName = resultSetMetaData.getColumnName(columnIndex).getBytes();
+      this.columnNextLength = 0xC;
+      this.columnLength = resultSetMetaData.getColumnDisplaySize(columnIndex);
+      this.columnType = MySQLFieldsType.fromJdbcType(resultSetMetaData.getColumnType(columnIndex));
+      this.columnDecimals = (byte) resultSetMetaData.getScale(columnIndex);
+      this.columnCharsetSet = 0x21;
+    } catch (Exception e) {
+      throw new MycatException(e);
+    }
+  }
+
 
   public ColumnDefPacket toColumnDefPacket(MySQLFieldInfo def, String alias) {
     ColumnDefPacket columnDefPacket = new ColumnDefPacketImpl();

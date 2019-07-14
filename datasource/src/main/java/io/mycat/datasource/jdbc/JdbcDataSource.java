@@ -1,8 +1,8 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.beans.mycat.MycatDataSource;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.compute.RowBaseIterator;
-import io.mycat.compute.RowMetaData;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.plug.loadBalance.LoadBalanceELement;
 import java.io.IOException;
@@ -26,7 +26,7 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceELement {
   public static void main(String[] args) throws SQLException, IOException {
     RowBaseIterator query = getSimple();
 
-    RowMetaData rowMetaData = query.metaData();
+    MycatRowMetaData rowMetaData = query.metaData();
     while (query.next()) {
       String string = query.getString(1);
       System.out.println(string);

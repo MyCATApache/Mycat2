@@ -1,4 +1,4 @@
-package io.mycat.grid;
+package io.mycat.datasource.jdbc;
 
 public interface MycatUpdateResponse extends MycatResponse {
 
@@ -6,7 +6,7 @@ public interface MycatUpdateResponse extends MycatResponse {
     return MycatResultSetType.UPDATEOK;
   }
 
-  long getUpdateCount();
+  int getUpdateCount();
 
   long getLastInsertId();
 }

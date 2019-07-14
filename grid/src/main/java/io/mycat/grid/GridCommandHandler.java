@@ -1,19 +1,13 @@
 package io.mycat.grid;
 
 
-import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.compute.RowBaseIterator;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.JdbcSession;
-import io.mycat.datasource.jdbc.response.JDBCResponse;
-import io.mycat.datasource.jdbc.response.JDBCResultResponse;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
-import java.sql.SQLException;
 import java.util.Map;
 
 public class GridCommandHandler extends AbstractCommandHandler {
@@ -29,26 +23,15 @@ public class GridCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleQuery(byte[] sqlBytes, MycatSession session) {
-    JdbcSession jdbcSession = jdbcRuntime
-        .getJdbcSessionByDataNodeName("dn1", MySQLIsolation.READ_UNCOMMITTED,
-            MySQLAutoCommit.ON, null);
     String sql = new String(sqlBytes).toUpperCase();
     LOGGER.info(sql);
     RowBaseIterator iterator = null;
-    try {
-      if (sql.contains("SELECT")) {
-        JDBCResponse jdbcResponse = jdbcSession.query(sql);
-        System.out.println(jdbcResponse);
-        if (jdbcResponse instanceof JDBCResultResponse) {
-          ((JDBCResultResponse) jdbcResponse).writeToMycatSession(session);
-        }
-      } else {
-        //  JDBCResponse jdbcResponse = jdbcSession.update(sql);
-        //  System.out.println(jdbcResponse);
-        session.writeOkEndPacket();
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
+    if (sql.contains("SELECT")) {
+      SQLExecuterWriter.writeToMycatSession(new SQLExecuter(sql, session, jdbcRuntime));
+    } else {
+      //  JDBCResponse jdbcResponse = jdbcSession.update(sql);
+      //  System.out.println(jdbcResponse);
+      session.writeOkEndPacket();
     }
   }
 

@@ -69,7 +69,7 @@ public final class MySQLServerStatus {
     return ++affectedRows;
   }
 
-  public int incrementWarningCount() {
+  public long incrementWarningCount() {
     return ++warningCount;
   }
 

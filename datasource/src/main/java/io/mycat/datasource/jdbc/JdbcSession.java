@@ -3,11 +3,10 @@ package io.mycat.datasource.jdbc;
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.datasource.jdbc.response.JDBCResponse;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
-import java.sql.SQLException;
+import java.sql.ResultSet;
 import java.sql.Statement;
 
 /**
@@ -75,13 +74,28 @@ public class JdbcSession {
     return connection == null;
   }
 
-  public JDBCResponse query(String sql) throws SQLException {
-    Statement statement = connection.createStatement();
-    return JdbcResultSetResolver.execute(statement, sql, false);
+
+  public MycatUpdateResponse executeUpdate(String sql, boolean needGeneratedKeys) {
+    try (Statement statement = connection.createStatement()) {
+      statement.executeUpdate(sql,
+          needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
+      long lastInsertId = 0L;
+      if (needGeneratedKeys) {
+        ResultSet generatedKeys = statement.getGeneratedKeys();
+        lastInsertId = generatedKeys.next() ? generatedKeys.getLong(0) : 0L;
+      }
+      return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId);
+    } catch (Exception e) {
+      throw new MycatException(e);
+    }
   }
 
-  public JDBCResponse update(String sql) throws SQLException {
-    Statement statement = connection.createStatement();
-    return JdbcResultSetResolver.execute(statement, sql, false);
+  public JdbcRowBaseIteratorImpl executeQuery(String sql) {
+    try {
+      Statement statement = connection.createStatement();
+      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql));
+    } catch (Exception e) {
+      throw new MycatException(e);
+    }
   }
 }

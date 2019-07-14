@@ -1,13 +1,14 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.compute.RowBaseIterator;
-import io.mycat.compute.RowMetaData;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.io.InputStream;
 import java.sql.Date;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 
@@ -15,9 +16,11 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcRowBaseIteratorImpl.class);
 
-  final ResultSet resultSet;
+  private final Statement statement;
+  private final ResultSet resultSet;
 
-  public JdbcRowBaseIteratorImpl(ResultSet resultSet) {
+  public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet) {
+    this.statement = statement;
     this.resultSet = resultSet;
   }
 
@@ -27,7 +30,7 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
   }
 
   @Override
-  public RowMetaData metaData() {
+  public MycatRowMetaData metaData() {
     try {
       return new JdbcRowMetaDataImpl(resultSet.getMetaData());
     } catch (Exception e) {
@@ -49,7 +52,12 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
     try {
       resultSet.close();
     } catch (Exception e) {
-      throw new MycatException(toMessage(e));
+      LOGGER.error("", e);
+    }
+    try {
+      statement.close();
+    } catch (Exception e) {
+      LOGGER.error("", e);
     }
   }
 
