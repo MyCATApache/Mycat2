@@ -71,6 +71,6 @@ public class ConfigLoader {
       e.printStackTrace();
       LOGGER.error("load config for {} fail", e);
     }
-    LOGGER.warn(root + "/" + configEnum.getFileName() + "not exist");
+    LOGGER.warn(root + "/" + configEnum.getFileName() + " not exist");
   }
 }
