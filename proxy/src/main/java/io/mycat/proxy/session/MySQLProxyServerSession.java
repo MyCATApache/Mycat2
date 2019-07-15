@@ -55,28 +55,30 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
     try {
       switchMySQLServerWriteHandler();
       ByteBuffer buffer = writeBufferPool().allocate(payload);
-      /**
-       * ensure data in queue
-       */
-      writeQueue().offer(buffer);
-      if (end) {
-        writeQueue().offer(END_PACKET);
+      boolean ioThread = Thread.currentThread() == getIOThread();
+      if (!ioThread && end) {
+        backFromWorkerThread();
       }
       setResponseFinished(end);
-      //todo 如果队列过长是否希望抛出异常
-      if (Thread.currentThread() == getIOThread()) {
-        /**
-         * try to write
-         */
+      Queue<ByteBuffer> byteBuffers = writeQueue();
+      while (!byteBuffers.offer(buffer)) { }
+      if (end){
+        while (!byteBuffers.offer(END_PACKET)) { }
+      }
+      if (ioThread) {
         writeToChannel();
       } else {
         this.change2WriteOpts();
-        getIOThread().getSelector().wakeup();
+        if (end) {
+          getIOThread().getSelector().wakeup();
+        }
       }
     } catch (Exception e) {
       this.close(false, setLastMessage(e));
     }
   }
+
+  void backFromWorkerThread();
 
 
   default void writeToChannel() throws IOException {
@@ -158,13 +160,12 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
     ByteBuffer[] packetContainer = session.packetContainer();
     MySQLPacketSplitter packetSplitter = session.packetSplitter();
     long writed;
-    boolean isEmpty = false;
     do {
       writed = 0;
-      if (isEmpty = byteBuffers.isEmpty()) {
+      if (byteBuffers.isEmpty()) {
         break;
       }
-      ByteBuffer first  = byteBuffers.peek();
+      ByteBuffer first = byteBuffers.peek();
 
       if (END_PACKET == first) {
         break;
@@ -215,6 +216,10 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         session.change2WriteOpts();
       } else {
         session.clearReadWriteOpts();
+        if (!byteBuffers.isEmpty()) {
+          writeToChannel(session);
+          return;
+        }
       }
     } else {
       byteBuffers.clear();

@@ -404,6 +404,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.writeHandler = WriteHandler.INSTANCE;
   }
 
+
   @Override
   public void writeToChannel() throws IOException {
     writeHandler.writeToChannel(this);
@@ -551,7 +552,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
    */
   public void deliverWorkerThread(ReactorEnvThread thread) {
-    crossSwapThreadBufferPool.bindSource(this,thread);
+    crossSwapThreadBufferPool.bindSource(thread);
     assert thread == Thread.currentThread();
     thread.getReactorEnv().setCurSession(this);
   }
@@ -559,10 +560,14 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   /**
    * 业务线程执行结束,清除业务线程的session,并代表处理结束
    */
-  public void backFromWorkerThread(ReactorEnvThread thread) {
-    assert thread == Thread.currentThread();
+  @Override
+  public void backFromWorkerThread() {
+    ReactorEnvThread thread = (ReactorEnvThread)Thread.currentThread();
+    assert getIOThread()!= thread;
     thread.getReactorEnv().setCurSession(null);
+    writeBufferPool().bindSource(null);
   }
+
 
   public boolean isAccessModeReadOnly() {
     return this.serverStatus.isAccessModeReadOnly();

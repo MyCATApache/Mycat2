@@ -20,24 +20,26 @@ public class CrossSwapThreadBufferPool {
   }
 
   public ByteBuffer allocate(int size) {
-//    if (source != null && source != Thread.currentThread()) {
-//      throw new MycatException("Illegal state");
-//    }
+    if (source != null && source != Thread.currentThread()) {
+      throw new MycatException("Illegal state");
+    }
     return bufferPool.allocate(size);
   }
 
   public ByteBuffer allocate(byte[] bytes) {
+    Thread thread = Thread.currentThread();
+    if (source != null && source != thread) {
+      System.out.println();
+    }
     return bufferPool.allocate(bytes);
   }
 
   public void recycle(ByteBuffer theBuf) {
-//    if (source != null && source != Thread.currentThread()) {
-//      throw new MycatException("Illegal state");
-//    }
     bufferPool.recycle(theBuf);
   }
 
-  public void bindSource(MycatSession session, ReactorEnvThread source) {
+  public void bindSource(ReactorEnvThread source) {
+    System.out.println("----------------------------------------"+source);
     this.source = source;
   }
 //

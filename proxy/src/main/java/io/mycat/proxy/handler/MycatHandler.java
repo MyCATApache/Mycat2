@@ -53,22 +53,22 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       int startIndex = proxyBuffer.channelReadStartIndex();
       int endIndex = proxyBuffer.channelReadEndIndex();
       packetResolver.setState(ComQueryState.QUERY_PACKET);
-        while (mycat.readProxyPayloadFully()) {
-          int endPos = packetResolver.getEndPos();
-          mycat.handle();
-          if (endPos<endIndex){
-            proxyBuffer.channelReadEndIndex();
-            proxyBuffer.channelReadEndIndex(endIndex);
-            continue;
-          }
+      while (mycat.readProxyPayloadFully()) {
+        int endPos = packetResolver.getEndPos();
+        mycat.handle();
+        if (endPos < endIndex) {
+          proxyBuffer.channelReadEndIndex();
+          proxyBuffer.channelReadEndIndex(endIndex);
+          continue;
         }
+      }
       return;
     } catch (ClosedChannelException e) {
-      MycatMonitor.onMycatHandlerCloseException(mycat,e);
+      MycatMonitor.onMycatHandlerCloseException(mycat, e);
       onException(mycat, e);
       return;
     } catch (Exception e) {
-      MycatMonitor.onMycatHandlerReadException(mycat,e);
+      MycatMonitor.onMycatHandlerReadException(mycat, e);
       onException(mycat, e);
     }
   }
@@ -76,12 +76,12 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
   @Override
   public void onSocketWrite(MycatSession mycat) {
     try {
-      if ((mycat.getChannelKey().interestOps()& SelectionKey.OP_WRITE)!=0){
+      if ((mycat.getChannelKey().interestOps() & SelectionKey.OP_WRITE) != 0) {
         mycat.writeToChannel();
       }
     } catch (Exception e) {
-      MycatMonitor.onMycatHandlerWriteException(mycat,e);
-      onException(mycat,e);
+      MycatMonitor.onMycatHandlerWriteException(mycat, e);
+      onException(mycat, e);
     }
   }
 
@@ -95,14 +95,14 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
         mycat.writeToChannel();
       }
     } catch (Exception e) {
-      MycatMonitor.onMycatHandlerWriteException(mycat,e);
-      onException(mycat,e);
+      MycatMonitor.onMycatHandlerWriteException(mycat, e);
+      onException(mycat, e);
     }
   }
 
   @Override
   public void onException(MycatSession mycat, Exception e) {
-    MycatMonitor.onMycatHandlerException(mycat,e);
+    MycatMonitor.onMycatHandlerException(mycat, e);
     LOGGER.error("{}", e);
     MycatSessionWriteHandler writeHandler = mycat.getWriteHandler();
     if (writeHandler != null) {
