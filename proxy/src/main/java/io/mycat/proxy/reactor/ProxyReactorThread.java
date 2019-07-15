@@ -40,7 +40,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
   /**
    * 定时唤醒selector的时间 1.防止写入事件得不到处理 2.处理pending队列
    */
-  protected final static long SELECTOR_TIMEOUT = 100;
+  protected final static long SELECTOR_TIMEOUT = 500L;
   protected final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(ProxyReactorThread.class);
   protected final FrontSessionManager<T> frontManager;
@@ -151,13 +151,14 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
     while (!this.isInterrupted()) {
       try {
         pendingJobsEmpty = pendingJobs.isEmpty();
-        long startTime = updateLastActiveTime();
+        long startTime = System.nanoTime();
         if (pendingJobsEmpty) {
           ///////////////epoll///////////////////
           int numOfKeys = selector.select(SELECTOR_TIMEOUT);
           //////////////////////////////////
           if (numOfKeys == 0) {
-            if ((updateLastActiveTime() - startTime) < (SELECTOR_TIMEOUT / 2)) {
+            long dis = System.nanoTime() - startTime;
+            if (dis < (SELECTOR_TIMEOUT / 2)) {
               invalidSelectCount++;
             }
           }
@@ -165,6 +166,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
         } else {
           selector.selectNow();
         }
+        updateLastActiveTime();
         final Set<SelectionKey> keys = selector.selectedKeys();
         if (keys.isEmpty()) {
           if (!pendingJobsEmpty) {
