@@ -21,12 +21,6 @@
     </dependency>
     <!-- https://mvnrepository.com/artifact/ch.vorburger.mariaDB4j/mariaDB4j -->
     <dependency>
-      <groupId>ch.vorburger.mariaDB4j</groupId>
-      <artifactId>mariaDB4j</artifactId>
-      <version>2.4.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.7.25</version>

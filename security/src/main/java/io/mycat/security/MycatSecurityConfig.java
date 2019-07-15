@@ -45,7 +45,7 @@ public class MycatSecurityConfig {
 
 
   public boolean isIgnorePassword() {
-    return false;
+    return true;
   }
 
 

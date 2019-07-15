@@ -313,6 +313,7 @@ public class JdbcDao extends ModualTest {
                     statement.execute("select 1");
                   }
                   connection.commit();
+                  LOGGER.info("{}", j);
                 }
                 atomicInteger.incrementAndGet();
                 LOGGER.info("connectId:{} end", index);
@@ -321,6 +322,7 @@ public class JdbcDao extends ModualTest {
                 return;
               }
             }).start();
+            Thread.sleep(1000);
           }
           while (atomicInteger.get() != count) {
             Thread.sleep(TimeUnit.SECONDS.toMillis(10));

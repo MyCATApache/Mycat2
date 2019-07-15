@@ -1,6 +1,6 @@
 proxy:
   ip: 0.0.0.0
-  port: 8066
+  port: 8065
   # 以下bufferPool是每个reactor1独立一个,不共享
   bufferPoolPageSize: 4194304     # 一页的大小，默认 1024*1024*4
   bufferPoolChunkSize: 8192       # chunk 大小 ， 默认 8192 chunk 为bufferpool 分配的最小单元,不能低于86

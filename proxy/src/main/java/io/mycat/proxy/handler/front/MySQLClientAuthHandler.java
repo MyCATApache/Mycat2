@@ -77,7 +77,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             if(!isChangeAuthPlugin) {
                 //密码读取与验证
                 this.auth = readResponseAuthPacket(mycat);
-                if (!securityManager.isIgnorePassword()) {
+                if (true) {
                     String authPluginName = auth.getAuthPluginName();
                     int capabilities = auth.getCapabilities();
                     //切换auth_plugin

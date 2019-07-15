@@ -8,6 +8,8 @@ import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
