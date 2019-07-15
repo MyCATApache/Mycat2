@@ -149,7 +149,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     if (isDeprecateEOF()) {
     } else {
       byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
-      writeBytes(bytes,true);
+      writeBytes(bytes,false);
     }
   }
 
