@@ -34,6 +34,8 @@ public class BlockCommandHandler extends AbstractCommandHandler {
   @Override
   public void handleQuery(byte[] sql, MycatSession mycatSession) {
     block(mycatSession, (session) -> {
+      String s = new String(sql);
+      System.out.println(s);
       handler.handleQuery(sql, session);
     });
   }
@@ -50,7 +52,7 @@ public class BlockCommandHandler extends AbstractCommandHandler {
         session.setLastMessage(e.toString());
         session.writeErrorEndPacket();
       } finally {
-        session.backFromWorkerThread(thread);
+        session.backFromWorkerThread();
       }
     });
   }

@@ -73,8 +73,9 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
 
   /**
    * 设置响应结束,即payload写入结束
+   * @param b
    */
-  void setResponseFinished(boolean b);
+  void setResponseFinished(ProcessState b);
   /**
    * 可能用于实现 reset connection命令
    */

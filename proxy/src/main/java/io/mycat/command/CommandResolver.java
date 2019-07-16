@@ -7,7 +7,9 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
+import java.util.ArrayDeque;
 import java.util.HashMap;
+import java.util.Queue;
 
 public class CommandResolver {
 

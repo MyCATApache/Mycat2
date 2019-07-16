@@ -51,14 +51,13 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       MySQLPacketResolver packetResolver = mycat.getPacketResolver();
       ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
       int startIndex = proxyBuffer.channelReadStartIndex();
-      int endIndex = proxyBuffer.channelReadEndIndex();
+      int endPosition = proxyBuffer.channelReadEndIndex();
       packetResolver.setState(ComQueryState.QUERY_PACKET);
       while (mycat.readProxyPayloadFully()) {
-        int endPos = packetResolver.getEndPos();
+        int readPosition = packetResolver.getEndPos();
         mycat.handle();
-        if (endPos < endIndex) {
-          proxyBuffer.channelReadEndIndex();
-          proxyBuffer.channelReadEndIndex(endIndex);
+        if (readPosition < endPosition) {
+          proxyBuffer.channelReadEndIndex(endPosition);
           continue;
         }
       }

@@ -59,7 +59,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
       if (!ioThread && end) {
         backFromWorkerThread();
       }
-      setResponseFinished(end);
+      setResponseFinished(end?ProcessState.DONE:ProcessState.DONE);
       Queue<ByteBuffer> byteBuffers = writeQueue();
       while (!byteBuffers.offer(buffer)) { }
       if (end){
@@ -99,7 +99,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
   default void writeErrorEndPacketBySyncInProcessError(int packetId, int errorCode) {
     setLastErrorCode(errorCode);
     switchMySQLServerWriteHandler();
-    this.setResponseFinished(true);
+    this.setResponseFinished(ProcessState.DONE);
     byte[] bytes = MySQLPacketUtil
         .generateError(errorCode, getLastMessage(),
             this.getCapabilities());
