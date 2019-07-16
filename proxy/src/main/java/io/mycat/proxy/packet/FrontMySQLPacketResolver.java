@@ -48,7 +48,6 @@ public class FrontMySQLPacketResolver {
         setPacketId(head.get(3));
         return true;
       } else {
-        multiPacketList.add(payload);
         head.position(0);
         payload = null;
         return readFromChannel(socketChannel);
