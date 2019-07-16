@@ -21,6 +21,7 @@ import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.text.MessageFormat;
 
 /**
  * @author jamie12221 chen junwen date 2019-05-10 21:13 Session
@@ -43,15 +44,7 @@ public interface Session<T extends Session> {
   NIOHandler getCurNIOHandler();
 
   static String getThrowableString(Throwable e) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(e.toString());
-    sb.append("\n");
-    StackTraceElement[] stackArray = e.getStackTrace();
-    for (int i = 0; i < stackArray.length; i++) {
-      StackTraceElement element = stackArray[i];
-      sb.append(element.toString()).append("\n");
-    }
-    return sb.toString();
+    return MessageFormat.format("{0}",e);
   }
 
   /**
