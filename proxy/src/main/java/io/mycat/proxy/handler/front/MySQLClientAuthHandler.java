@@ -225,7 +225,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
         hs.setAuthPluginName(clientAuthPluginName);
         MySQLPayloadWriter mySQLPayloadWriter = new MySQLPayloadWriter();
         hs.writePayload(mySQLPayloadWriter);
-        mycat.setPakcetId(-1);//使用获取的packetId变为0
+        mycat.setPacketId(-1);//使用获取的packetId变为0
         mycat.writeBytes(mySQLPayloadWriter.toByteArray(),true);
     }
 

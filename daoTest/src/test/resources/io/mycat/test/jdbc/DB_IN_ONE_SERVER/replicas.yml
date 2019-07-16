@@ -13,21 +13,3 @@ replicas:
         minCon: 1                   # 最小连接
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
-      - name: mytest3307              # mysql 主机名
-        ip:  0.0.0.0                  # i
-        port: 3307                  # port
-        user: root                  # 用户名
-        password:        123456     # 密码
-        minCon: 1                   # 最小连接
-        maxCon: 10000                  # 最大连接
-        maxRetryCount: 3            # 连接重试次数
-      - name: jdbcMysql              # mysql 主机名
-        ip: 127.0.0.1               # i
-        port: 3306                  # port
-        user: root                  # 用户名
-        password:        123456     # 密码
-        minCon: 1                   # 最小连接
-        maxCon: 10000                  # 最大连接
-        maxRetryCount: 3            # 连接重试次数
-        dbType: jdbcMysql
-        url: jdbc:mysql://localhost:8066/test

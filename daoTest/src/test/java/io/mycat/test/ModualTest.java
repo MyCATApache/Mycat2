@@ -48,6 +48,43 @@ public abstract class ModualTest {
     });
     future.get();
   }
+  public static void loadModule11(String module, ProxyBeanProviders proxyBeanProviders,
+      MycatMonitorCallback callback,
+      TestGettingConnetionCallback gettingConnetionCallback)
+      throws IOException, ExecutionException, InterruptedException {
+    String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
+    String rootResourcePath = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module).toAbsolutePath().toString();
+    ConfigReceiver cr = ConfigLoader.load(rootResourcePath);
+    ProxyRuntime runtime = new ProxyRuntime(cr,proxyBeanProviders);
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    final CompletableFuture<String> future = new CompletableFuture<>();
+    MycatCore.startup(rootResourcePath, runtime, callback,
+        new AsyncTaskCallBack() {
+          @Override
+          public void onFinished(Object sender, Object result, Object attr) {
+            executor.submit(() -> {
+              try {
+                gettingConnetionCallback.test(future);
+              }catch (Exception e){
+                e.printStackTrace();
+              }finally {
+                MycatCore.exit(new MycatException("normal"));
+                future.complete(null);
+              }
+            });
+          }
+
+          @Override
+          public void onException(Exception e, Object sender, Object attr) {
+            e.printStackTrace();
+            Assert.fail(e.toString());
+            MycatCore.exit(e);
+            future.complete(null);
+          }
+
+        });
+    future.get();
+  }
 
   public static void compelete(Object fulture) {
     CompletableFuture completableFuture = (CompletableFuture) fulture;

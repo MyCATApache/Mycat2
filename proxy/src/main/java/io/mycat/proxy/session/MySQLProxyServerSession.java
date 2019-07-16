@@ -59,7 +59,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
       if (!ioThread && end) {
         backFromWorkerThread();
       }
-      setResponseFinished(end?ProcessState.DONE:ProcessState.DONE);
+      setResponseFinished(end?ProcessState.DONE:ProcessState.DOING);
       Queue<ByteBuffer> byteBuffers = writeQueue();
       while (!byteBuffers.offer(buffer)) { }
       if (end){

@@ -16,7 +16,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
   /**
    * 设置上下文packetId,用于响应生成
    */
-  void setPakcetId(int packet);
+  void setPacketId(int packet);
 
   /**
    * ++packetId

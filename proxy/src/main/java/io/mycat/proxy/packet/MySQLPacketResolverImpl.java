@@ -457,14 +457,4 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   public final void setOkMessage(byte[] message) {
   }
 
-//  @Override
-//  public final int getEofServerStatus() {
-//    return this.serverStatus;
-//  }
-//
-//  @Override
-//  public final int setEofServerStatus(int status) {
-//    return this.serverStatus = status;
-//  }
-
 }

@@ -13,10 +13,10 @@ import java.util.Queue;
 
 public class CommandResolver {
 
-  public static void handle(MycatSession mycat, CommandDispatcher commandHandler) {
+  public static void handle(MycatSession mycat, MySQLPacket curPacket,
+      CommandDispatcher commandHandler) {
     MycatMonitor.onCommandStart(mycat);
     try {
-      MySQLPacket curPacket = mycat.currentProxyPayload();
       boolean isEmptyPayload = curPacket.readFinished();
       if (isEmptyPayload) {
         MycatMonitor.onLoadDataLocalInFileEmptyPacketStart(mycat);

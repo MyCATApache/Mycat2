@@ -45,6 +45,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -176,7 +177,7 @@ public class JdbcDao extends ModualTest {
               statement.execute(s1);
             }
             ResultSet resultSet = statement.executeQuery(
-                "select * from travelrecord;select * from travelrecord;");
+                "select * from travelrecord;");
           } catch (Exception e) {
             e.printStackTrace();
             Assert.fail();
@@ -224,7 +225,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false";
+  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true";
   final static String username = "root";
   final static String password = "123456";
 
@@ -289,11 +290,16 @@ public class JdbcDao extends ModualTest {
 
   public static Connection getConnection() throws SQLException {
     Connection connection = null;
+    Properties properties = new Properties();
+    properties.put("user", getUsername());
+    properties.put("password",  getPassword());
+    properties.put("useBatchMultiSend", "false");
+    properties.put("usePipelineAuth", "false");
     connection = DriverManager
-        .getConnection(getUrl(), getUsername(),
-            getPassword());
+        .getConnection(getUrl(),properties);
     return connection;
   }
+
 
   @Test
   public void perTest() throws InterruptedException, ExecutionException, IOException {
@@ -302,15 +308,16 @@ public class JdbcDao extends ModualTest {
 //          Thread.sleep(TimeUnit.SECONDS.toMillis(5));
           int count = 1;
           AtomicInteger atomicInteger = new AtomicInteger(0);
+          AtomicInteger counter = new AtomicInteger(0);
           for (int i = 0; i < count; i++) {
             int index = i;
             new Thread(() -> {
               try (Connection connection = getConnection()) {
                 for (int j = 0; j < 100000; j++) {
-                  connection.setAutoCommit(false);
-                  connection.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
                   try (Statement statement = connection.createStatement()) {
-                    statement.execute("select 1");
+                    statement.execute("INSERT INTO `travelrecord` (`id`) VALUES ('"
+                        + counter.incrementAndGet()
+                        + "'); ");
                   }
                   connection.commit();
                   LOGGER.info("{}", j);

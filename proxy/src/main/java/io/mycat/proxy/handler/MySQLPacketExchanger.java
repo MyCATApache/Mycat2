@@ -485,6 +485,7 @@ public enum MySQLPacketExchanger {
                   mycat.setHandleContentOfFilename(true);
                 }
               }
+              mycat.getIOThread().getSelector().wakeup();
               onClearInNormalResponse(mycat, mysql);
             }
           }
