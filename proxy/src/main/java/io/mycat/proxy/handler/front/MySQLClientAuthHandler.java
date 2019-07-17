@@ -60,7 +60,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
     @Override
     public void onSocketRead(MycatSession mycat) {
-        ProxyRuntime runtime = getRuntime();
+        ProxyRuntime runtime = mycat.getRuntime();
         try {
             if (mycat.getCurNIOHandler() != this) {
                 return;
