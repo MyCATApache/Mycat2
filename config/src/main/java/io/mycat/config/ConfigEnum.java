@@ -15,6 +15,7 @@
 package io.mycat.config;
 
 
+import io.mycat.config.datasource.JdbcDriverRootConfig;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
@@ -49,6 +50,7 @@ public enum ConfigEnum {
   VARIABLES(14, "variables.yaml", MysqlServerVariablesRootConfig.class),
   DATANODE(15, "dataNode.yml", DataNodeRootConfig.class),
   SEQUENCE_MODIFIER(16, "sequenceModifier.yml", SchemaSequenceModifierRootConfig.class),
+  JDBC_DRIVER(17, "jdbcDriver.yml", JdbcDriverRootConfig.class),
   ;
   private byte type;
   private String fileName;
