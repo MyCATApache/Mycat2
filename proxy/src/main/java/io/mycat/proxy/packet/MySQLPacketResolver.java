@@ -50,8 +50,6 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.io.IOException;
 
-//import static io.mycat.proxy.packet.MySQLPayloadType.ROW_FINISHED;
-
 /**
  * 报文处理类 该类实现报文解析
  *

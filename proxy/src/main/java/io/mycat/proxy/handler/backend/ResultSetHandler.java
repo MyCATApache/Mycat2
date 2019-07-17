@@ -173,7 +173,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       return;
     }
     try {
-      MySQLPacketResolver resolver = mysql.getPacketResolver();
+      MySQLPacketResolver resolver = mysql.getBackendPacketResolver();
       ProxyBuffer proxyBuffer = mysql.currentProxyBuffer();
       proxyBuffer.newBufferIfNeed();
       if (!mysql.readFromChannel()) {
@@ -185,7 +185,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
       boolean isResponseFinished = false;
       ErrorPacketImpl errorPacket = null;
       while (mysql.getCurNIOHandler() == this && mysql.readProxyPayloadFully()) {
-        MySQLPayloadType type = mysql.getPacketResolver().getMySQLPayloadType();
+        MySQLPayloadType type = mysql.getBackendPacketResolver().getMySQLPayloadType();
         isResponseFinished = mysql.isResponseFinished();
         MySQLPacket payload = mysql.currentProxyPayload();
         int startPos = payload.packetReadStartIndex();
@@ -278,7 +278,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
           break;
         }
         assert mysql.getCurNIOHandler() == this;
-        MySQLPacketResolver packetResolver = mysql.getPacketResolver();
+        MySQLPacketResolver packetResolver = mysql.getBackendPacketResolver();
         mySQLPacket.packetReadStartIndex(packetResolver.getEndPos());
       }
       if (isResponseFinished) {

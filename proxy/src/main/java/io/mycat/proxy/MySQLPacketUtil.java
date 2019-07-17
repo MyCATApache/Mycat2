@@ -11,7 +11,7 @@ import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.beans.mysql.packet.PreparedOKPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.packet.ColumnDefPacketImpl;
+import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;

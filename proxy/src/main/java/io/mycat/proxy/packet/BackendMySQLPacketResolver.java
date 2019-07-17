@@ -25,7 +25,7 @@ import io.mycat.proxy.session.MySQLProxySession;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class MySQLPacketResolverImpl implements MySQLPacketResolver {
+public class BackendMySQLPacketResolver implements MySQLPacketResolver {
 
   MySQLPacket mySQLPacket;
   MySQLPacket payload;
@@ -54,7 +54,7 @@ public class MySQLPacketResolverImpl implements MySQLPacketResolver {
   MySQLPayloadType mySQLPacketProcessType;
   boolean isClientLoginResponse = false;
 
-  public MySQLPacketResolverImpl(MySQLProxySession session) {
+  public BackendMySQLPacketResolver(MySQLProxySession session) {
     this.session = session;
   }
 

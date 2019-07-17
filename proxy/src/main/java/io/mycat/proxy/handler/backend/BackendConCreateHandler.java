@@ -127,7 +127,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         }
         //收到切换登陆插件的包
         if (mysql.getPayloadType() == MySQLPayloadType.FIRST_EOF
-                && mysql.getPacketResolver().getState()
+                && mysql.getBackendPacketResolver().getState()
                 == ComQueryState.AUTH_SWITCH_PLUGIN_RESPONSE) {
             //重新发送密码验证
             MySQLPacket mySQLPacket = mysql.currentProxyPayload();
@@ -138,18 +138,18 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             mySQLPacket = mysql.newCurrentProxyPacket(1024);
             mySQLPacket.writeBytes(password);
             mysql.writeCurrentProxyPacket(mySQLPacket, mysql.getPacketId() + 1);
-            mysql.getPacketResolver().setIsClientLoginRequest(true);
+            mysql.getBackendPacketResolver().setIsClientLoginRequest(true);
             return;
         }
         //验证成功
         if (payloadType == MySQLPayloadType.FIRST_OK) {
             mysql.resetPacket();
-            mysql.getPacketResolver().setIsClientLoginRequest(false);
-            callback.onFinishedOk(mysql.getPacketResolver().getServerStatus(), mysql, null, null);
+            mysql.getBackendPacketResolver().setIsClientLoginRequest(false);
+            callback.onFinishedOk(mysql.getBackendPacketResolver().getServerStatus(), mysql, null, null);
             return;
         }
 
-        MySQLPacket mySQLPacket = mysql.getPacketResolver().currentPayload();
+        MySQLPacket mySQLPacket = mysql.getBackendPacketResolver().currentPayload();
         //用公钥进行密码加密
         if (STR_CACHING_AUTH_STAGE.equals(stage) && authPluginName
                 .equals(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME)) {
@@ -160,7 +160,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             mySQLPacket = mysql.newCurrentProxyPacket(1024);
             mySQLPacket.writeBytes(payload);
             mysql.writeCurrentProxyPacket(mySQLPacket, mysql.getPacketId() + 1);
-            mysql.getPacketResolver().setIsClientLoginRequest(true);
+            mysql.getBackendPacketResolver().setIsClientLoginRequest(true);
             stage = null;
             return;
         }
@@ -172,9 +172,9 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             mysql.resetCurrentProxyPayload();
             proxyBuffer.channelReadEndIndex(totalPacketEndIndex);
 
-            MySQLPacketResolver packetResolver = mysql.getPacketResolver();
+            MySQLPacketResolver packetResolver = mysql.getBackendPacketResolver();
             mySQLPacket.packetReadStartIndex(packetResolver.getEndPos());
-            mysql.getPacketResolver().setIsClientLoginRequest(true);
+            mysql.getBackendPacketResolver().setIsClientLoginRequest(true);
             handle(mysql);
             return;
         }
@@ -185,7 +185,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             mySQLPacket.writeBytes(payload);
             mysql.writeCurrentProxyPacket(mySQLPacket, 3);
             stage = STR_CACHING_AUTH_STAGE;
-            mysql.getPacketResolver().setIsClientLoginRequest(true);
+            mysql.getBackendPacketResolver().setIsClientLoginRequest(true);
             return;
         }
         //连接不上
@@ -194,14 +194,14 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         String message = new String(errorPacket.getErrorMessage());
         LOGGER.error(message);
         mysql.resetCurrentProxyPayload();
-        callback.onFinishedErrorPacket(errorPacket, mysql.getPacketResolver().getServerStatus(),
+        callback.onFinishedErrorPacket(errorPacket, mysql.getBackendPacketResolver().getServerStatus(),
                 mysql, this, null);
-        mysql.getPacketResolver().setIsClientLoginRequest(false);
+        mysql.getBackendPacketResolver().setIsClientLoginRequest(false);
     }
 
     public void writeClientAuth(MySQLClientSession mysql) throws IOException {
         int serverCapabilities = GlobalConfig.getClientCapabilityFlags().value;
-        mysql.getPacketResolver().setCapabilityFlags(serverCapabilities);
+        mysql.getBackendPacketResolver().setCapabilityFlags(serverCapabilities);
         HandshakePacket hs = new HandshakePacket();
         MySQLPacket payload = mysql.currentProxyPayload();
         if (payload.isErrorPacket()) {
@@ -211,7 +211,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             mysql.setLastMessage(errorMessage);
             onClear(mysql);
             mysql.close(false, errorMessage);
-            callback.onFinishedErrorPacket(errorPacket, mysql.getPacketResolver().getServerStatus(),
+            callback.onFinishedErrorPacket(errorPacket, mysql.getBackendPacketResolver().getServerStatus(),
                     mysql, this, null);
             return;
         }
@@ -233,7 +233,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         packet.setAuthPluginName(hs.getAuthPluginName());
 //      packet.setAuthPluginName(CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME);
         MySQLPacket mySQLPacket = mysql.newCurrentProxyPacket(1024);
-        mysql.getPacketResolver().setIsClientLoginRequest(true);
+        mysql.getBackendPacketResolver().setIsClientLoginRequest(true);
         packet.writePayload(mySQLPacket);
         this.welcomePkgReceived = true;
         mysql.writeCurrentProxyPacket(mySQLPacket, 1);

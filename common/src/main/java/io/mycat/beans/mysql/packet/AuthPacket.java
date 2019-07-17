@@ -101,7 +101,7 @@ public class AuthPacket {
             authPluginName = buffer.readNULString();
         }
 
-        if (MySQLServerCapabilityFlags.isConnectAttrs(capabilities)) {
+        if (MySQLServerCapabilityFlags.isConnectAttrs(capabilities) && !buffer.readFinished()) {
             long kvAllLength = buffer.readLenencInt();
             if (kvAllLength != 0) {
                 clientConnectAttrs = new HashMap<>();

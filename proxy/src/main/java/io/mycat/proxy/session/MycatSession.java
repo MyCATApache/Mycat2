@@ -33,9 +33,6 @@ import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
-import io.mycat.proxy.packet.MySQLPacketResolver;
-import io.mycat.proxy.packet.MySQLPacketResolver.ComQueryState;
-import io.mycat.proxy.packet.MySQLPacketResolverImpl;
 import io.mycat.proxy.reactor.ReactorEnv;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.security.MycatUser;
@@ -46,8 +43,7 @@ import java.nio.charset.Charset;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
-public final class MycatSession extends AbstractSession<MycatSession> implements
-    MySQLProxySession<MycatSession>, LocalInFileSession,
+public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
     MySQLProxyServerSession<MycatSession> {
 
   private CommandDispatcher commandHandler;
@@ -60,12 +56,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   /***
    * 以下资源要做session关闭时候释放
    */
-  private final ProxyBuffer proxyBuffer;//reset
+  private final ProxyBuffer proxyBuffer;//clearQueue
   private final ByteBuffer header = ByteBuffer.allocate(4);//gc
   private String schema;
   private MycatUser user;
   private final LinkedTransferQueue<ByteBuffer> writeQueue = new LinkedTransferQueue<>();//buffer recycle
-  private final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);//reset
+//  private final MySQLPacketResolver packetResolver = new BackendMySQLPacketResolver(this);//clearQueue
   private final CrossSwapThreadBufferPool crossSwapThreadBufferPool;
 
 
@@ -78,6 +74,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MySQLClientSession backend;//unbindSource
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
   private final FrontMySQLPacketResolver frontResolver;
+  private byte packetId = 0;
 
 
   public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
@@ -88,6 +85,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         bufferPool);
     this.processState = ProcessState.READY;
     this.frontResolver = new FrontMySQLPacketResolver(bufferPool, this);
+    this.packetId = 0;
   }
 
   /**
@@ -227,19 +225,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
 
-  @Override
   public ProxyBuffer currentProxyBuffer() {
     return proxyBuffer;
-  }
-
-  @Override
-  public MySQLPacketResolver getPacketResolver() {
-    return packetResolver;
-  }
-
-  @Override
-  public void setCurrentProxyBuffer(ProxyBuffer buffer) {
-    throw new MycatException("unsupport!");
   }
 
   public int getServerCapabilities() {
@@ -248,7 +235,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void setServerCapabilities(int serverCapabilities) {
     this.serverStatus.setServerCapabilities(serverCapabilities);
-    packetResolver.setCapabilityFlags(serverCapabilities);
   }
 
   public void setMySQLSession(MySQLClientSession mySQLSession) {
@@ -286,13 +272,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public void setPacketId(int packet) {
-    packetResolver.setPacketId(packet);
+  public void setPacketId(int packetId){
+    this.packetId = (byte) packetId;
   }
 
   @Override
   public byte getNextPacketId() {
-    return (byte) packetResolver.incrementPacketIdAndGet();
+    return ++packetId;
   }
 
 
@@ -414,13 +400,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     writeHandler.writeToChannel(this);
   }
 
-  public boolean readProxyPayloadFully() {
-    return packetResolver.readMySQLPayloadFully();
-  }
-
   @Override
   public final boolean readFromChannel() throws IOException {
-    boolean b = MySQLProxySession.super.readFromChannel();
+    boolean b = frontResolver.readFromChannel();
     if (b) {
       MycatMonitor.onFrontRead(this, proxyBuffer.currentByteBuffer(),
           proxyBuffer.channelReadStartIndex(), proxyBuffer.channelReadEndIndex());
@@ -429,17 +411,14 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   public MySQLPacket currentProxyPayload() {
-    return packetResolver.currentPayload();
+    return frontResolver.getPayload();
   }
 
   public void resetCurrentProxyPayload() {
-    packetResolver.resetPayload();
-
+    frontResolver.reset();
   }
 
   public void resetPacket() {
-    packetResolver.reset();
-    packetResolver.setState(ComQueryState.QUERY_PACKET);
     frontResolver.reset();
     BufferPool bufPool = this.getIOThread().getBufPool();
     for (ByteBuffer byteBuffer : writeQueue) {
@@ -448,7 +427,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     writeQueue.clear();
   }
 
-  @Override
+
   public long getSelectLimit() {
     return serverStatus.getSelectLimit();
   }

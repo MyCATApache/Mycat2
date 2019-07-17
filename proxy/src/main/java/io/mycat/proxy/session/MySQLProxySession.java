@@ -16,7 +16,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
 
   void setCurrentProxyBuffer(ProxyBuffer buffer);
 
-  MySQLPacketResolver getPacketResolver();
+  MySQLPacketResolver getBackendPacketResolver();
 
   /**
    * 读取通道的数据,该方法在mycat 与mysql session都作为通道读
@@ -34,35 +34,35 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
    * 读取完整的payload
    */
   default boolean readProxyPayloadFully() {
-    return getPacketResolver().readMySQLPayloadFully();
+    return getBackendPacketResolver().readMySQLPayloadFully();
   }
 
   /**
    * 获取当前的payload,此时下标就是payload的开始位置 使用该方法后需要调用resetCurrentProxyPayload释放资源
    */
   default MySQLPacket currentProxyPayload() {
-    return getPacketResolver().currentPayload();
+    return getBackendPacketResolver().currentPayload();
   }
 
   /**
    * 释放payload资源
    */
   default void resetCurrentProxyPayload() {
-    getPacketResolver().resetPayload();
+    getBackendPacketResolver().resetPayload();
   }
 
   /**
    * 尽可能地读取payload,可能获得的payload并不完整
    */
   default boolean readPartProxyPayload() throws IOException {
-    return getPacketResolver().readMySQLPacket();
+    return getBackendPacketResolver().readMySQLPacket();
   }
 
   /**
    * 释放buffer相关资源,但是在mycat session中并不清除proxybuffer对象,而在mysql session清除proxybuffer
    */
   default void resetPacket() {
-    getPacketResolver().reset();
+    getBackendPacketResolver().reset();
   }
 
   long getSelectLimit();

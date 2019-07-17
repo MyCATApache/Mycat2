@@ -4,7 +4,7 @@
 //import io.mycat.grid.response.JDBCResultResponse;
 //import io.mycat.logTip.MycatLogger;
 //import io.mycat.logTip.MycatLoggerFactory;
-//import io.mycat.proxy.packet.ColumnDefPacketImpl;
+//import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 //import java.sql.ResultSet;
 //import java.sql.ResultSetMetaData;
 //import java.sql.SQLException;

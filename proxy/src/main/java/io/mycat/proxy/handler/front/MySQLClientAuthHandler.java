@@ -62,14 +62,10 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     public void onSocketRead(MycatSession mycat) {
         ProxyRuntime runtime = getRuntime();
         try {
-            mycat.currentProxyBuffer().newBufferIfNeed();
             if (mycat.getCurNIOHandler() != this) {
                 return;
             }
             if (!mycat.readFromChannel()) {
-                return;
-            }
-            if (!mycat.readProxyPayloadFully()) {
                 return;
             }
             MycatSecurityConfig securityManager = runtime.getSecurityManager();
@@ -146,6 +142,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 
             mycat.writeOkEndPacket();
         } catch (Exception e) {
+            LOGGER.error("",e);
             MycatMonitor.onAuthHandlerReadException(mycat,e);
             onClear(mycat);
             failture(mycat, e);

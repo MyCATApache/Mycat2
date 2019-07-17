@@ -46,7 +46,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
       FrontMySQLPacketResolver resolver = mycat.getMySQLPacketResolver();
        ProcessState processState = mycat.getProcessState();
        if (processState == ProcessState.READY){
-         if(resolver.readFromChannel(mycat.channel())) {
+         if(resolver.readFromChannel()) {
            mycat.clearReadWriteOpts();
            mycat.handle(resolver.getPayload());
          } else {
@@ -61,7 +61,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
 //      if (!mycat.readFromChannel()) {
 //        return;
 //      }
-//      MySQLPacketResolver packetResolver = mycat.getPacketResolver();
+//      MySQLPacketResolver packetResolver = mycat.getBackendPacketResolver();
 //      ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
 //      int startIndex = proxyBuffer.channelReadStartIndex();
 //      int endPosition = proxyBuffer.channelReadEndIndex();

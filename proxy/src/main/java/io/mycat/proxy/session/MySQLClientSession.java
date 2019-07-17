@@ -28,7 +28,7 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketResolver;
-import io.mycat.proxy.packet.MySQLPacketResolverImpl;
+import io.mycat.proxy.packet.BackendMySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
@@ -45,7 +45,7 @@ public class MySQLClientSession extends
     AbstractBackendSession<MySQLClientSession> implements MySQLProxySession<MySQLClientSession> {
 
 
-  protected final MySQLPacketResolver packetResolver = new MySQLPacketResolverImpl(this);
+  protected final MySQLPacketResolver packetResolver = new BackendMySQLPacketResolver(this);
   /**
    * mysql session的源配置信息
    */
@@ -226,7 +226,7 @@ public class MySQLClientSession extends
     ) {
       return true;
     }
-    int serverStatus = getPacketResolver().getServerStatus();
+    int serverStatus = getBackendPacketResolver().getServerStatus();
     if (
         MySQLServerStatusFlags
             .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)) {
@@ -336,7 +336,7 @@ public class MySQLClientSession extends
   /**
    * 获取报文处理器
    */
-  public MySQLPacketResolver getPacketResolver() {
+  public MySQLPacketResolver getBackendPacketResolver() {
     return packetResolver;
   }
 
@@ -606,7 +606,7 @@ public class MySQLClientSession extends
   }
 
   public void prepareReveiceMultiResultSetResponse() {
-    this.getPacketResolver().prepareReveiceMultiResultSetResponse();
+    this.getBackendPacketResolver().prepareReveiceMultiResultSetResponse();
   }
 
   public ResponseType getResponseType(){
