@@ -35,7 +35,7 @@ public class FrontMySQLPacketResolver {
       if (!head.hasRemaining()) {
         head.position(0);
         int length = MySQLPacket.readInt(head, 3);
-        multiPacketList.add(payload = ByteBuffer.allocate(length));
+        multiPacketList.add(payload = pool.allocate(length));
         payload.limit(length);
       } else {
         return false;
@@ -94,6 +94,7 @@ public class FrontMySQLPacketResolver {
         }
         currentMySQLPacket.newBuffer(size);
         for (ByteBuffer byteBuffer : multiPacketList) {
+          byteBuffer.position(0);
           currentMySQLPacket.put(byteBuffer);
         }
         currentMySQLPacket.channelReadStartIndex(0);
