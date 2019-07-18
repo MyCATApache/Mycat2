@@ -19,7 +19,7 @@ import java.util.Set;
  **/
 public interface ProxyBeanProviders {
 
-  void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext);
+  void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception;
 
 
   MySQLDatasource createDatasource(ProxyRuntime runtime, int index,

@@ -4,14 +4,14 @@ import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.compute.RowBaseIterator;
 import io.mycat.config.datasource.DatasourceConfig;
-import io.mycat.plug.loadBalance.LoadBalanceELement;
+import io.mycat.plug.loadBalance.LoadBalanceElement;
 import java.io.IOException;
 import java.sql.SQLException;
 
 /**
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public class JdbcDataSource implements MycatDataSource, LoadBalanceELement {
+public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
 
   private final int index;
   private final DatasourceConfig datasourceConfig;
@@ -44,7 +44,7 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceELement {
 //
 //
 //    JdbcDataSourceManager sourceManager = new JdbcDataSourceManager(SessionProviderImpl.INSYANCE,
-//        DatasourceProviderImpl.INSTANCE,jdbcDataSources);
+//        DruidDatasourceProvider.INSTANCE,jdbcDataSources);
 //
 //    JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);
 //    JdbcSession session = sourceManager.createSession(jdbcDataSource);
@@ -120,5 +120,13 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceELement {
   @Override
   public int getWeight() {
     return 0;
+  }
+
+  public String getDbType() {
+    return  datasourceConfig.getDbType();
+  }
+
+  public String getDb() {
+    return  datasourceConfig.getDb();
   }
 }

@@ -85,7 +85,8 @@ public class ProxyRuntime {
   private final Map<String, Object> defContext = new HashMap<>();
   private MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
 
-  public ProxyRuntime(ConfigReceiver configReceiver, ProxyBeanProviders providers) {
+  public ProxyRuntime(ConfigReceiver configReceiver, ProxyBeanProviders providers)
+      throws Exception {
     this.config = configReceiver;
     this.providers = providers;
     this.initCharset(configReceiver.getResourcePath());

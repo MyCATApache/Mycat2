@@ -32,7 +32,7 @@ public enum BalanceRoundRobin implements LoadBalanceStrategy{
   INSTANCE {
     private final ConcurrentMap<String, AtomicInteger> sequences = new ConcurrentHashMap<String, AtomicInteger>();
     @Override
-    public LoadBalanceELement select(LoadBalanceInfo info, List<LoadBalanceELement> entityList) {
+    public LoadBalanceElement select(LoadBalanceInfo info, List<LoadBalanceElement> entityList) {
       if(null == entityList && entityList.size() == 0) {
           return null;
       }
@@ -42,7 +42,7 @@ public enum BalanceRoundRobin implements LoadBalanceStrategy{
       int sumWeight = 0;
       int[] weightList = new int[entityList.size()]; //权重list
       for (int i = 0; i < length; i++) {
-        LoadBalanceELement loadBalanceDataSource = entityList.get(i);
+        LoadBalanceElement loadBalanceDataSource = entityList.get(i);
         int weight = loadBalanceDataSource.getWeight();
         maxWeight = Math.max(maxWeight, weight);
         minWeight = Math.max(minWeight, weight);

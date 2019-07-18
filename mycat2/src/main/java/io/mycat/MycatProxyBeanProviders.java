@@ -26,7 +26,7 @@ import java.util.Set;
 public class MycatProxyBeanProviders implements ProxyBeanProviders {
 
   @Override
-  public void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext) {
+  public void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception {
     defContext.put("routeConfig",
         new MycatRouterConfig(runtime.getConfig(), runtime.getMySQLAPIRuntime()));
     defContext.put("jdbcRuntime", new JdbcRuntime(runtime));

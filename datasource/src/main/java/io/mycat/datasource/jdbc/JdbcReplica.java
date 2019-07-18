@@ -8,6 +8,7 @@ import io.mycat.proxy.ProxyRuntime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class JdbcReplica implements MycatReplica {
@@ -16,14 +17,14 @@ public class JdbcReplica implements MycatReplica {
   private final ReplicaDatasourceSelector<JdbcDataSource> selector;
   private ReplicaConfig replicaConfig;
 
-  public JdbcReplica(ProxyRuntime runtime,
+  public JdbcReplica(ProxyRuntime runtime, Map<String, String> jdbcDriverMap,
       ReplicaConfig replicaConfig,
-      Set<Integer> writeIndex) {
+      Set<Integer> writeIndex,DatasourceProvider provider) {
     this.replicaConfig = replicaConfig;
     List<JdbcDataSource> datasourceList = getJdbcDatasourceList(replicaConfig);
     selector = new ReplicaDatasourceSelector<>(runtime, replicaConfig, writeIndex,
         datasourceList);
-    this.dataSourceManager = new JdbcDataSourceManager(runtime, DatasourceProviderImpl.INSTANCE,
+    this.dataSourceManager = new JdbcDataSourceManager(runtime, provider,jdbcDriverMap,
         datasourceList);
   }
 

@@ -17,7 +17,7 @@ package io.mycat.replica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.plug.loadBalance.LoadBalanceELement;
+import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public abstract class MySQLDatasource implements LoadBalanceELement {
+public abstract class MySQLDatasource implements LoadBalanceElement {
 
   protected static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
   protected final int index;

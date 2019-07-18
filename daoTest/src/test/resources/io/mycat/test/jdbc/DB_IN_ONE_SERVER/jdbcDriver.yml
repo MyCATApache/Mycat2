@@ -1,0 +1,3 @@
+datasourceProviderClass: io.mycat.datasource.jdbc.DruidDatasourceProvider
+jdbcDriver:
+  mysql: io.mycat.datasource.jdbc.DruidDatasourceProvider

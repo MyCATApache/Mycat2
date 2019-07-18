@@ -2,6 +2,7 @@ package io.mycat.datasource.jdbc;
 
 
 import io.mycat.MycatException;
+import io.mycat.config.datasource.JdbcDriverRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
@@ -9,9 +10,11 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
@@ -25,27 +28,17 @@ public class JdbcDataSourceManager implements SessionManager {
 
   private final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(JdbcDataSourceManager.class);
-  private final static Set<String> AVAILABLE_JDBC_DATA_SOURCE = new HashSet<>();
   private final ConcurrentHashMap<Integer, JdbcSession> allSessions = new ConcurrentHashMap<>(8192);
   private final HashMap<JdbcDataSource, DataSource> dataSourceMap = new HashMap<>();
   private final DatasourceProvider datasourceProvider;
+  private final Map<String, String> jdbcDriverMap;
   private final ProxyRuntime runtime;
 
-  static {
-    // 加载可能的驱动
-    List<String> drivers = Arrays.asList(
-        "com.mysql.jdbc.Driver");
-    for (String driver : drivers) {
-      try {
-        Class.forName(driver);
-        AVAILABLE_JDBC_DATA_SOURCE.add(driver);
-      } catch (ClassNotFoundException ignored) {
-      }
-    }
-  }
 
   public JdbcDataSourceManager(ProxyRuntime runtime,
-      DatasourceProvider provider, List<JdbcDataSource> dataSources) {
+      DatasourceProvider provider, Map<String,String> jdbcDriverMap, List<JdbcDataSource> dataSources) {
+    Objects.requireNonNull(jdbcDriverMap);
+    this.jdbcDriverMap = jdbcDriverMap;
     Objects.requireNonNull(runtime);
     Objects.requireNonNull(provider);
     Objects.requireNonNull(dataSources);
@@ -54,8 +47,7 @@ public class JdbcDataSourceManager implements SessionManager {
 
     for (JdbcDataSource dataSource : dataSources) {
       DataSource pool = datasourceProvider
-          .createDataSource(dataSource.getUrl(), dataSource.getUsername(),
-              dataSource.getPassword());
+          .createDataSource(dataSource,jdbcDriverMap);
       dataSourceMap.put(dataSource, pool);
     }
 
@@ -118,8 +110,4 @@ public class JdbcDataSourceManager implements SessionManager {
     return pool.getConnection();
   }
 
-  interface DatasourceProvider {
-
-    DataSource createDataSource(String url, String username, String password);
-  }
 }

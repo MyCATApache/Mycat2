@@ -22,7 +22,7 @@ package io.mycat.plug.loadBalance;
  * @version V1.0
  * date Date : 2019年06月01日 14:02
  */
-public interface LoadBalanceELement {
+public interface LoadBalanceElement {
 
     String getName();
 
