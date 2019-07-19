@@ -75,7 +75,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
   private final FrontMySQLPacketResolver frontResolver;
   private byte packetId = 0;
-
+  private String dataNode;
 
   public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
       SessionManager<MycatSession> sessionManager) {
@@ -97,10 +97,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.commandHandler = commandHandler;
   }
 
-  /**
-   * 路由信息
-   */
-  private String dataNode;
 
   public void handle(MySQLPacket payload) {
     assert commandHandler != null;
@@ -241,11 +237,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.backend = mySQLSession;
   }
 
-  public long getAffectedRows() {
+  public int getAffectedRows() {
     return this.serverStatus.getAffectedRows();
   }
 
-  public void setAffectedRows(long affectedRows) {
+  public void setAffectedRows(int affectedRows) {
     this.serverStatus.setAffectedRows(affectedRows);
   }
 

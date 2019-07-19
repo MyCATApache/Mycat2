@@ -8,13 +8,12 @@ import java.util.Iterator;
 
 public class SQLExecuterWriter {
 
-  public static void writeToMycatSession(final SQLExecuter sqlExecuters) {
-    writeToMycatSession(new SQLExecuter[]{sqlExecuters});
+  public static void writeToMycatSession(MycatSession session,final SQLExecuter sqlExecuters) {
+    writeToMycatSession(session,new SQLExecuter[]{sqlExecuters});
   }
 
-  public static void writeToMycatSession(final SQLExecuter... sqlExecuters) {
+  public static void writeToMycatSession(MycatSession session,final SQLExecuter... sqlExecuters) {
     final SQLExecuter endSqlExecuter = sqlExecuters[sqlExecuters.length - 1];
-    MycatSession session = endSqlExecuter.getMycatSession();
     try {
       for (SQLExecuter sqlExecuter : sqlExecuters) {
         try (MycatResponse resultSet = sqlExecuter.execute()) {
@@ -40,11 +39,10 @@ public class SQLExecuterWriter {
               long lastInsertId1 = currentUpdateResponse.getLastInsertId();
               session.setWarningCount(updateCount);
               session.setLastInsertId(lastInsertId1);
-              session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
+              session.writeOk(endSqlExecuter != sqlExecuter);
               break;
           }
         }
-
       }
       return;
     } catch (Exception e) {

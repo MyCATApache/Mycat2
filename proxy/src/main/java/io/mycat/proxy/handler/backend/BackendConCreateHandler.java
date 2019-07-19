@@ -225,6 +225,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         packet.setMaxPacketSize(getRuntime().getMaxAllowedPacket());
         packet.setCharacterSet((byte) charsetIndex);
         packet.setUsername(datasource.getUsername());
+        packet.setDatabase(datasource.getInitDb());
         this.seed = hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo();
         //加密密码
         this.authPluginName = hs.getAuthPluginName();

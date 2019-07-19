@@ -7,7 +7,7 @@ import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
-import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -29,7 +29,7 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
   public void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception {
     defContext.put("routeConfig",
         new MycatRouterConfig(runtime.getConfig(), runtime.getMySQLAPIRuntime()));
-    defContext.put("jdbcRuntime", new JdbcRuntime(runtime));
+    defContext.put("gridRuntime", new GridRuntime(runtime));
   }
 
   @Override

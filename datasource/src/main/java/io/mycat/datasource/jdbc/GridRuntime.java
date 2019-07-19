@@ -17,14 +17,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-public class JdbcRuntime {
+public class GridRuntime {
 
   final ProxyRuntime proxyRuntime;
   final Map<String, JdbcReplica> jdbcReplicaMap = new HashMap<>();
   final Map<String, JdbcDataNode> jdbcDataNodeMap = new HashMap<>();
 
 
-  public JdbcRuntime(ProxyRuntime proxyRuntime) throws Exception {
+  public GridRuntime(ProxyRuntime proxyRuntime) throws Exception {
     this.proxyRuntime = proxyRuntime;
     ReplicasRootConfig dsConfig = proxyRuntime.getConfig(ConfigEnum.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = proxyRuntime.getConfig(ConfigEnum.REPLICA_INDEX);
@@ -46,7 +46,9 @@ public class JdbcRuntime {
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit,
       JdbcDataSourceQuery query) {
-    JdbcSession session = jdbcDataNodeMap.get(dataNodeName).getReplica()
+    JdbcDataNode  jdbcDataNode = jdbcDataNodeMap.get(dataNodeName);
+    JdbcReplica replica = jdbcDataNode.getReplica();
+    JdbcSession session =replica
         .getJdbcSessionByBalance(query);
     session.sync(isolation, autoCommit);
     return session;

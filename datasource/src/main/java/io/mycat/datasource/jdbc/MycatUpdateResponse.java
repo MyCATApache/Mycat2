@@ -9,4 +9,6 @@ public interface MycatUpdateResponse extends MycatResponse {
   int getUpdateCount();
 
   long getLastInsertId();
+
+  int serverStatus();
 }

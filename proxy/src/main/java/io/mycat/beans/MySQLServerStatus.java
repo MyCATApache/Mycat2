@@ -28,7 +28,7 @@ import java.nio.charset.Charset;
  **/
 public final class MySQLServerStatus {
   private String lastMessage;
-  private long affectedRows;
+  private int affectedRows;
   private int serverStatus;
   private int warningCount;
   private long lastInsertId;
@@ -122,11 +122,11 @@ public final class MySQLServerStatus {
     this.lastMessage = lastMessage;
   }
 
-  public long getAffectedRows() {
+  public int getAffectedRows() {
     return affectedRows;
   }
 
-  public void setAffectedRows(long affectedRows) {
+  public void setAffectedRows(int affectedRows) {
     this.affectedRows = affectedRows;
   }
 

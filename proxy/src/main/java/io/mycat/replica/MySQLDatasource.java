@@ -222,4 +222,8 @@ public abstract class MySQLDatasource implements LoadBalanceElement {
   public int getIndex() {
     return index;
   }
+
+  public String getInitDb(){
+    return datasourceConfig.getInitDb();
+  }
 }

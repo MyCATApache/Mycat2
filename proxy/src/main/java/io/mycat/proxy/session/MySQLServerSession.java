@@ -142,6 +142,21 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
         );
     writeBytes(bytes,true);
   }
+  default void writeOk(boolean hasMoreResult) {
+    int serverStatus = getServerStatus();
+    if (hasMoreResult) {
+      serverStatus |= MySQLServerStatusFlags.MORE_RESULTS;
+    }
+    byte[] bytes = MySQLPacketUtil
+        .generateOk(0, getWarningCount(), serverStatus, affectedRows(),
+            getLastInsertId(),
+            MySQLServerCapabilityFlags.isClientProtocol41(getCapabilities()),
+            MySQLServerCapabilityFlags.isKnowsAboutTransactions(getCapabilities()),
+            false, ""
+
+        );
+    writeBytes(bytes, !hasMoreResult);
+  }
 
   /**
    * 写入字段阶段技术报文,即字段包都写入后调用此方法

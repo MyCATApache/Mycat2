@@ -11,15 +11,17 @@ public class JdbcDataSourceQuery {
     return runOnMaster;
   }
 
-  public void setRunOnMaster(boolean runOnMaster) {
+  public JdbcDataSourceQuery setRunOnMaster(boolean runOnMaster) {
     this.runOnMaster = runOnMaster;
+    return this;
   }
 
   public LoadBalanceStrategy getStrategy() {
     return strategy;
   }
 
-  public void setStrategy(LoadBalanceStrategy strategy) {
+  public JdbcDataSourceQuery setStrategy(LoadBalanceStrategy strategy) {
     this.strategy = strategy;
+    return this;
   }
 }

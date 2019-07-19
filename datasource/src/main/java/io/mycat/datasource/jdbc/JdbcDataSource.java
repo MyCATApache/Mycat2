@@ -127,6 +127,6 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
   }
 
   public String getDb() {
-    return  datasourceConfig.getDb();
+    return  datasourceConfig.getInitDb();
   }
 }

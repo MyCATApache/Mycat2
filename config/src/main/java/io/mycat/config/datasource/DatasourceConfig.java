@@ -18,7 +18,6 @@
 package io.mycat.config.datasource;
 
 import io.mycat.config.GlobalConfig;
-import java.util.Objects;
 
 /**
  * dataSource
@@ -40,7 +39,7 @@ public class DatasourceConfig {
     private String url;
     private int weight = 0;
     private String initSQL;
-    private String db;
+    private String initDb;
 
     public String getName() {
         return name;
@@ -138,12 +137,12 @@ public class DatasourceConfig {
         this.initSQL = initSQL;
     }
 
-    public String getDb() {
-        return db;
+    public String getInitDb() {
+        return initDb;
     }
 
-    public void setDb(String db) {
-        this.db = db;
+    public void setInitDb(String initDb) {
+        this.initDb = initDb;
     }
 
     @Override
@@ -193,7 +192,7 @@ public class DatasourceConfig {
         if (initSQL != null ? !initSQL.equals(that.initSQL) : that.initSQL != null) {
             return false;
         }
-        return db != null ? db.equals(that.db) : that.db == null;
+        return initDb != null ? initDb.equals(that.initDb) : that.initDb == null;
     }
 
     @Override
@@ -210,7 +209,7 @@ public class DatasourceConfig {
         result = 31 * result + (url != null ? url.hashCode() : 0);
         result = 31 * result + weight;
         result = 31 * result + (initSQL != null ? initSQL.hashCode() : 0);
-        result = 31 * result + (db != null ? db.hashCode() : 0);
+        result = 31 * result + (initDb != null ? initDb.hashCode() : 0);
         return result;
     }
 }

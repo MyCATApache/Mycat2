@@ -41,7 +41,6 @@ public class ReplicaDatasourceSelector<T extends MycatDataSource> implements Loa
       if (writeIndex.contains(index)) {
         switch (config.getRepType()) {
           case SINGLE_NODE:
-            break;
           case MASTER_SLAVE: {
             if (writeDataSource.isEmpty()) {
               writeDataSource.add(jdbcDataSource);
@@ -57,6 +56,9 @@ public class ReplicaDatasourceSelector<T extends MycatDataSource> implements Loa
             break;
         }
       }
+    }
+    if (writeDataSource.isEmpty()){
+      throw new MycatException("writeDataSource list is empty");
     }
   }
 
