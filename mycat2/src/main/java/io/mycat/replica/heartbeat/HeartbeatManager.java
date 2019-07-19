@@ -18,11 +18,17 @@ package io.mycat.replica.heartbeat;
 
 /**
  * @author : zhangwy
- * @version V1.0
+ * @author : chenjunwen
+ * @version V1.1
  *  心跳流程控制
  */
 public interface HeartbeatManager {
     void heartBeat();
 
     void setStatus(DatasourceStatus datasourceStatus, int status) ;
+
+   default void setStatus(int status) {
+       DatasourceStatus datasourceStatus = new DatasourceStatus();
+       setStatus(datasourceStatus,status);
+   }
 }

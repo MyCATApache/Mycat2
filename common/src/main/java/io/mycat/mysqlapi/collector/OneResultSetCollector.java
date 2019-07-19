@@ -16,7 +16,7 @@ import java.util.Map;
  * @author jamie12221
  *  date 2019-05-22 01:17
  **/
-public class OneResultSetCollector implements ResultSetCollector, Iterable<Object[]> {
+public class OneResultSetCollector implements ResultSetCollector, Iterable<Object[]>{
 
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(StringUtil.class);
   ArrayList[] result;
@@ -116,4 +116,5 @@ public class OneResultSetCollector implements ResultSetCollector, Iterable<Objec
   public Iterator<Object[]> iterator() {
     return CollectorUtil.iterator(this);
   }
+
 }

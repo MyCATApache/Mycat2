@@ -2,6 +2,7 @@ package io.mycat.datasource.jdbc;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 
 public class DruidDatasourceProvider implements DatasourceProvider {
@@ -19,6 +20,7 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     datasource.setUsername(username);
     datasource.setUrl(url);
     datasource.setDriverClassName(jdbcDriver);
+    datasource.setMaxWait(TimeUnit.MILLISECONDS.toMillis(500));
     return datasource;
   }
 }

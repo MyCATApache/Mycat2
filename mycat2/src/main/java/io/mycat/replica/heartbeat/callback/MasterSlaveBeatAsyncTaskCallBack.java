@@ -14,17 +14,10 @@
  */
 package io.mycat.replica.heartbeat.callback;
 
-import io.mycat.beans.mysql.MySQLCommandType;
-import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.mysqlapi.collector.CollectorUtil;
-import io.mycat.mysqlapi.collector.OneResultSetCollector;
-import io.mycat.mysqlapi.collector.TextResultSetTransforCollector;
-import io.mycat.proxy.callback.ResultSetCallBack;
-import io.mycat.proxy.handler.backend.TextResultSetHandler;
-import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.mysqlapi.collector.CommonSQLCallback;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
@@ -33,25 +26,24 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @author : zhangwy
- *  date Date : 2019年05月15日 21:34
+ * @author : zhangwy date Date : 2019年05月15日 21:34
  */
-public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack {
+public class MasterSlaveBeatAsyncTaskCallBack implements CommonSQLCallback {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MasterSlaveBeatAsyncTaskCallBack.class);
   final int slaveThreshold = 1000; //延迟阈值
+  protected final HeartbeatDetector heartbeatDetector;
 
   public MasterSlaveBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
-    super(heartbeatDetector);
+    this.heartbeatDetector = heartbeatDetector;
   }
 
   public String getSql() {
     return GlobalConfig.MASTER_SLAVE_HEARTBEAT_SQL;
   }
 
-  protected void process(OneResultSetCollector queryResultSetCollector) {
+  public void process(List<Map<String, Object>> resultList) {
     DatasourceStatus datasourceStatus = new DatasourceStatus();
-    List<Map<String, Object>> resultList = CollectorUtil.toList(queryResultSetCollector);
     if (resultList.size() > 0) {
       Map<String, Object> resultResult = resultList.get(0);
       String Slave_IO_Running =
@@ -59,14 +51,14 @@ public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
       String Slave_SQL_Running =
           resultResult != null ? (String) resultResult.get("Slave_SQL_Running") : null;
       if (Slave_IO_Running != null
-              && Slave_IO_Running.equals(Slave_SQL_Running)
-              && Slave_SQL_Running.equals("Yes")) {
+          && Slave_IO_Running.equals(Slave_SQL_Running)
+          && Slave_SQL_Running.equals("Yes")) {
         datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_NORMAL);
         Long Behind_Master = (Long) resultResult.get("Seconds_Behind_Master");
         if (Behind_Master > slaveThreshold) {
           datasourceStatus.setSlaveBehindMaster(true);
           System.out.println("found MySQL master/slave Replication delay !!! " +
-                                 " binlog sync time delay: " + Behind_Master + "s");
+              " binlog sync time delay: " + Behind_Master + "s");
         } else {
           datasourceStatus.setSlaveBehindMaster(false);
         }
@@ -74,67 +66,21 @@ public class MasterSlaveBeatAsyncTaskCallBack extends HeartBeatAsyncTaskCallBack
         String Last_IO_Error =
             resultResult != null ? (String) resultResult.get("Last_IO_Error") : null;
         System.out.println("found MySQL master/slave Replication err !!! "
-                               + Last_IO_Error);
+            + Last_IO_Error);
         datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_ERROR);
       }
     }
     heartbeatDetector.getHeartbeatManager().setStatus(datasourceStatus, DatasourceStatus.OK_STATUS);
   }
 
-
   @Override
-  public void onSession(MySQLClientSession session, Object sender, Object attr) {
-    if (isQuit == false) {
-      OneResultSetCollector collector = new OneResultSetCollector();
-      TextResultSetTransforCollector transfor = new TextResultSetTransforCollector(
-          collector);
-      TextResultSetHandler queryResultSetTask = new TextResultSetHandler(transfor, (i) -> true);
-      queryResultSetTask.request(session, MySQLCommandType.COM_QUERY, getSql(),
-          new ResultSetCallBack<MySQLClientSession>() {
-            @Override
-            public void onFinishedSendException(Exception exception, Object sender,
-                Object attr) {
-              if (isQuit == false) {
-                onStatus(DatasourceStatus.ERROR_STATUS);
-              }
-            }
-
-            @Override
-            public void onFinishedException(Exception exception, Object sender, Object attr) {
-              if (isQuit == false) {
-                onStatus(DatasourceStatus.ERROR_STATUS);
-              }
-
-            }
-
-            @Override
-            public void onFinished(boolean monopolize, MySQLClientSession mysql,
-                Object sender, Object attr) {
-              try {
-                if (isQuit == false) {
-                  process(collector);
-                }
-              } finally {
-                mysql.getSessionManager().addIdleSession(mysql);
-              }
-            }
-
-            @Override
-            public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                MySQLClientSession mysql, Object sender, Object attr) {
-              if (isQuit == false) {
-                onStatus(DatasourceStatus.ERROR_STATUS);
-              }
-            }
-          })
-      ;
-    }
+  public void onError(String errorMessage) {
+    heartbeatDetector.getHeartbeatManager().setStatus(DatasourceStatus.ERROR_STATUS);
   }
 
   @Override
-  public void onException(Exception e, Object sender, Object attr) {
-    if (isQuit == false) {
-      onStatus(DatasourceStatus.ERROR_STATUS);
-    }
+  public void onException(Exception e) {
+    heartbeatDetector.getHeartbeatManager().setStatus(DatasourceStatus.ERROR_STATUS);
   }
+
 }

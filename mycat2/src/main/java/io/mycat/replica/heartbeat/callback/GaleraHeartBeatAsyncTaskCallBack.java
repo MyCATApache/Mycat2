@@ -29,11 +29,12 @@ import java.util.Map;
 
 /**
  * @author : zhangwy
+ * @author : chenujunwen
  *  date Date : 2019年05月17日 21:34
  */
 public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCallBack {
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
+    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(GaleraHeartBeatAsyncTaskCallBack.class);
     public GaleraHeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
         super(heartbeatDetector);
     }
@@ -42,11 +43,9 @@ public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCa
         return GlobalConfig.GARELA_CLUSTER_HEARTBEAT_SQL;
     }
 
-    protected void process(MySQLClientSession session,
-        OneResultSetCollector queryResultSetCollector) {
-        queryResultSetCollector.toString();
+    @Override
+    public void process(List<Map<String, Object>> resultList) {
         DatasourceStatus datasourceStatus = new DatasourceStatus();
-        List<Map<String, Object>> resultList = CollectorUtil.toList(queryResultSetCollector);
         Map<String, Object> resultResult = new HashMap<>();
         for(Map<String, Object> map : resultList ) {
             String variableName = (String)map.get("Variable_name");
@@ -62,6 +61,7 @@ public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCa
                 && "Primary".equals(wsrep_cluster_status)) {
                 datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_NORMAL);
                 datasourceStatus.setStatus(DatasourceStatus.OK_STATUS);
+                return;
             } else {
                 LOGGER.info("found MySQL  cluster status err !!! "
                     + " wsrep_cluster_status: "+ wsrep_cluster_status
@@ -70,6 +70,7 @@ public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCa
                 );
                 datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_ERROR);
                 datasourceStatus.setStatus(DatasourceStatus.ERROR_STATUS);
+                return;
             }
         }
         heartbeatDetector.getHeartbeatManager().setStatus(datasourceStatus, DatasourceStatus.OK_STATUS);

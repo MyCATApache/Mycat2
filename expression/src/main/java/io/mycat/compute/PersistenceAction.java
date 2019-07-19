@@ -1,6 +1,7 @@
 package io.mycat.compute;
 
 import io.mycat.MycatException;
+import io.mycat.mysqlapi.collector.RowBaseIterator;
 
 public interface PersistenceAction {
 

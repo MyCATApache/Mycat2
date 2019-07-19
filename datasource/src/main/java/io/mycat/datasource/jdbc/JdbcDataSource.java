@@ -2,7 +2,7 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.compute.RowBaseIterator;
+import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import java.io.IOException;

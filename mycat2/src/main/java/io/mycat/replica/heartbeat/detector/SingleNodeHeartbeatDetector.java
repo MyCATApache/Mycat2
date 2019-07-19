@@ -34,7 +34,7 @@ public class SingleNodeHeartbeatDetector extends AbstractHeartBeatDetector imple
 
     @Override
     public HeartBeatAsyncTaskCallBack getAsyncTaskCallback() {
-        return new SingleHeartBeatAsyncTaskCallBack(this);
+        return new HeartBeatAsyncTaskCallBack(this,new SingleHeartBeatAsyncTaskCallBack(this));
     }
 
 }

@@ -1,7 +1,7 @@
 package io.mycat.compute.expression;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.compute.RowBaseIterator;
+import io.mycat.mysqlapi.collector.RowBaseIterator;
 import java.io.InputStream;
 import java.sql.Date;
 import java.sql.Time;

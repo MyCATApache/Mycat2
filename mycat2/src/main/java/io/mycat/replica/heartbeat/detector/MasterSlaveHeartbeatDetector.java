@@ -33,6 +33,6 @@ public class MasterSlaveHeartbeatDetector extends AbstractHeartBeatDetector impl
     }
     @Override
     public HeartBeatAsyncTaskCallBack getAsyncTaskCallback() {
-        return new MasterSlaveBeatAsyncTaskCallBack(this);
+        return new HeartBeatAsyncTaskCallBack(this,new MasterSlaveBeatAsyncTaskCallBack(this));
     }
 }

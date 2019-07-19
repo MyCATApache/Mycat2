@@ -63,7 +63,7 @@ public class GarelaHeartbeatDetector extends MasterSlaveHeartbeatDetector implem
   }
     @Override
     public HeartBeatAsyncTaskCallBack getAsyncTaskCallback() {
-        return new GaleraHeartBeatAsyncTaskCallBack(this);
+        return new HeartBeatAsyncTaskCallBack(this,new GaleraHeartBeatAsyncTaskCallBack(this));
     }
 
 //    public HeartbeatInfReceiver<DatasourceStatus> getHeartbeatInfReceiver() {

@@ -1,6 +1,6 @@
 package io.mycat.datasource.jdbc;
 
-import io.mycat.compute.RowBaseIterator;
+import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.proxy.MySQLPacketUtil;
 import java.io.IOException;
 import java.util.Iterator;
@@ -9,11 +9,8 @@ public class MycatResultSetResponseImpl implements MycatResultSetResponse {
 
   final RowBaseIterator rowBaseIterator;
   private DataNodeSession session;
-  private JdbcSession jdbcSession;
 
-  public MycatResultSetResponseImpl(JdbcSession jdbcSession,
-      RowBaseIterator rowBaseIterator,DataNodeSession session) {
-    this.jdbcSession = jdbcSession;
+  public MycatResultSetResponseImpl(RowBaseIterator rowBaseIterator, DataNodeSession session) {
     this.rowBaseIterator = rowBaseIterator;
     this.session = session;
   }

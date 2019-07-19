@@ -4,6 +4,7 @@ import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.config.ConfigEnum;
+import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.JdbcDriverRootConfig;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
@@ -11,6 +12,8 @@ import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.proxy.ProxyRuntime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,8 +71,12 @@ public class GridRuntime {
         && !replicasRootConfig.getReplicas().isEmpty()) {
       for (ReplicaConfig replicaConfig : replicasRootConfig.getReplicas()) {
         Set<Integer> replicaIndexes = ProxyRuntime.getReplicaIndexes(masterIndexes, replicaConfig);
+        List<JdbcDataSource> jdbcDatasourceList = getJdbcDatasourceList(replicaConfig);
+        if (jdbcDatasourceList.isEmpty()) {
+          return;
+        }
         JdbcReplica jdbcReplica = new JdbcReplica(proxyRuntime, jdbcDriverMap, replicaConfig,
-            replicaIndexes,datasourceProvider);
+            replicaIndexes,jdbcDatasourceList,datasourceProvider);
         jdbcReplicaMap.put(jdbcReplica.getName(), jdbcReplica);
       }
     }
@@ -83,6 +90,20 @@ public class GridRuntime {
             new JdbcDataNode(jdbcReplicaMap.get(dataNode.getReplica()), dataNode));
       }
     }
-
   }
+  public static List<JdbcDataSource> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
+    List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
+    if (mysqls == null) {
+      return Collections.emptyList();
+    }
+    List<JdbcDataSource> datasourceList = new ArrayList<>();
+    for (int index = 0; index < mysqls.size(); index++) {
+      DatasourceConfig datasourceConfig = mysqls.get(index);
+      if (datasourceConfig.getDbType() != null) {
+        datasourceList.add(new JdbcDataSource(index, datasourceConfig));
+      }
+    }
+    return datasourceList;
+  }
+
 }
