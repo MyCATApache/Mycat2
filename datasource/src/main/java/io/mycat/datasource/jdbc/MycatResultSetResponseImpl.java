@@ -8,12 +8,14 @@ import java.util.Iterator;
 public class MycatResultSetResponseImpl implements MycatResultSetResponse {
 
   final RowBaseIterator rowBaseIterator;
+  private DataNodeSession session;
   private JdbcSession jdbcSession;
 
   public MycatResultSetResponseImpl(JdbcSession jdbcSession,
-      RowBaseIterator rowBaseIterator) {
+      RowBaseIterator rowBaseIterator,DataNodeSession session) {
     this.jdbcSession = jdbcSession;
     this.rowBaseIterator = rowBaseIterator;
+    this.session = session;
   }
 
   @Override
@@ -66,6 +68,6 @@ public class MycatResultSetResponseImpl implements MycatResultSetResponse {
   @Override
   public void close() throws IOException {
     rowBaseIterator.close();
-    jdbcSession.close(false, "close");
+    session.finish();
   }
 }

@@ -42,7 +42,8 @@ public class ExecutionPlanBuilder {
   public SQLExecuter[] generate(byte[] sqlBytes) {
     String sql = new String(sqlBytes);
     parser.parse(sqlBytes, sqlContext);
-    switch (sqlContext.getSQLType()) {
+    byte sqlType =sqlContext.getSQLType()==0? sqlContext.getCurSQLType():sqlContext.getSQLType();
+    switch (sqlType) {
       case BufferSQLContext.BEGIN_SQL:
       case BufferSQLContext.START_SQL:
       case BufferSQLContext.START_TRANSACTION_SQL: {

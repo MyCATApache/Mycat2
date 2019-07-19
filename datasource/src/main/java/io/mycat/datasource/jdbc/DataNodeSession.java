@@ -3,12 +3,12 @@ package io.mycat.datasource.jdbc;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DataNodeSession {
 
-  final List<JdbcSession> backends = new ArrayList<>();
+  final Map<String, JdbcSession> backends = new HashMap<>();
   final GridRuntime jdbcRuntime;
 
   MySQLAutoCommit autocommit = MySQLAutoCommit.ON;
@@ -21,34 +21,48 @@ public class DataNodeSession {
 
   public void setAutomcommit(boolean on) {
     this.autocommit = on ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF;
-    for (JdbcSession backend : backends) {
+    for (JdbcSession backend : backends.values()) {
       backend.setAutomcommit(on);
     }
   }
 
   public void setTransactionIsolation(MySQLIsolation isolation) {
     this.isolation = isolation;
-    for (JdbcSession backend : backends) {
+    for (JdbcSession backend : backends.values()) {
       backend.setTransactionIsolation(isolation);
     }
   }
 
   public MycatResultSetResponse executeQuery(String dataNode, String sql, boolean runOnMaster,
       LoadBalanceStrategy strategy) {
-    JdbcSession session = this.jdbcRuntime
-        .getJdbcSessionByDataNodeName(dataNode, isolation, autocommit,
-            new JdbcDataSourceQuery().setRunOnMaster(runOnMaster).setStrategy(strategy));
-    backends.add(session);
-    return new MycatResultSetResponseImpl(session, session.executeQuery(sql));
+    JdbcSession session = getBackendSession(dataNode, runOnMaster, strategy);
+    return new MycatResultSetResponseImpl(session, session.executeQuery(sql), this);
   }
 
-  public  MycatUpdateResponse executeUpdate(String dataNode, String sql,boolean runOnMaster,
+  private JdbcSession getBackendSession(String dataNode, boolean runOnMaster,
       LoadBalanceStrategy strategy) {
-    JdbcSession session = this.jdbcRuntime
-        .getJdbcSessionByDataNodeName(dataNode, isolation, autocommit,
-            new JdbcDataSourceQuery().setRunOnMaster(runOnMaster).setStrategy(strategy));
-    backends.add(session);
-    return session.executeUpdate(sql,true);
+    JdbcSession session = backends
+        .compute(dataNode, (s, session1) -> {
+          if (session1 == null) {
+            session1 = jdbcRuntime
+                .getJdbcSessionByDataNodeName(dataNode, isolation, autocommit,
+                    new JdbcDataSourceQuery().setRunOnMaster(runOnMaster).setStrategy(strategy));
+          }
+          return session1;
+        });
+
+    backends.put(dataNode, session);
+    return session;
+  }
+
+  public MycatUpdateResponse executeUpdate(String dataNode, String sql, boolean runOnMaster,
+      LoadBalanceStrategy strategy) {
+    try {
+      JdbcSession session = getBackendSession(dataNode, runOnMaster, strategy);
+      return session.executeUpdate(sql, true);
+    } finally {
+      finish();
+    }
   }
 
   public void startTransaction() {
@@ -56,28 +70,38 @@ public class DataNodeSession {
   }
 
   public void commit() {
-    this.autocommit = MySQLAutoCommit.ON;
-    for (JdbcSession backend : backends) {
-      backend.commit();
-      backend.close(true, "commit");
+    try {
+      this.autocommit = MySQLAutoCommit.ON;
+      for (JdbcSession backend : backends.values()) {
+        backend.commit();
+        backend.close(true, "commit");
+      }
+      backends.clear();
+    } finally {
+      finish();
     }
-    backends.clear();
+
   }
 
   public void rollback() {
-    this.autocommit = MySQLAutoCommit.ON;
-    for (JdbcSession backend : backends) {
-      backend.rollback();
-      backend.close(true, "rollback");
+    try {
+      this.autocommit = MySQLAutoCommit.ON;
+      for (JdbcSession backend : backends.values()) {
+        backend.rollback();
+        backend.close(true, "rollback");
+      }
+      backends.clear();
+    } finally {
+      finish();
     }
-    backends.clear();
   }
 
   public void finish() {
-    if (autocommit == MySQLAutoCommit.ON){
-      for (JdbcSession backend : backends) {
-        backend.close(true,"finish");
+    if (autocommit == MySQLAutoCommit.ON) {
+      for (JdbcSession backend : backends.values()) {
+        backend.close(true, "finish");
       }
+      backends.clear();
     }
   }
 }
