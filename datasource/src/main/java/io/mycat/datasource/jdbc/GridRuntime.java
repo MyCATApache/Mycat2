@@ -36,22 +36,30 @@ public class GridRuntime {
     Objects.requireNonNull(datasourceProviderClass);
     DatasourceProvider datasourceProvider;
     try {
-      datasourceProvider = (DatasourceProvider) Class.forName(datasourceProviderClass).newInstance();
+      datasourceProvider = (DatasourceProvider) Class.forName(datasourceProviderClass)
+          .newInstance();
     } catch (Exception e) {
       throw new MycatException("can not load datasourceProvider:{}", datasourceProviderClass);
     }
-    initJdbcReplica(dsConfig, replicaIndexConfig, jdbcDriverRootConfig.getJdbcDriver(),datasourceProvider);
+    initJdbcReplica(dsConfig, replicaIndexConfig, jdbcDriverRootConfig.getJdbcDriver(),
+        datasourceProvider);
     DataNodeRootConfig dataNodeRootConfig = proxyRuntime.getConfig(ConfigEnum.DATANODE);
     initJdbcDataNode(dataNodeRootConfig);
+  }
+
+  public JdbcReplica getJdbcReplicaByReplicaName(String name) {
+    JdbcReplica jdbcReplica = jdbcReplicaMap.get(name);
+    Objects.requireNonNull(jdbcReplica);
+    return jdbcReplica;
   }
 
   public JdbcSession getJdbcSessionByDataNodeName(String dataNodeName,
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit,
       JdbcDataSourceQuery query) {
-    JdbcDataNode  jdbcDataNode = jdbcDataNodeMap.get(dataNodeName);
+    JdbcDataNode jdbcDataNode = jdbcDataNodeMap.get(dataNodeName);
     JdbcReplica replica = jdbcDataNode.getReplica();
-    JdbcSession session =replica
+    JdbcSession session = replica
         .getJdbcSessionByBalance(query);
     session.sync(isolation, autoCommit);
     return session;
@@ -76,7 +84,7 @@ public class GridRuntime {
           return;
         }
         JdbcReplica jdbcReplica = new JdbcReplica(proxyRuntime, jdbcDriverMap, replicaConfig,
-            replicaIndexes,jdbcDatasourceList,datasourceProvider);
+            replicaIndexes, jdbcDatasourceList, datasourceProvider);
         jdbcReplicaMap.put(jdbcReplica.getName(), jdbcReplica);
       }
     }
@@ -91,6 +99,7 @@ public class GridRuntime {
       }
     }
   }
+
   public static List<JdbcDataSource> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
     if (mysqls == null) {
@@ -106,4 +115,7 @@ public class GridRuntime {
     return datasourceList;
   }
 
+  public <T> T getConfig(ConfigEnum heartbeat) {
+    return (T) proxyRuntime.getConfig(heartbeat);
+  }
 }

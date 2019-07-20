@@ -12,15 +12,11 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica.heartbeat.callback;
+package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.mysqlapi.collector.CollectorUtil;
-import io.mycat.mysqlapi.collector.OneResultSetCollector;
-import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.HashMap;
@@ -32,10 +28,11 @@ import java.util.Map;
  * @author : chenujunwen
  *  date Date : 2019年05月17日 21:34
  */
-public class GaleraHeartBeatAsyncTaskCallBack extends MasterSlaveBeatAsyncTaskCallBack {
+public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
 
-    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(GaleraHeartBeatAsyncTaskCallBack.class);
-    public GaleraHeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
+    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(
+        MySQLGaleraHeartBeatStrategy.class);
+    public MySQLGaleraHeartBeatStrategy(HeartbeatDetector heartbeatDetector) {
         super(heartbeatDetector);
     }
 

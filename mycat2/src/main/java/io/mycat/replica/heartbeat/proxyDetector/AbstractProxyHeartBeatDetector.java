@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica.heartbeat;
+package io.mycat.replica.heartbeat.proxyDetector;
 
 
 import io.mycat.config.ConfigEnum;
@@ -25,6 +25,9 @@ import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.replica.MySQLDataSourceEx;
+import io.mycat.replica.MySQLDatasource;
+import io.mycat.replica.heartbeat.HeartbeatDetector;
+import io.mycat.replica.heartbeat.HeartbeatManager;
 
 /**
  * @author : zhangwy
@@ -32,18 +35,18 @@ import io.mycat.replica.MySQLDataSourceEx;
  *
  *  date Date : 2019年05月06日 23:20
  */
-public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
+public abstract  class AbstractProxyHeartBeatDetector implements HeartbeatDetector<MySQLDatasource,ProxyHeartBeatAsyncTaskCallBack> {
     protected final ReplicaConfig replicaConfig;
-    protected final MySQLDataSourceEx dataSource;
+    protected final MySQLDatasource dataSource;
     protected final HeartbeatManager heartbeatManager;
     protected volatile long lastSendQryTime;
     protected volatile long lastReceivedQryTime;//    private isCheck
     protected long heartbeatTimeout ;
-    protected volatile HeartBeatAsyncTaskCallBack heartBeatAsyncTaskCallBack;
+    protected volatile ProxyHeartBeatAsyncTaskCallBack heartBeatAsyncTaskCallBack;
     protected final ProxyRuntime runtime;
 
 
-    public AbstractHeartBeatDetector(ProxyRuntime runtime,ReplicaConfig replicaConfig, MySQLDataSourceEx dataSource , HeartbeatManager heartbeatManager) {
+    public AbstractProxyHeartBeatDetector(ProxyRuntime runtime,ReplicaConfig replicaConfig, MySQLDatasource dataSource , HeartbeatManager heartbeatManager) {
         this.replicaConfig = replicaConfig;
         this.dataSource = dataSource;
         this.heartbeatManager = heartbeatManager;
@@ -56,7 +59,7 @@ public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
     }
 
     public void heartBeat(){
-        heartBeatAsyncTaskCallBack = getAsyncTaskCallback();
+        heartBeatAsyncTaskCallBack = getCallback();
         MySQLTaskUtil
             .getMySQLSessionForTryConnectFromUserThread(runtime, dataSource, null,
                 PartialType.SMALL_ID, heartBeatAsyncTaskCallBack);
@@ -84,11 +87,11 @@ public abstract  class AbstractHeartBeatDetector  implements  HeartbeatDetector{
 
 
     @Override
-    public ReplicaConfig getReplicaConfig() {
+    public ReplicaConfig getReplica() {
         return replicaConfig;
     }
     @Override
-    public MySQLDataSourceEx getDataSource() {
+    public MySQLDatasource getDataSource() {
         return dataSource;
     }
 

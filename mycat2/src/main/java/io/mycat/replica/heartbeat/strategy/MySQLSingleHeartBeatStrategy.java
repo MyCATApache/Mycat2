@@ -12,29 +12,24 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica.heartbeat.callback;
+package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.mysqlapi.collector.CommonSQLCallback;
-import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.List;
 import java.util.Map;
 
 /**
- * @author : zhangwy
- *  date Date : 2019年05月15日 21:34
+ * @author : zhangwy date Date : 2019年05月15日 21:34
  */
-public class SingleHeartBeatAsyncTaskCallBack implements CommonSQLCallback {
+public class MySQLSingleHeartBeatStrategy implements CommonSQLCallback {
 
   final static String sql = "select user()";
   final private HeartbeatDetector heartbeatDetector;
 
-  public SingleHeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
-
+  public MySQLSingleHeartBeatStrategy(HeartbeatDetector heartbeatDetector) {
     this.heartbeatDetector = heartbeatDetector;
   }
-
-
 
 
   @Override
@@ -54,6 +49,5 @@ public class SingleHeartBeatAsyncTaskCallBack implements CommonSQLCallback {
 
   @Override
   public void onException(Exception e) {
-    this.heartbeatDetector.getHeartbeatManager().setStatus(DatasourceStatus.ERROR_STATUS);
   }
 }

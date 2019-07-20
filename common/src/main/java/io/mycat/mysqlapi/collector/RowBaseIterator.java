@@ -40,4 +40,6 @@ public interface RowBaseIterator extends Closeable {
   java.io.InputStream getAsciiStream(int columnIndex);
 
   java.io.InputStream getBinaryStream(int columnIndex);
+
+  public Object getObject(int columnIndex);
 }

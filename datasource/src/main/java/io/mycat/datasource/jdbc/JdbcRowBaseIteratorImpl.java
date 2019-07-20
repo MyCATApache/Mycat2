@@ -195,4 +195,12 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
       throw new MycatException(toMessage(e));
     }
   }
+  @Override
+  public Object getObject(int columnIndex) {
+    try{
+      return resultSet.getObject(columnIndex);
+    }catch (Exception e){
+      throw new MycatException(e);
+    }
+  }
 }

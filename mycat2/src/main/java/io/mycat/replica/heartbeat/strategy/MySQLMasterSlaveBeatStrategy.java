@@ -12,15 +12,13 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica.heartbeat.callback;
+package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.mysqlapi.collector.CommonSQLCallback;
-import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.DatasourceStatus;
-import io.mycat.replica.heartbeat.HeartBeatAsyncTaskCallBack;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.List;
 import java.util.Map;
@@ -28,13 +26,14 @@ import java.util.Map;
 /**
  * @author : zhangwy date Date : 2019年05月15日 21:34
  */
-public class MasterSlaveBeatAsyncTaskCallBack implements CommonSQLCallback {
+public class MySQLMasterSlaveBeatStrategy implements CommonSQLCallback {
 
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MasterSlaveBeatAsyncTaskCallBack.class);
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(
+      MySQLMasterSlaveBeatStrategy.class);
   final int slaveThreshold = 1000; //延迟阈值
   protected final HeartbeatDetector heartbeatDetector;
 
-  public MasterSlaveBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector) {
+  public MySQLMasterSlaveBeatStrategy(HeartbeatDetector heartbeatDetector) {
     this.heartbeatDetector = heartbeatDetector;
   }
 

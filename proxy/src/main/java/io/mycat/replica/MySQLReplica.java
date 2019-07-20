@@ -121,7 +121,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
    *
    * @param runOnMaster is runOnMaster
    * @param strategy balanceStrategy
-   * @param asynTaskCallBack callback function
+   * @param asynTaskCallBack strategy function
    */
   public void getMySQLSessionByBalance(boolean runOnMaster, LoadBalanceStrategy strategy,
       List<SessionIdAble> ids,

@@ -17,19 +17,18 @@
 package io.mycat.replica.heartbeat;
 
 import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.replica.MySQLDataSourceEx;
 
-public interface HeartbeatDetector {
+public interface HeartbeatDetector<T,C> {
 
-    ReplicaConfig getReplicaConfig();
+    ReplicaConfig getReplica();
 
-    MySQLDataSourceEx getDataSource();
+    T getDataSource();
 
     HeartbeatManager getHeartbeatManager();
 
     void heartBeat();
 
-    HeartBeatAsyncTaskCallBack getAsyncTaskCallback();
+    C getCallback();
 
     boolean isHeartbeatTimeout();
 

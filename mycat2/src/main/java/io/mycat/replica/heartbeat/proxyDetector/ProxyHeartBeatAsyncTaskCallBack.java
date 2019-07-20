@@ -1,4 +1,4 @@
-package io.mycat.replica.heartbeat;
+package io.mycat.replica.heartbeat.proxyDetector;
 
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
@@ -10,25 +10,27 @@ import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.replica.heartbeat.DatasourceStatus;
+import io.mycat.replica.heartbeat.HeartbeatDetector;
 
 /**
  * @author : zhangwy
  * @author : chenjunwen
  * @version V1.1 date Date : 2019年07月19日 17:46
  */
-public class HeartBeatAsyncTaskCallBack implements SessionCallBack<MySQLClientSession> {
+public class ProxyHeartBeatAsyncTaskCallBack implements SessionCallBack<MySQLClientSession> {
 
   protected volatile boolean isQuit = false;
   protected final HeartbeatDetector heartbeatDetector;
   private CommonSQLCallback commonSQLCallback;
 
-  public HeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector,
+  public ProxyHeartBeatAsyncTaskCallBack(HeartbeatDetector heartbeatDetector,
       CommonSQLCallback commonSQLCallback) {
     this.heartbeatDetector = heartbeatDetector;
     this.commonSQLCallback = commonSQLCallback;
   }
 
-   void setQuit(boolean quit) {
+  public void setQuit(boolean quit) {
     isQuit = quit;
   }
 
