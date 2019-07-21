@@ -1,6 +1,7 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.beans.mycat.MycatDataSource;
+import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.config.datasource.DatasourceConfig;
@@ -15,11 +16,14 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
 
   private final int index;
   private final DatasourceConfig datasourceConfig;
+  private final JdbcReplica replica;
   private volatile boolean isAlive = true;
 
-  public JdbcDataSource(int index, DatasourceConfig datasourceConfig) {
+  public JdbcDataSource(int index, DatasourceConfig datasourceConfig,
+      JdbcReplica replica) {
     this.index = index;
     this.datasourceConfig = datasourceConfig;
+    this.replica = replica;
   }
 
 
@@ -128,5 +132,9 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
 
   public String getDb() {
     return  datasourceConfig.getInitDb();
+  }
+
+  public JdbcReplica getReplica() {
+    return replica;
   }
 }

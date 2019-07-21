@@ -127,4 +127,9 @@ public class TableScan implements RowBaseIterator {
   public InputStream getBinaryStream(int columnIndex) {
     return currentRowBaseIterator.getBinaryStream(columnIndex);
   }
+
+  @Override
+  public Object getObject(int columnIndex) {
+    return currentRowBaseIterator.getObject(columnIndex);
+  }
 }

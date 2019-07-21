@@ -1,4 +1,4 @@
-package io.mycat.replica.heartbeat;
+package io.mycat.replica;
 
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.config.datasource.ReplicaConfig;
@@ -23,6 +23,11 @@ public class MySQLReplicaEx extends MySQLReplica {
   public MySQLReplicaEx(ProxyRuntime runtime,ReplicaConfig replicaConfig, Set<Integer> writeIndex,
       MycatProxyBeanProviders dataSourceFactory) {
     super(runtime,replicaConfig, writeIndex, dataSourceFactory);
+  }
+
+  @Override
+  public ReplicaConfig getReplicaConfig() {
+    return config;
   }
 
   public boolean switchDataSourceIfNeed() {

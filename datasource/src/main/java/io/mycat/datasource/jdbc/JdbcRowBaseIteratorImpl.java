@@ -2,15 +2,19 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.mysqlapi.collector.RowBaseIterator;
 import java.io.InputStream;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
 
@@ -195,12 +199,32 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
       throw new MycatException(toMessage(e));
     }
   }
+
   @Override
   public Object getObject(int columnIndex) {
-    try{
+    try {
       return resultSet.getObject(columnIndex);
-    }catch (Exception e){
+    } catch (Exception e) {
       throw new MycatException(e);
     }
   }
+
+  public List<Map<String, Object>> getResultSetMap() {
+    return getResultSetMap(this);
+  }
+
+  private List<Map<String, Object>> getResultSetMap(JdbcRowBaseIteratorImpl iterator) {
+    MycatRowMetaData metaData = iterator.metaData();
+    int columnCount = metaData.getColumnCount();
+    List<Map<String, Object>> resultList = new ArrayList<>();
+    while (iterator.next()) {
+      HashMap<String, Object> row = new HashMap<>(columnCount);
+      for (int i = 0; i < columnCount; i++) {
+        row.put(metaData.getColumnName(i), iterator.getObject(i));
+      }
+      resultList.add(row);
+    }
+    return resultList;
+  }
+
 }

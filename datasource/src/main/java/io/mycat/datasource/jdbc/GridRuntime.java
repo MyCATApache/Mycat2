@@ -1,6 +1,8 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
+import io.mycat.beans.mycat.MycatDataSource;
+import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.config.ConfigEnum;
@@ -11,6 +13,7 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
+import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GridRuntime {
 
@@ -79,12 +83,12 @@ public class GridRuntime {
         && !replicasRootConfig.getReplicas().isEmpty()) {
       for (ReplicaConfig replicaConfig : replicasRootConfig.getReplicas()) {
         Set<Integer> replicaIndexes = ProxyRuntime.getReplicaIndexes(masterIndexes, replicaConfig);
-        List<JdbcDataSource> jdbcDatasourceList = getJdbcDatasourceList(replicaConfig);
-        if (jdbcDatasourceList.isEmpty()) {
-          return;
+        List<DatasourceConfig> jdbcDatasourceConfigList = getJdbcDatasourceList(replicaConfig);
+        if (jdbcDatasourceConfigList.isEmpty()) {
+          continue;
         }
-        JdbcReplica jdbcReplica = new JdbcReplica(proxyRuntime, jdbcDriverMap, replicaConfig,
-            replicaIndexes, jdbcDatasourceList, datasourceProvider);
+        JdbcReplica jdbcReplica = new JdbcReplica(this, jdbcDriverMap, replicaConfig,
+            replicaIndexes, jdbcDatasourceConfigList, datasourceProvider);
         jdbcReplicaMap.put(jdbcReplica.getName(), jdbcReplica);
       }
     }
@@ -100,16 +104,16 @@ public class GridRuntime {
     }
   }
 
-  public static List<JdbcDataSource> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
+  public static List<DatasourceConfig> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
     if (mysqls == null) {
       return Collections.emptyList();
     }
-    List<JdbcDataSource> datasourceList = new ArrayList<>();
+    List<DatasourceConfig> datasourceList = new ArrayList<>();
     for (int index = 0; index < mysqls.size(); index++) {
       DatasourceConfig datasourceConfig = mysqls.get(index);
-      if (datasourceConfig.getDbType() != null) {
-        datasourceList.add(new JdbcDataSource(index, datasourceConfig));
+      if (datasourceConfig.getUrl() != null) {
+        datasourceList.add(datasourceConfig);
       }
     }
     return datasourceList;
@@ -117,5 +121,14 @@ public class GridRuntime {
 
   public <T> T getConfig(ConfigEnum heartbeat) {
     return (T) proxyRuntime.getConfig(heartbeat);
+  }
+
+  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name){
+    return proxyRuntime.getLoadBalanceByBalanceName(name);
+  }
+
+  public void updateReplicaMasterIndexesConfig(MycatReplica replica,
+      List<MycatDataSource> writeDataSource) {
+    proxyRuntime.updateReplicaMasterIndexesConfig(replica,writeDataSource);
   }
 }

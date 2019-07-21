@@ -1,8 +1,8 @@
 package io.mycat.replica;
 
-import io.mycat.config.ConfigEnum;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.replica.heartbeat.HeartbeatManager;
 import io.mycat.replica.heartbeat.proxyDetector.MySQLProxyHeartBeatManager;
 
 /**
@@ -10,7 +10,7 @@ import io.mycat.replica.heartbeat.proxyDetector.MySQLProxyHeartBeatManager;
  *  date 2019-05-14 19:36
  **/
 public class MySQLDataSourceEx extends MySQLDatasource {
-  final MySQLProxyHeartBeatManager mysqlHeartBeatManager;
+  final HeartbeatManager mysqlHeartBeatManager;
 
   public MySQLDataSourceEx(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
@@ -25,16 +25,16 @@ public class MySQLDataSourceEx extends MySQLDatasource {
   @Override
   public boolean isAlive() {
     if(isMaster()) {
-      return mysqlHeartBeatManager.getHeartBeatStatus().isAlive();
+      return mysqlHeartBeatManager.getDsStatus().isAlive();
     } else {
-      return mysqlHeartBeatManager.getHeartBeatStatus().isAlive()&& asSelectRead();
+      return mysqlHeartBeatManager.getDsStatus().isAlive()&& asSelectRead();
     }
   }
 
   @Override
   public boolean asSelectRead() {
-    return mysqlHeartBeatManager.getHeartBeatStatus().isAlive()
-        && mysqlHeartBeatManager.getHeartBeatStatus().isSlaveBehindMaster() == false
-        && mysqlHeartBeatManager.getHeartBeatStatus().isDbSynStatusNormal();
+    return mysqlHeartBeatManager.getDsStatus().isAlive()
+        && mysqlHeartBeatManager.getDsStatus().isSlaveBehindMaster() == false
+        && mysqlHeartBeatManager.getDsStatus().isDbSynStatusNormal();
   }
 }

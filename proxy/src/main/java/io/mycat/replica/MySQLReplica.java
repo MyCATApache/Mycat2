@@ -16,6 +16,7 @@ package io.mycat.replica;
 
 import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
+import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
@@ -47,9 +48,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
 
   static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLReplica.class);
-  private final ReplicaConfig config;
+  protected final ReplicaConfig config;
   private final List<MySQLDatasource> datasourceList = new ArrayList<>();
-  private final CopyOnWriteArrayList<MySQLDatasource> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
+  private final List<MySQLDatasource> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
   private LoadBalanceStrategy defaultLoadBalanceStrategy;
   protected final ProxyRuntime runtime;
 
@@ -233,7 +234,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
     int size = writeDataSource.size();
     if (writeDataSource.size() == 1) {
       datasource = writeDataSource.get(0);
-      return datasource.isAlive() ? Collections.singletonList(datasource) : Collections.emptyList();
+      return (List<MySQLDatasource>)(datasource.isAlive() ? Collections.singletonList(datasource) : Collections.emptyList());
     }
     ArrayList<MySQLDatasource> datasources = new ArrayList<>(size);
     for (int i = 0; i < size; i++) {
@@ -255,6 +256,11 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
     return writeDataSource.contains(datasource);
   }
 
+
+  @Override
+  public ReplicaConfig getReplicaConfig() {
+    return config;
+  }
 
   /**
    * 切换写节点

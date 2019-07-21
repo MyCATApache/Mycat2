@@ -18,6 +18,8 @@ import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
+import io.mycat.beans.mycat.MycatDataSource;
+import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.ConfigEnum;
@@ -435,8 +437,8 @@ public class ProxyRuntime {
     return providers;
   }
 
-  public void updateReplicaMasterIndexesConfig(final MySQLReplica replica,
-      List<MySQLDatasource> writeDataSource) {
+  public <T extends MycatDataSource> void updateReplicaMasterIndexesConfig(final MycatReplica replica,
+      List<T> writeDataSource) {
 
     synchronized (REPLICA_MASTER_INDEXES_LOGGER) {
       final MasterIndexesRootConfig config = getConfig(ConfigEnum.REPLICA_INDEX);

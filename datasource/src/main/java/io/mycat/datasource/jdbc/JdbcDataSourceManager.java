@@ -31,18 +31,14 @@ public class JdbcDataSourceManager implements SessionManager {
   private final ConcurrentHashMap<Integer, JdbcSession> allSessions = new ConcurrentHashMap<>(8192);
   private final HashMap<JdbcDataSource, DataSource> dataSourceMap = new HashMap<>();
   private final DatasourceProvider datasourceProvider;
-  private final Map<String, String> jdbcDriverMap;
-  private final ProxyRuntime runtime;
 
 
-  public JdbcDataSourceManager(ProxyRuntime runtime,
+  public JdbcDataSourceManager(GridRuntime runtime,
       DatasourceProvider provider, Map<String,String> jdbcDriverMap, List<JdbcDataSource> dataSources) {
     Objects.requireNonNull(jdbcDriverMap);
-    this.jdbcDriverMap = jdbcDriverMap;
     Objects.requireNonNull(runtime);
     Objects.requireNonNull(provider);
     Objects.requireNonNull(dataSources);
-    this.runtime = runtime;
     this.datasourceProvider = provider;
 
     for (JdbcDataSource dataSource : dataSources) {
@@ -88,7 +84,7 @@ public class JdbcDataSourceManager implements SessionManager {
     } catch (SQLException e) {
       throw new MycatException(e);
     }
-    JdbcSession jdbcSession = new JdbcSession(runtime.genSessionId(), key);
+    JdbcSession jdbcSession = new JdbcSession((int)Thread.currentThread().getId(), key);
     jdbcSession.wrap(connection);
     allSessions.put(jdbcSession.sessionId(), jdbcSession);
     return jdbcSession;

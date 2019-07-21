@@ -8,7 +8,6 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.ProxyRuntime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -23,18 +22,17 @@ public class ReplicaDatasourceSelector<T extends MycatDataSource> implements Loa
   protected final ReplicaConfig config;
   protected final List<T> datasourceList;
   protected final CopyOnWriteArrayList<T> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
-  protected final ProxyRuntime runtime;
+  protected final GridRuntime runtime;
   protected LoadBalanceStrategy defaultLoadBalanceStrategy;
 
-  public ReplicaDatasourceSelector(ProxyRuntime runtime, ReplicaConfig replicaConfig,
-      Set<Integer> writeIndex, List<T> datasourceList) {
+  public ReplicaDatasourceSelector(GridRuntime runtime, ReplicaConfig replicaConfig,
+      Set<Integer> writeIndex, List<T> datasourceList,
+      LoadBalanceStrategy defaultLoadBalanceStrategy) {
     this.runtime = runtime;
     this.config = replicaConfig;
     Objects.requireNonNull(runtime);
     Objects.requireNonNull(replicaConfig);
-
-    defaultLoadBalanceStrategy = runtime
-        .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
+    this.defaultLoadBalanceStrategy = defaultLoadBalanceStrategy;
     this.datasourceList = datasourceList;
     for (T jdbcDataSource : datasourceList) {
       int index = jdbcDataSource.getIndex();
@@ -57,7 +55,7 @@ public class ReplicaDatasourceSelector<T extends MycatDataSource> implements Loa
         }
       }
     }
-    if (writeDataSource.isEmpty()){
+    if (writeDataSource.isEmpty()) {
       throw new MycatException("writeDataSource list is empty");
     }
   }
