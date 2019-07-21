@@ -43,8 +43,8 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
-import io.mycat.proxy.callback.AsyncTaskCallBack;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
+import io.mycat.proxy.callback.EmptyAsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -99,6 +99,10 @@ public class ProxyRuntime {
     this.initDataNode(providers, configReceiver.getConfig(ConfigEnum.DATANODE));
 
     providers.initRuntime(this, defContext);
+  }
+
+  public void beforeAcceptConnectionProcess() throws Exception {
+    providers.beforeAcceptConnectionProcess(this, defContext);
   }
 
   public void startReactor() throws IOException {
@@ -310,17 +314,7 @@ public class ProxyRuntime {
     Objects.requireNonNull(datasourceMap);
     for (MySQLDatasource datasource : datasourceMap.values()) {
       datasource.init(reactorThreads, new AsyncTaskCallBackCounter(datasourceMap.size(),
-          new AsyncTaskCallBack() {
-            @Override
-            public void onFinished(Object sender, Object result, Object attr) {
-
-            }
-
-            @Override
-            public void onException(Exception e, Object sender, Object attr) {
-
-            }
-          }));
+          EmptyAsyncTaskCallBack.INSTANCE));
     }
 
   }
@@ -437,7 +431,8 @@ public class ProxyRuntime {
     return providers;
   }
 
-  public <T extends MycatDataSource> void updateReplicaMasterIndexesConfig(final MycatReplica replica,
+  public <T extends MycatDataSource> void updateReplicaMasterIndexesConfig(
+      final MycatReplica replica,
       List<T> writeDataSource) {
 
     synchronized (REPLICA_MASTER_INDEXES_LOGGER) {

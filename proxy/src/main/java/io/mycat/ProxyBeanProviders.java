@@ -21,6 +21,7 @@ public interface ProxyBeanProviders {
 
   void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception;
 
+  void beforeAcceptConnectionProcess(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception;
 
   MySQLDatasource createDatasource(ProxyRuntime runtime, int index,
       DatasourceConfig datasourceConfig,
@@ -36,4 +37,7 @@ public interface ProxyBeanProviders {
   MySQLSynContext createMySQLSynContext(MycatSession mycat);
 
   MySQLSynContext createMySQLSynContext(MySQLClientSession mysql);
+
+
+  
 }

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GridRuntime {
 
@@ -49,6 +48,8 @@ public class GridRuntime {
         datasourceProvider);
     DataNodeRootConfig dataNodeRootConfig = proxyRuntime.getConfig(ConfigEnum.DATANODE);
     initJdbcDataNode(dataNodeRootConfig);
+
+
   }
 
   public JdbcReplica getJdbcReplicaByReplicaName(String name) {
@@ -104,7 +105,7 @@ public class GridRuntime {
     }
   }
 
-  public static List<DatasourceConfig> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
+  private static List<DatasourceConfig> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
     List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
     if (mysqls == null) {
       return Collections.emptyList();

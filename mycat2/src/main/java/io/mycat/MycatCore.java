@@ -22,6 +22,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.AsyncTaskCallBack;
+import io.mycat.proxy.callback.EmptyAsyncTaskCallBack;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
@@ -61,19 +62,7 @@ public class MycatCore {
     MycatProxyBeanProviders proxyBeanProviders = new MycatProxyBeanProviders();
     runtime = new ProxyRuntime(
         ConfigLoader.load(resourcesPath, GlobalConfig.genVersion()), proxyBeanProviders);
-    startup(resourcesPath, runtime, new MycatMonitorLogCallback(),
-        new AsyncTaskCallBack() {
-          @Override
-          public void onFinished(Object sender, Object result, Object attr) {
-
-          }
-
-          @Override
-          public void onException(Exception e, Object sender, Object attr) {
-            e.printStackTrace();
-          }
-
-        });
+    startup(resourcesPath, runtime, new MycatMonitorLogCallback(), EmptyAsyncTaskCallBack.INSTANCE);
     return;
 
   }
@@ -86,83 +75,49 @@ public class MycatCore {
     try {
       MycatMonitor.setCallback(callback);
       runtime.startReactor();
-      ScheduledExecutorService service = Executors.newScheduledThreadPool(1);
+
+      ScheduledExecutorService nonBlockScheduled = Executors.newScheduledThreadPool(1);
       HeartbeatRootConfig heartbeatRootConfig = runtime
           .getConfig(ConfigEnum.HEARTBEAT);
-      long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
-      long replicaIdleCheckPeriod = idleTimeout / 2;
-      service.scheduleAtFixedRate(idleConnectCheck(runtime), 0, replicaIdleCheckPeriod,
-          TimeUnit.SECONDS);
-      long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
-      service.scheduleAtFixedRate(new Runnable() {
-        @Override
-        public void run() {
-          Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
-          for (MySQLDataSourceEx datasource : datasourceList) {
-            datasource.heartBeat();
-          }
-        }
-      }, 0, period, TimeUnit.SECONDS);
-      service.scheduleAtFixedRate(new Runnable() {
-        @Override
-        public void run() {
+      startMySQLProxyIdleCheckService(nonBlockScheduled, heartbeatRootConfig);
+      startMySQLProxyHeartbeat(nonBlockScheduled, heartbeatRootConfig);
+      startMySQLCollectInfoService(nonBlockScheduled);
 
-          try {
-            ProxyDashboard.INSTANCE.collectInfo(runtime);
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-
-        }
-      }, 0, 30, TimeUnit.SECONDS);
-
+      runtime.beforeAcceptConnectionProcess();
       runtime.startAcceptor();
       startFinished.onFinished(null, null, null);
     } catch (Exception e) {
       startFinished.onException(e, null, null);
     }
+  }
 
-//
-//  public static void getReplicaMetaData(ProxyRuntime runtime, AsyncTaskCallBack asyncTaskCallBack) {
-//    Collection<MySQLReplica> mySQLReplicaList = runtime.getMySQLReplicaList();
-//    AsyncTaskCallBackCounter counter = new AsyncTaskCallBackCounter(mySQLReplicaList.size(),
-//        asyncTaskCallBack);
-//    for (MySQLReplica mySQLReplica : mySQLReplicaList) {
-//      MySQLDatasource master = mySQLReplica.getMaster();
-//      MySQLTaskUtil.getMySQLSessionForTryConnect(master,
-//          new AsyncTaskCallBack<MySQLClientSession>() {
-//            @Override
-//            public void finished(MySQLClientSession session, Object sender,
-//                boolean success,
-//                Object result, Object attr) {
-//              QueryUtil.showInformationSchemaColumns(session,
-//                  new AsyncTaskCallBack<MySQLClientSession>() {
-//                    @Override
-//                    public void finished(MySQLClientSession session, Object sender,
-//                        boolean success, Object result, Object attr) {
-//                      if (success) {
-//                        session.getSessionManager().addIdleSession(session);
-//                        ResultSetCollector collector = (ResultSetCollector) result;
-//                        for (Object[] objects : collector) {
-//                          String TABLE_SCHEMA = (String) objects[1];
-//                          String TABLE_NAME = (String) objects[2];
-//                          String COLUMN_NAME = (String) objects[3];
-//                          Object CHARACTER_OCTET_LENGTH = objects[9];
-//                          Object COLUMN_TYPE = objects[15];
-//                          mySQLReplica
-//                              .addMetaData(TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME);
-//                        }
-//                        counter.finished(session, sender, success, result, attr);
-//                      } else {
-//                        counter.finished(session, sender, success, result, attr);
-//                      }
-//                    }
-//                  });
-//            }
-//          });
-//    }
-//  }
-//
+  private static void startMySQLProxyHeartbeat(ScheduledExecutorService service,
+      HeartbeatRootConfig heartbeatRootConfig) {
+    long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+    service.scheduleAtFixedRate(() -> {
+      Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
+      for (MySQLDataSourceEx datasource : datasourceList) {
+        datasource.heartBeat();
+      }
+    }, 0, period, TimeUnit.SECONDS);
+  }
+
+  private static void startMySQLCollectInfoService(ScheduledExecutorService service) {
+    service.scheduleAtFixedRate(() -> {
+      try {
+        ProxyDashboard.INSTANCE.collectInfo(runtime);
+      } catch (Exception e) {
+        LOGGER.error("",e);
+      }
+    }, 0, 30, TimeUnit.SECONDS);
+  }
+
+  private static void startMySQLProxyIdleCheckService(ScheduledExecutorService service,
+      HeartbeatRootConfig heartbeatRootConfig) {
+    long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
+    long replicaIdleCheckPeriod = idleTimeout / 2;
+    service.scheduleAtFixedRate(idleConnectCheck(runtime), 0, replicaIdleCheckPeriod,
+        TimeUnit.SECONDS);
   }
 
 
