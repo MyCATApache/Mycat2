@@ -73,7 +73,7 @@ public abstract class HeartbeatManager {
   protected void setTimeout(DatasourceStatus datasourceStatus) {
     this.hbStatus.incrementErrorCount();
     this.heartbeatDetector.quitDetector();
-    if (this.hbStatus.getErrorCount() == this.hbStatus.getMaxRetry()) {
+    if (this.hbStatus.getErrorCount() >= this.hbStatus.getMaxRetry()) {
       datasourceStatus.setStatus(DatasourceStatus.TIMEOUT_STATUS);
       sendDataSourceStatus(datasourceStatus);
       this.hbStatus.setErrorCount(0);
@@ -84,7 +84,7 @@ public abstract class HeartbeatManager {
   protected void setError(DatasourceStatus datasourceStatus) {
     this.hbStatus.incrementErrorCount();
     this.heartbeatDetector.quitDetector();
-    if (this.hbStatus.getErrorCount() == this.hbStatus.getMaxRetry()) {
+    if (this.hbStatus.getErrorCount() >= this.hbStatus.getMaxRetry()) {
       datasourceStatus.setStatus(DatasourceStatus.ERROR_STATUS);
       sendDataSourceStatus(datasourceStatus);
       this.hbStatus.setErrorCount(0);

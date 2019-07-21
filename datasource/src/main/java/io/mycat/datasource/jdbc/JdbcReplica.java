@@ -30,7 +30,7 @@ public class JdbcReplica implements MycatReplica {
     this.selector = new ReplicaDatasourceSelector<>(runtime, replicaConfig, writeIndex, dataSources,
         runtime.getLoadBalanceByBalanceName(null));
     this.dataSourceManager = new JdbcDataSourceManager(runtime, provider, jdbcDriverMap,
-        dataSources);
+        dataSources,    this.selector);
   }
 
   private List<JdbcDataSource> getJdbcDataSources(
@@ -130,5 +130,9 @@ public class JdbcReplica implements MycatReplica {
 
   public boolean isMaster(JdbcDataSource jdbcDataSource) {
     return selector.writeDataSource.contains(jdbcDataSource);
+  }
+
+  public JdbcSession createSessionDirectly(JdbcDataSource jdbcDataSource) {
+    return dataSourceManager.createSessionDirectly(jdbcDataSource);
   }
 }

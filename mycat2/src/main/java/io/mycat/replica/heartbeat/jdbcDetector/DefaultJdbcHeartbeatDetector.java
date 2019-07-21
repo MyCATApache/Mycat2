@@ -61,10 +61,9 @@ public class DefaultJdbcHeartbeatDetector implements
 
   @Override
   public void heartBeat() {
-    if (!quit.get()) {
       JdbcSession session = null;
       try {
-        session = replica.createSession(jdbcDataSource);
+        session = replica.createSessionDirectly(jdbcDataSource);
         List<Map<String, Object>> resultList;
         try (JdbcRowBaseIteratorImpl iterator = session.executeQuery(callback.getSql())) {
           resultList = iterator.getResultSetMap();
@@ -74,11 +73,11 @@ public class DefaultJdbcHeartbeatDetector implements
         callback.onException(e);
         throw e;
       } finally {
+        quit.set(false);
         if (session != null) {
           session.close(true, "heartBeat");
         }
       }
-    }
   }
 
 
