@@ -31,10 +31,12 @@ public class JdbcDataSourceManager implements SessionManager {
   private final ConcurrentHashMap<Integer, JdbcSession> allSessions = new ConcurrentHashMap<>(8192);
   private final HashMap<JdbcDataSource, DataSource> dataSourceMap = new HashMap<>();
   private final DatasourceProvider datasourceProvider;
+  private final List<JdbcDataSource> dataSources;
 
 
   public JdbcDataSourceManager(GridRuntime runtime,
       DatasourceProvider provider, Map<String,String> jdbcDriverMap, List<JdbcDataSource> dataSources) {
+
     Objects.requireNonNull(jdbcDriverMap);
     Objects.requireNonNull(runtime);
     Objects.requireNonNull(provider);
@@ -46,7 +48,7 @@ public class JdbcDataSourceManager implements SessionManager {
           .createDataSource(dataSource,jdbcDriverMap);
       dataSourceMap.put(dataSource, pool);
     }
-
+    this.dataSources = dataSources;
   }
 
   public List<JdbcSession> getAllSessions() {
@@ -104,6 +106,10 @@ public class JdbcDataSourceManager implements SessionManager {
   private Connection getConnection(JdbcDataSource key) throws SQLException {
     DataSource pool = getPool(key);
     return pool.getConnection();
+  }
+
+  public List<JdbcDataSource> getDatasourceList(){
+    return dataSources;
   }
 
 }

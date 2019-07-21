@@ -32,7 +32,11 @@ public abstract class HeartbeatManager {
    */
   public void heartBeat() {
     if (hbStatus.tryChecking()) {
-      this.heartbeatDetector.heartBeat();
+      try {
+        this.heartbeatDetector.heartBeat();
+      }finally {
+        hbStatus.setChecking(false);
+      }
     } else if (this.heartbeatDetector.isHeartbeatTimeout()) {
       DatasourceStatus datasourceStatus = new DatasourceStatus();
       datasourceStatus.setStatus(DatasourceStatus.TIMEOUT_STATUS);

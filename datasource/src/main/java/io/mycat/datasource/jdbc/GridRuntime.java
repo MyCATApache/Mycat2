@@ -11,8 +11,11 @@ import io.mycat.config.datasource.JdbcDriverRootConfig;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
+import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import java.util.ArrayList;
@@ -22,16 +25,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class GridRuntime {
+
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(GridRuntime.class);
 
   final ProxyRuntime proxyRuntime;
   final Map<String, JdbcReplica> jdbcReplicaMap = new HashMap<>();
   final Map<String, JdbcDataNode> jdbcDataNodeMap = new HashMap<>();
-
+  final Map<String, JdbcDataSource> jdbcDataSourceMap = new HashMap<>();
+  final GridBeanProviders providers;
 
   public GridRuntime(ProxyRuntime proxyRuntime) throws Exception {
     this.proxyRuntime = proxyRuntime;
+    String gridBeanProvidersClass = (String) proxyRuntime.getDefContext()
+        .getOrDefault("GridBeanProviders", "io.mycat.DefaultGridBeanProviders");
+    this.providers = (GridBeanProviders) Class.forName(gridBeanProvidersClass).newInstance();
     ReplicasRootConfig dsConfig = proxyRuntime.getConfig(ConfigEnum.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = proxyRuntime.getConfig(ConfigEnum.REPLICA_INDEX);
     JdbcDriverRootConfig jdbcDriverRootConfig = proxyRuntime.getConfig(ConfigEnum.JDBC_DRIVER);
@@ -49,8 +61,22 @@ public class GridRuntime {
     DataNodeRootConfig dataNodeRootConfig = proxyRuntime.getConfig(ConfigEnum.DATANODE);
     initJdbcDataNode(dataNodeRootConfig);
 
+    ScheduledExecutorService blockScheduled = Executors.newScheduledThreadPool(1);
+    HeartbeatRootConfig heartbeatRootConfig = proxyRuntime
+        .getConfig(ConfigEnum.HEARTBEAT);
+    long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+    blockScheduled.scheduleAtFixedRate(() -> {
+      try {
+        for (JdbcDataSource value : jdbcDataSourceMap.values()) {
+          value.heartBeat();
+        }
+      } catch (Exception e) {
+        LOGGER.error("",e);
+      }
+    }, 0, period, TimeUnit.SECONDS);
 
   }
+
 
   public JdbcReplica getJdbcReplicaByReplicaName(String name) {
     JdbcReplica jdbcReplica = jdbcReplicaMap.get(name);
@@ -88,9 +114,19 @@ public class GridRuntime {
         if (jdbcDatasourceConfigList.isEmpty()) {
           continue;
         }
-        JdbcReplica jdbcReplica = new JdbcReplica(this, jdbcDriverMap, replicaConfig,
+        JdbcReplica jdbcReplica = providers.createJdbcReplica(this, jdbcDriverMap, replicaConfig,
             replicaIndexes, jdbcDatasourceConfigList, datasourceProvider);
         jdbcReplicaMap.put(jdbcReplica.getName(), jdbcReplica);
+        List<JdbcDataSource> datasourceList = jdbcReplica.getDatasourceList();
+        for (JdbcDataSource jdbcDataSource : datasourceList) {
+          jdbcDataSourceMap.compute(jdbcDataSource.getName(),
+              (s, dataSource) -> {
+                if (dataSource != null) {
+                  throw new MycatException("duplicate name of jdbc datasource");
+                }
+                return jdbcDataSource;
+              });
+        }
       }
     }
   }
@@ -124,12 +160,16 @@ public class GridRuntime {
     return (T) proxyRuntime.getConfig(heartbeat);
   }
 
-  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name){
+  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
     return proxyRuntime.getLoadBalanceByBalanceName(name);
   }
 
   public void updateReplicaMasterIndexesConfig(MycatReplica replica,
       List<MycatDataSource> writeDataSource) {
-    proxyRuntime.updateReplicaMasterIndexesConfig(replica,writeDataSource);
+    proxyRuntime.updateReplicaMasterIndexesConfig(replica, writeDataSource);
+  }
+
+  public GridBeanProviders getProvider() {
+    return providers;
   }
 }

@@ -15,6 +15,7 @@
 package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.mysqlapi.collector.CommonSQLCallback;
+import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.List;
 import java.util.Map;
@@ -44,10 +45,11 @@ public class MySQLSingleHeartBeatStrategy implements CommonSQLCallback {
 
   @Override
   public void onError(String errorMessage) {
-
+    heartbeatDetector.getHeartbeatManager().setStatus(DatasourceStatus.ERROR_STATUS);
   }
 
   @Override
   public void onException(Exception e) {
+    heartbeatDetector.getHeartbeatManager().setStatus(DatasourceStatus.ERROR_STATUS);
   }
 }

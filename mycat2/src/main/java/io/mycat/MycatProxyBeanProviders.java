@@ -15,6 +15,7 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import io.mycat.replica.MySQLReplicaEx;
 import io.mycat.router.MycatRouterConfig;
 import java.util.Map;
 import java.util.Objects;
@@ -47,7 +48,7 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
   @Override
   public MySQLReplica createReplica(ProxyRuntime runtime, ReplicaConfig replicaConfig,
       Set<Integer> writeIndex) {
-    return new MySQLReplica(runtime, replicaConfig, writeIndex, this) {
+    return new MySQLReplicaEx(runtime, replicaConfig, writeIndex, this) {
     };
   }
 

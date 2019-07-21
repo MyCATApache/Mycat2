@@ -87,6 +87,7 @@ public class MycatCore {
       runtime.startAcceptor();
       startFinished.onFinished(null, null, null);
     } catch (Exception e) {
+      LOGGER.error("",e);
       startFinished.onException(e, null, null);
     }
   }

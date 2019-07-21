@@ -12,12 +12,11 @@ import java.sql.SQLException;
 /**
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
+public abstract class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
 
   private final int index;
   private final DatasourceConfig datasourceConfig;
   private final JdbcReplica replica;
-  private volatile boolean isAlive = true;
 
   public JdbcDataSource(int index, DatasourceConfig datasourceConfig,
       JdbcReplica replica) {
@@ -70,9 +69,7 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
     return datasourceConfig.getPassword();
   }
 
-  public boolean isAlive() {
-    return isAlive;
-  }
+  public abstract boolean isAlive();
 
   public String getName() {
     return datasourceConfig.getName();
@@ -80,7 +77,7 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
 
   @Override
   public boolean isMaster() {
-    return false;
+    return this.replica.isMaster(this);
   }
 
   @Override
@@ -137,4 +134,6 @@ public class JdbcDataSource implements MycatDataSource, LoadBalanceElement {
   public JdbcReplica getReplica() {
     return replica;
   }
+
+  public abstract void heartBeat();
 }

@@ -35,16 +35,17 @@ public class JdbcReplica implements MycatReplica {
 
   private List<JdbcDataSource> getJdbcDataSources(
       List<DatasourceConfig> datasourceConfigList) {
+    GridBeanProviders provider = runtime.getProvider();
     ArrayList<JdbcDataSource> dataSources = new ArrayList<>();
     for (int i = 0; i < datasourceConfigList.size(); i++) {
       DatasourceConfig datasourceConfig = datasourceConfigList.get(i);
-      dataSources.add(new JdbcDataSource(i, datasourceConfig, this));
+      dataSources.add(provider.createJdbcDataSource(runtime,i, datasourceConfig, this));
     }
     return dataSources;
   }
 
   public JdbcSession createSession(JdbcDataSource dataSource) {
-    return dataSourceManager.createSession(dataSource);
+    return  dataSourceManager.createSession(dataSource);
   }
 
 
@@ -121,5 +122,13 @@ public class JdbcReplica implements MycatReplica {
         break;
     }
     return false;
+  }
+
+  public List<JdbcDataSource> getDatasourceList() {
+    return this.dataSourceManager.getDatasourceList();
+  }
+
+  public boolean isMaster(JdbcDataSource jdbcDataSource) {
+    return selector.writeDataSource.contains(jdbcDataSource);
   }
 }

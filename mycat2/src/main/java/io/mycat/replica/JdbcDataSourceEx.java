@@ -1,8 +1,6 @@
 package io.mycat.replica;
 
-import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
-import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.datasource.jdbc.JdbcDataSource;
 import io.mycat.datasource.jdbc.JdbcReplica;
