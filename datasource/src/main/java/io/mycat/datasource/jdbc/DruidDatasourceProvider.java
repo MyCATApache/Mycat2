@@ -20,7 +20,7 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     datasource.setUsername(username);
     datasource.setUrl(url);
     datasource.setDriverClassName(jdbcDriver);
-    datasource.setMaxWait(TimeUnit.MILLISECONDS.toMillis(500));
+    datasource.setMaxWait(TimeUnit.MILLISECONDS.toMillis(300));
     return datasource;
   }
 }

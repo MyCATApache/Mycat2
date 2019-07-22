@@ -559,6 +559,33 @@ public final class MySQLSessionManager implements
       callBack.onException(SESSION_MAX_COUNT_LIMIT, this, null);
       return;
     }
+    int maxRetry = key.gerMaxRetry();
+    if (maxRetry== 0){
+      createCon(key, callBack);
+    }else {
+      createCon(key, new SessionCallBack<MySQLClientSession>() {
+        int retryCount = 0;
+        @Override
+        public void onSession(MySQLClientSession session, Object sender, Object attr) {
+          callBack.onSession(session, sender, attr);
+        }
+
+        @Override
+        public void onException(Exception exception, Object sender, Object attr) {
+          ++retryCount;
+          if (retryCount >= maxRetry){
+            callBack.onException(exception, sender, attr);
+          }else {
+            createCon(key,this);
+          }
+        }
+      });
+    }
+
+  }
+
+  private void createCon(MySQLDatasource key,
+      SessionCallBack<MySQLClientSession> callBack) {
     new BackendConCreateHandler(key, this,
         (MycatReactorThread) Thread.currentThread(), new CommandCallBack() {
       @Override
