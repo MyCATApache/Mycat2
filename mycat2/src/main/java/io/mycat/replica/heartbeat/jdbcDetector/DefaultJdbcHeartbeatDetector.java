@@ -14,7 +14,6 @@ import io.mycat.replica.heartbeat.HeartbeatDetector;
 import io.mycat.replica.heartbeat.HeartbeatManager;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
 public class DefaultJdbcHeartbeatDetector implements
@@ -27,7 +26,6 @@ public class DefaultJdbcHeartbeatDetector implements
   protected volatile long lastSendQryTime;
   protected volatile long lastReceivedQryTime;//    private isCheck
   protected final long heartbeatTimeout;
-  private final AtomicBoolean quit = new AtomicBoolean(false);
 
   public DefaultJdbcHeartbeatDetector(GridRuntime runtime, JdbcReplica replica,
       JdbcDataSource jdbcDataSource, HeartbeatManager manager,
@@ -73,7 +71,6 @@ public class DefaultJdbcHeartbeatDetector implements
         callback.onException(e);
         throw e;
       } finally {
-        quit.set(false);
         if (session != null) {
           session.close(true, "heartBeat");
         }
@@ -104,7 +101,6 @@ public class DefaultJdbcHeartbeatDetector implements
 
   @Override
   public boolean quitDetector() {
-    quit.set(true);
-    return true;
+    return false;
   }
 }
