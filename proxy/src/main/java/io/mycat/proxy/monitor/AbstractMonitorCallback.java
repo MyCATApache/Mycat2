@@ -227,7 +227,9 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   }
 
 
-  public void onRoute(Session session, String dataNode, byte[] payload) {
+  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+      String dataNode,
+      byte[] payload) {
 
   }
 
@@ -592,6 +594,11 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
 
   @Override
   public void onResultSetEnd(MySQLClientSession mysql) {
+
+  }
+
+  @Override
+  public void onRouteSQL(Session session, String dataNodeName, String sql) {
 
   }
 }

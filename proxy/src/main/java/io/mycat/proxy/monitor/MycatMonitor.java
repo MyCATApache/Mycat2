@@ -24,11 +24,21 @@ public final class MycatMonitor {
     callback.onOrginSQL(session, sql);
   }
 
-  public final static void onRoute(Session session, String dataNode, byte[] packet) {
+  public final static void onRouteSQL(Session session, String dataNodeName,String sql){
     Objects.requireNonNull(session);
-    Objects.requireNonNull(dataNode);
-    Objects.requireNonNull(packet);
-    callback.onRoute(session, dataNode, packet);
+    Objects.requireNonNull(dataNodeName);
+    Objects.requireNonNull(sql);
+    callback.onRouteSQL(session, dataNodeName,sql);
+  }
+
+  public final static void onRouteResult(Session session, String dataNodeName, String replicaName,
+      String dataSourceName,
+      byte[] packet) {
+    Objects.requireNonNull(session);
+    Objects.requireNonNull(dataNodeName);
+    Objects.requireNonNull(replicaName);
+    Objects.requireNonNull(dataSourceName);
+    callback.onRouteSQLResult(session, dataNodeName,replicaName,dataSourceName, packet);
   }
 
   public static void setCallback(MycatMonitorCallback callback) {

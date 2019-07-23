@@ -83,8 +83,9 @@ public interface MycatMonitorCallback {
   void onAddIdleMysqlSession(MySQLClientSession session);
 
   void onGetIdleMysqlSession(MySQLClientSession session);
-
-  void onRoute(Session session, String dataNode, byte[] payload);
+  void onRouteSQL(Session session, String dataNodeName,String sql);
+  void onRouteSQLResult(Session session, String dataNodeName, String replicaName, String dataSource,
+      byte[] payload);
 
   /**
    * exception

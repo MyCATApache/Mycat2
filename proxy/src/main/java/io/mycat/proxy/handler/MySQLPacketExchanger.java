@@ -33,6 +33,7 @@ import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
 import java.util.Objects;
 
@@ -212,6 +213,8 @@ public enum MySQLPacketExchanger {
       MySQLTaskUtil.withBackend(mycat, dataNodeName, query, new SessionSyncCallback() {
         @Override
         public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
+          MySQLDatasource datasource = mysql.getDatasource();
+          MycatMonitor.onRouteResult(mycat, dataNodeName,datasource.getReplica().getName(),datasource.getName(), packetData);
           proxyNIOHandler.proxyBackend(mysql, finallyCallBack, responseType, mycat, packetData);
         }
 

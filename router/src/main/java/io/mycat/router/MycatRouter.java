@@ -71,35 +71,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 
     ResultRoute routeResult = null;
     try {
-      if (sa.getDataNode() != null) {
-        OneServerResultRoute osr = new OneServerResultRoute();
-        osr.setDataNode(sa.getDataNode());
-        osr.setSql(sql);
-        return routeResult = osr;
-      } else if (sa.getSchema() != null) {
-        defaultSchema = config.getSchemaBySchemaName(sa.getSchema());
-        if (defaultSchema == null) {
-          throw new MycatException("can not find schema:{}", sa.getSchema());
-        }
-      }
-      int schemaCount = sqlContext.getSchemaCount();
-      if (schemaCount == 0) {
-        RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
-        return routeResult = routeStrategy.route(defaultSchema, sql, this.context);
-      }
-      if (schemaCount == 1) {
-//        String schemaName = sqlContext.getSchemaName(0);
-//        MycatSchema schema = config.getSchemaBySchemaName(schemaName);
-//        if (schema == null) {
-//          throw new MycatException("can not find schema:{}", schemaName);
-//        }
-//        RouteStrategy routeStrategy = schema.getRouteStrategy();
-//        return routeResult = routeStrategy.route(schema, sql, this.context);
-        throw new MycatException("sql:{} should not contains schema:{}", sql,
-            sqlContext.getSchemaName(0));
-      } else {
-        return routeResult = this.route(defaultSchema, sql, this.context);
-      }
+      routeResult = getResultRoute(defaultSchema, sqlContext, sql, sa, routeResult);
     } finally {
       if (routeResult != null) {
         if (balance != null) {
@@ -109,6 +81,40 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
           routeResult.setRunOnMaster(runOnMaster);
         }
       }
+    }
+    return null;
+  }
+
+  private ResultRoute getResultRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
+      String sql, MycatProxyStaticAnnotation sa, ResultRoute routeResult) {
+    if (sa.getDataNode() != null) {
+      OneServerResultRoute osr = new OneServerResultRoute();
+      osr.setDataNode(sa.getDataNode());
+      osr.setSql(sql);
+      return routeResult = osr;
+    } else if (sa.getSchema() != null) {
+      defaultSchema = config.getSchemaBySchemaName(sa.getSchema());
+      if (defaultSchema == null) {
+        throw new MycatException("can not find schema:{}", sa.getSchema());
+      }
+    }
+    int schemaCount = sqlContext.getSchemaCount();
+    if (schemaCount == 0) {
+      RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
+      return routeResult = routeStrategy.route(defaultSchema, sql, this.context);
+    }
+    if (schemaCount == 1) {
+//        String schemaName = sqlContext.getSchemaName(0);
+//        MycatSchema schema = config.getSchemaBySchemaName(schemaName);
+//        if (schema == null) {
+//          throw new MycatException("can not find schema:{}", schemaName);
+//        }
+//        RouteStrategy routeStrategy = schema.getRouteStrategy();
+//        return routeResult = routeStrategy.route(schema, sql, this.context);
+      throw new MycatException("sql:{} should not contains schema:{}", sql,
+          sqlContext.getSchemaName(0));
+    } else {
+      return routeResult = this.route(defaultSchema, sql, this.context);
     }
   }
 //

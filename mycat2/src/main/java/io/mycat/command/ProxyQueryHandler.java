@@ -93,8 +93,8 @@ public class ProxyQueryHandler {
 
     byte sqlType = sqlContext.getSQLType();
     if (mycat.isBindMySQLSession()) {
-      MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql),
-          mycat.getMySQLSession().getDataNode().getName(), null, ResponseType.QUERY);
+      MySQLTaskUtil.proxyBackend(mycat, sql,
+          mycat.getMySQLSession().getDataNode().getName(), null);
       return;
     }
     try {
@@ -182,8 +182,7 @@ public class ProxyQueryHandler {
             throw new MycatException("show sql:{} can not route", sql);
           }
           MySQLTaskUtil
-              .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), defaultDataNode, null,
-                  ResponseType.QUERY);
+              .proxyBackend(mycat, sql, defaultDataNode, null);
           return;
         case SHOW_VARIABLES_SQL: {
           mycat.writeColumnCount(2);
