@@ -22,6 +22,7 @@ import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.handler.backend.MySQLSessionSyncUtil;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
+import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketCallback;
@@ -95,7 +96,7 @@ public class MySQLTaskUtil {
    *
    * 回调执行的函数处于mycat reactor thread 所以不能编写长时间执行的代码
    */
-  public static void getMySQLSessionFromUserThread(ProxyRuntime runtime, MySQLSynContext synContext,
+  public static void getMySQLSessionFromUserThread(ProxyRuntime runtime, MySQLSynContextImpl synContext,
       MySQLDataSourceQuery query,
       SessionSyncCallback asynTaskCallBack) {
     MycatReactorThread[] threads = runtime.getMycatReactorThreads();
@@ -130,7 +131,6 @@ public class MySQLTaskUtil {
 
     assert (Thread.currentThread() instanceof MycatReactorThread);
     Objects.requireNonNull(synContext.getDataNode());
-    Objects.requireNonNull(synContext.getCharset());
     MySQLDataNode dataNode = synContext.getDataNode();
     MySQLReplica replica = (MySQLReplica) dataNode.getReplica();
     Objects.requireNonNull(replica);

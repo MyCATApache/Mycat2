@@ -20,6 +20,7 @@ public class MySQLSessionSyncUtil {
         .createMySQLSynContext(mysql);
     if (mySQLSynContext.equals(mycatContext)) {
       callBack.onSession(mysql, sender, null);
+      return;
     } else {
       String syncSQL = mycatContext.getSyncSQL();
       MycatMonitor.onSyncSQL(mycatContext, syncSQL, mysql);
@@ -30,7 +31,7 @@ public class MySQLSessionSyncUtil {
             public void onFinished(boolean monopolize, MySQLClientSession mysql,
                 Object sender, Object attr) {
               mycatContext.successSyncMySQLClientSession(mysql);
-              MycatMonitor.onSynchronizationState(mysql);
+              mycatContext.onSynchronizationStateLog(mysql);
               callBack.onSession(mysql, sender, attr);
             }
 

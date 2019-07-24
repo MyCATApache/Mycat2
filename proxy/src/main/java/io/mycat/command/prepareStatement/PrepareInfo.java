@@ -13,7 +13,7 @@ import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.MySQLSessionSyncUtil;
-import io.mycat.proxy.handler.backend.MySQLSynContext;
+import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.handler.backend.PrepareStmtTask;
 import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.handler.backend.SessionSyncCallback;
@@ -60,7 +60,7 @@ public class PrepareInfo {
         new SessionCallBack<MySQLClientSession>() {
           @Override
           public void onSession(MySQLClientSession session, Object sender, Object attr) {
-            MySQLSynContext mySQLSyn = new MySQLSynContext(mycat);
+            MySQLSynContextImpl mySQLSyn = new MySQLSynContextImpl(mycat);
             MySQLSessionSyncUtil.sync(mySQLSyn, session,
                 this, new SessionSyncCallback() {
               @Override

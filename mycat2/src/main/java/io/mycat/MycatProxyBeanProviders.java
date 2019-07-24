@@ -9,7 +9,7 @@ import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.handler.backend.MySQLSynContext;
+import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDataSourceEx;
@@ -75,13 +75,13 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
   }
 
   @Override
-  public MySQLSynContext createMySQLSynContext(MycatSession mycat) {
-    return new MySQLSynContext(mycat);
+  public MySQLSynContextImpl createMySQLSynContext(MycatSession mycat) {
+    return new MySQLSynContextImpl(mycat);
   }
 
   @Override
-  public MySQLSynContext createMySQLSynContext(MySQLClientSession mysql) {
-    return new MySQLSynContext(mysql);
+  public MySQLSynContextImpl createMySQLSynContext(MySQLClientSession mysql) {
+    return new MySQLSynContextImpl(mysql);
   }
 
 

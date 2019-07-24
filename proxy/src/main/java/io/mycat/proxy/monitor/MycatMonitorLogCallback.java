@@ -3,6 +3,7 @@ package io.mycat.proxy.monitor;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
+import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -62,7 +63,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       String dataSourceName,
       byte[] payload) {
     if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataNode:{} replica:{} ", session.sessionId(), dataNodeName,
+      SQL_LOGGER.info("sessionId:{} dataNode:{} replica:{} datasource:{}", session.sessionId(), dataNodeName,
           replicaName,dataSourceName);
     }
   }
@@ -336,7 +337,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   public final void onSynchronizationState(MySQLClientSession session) {
     if (onBind) {
       //    Thread.dumpStack();
-      MySQLSynContext c = new MySQLSynContext(session);
+      MySQLSynContextImpl c = new MySQLSynContextImpl(session);
       LOGGER.debug(
           "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
           session.sessionId(), c.getDataNode() != null ? c.getDataNode().getName() : null,
