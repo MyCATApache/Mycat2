@@ -118,6 +118,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   public void setAutoCommit(MySQLAutoCommit off) {
+    LOGGER.info("set mycat session id:{} autocommit:{}",sessionId(),off);
     this.serverStatus.setAutoCommit(off);
   }
 
@@ -125,8 +126,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     return this.serverStatus.getIsolation();
   }
 
-  public void setIsolation(MySQLIsolation readUncommitted) {
-    this.serverStatus.setIsolation(readUncommitted);
+  public void setIsolation(MySQLIsolation isolation) {
+    LOGGER.info("set mycat session id:{} isolation:{}",sessionId(),isolation);
+    this.serverStatus.setIsolation(isolation);
   }
 
 

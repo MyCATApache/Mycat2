@@ -58,8 +58,18 @@ public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {
       if (runOnMaster!=null){
         query.setRunOnMaster(runOnMaster);
       }
+      switch (sqlContext.getSQLType()){
+        case BufferSQLContext.SET_TRANSACTION_SQL:{
+          session.setIsolation(sqlContext.getIsolation());
+          break;
+        }
+        case BufferSQLContext.SET_AUTOCOMMIT_SQL:{
+          session.setAutoCommit(sqlContext.getAutocommit());
+          break;
+        }
+      }
     } catch (Exception e) {
-      LOGGER.warn("", e);
+      LOGGER.error("", e);
     }
     try {
       MySQLTaskUtil.proxyBackend(session, new String(sql),

@@ -1,5 +1,6 @@
 package io.mycat.sqlparser.util;
 
+import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
 import java.util.Arrays;
@@ -120,6 +121,10 @@ public class BufferSQLContext {
 
   public Boolean isAutocommit() {
     return autocommit;
+  }
+
+  public MySQLAutoCommit getAutocommit() {
+    return  autocommit?MySQLAutoCommit.ON:MySQLAutoCommit.OFF;
   }
 
   public void setAutocommit(boolean autocommit) {
