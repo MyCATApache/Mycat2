@@ -21,11 +21,10 @@ import io.mycat.beans.mycat.MycatTableRule;
 import io.mycat.beans.mycat.ShardingDbTable;
 import io.mycat.router.DynamicAnnotationResult;
 import io.mycat.router.MycatProxyStaticAnnotation;
-import io.mycat.router.ResultRoute;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
 import io.mycat.router.RuleAlgorithm;
-import io.mycat.router.routeResult.OneServerResultRoute;
+import io.mycat.router.OneServerResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.util.Objects;
 
@@ -35,7 +34,7 @@ import java.util.Objects;
 public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
+  public OneServerResultRoute route(MycatSchema schema, String sql, RouteContext context) {
     BufferSQLContext sqlContext = context.getSqlContext();
     boolean runOnMaster = !sqlContext.isSimpleSelect();
     if (sqlContext.getTableCount() == 1) {

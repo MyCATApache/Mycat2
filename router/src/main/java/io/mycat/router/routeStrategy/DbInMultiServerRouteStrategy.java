@@ -17,10 +17,9 @@ package io.mycat.router.routeStrategy;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
-import io.mycat.router.ResultRoute;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
-import io.mycat.router.routeResult.OneServerResultRoute;
+import io.mycat.router.OneServerResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
 
 /**
@@ -29,7 +28,7 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 public class DbInMultiServerRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public ResultRoute route(MycatSchema schema, String sql, RouteContext context) {
+  public OneServerResultRoute route(MycatSchema schema, String sql, RouteContext context) {
     BufferSQLContext sqlContext = context.getSqlContext();
     int sqlCount = sqlContext.getSQLCount();
     int tableCount = sqlContext.getTableCount();

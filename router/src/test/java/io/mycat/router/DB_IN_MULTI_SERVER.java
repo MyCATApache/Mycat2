@@ -1,7 +1,6 @@
 package io.mycat.router;
 
 import io.mycat.MycatException;
-import io.mycat.router.routeResult.OneServerResultRoute;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -21,14 +20,14 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;";
     String schema = "db1";
     String dn1 = "dn1";
-    ResultRoute result = loadModule(module)
+    OneServerResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
     Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
 
     String sql2 = "select * from travelrecord2;";
     String schema2 = "db1";
     String dn2 = "dn2";
-    ResultRoute result2 = router
+    OneServerResultRoute result2 = router
                               .enterRoute(schema2, sql2);
     Assert.assertEquals(new OneServerResultRoute().setDataNode(dn2).setSql(sql2), result2);
   }
@@ -39,7 +38,7 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;";
     String schema = "errorDb";
     String dn1 = "dn1";
-    ResultRoute result = loadModule(module)
+    OneServerResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
     Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
   }
@@ -49,7 +48,7 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     thrown.expect(MycatException.class);
     String sql = "select 1;";
     String schema = "db1";
-    ResultRoute result = loadModule(module)
+    OneServerResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
   }
 
@@ -59,7 +58,7 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from db2.travelrecord";
     String schema = "db1";
     String dn1 = "dn1";
-    ResultRoute result = loadModule(module)
+    OneServerResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
     Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
   }
@@ -69,7 +68,7 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;select * from travelrecord";
     String schema = "db1";
     String dn1 = "dn1";
-    ResultRoute result = loadModule(module)
+    OneServerResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
     Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
   }
@@ -80,7 +79,7 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;select * from travelrecord2";
     String schema = "db1";
     String dn1 = "dn1";
-    ResultRoute result = loadModule(module)
+    OneServerResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
     Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
   }
@@ -91,7 +90,7 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from db1.travelrecord;select * from travelrecord2";
     String schema = "db1";
     String dn1 = "dn1";
-    ResultRoute result = loadModule(module)
+    OneServerResultRoute result = loadModule(module)
                              .enterRoute(schema, sql);
     Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
   }

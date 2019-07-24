@@ -28,7 +28,7 @@ public class Route {
   private final Set<String> equalKeys;
   private final Set<String> rangeStartKeys;
   private final Set<String> rangeEndKeys;
-  Route nextRoute;
+  private Route nextRoute;
 
 
   public Route(String column, Set<String> equalKey, Set<String> rangeStart, Set<String> rangeEnd) {

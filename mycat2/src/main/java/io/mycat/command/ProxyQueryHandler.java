@@ -49,9 +49,7 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
-import io.mycat.router.ResultRoute;
-import io.mycat.router.routeResult.OneServerResultRoute;
-import io.mycat.router.routeResult.ResultRouteType;
+import io.mycat.router.OneServerResultRoute;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.security.MycatUser;
 import io.mycat.sequenceModifier.ModifyCallback;
@@ -278,24 +276,21 @@ public class ProxyQueryHandler {
           useSchema.getDefaultDataNode(), query, ResponseType.QUERY);
       return;
     }
-    ResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
+    OneServerResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
     if (resultRoute == null) {
       mycat.setLastMessage("can not route:" + sql);
       mycat.writeErrorEndPacket();
-    } else if (resultRoute.getType() == ResultRouteType.ONE_SERVER_RESULT_ROUTE) {
-      OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
-      MySQLDataSourceQuery query = new MySQLDataSourceQuery();
-      query.setIds(null);
-      query.setRunOnMaster(resultRoute.isRunOnMaster(!simpleSelect));
-      query.setStrategy(runtime
-          .getLoadBalanceByBalanceName(resultRoute.getBalance()));
-      MySQLTaskUtil
-          .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
-              resultRoute1.getDataNode(), query, ResponseType.QUERY);
-    } else {
-      mycat.setLastMessage("unsupport sql");
-      mycat.writeErrorEndPacket();
+      return;
     }
+    OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
+    MySQLDataSourceQuery query = new MySQLDataSourceQuery();
+    query.setIds(null);
+    query.setRunOnMaster(resultRoute.isRunOnMaster(!simpleSelect));
+    query.setStrategy(runtime
+        .getLoadBalanceByBalanceName(resultRoute.getBalance()));
+    MySQLTaskUtil
+        .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(resultRoute1.getSql()),
+            resultRoute1.getDataNode(), query, ResponseType.QUERY);
   }
 
   public void showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {

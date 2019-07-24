@@ -12,27 +12,27 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.router.routeResult;
+package io.mycat.router;
 
-import io.mycat.router.ResultRoute;
-import java.io.IOException;
 import java.util.Objects;
 
 /**
  * @author jamie12221 date 2019-05-05 12:54 只涉及一个服务器分发的路由结果
  **/
 
-public class OneServerResultRoute extends ResultRoute {
+public class OneServerResultRoute {
 
-  String dataNode;
-  String sql;
+  private String dataNode;
+  private String sql;
+  private String balance;
+  private Boolean runOnMaster;
 
   public String getDataNode() {
     return dataNode;
   }
 
   public OneServerResultRoute setDataNode(String dataNode) {
-      this.dataNode = dataNode;
+    this.dataNode = dataNode;
     return this;
   }
 
@@ -54,16 +54,6 @@ public class OneServerResultRoute extends ResultRoute {
   }
 
   @Override
-  public <CONTEXT> void accept(Executer<CONTEXT> executer, CONTEXT context) throws IOException {
-    executer.run(this, context);
-  }
-
-  @Override
-  public ResultRouteType getType() {
-    return ResultRouteType.ONE_SERVER_RESULT_ROUTE;
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -80,4 +70,26 @@ public class OneServerResultRoute extends ResultRoute {
   public int hashCode() {
     return Objects.hash(dataNode, sql);
   }
+
+
+  public OneServerResultRoute setBalance(String balance) {
+    this.balance = balance;
+    return this;
+  }
+
+  public String getBalance() {
+    return balance;
+  }
+
+
+  public OneServerResultRoute setRunOnMaster(Boolean runOnMaster) {
+    this.runOnMaster = runOnMaster;
+    return this;
+  }
+
+
+  public boolean isRunOnMaster(boolean expectRunOnMaster) {
+    return runOnMaster == null ? expectRunOnMaster : runOnMaster;
+  }
+
 }
