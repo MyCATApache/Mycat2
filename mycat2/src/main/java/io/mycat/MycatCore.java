@@ -59,9 +59,8 @@ public class MycatCore {
     if (resourcesPath == null || Boolean.getBoolean("DEBUG")) {
       resourcesPath = ProxyRuntime.getResourcesPath(MycatCore.class);
     }
-    MycatProxyBeanProviders proxyBeanProviders = new MycatProxyBeanProviders();
     runtime = new ProxyRuntime(
-        ConfigLoader.load(resourcesPath, GlobalConfig.genVersion()), proxyBeanProviders);
+        ConfigLoader.load(resourcesPath, GlobalConfig.genVersion()));
     startup(resourcesPath, runtime, new MycatMonitorLogCallback(), EmptyAsyncTaskCallBack.INSTANCE);
     return;
 

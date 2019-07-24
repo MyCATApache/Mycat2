@@ -87,10 +87,14 @@ public class ProxyRuntime {
   private final Map<String, Object> defContext = new HashMap<>();
   private MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
 
-  public ProxyRuntime(ConfigReceiver configReceiver, ProxyBeanProviders providers)
+  public ProxyRuntime(ConfigReceiver configReceiver)
       throws Exception {
     this.config = configReceiver;
-    this.providers = providers;
+    ProxyRootConfig config = this.config.getConfig(ConfigEnum.PROXY);
+    Objects.requireNonNull(config, "proxy.yaml was not found");
+    String proxyBeanProviders = config.getProxy().getProxyBeanProviders();
+    Objects.requireNonNull(proxyBeanProviders, "proxyBeanProviders was not found");
+    this.providers = (ProxyBeanProviders) Class.forName(proxyBeanProviders).newInstance();
     this.initCharset(configReceiver.getResourcePath());
     this.initMySQLVariables();
     this.initPlug();

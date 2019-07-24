@@ -51,11 +51,11 @@ public abstract class ModualTest {
   public static void loadModule11(String module, ProxyBeanProviders proxyBeanProviders,
       MycatMonitorCallback callback,
       TestGettingConnetionCallback gettingConnetionCallback)
-      throws IOException, ExecutionException, InterruptedException {
+      throws Exception {
     String resourcesPath = ProxyRuntime.getResourcesPath(ModualTest.class);
     String rootResourcePath = Paths.get(resourcesPath).resolve("io/mycat/test/jdbc").resolve(module).toAbsolutePath().toString();
     ConfigReceiver cr = ConfigLoader.load(rootResourcePath);
-    ProxyRuntime runtime = new ProxyRuntime(cr,proxyBeanProviders);
+    ProxyRuntime runtime = new ProxyRuntime(cr);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     final CompletableFuture<String> future = new CompletableFuture<>();
     MycatCore.startup(rootResourcePath, runtime, callback,

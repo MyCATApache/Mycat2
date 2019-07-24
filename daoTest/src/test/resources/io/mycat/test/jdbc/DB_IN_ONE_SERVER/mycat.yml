@@ -7,3 +7,4 @@ proxy:
   bufferPoolPageNumber: 2        # 页数量. 默认 2
   reactorNumber: 1        # 页数量. 默认 -1 取逻辑处理器数量
   commandDispatcherClass: io.mycat.command.MycatCommandHandler
+  proxyBeanProviders: io.mycat.MycatProxyBeanProviders
