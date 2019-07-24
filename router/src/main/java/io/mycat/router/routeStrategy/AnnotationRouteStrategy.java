@@ -21,10 +21,10 @@ import io.mycat.beans.mycat.MycatTableRule;
 import io.mycat.beans.mycat.ShardingDbTable;
 import io.mycat.router.DynamicAnnotationResult;
 import io.mycat.router.MycatProxyStaticAnnotation;
+import io.mycat.router.ProxyRouteResult;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
 import io.mycat.router.RuleAlgorithm;
-import io.mycat.router.OneServerResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import java.util.Objects;
 
@@ -34,7 +34,7 @@ import java.util.Objects;
 public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public OneServerResultRoute route(MycatSchema schema, String sql, RouteContext context) {
+  public ProxyRouteResult route(MycatSchema schema, String sql, RouteContext context) {
     BufferSQLContext sqlContext = context.getSqlContext();
     boolean runOnMaster = !sqlContext.isSimpleSelect();
     if (sqlContext.getTableCount() == 1) {
@@ -49,7 +49,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
           throw new MycatException("unsupport global table");
 //          GlobalTable table = (GlobalTable) o;
 //          if (sqlContext.isSimpleSelect()) {
-//            OneServerResultRoute result = new OneServerResultRoute();
+//            ProxyRouteResult result = new ProxyRouteResult();
 //            int index = ThreadLocalRandom.current().nextInt(0, table.getDataNodes().size());
 //            String dataNode = table.getDataNodes().get(index);//@todo 负载均衡
 //            result.setSql(sql);
@@ -74,14 +74,14 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
             if (sa.getShardingKey() != null && sa.getShardingRangeKeyStart() == null
                 && sa.getShardingRangeKeyEnd() == null) {
               int calculate = ruleAlgorithm.calculate(sa.getShardingKey());
-              OneServerResultRoute result = new OneServerResultRoute();
+              ProxyRouteResult result = new ProxyRouteResult();
               return result.setSql(sql).setDataNode(table.getDataNodes().get(calculate));
             } else if (sa.getShardingKey() == null && sa.getShardingRangeKeyStart() != null
                 && sa.getShardingRangeKeyEnd() != null) {
               int[] keys = ruleAlgorithm
                   .calculateRange(sa.getShardingRangeKeyStart(), sa.getShardingRangeKeyEnd());
               if (keys.length == 1) {
-                OneServerResultRoute result = new OneServerResultRoute();
+                ProxyRouteResult result = new ProxyRouteResult();
                 return result.setSql(sql).setDataNode(table.getDataNodes().get(keys[0]))
                     .setRunOnMaster(runOnMaster);
               }
@@ -91,7 +91,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
               int[] keys = ruleAlgorithm
                   .calculateRange(sa.getShardingRangeKeyStart(), sa.getShardingRangeKeyEnd());
               if (keys.length == 1 && calculate == keys[0]) {
-                OneServerResultRoute result = new OneServerResultRoute();
+                ProxyRouteResult result = new ProxyRouteResult();
                 return result.setSql(sql).setDataNode(table.getDataNodes().get(calculate))
                     .setRunOnMaster(runOnMaster);
               }
@@ -105,7 +105,7 @@ public class AnnotationRouteStrategy implements RouteStrategy<RouteContext> {
             return context.getSqlParseRouteRouteStrategy().route(schema, sql, context);
           } else if (index > -1) {
             String dataNode = table.getDataNodes().get(index);
-            OneServerResultRoute result = new OneServerResultRoute();
+            ProxyRouteResult result = new ProxyRouteResult();
             result.setDataNode(dataNode);
             result.setSql(sql);
             result.setRunOnMaster(runOnMaster);

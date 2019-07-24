@@ -22,5 +22,5 @@ import io.mycat.beans.mycat.MycatSchema;
  **/
 public interface RouteStrategy<A> {
 
-  OneServerResultRoute route(MycatSchema schema, String sql, A attr);
+  ProxyRouteResult route(MycatSchema schema, String sql, A attr);
 }

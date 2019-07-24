@@ -20,16 +20,16 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;";
     String schema = "db1";
     String dn1 = "dn1";
-    OneServerResultRoute result = loadModule(module)
+    ProxyRouteResult result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new ProxyRouteResult().setDataNode(dn1).setSql(sql));
 
     String sql2 = "select * from travelrecord2;";
     String schema2 = "db1";
     String dn2 = "dn2";
-    OneServerResultRoute result2 = router
+    ProxyRouteResult result2 = router
                               .enterRoute(schema2, sql2);
-    Assert.assertEquals(new OneServerResultRoute().setDataNode(dn2).setSql(sql2), result2);
+    Assert.assertEquals(new ProxyRouteResult().setDataNode(dn2).setSql(sql2), result2);
   }
 
   @Test
@@ -38,9 +38,9 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;";
     String schema = "errorDb";
     String dn1 = "dn1";
-    OneServerResultRoute result = loadModule(module)
+    ProxyRouteResult result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new ProxyRouteResult().setDataNode(dn1).setSql(sql));
   }
 
   @Test
@@ -48,7 +48,7 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     thrown.expect(MycatException.class);
     String sql = "select 1;";
     String schema = "db1";
-    OneServerResultRoute result = loadModule(module)
+    ProxyRouteResult result = loadModule(module)
                              .enterRoute(schema, sql);
   }
 
@@ -58,9 +58,9 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from db2.travelrecord";
     String schema = "db1";
     String dn1 = "dn1";
-    OneServerResultRoute result = loadModule(module)
+    ProxyRouteResult result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new ProxyRouteResult().setDataNode(dn1).setSql(sql));
   }
 
   @Test
@@ -68,9 +68,9 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;select * from travelrecord";
     String schema = "db1";
     String dn1 = "dn1";
-    OneServerResultRoute result = loadModule(module)
+    ProxyRouteResult result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new ProxyRouteResult().setDataNode(dn1).setSql(sql));
   }
 
   @Test
@@ -79,9 +79,9 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from travelrecord;select * from travelrecord2";
     String schema = "db1";
     String dn1 = "dn1";
-    OneServerResultRoute result = loadModule(module)
+    ProxyRouteResult result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new ProxyRouteResult().setDataNode(dn1).setSql(sql));
   }
 
   @Test
@@ -90,8 +90,8 @@ public class DB_IN_MULTI_SERVER extends MycatRouterTest {
     String sql = "select * from db1.travelrecord;select * from travelrecord2";
     String schema = "db1";
     String dn1 = "dn1";
-    OneServerResultRoute result = loadModule(module)
+    ProxyRouteResult result = loadModule(module)
                              .enterRoute(schema, sql);
-    Assert.assertEquals(result, new OneServerResultRoute().setDataNode(dn1).setSql(sql));
+    Assert.assertEquals(result, new ProxyRouteResult().setDataNode(dn1).setSql(sql));
   }
 }

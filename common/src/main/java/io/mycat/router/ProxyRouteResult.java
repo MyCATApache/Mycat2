@@ -20,7 +20,7 @@ import java.util.Objects;
  * @author jamie12221 date 2019-05-05 12:54 只涉及一个服务器分发的路由结果
  **/
 
-public class OneServerResultRoute {
+public class ProxyRouteResult {
 
   private String dataNode;
   private String sql;
@@ -31,7 +31,7 @@ public class OneServerResultRoute {
     return dataNode;
   }
 
-  public OneServerResultRoute setDataNode(String dataNode) {
+  public ProxyRouteResult setDataNode(String dataNode) {
     this.dataNode = dataNode;
     return this;
   }
@@ -40,7 +40,7 @@ public class OneServerResultRoute {
     return sql;
   }
 
-  public OneServerResultRoute setSql(String sql) {
+  public ProxyRouteResult setSql(String sql) {
     this.sql = sql;
     return this;
   }
@@ -61,7 +61,7 @@ public class OneServerResultRoute {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    OneServerResultRoute result = (OneServerResultRoute) o;
+    ProxyRouteResult result = (ProxyRouteResult) o;
     return Objects.equals(dataNode, result.dataNode) &&
         Objects.equals(sql, result.sql);
   }
@@ -72,7 +72,7 @@ public class OneServerResultRoute {
   }
 
 
-  public OneServerResultRoute setBalance(String balance) {
+  public ProxyRouteResult setBalance(String balance) {
     this.balance = balance;
     return this;
   }
@@ -82,7 +82,7 @@ public class OneServerResultRoute {
   }
 
 
-  public OneServerResultRoute setRunOnMaster(Boolean runOnMaster) {
+  public ProxyRouteResult setRunOnMaster(Boolean runOnMaster) {
     this.runOnMaster = runOnMaster;
     return this;
   }

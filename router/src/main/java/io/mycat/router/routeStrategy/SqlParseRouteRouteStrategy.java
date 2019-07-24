@@ -16,7 +16,7 @@ package io.mycat.router.routeStrategy;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
-import io.mycat.router.OneServerResultRoute;
+import io.mycat.router.ProxyRouteResult;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
 
@@ -27,7 +27,7 @@ import io.mycat.router.RouteStrategy;
 public class SqlParseRouteRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public OneServerResultRoute route(MycatSchema schema, String sql, RouteContext context) {
+  public ProxyRouteResult route(MycatSchema schema, String sql, RouteContext context) {
     throw new MycatException("unsupport sql parse");
   }
 }

@@ -25,7 +25,7 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
-import io.mycat.router.OneServerResultRoute;
+import io.mycat.router.ProxyRouteResult;
 import io.mycat.sqlparser.util.BufferSQLContext;
 
 /**
@@ -99,14 +99,14 @@ public class MycatCommandHandler extends AbstractCommandHandler {
     }
     String sql = new String(bytes);
     BufferSQLContext bufferSQLContext = router.simpleParse(sql);
-    OneServerResultRoute resultRoute = router.enterRoute(schema, bufferSQLContext, sql);
+    ProxyRouteResult resultRoute = router.enterRoute(schema, bufferSQLContext, sql);
     if (schema.getSchemaType() != SchemaType.DB_IN_ONE_SERVER) {
       mycat.setLastMessage(
           "MySQLProxyPrepareStatement only support in DB_IN_ONE_SERVER");
       mycat.writeErrorEndPacket();
       return;
     }
-    OneServerResultRoute route = (OneServerResultRoute) resultRoute;
+    ProxyRouteResult route = (ProxyRouteResult) resultRoute;
     LoadBalanceStrategy balance = mycat.getRuntime()
         .getLoadBalanceByBalanceName(resultRoute.getBalance());
     String dataNode = schema.getDefaultDataNode();

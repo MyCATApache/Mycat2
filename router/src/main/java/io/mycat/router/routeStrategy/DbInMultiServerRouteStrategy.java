@@ -17,9 +17,9 @@ package io.mycat.router.routeStrategy;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mycat.MycatTable;
+import io.mycat.router.ProxyRouteResult;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
-import io.mycat.router.OneServerResultRoute;
 import io.mycat.sqlparser.util.BufferSQLContext;
 
 /**
@@ -28,7 +28,7 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 public class DbInMultiServerRouteStrategy implements RouteStrategy<RouteContext> {
 
   @Override
-  public OneServerResultRoute route(MycatSchema schema, String sql, RouteContext context) {
+  public ProxyRouteResult route(MycatSchema schema, String sql, RouteContext context) {
     BufferSQLContext sqlContext = context.getSqlContext();
     int sqlCount = sqlContext.getSQLCount();
     int tableCount = sqlContext.getTableCount();
@@ -51,7 +51,7 @@ public class DbInMultiServerRouteStrategy implements RouteStrategy<RouteContext>
         throw new MycatException(" tables:{} {} is diff ", tableName, otherTableName);
       }
     }
-    OneServerResultRoute result = new OneServerResultRoute();
+    ProxyRouteResult result = new ProxyRouteResult();
     if (schema.existTable(tableName)) {
       MycatTable tableByTable = schema.getTableByTableName(tableName);
       String dataNode = tableByTable.getDataNodes().get(0);

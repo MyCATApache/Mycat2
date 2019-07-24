@@ -49,7 +49,7 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
-import io.mycat.router.OneServerResultRoute;
+import io.mycat.router.ProxyRouteResult;
 import io.mycat.router.util.RouterUtil;
 import io.mycat.security.MycatUser;
 import io.mycat.sequenceModifier.ModifyCallback;
@@ -276,13 +276,13 @@ public class ProxyQueryHandler {
           useSchema.getDefaultDataNode(), query, ResponseType.QUERY);
       return;
     }
-    OneServerResultRoute resultRoute = router.enterRoute(useSchema, sqlContext, sql);
+    ProxyRouteResult resultRoute = router.enterRoute(useSchema, sqlContext, sql);
     if (resultRoute == null) {
       mycat.setLastMessage("can not route:" + sql);
       mycat.writeErrorEndPacket();
       return;
     }
-    OneServerResultRoute resultRoute1 = (OneServerResultRoute) resultRoute;
+    ProxyRouteResult resultRoute1 = (ProxyRouteResult) resultRoute;
     MySQLDataSourceQuery query = new MySQLDataSourceQuery();
     query.setIds(null);
     query.setRunOnMaster(resultRoute.isRunOnMaster(!simpleSelect));

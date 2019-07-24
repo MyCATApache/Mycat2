@@ -45,7 +45,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     return sqlContext;
   }
 
-  public OneServerResultRoute enterRoute(MycatSchema defaultSchema, String sql) {
+  public ProxyRouteResult enterRoute(MycatSchema defaultSchema, String sql) {
     BufferSQLContext bufferSQLContext = sqlContext();
     sqlParser().parse(sql.getBytes(), bufferSQLContext);
     return enterRoute(defaultSchema, bufferSQLContext, sql);
@@ -57,7 +57,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     return bufferSQLContext;
   }
 
-  public OneServerResultRoute enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
+  public ProxyRouteResult enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
       String sql) {
     this.context.clear();
     this.context.setSqlContext(sqlContext);
@@ -68,7 +68,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     String balance = sa.getBalance();
     Boolean runOnMaster = sa.getRunOnMaster();
 
-    OneServerResultRoute routeResult = null;
+    ProxyRouteResult routeResult = null;
     try {
       routeResult = getResultRoute(defaultSchema, sqlContext, sql, sa, routeResult);
     } finally {
@@ -84,10 +84,10 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     return routeResult;
   }
 
-  private OneServerResultRoute getResultRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
-      String sql, MycatProxyStaticAnnotation sa, OneServerResultRoute routeResult) {
+  private ProxyRouteResult getResultRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
+      String sql, MycatProxyStaticAnnotation sa, ProxyRouteResult routeResult) {
     if (sa.getDataNode() != null) {
-      OneServerResultRoute osr = new OneServerResultRoute();
+      ProxyRouteResult osr = new ProxyRouteResult();
       osr.setDataNode(sa.getDataNode());
       osr.setSql(sql);
       return routeResult = osr;
@@ -130,7 +130,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
 //    return result;
 //  }
 
-  public OneServerResultRoute enterRoute(String defaultSchemaName, String sql) {
+  public ProxyRouteResult enterRoute(String defaultSchemaName, String sql) {
     MycatSchema defaultSchema = config.getSchemaBySchemaName(defaultSchemaName);
     if (defaultSchema == null) {
       throw new MycatException("can not find schema:{}", defaultSchemaName);
@@ -139,7 +139,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   }
 
   @Override
-  public OneServerResultRoute route(MycatSchema schema, String sql, RouteContext routeContext) {
+  public ProxyRouteResult route(MycatSchema schema, String sql, RouteContext routeContext) {
     SqlParseRouteRouteStrategy strategy = routeContext.getSqlParseRouteRouteStrategy();
     strategy.route(schema, sql, context);
     return null;
