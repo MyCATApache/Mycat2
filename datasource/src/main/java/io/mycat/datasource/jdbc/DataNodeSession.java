@@ -36,7 +36,7 @@ public class DataNodeSession {
   public MycatResultSetResponse executeQuery(String dataNode, String sql, boolean runOnMaster,
       LoadBalanceStrategy strategy) {
     JdbcSession session = getBackendSession(dataNode, runOnMaster, strategy);
-    return new MycatResultSetResponseImpl(session.executeQuery(sql), this);
+    return new SingleDataNodeResultSetResponse(session.executeQuery(sql), this);
   }
 
   private JdbcSession getBackendSession(String dataNode, boolean runOnMaster,

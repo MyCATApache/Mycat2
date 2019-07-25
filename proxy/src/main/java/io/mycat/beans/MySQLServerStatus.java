@@ -23,10 +23,10 @@ import java.nio.charset.Charset;
 /**
  * 集中处理mysql服务器状态
  *
- * @author jamie12221
- *  date 2019-05-10 13:21
+ * @author jamie12221 date 2019-05-10 13:21
  **/
 public final class MySQLServerStatus {
+
   private String lastMessage;
   private int affectedRows;
   private int serverStatus;
@@ -90,6 +90,7 @@ public final class MySQLServerStatus {
     this.charsetName = charsetName;
     this.charset = charset;
   }
+
   public MySQLAutoCommit getAutoCommit() {
     return autoCommit;
   }
@@ -115,7 +116,7 @@ public final class MySQLServerStatus {
   }
 
   public String getLastMessage() {
-    return lastMessage == null?"":lastMessage;
+    return lastMessage == null ? "" : lastMessage;
   }
 
   public void setLastMessage(String lastMessage) {
@@ -204,6 +205,14 @@ public final class MySQLServerStatus {
 
   public void setAccessModeReadOnly(boolean accessModeReadOnly) {
     this.accessModeReadOnly = accessModeReadOnly;
+  }
+
+  public void addServerStatusFlag(int flag) {
+    this.setServerStatus(this.getServerStatus() | flag);
+  }
+
+  public void removeServerStatusFlag(int flag) {
+    this.setServerStatus(this.getServerStatus() & ~flag);
   }
 
 }

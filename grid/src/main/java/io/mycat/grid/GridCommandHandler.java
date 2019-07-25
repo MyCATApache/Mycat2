@@ -12,13 +12,14 @@ import java.util.Map;
 public class GridCommandHandler extends AbstractCommandHandler {
 
   private final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(GridCommandHandler.class);
-  ExecutionPlanBuilder executionPlan;
+  ProxyExecutionPlanBuilder executionPlan;
+  private final static String UNSUPPORT = "unsupport!";
 
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     Map<String, Object> defContext = runtime.getDefContext();
     GridRuntime jdbcRuntime = (GridRuntime) defContext.get("gridRuntime");
-    this.executionPlan = new ExecutionPlanBuilder(session, jdbcRuntime);
+    this.executionPlan = new ProxyExecutionPlanBuilder(session, jdbcRuntime);
   }
 
   @Override
@@ -31,107 +32,54 @@ public class GridCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleContentOfFilename(byte[] sql, MycatSession session) {
-
+    session.setLastMessage(UNSUPPORT);
+    session.writeErrorEndPacket();
   }
 
   @Override
   public void handleContentOfFilenameEmptyOk(MycatSession session) {
-
+    session.setLastMessage(UNSUPPORT);
+    session.writeErrorEndPacket();
   }
 
-  @Override
-  public void handleQuit(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleInitDb(String db, MycatSession session) {
-
-  }
-
-  @Override
-  public void handlePing(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleFieldList(String table, String filedWildcard, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleSetOption(boolean on, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleCreateDb(String schemaName, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleDropDb(String schemaName, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleStatistics(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleProcessInfo(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleProcessKill(long connectionId, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleChangeUser(String userName, String authResponse, String schemaName,
-      int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
-      MycatSession session) {
-
-  }
-
-  @Override
-  public void handleResetConnection(MycatSession session) {
-
-  }
 
   @Override
   public void handlePrepareStatement(byte[] sql, MycatSession session) {
-
+    session.setLastMessage(UNSUPPORT);
+    session.writeErrorEndPacket();
   }
 
   @Override
   public void handlePrepareStatementLongdata(long statementId, int paramId, byte[] data,
       MycatSession session) {
-
+    session.setLastMessage(UNSUPPORT);
+    session.writeErrorEndPacket();
   }
 
   @Override
   public void handlePrepareStatementExecute(byte[] rawPayload, long statementId, byte flags,
       int numParams, byte[] rest, MycatSession session) {
-
+    session.setLastMessage(UNSUPPORT);
+    session.writeErrorEndPacket();
   }
 
   @Override
   public void handlePrepareStatementClose(long statementId, MycatSession session) {
-
+    session.setLastMessage(UNSUPPORT);
+    session.writeErrorEndPacket();
   }
 
   @Override
   public void handlePrepareStatementFetch(long statementId, long row,
       MycatSession mycat) {
-
+    mycat.setLastMessage(UNSUPPORT);
+    mycat.writeErrorEndPacket();
   }
 
   @Override
   public void handlePrepareStatementReset(long statementId, MycatSession session) {
-
+    session.setLastMessage(UNSUPPORT);
+    session.writeErrorEndPacket();
   }
 
   @Override

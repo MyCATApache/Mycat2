@@ -1,10 +1,8 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
-import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.beans.mysql.MySQLIsolationLevel;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -41,7 +39,7 @@ public class JdbcSession {
     try {
       int transactionIsolation = connection.getTransactionIsolation();
       int jdbcValue = isolation.getJdbcValue();
-      if (transactionIsolation != jdbcValue){
+      if (transactionIsolation != jdbcValue) {
         connection.setTransactionIsolation(jdbcValue);
       }
       connection.setAutoCommit(autoCommit == MySQLAutoCommit.ON);
@@ -73,10 +71,10 @@ public class JdbcSession {
     try (Statement statement = connection.createStatement()) {
       statement.executeUpdate(sql,
           needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-      long lastInsertId = 0L;
+      int lastInsertId = 0;
       if (needGeneratedKeys) {
         ResultSet generatedKeys = statement.getGeneratedKeys();
-        lastInsertId = generatedKeys.next() ? generatedKeys.getLong(0) : 0L;
+        lastInsertId = (int) (generatedKeys.next() ? generatedKeys.getLong(0) : 0L);
       }
       return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId,
           MySQLServerStatusFlags.AUTO_COMMIT);
@@ -112,7 +110,7 @@ public class JdbcSession {
 
   public void setTransactionIsolation(MySQLIsolation isolation) {
     try {
-    connection.setTransactionIsolation(isolation.getJdbcValue());
+      connection.setTransactionIsolation(isolation.getJdbcValue());
     } catch (Exception e) {
       throw new MycatException(e);
     }

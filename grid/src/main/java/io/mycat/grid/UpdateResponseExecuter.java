@@ -32,7 +32,7 @@ public class UpdateResponseExecuter implements SQLExecuter {
 
       @Override
       public int serverStatus() {
-        return session.getServerStatus();
+        return session.getServerStatus().getServerStatus();
       }
     };
   }

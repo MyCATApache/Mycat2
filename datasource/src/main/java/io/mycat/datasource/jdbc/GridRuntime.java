@@ -71,10 +71,14 @@ public class GridRuntime {
           value.heartBeat();
         }
       } catch (Exception e) {
-        LOGGER.error("",e);
+        LOGGER.error("", e);
       }
     }, 0, period, TimeUnit.SECONDS);
 
+  }
+
+  public Map<String, Object> getDefContext() {
+    return proxyRuntime.getDefContext();
   }
 
 

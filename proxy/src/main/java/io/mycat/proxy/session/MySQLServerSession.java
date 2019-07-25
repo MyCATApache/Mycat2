@@ -45,7 +45,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
   /**
    * ok eof
    */
-  int getServerStatus();
+  int getServerStatusValue();
 
 
   int getWarningCount();
@@ -133,7 +133,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    */
   default void writeOkEndPacket() {
     byte[] bytes = MySQLPacketUtil
-        .generateOk(0, getWarningCount(), getServerStatus(), affectedRows(),
+        .generateOk(0, getWarningCount(), getServerStatusValue(), affectedRows(),
             getLastInsertId(),
             MySQLServerCapabilityFlags.isClientProtocol41(getCapabilities()),
             MySQLServerCapabilityFlags.isKnowsAboutTransactions(getCapabilities()),
@@ -143,7 +143,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
     writeBytes(bytes,true);
   }
   default void writeOk(boolean hasMoreResult) {
-    int serverStatus = getServerStatus();
+    int serverStatus = getServerStatusValue();
     if (hasMoreResult) {
       serverStatus |= MySQLServerStatusFlags.MORE_RESULTS;
     }
@@ -164,7 +164,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
   default void writeColumnEndPacket() {
     if (isDeprecateEOF()) {
     } else {
-      byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatus());
+      byte[] bytes = MySQLPacketUtil.generateEof(getWarningCount(), getServerStatusValue());
       writeBytes(bytes,false);
     }
   }
@@ -174,7 +174,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
    */
   default void writeRowEndPacket(boolean hasMoreResult, boolean hasCursor) {
     byte[] bytes;
-    int serverStatus = getServerStatus();
+    int serverStatus = getServerStatusValue();
     if (hasMoreResult) {
       serverStatus |= MySQLServerStatusFlags.MORE_RESULTS;
     }
@@ -204,7 +204,7 @@ public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
       lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
     }
     byte[] bytes = MySQLPacketUtil
-        .generateError(lastErrorCode, getLastMessage(), this.getServerStatus());
+        .generateError(lastErrorCode, getLastMessage(), this.getServerStatusValue());
     writeBytes(bytes,true);
   }
   default void writeErrorEndPacket(ErrorPacketImpl packet) {

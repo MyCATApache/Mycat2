@@ -5,12 +5,12 @@ import io.mycat.proxy.MySQLPacketUtil;
 import java.io.IOException;
 import java.util.Iterator;
 
-public class MycatResultSetResponseImpl implements MycatResultSetResponse {
+public class SingleDataNodeResultSetResponse implements MycatResultSetResponse {
 
   final RowBaseIterator rowBaseIterator;
   private DataNodeSession session;
 
-  public MycatResultSetResponseImpl(RowBaseIterator rowBaseIterator, DataNodeSession session) {
+  public SingleDataNodeResultSetResponse(RowBaseIterator rowBaseIterator, DataNodeSession session) {
     this.rowBaseIterator = rowBaseIterator;
     this.session = session;
   }
@@ -23,7 +23,7 @@ public class MycatResultSetResponseImpl implements MycatResultSetResponse {
   @Override
   public Iterator<byte[]> columnDefIterator() {
     return new Iterator<byte[]>() {
-      final int count = MycatResultSetResponseImpl.this.columnCount();
+      final int count = SingleDataNodeResultSetResponse.this.columnCount();
       int index = 1;
 
       @Override
@@ -34,7 +34,7 @@ public class MycatResultSetResponseImpl implements MycatResultSetResponse {
       @Override
       public byte[] next() {
         return MySQLPacketUtil
-            .generateColumnDefPayload(MycatResultSetResponseImpl.this.rowBaseIterator.metaData(),
+            .generateColumnDefPayload(SingleDataNodeResultSetResponse.this.rowBaseIterator.metaData(),
                 index++);
       }
     };
@@ -43,7 +43,7 @@ public class MycatResultSetResponseImpl implements MycatResultSetResponse {
   @Override
   public Iterator<byte[][]> rowIterator() {
     return new Iterator<byte[][]>() {
-      final int count = MycatResultSetResponseImpl.this.columnCount();
+      final int count = SingleDataNodeResultSetResponse.this.columnCount();
 
       @Override
       public boolean hasNext() {
@@ -53,7 +53,7 @@ public class MycatResultSetResponseImpl implements MycatResultSetResponse {
       @Override
       public byte[][] next() {
         byte[][] bytes = new byte[count][];
-        RowBaseIterator rowBaseIterator = MycatResultSetResponseImpl.this.rowBaseIterator;
+        RowBaseIterator rowBaseIterator = SingleDataNodeResultSetResponse.this.rowBaseIterator;
         for (int i = 0, j = 1; i < count; i++, j++) {
           bytes[i] = rowBaseIterator.getBytes(j);
         }

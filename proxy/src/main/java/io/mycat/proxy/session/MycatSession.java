@@ -307,7 +307,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
-  public int getServerStatus() {
+  public int getServerStatusValue() {
     return this.serverStatus.getServerStatus();
   }
 
@@ -315,6 +315,10 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public int setServerStatus(int s) {
     return this.serverStatus.setServerStatus(s);
   }
+  public MySQLServerStatus getServerStatus() {
+    return this.serverStatus;
+  }
+
 
 
   @Override
@@ -568,4 +572,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public ProcessState getProcessState() {
     return processState;
   }
+
+
 }
