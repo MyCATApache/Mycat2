@@ -40,12 +40,17 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
+import io.mycat.beans.resultset.MycatResponse;
+import io.mycat.beans.resultset.MycatResultSet;
+import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.ResultSetProvider;
+import io.mycat.proxy.SQLExecuterWriter;
 import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
@@ -310,17 +315,16 @@ public class ProxyQueryHandler {
   public void showTable(MycatSession mycat, String schemaName) {
     Collection<String> tableName = router.getConfig().getSchemaBySchemaName(schemaName)
         .getMycatTables().keySet();
-    mycat.writeColumnCount(2);
-    mycat.writeColumnDef("Tables in " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
-    mycat.writeColumnDef("Table_type " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
-    mycat.writeColumnEndPacket();
     MycatRouterConfig config = router.getConfig();
     MycatSchema schema = config.getSchemaBySchemaName(schemaName);
-    byte[] basetable = mycat.encode("BASE TABLE");
+    MycatResultSet resultSet = ResultSetProvider.INSTANCE
+        .createDefaultResultSet(2, mycat.charsetIndex(), mycat.charset());
+    resultSet.addColumnDef(0,"Tables in " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+    resultSet.addColumnDef(1,"Table_type " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     for (String name : schema.getMycatTables().keySet()) {
-      mycat.writeTextRowPacket(new byte[][]{mycat.encode(name), basetable});
+      resultSet.addTextRowPayload(name, "BASE TABLE");
     }
-    mycat.writeRowEndPacket(mycat.hasResultset(), mycat.hasCursor());
+    SQLExecuterWriter.writeToMycatSession(mycat, () -> resultSet);
   }
 
   public void useSchema(MycatSession mycat, String schemaName) {

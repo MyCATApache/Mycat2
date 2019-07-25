@@ -16,10 +16,11 @@ import io.mycat.MycatException;
 import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.datasource.jdbc.DataNodeSession;
 import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.datasource.jdbc.MycatResultSetResponse;
-import io.mycat.datasource.jdbc.MycatUpdateResponse;
+import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -97,7 +98,7 @@ public class ProxyExecutionPlanBuilder {
       case SHOW_WARNINGS:
       case SHOW_VARIABLES_SQL: {
         MycatResultSetResponse response = dataNodeSession
-            .executeQuery(router.getDafaultDataNode(), sql, false, null);
+            .executeQuery(router.getDafaultDataNode(mycat.getSchema()), sql, false, null);
         return new SQLExecuter[]{() -> response};
       }
       case USE_SQL: {

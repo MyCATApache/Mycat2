@@ -1,4 +1,4 @@
-package io.mycat.datasource.jdbc;
+package io.mycat.beans.resultset;
 
 import java.util.Iterator;
 

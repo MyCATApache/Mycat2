@@ -19,7 +19,7 @@ import java.util.Queue;
  *
  * mysql server session 该接口实现服务器模式
  **/
-public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServerSession<T> {
+public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServerSession<T> ,Session<T> {
 
 
   CrossSwapThreadBufferPool writeBufferPool();

@@ -1,7 +1,8 @@
 package io.mycat.grid;
 
-import io.mycat.datasource.jdbc.MycatResponse;
-import io.mycat.datasource.jdbc.MycatUpdateResponse;
+import io.mycat.beans.resultset.MycatResponse;
+import io.mycat.beans.resultset.MycatUpdateResponse;
+import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 

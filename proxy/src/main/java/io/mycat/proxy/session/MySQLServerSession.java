@@ -9,7 +9,7 @@ import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import java.nio.charset.Charset;
 
-public interface MySQLServerSession<T extends Session<T>> extends Session<T> {
+public interface MySQLServerSession<T> {
 
 
 

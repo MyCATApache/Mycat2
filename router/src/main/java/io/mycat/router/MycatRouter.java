@@ -19,7 +19,7 @@ import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
-import java.util.Optional;
+import java.util.Objects;
 
 /**
  * @author jamie12221 date 2019-05-05 17:04
@@ -57,10 +57,12 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
     sqlParser().parse(sql.getBytes(), bufferSQLContext);
     return bufferSQLContext;
   }
+
   public ProxyRouteResult enterRoute(String defaultSchema, BufferSQLContext sqlContext,
-      String sql){
-    return enterRoute(config.getSchemaBySchemaName(defaultSchema),sqlContext,sql);
+      String sql) {
+    return enterRoute(config.getSchemaBySchemaName(defaultSchema), sqlContext, sql);
   }
+
   public ProxyRouteResult enterRoute(MycatSchema defaultSchema, BufferSQLContext sqlContext,
       String sql) {
     this.context.clear();
@@ -145,7 +147,7 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   @Override
   public ProxyRouteResult route(MycatSchema schema, String sql, RouteContext routeContext) {
     SqlParseRouteRouteStrategy strategy = routeContext.getSqlParseRouteRouteStrategy();
-   return strategy.route(schema, sql, context);
+    return strategy.route(schema, sql, context);
   }
 
   public MycatRouterConfig getConfig() {
@@ -163,8 +165,16 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   public MycatSchema getSchemaOrDefaultBySchemaName(String name) {
     return config.getSchemaOrDefaultBySchemaName(name);
   }
-
-  public String getDafaultDataNode() {
-    return config.getDefaultSchema().getDefaultDataNode();
+  public String getDafaultDataNode(String schema){
+   return getDafaultDataNode(config.getSchemaBySchemaName(schema));
+  }
+  public String getDafaultDataNode(MycatSchema schema) {
+    Objects.requireNonNull(schema);
+    String defaultDataNode = schema.getDefaultDataNode();
+    if (defaultDataNode == null) {
+      return schema.getMycatTables().values().iterator().next().getDataNodes().get(0);
+    } else {
+      return defaultDataNode;
+    }
   }
 }

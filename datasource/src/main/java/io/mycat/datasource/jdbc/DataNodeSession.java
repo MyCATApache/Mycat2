@@ -2,6 +2,8 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import java.util.HashMap;
 import java.util.Map;

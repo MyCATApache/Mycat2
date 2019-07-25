@@ -1,5 +1,6 @@
 package io.mycat.datasource.jdbc;
 
+import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.proxy.MySQLPacketUtil;
 import java.io.IOException;
