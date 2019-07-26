@@ -15,6 +15,7 @@ import static io.mycat.sqlparser.util.BufferSQLContext.USE_SQL;
 
 import io.mycat.MycatException;
 import io.mycat.beans.MySQLServerStatus;
+import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.resultset.MycatResultSetResponse;
@@ -25,10 +26,12 @@ import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ProxyRouteResult;
+import io.mycat.router.util.RouterUtil;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
 import java.util.Objects;
@@ -56,10 +59,14 @@ public class ProxyExecutionPlanBuilder {
   }
 
   public SQLExecuter[] generate(byte[] sqlBytes) {
+    MycatSchema schema = router
+        .getSchemaOrDefaultBySchemaName(mycat.getSchema());
     parser.parse(sqlBytes, sqlContext);
     byte sqlType =
         sqlContext.getSQLType() == 0 ? sqlContext.getCurSQLType() : sqlContext.getSQLType();
-    String sql = new String(sqlBytes);
+    String orgin = new String(sqlBytes);
+    MycatMonitor.onOrginSQL(mycat, orgin);
+    String sql = RouterUtil.removeSchema(orgin, schema.getSchemaName()).trim();
     switch (sqlType) {
       case BufferSQLContext.BEGIN_SQL:
       case BufferSQLContext.START_SQL:
@@ -107,7 +114,8 @@ public class ProxyExecutionPlanBuilder {
       case SHOW_SQL:
         return responseOk();
       case SHOW_VARIABLES_SQL: {
-        return new SQLExecuter[]{MycatRouterResponse.showVariables(mycat,jdbcRuntime.getVariables().entries())};
+        return new SQLExecuter[]{
+            MycatRouterResponse.showVariables(mycat, jdbcRuntime.getVariables().entries())};
       }
       case USE_SQL: {
         String schemaName = sqlContext.getSchemaName(0);
@@ -124,7 +132,7 @@ public class ProxyExecutionPlanBuilder {
               execute(sqlType, this.router.enterRoute(mycat.getSchema(), sqlContext, sql))};
         } else if (SELECT_SQL == sqlType || SELECT_FOR_UPDATE_SQL == sqlType) {
           MycatResultSetResponse response = dataNodeSession
-              .executeQuery(router.getRandomDataNode(mycat.getSchema()), sql, true, null);
+              .executeQuery(mycat, router.getRandomDataNode(mycat.getSchema()), sql, true, null);
           return new SQLExecuter[]{() -> response};
         }
       }
@@ -137,6 +145,7 @@ public class ProxyExecutionPlanBuilder {
   private SQLExecuter execute(byte sqlType, ProxyRouteResult routeResult) {
     String dataNode = routeResult.getDataNode();
     String sql = routeResult.getSql();
+    MycatMonitor.onRouteSQL(mycat, dataNode, sql);
     String balance = routeResult.getBalance();
     LoadBalanceStrategy loadBalanceByBalance = jdbcRuntime
         .getLoadBalanceByBalanceName(balance);
@@ -145,14 +154,14 @@ public class ProxyExecutionPlanBuilder {
       case DELETE_SQL:
       case INSERT_SQL: {
         MycatUpdateResponse response = dataNodeSession
-            .executeUpdate(dataNode, sql, true, loadBalanceByBalance);
+            .executeUpdate(mycat, dataNode, sql, true, loadBalanceByBalance);
         return () -> response;
       }
       case SELECT_FOR_UPDATE_SQL:
       case SELECT_SQL: {
         boolean runOnMaster = routeResult.isRunOnMaster(false) || !sqlContext.isSimpleSelect();
         MycatResultSetResponse response = dataNodeSession
-            .executeQuery(routeResult.getDataNode(), sql, runOnMaster, loadBalanceByBalance);
+            .executeQuery(mycat, routeResult.getDataNode(), sql, runOnMaster, loadBalanceByBalance);
         return () -> response;
       }
       default:

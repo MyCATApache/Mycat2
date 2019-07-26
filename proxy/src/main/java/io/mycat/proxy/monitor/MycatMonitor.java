@@ -3,7 +3,6 @@ package io.mycat.proxy.monitor;
 import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
 
 import io.mycat.proxy.handler.backend.MySQLSynContext;
-import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
@@ -34,12 +33,22 @@ public final class MycatMonitor {
 
   public final static void onRouteResult(Session session, String dataNodeName, String replicaName,
       String dataSourceName,
+      String sql) {
+    Objects.requireNonNull(session);
+    Objects.requireNonNull(dataNodeName);
+    Objects.requireNonNull(replicaName);
+    Objects.requireNonNull(dataSourceName);
+    callback.onRouteSQLResult(session, dataNodeName, replicaName, dataSourceName, sql);
+  }
+
+  public final static void onRouteResult(Session session, String dataNodeName, String replicaName,
+      String dataSourceName,
       byte[] packet) {
     Objects.requireNonNull(session);
     Objects.requireNonNull(dataNodeName);
     Objects.requireNonNull(replicaName);
     Objects.requireNonNull(dataSourceName);
-    callback.onRouteSQLResult(session, dataNodeName,replicaName,dataSourceName, packet);
+    callback.onRouteSQLResult(session, dataNodeName, replicaName, dataSourceName, packet);
   }
 
   public static void setCallback(MycatMonitorCallback callback) {

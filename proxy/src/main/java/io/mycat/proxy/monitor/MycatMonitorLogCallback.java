@@ -68,6 +68,16 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
     }
   }
 
+  @Override
+  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+      String dataSourceName, String sql) {
+    if (onSQL) {
+      SQL_LOGGER.info("sessionId:{} dataNode:{} replica:{} datasource:{}", session.sessionId(),
+          dataNodeName,
+          replicaName, dataSourceName);
+    }
+  }
+
   /**
    * exception
    */

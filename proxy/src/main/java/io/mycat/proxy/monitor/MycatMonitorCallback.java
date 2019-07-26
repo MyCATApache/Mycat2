@@ -3,7 +3,6 @@ package io.mycat.proxy.monitor;
 import io.mycat.MycatException;
 import io.mycat.annotations.NoExcept;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
-import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -88,6 +87,8 @@ public interface MycatMonitorCallback {
   void onRouteSQLResult(Session session, String dataNodeName, String replicaName, String dataSource,
       byte[] payload);
 
+  void onRouteSQLResult(Session session, String dataNodeName, String replicaName, String dataSource,
+      String sql);
   /**
    * exception
    */

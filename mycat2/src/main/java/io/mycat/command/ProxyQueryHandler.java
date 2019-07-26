@@ -38,19 +38,15 @@ import static io.mycat.sqlparser.util.BufferSQLContext.USE_SQL;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
-import io.mycat.beans.resultset.MycatResultSet;
 import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.grid.MycatRouterResponse;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.SQLExecuterWriter;
 import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.monitor.MycatMonitor;
@@ -63,10 +59,6 @@ import io.mycat.security.MycatUser;
 import io.mycat.sequenceModifier.ModifyCallback;
 import io.mycat.sequenceModifier.SequenceModifier;
 import io.mycat.sqlparser.util.BufferSQLContext;
-import java.nio.charset.Charset;
-import java.util.Collection;
-import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * @author jamie12221 date 2019-05-17 17:37
@@ -186,7 +178,6 @@ public class ProxyQueryHandler {
           SQLExecuterWriter.writeToMycatSession(mycat,MycatRouterResponse.showVariables(mycat,mycat.getRuntime().getVariables().entries()));
           return;
         }
-
         case SHOW_WARNINGS: {
           SQLExecuterWriter.writeToMycatSession(mycat,MycatRouterResponse.showWarnnings(mycat));
           return;
