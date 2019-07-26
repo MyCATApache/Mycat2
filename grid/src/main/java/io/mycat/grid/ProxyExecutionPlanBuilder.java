@@ -71,37 +71,21 @@ public class ProxyExecutionPlanBuilder {
       case BufferSQLContext.BEGIN_SQL:
       case BufferSQLContext.START_SQL:
       case BufferSQLContext.START_TRANSACTION_SQL: {
-        dataNodeSession.startTransaction();
-        MySQLServerStatus serverStatus = mycat.getServerStatus();
-        serverStatus.addServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
-        return responseOk();
+        return begin();
       }
       case BufferSQLContext.COMMIT_SQL: {
-        dataNodeSession.commit();
-        MySQLServerStatus serverStatus = mycat.getServerStatus();
-        serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
-        return responseOk();
+        return commit();
       }
       case BufferSQLContext.SET_AUTOCOMMIT_SQL: {
         dataNodeSession.setAutomcommit(sqlContext.isAutocommit());
         return responseOk();
       }
       case BufferSQLContext.ROLLBACK_SQL: {
-        dataNodeSession.rollback();
-        MySQLServerStatus serverStatus = mycat.getServerStatus();
-        serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
-        return responseOk();
+        return rollback();
       }
       case SET_TRANSACTION_SQL: {
-        MySQLIsolation isolation = sqlContext.getIsolation();
-        if (isolation == null) {
-          throw new MycatException("unsupport!");
-        }
-        dataNodeSession.setTransactionIsolation(isolation);
-        mycat.setIsolation(isolation);
-        return responseOk();
+        return setTranscation();
       }
-
       case SHOW_DB_SQL:
         return new SQLExecuter[]{
             MycatRouterResponse.showDb(mycat, router.getConfig().getSchemaList())};
@@ -118,9 +102,7 @@ public class ProxyExecutionPlanBuilder {
             MycatRouterResponse.showVariables(mycat, jdbcRuntime.getVariables().entries())};
       }
       case USE_SQL: {
-        String schemaName = sqlContext.getSchemaName(0);
-        mycat.useSchema(schemaName);
-        return responseOk();
+        return useSchema();
       }
       case UPDATE_SQL:
       case INSERT_SQL:
@@ -140,6 +122,43 @@ public class ProxyExecutionPlanBuilder {
         IGNORED_SQL_LOGGER.warn("ignore:{}", sql);
         return responseOk();
     }
+  }
+
+  private SQLExecuter[] useSchema() {
+    String schemaName = sqlContext.getSchemaName(0);
+    mycat.useSchema(schemaName);
+    return responseOk();
+  }
+
+  private SQLExecuter[] setTranscation() {
+    MySQLIsolation isolation = sqlContext.getIsolation();
+    if (isolation == null) {
+      throw new MycatException("unsupport!");
+    }
+    dataNodeSession.setTransactionIsolation(isolation);
+    mycat.setIsolation(isolation);
+    return responseOk();
+  }
+
+  private SQLExecuter[] begin() {
+    dataNodeSession.startTransaction();
+    MySQLServerStatus serverStatus = mycat.getServerStatus();
+    serverStatus.addServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    return responseOk();
+  }
+
+  private SQLExecuter[] commit() {
+    dataNodeSession.commit();
+    MySQLServerStatus serverStatus = mycat.getServerStatus();
+    serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    return responseOk();
+  }
+
+  private SQLExecuter[] rollback() {
+    dataNodeSession.rollback();
+    MySQLServerStatus serverStatus = mycat.getServerStatus();
+    serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    return responseOk();
   }
 
   private SQLExecuter execute(byte sqlType, ProxyRouteResult routeResult) {

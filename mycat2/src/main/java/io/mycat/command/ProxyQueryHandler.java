@@ -91,26 +91,15 @@ public class ProxyQueryHandler {
     try {
       switch (sqlType) {
         case USE_SQL: {
-          String schemaName = sqlContext.getSchemaName(0);
-          useSchema(mycat, schemaName);
+          useSchema(mycat, sqlContext);
           break;
         }
         case SET_AUTOCOMMIT_SQL: {
-          Boolean autocommit = sqlContext.isAutocommit();
-          if (autocommit == null) {
-            mycat.setLastMessage("set autocommit fail!");
-            mycat.writeErrorEndPacket();
-            return;
-          } else {
-            mycat.setAutoCommit(autocommit ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF);
-            mycat.writeOkEndPacket();
-            return;
-          }
+          setAutocommit(mycat, sqlContext);
+          return;
         }
         case SET_CHARSET: {
-          String charset = sqlContext.getCharset();
-          mycat.setCharset(charset);
-          mycat.writeOkEndPacket();
+          setCharset(mycat, sqlContext);
           return;
         }
         case SET_SQL_SELECT_LIMIT: {
@@ -130,25 +119,7 @@ public class ProxyQueryHandler {
           return;
         }
         case SET_TRANSACTION_SQL: {
-          if (sqlContext.isAccessMode()) {
-            mycat.setAccessModeReadOnly(true);
-            mycat.writeOkEndPacket();
-            return;
-          }
-          if (sqlContext.getTransactionLevel() == MySQLIsolationLevel.GLOBAL) {
-            IGNORED_SQL_LOGGER.warn("unsupport global send error", sql);
-            mycat.setLastMessage("unsupport global level");
-            mycat.writeErrorEndPacket();
-            return;
-          }
-          MySQLIsolation isolation = sqlContext.getIsolation();
-          if (isolation == null) {
-            mycat.setLastMessage("set transaction fail!");
-            mycat.writeErrorEndPacket();
-            return;
-          }
-          mycat.setIsolation(isolation);
-          mycat.writeOkEndPacket();
+          setTranscation(mycat, sql, sqlContext);
           return;
         }
         case SHOW_DB_SQL: {
@@ -239,6 +210,54 @@ public class ProxyQueryHandler {
     }
   }
 
+  private void setCharset(MycatSession mycat, BufferSQLContext sqlContext) {
+    String charset = sqlContext.getCharset();
+    mycat.setCharset(charset);
+    mycat.writeOkEndPacket();
+    return;
+  }
+
+  private void useSchema(MycatSession mycat, BufferSQLContext sqlContext) {
+    String schemaName = sqlContext.getSchemaName(0);
+    useSchema(mycat, schemaName);
+    return;
+  }
+
+  private void setAutocommit(MycatSession mycat, BufferSQLContext sqlContext) {
+    Boolean autocommit = sqlContext.isAutocommit();
+    if (autocommit == null) {
+      mycat.setLastMessage("set autocommit fail!");
+      mycat.writeErrorEndPacket();
+      return;
+    } else {
+      mycat.setAutoCommit(autocommit ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF);
+      mycat.writeOkEndPacket();
+      return;
+    }
+  }
+
+  private void setTranscation(MycatSession mycat, String sql, BufferSQLContext sqlContext) {
+    if (sqlContext.isAccessMode()) {
+      mycat.setAccessModeReadOnly(true);
+      mycat.writeOkEndPacket();
+      return;
+    }
+    if (sqlContext.getTransactionLevel() == MySQLIsolationLevel.GLOBAL) {
+      IGNORED_SQL_LOGGER.warn("unsupport global send error", sql);
+      mycat.setLastMessage("unsupport global level");
+      mycat.writeErrorEndPacket();
+      return;
+    }
+    MySQLIsolation isolation = sqlContext.getIsolation();
+    if (isolation == null) {
+      mycat.setLastMessage("set transaction fail!");
+      mycat.writeErrorEndPacket();
+      return;
+    }
+    mycat.setIsolation(isolation);
+    mycat.writeOkEndPacket();
+    return;
+  }
 
 
   public void execute(MycatSession mycat, MycatSchema useSchema, String sql,
