@@ -31,10 +31,10 @@ public class DefResultSet implements  MycatResultSet {
       String columnName, String orgName, int type, int columnFlags, int columnDecimals,
       int length) {
     byte[] bytes = MySQLPacketUtil
-        .generateColumnDefPayload("information_schema", "SCHEMATA", "SCHEMATA", "Database",
-            "SCHEMA_NAME",
-            MySQLFieldsType.FIELD_TYPE_VAR_STRING,
-            0x1, 0,charsetIndex, 192, charset);
+        .generateColumnDefPayload(database, table, originalTable, columnName,
+            orgName,
+            type,
+            columnFlags, columnDecimals,charsetIndex, length, charset);
     columnDefList[index] = bytes;
     jdbcTypeList[index] = type;
   }
