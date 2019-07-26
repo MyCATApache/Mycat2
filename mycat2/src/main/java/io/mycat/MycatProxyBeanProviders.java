@@ -34,7 +34,7 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
 
   @Override
   public void beforeAcceptConnectionProcess(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception {
-    defContext.put("routeConfig",
+    defContext.put("routerConfig",
         new MycatRouterConfig(runtime.getConfig(), runtime.getMySQLAPIRuntime()));
     defContext.put("gridRuntime", new GridRuntime(runtime));
   }

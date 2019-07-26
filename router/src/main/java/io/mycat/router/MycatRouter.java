@@ -165,16 +165,25 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   public MycatSchema getSchemaOrDefaultBySchemaName(String name) {
     return config.getSchemaOrDefaultBySchemaName(name);
   }
-  public String getDafaultDataNode(String schema){
-   return getDafaultDataNode(config.getSchemaBySchemaName(schema));
+  public String getRandomDataNode(String schema){
+   return getRandomDataNode(config.getSchemaOrDefaultBySchemaName(schema));
   }
-  public String getDafaultDataNode(MycatSchema schema) {
+  public String getRandomDataNode(MycatSchema schema) {
     Objects.requireNonNull(schema);
     String defaultDataNode = schema.getDefaultDataNode();
     if (defaultDataNode == null) {
       return schema.getMycatTables().values().iterator().next().getDataNodes().get(0);
     } else {
       return defaultDataNode;
+    }
+  }
+
+  public boolean existTable(String schemaName, String tableName) {
+    MycatSchema schemaBySchema = config.getSchemaBySchemaName(schemaName);
+    if (schemaBySchema != null){
+      return schemaBySchema.getMycatTables().containsKey(tableName);
+    }else {
+      return false;
     }
   }
 }

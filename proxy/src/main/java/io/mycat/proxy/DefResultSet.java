@@ -1,7 +1,7 @@
 package io.mycat.proxy;
 
+import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.resultset.MycatResultSet;
-import io.mycat.beans.resultset.MycatResultSetResponse;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -23,6 +23,20 @@ public class DefResultSet implements  MycatResultSet {
     this.charset = charset;
     this.rowList = new ArrayList<>();
 
+  }
+
+
+  @Override
+  public void addColumnDef(int index, String database, String table, String originalTable,
+      String columnName, String orgName, int type, int columnFlags, int columnDecimals,
+      int length) {
+    byte[] bytes = MySQLPacketUtil
+        .generateColumnDefPayload("information_schema", "SCHEMATA", "SCHEMATA", "Database",
+            "SCHEMA_NAME",
+            MySQLFieldsType.FIELD_TYPE_VAR_STRING,
+            0x1, 0,charsetIndex, 192, charset);
+    columnDefList[index] = bytes;
+    jdbcTypeList[index] = type;
   }
 
   public void addColumnDef(int index, String columnName, int type) {

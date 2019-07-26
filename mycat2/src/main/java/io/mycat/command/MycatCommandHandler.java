@@ -43,7 +43,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
   @Override
   public void initRuntime(MycatSession mycat, ProxyRuntime runtime) {
     this.mycat = mycat;
-    this.router = new MycatRouter((MycatRouterConfig) runtime.getDefContext().get("routeConfig"));
+    this.router = new MycatRouter((MycatRouterConfig) runtime.getDefContext().get("routerConfig"));
     this.prepareContext = new PrepareStmtContext(mycat);
     this.proxyQueryHandler = new ProxyQueryHandler(router, runtime);
     this.serverQueryHandler = new BlockCommandHandler(router, runtime);

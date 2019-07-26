@@ -5,6 +5,7 @@ import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.JdbcDriverRootConfig;
@@ -76,7 +77,9 @@ public class GridRuntime {
     }, 0, period, TimeUnit.SECONDS);
 
   }
-
+  public MySQLVariables getVariables(){
+   return proxyRuntime.getVariables();
+  }
   public Map<String, Object> getDefContext() {
     return proxyRuntime.getDefContext();
   }
@@ -139,8 +142,15 @@ public class GridRuntime {
     if (config != null && config.getDataNodes() != null) {
       List<DataNodeConfig> dataNodes = config.getDataNodes();
       for (DataNodeConfig dataNode : dataNodes) {
-        jdbcDataNodeMap.put(dataNode.getName(),
-            new JdbcDataNode(jdbcReplicaMap.get(dataNode.getReplica()), dataNode));
+        JdbcReplica jdbcReplica = jdbcReplicaMap.get(dataNode.getReplica());
+        try {
+          Objects.requireNonNull(jdbcReplica);
+          jdbcDataNodeMap.put(dataNode.getName(),
+              new JdbcDataNode(jdbcReplica, dataNode));
+        }catch (Exception e){
+          e.printStackTrace();
+        }
+
       }
     }
   }

@@ -2,6 +2,7 @@ package io.mycat.grid;
 
 import static io.mycat.sqlparser.util.BufferSQLContext.DELETE_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.INSERT_SQL;
+import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_FOR_UPDATE_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SET_TRANSACTION_SQL;
 import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
@@ -16,11 +17,11 @@ import io.mycat.MycatException;
 import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.datasource.jdbc.DataNodeSession;
 import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -30,6 +31,7 @@ import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ProxyRouteResult;
 import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
+import java.util.Objects;
 
 public class ProxyExecutionPlanBuilder {
 
@@ -49,6 +51,7 @@ public class ProxyExecutionPlanBuilder {
     this.sqlContext = new BufferSQLContext();
     MycatRouterConfig routerConfig = (MycatRouterConfig) jdbcRuntime.getDefContext()
         .get("routerConfig");
+    Objects.requireNonNull(routerConfig);
     this.router = new MycatRouter(routerConfig);
   }
 
@@ -93,13 +96,18 @@ public class ProxyExecutionPlanBuilder {
       }
 
       case SHOW_DB_SQL:
-      case SHOW_SQL:
+        return new SQLExecuter[]{
+            MycatRouterResponse.showDb(mycat, router.getConfig().getSchemaList())};
       case SHOW_TB_SQL:
+        return new SQLExecuter[]{
+            MycatRouterResponse.showTable(router, mycat, mycat.getSchema())};
       case SHOW_WARNINGS:
+        return new SQLExecuter[]{
+            MycatRouterResponse.showWarnnings(mycat)};
+      case SHOW_SQL:
+        return responseOk();
       case SHOW_VARIABLES_SQL: {
-        MycatResultSetResponse response = dataNodeSession
-            .executeQuery(router.getDafaultDataNode(mycat.getSchema()), sql, false, null);
-        return new SQLExecuter[]{() -> response};
+        return new SQLExecuter[]{MycatRouterResponse.showVariables(mycat,jdbcRuntime.getVariables().entries())};
       }
       case USE_SQL: {
         String schemaName = sqlContext.getSchemaName(0);
@@ -109,9 +117,16 @@ public class ProxyExecutionPlanBuilder {
       case UPDATE_SQL:
       case INSERT_SQL:
       case DELETE_SQL:
+      case SELECT_FOR_UPDATE_SQL:
       case SELECT_SQL: {
-        return new SQLExecuter[]{
-            execute(sqlType, this.router.enterRoute(mycat.getSchema(), sqlContext, sql))};
+        if (router.existTable(mycat.getSchema(), sqlContext.getTableName(0))) {
+          return new SQLExecuter[]{
+              execute(sqlType, this.router.enterRoute(mycat.getSchema(), sqlContext, sql))};
+        } else if (SELECT_SQL == sqlType || SELECT_FOR_UPDATE_SQL == sqlType) {
+          MycatResultSetResponse response = dataNodeSession
+              .executeQuery(router.getRandomDataNode(mycat.getSchema()), sql, true, null);
+          return new SQLExecuter[]{() -> response};
+        }
       }
       default:
         IGNORED_SQL_LOGGER.warn("ignore:{}", sql);
@@ -129,11 +144,11 @@ public class ProxyExecutionPlanBuilder {
       case UPDATE_SQL:
       case DELETE_SQL:
       case INSERT_SQL: {
-        boolean runOnMaster = routeResult.isRunOnMaster(true);
         MycatUpdateResponse response = dataNodeSession
-            .executeUpdate(dataNode, sql, runOnMaster, loadBalanceByBalance);
+            .executeUpdate(dataNode, sql, true, loadBalanceByBalance);
         return () -> response;
       }
+      case SELECT_FOR_UPDATE_SQL:
       case SELECT_SQL: {
         boolean runOnMaster = routeResult.isRunOnMaster(false) || !sqlContext.isSimpleSelect();
         MycatResultSetResponse response = dataNodeSession

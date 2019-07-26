@@ -14,6 +14,8 @@ replicas:
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
         weight: 3            # 权重
+        dbType: jdbcMysql
+        url: jdbc:mysql://localhost:3306/db1?useLegacyDatetimeCode=false&serverTimezone=UTC
         initDb: db1
       - name: mytest3307b              # mysql 主机名
         ip: 127.0.0.1               # i

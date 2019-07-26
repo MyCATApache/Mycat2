@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.util.Iterator;
 
 public interface MycatResultSet extends MycatResultSetResponse{
+  public void addColumnDef(int index,String database, String table,
+      String originalTable,
+      String columnName, String orgName, int type,
+      int columnFlags,
+      int columnDecimals, int length);
   public void addColumnDef(int index, String columnName, int type);
   public int columnCount();
   public Iterator<byte[]> columnDefIterator();
