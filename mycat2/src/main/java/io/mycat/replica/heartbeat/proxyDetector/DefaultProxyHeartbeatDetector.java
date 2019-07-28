@@ -16,14 +16,13 @@
  */
 package io.mycat.replica.heartbeat.proxyDetector;
 
+import io.mycat.api.collector.CommonSQLCallback;
 import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.mysqlapi.collector.CommonSQLCallback;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import io.mycat.replica.heartbeat.HeartbeatManager;
-import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
 import java.util.function.Function;
 
 

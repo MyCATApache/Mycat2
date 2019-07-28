@@ -18,6 +18,8 @@ import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
 
 import io.mycat.MycatException;
 import io.mycat.annotations.NoExcept;
+import io.mycat.api.collector.OneResultSetCollector;
+import io.mycat.api.collector.TextResultSetTransforCollector;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
@@ -26,8 +28,6 @@ import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.mysqlapi.collector.OneResultSetCollector;
-import io.mycat.mysqlapi.collector.TextResultSetTransforCollector;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.CommandCallBack;
 import io.mycat.proxy.callback.RequestCallback;

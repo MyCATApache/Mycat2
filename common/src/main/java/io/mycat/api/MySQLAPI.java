@@ -1,7 +1,7 @@
-package io.mycat.mysqlapi;
+package io.mycat.api;
 
-import io.mycat.mysqlapi.callback.MySQLAPIExceptionCallback;
-import io.mycat.mysqlapi.collector.ResultSetCollector;
+import io.mycat.api.callback.MySQLAPIExceptionCallback;
+import io.mycat.api.collector.ResultSetCollector;
 
 public interface MySQLAPI {
 

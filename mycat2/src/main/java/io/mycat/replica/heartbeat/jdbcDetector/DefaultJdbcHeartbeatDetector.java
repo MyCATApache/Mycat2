@@ -1,5 +1,6 @@
 package io.mycat.replica.heartbeat.jdbcDetector;
 
+import io.mycat.api.collector.CommonSQLCallback;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.heartbeat.HeartbeatConfig;
@@ -9,7 +10,6 @@ import io.mycat.datasource.jdbc.JdbcDataSource;
 import io.mycat.datasource.jdbc.JdbcReplica;
 import io.mycat.datasource.jdbc.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.JdbcSession;
-import io.mycat.mysqlapi.collector.CommonSQLCallback;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import io.mycat.replica.heartbeat.HeartbeatManager;
 import java.util.List;

@@ -1,4 +1,4 @@
-package io.mycat.mysqlapi.collector;
+package io.mycat.api.collector;
 
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.logTip.MycatLogger;

@@ -1,10 +1,10 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.compute.Command;
 import io.mycat.compute.PersistenceAction;
 import io.mycat.compute.QueryNavigator;
-import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.compute.Session;
 import java.util.Map;
 

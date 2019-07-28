@@ -43,10 +43,10 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
 import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 
 import io.mycat.MycatException;
+import io.mycat.api.collector.ResultSetTransfor;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.beans.mysql.packet.MySQLPacket;
-import io.mycat.mysqlapi.collector.ResultSetTransfor;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 import java.util.function.IntPredicate;
 
 /**

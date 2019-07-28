@@ -1,11 +1,10 @@
 package io.mycat.router.sequence;
 
-import io.mycat.mysqlapi.MySQLAPIRuntime;
 import java.util.Map;
 
-public interface SequenceHandler {
+public interface SequenceHandler<Runtime> {
 
   void nextId(String schema, String seqName, SequenceCallback callback);
 
-  void init(MySQLAPIRuntime mySQLAPIRuntime, Map<String, String> properties);
+  void init(Runtime mySQLAPIRuntime, Map<String, String> properties);
 }

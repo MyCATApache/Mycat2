@@ -12,12 +12,15 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.mysqlapi.collector;
+package io.mycat.api.collector;
 
+
+import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.math.BigDecimal;
-import java.sql.Date;
 
 /**
  * 文本结果集收集类
@@ -25,11 +28,15 @@ import java.sql.Date;
  * @author jamie12221
  *  date 2019-05-10 13:21
  */
-public class TextResultSetTransforCollector implements ResultSetTransfor {
+@NoExcept
+public class BinaryResultSetTransforCollector implements ResultSetTransfor {
+
+  final static MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(BinaryResultSetTransforCollector.class);
 
   final ResultSetCollector collector;
 
-  public TextResultSetTransforCollector(
+  public BinaryResultSetTransforCollector(
       ResultSetCollector collector) {
     this.collector = collector;
   }
@@ -57,30 +64,26 @@ public class TextResultSetTransforCollector implements ResultSetTransfor {
   @Override
   public void collectDecimal(int columnIndex, ColumnDefPacket columnDef, int decimalScale,
       MySQLPacket mySQLPacket, int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    BigDecimal bigDecimal = new BigDecimal(string);
+    BigDecimal bigDecimal = new BigDecimal(mySQLPacket.readLenencString());
     collector.addDecimal(columnIndex, bigDecimal);
-
   }
 
   @Override
   public void collectTiny(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    int i = Integer.parseInt(string);
+    int i = mySQLPacket.readByte() & 0xff;
     collector.addValue(columnIndex, i, false);
   }
 
   @Override
   public void collectGeometry(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String v = mySQLPacket.readLenencString();
-    collector.addString(columnIndex, v);
+    String lenencBytes = mySQLPacket.readLenencString();
+    collector.addString(columnIndex, lenencBytes);
   }
 
   @Override
-  public void collectTinyString(int columnIndex, ColumnDefPacket columnDef,
-      MySQLPacket mySQLPacket,
+  public void collectTinyString(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     String lenencBytes = mySQLPacket.readLenencString();
     collector.addString(columnIndex, lenencBytes);
@@ -96,8 +99,7 @@ public class TextResultSetTransforCollector implements ResultSetTransfor {
   @Override
   public void collectShort(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    int lenencInt = Integer.parseInt(string);
+    int lenencInt = (int) mySQLPacket.readFixInt(2);
     collector.addValue(columnIndex, lenencInt, false);
   }
 
@@ -109,8 +111,7 @@ public class TextResultSetTransforCollector implements ResultSetTransfor {
   }
 
   @Override
-  public void collectMediumBlob(int columnIndex, ColumnDefPacket columnDef,
-      MySQLPacket mySQLPacket,
+  public void collectMediumBlob(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
     byte[] lenencBytes = mySQLPacket.readLenencBytes();
     collector.addBlob(columnIndex, lenencBytes);
@@ -126,17 +127,15 @@ public class TextResultSetTransforCollector implements ResultSetTransfor {
   @Override
   public void collectFloat(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    double v = Double.parseDouble(string);
-    collector.addValue(columnIndex, v, true);
+    float v = mySQLPacket.readFloat();
+    collector.addValue(columnIndex, v, false);
   }
 
   @Override
   public void collectDouble(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    double v = Double.parseDouble(string);
-    collector.addValue(columnIndex, v, true);
+    double v = mySQLPacket.readDouble();
+    collector.addValue(columnIndex, v, false);
   }
 
   @Override
@@ -147,65 +146,62 @@ public class TextResultSetTransforCollector implements ResultSetTransfor {
   @Override
   public void collectTimestamp(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    Date date = Date.valueOf(string);
+    java.util.Date date = mySQLPacket.readDate();
     collector.addDate(columnIndex, date);
   }
+
 
   @Override
   public void collectInt24(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    int i = Integer.parseInt(string);
-    collector.addValue(columnIndex, i, false);
+    int lenencInt = (int) mySQLPacket.readFixInt(4);
+    collector.addValue(columnIndex, lenencInt, false);
   }
 
   @Override
   public void collectDate(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    Date date = Date.valueOf(string);
+    java.util.Date date = mySQLPacket.readDate();
     collector.addDate(columnIndex, date);
-
+    LOGGER.debug("{}:{}", columnDef.getColumnNameString(), date);
   }
 
   @Override
   public void collectTime(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    Date date = Date.valueOf(string);
+    java.util.Date date = mySQLPacket.readDate();
     collector.addDate(columnIndex, date);
   }
 
   @Override
   public void collectDatetime(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    Date date = Date.valueOf(string);
+    java.util.Date date = mySQLPacket.readDate();
     collector.addDate(columnIndex, date);
   }
 
   @Override
   public void collectYear(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    Date date = Date.valueOf(string);
+    java.util.Date date = mySQLPacket.readDate();
     collector.addDate(columnIndex, date);
   }
 
   @Override
   public void collectNewDate(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    Date date = Date.valueOf(string);
+    java.util.Date date = mySQLPacket.readDate();
     collector.addDate(columnIndex, date);
   }
 
   @Override
   public void collectVarChar(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String lenencBytes = mySQLPacket.readLenencString();
-    collector.addString(columnIndex, lenencBytes);
+    if (true) {
+      String lenencString = mySQLPacket.readLenencString();
+      collector.addString(columnIndex, lenencString);
+      LOGGER.debug("{}:{}", columnDef.getColumnNameString(), lenencString);
+    }
   }
 
   @Override
@@ -218,7 +214,7 @@ public class TextResultSetTransforCollector implements ResultSetTransfor {
   @Override
   public void collectNewDecimal(int columnIndex, ColumnDefPacket columnDef, int decimalScale,
       MySQLPacket mySQLPacket, int startIndex) {
-    BigDecimal bigDecimal = new BigDecimal(mySQLPacket.readLenencString());
+    BigDecimal bigDecimal = mySQLPacket.readBigDecimal();
     collector.addDecimal(columnIndex, bigDecimal);
   }
 
@@ -239,16 +235,14 @@ public class TextResultSetTransforCollector implements ResultSetTransfor {
   @Override
   public void collectLong(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    long lenencInt = Long.parseLong(string);
+    long lenencInt = mySQLPacket.readLong();
     collector.addValue(columnIndex, lenencInt, false);
   }
 
   @Override
   public void collectLongLong(int columnIndex, ColumnDefPacket columnDef, MySQLPacket mySQLPacket,
       int startIndex) {
-    String string = mySQLPacket.readLenencString();
-    long lenencInt = Long.parseLong(string);
+    long lenencInt = mySQLPacket.readLong();
     collector.addValue(columnIndex, lenencInt, false);
   }
 

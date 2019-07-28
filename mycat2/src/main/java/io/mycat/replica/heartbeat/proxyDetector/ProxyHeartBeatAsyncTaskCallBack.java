@@ -1,11 +1,11 @@
 package io.mycat.replica.heartbeat.proxyDetector;
 
+import io.mycat.api.collector.CollectorUtil;
+import io.mycat.api.collector.CommonSQLCallback;
+import io.mycat.api.collector.OneResultSetCollector;
+import io.mycat.api.collector.TextResultSetTransforCollector;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
-import io.mycat.mysqlapi.collector.CollectorUtil;
-import io.mycat.mysqlapi.collector.CommonSQLCallback;
-import io.mycat.mysqlapi.collector.OneResultSetCollector;
-import io.mycat.mysqlapi.collector.TextResultSetTransforCollector;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;

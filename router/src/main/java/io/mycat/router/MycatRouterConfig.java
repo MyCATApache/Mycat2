@@ -15,6 +15,7 @@
 package io.mycat.router;
 
 import io.mycat.MycatException;
+import io.mycat.api.MySQLAPIRuntime;
 import io.mycat.beans.mycat.DefaultTable;
 import io.mycat.beans.mycat.ERTable;
 import io.mycat.beans.mycat.GlobalTable;
@@ -42,7 +43,6 @@ import io.mycat.config.schema.SchemaConfig;
 import io.mycat.config.schema.SchemaRootConfig;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.config.schema.TableDefConfig;
-import io.mycat.mysqlapi.MySQLAPIRuntime;
 import io.mycat.router.dynamicAnnotation.DynamicAnnotationMatcherImpl;
 import io.mycat.router.routeStrategy.AnnotationRouteStrategy;
 import io.mycat.router.routeStrategy.DbInMultiServerRouteStrategy;

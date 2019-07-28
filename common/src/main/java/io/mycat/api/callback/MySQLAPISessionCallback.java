@@ -1,6 +1,6 @@
-package io.mycat.mysqlapi.callback;
+package io.mycat.api.callback;
 
-import io.mycat.mysqlapi.MySQLAPI;
+import io.mycat.api.MySQLAPI;
 
 public interface MySQLAPISessionCallback {
 

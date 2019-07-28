@@ -1,15 +1,15 @@
 package io.mycat.router.sequence;
 
+import io.mycat.api.MySQLAPIRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.mysqlapi.MySQLAPIRuntime;
 import io.mycat.sequenceModifier.ModifyCallback;
 import io.mycat.sequenceModifier.SequenceModifier;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SequenceModifierImpl implements SequenceModifier {
+public class SequenceModifierImpl implements SequenceModifier<MySQLAPIRuntime> {
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(SequenceModifierImpl.class);
   private Pattern pattern;

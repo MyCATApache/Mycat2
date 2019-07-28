@@ -1,7 +1,7 @@
 package io.mycat.datasource.jdbc;
 
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.proxy.MySQLPacketUtil;
 import java.io.IOException;
 import java.math.BigDecimal;

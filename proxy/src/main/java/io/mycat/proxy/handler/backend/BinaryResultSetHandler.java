@@ -29,11 +29,11 @@ import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
 import static io.mycat.beans.mysql.MySQLType.FIELD_TYPE_INT24;
 
 import io.mycat.MycatException;
+import io.mycat.api.collector.ResultSetTransfor;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
-import io.mycat.beans.mysql.packet.MySQLPacket;
-import io.mycat.mysqlapi.collector.ResultSetTransfor;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
+import io.mycat.beans.mysql.packet.MySQLPacket;
 
 /**
  * @author jamie12221

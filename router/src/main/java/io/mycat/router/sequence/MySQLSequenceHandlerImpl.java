@@ -1,15 +1,15 @@
 package io.mycat.router.sequence;
 
 import io.mycat.MycatException;
+import io.mycat.api.MySQLAPI;
+import io.mycat.api.MySQLAPIRuntime;
+import io.mycat.api.callback.MySQLAPIExceptionCallback;
+import io.mycat.api.callback.MySQLAPISessionCallback;
+import io.mycat.api.callback.MySQLJobCallback;
+import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.mysqlapi.MySQLAPI;
-import io.mycat.mysqlapi.MySQLAPIRuntime;
-import io.mycat.mysqlapi.callback.MySQLAPIExceptionCallback;
-import io.mycat.mysqlapi.callback.MySQLAPISessionCallback;
-import io.mycat.mysqlapi.callback.MySQLJobCallback;
-import io.mycat.mysqlapi.collector.OneResultSetCollector;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class MySQLSequenceHandlerImpl implements SequenceHandler {
+public class MySQLSequenceHandlerImpl implements SequenceHandler<MySQLAPIRuntime> {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(MySQLSequenceHandlerImpl.class);

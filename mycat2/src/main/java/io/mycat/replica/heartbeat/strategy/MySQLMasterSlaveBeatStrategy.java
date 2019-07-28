@@ -14,10 +14,10 @@
  */
 package io.mycat.replica.heartbeat.strategy;
 
+import io.mycat.api.collector.CommonSQLCallback;
 import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.mysqlapi.collector.CommonSQLCallback;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import java.util.List;

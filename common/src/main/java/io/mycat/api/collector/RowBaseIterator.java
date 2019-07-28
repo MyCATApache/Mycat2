@@ -1,4 +1,4 @@
-package io.mycat.mysqlapi.collector;
+package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
 import java.io.Closeable;

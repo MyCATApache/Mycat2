@@ -1,7 +1,7 @@
-package io.mycat.mysqlapi;
+package io.mycat.api;
 
-import io.mycat.mysqlapi.callback.MySQLAPISessionCallback;
-import io.mycat.mysqlapi.callback.MySQLJobCallback;
+import io.mycat.api.callback.MySQLAPISessionCallback;
+import io.mycat.api.callback.MySQLJobCallback;
 
 public interface MySQLAPIRuntime {
 

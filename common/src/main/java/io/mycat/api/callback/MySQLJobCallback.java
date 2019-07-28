@@ -1,4 +1,4 @@
-package io.mycat.mysqlapi.callback;
+package io.mycat.api.callback;
 
 public interface MySQLJobCallback {
 

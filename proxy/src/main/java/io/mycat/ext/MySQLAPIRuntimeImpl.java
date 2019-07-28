@@ -1,7 +1,7 @@
 package io.mycat.ext;
 
-import io.mycat.mysqlapi.callback.MySQLAPISessionCallback;
-import io.mycat.mysqlapi.callback.MySQLJobCallback;
+import io.mycat.api.callback.MySQLAPISessionCallback;
+import io.mycat.api.callback.MySQLJobCallback;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -11,7 +11,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.SessionManager.PartialType;
 import java.util.Collections;
 
-public class MySQLAPIRuntimeImpl implements io.mycat.mysqlapi.MySQLAPIRuntime {
+public class MySQLAPIRuntimeImpl implements io.mycat.api.MySQLAPIRuntime {
 
   @Override
   public void create(String dataSourceName, MySQLAPISessionCallback callback) {

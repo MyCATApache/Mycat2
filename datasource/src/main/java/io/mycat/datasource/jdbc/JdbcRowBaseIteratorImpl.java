@@ -1,10 +1,10 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.mysqlapi.collector.RowBaseIterator;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Date;

@@ -1,11 +1,11 @@
 package io.mycat.ext;
 
+import io.mycat.api.MySQLAPI;
+import io.mycat.api.callback.MySQLAPIExceptionCallback;
+import io.mycat.api.collector.ResultSetCollector;
+import io.mycat.api.collector.TextResultSetTransforCollector;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
-import io.mycat.mysqlapi.MySQLAPI;
-import io.mycat.mysqlapi.callback.MySQLAPIExceptionCallback;
-import io.mycat.mysqlapi.collector.ResultSetCollector;
-import io.mycat.mysqlapi.collector.TextResultSetTransforCollector;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.handler.backend.TextResultSetHandler;
 import io.mycat.proxy.session.MySQLClientSession;
