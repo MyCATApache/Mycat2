@@ -7,7 +7,6 @@ import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -19,7 +18,7 @@ public class BlockCommandHandler extends AbstractCommandHandler {
       .newCachedThreadPool(r -> new ReactorEnvThread(r) {
       });
 
-  GridCommandHandler handler;
+  final GridCommandHandler handler;
 
   public BlockCommandHandler(MycatRouter router, ProxyRuntime runtime) {
     handler = new GridCommandHandler();
@@ -69,67 +68,6 @@ public class BlockCommandHandler extends AbstractCommandHandler {
     }));
   }
 
-  @Override
-  public void handleQuit(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleInitDb(String db, MycatSession session) {
-
-  }
-
-  @Override
-  public void handlePing(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleFieldList(String table, String filedWildcard, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleSetOption(boolean on, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleCreateDb(String schemaName, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleDropDb(String schemaName, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleStatistics(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleProcessInfo(MycatSession session) {
-
-  }
-
-  @Override
-  public void handleProcessKill(long connectionId, MycatSession session) {
-
-  }
-
-  @Override
-  public void handleChangeUser(String userName, String authResponse, String schemaName,
-      int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
-      MycatSession session) {
-
-  }
-
-  @Override
-  public void handleResetConnection(MycatSession session) {
-
-  }
 
   @Override
   public void handlePrepareStatement(byte[] sql, MycatSession mycat) {
