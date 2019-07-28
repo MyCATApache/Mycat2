@@ -16,7 +16,7 @@ import java.sql.Statement;
 /**
  * @author jamie12221 date 2019-05-10 14:51
  **/
-public class JdbcSession {
+public class JdbcSession implements ClearableSession {
 
   protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcSession.class);
   protected final int sessionId;
@@ -85,10 +85,11 @@ public class JdbcSession {
     }
   }
 
-  public JdbcRowBaseIteratorImpl executeQuery(String sql) {
+  public JdbcRowBaseIteratorImpl executeQuery(ClearableSession session,
+      String sql) {
     try {
       Statement statement = connection.createStatement();
-      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql));
+      return new JdbcRowBaseIteratorImpl(session, statement, statement.executeQuery(sql));
     } catch (Exception e) {
       throw new MycatException(e);
     }
@@ -123,6 +124,15 @@ public class JdbcSession {
       connection.setAutoCommit(on);
     } catch (SQLException e) {
       throw new MycatException(e);
+    }
+  }
+
+  @Override
+  public void clear() {
+    try {
+      connection.close();
+    } catch (SQLException e) {
+      LOGGER.error("", e);
     }
   }
 }

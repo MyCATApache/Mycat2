@@ -1,12 +1,12 @@
 package io.mycat.proxy;
 
-import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.resultset.MycatResultSet;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.ListIterator;
 
 public class DefResultSet implements  MycatResultSet {
 
@@ -75,17 +75,19 @@ public class DefResultSet implements  MycatResultSet {
   }
 
   @Override
-  public Iterator<byte[][]> rowIterator() {
-    Iterator<byte[][]> iterator = rowList.iterator();
-    return new Iterator<byte[][]>() {
+  public Iterator<byte[]> rowIterator() {
+    ListIterator<byte[][]> iterator = rowList.listIterator();
+    return new Iterator<byte[]>() {
       @Override
       public boolean hasNext() {
         return iterator.hasNext();
       }
 
       @Override
-      public byte[][] next() {
-        return iterator.next();
+      public byte[] next() {
+        byte[] bytes = MySQLPacketUtil.generateTextRow(iterator.next());
+        iterator.set(null);
+        return bytes;
       }
     };
   }

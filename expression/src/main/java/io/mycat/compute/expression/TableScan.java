@@ -3,6 +3,7 @@ package io.mycat.compute.expression;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.mysqlapi.collector.RowBaseIterator;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -131,5 +132,10 @@ public class TableScan implements RowBaseIterator {
   @Override
   public Object getObject(int columnIndex) {
     return currentRowBaseIterator.getObject(columnIndex);
+  }
+
+  @Override
+  public BigDecimal getBigDecimal(int columnIndex) {
+    return currentRowBaseIterator.getBigDecimal(columnIndex);
   }
 }

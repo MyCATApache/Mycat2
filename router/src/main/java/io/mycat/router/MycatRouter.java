@@ -104,7 +104,8 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
       }
     }
     int schemaCount = sqlContext.getSchemaCount();
-    if (schemaCount == 0) {
+    if (schemaCount == 0 || (schemaCount == 1 && sqlContext.getSchemaName(0)
+        .equalsIgnoreCase(defaultSchema.getSchemaName()))) {
       RouteStrategy routeStrategy = defaultSchema.getRouteStrategy();
       return routeResult = routeStrategy.route(defaultSchema, sql, this.context);
     }

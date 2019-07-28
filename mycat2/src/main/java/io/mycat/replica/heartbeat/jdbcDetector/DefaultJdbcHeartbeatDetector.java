@@ -63,7 +63,7 @@ public class DefaultJdbcHeartbeatDetector implements
       try {
         session = replica.createSessionDirectly(jdbcDataSource);
         List<Map<String, Object>> resultList;
-        try (JdbcRowBaseIteratorImpl iterator = session.executeQuery(callback.getSql())) {
+        try (JdbcRowBaseIteratorImpl iterator = session.executeQuery(session, callback.getSql())) {
           resultList = iterator.getResultSetMap();
         }
         callback.process(resultList);

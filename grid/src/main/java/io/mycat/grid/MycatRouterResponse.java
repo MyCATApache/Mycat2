@@ -29,14 +29,12 @@ public class MycatRouterResponse {
   }
 
   public static SQLExecuter showTable(MycatRouter router, MycatSession mycat, String schemaName) {
-    Collection<String> tableName = router.getConfig().getSchemaBySchemaName(schemaName)
-        .getMycatTables().keySet();
     MycatRouterConfig config = router.getConfig();
-    MycatSchema schema = config.getSchemaBySchemaName(schemaName);
+    MycatSchema schema = config.getSchemaOrDefaultBySchemaName(schemaName);
     MycatResultSet resultSet = ResultSetProvider.INSTANCE
         .createDefaultResultSet(2, mycat.charsetIndex(), mycat.charset());
-    resultSet.addColumnDef(0, "Tables in " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
-    resultSet.addColumnDef(1, "Table_type " + tableName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+    resultSet.addColumnDef(0, "Tables in " + schemaName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
+    resultSet.addColumnDef(1, "Table_type " + schemaName, MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     for (String name : schema.getMycatTables().keySet()) {
       resultSet.addTextRowPayload(name, "BASE TABLE");
     }

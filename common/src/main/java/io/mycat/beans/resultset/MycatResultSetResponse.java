@@ -12,6 +12,6 @@ public interface MycatResultSetResponse extends MycatResponse {
 
   Iterator<byte[]> columnDefIterator();
 
-  Iterator<byte[][]> rowIterator();
+  Iterator<byte[]> rowIterator();
 
 }

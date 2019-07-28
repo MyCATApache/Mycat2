@@ -6,6 +6,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.mysqlapi.collector.RowBaseIterator;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -20,10 +21,13 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcRowBaseIteratorImpl.class);
 
+  private final ClearableSession session;
   private final Statement statement;
   private final ResultSet resultSet;
 
-  public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet) {
+  public JdbcRowBaseIteratorImpl(ClearableSession session,
+      Statement statement, ResultSet resultSet) {
+    this.session = session;
     this.statement = statement;
     this.resultSet = resultSet;
   }
@@ -63,6 +67,7 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
     } catch (Exception e) {
       LOGGER.error("", e);
     }
+    this.session.clear();
   }
 
   @Override
@@ -204,6 +209,15 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
   public Object getObject(int columnIndex) {
     try {
       return resultSet.getObject(columnIndex);
+    } catch (Exception e) {
+      throw new MycatException(e);
+    }
+  }
+
+  @Override
+  public BigDecimal getBigDecimal(int columnIndex) {
+    try {
+      return resultSet.getBigDecimal(columnIndex);
     } catch (Exception e) {
       throw new MycatException(e);
     }

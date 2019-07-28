@@ -2,6 +2,7 @@ package io.mycat.mysqlapi.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
 import java.io.Closeable;
+import java.math.BigDecimal;
 
 public interface RowBaseIterator extends Closeable {
 
@@ -41,5 +42,7 @@ public interface RowBaseIterator extends Closeable {
 
   java.io.InputStream getBinaryStream(int columnIndex);
 
-  public Object getObject(int columnIndex);
+  Object getObject(int columnIndex);
+
+  BigDecimal getBigDecimal(int columnIndex);
 }

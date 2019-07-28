@@ -28,9 +28,9 @@ public class SQLExecuterWriter {
                   session.writeBytes(columnDefPayloadsIterator.next(), false);
                 }
                 session.writeColumnEndPacket();
-                Iterator<byte[][]> rowIterator = currentResultSet.rowIterator();
+                Iterator<byte[]> rowIterator = currentResultSet.rowIterator();
                 while (rowIterator.hasNext()) {
-                  session.writeTextRowPacket(rowIterator.next());
+                  session.writeBytes(rowIterator.next(), false);
                 }
                 session.writeRowEndPacket(endSqlExecuter != sqlExecuter, false);
                 break;

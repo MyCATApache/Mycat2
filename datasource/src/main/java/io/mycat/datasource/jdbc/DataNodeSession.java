@@ -10,7 +10,7 @@ import io.mycat.proxy.session.MycatSession;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DataNodeSession {
+public class DataNodeSession implements ClearableSession {
 
   final Map<String, JdbcSession> backends = new HashMap<>();
   final GridRuntime jdbcRuntime;
@@ -45,7 +45,7 @@ public class DataNodeSession {
     MycatMonitor
         .onRouteResult(mycat, dataNode, datasource.getReplica().getName(), datasource.getName(),
             sql);
-    return new SingleDataNodeResultSetResponse(session.executeQuery(sql), this);
+    return new TextResultSetResponse(session.executeQuery(this, sql));
   }
 
   private JdbcSession getBackendSession(String dataNode, boolean runOnMaster,
@@ -75,7 +75,7 @@ public class DataNodeSession {
               sql);
       return session.executeUpdate(sql, true);
     } finally {
-      finish();
+      clear();
     }
   }
 
@@ -92,7 +92,7 @@ public class DataNodeSession {
       }
       backends.clear();
     } finally {
-      finish();
+      clear();
     }
 
   }
@@ -106,11 +106,12 @@ public class DataNodeSession {
       }
       backends.clear();
     } finally {
-      finish();
+      clear();
     }
   }
 
-  public void finish() {
+  @Override
+  public void clear() {
     if (autocommit == MySQLAutoCommit.ON) {
       for (JdbcSession backend : backends.values()) {
         backend.close(true, "finish");
