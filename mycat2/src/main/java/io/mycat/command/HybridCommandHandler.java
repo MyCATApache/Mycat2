@@ -46,7 +46,7 @@ public class HybridCommandHandler extends AbstractCommandHandler {
     this.router = new MycatRouter((MycatRouterConfig) runtime.getDefContext().get("routerConfig"));
     this.prepareContext = new PrepareStmtContext(mycat);
     this.proxyQueryHandler = new ProxyQueryHandler(router, runtime);
-    this.serverQueryHandler = new BlockCommandHandler(router, runtime);
+    this.serverQueryHandler = new BlockCommandHandler();
     this.serverQueryHandler.initRuntime(mycat, runtime);
   }
 

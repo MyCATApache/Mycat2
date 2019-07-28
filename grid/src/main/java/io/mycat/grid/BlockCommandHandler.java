@@ -6,7 +6,6 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.router.MycatRouter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -20,7 +19,7 @@ public class BlockCommandHandler extends AbstractCommandHandler {
 
   final GridCommandHandler handler;
 
-  public BlockCommandHandler(MycatRouter router, ProxyRuntime runtime) {
+  public BlockCommandHandler() {
     handler = new GridCommandHandler();
 
   }

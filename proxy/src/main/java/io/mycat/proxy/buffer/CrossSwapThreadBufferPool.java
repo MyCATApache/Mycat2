@@ -3,7 +3,6 @@ package io.mycat.proxy.buffer;
 import io.mycat.MycatException;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.reactor.ReactorEnvThread;
-import io.mycat.proxy.session.MycatSession;
 import java.nio.ByteBuffer;
 
 /**
@@ -39,17 +38,8 @@ public class CrossSwapThreadBufferPool {
   }
 
   public void bindSource(ReactorEnvThread source) {
-    System.out.println("----------------------------------------"+source);
     this.source = source;
   }
-//
-//  public void unbindSource(ReactorEnvThread source) {
-////    if (this.source == source) {
-////      this.source = null;
-////    } else {
-////      throw new MycatException("unsupport operation");
-////    }
-//  }
 
   public ReactorEnvThread getSource() {
     return source;
