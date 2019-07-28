@@ -1,4 +1,4 @@
-defaultSchemaName: ANNOTATION_ROUTE
+defaultSchemaName: DB_IN_ONE_SERVER_3306
 schemas:
   - name: DB_IN_ONE_SERVER_3306
     schemaType: DB_IN_ONE_SERVER
