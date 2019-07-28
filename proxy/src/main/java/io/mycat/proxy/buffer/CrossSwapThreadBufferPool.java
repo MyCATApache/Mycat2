@@ -27,9 +27,6 @@ public class CrossSwapThreadBufferPool {
 
   public ByteBuffer allocate(byte[] bytes) {
     Thread thread = Thread.currentThread();
-    if (source != null && source != thread) {
-      System.out.println();
-    }
     return bufferPool.allocate(bytes);
   }
 
