@@ -11,9 +11,10 @@ import io.mycat.proxy.SQLExecuterWriter;
 import io.mycat.proxy.session.MycatSession;
 import java.util.Map;
 
-public class GridCommandHandler extends AbstractCommandHandler {
+public class GridProxyCommandHandler extends AbstractCommandHandler {
 
-  private final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(GridCommandHandler.class);
+  private final static MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(GridProxyCommandHandler.class);
   ProxyExecutionPlanBuilder executionPlan;
   private final static String UNSUPPORT = "unsupport!";
 

@@ -19,7 +19,7 @@ import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.config.schema.SchemaType;
-import io.mycat.grid.BlockCommandHandler;
+import io.mycat.grid.BlockProxyCommandHandler;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
@@ -31,14 +31,14 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 /**
  * @author jamie12221 date 2019-05-13 02:47
  **/
-public class HybridCommandHandler extends AbstractCommandHandler {
+public class HybridProxyCommandHandler extends AbstractCommandHandler {
 
   private MycatRouter router;
   private MycatSession mycat;
   private PrepareStmtContext prepareContext;
   private final LoaddataContext loadDataContext = new LoaddataContext();
   private ProxyQueryHandler proxyQueryHandler;
-  private BlockCommandHandler serverQueryHandler;
+  private BlockProxyCommandHandler serverQueryHandler;
 
   @Override
   public void initRuntime(MycatSession mycat, ProxyRuntime runtime) {
@@ -46,7 +46,7 @@ public class HybridCommandHandler extends AbstractCommandHandler {
     this.router = new MycatRouter((MycatRouterConfig) runtime.getDefContext().get("routerConfig"));
     this.prepareContext = new PrepareStmtContext(mycat);
     this.proxyQueryHandler = new ProxyQueryHandler(router, runtime);
-    this.serverQueryHandler = new BlockCommandHandler();
+    this.serverQueryHandler = new BlockProxyCommandHandler();
     this.serverQueryHandler.initRuntime(mycat, runtime);
   }
 

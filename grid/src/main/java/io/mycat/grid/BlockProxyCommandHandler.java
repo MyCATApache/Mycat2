@@ -10,17 +10,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
-public class BlockCommandHandler extends AbstractCommandHandler {
+public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockCommandHandler.class);
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockProxyCommandHandler.class);
   final static ExecutorService service = Executors
       .newCachedThreadPool(r -> new ReactorEnvThread(r) {
       });
 
-  final GridCommandHandler handler;
+  final GridProxyCommandHandler handler;
 
-  public BlockCommandHandler() {
-    handler = new GridCommandHandler();
+  public BlockProxyCommandHandler() {
+    handler = new GridProxyCommandHandler();
 
   }
 
