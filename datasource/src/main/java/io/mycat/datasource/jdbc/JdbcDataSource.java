@@ -1,10 +1,9 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.beans.mycat.MycatDataSource;
-import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.mysqlapi.collector.RowBaseIterator;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -17,12 +16,15 @@ public abstract class JdbcDataSource implements MycatDataSource, LoadBalanceElem
   private final int index;
   private final DatasourceConfig datasourceConfig;
   private final JdbcReplica replica;
+  private final boolean isMySQLType;
 
   public JdbcDataSource(int index, DatasourceConfig datasourceConfig,
       JdbcReplica replica) {
     this.index = index;
     this.datasourceConfig = datasourceConfig;
     this.replica = replica;
+    String dbType = datasourceConfig.getDbType();
+    this.isMySQLType = dbType == null || dbType.toUpperCase().contains("MYSQL");
   }
 
 
@@ -54,7 +56,6 @@ public abstract class JdbcDataSource implements MycatDataSource, LoadBalanceElem
 //    return session.query("SELECT * FROM `information_schema`.`COLUMNS`;");
     return null;
   }
-
 
 
   public String getUrl() {
@@ -123,12 +124,12 @@ public abstract class JdbcDataSource implements MycatDataSource, LoadBalanceElem
     return 0;
   }
 
-  public String getDbType() {
-    return  datasourceConfig.getDbType();
+  public boolean isMySQLType() {
+    return isMySQLType;
   }
 
   public String getDb() {
-    return  datasourceConfig.getInitDb();
+    return datasourceConfig.getInitDb();
   }
 
   public JdbcReplica getReplica() {
@@ -136,4 +137,8 @@ public abstract class JdbcDataSource implements MycatDataSource, LoadBalanceElem
   }
 
   public abstract void heartBeat();
+
+  public String getDbType() {
+    return datasourceConfig.getDbType();
+  }
 }

@@ -45,7 +45,7 @@ public class DataNodeSession implements ClearableSession {
     MycatMonitor
         .onRouteResult(mycat, dataNode, datasource.getReplica().getName(), datasource.getName(),
             sql);
-    if (session.getDatasource().getDbType() == null) {
+    if (session.getDatasource().isMySQLType()) {
       return new SingleDataNodeResultSetResponse(session.executeQuery(this, sql));
     } else {
       return new TextResultSetResponse(session.executeQuery(this, sql));
