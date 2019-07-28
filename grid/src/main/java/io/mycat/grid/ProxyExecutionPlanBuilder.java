@@ -186,7 +186,7 @@ public class ProxyExecutionPlanBuilder {
       case DELETE_SQL:
       case INSERT_SQL: {
         MycatUpdateResponse response = dataNodeSession
-            .executeUpdate(mycat, dataNode, sql, true, loadBalanceByBalance);
+            .executeUpdate(mycat, dataNode, sql, sqlType == INSERT_SQL, true, loadBalanceByBalance);
         return () -> response;
       }
       case SELECT_FOR_UPDATE_SQL:

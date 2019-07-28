@@ -26,7 +26,9 @@ public class CrossSwapThreadBufferPool {
   }
 
   public ByteBuffer allocate(byte[] bytes) {
-    Thread thread = Thread.currentThread();
+    if (source != null && source != Thread.currentThread()) {
+      throw new MycatException("Illegal state");
+    }
     return bufferPool.allocate(bytes);
   }
 

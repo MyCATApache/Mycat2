@@ -69,6 +69,7 @@ public class DataNodeSession implements ClearableSession {
   }
 
   public MycatUpdateResponse executeUpdate(MycatSession mycat, String dataNode, String sql,
+      boolean insert,
       boolean runOnMaster,
       LoadBalanceStrategy strategy) {
     try {
@@ -77,7 +78,7 @@ public class DataNodeSession implements ClearableSession {
       MycatMonitor
           .onRouteResult(mycat, dataNode, datasource.getReplica().getName(), datasource.getName(),
               sql);
-      return session.executeUpdate(sql, true);
+      return session.executeUpdate(sql, insert);
     } finally {
       clear();
     }
