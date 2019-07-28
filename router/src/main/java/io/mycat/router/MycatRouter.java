@@ -180,7 +180,11 @@ public class MycatRouter implements RouteStrategy<RouteContext> {
   }
 
   public boolean existTable(String schemaName, String tableName) {
-    MycatSchema schemaBySchema = config.getSchemaBySchemaName(schemaName);
+    MycatSchema schema = config.getSchemaBySchemaName(schemaName);
+    return existTable(schema, tableName);
+  }
+
+  public boolean existTable(MycatSchema schemaBySchema, String tableName) {
     if (schemaBySchema != null){
       return schemaBySchema.getMycatTables().containsKey(tableName);
     }else {

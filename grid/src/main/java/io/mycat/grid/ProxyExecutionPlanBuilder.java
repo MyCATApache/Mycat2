@@ -59,14 +59,27 @@ public class ProxyExecutionPlanBuilder {
   }
 
   public SQLExecuter[] generate(byte[] sqlBytes) {
-    MycatSchema schema = router
-        .getSchemaOrDefaultBySchemaName(mycat.getSchema());
+    MycatSchema schema = null;
     parser.parse(sqlBytes, sqlContext);
+    String orgin = new String(sqlBytes);
+    String sql;
+    boolean b = sqlContext.getSchemaCount() > 0;
+    if (b) {
+      String schemaName = sqlContext.getSchemaName(0);
+      sql = RouterUtil.removeSchema(orgin, schemaName).trim();
+      schema = router
+          .getSchemaOrDefaultBySchemaName(schemaName);
+    } else {
+      sql = orgin;
+    }
+    if (schema == null) {
+      schema = router.getSchemaOrDefaultBySchemaName(mycat.getSchema());
+    }
     byte sqlType =
         sqlContext.getSQLType() == 0 ? sqlContext.getCurSQLType() : sqlContext.getSQLType();
-    String orgin = new String(sqlBytes);
+
     MycatMonitor.onOrginSQL(mycat, orgin);
-    String sql = RouterUtil.removeSchema(orgin, schema.getSchemaName()).trim();
+
     switch (sqlType) {
       case BufferSQLContext.BEGIN_SQL:
       case BufferSQLContext.START_SQL:
@@ -91,7 +104,7 @@ public class ProxyExecutionPlanBuilder {
             MycatRouterResponse.showDb(mycat, router.getConfig().getSchemaList())};
       case SHOW_TB_SQL:
         return new SQLExecuter[]{
-            MycatRouterResponse.showTable(router, mycat, mycat.getSchema())};
+            MycatRouterResponse.showTable(router, mycat, schema.getSchemaName())};
       case SHOW_WARNINGS:
         return new SQLExecuter[]{
             MycatRouterResponse.showWarnnings(mycat)};
@@ -109,12 +122,12 @@ public class ProxyExecutionPlanBuilder {
       case DELETE_SQL:
       case SELECT_FOR_UPDATE_SQL:
       case SELECT_SQL: {
-        if (router.existTable(mycat.getSchema(), sqlContext.getTableName(0))) {
+        if (router.existTable(schema, sqlContext.getTableName(0))) {
           return new SQLExecuter[]{
-              execute(sqlType, this.router.enterRoute(mycat.getSchema(), sqlContext, sql))};
+              execute(sqlType, this.router.enterRoute(schema, sqlContext, sql))};
         } else if (SELECT_SQL == sqlType || SELECT_FOR_UPDATE_SQL == sqlType) {
           MycatResultSetResponse response = dataNodeSession
-              .executeQuery(mycat, router.getRandomDataNode(mycat.getSchema()), sql, true, null);
+              .executeQuery(mycat, router.getRandomDataNode(schema), sql, true, null);
           return new SQLExecuter[]{() -> response};
         }
       }
