@@ -31,7 +31,7 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 /**
  * @author jamie12221 date 2019-05-13 02:47
  **/
-public class MycatCommandHandler extends AbstractCommandHandler {
+public class HybridCommandHandler extends AbstractCommandHandler {
 
   private MycatRouter router;
   private MycatSession mycat;
@@ -106,7 +106,7 @@ public class MycatCommandHandler extends AbstractCommandHandler {
       mycat.writeErrorEndPacket();
       return;
     }
-    ProxyRouteResult route = (ProxyRouteResult) resultRoute;
+    ProxyRouteResult route = resultRoute;
     LoadBalanceStrategy balance = mycat.getRuntime()
         .getLoadBalanceByBalanceName(resultRoute.getBalance());
     String dataNode = schema.getDefaultDataNode();

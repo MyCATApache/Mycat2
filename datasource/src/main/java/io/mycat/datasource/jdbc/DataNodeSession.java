@@ -45,7 +45,11 @@ public class DataNodeSession implements ClearableSession {
     MycatMonitor
         .onRouteResult(mycat, dataNode, datasource.getReplica().getName(), datasource.getName(),
             sql);
-    return new TextResultSetResponse(session.executeQuery(this, sql));
+    if (session.getDatasource().getDbType() == null) {
+      return new SingleDataNodeResultSetResponse(session.executeQuery(this, sql));
+    } else {
+      return new TextResultSetResponse(session.executeQuery(this, sql));
+    }
   }
 
   private JdbcSession getBackendSession(String dataNode, boolean runOnMaster,

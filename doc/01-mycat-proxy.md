@@ -22,7 +22,7 @@ proxy:
   bufferPoolChunkSize: 8192       # chunk 大小 ， 默认 8192 
   bufferPoolPageNumber: 2        # 页数量. 默认 2
   reactorNumber: 2        #  默认 1 取逻辑处理器数量
-  commandDispatcherClass: io.mycat.command.MycatCommandHandler
+  commandDispatcherClass: io.mycat.command.HybridCommandHandler
 ```
 
 ### ip
@@ -35,7 +35,7 @@ mycat proxy监听的端口
 
 ### commandDispatcherClass
 
-自定义命令分发类,默认:   io.mycat.command.MycatCommandHandler
+自定义命令分发类,默认:   io.mycat.command.HybridCommandHandler
 
 指定一个实现了CommandDispatcher接口的类即可
 
