@@ -609,6 +609,8 @@ public class BufferSQLParser {
             pos++;
             //   TokenizerUtil.debug(() -> "START");
             if (hashArray.getHash(pos) == TokenHash.TRANSACTION) {
+              context.setSQLType(BufferSQLContext.START_TRANSACTION_SQL);
+              pos++;
               //    pos = TCLSQLParser.pickStartTransaction(++pos, arrayCount, context, hashArray);
             }
           }
