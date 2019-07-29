@@ -68,6 +68,7 @@
 - [x] Proxy读写分离专用路由(cjw-2019-7-24)
 - [x] JDBC连接池单节点路由（cjw-2019-7-26）
 - [x] JDBC结果集值转换成MySQL文本结果集（cjw-2019-7-28）
+- [x] replca.yaml中mysqls的名字改为datasources（cjw-2019-7-29）
 
 
 

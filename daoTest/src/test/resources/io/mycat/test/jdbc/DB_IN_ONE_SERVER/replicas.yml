@@ -4,7 +4,7 @@ replicas:
     switchType: SWITCH              # 切换类型
     balanceName: BalanceAllRead   # 读写分离类型
     balanceType: BALANCE_ALL
-    mysqls:
+    datasources:
       - name: mytest3307              # mysql 主机名
         ip: 0.0.0.0               # i
         port: 3306                  # port
