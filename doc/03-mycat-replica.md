@@ -52,7 +52,7 @@ replicas:
     switchType: SWITCH              # 切换类型
     balanceName: BalanceRoundRobin   # 负载均衡算法名字
     balanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
-    mysqls:
+    datasources:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
         port: 3306                  # port
@@ -152,7 +152,7 @@ BALANCE_NONE
 ### 数据源属性
 
 ```yaml
-  mysqls:
+  datasources:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
         port: 3306                  # port

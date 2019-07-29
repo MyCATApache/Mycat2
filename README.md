@@ -73,12 +73,12 @@ message of replica:x:
 
 reference load balance tableName that be in plug config
 
-- #### mysqls
+- #### datasources
 
 
 configure multiple mysql connection config
 
-#### mysqls-mysql
+#### datasources-mysql
 
 - ###### tableName
 
@@ -123,7 +123,7 @@ masterIndexes:
 
 repli is a replica  tableName that in datasource config
 
-the number 0 is mysqls index  in datasource confg marks as matser mysql server
+the number 0 is datasources index  in datasource confg marks as matser mysql server
 
 when the master node switches, the number changes to new master index
 
@@ -449,7 +449,7 @@ replicas:
     repType: MASTER_SLAVE         # do not care
     switchType: SWITCH            # do not care
     balanceName: BalanceAllRead   # do not care
-    mysqls:
+    datasources:
       - tableName: mytest3306             
         ip: 127.0.0.1               #
         port: 3306                  # 

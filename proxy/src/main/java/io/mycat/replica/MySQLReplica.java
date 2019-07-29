@@ -16,7 +16,6 @@ package io.mycat.replica;
 
 import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
-import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
@@ -67,7 +66,7 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
     this.runtime = runtime;
     assert replicaConfig != null;
     assert writeIndex.size() > 0;
-    List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
+    List<DatasourceConfig> mysqls = replicaConfig.getDatasources();
     defaultLoadBalanceStrategy = runtime
         .getLoadBalanceByBalanceName(replicaConfig.getBalanceName());
     assert mysqls != null;

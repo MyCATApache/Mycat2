@@ -156,7 +156,7 @@ public class GridRuntime {
   }
 
   private static List<DatasourceConfig> getJdbcDatasourceList(ReplicaConfig replicaConfig) {
-    List<DatasourceConfig> mysqls = replicaConfig.getMysqls();
+    List<DatasourceConfig> mysqls = replicaConfig.getDatasources();
     if (mysqls == null) {
       return Collections.emptyList();
     }

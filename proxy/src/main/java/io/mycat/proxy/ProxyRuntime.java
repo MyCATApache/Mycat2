@@ -228,7 +228,7 @@ public class ProxyRuntime {
       Objects
           .requireNonNull(replicaConfig.getBalanceType(),
               "replica balance message can not be empty");
-      Objects.requireNonNull(replicaConfig.getMysqls(), "mysql list can not be empty");
+      Objects.requireNonNull(replicaConfig.getDatasources(), "mysql list can not be empty");
       ////////////////////////////////////check/////////////////////////////////////////////////
       Set<Integer> writeIndex = getReplicaIndexes(replicaIndexes, replicaConfig);
       MySQLReplica replica = factory

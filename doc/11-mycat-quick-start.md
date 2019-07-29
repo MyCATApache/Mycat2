@@ -43,7 +43,7 @@ replicas:
     switchType: SWITCH              # 切换类型
     balanceName: BalanceLeastActive   #负载均衡算法名称
     balanceType: BALANCE_ALL #负载均衡类型
-    mysqls:
+    datasources:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
         port: 3306                  # port

@@ -1,8 +1,8 @@
 # mycat 2.0 proxy router
 
-author:junwen 2019-7-2,2019-7-3
+author:junwen 2019-7-2,2019-7-3,2019-7-29
 
-本文描述proxy router的一些行为,用户需要知道这些行为适配满足业务系统
+本文描述proxy router(特指mycat proxy的路由，mycat还有其他路由部分)的一些行为,用户需要知道这些行为适配满足业务系统
 
 一些常见问题也需要看看jdbc的处理
 

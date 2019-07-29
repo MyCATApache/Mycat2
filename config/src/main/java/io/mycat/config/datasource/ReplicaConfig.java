@@ -72,7 +72,7 @@ public class ReplicaConfig {
   private RepTypeEnum repType;
   private RepSwitchTypeEnum switchType;
   private String balanceName;
-  private List<DatasourceConfig> mysqls;
+  private List<DatasourceConfig> datasources;
   private BalanceTypeEnum balanceType;
 
   public String getName() {
@@ -107,12 +107,12 @@ public class ReplicaConfig {
     this.balanceName = balanceName;
   }
 
-  public List<DatasourceConfig> getMysqls() {
-    return mysqls;
+  public List<DatasourceConfig> getDatasources() {
+    return datasources;
   }
 
-  public void setMysqls(List<DatasourceConfig> mysqls) {
-    this.mysqls = mysqls;
+  public void setDatasources(List<DatasourceConfig> datasources) {
+    this.datasources = datasources;
   }
 
   public BalanceTypeEnum getBalanceType() {
@@ -127,6 +127,6 @@ public class ReplicaConfig {
   public String toString() {
     return "ReplicaConfig{" + "name='" + name + '\'' + ", repType=" + repType + ", switchType="
         + switchType + ", balanceName=" + balanceName
-        + ", mysqls=" + mysqls + '}';
+        + ", datasources=" + datasources + '}';
   }
 }
