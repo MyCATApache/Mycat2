@@ -27,7 +27,7 @@ public class GridProxyCommandHandler extends AbstractCommandHandler {
 
   @Override
   public void handleQuery(byte[] sqlBytes, MycatSession session) {
-    String sql = new String(sqlBytes).toUpperCase();
+    String sql = new String(sqlBytes);
     LOGGER.info(sql);
     SQLExecuter[] executer = executionPlan.generate(sqlBytes);
     SQLExecuterWriter.writeToMycatSession(session,executer);
