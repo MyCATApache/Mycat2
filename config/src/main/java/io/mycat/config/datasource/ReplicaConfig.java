@@ -74,6 +74,7 @@ public class ReplicaConfig {
   private String balanceName;
   private List<DatasourceConfig> datasources;
   private BalanceTypeEnum balanceType;
+  private long slaveThreshold;
 
   public String getName() {
     return name;
@@ -123,10 +124,26 @@ public class ReplicaConfig {
     this.balanceType = balanceType;
   }
 
+
+  public long getSlaveThreshold() {
+    return slaveThreshold;
+  }
+
+
+  public void setSlaveThreshold(long slaveThreshold) {
+    this.slaveThreshold = slaveThreshold;
+  }
+
   @Override
   public String toString() {
-    return "ReplicaConfig{" + "name='" + name + '\'' + ", repType=" + repType + ", switchType="
-        + switchType + ", balanceName=" + balanceName
-        + ", datasources=" + datasources + '}';
+    return "ReplicaConfig{" +
+        "name='" + name + '\'' +
+        ", repType=" + repType +
+        ", switchType=" + switchType +
+        ", balanceName='" + balanceName + '\'' +
+        ", datasources=" + datasources +
+        ", balanceType=" + balanceType +
+        ", slaveThreshold=" + slaveThreshold +
+        '}';
   }
 }

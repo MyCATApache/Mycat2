@@ -30,11 +30,12 @@ public class MySQLMasterSlaveBeatStrategy implements CommonSQLCallback {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(
       MySQLMasterSlaveBeatStrategy.class);
-  final int slaveThreshold = 1000; //延迟阈值
+  final long slaveThreshold; //延迟阈值
   protected final HeartbeatDetector heartbeatDetector;
 
   public MySQLMasterSlaveBeatStrategy(HeartbeatDetector heartbeatDetector) {
     this.heartbeatDetector = heartbeatDetector;
+    this.slaveThreshold = heartbeatDetector.getReplica().getSlaveThreshold();
   }
 
   public String getSql() {
