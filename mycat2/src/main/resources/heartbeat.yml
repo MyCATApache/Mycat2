@@ -1,6 +1,6 @@
 heartbeat:
   minHeartbeatChecktime: 12000 #最小心跳间隔 毫秒
-  replicaHeartbeatPeriod: 2 #集群心跳周期 秒
+  replicaHeartbeatPeriod: 120 #集群心跳周期 秒
 #  replicaIdleCheckPeriod: 1200000000 #集群闲置检测周期  毫秒
   idleTimeout: 1200000000 #闲置超时时间 毫秒 集群闲置检测周期 =  idleTimeout /2
   minSwitchTimeInterval: 12000 # 毫秒

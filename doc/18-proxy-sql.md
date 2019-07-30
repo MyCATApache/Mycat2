@@ -131,6 +131,7 @@ show variables
 ```
 
 返回variables.yaml配置文件的内容
+该功能已去掉
 
 
 

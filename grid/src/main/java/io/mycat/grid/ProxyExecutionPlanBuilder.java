@@ -111,8 +111,7 @@ public class ProxyExecutionPlanBuilder {
       case SHOW_SQL:
         return responseOk();
       case SHOW_VARIABLES_SQL: {
-        return new SQLExecuter[]{
-            MycatRouterResponse.showVariables(mycat, jdbcRuntime.getVariables().entries())};
+        return directSQL(schema, sql);
       }
       case USE_SQL: {
         return useSchema();
@@ -126,15 +125,19 @@ public class ProxyExecutionPlanBuilder {
           return new SQLExecuter[]{
               execute(sqlType, this.router.enterRoute(schema, sqlContext, sql))};
         } else if (SELECT_SQL == sqlType || SELECT_FOR_UPDATE_SQL == sqlType) {
-          MycatResultSetResponse response = dataNodeSession
-              .executeQuery(mycat, router.getRandomDataNode(schema), sql, true, null);
-          return new SQLExecuter[]{() -> response};
+          return directSQL(schema, sql);
         }
       }
       default:
         IGNORED_SQL_LOGGER.warn("ignore:{}", sql);
         return responseOk();
     }
+  }
+
+  private SQLExecuter[] directSQL(MycatSchema schema, String sql) {
+    MycatResultSetResponse response = dataNodeSession
+        .executeQuery(mycat, router.getRandomDataNode(schema), sql, true, null);
+    return new SQLExecuter[]{() -> response};
   }
 
   private SQLExecuter[] useSchema() {

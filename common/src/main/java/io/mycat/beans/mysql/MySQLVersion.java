@@ -28,7 +28,7 @@ public class MySQLVersion {
 	public static final byte PROTOCOL_VERSION = 10;
 
 	/** 服务器版本 **/
-  public static byte[] SERVER_VERSION = "5.6-mycat-2.0-Prev-20170806210402".getBytes();
+	public static byte[] SERVER_VERSION = "8.0.11-mycat-2.0-20190730105950".getBytes();
 
 	public static void setServerVersion(String version) {
 		byte[] mysqlVersionPart = version.getBytes();

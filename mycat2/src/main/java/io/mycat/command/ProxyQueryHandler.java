@@ -146,7 +146,8 @@ public class ProxyQueryHandler {
               .proxyBackend(mycat, sql, defaultDataNode, null);
           return;
         case SHOW_VARIABLES_SQL: {
-          SQLExecuterWriter.writeToMycatSession(mycat,MycatRouterResponse.showVariables(mycat,mycat.getRuntime().getVariables().entries()));
+          MySQLTaskUtil
+              .proxyBackend(mycat, sql, router.getRandomDataNode(schema), null);
           return;
         }
         case SHOW_WARNINGS: {
