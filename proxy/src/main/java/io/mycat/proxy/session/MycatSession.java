@@ -575,4 +575,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
 
+  public void setAutoCommit(boolean autocommit) {
+    this.setAutoCommit(autocommit ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF);
+  }
 }

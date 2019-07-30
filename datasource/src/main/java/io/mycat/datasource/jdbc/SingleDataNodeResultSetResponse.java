@@ -52,6 +52,7 @@ public class SingleDataNodeResultSetResponse implements MycatResultSetResponse {
 
       @Override
       public byte[] next() {
+        //todo optimize to remove tmp array
         RowBaseIterator rowBaseIterator = SingleDataNodeResultSetResponse.this.rowBaseIterator;
         byte[][] bytes = new byte[count][];
         for (int i = 0, j = 1; i < count; i++, j++) {

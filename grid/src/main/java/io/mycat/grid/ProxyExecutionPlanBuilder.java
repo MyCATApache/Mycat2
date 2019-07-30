@@ -37,7 +37,7 @@ import io.mycat.sqlparser.util.BufferSQLContext;
 import io.mycat.sqlparser.util.BufferSQLParser;
 import java.util.Objects;
 
-public class ProxyExecutionPlanBuilder {
+public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
 
   final MycatSession mycat;
   private final BufferSQLParser parser;
@@ -92,6 +92,7 @@ public class ProxyExecutionPlanBuilder {
       }
       case BufferSQLContext.SET_AUTOCOMMIT_SQL: {
         dataNodeSession.setAutomcommit(sqlContext.isAutocommit());
+        mycat.setAutoCommit(sqlContext.isAutocommit());
         return responseOk();
       }
       case BufferSQLContext.ROLLBACK_SQL: {

@@ -225,7 +225,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true";
+  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true&characterEncoding=utf8";
   final static String username = "root";
   final static String password = "123456";
 

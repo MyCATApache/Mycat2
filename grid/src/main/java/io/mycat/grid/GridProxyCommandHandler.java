@@ -15,7 +15,7 @@ public class GridProxyCommandHandler extends AbstractCommandHandler {
 
   private final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(GridProxyCommandHandler.class);
-  ProxyExecutionPlanBuilder executionPlan;
+  ExecuterBuilder executionPlan;
   private final static String UNSUPPORT = "unsupport!";
 
   @Override
