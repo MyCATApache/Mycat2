@@ -26,7 +26,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 客户端JDBC推荐连接字符串
 
 ```
-jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true&characterEncoding=utf8
+jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8
 ```
 
 2019-7-30,jdbc作为数据源处于测试阶段
