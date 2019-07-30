@@ -225,7 +225,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true";
+  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true";
   final static String username = "root";
   final static String password = "123456";
 
@@ -261,20 +261,20 @@ public class JdbcDao extends ModualTest {
     });
   }
 
-  public static void main(String[] args) {
-    try (Connection connection = getConnection()) {
-      connection.setAutoCommit(false);
-      Statement statement = connection.createStatement();
-      ResultSet resultSet = statement.executeQuery("SELECT `id`, `topid` FROM `test` FOR UPDATE;");
-      connection.commit();
-    } catch (Exception e) {
-      e.printStackTrace();
-      Assert.fail(e.toString());
-    } finally {
-      MycatCore.exit();
-
-    }
-  }
+//  public static void main(String[] args) {
+//    try (Connection connection = getConnection()) {
+//      connection.setAutoCommit(false);
+//      Statement statement = connection.createStatement();
+//      ResultSet resultSet = statement.executeQuery("SELECT `id`, `topid` FROM `test` FOR UPDATE;");
+//      connection.commit();
+//    } catch (Exception e) {
+//      e.printStackTrace();
+//      Assert.fail(e.toString());
+//    } finally {
+//      MycatCore.exit();
+//
+//    }
+//  }
 
   public static String getUrl() {
     return url;
@@ -313,7 +313,7 @@ public class JdbcDao extends ModualTest {
             int index = i;
             new Thread(() -> {
               try (Connection connection = getConnection()) {
-                for (int j = 0; j < 100000; j++) {
+                for (int j = 0; j < 10; j++) {
                   try (Statement statement = connection.createStatement()) {
                     statement.execute("INSERT INTO `travelrecord` (`id`) VALUES ('"
                         + counter.incrementAndGet()
