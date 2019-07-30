@@ -32,7 +32,8 @@ public class DbInMultiServerRouteStrategy implements RouteStrategy<RouteContext>
     BufferSQLContext sqlContext = context.getSqlContext();
     int sqlCount = sqlContext.getSQLCount();
     int tableCount = sqlContext.getTableCount();
-    if (sqlContext.getSchemaCount() > 0) {
+    if (sqlContext.getSchemaCount() > 0 && !schema.getSchemaName()
+        .equalsIgnoreCase(sqlContext.getSchemaName(0))) {
       throw new MycatException("sql:{} should not contain schema", sql);
     }
     if (tableCount < 1) {
