@@ -111,6 +111,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public void onHandlerFinishedClear() {
     resetPacket();
     setResponseFinished(ProcessState.READY);
+    this.change2ReadOpts();
   }
 
   public MySQLAutoCommit getAutoCommit() {

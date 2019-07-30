@@ -69,5 +69,6 @@ public class PrepareStmtContext {
   public void appendLongData(long statementId, int paramId, byte[] data) {
     PrepareInfo prepareInfo = this.prepareMap.get(statementId);
     prepareInfo.appendLongData(paramId,data);
+    mycat.onHandlerFinishedClear();
   }
 }

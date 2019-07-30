@@ -102,7 +102,6 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
     try {
       if (mycat.isResponseFinished()) {
         mycat.onHandlerFinishedClear();
-        mycat.change2ReadOpts();
       } else {
         mycat.writeToChannel();
       }
