@@ -104,9 +104,10 @@ proxy:
   schema.yaml
 
 ```yaml
-defaultSchemaName: 读写分离
+defaultSchemaName: 物理库
 schemas:
-  - name: DB_IN_ONE_SERVER_3306
+  - name: 物理库
+    schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
 ```
 
@@ -129,7 +130,7 @@ replicas:
         maxCon: 1000                  # 最大连接
         maxRetryCount: 3            # 连接重试次数
         weight: 3            # 权重
-        initDb: db1			#读写分离必须配置该属性
+        initDb: 物理库			#读写分离必须配置该属性
         slaveThreshold: 0   #主从节点同步延迟阈值,默认为0
 ```
 

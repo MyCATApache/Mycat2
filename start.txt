@@ -1,4 +1,4 @@
-java -Dfile.encoding=UTF-8 -DMYCAT_HOME=D:\newgit\f\mycat2\target\mycat2-0.1-20190605051031-resources.tar -jar D:\newgit\f\mycat2\target\mycat2-0.1-20190610233303-single.jar
+java -Dfile.encoding=UTF-8 -DMYCAT_HOME=D:\newgit\f\mycat2\src\main\resources -jar D:\newgit\f\mycat2\target\mycat2-0.2-SNAPSHOT-20190730110324-single.jar
 
 java -Dfile.encoding=UTF-8 -DMYCAT_HOME=/home/mycat/resources -jar /home/mycat/mycat2.jar >> mycat.log
 

@@ -33,7 +33,7 @@ public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {
     this.sqlContext = new BufferSQLContext();
     this.sqlParser = new BufferSQLParser();
     this.prepareContext = new PrepareStmtContext(session);
-    this.config = (MycatRouterConfig) runtime.getDefContext().get("routeConfig");
+    this.config = (MycatRouterConfig) runtime.getDefContext().get("routerConfig");
     MycatSchema schema = config.getDefaultSchema();
     Objects.requireNonNull(schema, "please config default schema");
     session.setSchema(schema.getSchemaName());

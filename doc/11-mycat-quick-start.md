@@ -144,6 +144,7 @@ schema.yaml
 defaultSchemaName: db1
 schemas:
   - name: db1
+    schemaType: DB_IN_ONE_SERVER
     defaultDataNode: dn1
 ```
 
