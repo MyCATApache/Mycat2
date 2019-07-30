@@ -41,7 +41,11 @@ public enum ProxyDashboard {
       for (MycatSession mycat : frontManager.getAllSessions()) {
         MycatUser user = mycat.getUser();
         LOGGER.info("---------------------------mycat---------------------------");
-        LOGGER.info("mycat id:{}  username:{}", mycat.sessionId(), user.getUserName());
+        if (user != null) {
+          LOGGER.info("mycat id:{}  username:{}", mycat.sessionId(), user.getUserName());
+        } else {
+          LOGGER.info("mycat id:{}", mycat.sessionId());
+        }
         ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
         Queue<ByteBuffer> writeQueue = mycat.writeQueue();
         LOGGER.info("byteBuffer:{} in proxyBuffer,writeQueue size:{}",
