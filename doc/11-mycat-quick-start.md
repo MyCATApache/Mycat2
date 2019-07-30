@@ -108,6 +108,34 @@ dataNodes:
   replica: repli
 ```
 
+
+
+replica.yaml
+
+修改下面关键点
+
+```yaml
+replicas:
+  - name: repli                      # 复制组 名称   必须唯一
+    repType: MASTER_SLAVE           # 复制类型 读写分离
+    initDB: DB #物理库的名称
+```
+
+数据源添加默认物理库的名称
+
+```yaml
+- name: mytest3307b              # mysql 主机名
+  ip: 127.0.0.1               # i
+  port: 3306                  # port
+  user: root                  # 用户名
+  password: 123456      # 密码
+  minCon: 1                   # 最小连接
+  maxCon: 1000                  # 最大连接
+  maxRetryCount: 3            # 连接重试次数
+  weight: 3            # 权重
+  initDb: db2          #物理库的名称
+```
+
 启动mycat即可
 
 
@@ -156,6 +184,31 @@ dataNodes:
 - name: dn1
   database: db1
   replica: repli
+```
+
+replica.yaml
+
+修改下面关键点
+
+```yaml
+replicas:
+  - name: repli                      # 复制组 名称   必须唯一
+    repType: MASTER_SLAVE           # 复制类型 读写分离
+```
+
+数据源添加默认物理库的名称
+
+```yaml
+- name: mytest3307b              # mysql 主机名
+  ip: 127.0.0.1               # i
+  port: 3306                  # port
+  user: root                  # 用户名
+  password: 123456      # 密码
+  minCon: 1                   # 最小连接
+  maxCon: 1000                  # 最大连接
+  maxRetryCount: 3            # 连接重试次数
+  weight: 3            # 权重
+  initDb: db2          #物理库的名称
 ```
 
 启动mycat即可
