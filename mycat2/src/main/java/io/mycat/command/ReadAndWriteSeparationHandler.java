@@ -42,15 +42,16 @@ public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {
   }
 
   @Override
-  public void handleQuery(byte[] sql, MycatSession session) {
+  public void handleQuery(byte[] bytes, MycatSession session) {
     if (session.isBindMySQLSession()) {
-      MySQLTaskUtil.proxyBackend(session, sql,
+      MySQLTaskUtil.proxyBackend(session, bytes,
           session.getDataNode(), null, ResponseType.QUERY);
       return;
     }
     try {
-      MySQLTaskUtil.proxyBackend(session, new String(sql),
-          session.getDataNode(), getDataSourceQuery(sql, session));
+      String sql = new String(bytes);
+      MySQLTaskUtil.proxyBackend(session, sql,
+          session.getDataNode(), getDataSourceQuery(bytes, session));
     } catch (Exception e) {
       LOGGER.error("", e);
       session.setLastMessage(e);

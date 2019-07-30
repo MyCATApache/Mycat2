@@ -21,6 +21,7 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.ProcessState;
 import io.mycat.proxy.session.SessionManager.CheckResult;
 import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
@@ -115,6 +116,9 @@ public class PrepareInfo {
                             mysql.setMycatSession(null);
                             mysql.switchNioHandler(null);
                             manager.addIdleSession(mysql);
+                            mycat.setResponseFinished(ProcessState.DONE);
+                            mycat.onHandlerFinishedClear();
+                            mycat.change2ReadOpts();
                           }
                         }
 

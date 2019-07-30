@@ -8,7 +8,6 @@ import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.callback.ResultSetCallBack;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.ProcessState;
 
 public class PrepareStmtTask implements ResultSetHandler {
 
@@ -97,7 +96,7 @@ public class PrepareStmtTask implements ResultSetHandler {
   @Override
   public void onFinishedCollect(MySQLClientSession mysql) {
     if (proxy) {
-      mycat.setResponseFinished(ProcessState.DONE);
+      //mycat.setResponseFinished(ProcessState.DONE);
     }
   }
 
