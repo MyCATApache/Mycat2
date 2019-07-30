@@ -4,6 +4,8 @@ author:junwen,zhangwy 2019-6-2
 
 author:junwen 2019-7-4
 
+author:junwen 2019-7-30
+
 [![Creative Commons License](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
 
@@ -17,9 +19,15 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 - 暂不支持MySQL压缩协议
 - 有限的SQL路由支持
-- 暂不支持跨节点修改SQL(jdbc数据源有限支持,不是分布式事务)和查询SQL(计划中)
+- 暂不支持跨节点修改SQL和查询SQL(计划中)
 
 
+
+客户端JDBC推荐连接字符串
+
+```
+jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true&characterEncoding=utf8
+```
 
 2019-7-30,jdbc作为数据源处于测试阶段
 
@@ -28,6 +36,8 @@ mycat.yml
 commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
 
 启动jdbc路由,此时sql不会被路由到proxy模块的数据源
+
+该路由不会把mysql语句改写成数据源目标SQL
 
 
 
