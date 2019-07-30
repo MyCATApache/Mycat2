@@ -21,6 +21,7 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.beans.resultset.SQLExecuter;
+import io.mycat.config.schema.SchemaType;
 import io.mycat.datasource.jdbc.DataNodeSession;
 import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.logTip.MycatLogger;
@@ -124,7 +125,8 @@ public class ProxyExecutionPlanBuilder {
         if (router.existTable(schema, sqlContext.getTableName(0))) {
           return new SQLExecuter[]{
               execute(sqlType, this.router.enterRoute(schema, sqlContext, sql))};
-        } else if (SELECT_SQL == sqlType || SELECT_FOR_UPDATE_SQL == sqlType) {
+        } else if (SELECT_SQL == sqlType || SELECT_FOR_UPDATE_SQL == sqlType
+            || schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
           return directSQL(schema, sql);
         }
       }

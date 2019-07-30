@@ -195,7 +195,8 @@ public class ProxyQueryHandler {
             }
             execute(mycat, useSchema, sql, sqlContext, sqlType);
             return;
-          }else if (sqlType == SELECT_SQL||sqlType == SELECT_FOR_UPDATE_SQL){
+          } else if (sqlType == SELECT_SQL || sqlType == SELECT_FOR_UPDATE_SQL
+              || schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
             execute(mycat, useSchema, sql, sqlContext, sqlType);
             return;
           }
