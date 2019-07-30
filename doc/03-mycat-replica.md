@@ -35,7 +35,7 @@ mysql数据源是mycat使用自研的mysql客户端进行通信
 
 ## JDBC数据源
 
-使用JDBC作为数据源连接(暂不支持)
+使用JDBC作为数据源连接(0.2开始支持)
 
 ## 前提
 
@@ -72,6 +72,8 @@ replicas:
         maxRetryCount: 3            # 连接重试次数
         weight: 1            # 权重
         initSQL: select 1; #该属性一般不写,作用是创建连接后马上执行一段初始化SQL,支持多语句
+        initDb: db1 #后端连接数据库的初始化database
+        slaveThreshold: 0 #主从延迟阈值,在repType:MASTER_SLAVE下生效
 ```
 
 ### 复制组属性
@@ -198,6 +200,24 @@ mysql连接登录用户名
 #### initSQL
 
  该属性一般不写,作用是创建连接后马上执行一段初始化SQL,支持多语句
+
+#### initDb
+
+ 后端连接数据库的初始化的database
+
+#### slaveThreshold
+
+主从延迟阈值,在repType:MASTER_SLAVE下生效
+
+#### dbType
+
+数据源的类型,一个集群的数据源的类型是一致的
+
+当dbType中有mysql字符串或者不设置该属性的时候,proxy创建此数据源配置的连接
+
+#### url
+
+jdbc连接的url,当设置该属性的时候,会使用jdbc创建连接,jdbc的连接,集群管理是与proxy的连接,集群管理是互不影响独立的.
 
 ## 数据源主节点下标记录(masterIndexes.yml)
 

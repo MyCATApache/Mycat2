@@ -52,15 +52,36 @@ replicas:
         minCon: 1                   # 最小连接
         maxCon: 1000                  # 最大连接
         weight: 3            # 权重
+        initDb: #创建连接的时候指定的database
 ```
 
 ### 步骤3
 
 修改schema.yaml,dataNode.yaml,以下两个架构选一个配置
 
-#### 负载均衡
+#### 读写分离配置1
 
-schemas - name是逻辑库的名称
+mycat.yaml
+
+设置commandDispatcherClass: io.mycat.command.HybridProxyCommandHandler
+
+```yaml
+proxy:
+  ip: 0.0.0.0
+  port: 8066
+  bufferPoolPageSize: 4194304     
+  bufferPoolChunkSize: 8192     
+  bufferPoolPageNumber: 2      
+  reactorNumber: 2      
+  commandDispatcherClass: io.mycat.command.HybridProxyCommandHandler
+  proxyBeanProviders: io.mycat.MycatProxyBeanProviders
+```
+
+
+
+defaultSchemaName是默认逻辑库的名称
+
+schemas - name是逻辑库的名称,不必与实际的物理库名称一致
 
 dataNode的database是mysql物理库的名称
 
@@ -69,6 +90,7 @@ replica是上述的复制组的名字
 schema.yaml
 
 ```yaml
+defaultSchemaName: DB_IN_ONE_SERVER_3306
 schemas:
   - name: db1
     schemaType: DB_IN_ONE_SERVER
@@ -86,9 +108,68 @@ dataNodes:
   replica: repli
 ```
 
+启动mycat即可
+
+
+
+#### 读写分离配置2
+
+mycat.yaml
+
+设置commandDispatcherClass: io.mycat.command.ReadAndWriteSeparationHandler
+
+```yaml
+proxy:
+  ip: 0.0.0.0
+  port: 8066
+  bufferPoolPageSize: 4194304     
+  bufferPoolChunkSize: 8192     
+  bufferPoolPageNumber: 2      
+  reactorNumber: 2      
+  commandDispatcherClass:  io.mycat.command.ReadAndWriteSeparationHandler
+  proxyBeanProviders: io.mycat.MycatProxyBeanProviders
+```
+
+defaultSchemaName是读写分离的物理库的名称
+
+schemas - name是物理库的名称
+
+dataNode的database是mysql物理库的名称
+
+replica是上述的复制组的名字
+
+schema.yaml
+
+```yaml
+defaultSchemaName: db1
+schemas:
+  - name: db1
+    defaultDataNode: dn1
+```
+
+dataNode.yaml
+
+```yaml
+dataNodes:
+
+- name: dn1
+  database: db1
+  replica: repli
+```
+
+启动mycat即可
+
+
+
 #### 在逻辑库聚合多个mysql服务器的物理表
 
 schema.yaml
+
+mycat.yaml
+
+设置commandDispatcherClass: io.mycat.command.HybridProxyCommandHandler
+
+
 
 ```yaml
 schemas:
@@ -111,6 +192,8 @@ dataNodes:
 ```
 
 
+
+更多配置请看mycat 2.0-schema(04-mycat-schema.md)
 
 
 

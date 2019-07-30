@@ -9,6 +9,10 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## 前提
 
+mycat.yml
+
+设置commandDispatcherClass: io.mycat.command.HybridProxyCommandHandler
+
 根据schema使用不同的SQL解析方式,以适应不同的应用,提高性能.
 
 暂时不支持跨schema的SQL.
@@ -22,6 +26,18 @@ use {schema}
 ```
 
 或者initDb命令切换schema
+
+
+
+2019-7-30,jdbc作为数据源处于测试阶段
+
+mycat.yml
+
+commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
+
+启动jdbc作为数据源,此时proxy模块的数据源失效
+
+
 
 ### 概念
 
