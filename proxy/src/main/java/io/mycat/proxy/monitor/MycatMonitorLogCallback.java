@@ -25,7 +25,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   final static boolean onBuffer = false;
   final static boolean recordDump = false;
   final static boolean onSQL = true;
-  final static boolean onException = false;
+  final static boolean onException = true;
   final static boolean onClear = false;
   final static boolean onCommand = false;
   final static boolean onBackend = false;

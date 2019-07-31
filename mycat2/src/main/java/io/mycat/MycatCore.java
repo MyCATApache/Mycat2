@@ -109,7 +109,7 @@ public class MycatCore {
       } catch (Exception e) {
         LOGGER.error("",e);
       }
-    }, 0, 30, TimeUnit.SECONDS);
+    }, 0, 5, TimeUnit.SECONDS);
   }
 
   private static void startMySQLProxyIdleCheckService(ScheduledExecutorService service,
