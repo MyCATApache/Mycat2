@@ -77,9 +77,11 @@ public class GridRuntime {
     }, 0, period, TimeUnit.SECONDS);
 
   }
-  public MySQLVariables getVariables(){
-   return proxyRuntime.getVariables();
+
+  public MySQLVariables getVariables() {
+    return proxyRuntime.getVariables();
   }
+
   public Map<String, Object> getDefContext() {
     return proxyRuntime.getDefContext();
   }
@@ -144,10 +146,12 @@ public class GridRuntime {
       for (DataNodeConfig dataNode : dataNodes) {
         JdbcReplica jdbcReplica = jdbcReplicaMap.get(dataNode.getReplica());
         try {
-          Objects.requireNonNull(jdbcReplica);
+          if (jdbcReplica == null) {
+            continue;
+          }
           jdbcDataNodeMap.put(dataNode.getName(),
               new JdbcDataNode(jdbcReplica, dataNode));
-        }catch (Exception e){
+        } catch (Exception e) {
           e.printStackTrace();
         }
 
