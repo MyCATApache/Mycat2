@@ -5,7 +5,8 @@ import io.mycat.proxy.session.SessionManager.SessionIdAble;
 import java.util.List;
 
 public class MySQLDataSourceQuery {
-  boolean runOnMaster = false;
+
+  boolean runOnMaster = true;
   LoadBalanceStrategy strategy = null;
   List<SessionIdAble> ids = null;
   public boolean isRunOnMaster() {

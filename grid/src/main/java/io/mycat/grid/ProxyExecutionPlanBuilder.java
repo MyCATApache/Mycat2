@@ -24,7 +24,6 @@ import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.datasource.jdbc.DataNodeSession;
 import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.datasource.jdbc.SimpleDataNodeSession;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -52,7 +51,7 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
   public ProxyExecutionPlanBuilder(MycatSession session, GridRuntime jdbcRuntime) {
     this.mycat = session;
     this.jdbcRuntime = jdbcRuntime;
-    this.dataNodeSession = new SimpleDataNodeSession(jdbcRuntime);
+    this.dataNodeSession = jdbcRuntime.createDataNodeSession();
     this.parser = new BufferSQLParser();
     this.sqlContext = new BufferSQLContext();
     MycatRouterConfig routerConfig = (MycatRouterConfig) jdbcRuntime.getDefContext()

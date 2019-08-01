@@ -16,6 +16,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
   final GridRuntime jdbcRuntime;
 
   MySQLAutoCommit autocommit = MySQLAutoCommit.ON;
+  protected boolean inTranscation = false;
   MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
 
   public SimpleDataNodeSession(GridRuntime jdbcRuntime) {
@@ -25,6 +26,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
 
   public void setAutomcommit(boolean on) {
     this.autocommit = on ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF;
+    this.inTranscation = true;
     for (JdbcSession backend : backends.values()) {
       backend.setAutomcommit(on);
     }
@@ -59,7 +61,9 @@ public class SimpleDataNodeSession implements DataNodeSession {
           if (session1 == null) {
             session1 = jdbcRuntime
                 .getJdbcSessionByDataNodeName(dataNode, isolation, autocommit,
-                    new JdbcDataSourceQuery().setRunOnMaster(runOnMaster).setStrategy(strategy));
+                    new JdbcDataSourceQuery()
+                        .setRunOnMaster(runOnMaster || autocommit == MySQLAutoCommit.OFF)
+                        .setStrategy(strategy));
           }
           return session1;
         });
@@ -85,12 +89,12 @@ public class SimpleDataNodeSession implements DataNodeSession {
   }
 
   public void startTransaction() {
-    this.autocommit = MySQLAutoCommit.OFF;
+    this.inTranscation = true;
   }
 
   public void commit() {
     try {
-      this.autocommit = MySQLAutoCommit.ON;
+      this.inTranscation = false;
       for (JdbcSession backend : backends.values()) {
         backend.commit();
         backend.close(true, "commit");
@@ -104,7 +108,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
 
   public void rollback() {
     try {
-      this.autocommit = MySQLAutoCommit.ON;
+      this.inTranscation = false;
       for (JdbcSession backend : backends.values()) {
         backend.rollback();
         backend.close(true, "rollback");
@@ -117,7 +121,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
 
   @Override
   public void clear() {
-    if (autocommit == MySQLAutoCommit.ON) {
+    if (!inTranscation) {
       for (JdbcSession backend : backends.values()) {
         backend.close(true, "finish");
       }

@@ -39,6 +39,8 @@ public class GridRuntime {
   final Map<String, JdbcDataNode> jdbcDataNodeMap = new HashMap<>();
   final Map<String, JdbcDataSource> jdbcDataSourceMap = new HashMap<>();
   final GridBeanProviders providers;
+  final boolean isJTA;
+  private final DatasourceProvider datasourceProvider;
 
   public GridRuntime(ProxyRuntime proxyRuntime) throws Exception {
     this.proxyRuntime = proxyRuntime;
@@ -50,13 +52,13 @@ public class GridRuntime {
     JdbcDriverRootConfig jdbcDriverRootConfig = proxyRuntime.getConfig(ConfigEnum.JDBC_DRIVER);
     String datasourceProviderClass = jdbcDriverRootConfig.getDatasourceProviderClass();
     Objects.requireNonNull(datasourceProviderClass);
-    DatasourceProvider datasourceProvider;
     try {
-      datasourceProvider = (DatasourceProvider) Class.forName(datasourceProviderClass)
+      this.datasourceProvider = (DatasourceProvider) Class.forName(datasourceProviderClass)
           .newInstance();
     } catch (Exception e) {
       throw new MycatException("can not load datasourceProvider:{}", datasourceProviderClass);
     }
+    isJTA = datasourceProvider.isJTA();
     initJdbcReplica(dsConfig, replicaIndexConfig, jdbcDriverRootConfig.getJdbcDriver(),
         datasourceProvider);
     DataNodeRootConfig dataNodeRootConfig = proxyRuntime.getConfig(ConfigEnum.DATANODE);
@@ -189,5 +191,17 @@ public class GridRuntime {
 
   public GridBeanProviders getProvider() {
     return providers;
+  }
+
+  public DataNodeSession createDataNodeSession() {
+    if (isJTA) {
+      return new JTADataNodeSession(this);
+    } else {
+      return new SimpleDataNodeSession(this);
+    }
+  }
+
+  public DatasourceProvider getDatasourceProvider() {
+    return datasourceProvider;
   }
 }
