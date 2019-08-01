@@ -145,8 +145,8 @@ public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {
 
   @Override
   public void handleInitDb(String db, MycatSession mycat) {
-    mycat.setLastMessage(UNSUPPORT_MESSAGE);
-    mycat.writeErrorEndPacket();
+    mycat.useSchema(db);
+    mycat.writeOkEndPacket();
   }
 
   @Override
