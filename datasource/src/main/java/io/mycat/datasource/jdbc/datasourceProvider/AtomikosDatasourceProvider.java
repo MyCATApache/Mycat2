@@ -27,9 +27,10 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     p.setProperty("password", password);
 
     AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
+    ds.setXaProperties(p);
     ds.setUniqueResourceName(datasourceName);
     ds.setXaDataSourceClassName(jdbcDriver);
-    ds.setXaProperties(p);
+
     return ds;
   }
 

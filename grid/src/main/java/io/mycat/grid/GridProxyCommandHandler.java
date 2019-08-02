@@ -3,6 +3,7 @@ package io.mycat.grid;
 
 import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.command.AbstractCommandHandler;
+import io.mycat.datasource.jdbc.DataNodeSession;
 import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -17,12 +18,14 @@ public class GridProxyCommandHandler extends AbstractCommandHandler {
       .getLogger(GridProxyCommandHandler.class);
   ExecuterBuilder executionPlan;
   private final static String UNSUPPORT = "unsupport!";
+  private DataNodeSession dataNodeSession;
 
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     Map<String, Object> defContext = runtime.getDefContext();
     GridRuntime jdbcRuntime = (GridRuntime) defContext.get("gridRuntime");
-    this.executionPlan = new ProxyExecutionPlanBuilder(session, jdbcRuntime);
+    this.dataNodeSession = jdbcRuntime.createDataNodeSession(session);
+    this.executionPlan = new ProxyExecutionPlanBuilder(session,dataNodeSession, jdbcRuntime);
   }
 
   @Override

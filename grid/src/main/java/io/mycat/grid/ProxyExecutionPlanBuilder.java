@@ -48,10 +48,10 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
       .getLogger("IGNORED_SQL_LOGGER");
   private final DataNodeSession dataNodeSession;
 
-  public ProxyExecutionPlanBuilder(MycatSession session, GridRuntime jdbcRuntime) {
-    this.mycat = session;
+  public ProxyExecutionPlanBuilder(MycatSession mycat,DataNodeSession dataNodeSession, GridRuntime jdbcRuntime) {
+    this.mycat = mycat;
+    this.dataNodeSession = dataNodeSession;
     this.jdbcRuntime = jdbcRuntime;
-    this.dataNodeSession = jdbcRuntime.createDataNodeSession();
     this.parser = new BufferSQLParser();
     this.sqlContext = new BufferSQLContext();
     MycatRouterConfig routerConfig = (MycatRouterConfig) jdbcRuntime.getDefContext()
@@ -161,16 +161,16 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
   }
 
   private SQLExecuter[] begin() {
-    dataNodeSession.startTransaction();
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.addServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    dataNodeSession.startTransaction();
     return responseOk();
   }
 
   private SQLExecuter[] commit() {
-    dataNodeSession.commit();
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    dataNodeSession.commit();
     return responseOk();
   }
 

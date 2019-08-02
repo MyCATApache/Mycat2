@@ -30,7 +30,7 @@ public class JdbcReplica implements MycatReplica {
     this.selector = new ReplicaDatasourceSelector<>(runtime, replicaConfig, writeIndex, dataSources,
         runtime.getLoadBalanceByBalanceName(null));
     this.dataSourceManager = new JdbcDataSourceManager(runtime, provider, jdbcDriverMap,
-        dataSources,    this.selector);
+        dataSources, this.selector);
   }
 
   private List<JdbcDataSource> getJdbcDataSources(
@@ -39,13 +39,15 @@ public class JdbcReplica implements MycatReplica {
     ArrayList<JdbcDataSource> dataSources = new ArrayList<>();
     for (int i = 0; i < datasourceConfigList.size(); i++) {
       DatasourceConfig datasourceConfig = datasourceConfigList.get(i);
-      dataSources.add(provider.createJdbcDataSource(runtime,i, datasourceConfig, this));
+      if (datasourceConfig.getDbType() != null && datasourceConfig.getUrl() != null) {
+        dataSources.add(provider.createJdbcDataSource(runtime, i, datasourceConfig, this));
+      }
     }
     return dataSources;
   }
 
   public JdbcSession createSession(JdbcDataSource dataSource) {
-    return  dataSourceManager.createSession(dataSource);
+    return dataSourceManager.createSession(dataSource);
   }
 
 
@@ -104,7 +106,7 @@ public class JdbcReplica implements MycatReplica {
           if (writeDataSource.get(i).isAlive()) {
             LOGGER.info("{} switch master to {}", this, i);
             ///////////////////////////////
-            runtime.updateReplicaMasterIndexesConfig(this,(List) writeDataSource);
+            runtime.updateReplicaMasterIndexesConfig(this, (List) writeDataSource);
             //////////////////////////////
             return true;
           }

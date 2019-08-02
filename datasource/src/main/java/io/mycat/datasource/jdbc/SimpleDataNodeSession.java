@@ -9,6 +9,7 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class SimpleDataNodeSession implements DataNodeSession {
 
@@ -19,7 +20,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
   protected boolean inTranscation = false;
   MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
 
-  public SimpleDataNodeSession(GridRuntime jdbcRuntime) {
+  public SimpleDataNodeSession(MycatSession session, GridRuntime jdbcRuntime) {
     this.jdbcRuntime = jdbcRuntime;
   }
 
@@ -56,6 +57,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
 
   private JdbcSession getBackendSession(String dataNode, boolean runOnMaster,
       LoadBalanceStrategy strategy) {
+    Objects.requireNonNull(dataNode);
     JdbcSession session = backends
         .compute(dataNode, (s, session1) -> {
           if (session1 == null) {

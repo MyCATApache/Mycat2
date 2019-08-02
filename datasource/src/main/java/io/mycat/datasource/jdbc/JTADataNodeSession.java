@@ -1,16 +1,20 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
+import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
+import io.mycat.proxy.session.MycatSession;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
 public class JTADataNodeSession extends SimpleDataNodeSession {
 
-  final UserTransaction userTransaction;
+  private MycatSession session;
+  UserTransaction userTransaction;
 
-  public JTADataNodeSession(GridRuntime jdbcRuntime) {
-    super(jdbcRuntime);
-    this.userTransaction = jdbcRuntime.getDatasourceProvider().createUserTransaction();
+  public JTADataNodeSession(MycatSession session, GridRuntime jdbcRuntime) {
+    super(session, jdbcRuntime);
+    this.session = session;
+    this.userTransaction = null;
   }
 
   @Override
@@ -22,6 +26,7 @@ public class JTADataNodeSession extends SimpleDataNodeSession {
       rollback();
       throw new MycatException(e);
     } finally {
+      userTransaction =null;
       clear();
     }
   }
@@ -30,6 +35,8 @@ public class JTADataNodeSession extends SimpleDataNodeSession {
   public void startTransaction() {
     inTranscation = true;
     try {
+      userTransaction =null;
+      userTransaction = jdbcRuntime.getDatasourceProvider().createUserTransaction();
       userTransaction.begin();
     } catch (Exception e) {
       throw new MycatException(e);
@@ -43,6 +50,9 @@ public class JTADataNodeSession extends SimpleDataNodeSession {
       userTransaction.setRollbackOnly();
     } catch (SystemException e) {
       throw new MycatException(e);
+    }finally {
+      userTransaction =null;
+      clear();
     }
   }
 

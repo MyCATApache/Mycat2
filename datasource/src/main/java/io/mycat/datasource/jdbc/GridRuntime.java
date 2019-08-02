@@ -19,6 +19,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.session.MycatSession;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -99,6 +100,7 @@ public class GridRuntime {
       MySQLIsolation isolation,
       MySQLAutoCommit autoCommit,
       JdbcDataSourceQuery query) {
+    Objects.requireNonNull(dataNodeName);
     JdbcDataNode jdbcDataNode = jdbcDataNodeMap.get(dataNodeName);
     JdbcReplica replica = jdbcDataNode.getReplica();
     JdbcSession session = replica
@@ -193,11 +195,11 @@ public class GridRuntime {
     return providers;
   }
 
-  public DataNodeSession createDataNodeSession() {
+  public DataNodeSession createDataNodeSession(MycatSession session) {
     if (isJTA) {
-      return new JTADataNodeSession(this);
+      return new JTADataNodeSession(session,this);
     } else {
-      return new SimpleDataNodeSession(this);
+      return new SimpleDataNodeSession(session,this);
     }
   }
 

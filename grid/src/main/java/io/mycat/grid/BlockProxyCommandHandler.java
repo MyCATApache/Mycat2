@@ -1,21 +1,20 @@
 package io.mycat.grid;
 
 import io.mycat.command.AbstractCommandHandler;
+import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MycatSession;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockProxyCommandHandler.class);
-  final static ExecutorService service = Executors
-      .newCachedThreadPool(r -> new ReactorEnvThread(r) {
-      });
+//  final static ExecutorService service = Executors
+//      .newCachedThreadPool(r -> new ReactorEnvThread(r) {
+//      });
 
   final GridProxyCommandHandler handler;
 
@@ -39,7 +38,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
   }
 
   public void block(MycatSession session, Consumer<MycatSession> consumer) {
-    service.submit(() -> {
+    TransactionProcessUnitManager.INSTANCE.run(session,() -> {
       ReactorEnvThread thread = null;
       try {
         thread = (ReactorEnvThread) Thread.currentThread();
