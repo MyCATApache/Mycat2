@@ -6,6 +6,7 @@ import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.function.Function1;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -17,26 +18,44 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private Connection connection;
     private Function1<ResultSet, Function0<T>> rowBuilderFactory;
     private  Function0<T> rowBuilder;
+    private String filterSql;
 
-    public MyCatResultSetEnumerable(Connection connection, Function1<ResultSet, Function0<T>> rowBuilderFactory) {
+    public MyCatResultSetEnumerable(BackEndTableInfo[] info, Function1<ResultSet, Function0<T>> rowBuilderFactory, String filterSql) {
         this.connection = connection;
         this.rowBuilderFactory = rowBuilderFactory;
+        this.filterSql = filterSql;
 
         try {
             System.out.println("run query");
             rss = new ArrayList<>();
-            rs = connection.createStatement().executeQuery("select * from test.test");
-            rss.add(rs);
-            rss.add(connection.createStatement().executeQuery("select * from test.test1"));
+            for (int i = 0; i <info.length; i++) {
+                connection = DriverManager
+                        .getConnection("jdbc:mysql://127.0.0.1:3306/test?serverTimezone=UTC",
+                                "test","123456");
+                String sql;
+                if (filterSql != null) {
+                    sql = "select * from " + info[i].schemaName + "." + info[i].tableName + " where " + filterSql;
+                }
+                else {
+                    sql = "select * from " +info[i].schemaName + "." + info[i].tableName;
+                }
+                System.out.println("get data using : " + sql);
+                rs = connection.createStatement().executeQuery(sql);
+                rss.add(rs);
+            }
 
-            rowBuilder = rowBuilderFactory.apply(rs);
+            //rs = connection.createStatement().executeQuery("select * from test.test");
+            //rss.add(rs);
+            //rss.add(connection.createStatement().executeQuery("select * from test.test1"));
+
+            //rowBuilder = rowBuilderFactory.apply(rs);
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
     @Override
     public Enumerator<T> enumerator() {
-        return new ResultSetEnumerator<>(rss, connection, rowBuilderFactory);
+        return new ResultSetEnumerator<>(rss, connection, rowBuilderFactory, filterSql);
     }
 
 }

@@ -17,8 +17,11 @@ public class ResultSetEnumerator<T> implements Enumerator<T> {
     private  List<Function0<T>> rowBuilders;
     private int size = 0;
     private int currentChannel = 0;
+    private ResultSet currentrs;
+
+    private  String filterSql;
     public ResultSetEnumerator(List<ResultSet> rss, Connection connection,
-                               Function1<ResultSet, Function0<T>> rowBuilderFactory) {
+                               Function1<ResultSet, Function0<T>> rowBuilderFactory, String filterSql) {
         this.connection = connection;
         this.rss = rss;
         this.size = rss.size();
@@ -27,22 +30,27 @@ public class ResultSetEnumerator<T> implements Enumerator<T> {
             rowBuilders.add(rowBuilderFactory.apply(rs));
         }
 
+        this.rowBuilderFactory = rowBuilderFactory;
+        this.filterSql = filterSql;
     }
     @Override
     public T current() {
-        return rowBuilders.get(currentChannel - 1).apply();
+        // return rowBuilders.get(currentChannel - 1).apply();
+        return rowBuilderFactory.apply(currentrs).apply();
     }
 
     @Override
     public boolean moveNext() {
-        boolean result;
+        boolean result = false;
         try {
-            if (currentChannel >= size ) {
-                currentChannel = 0;
+            while (!rss.isEmpty()) {
+                currentrs = rss.get(0);
+                result = currentrs.next();
+                if (result == true) {
+                    return result;
+                }
+                rss.remove(0);
             }
-            // TODO:check all currentChannel
-            result = rss.get(currentChannel).next();
-            currentChannel++;
 
         } catch (SQLException e) {
             e.printStackTrace();

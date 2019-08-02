@@ -1,6 +1,10 @@
 package io.mycat.calcite.table;
 
+import io.mycat.calcite.BackEndTableInfo;
 import io.mycat.calcite.MyCatResultSetEnumerable;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.sql.SqlDialect;
 import com.google.common.collect.Lists;
 import org.apache.calcite.DataContext;
@@ -42,10 +46,12 @@ public class JdbcTable implements TranslatableTable, ScannableTable, FilterableT
     private ResultSet rs;
     private RelProtoDataType protoRowType;
     private Connection connection;
-    private final RowSignature rowSignature;
-    public JdbcTable(
-            final String schemaName,
-            final String tableName) throws Exception {
+    private RowSignature rowSignature;
+
+    private BackEndTableInfo[] info;
+    private RexNode node;
+
+    public JdbcTable(String schemaName, String tableName, BackEndTableInfo[] info) throws Exception {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.catalogName = "";
@@ -54,19 +60,16 @@ System.out.println("build table");
         // TODO: build a metadata service
         Class.forName("com.mysql.cj.jdbc.Driver");
         connection = DriverManager
-                .getConnection("jdbc:mysql://127.0.01:3306/test?serverTimezone=UTC",
+                .getConnection("jdbc:mysql://127.0.0.1:3306/test?serverTimezone=UTC",
                         "test","123456");
-        RowSignature.Builder builder = RowSignature.builder();
-        builder.add("pk", JDBCType.INTEGER);
-        builder.add("col", JDBCType.VARCHAR);
-        rowSignature = builder.build();
 
+        this.info = info;
         metaData = connection.getMetaData();
-        protoRowType = getRelDataType(metaData, null, "test", "test");
+        protoRowType = getRelDataType(metaData, null, info[0].schemaName, info[0].tableName);
     }
 
     RelProtoDataType getRelDataType(DatabaseMetaData metaData, String catalogName,
-                                    String schemaName, String tableName) throws SQLException {
+                                    String schemaName, String tableName) throws Exception {
         final ResultSet resultSet =
                 metaData.getColumns("test", schemaName, tableName, null);
 
@@ -76,9 +79,11 @@ System.out.println("build table");
         final RelDataTypeFactory typeFactory =
                 new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
+        RowSignature.Builder builder = RowSignature.builder();
         while (resultSet.next()) {
             final String columnName = resultSet.getString(4);
             final int dataType = resultSet.getInt(5);
+            builder.add(columnName, JDBCType.valueOf(dataType) );
             final String typeString = resultSet.getString(6);
             final int precision;
             final int scale;
@@ -99,6 +104,7 @@ System.out.println("build table");
             fieldInfo.add(columnName, sqlType).nullable(nullable);
         }
         resultSet.close();
+        this.rowSignature = builder.build();
         return RelDataTypeImpl.proto(fieldInfo.build());
     }
 
@@ -231,6 +237,7 @@ System.out.println("build table");
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> list) {
         final JavaTypeFactory typeFactory = root.getTypeFactory();
+        String filterSql = null;
         // JdbcUtils.ObjectArrayRowBuilder.factory(fieldClasses(typeFactory)));
         /*
         System.out.println("filter push down");
@@ -240,7 +247,38 @@ System.out.println("build table");
                 JdbcUtils.ObjectArrayRowBuilder.factory(fieldClasses(typeFactory)));
 
          */
-        return new MyCatResultSetEnumerable<>(connection, JdbcUtils.ObjectArrayRowBuilder.factory(fieldClasses(typeFactory)));
+
+        // check the filter push down
+
+        if (!list.isEmpty()) {
+            System.out.println(tableName + "-------------------------------------------");
+            System.out.println(tableName);
+
+            for (RexNode node : list) {
+                System.out.println(node.toString());
+                System.out.println(node.getKind().sql);
+                System.out.println(node.getKind().name());
+                this.node = node;
+                RexCall call = (RexCall)node;
+                RexInputRef left =(RexInputRef) call.getOperands().get(0);
+                RexLiteral right = (RexLiteral) call.getOperands().get(1);
+                System.out.println("left : " +left.getIndex());
+                System.out.println("rigth : " + right.getValue2().toString());
+                StringBuilder sb = new StringBuilder();
+                sb.append(rowSignature.getRowOrder().get(left.getIndex()));
+                sb.append(">");
+                sb.append(right.getValue2().toString());
+
+                filterSql = sb.toString();
+                System.out.println(filterSql);
+            }
+            list.remove(node);
+
+            System.out.println(tableName + "-------------------------------------------");
+        }
+
+        return new MyCatResultSetEnumerable<>(info, JdbcUtils.ObjectArrayRowBuilder.factory(fieldClasses(typeFactory)), filterSql);
     }
 
 }
+
