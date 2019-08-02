@@ -215,4 +215,7 @@ public final class MySQLServerStatus {
     this.setServerStatus(this.getServerStatus() & ~flag);
   }
 
+  public boolean isServerStatusFlag(int flag) {
+    return (/**/this.getServerStatus() & flag) != 0;
+  }
 }
