@@ -91,7 +91,7 @@ public class ProxyRuntime {
       throws Exception {
     this.config = configReceiver;
     ProxyRootConfig config = this.config.getConfig(ConfigEnum.PROXY);
-    Objects.requireNonNull(config, "proxy.yaml was not found");
+    Objects.requireNonNull(config, "mycat.yaml was not found");
     String proxyBeanProviders = config.getProxy().getProxyBeanProviders();
     Objects.requireNonNull(proxyBeanProviders, "proxyBeanProviders was not found");
     this.providers = (ProxyBeanProviders) Class.forName(proxyBeanProviders).newInstance();
