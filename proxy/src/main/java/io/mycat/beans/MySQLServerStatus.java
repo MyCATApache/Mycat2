@@ -216,6 +216,6 @@ public final class MySQLServerStatus {
   }
 
   public boolean isServerStatusFlag(int flag) {
-    return (/**/this.getServerStatus() & flag) != 0;
+    return (this.getServerStatus() & flag) != 0;
   }
 }
