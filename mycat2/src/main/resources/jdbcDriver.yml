@@ -1,3 +1,4 @@
-datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
 jdbcDriver:
   mysql: com.mysql.jdbc.Driver
+  mysql-xa: com.mysql.cj.jdbc.MysqlXADataSource
