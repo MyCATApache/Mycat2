@@ -5,11 +5,10 @@ import io.mycat.logTip.MycatLoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public abstract class ReactorEnvThread extends Thread {
+public abstract class ReactorEnvThread extends SessionThread {
 
   protected final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(ReactorEnvThread.class);
-  protected final ReactorEnv reactorEnv = new ReactorEnv();
   protected final ConcurrentLinkedQueue<NIOJob> pendingJobs = new ConcurrentLinkedQueue<>();
 
 
@@ -46,9 +45,6 @@ public abstract class ReactorEnvThread extends Thread {
     }
   }
 
-  public ReactorEnv getReactorEnv() {
-    return reactorEnv;
-  }
 
 
   public void close(Exception throwable) {

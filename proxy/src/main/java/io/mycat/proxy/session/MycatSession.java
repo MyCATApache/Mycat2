@@ -194,11 +194,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     assert hint != null;
     try {
       if (crossSwapThreadBufferPool != null) {
-        ReactorEnvThread source = crossSwapThreadBufferPool.getSource();
+        Thread source = crossSwapThreadBufferPool.getSource();
         if (source != null) {
-          ReactorEnv reactorEnv = source.getReactorEnv();
-          source.interrupt();
-          reactorEnv.close();
+//          ReactorEnv reactorEnv = source.getReactorEnv();
+//          source.interrupt();
+//          reactorEnv.close();
         }
       }
     } catch (Exception e) {
@@ -541,10 +541,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   /**
    * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
    */
-  public void deliverWorkerThread(ReactorEnvThread thread) {
+  public void deliverWorkerThread(Thread thread) {
     crossSwapThreadBufferPool.bindSource(thread);
     assert thread == Thread.currentThread();
-    thread.getReactorEnv().setCurSession(this);
   }
 
   /**
@@ -552,9 +551,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    */
   @Override
   public void backFromWorkerThread() {
-    ReactorEnvThread thread = (ReactorEnvThread)Thread.currentThread();
+    Thread thread = Thread.currentThread();
     assert getIOThread()!= thread;
-    thread.getReactorEnv().setCurSession(null);
     writeBufferPool().bindSource(null);
   }
 

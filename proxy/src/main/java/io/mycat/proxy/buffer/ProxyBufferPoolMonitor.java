@@ -3,6 +3,7 @@ package io.mycat.proxy.buffer;
 import io.mycat.buffer.BufferPoolImpl;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.Session;
 import java.nio.ByteBuffer;
 
@@ -24,14 +25,13 @@ public final class ProxyBufferPoolMonitor extends BufferPoolImpl {
   }
 
   public Session getSession() {
-    ReactorEnvThread thread = (ReactorEnvThread)Thread.currentThread();
-    return thread.getReactorEnv().getCurSession();
+    SessionThread thread = (SessionThread)Thread.currentThread();
+    return thread.getCurSession();
   }
 
   @Override
   public ByteBuffer allocate(byte[] bytes) {
-    ByteBuffer allocate = super.allocate(bytes);
-    return allocate;
+    return super.allocate(bytes);
   }
 
   @Override

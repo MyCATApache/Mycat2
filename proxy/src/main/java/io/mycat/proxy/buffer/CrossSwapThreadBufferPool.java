@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
  */
 public class CrossSwapThreadBufferPool {
 
-  private volatile ReactorEnvThread source;
+  private volatile Thread source;
   private BufferPool bufferPool;
 
   public CrossSwapThreadBufferPool(
@@ -36,11 +36,11 @@ public class CrossSwapThreadBufferPool {
     bufferPool.recycle(theBuf);
   }
 
-  public void bindSource(ReactorEnvThread source) {
+  public void bindSource(Thread source) {
     this.source = source;
   }
 
-  public ReactorEnvThread getSource() {
+  public Thread getSource() {
     return source;
   }
 }

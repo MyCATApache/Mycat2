@@ -39,9 +39,9 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
   public void block(MycatSession session, Consumer<MycatSession> consumer) {
     TransactionProcessUnitManager.INSTANCE.run(session,() -> {
-      ReactorEnvThread thread = null;
+      Thread thread = null;
       try {
-        thread = (ReactorEnvThread) Thread.currentThread();
+        thread = Thread.currentThread();
         session.deliverWorkerThread(thread);
         consumer.accept(session);
       } catch (Exception e) {

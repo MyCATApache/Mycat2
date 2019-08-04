@@ -108,7 +108,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
   /**
    * 该方法仅NIOAcceptor使用
    */
-  protected void processAcceptKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processAcceptKey(SelectionKey curKey) throws IOException {
     assert false;
   }
 
@@ -116,9 +116,9 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
    * 该方法仅Reactor自身创建的主动连接使用
    */
   @SuppressWarnings("unchecked")
-  protected void processConnectKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processConnectKey(SelectionKey curKey) throws IOException {
     T session = (T) curKey.attachment();
-    reactorEnv.setCurSession(session);
+    setCurSession(session);
     SocketChannel channel = (SocketChannel) curKey.channel();
     NIOHandler curNIOHandler = session.getCurNIOHandler();
     if (curNIOHandler instanceof BackendNIOHandler) {
@@ -134,16 +134,16 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
   }
 
   @SuppressWarnings("unchecked")
-  protected void processReadKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processReadKey( SelectionKey curKey) throws IOException {
     T session = (T) curKey.attachment();
-    reactorEnv.setCurSession(session);
+    setCurSession(session);
     session.getCurNIOHandler().onSocketRead(session);
   }
 
   @SuppressWarnings("unchecked")
-  protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processWriteKey( SelectionKey curKey) throws IOException {
     T session = (T) curKey.attachment();
-    reactorEnv.setCurSession(session);
+    setCurSession(session);
     session.getCurNIOHandler().onSocketWrite(session);
   }
 
@@ -185,23 +185,23 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
               continue;
             }
             int readdyOps = key.readyOps();
-            reactorEnv.setCurSession(null);
+            setCurSession(null);
             // 如果当前收到连接请求
             if ((readdyOps & SelectionKey.OP_ACCEPT) != 0) {
-              processAcceptKey(reactorEnv, key);
+              processAcceptKey( key);
             }
             // 如果当前连接事件
             else if ((readdyOps & SelectionKey.OP_CONNECT) != 0) {
-              this.processConnectKey(reactorEnv, key);
+              this.processConnectKey( key);
             } else if ((readdyOps & SelectionKey.OP_READ) != 0) {
-              this.processReadKey(reactorEnv, key);
+              this.processReadKey( key);
 
             } else if ((readdyOps & SelectionKey.OP_WRITE) != 0) {
-              this.processWriteKey(reactorEnv, key);
+              this.processWriteKey(key);
             }
           } catch (Exception e) {//如果设置为IOException方便调试,避免吞没其他类型异常
             LOGGER.error("{}", e);
-            Session curSession = reactorEnv.getCurSession();
+            Session curSession = getCurSession();
             if (curSession != null) {
               NIOHandler curNIOHandler = curSession.getCurNIOHandler();
               if (curNIOHandler != null) {
@@ -209,7 +209,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
               } else {
                 curSession.close(false, curSession.setLastMessage(e));
               }
-              reactorEnv.setCurSession(null);
+              setCurSession(null);
             }
           }
         }
@@ -227,7 +227,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
         LOGGER.warn("selector is closed");
         break;
       } catch (Throwable e) {
-        LOGGER.warn("Unknown session:{}", reactorEnv.getCurSession(), e);
+        LOGGER.warn("Unknown session:{}", getCurSession(), e);
       }
     }
   }

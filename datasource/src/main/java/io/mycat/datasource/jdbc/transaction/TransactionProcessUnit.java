@@ -2,10 +2,10 @@ package io.mycat.datasource.jdbc.transaction;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.proxy.reactor.SessionThread;
 import java.util.concurrent.LinkedTransferQueue;
 
-public final class TransactionProcessUnit extends ReactorEnvThread {
+public final class TransactionProcessUnit extends SessionThread {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(TransactionProcessUnit.class);
