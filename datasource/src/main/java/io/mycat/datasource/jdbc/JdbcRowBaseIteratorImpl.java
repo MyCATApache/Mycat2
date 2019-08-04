@@ -21,11 +21,11 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcRowBaseIteratorImpl.class);
 
-  private final ClearableSession session;
+  private final DataNodeSession session;
   private final Statement statement;
   private final ResultSet resultSet;
 
-  public JdbcRowBaseIteratorImpl(ClearableSession session,
+  public JdbcRowBaseIteratorImpl(DataNodeSession session,
       Statement statement, ResultSet resultSet) {
     this.session = session;
     this.statement = statement;
@@ -67,7 +67,9 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
     } catch (Exception e) {
       LOGGER.error("", e);
     }
-    this.session.clear();
+    if (this.session != null) {
+      this.session.close();
+    }
   }
 
   @Override

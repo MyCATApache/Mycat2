@@ -1,7 +1,6 @@
 package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatException;
-import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
 import io.mycat.proxy.session.MycatSession;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
@@ -27,7 +26,7 @@ public class JTADataNodeSession extends SimpleDataNodeSession {
       throw new MycatException(e);
     } finally {
       userTransaction =null;
-      clear();
+      close();
     }
   }
 
@@ -52,12 +51,8 @@ public class JTADataNodeSession extends SimpleDataNodeSession {
       throw new MycatException(e);
     }finally {
       userTransaction =null;
-      clear();
+      close();
     }
   }
 
-  @Override
-  public void clear() {
-    super.clear();
-  }
 }

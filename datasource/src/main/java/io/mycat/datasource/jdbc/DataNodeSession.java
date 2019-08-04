@@ -1,12 +1,13 @@
 package io.mycat.datasource.jdbc;
 
+import io.mycat.CloseableObject;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.session.MycatSession;
 
-public interface DataNodeSession extends ClearableSession {
+public interface DataNodeSession extends CloseableObject {
 
   void setAutomcommit(boolean on);
 

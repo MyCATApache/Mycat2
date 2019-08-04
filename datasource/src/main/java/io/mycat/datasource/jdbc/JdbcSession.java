@@ -1,5 +1,6 @@
 package io.mycat.datasource.jdbc;
 
+import io.mycat.CloseableObject;
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -16,7 +17,7 @@ import java.sql.Statement;
 /**
  * @author jamie12221 date 2019-05-10 14:51
  **/
-public class JdbcSession implements ClearableSession {
+public class JdbcSession implements CloseableObject {
 
   protected final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcSession.class);
   protected final int sessionId;
@@ -85,7 +86,7 @@ public class JdbcSession implements ClearableSession {
     }
   }
 
-  public JdbcRowBaseIteratorImpl executeQuery(ClearableSession session,
+  public JdbcRowBaseIteratorImpl executeQuery(DataNodeSession session,
       String sql) {
     try {
       Statement statement = connection.createStatement();
@@ -95,6 +96,14 @@ public class JdbcSession implements ClearableSession {
     }
   }
 
+  public JdbcRowBaseIteratorImpl executeQuery(String sql) {
+    try {
+      Statement statement = connection.createStatement();
+      return new JdbcRowBaseIteratorImpl(null, statement, statement.executeQuery(sql));
+    } catch (Exception e) {
+      throw new MycatException(e);
+    }
+  }
   public void commit() {
     try {
       connection.commit();
@@ -128,7 +137,12 @@ public class JdbcSession implements ClearableSession {
   }
 
   @Override
-  public void clear() {
+  public void onExceptionClose() {
+    close();
+  }
+
+  @Override
+  public void close() {
     try {
       connection.close();
     } catch (SQLException e) {

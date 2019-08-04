@@ -86,7 +86,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
               sql);
       return session.executeUpdate(sql, insert);
     } finally {
-      clear();
+      close();
     }
   }
 
@@ -103,7 +103,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
       }
       backends.clear();
     } finally {
-      clear();
+      close();
     }
 
   }
@@ -117,17 +117,23 @@ public class SimpleDataNodeSession implements DataNodeSession {
       }
       backends.clear();
     } finally {
-      clear();
+      close();
     }
   }
 
+
   @Override
-  public void clear() {
+  public void onExceptionClose() {
+    for (JdbcSession backend : backends.values()) {
+      backend.close(true, "finish");
+    }
+    backends.clear();
+  }
+
+  @Override
+  public void close() {
     if (!inTranscation) {
-      for (JdbcSession backend : backends.values()) {
-        backend.close(true, "finish");
-      }
-      backends.clear();
+      onExceptionClose();
     }
   }
 }

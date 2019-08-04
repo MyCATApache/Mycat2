@@ -46,6 +46,8 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
         consumer.accept(session);
       } catch (Exception e) {
         LOGGER.error("", e);
+        assert thread instanceof SessionThread;
+        thread.onExceptionClose();
         session.setLastMessage(e.toString());
         session.writeErrorEndPacket();
       } finally {

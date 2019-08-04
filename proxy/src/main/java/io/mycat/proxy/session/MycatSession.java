@@ -549,7 +549,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   @Override
   public void backFromWorkerThread() {
     Thread thread = Thread.currentThread();
-    assert getIOThread()!= thread;
+    assert getIOThread() != thread && thread instanceof SessionThread;
     writeBufferPool().bindSource(null);
   }
 
