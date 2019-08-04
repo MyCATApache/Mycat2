@@ -20,10 +20,13 @@ public final class TransactionProcessUnit extends ReactorEnvThread {
   @Override
   public void run() {
 
-    while (true) {
+    while (!isInterrupted()) {
       Runnable poll = null;
       try {
         poll = blockingDeque.take();
+        if (poll == END){
+          break;
+        }
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
@@ -32,7 +35,7 @@ public final class TransactionProcessUnit extends ReactorEnvThread {
         try {
           poll.run();
         } catch (Exception e) {
-          LOGGER.error("",e);
+          LOGGER.error("", e);
         }
       }
     }
@@ -40,5 +43,13 @@ public final class TransactionProcessUnit extends ReactorEnvThread {
 
   public long getStartTime() {
     return startTime;
+  }
+
+  static final Runnable END = () -> {
+  };
+
+  public void close() {
+    interrupt();
+    blockingDeque.add(END);
   }
 }
