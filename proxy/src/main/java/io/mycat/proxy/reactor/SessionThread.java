@@ -8,7 +8,11 @@ import java.util.List;
 public class SessionThread extends Thread implements CloseableObject {
 
   private Session session;
-  private List<CloseableObject> closeableObjects = new ArrayList<>();
+  private final List<CloseableObject> closeableObjects = new ArrayList<>(0);
+
+  public void addCloseableObject(CloseableObject object) {
+    closeableObjects.add(object);
+  }
 
   public SessionThread() {
   }

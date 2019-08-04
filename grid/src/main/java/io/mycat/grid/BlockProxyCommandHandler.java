@@ -12,15 +12,10 @@ import java.util.function.Consumer;
 public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockProxyCommandHandler.class);
-//  final static ExecutorService service = Executors
-//      .newCachedThreadPool(r -> new ReactorEnvThread(r) {
-//      });
-
   final GridProxyCommandHandler handler;
 
   public BlockProxyCommandHandler() {
     handler = new GridProxyCommandHandler();
-
   }
 
   @Override
@@ -38,7 +33,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
   }
 
   public void block(MycatSession session, Consumer<MycatSession> consumer) {
-    TransactionProcessUnitManager.INSTANCE.run(session,() -> {
+    TransactionProcessUnitManager.INSTANCE.run(session, () -> {
       SessionThread thread = null;
       try {
         thread = (SessionThread) Thread.currentThread();
