@@ -206,4 +206,18 @@ public class GridRuntime {
   public DatasourceProvider getDatasourceProvider() {
     return datasourceProvider;
   }
+
+  public List<Map<String, Object>> query(JdbcDataSource dataSource, String sql) {
+    JdbcSession session = dataSource.getReplica().createSessionDirectly(dataSource);
+    Objects.requireNonNull(session);
+    List<Map<String, Object>> resultList;
+    try {
+      try (JdbcRowBaseIteratorImpl iterator = session.executeQuery(sql)) {
+        resultList = iterator.getResultSetMap();
+      }
+    } finally {
+      session.close();
+    }
+    return resultList;
+  }
 }
