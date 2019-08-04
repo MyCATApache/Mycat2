@@ -24,4 +24,8 @@ public class SessionThread extends Thread {
   public void setCurSession(Session session){
     this.session = session;
   }
+
+  public void close() {
+
+  }
 }

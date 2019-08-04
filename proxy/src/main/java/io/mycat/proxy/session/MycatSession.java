@@ -34,8 +34,7 @@ import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
-import io.mycat.proxy.reactor.ReactorEnv;
-import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.security.MycatUser;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
@@ -194,11 +193,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     assert hint != null;
     try {
       if (crossSwapThreadBufferPool != null) {
-        Thread source = crossSwapThreadBufferPool.getSource();
+        SessionThread source = crossSwapThreadBufferPool.getSource();
         if (source != null) {
-//          ReactorEnv reactorEnv = source.getReactorEnv();
-//          source.interrupt();
-//          reactorEnv.close();
+          source.close();
         }
       }
     } catch (Exception e) {
@@ -541,7 +538,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   /**
    * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
    */
-  public void deliverWorkerThread(Thread thread) {
+  public void deliverWorkerThread(SessionThread thread) {
     crossSwapThreadBufferPool.bindSource(thread);
     assert thread == Thread.currentThread();
   }

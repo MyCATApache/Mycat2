@@ -2,7 +2,7 @@ package io.mycat.proxy.buffer;
 
 import io.mycat.MycatException;
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.proxy.reactor.SessionThread;
 import java.nio.ByteBuffer;
 
 /**
@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
  */
 public class CrossSwapThreadBufferPool {
 
-  private volatile Thread source;
+  private volatile SessionThread source;
   private BufferPool bufferPool;
 
   public CrossSwapThreadBufferPool(
@@ -36,11 +36,11 @@ public class CrossSwapThreadBufferPool {
     bufferPool.recycle(theBuf);
   }
 
-  public void bindSource(Thread source) {
+  public void bindSource(SessionThread source) {
     this.source = source;
   }
 
-  public Thread getSource() {
+  public SessionThread getSource() {
     return source;
   }
 }

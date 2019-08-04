@@ -5,7 +5,7 @@ import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.MycatSession;
 import java.util.function.Consumer;
 
@@ -39,9 +39,9 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
   public void block(MycatSession session, Consumer<MycatSession> consumer) {
     TransactionProcessUnitManager.INSTANCE.run(session,() -> {
-      Thread thread = null;
+      SessionThread thread = null;
       try {
-        thread = Thread.currentThread();
+        thread = (SessionThread) Thread.currentThread();
         session.deliverWorkerThread(thread);
         consumer.accept(session);
       } catch (Exception e) {
