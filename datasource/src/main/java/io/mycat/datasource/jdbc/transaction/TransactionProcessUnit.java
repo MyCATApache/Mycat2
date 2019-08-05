@@ -19,37 +19,36 @@ public final class TransactionProcessUnit extends SessionThread {
 
   @Override
   public void run() {
-
-    while (!isInterrupted()) {
-      Runnable poll = null;
-      try {
-        poll = blockingDeque.take();
-        if (poll == END){
-          break;
-        }
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-      if (poll != null) {
-        this.startTime = System.currentTimeMillis();
+    try {
+      while (!isInterrupted()) {
+        Runnable poll = null;
         try {
-          poll.run();
-        } catch (Exception e) {
-          LOGGER.error("", e);
+          poll = blockingDeque.take();
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+        if (poll != null) {
+          this.startTime = System.currentTimeMillis();
+          try {
+            poll.run();
+          } catch (Exception e) {
+            LOGGER.error("", e);
+          }
         }
       }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+    System.out.println("---------------------------------------------");
   }
 
   public long getStartTime() {
     return startTime;
   }
 
-  static final Runnable END = () -> {
-  };
-
   public void close() {
-    interrupt();
-    blockingDeque.add(END);
+    super.close();
+//    interrupt();
+//    blockingDeque.add(END);
   }
 }

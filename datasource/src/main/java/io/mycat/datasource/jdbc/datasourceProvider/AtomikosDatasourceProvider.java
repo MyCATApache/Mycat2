@@ -30,7 +30,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     ds.setXaProperties(p);
     ds.setUniqueResourceName(datasourceName);
     ds.setXaDataSourceClassName(jdbcDriver);
-
+    ds.setLocalTransactionMode(true);
     return ds;
   }
 

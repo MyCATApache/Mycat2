@@ -15,6 +15,7 @@ import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
+import io.mycat.datasource.jdbc.transaction.TransactionProcessUnit;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -71,14 +72,18 @@ public class GridRuntime {
     HeartbeatRootConfig heartbeatRootConfig = proxyRuntime
         .getConfig(ConfigEnum.HEARTBEAT);
     long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+    TransactionProcessUnit transactionProcessUnit = new TransactionProcessUnit();
+    transactionProcessUnit.start();
     blockScheduled.scheduleAtFixedRate(() -> {
-      try {
-        for (JdbcDataSource value : jdbcDataSourceMap.values()) {
-          value.heartBeat();
+      transactionProcessUnit.run(() -> {
+        try {
+          for (JdbcDataSource value : jdbcDataSourceMap.values()) {
+            value.heartBeat();
+          }
+        } catch (Exception e) {
+          e.printStackTrace();
         }
-      } catch (Exception e) {
-        LOGGER.error("", e);
-      }
+      });
     }, 0, period, TimeUnit.SECONDS);
 
   }

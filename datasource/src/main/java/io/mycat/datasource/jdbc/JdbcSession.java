@@ -23,14 +23,17 @@ public class JdbcSession implements CloseableObject {
   protected final int sessionId;
   protected final JdbcDataSource key;
   protected volatile Connection connection;
+  private JdbcDataSourceManager jdbcDataSourceManager;
 
   public JdbcSession(int sessionId, JdbcDataSource key) {
     this.sessionId = sessionId;
     this.key = key;
   }
 
-  public void wrap(Connection connection) {
+  public void wrap(Connection connection,
+      JdbcDataSourceManager jdbcDataSourceManager) {
     this.connection = connection;
+    this.jdbcDataSourceManager = jdbcDataSourceManager;
   }
 
   public JdbcDataSource getDatasource() {
@@ -54,11 +57,7 @@ public class JdbcSession implements CloseableObject {
 
   public void close(boolean normal, String reason) {
     LOGGER.debug("jdbc sessionId:{} normal:{} reason:{}", sessionId, normal, reason);
-    try {
-      connection.close();
-    } catch (Exception e) {
-      LOGGER.debug("", e);
-    }
+    jdbcDataSourceManager.closeSession(this, normal, reason);
   }
 
   public int sessionId() {
@@ -104,6 +103,7 @@ public class JdbcSession implements CloseableObject {
       throw new MycatException(e);
     }
   }
+
   public void commit() {
     try {
       connection.commit();

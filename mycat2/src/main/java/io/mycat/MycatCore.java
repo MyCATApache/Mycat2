@@ -116,7 +116,8 @@ public class MycatCore {
       HeartbeatRootConfig heartbeatRootConfig) {
     long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
     long replicaIdleCheckPeriod = idleTimeout / 2;
-    service.scheduleAtFixedRate(idleConnectCheck(runtime), 0, replicaIdleCheckPeriod,
+    service.scheduleAtFixedRate(idleConnectCheck(runtime), replicaIdleCheckPeriod,
+        replicaIdleCheckPeriod,
         TimeUnit.SECONDS);
   }
 

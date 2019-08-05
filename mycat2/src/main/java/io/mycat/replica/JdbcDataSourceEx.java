@@ -14,11 +14,13 @@ public class JdbcDataSourceEx extends JdbcDataSource {
   private final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(JdbcDataSourceEx.class);
   final JdbcHeartbeatManager jdbcHeartbeatManager;
+  private GridRuntime runtime;
 
   public JdbcDataSourceEx(GridRuntime runtime, int index, DatasourceConfig datasourceConfig,
       JdbcReplica mycatReplica) {
     super(index, datasourceConfig, mycatReplica);
     jdbcHeartbeatManager = new JdbcHeartbeatManager(this, runtime);
+    this.runtime = runtime;
   }
 
   public void heartBeat() {

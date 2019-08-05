@@ -81,7 +81,7 @@ public class JdbcDataSourceManager implements SessionManager {
     JdbcSession jdbcSession = new JdbcSession((int) Thread.currentThread().getId(), key);
     SessionThread thread = (SessionThread) Thread.currentThread();
     thread.addCloseableObject(jdbcSession);
-    jdbcSession.wrap(connection);
+    jdbcSession.wrap(connection, this);
     allSessions.put(jdbcSession.sessionId(), jdbcSession);
     return jdbcSession;
   }
