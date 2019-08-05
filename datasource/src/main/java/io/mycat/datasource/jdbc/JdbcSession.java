@@ -149,4 +149,13 @@ public class JdbcSession implements CloseableObject {
       LOGGER.error("", e);
     }
   }
+
+  public boolean isClosed() {
+    try {
+      return connection.isClosed();
+    } catch (SQLException e) {
+      LOGGER.error("", e);
+      return false;
+    }
+  }
 }

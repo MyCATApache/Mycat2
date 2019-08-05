@@ -4,6 +4,7 @@ package io.mycat.datasource.jdbc;
 import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.proxy.reactor.SessionThread;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -78,6 +79,8 @@ public class JdbcDataSourceManager implements SessionManager {
       throw new MycatException(e);
     }
     JdbcSession jdbcSession = new JdbcSession((int) Thread.currentThread().getId(), key);
+    SessionThread thread = (SessionThread) Thread.currentThread();
+    thread.addCloseableObject(jdbcSession);
     jdbcSession.wrap(connection);
     allSessions.put(jdbcSession.sessionId(), jdbcSession);
     return jdbcSession;

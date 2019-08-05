@@ -1,6 +1,6 @@
 package io.mycat;
 
-public interface CloseableObject {
+public interface CloseableObject extends Cloneable {
 
   void onExceptionClose();
 

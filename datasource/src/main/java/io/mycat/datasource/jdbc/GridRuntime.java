@@ -19,6 +19,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
+import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.MycatSession;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,7 +66,8 @@ public class GridRuntime {
     DataNodeRootConfig dataNodeRootConfig = proxyRuntime.getConfig(ConfigEnum.DATANODE);
     initJdbcDataNode(dataNodeRootConfig);
 
-    ScheduledExecutorService blockScheduled = Executors.newScheduledThreadPool(1);
+    ScheduledExecutorService blockScheduled = Executors.newScheduledThreadPool(1,
+        r -> new SessionThread(r));
     HeartbeatRootConfig heartbeatRootConfig = proxyRuntime
         .getConfig(ConfigEnum.HEARTBEAT);
     long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();

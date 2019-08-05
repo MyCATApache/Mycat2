@@ -60,7 +60,7 @@ public class SimpleDataNodeSession implements DataNodeSession {
     Objects.requireNonNull(dataNode);
     JdbcSession session = backends
         .compute(dataNode, (s, session1) -> {
-          if (session1 == null) {
+          if (session1 == null || session1.isClosed()) {
             session1 = jdbcRuntime
                 .getJdbcSessionByDataNodeName(dataNode, isolation, autocommit,
                     new JdbcDataSourceQuery()
