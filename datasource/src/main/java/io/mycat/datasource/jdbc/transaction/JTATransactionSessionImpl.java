@@ -5,7 +5,6 @@ import io.mycat.datasource.jdbc.JdbcDataSource;
 import io.mycat.datasource.jdbc.connection.AbsractConnection;
 import io.mycat.datasource.jdbc.connection.XATransactionConnection;
 import java.sql.Connection;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import javax.transaction.Status;
@@ -16,7 +15,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   private final UserTransaction userTransaction;
   private final TransactionProcessUnit transactionProcessUnit;
-  private final Map<JdbcDataSource, XATransactionConnection> connectionMap = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<JdbcDataSource, XATransactionConnection> connectionMap = new ConcurrentHashMap<>();
   private boolean autocommit = false;
   private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
@@ -33,6 +32,8 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   @Override
   public void begin() {
+    connectionMap.values().forEach(c -> c.close());
+    connectionMap.clear();
     try {
       userTransaction.begin();
     } catch (Exception e) {
@@ -42,26 +43,28 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   public AbsractConnection getConnection(JdbcDataSource jdbcDataSource) {
     beforeDoAction();
-    XATransactionConnection connection = connectionMap.compute(jdbcDataSource,
-        new BiFunction<JdbcDataSource, XATransactionConnection, XATransactionConnection>() {
-          @Override
-          public XATransactionConnection apply(JdbcDataSource dataSource,
-              XATransactionConnection absractConnection) {
-            if (absractConnection != null) {
-              if (absractConnection.isClosed()) {
-                if (!isInTransaction()) {
-                  return transactionProcessUnit
-                      .getXATransactionConnection(jdbcDataSource, transactionIsolation);
+    XATransactionConnection connection;
+    do {
+      connection = connectionMap.compute(jdbcDataSource,
+          new BiFunction<JdbcDataSource, XATransactionConnection, XATransactionConnection>() {
+            @Override
+            public XATransactionConnection apply(JdbcDataSource dataSource,
+                XATransactionConnection absractConnection) {
+              if (absractConnection != null) {
+                if (absractConnection.isClosed()) {
+                  if (!isInTransaction()) {
+                    return transactionProcessUnit
+                        .getXATransactionConnection(jdbcDataSource, transactionIsolation);
+                  }
                 }
-                throw new MycatException("11111111111111");
+                return absractConnection;
+              } else {
+                return transactionProcessUnit
+                    .getXATransactionConnection(jdbcDataSource, transactionIsolation);
               }
-              return absractConnection;
-            } else {
-              return transactionProcessUnit
-                  .getXATransactionConnection(jdbcDataSource, transactionIsolation);
             }
-          }
-        });
+          });
+    } while (connection.isClosed());
 
     if (connection.isClosed()) {
       throw new MycatException("11111111111111");
@@ -92,7 +95,14 @@ public class JTATransactionSessionImpl implements TransactionSession {
   @Override
   public boolean isInTransaction() {
     try {
-      return Status.STATUS_NO_TRANSACTION != userTransaction.getStatus();
+      int status = userTransaction.getStatus();
+      switch (status) {
+        case Status.STATUS_NO_TRANSACTION:
+        case Status.STATUS_UNKNOWN:
+          return false;
+        default:
+          return true;
+      }
     } catch (SystemException e) {
       throw new MycatException(e);
     }
@@ -104,6 +114,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
       if (!this.autocommit && Status.STATUS_NO_TRANSACTION == userTransaction.getStatus()) {
         begin();
       }
+
       System.out.println("--------------------------------------------------------------------");
       System.out.println(userTransaction.getStatus());
     } catch (SystemException e) {
@@ -125,7 +136,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
 
   public void close() {
-    // connectionMap.values().forEach(AbsractConnection::close);
-    // connectionMap.clear();
+    connectionMap.values().forEach(AbsractConnection::close);
+    connectionMap.clear();
   }
 }

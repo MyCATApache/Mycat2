@@ -5,6 +5,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MycatSession;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -45,6 +46,7 @@ public class TransactionProcessUnitManager {
               allSession.add(transactionThread1);
             }
           }
+          Objects.requireNonNull(transactionThread1);
           return transactionThread1;
         });
     transactionThread.run(runnable);

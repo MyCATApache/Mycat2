@@ -20,16 +20,19 @@ public abstract class AbsractConnection {
   protected final Connection connection;
   private JdbcDataSource jdbcDataSource;
   private volatile boolean isClosed = false;
+  protected final ConnectionManager connectionManager;
 
-  public AbsractConnection(Connection connection, JdbcDataSource jdbcDataSource) {
+  public AbsractConnection(Connection connection, JdbcDataSource jdbcDataSource,
+      ConnectionManager connectionManager) {
     this.connection = connection;
     this.jdbcDataSource = jdbcDataSource;
+    this.connectionManager = connectionManager;
   }
 
 
   public MycatUpdateResponse executeUpdate(String sql, boolean needGeneratedKeys) {
     try (Statement statement = connection.createStatement()) {
-      statement.executeUpdate(sql,
+      statement.execute(sql,
           needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
       int lastInsertId = 0;
       if (needGeneratedKeys) {
@@ -63,8 +66,7 @@ public abstract class AbsractConnection {
     try {
       if (!isClosed) {
         isClosed = true;
-
-        ///connection.close();
+        connectionManager.closeConnection(connection);
       }
     } catch (Exception e) {
       LOGGER.error("", e);

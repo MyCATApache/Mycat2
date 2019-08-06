@@ -9,10 +9,13 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import javax.sql.DataSource;
 
 /**
@@ -23,6 +26,7 @@ public class AbsractJdbcConnectionManager implements ConnectionManager {
   private final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(AbsractJdbcConnectionManager.class);
   private final HashMap<JdbcDataSource, DataSource> dataSourceMap = new HashMap<>();
+  private final Set<Connection> unused = Collections.synchronizedSet(new HashSet<>());
   private final DatasourceProvider datasourceProvider;
   private final List<JdbcDataSource> dataSources;
 
@@ -48,16 +52,36 @@ public class AbsractJdbcConnectionManager implements ConnectionManager {
   }
 
 
-  public Connection getConnection(JdbcDataSource key) {
+  public synchronized Connection getConnection(JdbcDataSource key) {
     DataSource pool = getPool(key);
     try {
       Connection connection = pool.getConnection();
       if (connection.isClosed()) {
         throw new MycatException("");
       }
+//      if(!unused.isEmpty()&&!unused.contains(connection)){
+//        closeConnection(connection);
+//        return getConnection(key);
+//      }
       return connection;
     } catch (SQLException e) {
       throw new MycatException(e);
+    }
+  }
+
+  @Override
+  public synchronized void closeConnection(Connection connection) {
+    try {
+
+      if (!isJTA()) {
+        if (!connection.isClosed()) {
+          connection.close();
+        }
+      } else {
+        //gc
+      }
+    } catch (SQLException e) {
+      e.printStackTrace();
     }
   }
 

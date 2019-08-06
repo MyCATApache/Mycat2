@@ -5,6 +5,8 @@ import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.datasource.jdbc.connection.AbsractJdbcConnectionManager;
 import io.mycat.datasource.jdbc.connection.AutocommitConnection;
+import io.mycat.datasource.jdbc.connection.LocalTransactionConnection;
+import io.mycat.datasource.jdbc.connection.XATransactionConnection;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -128,11 +130,28 @@ public class JdbcReplica implements MycatReplica {
     return selector.writeDataSource.contains(jdbcDataSource);
   }
 
-  public Connection getConnection(JdbcDataSource dataSource) {
+  private Connection getConnection(JdbcDataSource dataSource) {
     return dataSourceManager.getConnection(dataSource);
   }
 
   public AutocommitConnection getAutocomitConnection(JdbcDataSource dataSource) {
-    return new AutocommitConnection(dataSourceManager.getConnection(dataSource), dataSource);
+    return new AutocommitConnection(dataSourceManager.getConnection(dataSource), dataSource,
+        dataSourceManager);
   }
+
+
+  public LocalTransactionConnection getLocalTransactionConnection(JdbcDataSource dataSource,
+      int transactionIsolation) {
+    Connection connection = getConnection(dataSource);
+    return new LocalTransactionConnection(connection, dataSource, transactionIsolation,
+        dataSourceManager);
+  }
+
+  public XATransactionConnection getXATransactionConnection(JdbcDataSource dataSource,
+      int transactionIsolation) {
+    Connection connection = getConnection(dataSource);
+    return new XATransactionConnection(connection, dataSource, transactionIsolation,
+        dataSourceManager);
+  }
+
 }

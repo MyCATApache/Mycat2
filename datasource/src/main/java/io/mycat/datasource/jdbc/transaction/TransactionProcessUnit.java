@@ -1,6 +1,5 @@
 package io.mycat.datasource.jdbc.transaction;
 
-import io.mycat.MycatException;
 import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.datasource.jdbc.JdbcDataSource;
 import io.mycat.datasource.jdbc.connection.AutocommitConnection;
@@ -9,8 +8,6 @@ import io.mycat.datasource.jdbc.connection.XATransactionConnection;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.concurrent.LinkedTransferQueue;
 
 public final class TransactionProcessUnit extends SessionThread {
@@ -70,26 +67,17 @@ public final class TransactionProcessUnit extends SessionThread {
   }
 
   public AutocommitConnection getAutocommitConnection(JdbcDataSource dataSource) {
-    return new AutocommitConnection(runtime.getConnection(dataSource), dataSource);
+    return dataSource.getReplica().getAutocomitConnection(dataSource);
   }
 
   public LocalTransactionConnection getLocalTransactionConnection(JdbcDataSource dataSource,
       int transactionIsolation) {
-    Connection connection = runtime.getConnection(dataSource);
-    return new LocalTransactionConnection(connection, dataSource, transactionIsolation);
+    return dataSource.getReplica().getLocalTransactionConnection(dataSource, transactionIsolation);
   }
 
   public XATransactionConnection getXATransactionConnection(JdbcDataSource dataSource,
       int transactionIsolation) {
-    Connection connection = runtime.getConnection(dataSource);
-    try {
-      if (connection.isClosed()) {
-        throw new MycatException("");
-      }
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-    return new XATransactionConnection(connection, dataSource, transactionIsolation);
+    return dataSource.getReplica().getXATransactionConnection(dataSource, transactionIsolation);
   }
 
   public TransactionSession getTransactionSession() {

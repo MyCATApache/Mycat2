@@ -566,23 +566,25 @@ public class JdbcDao extends ModualTest {
   @Test
   public void jtaTest() throws InterruptedException, ExecutionException, IOException {
     AtomicInteger atomicInteger = new AtomicInteger(0);
-    int count = 999999999;
+    int count = 1000;
     for (int i = 0; i < count; i++) {
       int index = i;
       new Thread(() -> {
-        try (Connection connection = getConnection()) {
-          connection.setAutoCommit(false);
-          try (Statement statement = connection.createStatement()) {
-            statement.execute("select 1");
-            statement.execute(" INSERT INTO `travelrecord` (`id`) VALUES ('2'); ");
-            statement.execute(" INSERT INTO `travelrecord2` (`id`) VALUES ('3'); ");
+        for (int j = 0; j < 3; j++) {
+          try (Connection connection = getConnection()) {
+            connection.setAutoCommit(false);
+            try (Statement statement = connection.createStatement()) {
+              statement.execute("select 1");
+              statement.execute(" INSERT INTO `travelrecord` (`id`) VALUES ('2'); ");
+              statement.execute(" INSERT INTO `travelrecord2` (`id`) VALUES ('3'); ");
+            }
+            connection.commit();
+            atomicInteger.incrementAndGet();
+            LOGGER.info("connectId:{} end", index);
+          } catch (Exception e) {
+            LOGGER.error("{}", e);
+            return;
           }
-          connection.commit();
-          atomicInteger.incrementAndGet();
-          LOGGER.info("connectId:{} end", index);
-        } catch (Exception e) {
-          LOGGER.error("{}", e);
-          return;
         }
       }).start();
       Thread.sleep(1);

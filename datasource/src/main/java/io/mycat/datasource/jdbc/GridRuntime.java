@@ -22,7 +22,6 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -210,9 +209,6 @@ public class GridRuntime {
     return datasourceProvider;
   }
 
-  public Connection getConnection(JdbcDataSource dataSource) {
-    return dataSource.getReplica().getConnection(dataSource);
-  }
 
   public TransactionProcessUnitManager getTransactionProcessUnitManager() {
     return transactionProcessUnitManager;

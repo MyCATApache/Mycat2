@@ -13,10 +13,9 @@ public class XATransactionConnection extends AbsractConnection {
       .getLogger(XATransactionConnection.class);
 
   public XATransactionConnection(Connection connection, JdbcDataSource dataSource,
-      int transactionIsolation) {
-    super(connection, dataSource);
+      int transactionIsolation, ConnectionManager connectionManager) {
+    super(connection, dataSource, connectionManager);
     try {
-      connection.setAutoCommit(false);
       connection.setTransactionIsolation(transactionIsolation);
     } catch (SQLException e) {
       LOGGER.error("", e);

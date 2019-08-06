@@ -85,6 +85,9 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
 
     MycatMonitor.onOrginSQL(mycat, orgin);
 
+    if (sql.contains("set autocommit=0")) {
+      return begin(transactionSession);
+    }
     switch (sqlType) {
       case BufferSQLContext.BEGIN_SQL:
       case BufferSQLContext.START_SQL:
