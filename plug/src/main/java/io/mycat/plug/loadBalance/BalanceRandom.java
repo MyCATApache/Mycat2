@@ -32,8 +32,8 @@ public enum BalanceRandom implements LoadBalanceStrategy{
           return null;
       }
       int size = entityList.size();
-      int randomIndex = ThreadLocalRandom.current().nextInt(size);
+      int randomIndex = ThreadLocalRandom.current().nextInt(0, size);
       return entityList.get(randomIndex);
     }
-  };
+  }
 }

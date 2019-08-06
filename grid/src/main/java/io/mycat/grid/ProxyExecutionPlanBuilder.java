@@ -22,8 +22,10 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.config.schema.SchemaType;
-import io.mycat.datasource.jdbc.DataNodeSession;
 import io.mycat.datasource.jdbc.GridRuntime;
+import io.mycat.datasource.jdbc.transaction.TransactionProcessUnit;
+import io.mycat.datasource.jdbc.transaction.TransactionSession;
+import io.mycat.datasource.jdbc.transaction.TransactionSessionUtil;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -46,11 +48,10 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
   private GridRuntime jdbcRuntime;
   private static final MycatLogger IGNORED_SQL_LOGGER = MycatLoggerFactory
       .getLogger("IGNORED_SQL_LOGGER");
-  private final DataNodeSession dataNodeSession;
 
-  public ProxyExecutionPlanBuilder(MycatSession mycat,DataNodeSession dataNodeSession, GridRuntime jdbcRuntime) {
+  public ProxyExecutionPlanBuilder(MycatSession mycat,
+      GridRuntime jdbcRuntime) {
     this.mycat = mycat;
-    this.dataNodeSession = dataNodeSession;
     this.jdbcRuntime = jdbcRuntime;
     this.parser = new BufferSQLParser();
     this.sqlContext = new BufferSQLContext();
@@ -61,6 +62,8 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
   }
 
   public SQLExecuter[] generate(byte[] sqlBytes) {
+    TransactionSession transactionSession = ((TransactionProcessUnit) Thread.currentThread())
+        .getTransactionSession();
     MycatSchema schema = null;
     parser.parse(sqlBytes, sqlContext);
     String orgin = new String(sqlBytes);
@@ -86,21 +89,21 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
       case BufferSQLContext.BEGIN_SQL:
       case BufferSQLContext.START_SQL:
       case BufferSQLContext.START_TRANSACTION_SQL: {
-        return begin();
+        return begin(transactionSession);
       }
       case BufferSQLContext.COMMIT_SQL: {
-        return commit();
+        return commit(transactionSession);
       }
       case BufferSQLContext.SET_AUTOCOMMIT_SQL: {
-        dataNodeSession.setAutomcommit(sqlContext.isAutocommit());
+        transactionSession.setAutocommit(sqlContext.isAutocommit());
         mycat.setAutoCommit(sqlContext.isAutocommit());
         return responseOk();
       }
       case BufferSQLContext.ROLLBACK_SQL: {
-        return rollback();
+        return rollback(transactionSession);
       }
       case SET_TRANSACTION_SQL: {
-        return setTranscation();
+        return setTranscation(transactionSession);
       }
       case SHOW_DB_SQL:
         return new SQLExecuter[]{
@@ -139,8 +142,8 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
   }
 
   private SQLExecuter[] directSQL(MycatSchema schema, String sql) {
-    MycatResultSetResponse response = dataNodeSession
-        .executeQuery(mycat, router.getRandomDataNode(schema), sql, true, null);
+    MycatResultSetResponse response = TransactionSessionUtil
+        .executeQuery(router.getRandomDataNode(schema), sql, true, null);
     return new SQLExecuter[]{() -> response};
   }
 
@@ -150,32 +153,32 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
     return responseOk();
   }
 
-  private SQLExecuter[] setTranscation() {
+  private SQLExecuter[] setTranscation(TransactionSession transactionSession) {
     MySQLIsolation isolation = sqlContext.getIsolation();
     if (isolation == null) {
       throw new MycatException("unsupport!");
     }
-    dataNodeSession.setTransactionIsolation(isolation);
+    transactionSession.setTransactionIsolation(isolation.getJdbcValue());
     mycat.setIsolation(isolation);
     return responseOk();
   }
 
-  private SQLExecuter[] begin() {
+  private SQLExecuter[] begin(TransactionSession transactionSession) {
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.addServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
-    dataNodeSession.startTransaction();
+    transactionSession.begin();
     return responseOk();
   }
 
-  private SQLExecuter[] commit() {
+  private SQLExecuter[] commit(TransactionSession transactionSession) {
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
-    dataNodeSession.commit();
+    transactionSession.commit();
     return responseOk();
   }
 
-  private SQLExecuter[] rollback() {
-    dataNodeSession.rollback();
+  private SQLExecuter[] rollback(TransactionSession transactionSession) {
+    transactionSession.rollback();
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
     return responseOk();
@@ -192,15 +195,15 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
       case UPDATE_SQL:
       case DELETE_SQL:
       case INSERT_SQL: {
-        MycatUpdateResponse response = dataNodeSession
-            .executeUpdate(mycat, dataNode, sql, sqlType == INSERT_SQL, true, loadBalanceByBalance);
+        MycatUpdateResponse response = TransactionSessionUtil
+            .executeUpdate(dataNode, sql, sqlType == INSERT_SQL, true, loadBalanceByBalance);
         return () -> response;
       }
       case SELECT_FOR_UPDATE_SQL:
       case SELECT_SQL: {
         boolean runOnMaster = routeResult.isRunOnMaster(false) || !sqlContext.isSimpleSelect();
-        MycatResultSetResponse response = dataNodeSession
-            .executeQuery(mycat, routeResult.getDataNode(), sql, runOnMaster, loadBalanceByBalance);
+        MycatResultSetResponse response = TransactionSessionUtil
+            .executeQuery(routeResult.getDataNode(), sql, runOnMaster, loadBalanceByBalance);
         return () -> response;
       }
       default:

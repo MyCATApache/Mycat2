@@ -1,7 +1,7 @@
 package io.mycat.grid;
 
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
+import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
@@ -13,6 +13,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockProxyCommandHandler.class);
   final GridProxyCommandHandler handler;
+  private GridRuntime jdbcRuntime;
 
   public BlockProxyCommandHandler() {
     handler = new GridProxyCommandHandler();
@@ -21,6 +22,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     handler.initRuntime(session, runtime);
+    this.jdbcRuntime = (GridRuntime) runtime.getDefContext().get("gridRuntime");
   }
 
   @Override
@@ -33,7 +35,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
   }
 
   public void block(MycatSession session, Consumer<MycatSession> consumer) {
-    TransactionProcessUnitManager.INSTANCE.run(session, () -> {
+    jdbcRuntime.getTransactionProcessUnitManager().run(session, () -> {
       SessionThread thread = null;
       try {
         thread = (SessionThread) Thread.currentThread();

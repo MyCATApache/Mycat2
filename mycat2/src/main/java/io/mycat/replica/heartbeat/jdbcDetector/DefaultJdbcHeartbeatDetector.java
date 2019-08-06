@@ -9,7 +9,7 @@ import io.mycat.datasource.jdbc.GridRuntime;
 import io.mycat.datasource.jdbc.JdbcDataSource;
 import io.mycat.datasource.jdbc.JdbcReplica;
 import io.mycat.datasource.jdbc.JdbcRowBaseIteratorImpl;
-import io.mycat.datasource.jdbc.JdbcSession;
+import io.mycat.datasource.jdbc.connection.AutocommitConnection;
 import io.mycat.replica.heartbeat.HeartbeatDetector;
 import io.mycat.replica.heartbeat.HeartbeatManager;
 import java.util.List;
@@ -59,11 +59,11 @@ public class DefaultJdbcHeartbeatDetector implements
 
   @Override
   public void heartBeat() {
-    JdbcSession session = null;
+    AutocommitConnection connection = null;
     try {
-      session = replica.createSessionDirectly(jdbcDataSource);
+      connection = replica.getAutocomitConnection(jdbcDataSource);
       List<Map<String, Object>> resultList;
-      try (JdbcRowBaseIteratorImpl iterator = session.executeQuery(callback.getSql())) {
+      try (JdbcRowBaseIteratorImpl iterator = connection.executeQuery(callback.getSql())) {
         resultList = iterator.getResultSetMap();
       }
       callback.process(resultList);
@@ -71,8 +71,8 @@ public class DefaultJdbcHeartbeatDetector implements
       callback.onException(e);
       throw e;
     } finally {
-      if (session != null) {
-        session.close(true, "heartBeat");
+      if (connection != null) {
+        connection.close();
       }
     }
   }

@@ -2,8 +2,10 @@ package io.mycat.datasource.jdbc.datasourceProvider;
 
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.jdbc.AtomikosDataSourceBean;
+import com.mysql.cj.jdbc.MysqlXADataSource;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.JdbcDataSource;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
@@ -22,15 +24,30 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     String datasourceName = config.getName();
 
     Properties p = new Properties();
-    p.setProperty("url", url);
-    p.setProperty("user", username);
-    p.setProperty("password", password);
-
+    p.setProperty("com.atomikos.icatch.serial_jta_transactions", "false");
     AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
     ds.setXaProperties(p);
+    ds.setConcurrentConnectionValidation(true);
     ds.setUniqueResourceName(datasourceName);
-    ds.setXaDataSourceClassName(jdbcDriver);
+    ds.getXaProperties().setProperty("com.atomikos.icatch.serial_jta_transactions", "false");
+    ds.setMaxPoolSize(65535);
     ds.setLocalTransactionMode(true);
+    ds.setBorrowConnectionTimeout(60);
+    ds.setReapTimeout(100000000);
+    ds.setMaxLifetime(999999999);
+
+    MysqlXADataSource mysqlXaDataSource = new MysqlXADataSource();
+    mysqlXaDataSource.setURL(url);
+    mysqlXaDataSource.setUser(username);
+    mysqlXaDataSource.setPassword(password);
+    try {
+      mysqlXaDataSource.setPinGlobalTxToPhysicalConnection(true);
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
+
+    ds.setXaDataSource(mysqlXaDataSource);
+
     return ds;
   }
 

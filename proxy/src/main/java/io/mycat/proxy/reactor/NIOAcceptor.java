@@ -58,7 +58,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
     // 找到一个可用的NIO Reactor Thread，交付托管
     MycatReactorThread[] reactorThreads = runtime.getMycatReactorThreads();
     MycatReactorThread nioReactor = reactorThreads[ThreadLocalRandom.current()
-                                                       .nextInt(reactorThreads.length)];
+        .nextInt(0, reactorThreads.length)];
     // 将通道注册到reactor对象上
     nioReactor.acceptNewSocketChannel(null, socketChannel);
   }

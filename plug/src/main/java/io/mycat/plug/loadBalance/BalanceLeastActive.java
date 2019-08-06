@@ -51,9 +51,9 @@ public enum BalanceLeastActive implements LoadBalanceStrategy {
       if (1 == size) {
         return balanceList.get(0);
       }
-      int i = ThreadLocalRandom.current().nextInt(size);
+      int i = ThreadLocalRandom.current().nextInt(0, size);
       return balanceList.get(i);
     }
-  };
+  }
 }
 

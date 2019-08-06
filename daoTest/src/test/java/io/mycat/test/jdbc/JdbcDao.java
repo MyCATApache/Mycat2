@@ -225,7 +225,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=true&characterEncoding=utf8";
+  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
   final static String username = "root";
   final static String password = "123456";
 
@@ -262,7 +262,7 @@ public class JdbcDao extends ModualTest {
   }
 
 //  public static void main(String[] args) {
-//    try (Connection connection = getConnection()) {
+//    try (Connection connection = getAutocommitConnection()) {
 //      connection.setAutoCommit(false);
 //      Statement statement = connection.createStatement();
 //      ResultSet resultSet = statement.executeQuery("SELECT `id`, `topid` FROM `test` FOR UPDATE;");
@@ -292,11 +292,11 @@ public class JdbcDao extends ModualTest {
     Connection connection = null;
     Properties properties = new Properties();
     properties.put("user", getUsername());
-    properties.put("password",  getPassword());
+    properties.put("password", getPassword());
     properties.put("useBatchMultiSend", "false");
     properties.put("usePipelineAuth", "false");
     connection = DriverManager
-        .getConnection(getUrl(),properties);
+        .getConnection(getUrl(), properties);
     return connection;
   }
 
@@ -562,4 +562,34 @@ public class JdbcDao extends ModualTest {
 //          }
 //        });
 //  }
+
+  @Test
+  public void jtaTest() throws InterruptedException, ExecutionException, IOException {
+    AtomicInteger atomicInteger = new AtomicInteger(0);
+    int count = 999999999;
+    for (int i = 0; i < count; i++) {
+      int index = i;
+      new Thread(() -> {
+        try (Connection connection = getConnection()) {
+          connection.setAutoCommit(false);
+          try (Statement statement = connection.createStatement()) {
+            statement.execute("select 1");
+            statement.execute(" INSERT INTO `travelrecord` (`id`) VALUES ('2'); ");
+            statement.execute(" INSERT INTO `travelrecord2` (`id`) VALUES ('3'); ");
+          }
+          connection.commit();
+          atomicInteger.incrementAndGet();
+          LOGGER.info("connectId:{} end", index);
+        } catch (Exception e) {
+          LOGGER.error("{}", e);
+          return;
+        }
+      }).start();
+      Thread.sleep(1);
+    }
+    while (atomicInteger.get() != count) {
+      Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+    }
+    LOGGER.info("success!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  }
 }

@@ -3,9 +3,12 @@ package io.mycat.datasource.jdbc;
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.datasource.jdbc.connection.AbsractJdbcConnectionManager;
+import io.mycat.datasource.jdbc.connection.AutocommitConnection;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class JdbcReplica implements MycatReplica {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcReplica.class);
-  private final JdbcDataSourceManager dataSourceManager;
+  private final AbsractJdbcConnectionManager dataSourceManager;
   private final ReplicaDatasourceSelector<JdbcDataSource> selector;
   private final GridRuntime runtime;
   private final ReplicaConfig replicaConfig;
@@ -29,8 +32,8 @@ public class JdbcReplica implements MycatReplica {
     List<JdbcDataSource> dataSources = getJdbcDataSources(datasourceConfigList);
     this.selector = new ReplicaDatasourceSelector<>(runtime, replicaConfig, writeIndex, dataSources,
         runtime.getLoadBalanceByBalanceName(null));
-    this.dataSourceManager = new JdbcDataSourceManager(runtime, provider, jdbcDriverMap,
-        dataSources, this.selector);
+    this.dataSourceManager = new AbsractJdbcConnectionManager(runtime, provider, jdbcDriverMap,
+        dataSources);
   }
 
   private List<JdbcDataSource> getJdbcDataSources(
@@ -46,15 +49,6 @@ public class JdbcReplica implements MycatReplica {
     return dataSources;
   }
 
-  public JdbcSession createSession(JdbcDataSource dataSource) {
-    return dataSourceManager.createSession(dataSource);
-  }
-
-
-  public JdbcSession getJdbcSessionByBalance(JdbcDataSourceQuery query) {
-    JdbcDataSource source = getDataSourceByBalance(query);
-    return createSession(source);
-  }
 
   public JdbcDataSource getDataSourceByBalance(JdbcDataSourceQuery query) {
     boolean runOnMaster = false;
@@ -134,7 +128,11 @@ public class JdbcReplica implements MycatReplica {
     return selector.writeDataSource.contains(jdbcDataSource);
   }
 
-  public JdbcSession createSessionDirectly(JdbcDataSource jdbcDataSource) {
-    return dataSourceManager.createSessionDirectly(jdbcDataSource);
+  public Connection getConnection(JdbcDataSource dataSource) {
+    return dataSourceManager.getConnection(dataSource);
+  }
+
+  public AutocommitConnection getAutocomitConnection(JdbcDataSource dataSource) {
+    return new AutocommitConnection(dataSourceManager.getConnection(dataSource), dataSource);
   }
 }

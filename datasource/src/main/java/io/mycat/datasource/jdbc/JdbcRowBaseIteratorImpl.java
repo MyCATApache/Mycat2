@@ -19,15 +19,12 @@ import java.util.Map;
 
 public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcRowBaseIteratorImpl.class);
-
-  private final DataNodeSession session;
+  private final static MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(JdbcRowBaseIteratorImpl.class);
   private final Statement statement;
   private final ResultSet resultSet;
 
-  public JdbcRowBaseIteratorImpl(DataNodeSession session,
-      Statement statement, ResultSet resultSet) {
-    this.session = session;
+  public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet) {
     this.statement = statement;
     this.resultSet = resultSet;
   }
@@ -66,9 +63,6 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
       statement.close();
     } catch (Exception e) {
       LOGGER.error("", e);
-    }
-    if (this.session != null) {
-      this.session.close();
     }
   }
 

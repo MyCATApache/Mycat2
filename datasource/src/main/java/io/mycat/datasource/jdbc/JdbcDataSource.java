@@ -48,7 +48,7 @@ public abstract class JdbcDataSource implements MycatDataSource, LoadBalanceElem
 //    List<JdbcDataSource> jdbcDataSources = initJdbcDatasource(replicaConfig);
 //
 //
-//    JdbcDataSourceManager sourceManager = new JdbcDataSourceManager(SessionProviderImpl.INSYANCE,
+//    AbsractJdbcConnectionManager sourceManager = new AbsractJdbcConnectionManager(SessionProviderImpl.INSYANCE,
 //        DruidDatasourceProvider.INSTANCE,jdbcDataSources);
 //
 //    JdbcDataSource jdbcDataSource = jdbcDataSources.get(0);

@@ -3,8 +3,6 @@ package io.mycat.datasource.jdbc;
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.beans.mycat.MycatReplica;
-import io.mycat.beans.mysql.MySQLAutoCommit;
-import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.datasource.DatasourceConfig;
@@ -15,13 +13,16 @@ import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
+import io.mycat.datasource.jdbc.transaction.JTATransactionSessionImpl;
+import io.mycat.datasource.jdbc.transaction.LocalTransactionSessionImpl;
 import io.mycat.datasource.jdbc.transaction.TransactionProcessUnit;
+import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
+import io.mycat.datasource.jdbc.transaction.TransactionSession;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.reactor.SessionThread;
-import io.mycat.proxy.session.MycatSession;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ public class GridRuntime {
   final GridBeanProviders providers;
   final boolean isJTA;
   private final DatasourceProvider datasourceProvider;
+  private final TransactionProcessUnitManager transactionProcessUnitManager;
 
   public GridRuntime(ProxyRuntime proxyRuntime) throws Exception {
     this.proxyRuntime = proxyRuntime;
@@ -66,13 +68,12 @@ public class GridRuntime {
         datasourceProvider);
     DataNodeRootConfig dataNodeRootConfig = proxyRuntime.getConfig(ConfigEnum.DATANODE);
     initJdbcDataNode(dataNodeRootConfig);
-
-    ScheduledExecutorService blockScheduled = Executors.newScheduledThreadPool(1,
-        r -> new SessionThread(r));
+    transactionProcessUnitManager = new TransactionProcessUnitManager(this);
+    ScheduledExecutorService blockScheduled = Executors.newScheduledThreadPool(1);
     HeartbeatRootConfig heartbeatRootConfig = proxyRuntime
         .getConfig(ConfigEnum.HEARTBEAT);
     long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
-    TransactionProcessUnit transactionProcessUnit = new TransactionProcessUnit();
+    TransactionProcessUnit transactionProcessUnit = new TransactionProcessUnit(this);
     transactionProcessUnit.start();
     blockScheduled.scheduleAtFixedRate(() -> {
       transactionProcessUnit.run(() -> {
@@ -103,17 +104,12 @@ public class GridRuntime {
     return jdbcReplica;
   }
 
-  public JdbcSession getJdbcSessionByDataNodeName(String dataNodeName,
-      MySQLIsolation isolation,
-      MySQLAutoCommit autoCommit,
+  public JdbcDataSource getJdbcDatasourceByDataNodeName(String dataNodeName,
       JdbcDataSourceQuery query) {
     Objects.requireNonNull(dataNodeName);
     JdbcDataNode jdbcDataNode = jdbcDataNodeMap.get(dataNodeName);
     JdbcReplica replica = jdbcDataNode.getReplica();
-    JdbcSession session = replica
-        .getJdbcSessionByBalance(query);
-    session.sync(isolation, autoCommit);
-    return session;
+    return replica.getDataSourceByBalance(query);
   }
 
 
@@ -202,11 +198,11 @@ public class GridRuntime {
     return providers;
   }
 
-  public DataNodeSession createDataNodeSession(MycatSession session) {
+  public TransactionSession createTransactionSession(TransactionProcessUnit processUnit) {
     if (isJTA) {
-      return new JTADataNodeSession(session,this);
+      return new LocalTransactionSessionImpl(processUnit);
     } else {
-      return new SimpleDataNodeSession(session,this);
+      return new JTATransactionSessionImpl(datasourceProvider.createUserTransaction(), processUnit);
     }
   }
 
@@ -214,17 +210,11 @@ public class GridRuntime {
     return datasourceProvider;
   }
 
-  public List<Map<String, Object>> query(JdbcDataSource dataSource, String sql) {
-    JdbcSession session = dataSource.getReplica().createSessionDirectly(dataSource);
-    Objects.requireNonNull(session);
-    List<Map<String, Object>> resultList;
-    try {
-      try (JdbcRowBaseIteratorImpl iterator = session.executeQuery(sql)) {
-        resultList = iterator.getResultSetMap();
-      }
-    } finally {
-      session.close();
-    }
-    return resultList;
+  public Connection getConnection(JdbcDataSource dataSource) {
+    return dataSource.getReplica().getConnection(dataSource);
+  }
+
+  public TransactionProcessUnitManager getTransactionProcessUnitManager() {
+    return transactionProcessUnitManager;
   }
 }
