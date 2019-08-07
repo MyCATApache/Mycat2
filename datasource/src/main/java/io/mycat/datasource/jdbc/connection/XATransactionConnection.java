@@ -1,7 +1,7 @@
 package io.mycat.datasource.jdbc.connection;
 
 import io.mycat.MycatException;
-import io.mycat.datasource.jdbc.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;

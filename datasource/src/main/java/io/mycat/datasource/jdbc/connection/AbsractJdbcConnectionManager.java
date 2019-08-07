@@ -3,19 +3,16 @@ package io.mycat.datasource.jdbc.connection;
 
 import io.mycat.MycatException;
 import io.mycat.datasource.jdbc.DatasourceProvider;
-import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.datasource.jdbc.JdbcDataSource;
+import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import javax.sql.DataSource;
 
 /**
@@ -26,12 +23,11 @@ public class AbsractJdbcConnectionManager implements ConnectionManager {
   private final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(AbsractJdbcConnectionManager.class);
   private final HashMap<JdbcDataSource, DataSource> dataSourceMap = new HashMap<>();
-  private final Set<Connection> unused = Collections.synchronizedSet(new HashSet<>());
   private final DatasourceProvider datasourceProvider;
   private final List<JdbcDataSource> dataSources;
 
 
-  public AbsractJdbcConnectionManager(GridRuntime runtime,
+  public AbsractJdbcConnectionManager(GRuntime runtime,
       DatasourceProvider provider, Map<String, String> jdbcDriverMap,
       List<JdbcDataSource> dataSources) {
     Objects.requireNonNull(jdbcDriverMap);
@@ -52,17 +48,13 @@ public class AbsractJdbcConnectionManager implements ConnectionManager {
   }
 
 
-  public synchronized Connection getConnection(JdbcDataSource key) {
+  public Connection getConnection(JdbcDataSource key) {
     DataSource pool = getPool(key);
     try {
       Connection connection = pool.getConnection();
       if (connection.isClosed()) {
-        throw new MycatException("");
+        throw new MycatException("get a broken connetion");
       }
-//      if(!unused.isEmpty()&&!unused.contains(connection)){
-//        closeConnection(connection);
-//        return getConnection(key);
-//      }
       return connection;
     } catch (SQLException e) {
       throw new MycatException(e);
@@ -70,18 +62,13 @@ public class AbsractJdbcConnectionManager implements ConnectionManager {
   }
 
   @Override
-  public synchronized void closeConnection(Connection connection) {
+  public void closeConnection(Connection connection) {
     try {
-
-      if (!isJTA()) {
-        if (!connection.isClosed()) {
-          connection.close();
-        }
-      } else {
-        //gc
+      if (!connection.isClosed()) {
+        connection.close();
       }
     } catch (SQLException e) {
-      e.printStackTrace();
+      LOGGER.error("", e);
     }
   }
 

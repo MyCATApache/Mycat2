@@ -2,7 +2,7 @@ package io.mycat.datasource.jdbc.datasourceProvider;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import io.mycat.datasource.jdbc.DatasourceProvider;
-import io.mycat.datasource.jdbc.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;

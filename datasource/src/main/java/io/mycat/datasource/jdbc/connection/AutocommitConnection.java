@@ -1,6 +1,6 @@
 package io.mycat.datasource.jdbc.connection;
 
-import io.mycat.datasource.jdbc.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import java.sql.Connection;
 
 public class AutocommitConnection extends AbsractConnection {

@@ -4,8 +4,8 @@ import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.beans.resultset.MycatUpdateResponseImpl;
-import io.mycat.datasource.jdbc.JdbcDataSource;
-import io.mycat.datasource.jdbc.JdbcRowBaseIteratorImpl;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
@@ -18,7 +18,7 @@ public abstract class AbsractConnection {
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(AbsractConnection.class);
   protected final Connection connection;
-  private JdbcDataSource jdbcDataSource;
+  private final JdbcDataSource jdbcDataSource;
   private volatile boolean isClosed = false;
   protected final ConnectionManager connectionManager;
 
@@ -66,6 +66,9 @@ public abstract class AbsractConnection {
     try {
       if (!isClosed) {
         isClosed = true;
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("close {}", connection);
+        }
         connectionManager.closeConnection(connection);
       }
     } catch (Exception e) {
@@ -93,10 +96,10 @@ public abstract class AbsractConnection {
 
   public boolean isClosed() {
     try {
-      return connection.isClosed();
+      return isClosed || connection.isClosed();
     } catch (SQLException e) {
-      e.printStackTrace();
-      return false;
+      LOGGER.error("", e);
+      return true;
     }
   }
 }

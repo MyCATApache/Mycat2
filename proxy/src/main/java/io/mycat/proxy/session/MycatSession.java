@@ -169,7 +169,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       if (dataNode.equals(this.dataNode)) {
         return;
       } else {
-        throw new MycatException("cannot switch dataNode  maybe session in transaction");
+        throw new MycatException("cannot switch dataNode  maybe session in manager");
       }
     }
   }

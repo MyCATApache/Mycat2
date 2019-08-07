@@ -1,14 +1,15 @@
-package io.mycat.datasource.jdbc.transaction;
+package io.mycat.datasource.jdbc.session;
 
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
-import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.datasource.jdbc.JdbcDataSource;
-import io.mycat.datasource.jdbc.JdbcDataSourceQuery;
-import io.mycat.datasource.jdbc.SingleDataNodeResultSetResponse;
-import io.mycat.datasource.jdbc.TextResultSetResponse;
+import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.connection.AbsractConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSourceQuery;
+import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
+import io.mycat.datasource.jdbc.resultset.SingleDataNodeResultSetResponse;
+import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import java.util.Objects;
 
@@ -37,7 +38,7 @@ public class TransactionSessionUtil {
     TransactionProcessUnit processUnit = (TransactionProcessUnit) Thread.currentThread();
     TransactionSession transactionSession = processUnit.getTransactionSession();
     transactionSession.beforeDoAction();
-    GridRuntime runtime = processUnit.getRuntime();
+    GRuntime runtime = processUnit.getRuntime();
     Objects.requireNonNull(dataNode);
     JdbcDataSource dataSource = runtime
         .getJdbcDatasourceByDataNodeName(dataNode,

@@ -1,27 +1,35 @@
 package io.mycat.datasource.jdbc;
 
+import io.mycat.ModuleUtil;
 import io.mycat.MycatException;
-import io.mycat.beans.mycat.MycatDataSource;
-import io.mycat.beans.mycat.MycatReplica;
-import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigLoader;
+import io.mycat.config.ConfigReceiver;
+import io.mycat.config.ConfigurableRoot;
+import io.mycat.config.GlobalConfig;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.JdbcDriverRootConfig;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
-import io.mycat.config.heartbeat.HeartbeatRootConfig;
+import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
-import io.mycat.datasource.jdbc.transaction.JTATransactionSessionImpl;
-import io.mycat.datasource.jdbc.transaction.LocalTransactionSessionImpl;
-import io.mycat.datasource.jdbc.transaction.TransactionProcessUnit;
-import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
-import io.mycat.datasource.jdbc.transaction.TransactionSession;
+import io.mycat.datasource.jdbc.datasource.JdbcDataNode;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSourceQuery;
+import io.mycat.datasource.jdbc.datasource.JdbcReplica;
+import io.mycat.datasource.jdbc.manager.TransactionProcessKey;
+import io.mycat.datasource.jdbc.manager.TransactionProcessTask;
+import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
+import io.mycat.datasource.jdbc.manager.TransactionProcessUnitManager;
+import io.mycat.datasource.jdbc.session.JTATransactionSessionImpl;
+import io.mycat.datasource.jdbc.session.LocalTransactionSessionImpl;
+import io.mycat.datasource.jdbc.session.TransactionSession;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.plug.loadBalance.LoadBalanceManager;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.proxy.ProxyRuntime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,71 +37,51 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
-public class GridRuntime {
-
-  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(GridRuntime.class);
-
-  final ProxyRuntime proxyRuntime;
-  final Map<String, JdbcReplica> jdbcReplicaMap = new HashMap<>();
-  final Map<String, JdbcDataNode> jdbcDataNodeMap = new HashMap<>();
-  final Map<String, JdbcDataSource> jdbcDataSourceMap = new HashMap<>();
-  final GridBeanProviders providers;
-  final boolean isJTA;
+public enum GRuntime {
+  INSTACNE;
+  private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(GRuntime.class);
+  private final Map<String, JdbcReplica> jdbcReplicaMap = new HashMap<>();
+  private final Map<String, JdbcDataNode> jdbcDataNodeMap = new HashMap<>();
+  private final Map<String, JdbcDataSource> jdbcDataSourceMap = new HashMap<>();
+  private final GBeanProviders providers;
+  private final boolean isJTA;
   private final DatasourceProvider datasourceProvider;
-  private final TransactionProcessUnitManager transactionProcessUnitManager;
+  private final LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
+  private final ConfigReceiver config;
+  private final TransactionProcessUnitManager manager;
 
-  public GridRuntime(ProxyRuntime proxyRuntime) throws Exception {
-    this.proxyRuntime = proxyRuntime;
-    String gridBeanProvidersClass = (String) proxyRuntime.getDefContext()
-        .getOrDefault("GridBeanProviders", "io.mycat.DefaultGridBeanProviders");
-    this.providers = (GridBeanProviders) Class.forName(gridBeanProvidersClass).newInstance();
-    ReplicasRootConfig dsConfig = proxyRuntime.getConfig(ConfigEnum.DATASOURCE);
-    MasterIndexesRootConfig replicaIndexConfig = proxyRuntime.getConfig(ConfigEnum.REPLICA_INDEX);
-    JdbcDriverRootConfig jdbcDriverRootConfig = proxyRuntime.getConfig(ConfigEnum.JDBC_DRIVER);
-    String datasourceProviderClass = jdbcDriverRootConfig.getDatasourceProviderClass();
-    Objects.requireNonNull(datasourceProviderClass);
+  GRuntime() {
     try {
-      this.datasourceProvider = (DatasourceProvider) Class.forName(datasourceProviderClass)
-          .newInstance();
+      this.config = ConfigLoader
+          .load("D:\\newgit2\\mycat2\\mycat2\\src\\main\\resources", GlobalConfig.genVersion());
+      String gridBeanProvidersClass = "io.mycat.DefaultGridBeanProviders";
+      this.providers = (GBeanProviders) Class.forName(gridBeanProvidersClass).newInstance();
+      ReplicasRootConfig dsConfig = config.getConfig(ConfigEnum.DATASOURCE);
+      MasterIndexesRootConfig replicaIndexConfig = config.getConfig(ConfigEnum.REPLICA_INDEX);
+      JdbcDriverRootConfig jdbcDriverRootConfig = config.getConfig(ConfigEnum.JDBC_DRIVER);
+      String datasourceProviderClass = jdbcDriverRootConfig.getDatasourceProviderClass();
+      Objects.requireNonNull(datasourceProviderClass);
+
+      PlugRootConfig plugRootConfig = config.getConfig(ConfigEnum.PLUG);
+      Objects.requireNonNull(plugRootConfig, "plug config can not found");
+      loadBalanceManager.load(plugRootConfig);
+
+      try {
+        this.datasourceProvider = (DatasourceProvider) Class.forName(datasourceProviderClass)
+            .newInstance();
+      } catch (Exception e) {
+        throw new MycatException("can not load datasourceProvider:{}", datasourceProviderClass);
+      }
+      isJTA = datasourceProvider.isJTA();
+      initJdbcReplica(dsConfig, replicaIndexConfig, jdbcDriverRootConfig.getJdbcDriver(),
+          datasourceProvider);
+      DataNodeRootConfig dataNodeRootConfig = config.getConfig(ConfigEnum.DATANODE);
+      initJdbcDataNode(dataNodeRootConfig);
+      manager = new TransactionProcessUnitManager(this);
     } catch (Exception e) {
-      throw new MycatException("can not load datasourceProvider:{}", datasourceProviderClass);
+      throw new MycatException(e);
     }
-    isJTA = datasourceProvider.isJTA();
-    initJdbcReplica(dsConfig, replicaIndexConfig, jdbcDriverRootConfig.getJdbcDriver(),
-        datasourceProvider);
-    DataNodeRootConfig dataNodeRootConfig = proxyRuntime.getConfig(ConfigEnum.DATANODE);
-    initJdbcDataNode(dataNodeRootConfig);
-    transactionProcessUnitManager = new TransactionProcessUnitManager(this);
-    ScheduledExecutorService blockScheduled = Executors.newScheduledThreadPool(1);
-    HeartbeatRootConfig heartbeatRootConfig = proxyRuntime
-        .getConfig(ConfigEnum.HEARTBEAT);
-    long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
-    TransactionProcessUnit transactionProcessUnit = new TransactionProcessUnit(this);
-    transactionProcessUnit.start();
-    blockScheduled.scheduleAtFixedRate(() -> {
-      transactionProcessUnit.run(() -> {
-        try {
-          for (JdbcDataSource value : jdbcDataSourceMap.values()) {
-            value.heartBeat();
-          }
-        } catch (Exception e) {
-          e.printStackTrace();
-        }
-      });
-    }, 0, period, TimeUnit.SECONDS);
-
-  }
-
-  public MySQLVariables getVariables() {
-    return proxyRuntime.getVariables();
-  }
-
-  public Map<String, Object> getDefContext() {
-    return proxyRuntime.getDefContext();
   }
 
 
@@ -124,7 +112,7 @@ public class GridRuntime {
     if (replicasRootConfig != null && replicasRootConfig.getReplicas() != null
         && !replicasRootConfig.getReplicas().isEmpty()) {
       for (ReplicaConfig replicaConfig : replicasRootConfig.getReplicas()) {
-        Set<Integer> replicaIndexes = ProxyRuntime.getReplicaIndexes(masterIndexes, replicaConfig);
+        Set<Integer> replicaIndexes = ModuleUtil.getReplicaIndexes(masterIndexes, replicaConfig);
         List<DatasourceConfig> jdbcDatasourceConfigList = getJdbcDatasourceList(replicaConfig);
         if (jdbcDatasourceConfigList.isEmpty()) {
           continue;
@@ -180,20 +168,7 @@ public class GridRuntime {
     return datasourceList;
   }
 
-  public <T> T getConfig(ConfigEnum heartbeat) {
-    return (T) proxyRuntime.getConfig(heartbeat);
-  }
-
-  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
-    return proxyRuntime.getLoadBalanceByBalanceName(name);
-  }
-
-  public void updateReplicaMasterIndexesConfig(MycatReplica replica,
-      List<MycatDataSource> writeDataSource) {
-    proxyRuntime.updateReplicaMasterIndexesConfig(replica, writeDataSource);
-  }
-
-  public GridBeanProviders getProvider() {
+  public GBeanProviders getProvider() {
     return providers;
   }
 
@@ -209,8 +184,19 @@ public class GridRuntime {
     return datasourceProvider;
   }
 
+  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
+    return loadBalanceManager.getLoadBalanceByBalanceName(name);
+  }
 
-  public TransactionProcessUnitManager getTransactionProcessUnitManager() {
-    return transactionProcessUnitManager;
+  public void updateReplicaMasterIndexesConfig(JdbcReplica replica, List writeDataSource) {
+  }
+
+  public <T extends ConfigurableRoot> T getConfig(ConfigEnum configEnum) {
+    ConfigurableRoot config = this.config.getConfig(configEnum);
+    return (T) config;
+  }
+
+  public void run(TransactionProcessKey key, TransactionProcessTask processTask) {
+    manager.run(key, processTask);
   }
 }

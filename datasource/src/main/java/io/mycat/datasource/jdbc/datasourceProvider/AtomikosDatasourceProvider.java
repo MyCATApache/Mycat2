@@ -4,7 +4,7 @@ import com.alibaba.druid.pool.xa.DruidXADataSource;
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.jdbc.AtomikosDataSourceBean;
 import io.mycat.datasource.jdbc.DatasourceProvider;
-import io.mycat.datasource.jdbc.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;

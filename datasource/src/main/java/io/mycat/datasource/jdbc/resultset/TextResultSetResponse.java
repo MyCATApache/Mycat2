@@ -1,4 +1,4 @@
-package io.mycat.datasource.jdbc;
+package io.mycat.datasource.jdbc.resultset;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;

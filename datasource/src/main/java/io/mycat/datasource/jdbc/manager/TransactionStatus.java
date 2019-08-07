@@ -1,4 +1,4 @@
-package io.mycat.datasource.jdbc.transaction;
+package io.mycat.datasource.jdbc.manager;
 
 import io.mycat.CloseableObject;
 

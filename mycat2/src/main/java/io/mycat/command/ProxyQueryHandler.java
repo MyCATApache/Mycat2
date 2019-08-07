@@ -252,7 +252,7 @@ public class ProxyQueryHandler {
     }
     MySQLIsolation isolation = sqlContext.getIsolation();
     if (isolation == null) {
-      mycat.setLastMessage("set transaction fail!");
+      mycat.setLastMessage("set manager fail!");
       mycat.writeErrorEndPacket();
       return;
     }

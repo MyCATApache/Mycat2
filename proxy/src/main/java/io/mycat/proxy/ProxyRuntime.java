@@ -14,18 +14,16 @@
  */
 package io.mycat.proxy;
 
+import io.mycat.ModuleUtil;
 import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
-import io.mycat.beans.mycat.MycatDataSource;
-import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.buffer.BufferPool;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigReceiver;
 import io.mycat.config.ConfigurableRoot;
-import io.mycat.config.YamlUtil;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
@@ -54,21 +52,15 @@ import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
-import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ProxyRuntime {
 
@@ -184,25 +176,6 @@ public class ProxyRuntime {
   }
 
 
-  public static Set<Integer> getReplicaIndexes(Map<String, String> replicaIndexes,
-      ReplicaConfig replicaConfig) {
-    String writeIndexText = replicaIndexes.get(replicaConfig.getName());
-    Set<Integer> writeIndex;
-    if (StringUtil.isEmpty(writeIndexText)) {
-      writeIndex = Collections.singleton(0);
-      LOGGER.warn("master indexes is empty and set  master of {} is 0 index",
-          replicaConfig.getName());
-    } else {
-      if (writeIndexText.contains(",")) {
-        List<String> strings = Arrays.asList(writeIndexText.split(","));
-        writeIndex = strings.stream().map(Integer::parseInt).collect(Collectors.toSet());
-      } else {
-        writeIndex = Collections.singleton(Integer.parseInt(writeIndexText));
-      }
-    }
-    return writeIndex;
-  }
-
   private void initRepliac(ProxyRuntime runtime, ProxyBeanProviders factory) {
     ReplicasRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
@@ -232,7 +205,7 @@ public class ProxyRuntime {
         return;
       }
       ////////////////////////////////////check/////////////////////////////////////////////////
-      Set<Integer> writeIndex = getReplicaIndexes(replicaIndexes, replicaConfig);
+      Set<Integer> writeIndex = ModuleUtil.getReplicaIndexes(replicaIndexes, replicaConfig);
       MySQLReplica replica = factory
           .createReplica(runtime, replicaConfig, writeIndex);
       replicaMap.put(replica.getName(), replica);
@@ -420,47 +393,16 @@ public class ProxyRuntime {
     return config;
   }
 
-  private static final Logger REPLICA_MASTER_INDEXES_LOGGER = LoggerFactory
-      .getLogger("replicaIndexesLogger");
 
 
   public Map<String, Object> getDefContext() {
     return defContext;
   }
 
-  /**
-   * Getter for property 'providers'.
-   *
-   * @return Value for property 'providers'.
-   */
   public ProxyBeanProviders getProviders() {
     return providers;
   }
 
-  public <T extends MycatDataSource> void updateReplicaMasterIndexesConfig(
-      final MycatReplica replica,
-      List<T> writeDataSource) {
-
-    synchronized (REPLICA_MASTER_INDEXES_LOGGER) {
-      final MasterIndexesRootConfig config = getConfig(ConfigEnum.REPLICA_INDEX);
-      Map<String, String> masterIndexes = new HashMap<>(config.getMasterIndexes());
-      String name = replica.getName();
-      String old = masterIndexes.get(name);
-      String switchRes = writeDataSource.stream().map(i -> String.valueOf(i.getIndex()))
-          .collect(Collectors.joining(","));
-      if (old.equalsIgnoreCase(switchRes)) {
-        return;
-      }
-      String backup = YamlUtil.dump(config);
-      YamlUtil.dumpBackupToFile(config.getFilePath(), config.getVersion(), backup);
-      masterIndexes.put(name, switchRes);
-      config.setMasterIndexes(masterIndexes);
-      config.setVersion(config.getVersion() + 1);
-      String newContext = YamlUtil.dump(config);
-      YamlUtil.dumpToFile(config.getFilePath(), newContext);
-      REPLICA_MASTER_INDEXES_LOGGER.info("switchRes from:{}", old, switchRes);
-    }
-  }
 
   public MySQLAPIRuntimeImpl getMySQLAPIRuntime() {
     return mySQLAPIRuntime;

@@ -1,59 +1,93 @@
-package io.mycat.datasource.jdbc.transaction;
+package io.mycat.datasource.jdbc.manager;
 
-import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.datasource.jdbc.JdbcDataSource;
+import io.mycat.MycatException;
+import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.connection.AutocommitConnection;
 import io.mycat.datasource.jdbc.connection.LocalTransactionConnection;
 import io.mycat.datasource.jdbc.connection.XATransactionConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.session.JTATransactionSessionImpl;
+import io.mycat.datasource.jdbc.session.LocalTransactionSessionImpl;
+import io.mycat.datasource.jdbc.session.TransactionSession;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
+import java.util.Objects;
 import java.util.concurrent.LinkedTransferQueue;
 
 public final class TransactionProcessUnit extends SessionThread {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(TransactionProcessUnit.class);
-  private volatile long startTime;
-  private final LinkedTransferQueue<Runnable> blockingDeque = new LinkedTransferQueue<>();
+  private final LinkedTransferQueue<TransactionProcessTask> blockingDeque = new LinkedTransferQueue<>();//todo optimization
+  private final TransactionProcessUnitManager manager;
+  private long startTime;
   private final TransactionSession transactionSession;
-  private final GridRuntime runtime;
+  private volatile TransactionProcessKey key;
 
-  public TransactionProcessUnit(GridRuntime runtime) {
+  public TransactionProcessUnit(GRuntime runtime, TransactionProcessUnitManager manager) {
     boolean jta = runtime.getDatasourceProvider().isJTA();
     this.transactionSession = !jta ? new LocalTransactionSessionImpl(this)
         : new JTATransactionSessionImpl(
             runtime.getDatasourceProvider().createUserTransaction(), this);
-    this.runtime = runtime;
+    this.manager = manager;
   }
 
-  public void run(Runnable runnale) {
-    blockingDeque.offer(runnale);
+  public void run(TransactionProcessKey key, TransactionProcessTask processTask) {
+    Objects.requireNonNull(key);
+    if (!blockingDeque.isEmpty()) {
+      throw new MycatException("unknown state");
+    }
+    if (this.key == null) {
+      this.key = key;
+    } else if (this.key != null && this.key == key) {
+
+    } else {
+      throw new MycatException("unknown state");
+    }
+    blockingDeque.offer(processTask);
   }
 
   @Override
   public void run() {
     try {
       while (!isInterrupted()) {
-        Runnable poll = null;
+        TransactionProcessTask poll = null;
         try {
           poll = blockingDeque.take();
         } catch (InterruptedException e) {
-          e.printStackTrace();
+          LOGGER.error("", e);
         }
         if (poll != null) {
           this.startTime = System.currentTimeMillis();
           try {
-            poll.run();
+            poll.accept(this.key, transactionSession);
           } catch (Exception e) {
             LOGGER.error("", e);
           }
+          recycleTransactionThread();
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      LOGGER.error("", e);
     }
-    System.out.println("---------------------------------------------");
+  }
+
+  public void recycleTransactionThread() {
+    this.getTransactionSession().afterDoAction();
+    if (!this.getTransactionSession().isInTransaction()) {
+      manager.map.remove(this.key);
+      this.key = null;
+      if (!manager.idleList.offer(this)) {
+        close();
+        decThreadCount();
+        manager.allSession.remove(this);
+      }
+    }
+  }
+
+  private void decThreadCount() {
+    manager.threadCounter.decrementAndGet();
   }
 
   public long getStartTime() {
@@ -62,8 +96,7 @@ public final class TransactionProcessUnit extends SessionThread {
 
   public void close() {
     super.close();
-//    interrupt();
-//    blockingDeque.add(END);
+    this.interrupt();
   }
 
   public AutocommitConnection getAutocommitConnection(JdbcDataSource dataSource) {
@@ -84,7 +117,8 @@ public final class TransactionProcessUnit extends SessionThread {
     return transactionSession;
   }
 
-  public GridRuntime getRuntime() {
-    return runtime;
+
+  public GRuntime getRuntime() {
+    return manager.runtime;
   }
 }

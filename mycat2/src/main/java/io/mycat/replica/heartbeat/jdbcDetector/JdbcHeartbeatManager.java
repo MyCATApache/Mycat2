@@ -5,9 +5,9 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.RepSwitchTypeEnum;
 import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
-import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.datasource.jdbc.JdbcDataSource;
-import io.mycat.datasource.jdbc.JdbcReplica;
+import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.heartbeat.DatasourceStatus;
@@ -23,10 +23,10 @@ public class JdbcHeartbeatManager extends HeartbeatManager {
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcHeartbeatManager.class);
 
   final JdbcDataSource dataSource;
-  final GridRuntime runtime;
+  final GRuntime runtime;
 
   public JdbcHeartbeatManager(JdbcDataSource jdbcDataSource,
-      GridRuntime runtime) {
+      GRuntime runtime) {
     HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(ConfigEnum.HEARTBEAT);
     ////////////////////////////////////check/////////////////////////////////////////////////
     Objects.requireNonNull(heartbeatRootConfig, "heartbeat config can not found");

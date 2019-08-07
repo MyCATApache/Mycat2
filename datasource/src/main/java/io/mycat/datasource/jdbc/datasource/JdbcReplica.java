@@ -1,8 +1,11 @@
-package io.mycat.datasource.jdbc;
+package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.datasource.jdbc.DatasourceProvider;
+import io.mycat.datasource.jdbc.GBeanProviders;
+import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.connection.AbsractJdbcConnectionManager;
 import io.mycat.datasource.jdbc.connection.AutocommitConnection;
 import io.mycat.datasource.jdbc.connection.LocalTransactionConnection;
@@ -22,10 +25,10 @@ public class JdbcReplica implements MycatReplica {
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcReplica.class);
   private final AbsractJdbcConnectionManager dataSourceManager;
   private final ReplicaDatasourceSelector<JdbcDataSource> selector;
-  private final GridRuntime runtime;
+  private final GRuntime runtime;
   private final ReplicaConfig replicaConfig;
 
-  public JdbcReplica(GridRuntime runtime, Map<String, String> jdbcDriverMap,
+  public JdbcReplica(GRuntime runtime, Map<String, String> jdbcDriverMap,
       ReplicaConfig replicaConfig,
       Set<Integer> writeIndex, List<DatasourceConfig> datasourceConfigList,
       DatasourceProvider provider) {
@@ -40,7 +43,7 @@ public class JdbcReplica implements MycatReplica {
 
   private List<JdbcDataSource> getJdbcDataSources(
       List<DatasourceConfig> datasourceConfigList) {
-    GridBeanProviders provider = runtime.getProvider();
+    GBeanProviders provider = runtime.getProvider();
     ArrayList<JdbcDataSource> dataSources = new ArrayList<>();
     for (int i = 0; i < datasourceConfigList.size(); i++) {
       DatasourceConfig datasourceConfig = datasourceConfigList.get(i);
@@ -102,7 +105,7 @@ public class JdbcReplica implements MycatReplica {
           if (writeDataSource.get(i).isAlive()) {
             LOGGER.info("{} switch master to {}", this, i);
             ///////////////////////////////
-            runtime.updateReplicaMasterIndexesConfig(this, (List) writeDataSource);
+            runtime.updateReplicaMasterIndexesConfig(this, writeDataSource);
             //////////////////////////////
             return true;
           }

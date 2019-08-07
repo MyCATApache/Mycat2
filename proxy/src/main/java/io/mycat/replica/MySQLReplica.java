@@ -14,9 +14,11 @@
  */
 package io.mycat.replica;
 
+import io.mycat.ModuleUtil;
 import io.mycat.MycatException;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MycatReplica;
+import io.mycat.config.ConfigEnum;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
@@ -277,7 +279,8 @@ public abstract class MySQLReplica implements MycatReplica, LoadBalanceInfo {
           if (datasourceList.get(i).isAlive()) {
             LOGGER.info("{} switch master to {}", this, i);
             ///////////////////////////////
-            runtime.updateReplicaMasterIndexesConfig(this, writeDataSource);
+            ModuleUtil.updateReplicaMasterIndexesConfig(this, writeDataSource, runtime.getConfig(
+                ConfigEnum.REPLICA_INDEX));
             //////////////////////////////
             return true;
           }

@@ -1,11 +1,15 @@
-package io.mycat.datasource.jdbc.transaction;
+package io.mycat.datasource.jdbc.session;
 
 import io.mycat.MycatException;
-import io.mycat.datasource.jdbc.JdbcDataSource;
 import io.mycat.datasource.jdbc.connection.AbsractConnection;
 import io.mycat.datasource.jdbc.connection.XATransactionConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.BiFunction;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
@@ -13,10 +17,12 @@ import javax.transaction.UserTransaction;
 
 public class JTATransactionSessionImpl implements TransactionSession {
 
+  private static final MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(JTATransactionSessionImpl.class);
   private final UserTransaction userTransaction;
   private final TransactionProcessUnit transactionProcessUnit;
-  private final ConcurrentHashMap<JdbcDataSource, XATransactionConnection> connectionMap = new ConcurrentHashMap<>();
-  private boolean autocommit = false;
+  private final Map<JdbcDataSource, XATransactionConnection> connectionMap = new HashMap<>();
+  private boolean autocommit = true;
   private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
   public JTATransactionSessionImpl(UserTransaction userTransaction,
@@ -32,9 +38,11 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   @Override
   public void begin() {
+
     connectionMap.values().forEach(c -> c.close());
     connectionMap.clear();
     try {
+      LOGGER.debug("{} begin", userTransaction);
       userTransaction.begin();
     } catch (Exception e) {
       throw new MycatException(e);
@@ -51,12 +59,6 @@ public class JTATransactionSessionImpl implements TransactionSession {
             public XATransactionConnection apply(JdbcDataSource dataSource,
                 XATransactionConnection absractConnection) {
               if (absractConnection != null) {
-                if (absractConnection.isClosed()) {
-                  if (!isInTransaction()) {
-                    return transactionProcessUnit
-                        .getXATransactionConnection(jdbcDataSource, transactionIsolation);
-                  }
-                }
                 return absractConnection;
               } else {
                 return transactionProcessUnit
@@ -65,10 +67,6 @@ public class JTATransactionSessionImpl implements TransactionSession {
             }
           });
     } while (connection.isClosed());
-
-    if (connection.isClosed()) {
-      throw new MycatException("11111111111111");
-    }
     return connection;
   }
 
@@ -77,6 +75,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
     try {
       userTransaction.commit();
     } catch (Exception e) {
+      LOGGER.error("", e);
       throw new MycatException(e);
     }
     afterDoAction();
@@ -85,7 +84,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
   @Override
   public void rollback() {
     try {
-      userTransaction.begin();
+      userTransaction.setRollbackOnly();
     } catch (Exception e) {
       throw new MycatException(e);
     }
@@ -99,6 +98,10 @@ public class JTATransactionSessionImpl implements TransactionSession {
       switch (status) {
         case Status.STATUS_NO_TRANSACTION:
         case Status.STATUS_UNKNOWN:
+        case Status.STATUS_ACTIVE:
+        case Status.STATUS_MARKED_ROLLBACK:
+        case Status.STATUS_COMMITTED:
+        case Status.STATUS_ROLLEDBACK:
           return false;
         default:
           return true;
@@ -111,7 +114,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
   @Override
   public void beforeDoAction() {
     try {
-      if (!this.autocommit && Status.STATUS_NO_TRANSACTION == userTransaction.getStatus()) {
+      if (!this.autocommit && !isInTransaction()) {
         begin();
       }
 

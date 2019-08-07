@@ -3,7 +3,7 @@ package io.mycat.grid;
 
 import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.datasource.jdbc.GridRuntime;
+import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
@@ -21,8 +21,8 @@ public class GridProxyCommandHandler extends AbstractCommandHandler {
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     Map<String, Object> defContext = runtime.getDefContext();
-    GridRuntime jdbcRuntime = (GridRuntime) defContext.get("gridRuntime");
-    this.executionPlan = new ProxyExecutionPlanBuilder(session, jdbcRuntime);
+    GRuntime jdbcRuntime = (GRuntime) defContext.get("gridRuntime");
+    // this.executionPlan = new ProxyExecutionPlanBuilder(session, jdbcRuntime);
   }
 
   @Override

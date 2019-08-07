@@ -1,9 +1,10 @@
-package io.mycat.datasource.jdbc;
+package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicaConfig.BalanceTypeEnum;
+import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceInfo;
@@ -22,10 +23,10 @@ public class ReplicaDatasourceSelector<T extends MycatDataSource> implements Loa
   protected final ReplicaConfig config;
   protected final List<T> datasourceList;
   protected final CopyOnWriteArrayList<T> writeDataSource = new CopyOnWriteArrayList<>(); //主节点默认为0
-  protected final GridRuntime runtime;
+  protected final GRuntime runtime;
   protected LoadBalanceStrategy defaultLoadBalanceStrategy;
 
-  public ReplicaDatasourceSelector(GridRuntime runtime, ReplicaConfig replicaConfig,
+  public ReplicaDatasourceSelector(GRuntime runtime, ReplicaConfig replicaConfig,
       Set<Integer> writeIndex, List<T> datasourceList,
       LoadBalanceStrategy defaultLoadBalanceStrategy) {
     this.runtime = runtime;

@@ -1,5 +1,6 @@
 package io.mycat.datasource.jdbc;
 
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import java.util.Map;
 import javax.sql.DataSource;
 import javax.transaction.UserTransaction;

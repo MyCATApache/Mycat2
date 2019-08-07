@@ -1,9 +1,9 @@
 package io.mycat.replica;
 
 import io.mycat.config.datasource.DatasourceConfig;
-import io.mycat.datasource.jdbc.GridRuntime;
-import io.mycat.datasource.jdbc.JdbcDataSource;
-import io.mycat.datasource.jdbc.JdbcReplica;
+import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
@@ -14,9 +14,9 @@ public class JdbcDataSourceEx extends JdbcDataSource {
   private final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(JdbcDataSourceEx.class);
   final JdbcHeartbeatManager jdbcHeartbeatManager;
-  private GridRuntime runtime;
+  private GRuntime runtime;
 
-  public JdbcDataSourceEx(GridRuntime runtime, int index, DatasourceConfig datasourceConfig,
+  public JdbcDataSourceEx(GRuntime runtime, int index, DatasourceConfig datasourceConfig,
       JdbcReplica mycatReplica) {
     super(index, datasourceConfig, mycatReplica);
     jdbcHeartbeatManager = new JdbcHeartbeatManager(this, runtime);
