@@ -17,7 +17,7 @@ public class TransactionSessionUtil {
   public static MycatResultSetResponse executeQuery(String dataNode, String sql,
       boolean runOnMaster,
       LoadBalanceStrategy strategy) {
-    DefaultConnection connection = getConnection(dataNode,
+    DsConnection connection = getConnection(dataNode,
         runOnMaster, strategy);
 
     if (connection.isClosed()) {
@@ -31,7 +31,7 @@ public class TransactionSessionUtil {
     }
   }
 
-  public static DefaultConnection getConnection(String dataNode,
+  public static DsConnection getConnection(String dataNode,
       boolean runOnMaster,
       LoadBalanceStrategy strategy) {
     GThread processUnit = (GThread) Thread.currentThread();
@@ -55,7 +55,7 @@ public class TransactionSessionUtil {
     GThread processUnit = (GThread) Thread.currentThread();
     TransactionSession transactionSession = processUnit.getTransactionSession();
     try {
-      DefaultConnection connection = getConnection(dataNode,
+      DsConnection connection = getConnection(dataNode,
           runOnMaster, strategy);
       transactionSession.beforeDoAction();
       return connection.executeUpdate(sql, insert);
