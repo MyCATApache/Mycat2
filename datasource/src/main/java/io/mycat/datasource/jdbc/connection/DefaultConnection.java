@@ -13,16 +13,33 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public abstract class AbsractConnection {
+public class DefaultConnection implements DsConnection {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(AbsractConnection.class);
+      .getLogger(DefaultConnection.class);
   final Connection connection;
   private final JdbcDataSource jdbcDataSource;
   private volatile boolean isClosed = false;
   protected final ConnectionManager connectionManager;
 
-  public AbsractConnection(Connection connection, JdbcDataSource jdbcDataSource,
+  public DefaultConnection(Connection connection, JdbcDataSource dataSource,
+      boolean autocommit,
+      int transactionIsolation, ConnectionManager connectionManager) {
+    this(connection, dataSource, connectionManager);
+    try {
+      if (!autocommit) {
+        connection.setAutoCommit(false);
+      }
+      if (Connection.TRANSACTION_REPEATABLE_READ != transactionIsolation) {
+        connection.setTransactionIsolation(transactionIsolation);
+      }
+    } catch (SQLException e) {
+      LOGGER.error("", e);
+      throw new MycatException(e);
+    }
+  }
+
+  public DefaultConnection(Connection connection, JdbcDataSource jdbcDataSource,
       ConnectionManager connectionManager) {
     this.connection = connection;
     this.jdbcDataSource = jdbcDataSource;

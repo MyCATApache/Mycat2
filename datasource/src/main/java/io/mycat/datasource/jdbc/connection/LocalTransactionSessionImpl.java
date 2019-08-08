@@ -16,7 +16,7 @@ public class LocalTransactionSessionImpl implements TransactionSession {
       .getLogger(LocalTransactionSessionImpl.class);
 
   private final GThread gthread;
-  private final Map<JdbcDataSource, AbsractConnection> connectionMap = new HashMap<>();
+  private final Map<JdbcDataSource, DsConnection> connectionMap = new HashMap<>();
   private boolean autocommit = false;
   private boolean isTrancation = false;
   private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
@@ -25,13 +25,13 @@ public class LocalTransactionSessionImpl implements TransactionSession {
     this.gthread = gthread;
   }
 
-  public AbsractConnection getConnection(JdbcDataSource jdbcDataSource) {
+  public DsConnection getConnection(JdbcDataSource jdbcDataSource) {
     beforeDoAction();
     return connectionMap.compute(jdbcDataSource,
-        new BiFunction<JdbcDataSource, AbsractConnection, AbsractConnection>() {
+        new BiFunction<JdbcDataSource, DsConnection, DsConnection>() {
           @Override
-          public AbsractConnection apply(JdbcDataSource dataSource,
-              AbsractConnection absractConnection) {
+          public DsConnection apply(JdbcDataSource dataSource,
+              DsConnection absractConnection) {
             if (absractConnection == null) {
               if (isTrancation) {
                 return gthread.getConnection(dataSource, false, transactionIsolation);
@@ -62,27 +62,27 @@ public class LocalTransactionSessionImpl implements TransactionSession {
   @Override
   public void commit() {
     isTrancation = false;
-    for (AbsractConnection value : connectionMap.values()) {
+    for (DsConnection value : connectionMap.values()) {
       try {
-        value.connection.commit();
+        ((DefaultConnection) value).connection.commit();
       } catch (SQLException e) {
         LOGGER.error("", e);
       }
     }
-    connectionMap.clear();
+    afterDoAction();
   }
 
   @Override
   public void rollback() {
     isTrancation = false;
-    for (AbsractConnection value : connectionMap.values()) {
+    for (DsConnection value : connectionMap.values()) {
       try {
-        value.connection.rollback();
+        ((DefaultConnection) value).connection.rollback();
       } catch (SQLException e) {
         LOGGER.error("", e);
       }
     }
-    connectionMap.clear();
+    afterDoAction();
   }
 
   @Override

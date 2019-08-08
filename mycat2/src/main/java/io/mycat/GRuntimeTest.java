@@ -2,7 +2,7 @@ package io.mycat;
 
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.connection.AbsractConnection;
+import io.mycat.datasource.jdbc.connection.DefaultConnection;
 import io.mycat.datasource.jdbc.connection.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
@@ -26,10 +26,10 @@ public class GRuntimeTest {
         @Override
         public void accept(BindThreadKey key, TransactionSession session) {
           session.begin();
-          AbsractConnection c1 = session.getConnection(ds1);
+          DefaultConnection c1 = session.getConnection(ds1);
           JdbcRowBaseIteratorImpl jdbcRowBaseIterator = c1.executeQuery("select 1");
           List<Map<String, Object>> resultSetMap = jdbcRowBaseIterator.getResultSetMap();
-          AbsractConnection c2 = session.getConnection(ds2);
+          DefaultConnection c2 = session.getConnection(ds2);
           List<Map<String, Object>> resultSetMap1 = c2.executeQuery("select 1").getResultSetMap();
           session.commit();
           System.out.println(resultSetMap1);

@@ -51,11 +51,7 @@ public class AbsractJdbcConnectionManager implements ConnectionManager {
   public Connection getConnection(JdbcDataSource key) {
     DataSource pool = getPool(key);
     try {
-      Connection connection = pool.getConnection();
-      if (connection.isClosed()) {
-        throw new MycatException("get a broken connetion");
-      }
-      return connection;
+      return pool.getConnection();
     } catch (SQLException e) {
       throw new MycatException(e);
     }
@@ -64,9 +60,7 @@ public class AbsractJdbcConnectionManager implements ConnectionManager {
   @Override
   public void closeConnection(Connection connection) {
     try {
-      if (!connection.isClosed()) {
-        connection.close();
-      }
+      connection.close();
     } catch (SQLException e) {
       LOGGER.error("", e);
     }

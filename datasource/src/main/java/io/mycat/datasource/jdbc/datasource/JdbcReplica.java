@@ -7,7 +7,8 @@ import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.GBeanProviders;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.connection.AbsractJdbcConnectionManager;
-import io.mycat.datasource.jdbc.connection.DefaultTransactionConnection;
+import io.mycat.datasource.jdbc.connection.DefaultConnection;
+import io.mycat.datasource.jdbc.connection.DsConnection;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -135,17 +136,17 @@ public class JdbcReplica implements MycatReplica {
     return dataSourceManager.getConnection(dataSource);
   }
 
-  public DefaultTransactionConnection getDefaultConnection(JdbcDataSource dataSource) {
+  public DsConnection getDefaultConnection(JdbcDataSource dataSource) {
     Connection connection = getConnection(dataSource);
-    return new DefaultTransactionConnection(connection, dataSource, true,
+    return new DefaultConnection(connection, dataSource, true,
         Connection.TRANSACTION_REPEATABLE_READ,
         dataSourceManager);
   }
 
-  public DefaultTransactionConnection getConnection(JdbcDataSource dataSource, boolean autocommit,
+  public DsConnection getConnection(JdbcDataSource dataSource, boolean autocommit,
       int transactionIsolation) {
     Connection connection = getConnection(dataSource);
-    return new DefaultTransactionConnection(connection, dataSource, autocommit,
+    return new DefaultConnection(connection, dataSource, autocommit,
         transactionIsolation,
         dataSourceManager);
   }

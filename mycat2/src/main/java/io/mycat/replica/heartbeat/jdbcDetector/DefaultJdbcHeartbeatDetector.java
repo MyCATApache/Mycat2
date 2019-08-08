@@ -6,7 +6,6 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.connection.DefaultTransactionConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;

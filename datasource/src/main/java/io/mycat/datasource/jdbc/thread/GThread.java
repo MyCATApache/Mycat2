@@ -3,7 +3,7 @@ package io.mycat.datasource.jdbc.thread;
 import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadPool;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.connection.DefaultTransactionConnection;
+import io.mycat.datasource.jdbc.connection.DsConnection;
 import io.mycat.datasource.jdbc.connection.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 
@@ -23,12 +23,12 @@ public class GThread extends BindThread {
     return transactionSession.isInTransaction();
   }
 
-  public DefaultTransactionConnection getConnection(JdbcDataSource dataSource,
+  public DsConnection getConnection(JdbcDataSource dataSource,
       int transactionIsolation) {
     return dataSource.getReplica().getConnection(dataSource, true, transactionIsolation);
   }
 
-  public DefaultTransactionConnection getConnection(JdbcDataSource dataSource, boolean autocommit,
+  public DsConnection getConnection(JdbcDataSource dataSource, boolean autocommit,
       int transactionIsolation) {
     return dataSource.getReplica().getConnection(dataSource, autocommit, transactionIsolation);
   }

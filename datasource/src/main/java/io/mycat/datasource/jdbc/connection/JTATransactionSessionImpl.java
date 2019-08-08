@@ -19,7 +19,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
       .getLogger(JTATransactionSessionImpl.class);
   private final UserTransaction userTransaction;
   private final GThread gThread;
-  private final Map<JdbcDataSource, DefaultTransactionConnection> connectionMap = new HashMap<>();
+  private final Map<JdbcDataSource, DsConnection> connectionMap = new HashMap<>();
   private boolean autocommit = true;
   private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
@@ -47,13 +47,13 @@ public class JTATransactionSessionImpl implements TransactionSession {
     }
   }
 
-  public AbsractConnection getConnection(JdbcDataSource jdbcDataSource) {
+  public DsConnection getConnection(JdbcDataSource jdbcDataSource) {
     beforeDoAction();
     return connectionMap.compute(jdbcDataSource,
-        new BiFunction<JdbcDataSource, DefaultTransactionConnection, DefaultTransactionConnection>() {
+        new BiFunction<JdbcDataSource, DsConnection, DsConnection>() {
           @Override
-          public DefaultTransactionConnection apply(JdbcDataSource dataSource,
-              DefaultTransactionConnection absractConnection) {
+          public DsConnection apply(JdbcDataSource dataSource,
+              DsConnection absractConnection) {
             if (absractConnection != null) {
               return absractConnection;
             } else {
@@ -133,7 +133,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
 
   public void close() {
-    connectionMap.values().forEach(AbsractConnection::close);
+    connectionMap.values().forEach(DsConnection::close);
     connectionMap.clear();
   }
 }

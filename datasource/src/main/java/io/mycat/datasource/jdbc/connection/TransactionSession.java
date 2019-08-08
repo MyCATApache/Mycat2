@@ -20,6 +20,6 @@ public interface TransactionSession {
 
   void setAutocommit(boolean autocommit);
 
-  AbsractConnection getConnection(JdbcDataSource jdbcDataSource);
+  DsConnection getConnection(JdbcDataSource jdbcDataSource);
 
 }
