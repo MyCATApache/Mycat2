@@ -206,14 +206,13 @@ public abstract class MySQLDatasource implements MycatDataSource, LoadBalanceEle
   }
 
   public boolean tryIncrementSessionCounter() {
-    int current = connectionCounter.get();
-    return current < connectionCounter.updateAndGet(operand -> {
-      if (operand < this.datasourceConfig.getMaxCon()) {
-        return ++operand;
-      } else {
+    return connectionCounter.updateAndGet(operand -> {
+      if (!(operand < this.datasourceConfig.getMaxCon())) {
         return operand;
+      } else {
+        return ++operand;
       }
-    });
+    }) < this.datasourceConfig.getMaxCon();
   }
 
   public String getInitSQL() {
@@ -224,7 +223,7 @@ public abstract class MySQLDatasource implements MycatDataSource, LoadBalanceEle
     return index;
   }
 
-  public String getInitDb(){
+  public String getInitDb() {
     return datasourceConfig.getInitDb();
   }
 

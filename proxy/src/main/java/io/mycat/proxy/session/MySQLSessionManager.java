@@ -224,7 +224,7 @@ public final class MySQLSessionManager implements
       }
     }
     //dataSource ids
-    if (datasource != null) {
+    if (datasource != null && ids != null) {
       return searchMap(ids, this.allSessions);
     }
     //ids
@@ -335,11 +335,14 @@ public final class MySQLSessionManager implements
         break;
       case IDLE:
       case BUSY:
-        MySQLPayloadWriter writer = this.clearTask.get(sessionId);
-        if (writer == null) {
-          writer = new MySQLPayloadWriter();
-        }
-        writer.writeBytes(packet);
+        this.clearTask.compute(sessionId,
+            (integer, writer1) -> {
+              if (writer1 == null) {
+                writer1 = new MySQLPayloadWriter();
+              }
+              writer1.writeBytes(packet);
+              return writer1;
+            });
         break;
     }
 

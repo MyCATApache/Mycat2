@@ -14,6 +14,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
 import java.util.Objects;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class TransactionProcessUnit extends SessionThread {
 
@@ -87,7 +88,14 @@ public final class TransactionProcessUnit extends SessionThread {
   }
 
   private void decThreadCount() {
-    manager.threadCounter.decrementAndGet();
+    AtomicInteger threadCounter = manager.threadCounter;
+    threadCounter.updateAndGet(operand -> {
+      if (operand > 0) {
+        return --operand;
+      } else {
+        return 0;
+      }
+    });
   }
 
   public long getStartTime() {

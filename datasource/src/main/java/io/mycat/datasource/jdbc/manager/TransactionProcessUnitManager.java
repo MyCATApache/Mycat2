@@ -69,12 +69,12 @@ public class TransactionProcessUnitManager {
 
 
   private boolean tryIncThreadCount() {
-    return threadCounter.get() < threadCounter.updateAndGet(operand -> {
-      if (maxThread <= operand) {
+    return threadCounter.updateAndGet(operand -> {
+      if (maxThread < operand) {
         return maxThread;
       } else {
         return ++operand;
       }
-    });
+    }) < maxThread;
   }
 }
