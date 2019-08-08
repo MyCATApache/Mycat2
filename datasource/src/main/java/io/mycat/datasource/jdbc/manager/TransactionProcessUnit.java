@@ -14,13 +14,12 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
 import java.util.Objects;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public final class TransactionProcessUnit extends SessionThread {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(TransactionProcessUnit.class);
-  private final LinkedTransferQueue<TransactionProcessTask> blockingDeque = new LinkedTransferQueue<>();//todo optimization
+  private final LinkedTransferQueue<TransactionProcessJob> blockingDeque = new LinkedTransferQueue<>();//todo optimization
   private final TransactionProcessUnitManager manager;
   private long startTime;
   private final TransactionSession transactionSession;
@@ -34,7 +33,7 @@ public final class TransactionProcessUnit extends SessionThread {
     this.manager = manager;
   }
 
-  public void run(TransactionProcessKey key, TransactionProcessTask processTask) {
+  public void run(TransactionProcessKey key, TransactionProcessJob processTask) {
     Objects.requireNonNull(key);
     if (!blockingDeque.isEmpty()) {
       throw new MycatException("unknown state");
@@ -46,31 +45,54 @@ public final class TransactionProcessUnit extends SessionThread {
     } else {
       throw new MycatException("unknown state");
     }
-    blockingDeque.offer(processTask);
+    if (Thread.currentThread() == processTask) {
+      processJob(null, processTask);
+    } else {
+      blockingDeque.offer(processTask);
+    }
   }
 
   @Override
   public void run() {
     try {
+      Exception exception = null;
+      TransactionProcessJob poll = null;
       while (!isInterrupted()) {
-        TransactionProcessTask poll = null;
+        exception = null;
+        poll = null;
         try {
-          poll = blockingDeque.take();
+          poll = blockingDeque.poll(manager.timeout, manager.timeoutUnit);
         } catch (InterruptedException e) {
-          LOGGER.error("", e);
         }
         if (poll != null) {
-          this.startTime = System.currentTimeMillis();
-          try {
-            poll.accept(this.key, transactionSession);
-          } catch (Exception e) {
-            LOGGER.error("", e);
-          }
+          processJob(exception, poll);
           recycleTransactionThread();
+        } else {
+          manager.tryDecThread();
         }
+        /////////////////////////////////
+        manager.pollTask();
       }
     } catch (Exception e) {
       LOGGER.error("", e);
+    }
+  }
+
+  private void processJob(Exception exception, TransactionProcessJob poll) {
+    this.startTime = System.currentTimeMillis();
+    try {
+      poll.accept(this.key, transactionSession);
+    } catch (Exception e) {
+      exception = e;
+      LOGGER.error("", e);
+    }
+
+    if (exception != null) {
+      try {
+        poll.onException(key, exception);
+      } catch (Exception e) {
+        LOGGER.error("", e);
+      }
     }
   }
 
@@ -81,22 +103,12 @@ public final class TransactionProcessUnit extends SessionThread {
       this.key = null;
       if (!manager.idleList.offer(this)) {
         close();
-        decThreadCount();
+        manager.decThreadCount();
         manager.allSession.remove(this);
       }
     }
   }
 
-  private void decThreadCount() {
-    AtomicInteger threadCounter = manager.threadCounter;
-    threadCounter.updateAndGet(operand -> {
-      if (operand > 0) {
-        return --operand;
-      } else {
-        return 0;
-      }
-    });
-  }
 
   public long getStartTime() {
     return startTime;

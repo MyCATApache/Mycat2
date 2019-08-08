@@ -19,8 +19,8 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataNode;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSourceQuery;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
+import io.mycat.datasource.jdbc.manager.TransactionProcessJob;
 import io.mycat.datasource.jdbc.manager.TransactionProcessKey;
-import io.mycat.datasource.jdbc.manager.TransactionProcessTask;
 import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
 import io.mycat.datasource.jdbc.manager.TransactionProcessUnitManager;
 import io.mycat.datasource.jdbc.session.JTATransactionSessionImpl;
@@ -196,7 +196,7 @@ public enum GRuntime {
     return (T) config;
   }
 
-  public void run(TransactionProcessKey key, TransactionProcessTask processTask) {
+  public void run(TransactionProcessKey key, TransactionProcessJob processTask) {
     manager.run(key, processTask);
   }
 }

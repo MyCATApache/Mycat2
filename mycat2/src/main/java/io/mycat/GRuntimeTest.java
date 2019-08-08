@@ -3,8 +3,8 @@ package io.mycat;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.connection.AbsractConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.manager.TransactionProcessJob;
 import io.mycat.datasource.jdbc.manager.TransactionProcessKey;
-import io.mycat.datasource.jdbc.manager.TransactionProcessTask;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.session.TransactionSession;
 import java.util.List;
@@ -21,7 +21,7 @@ public class GRuntimeTest {
     CountDownLatch countDownLatch = new CountDownLatch(100000);
     for (int i = 0; i < 100000; i++) {
       TransactionProcessKey id = id();
-      GRuntime.INSTACNE.run(id, new TransactionProcessTask() {
+      GRuntime.INSTACNE.run(id, new TransactionProcessJob() {
         @Override
         public void accept(TransactionProcessKey key, TransactionSession session) {
           session.begin();
@@ -33,6 +33,11 @@ public class GRuntimeTest {
           session.commit();
           System.out.println(resultSetMap1);
           countDownLatch.countDown();
+        }
+
+        @Override
+        public void onException(TransactionProcessKey key, Exception e) {
+          System.out.println(e);
         }
       });
     }
