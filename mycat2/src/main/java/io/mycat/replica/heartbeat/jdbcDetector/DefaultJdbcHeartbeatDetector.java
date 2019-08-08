@@ -6,7 +6,7 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.connection.AutocommitConnection;
+import io.mycat.datasource.jdbc.connection.DefaultTransactionConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
@@ -59,9 +59,9 @@ public class DefaultJdbcHeartbeatDetector implements
 
   @Override
   public void heartBeat() {
-    AutocommitConnection connection = null;
+    DefaultTransactionConnection connection = null;
     try {
-      connection = replica.getAutocomitConnection(jdbcDataSource);
+      connection = replica.getDefaultConnection(jdbcDataSource);
       List<Map<String, Object>> resultList;
       try (JdbcRowBaseIteratorImpl iterator = connection.executeQuery(callback.getSql())) {
         resultList = iterator.getResultSetMap();

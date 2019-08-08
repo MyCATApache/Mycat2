@@ -1,6 +1,5 @@
-package io.mycat.datasource.jdbc.session;
+package io.mycat.datasource.jdbc.connection;
 
-import io.mycat.datasource.jdbc.connection.AbsractConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 
 public interface TransactionSession {

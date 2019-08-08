@@ -17,12 +17,11 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
 
   protected abstract boolean continueBind();
 
-  public void run(KEY key, PROCESS processTask) {
+  void run(KEY key, PROCESS processTask) {
     Objects.requireNonNull(key);
-    if (!blockingDeque.isEmpty()) {
+    if (!blockingDeque.isEmpty() && this.key != key) {
       throw new RuntimeException("unknown state");
-    }
-    if (this.key == null) {
+    } else if (this.key == null) {
       this.key = key;
     } else if (this.key != null && this.key == key) {
 
@@ -40,19 +39,27 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
   public void run() {
     try {
       Exception exception = null;
-      BindThreadCallback poll = null;
+      BindThreadCallback callback = null;
       while (!isInterrupted()) {
         exception = null;
-        poll = null;
-        try {
-          poll = blockingDeque.poll(manager.timeout, manager.timeoutUnit);
-        } catch (InterruptedException e) {
-        }
-        if (poll != null) {
-          processJob(exception, poll);
-          recycleTransactionThread();
+        callback = null;
+
+        if (manager.pending.isEmpty()) {
+          try {
+            callback = blockingDeque.poll(manager.waitTaskTimeout, manager.timeoutUnit);
+          } catch (InterruptedException ignored) {
+          }
         } else {
-          manager.tryDecThread();
+          callback = blockingDeque.poll();
+        }
+        if (callback != null) {
+          processJob(exception, callback);
+        }
+        boolean bind = continueBind();
+        if (this.key != null && !bind) {
+          recycleTransactionThread();
+        } else if (this.key == null && bind) {
+          throw new RuntimeException("unknown state");
         }
         manager.pollTask();
       }

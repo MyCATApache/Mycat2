@@ -23,6 +23,7 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
+import io.mycat.bindThread.BindThreadKey;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.CommandResolver;
@@ -44,7 +45,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
-    MySQLProxyServerSession<MycatSession> {
+    MySQLProxyServerSession<MycatSession>, BindThreadKey {
 
   private CommandDispatcher commandHandler;
   int resultSetCount;

@@ -1,10 +1,8 @@
-package io.mycat.datasource.jdbc.session;
+package io.mycat.datasource.jdbc.connection;
 
 import io.mycat.MycatException;
-import io.mycat.datasource.jdbc.connection.AbsractConnection;
-import io.mycat.datasource.jdbc.connection.XATransactionConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
+import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
@@ -20,25 +18,25 @@ public class JTATransactionSessionImpl implements TransactionSession {
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(JTATransactionSessionImpl.class);
   private final UserTransaction userTransaction;
-  private final TransactionProcessUnit transactionProcessUnit;
-  private final Map<JdbcDataSource, XATransactionConnection> connectionMap = new HashMap<>();
+  private final GThread gThread;
+  private final Map<JdbcDataSource, DefaultTransactionConnection> connectionMap = new HashMap<>();
   private boolean autocommit = true;
   private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
   public JTATransactionSessionImpl(UserTransaction userTransaction,
-      TransactionProcessUnit transactionProcessUnit) {
+      GThread gThread) {
     this.userTransaction = userTransaction;
-    this.transactionProcessUnit = transactionProcessUnit;
+    this.gThread = gThread;
   }
 
   @Override
   public void setTransactionIsolation(int transactionIsolation) {
     this.transactionIsolation = transactionIsolation;
+    this.connectionMap.values().forEach(c -> c.setTransactionIsolation(transactionIsolation));
   }
 
   @Override
   public void begin() {
-
     connectionMap.values().forEach(c -> c.close());
     connectionMap.clear();
     try {
@@ -51,23 +49,19 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   public AbsractConnection getConnection(JdbcDataSource jdbcDataSource) {
     beforeDoAction();
-    XATransactionConnection connection;
-    do {
-      connection = connectionMap.compute(jdbcDataSource,
-          new BiFunction<JdbcDataSource, XATransactionConnection, XATransactionConnection>() {
-            @Override
-            public XATransactionConnection apply(JdbcDataSource dataSource,
-                XATransactionConnection absractConnection) {
-              if (absractConnection != null) {
-                return absractConnection;
-              } else {
-                return transactionProcessUnit
-                    .getXATransactionConnection(jdbcDataSource, transactionIsolation);
-              }
+    return connectionMap.compute(jdbcDataSource,
+        new BiFunction<JdbcDataSource, DefaultTransactionConnection, DefaultTransactionConnection>() {
+          @Override
+          public DefaultTransactionConnection apply(JdbcDataSource dataSource,
+              DefaultTransactionConnection absractConnection) {
+            if (absractConnection != null) {
+              return absractConnection;
+            } else {
+              return gThread
+                  .getConnection(jdbcDataSource, transactionIsolation);
             }
-          });
-    } while (connection.isClosed());
-    return connection;
+          }
+        });
   }
 
   @Override

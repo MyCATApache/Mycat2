@@ -7,16 +7,22 @@ import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public class XATransactionConnection extends AbsractConnection {
+public class DefaultTransactionConnection extends AbsractConnection {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
-      .getLogger(XATransactionConnection.class);
+      .getLogger(DefaultTransactionConnection.class);
 
-  public XATransactionConnection(Connection connection, JdbcDataSource dataSource,
+  public DefaultTransactionConnection(Connection connection, JdbcDataSource dataSource,
+      boolean autocommit,
       int transactionIsolation, ConnectionManager connectionManager) {
     super(connection, dataSource, connectionManager);
     try {
-      connection.setTransactionIsolation(transactionIsolation);
+      if (!autocommit) {
+        connection.setAutoCommit(false);
+      }
+      if (Connection.TRANSACTION_REPEATABLE_READ != transactionIsolation) {
+        connection.setTransactionIsolation(transactionIsolation);
+      }
     } catch (SQLException e) {
       LOGGER.error("", e);
       throw new MycatException(e);

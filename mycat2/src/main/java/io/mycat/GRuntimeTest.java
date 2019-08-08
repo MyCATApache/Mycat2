@@ -1,12 +1,12 @@
 package io.mycat;
 
+import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.connection.AbsractConnection;
+import io.mycat.datasource.jdbc.connection.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.datasource.jdbc.manager.TransactionProcessJob;
-import io.mycat.datasource.jdbc.manager.TransactionProcessKey;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
-import io.mycat.datasource.jdbc.session.TransactionSession;
+import io.mycat.datasource.jdbc.thread.GProcess;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -18,12 +18,13 @@ public class GRuntimeTest {
 
     JdbcDataSource ds1 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn1", null);
     JdbcDataSource ds2 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn2", null);
-    CountDownLatch countDownLatch = new CountDownLatch(100000);
-    for (int i = 0; i < 100000; i++) {
-      TransactionProcessKey id = id();
-      GRuntime.INSTACNE.run(id, new TransactionProcessJob() {
+    CountDownLatch countDownLatch = new CountDownLatch(1000);
+    for (int i = 0; i < 1000; i++) {
+      BindThreadKey id = id();
+      GRuntime.INSTACNE.run(id, new GProcess() {
+
         @Override
-        public void accept(TransactionProcessKey key, TransactionSession session) {
+        public void accept(BindThreadKey key, TransactionSession session) {
           session.begin();
           AbsractConnection c1 = session.getConnection(ds1);
           JdbcRowBaseIteratorImpl jdbcRowBaseIterator = c1.executeQuery("select 1");
@@ -33,10 +34,10 @@ public class GRuntimeTest {
           session.commit();
           System.out.println(resultSetMap1);
           countDownLatch.countDown();
+          System.out.println("-----------------" + countDownLatch);
         }
-
         @Override
-        public void onException(TransactionProcessKey key, Exception e) {
+        public void onException(BindThreadKey key, Exception e) {
           System.out.println(e);
         }
       });
@@ -45,8 +46,8 @@ public class GRuntimeTest {
     System.out.println("----------------------end-------------------------");
   }
 
-  private static TransactionProcessKey id() {
-    return new TransactionProcessKey() {
+  private static BindThreadKey id() {
+    return new BindThreadKey() {
       final int id = ThreadLocalRandom.current().nextInt();
 
       @Override

@@ -1,8 +1,8 @@
 package io.mycat.bindThread;
 
-public abstract class BindThreadKey {
+public interface BindThreadKey {
 
-  public abstract int hashCode();
+  int hashCode();
 
-  public abstract boolean equals(Object obj);
+  boolean equals(Object obj);
 }

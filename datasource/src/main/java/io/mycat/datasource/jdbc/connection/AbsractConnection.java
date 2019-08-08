@@ -17,7 +17,7 @@ public abstract class AbsractConnection {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(AbsractConnection.class);
-  protected final Connection connection;
+  final Connection connection;
   private final JdbcDataSource jdbcDataSource;
   private volatile boolean isClosed = false;
   protected final ConnectionManager connectionManager;

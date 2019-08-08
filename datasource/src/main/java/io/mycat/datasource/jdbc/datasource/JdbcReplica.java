@@ -7,9 +7,7 @@ import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.GBeanProviders;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.connection.AbsractJdbcConnectionManager;
-import io.mycat.datasource.jdbc.connection.AutocommitConnection;
-import io.mycat.datasource.jdbc.connection.LocalTransactionConnection;
-import io.mycat.datasource.jdbc.connection.XATransactionConnection;
+import io.mycat.datasource.jdbc.connection.DefaultTransactionConnection;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -137,24 +135,18 @@ public class JdbcReplica implements MycatReplica {
     return dataSourceManager.getConnection(dataSource);
   }
 
-  public AutocommitConnection getAutocomitConnection(JdbcDataSource dataSource) {
-    return new AutocommitConnection(dataSourceManager.getConnection(dataSource), dataSource,
+  public DefaultTransactionConnection getDefaultConnection(JdbcDataSource dataSource) {
+    Connection connection = getConnection(dataSource);
+    return new DefaultTransactionConnection(connection, dataSource, true,
+        Connection.TRANSACTION_REPEATABLE_READ,
         dataSourceManager);
   }
 
-
-  public LocalTransactionConnection getLocalTransactionConnection(JdbcDataSource dataSource,
+  public DefaultTransactionConnection getConnection(JdbcDataSource dataSource, boolean autocommit,
       int transactionIsolation) {
     Connection connection = getConnection(dataSource);
-    return new LocalTransactionConnection(connection, dataSource, transactionIsolation,
+    return new DefaultTransactionConnection(connection, dataSource, autocommit,
+        transactionIsolation,
         dataSourceManager);
   }
-
-  public XATransactionConnection getXATransactionConnection(JdbcDataSource dataSource,
-      int transactionIsolation) {
-    Connection connection = getConnection(dataSource);
-    return new XATransactionConnection(connection, dataSource, transactionIsolation,
-        dataSourceManager);
-  }
-
 }

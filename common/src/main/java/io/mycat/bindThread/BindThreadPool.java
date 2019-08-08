@@ -20,14 +20,14 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
   final AtomicInteger threadCounter = new AtomicInteger(0);
   final int minThread;
   final int maxThread;
-  final long timeout;
+  final long waitTaskTimeout;
   final TimeUnit timeoutUnit;
 
-  public BindThreadPool(int maxPengdingLimit, long timeout,
+  public BindThreadPool(int maxPengdingLimit, long waitTaskTimeout,
       TimeUnit timeoutUnit, int minThread, int maxThread,
       Function<BindThreadPool, PROCESS> processFactory,
       Consumer<Exception> exceptionHandler) {
-    this.timeout = timeout;
+    this.waitTaskTimeout = waitTaskTimeout;
     this.timeoutUnit = timeoutUnit;
     this.minThread = minThread;
     this.maxThread = maxThread;
@@ -50,6 +50,9 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
       if (poll != null) {
         poll.getTask().onException(poll.getKey(), e);
       }
+    }
+    if (poll == null) {
+      tryDecThread();
     }
   }
 
@@ -118,19 +121,18 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
   }
 
   public void tryDecThread() {
-    while (idleList.size() > minThread) {
+    if (threadCounter.get() - map.size() > minThread) {
       PROCESS poll = idleList.poll();
       if (poll != null) {
-        poll.close();
-        allSession.remove(poll);
         decThreadCount();
-      } else {
-        break;
+        poll.close();
+        System.out.println("------------------end-connection");
+        allSession.remove(poll);
       }
     }
   }
 
-  private interface PengdingJob {
+  interface PengdingJob {
 
     boolean run();
 

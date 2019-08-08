@@ -1,48 +1,49 @@
-package io.mycat.datasource.jdbc.session;
+package io.mycat.datasource.jdbc.connection;
 
-import io.mycat.MycatException;
-import io.mycat.datasource.jdbc.connection.AbsractConnection;
-import io.mycat.datasource.jdbc.connection.TransactionConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
+import io.mycat.datasource.jdbc.thread.GThread;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
 public class LocalTransactionSessionImpl implements TransactionSession {
 
-  private final TransactionProcessUnit transactionProcessUnit;
+  private static final MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(LocalTransactionSessionImpl.class);
+
+  private final GThread gthread;
   private final Map<JdbcDataSource, AbsractConnection> connectionMap = new HashMap<>();
   private boolean autocommit = false;
   private boolean isTrancation = false;
   private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
-  public LocalTransactionSessionImpl(
-      TransactionProcessUnit transactionProcessUnit) {
-    this.transactionProcessUnit = transactionProcessUnit;
+  public LocalTransactionSessionImpl(GThread gthread) {
+    this.gthread = gthread;
   }
 
   public AbsractConnection getConnection(JdbcDataSource jdbcDataSource) {
     beforeDoAction();
-    AbsractConnection connection = connectionMap.compute(jdbcDataSource,
+    return connectionMap.compute(jdbcDataSource,
         new BiFunction<JdbcDataSource, AbsractConnection, AbsractConnection>() {
           @Override
           public AbsractConnection apply(JdbcDataSource dataSource,
               AbsractConnection absractConnection) {
             if (absractConnection == null) {
               if (isTrancation) {
-                return transactionProcessUnit.getAutocommitConnection(dataSource);
+                return gthread.getConnection(dataSource, false, transactionIsolation);
               } else {
-                return transactionProcessUnit
-                    .getLocalTransactionConnection(dataSource, transactionIsolation);
+                return gthread
+                    .getConnection(dataSource, transactionIsolation);
               }
             } else {
               return absractConnection;
             }
           }
         });
-    return connection;
   }
 
   @Override
@@ -53,16 +54,19 @@ public class LocalTransactionSessionImpl implements TransactionSession {
   @Override
   public void begin() {
     beforeDoAction();
+    connectionMap.values().forEach(c -> c.close());
+    connectionMap.clear();
     isTrancation = true;
   }
 
   @Override
   public void commit() {
+    isTrancation = false;
     for (AbsractConnection value : connectionMap.values()) {
-      if (value instanceof TransactionConnection) {
-        ((TransactionConnection) value).commit();
-      } else {
-        throw new MycatException("unknown state");
+      try {
+        value.connection.commit();
+      } catch (SQLException e) {
+        LOGGER.error("", e);
       }
     }
     connectionMap.clear();
@@ -70,11 +74,12 @@ public class LocalTransactionSessionImpl implements TransactionSession {
 
   @Override
   public void rollback() {
+    isTrancation = false;
     for (AbsractConnection value : connectionMap.values()) {
-      if (value instanceof TransactionConnection) {
-        ((TransactionConnection) value).rollback();
-      } else {
-        throw new MycatException("unknown state");
+      try {
+        value.connection.rollback();
+      } catch (SQLException e) {
+        LOGGER.error("", e);
       }
     }
     connectionMap.clear();

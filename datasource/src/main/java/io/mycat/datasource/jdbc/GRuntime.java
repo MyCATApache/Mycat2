@@ -2,6 +2,8 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.ModuleUtil;
 import io.mycat.MycatException;
+import io.mycat.bindThread.BindThreadCallback;
+import io.mycat.bindThread.BindThreadKey;
 import io.mycat.config.ConfigEnum;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiver;
@@ -15,17 +17,15 @@ import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
+import io.mycat.datasource.jdbc.connection.JTATransactionSessionImpl;
+import io.mycat.datasource.jdbc.connection.LocalTransactionSessionImpl;
+import io.mycat.datasource.jdbc.connection.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.JdbcDataNode;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSourceQuery;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
-import io.mycat.datasource.jdbc.manager.TransactionProcessJob;
-import io.mycat.datasource.jdbc.manager.TransactionProcessKey;
-import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
-import io.mycat.datasource.jdbc.manager.TransactionProcessUnitManager;
-import io.mycat.datasource.jdbc.session.JTATransactionSessionImpl;
-import io.mycat.datasource.jdbc.session.LocalTransactionSessionImpl;
-import io.mycat.datasource.jdbc.session.TransactionSession;
+import io.mycat.datasource.jdbc.thread.GThread;
+import io.mycat.datasource.jdbc.thread.GThreadPool;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceManager;
@@ -49,7 +49,7 @@ public enum GRuntime {
   private final DatasourceProvider datasourceProvider;
   private final LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
   private final ConfigReceiver config;
-  private final TransactionProcessUnitManager manager;
+  private final GThreadPool gThreadPool;
 
   GRuntime() {
     try {
@@ -78,7 +78,7 @@ public enum GRuntime {
           datasourceProvider);
       DataNodeRootConfig dataNodeRootConfig = config.getConfig(ConfigEnum.DATANODE);
       initJdbcDataNode(dataNodeRootConfig);
-      manager = new TransactionProcessUnitManager(this);
+      gThreadPool = new GThreadPool(this);
     } catch (Exception e) {
       throw new MycatException(e);
     }
@@ -172,11 +172,11 @@ public enum GRuntime {
     return providers;
   }
 
-  public TransactionSession createTransactionSession(TransactionProcessUnit processUnit) {
+  public TransactionSession createTransactionSession(GThread gThread) {
     if (isJTA) {
-      return new LocalTransactionSessionImpl(processUnit);
+      return new JTATransactionSessionImpl(datasourceProvider.createUserTransaction(), gThread);
     } else {
-      return new JTATransactionSessionImpl(datasourceProvider.createUserTransaction(), processUnit);
+      return new LocalTransactionSessionImpl(gThread);
     }
   }
 
@@ -196,7 +196,7 @@ public enum GRuntime {
     return (T) config;
   }
 
-  public void run(TransactionProcessKey key, TransactionProcessJob processTask) {
-    manager.run(key, processTask);
+  public void run(BindThreadKey key, BindThreadCallback processTask) {
+    gThreadPool.run(key, processTask);
   }
 }

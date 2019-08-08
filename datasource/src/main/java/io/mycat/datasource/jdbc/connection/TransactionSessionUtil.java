@@ -1,15 +1,14 @@
-package io.mycat.datasource.jdbc.session;
+package io.mycat.datasource.jdbc.connection;
 
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.connection.AbsractConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSourceQuery;
-import io.mycat.datasource.jdbc.manager.TransactionProcessUnit;
 import io.mycat.datasource.jdbc.resultset.SingleDataNodeResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
+import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import java.util.Objects;
 
@@ -35,10 +34,10 @@ public class TransactionSessionUtil {
   public static AbsractConnection getConnection(String dataNode,
       boolean runOnMaster,
       LoadBalanceStrategy strategy) {
-    TransactionProcessUnit processUnit = (TransactionProcessUnit) Thread.currentThread();
+    GThread processUnit = (GThread) Thread.currentThread();
     TransactionSession transactionSession = processUnit.getTransactionSession();
     transactionSession.beforeDoAction();
-    GRuntime runtime = processUnit.getRuntime();
+    GRuntime runtime = GRuntime.INSTACNE;
     Objects.requireNonNull(dataNode);
     JdbcDataSource dataSource = runtime
         .getJdbcDatasourceByDataNodeName(dataNode,
@@ -53,7 +52,7 @@ public class TransactionSessionUtil {
       boolean insert,
       boolean runOnMaster,
       LoadBalanceStrategy strategy) {
-    TransactionProcessUnit processUnit = (TransactionProcessUnit) Thread.currentThread();
+    GThread processUnit = (GThread) Thread.currentThread();
     TransactionSession transactionSession = processUnit.getTransactionSession();
     try {
       AbsractConnection connection = getConnection(dataNode,
