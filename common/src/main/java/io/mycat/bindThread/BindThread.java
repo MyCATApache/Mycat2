@@ -29,7 +29,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     } else {
       throw new RuntimeException("unknown state");
     }
-    if (Thread.currentThread() == processTask) {
+    if (Thread.currentThread() == this) {
       processJob(null, processTask);
     } else {
       blockingDeque.offer(processTask);
