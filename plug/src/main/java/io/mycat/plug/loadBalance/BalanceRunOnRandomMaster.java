@@ -16,24 +16,30 @@
 package io.mycat.plug.loadBalance;
 
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * roundRobin
  */
-public enum BalanceRunOnMaster implements LoadBalanceStrategy {
+public enum BalanceRunOnRandomMaster implements LoadBalanceStrategy {
   INSTANCE {
     @Override
     public LoadBalanceElement select(LoadBalanceInfo info, List<LoadBalanceElement> entityList) {
       if (null == entityList || entityList.isEmpty()) {
         return null;
       }
+      ArrayList<LoadBalanceElement> masterList = new ArrayList<>(2);
       for (LoadBalanceElement loadBalanceElement : entityList) {
         if (loadBalanceElement.isMaster()) {
-          return loadBalanceElement;
+          masterList.add(loadBalanceElement);
         }
       }
-      return null;
+      if (masterList.isEmpty()) {
+        return null;
+      }
+      return masterList.get(ThreadLocalRandom.current().nextInt(0, masterList.size()));
     }
   }
 }
