@@ -21,38 +21,22 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * 最小连接数优先
+ * roundRobin
  */
-public enum BalanceLeastActive implements LoadBalanceStrategy {
+public enum BalanceRunOnMaster implements LoadBalanceStrategy {
   INSTANCE {
     @Override
     public LoadBalanceElement select(LoadBalanceInfo info, List<LoadBalanceElement> entityList) {
       if (null == entityList || entityList.isEmpty()) {
         return null;
       }
-      int len = entityList.size();
-      List<LoadBalanceElement> balanceList = new ArrayList<>();
-
-      int leastActive = Integer.MAX_VALUE;
-      for (int i = 0; i < len; i++) {
-        LoadBalanceElement le = entityList.get(i);
-        if (le == null) {
-          continue;
-        }
-        if (leastActive > le.getSessionCounter()) {
-          leastActive = le.getSessionCounter();
-          balanceList.clear();
-          balanceList.add(le);
-        } else if (leastActive == le.getSessionCounter()) {
-          balanceList.add(le);
+      ArrayList<LoadBalanceElement> masterList = new ArrayList<>(2);
+      for (LoadBalanceElement loadBalanceElement : entityList) {
+        if (loadBalanceElement.isMaster()) {
+          masterList.add(loadBalanceElement);
         }
       }
-      int size = balanceList.size();
-      if (1 == size) {
-        return balanceList.get(0);
-      }
-      int i = ThreadLocalRandom.current().nextInt(0, size);
-      return balanceList.get(i);
+      return masterList.get(ThreadLocalRandom.current().nextInt(0, masterList.size()));
     }
   }
 }
