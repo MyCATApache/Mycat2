@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * roundRobin
+ * BalanceRunOnRandomMaster
  */
 public enum BalanceRunOnRandomMaster implements LoadBalanceStrategy {
   INSTANCE {

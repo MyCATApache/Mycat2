@@ -19,7 +19,7 @@ package io.mycat.plug.loadBalance;
 import java.util.List;
 
 /**
- * roundRobin
+ * BalanceRunOnMaster
  */
 public enum BalanceRunOnMaster implements LoadBalanceStrategy {
   INSTANCE {
