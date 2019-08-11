@@ -27,53 +27,31 @@ import java.util.List;
  * @author: gaozhiwen
  */
 public class ReplicaConfig {
-//    public enum BalanceTypeEnum {
+//    public enum BalanceType {
 //        BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
 //    }
 
-  public enum RepSwitchTypeEnum {
-    NOT_SWITCH, SWITCH
-  }
-
-  public enum RepTypeEnum {
-    // 单一节点
-    SINGLE_NODE(GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL, GlobalConfig.MYSQL_SLAVE_STAUTS_COLMS),
-    // 普通主从
-    MASTER_SLAVE(GlobalConfig.MASTER_SLAVE_HEARTBEAT_SQL, GlobalConfig.MYSQL_SLAVE_STAUTS_COLMS),
-    // 普通基于garela cluster集群
-    GARELA_CLUSTER(GlobalConfig.GARELA_CLUSTER_HEARTBEAT_SQL,
-        GlobalConfig.MYSQL_CLUSTER_STAUTS_COLMS),
-    NONE("SELECT 1", null),
-    ;
-
-    private byte[] hearbeatSQL;
-    private String[] fetchColms;
-
-    RepTypeEnum(String hearbeatSQL, String[] fetchColms) {
-      this.hearbeatSQL = hearbeatSQL.getBytes();
-      this.fetchColms = fetchColms;
-    }
-
-    public byte[] getHearbeatSQL() {
-      return hearbeatSQL;
-    }
-
-    public String[] getFetchColms() {
-      return fetchColms;
-    }
-  }
-
-  public enum BalanceTypeEnum {
-    // 单独写节点
-    BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
-  }
+  private RepType repType;
+  private RepSwitchType switchType;
+  private BalanceType balanceType;
 
   private String name;
-  private RepTypeEnum repType;
-  private RepSwitchTypeEnum switchType;
+
+  public RepType getRepType() {
+    return repType;
+  }
+
+  public void setRepType(RepType repType) {
+    this.repType = repType;
+  }
+
   private String balanceName;
   private List<DatasourceConfig> datasources;
-  private BalanceTypeEnum balanceType;
+
+  public RepSwitchType getSwitchType() {
+    return switchType;
+  }
+
   private long slaveThreshold;
 
   public String getName() {
@@ -84,20 +62,20 @@ public class ReplicaConfig {
     this.name = name;
   }
 
-  public RepTypeEnum getRepType() {
-    return repType;
-  }
-
-  public void setRepType(RepTypeEnum repType) {
-    this.repType = repType;
-  }
-
-  public RepSwitchTypeEnum getSwitchType() {
-    return switchType;
-  }
-
-  public void setSwitchType(RepSwitchTypeEnum switchType) {
+  public void setSwitchType(RepSwitchType switchType) {
     this.switchType = switchType;
+  }
+
+  public BalanceType getBalanceType() {
+    return balanceType;
+  }
+
+  public void setBalanceType(BalanceType balanceType) {
+    this.balanceType = balanceType;
+  }
+
+  public enum RepSwitchType {
+    NOT_SWITCH, SWITCH
   }
 
   public String getBalanceName() {
@@ -116,12 +94,37 @@ public class ReplicaConfig {
     this.datasources = datasources;
   }
 
-  public BalanceTypeEnum getBalanceType() {
-    return balanceType;
+  public enum RepType {
+    // 单一节点
+    SINGLE_NODE(GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL, GlobalConfig.MYSQL_SLAVE_STAUTS_COLMS),
+    // 普通主从
+    MASTER_SLAVE(GlobalConfig.MASTER_SLAVE_HEARTBEAT_SQL, GlobalConfig.MYSQL_SLAVE_STAUTS_COLMS),
+    // 普通基于garela cluster集群
+    GARELA_CLUSTER(GlobalConfig.GARELA_CLUSTER_HEARTBEAT_SQL,
+        GlobalConfig.MYSQL_CLUSTER_STAUTS_COLMS),
+    NONE("SELECT 1", null),
+    ;
+
+    private byte[] hearbeatSQL;
+    private String[] fetchColms;
+
+    RepType(String hearbeatSQL, String[] fetchColms) {
+      this.hearbeatSQL = hearbeatSQL.getBytes();
+      this.fetchColms = fetchColms;
+    }
+
+    public byte[] getHearbeatSQL() {
+      return hearbeatSQL;
+    }
+
+    public String[] getFetchColms() {
+      return fetchColms;
+    }
   }
 
-  public void setBalanceType(BalanceTypeEnum balanceType) {
-    this.balanceType = balanceType;
+  public enum BalanceType {
+    // 单独写节点
+    BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
   }
 
 

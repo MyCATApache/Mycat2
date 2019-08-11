@@ -39,4 +39,6 @@ public class MasterIndexesRootConfig extends ConfigurableRoot {
     public void setMasterIndexes(Map<String, String> masterIndexes) {
         this.masterIndexes = masterIndexes;
     }
+
+
 }
