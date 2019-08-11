@@ -1,25 +1,51 @@
-package io.mycat.config;
+package io.mycat;
 
+import static jdk.nashorn.internal.objects.NativeMath.log;
+
+import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigLoader;
+import io.mycat.config.ConfigReceiver;
+import io.mycat.config.GlobalConfig;
+import io.mycat.config.ReplicaIndexesModifier;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public enum ConfigRuntime {
   INSTCANE;
   volatile String resourcesPath;
   volatile MasterIndexesRootConfig masterIndexesRootConfig;
+  final Logger LOGGER = LoggerFactory.getLogger(ConfigRuntime.class);
+  volatile ConfigReceiver lastConfig;
 
   ConfigRuntime() {
     String configResourceKeyName = "MYCAT_HOME";
     String resourcesPath = System.getProperty(configResourceKeyName);
     if (resourcesPath == null) {
-      resourcesPath = Paths.get("").toAbsolutePath().toString();
+      Path root = Paths.get("").toAbsolutePath();
+
+      try {
+        resourcesPath = Files
+            .find(root, 5,
+                (path, basicFileAttributes) -> {
+                  if (Files.isDirectory(path)) {
+                    return false;
+                  }
+                  return path.toString().endsWith("masterIndexes.yml");
+                }).findFirst().map(i -> i.getParent()).orElse(root).toAbsolutePath()
+            .toString();
+      } catch (IOException e) {
+        resourcesPath = root.toString();
+      }
     }
-    log("config folder path:{}", resourcesPath);
+    LOGGER.info("config folder path:{}", resourcesPath);
     log(configResourceKeyName, resourcesPath);
     if (resourcesPath == null || Boolean.getBoolean("DEBUG")) {
       try {
@@ -29,11 +55,7 @@ public enum ConfigRuntime {
       }
     }
     this.resourcesPath = resourcesPath;
-    init(resourcesPath);
-  }
-
-  private static void log(String tmp, Object... args) {
-    System.out.println(MessageFormat.format(tmp, args));
+    this.lastConfig = init(resourcesPath);
   }
 
   public static String getResourcesPath(Class clazz) {
@@ -47,26 +69,32 @@ public enum ConfigRuntime {
     }
   }
 
-  private void init(String resourcesPath) {
+  private ConfigReceiver init(String resourcesPath) {
     try {
       ConfigReceiver receiver = ConfigLoader.load(resourcesPath, GlobalConfig.genVersion());
       MasterIndexesRootConfig masterIndexesRootConfig = receiver
           .getConfig(ConfigEnum.REPLICA_INDEX);
       Objects.requireNonNull(masterIndexesRootConfig);
       this.masterIndexesRootConfig = masterIndexesRootConfig;
+      return receiver;
     } catch (IOException e) {
       e.printStackTrace();
     }
+    return null;
   }
 
-  public void reload(String path) {
+  public ConfigReceiver load() {
+    return lastConfig;
+  }
+
+  public ConfigReceiver load(String path) {
     Objects.requireNonNull(path);
     String argPath = Paths.get(path).toAbsolutePath().toString();
-    if (argPath.equalsIgnoreCase(resourcesPath)) {
+    if (!argPath.equalsIgnoreCase(resourcesPath)) {
       this.resourcesPath = argPath;
-      init(this.resourcesPath);
+      return init(this.resourcesPath);
     }
-
+    return lastConfig;
   }
 
   public String getResourcesPath() {
