@@ -1,12 +1,12 @@
 package io.mycat.replica.heartbeat.jdbcDetector;
 
 import io.mycat.api.collector.CommonSQLCallback;
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.connection.DsConnection;
+import io.mycat.datasource.jdbc.datasource.DsConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
@@ -36,15 +36,15 @@ public class DefaultJdbcHeartbeatDetector implements
     this.callback = commonSQLCallbacbProvider.apply(this);
 
     HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(
-        ConfigEnum.HEARTBEAT);
+        ConfigFile.HEARTBEAT);
     HeartbeatConfig heartbeatConfig = heartbeatRootConfig
         .getHeartbeat();
     this.heartbeatTimeout = heartbeatConfig.getMinHeartbeatChecktime();
   }
 
   @Override
-  public ReplicaConfig getReplica() {
-    return replica.getConfig();
+  public ReplicaConfig getReplicaConfig() {
+    return replica.getReplicaConfig();
   }
 
   @Override

@@ -17,7 +17,6 @@
 package io.mycat.config.datasource;
 
 
-import io.mycat.config.GlobalConfig;
 import java.util.List;
 
 /**
@@ -27,28 +26,25 @@ import java.util.List;
  * @author: gaozhiwen
  */
 public class ReplicaConfig {
-//    public enum BalanceType {
-//        BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
-//    }
 
-  private RepType repType;
-  private RepSwitchType switchType;
-  private BalanceType balanceType;
+  private String repType;
+  private String switchType;
+  private String balanceType;
 
   private String name;
+  private String readBalanceName;
+  private String writeBalanceName;
 
-  public RepType getRepType() {
+  public String getRepType() {
     return repType;
   }
 
-  public void setRepType(RepType repType) {
+  public void setRepType(String repType) {
     this.repType = repType;
   }
-
-  private String balanceName;
   private List<DatasourceConfig> datasources;
 
-  public RepSwitchType getSwitchType() {
+  public String getSwitchType() {
     return switchType;
   }
 
@@ -62,28 +58,29 @@ public class ReplicaConfig {
     this.name = name;
   }
 
-  public void setSwitchType(RepSwitchType switchType) {
+  public void setSwitchType(String switchType) {
     this.switchType = switchType;
   }
 
-  public BalanceType getBalanceType() {
+  public String getBalanceType() {
     return balanceType;
   }
 
-  public void setBalanceType(BalanceType balanceType) {
+  public void setBalanceType(String balanceType) {
     this.balanceType = balanceType;
   }
 
-  public enum RepSwitchType {
-    NOT_SWITCH, SWITCH
+
+  public String getReadBalanceName() {
+    return readBalanceName;
   }
 
-  public String getBalanceName() {
-    return balanceName;
+  public void setReadBalanceName(String readBalanceName) {
+    this.readBalanceName = readBalanceName;
   }
 
-  public void setBalanceName(String balanceName) {
-    this.balanceName = balanceName;
+  public String getWriteBalanceName() {
+    return writeBalanceName;
   }
 
   public List<DatasourceConfig> getDatasources() {
@@ -92,39 +89,6 @@ public class ReplicaConfig {
 
   public void setDatasources(List<DatasourceConfig> datasources) {
     this.datasources = datasources;
-  }
-
-  public enum RepType {
-    // 单一节点
-    SINGLE_NODE(GlobalConfig.SINGLE_NODE_HEARTBEAT_SQL, GlobalConfig.MYSQL_SLAVE_STAUTS_COLMS),
-    // 普通主从
-    MASTER_SLAVE(GlobalConfig.MASTER_SLAVE_HEARTBEAT_SQL, GlobalConfig.MYSQL_SLAVE_STAUTS_COLMS),
-    // 普通基于garela cluster集群
-    GARELA_CLUSTER(GlobalConfig.GARELA_CLUSTER_HEARTBEAT_SQL,
-        GlobalConfig.MYSQL_CLUSTER_STAUTS_COLMS),
-    NONE("SELECT 1", null),
-    ;
-
-    private byte[] hearbeatSQL;
-    private String[] fetchColms;
-
-    RepType(String hearbeatSQL, String[] fetchColms) {
-      this.hearbeatSQL = hearbeatSQL.getBytes();
-      this.fetchColms = fetchColms;
-    }
-
-    public byte[] getHearbeatSQL() {
-      return hearbeatSQL;
-    }
-
-    public String[] getFetchColms() {
-      return fetchColms;
-    }
-  }
-
-  public enum BalanceType {
-    // 单独写节点
-    BALANCE_ALL, BALANCE_ALL_READ, BALANCE_NONE
   }
 
 
@@ -143,7 +107,7 @@ public class ReplicaConfig {
         "name='" + name + '\'' +
         ", repType=" + repType +
         ", switchType=" + switchType +
-        ", balanceName='" + balanceName + '\'' +
+        ", readBalanceName='" + readBalanceName + '\'' +
         ", datasources=" + datasources +
         ", balanceType=" + balanceType +
         ", slaveThreshold=" + slaveThreshold +

@@ -14,6 +14,9 @@
  */
 package io.mycat.replica.heartbeat;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
+
 /**
  * @author : zhangwy
  * @author : chenjunwen
@@ -21,9 +24,11 @@ package io.mycat.replica.heartbeat;
  */
 public abstract class HeartbeatManager {
 
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(HeartbeatManager.class);
   protected volatile DatasourceStatus dsStatus;
   protected HeartBeatStatus hbStatus;
   protected HeartbeatDetector heartbeatDetector;
+  protected DataSourceStatusReveiver dataSourceStatusReveiver;
 
 
   /**
@@ -34,7 +39,7 @@ public abstract class HeartbeatManager {
     if (hbStatus.tryChecking()) {
       try {
         this.heartbeatDetector.heartBeat();
-      }finally {
+      } finally {
         hbStatus.setChecking(false);
       }
     } else if (this.heartbeatDetector.isHeartbeatTimeout()) {
@@ -45,7 +50,20 @@ public abstract class HeartbeatManager {
   }
 
 
-  protected abstract void sendDataSourceStatus(DatasourceStatus datasourceStatus);
+  public abstract void sendDataSourceStatus(DatasourceStatus datasourceStatus);
+
+  public boolean isAlive(boolean master) {
+    if (master) {
+      return this.dsStatus.isAlive();
+    } else {
+      return this.dsStatus.isAlive() && asSelectRead();
+    }
+
+  }
+
+  public boolean asSelectRead() {
+    return dsStatus.isAlive() && !dsStatus.isSlaveBehindMaster() && dsStatus.isDbSynStatusNormal();
+  }
 
   public void setStatus(int status) {
     DatasourceStatus datasourceStatus = new DatasourceStatus();

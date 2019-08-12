@@ -17,13 +17,12 @@ package io.mycat.proxy.session;
 import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
 
 import io.mycat.MycatException;
-import io.mycat.annotations.NoExcept;
 import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.api.collector.TextResultSetTransforCollector;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.MycatLogger;
@@ -81,7 +80,6 @@ public final class MySQLSessionManager implements
   /**
    * 返回不可变集合,防止外部代码错误操作allSessions导致泄漏MySQLSession
    */
-  @NoExcept
   @Override
   public final List<MySQLClientSession> getAllSessions() {
     return new ArrayList<>(allSessions.values());
@@ -90,7 +88,6 @@ public final class MySQLSessionManager implements
   /**
    * 获得mysql proxy中,该线程中所有的mysqlSession的数量
    */
-  @NoExcept
   @Override
   public final int currentSessionCount() {
     return allSessions.size();
@@ -113,7 +110,7 @@ public final class MySQLSessionManager implements
       MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids,
           partialType);
       for (; ; ) {
-        if (!datasource.isAlive()) {
+        if (!datasource.instance().isAlive()) {
           asyncTaskCallBack
               .onException(new MycatException(datasource.getName() + " is not alive!"), this,
                   null);
@@ -129,6 +126,7 @@ public final class MySQLSessionManager implements
           if (!mySQLSession.isOpen()) {
             thread.addNIOJob(new NIOJob() {
               static final String MESSAGE = "mysql session is close in idle";
+
               @Override
               public void run(ReactorEnvThread reactor) throws Exception {
                 mySQLSession.close(false, MESSAGE);
@@ -256,7 +254,7 @@ public final class MySQLSessionManager implements
    * 根据dataSource的配置信息获得可用的MySQLSession 0.如果dataSource已经失效,则直接回调异常,异常信息在callback的attr
    * 1.首先从空闲的session集合里面尝试获取 若存在空闲的session则随机从头部或者尾部获得session 2.否则创建新的session
    */
-  @NoExcept
+
   @Override
   public final void getIdleSessionsOfKey(MySQLDatasource datasource,
       SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
@@ -267,7 +265,6 @@ public final class MySQLSessionManager implements
    * 把使用完毕的mysql session释放到连接池 1.禁止把session多次放入闲置连接池,但是该方法不查重,需要调用方保证
    * 2.在闲置连接池里面,session不对写入事件响应,但对读取事件响应,因为可能收到关闭事件
    */
-  @NoExcept
   @Override
   public final void addIdleSession(MySQLClientSession session) {
     try {
@@ -352,7 +349,6 @@ public final class MySQLSessionManager implements
   /**
    * 1.从闲置池里面移除mysql session 2.该函数不会关闭session 3.该函数可以被子类重写,但是未能遇见这种需要
    */
-  @NoExcept
   private void removeIdleSession(MySQLClientSession session) {
     try {
       assert session != null;
@@ -404,7 +400,7 @@ public final class MySQLSessionManager implements
   public void idleConnectCheck() {
     Collection<MySQLReplica> mysqlReplicaList = this.runtime.getMySQLReplicaList();
     HeartbeatRootConfig heartbeatRootConfig = this.runtime
-        .getConfig(ConfigEnum.HEARTBEAT);
+        .getConfig(ConfigFile.HEARTBEAT);
     long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
     long hearBeatTime = System.currentTimeMillis() - idleTimeout;
     long hearBeatTime2 = System.currentTimeMillis() - 2 * idleTimeout;
@@ -414,6 +410,9 @@ public final class MySQLSessionManager implements
           .getDatasourceList();
 
       for (MySQLDatasource mySQLDatasource : dataSourceList) {
+        if (mySQLDatasource == null) {
+          continue;
+        }
         int maxConsInOneCheck = Math.min(10, mySQLDatasource.getSessionMinCount());
         LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource);
         List<MySQLClientSession> checkList = new ArrayList<>();
@@ -563,11 +562,12 @@ public final class MySQLSessionManager implements
       return;
     }
     int maxRetry = key.gerMaxRetry();
-    if (maxRetry== 0){
+    if (maxRetry == 0) {
       createCon(key, callBack);
-    }else {
+    } else {
       createCon(key, new SessionCallBack<MySQLClientSession>() {
         int retryCount = 0;
+
         @Override
         public void onSession(MySQLClientSession session, Object sender, Object attr) {
           callBack.onSession(session, sender, attr);
@@ -576,10 +576,10 @@ public final class MySQLSessionManager implements
         @Override
         public void onException(Exception exception, Object sender, Object attr) {
           ++retryCount;
-          if (retryCount >= maxRetry){
+          if (retryCount >= maxRetry) {
             callBack.onException(exception, sender, attr);
-          }else {
-            createCon(key,this);
+          } else {
+            createCon(key, this);
           }
         }
       });
@@ -665,7 +665,6 @@ public final class MySQLSessionManager implements
   /**
    * 从连接池移除session 1.移除连接 2.关闭连接 3.关闭原因需要写清楚
    */
-  @NoExcept
   @Override
   public void removeSession(MySQLClientSession session, boolean normal, String reason) {
     try {

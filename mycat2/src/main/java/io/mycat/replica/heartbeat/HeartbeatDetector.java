@@ -19,7 +19,7 @@ import io.mycat.config.datasource.ReplicaConfig;
 
 public interface HeartbeatDetector<T extends MycatDataSource,C> {
 
-  ReplicaConfig getReplica();
+  ReplicaConfig getReplicaConfig();
 
   T getDataSource();
 
@@ -36,5 +36,4 @@ public interface HeartbeatDetector<T extends MycatDataSource,C> {
   void updateLastSendQryTime();
 
   boolean quitDetector();
-//    HeartbeatInfReceiver<DatasourceStatus> getHeartbeatInfReceiver();
 }

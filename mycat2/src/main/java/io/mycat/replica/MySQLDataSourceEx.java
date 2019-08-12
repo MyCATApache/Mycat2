@@ -15,26 +15,32 @@ public class MySQLDataSourceEx extends MySQLDatasource {
   public MySQLDataSourceEx(ProxyRuntime runtime,int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
     super(index, datasourceConfig, replica);
-    mysqlHeartBeatManager = new MySQLProxyHeartBeatManager(runtime,replica.getConfig(), this);
+    mysqlHeartBeatManager = new MySQLProxyHeartBeatManager(runtime, replica.getReplicaConfig(),
+        this);
   }
 
   public void heartBeat() {
     mysqlHeartBeatManager.heartBeat();
   }
+//
+//  @Override
+//  public boolean isAlive() {
+//    if(isMaster()) {
+//      return mysqlHeartBeatManager.getDsStatus().isAlive();
+//    } else {
+//      return mysqlHeartBeatManager.getDsStatus().isAlive()&& asSelectRead();
+//    }
+//  }
+//
+//  @Override
+//  public boolean asSelectRead() {
+//    return mysqlHeartBeatManager.getDsStatus().isAlive()
+//        && mysqlHeartBeatManager.getDsStatus().isSlaveBehindMaster() == false
+//        && mysqlHeartBeatManager.getDsStatus().isDbSynStatusNormal();
+//  }
 
   @Override
-  public boolean isAlive() {
-    if(isMaster()) {
-      return mysqlHeartBeatManager.getDsStatus().isAlive();
-    } else {
-      return mysqlHeartBeatManager.getDsStatus().isAlive()&& asSelectRead();
-    }
-  }
-
-  @Override
-  public boolean asSelectRead() {
-    return mysqlHeartBeatManager.getDsStatus().isAlive()
-        && mysqlHeartBeatManager.getDsStatus().isSlaveBehindMaster() == false
-        && mysqlHeartBeatManager.getDsStatus().isDbSynStatusNormal();
+  public PhysicsInstanceImpl instance() {
+    return null;
   }
 }

@@ -40,6 +40,7 @@ public class DatasourceConfig {
     private int weight = 0;
     private String initSQL;
     private String initDb;
+  private String instanceType;
 
     public String getName() {
         return name;
@@ -144,6 +145,14 @@ public class DatasourceConfig {
     public void setInitDb(String initDb) {
         this.initDb = initDb;
     }
+
+  public String getInstanceType() {
+    return instanceType;
+  }
+
+  public void setInstanceType(String instanceType) {
+    this.instanceType = instanceType;
+  }
 
     @Override
     public boolean equals(Object o) {

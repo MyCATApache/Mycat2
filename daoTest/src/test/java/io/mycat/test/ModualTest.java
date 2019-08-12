@@ -58,7 +58,7 @@ public abstract class ModualTest {
     ProxyRuntime runtime = new ProxyRuntime(cr);
     ExecutorService executor = Executors.newSingleThreadExecutor();
     final CompletableFuture<String> future = new CompletableFuture<>();
-    MycatCore.startup(rootResourcePath, runtime, callback,
+    MycatCore.startup(runtime, callback,
         new AsyncTaskCallBack() {
           @Override
           public void onFinished(Object sender, Object result, Object attr) {

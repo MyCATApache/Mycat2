@@ -7,7 +7,7 @@ import io.mycat.replica.heartbeat.proxyDetector.ProxyHeartBeatAsyncTaskCallBack;
 public class NoneHeartbeatDetector implements HeartbeatDetector {
 
   @Override
-  public ReplicaConfig getReplica() {
+  public ReplicaConfig getReplicaConfig() {
     return null;
   }
 

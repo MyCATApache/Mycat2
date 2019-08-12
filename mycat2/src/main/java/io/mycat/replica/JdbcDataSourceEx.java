@@ -34,20 +34,20 @@ public class JdbcDataSourceEx extends JdbcDataSource {
       thread.close();
     }
   }
-
-  @Override
-  public boolean isAlive() {
-    if (isMaster()) {
-      return jdbcHeartbeatManager.getDsStatus().isAlive();
-    } else {
-      return jdbcHeartbeatManager.getDsStatus().isAlive() && asSelectRead();
-    }
-  }
-
-  @Override
-  public boolean asSelectRead() {
-    return jdbcHeartbeatManager.getDsStatus().isAlive()
-        && jdbcHeartbeatManager.getDsStatus().isSlaveBehindMaster() == false
-        && jdbcHeartbeatManager.getDsStatus().isDbSynStatusNormal();
-  }
+//
+//  @Override
+//  public boolean isAlive() {
+//    if (isMaster()) {
+//      return jdbcHeartbeatManager.getDsStatus().isAlive();
+//    } else {
+//      return jdbcHeartbeatManager.getDsStatus().isAlive() && asSelectRead();
+//    }
+//  }
+//
+//  @Override
+//  public boolean asSelectRead() {
+//    return jdbcHeartbeatManager.getDsStatus().isAlive()
+//        && !jdbcHeartbeatManager.getDsStatus().isSlaveBehindMaster()
+//        && jdbcHeartbeatManager.getDsStatus().isDbSynStatusNormal();
+//  }
 }

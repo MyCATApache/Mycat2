@@ -14,17 +14,16 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.ModuleUtil;
-import io.mycat.MycatException;
+
+import io.mycat.ConfigRuntime;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.buffer.BufferPool;
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.ConfigReceiver;
 import io.mycat.config.ConfigurableRoot;
-import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
 import io.mycat.config.plug.PlugRootConfig;
@@ -50,16 +49,15 @@ import io.mycat.proxy.reactor.NIOAcceptor;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import io.mycat.replica.ReplicaRuntime;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ProxyRuntime {
@@ -82,7 +80,7 @@ public class ProxyRuntime {
   public ProxyRuntime(ConfigReceiver configReceiver)
       throws Exception {
     this.config = configReceiver;
-    ProxyRootConfig config = this.config.getConfig(ConfigEnum.PROXY);
+    ProxyRootConfig config = this.config.getConfig(ConfigFile.PROXY);
     Objects.requireNonNull(config, "mycat.yaml was not found");
     String proxyBeanProviders = config.getProxy().getProxyBeanProviders();
     Objects.requireNonNull(proxyBeanProviders, "proxyBeanProviders was not found");
@@ -92,7 +90,7 @@ public class ProxyRuntime {
     this.initPlug();
     this.initSecurityManager();
     this.initRepliac(this, providers);
-    this.initDataNode(providers, configReceiver.getConfig(ConfigEnum.DATANODE));
+    this.initDataNode(providers, configReceiver.getConfig(ConfigFile.DATANODE));
 
     providers.initRuntime(this, defContext);
   }
@@ -135,12 +133,12 @@ public class ProxyRuntime {
   }
 
   private void initMySQLVariables() {
-    MysqlServerVariablesRootConfig config = getConfig(ConfigEnum.VARIABLES);
+    MysqlServerVariablesRootConfig config = getConfig(ConfigFile.VARIABLES);
     Objects.requireNonNull(config.getVariables(), "variables config config not found");
     variables = new MySQLVariables(config.getVariables());
   }
 
-  public <T extends ConfigurableRoot> T getConfig(ConfigEnum configEnum) {
+  public <T extends ConfigurableRoot> T getConfig(ConfigFile configEnum) {
     ConfigurableRoot config = this.config.getConfig(configEnum);
     return (T) config;
   }
@@ -177,53 +175,17 @@ public class ProxyRuntime {
 
 
   private void initRepliac(ProxyRuntime runtime, ProxyBeanProviders factory) {
-    ReplicasRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
-    MasterIndexesRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
-    ////////////////////////////////////check/////////////////////////////////////////////////
-    Objects.requireNonNull(dsConfig, "replica config can not found");
-    Objects.requireNonNull(dsConfig.getReplicas(), "replica config can not be empty");
-    Objects.requireNonNull(replicaIndexConfig, "master indexes can not found");
-    Objects
-        .requireNonNull(replicaIndexConfig.getMasterIndexes(), "master indexes can not be empty");
-    ////////////////////////////////////check/////////////////////////////////////////////////
-    List<ReplicaConfig> replicas = dsConfig.getReplicas();
-    Map<String, String> replicaIndexes = replicaIndexConfig.getMasterIndexes();
-    int size = replicas.size();
-    for (int i = 0; i < size; i++) {
-      ReplicaConfig replicaConfig = replicas.get(i);
-      ////////////////////////////////////check/////////////////////////////////////////////////
-      Objects.requireNonNull(replicaConfig.getName(), "replica name can not be empty");
-      Objects.requireNonNull(replicaConfig.getRepType(), "replica message can not be empty");
-      Objects
-          .requireNonNull(replicaConfig.getSwitchType(), "replica switch message can not be empty");
-      Objects
-          .requireNonNull(replicaConfig.getBalanceName(), "replica balance name can not be empty");
-      Objects
-          .requireNonNull(replicaConfig.getBalanceType(),
-              "replica balance message can not be empty");
-      if (replicaConfig.getDatasources() == null) {
-        return;
-      }
-      ////////////////////////////////////check/////////////////////////////////////////////////
-      Set<Integer> writeIndex = ModuleUtil.getReplicaIndexes(replicaIndexes, replicaConfig);
-      MySQLReplica replica = factory
-          .createReplica(runtime, replicaConfig, writeIndex);
-      replicaMap.put(replica.getName(), replica);
-      List<MySQLDatasource> datasourceList = replica.getDatasourceList();
-      if (datasourceList != null) {
-        for (MySQLDatasource datasource : datasourceList) {
-          if (this.datasourceMap.containsKey(datasource.getName())) {
-            throw new MycatException("dataSource name:{} can noy duplicate", datasource.getName());
-          } else {
-            this.datasourceMap.put(datasource.getName(), datasource);
-          }
-        }
-      }
+    ReplicaRuntime.INSTCANE.load();
+    ReplicasRootConfig replicasRootConfig = ConfigRuntime.INSTCANE.getConfig(ConfigFile.DATASOURCE);
+
+    for (ReplicaConfig config : replicasRootConfig.getReplicas()) {
+      MySQLReplica replica = factory.createReplica(runtime, config,
+          ConfigRuntime.INSTCANE.getReplicaIndexes(config.getName()));
     }
   }
 
   private io.mycat.config.proxy.ProxyConfig getProxy() {
-    ProxyRootConfig proxyRootConfig = getConfig(ConfigEnum.PROXY);
+    ProxyRootConfig proxyRootConfig = getConfig(ConfigFile.PROXY);
     ////////////////////////////////////check/////////////////////////////////////////////////
     Objects.requireNonNull(proxyRootConfig, "proxy(mycat) config can not found");
     Objects.requireNonNull(proxyRootConfig.getProxy(), "proxy config can not be empty");
@@ -359,7 +321,7 @@ public class ProxyRuntime {
 
 
   private void initSecurityManager() {
-    UserRootConfig userRootConfig = getConfig(ConfigEnum.USER);
+    UserRootConfig userRootConfig = getConfig(ConfigFile.USER);
     Objects.requireNonNull(userRootConfig, "user config can not found");
     this.securityManager = new MycatSecurityConfig(userRootConfig);
   }
@@ -379,7 +341,7 @@ public class ProxyRuntime {
   }
 
   private void initPlug() {
-    PlugRootConfig plugRootConfig = getConfig(ConfigEnum.PLUG);
+    PlugRootConfig plugRootConfig = getConfig(ConfigFile.PLUG);
     Objects.requireNonNull(plugRootConfig, "plug config can not found");
     loadBalanceManager.load(plugRootConfig);
   }
@@ -392,7 +354,6 @@ public class ProxyRuntime {
   public ConfigReceiver getConfig() {
     return config;
   }
-
 
 
   public Map<String, Object> getDefContext() {

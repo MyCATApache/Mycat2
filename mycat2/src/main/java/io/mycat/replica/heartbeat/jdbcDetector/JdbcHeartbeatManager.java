@@ -1,8 +1,7 @@
 package io.mycat.replica.heartbeat.jdbcDetector;
 
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.config.datasource.ReplicaConfig.RepSwitchTypeEnum;
 import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.datasource.jdbc.GRuntime;
@@ -10,6 +9,10 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.replica.PhysicsInstance;
+import io.mycat.replica.ReplicaRuntime;
+import io.mycat.replica.ReplicaSwitchType;
+import io.mycat.replica.ReplicaType;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStatus;
 import io.mycat.replica.heartbeat.HeartbeatManager;
@@ -27,7 +30,7 @@ public class JdbcHeartbeatManager extends HeartbeatManager {
 
   public JdbcHeartbeatManager(JdbcDataSource jdbcDataSource,
       GRuntime runtime) {
-    HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(ConfigEnum.HEARTBEAT);
+    HeartbeatRootConfig heartbeatRootConfig = runtime.getConfig(ConfigFile.HEARTBEAT);
     ////////////////////////////////////check/////////////////////////////////////////////////
     Objects.requireNonNull(heartbeatRootConfig, "heartbeat config can not found");
     Objects
@@ -45,34 +48,43 @@ public class JdbcHeartbeatManager extends HeartbeatManager {
 
     JdbcReplica replica = jdbcDataSource.getReplica();
     ReplicaConfig replicaConfig = replica.getReplicaConfig();
-
-    if (ReplicaConfig.RepTypeEnum.SINGLE_NODE.equals(replicaConfig.getRepType())) {
-      this.heartbeatDetector = new DefaultJdbcHeartbeatDetector(runtime, replica, jdbcDataSource,
-          this, MySQLSingleHeartBeatStrategy::new);
-    } else if (ReplicaConfig.RepTypeEnum.MASTER_SLAVE.equals(replicaConfig.getRepType())) {
-      this.heartbeatDetector = new DefaultJdbcHeartbeatDetector(runtime, replica, jdbcDataSource,
-          this,
-          MySQLMasterSlaveBeatStrategy::new);
-    } else if (ReplicaConfig.RepTypeEnum.GARELA_CLUSTER.equals(replicaConfig.getRepType())) {
-      this.heartbeatDetector = new DefaultJdbcHeartbeatDetector(runtime, replica, jdbcDataSource,
-          this,
-          MySQLSingleHeartBeatStrategy::new);
-    } else {
-      this.heartbeatDetector = new NoneHeartbeatDetector();
+    ReplicaType replicaType = ReplicaType.valueOf(replicaConfig.getRepType());
+    switch (replicaType) {
+      case SINGLE_NODE:
+        this.heartbeatDetector = new DefaultJdbcHeartbeatDetector(runtime, replica, jdbcDataSource,
+            this, MySQLSingleHeartBeatStrategy::new);
+        break;
+      case MASTER_SLAVE:
+        this.heartbeatDetector = new DefaultJdbcHeartbeatDetector(runtime, replica, jdbcDataSource,
+            this,
+            MySQLMasterSlaveBeatStrategy::new);
+        break;
+      case GARELA_CLUSTER:
+        this.heartbeatDetector = new DefaultJdbcHeartbeatDetector(runtime, replica, jdbcDataSource,
+            this,
+            MySQLSingleHeartBeatStrategy::new);
+        break;
+      case NONE:
+        this.heartbeatDetector = new NoneHeartbeatDetector();
+        break;
     }
   }
 
   @Override
-  protected void sendDataSourceStatus(DatasourceStatus currentDatasourceStatus) {
+  public void sendDataSourceStatus(DatasourceStatus currentDatasourceStatus) {
+    PhysicsInstance instance = dataSource.instance();
+    ReplicaRuntime.INSTCANE
+        .updateInstanceStatus(dataSource.getReplica().getName(), dataSource.getName(),
+            isAlive(instance.isMaster()), instance.asSelectRead());
     //状态不同进行状态的同步
     if (!this.dsStatus.equals(currentDatasourceStatus)) {
       //设置状态给 dataSource
       this.dsStatus = currentDatasourceStatus;
       LOGGER.error("{} heartStatus {}", dataSource.getName(), dsStatus);
     }
-    ReplicaConfig conf = this.dataSource.getReplica().getConfig();
-    if (conf.getSwitchType().equals(RepSwitchTypeEnum.SWITCH)
-        && dataSource.isMaster() && dsStatus.isError()
+    ReplicaSwitchType replicaSwitchType = this.dataSource.getReplica().getSwitchType();
+    if (replicaSwitchType.equals(ReplicaSwitchType.SWITCH)
+        && dataSource.instance().isMaster() && dsStatus.isError()
         && canSwitchDataSource()) {
       //replicat 进行选主
       if (dataSource.getReplica().switchDataSourceIfNeed()) {

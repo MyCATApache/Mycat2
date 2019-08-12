@@ -27,11 +27,6 @@
       <artifactId>grid</artifactId>
       <version>0.2-SNAPSHOT</version>
     </dependency>
-    <dependency>
-      <groupId>io.mycat</groupId>
-      <artifactId>grid</artifactId>
-      <version>0.2-SNAPSHOT</version>
-    </dependency>
     <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
     <dependency>
       <groupId>mysql</groupId>

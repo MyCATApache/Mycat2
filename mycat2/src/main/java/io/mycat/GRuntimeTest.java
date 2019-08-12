@@ -2,9 +2,9 @@ package io.mycat;
 
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.connection.DsConnection;
-import io.mycat.datasource.jdbc.connection.TransactionSession;
+import io.mycat.datasource.jdbc.datasource.DsConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.thread.GProcess;
 import java.util.List;

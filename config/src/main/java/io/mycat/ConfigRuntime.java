@@ -2,9 +2,10 @@ package io.mycat;
 
 import static jdk.nashorn.internal.objects.NativeMath.log;
 
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.ConfigLoader;
 import io.mycat.config.ConfigReceiver;
+import io.mycat.config.ConfigurableRoot;
 import io.mycat.config.GlobalConfig;
 import io.mycat.config.ReplicaIndexesModifier;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
@@ -20,9 +21,9 @@ import org.slf4j.LoggerFactory;
 
 public enum ConfigRuntime {
   INSTCANE;
+  final Logger LOGGER = LoggerFactory.getLogger(ConfigRuntime.class);
   volatile String resourcesPath;
   volatile MasterIndexesRootConfig masterIndexesRootConfig;
-  final Logger LOGGER = LoggerFactory.getLogger(ConfigRuntime.class);
   volatile ConfigReceiver lastConfig;
 
   ConfigRuntime() {
@@ -73,7 +74,7 @@ public enum ConfigRuntime {
     try {
       ConfigReceiver receiver = ConfigLoader.load(resourcesPath, GlobalConfig.genVersion());
       MasterIndexesRootConfig masterIndexesRootConfig = receiver
-          .getConfig(ConfigEnum.REPLICA_INDEX);
+          .getConfig(ConfigFile.REPLICA_INDEX);
       Objects.requireNonNull(masterIndexesRootConfig);
       this.masterIndexesRootConfig = masterIndexesRootConfig;
       return receiver;
@@ -113,6 +114,11 @@ public enum ConfigRuntime {
     ReplicaIndexesModifier
         .updateReplicaMasterIndexesConfig(masterIndexesRootConfig, replicaName, oldWriteDataSource,
             newWriteDataSource);
+  }
+
+  public <T extends ConfigurableRoot> T getConfig(ConfigFile configEnum) {
+    ConfigurableRoot config = lastConfig.getConfig(configEnum);
+    return (T) config;
   }
 
 

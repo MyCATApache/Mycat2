@@ -35,7 +35,7 @@ public class MySQLMasterSlaveBeatStrategy implements CommonSQLCallback {
 
   public MySQLMasterSlaveBeatStrategy(HeartbeatDetector heartbeatDetector) {
     this.heartbeatDetector = heartbeatDetector;
-    this.slaveThreshold = heartbeatDetector.getReplica().getSlaveThreshold();
+    this.slaveThreshold = heartbeatDetector.getReplicaConfig().getSlaveThreshold();
   }
 
   public String getSql() {
@@ -57,12 +57,12 @@ public class MySQLMasterSlaveBeatStrategy implements CommonSQLCallback {
         Long Behind_Master = (Long) resultResult.get("Seconds_Behind_Master");
         if (Behind_Master > slaveThreshold) {
           datasourceStatus.setSlaveBehindMaster(true);
-          System.out.println("found MySQL master/slave Replication delay !!! " +
+          LOGGER.info("found MySQL master/slave Replication delay !!! " +
               " binlog sync time delay: " + Behind_Master + "s");
         } else {
           datasourceStatus.setSlaveBehindMaster(false);
         }
-      } else if (heartbeatDetector.getDataSource().asSelectRead()) {
+      } else if (heartbeatDetector.getDataSource().instance().asSelectRead()) {
         String Last_IO_Error =
             resultResult != null ? (String) resultResult.get("Last_IO_Error") : null;
         System.out.println("found MySQL master/slave Replication err !!! "

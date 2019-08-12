@@ -2,7 +2,7 @@ package io.mycat;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
@@ -59,7 +59,7 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
 
   @Override
   public CommandDispatcher createCommandDispatcher(ProxyRuntime runtime, MycatSession session) {
-    ProxyRootConfig config = runtime.getConfig(ConfigEnum.PROXY);
+    ProxyRootConfig config = runtime.getConfig(ConfigFile.PROXY);
     Objects.requireNonNull(config);
     String commandDispatcherClass = config.getProxy().getCommandDispatcherClass();
     CommandDispatcher commandDispatcher;

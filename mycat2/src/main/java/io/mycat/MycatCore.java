@@ -14,9 +14,7 @@
  */
 package io.mycat;
 
-import io.mycat.config.ConfigEnum;
-import io.mycat.config.ConfigLoader;
-import io.mycat.config.GlobalConfig;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -33,7 +31,6 @@ import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.MySQLDataSourceEx;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -49,24 +46,11 @@ public class MycatCore {
   private static ProxyRuntime runtime;
 
   public static void main(String[] args) throws Exception {
-    String configResourceKeyName = "MYCAT_HOME";
-    String resourcesPath = System.getProperty(configResourceKeyName);
-    if (resourcesPath == null) {
-      resourcesPath = Paths.get("").toAbsolutePath().toString();
-    }
-    LOGGER.info("config folder path:{}", resourcesPath);
-    LOGGER.info(configResourceKeyName, resourcesPath);
-    if (resourcesPath == null || Boolean.getBoolean("DEBUG")) {
-      resourcesPath = ProxyRuntime.getResourcesPath(MycatCore.class);
-    }
-    runtime = new ProxyRuntime(
-        ConfigLoader.load(resourcesPath, GlobalConfig.genVersion()));
-    startup(resourcesPath, runtime, new MycatMonitorLogCallback(), EmptyAsyncTaskCallBack.INSTANCE);
-    return;
-
+    runtime = new ProxyRuntime(ConfigRuntime.INSTCANE.load());
+    startup(runtime, new MycatMonitorLogCallback(), EmptyAsyncTaskCallBack.INSTANCE);
   }
 
-  public static void startup(String resourcesPath, ProxyRuntime rt,
+  public static void startup(ProxyRuntime rt,
       MycatMonitorCallback callback,
       AsyncTaskCallBack startFinished)
       throws IOException {
@@ -77,7 +61,7 @@ public class MycatCore {
 
       ScheduledExecutorService nonBlockScheduled = Executors.newScheduledThreadPool(1);
       HeartbeatRootConfig heartbeatRootConfig = runtime
-          .getConfig(ConfigEnum.HEARTBEAT);
+          .getConfig(ConfigFile.HEARTBEAT);
       startMySQLProxyIdleCheckService(nonBlockScheduled, heartbeatRootConfig);
       startMySQLProxyHeartbeat(nonBlockScheduled, heartbeatRootConfig);
       startMySQLCollectInfoService(nonBlockScheduled);

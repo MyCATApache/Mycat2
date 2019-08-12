@@ -118,7 +118,7 @@ replicas:
   - name: repli                      # 
     repType: MASTER_SLAVE           # 复制类型 读写分离必须配置该属性
     switchType: NOT_SWITCH              # 切换类型, 读写分离按情况配置该属性
-    balanceName: BalanceRoundRobin   # 负载均衡算法名字
+    readBalanceName: BalanceRoundRobin   # 负载均衡算法名字
     balanceType: BALANCE_ALL 
     datasources:
       - name: mytest3306b              # mysql 主机名

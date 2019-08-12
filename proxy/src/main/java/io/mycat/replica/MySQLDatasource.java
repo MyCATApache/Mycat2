@@ -18,7 +18,6 @@ import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -33,19 +32,23 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public abstract class MySQLDatasource implements MycatDataSource, LoadBalanceElement {
+public abstract class MySQLDatasource implements MycatDataSource {
 
   protected static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
   protected final int index;
   protected final DatasourceConfig datasourceConfig;
   protected final MySQLReplica replica;
   protected final AtomicInteger connectionCounter = new AtomicInteger(0);
+  protected final PhysicsInstance instance;
 
   public MySQLDatasource(int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
     this.index = index;
     this.datasourceConfig = datasourceConfig;
     this.replica = replica;
+    this.instance = ReplicaRuntime.INSTCANE
+        .registerDatasource(replica.getName(), datasourceConfig, index,
+            () -> connectionCounter.get());
   }
 
   public int getSessionLimitCount() {
@@ -118,25 +121,6 @@ public abstract class MySQLDatasource implements MycatDataSource, LoadBalanceEle
     };
   }
 
-//  /**
-//   * 关闭此dataSource创建的连接
-//   *
-//   * @param message 关闭原因
-//   */
-//  public void clearAndDestroyCons(String message) {
-//    Objects.requireNonNull(message);
-//    MycatReactorThread[] mycatReactorThreads = ProxyRuntime.INSTANCE.getMycatReactorThreads();
-//    Objects.requireNonNull(mycatReactorThreads);
-//    for (MycatReactorThread thread : mycatReactorThreads) {
-//      thread.addNIOJob(
-//          () -> {
-//            thread.getMySQLSessionManager().clearAndDestroyDataSource(this, message);
-//          });
-//    }
-//  }
-
-  public abstract boolean isAlive();
-
   @Override
   public String getName() {
     return this.datasourceConfig.getName();
@@ -179,22 +163,6 @@ public abstract class MySQLDatasource implements MycatDataSource, LoadBalanceEle
     return getName().hashCode();
   }
 
-  @Override
-  public boolean isMaster() {
-    return replica.isMaster(this);
-  }
-
-
-  @Override
-  public int getSessionCounter() {
-    return connectionCounter.get();
-  }
-
-  @Override
-  public int getWeight() {
-    return this.datasourceConfig.getWeight();
-  }
-
   public int decrementSessionCounter() {
     return connectionCounter.updateAndGet(operand -> {
       if (operand > 0) {
@@ -229,5 +197,9 @@ public abstract class MySQLDatasource implements MycatDataSource, LoadBalanceEle
 
   public int gerMaxRetry() {
     return this.datasourceConfig.getMaxRetryCount();
+  }
+
+  public PhysicsInstance getInstance() {
+    return instance;
   }
 }
