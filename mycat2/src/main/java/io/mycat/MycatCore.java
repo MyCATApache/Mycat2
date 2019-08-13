@@ -40,12 +40,10 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLSessionManager;
-import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.ReplicaHeartbeatRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -109,15 +107,8 @@ public class MycatCore {
       }
     }
     long period = heartbeatConfig.getReplicaHeartbeatPeriod();
-    service.scheduleAtFixedRate(() -> {
-      ReplicaHeartbeatRuntime.INSTANCE.heartbeat();
-      Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
-      for (MySQLDataSourceEx datasource : datasourceList) {
-        if (datasource != null) {
-          datasource.heartBeat();
-        }
-      }
-    }, 0, period, TimeUnit.SECONDS);
+    service.scheduleAtFixedRate(ReplicaHeartbeatRuntime.INSTANCE::heartbeat, 0, period,
+        TimeUnit.SECONDS);
   }
 
 

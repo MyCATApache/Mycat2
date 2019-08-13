@@ -199,7 +199,7 @@ public abstract class MySQLDatasource implements MycatDataSource {
     return this.datasourceConfig.getMaxRetryCount();
   }
 
-  public PhysicsInstance getInstance() {
+  public PhysicsInstance instance() {
     return instance;
   }
 }

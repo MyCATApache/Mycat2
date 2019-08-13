@@ -68,8 +68,6 @@ public abstract class JdbcDataSource implements MycatDataSource {
     return datasourceConfig.getMaxCon();
   }
 
-  public abstract void heartBeat();
-
   public String getDbType() {
     return datasourceConfig.getDbType();
   }

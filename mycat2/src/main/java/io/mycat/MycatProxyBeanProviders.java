@@ -12,10 +12,8 @@ import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
-import io.mycat.replica.MySQLReplicaEx;
 import io.mycat.router.MycatRouterConfig;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +30,8 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
   }
 
   @Override
-  public void beforeAcceptConnectionProcess(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception {
+  public void beforeAcceptConnectionProcess(ProxyRuntime runtime, Map<String, Object> defContext)
+      throws Exception {
     defContext.put("routerConfig",
         new MycatRouterConfig(runtime.getConfig(), runtime.getMySQLAPIRuntime()));
 //    defContext.put("gridRuntime", new GRuntime(runtime));
@@ -42,13 +41,14 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
   public MySQLDatasource createDatasource(ProxyRuntime runtime, int index,
       DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
-    return new MySQLDataSourceEx(runtime, index, datasourceConfig, replica);
+    return new MySQLDatasource(index, datasourceConfig, replica) {
+    };
   }
 
   @Override
   public MySQLReplica createReplica(ProxyRuntime runtime, ReplicaConfig replicaConfig,
       Set<Integer> writeIndex) {
-    return new MySQLReplicaEx(runtime, replicaConfig, writeIndex, this) {
+    return new MySQLReplica(runtime, replicaConfig, this) {
     };
   }
 

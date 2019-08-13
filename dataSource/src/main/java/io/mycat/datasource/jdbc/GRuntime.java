@@ -67,7 +67,6 @@ public enum GRuntime {
       PlugRootConfig plugRootConfig = config.getConfig(ConfigFile.PLUG);
       Objects.requireNonNull(plugRootConfig, "plug config can not found");
       loadBalanceManager.load(plugRootConfig);
-
       try {
         this.datasourceProvider = (DatasourceProvider) Class.forName(datasourceProviderClass)
             .newInstance();
@@ -80,8 +79,6 @@ public enum GRuntime {
       DataNodeRootConfig dataNodeRootConfig = config.getConfig(ConfigFile.DATANODE);
       initJdbcDataNode(dataNodeRootConfig);
       gThreadPool = new GThreadPool(this);
-
-
     } catch (Exception e) {
       throw new MycatException(e);
     }

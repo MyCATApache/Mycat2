@@ -22,10 +22,5 @@
       <artifactId>plug</artifactId>
       <version>0.2-SNAPSHOT</version>
     </dependency>
-    <dependency>
-      <groupId>io.mycat</groupId>
-      <artifactId>proxy</artifactId>
-      <version>0.2-SNAPSHOT</version>
-    </dependency>
   </dependencies>
 </project>

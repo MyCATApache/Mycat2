@@ -31,7 +31,6 @@ public enum ConfigRuntime {
     String resourcesPath = System.getProperty(configResourceKeyName);
     if (resourcesPath == null) {
       Path root = Paths.get("").toAbsolutePath();
-
       try {
         resourcesPath = Files
             .find(root, 5,
@@ -120,6 +119,4 @@ public enum ConfigRuntime {
     ConfigurableRoot config = lastConfig.getConfig(configEnum);
     return (T) config;
   }
-
-
 }
