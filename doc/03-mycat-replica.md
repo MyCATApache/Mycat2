@@ -51,7 +51,7 @@ replicas:
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
     readBalanceName: BalanceRoundRobin   # 负载均衡算法名字
-    balanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
+    readbalanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
     datasources:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
@@ -84,7 +84,7 @@ replicas:
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
   	readBalanceName: BalanceRoundRobin   # 负载均衡算法名字
-    balanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
+    readbalanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
 ```
 
 #### name
@@ -129,7 +129,7 @@ SWITCH
 
 负载均衡算法的名称,引用(plug)插件配置的负载均衡算法,用于选择节点的算法
 
-#### balanceType
+#### readbalanceType
 
 负载均衡算法的类型
 

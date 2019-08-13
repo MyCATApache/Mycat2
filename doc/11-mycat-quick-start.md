@@ -42,7 +42,7 @@ replicas:
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
     readBalanceName: BalanceLeastActive   #负载均衡算法名称
-    balanceType: BALANCE_ALL #负载均衡类型
+    readbalanceType: BALANCE_ALL #负载均衡类型
     datasources:
       - name: mytest3306b              # mysql 主机名
         ip: 127.0.0.1               # i

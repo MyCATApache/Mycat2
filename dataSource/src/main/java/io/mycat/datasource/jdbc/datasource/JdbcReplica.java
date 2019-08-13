@@ -51,7 +51,6 @@ public class JdbcReplica implements MycatReplica {
     return dataSources;
   }
 
-
   public JdbcDataSource getDataSourceByBalance(JdbcDataSourceQuery query) {
     boolean runOnMaster = false;
     LoadBalanceStrategy strategy = null;

@@ -34,6 +34,7 @@ public enum ReplicaSelectorRuntime {
   }
 
   private void innerThis() {
+    PlugRuntime.INSTCANE.load();
     ReplicasRootConfig dsConfig = ConfigRuntime.INSTCANE.getConfig(ConfigFile.DATASOURCE);
     MasterIndexesRootConfig replicaIndexConfig = ConfigRuntime.INSTCANE
         .getConfig(ConfigFile.REPLICA_INDEX);
@@ -58,7 +59,7 @@ public enum ReplicaSelectorRuntime {
           .requireNonNull(replicaConfig.getReadBalanceName(),
               "replica balance name can not be empty");
       Objects
-          .requireNonNull(replicaConfig.getBalanceType(),
+          .requireNonNull(replicaConfig.getReadbalanceType(),
               "replica balance message can not be empty");
       if (replicaConfig.getDatasources() == null) {
         return;
@@ -67,7 +68,7 @@ public enum ReplicaSelectorRuntime {
 
       String name = replicaConfig.getName();
       ReplicaType replicaType = ReplicaType.valueOf(replicaConfig.getRepType());
-      BalanceType balanceType = BalanceType.valueOf(replicaConfig.getBalanceType());
+      BalanceType balanceType = BalanceType.valueOf(replicaConfig.getReadbalanceType());
       ReplicaSwitchType switchType = ReplicaSwitchType.valueOf(replicaConfig.getSwitchType());
 
       LoadBalanceStrategy readLB = PlugRuntime.INSTCANE

@@ -29,11 +29,12 @@ public class ReplicaConfig {
 
   private String repType;
   private String switchType;
-  private String balanceType;
+  private String readbalanceType;
 
   private String name;
   private String readBalanceName;
   private String writeBalanceName;
+  private long slaveThreshold;
 
   public String getRepType() {
     return repType;
@@ -48,8 +49,6 @@ public class ReplicaConfig {
     return switchType;
   }
 
-  private long slaveThreshold;
-
   public String getName() {
     return name;
   }
@@ -62,12 +61,12 @@ public class ReplicaConfig {
     this.switchType = switchType;
   }
 
-  public String getBalanceType() {
-    return balanceType;
+  public String getReadbalanceType() {
+    return readbalanceType;
   }
 
-  public void setBalanceType(String balanceType) {
-    this.balanceType = balanceType;
+  public void setReadbalanceType(String readbalanceType) {
+    this.readbalanceType = readbalanceType;
   }
 
 
@@ -101,6 +100,10 @@ public class ReplicaConfig {
     this.slaveThreshold = slaveThreshold;
   }
 
+  public void setWriteBalanceName(String writeBalanceName) {
+    this.writeBalanceName = writeBalanceName;
+  }
+
   @Override
   public String toString() {
     return "ReplicaConfig{" +
@@ -109,7 +112,7 @@ public class ReplicaConfig {
         ", switchType=" + switchType +
         ", readBalanceName='" + readBalanceName + '\'' +
         ", datasources=" + datasources +
-        ", balanceType=" + balanceType +
+        ", readbalanceType=" + readbalanceType +
         ", slaveThreshold=" + slaveThreshold +
         '}';
   }

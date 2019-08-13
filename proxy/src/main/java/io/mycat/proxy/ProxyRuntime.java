@@ -181,6 +181,10 @@ public class ProxyRuntime {
     for (ReplicaConfig config : replicasRootConfig.getReplicas()) {
       MySQLReplica replica = factory.createReplica(runtime, config,
           ConfigRuntime.INSTCANE.getReplicaIndexes(config.getName()));
+      this.replicaMap.put(config.getName(), replica);
+      for (MySQLDatasource datasource : replica.getDatasourceList()) {
+        this.datasourceMap.put(datasource.getName(), datasource);
+      }
     }
   }
 

@@ -39,7 +39,7 @@ public enum ConfigRuntime {
                     return false;
                   }
                   return path.toString().endsWith("masterIndexes.yml");
-                }).findFirst().map(i -> i.getParent()).orElse(root).toAbsolutePath()
+                }).findFirst().map(Path::getParent).orElse(root).toAbsolutePath()
             .toString();
       } catch (IOException e) {
         resourcesPath = root.toString();

@@ -31,7 +31,6 @@ public abstract class JdbcDataSource implements MycatDataSource {
         index, () -> counter.get());
   }
 
-
   public String getUrl() {
     return datasourceConfig.getUrl();
   }

@@ -99,6 +99,11 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     readDataSource = new CopyOnWriteArrayList<>(read);
     writeDataSource = new CopyOnWriteArrayList<>(write);
 
+    for (PhysicsInstanceImpl physicsInstance : writeDataSource) {
+      physicsInstance.notifyChangeAlive(true);
+      physicsInstance.notifyChangeSelectRead(true);
+    }
+
     switch (type) {
       case SINGLE_NODE:
       case MASTER_SLAVE:

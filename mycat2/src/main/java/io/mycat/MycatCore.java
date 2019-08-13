@@ -45,8 +45,10 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -107,7 +109,13 @@ public class MycatCore {
       }
     }
     long period = heartbeatConfig.getReplicaHeartbeatPeriod();
-    service.scheduleAtFixedRate(ReplicaHeartbeatRuntime.INSTANCE::heartbeat, 0, period,
+    service.scheduleAtFixedRate(() -> {
+          try {
+            ReplicaHeartbeatRuntime.INSTANCE.heartbeat();
+          } catch (Exception e) {
+            LOGGER.error("", e);
+          }
+        }, 0, period,
         TimeUnit.SECONDS);
   }
 
@@ -119,7 +127,7 @@ public class MycatCore {
       } catch (Exception e) {
         LOGGER.error("", e);
       }
-    }, 0, 5, TimeUnit.MINUTES);
+    }, 0, 5, TimeUnit.SECONDS);
   }
 
   private static void startMySQLProxyIdleCheckService(ScheduledExecutorService service) {
@@ -181,52 +189,72 @@ public class MycatCore {
       if (heartBeatStrategy.isQuit()) {
         return;
       }
-      runtime.getMySQLAPIRuntime().create(datasource.getName(),
-          new MySQLAPISessionCallback() {
-            @Override
-            public void onSession(MySQLAPI mySQLAPI) {
-              if (heartBeatStrategy.isQuit()) {
-                mySQLAPI.close();
-                return;
-              }
-              OneResultSetCollector collector = new OneResultSetCollector();
-              mySQLAPI.query(heartBeatStrategy.getSql(), collector,
-                  new MySQLAPIExceptionCallback() {
-                    @Override
-                    public void onException(Exception exception,
-                        MySQLAPI mySQLAPI) {
-                      if (heartBeatStrategy.isQuit()) {
-                        return;
-                      }
-                      heartBeatStrategy.onException(exception);
-                    }
+      MycatReactorThread[] mycatReactorThreads = runtime.getMycatReactorThreads();
+      MycatReactorThread mycatReactorThread = mycatReactorThreads[ThreadLocalRandom.current()
+          .nextInt(0, mycatReactorThreads.length)];
+      mycatReactorThread.addNIOJob(new NIOJob() {
+        @Override
+        public void run(ReactorEnvThread reactor) throws Exception {
+          runtime.getMySQLAPIRuntime().create(datasource.getName(),
+              new MySQLAPISessionCallback() {
+                @Override
+                public void onSession(MySQLAPI mySQLAPI) {
+                  if (heartBeatStrategy.isQuit()) {
+                    mySQLAPI.close();
+                    return;
+                  }
+                  OneResultSetCollector collector = new OneResultSetCollector();
+                  mySQLAPI.query(heartBeatStrategy.getSql(), collector,
+                      new MySQLAPIExceptionCallback() {
+                        @Override
+                        public void onException(Exception exception,
+                            MySQLAPI mySQLAPI) {
+                          if (heartBeatStrategy.isQuit()) {
+                            return;
+                          }
+                          heartBeatStrategy.onException(exception);
+                        }
 
-                    @Override
-                    public void onFinished(boolean monopolize, MySQLAPI mySQLAPI) {
-                      mySQLAPI.close();
-                      heartBeatStrategy.process(CollectorUtil.toList(collector));
-                    }
+                        @Override
+                        public void onFinished(boolean monopolize, MySQLAPI mySQLAPI) {
+                          mySQLAPI.close();
+                          List<Map<String, Object>> maps = CollectorUtil.toList(collector);
+                          heartBeatStrategy.process(maps);
+                        }
 
-                    @Override
-                    public void onErrorPacket(ErrorPacket errorPacket,
-                        boolean monopolize, MySQLAPI mySQLAPI) {
-                      if (heartBeatStrategy.isQuit()) {
-                        return;
-                      }
-                      heartBeatStrategy
-                          .onError(errorPacket.getErrorMessageString());
-                    }
-                  });
-            }
+                        @Override
+                        public void onErrorPacket(ErrorPacket errorPacket,
+                            boolean monopolize, MySQLAPI mySQLAPI) {
+                          if (heartBeatStrategy.isQuit()) {
+                            return;
+                          }
+                          heartBeatStrategy
+                              .onError(errorPacket.getErrorMessageString());
+                        }
+                      });
+                }
 
-            @Override
-            public void onException(Exception exception) {
-              if (heartBeatStrategy.isQuit()) {
-                return;
-              }
-              heartBeatStrategy.onException(exception);
-            }
-          });
+                @Override
+                public void onException(Exception exception) {
+                  if (heartBeatStrategy.isQuit()) {
+                    return;
+                  }
+                  heartBeatStrategy.onException(exception);
+                }
+              });
+        }
+
+        @Override
+        public void stop(ReactorEnvThread reactor, Exception reason) {
+
+        }
+
+        @Override
+        public String message() {
+          return null;
+        }
+      });
+
     };
   }
 }

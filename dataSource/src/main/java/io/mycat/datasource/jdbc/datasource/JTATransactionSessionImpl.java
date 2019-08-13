@@ -110,7 +110,6 @@ public class JTATransactionSessionImpl implements TransactionSession {
       if (!this.autocommit && !isInTransaction()) {
         begin();
       }
-
       System.out.println("--------------------------------------------------------------------");
       System.out.println(userTransaction.getStatus());
     } catch (SystemException e) {

@@ -16,11 +16,17 @@ public enum PlugRuntime {
   }
 
   public void load() {
-    PlugRootConfig plugRootConfig = ConfigRuntime.INSTCANE.getConfig(ConfigFile.PLUG);
-    Objects.requireNonNull(plugRootConfig, "plug config can not found");
-    LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
-    loadBalanceManager.load(plugRootConfig);
-    this.manager = loadBalanceManager;
+    load(false);
+  }
+
+  public void load(boolean force) {
+    if (manager == null || force) {
+      PlugRootConfig plugRootConfig = ConfigRuntime.INSTCANE.getConfig(ConfigFile.PLUG);
+      Objects.requireNonNull(plugRootConfig, "plug config can not found");
+      LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
+      loadBalanceManager.load(plugRootConfig);
+      this.manager = loadBalanceManager;
+    }
   }
 
   public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
