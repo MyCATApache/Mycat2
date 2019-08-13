@@ -61,7 +61,7 @@ public abstract class MySQLReplica implements MycatReplica {
     assert mysqls != null;
     this.runtime = runtime;
     this.config = replicaConfig;
-    this.selector = ReplicaRuntime.INSTCANE
+    this.selector = ReplicaSelectorRuntime.INSTCANE
         .getDataSourceSelector(replicaConfig.getName());
     List<DatasourceConfig> datasources = config.getDatasources();
     if (datasources != null) {
@@ -93,8 +93,8 @@ public abstract class MySQLReplica implements MycatReplica {
   public MySQLDatasource getMySQLSessionByBalance(boolean runOnMaster,
       LoadBalanceStrategy strategy) {
     PhysicsInstanceImpl instance =
-        runOnMaster ? ReplicaRuntime.INSTCANE.getWriteDatasource(strategy, selector)
-            : ReplicaRuntime.INSTCANE.getDatasource(strategy, selector);
+        runOnMaster ? ReplicaSelectorRuntime.INSTCANE.getWriteDatasource(strategy, selector)
+            : ReplicaSelectorRuntime.INSTCANE.getDatasource(strategy, selector);
     return mySQLDatasources.get(instance.getIndex());
   }
 

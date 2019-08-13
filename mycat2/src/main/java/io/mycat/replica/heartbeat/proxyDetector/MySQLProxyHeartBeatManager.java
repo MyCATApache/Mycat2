@@ -10,7 +10,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.PhysicsInstance;
-import io.mycat.replica.ReplicaRuntime;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
 import io.mycat.replica.heartbeat.DatasourceStatus;
@@ -81,7 +81,7 @@ public class MySQLProxyHeartBeatManager extends HeartbeatManager {
 
   private void updateInstance(DatasourceStatus currentDatasourceStatus) {
     PhysicsInstance instance = dataSource.instance();
-    ReplicaRuntime.INSTCANE
+    ReplicaSelectorRuntime.INSTCANE
         .updateInstanceStatus(dataSource.getReplica().getName(), dataSource.getName(),
             isAlive(instance.isMaster()), instance.asSelectRead());
     //状态不同进行状态的同步

@@ -10,7 +10,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.replica.ReplicaDataSourceSelector;
-import io.mycat.replica.ReplicaRuntime;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ public class JdbcReplica implements MycatReplica {
     this.runtime = runtime;
     this.replicaConfig = replicaConfig;
     List<JdbcDataSource> dataSources = getJdbcDataSources(datasourceConfigList);
-    this.selector = ReplicaRuntime.INSTCANE.getDataSourceSelector(replicaConfig.getName());
+    this.selector = ReplicaSelectorRuntime.INSTCANE.getDataSourceSelector(replicaConfig.getName());
     this.dataSourceManager = new JdbcConnectionManager(runtime, provider, jdbcDriverMap,
         dataSources);
   }

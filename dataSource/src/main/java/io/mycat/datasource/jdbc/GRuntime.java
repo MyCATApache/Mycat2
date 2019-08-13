@@ -80,6 +80,8 @@ public enum GRuntime {
       DataNodeRootConfig dataNodeRootConfig = config.getConfig(ConfigFile.DATANODE);
       initJdbcDataNode(dataNodeRootConfig);
       gThreadPool = new GThreadPool(this);
+
+
     } catch (Exception e) {
       throw new MycatException(e);
     }

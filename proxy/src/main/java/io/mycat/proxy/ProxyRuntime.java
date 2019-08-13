@@ -49,7 +49,7 @@ import io.mycat.proxy.reactor.NIOAcceptor;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
-import io.mycat.replica.ReplicaRuntime;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
@@ -175,7 +175,7 @@ public class ProxyRuntime {
 
 
   private void initRepliac(ProxyRuntime runtime, ProxyBeanProviders factory) {
-    ReplicaRuntime.INSTCANE.load();
+    ReplicaSelectorRuntime.INSTCANE.load();
     ReplicasRootConfig replicasRootConfig = ConfigRuntime.INSTCANE.getConfig(ConfigFile.DATASOURCE);
 
     for (ReplicaConfig config : replicasRootConfig.getReplicas()) {

@@ -11,7 +11,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.PhysicsInstance;
-import io.mycat.replica.ReplicaRuntime;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
 import io.mycat.replica.ReplicaType;
 import io.mycat.replica.heartbeat.DatasourceStatus;
@@ -74,7 +74,7 @@ public class JdbcHeartbeatManager extends HeartbeatManager {
   @Override
   public void sendDataSourceStatus(DatasourceStatus currentDatasourceStatus) {
     PhysicsInstance instance = dataSource.instance();
-    ReplicaRuntime.INSTCANE
+    ReplicaSelectorRuntime.INSTCANE
         .updateInstanceStatus(dataSource.getReplica().getName(), dataSource.getName(),
             isAlive(instance.isMaster()), instance.asSelectRead());
     //状态不同进行状态的同步

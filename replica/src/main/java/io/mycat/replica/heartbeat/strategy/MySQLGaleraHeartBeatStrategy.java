@@ -18,6 +18,7 @@ import io.mycat.config.GlobalConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.heartbeat.DatasourceStatus;
+import io.mycat.replica.heartbeat.HeartbeatFlow;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,5 +67,12 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
       }
     }
     heartbeatFlow.setStatus(datasourceStatus, DatasourceStatus.OK_STATUS);
+  }
+
+  public MySQLGaleraHeartBeatStrategy() {
+  }
+
+  public MySQLGaleraHeartBeatStrategy(HeartbeatFlow heartbeatFlow) {
+    super(heartbeatFlow);
   }
 }

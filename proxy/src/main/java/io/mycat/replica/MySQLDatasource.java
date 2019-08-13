@@ -46,7 +46,7 @@ public abstract class MySQLDatasource implements MycatDataSource {
     this.index = index;
     this.datasourceConfig = datasourceConfig;
     this.replica = replica;
-    this.instance = ReplicaRuntime.INSTCANE
+    this.instance = ReplicaSelectorRuntime.INSTCANE
         .registerDatasource(replica.getName(), datasourceConfig, index,
             () -> connectionCounter.get());
   }

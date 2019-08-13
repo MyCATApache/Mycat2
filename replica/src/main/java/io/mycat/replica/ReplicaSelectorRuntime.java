@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public enum ReplicaRuntime {
+public enum ReplicaSelectorRuntime {
   INSTCANE;
 
   final ConcurrentMap<String, ReplicaDataSourceSelector> map = new ConcurrentHashMap<>();

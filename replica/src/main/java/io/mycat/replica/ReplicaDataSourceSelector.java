@@ -32,7 +32,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
   protected volatile CopyOnWriteArrayList<PhysicsInstanceImpl> writeDataSource = new CopyOnWriteArrayList<>();
   protected volatile CopyOnWriteArrayList<PhysicsInstanceImpl> readDataSource = new CopyOnWriteArrayList<>();
 
-  private final static boolean DEFAULT_SELECT_AS_READ = false;
+  private final static boolean DEFAULT_SELECT_AS_READ = true;
   private final static boolean DEFAULT_ALIVE = false;
 
   public ReplicaDataSourceSelector(String name, BalanceType balanceType, ReplicaType type,
@@ -216,8 +216,8 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
   public <T> T getDataSource(boolean runOnMaster,
       LoadBalanceStrategy strategy) {
     PhysicsInstanceImpl instance =
-        runOnMaster ? ReplicaRuntime.INSTCANE.getWriteDatasource(strategy, this)
-            : ReplicaRuntime.INSTCANE.getDatasource(strategy, this);
+        runOnMaster ? ReplicaSelectorRuntime.INSTCANE.getWriteDatasource(strategy, this)
+            : ReplicaSelectorRuntime.INSTCANE.getDatasource(strategy, this);
     return (T) instance;
   }
 

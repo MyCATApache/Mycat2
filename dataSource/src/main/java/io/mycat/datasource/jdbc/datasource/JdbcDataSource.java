@@ -4,7 +4,7 @@ import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.config.MycatConfigUtil;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.replica.PhysicsInstance;
-import io.mycat.replica.ReplicaRuntime;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -26,7 +26,8 @@ public abstract class JdbcDataSource implements MycatDataSource {
     this.replica = replica;
     String dbType = datasourceConfig.getDbType();
     this.isMySQLType = MycatConfigUtil.isMySQLType(datasourceConfig);
-    this.instance = ReplicaRuntime.INSTCANE.registerDatasource(replica.getName(), datasourceConfig,
+    this.instance = ReplicaSelectorRuntime.INSTCANE
+        .registerDatasource(replica.getName(), datasourceConfig,
         index, () -> counter.get());
   }
 

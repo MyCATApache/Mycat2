@@ -64,7 +64,7 @@ public abstract class HeartbeatFlow {
 
   protected void setError(DatasourceStatus datasourceStatus) {
     this.hbStatus.incrementErrorCount();
-    quitDetector();
+    setTaskquitDetector();
     if (this.hbStatus.getErrorCount() >= this.hbStatus.getMaxRetry()) {
       datasourceStatus.setStatus(DatasourceStatus.ERROR_STATUS);
       sendDataSourceStatus(datasourceStatus);
@@ -96,7 +96,7 @@ public abstract class HeartbeatFlow {
 
   protected void setTimeout(DatasourceStatus datasourceStatus) {
     this.hbStatus.incrementErrorCount();
-    quitDetector();
+    setTaskquitDetector();
     if (this.hbStatus.getErrorCount() >= this.hbStatus.getMaxRetry()) {
       datasourceStatus.setStatus(DatasourceStatus.TIMEOUT_STATUS);
       sendDataSourceStatus(datasourceStatus);
@@ -108,7 +108,7 @@ public abstract class HeartbeatFlow {
 
   public abstract void sendDataSourceStatus(DatasourceStatus status);
 
-  public abstract void quitDetector();
+  public abstract void setTaskquitDetector();
 
   public long getSlaveThreshold() {
     return slaveThreshold;

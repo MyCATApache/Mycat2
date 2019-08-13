@@ -16,6 +16,7 @@ package io.mycat.replica.heartbeat.strategy;
 
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
+import io.mycat.replica.heartbeat.HeartbeatFlow;
 import java.util.List;
 import java.util.Map;
 
@@ -44,5 +45,12 @@ public class MySQLSingleHeartBeatStrategy extends HeartBeatStrategy {
   @Override
   public void onException(Exception e) {
     this.heartbeatFlow.setStatus(DatasourceStatus.ERROR_STATUS);
+  }
+
+  public MySQLSingleHeartBeatStrategy() {
+  }
+
+  public MySQLSingleHeartBeatStrategy(HeartbeatFlow heartbeatFlow) {
+    super(heartbeatFlow);
   }
 }

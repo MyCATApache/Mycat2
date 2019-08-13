@@ -14,7 +14,18 @@
  */
 package io.mycat;
 
+import io.mycat.api.MySQLAPI;
+import io.mycat.api.callback.MySQLAPIExceptionCallback;
+import io.mycat.api.callback.MySQLAPISessionCallback;
+import io.mycat.api.collector.CollectorUtil;
+import io.mycat.api.collector.OneResultSetCollector;
+import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.config.ConfigFile;
+import io.mycat.config.MycatConfigUtil;
+import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.config.datasource.ReplicasRootConfig;
+import io.mycat.config.heartbeat.HeartbeatConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -30,11 +41,16 @@ import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.replica.MySQLDataSourceEx;
+import io.mycat.replica.ReplicaHeartbeatRuntime;
+import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @author cjw
@@ -57,47 +73,67 @@ public class MycatCore {
     runtime = rt;
     try {
       MycatMonitor.setCallback(callback);
+      ReplicaSelectorRuntime.INSTCANE.load();
+      ReplicaHeartbeatRuntime.INSTANCE.load();
       runtime.startReactor();
 
       ScheduledExecutorService nonBlockScheduled = Executors.newScheduledThreadPool(1);
-      HeartbeatRootConfig heartbeatRootConfig = runtime
-          .getConfig(ConfigFile.HEARTBEAT);
-      startMySQLProxyIdleCheckService(nonBlockScheduled, heartbeatRootConfig);
-      startMySQLProxyHeartbeat(nonBlockScheduled, heartbeatRootConfig);
+      startMySQLProxyIdleCheckService(nonBlockScheduled);
+      startMySQLProxyHeartbeat(nonBlockScheduled);
       startMySQLCollectInfoService(nonBlockScheduled);
 
       runtime.beforeAcceptConnectionProcess();
       runtime.startAcceptor();
       startFinished.onFinished(null, null, null);
     } catch (Exception e) {
-      LOGGER.error("",e);
+      LOGGER.error("", e);
       startFinished.onException(e, null, null);
     }
   }
 
-  private static void startMySQLProxyHeartbeat(ScheduledExecutorService service,
-      HeartbeatRootConfig heartbeatRootConfig) {
-    long period = heartbeatRootConfig.getHeartbeat().getReplicaHeartbeatPeriod();
+  private static void startMySQLProxyHeartbeat(ScheduledExecutorService service) {
+    HeartbeatRootConfig heartbeatRootConfig = runtime
+        .getConfig(ConfigFile.HEARTBEAT);
+    ReplicasRootConfig replicasRootConfig = runtime
+        .getConfig(ConfigFile.DATASOURCE);
+    HeartbeatConfig heartbeatConfig = heartbeatRootConfig.getHeartbeat();
+    for (ReplicaConfig replica : replicasRootConfig.getReplicas()) {
+      List<DatasourceConfig> datasources = replica.getDatasources();
+      if (datasources != null) {
+        for (DatasourceConfig datasource : datasources) {
+          if (MycatConfigUtil.isMySQLType(datasource)) {
+            ReplicaHeartbeatRuntime.INSTANCE.register(replica, datasource, heartbeatConfig,
+                heartBeatStrategy(datasource));
+          }
+        }
+      }
+    }
+    long period = heartbeatConfig.getReplicaHeartbeatPeriod();
     service.scheduleAtFixedRate(() -> {
+      ReplicaHeartbeatRuntime.INSTANCE.heartbeat();
       Collection<MySQLDataSourceEx> datasourceList = runtime.getMySQLDatasourceList();
       for (MySQLDataSourceEx datasource : datasourceList) {
-        datasource.heartBeat();
+        if (datasource != null) {
+          datasource.heartBeat();
+        }
       }
     }, 0, period, TimeUnit.SECONDS);
   }
+
 
   private static void startMySQLCollectInfoService(ScheduledExecutorService service) {
     service.scheduleAtFixedRate(() -> {
       try {
         ProxyDashboard.INSTANCE.collectInfo(runtime);
       } catch (Exception e) {
-        LOGGER.error("",e);
+        LOGGER.error("", e);
       }
     }, 0, 5, TimeUnit.MINUTES);
   }
 
-  private static void startMySQLProxyIdleCheckService(ScheduledExecutorService service,
-      HeartbeatRootConfig heartbeatRootConfig) {
+  private static void startMySQLProxyIdleCheckService(ScheduledExecutorService service) {
+    HeartbeatRootConfig heartbeatRootConfig = runtime
+        .getConfig(ConfigFile.HEARTBEAT);
     long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
     long replicaIdleCheckPeriod = idleTimeout / 2;
     service.scheduleAtFixedRate(idleConnectCheck(runtime), replicaIdleCheckPeriod,
@@ -147,5 +183,59 @@ public class MycatCore {
     if (runtime != null) {
       runtime.exit(e);
     }
+  }
+
+  private static Consumer<HeartBeatStrategy> heartBeatStrategy(DatasourceConfig datasource) {
+    return heartBeatStrategy -> {
+      if (heartBeatStrategy.isQuit()) {
+        return;
+      }
+      runtime.getMySQLAPIRuntime().create(datasource.getName(),
+          new MySQLAPISessionCallback() {
+            @Override
+            public void onSession(MySQLAPI mySQLAPI) {
+              if (heartBeatStrategy.isQuit()) {
+                mySQLAPI.close();
+                return;
+              }
+              OneResultSetCollector collector = new OneResultSetCollector();
+              mySQLAPI.query(heartBeatStrategy.getSql(), collector,
+                  new MySQLAPIExceptionCallback() {
+                    @Override
+                    public void onException(Exception exception,
+                        MySQLAPI mySQLAPI) {
+                      if (heartBeatStrategy.isQuit()) {
+                        return;
+                      }
+                      heartBeatStrategy.onException(exception);
+                    }
+
+                    @Override
+                    public void onFinished(boolean monopolize, MySQLAPI mySQLAPI) {
+                      mySQLAPI.close();
+                      heartBeatStrategy.process(CollectorUtil.toList(collector));
+                    }
+
+                    @Override
+                    public void onErrorPacket(ErrorPacket errorPacket,
+                        boolean monopolize, MySQLAPI mySQLAPI) {
+                      if (heartBeatStrategy.isQuit()) {
+                        return;
+                      }
+                      heartBeatStrategy
+                          .onError(errorPacket.getErrorMessageString());
+                    }
+                  });
+            }
+
+            @Override
+            public void onException(Exception exception) {
+              if (heartBeatStrategy.isQuit()) {
+                return;
+              }
+              heartBeatStrategy.onException(exception);
+            }
+          });
+    };
   }
 }

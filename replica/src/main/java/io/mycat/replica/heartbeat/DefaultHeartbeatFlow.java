@@ -1,35 +1,39 @@
 package io.mycat.replica.heartbeat;
 
 import io.mycat.replica.PhysicsInstance;
-import io.mycat.replica.ReplicaRuntime;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class HeartbeatFlowImpl extends HeartbeatFlow {
+public class DefaultHeartbeatFlow extends HeartbeatFlow {
 
-  final HeartBeatStrategy strategy;
   private final String replicaName;
   private final String datasouceName;
   private final ReplicaSwitchType switchType;
-  private final BiConsumer<HeartbeatFlow, HeartBeatStrategy> commonSQLCallbacbProvider;
-  protected volatile boolean isQuit = false;
+  private final Consumer<HeartBeatStrategy> executer;
+  private final Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider;
+  private HeartBeatStrategy strategy;
 
-  public HeartbeatFlowImpl(PhysicsInstance instance, String replica, String datasouceName,
+  public DefaultHeartbeatFlow(PhysicsInstance instance, String replica, String datasouceName,
       int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
-      ReplicaSwitchType switchType, long slaveThreshold, HeartBeatStrategy strategy,
-      BiConsumer<HeartbeatFlow, HeartBeatStrategy> executer) {
+      ReplicaSwitchType switchType, long slaveThreshold,
+      Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider,
+      Consumer<HeartBeatStrategy> executer) {
     super(instance, maxRetry, minSwitchTimeInterval, heartbeatTimeout, slaveThreshold);
     this.replicaName = replica;
     this.datasouceName = datasouceName;
     this.switchType = switchType;
-    this.strategy = strategy;
-    this.commonSQLCallbacbProvider = executer;
+    this.executer = executer;
+    this.strategyProvider = strategyProvider;
   }
 
   @Override
   public void heartbeat() {
-    commonSQLCallbacbProvider.accept(this, strategy);
+    HeartBeatStrategy strategy = strategyProvider.apply(this);
+    this.strategy = strategy;
+    executer.accept(strategy);
   }
 
   @Override
@@ -40,14 +44,14 @@ public class HeartbeatFlowImpl extends HeartbeatFlow {
       this.dsStatus = currentDatasourceStatus;
       LOGGER.error("{} heartStatus {}", datasouceName, dsStatus);
     }
-    ReplicaRuntime.INSTCANE
+    ReplicaSelectorRuntime.INSTCANE
         .updateInstanceStatus(replicaName, datasouceName, isAlive(instance.isMaster()),
             instance.asSelectRead());
     if (switchType.equals(ReplicaSwitchType.SWITCH)
         && instance.isMaster() && dsStatus.isError()
         && canSwitchDataSource()) {
       //replicat 进行选主
-      if (ReplicaRuntime.INSTCANE.notifySwitchReplicaDataSource(replicaName)) {
+      if (ReplicaSelectorRuntime.INSTCANE.notifySwitchReplicaDataSource(replicaName)) {
         //updataSwitchTime
         this.hbStatus.setLastSwitchTime(System.currentTimeMillis());
       }
@@ -55,8 +59,10 @@ public class HeartbeatFlowImpl extends HeartbeatFlow {
   }
 
   @Override
-  public void quitDetector() {
-    this.isQuit = true;
+  public void setTaskquitDetector() {
+    if (strategyProvider != null) {
+      strategy.setQuit(true);
+    }
   }
 
   private boolean isAlive(boolean master) {
