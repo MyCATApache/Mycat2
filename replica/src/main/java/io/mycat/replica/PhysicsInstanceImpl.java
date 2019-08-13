@@ -15,11 +15,13 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
   volatile boolean alive;
   volatile boolean selectRead;
 
-  public PhysicsInstanceImpl(int index, String name, InstanceType type, boolean selectRead,
+  public PhysicsInstanceImpl(int index, String name, InstanceType type, boolean alive,
+      boolean selectRead,
       int weight, ReplicaDataSourceSelector selector) {
     this.type = type;
     this.index = index;
     this.name = name;
+    this.alive = alive;
     this.selectRead = selectRead;
     this.weight = weight;
     this.selector = selector;

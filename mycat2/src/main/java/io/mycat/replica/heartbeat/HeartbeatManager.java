@@ -28,7 +28,6 @@ public abstract class HeartbeatManager {
   protected volatile DatasourceStatus dsStatus;
   protected HeartBeatStatus hbStatus;
   protected HeartbeatDetector heartbeatDetector;
-  protected DataSourceStatusReveiver dataSourceStatusReveiver;
 
 
   /**

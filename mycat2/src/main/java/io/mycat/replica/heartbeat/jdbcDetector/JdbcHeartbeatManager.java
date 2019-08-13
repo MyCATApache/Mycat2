@@ -1,5 +1,6 @@
 package io.mycat.replica.heartbeat.jdbcDetector;
 
+import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.config.ConfigFile;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.heartbeat.HeartbeatConfig;
@@ -25,7 +26,7 @@ public class JdbcHeartbeatManager extends HeartbeatManager {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcHeartbeatManager.class);
 
-  final JdbcDataSource dataSource;
+  final MycatDataSource dataSource;
   final GRuntime runtime;
 
   public JdbcHeartbeatManager(JdbcDataSource jdbcDataSource,

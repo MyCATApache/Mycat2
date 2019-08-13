@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ReplicaDataSourceSelector implements LoadBalanceInfo {
@@ -31,6 +31,9 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
   protected final LoadBalanceStrategy defaultWriteLoadBalanceStrategy;
   protected volatile CopyOnWriteArrayList<PhysicsInstanceImpl> writeDataSource = new CopyOnWriteArrayList<>();
   protected volatile CopyOnWriteArrayList<PhysicsInstanceImpl> readDataSource = new CopyOnWriteArrayList<>();
+
+  private final static boolean DEFAULT_SELECT_AS_READ = false;
+  private final static boolean DEFAULT_ALIVE = false;
 
   public ReplicaDataSourceSelector(String name, BalanceType balanceType, ReplicaType type,
       ReplicaSwitchType switchType, LoadBalanceStrategy defaultReadLoadBalanceStrategy,
@@ -66,15 +69,13 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
 
   public PhysicsInstanceImpl register(int index, String dataSourceName, InstanceType type,
       int weight) {
-    return datasourceMap.compute(dataSourceName,
-        new BiFunction<String, PhysicsInstanceImpl, PhysicsInstanceImpl>() {
+    return datasourceMap.computeIfAbsent(dataSourceName,
+        new Function<String, PhysicsInstanceImpl>() {
           @Override
-          public PhysicsInstanceImpl apply(String dataSourceName, PhysicsInstanceImpl instance) {
-            if (instance == null) {
-              instance = new PhysicsInstanceImpl(index, dataSourceName, type, false, weight,
-                  ReplicaDataSourceSelector.this);
-            }
-            return instance;
+          public PhysicsInstanceImpl apply(String dataSourceName) {
+            return new PhysicsInstanceImpl(index, dataSourceName, type, DEFAULT_ALIVE,
+                DEFAULT_SELECT_AS_READ, weight,
+                ReplicaDataSourceSelector.this);
           }
         });
   }
