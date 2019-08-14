@@ -36,17 +36,17 @@ public enum ReplicaHeartbeatRuntime {
         .forEach((key, value) -> value.heartbeat());
   }
 
-  public void register(ReplicaConfig replicaConfig, DatasourceConfig datasourceConfig,
+  public boolean register(ReplicaConfig replicaConfig, DatasourceConfig datasourceConfig,
       HeartbeatConfig heartbeatConfig,
       Consumer<HeartBeatStrategy> executer) {
-    register(physicsInstanceMap.get(datasourceConfig.getName()),
+    return register(physicsInstanceMap.get(datasourceConfig.getName()),
         replicaConfig.getName(), datasourceConfig.getName(), datasourceConfig.getMaxRetryCount(),
         heartbeatConfig.getMinSwitchTimeInterval(), heartbeatConfig.getMinHeartbeatChecktime(),
         ReplicaSwitchType.valueOf(replicaConfig.getSwitchType()), replicaConfig.getSlaveThreshold(),
         ReplicaType.valueOf(replicaConfig.getRepType()), executer);
   }
 
-  public void register(PhysicsInstance instance,
+  public boolean register(PhysicsInstance instance,
       String replica, String datasouceName, int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
       ReplicaSwitchType switchType, long slaveThreshold, ReplicaType replicaType,
@@ -66,11 +66,12 @@ public enum ReplicaHeartbeatRuntime {
         strategyProvider = MySQLSingleHeartBeatStrategy::new;
         break;
     }
-    register(instance, replica, datasouceName, maxRetry, minSwitchTimeInterval, heartbeatTimeout,
+    return register(instance, replica, datasouceName, maxRetry, minSwitchTimeInterval,
+        heartbeatTimeout,
         switchType, slaveThreshold, strategyProvider, executer);
   }
 
-  public void register(PhysicsInstance instance,
+  public boolean register(PhysicsInstance instance,
       String replica, String datasouceName, int maxRetry,
       long minSwitchTimeInterval, long heartbeatTimeout,
       ReplicaSwitchType switchType, long slaveThreshold,
@@ -79,7 +80,7 @@ public enum ReplicaHeartbeatRuntime {
     DefaultHeartbeatFlow heartbeatFlow = new DefaultHeartbeatFlow(instance, replica, datasouceName,
         maxRetry, minSwitchTimeInterval, heartbeatTimeout, switchType, slaveThreshold, strategy,
         executer);
-    heartbeatDetectorMap.putIfAbsent(datasouceName, heartbeatFlow);
+    return heartbeatFlow == heartbeatDetectorMap.putIfAbsent(datasouceName, heartbeatFlow);
   }
 
   public void load() {

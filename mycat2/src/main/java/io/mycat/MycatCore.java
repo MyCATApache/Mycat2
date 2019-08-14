@@ -97,26 +97,30 @@ public class MycatCore {
     ReplicasRootConfig replicasRootConfig = runtime
         .getConfig(ConfigFile.DATASOURCE);
     HeartbeatConfig heartbeatConfig = heartbeatRootConfig.getHeartbeat();
+    boolean existUpdate = false;
     for (ReplicaConfig replica : replicasRootConfig.getReplicas()) {
       List<DatasourceConfig> datasources = replica.getDatasources();
       if (datasources != null) {
         for (DatasourceConfig datasource : datasources) {
           if (MycatConfigUtil.isMySQLType(datasource)) {
-            ReplicaHeartbeatRuntime.INSTANCE.register(replica, datasource, heartbeatConfig,
-                heartBeatStrategy(datasource));
+            existUpdate = existUpdate || ReplicaHeartbeatRuntime.INSTANCE
+                .register(replica, datasource, heartbeatConfig,
+                    heartBeatStrategy(datasource));
           }
         }
       }
     }
-    long period = heartbeatConfig.getReplicaHeartbeatPeriod();
-    service.scheduleAtFixedRate(() -> {
-          try {
-            ReplicaHeartbeatRuntime.INSTANCE.heartbeat();
-          } catch (Exception e) {
-            LOGGER.error("", e);
-          }
-        }, 0, period,
-        TimeUnit.SECONDS);
+    if (existUpdate) {
+      long period = heartbeatConfig.getReplicaHeartbeatPeriod();
+      service.scheduleAtFixedRate(() -> {
+            try {
+              ReplicaHeartbeatRuntime.INSTANCE.heartbeat();
+            } catch (Exception e) {
+              LOGGER.error("", e);
+            }
+          }, 0, period,
+          TimeUnit.MILLISECONDS);
+    }
   }
 
 

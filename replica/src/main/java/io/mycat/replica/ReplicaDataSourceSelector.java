@@ -218,12 +218,12 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     return true;
   }
 
-  public <T> T getDataSource(boolean runOnMaster,
+  public PhysicsInstance getDataSource(boolean runOnMaster,
       LoadBalanceStrategy strategy) {
     PhysicsInstanceImpl instance =
         runOnMaster ? ReplicaSelectorRuntime.INSTCANE.getWriteDatasource(strategy, this)
             : ReplicaSelectorRuntime.INSTCANE.getDatasource(strategy, this);
-    return (T) instance;
+    return instance;
   }
 
   @Override

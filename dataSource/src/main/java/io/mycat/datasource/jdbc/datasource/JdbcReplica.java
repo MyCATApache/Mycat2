@@ -25,6 +25,7 @@ public class JdbcReplica implements MycatReplica {
   private final JdbcConnectionManager dataSourceManager;
   private final GRuntime runtime;
   private final ReplicaConfig replicaConfig;
+  private final List<JdbcDataSource> dataSources;
 
   public JdbcReplica(GRuntime runtime, Map<String, String> jdbcDriverMap,
       ReplicaConfig replicaConfig,
@@ -32,7 +33,7 @@ public class JdbcReplica implements MycatReplica {
       DatasourceProvider provider) {
     this.runtime = runtime;
     this.replicaConfig = replicaConfig;
-    List<JdbcDataSource> dataSources = getJdbcDataSources(datasourceConfigList);
+    this.dataSources = getJdbcDataSources(datasourceConfigList);
     this.selector = ReplicaSelectorRuntime.INSTCANE.getDataSourceSelector(replicaConfig.getName());
     this.dataSourceManager = new JdbcConnectionManager(runtime, provider, jdbcDriverMap,
         dataSources);
@@ -45,7 +46,11 @@ public class JdbcReplica implements MycatReplica {
     for (int i = 0; i < datasourceConfigList.size(); i++) {
       DatasourceConfig datasourceConfig = datasourceConfigList.get(i);
       if (datasourceConfig.getDbType() != null && datasourceConfig.getUrl() != null) {
-        dataSources.add(provider.createJdbcDataSource(runtime, i, datasourceConfig, this));
+        JdbcDataSource jdbcDataSource = provider
+            .createJdbcDataSource(runtime, i, datasourceConfig, this);
+        dataSources.add(jdbcDataSource);
+      } else {
+        dataSources.add(null);
       }
     }
     return dataSources;
@@ -58,8 +63,9 @@ public class JdbcReplica implements MycatReplica {
       runOnMaster = query.isRunOnMaster();
       strategy = query.getStrategy();
     }
-    return selector.getDataSource(runOnMaster, strategy);
+    return dataSources.get(selector.getDataSource(runOnMaster, strategy).getIndex());
   }
+
 
   public String getName() {
     return replicaConfig.getName();
