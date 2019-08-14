@@ -216,8 +216,8 @@ public enum GRuntime {
         if (jdbcReplica == null) {
           continue;
         }
-        jdbcDataNodeMap.put(dataNode.getName(),
-            new JdbcDataNode(jdbcReplica, dataNode));
+        JdbcDataNode jdbcDataNode = new JdbcDataNode(jdbcReplica, dataNode);
+        jdbcDataNodeMap.put(dataNode.getName(), jdbcDataNode);
       }
     }
   }

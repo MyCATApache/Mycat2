@@ -20,6 +20,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
   private final GThread gThread;
   private final Map<JdbcDataSource, DsConnection> connectionMap = new HashMap<>();
   private boolean autocommit = true;
+  private boolean inTranscation = false;
   private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
   public JTATransactionSessionImpl(UserTransaction userTransaction,
@@ -65,6 +66,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   @Override
   public void commit() {
+//    inTranscation = true;
     try {
       userTransaction.commit();
     } catch (Exception e) {
@@ -91,7 +93,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
       switch (status) {
         case Status.STATUS_NO_TRANSACTION:
         case Status.STATUS_UNKNOWN:
-        case Status.STATUS_ACTIVE:
+//        case Status.STATUS_ACTIVE:
         case Status.STATUS_MARKED_ROLLBACK:
         case Status.STATUS_COMMITTED:
         case Status.STATUS_ROLLEDBACK:

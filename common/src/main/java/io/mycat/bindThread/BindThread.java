@@ -55,8 +55,9 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         if (callback != null) {
           processJob(exception, callback);
         }
-        boolean bind = continueBind();
-        if (this.key != null && !bind) {
+
+        boolean bind = false;
+        if (this.key != null && !(bind = continueBind())) {
           recycleTransactionThread();
         } else if (this.key == null && bind) {
           throw new RuntimeException("unknown state");

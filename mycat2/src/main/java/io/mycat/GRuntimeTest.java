@@ -7,6 +7,7 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.thread.GProcess;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -15,7 +16,8 @@ import java.util.concurrent.ThreadLocalRandom;
 public class GRuntimeTest {
 
   public static void main(String[] args) throws InterruptedException {
-
+    ReplicaSelectorRuntime.INSTCANE.load();
+    GRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
     JdbcDataSource ds1 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn1", null);
     JdbcDataSource ds2 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn2", null);
     CountDownLatch countDownLatch = new CountDownLatch(1000);

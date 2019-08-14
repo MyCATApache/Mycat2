@@ -175,6 +175,7 @@ public enum ReplicaSelectorRuntime {
       DatasourceConfig config,
       int index,
       SessionCounter sessionCounter) {
+    Objects.requireNonNull(selector);
     boolean master = ConfigRuntime.INSTCANE.getReplicaIndexes(selector.getName()).contains(index);
     InstanceType instanceType = InstanceType.READ;
     switch (selector.type) {
