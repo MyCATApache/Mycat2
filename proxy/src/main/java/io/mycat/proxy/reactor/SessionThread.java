@@ -1,51 +1,10 @@
 package io.mycat.proxy.reactor;
 
-import io.mycat.CloseableObject;
 import io.mycat.proxy.session.Session;
-import java.util.ArrayList;
-import java.util.List;
 
-public class SessionThread extends Thread implements CloseableObject {
+public interface SessionThread {
 
-  private Session session;
-  private final List<CloseableObject> closeableObjects = new ArrayList<>(0);
+  Session getCurSession();
 
-  public void addCloseableObject(CloseableObject object) {
-    closeableObjects.add(object);
-  }
-
-  public SessionThread() {
-  }
-
-  public SessionThread(Runnable target) {
-    super(target);
-  }
-
-  public SessionThread(Runnable target, String name) {
-    super(target, name);
-  }
-
-  public Session getCurSession() {
-    return session;
-  }
-
-  public void setCurSession(Session session) {
-    this.session = session;
-  }
-
-  public void close() {
-    for (CloseableObject closeableObject : closeableObjects) {
-      closeableObject.close();
-    }
-    closeableObjects.clear();
-  }
-
-  @Override
-  public void onExceptionClose() {
-    for (CloseableObject closeableObject : closeableObjects) {
-      closeableObject.onExceptionClose();
-    }
-    closeableObjects.clear();
-  }
-
+  void setCurSession(Session session);
 }

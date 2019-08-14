@@ -5,7 +5,6 @@ import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 
 public abstract class GProcess<T extends BindThreadKey> implements BindThreadCallback<T, GThread> {
-
   @Override
   public void accept(T key, GThread context) {
     accept(key, context.transactionSession);

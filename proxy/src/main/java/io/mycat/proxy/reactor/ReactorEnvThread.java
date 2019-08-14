@@ -5,7 +5,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public abstract class ReactorEnvThread extends SessionThread {
+public abstract class ReactorEnvThread extends Thread implements SessionThread {
 
   protected final static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(ReactorEnvThread.class);

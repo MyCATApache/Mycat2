@@ -46,6 +46,7 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
   protected final FrontSessionManager<T> frontManager;
   protected Selector selector;
   protected final BufferPool bufPool;
+  protected Session session;
 
 
   private static long activeTime = System.currentTimeMillis();
@@ -264,4 +265,15 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
     }
     //close buffer
   }
+
+  @Override
+  public Session getCurSession() {
+    return session;
+  }
+
+  @Override
+  public void setCurSession(Session session) {
+    this.session = session;
+  }
+
 }

@@ -2,6 +2,8 @@ package io.mycat.proxy.buffer;
 
 import io.mycat.MycatException;
 import io.mycat.buffer.BufferPool;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
 import java.nio.ByteBuffer;
 
@@ -10,6 +12,7 @@ import java.nio.ByteBuffer;
  */
 public class CrossSwapThreadBufferPool {
 
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(CrossSwapThreadBufferPool.class);
   private volatile SessionThread source;
   private BufferPool bufferPool;
 
@@ -19,17 +22,20 @@ public class CrossSwapThreadBufferPool {
   }
 
   public ByteBuffer allocate(int size) {
-    if (source != null && source != Thread.currentThread()) {
-      throw new MycatException("Illegal state");
-    }
+    check();
     return bufferPool.allocate(size);
   }
 
   public ByteBuffer allocate(byte[] bytes) {
+    check();
+    return bufferPool.allocate(bytes);
+  }
+
+  private void check() {
     if (source != null && source != Thread.currentThread()) {
+      LOGGER.error("@@@@@@@@@@@@@@@@@@@@@@{}", Thread.currentThread());
       throw new MycatException("Illegal state");
     }
-    return bufferPool.allocate(bytes);
   }
 
   public void recycle(ByteBuffer theBuf) {

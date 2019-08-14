@@ -6,11 +6,14 @@ import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.DsConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
+import io.mycat.proxy.reactor.SessionThread;
+import io.mycat.proxy.session.Session;
 
-public class GThread extends BindThread {
+public class GThread extends BindThread implements SessionThread {
 
   protected final GRuntime runtime;
   protected final TransactionSession transactionSession;
+  protected Session session;
 
   public GThread(GRuntime runtime, BindThreadPool manager) {
     super(manager);
@@ -35,5 +38,15 @@ public class GThread extends BindThread {
 
   public TransactionSession getTransactionSession() {
     return transactionSession;
+  }
+
+  @Override
+  public Session getCurSession() {
+    return session;
+  }
+
+  @Override
+  public void setCurSession(Session session) {
+    this.session = session;
   }
 }

@@ -244,7 +244,7 @@ public enum GRuntime {
     return (T) config;
   }
 
-  public void run(BindThreadKey key, BindThreadCallback processTask) {
+  public <K extends BindThreadKey, T extends BindThreadCallback> void run(K key, T processTask) {
     gThreadPool.run(key, processTask);
   }
 

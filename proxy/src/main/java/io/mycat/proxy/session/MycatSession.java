@@ -196,7 +196,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       if (crossSwapThreadBufferPool != null) {
         SessionThread source = crossSwapThreadBufferPool.getSource();
         if (source != null) {
-          source.close();
+          source.setCurSession(null);
         }
       }
     } catch (Exception e) {
@@ -540,6 +540,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
    */
   public void deliverWorkerThread(SessionThread thread) {
+    LOGGER.info("@@@@@@@@@@@@@@@@@@@@@@{}", thread);
     crossSwapThreadBufferPool.bindSource(thread);
     assert thread == Thread.currentThread();
   }
