@@ -26,7 +26,6 @@ import io.mycat.config.ConfigReceiver;
 import io.mycat.config.ConfigurableRoot;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
-import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.MysqlServerVariablesRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
@@ -37,8 +36,6 @@ import io.mycat.config.user.UserRootConfig;
 import io.mycat.ext.MySQLAPIRuntimeImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.EmptyAsyncTaskCallBack;
@@ -67,7 +64,6 @@ public class ProxyRuntime {
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final Map<String, MySQLDatasource> datasourceMap = new HashMap<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
-  private LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
   private MycatSecurityConfig securityManager;
   private MySQLVariables variables;
   private NIOAcceptor acceptor;
@@ -75,7 +71,7 @@ public class ProxyRuntime {
   private final ConfigReceiver config;
   private ProxyBeanProviders providers;
   private final Map<String, Object> defContext = new HashMap<>();
-  private MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
+  private final MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
 
   public ProxyRuntime(ConfigReceiver configReceiver)
       throws Exception {
@@ -87,7 +83,6 @@ public class ProxyRuntime {
     this.providers = (ProxyBeanProviders) Class.forName(proxyBeanProviders).newInstance();
     this.initCharset(configReceiver.getResourcePath());
     this.initMySQLVariables();
-    this.initPlug();
     this.initSecurityManager();
     this.initRepliac(this, providers);
     this.initDataNode(providers, configReceiver.getConfig(ConfigFile.DATANODE));
@@ -115,7 +110,6 @@ public class ProxyRuntime {
     this.replicaMap.clear();
     this.datasourceMap.clear();
     this.dataNodeMap.clear();
-    this.loadBalanceManager = new LoadBalanceManager();
     this.securityManager = null;
     this.variables = null;
     this.reactorThreads = null;
@@ -342,16 +336,6 @@ public class ProxyRuntime {
 
   public void registerMonitor(MycatMonitorCallback callback) {
     MycatMonitor.setCallback(callback);
-  }
-
-  private void initPlug() {
-    PlugRootConfig plugRootConfig = getConfig(ConfigFile.PLUG);
-    Objects.requireNonNull(plugRootConfig, "plug config can not found");
-    loadBalanceManager.load(plugRootConfig);
-  }
-
-  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
-    return loadBalanceManager.getLoadBalanceByBalanceName(name);
   }
 
 

@@ -20,6 +20,7 @@ import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.grid.BlockProxyCommandHandler;
+import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
@@ -107,7 +108,7 @@ public class HybridProxyCommandHandler extends AbstractCommandHandler {
       return;
     }
     ProxyRouteResult route = resultRoute;
-    LoadBalanceStrategy balance = mycat.getRuntime()
+    LoadBalanceStrategy balance = PlugRuntime.INSTCANE
         .getLoadBalanceByBalanceName(resultRoute.getBalance());
     String dataNode = schema.getDefaultDataNode();
     mycat.switchDataNode(dataNode);

@@ -5,6 +5,7 @@ import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.plug.PlugRuntime;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.ResponseType;
@@ -80,7 +81,7 @@ public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {
       Boolean runOnMaster = sa.getRunOnMaster();
       query.setRunOnMaster(!simpleSelect);
       if (balance != null) {
-        query.setStrategy(session.getRuntime().getLoadBalanceByBalanceName(balance));
+        query.setStrategy(PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(balance));
       }
       if (runOnMaster != null) {
         query.setRunOnMaster(runOnMaster);

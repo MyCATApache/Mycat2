@@ -45,6 +45,7 @@ import io.mycat.config.schema.SchemaType;
 import io.mycat.grid.MycatRouterResponse;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.plug.PlugRuntime;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.SQLExecuterWriter;
@@ -280,7 +281,7 @@ public class ProxyQueryHandler {
     MySQLDataSourceQuery query = new MySQLDataSourceQuery();
     query.setIds(null);
     query.setRunOnMaster(resultRoute.isRunOnMaster(!simpleSelect));
-    query.setStrategy(runtime
+    query.setStrategy(PlugRuntime.INSTCANE
         .getLoadBalanceByBalanceName(resultRoute.getBalance()));
     MySQLTaskUtil
         .proxyBackend(mycat, resultRoute.getSql(), resultRoute.getDataNode(), query);
