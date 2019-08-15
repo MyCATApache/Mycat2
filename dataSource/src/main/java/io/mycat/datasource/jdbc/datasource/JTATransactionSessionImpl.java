@@ -8,7 +8,6 @@ import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
-import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
 
@@ -19,9 +18,9 @@ public class JTATransactionSessionImpl implements TransactionSession {
   private final UserTransaction userTransaction;
   private final GThread gThread;
   private final Map<JdbcDataSource, DsConnection> connectionMap = new HashMap<>();
-  private boolean autocommit = true;
-  private boolean inTranscation = false;
-  private int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
+  private volatile boolean autocommit = true;
+  private volatile boolean inTranscation = false;
+  private volatile int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
   public JTATransactionSessionImpl(UserTransaction userTransaction,
       GThread gThread) {
@@ -37,6 +36,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   @Override
   public void begin() {
+    inTranscation = true;
     connectionMap.values().forEach(c -> c.close());
     connectionMap.clear();
     try {
@@ -66,7 +66,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   @Override
   public void commit() {
-//    inTranscation = true;
+    inTranscation = false;
     try {
       userTransaction.commit();
     } catch (Exception e) {
@@ -78,8 +78,9 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
   @Override
   public void rollback() {
+    inTranscation = false;
     try {
-      userTransaction.setRollbackOnly();
+      userTransaction.rollback();
     } catch (Exception e) {
       throw new MycatException(e);
     }
@@ -89,19 +90,21 @@ public class JTATransactionSessionImpl implements TransactionSession {
   @Override
   public boolean isInTransaction() {
     try {
-      int status = userTransaction.getStatus();
-      switch (status) {
-        case Status.STATUS_NO_TRANSACTION:
-        case Status.STATUS_UNKNOWN:
+//      int status = userTransaction.getStatus();
+//      LOGGER.debug("()()()()()()()(({}", status);
+//      switch (status) {
+//        case Status.STATUS_NO_TRANSACTION:
+//        case Status.STATUS_UNKNOWN:
+//        case Status.STATUS_MARKED_ROLLBACK:
+//        case Status.STATUS_COMMITTED:
+//        case Status.STATUS_ROLLEDBACK:
+//          return inTranscation;
+//        default:
 //        case Status.STATUS_ACTIVE:
-        case Status.STATUS_MARKED_ROLLBACK:
-        case Status.STATUS_COMMITTED:
-        case Status.STATUS_ROLLEDBACK:
-          return false;
-        default:
-          return true;
-      }
-    } catch (SystemException e) {
+//          return inTranscation = true;
+//      }
+      return inTranscation;
+    } catch (Exception e) {
       throw new MycatException(e);
     }
   }

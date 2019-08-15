@@ -1,4 +1,4 @@
-package io.mycat.sqlparser.util;
+package io.mycat.sqlparser.util.simpleParser;
 
 /**
  * Created by jamie on 2017/8/29.
@@ -10,10 +10,10 @@ public interface ByteArrayView {
   int length();
 
 
-  public void set(int index, byte value);
+  void set(int index, byte value);
 
 
-  public void setOffset(int offset);
+  void setOffset(int offset);
 
   default String getString(int start, int length) {
     return new String(getBytes(start, length));
@@ -24,7 +24,7 @@ public interface ByteArrayView {
     return res;
   }
 
-  public default byte[] getBytes(int start, int length) {
+  default byte[] getBytes(int start, int length) {
     byte[] bytes = new byte[length];
     for (int i = start, j = 0; j < length; i++, j++) {
       bytes[j] = getByte(i);

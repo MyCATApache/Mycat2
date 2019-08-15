@@ -13,8 +13,8 @@ import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatProxyStaticAnnotation;
 import io.mycat.router.MycatRouterConfig;
-import io.mycat.sqlparser.util.BufferSQLContext;
-import io.mycat.sqlparser.util.BufferSQLParser;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLParser;
 import java.util.Objects;
 
 public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {

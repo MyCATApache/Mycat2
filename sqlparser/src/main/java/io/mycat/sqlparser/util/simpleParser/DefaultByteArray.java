@@ -1,4 +1,4 @@
-package io.mycat.sqlparser.util;
+package io.mycat.sqlparser.util.simpleParser;
 
 /**
  * Created by jamie on 2017/8/29.

@@ -1,4 +1,4 @@
-package io.mycat.sqlparser.util;
+package io.mycat.sqlparser.util.simpleParser;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;

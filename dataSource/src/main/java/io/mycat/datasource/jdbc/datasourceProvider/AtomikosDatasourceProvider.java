@@ -27,7 +27,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     p.setProperty("com.atomikos.icatch.serial_jta_transactions", "false");
     AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
     ds.setXaProperties(p);
-    ds.setConcurrentConnectionValidation(false);
+    ds.setConcurrentConnectionValidation(true);
     ds.setUniqueResourceName(datasourceName);
     ds.setPoolSize(1);
     ds.setMaxPoolSize(65535);

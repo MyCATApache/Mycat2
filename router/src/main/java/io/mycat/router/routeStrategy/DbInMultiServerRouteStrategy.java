@@ -20,7 +20,7 @@ import io.mycat.beans.mycat.MycatTable;
 import io.mycat.router.ProxyRouteResult;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
-import io.mycat.sqlparser.util.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
 
 /**
  * @author jamie12221 date 2019-05-05 16:54

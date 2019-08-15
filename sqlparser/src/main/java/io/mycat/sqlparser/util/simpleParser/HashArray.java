@@ -1,4 +1,4 @@
-package io.mycat.sqlparser.util;
+package io.mycat.sqlparser.util.simpleParser;
 
 /**
  * Created by Kaiz on 2017/3/21. 2017/11/25: 调整hasharray大小，从4096增加到8192，如果要调整大小，需要调整 Context

@@ -27,7 +27,7 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ProxyRouteResult;
-import io.mycat.sqlparser.util.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
 
 /**
  * @author jamie12221 date 2019-05-13 02:47

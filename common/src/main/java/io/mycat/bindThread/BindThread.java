@@ -44,25 +44,23 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         exception = null;
         callback = null;
 
-        if (manager.pending.isEmpty()) {
-          try {
-            callback = blockingDeque.poll(manager.waitTaskTimeout, manager.timeoutUnit);
-          } catch (InterruptedException ignored) {
-          }
-        } else {
-          callback = blockingDeque.poll();
+        try {
+          callback = blockingDeque.poll(manager.waitTaskTimeout, manager.timeoutUnit);
+        } catch (InterruptedException ignored) {
         }
         if (callback != null) {
           processJob(exception, callback);
+
         }
 
-        boolean bind = false;
-        if (this.key != null && !(bind = continueBind())) {
-          recycleTransactionThread();
-        } else if (this.key == null && bind) {
-          throw new RuntimeException("unknown state");
+        {
+          boolean bind = false;
+          if (this.key != null && !(bind = continueBind())) {
+            recycleTransactionThread(callback);
+          } else if (this.key == null && bind) {
+            throw new RuntimeException("unknown state");
+          }
         }
-        manager.pollTask();
       }
     } catch (Exception e) {
       manager.exceptionHandler.accept(e);
@@ -82,8 +80,8 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     }
   }
 
-  public void recycleTransactionThread() {
-    if (!continueBind()) {
+  public void recycleTransactionThread(BindThreadCallback callback) {
+    if (!continueBind() && callback == null) {
       manager.map.remove(this.key);
       this.key = null;
       if (!manager.idleList.offer(this)) {

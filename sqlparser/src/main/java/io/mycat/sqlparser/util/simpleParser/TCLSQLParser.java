@@ -1,6 +1,6 @@
-package io.mycat.sqlparser.util;
+package io.mycat.sqlparser.util.simpleParser;
 
-import static io.mycat.sqlparser.util.TokenizerUtil.debug;
+import static io.mycat.sqlparser.util.simpleParser.TokenizerUtil.debug;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLIsolation;

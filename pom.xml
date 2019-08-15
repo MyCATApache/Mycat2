@@ -18,7 +18,6 @@
     <module>security</module>
     <module>grid</module>
     <module>replica</module>
-    <module>dataNode</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

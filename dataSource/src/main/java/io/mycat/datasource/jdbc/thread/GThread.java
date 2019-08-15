@@ -6,6 +6,8 @@ import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.DsConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.Session;
 
@@ -15,6 +17,8 @@ public class GThread extends BindThread implements SessionThread {
   protected final TransactionSession transactionSession;
   protected Session session;
 
+  private static MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(GThread.class);
   public GThread(GRuntime runtime, BindThreadPool manager) {
     super(manager);
     this.transactionSession = runtime.createTransactionSession(this);
@@ -23,7 +27,9 @@ public class GThread extends BindThread implements SessionThread {
 
   @Override
   protected boolean continueBind() {
-    return transactionSession.isInTransaction();
+    boolean inTransaction = transactionSession.isInTransaction();
+    LOGGER.debug("-->{} inTransaction:{}", transactionSession, inTransaction);
+    return inTransaction;
   }
 
   public DsConnection getConnection(JdbcDataSource dataSource,

@@ -2,6 +2,9 @@ package io.mycat.sqlparser.util;
 
 import static org.junit.Assert.assertEquals;
 
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLParser;
+import io.mycat.sqlparser.util.simpleParser.MatchMethodGenerator;
 import java.util.HashMap;
 import org.junit.Assert;
 import org.junit.Before;

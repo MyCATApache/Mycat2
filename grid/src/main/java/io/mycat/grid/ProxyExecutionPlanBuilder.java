@@ -1,17 +1,17 @@
 package io.mycat.grid;
 
-import static io.mycat.sqlparser.util.BufferSQLContext.DELETE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.INSERT_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_FOR_UPDATE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SELECT_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SET_TRANSACTION_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_DB_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_TB_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_VARIABLES_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.SHOW_WARNINGS;
-import static io.mycat.sqlparser.util.BufferSQLContext.UPDATE_SQL;
-import static io.mycat.sqlparser.util.BufferSQLContext.USE_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.DELETE_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.INSERT_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SELECT_FOR_UPDATE_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SELECT_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SET_TRANSACTION_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SHOW_DB_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SHOW_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SHOW_TB_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SHOW_VARIABLES_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.SHOW_WARNINGS;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.UPDATE_SQL;
+import static io.mycat.sqlparser.util.simpleParser.BufferSQLContext.USE_SQL;
 
 import io.mycat.MycatException;
 import io.mycat.beans.MySQLServerStatus;
@@ -36,12 +36,14 @@ import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ProxyRouteResult;
 import io.mycat.router.util.RouterUtil;
-import io.mycat.sqlparser.util.BufferSQLContext;
-import io.mycat.sqlparser.util.BufferSQLParser;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLParser;
 import java.util.Objects;
 
 public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
 
+  private static final MycatLogger LOGGER = MycatLoggerFactory
+      .getLogger(ProxyExecutionPlanBuilder.class);
   private static final MycatLogger IGNORED_SQL_LOGGER = MycatLoggerFactory
       .getLogger("IGNORED_SQL_LOGGER");
   final MycatSession mycat;
@@ -67,6 +69,7 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
     MycatSchema schema = null;
     parser.parse(sqlBytes, sqlContext);
     String orgin = new String(sqlBytes);
+    LOGGER.error(" session :{} thread:{} sql:{}", mycat, Thread.currentThread(), orgin);
     String sql;
     boolean b = sqlContext.getSchemaCount() > 0;
     if (b) {
@@ -92,6 +95,7 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
       case BufferSQLContext.BEGIN_SQL:
       case BufferSQLContext.START_SQL:
       case BufferSQLContext.START_TRANSACTION_SQL: {
+        LOGGER.error(" session id:{} thread{}", mycat.sessionId(), Thread.currentThread());
         return begin(transactionSession);
       }
       case BufferSQLContext.COMMIT_SQL: {
@@ -176,7 +180,12 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
   private SQLExecuter[] commit(TransactionSession transactionSession) {
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+//    try {
     transactionSession.commit();
+//    }catch (Exception e){
+//      LOGGER.error("error session :{} thread{}",mycat,Thread.currentThread());
+//      LOGGER.error("",e);
+//    }
     return responseOk();
   }
 

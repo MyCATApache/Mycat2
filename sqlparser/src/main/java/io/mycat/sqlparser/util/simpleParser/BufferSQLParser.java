@@ -1,7 +1,8 @@
-package io.mycat.sqlparser.util;
+package io.mycat.sqlparser.util.simpleParser;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.sqlparser.util.SQLMapAnnotation;
 
 /**
  * Created by Kaiz on 2017/2/6.

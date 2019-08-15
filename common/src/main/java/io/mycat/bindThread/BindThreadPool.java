@@ -1,9 +1,12 @@
 package io.mycat.bindThread;
 
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -12,7 +15,7 @@ import java.util.function.Function;
 public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThread> {
 
   final ConcurrentHashMap<KEY, PROCESS> map = new ConcurrentHashMap<>();
-  final ConcurrentLinkedQueue<PROCESS> idleList = new ConcurrentLinkedQueue<>();
+  final BlockingQueue<PROCESS> idleList = new LinkedBlockingQueue<>();
   final ConcurrentLinkedQueue<PROCESS> allSession = new ConcurrentLinkedQueue<>();
   final LinkedBlockingQueue<PengdingJob> pending;
   final Function<BindThreadPool, PROCESS> processFactory;
@@ -22,6 +25,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
   final int maxThread;
   final long waitTaskTimeout;
   final TimeUnit timeoutUnit;
+  private final ScheduledExecutorService check;
 
   public BindThreadPool(int maxPengdingLimit, long waitTaskTimeout,
       TimeUnit timeoutUnit, int minThread, int maxThread,
@@ -35,9 +39,29 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         maxPengdingLimit < 0 ? Integer.MAX_VALUE : maxPengdingLimit);
     this.processFactory = processFactory;
     this.exceptionHandler = exceptionHandler;
+    this.check = Executors.newScheduledThreadPool(1);
+    this.check.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                          while (true) {
+                            try {
+                              pollTask();
+                            } catch (Exception e) {
+                              e.printStackTrace();
+                            }
+                          }
+                        }
+                      }
+        //   , 1, 1, TimeUnit.MILLISECONDS
+    );
   }
 
   void pollTask() {
+    try {
+      idleList.offer(idleList.take());
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
     PengdingJob poll = null;
     try {
       while ((poll = pending.poll()) != null) {
@@ -95,6 +119,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }
       }
     }
+    map.put(key, transactionThread);
     transactionThread.run(key, task);
     return true;
   }
@@ -126,7 +151,6 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
       if (poll != null) {
         decThreadCount();
         poll.close();
-        System.out.println("------------------end-connection");
         allSession.remove(poll);
       }
     }
