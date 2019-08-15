@@ -89,11 +89,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.packetId = 0;
   }
 
-  /**
-   * Setter for property 'commandHandler'.
-   *
-   * @param commandHandler Value to set for property 'commandHandler'.
-   */
   public void setCommandHandler(CommandDispatcher commandHandler) {
     this.commandHandler = commandHandler;
   }

@@ -1,6 +1,5 @@
 package io.mycat.datasource.jdbc.datasource;
 
-import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.datasource.jdbc.GRuntime;
@@ -17,11 +16,6 @@ public class TransactionSessionUtil {
       LoadBalanceStrategy strategy) {
     DsConnection connection = getConnection(dataNode,
         runOnMaster, strategy);
-
-    if (connection.isClosed()) {
-      throw new MycatException("11111111111111");
-    }
-
     if (connection.getDataSource().isMySQLType()) {
       return new SingleDataNodeResultSetResponse(connection.executeQuery(sql));
     } else {

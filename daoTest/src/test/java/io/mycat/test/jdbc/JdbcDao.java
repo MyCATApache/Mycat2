@@ -567,7 +567,7 @@ public class JdbcDao extends ModualTest {
   @Test
   public void jtaTest() throws InterruptedException, ExecutionException, IOException {
     AtomicInteger atomicInteger = new AtomicInteger(0);
-    int count = 10;
+    int count = 10000;
     CountDownLatch latch = new CountDownLatch(count);
     for (int i = 0; i < count; i++) {
       int index = i;

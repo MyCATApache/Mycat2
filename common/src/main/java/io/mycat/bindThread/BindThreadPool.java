@@ -110,7 +110,6 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         if (tryIncThreadCount()) {
           transactionThread = processFactory.apply(this);
           transactionThread.start();
-          map.put(key, transactionThread);
         } else {
           if (!pending.offer(createPengdingTask(key, task))) {
             task.onException(key, new Exception("max pending job limit"));
