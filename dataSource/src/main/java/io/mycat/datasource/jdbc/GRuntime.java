@@ -70,14 +70,15 @@ public enum GRuntime {
   private ConfigReceiver config;
   private GThreadPool gThreadPool;
   private ScheduledExecutorService schedule;
+  private JdbcDriverRootConfig jdbcDriverRootConfig;
 
   GRuntime() {
 
   }
 
-
   public void load(ConfigReceiver config) {
     this.config = config;
+    this.jdbcDriverRootConfig = this.getConfig(ConfigFile.JDBC_DRIVER);
     String gridBeanProvidersClass = "io.mycat.DefaultGridBeanProviders";
     try {
       this.providers = (GBeanProviders) Class.forName(gridBeanProvidersClass).newInstance();
@@ -98,7 +99,7 @@ public enum GRuntime {
       throw new MycatException("can not load datasourceProvider:{}", datasourceProviderClass);
     }
     isJTA = datasourceProvider.isJTA();
-    initJdbcReplica(dsConfig, replicaIndexConfig, jdbcDriverRootConfig.getJdbcDriver(),
+    initJdbcReplica(dsConfig, replicaIndexConfig,
         datasourceProvider);
     DataNodeRootConfig dataNodeRootConfig = config.getConfig(ConfigFile.DATANODE);
     initJdbcDataNode(dataNodeRootConfig);
@@ -189,23 +190,14 @@ public enum GRuntime {
 
 
   private void initJdbcReplica(ReplicasRootConfig replicasRootConfig,
-      MasterIndexesRootConfig replicaIndexConfig, Map<String, String> jdbcDriverMap,
+      MasterIndexesRootConfig replicaIndexConfig,
       DatasourceProvider datasourceProvider) {
-    Map<String, String> masterIndexes = replicaIndexConfig.getMasterIndexes();
-    Objects.requireNonNull(jdbcDriverMap, "jdbcDriver.yml is not existed.");
-    for (String valve : jdbcDriverMap.values()) {
-      try {
-        Class.forName(valve);
-      } catch (ClassNotFoundException e) {
-        LOGGER.error("", e);
-      }
-    }
     if (replicasRootConfig != null && replicasRootConfig.getReplicas() != null
         && !replicasRootConfig.getReplicas().isEmpty()) {
       for (ReplicaConfig replicaConfig : replicasRootConfig.getReplicas()) {
         Set<Integer> replicaIndexes = ConfigRuntime.INSTCANE
             .getReplicaIndexes(replicaConfig.getName());
-        JdbcReplica jdbcReplica = providers.createJdbcReplica(this, jdbcDriverMap, replicaConfig,
+        JdbcReplica jdbcReplica = providers.createJdbcReplica(this, replicaConfig,
             replicaIndexes, replicaConfig.getDatasources(), datasourceProvider);
         jdbcReplicaMap.put(jdbcReplica.getName(), jdbcReplica);
         List<JdbcDataSource> datasourceList = jdbcReplica.getDatasourceList();
@@ -264,5 +256,21 @@ public enum GRuntime {
 
   public Map<String, Object> getDefContext() {
     return defContext;
+  }
+
+  public int getMaxThread() {
+    return jdbcDriverRootConfig.getMaxThread();
+  }
+
+  public int getWaitTaskTimeout() {
+    return jdbcDriverRootConfig.getWaitTaskTimeout();
+  }
+
+  public String getTimeUnit() {
+    return jdbcDriverRootConfig.getTimeUnit();
+  }
+
+  public int getMaxPengdingLimit() {
+    return jdbcDriverRootConfig.getMaxPengdingLimit();
   }
 }

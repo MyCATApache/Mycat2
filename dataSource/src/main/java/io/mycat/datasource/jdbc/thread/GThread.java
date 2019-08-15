@@ -27,7 +27,6 @@ import io.mycat.proxy.session.Session;
 
 public class GThread extends BindThread implements SessionThread {
 
-  protected final GRuntime runtime;
   protected final TransactionSession transactionSession;
   protected Session session;
 
@@ -37,7 +36,6 @@ public class GThread extends BindThread implements SessionThread {
   public GThread(GRuntime runtime, BindThreadPool manager) {
     super(manager);
     this.transactionSession = runtime.createTransactionSession(this);
-    this.runtime = runtime;
   }
 
   @Override

@@ -24,7 +24,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import javax.sql.DataSource;
 
@@ -41,9 +40,8 @@ public class JdbcConnectionManager implements ConnectionManager {
 
 
   public JdbcConnectionManager(GRuntime runtime,
-      DatasourceProvider provider, Map<String, String> jdbcDriverMap,
+      DatasourceProvider provider,
       List<JdbcDataSource> dataSources) {
-    Objects.requireNonNull(jdbcDriverMap);
     Objects.requireNonNull(runtime);
     Objects.requireNonNull(provider);
     Objects.requireNonNull(dataSources);

@@ -29,7 +29,6 @@ import io.mycat.replica.ReplicaSwitchType;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public class JdbcReplica implements MycatReplica {
@@ -41,7 +40,7 @@ public class JdbcReplica implements MycatReplica {
   private final ReplicaConfig replicaConfig;
   private final List<JdbcDataSource> dataSources;
 
-  public JdbcReplica(GRuntime runtime, Map<String, String> jdbcDriverMap,
+  public JdbcReplica(GRuntime runtime,
       ReplicaConfig replicaConfig,
       Set<Integer> writeIndex, List<DatasourceConfig> datasourceConfigList,
       DatasourceProvider provider) {
@@ -49,7 +48,7 @@ public class JdbcReplica implements MycatReplica {
     this.replicaConfig = replicaConfig;
     this.dataSources = getJdbcDataSources(datasourceConfigList);
     this.selector = ReplicaSelectorRuntime.INSTCANE.getDataSourceSelector(replicaConfig.getName());
-    this.dataSourceManager = new JdbcConnectionManager(runtime, provider, jdbcDriverMap,
+    this.dataSourceManager = new JdbcConnectionManager(runtime, provider,
         dataSources);
   }
 

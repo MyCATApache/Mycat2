@@ -8,7 +8,6 @@ import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public final class DefaultGridBeanProviders implements GBeanProviders {
@@ -21,10 +20,10 @@ public final class DefaultGridBeanProviders implements GBeanProviders {
   }
 
   @Override
-  public <T extends JdbcReplica> T createJdbcReplica(GRuntime runtime,
-      Map<String, String> jdbcDriverMap, ReplicaConfig replicaConfig, Set<Integer> writeIndex,
+  public <T extends JdbcReplica> T createJdbcReplica(GRuntime runtime, ReplicaConfig replicaConfig,
+      Set<Integer> writeIndex,
       List<DatasourceConfig> datasourceConfigList, DatasourceProvider provider) {
-    return (T) new JdbcReplica(runtime, jdbcDriverMap, replicaConfig, writeIndex,
+    return (T) new JdbcReplica(runtime, replicaConfig, writeIndex,
         datasourceConfigList, provider);
   }
 }

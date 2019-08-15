@@ -1,11 +1,11 @@
 package io.mycat.bindThread;
 
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -15,7 +15,7 @@ import java.util.function.Function;
 public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThread> {
 
   final ConcurrentHashMap<KEY, PROCESS> map = new ConcurrentHashMap<>();
-  final BlockingQueue<PROCESS> idleList = new LinkedBlockingQueue<>();
+  final LinkedTransferQueue<PROCESS> idleList = new LinkedTransferQueue<>();
   final ConcurrentLinkedQueue<PROCESS> allSession = new ConcurrentLinkedQueue<>();
   final LinkedBlockingQueue<PengdingJob> pending;
   final Function<BindThreadPool, PROCESS> processFactory;
@@ -58,13 +58,16 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
 
   void pollTask() {
     try {
-      idleList.offer(idleList.take());
+      PROCESS process = idleList.poll(waitTaskTimeout, timeoutUnit);
+      if (process != null) {
+        idleList.add(process);
+      }
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
     PengdingJob poll = null;
     try {
-      while ((poll = pending.poll()) != null) {
+      while ((poll = pending.poll(waitTaskTimeout, timeoutUnit)) != null) {
         if (!poll.run()) {
           break;
         }

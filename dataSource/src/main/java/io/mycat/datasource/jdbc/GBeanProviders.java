@@ -19,7 +19,6 @@ import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 public interface GBeanProviders {
@@ -29,7 +28,6 @@ public interface GBeanProviders {
       JdbcReplica mycatReplica);
 
   <T extends JdbcReplica> T createJdbcReplica(GRuntime runtime,
-      Map<String, String> jdbcDriverMap,
       ReplicaConfig replicaConfig,
       Set<Integer> writeIndex,
       List<DatasourceConfig> datasourceConfigList,

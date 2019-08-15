@@ -26,14 +26,9 @@ public class GThreadPool<KEY extends BindThreadKey> extends BindThreadPool<KEY, 
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(GThreadPool.class);
-  static int maxPengdingLimit = -1;
-  static int waitTaskTimeout = 5;
-  static TimeUnit timeUnit = TimeUnit.SECONDS;
-  static int minThread = 2;
-  static int maxThread = 50;
-
   public GThreadPool(GRuntime runtime) {
-    super(maxPengdingLimit, waitTaskTimeout, timeUnit, minThread, maxThread,
+    super(runtime.getMaxPengdingLimit(), runtime.getWaitTaskTimeout(),
+        TimeUnit.valueOf(runtime.getTimeUnit()), runtime.getMaxThread(), runtime.getMaxThread(),
         bindThreadPool -> new GThread(runtime, bindThreadPool), (e) -> LOGGER.error("", e));
   }
 
