@@ -30,11 +30,11 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     ds.setConcurrentConnectionValidation(true);
     ds.setUniqueResourceName(datasourceName);
     ds.setPoolSize(1);
-    ds.setMaxPoolSize(65535);
+    ds.setMaxPoolSize(1000);
     ds.setLocalTransactionMode(true);
     ds.setBorrowConnectionTimeout(60);
-    ds.setReapTimeout(100000000);
-    ds.setMaxLifetime(999999999);
+    ds.setReapTimeout(1000);
+    ds.setMaxLifetime(1000);
 //
 //    MysqlXADataSource mysqlXaDataSource = new MysqlXADataSource();
 //    mysqlXaDataSource.setURL(url);
@@ -45,7 +45,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     datasource.setPassword(password);
     datasource.setUsername(username);
     datasource.setUrl(url);
-    datasource.setMaxActive(100000);
+    datasource.setMaxActive(1000);
     datasource.setMaxWait(TimeUnit.SECONDS.toMillis(5));
     try {
 //      mysqlXaDataSource.setConnectTimeout(10000);

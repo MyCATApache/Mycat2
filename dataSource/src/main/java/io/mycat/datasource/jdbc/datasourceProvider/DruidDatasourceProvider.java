@@ -4,7 +4,6 @@ import com.alibaba.druid.pool.DruidDataSource;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 
 public class DruidDatasourceProvider implements DatasourceProvider {
@@ -21,8 +20,9 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     datasource.setPassword(password);
     datasource.setUsername(username);
     datasource.setUrl(url);
-    datasource.setDriverClassName(jdbcDriver);
-    datasource.setMaxWait(TimeUnit.MILLISECONDS.toMillis(300));
+    datasource.setMaxWait(5000);
+    datasource.setMaxActive(200);
+//    datasource.setDriverClassName(jdbcDriver);
     return datasource;
   }
 }

@@ -567,14 +567,14 @@ public class JdbcDao extends ModualTest {
   @Test
   public void jtaTest() throws InterruptedException, ExecutionException, IOException {
     AtomicInteger atomicInteger = new AtomicInteger(0);
-    int count = 60;
+    int count = 10;
     CountDownLatch latch = new CountDownLatch(count);
     for (int i = 0; i < count; i++) {
       int index = i;
       new Thread(() -> {
-        for (int j = 0; j < 10; j++) {
+        for (int j = 0; j < 1; j++) {
           try (Connection connection = getConnection()) {
-            connection.setAutoCommit(false);
+//            connection.setAutoCommit(false);
             try (Statement statement = connection.createStatement()) {
               statement.execute("select 1");
 //              statement.execute(" INSERT INTO `travelrecord` (`id`) VALUES ('2'); ");

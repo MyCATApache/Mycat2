@@ -91,7 +91,7 @@ public class LocalTransactionSessionImpl implements TransactionSession {
 
   @Override
   public void beforeDoAction() {
-    if (autocommit) {
+    if (!isInTransaction()) {
       connectionMap.values().forEach(c -> c.close());
       connectionMap.clear();
     } else {
@@ -101,7 +101,7 @@ public class LocalTransactionSessionImpl implements TransactionSession {
 
   @Override
   public void afterDoAction() {
-    if (!isTrancation) {
+    if (!isInTransaction()) {
       connectionMap.values().forEach(c -> c.close());
       connectionMap.clear();
     }
