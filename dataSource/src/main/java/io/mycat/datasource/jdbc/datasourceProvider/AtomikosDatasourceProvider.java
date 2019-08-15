@@ -15,61 +15,72 @@
 package io.mycat.datasource.jdbc.datasourceProvider;
 
 import com.alibaba.druid.pool.xa.DruidXADataSource;
+import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.jdbc.AtomikosDataSourceBean;
+import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import javax.transaction.UserTransaction;
 
 public class AtomikosDatasourceProvider implements DatasourceProvider {
 
   @Override
-  public DataSource createDataSource(JdbcDataSource config, Map<String, String> jdbcDriverMap) {
+  public DataSource createDataSource(JdbcDataSource jdbcDataSource) {
+    DatasourceConfig config = jdbcDataSource.getConfig();
+    String username = config.getUser();
     String password = config.getPassword();
-    String username = config.getUsername();
     String url = config.getUrl();
     String dbType = config.getDbType();
-    String db = config.getDb();
-    String jdbcDriver = jdbcDriverMap.get(dbType);
-    String datasourceName = config.getName();
+    String initDb = config.getInitDb();
+    int maxRetryCount = config.getMaxRetryCount();
+    String initSQL = config.getInitSQL();
+
+    String jdbcDriver = config.getJdbcDriverClass();
+    int maxCon = config.getMaxCon();
+    int minCon = config.getMinCon();
 
     Properties p = new Properties();
     p.setProperty("com.atomikos.icatch.serial_jta_transactions", "false");
     AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
     ds.setXaProperties(p);
     ds.setConcurrentConnectionValidation(true);
-    ds.setUniqueResourceName(datasourceName);
-    ds.setPoolSize(1);
-    ds.setMaxPoolSize(1000);
+    ds.setUniqueResourceName(jdbcDataSource.getName());
+    ds.setPoolSize(minCon);
+    ds.setMaxPoolSize(maxCon);
     ds.setLocalTransactionMode(true);
     ds.setBorrowConnectionTimeout(60);
-    ds.setReapTimeout(1000);
-    ds.setMaxLifetime(1000);
-//
-//    MysqlXADataSource mysqlXaDataSource = new MysqlXADataSource();
-//    mysqlXaDataSource.setURL(url);
-//    mysqlXaDataSource.setUser(username);
-//    mysqlXaDataSource.setPassword(password);
 
     DruidXADataSource datasource = new DruidXADataSource();
     datasource.setPassword(password);
     datasource.setUsername(username);
     datasource.setUrl(url);
-    datasource.setMaxActive(1000);
-    datasource.setMaxWait(TimeUnit.SECONDS.toMillis(5));
-    try {
-//      mysqlXaDataSource.setConnectTimeout(10000);
-//      mysqlXaDataSource.setAutoReconnectForPools(true);
-//      mysqlXaDataSource.setPinGlobalTxToPhysicalConnection(true);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    datasource.setMaxWait(TimeUnit.SECONDS.toMillis(1));
+    datasource.setMaxActive(maxCon);
+    datasource.setMinIdle(minCon);
 
-    // ds.setXaDataSource(mysqlXaDataSource);
+    if (maxRetryCount > 0) {
+      datasource.setConnectionErrorRetryAttempts(maxRetryCount);
+    }
+    if (dbType != null) {
+      datasource.setDbType(dbType);
+    }
+    if (initSQL != null) {
+      datasource.setConnectionInitSqls(
+          SQLParserUtils.createSQLStatementParser(initSQL, dbType).parseStatementList().stream()
+              .map(Object::toString).collect(
+              Collectors.toList()));
+    }
+    if (initDb != null) {
+
+    }
+    if (jdbcDriver != null) {
+      datasource.setDriverClassName(jdbcDriver);
+    }
     ds.setXaDataSource(datasource);
     return datasource;
   }

@@ -50,7 +50,7 @@ public class JdbcConnectionManager implements ConnectionManager {
     this.datasourceProvider = provider;
     for (JdbcDataSource dataSource : dataSources) {
       DataSource pool = datasourceProvider
-          .createDataSource(dataSource, jdbcDriverMap);
+          .createDataSource(dataSource);
       dataSourceMap.put(dataSource, pool);
     }
     this.dataSources = dataSources;

@@ -15,29 +15,58 @@
 package io.mycat.datasource.jdbc.datasourceProvider;
 
 import com.alibaba.druid.pool.DruidDataSource;
+import com.alibaba.druid.sql.parser.SQLParserUtils;
+import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 public class DruidDatasourceProvider implements DatasourceProvider {
 
   @Override
-  public DataSource createDataSource(JdbcDataSource config, Map<String, String> jdbcDriverMap) {
-    String username = config.getUsername();
+  public DataSource createDataSource(JdbcDataSource jdbcDataSource) {
+    DatasourceConfig config = jdbcDataSource.getConfig();
+    String username = config.getUser();
     String password = config.getPassword();
     String url = config.getUrl();
     String dbType = config.getDbType();
-    String db = config.getDb();
-    String jdbcDriver = jdbcDriverMap.get(dbType);
+    String initDb = config.getInitDb();
+    int maxRetryCount = config.getMaxRetryCount();
+    String initSQL = config.getInitSQL();
+
+    String jdbcDriver = config.getJdbcDriverClass();
+    int maxCon = config.getMaxCon();
+    int minCon = config.getMinCon();
 
     DruidDataSource datasource = new DruidDataSource();
     datasource.setPassword(password);
     datasource.setUsername(username);
     datasource.setUrl(url);
-    datasource.setMaxWait(5000);
-    datasource.setMaxActive(200);
-//    datasource.setDriverClassName(jdbcDriver);
+    datasource.setMaxWait(TimeUnit.SECONDS.toMillis(1));
+    datasource.setMaxActive(maxCon);
+    datasource.setMinIdle(minCon);
+
+    if (maxRetryCount > 0) {
+      datasource.setConnectionErrorRetryAttempts(maxRetryCount);
+    }
+    if (dbType != null) {
+      datasource.setDbType(dbType);
+    }
+    if (initSQL != null) {
+      datasource.setConnectionInitSqls(
+          SQLParserUtils.createSQLStatementParser(initSQL, dbType).parseStatementList().stream()
+              .map(Object::toString).collect(
+              Collectors.toList()));
+    }
+    if (initDb != null) {
+
+    }
+    if (jdbcDriver != null) {
+      datasource.setDriverClassName(jdbcDriver);
+    }
+
     return datasource;
   }
 }

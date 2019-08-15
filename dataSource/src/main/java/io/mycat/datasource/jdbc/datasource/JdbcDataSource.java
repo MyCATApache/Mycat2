@@ -113,4 +113,8 @@ public abstract class JdbcDataSource implements MycatDataSource {
     result = 31 * result + (datasourceConfig != null ? datasourceConfig.hashCode() : 0);
     return result;
   }
+
+  public DatasourceConfig getConfig() {
+    return datasourceConfig;
+  }
 }
