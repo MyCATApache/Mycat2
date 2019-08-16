@@ -67,13 +67,13 @@ io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
 
 
 
-后端会话管理
+##### 后端会话管理
 
 jdbc连接数量和proxy连接数量一并统计,超过了配置的数据源数量就会报错
 
 
 
-心跳管理
+##### 心跳管理
 
 在proxy已经启动后加载jdbc模块,如果存在mysql连接,则proxy已经做了mysql连接的心跳,jdbc模块不会对mysql数据源再进行心跳检测.但是仅仅启动jdbc模块,则jdbc模块会使用jdbc连接进行心跳.
 
