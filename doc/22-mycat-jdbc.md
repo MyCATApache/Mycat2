@@ -4,6 +4,83 @@ author:junwen 2019-7-22
 
 
 
+## jdbcDriver.yml配置
+
+```yaml
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+maxPengdingLimit: -1
+waitTaskTimeout: 5
+timeUnit: SECONDS
+minThread: 2
+maxThread: 32
+```
+
+##### minThread
+
+线程池维持的线程数,它们不会在闲置时候被杀死
+
+##### maxThread
+
+线程的最大数量,当请求无法获取可供用于处理的线程后,请求将会排队延后
+
+##### maxPengdingLimit
+
+是队列的长度,当该值为-1的时候,代表不限制队列长度,当请求数超过队列长度的时候,将会报错
+
+##### waitTaskTimeout
+
+是检测空闲线程轮训的等待时间间隔,当达到这个时间间隔之后就会把空闲的线程杀死
+
+##### timeUnit
+
+waitTaskTimeout的单位
+
+如果请求在响应后,会话上存在事务,那么线程就是被该会话占用,在事务消失之前,都不会被其他会话占用
+
+##### datasourceProviderClass
+
+数据源实现提供者,一般该类内置不需要改变.该类用于适配不同数据源
+
+
+
+## jdbc数据源架构
+
+##### 事务管理
+
+事务管理提供两种实现,本地事务与XA事务,XA事务使用Atomikos提供
+
+datasourceProviderClass更改即可变更事务实现
+
+Atomikos XA事务,其中这个事务实现可能会针对一些场景使用优化尽量使用本地事务
+
+io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+
+本地事务
+
+io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
+
+
+
+##### 线程管理
+
+有事务则会话绑定线程,无事务则在会话响应之后释放线程
+
+
+
+后端会话管理
+
+jdbc连接数量和proxy连接数量一并统计,超过了配置的数据源数量就会报错
+
+
+
+心跳管理
+
+在proxy已经启动后加载jdbc模块,如果存在mysql连接,则proxy已经做了mysql连接的心跳,jdbc模块不会对mysql数据源再进行心跳检测.但是仅仅启动jdbc模块,则jdbc模块会使用jdbc连接进行心跳.
+
+
+
+
+
 ## jdbc数据源的限制
 
 ### 会话同步限制
@@ -22,7 +99,9 @@ mycat2前端暂时只实现了mysql协议，mysql客户端连接mycat的时候�
 
 mycat的集群管理需要保证连接是存活可用的，进行心跳，根据数据库服务器的信息判断服务器之间主从同步的信息，来减少读写分离不一致的影响甚至直接把同步延迟太大的服务器直接列为不可用。
 
-一个jdbc连接池已经实现检查存活连接是否存活。它的实现是阻塞的。如果一直阻塞一个连接会影响后续的连接的检查。而阻塞超时时间是连接池的设置的，所以连接池的获取连接的时间要有一个合适的值。
+~~一个jdbc连接池已经实现检查存活连接是否存活。它的实现是阻塞的。如果一直阻塞一个连接会影响后续的连接的检查。而阻塞超时时间是连接池的设置的，所以连接池的获取连接的时间要有一个合适的值。~~
+
+对于proxy已经加载而且mysql类型,
 
 暂时，jdbc心跳配置仅仅支持mysql心跳配置类，其他数据库还没有实现。
 
