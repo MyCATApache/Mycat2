@@ -60,7 +60,7 @@
     <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>mycat2</artifactId>
-      <version>0.2-SNAPSHOT</version>
+      <version>0.3-SNAPSHOP</version>
       <scope>test</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->

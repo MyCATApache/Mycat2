@@ -1,0 +1,15 @@
+SELECT 1;
+CREATE DATABASE db1;
+CREATE TABLE `travelrecord` (
+  `id` bigint(20) NOT NULL,
+  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
+  `traveldate` date DEFAULT NULL,
+  `fee` decimal(10,0) DEFAULT NULL,
+  `days` int(11) DEFAULT NULL,
+  `blob` longblob DEFAULT NULL,
+  `d` double DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('13333333333333333');
+INSERT INTO `db1`.`travelrecord` (`id`) VALUES (1+1);
+INSERT INTO `db1`.`travelrecord` (`id`) VALUES (SELECT t.id from travelrecord as t);
+SELECT t.id from travelrecord as t;

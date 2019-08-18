@@ -15,12 +15,19 @@
     <dependencies>
         <!-- https://mvnrepository.com/artifact/com.github.jsqlparser/jsqlparser -->
         <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
-      <!--<dependency>-->
-      <!--<groupId>com.alibaba</groupId>-->
-      <!--<artifactId>druid</artifactId>-->
-      <!--<version>1.1.16</version>-->
-      <!--</dependency>-->
-        <dependency>
+      <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>druid</artifactId>
+      <version>1.1.19</version>
+      </dependency>
+      <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
+      <dependency>
+        <groupId>com.alibaba.fastsql</groupId>
+        <artifactId>fastsql</artifactId>
+        <version>2.0.0_preview_896</version>
+      </dependency>
+
+      <dependency>
           <groupId>io.mycat</groupId>
           <artifactId>common</artifactId>
           <version>0.3-SNAPSHOP</version>
