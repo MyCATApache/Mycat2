@@ -1,20 +1,22 @@
 package io.mycat.sqlparser.util;
 
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLLimit;
-import com.alibaba.druid.sql.ast.SQLOrderBy;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectGroupByClause;
-import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.druid.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
-import com.alibaba.druid.sql.parser.SQLParserUtils;
-import com.alibaba.druid.sql.parser.SQLStatementParser;
-import com.alibaba.druid.sql.repository.SchemaRepository;
+
+import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.SQLLimit;
+import com.alibaba.fastsql.sql.ast.SQLOrderBy;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectGroupByClause;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
+import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlSchemaStatVisitor;
+import com.alibaba.fastsql.sql.parser.SQLParserUtils;
+import com.alibaba.fastsql.sql.parser.SQLStatementParser;
+import com.alibaba.fastsql.sql.repository.SchemaRepository;
 import java.util.List;
 
 public class MycatStatementVisitor extends MySqlASTVisitorAdapter {
@@ -64,7 +66,7 @@ public class MycatStatementVisitor extends MySqlASTVisitorAdapter {
             "mysql");
     List<SQLStatement> sqlStatements = mysql.parseStatementList();
     System.out.println(sqlStatements);
-    SchemaRepository schemaRepository = new SchemaRepository("mysql");
+    SchemaRepository schemaRepository = new SchemaRepository(DbType.mysql);
     schemaRepository.acceptDDL("CREATE TABLE `travelrecord` (\n"
         + "  `id` bigint(20) NOT NULL,\n"
         + "  `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n"

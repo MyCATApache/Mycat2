@@ -1,29 +1,29 @@
 package io.mycat.sqlparser.util;
 
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.SQLName;
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.druid.sql.ast.statement.SQLCreateSequenceStatement;
-import com.alibaba.druid.sql.ast.statement.SQLDropSequenceStatement;
-import com.alibaba.druid.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.druid.sql.ast.statement.SQLSelectItem;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.ast.statement.SQLTableSource;
-import com.alibaba.druid.sql.repository.Schema;
-import com.alibaba.druid.sql.repository.SchemaObject;
-import com.alibaba.druid.sql.repository.SchemaRepository;
-import com.alibaba.druid.sql.repository.SchemaResolveVisitor.Option;
+
+import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.SQLName;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.ast.statement.SQLCreateSequenceStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLDropSequenceStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.repository.Schema;
+import com.alibaba.fastsql.sql.repository.SchemaObject;
+import com.alibaba.fastsql.sql.repository.SchemaRepository;
+import com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public class MycatSchemaRespository {
 
-  final SchemaRepository schemaRepository = new SchemaRepository("mysql");
+  final SchemaRepository schemaRepository = new SchemaRepository(DbType.mysql);
 
-  public String getDbType() {
-    return schemaRepository.getDbType();
-  }
 
   public String getDefaultSchemaName() {
     return schemaRepository.getDefaultSchemaName();
@@ -71,7 +71,7 @@ public class MycatSchemaRespository {
   }
 
   public void acceptDDL(String ddl, String dbType) {
-    schemaRepository.acceptDDL(ddl, dbType);
+    schemaRepository.acceptDDL(ddl, DbType.mysql);
   }
 
   public void accept(SQLStatement stmt) {
@@ -167,5 +167,14 @@ public class MycatSchemaRespository {
 
   public void dropSchema(String simpleName) {
 
+  }
+
+  public SQLColumnDefinition findPartitionColumn(List<SQLExpr> columns) {
+
+    return null;
+  }
+
+  public int findPartitionColumnIndex(List<SQLExpr> columns) {
+    return 0;
   }
 }
