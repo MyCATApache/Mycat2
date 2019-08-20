@@ -1,5 +1,6 @@
 package io.mycat.sqlparser.util;
 
+import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.CheckColumnAmbiguous;
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveAllColumn;
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveIdentifierAlias;
 
@@ -7,12 +8,10 @@ import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExprGroup;
-import com.alibaba.fastsql.sql.ast.expr.SQLCharExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLAlterStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLAlterTableStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLAlterViewStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLCommitStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateDatabaseStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLCreateFunctionStatement;
@@ -45,40 +44,38 @@ import com.alibaba.fastsql.sql.parser.SQLParserFeature;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
-import com.alibaba.fastsql.sql.visitor.ParameterizedOutputVisitorUtils;
-import com.alibaba.fastsql.sql.visitor.SQLEvalVisitor;
-import com.alibaba.fastsql.sql.visitor.SQLEvalVisitorUtils;
 import com.sun.xml.internal.ws.server.UnsupportedMediaException;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.sqlparser.util.complie.ConstantFoldingRepository;
-import io.mycat.sqlparser.util.complie.RangeLayoutResolver;
-import io.mycat.sqlparser.util.dataLayout.InsertDataAffinity;
+import io.mycat.sqlparser.util.complie.RangeVariable;
+import io.mycat.sqlparser.util.complie.RangeVariableType;
+import io.mycat.sqlparser.util.complie.WherePartRangeCollector;
+import io.mycat.sqlparser.util.dataLayout.DataLayoutMapping;
 import io.mycat.sqlparser.util.dataLayout.DataLayoutRespository;
+import io.mycat.sqlparser.util.dataLayout.InsertDataAffinity;
 import io.mycat.sqlparser.util.dataLayout.MySQLDataAffinityLayout;
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import net.sf.jsqlparser.JSQLParserException;
-import net.sf.jsqlparser.parser.CCJSqlParserManager;
-import net.sf.jsqlparser.statement.Statement;
-import net.sf.jsqlparser.util.cnfexpression.CNFConverter;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 public class MycatConsole {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatConsole.class);
   final MycatSchemaRespository schemaRespository = new MycatSchemaRespository();
-  final DataLayoutRespository dataLayoutRespository = new DataLayoutRespository();
-  final ConstantFoldingRepository constantFoldingRepository = new ConstantFoldingRepository();
+  final DataLayoutRespository dataLayoutRespository = new DataLayoutRespository(schemaRespository);
 
   public Iterator<MycatResponse> input(String sql) {
+
     SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, "mysql",
         SQLParserFeature.EnableSQLBinaryOpExprGroup,
         SQLParserFeature.UseInsertColumnsCache,
@@ -96,22 +93,61 @@ public class MycatConsole {
         SQLStatement statement = iterator.next();
         System.out.println("----------------before--------------------");
         System.out.println(statement);
-        Optimizers.optimize(statement, DbType.mysql);
+        schemaRespository.schemaRepository.resolve(statement, ResolveAllColumn,
+            ResolveIdentifierAlias,
+            CheckColumnAmbiguous);
+        Optimizers.optimize(statement, DbType.mysql, schemaRespository.schemaRepository);
         System.out.println("----------------after--------------------");
         System.out.println(statement);
         System.out.println("---------------------------------");
-
         if (statement instanceof SQLSelectStatement) {
           SQLSelect select = ((SQLSelectStatement) statement).getSelect();
           SQLSelectQueryBlock queryBlock = select.getQueryBlock();
           SQLTableSource from = queryBlock.getFrom();
-          if (from!=null){
+          if (from != null && from instanceof SQLExprTableSource) {
+            SchemaObject schemaObject = ((SQLExprTableSource) from).getSchemaObject();
+            DataLayoutMapping dataLayoutMapping = dataLayoutRespository
+                .getDataLayoutMapping(schemaObject);
             SQLExpr where = queryBlock.getWhere();
-            if (where!=null){
-              RangeLayoutResolver rangeLayoutResolver = new RangeLayoutResolver(from,
-                  schemaRespository);
-              where.accept(rangeLayoutResolver);
-              System.out.println();
+            if (where != null) {
+              WherePartRangeCollector rangeCollector = new WherePartRangeCollector();
+              where.accept(rangeCollector);
+              List<RangeVariable> rangeVariables = new ArrayList<>(1);
+              SQLColumnDefinition partitionColumn = dataLayoutRespository
+                  .getPartitionColumn(schemaObject);
+              TreeSet<Integer> range = new TreeSet<>();
+              for (Entry<SQLColumnDefinition, List<RangeVariable>> entry : rangeCollector
+                  .getConditions().entrySet()) {
+                SQLColumnDefinition column = entry.getKey();
+                if (partitionColumn != column) {
+                  continue;
+                }
+                List<RangeVariable> list = entry.getValue();
+                range.clear();
+                for (RangeVariable rangeVariable : list) {
+                  switch (rangeVariable.getOperator()) {
+                    case EQUAL:
+                      range.add(dataLayoutMapping.calculate(rangeVariable.getBegin().toString()));
+                      break;
+                    case RANGE:
+                      int begin = dataLayoutMapping
+                          .calculate(rangeVariable.getBegin().toString());
+                      int end = dataLayoutMapping
+                          .calculate(rangeVariable.getEnd().toString());
+                      for (int index = begin; index <= end; index++) {
+                        range.add(index);
+                      }
+                      break;
+                  }
+                }
+                Integer first = range.first();
+                Integer last = range.last();
+                if (range.size()==1) {
+                  rangeVariables.add(new RangeVariable(partitionColumn, RangeVariableType.EQUAL,first));
+                }else {
+                  rangeVariables.add(new RangeVariable(partitionColumn, RangeVariableType.EQUAL,first));
+                }
+              }
             }
           }
           System.out.println();
@@ -199,7 +235,8 @@ public class MycatConsole {
     SQLExprTableSource tableSource = statement.getTableSource();
     SchemaObject tableSchema = tableSource.getSchemaObject();
     List<SQLExpr> columns = statement.getColumns();
-    InsertDataAffinity dataAffinity = dataLayoutRespository.getTableDataLayout(tableSource, columns);
+    InsertDataAffinity dataAffinity = dataLayoutRespository
+        .getInsertTableDataLayout(tableSource, columns);
     List<ValuesClause> valuesList = statement.getValuesList();
     for (ValuesClause valuesClause : valuesList) {
       List<SQLExpr> values = valuesClause.getValues();
@@ -212,7 +249,7 @@ public class MycatConsole {
     }
     dataAffinity.saveParseTree(statement);
     return dataAffinity;
-}
+  }
 
   private SQLExpr constantFolding(SQLExpr sqlExpr) {
 //    if (sqlExpr instanceof SQLValuableExpr) {
