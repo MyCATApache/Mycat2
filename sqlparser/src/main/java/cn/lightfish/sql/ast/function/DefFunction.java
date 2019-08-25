@@ -1,0 +1,37 @@
+package cn.lightfish.sql.ast.function;
+
+import java.lang.invoke.MethodHandle;
+import java.util.function.Function;
+
+
+public class DefFunction implements Function<Object,Object> {
+
+  final String methodName;
+  final boolean varArgs;
+  final Class[] parameterTypes;
+  final Class returnType;
+  MethodHandle handle;
+
+  public DefFunction(String methodName, boolean varArgs, Class[] parameterTypes,
+      Class returnType, MethodHandle handle) {
+    this.methodName = methodName;
+    this.varArgs = varArgs;
+    this.parameterTypes = parameterTypes;
+    this.returnType = returnType;
+    this.handle = handle;
+  }
+
+  private Object invoke(Object... args) {
+    try {
+    return   handle.invokeWithArguments(args);
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
+      return null;
+    }
+  }
+
+  @Override
+  public Object apply(Object objects) {
+    return invoke(objects);
+  }
+}
