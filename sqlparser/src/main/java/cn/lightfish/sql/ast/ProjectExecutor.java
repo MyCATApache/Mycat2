@@ -1,5 +1,6 @@
 package cn.lightfish.sql.ast;
 
+import cn.lightfish.sql.ast.executor.AbsractExecutor;
 import cn.lightfish.sql.ast.valueExpr.ValueExpr;
 import io.mycat.schema.MycatColumnDefinition;
 

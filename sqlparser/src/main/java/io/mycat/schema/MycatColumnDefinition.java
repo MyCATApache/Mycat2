@@ -17,4 +17,12 @@ public class MycatColumnDefinition {
   public Class getType() {
     return type;
   }
+
+  @Override
+  public String toString() {
+    return "MycatColumnDefinition{" +
+        "columnName='" + columnName + '\'' +
+        ", type=" + type +
+        '}';
+  }
 }

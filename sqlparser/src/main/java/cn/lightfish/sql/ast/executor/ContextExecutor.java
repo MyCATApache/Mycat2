@@ -1,10 +1,12 @@
-package cn.lightfish.sql.ast;
+package cn.lightfish.sql.ast.executor;
 
+import cn.lightfish.sql.ast.Executor;
+import cn.lightfish.sql.ast.RootExecutionContext;
 import io.mycat.schema.MycatColumnDefinition;
 
 public class ContextExecutor implements Executor {
 
-  final RootExecutionContext context;
+  public  final RootExecutionContext context;
   final Executor executor;
   final int startIndex;
 

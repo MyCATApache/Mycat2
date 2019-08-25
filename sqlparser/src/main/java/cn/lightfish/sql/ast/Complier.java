@@ -1,5 +1,7 @@
 package cn.lightfish.sql.ast;
 
+import static io.mycat.sqlparser.MycatParser.CACHE_REPOSITORY;
+
 import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalAddExpr;
 import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalDivisionExpr;
 import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalMultipyExpr;
@@ -12,6 +14,7 @@ import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongAddExpr;
 import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongDivisionExpr;
 import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongMultipyExpr;
 import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongSubtractExpr;
+import cn.lightfish.sql.ast.booleanExpr.BooleanExistsExpr;
 import cn.lightfish.sql.ast.booleanExpr.BooleanExpr;
 import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanEqualityExpr;
 import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanLessThanExpr;
@@ -23,6 +26,9 @@ import cn.lightfish.sql.ast.collector.ColumnCollector.SelectColumn;
 import cn.lightfish.sql.ast.collector.SubqueryCollector;
 import cn.lightfish.sql.ast.collector.SubqueryCollector.CorrelatedQuery;
 import cn.lightfish.sql.ast.dateExpr.DateExpr;
+import cn.lightfish.sql.ast.executor.ContextExecutor;
+import cn.lightfish.sql.ast.executor.FilterExecutor;
+import cn.lightfish.sql.ast.executor.OnlyProjectExecutor;
 import cn.lightfish.sql.ast.function.FunctionManager;
 import cn.lightfish.sql.ast.numberExpr.BigDecimalExpr;
 import cn.lightfish.sql.ast.numberExpr.DoubleExpr;
@@ -31,10 +37,12 @@ import cn.lightfish.sql.ast.stringExpr.StringConstExpr;
 import cn.lightfish.sql.ast.stringExpr.StringExpr;
 import cn.lightfish.sql.ast.valueExpr.NullConstExpr;
 import cn.lightfish.sql.ast.valueExpr.ValueExpr;
+import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLCastExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLExistsExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
@@ -53,6 +61,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLUnnestTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLValuesTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.fastsql.sql.optimizer.Optimizers;
 import io.mycat.schema.MycatColumnDefinition;
 import io.mycat.schema.MycatSchemaManager;
 import java.math.BigDecimal;
@@ -61,6 +70,7 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +83,8 @@ public class Complier {
   private final HashMap<Object, Integer> columnIndexMap = new HashMap<>();
   private final Map<Object, List<SQLColumnDefinition>> tableSourceColumnMap = new HashMap<>();
   private final HashMap<Object, Integer> tableSourceColumnStartIndexMap = new HashMap<>();
+  private List<CorrelatedQuery> correlateQueries;
+  private List<MySqlSelectQueryBlock> normalQueries;
 
   public void createTableSource(SQLTableSource tableSource, ValueExpr where) {
 
@@ -103,14 +115,14 @@ public class Complier {
   }
 
   public void createTableSource(SQLTableSource tableSource, SQLExpr where,
-      List<SQLColumnDefinition> columnDefinitions) {
+      List<SQLColumnDefinition> columnDefinitions, long offset, long rowCount) {
     if (tableSource == null) {
       context.createNullTableSource();
       return;
     }
     if (tableSource instanceof SQLExprTableSource) {
       SQLExprTableSource table = (SQLExprTableSource) tableSource;
-      createTableSource(table, where, columnDefinitions);
+      createTableSource(table, where, columnDefinitions, offset, rowCount);
     } else if (tableSource instanceof SQLSubqueryTableSource) {
 
     } else if (tableSource instanceof SQLJoinTableSource) {
@@ -129,17 +141,19 @@ public class Complier {
   }
 
   private void createTableSource(SQLExprTableSource tableSource, SQLExpr where,
-      List<SQLColumnDefinition> columnDefinitions) {
+      List<SQLColumnDefinition> columnDefinitions, long offset, long rowCount) {
     String schema = tableSource.getSchemaObject().getSchema().getName();
     String tableName = tableSource.getTableName();
 
-    MycatColumnDefinition[] mycatColumnDefinitions = new MycatColumnDefinition[columnDefinitions.size()];
+    MycatColumnDefinition[] mycatColumnDefinitions = new MycatColumnDefinition[columnDefinitions
+        .size()];
     for (int i = 0; i < mycatColumnDefinitions.length; i++) {
       SQLColumnDefinition columnDefinition = columnDefinitions.get(i);
-      mycatColumnDefinitions[i] = new MycatColumnDefinition(columnDefinition.getColumnName(),SQLTypeMap.toClass(columnDefinition.jdbcType()));
+      mycatColumnDefinitions[i] = new MycatColumnDefinition(columnDefinition.getColumnName(),
+          SQLTypeMap.toClass(columnDefinition.jdbcType()));
     }
     Executor tableExecuter = MycatSchemaManager.INSTANCE
-        .getTableSource(schema, tableName, mycatColumnDefinitions);
+        .getTableSource(schema, tableName, mycatColumnDefinitions, offset, rowCount);
     context.rootExecutor = new ContextExecutor(this.context, tableExecuter,
         tableSourceColumnStartIndexMap.get(tableSource));
     if (where != null) {
@@ -252,10 +266,56 @@ public class Complier {
       ValueExpr value = createExpr(expr.getExpr());
       Class<?> targetType = SQLTypeMap.toClass(expr.getDataType().jdbcType());
       return createCast(value, targetType);
+    } else if (sqlExpr instanceof SQLExistsExpr) {
+      SQLExistsExpr existsExpr = (SQLExistsExpr) sqlExpr;
+      return createSQLExistsExpr(existsExpr);
     }
     throw new UnsupportedOperationException();
   }
 
+  private BooleanExpr createSQLExistsExpr(SQLExistsExpr existsExpr) {
+    return new BooleanExistsExpr(
+        createSubQuery(existsExpr.getSubQuery().getQueryBlock(), SubQueryType.EXISTS),
+        existsExpr.isNot());
+  }
+
+  private Executor createSubQuery(SQLSelectQueryBlock queryBlock,
+      SubQueryType type) {
+    long row;
+    List<SQLSelectItem> selectList = queryBlock.getSelectList();
+    SQLExpr where = queryBlock.getWhere();
+    SQLTableSource from = queryBlock.getFrom();
+    List<SQLColumnDefinition> sqlColumnDefinitions = this.tableSourceColumnMap.get(from);
+    switch (type) {
+      case TABLE:
+        row = -1;
+        break;
+      case SCALAR:
+        if (selectList.size() != 1) {
+          throw new UnsupportedOperationException();
+        }
+        row = 2;
+        break;
+      case ROW:
+        row = 2;
+        break;
+      case EXISTS:
+        row = -1;
+        selectList = Collections.emptyList();
+        sqlColumnDefinitions = Collections.emptyList();
+        break;
+      case COLUMN:
+        if (selectList.size() != 1) {
+          throw new UnsupportedOperationException();
+        }
+        row = -1;
+        break;
+      default:
+        throw new UnsupportedOperationException();
+    }
+    createTableSource(from, where, sqlColumnDefinitions, 0, row);
+    return createProject(selectList, null);
+  }
 
   private ValueExpr createCast(ValueExpr value, Class<?> targetType) {
     Objects.requireNonNull(targetType);
@@ -394,13 +454,20 @@ public class Complier {
 
   private Executor createProject(List<SQLSelectItem> selectItems,
       List<String> aliasList) {
-    MycatColumnDefinition[] columnDefinitions = new MycatColumnDefinition[selectItems.size()];
-    ValueExpr[] exprs = new ValueExpr[selectItems.size()];
-    for (int i = 0; i < exprs.length; i++) {
+    int size = aliasList != null ? aliasList.size() : selectItems.size();
+    MycatColumnDefinition[] columnDefinitions = new MycatColumnDefinition[size];
+    ValueExpr[] exprs = new ValueExpr[size];
+    for (int i = 0; i < size; i++) {
       SQLSelectItem item = selectItems.get(i);
       exprs[i] = createExpr(item.getExpr());
-      columnDefinitions[i] = new MycatColumnDefinition(aliasList.get(i), exprs[i].getType());
+      columnDefinitions[i] = new MycatColumnDefinition(
+          aliasList != null ? aliasList.get(i) : item.computeAlias(), exprs[i].getType());
     }
+    return createProjectExecutor(columnDefinitions, exprs);
+  }
+
+  private Executor createProjectExecutor(MycatColumnDefinition[] columnDefinitions,
+      ValueExpr[] exprs) {
     if (context.hasDatasource()) {
       return new ProjectExecutor(columnDefinitions, exprs, context.rootExecutor);
     } else {
@@ -408,9 +475,8 @@ public class Complier {
       for (int i = 0; i < exprs.length; i++) {
         res[i] = exprs[i].getValue();
       }
-      return new ScalarProjectExecutor(columnDefinitions, res);
+      return new OnlyProjectExecutor(columnDefinitions, res);
     }
-
   }
 
   public void initExecuteScope(Map<SQLTableSource, SelectColumn> datasourceMap) {
@@ -439,25 +505,20 @@ public class Complier {
 
   public Executor complieRootQuery(SQLSelectStatement x) {
     SQLSelectQueryBlock rootQuery = x.getSelect().getQueryBlock();
-    List<SQLSelectItem> selectList = new ArrayList<>(rootQuery.getSelectList());
     List<String> aliasList = new ArrayList<>();
-    for (SQLSelectItem sqlSelectItem : selectList) {
-      aliasList.add(selectList.toString());
+    for (SQLSelectItem sqlSelectItem : rootQuery.getSelectList()) {
+      aliasList.add(sqlSelectItem.toString());
     }
-
-    //  Optimizers.optimize(x, DbType.mysql, CACHE_REPOSITORY);
+    Optimizers.optimize(x, DbType.mysql, CACHE_REPOSITORY);
     ColumnCollector columnCollector = new ColumnCollector();
     x.accept(columnCollector);
     this.initExecuteScope(columnCollector.getDatasourceMap());
     SubqueryCollector subqueryCollector = new SubqueryCollector();
     x.accept(subqueryCollector);
-    List<CorrelatedQuery> correlateQueries = subqueryCollector.getCorrelateQueries();
-    List<MySqlSelectQueryBlock> normalQueries = subqueryCollector.getNormalQueries();
-    for (MySqlSelectQueryBlock normalQuery : normalQueries) {
-
-    }
+    this.correlateQueries = subqueryCollector.getCorrelateQueries();
+    this.normalQueries = subqueryCollector.getNormalQueries();
     SQLTableSource from = rootQuery.getFrom();
-    createTableSource(from, rootQuery.getWhere(),tableSourceColumnMap.get(from));
-    return createProject(selectList, aliasList);
+    createTableSource(from, rootQuery.getWhere(), tableSourceColumnMap.get(from), 0, -1);
+    return createProject(rootQuery.getSelectList(), aliasList);
   }
 }

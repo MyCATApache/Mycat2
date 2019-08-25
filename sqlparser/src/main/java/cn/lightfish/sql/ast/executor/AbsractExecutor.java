@@ -1,5 +1,6 @@
-package cn.lightfish.sql.ast;
+package cn.lightfish.sql.ast.executor;
 
+import cn.lightfish.sql.ast.Executor;
 import io.mycat.schema.MycatColumnDefinition;
 import java.util.List;
 

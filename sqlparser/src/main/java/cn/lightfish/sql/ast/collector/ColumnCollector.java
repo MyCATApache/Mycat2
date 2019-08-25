@@ -99,7 +99,6 @@ public class ColumnCollector extends MySqlASTVisitorAdapter {
   }
 
   public static class SelectColumn {
-
     final Map<SQLExpr, SQLColumnDefinition> columnList = new HashMap<>();
     public Map<SQLExpr, SQLColumnDefinition> getColumnMap() {
       return columnList;

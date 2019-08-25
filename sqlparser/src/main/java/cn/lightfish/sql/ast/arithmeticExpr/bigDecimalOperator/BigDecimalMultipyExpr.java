@@ -16,7 +16,13 @@ public class BigDecimalMultipyExpr implements BigDecimalExpr {
   @Override
   public BigDecimal getValue() {
     BigDecimal leftValue = (BigDecimal) left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
     BigDecimal rightValue = (BigDecimal) right.getValue();
+    if (rightValue == null) {
+      return null;
+    }
     return leftValue.multiply(rightValue);
   }
 }

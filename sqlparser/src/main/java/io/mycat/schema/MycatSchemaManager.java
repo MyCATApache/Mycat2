@@ -15,10 +15,10 @@ public enum MycatSchemaManager {
    return new MycatConsole();
   }
 
-  public Executor getTableSource(String schema, String tableName) {
+  public Executor getTableSource(String schema, String tableName,
+      MycatColumnDefinition[] columnDefinitions, long offset, long rowCount) {
     MycatTable table = schemas.get(schema).getTableByName(tableName);
-    List<MycatColumnDefinition> columnDefinitions = table.columnDefinitions;
     List<Object[]> list = Arrays.asList(new Object[]{1L}, new Object[]{2L});
-    return new SimpleExecutor(columnDefinitions.toArray( new MycatColumnDefinition[0]),list.iterator());
+    return new SimpleExecutor(columnDefinitions,list.iterator());
   }
 }

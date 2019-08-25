@@ -1,12 +1,12 @@
-package cn.lightfish.sql.ast;
+package cn.lightfish.sql.ast.executor;
 
 import io.mycat.schema.MycatColumnDefinition;
 
-public class ScalarProjectExecutor extends AbsractExecutor {
+public class OnlyProjectExecutor extends AbsractExecutor {
 
   Object[] objectList;
 
-  public ScalarProjectExecutor(MycatColumnDefinition[] columnList, Object[] objectList) {
+  public OnlyProjectExecutor(MycatColumnDefinition[] columnList, Object[] objectList) {
     super(columnList);
     this.objectList = objectList;
   }

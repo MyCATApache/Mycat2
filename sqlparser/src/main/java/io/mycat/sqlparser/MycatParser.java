@@ -18,7 +18,7 @@ import java.util.List;
 
 public enum MycatParser {
   INSTANCE;
-  final static SchemaRepository CACHE_REPOSITORY = new SchemaRepository(DbType.mysql);
+  public final static SchemaRepository CACHE_REPOSITORY = new SchemaRepository(DbType.mysql);
 
   public Iterator<SQLStatement> parse(String sql) {
     SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql,
@@ -33,8 +33,8 @@ public enum MycatParser {
       CACHE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn,
           ResolveIdentifierAlias,
           CheckColumnAmbiguous);
-      Optimizers.optimize(sqlStatement, DbType.mysql,CACHE_REPOSITORY);
     }
+
     return sqlStatements.iterator();
   }
 }

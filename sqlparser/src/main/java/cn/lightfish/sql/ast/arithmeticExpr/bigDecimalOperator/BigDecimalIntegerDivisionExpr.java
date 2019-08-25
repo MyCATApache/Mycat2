@@ -8,14 +8,21 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class BigDecimalIntegerDivisionExpr implements BigDecimalExpr {
+
   private final RootExecutionContext context;
   private final ValueExpr left;
   private final ValueExpr right;
 
   @Override
   public BigDecimal getValue() {
-    BigDecimal left = (BigDecimal) this.left.getValue();
+    BigDecimal leftValue = (BigDecimal) this.left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
     BigDecimal rightValue = (BigDecimal) this.right.getValue();
-    return left.divideToIntegralValue(rightValue);
+    if (rightValue == null) {
+      return null;
+    }
+    return leftValue.divideToIntegralValue(rightValue);
   }
 }

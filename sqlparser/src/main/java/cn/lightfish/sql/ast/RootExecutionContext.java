@@ -11,8 +11,8 @@ import java.util.Map;
 
 public class RootExecutionContext {
 
-  Object[] scope = new Object[32];
- final Map<Integer, Class> scopeType = new HashMap<>();
+  public Object[] scope = new Object[32];
+  public final Map<Integer, Class> scopeType = new HashMap<>();
   Executor rootExecutor;
   BooleanExpr rootFilter;
 

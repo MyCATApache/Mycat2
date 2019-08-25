@@ -15,8 +15,14 @@ public class BigDecimalAddExpr implements BigDecimalExpr {
 
   @Override
   public BigDecimal getValue() {
-    BigDecimal left = (BigDecimal) this.left.getValue();
+    BigDecimal leftValue = (BigDecimal) this.left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
     BigDecimal rightValue = (BigDecimal) this.right.getValue();
-    return left.add(rightValue);
+    if (rightValue == null) {
+      return null;
+    }
+    return leftValue.add(rightValue);
   }
 }

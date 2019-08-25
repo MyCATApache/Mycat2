@@ -15,6 +15,9 @@ public class BigDecimalSignExpr implements BigDecimalExpr {
   @Override
   public BigDecimal getValue() {
     BigDecimal value = (BigDecimal) valueExpr.getValue();
+    if (value == null){
+      return null;
+    }
     return value.negate();
   }
 }
