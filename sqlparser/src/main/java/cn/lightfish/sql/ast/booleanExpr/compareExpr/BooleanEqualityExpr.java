@@ -28,6 +28,6 @@ public class BooleanEqualityExpr implements BooleanExpr {
     if (rightValue == null) {
       return null;
     }
-    return Objects.equals(leftValue, rightValue);
+    return  Objects.equals(leftValue, rightValue);
   }
 }

@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class BooleanAndExpr implements BooleanExpr {
+
   private final RootExecutionContext context;
   private final BooleanExpr left;
   private final BooleanExpr right;
@@ -20,6 +21,6 @@ public class BooleanAndExpr implements BooleanExpr {
     if (rightValue == null) {
       return false;
     }
-    return leftValue&&rightValue;
+    return leftValue && rightValue;
   }
 }

@@ -3,6 +3,7 @@ package cn.lightfish.sql.ast;
 import cn.lightfish.sql.ast.booleanExpr.BooleanValueExpr;
 import cn.lightfish.sql.ast.dateExpr.DateValueExpr;
 import cn.lightfish.sql.ast.numberExpr.BigDecimalConstExpr;
+import cn.lightfish.sql.ast.numberExpr.BigIntegerConstExpr;
 import cn.lightfish.sql.ast.numberExpr.DoubleConstExpr;
 import cn.lightfish.sql.ast.numberExpr.LongConstExpr;
 import cn.lightfish.sql.ast.stringExpr.StringConstExpr;
@@ -30,8 +31,29 @@ import com.alibaba.fastsql.sql.ast.expr.SQLTinyIntExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Date;
 
 public class ExecutorUtil {
+
+  public static ValueExpr transfor(Object value) {
+    if (value instanceof String) {
+      return new StringConstExpr(value.toString());
+    } else if (value instanceof Long) {
+      return new LongConstExpr((Long) value);
+    } else if (value instanceof BigInteger) {
+      return new BigIntegerConstExpr((BigInteger) value);
+    } else if (value instanceof BigDecimal) {
+      return new BigDecimalConstExpr((BigDecimal) value);
+    } else if (value instanceof Double) {
+      return new DoubleConstExpr((Double) value);
+    } else if (value instanceof Date) {
+      return new DateValueExpr((Date) value);
+    }else {
+      return null;
+    }
+  }
 
   public static ValueExpr transfor(SQLValuableExpr valuableExpr) {
     ValueExecutorTransfor transfor = new ValueExecutorTransfor();

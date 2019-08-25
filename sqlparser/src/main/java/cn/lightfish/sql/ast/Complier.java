@@ -1,16 +1,17 @@
 package cn.lightfish.sql.ast;
 
 import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongAddExpr;
-import cn.lightfish.sql.ast.booleanExpr.logicalExpr.BooleanAndExpr;
-import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanEqualityExpr;
 import cn.lightfish.sql.ast.booleanExpr.BooleanExpr;
+import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanEqualityExpr;
 import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanLessThanExpr;
 import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanNotEqualityExpr;
+import cn.lightfish.sql.ast.booleanExpr.logicalExpr.BooleanAndExpr;
 import cn.lightfish.sql.ast.booleanExpr.logicalExpr.BooleanOrExpr;
 import cn.lightfish.sql.ast.collector.ColumnCollector;
 import cn.lightfish.sql.ast.collector.ColumnCollector.SelectColumn;
 import cn.lightfish.sql.ast.collector.SubqueryCollector;
 import cn.lightfish.sql.ast.collector.SubqueryCollector.CorrelatedQuery;
+import cn.lightfish.sql.ast.function.FunctionManager;
 import cn.lightfish.sql.ast.stringExpr.StringConstExpr;
 import cn.lightfish.sql.ast.valueExpr.ValueExpr;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
@@ -149,7 +150,7 @@ public class Complier {
           return new BooleanEqualityExpr(context, leftExpr, rightExpr);
         case Add:
           checkReturnType(leftExpr, rightExpr, leftExpr.getType());
-          return new LongAddExpr(context,leftExpr, rightExpr);
+          return new LongAddExpr(context, leftExpr, rightExpr);
         default:
           throw new UnsupportedOperationException();
       }
@@ -165,21 +166,37 @@ public class Complier {
       return ExecutorUtil.transfor((SQLValuableExpr) sqlExpr);
     } else if (sqlExpr instanceof SQLVariantRefExpr) {
       SQLVariantRefExpr variantRefExpr = (SQLVariantRefExpr) sqlExpr;
-      if (variantRefExpr.isGlobal()) {
-        return new StringConstExpr((String) context.getGlobalVariant(variantRefExpr.getName()));
-      } else if (variantRefExpr.isSession()) {
-        return new StringConstExpr((String) context.getSessionVariant(variantRefExpr.getName()));
-      }
-    }else if (sqlExpr instanceof SQLMethodInvokeExpr){
-      SQLMethodInvokeExpr methodInvokeExpr = (SQLMethodInvokeExpr)sqlExpr;
-      return createMethod(methodInvokeExpr);
+      return createVariantRef(variantRefExpr);
+    } else if (sqlExpr instanceof SQLMethodInvokeExpr) {
+      return createMethod((SQLMethodInvokeExpr) sqlExpr);
     }
     throw new UnsupportedOperationException();
   }
 
+  private ValueExpr createVariantRef(SQLVariantRefExpr variantRefExpr) {
+    if (variantRefExpr.isGlobal()) {
+      return new StringConstExpr((String) context.getGlobalVariant(variantRefExpr.getName()));
+    } else if (variantRefExpr.isSession()) {
+      return new StringConstExpr((String) context.getSessionVariant(variantRefExpr.getName()));
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   private ValueExpr createMethod(SQLMethodInvokeExpr methodInvokeExpr) {
     String methodName = methodInvokeExpr.getMethodName();
-    return null;
+    List<SQLExpr> arguments = methodInvokeExpr.getArguments();
+    if (arguments == null || arguments.isEmpty()) {
+      Object value = FunctionManager.INSTANCE.getFunctionByName(methodName).apply(null);
+      return ExecutorUtil.transfor(value);
+    } else {
+      Object[] args = new Object[arguments.size()];
+      for (int i = 0; i < args.length; i++) {
+        args[i] = createExpr(arguments.get(i)).getValue();
+      }
+      Object value = FunctionManager.INSTANCE.getFunctionByName(methodName).apply(args);
+      return ExecutorUtil.transfor(value);
+    }
   }
 
   private void checkReturnType(ValueExpr leftExpr, ValueExpr rightExpr,

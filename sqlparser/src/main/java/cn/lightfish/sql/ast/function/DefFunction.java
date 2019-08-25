@@ -4,7 +4,7 @@ import java.lang.invoke.MethodHandle;
 import java.util.function.Function;
 
 
-public class DefFunction implements Function<Object,Object> {
+public class DefFunction implements Function<Object, Object> {
 
   final String methodName;
   final boolean varArgs;
@@ -21,9 +21,22 @@ public class DefFunction implements Function<Object,Object> {
     this.handle = handle;
   }
 
+  private Object invoke() {
+    try {
+      return handle.invoke();
+    } catch (Throwable throwable) {
+      throwable.printStackTrace();
+      return null;
+    }
+  }
+
   private Object invoke(Object... args) {
     try {
-    return   handle.invokeWithArguments(args);
+      if (args == null || args.length == 0 || args[0] == null) {
+        return handle.invoke();
+      } else {
+        return handle.invokeWithArguments(args);
+      }
     } catch (Throwable throwable) {
       throwable.printStackTrace();
       return null;
@@ -32,6 +45,6 @@ public class DefFunction implements Function<Object,Object> {
 
   @Override
   public Object apply(Object objects) {
-    return invoke(objects);
+    return objects==null? invoke(): invoke(objects);
   }
 }

@@ -1,22 +1,25 @@
 package cn.lightfish.sql.ast.dateExpr;
 
 import cn.lightfish.sql.ast.valueExpr.ValueExpr;
+import java.util.Date;
 
-public class DateValueExpr implements ValueExpr<String> {
+public class DateValueExpr implements ValueExpr<Date> {
 
-  private String date;
-
+  private Date date;
   public DateValueExpr(String date) {
+    this.date = new Date(Date.parse(date));
+  }
+  public DateValueExpr(Date date) {
     this.date = date;
   }
 
   @Override
-  public String getValue() {
+  public Date getValue() {
     return date;
   }
 
   @Override
-  public Class<String> getType() {
-    return String.class;
+  public Class<Date> getType() {
+    return Date.class;
   }
 }
