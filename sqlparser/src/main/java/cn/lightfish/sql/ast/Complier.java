@@ -70,8 +70,8 @@ import java.util.Objects;
 public class Complier {
 
   RootExecutionContext context = new RootExecutionContext();
-  private Map<SQLTableSource, SelectColumn> datasourceMap;
   private final HashMap<Object, Integer> columnIndexMap = new HashMap<>();
+  private final Map<Object, List<SQLColumnDefinition>> tableSourceColumnMap = new HashMap<>();
   private final HashMap<Object, Integer> tableSourceColumnStartIndexMap = new HashMap<>();
 
   public void createTableSource(SQLTableSource tableSource, ValueExpr where) {
@@ -102,14 +102,15 @@ public class Complier {
 
   }
 
-  public void createTableSource(SQLTableSource tableSource, SQLExpr where) {
+  public void createTableSource(SQLTableSource tableSource, SQLExpr where,
+      List<SQLColumnDefinition> columnDefinitions) {
     if (tableSource == null) {
       context.createNullTableSource();
       return;
     }
     if (tableSource instanceof SQLExprTableSource) {
       SQLExprTableSource table = (SQLExprTableSource) tableSource;
-      createTableSource(table, where);
+      createTableSource(table, where, columnDefinitions);
     } else if (tableSource instanceof SQLSubqueryTableSource) {
 
     } else if (tableSource instanceof SQLJoinTableSource) {
@@ -127,11 +128,18 @@ public class Complier {
     }
   }
 
-  private void createTableSource(SQLExprTableSource tableSource, SQLExpr where) {
+  private void createTableSource(SQLExprTableSource tableSource, SQLExpr where,
+      List<SQLColumnDefinition> columnDefinitions) {
     String schema = tableSource.getSchemaObject().getSchema().getName();
     String tableName = tableSource.getTableName();
+
+    MycatColumnDefinition[] mycatColumnDefinitions = new MycatColumnDefinition[columnDefinitions.size()];
+    for (int i = 0; i < mycatColumnDefinitions.length; i++) {
+      SQLColumnDefinition columnDefinition = columnDefinitions.get(i);
+      mycatColumnDefinitions[i] = new MycatColumnDefinition(columnDefinition.getColumnName(),SQLTypeMap.toClass(columnDefinition.jdbcType()));
+    }
     Executor tableExecuter = MycatSchemaManager.INSTANCE
-        .getTableSource(schema, tableName);
+        .getTableSource(schema, tableName, mycatColumnDefinitions);
     context.rootExecutor = new ContextExecutor(this.context, tableExecuter,
         tableSourceColumnStartIndexMap.get(tableSource));
     if (where != null) {
@@ -378,11 +386,11 @@ public class Complier {
       }
     };
   }
-
-  public Executor complieNormalQuery(MySqlSelectQueryBlock normalQuery) {
-    createTableSource(normalQuery.getFrom(), normalQuery.getWhere());
-    return null;
-  }
+//
+//  public Executor complieNormalQuery(MySqlSelectQueryBlock normalQuery) {
+//    createTableSource(normalQuery.getFrom(), normalQuery.getWhere(),null);
+//    return null;
+//  }
 
   private Executor createProject(List<SQLSelectItem> selectItems,
       List<String> aliasList) {
@@ -406,7 +414,6 @@ public class Complier {
   }
 
   public void initExecuteScope(Map<SQLTableSource, SelectColumn> datasourceMap) {
-    this.datasourceMap = new HashMap<>(datasourceMap);
     this.columnIndexMap.clear();
     this.context.scopeType.clear();
     this.tableSourceColumnStartIndexMap.clear();
@@ -414,13 +421,16 @@ public class Complier {
       SQLTableSource key1 = entry.getKey();
       SelectColumn value = entry.getValue();
       tableSourceColumnStartIndexMap.put(key1, columnIndexMap.size());
+      List<SQLColumnDefinition> columnList = null;
+      tableSourceColumnMap.put(key1, columnList = new ArrayList<SQLColumnDefinition>());
       for (Entry<SQLExpr, SQLColumnDefinition> definitionEntry : value
           .getColumnMap().entrySet()) {
-        SQLColumnDefinition key = definitionEntry.getValue();
-        if (!columnIndexMap.containsKey(key)) {
+        SQLColumnDefinition columnDefinition = definitionEntry.getValue();
+        if (!columnIndexMap.containsKey(columnDefinition)) {
           int index = columnIndexMap.size();
-          columnIndexMap.put(key, index);
-          context.scopeType.put(index, SQLTypeMap.toClass(key.jdbcType()));
+          columnIndexMap.put(columnDefinition, index);
+          columnList.add(columnDefinition);
+          context.scopeType.put(index, SQLTypeMap.toClass(columnDefinition.jdbcType()));
         }
       }
     }
@@ -446,7 +456,8 @@ public class Complier {
     for (MySqlSelectQueryBlock normalQuery : normalQueries) {
 
     }
-    createTableSource(rootQuery.getFrom(), rootQuery.getWhere());
+    SQLTableSource from = rootQuery.getFrom();
+    createTableSource(from, rootQuery.getWhere(),tableSourceColumnMap.get(from));
     return createProject(selectList, aliasList);
   }
 }

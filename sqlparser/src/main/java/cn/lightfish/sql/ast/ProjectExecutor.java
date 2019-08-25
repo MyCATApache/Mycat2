@@ -20,8 +20,9 @@ public class ProjectExecutor extends AbsractExecutor {
 
   @Override
   public Object[] next() {
-    Object[] res = executor.next();
-    for (int i = 0; i < res.length; i++) {
+    executor.next();
+    Object[] res = new Object[exprs.length];
+    for (int i = 0; i <exprs.length; i++) {
       res[i] = exprs[i].getValue();
     }
     return res;

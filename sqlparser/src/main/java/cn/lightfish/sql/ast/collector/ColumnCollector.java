@@ -21,7 +21,7 @@ public class ColumnCollector extends MySqlASTVisitorAdapter {
   public boolean visit(MySqlSelectQueryBlock x) {
     SQLTableSource from = x.getFrom();
     if (from != null) {
-      currentColumnList.put(from, new SelectColumn(from));
+      currentColumnList.put(from, new SelectColumn());
     }
     return super.visit(x);
   }
@@ -35,7 +35,7 @@ public class ColumnCollector extends MySqlASTVisitorAdapter {
         HashSet<SQLColumnDefinition> selectSet = new HashSet<>();
         for (SQLSelectItem sqlSelectItem : x.getSelectList()) {
           SQLColumnDefinition columnDef = getColumnDef(sqlSelectItem.getExpr());
-          if (columnDef!=null){
+          if (columnDef != null) {
             selectSet.add(columnDef);
           }
         }
@@ -58,7 +58,7 @@ public class ColumnCollector extends MySqlASTVisitorAdapter {
     SQLColumnDefinition resolvedColumn = null;
     if (sqlExpr instanceof SQLIdentifierExpr) {
       resolvedColumn = ((SQLIdentifierExpr) sqlExpr).getResolvedColumn();
-    } else if (sqlExpr instanceof SQLPropertyExpr){
+    } else if (sqlExpr instanceof SQLPropertyExpr) {
       resolvedColumn = ((SQLPropertyExpr) sqlExpr).getResolvedColumn();
     }
     return resolvedColumn;
@@ -91,23 +91,16 @@ public class ColumnCollector extends MySqlASTVisitorAdapter {
     if (resolvedTableSource != null && resolvedColumn != null) {
       selectColumn = currentColumnList.get(resolvedTableSource);
       if (selectColumn == null) {
-         selectColumn = new SelectColumn(resolvedTableSource);
-        currentColumnList.put(resolvedTableSource,selectColumn);
+        selectColumn = new SelectColumn();
+        currentColumnList.put(resolvedTableSource, selectColumn);
       }
       selectColumn.columnList.put(sqlExpr, resolvedColumn);
     }
   }
+
   public static class SelectColumn {
-    final SQLTableSource tableSource;
+
     final Map<SQLExpr, SQLColumnDefinition> columnList = new HashMap<>();
-    public SelectColumn(SQLTableSource tableSource) {
-      this.tableSource = tableSource;
-    }
-
-    public SQLTableSource getTableSource() {
-      return tableSource;
-    }
-
     public Map<SQLExpr, SQLColumnDefinition> getColumnMap() {
       return columnList;
     }

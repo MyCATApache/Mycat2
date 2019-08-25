@@ -24,8 +24,7 @@ public class FilterExecutor implements Executor {
   public boolean hasNext() {
     while (executor.hasNext()) {
       currentRow = executor.next();
-      Object value = filter.getValue();
-      if (value != Boolean.FALSE) {
+      if (filter.test() != Boolean.FALSE) {
         return true;
       }
     }
