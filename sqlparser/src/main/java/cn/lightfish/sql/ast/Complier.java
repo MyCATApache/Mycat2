@@ -1,6 +1,17 @@
 package cn.lightfish.sql.ast;
 
+import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalAddExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalDivisionExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalMultipyExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalSubtractExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleAddExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleDivisionExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleMultipyExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleSubtractExpr;
 import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongAddExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongDivisionExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongMultipyExpr;
+import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongSubtractExpr;
 import cn.lightfish.sql.ast.booleanExpr.BooleanExpr;
 import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanEqualityExpr;
 import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanLessThanExpr;
@@ -11,12 +22,19 @@ import cn.lightfish.sql.ast.collector.ColumnCollector;
 import cn.lightfish.sql.ast.collector.ColumnCollector.SelectColumn;
 import cn.lightfish.sql.ast.collector.SubqueryCollector;
 import cn.lightfish.sql.ast.collector.SubqueryCollector.CorrelatedQuery;
+import cn.lightfish.sql.ast.dateExpr.DateExpr;
 import cn.lightfish.sql.ast.function.FunctionManager;
+import cn.lightfish.sql.ast.numberExpr.BigDecimalExpr;
+import cn.lightfish.sql.ast.numberExpr.DoubleExpr;
+import cn.lightfish.sql.ast.numberExpr.LongExpr;
 import cn.lightfish.sql.ast.stringExpr.StringConstExpr;
+import cn.lightfish.sql.ast.stringExpr.StringExpr;
+import cn.lightfish.sql.ast.valueExpr.NullConstExpr;
 import cn.lightfish.sql.ast.valueExpr.ValueExpr;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLCastExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
@@ -37,11 +55,17 @@ import com.alibaba.fastsql.sql.ast.statement.SQLValuesTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import io.mycat.schema.MycatColumnDefinition;
 import io.mycat.schema.MycatSchemaManager;
+import java.math.BigDecimal;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
 public class Complier {
 
@@ -123,36 +147,82 @@ public class Complier {
       SQLBinaryOpExpr binaryOpExpr = (SQLBinaryOpExpr) sqlExpr;
       ValueExpr leftExpr = createExpr(binaryOpExpr.getLeft());
       ValueExpr rightExpr = createExpr(binaryOpExpr.getRight());
+
+      Class leftExprType = leftExpr.getType();
+      Class rightExprType = rightExpr.getType();
+      if (leftExprType != rightExprType) {
+        if ((Number.class.isAssignableFrom(leftExprType) && (Number.class
+            .isAssignableFrom(rightExprType)))) {
+          leftExpr = createCast(leftExpr, Double.class);
+          rightExpr = createCast(rightExpr, Double.class);
+        }
+      }
+      checkReturnType(leftExpr, rightExpr, leftExpr.getType(), sqlExpr);
       switch (binaryOpExpr.getOperator()) {
         case BooleanOr:
-          checkReturnType(leftExpr, rightExpr, Boolean.class);
+          checkReturnType(leftExpr, rightExpr, Boolean.class, sqlExpr);
           return new BooleanOrExpr(context, (BooleanExpr) leftExpr, (BooleanExpr) rightExpr);
         case BooleanAnd:
-          checkReturnType(leftExpr, rightExpr, Boolean.class);
+          checkReturnType(leftExpr, rightExpr, Boolean.class, sqlExpr);
           return new BooleanAndExpr(context, (BooleanExpr) leftExpr, (BooleanExpr) rightExpr);
         case Equality:
-          checkReturnType(leftExpr, rightExpr, leftExpr.getType());
           return new BooleanEqualityExpr(context, leftExpr, rightExpr);
         case LessThanOrGreater:
-          checkReturnType(leftExpr, rightExpr, leftExpr.getType());
           return new BooleanNotEqualityExpr(context, leftExpr, rightExpr);
         case LessThan:
-          checkReturnType(leftExpr, rightExpr, leftExpr.getType());
           return new BooleanLessThanExpr(context, leftExpr, rightExpr);
         case LessThanOrEqual:
-          checkReturnType(leftExpr, rightExpr, leftExpr.getType());
           return new BooleanEqualityExpr(context, leftExpr, rightExpr);
         case GreaterThan:
-          checkReturnType(leftExpr, rightExpr, leftExpr.getType());
           return new BooleanEqualityExpr(context, leftExpr, rightExpr);
         case GreaterThanOrEqual:
-          checkReturnType(leftExpr, rightExpr, leftExpr.getType());
+          checkReturnType(leftExpr, rightExpr, leftExpr.getType(), sqlExpr);
           return new BooleanEqualityExpr(context, leftExpr, rightExpr);
         case Add:
-          checkReturnType(leftExpr, rightExpr, leftExpr.getType());
-          return new LongAddExpr(context, leftExpr, rightExpr);
-        default:
+          if (leftExpr.getType() == Long.class) {
+            return new LongAddExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == Double.class) {
+            return new DoubleAddExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == BigDecimal.class) {
+            return new BigDecimalAddExpr(context, leftExpr, rightExpr);
+          }
           throw new UnsupportedOperationException();
+        case Subtract:
+          if (leftExpr.getType() == Long.class) {
+            return new LongSubtractExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == Double.class) {
+            return new DoubleSubtractExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == BigDecimal.class) {
+            return new BigDecimalSubtractExpr(context, leftExpr, rightExpr);
+          }
+          throw new UnsupportedOperationException();
+        case Multiply:
+          if (leftExpr.getType() == Long.class) {
+            return new LongMultipyExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == Double.class) {
+            return new DoubleMultipyExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == BigDecimal.class) {
+            return new BigDecimalMultipyExpr(context, leftExpr, rightExpr);
+          }
+          throw new UnsupportedOperationException();
+        case Divide:
+          if (leftExpr.getType() == Long.class) {
+            return new LongDivisionExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == Double.class) {
+            return new DoubleDivisionExpr(context, leftExpr, rightExpr);
+          }
+          if (leftExpr.getType() == BigDecimal.class) {
+            return new BigDecimalDivisionExpr(context, leftExpr, rightExpr);
+          }
+          throw new UnsupportedOperationException();
+        default:
       }
     } else if (sqlExpr instanceof SQLIdentifierExpr) {
       SQLIdentifierExpr expr = (SQLIdentifierExpr) sqlExpr;
@@ -169,8 +239,90 @@ public class Complier {
       return createVariantRef(variantRefExpr);
     } else if (sqlExpr instanceof SQLMethodInvokeExpr) {
       return createMethod((SQLMethodInvokeExpr) sqlExpr);
+    } else if (sqlExpr instanceof SQLCastExpr) {
+      SQLCastExpr expr = (SQLCastExpr) sqlExpr;
+      ValueExpr value = createExpr(expr.getExpr());
+      Class<?> targetType = SQLTypeMap.toClass(expr.getDataType().jdbcType());
+      return createCast(value, targetType);
     }
     throw new UnsupportedOperationException();
+  }
+
+
+  private ValueExpr createCast(ValueExpr value, Class<?> targetType) {
+    Objects.requireNonNull(targetType);
+    Class orginClass = value.getType();
+    if (orginClass == targetType) {
+      return value;
+    } else if (targetType.equals(String.class)) {
+      return (StringExpr) () -> {
+        Comparable v = value.getValue();
+        return v == null ? null : v.toString();
+      };
+    } else if (targetType.equals(Long.class)) {
+      if (Number.class.isAssignableFrom(orginClass)) {
+        return (LongExpr) () -> {
+          Number v = (Number) value.getValue();
+          return v == null ? null : v.longValue();
+        };
+      } else if (String.class == orginClass) {
+        return (LongExpr) () -> {
+          String v = (String) value.getValue();
+          return v == null ? null : Long.parseLong(v);
+        };
+      }
+    } else if (targetType.equals(Double.class)) {
+      if (Number.class.isAssignableFrom(orginClass)) {
+        return (DoubleExpr) () -> {
+          Number v = (Number) value.getValue();
+          return v == null ? null : v.doubleValue();
+        };
+      } else if (String.class == orginClass) {
+        return (DoubleExpr) () -> {
+          String v = (String) value.getValue();
+          return v == null ? null : Double.parseDouble(v);
+        };
+      }
+    } else if (targetType.equals(BigDecimal.class)) {
+      if (orginClass == Long.class) {
+        return (BigDecimalExpr) () -> {
+          Long v = (Long) value.getValue();
+          return v == null ? null : new BigDecimal(v);
+        };
+      } else if (orginClass == Double.class) {
+        return (BigDecimalExpr) () -> {
+          Double v = (Double) value.getValue();
+          return v == null ? null : new BigDecimal(v);
+        };
+      } else if (orginClass == String.class) {
+        return (BigDecimalExpr) () -> {
+          String v = (String) value.getValue();
+          return v == null ? null : new BigDecimal(v);
+        };
+      }
+    } else if (targetType.equals(Date.class) || targetType == java.util.Date.class) {
+      if (orginClass == String.class) {
+        return (DateExpr) () -> {
+          String v = (String) value.getValue();
+          return v == null ? null : Date.valueOf(v);
+        };
+      }
+    } else if (targetType.equals(Timestamp.class)) {
+      if (orginClass == String.class) {
+        return (DateExpr) () -> {
+          String v = (String) value.getValue();
+          return v == null ? null : Timestamp.valueOf(v);
+        };
+      }
+    } else if (targetType.equals(Time.class)) {
+      if (orginClass == String.class) {
+        return (DateExpr) () -> {
+          String v = (String) value.getValue();
+          return v == null ? null : Time.valueOf(v);
+        };
+      }
+    }
+    return NullConstExpr.INSTANCE;
   }
 
   private ValueExpr createVariantRef(SQLVariantRefExpr variantRefExpr) {
@@ -200,11 +352,13 @@ public class Complier {
   }
 
   private void checkReturnType(ValueExpr leftExpr, ValueExpr rightExpr,
-      Class clazz) {
+      Class clazz, SQLExpr sqlExpr) {
     if (leftExpr.getType().equals(clazz) && clazz.equals(rightExpr.getType())) {
 
     } else {
-      throw new ClassCastException();
+      throw new ClassCastException(MessageFormat
+          .format("{0} left is {1} right is {2}", sqlExpr, leftExpr.getType(),
+              rightExpr.getType()));
     }
   }
 
@@ -225,23 +379,19 @@ public class Complier {
     };
   }
 
-
   public Executor complieNormalQuery(MySqlSelectQueryBlock normalQuery) {
     createTableSource(normalQuery.getFrom(), normalQuery.getWhere());
-    return createProject(normalQuery.getSelectList());
+    return null;
   }
 
-  private Executor createProject(List<SQLSelectItem> selectItems) {
+  private Executor createProject(List<SQLSelectItem> selectItems,
+      List<String> aliasList) {
     MycatColumnDefinition[] columnDefinitions = new MycatColumnDefinition[selectItems.size()];
     ValueExpr[] exprs = new ValueExpr[selectItems.size()];
     for (int i = 0; i < exprs.length; i++) {
       SQLSelectItem item = selectItems.get(i);
-      String name = item.getAlias();
-      if (name == null) {
-        name = item.toString();
-      }
       exprs[i] = createExpr(item.getExpr());
-      columnDefinitions[i] = new MycatColumnDefinition(name, exprs[i].getType());
+      columnDefinitions[i] = new MycatColumnDefinition(aliasList.get(i), exprs[i].getType());
     }
     if (context.hasDatasource()) {
       return new ProjectExecutor(columnDefinitions, exprs, context.rootExecutor);
@@ -280,6 +430,12 @@ public class Complier {
   public Executor complieRootQuery(SQLSelectStatement x) {
     SQLSelectQueryBlock rootQuery = x.getSelect().getQueryBlock();
     List<SQLSelectItem> selectList = new ArrayList<>(rootQuery.getSelectList());
+    List<String> aliasList = new ArrayList<>();
+    for (SQLSelectItem sqlSelectItem : selectList) {
+      aliasList.add(selectList.toString());
+    }
+
+    //  Optimizers.optimize(x, DbType.mysql, CACHE_REPOSITORY);
     ColumnCollector columnCollector = new ColumnCollector();
     x.accept(columnCollector);
     this.initExecuteScope(columnCollector.getDatasourceMap());
@@ -288,9 +444,9 @@ public class Complier {
     List<CorrelatedQuery> correlateQueries = subqueryCollector.getCorrelateQueries();
     List<MySqlSelectQueryBlock> normalQueries = subqueryCollector.getNormalQueries();
     for (MySqlSelectQueryBlock normalQuery : normalQueries) {
-      Executor executor = this.complieNormalQuery(normalQuery);
+
     }
     createTableSource(rootQuery.getFrom(), rootQuery.getWhere());
-    return createProject(selectList);
+    return createProject(selectList, aliasList);
   }
 }

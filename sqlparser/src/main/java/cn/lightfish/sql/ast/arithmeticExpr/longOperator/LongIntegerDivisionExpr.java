@@ -1,22 +1,21 @@
 package cn.lightfish.sql.ast.arithmeticExpr.longOperator;
 
 import cn.lightfish.sql.ast.RootExecutionContext;
-import cn.lightfish.sql.ast.numberExpr.DoubleExpr;
 import cn.lightfish.sql.ast.numberExpr.LongExpr;
 import cn.lightfish.sql.ast.valueExpr.ValueExpr;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public class LongDivisionExpr implements DoubleExpr {
+public class LongIntegerDivisionExpr implements LongExpr {
 
   private final RootExecutionContext context;
   private final ValueExpr left;
   private final ValueExpr right;
 
   @Override
-  public Double getValue() {
+  public Long getValue() {
     Long leftValue = (Long) left.getValue();
     Long rightValue = (Long) right.getValue();
-    return leftValue*1.0 / rightValue;
+    return leftValue / rightValue;
   }
 }

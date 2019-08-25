@@ -1,9 +1,8 @@
 package cn.lightfish.sql.ast;
 
 import cn.lightfish.sql.ast.booleanExpr.BooleanValueExpr;
-import cn.lightfish.sql.ast.dateExpr.DateValueExpr;
+import cn.lightfish.sql.ast.dateExpr.DateConstExpr;
 import cn.lightfish.sql.ast.numberExpr.BigDecimalConstExpr;
-import cn.lightfish.sql.ast.numberExpr.BigIntegerConstExpr;
 import cn.lightfish.sql.ast.numberExpr.DoubleConstExpr;
 import cn.lightfish.sql.ast.numberExpr.LongConstExpr;
 import cn.lightfish.sql.ast.stringExpr.StringConstExpr;
@@ -32,8 +31,7 @@ import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Date;
+import java.sql.Date;
 
 public class ExecutorUtil {
 
@@ -42,17 +40,18 @@ public class ExecutorUtil {
       return new StringConstExpr(value.toString());
     } else if (value instanceof Long) {
       return new LongConstExpr((Long) value);
-    } else if (value instanceof BigInteger) {
-      return new BigIntegerConstExpr((BigInteger) value);
     } else if (value instanceof BigDecimal) {
       return new BigDecimalConstExpr((BigDecimal) value);
     } else if (value instanceof Double) {
       return new DoubleConstExpr((Double) value);
-    } else if (value instanceof Date) {
-      return new DateValueExpr((Date) value);
-    }else {
-      return null;
     }
+    Class<?> type = value.getClass();
+    if (type == java.sql.Date.class) {
+      return new DateConstExpr((Date) value);
+    } else if (type == java.util.Date.class) {
+      return new DateConstExpr((Date) value);
+    }
+    throw new UnsupportedOperationException();
   }
 
   public static ValueExpr transfor(SQLValuableExpr valuableExpr) {
@@ -95,13 +94,13 @@ public class ExecutorUtil {
 
     @Override
     public boolean visit(SQLDateExpr x) {
-      value = new DateValueExpr(x.getValue());
+      value = new DateConstExpr(x.getValue());
       return false;
     }
 
     @Override
     public boolean visit(SQLDateTimeExpr x) {
-      value = new DateValueExpr(x.getValue());
+      value = new DateConstExpr(x.getValue());
       return false;
     }
 
@@ -149,7 +148,8 @@ public class ExecutorUtil {
 
     @Override
     public boolean visit(SQLNumberExpr x) {
-      value = new LongConstExpr(x.getNumber().longValue());
+      BigDecimal number = (BigDecimal)x.getNumber();
+      value = new BigDecimalConstExpr(number);
       return false;
     }
 
@@ -167,13 +167,13 @@ public class ExecutorUtil {
 
     @Override
     public boolean visit(SQLTimeExpr x) {
-      value = new DateValueExpr(x.getValue());
+      value = new DateConstExpr(x.getValue());
       return false;
     }
 
     @Override
     public boolean visit(SQLTimestampExpr x) {
-      value = new DateValueExpr(x.getValue());
+      value = new DateConstExpr(x.getValue());
       return false;
     }
 

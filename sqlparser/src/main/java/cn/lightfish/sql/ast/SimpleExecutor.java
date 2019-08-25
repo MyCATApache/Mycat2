@@ -27,7 +27,11 @@ public class SimpleExecutor implements Executor {
   public Object[] next() {
     Object[] next = iterator.next();
     for (int i = 0; i < columnList.length; i++) {
-      next[i] = columnList[i].getType().cast(next[i]);
+      try {
+        next[i] = columnList[i].getType().cast(next[i]);
+      }catch (Exception e){
+        e.printStackTrace();
+      }
     }
     return next;
   }

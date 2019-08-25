@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 public enum FunctionManager {
   INSTANCE;
- final private HashMap<String, DefFunction> map = new HashMap<>();
+  final private HashMap<String, DefFunction> map = new HashMap<>();
 
   FunctionManager() {
     register(CastFunction.class);
@@ -52,9 +52,10 @@ public enum FunctionManager {
 
   private void registerFunction(String name, boolean isVarArgs, Type returnType,
       Type[] paramTypes, MethodHandle methodHandle) {
-    map.put(name,
-        new DefFunction(name, isVarArgs, (Class[]) paramTypes, (Class) returnType, methodHandle));
-    System.out.println();
+    DefFunction defFunction = new DefFunction(name, isVarArgs, (Class[]) paramTypes,
+        (Class) returnType, methodHandle);
+    map.put(name.toUpperCase(), defFunction);
+    map.put(name.toLowerCase(), defFunction);
   }
 
   public static void main(String[] args) {
@@ -64,7 +65,7 @@ public enum FunctionManager {
 
   public Function getFunctionByName(String functionName) {
     Function function = map.get(functionName);
-    if (function == null){
+    if (function == null) {
       throw new UnsupportedOperationException();
     }
     return function;
