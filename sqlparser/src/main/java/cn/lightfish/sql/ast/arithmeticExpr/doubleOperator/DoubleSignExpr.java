@@ -13,6 +13,10 @@ public class DoubleSignExpr implements DoubleExpr {
 
   @Override
   public Double getValue() {
-    return -(Double)value.getValue();
+    Double value = (Double) this.value.getValue();
+    if (value == null){
+      return null;
+    }
+    return -value;
   }
 }

@@ -14,10 +14,10 @@ public class BooleanAndExpr implements BooleanExpr {
   @Override
   public Boolean test() {
     Boolean leftValue = left.test();
-    Boolean rightValue = right.test();
     if (leftValue == null) {
       return false;
     }
+    Boolean rightValue = right.test();
     if (rightValue == null) {
       return false;
     }

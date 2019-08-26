@@ -21,10 +21,11 @@ public class BooleanNotEqualityExpr implements BooleanExpr {
   @Override
   public Boolean test() {
     Object leftValue = left.getValue();
-    Object rightValue = right.getValue();
+
     if (leftValue==null){
       return null;
     }
+    Object rightValue = right.getValue();
     if (rightValue==null){
       return null;
     }

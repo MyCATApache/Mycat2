@@ -15,7 +15,13 @@ public class DoubleModExpr implements DoubleExpr {
   @Override
   public Double getValue() {
     Double leftValue = (Double) this.left.getValue();
+    if (leftValue == null) {
+      return leftValue;
+    }
     Double rightValue = (Double) this.right.getValue();
-    return leftValue / rightValue;
+    if (rightValue == null) {
+      return null;
+    }
+    return leftValue % rightValue;
   }
 }

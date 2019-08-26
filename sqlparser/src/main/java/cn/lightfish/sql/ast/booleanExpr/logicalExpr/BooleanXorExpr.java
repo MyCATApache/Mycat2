@@ -14,10 +14,10 @@ public class BooleanXorExpr implements BooleanExpr {
   @Override
   public Boolean test() {
     Boolean leftValue = (Boolean) left.test();
-    Boolean rightValue = (Boolean) right.test();
     if (leftValue == null) {
       return false;
     }
+    Boolean rightValue = (Boolean) right.test();
     if (rightValue == null) {
       return false;
     }

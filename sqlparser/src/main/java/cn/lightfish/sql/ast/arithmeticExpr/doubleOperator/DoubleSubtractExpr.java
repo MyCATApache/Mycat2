@@ -14,8 +14,14 @@ public class DoubleSubtractExpr implements DoubleExpr {
 
   @Override
   public Double getValue() {
-    Double left = (Double) this.left.getValue();
-    Double rightValue = (Double)this.right.getValue();
-    return left+rightValue;
+    Double leftValue = (Double) this.left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
+    Double rightValue = (Double) this.right.getValue();
+    if (rightValue == null) {
+      return null;
+    }
+    return leftValue - rightValue;
   }
 }

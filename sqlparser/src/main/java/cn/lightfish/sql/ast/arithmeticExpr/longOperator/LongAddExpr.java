@@ -15,7 +15,13 @@ public class LongAddExpr implements LongExpr {
   @Override
   public Long getValue() {
     Long left = (Long) this.left.getValue();
+    if (left == null){
+      return null;
+    }
     Long rightValue = (Long) this.right.getValue();
+    if (rightValue == null){
+      return null;
+    }
     return left + rightValue;
   }
 }

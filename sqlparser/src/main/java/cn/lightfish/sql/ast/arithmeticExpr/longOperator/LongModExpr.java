@@ -14,8 +14,14 @@ public class LongModExpr implements LongExpr {
 
   @Override
   public Long getValue() {
-    Long left = (Long) this.left.getValue();
-    Long rightValue = (Long)this.right.getValue();
-    return left+rightValue;
+    Long leftValue = (Long) this.left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
+    Long rightValue = (Long) this.right.getValue();
+    if (rightValue == null) {
+      return rightValue;
+    }
+    return leftValue % rightValue;
   }
 }

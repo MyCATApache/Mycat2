@@ -14,8 +14,14 @@ public class LongSubtractExpr implements LongExpr {
 
   @Override
   public Long getValue() {
-    Long left = (Long) this.left.getValue();
+    Long leftValue = (Long) this.left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
     Long rightValue = (Long) this.right.getValue();
-    return left - rightValue;
+    if (rightValue == null) {
+      return null;
+    }
+    return leftValue - rightValue;
   }
 }

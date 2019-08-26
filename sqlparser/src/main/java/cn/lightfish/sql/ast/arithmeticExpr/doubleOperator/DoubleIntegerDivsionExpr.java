@@ -16,7 +16,14 @@ public class DoubleIntegerDivsionExpr implements DoubleExpr {
   @Override
   public Double getValue() {
     Double leftValue = (Double) this.left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
     Double rightValue = (Double) this.right.getValue();
-    return BigDecimal.valueOf(leftValue).divideToIntegralValue(BigDecimal.valueOf(rightValue)).doubleValue();
+    if (rightValue == null) {
+      return null;
+    }
+    return BigDecimal.valueOf(leftValue).divideToIntegralValue(BigDecimal.valueOf(rightValue))
+        .doubleValue();
   }
 }

@@ -69,7 +69,7 @@ public class SubqueryCollector extends MySqlASTVisitorAdapter {
       SQLColumnDefinition resolvedColumn,
       SQLTableSource resolvedTableSource) {
     if (resolvedColumn != null && !stack.isEmpty()) {
-      if (stack.peek().getFrom() != resolvedTableSource) {
+      if (!resolvedTableSource.equals(stack.peek().getFrom())) {
         addCorrelatedQuery(x, resolvedTableSource);
         return true;
       }

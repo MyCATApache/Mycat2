@@ -3,14 +3,23 @@ package cn.lightfish.sql.ast.booleanExpr.compareExpr;
 import cn.lightfish.sql.ast.RootExecutionContext;
 import cn.lightfish.sql.ast.booleanExpr.BooleanExpr;
 import cn.lightfish.sql.ast.valueExpr.ValueExpr;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
+
 public class BooleanIsExpr implements BooleanExpr {
 
   private final RootExecutionContext context;
   private final ValueExpr expr;
   private final ValueExpr target;
+
+  public BooleanIsExpr(RootExecutionContext context, ValueExpr expr,
+      ValueExpr target) {
+    this.context = context;
+    this.expr = expr;
+    this.target = target;
+    if (this.target.getType() != Integer.class) {
+      throw new UnsupportedOperationException();
+    }
+  }
 
   @Override
   public Boolean test() {
@@ -19,17 +28,21 @@ public class BooleanIsExpr implements BooleanExpr {
     if (test == null && target == null) {
       return true;
     }
-    if (target == null) {
+    if (test == null && target != null) {
       return false;
     }
-    Boolean exprIsTrue = Boolean.FALSE;
-    if (test != null) {
-      if (test instanceof Number) {
-        exprIsTrue = ((Number) test).intValue() != 0;
+    if (test != null && target == null) {
+      return false;
+    }
+    if (test != null && target != null) {
+      Number targetValue = (Number) target;
+      if ((test instanceof Number) && (targetValue instanceof Number)) {
+        int testValue = ((Number) test).intValue();
+        return (testValue == 0 && targetValue.intValue() == 0);
       } else {
-        exprIsTrue = true;
+        return targetValue.equals(test);
       }
     }
-    return exprIsTrue == target;
+    return false;
   }
 }

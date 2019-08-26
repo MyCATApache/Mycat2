@@ -15,7 +15,13 @@ public class LongMultipyExpr implements LongExpr {
   @Override
   public Long getValue() {
     Long leftValue = (Long) left.getValue();
+    if (leftValue == null){
+      return null;
+    }
     Long rightValue = (Long) right.getValue();
+    if (rightValue == null){
+      return null;
+    }
     return leftValue * rightValue;
   }
 }

@@ -15,7 +15,13 @@ public class DoubleMultipyExpr implements DoubleExpr {
   @Override
   public Double getValue() {
     Double leftValue = (Double) left.getValue();
+    if (leftValue == null) {
+      return null;
+    }
     Double rightValue = (Double) right.getValue();
+    if (rightValue == null) {
+      return null;
+    }
     return leftValue * rightValue;
   }
 }

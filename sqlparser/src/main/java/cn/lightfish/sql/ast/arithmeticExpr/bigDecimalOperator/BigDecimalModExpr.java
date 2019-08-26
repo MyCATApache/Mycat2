@@ -16,7 +16,13 @@ public class BigDecimalModExpr implements BigDecimalExpr {
   @Override
   public BigDecimal getValue() {
     BigDecimal leftValue = (BigDecimal) this.left.getValue();
+    if (leftValue == null){
+      return null;
+    }
     BigDecimal rightValue = (BigDecimal) this.right.getValue();
+    if (rightValue == null){
+      return null;
+    }
     return leftValue.divideAndRemainder(leftValue)[0];
   }
 }
