@@ -1,12 +1,12 @@
-package cn.lightfish.sql.executor;
+package cn.lightfish.sql.executor.logicExecutor;
 
-import cn.lightfish.sql.schema.MycatColumnDefinition;
+import cn.lightfish.sql.schema.SimpleColumnDefinition;
 
 public class OnlyProjectExecutor extends AbsractExecutor {
 
   Object[] objectList;
 
-  public OnlyProjectExecutor(MycatColumnDefinition[] columnList, Object[] objectList) {
+  public OnlyProjectExecutor(SimpleColumnDefinition[] columnList, Object[] objectList) {
     super(columnList);
     this.objectList = objectList;
   }

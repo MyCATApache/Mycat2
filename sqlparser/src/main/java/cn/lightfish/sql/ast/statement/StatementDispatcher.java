@@ -1,13 +1,18 @@
-package cn.lightfish.sql.ast.expr.statement;
+package cn.lightfish.sql.ast.statement;
 
-import cn.lightfish.sql.ast.Complier;
-import cn.lightfish.sql.executor.Executor;
-import cn.lightfish.sql.ast.RootExecutionContext;
+import cn.lightfish.sql.ast.complier.ComplierContext;
+import cn.lightfish.sql.ast.complier.ExprComplier;
 import cn.lightfish.sql.ast.SQLTypeMap;
-import cn.lightfish.sql.console.MycatConsoleResult;
+import cn.lightfish.sql.ast.converter.Converters;
+import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.persistent.InsertPersistent;
+import cn.lightfish.sql.persistent.PersistentManager;
+import cn.lightfish.sql.schema.SimpleColumnDefinition;
+import cn.lightfish.sql.schema.MycatConsole;
+import cn.lightfish.sql.schema.MycatPartition;
+import cn.lightfish.sql.schema.MycatTable;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
@@ -26,10 +31,6 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableState
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import cn.lightfish.sql.schema.MycatColumnDefinition;
-import cn.lightfish.sql.schema.MycatPartition;
-import cn.lightfish.sql.schema.MycatTable;
-import cn.lightfish.sql.schema.MycatConsole;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,20 +41,20 @@ import java.util.Map;
 public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
   final MycatConsole console;
-  private final Complier complier;
-  MycatConsoleResult consoleResult;
-  final RootExecutionContext context = new RootExecutionContext();
+  private final ComplierContext complierContext;
+  Executor consoleResult;
+
   public StatementDispatcher(MycatConsole console) {
     this.console = console;
-    this.complier = new Complier();
+    this.complierContext = new ComplierContext(console.getContext());
   }
 
   @Override
   public boolean visit(SQLSelectStatement x) {
-    Executor projectExecutor = complier.complieRootQuery(x);
-    MycatColumnDefinition[]  columnNames = projectExecutor.columnDefList();
-    System.out.println("column:"+Arrays.toString(columnNames));
-    while (projectExecutor.hasNext()){
+    Executor projectExecutor = complierContext.getRootQueryComplier().complieRootQuery(x);
+    SimpleColumnDefinition[] columnNames = projectExecutor.columnDefList();
+    System.out.println("column:" + Arrays.toString(columnNames));
+    while (projectExecutor.hasNext()) {
       Object[] next = projectExecutor.next();
       System.out.println(Arrays.toString(next));
     }
@@ -66,59 +67,35 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
     MycatTable table = console.getCurrnetSchema().getTableByName(x.getTableName().getSimpleName());
     List<SQLExpr> columns = x.getColumns();
     int count = columns.size();
-    MycatPartition partition = table.getPartition();
-    Map<Integer, List<ValuesClause>> route = new HashMap<>();
-    if (partition == null) {
-
-    } else {
-      String partitionCoulumn = partition.getDbPartitionCoulumn();
-      String partitionCoulumn2 = partition.getTablePartitionCoulumn();
-      int partitionCoulumnIndex = -1;
-      int partitionCoulumnIndex2 = -1;
-      for (int i = 0; i < count; i++) {
-        SQLExpr column = columns.get(i);
-        if (column instanceof SQLName) {
-          SQLColumnDefinition columnDefinition = ((SQLName) column).getResolvedColumn();
-          String columnName = columnDefinition.getColumnName();
-          if (columnName.equalsIgnoreCase(partitionCoulumn)) {
-            partitionCoulumnIndex = i;
-          } else if (columnName.equalsIgnoreCase(partitionCoulumn2)) {
-            partitionCoulumnIndex2 = i;
-          }
-        }
-      }
-      List<ValuesClause> valuesList = x.getValuesList();
-      for (ValuesClause valuesClause : valuesList) {
-        List<SQLExpr> values = valuesClause.getValues();
-        SQLValuableExpr valuableExpr = (SQLValuableExpr) values.get(partitionCoulumnIndex);
-        Object value = valuableExpr.getValue();
-        partition.assignment(value);
-        if (partitionCoulumn2 != null) {
-          if (!partitionCoulumn.equalsIgnoreCase(partitionCoulumn2)) {
-            SQLValuableExpr valuableExpr2 = (SQLValuableExpr) values.get(partitionCoulumnIndex2);
-            Object value2 = valuableExpr2.getValue();
-            partition.assignment(value2);
-          }
-        }
-        int dataNodeIndex = partition.getReturnValue();
-
-        List<ValuesClause> group = route.computeIfAbsent(dataNodeIndex, k -> new ArrayList<>());
-        group.add(valuesClause);
-      }
+    String[] columnNameList = new String[count];
+    for (int i = 0; i < count; i++) {
+      columnNameList[i] = Converters.getColumnName(columns.get(i));
     }
-    console.insert(table, route, x);
+    Map<String,Object> persistentAttribute = new HashMap<>();
+    InsertPersistent insertPersistent = PersistentManager.INSTANCE.getInsertPersistent(console,table,columnNameList, persistentAttribute);
+    List<ValuesClause> valuesList = x.getValuesList();
+    for (ValuesClause valuesClause : valuesList) {
+      List<SQLExpr> values = valuesClause.getValues();
+      Object[] row = new Object[count];
+      for (int i = 0; i < count; i++) {
+        SQLExpr valueExpr = values.get(i);
+        SQLValuableExpr valuableExpr = (SQLValuableExpr) valueExpr;
+        row[i] = valuableExpr.getValue();
+      }
+      insertPersistent.insert(row);
+    }
     return super.visit(x);
   }
 
   @Override
   public boolean visit(SQLCreateDatabaseStatement x) {
-    this.consoleResult = console.createSchema(x.getDatabaseName());
+    console.createSchema(x.getDatabaseName());
     return super.visit(x);
   }
 
   @Override
   public boolean visit(SQLShowDatabasesStatement x) {
-    this.consoleResult = console.showDatabase();
+    console.showDatabase();
     return super.visit(x);
   }
 
@@ -127,14 +104,15 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
     String tableName = x.getTableSource().getSchemaObject().getName();
     List<SQLTableElement> tableElementList =
         x.getTableElementList() == null ? Collections.emptyList() : x.getTableElementList();
-    List<MycatColumnDefinition> columnDefinitions = new ArrayList<>(tableElementList.size());
+    List<SimpleColumnDefinition> columnDefinitions = new ArrayList<>(tableElementList.size());
     String primaryKey = null;
     for (SQLTableElement sqlTableElement : tableElementList) {
       if (sqlTableElement instanceof SQLColumnDefinition) {
         SQLColumnDefinition columnDefinition = (SQLColumnDefinition) sqlTableElement;
         String columnName = columnDefinition.getColumnName();
         SQLDataType dataType = columnDefinition.getDataType();
-        MycatColumnDefinition mycatColumnDefinition = new MycatColumnDefinition(columnName,  SQLTypeMap.toClass(dataType.jdbcType()));
+        SimpleColumnDefinition mycatColumnDefinition = new SimpleColumnDefinition(columnName,
+            SQLTypeMap.toClass(dataType.jdbcType()));
         columnDefinitions.add(mycatColumnDefinition);
       } else if (sqlTableElement instanceof SQLColumnPrimaryKey) {
         SQLColumnPrimaryKey columnPrimaryKey = (SQLColumnPrimaryKey) sqlTableElement;
@@ -144,11 +122,10 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
     SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) x
         .getDbPartitionBy();//指定分库键和分库算法，不支持按照时间分库；
     if (dbPartitionBy != null) {
-      this.consoleResult = console.createTable(new MycatTable(tableName, columnDefinitions,
+      console.createTable(new MycatTable(tableName, columnDefinitions,
           getMycatPartition(x, primaryKey, dbPartitionBy)));
     } else {
-      this.consoleResult = console
-          .createTable(new MycatTable(tableName, columnDefinitions, x.isBroadCast()));
+      console.createTable(new MycatTable(tableName, columnDefinitions, x.isBroadCast()));
     }
     return super.visit(x);
   }
@@ -182,13 +159,13 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
   @Override
   public boolean visit(SQLDropDatabaseStatement x) {
-    this.consoleResult = console.dropDatabase(x.getDatabaseName());
+    console.dropDatabase(x.getDatabaseName());
     return super.visit(x);
   }
 
   @Override
   public boolean visit(SQLDropTableGroupStatement x) {
-    this.consoleResult = console.dropTable(x.getTableGroupName());
+    console.dropTable(x.getTableGroupName());
     return super.visit(x);
   }
 
@@ -199,7 +176,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
     for (SQLExprTableSource tableSource : tableSources) {
       nameList.add(tableSource.getTableName());
     }
-    this.consoleResult = console.dropTable(nameList);
+    console.dropTable(nameList);
 
     return super.visit(x);
   }
@@ -211,7 +188,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
     return super.visit(x);
   }
 
-  public MycatConsoleResult getConsoleResult() {
+  public Executor getConsoleResult() {
     return consoleResult;
   }
 }

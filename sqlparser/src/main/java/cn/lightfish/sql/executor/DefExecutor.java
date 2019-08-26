@@ -1,20 +1,25 @@
 package cn.lightfish.sql.executor;
 
-import cn.lightfish.sql.schema.MycatColumnDefinition;
+import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.schema.SimpleColumnDefinition;
 import java.util.Iterator;
 
-public class SimpleExecutor implements Executor {
+public class DefExecutor implements Executor {
 
   private final Iterator<Object[]> iterator;
-  private final MycatColumnDefinition[] columnList;
+  private final SimpleColumnDefinition[] columnList;
 
-  public SimpleExecutor(MycatColumnDefinition[] columnList, Iterator<Object[]> iterator) {
+  public DefExecutor(SimpleColumnDefinition[] columnList, Iterator<Object[]> iterator) {
     this.columnList = columnList;
     this.iterator = iterator;
   }
+  public DefExecutor(SimpleColumnDefinition[] columnList, Iterable iterable) {
+    this.columnList = columnList;
+    this.iterator = iterable.iterator();
+  }
 
   @Override
-  public MycatColumnDefinition[] columnDefList() {
+  public SimpleColumnDefinition[] columnDefList() {
     return columnList;
   }
 

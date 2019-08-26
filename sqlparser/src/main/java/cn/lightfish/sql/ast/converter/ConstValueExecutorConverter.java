@@ -1,4 +1,4 @@
-package cn.lightfish.sql.ast.expr.exprUtil;
+package cn.lightfish.sql.ast.converter;
 
 import cn.lightfish.sql.ast.expr.ValueExpr;
 import cn.lightfish.sql.ast.expr.booleanExpr.BooleanValueExpr;
@@ -31,7 +31,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import java.math.BigDecimal;
 
-class ConstValueExecutorTransfor extends MySqlASTVisitorAdapter {
+class ConstValueExecutorConverter extends MySqlASTVisitorAdapter {
 
   public ValueExpr value;
 

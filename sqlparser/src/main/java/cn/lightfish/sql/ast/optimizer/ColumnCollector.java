@@ -1,5 +1,6 @@
 package cn.lightfish.sql.ast.optimizer;
 
+import cn.lightfish.sql.ast.converter.Converters;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
@@ -13,15 +14,15 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class ColumnOptimizer extends MySqlASTVisitorAdapter {
+public class ColumnCollector extends MySqlASTVisitorAdapter {
 
-  final Map<SQLTableSource, SelectColumn> currentColumnList = new HashMap<>();
+  private final Map<SQLTableSource, Map<SQLExpr, SQLColumnDefinition>> tableSourceColumnMap = new HashMap<>();
 
   @Override
   public boolean visit(MySqlSelectQueryBlock x) {
     SQLTableSource from = x.getFrom();
     if (from != null) {
-      currentColumnList.put(from, new SelectColumn());
+      tableSourceColumnMap.put(from, new HashMap<>());
     }
     return super.visit(x);
   }
@@ -30,16 +31,16 @@ public class ColumnOptimizer extends MySqlASTVisitorAdapter {
   public void endVisit(MySqlSelectQueryBlock x) {
     SQLTableSource from = x.getFrom();
     if (from != null) {
-      SelectColumn selectColumn = currentColumnList.get(from);
+      Map<SQLExpr, SQLColumnDefinition> selectColumn = tableSourceColumnMap.get(from);
       if (selectColumn != null) {
         HashSet<SQLColumnDefinition> selectSet = new HashSet<>();
         for (SQLSelectItem sqlSelectItem : x.getSelectList()) {
-          SQLColumnDefinition columnDef = getColumnDef(sqlSelectItem.getExpr());
+          SQLColumnDefinition columnDef = Converters.getColumnDef(sqlSelectItem.getExpr());
           if (columnDef != null) {
             selectSet.add(columnDef);
           }
         }
-        for (Entry<SQLExpr, SQLColumnDefinition> entry : selectColumn.columnList
+        for (Entry<SQLExpr, SQLColumnDefinition> entry : selectColumn
             .entrySet()) {
           if (!selectSet.contains(entry.getValue())) {
             SQLExpr sqlExpr = entry.getKey().clone();
@@ -52,16 +53,6 @@ public class ColumnOptimizer extends MySqlASTVisitorAdapter {
       }
     }
     super.endVisit(x);
-  }
-
-  private SQLColumnDefinition getColumnDef(SQLExpr sqlExpr) {
-    SQLColumnDefinition resolvedColumn = null;
-    if (sqlExpr instanceof SQLIdentifierExpr) {
-      resolvedColumn = ((SQLIdentifierExpr) sqlExpr).getResolvedColumn();
-    } else if (sqlExpr instanceof SQLPropertyExpr) {
-      resolvedColumn = ((SQLPropertyExpr) sqlExpr).getResolvedColumn();
-    }
-    return resolvedColumn;
   }
 
 
@@ -87,25 +78,15 @@ public class ColumnOptimizer extends MySqlASTVisitorAdapter {
       resolvedColumn = ((SQLPropertyExpr) sqlExpr).getResolvedColumn();
       resolvedTableSource = ((SQLPropertyExpr) sqlExpr).getResolvedTableSource();
     }
-    SelectColumn selectColumn;
+    Map<SQLExpr, SQLColumnDefinition> selectColumn;
     if (resolvedTableSource != null && resolvedColumn != null) {
-      selectColumn = currentColumnList.get(resolvedTableSource);
-      if (selectColumn == null) {
-        selectColumn = new SelectColumn();
-        currentColumnList.put(resolvedTableSource, selectColumn);
-      }
-      selectColumn.columnList.put(sqlExpr, resolvedColumn);
+      selectColumn = tableSourceColumnMap.computeIfAbsent(resolvedTableSource, k -> new HashMap<>());
+      selectColumn.put(sqlExpr, resolvedColumn);
     }
   }
 
-  public static class SelectColumn {
-    final Map<SQLExpr, SQLColumnDefinition> columnList = new HashMap<>();
-    public Map<SQLExpr, SQLColumnDefinition> getColumnMap() {
-      return columnList;
-    }
+  public Map<SQLTableSource, Map<SQLExpr, SQLColumnDefinition>> getTableSourceColumnMap() {
+    return tableSourceColumnMap;
   }
 
-  public Map<SQLTableSource, SelectColumn> getDatasourceMap() {
-    return currentColumnList;
-  }
 }

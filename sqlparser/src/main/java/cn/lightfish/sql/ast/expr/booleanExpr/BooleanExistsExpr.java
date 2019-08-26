@@ -1,6 +1,6 @@
 package cn.lightfish.sql.ast.expr.booleanExpr;
 
-import cn.lightfish.sql.executor.Executor;
+import cn.lightfish.sql.executor.logicExecutor.Executor;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor

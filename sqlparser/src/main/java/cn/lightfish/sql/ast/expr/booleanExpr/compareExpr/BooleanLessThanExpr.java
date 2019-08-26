@@ -1,6 +1,6 @@
 package cn.lightfish.sql.ast.expr.booleanExpr.compareExpr;
 
-import cn.lightfish.sql.ast.RootExecutionContext;
+import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
 import cn.lightfish.sql.ast.expr.ValueExpr;
 import lombok.AllArgsConstructor;
@@ -8,7 +8,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class BooleanLessThanExpr implements BooleanExpr {
 
-  private final RootExecutionContext context;
+  private final RootSessionContext context;
   private final ValueExpr left;
   private final ValueExpr right;
 

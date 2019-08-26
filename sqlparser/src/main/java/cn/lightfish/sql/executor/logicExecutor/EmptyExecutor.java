@@ -1,13 +1,13 @@
-package cn.lightfish.sql.executor;
+package cn.lightfish.sql.executor.logicExecutor;
 
-import cn.lightfish.sql.schema.MycatColumnDefinition;
+import cn.lightfish.sql.schema.SimpleColumnDefinition;
 
 public enum  EmptyExecutor implements Executor {
 INSTANCE;
 
   @Override
-  public MycatColumnDefinition[] columnDefList() {
-    return new MycatColumnDefinition[0];
+  public SimpleColumnDefinition[] columnDefList() {
+    return new SimpleColumnDefinition[0];
   }
 
   @Override

@@ -1,17 +1,17 @@
 package cn.lightfish.sql.ast.expr.booleanExpr.compareExpr;
 
-import cn.lightfish.sql.ast.RootExecutionContext;
+import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
 import cn.lightfish.sql.ast.expr.ValueExpr;
 import java.util.Objects;
 
 public class BooleanEqualityExpr implements BooleanExpr {
 
-  private final RootExecutionContext context;
+  private final RootSessionContext context;
   private final ValueExpr left;
   private final ValueExpr right;
 
-  public BooleanEqualityExpr(RootExecutionContext context, ValueExpr left,
+  public BooleanEqualityExpr(RootSessionContext context, ValueExpr left,
       ValueExpr right) {
     this.context = context;
     this.left = left;

@@ -1,108 +1,52 @@
 package cn.lightfish.sql.schema;
 
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLName;
+import cn.lightfish.sql.context.RootSessionContext;
+import cn.lightfish.sql.ast.expr.SQLParser;
+import cn.lightfish.sql.ast.statement.StatementDispatcher;
+import cn.lightfish.sql.executor.DefExecutor;
+import cn.lightfish.sql.executor.UpdateExecutor;
+import cn.lightfish.sql.executor.logicExecutor.Executor;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLDeleteStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement.ValuesClause;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
-import io.mycat.beans.resultset.MycatResponse;
-import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import cn.lightfish.sql.console.MycatConsoleResult;
-import cn.lightfish.sql.console.MycatConsoleResultImpl;
-import cn.lightfish.sql.ast.expr.MycatParser;
-import cn.lightfish.sql.console.ResultOk;
-import cn.lightfish.sql.ast.expr.statement.StatementDispatcher;
-import io.mycat.sqlparser.util.dataLayout.InsertDataAffinity;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class MycatConsole {
+
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatConsole.class);
+  final RootSessionContext context = new RootSessionContext();
   MycatSchema currentSchema;
 
-
-  public Iterator<MycatConsoleResult> input(String sql) {
-    Iterator<SQLStatement> statementIterator = MycatParser.INSTANCE.parse(sql);
-    return new Iterator<MycatConsoleResult>() {
+  public Iterator<Executor> input(String sql) {
+    Iterator<SQLStatement> statementIterator = SQLParser.INSTANCE.parse(sql);
+    return new Iterator<Executor>() {
       @Override
       public boolean hasNext() {
         return statementIterator.hasNext();
       }
 
       @Override
-      public MycatConsoleResult next() {
+      public Executor next() {
         SQLStatement statement = statementIterator.next();
         StatementDispatcher statementDispatcher = new StatementDispatcher(MycatConsole.this);
         statement.accept(statementDispatcher);
         return response(statementDispatcher);
       }
 
-      private MycatConsoleResult response(StatementDispatcher mycatStatementVisitor) {
-        return mycatStatementVisitor.getConsoleResult();
+      private Executor response(StatementDispatcher mycatStatementVisitor) {
+        Executor consoleResult = mycatStatementVisitor.getConsoleResult();
+        return (consoleResult != null) ? consoleResult : UpdateExecutor.INSTACNE;
       }
     };
-  }
-
-  private void complie(SQLDeleteStatement statement) {
-    SQLName tableName = statement.getTableName();
-    SQLExpr where = statement.getWhere();
-
-  }
-
-  private InsertDataAffinity complie(MySqlUpdateStatement statement) {
-    return null;
-  }
-
-
-  private InsertDataAffinity complie(MySqlInsertStatement statement) {
-//    SQLExprTableSource tableSource = statement.getTableSource();
-//    SchemaObject tableSchema = tableSource.getSchemaObject();
-//    List<SQLExpr> columns = statement.getColumns();
-//    InsertDataAffinity dataAffinity = dataLayoutRespository
-//        .getInsertTableDataLayout(tableSource, columns);
-//    List<ValuesClause> valuesList = statement.getValuesList();
-//    for (ValuesClause valuesClause : valuesList) {
-//      List<SQLExpr> values = valuesClause.getValues();
-//      for (int i = 0; i < values.size(); i++) {
-//        SQLExpr sqlExpr = values.get(i);
-//        sqlExpr = constantFolding(sqlExpr);
-//        values.set(i, sqlExpr);
-//      }
-//      dataAffinity.insert(values);
-//    }
-//    dataAffinity.saveParseTree(statement);
-//    return dataAffinity;
-    return null;
-  }
-
-  private SQLExpr constantFolding(SQLExpr sqlExpr) {
-//    if (sqlExpr instanceof SQLValuableExpr) {
-//
-//    } else {
-//      sqlExpr.accept(SQL_EVAL_VISITOR);
-//      Object value = sqlExpr.getAttribute(SQLEvalVisitor.EVAL_VALUE);
-//      if (value != null) {
-//        sqlExpr = new SQLCharExpr(value.toString());
-//      }
-//    }
-
-    return sqlExpr;
-  }
-
-  private MycatResponse responseOk() {
-    return new MycatUpdateResponseImpl(0, 0, 0);
   }
 
   public static void main(String[] args) throws IOException, URISyntaxException {
@@ -111,10 +55,10 @@ public class MycatConsole {
     String text = new String(Files.readAllBytes(
         Paths.get(MycatConsole.class.getClassLoader().getResource("test.txt").toURI())
             .toAbsolutePath()));
-    Iterator<MycatConsoleResult> iterator = console.input(text);
+    Iterator<Executor> iterator = console.input(text);
     int id = 1;
     while (iterator.hasNext()) {
-      MycatConsoleResult result = iterator.next();
+      Executor result = iterator.next();
       if (result == null) {
         continue;
       }
@@ -122,11 +66,12 @@ public class MycatConsole {
       out.println("-------------------------------------------------------------------------");
       out.println("id:" + id);
       ++id;
-      if (result instanceof ResultOk) {
+      if (result instanceof UpdateExecutor) {
         out.println("ok");
         continue;
       }
-      String columnText = String.join("|", result.columnDefList());
+      String columnText = Arrays.stream(result.columnDefList()).map(i -> i.getColumnName()).collect(
+          Collectors.joining("|"));
 
       char[] w = new char[columnText.length()];
       Arrays.fill(w, '-');
@@ -134,7 +79,7 @@ public class MycatConsole {
       out.println(new String(w));
       out.println(columnText);
       out.println(new String(w));
-      Iterator<Object[]> rowIterator = result.rowIterator();
+      Iterator<Object[]> rowIterator = result;
       while (rowIterator.hasNext()) {
         Object[] rowList = rowIterator.next();
         String rowText = Arrays.asList(rowList).stream().map(i -> i.toString())
@@ -145,54 +90,46 @@ public class MycatConsole {
     System.out.println();
   }
 
-  public MycatConsoleResult createSchema(String databaseName) {
-    MycatSchema mycatSchema = MycatSchemaManager.INSTANCE.schemas.computeIfAbsent(databaseName, MycatSchema::new);
+  public boolean createSchema(String databaseName) {
+    MycatSchema mycatSchema = MycatSchemaManager.INSTANCE.schemas
+        .computeIfAbsent(databaseName, MycatSchema::new);
     if (currentSchema == null) {
       currentSchema = mycatSchema;
     }
-    return new ResultOk();
+    return true;
   }
 
-  public MycatConsoleResult showDatabase() {
-    MycatConsoleResultImpl mycatConsoleResult = new MycatConsoleResultImpl(1);
-    mycatConsoleResult.addColumn("Database");
+  public Executor showDatabase() {
+    SimpleColumnDefinition[] columnList = new SimpleColumnDefinition[]{
+        new SimpleColumnDefinition("Database", String.class)};
+    List<String[]> list = new ArrayList<>();
     for (String database : MycatSchemaManager.INSTANCE.schemas.keySet()) {
-      mycatConsoleResult.addRow(database);
+      list.add(new String[]{database});
     }
-
-    return mycatConsoleResult;
+    return new DefExecutor(columnList, list);
   }
 
-  public MycatConsoleResult createTable(MycatTable table) {
+  public void createTable(MycatTable table) {
     currentSchema.createTable(table);
-    return new ResultOk();
   }
 
-  public MycatConsoleResult dropDatabase(String databaseName) {
+  public void dropDatabase(String databaseName) {
     MycatSchemaManager.INSTANCE.schemas.remove(databaseName);
-    return new ResultOk();
   }
 
-  public MycatConsoleResult dropTable(String tableGroupName) {
+  public void dropTable(String tableGroupName) {
     currentSchema.dropTable(tableGroupName);
-    return new ResultOk();
   }
 
-  public MycatConsoleResult dropTable(List<String> nameList) {
+  public void dropTable(List<String> nameList) {
     currentSchema.dropTable(nameList);
-    return new ResultOk();
   }
 
   public MycatSchema getCurrnetSchema() {
     return currentSchema;
   }
 
-  public void delete(MycatTable table, int dataNodeIndex, MySqlInsertStatement x) {
-
-  }
-
-  public void insert(MycatTable table, Map<Integer, List<ValuesClause>> dataNodeIndex,
-      MySqlInsertStatement x) {
-
+  public RootSessionContext getContext() {
+    return context;
   }
 }

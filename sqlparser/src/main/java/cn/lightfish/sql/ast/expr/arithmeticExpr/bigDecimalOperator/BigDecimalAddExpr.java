@@ -1,6 +1,6 @@
 package cn.lightfish.sql.ast.expr.arithmeticExpr.bigDecimalOperator;
 
-import cn.lightfish.sql.ast.RootExecutionContext;
+import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.ast.expr.numberExpr.BigDecimalExpr;
 import cn.lightfish.sql.ast.expr.ValueExpr;
 import java.math.BigDecimal;
@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 public class BigDecimalAddExpr implements BigDecimalExpr {
 
-  private final RootExecutionContext context;
+  private final RootSessionContext context;
   private final ValueExpr left;
   private final ValueExpr right;
 

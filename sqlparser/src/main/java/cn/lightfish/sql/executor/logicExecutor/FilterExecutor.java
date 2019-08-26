@@ -1,7 +1,7 @@
-package cn.lightfish.sql.executor;
+package cn.lightfish.sql.executor.logicExecutor;
 
 import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
-import cn.lightfish.sql.schema.MycatColumnDefinition;
+import cn.lightfish.sql.schema.SimpleColumnDefinition;
 
 public class FilterExecutor implements Executor {
 
@@ -16,7 +16,7 @@ public class FilterExecutor implements Executor {
 
 
   @Override
-  public  MycatColumnDefinition[] columnDefList() {
+  public  SimpleColumnDefinition[] columnDefList() {
     return executor.columnDefList();
   }
 

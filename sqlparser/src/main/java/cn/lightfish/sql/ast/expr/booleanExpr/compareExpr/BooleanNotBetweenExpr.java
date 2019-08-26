@@ -1,6 +1,6 @@
 package cn.lightfish.sql.ast.expr.booleanExpr.compareExpr;
 
-import cn.lightfish.sql.ast.RootExecutionContext;
+import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
 import cn.lightfish.sql.ast.expr.ValueExpr;
 
@@ -9,7 +9,7 @@ public class BooleanNotBetweenExpr implements BooleanExpr {
   final BooleanBetweenExpr betweenExpr;
 
   public BooleanNotBetweenExpr(
-      final RootExecutionContext context,
+      final RootSessionContext context,
       final ValueExpr expr,
       final ValueExpr left,
       final ValueExpr right) {

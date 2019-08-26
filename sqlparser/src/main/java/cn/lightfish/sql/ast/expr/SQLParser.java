@@ -4,22 +4,19 @@ import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.Che
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveAllColumn;
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveIdentifierAlias;
 
+import cn.lightfish.sql.context.GlobalContext;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLAlterStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLDDLStatement;
-import com.alibaba.fastsql.sql.optimizer.Optimizers;
 import com.alibaba.fastsql.sql.parser.SQLParserFeature;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
-import com.alibaba.fastsql.sql.repository.SchemaRepository;
 import java.util.Iterator;
 import java.util.List;
 
-public enum MycatParser {
+public enum SQLParser {
   INSTANCE;
-  public final static SchemaRepository CACHE_REPOSITORY = new SchemaRepository(DbType.mysql);
-
   public Iterator<SQLStatement> parse(String sql) {
     SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql,
         SQLParserFeature.EnableSQLBinaryOpExprGroup,
@@ -27,10 +24,10 @@ public enum MycatParser {
         SQLParserFeature.OptimizedForParameterized);
     List<SQLStatement> sqlStatements = parser.parseStatementList();
     for (SQLStatement sqlStatement : sqlStatements) {
-      if (sqlStatement instanceof SQLAlterStatement||sqlStatement instanceof SQLDDLStatement){
-        CACHE_REPOSITORY.accept(sqlStatement);
+      if (sqlStatement instanceof SQLAlterStatement || sqlStatement instanceof SQLDDLStatement) {
+        GlobalContext.INSTANCE.CACHE_REPOSITORY.accept(sqlStatement);
       }
-      CACHE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn,
+      GlobalContext.INSTANCE.CACHE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn,
           ResolveIdentifierAlias,
           CheckColumnAmbiguous);
     }
