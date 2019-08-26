@@ -50,6 +50,8 @@ public class ExecutorUtil {
       return new DateConstExpr((Date) value);
     } else if (type == java.util.Date.class) {
       return new DateConstExpr((Date) value);
+    }else if (java.util.Date.class.isAssignableFrom(type)){
+      return new DateConstExpr((Date) value);
     }
     throw new UnsupportedOperationException();
   }
