@@ -1,42 +1,45 @@
 package cn.lightfish.sql.ast;
 
-import static io.mycat.sqlparser.MycatParser.CACHE_REPOSITORY;
+import static cn.lightfish.sql.ast.expr.MycatParser.CACHE_REPOSITORY;
 
-import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalAddExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalDivisionExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalMultipyExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.bigDecimalOperator.BigDecimalSubtractExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleAddExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleDivisionExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleMultipyExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.doubleOperator.DoubleSubtractExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongAddExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongDivisionExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongMultipyExpr;
-import cn.lightfish.sql.ast.arithmeticExpr.longOperator.LongSubtractExpr;
-import cn.lightfish.sql.ast.booleanExpr.BooleanExistsExpr;
-import cn.lightfish.sql.ast.booleanExpr.BooleanExpr;
-import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanEqualityExpr;
-import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanLessThanExpr;
-import cn.lightfish.sql.ast.booleanExpr.compareExpr.BooleanNotEqualityExpr;
-import cn.lightfish.sql.ast.booleanExpr.logicalExpr.BooleanAndExpr;
-import cn.lightfish.sql.ast.booleanExpr.logicalExpr.BooleanOrExpr;
-import cn.lightfish.sql.ast.collector.ColumnCollector;
-import cn.lightfish.sql.ast.collector.ColumnCollector.SelectColumn;
-import cn.lightfish.sql.ast.collector.SubqueryCollector;
-import cn.lightfish.sql.ast.collector.SubqueryCollector.CorrelatedQuery;
-import cn.lightfish.sql.ast.dateExpr.DateExpr;
-import cn.lightfish.sql.ast.executor.ContextExecutor;
-import cn.lightfish.sql.ast.executor.FilterExecutor;
-import cn.lightfish.sql.ast.executor.OnlyProjectExecutor;
-import cn.lightfish.sql.ast.function.FunctionManager;
-import cn.lightfish.sql.ast.numberExpr.BigDecimalExpr;
-import cn.lightfish.sql.ast.numberExpr.DoubleExpr;
-import cn.lightfish.sql.ast.numberExpr.LongExpr;
-import cn.lightfish.sql.ast.stringExpr.StringConstExpr;
-import cn.lightfish.sql.ast.stringExpr.StringExpr;
-import cn.lightfish.sql.ast.valueExpr.NullConstExpr;
-import cn.lightfish.sql.ast.valueExpr.ValueExpr;
+import cn.lightfish.sql.executor.Executor;
+import cn.lightfish.sql.executor.ProjectExecutor;
+import cn.lightfish.sql.ast.expr.exprUtil.ExprUtil;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.bigDecimalOperator.BigDecimalAddExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.bigDecimalOperator.BigDecimalDivisionExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.bigDecimalOperator.BigDecimalMultipyExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.bigDecimalOperator.BigDecimalSubtractExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.doubleOperator.DoubleAddExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.doubleOperator.DoubleDivisionExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.doubleOperator.DoubleMultipyExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.doubleOperator.DoubleSubtractExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.longOperator.LongAddExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.longOperator.LongDivisionExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.longOperator.LongMultipyExpr;
+import cn.lightfish.sql.ast.expr.arithmeticExpr.longOperator.LongSubtractExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExistsExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.compareExpr.BooleanEqualityExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.compareExpr.BooleanLessThanExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.compareExpr.BooleanNotEqualityExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.logicalExpr.BooleanAndExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.logicalExpr.BooleanOrExpr;
+import cn.lightfish.sql.ast.optimizer.ColumnOptimizer;
+import cn.lightfish.sql.ast.optimizer.ColumnOptimizer.SelectColumn;
+import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer;
+import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer.CorrelatedQuery;
+import cn.lightfish.sql.ast.expr.dateExpr.DateExpr;
+import cn.lightfish.sql.executor.ContextExecutor;
+import cn.lightfish.sql.executor.FilterExecutor;
+import cn.lightfish.sql.executor.OnlyProjectExecutor;
+import cn.lightfish.sql.ast.expr.functionExpr.FunctionManager;
+import cn.lightfish.sql.ast.expr.numberExpr.BigDecimalExpr;
+import cn.lightfish.sql.ast.expr.numberExpr.DoubleExpr;
+import cn.lightfish.sql.ast.expr.numberExpr.LongExpr;
+import cn.lightfish.sql.ast.expr.stringExpr.StringConstExpr;
+import cn.lightfish.sql.ast.expr.stringExpr.StringExpr;
+import cn.lightfish.sql.ast.expr.valueExpr.NullConstExpr;
+import cn.lightfish.sql.ast.expr.ValueExpr;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
@@ -62,8 +65,8 @@ import com.alibaba.fastsql.sql.ast.statement.SQLUnnestTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLValuesTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.fastsql.sql.optimizer.Optimizers;
-import io.mycat.schema.MycatColumnDefinition;
-import io.mycat.schema.MycatSchemaManager;
+import cn.lightfish.sql.schema.MycatColumnDefinition;
+import cn.lightfish.sql.schema.MycatSchemaManager;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
@@ -117,7 +120,6 @@ public class Complier {
   public void createTableSource(SQLTableSource tableSource, SQLExpr where,
       List<SQLColumnDefinition> columnDefinitions, long offset, long rowCount) {
     if (tableSource == null) {
-      context.createNullTableSource();
       return;
     }
     if (tableSource instanceof SQLExprTableSource) {
@@ -140,7 +142,7 @@ public class Complier {
     }
   }
 
-  private void createTableSource(SQLExprTableSource tableSource, SQLExpr where,
+  public void createTableSource(SQLExprTableSource tableSource, SQLExpr where,
       List<SQLColumnDefinition> columnDefinitions, long offset, long rowCount) {
     String schema = tableSource.getSchemaObject().getSchema().getName();
     String tableName = tableSource.getTableName();
@@ -255,7 +257,7 @@ public class Complier {
     } else if (sqlExpr instanceof SQLName) {
       throw new UnsupportedOperationException();
     } else if (sqlExpr instanceof SQLValuableExpr) {
-      return ExecutorUtil.transfor((SQLValuableExpr) sqlExpr);
+      return ExprUtil.transfor((SQLValuableExpr) sqlExpr);
     } else if (sqlExpr instanceof SQLVariantRefExpr) {
       SQLVariantRefExpr variantRefExpr = (SQLVariantRefExpr) sqlExpr;
       return createVariantRef(variantRefExpr);
@@ -273,13 +275,13 @@ public class Complier {
     throw new UnsupportedOperationException();
   }
 
-  private BooleanExpr createSQLExistsExpr(SQLExistsExpr existsExpr) {
+  public BooleanExpr createSQLExistsExpr(SQLExistsExpr existsExpr) {
     return new BooleanExistsExpr(
         createSubQuery(existsExpr.getSubQuery().getQueryBlock(), SubQueryType.EXISTS),
         existsExpr.isNot());
   }
 
-  private Executor createSubQuery(SQLSelectQueryBlock queryBlock,
+  public Executor createSubQuery(SQLSelectQueryBlock queryBlock,
       SubQueryType type) {
     long row;
     List<SQLSelectItem> selectList = queryBlock.getSelectList();
@@ -317,7 +319,7 @@ public class Complier {
     return createProject(selectList, null);
   }
 
-  private ValueExpr createCast(ValueExpr value, Class<?> targetType) {
+  public ValueExpr createCast(ValueExpr value, Class<?> targetType) {
     Objects.requireNonNull(targetType);
     Class orginClass = value.getType();
     if (orginClass == targetType) {
@@ -393,7 +395,7 @@ public class Complier {
     return NullConstExpr.INSTANCE;
   }
 
-  private ValueExpr createVariantRef(SQLVariantRefExpr variantRefExpr) {
+  public ValueExpr createVariantRef(SQLVariantRefExpr variantRefExpr) {
     if (variantRefExpr.isGlobal()) {
       return new StringConstExpr((String) context.getGlobalVariant(variantRefExpr.getName()));
     } else if (variantRefExpr.isSession()) {
@@ -403,23 +405,23 @@ public class Complier {
     }
   }
 
-  private ValueExpr createMethod(SQLMethodInvokeExpr methodInvokeExpr) {
+  public ValueExpr createMethod(SQLMethodInvokeExpr methodInvokeExpr) {
     String methodName = methodInvokeExpr.getMethodName();
     List<SQLExpr> arguments = methodInvokeExpr.getArguments();
     if (arguments == null || arguments.isEmpty()) {
       Object value = FunctionManager.INSTANCE.getFunctionByName(methodName).apply(null);
-      return ExecutorUtil.transfor(value);
+      return ExprUtil.transfor(value);
     } else {
       Object[] args = new Object[arguments.size()];
       for (int i = 0; i < args.length; i++) {
         args[i] = createExpr(arguments.get(i)).getValue();
       }
       Object value = FunctionManager.INSTANCE.getFunctionByName(methodName).apply(args);
-      return ExecutorUtil.transfor(value);
+      return ExprUtil.transfor(value);
     }
   }
 
-  private void checkReturnType(ValueExpr leftExpr, ValueExpr rightExpr,
+  public void checkReturnType(ValueExpr leftExpr, ValueExpr rightExpr,
       Class clazz, SQLExpr sqlExpr) {
     if (leftExpr.getType().equals(clazz) && clazz.equals(rightExpr.getType())) {
 
@@ -430,7 +432,7 @@ public class Complier {
     }
   }
 
-  private <T extends Comparable<T>> ValueExpr<T> getFieldExecutor(
+  public <T extends Comparable<T>> ValueExpr<T> getFieldExecutor(
       SQLColumnDefinition resolvedColumn) {
     int index = columnIndexMap.getOrDefault(resolvedColumn, -1);
     Class type = context.scopeType.get(index);
@@ -446,13 +448,8 @@ public class Complier {
       }
     };
   }
-//
-//  public Executor complieNormalQuery(MySqlSelectQueryBlock normalQuery) {
-//    createTableSource(normalQuery.getFrom(), normalQuery.getWhere(),null);
-//    return null;
-//  }
 
-  private Executor createProject(List<SQLSelectItem> selectItems,
+  public Executor createProject(List<SQLSelectItem> selectItems,
       List<String> aliasList) {
     int size = aliasList != null ? aliasList.size() : selectItems.size();
     MycatColumnDefinition[] columnDefinitions = new MycatColumnDefinition[size];
@@ -466,7 +463,7 @@ public class Complier {
     return createProjectExecutor(columnDefinitions, exprs);
   }
 
-  private Executor createProjectExecutor(MycatColumnDefinition[] columnDefinitions,
+  public Executor createProjectExecutor(MycatColumnDefinition[] columnDefinitions,
       ValueExpr[] exprs) {
     if (context.hasDatasource()) {
       return new ProjectExecutor(columnDefinitions, exprs, context.rootExecutor);
@@ -510,10 +507,10 @@ public class Complier {
       aliasList.add(sqlSelectItem.toString());
     }
     Optimizers.optimize(x, DbType.mysql, CACHE_REPOSITORY);
-    ColumnCollector columnCollector = new ColumnCollector();
+    ColumnOptimizer columnCollector = new ColumnOptimizer();
     x.accept(columnCollector);
     this.initExecuteScope(columnCollector.getDatasourceMap());
-    SubqueryCollector subqueryCollector = new SubqueryCollector();
+    SubqueryOptimizer subqueryCollector = new SubqueryOptimizer();
     x.accept(subqueryCollector);
     this.correlateQueries = subqueryCollector.getCorrelateQueries();
     this.normalQueries = subqueryCollector.getNormalQueries();
