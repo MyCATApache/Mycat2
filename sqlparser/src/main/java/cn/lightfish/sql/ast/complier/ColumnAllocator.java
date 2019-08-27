@@ -2,16 +2,19 @@ package cn.lightfish.sql.ast.complier;
 
 import cn.lightfish.sql.ast.SQLTypeMap;
 import cn.lightfish.sql.ast.expr.ValueExpr;
-import cn.lightfish.sql.schema.SimpleColumnDefinition;
+import cn.lightfish.sql.schema.MycatSchemaManager;
+import cn.lightfish.sql.schema.MycatTable;
+import cn.lightfish.sql.schema.TableColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.repository.SchemaObject;
 import java.util.HashMap;
 import java.util.List;
 
 public class ColumnAllocator {
 
-  private ComplierContext complierContext;
+  private final ComplierContext complierContext;
   private final HashMap<SQLColumnDefinition, Integer> columnIndexMap;
   private final HashMap<SQLTableSource, List<SQLColumnDefinition>> tableSourceColumnMap;
   private final HashMap<SQLTableSource, Integer> tableSourceColumnStartIndexMap;
@@ -44,14 +47,17 @@ public class ColumnAllocator {
     };
   }
 
-  public SimpleColumnDefinition[] getColumnDefinition(SQLExprTableSource tableSource) {
+  public TableColumnDefinition[] getLeafTableColumnDefinition(SQLExprTableSource tableSource) {
+    SchemaObject tableObject = tableSource.getSchemaObject();
+    MycatTable table = MycatSchemaManager.INSTANCE
+        .getTable(tableObject.getSchema().getName(), tableObject.getName());
+    List<TableColumnDefinition> definitions = table.getColumnDefinitions();
     List<SQLColumnDefinition> columnDefinitions = tableSourceColumnMap.get(tableSource);
-    SimpleColumnDefinition[] mycatColumnDefinitions = new SimpleColumnDefinition[columnDefinitions
+    TableColumnDefinition[] mycatColumnDefinitions = new TableColumnDefinition[columnDefinitions
         .size()];
     for (int i = 0; i < mycatColumnDefinitions.length; i++) {
       SQLColumnDefinition columnDefinition = columnDefinitions.get(i);
-      mycatColumnDefinitions[i] = new SimpleColumnDefinition(columnDefinition.getColumnName(),
-          SQLTypeMap.toClass(columnDefinition.jdbcType()));
+      mycatColumnDefinitions[i] = table.getColumnByName(columnDefinition.getColumnName());
     }
     return mycatColumnDefinitions;
   }

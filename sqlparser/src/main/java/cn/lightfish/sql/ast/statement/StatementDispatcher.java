@@ -1,16 +1,17 @@
 package cn.lightfish.sql.ast.statement;
 
 import cn.lightfish.sql.ast.complier.ComplierContext;
-import cn.lightfish.sql.ast.complier.ExprComplier;
 import cn.lightfish.sql.ast.SQLTypeMap;
 import cn.lightfish.sql.ast.converter.Converters;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
 import cn.lightfish.sql.persistent.InsertPersistent;
 import cn.lightfish.sql.persistent.PersistentManager;
+import cn.lightfish.sql.schema.MycatSchema;
 import cn.lightfish.sql.schema.SimpleColumnDefinition;
 import cn.lightfish.sql.schema.MycatConsole;
 import cn.lightfish.sql.schema.MycatPartition;
 import cn.lightfish.sql.schema.MycatTable;
+import cn.lightfish.sql.schema.TableColumnDefinition;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr;
@@ -37,6 +38,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
@@ -64,15 +66,15 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
   @Override
   public boolean visit(MySqlInsertStatement x) {
-    MycatTable table = console.getCurrnetSchema().getTableByName(x.getTableName().getSimpleName());
+    MycatTable table = console.getCurrentSchema().getTableByName(x.getTableName().getSimpleName());
     List<SQLExpr> columns = x.getColumns();
     int count = columns.size();
-    String[] columnNameList = new String[count];
-    for (int i = 0; i < count; i++) {
-      columnNameList[i] = Converters.getColumnName(columns.get(i));
-    }
+//    String[] columnNameList = new String[count];
+//    for (int i = 0; i < count; i++) {
+//      columnNameList[i] = Converters.getColumnName(columns.get(i));
+//    }
     Map<String,Object> persistentAttribute = new HashMap<>();
-    InsertPersistent insertPersistent = PersistentManager.INSTANCE.getInsertPersistent(console,table,columnNameList, persistentAttribute);
+    InsertPersistent insertPersistent = PersistentManager.INSTANCE.getInsertPersistent(console,table,null, persistentAttribute);
     List<ValuesClause> valuesList = x.getValuesList();
     for (ValuesClause valuesClause : valuesList) {
       List<SQLExpr> values = valuesClause.getValues();
@@ -101,17 +103,19 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
   @Override
   public boolean visit(MySqlCreateTableStatement x) {
+    MycatSchema currnetSchema = console.getCurrentSchema();
+    Objects.requireNonNull(currnetSchema);
     String tableName = x.getTableSource().getSchemaObject().getName();
     List<SQLTableElement> tableElementList =
         x.getTableElementList() == null ? Collections.emptyList() : x.getTableElementList();
-    List<SimpleColumnDefinition> columnDefinitions = new ArrayList<>(tableElementList.size());
+    List<TableColumnDefinition> columnDefinitions = new ArrayList<>(tableElementList.size());
     String primaryKey = null;
     for (SQLTableElement sqlTableElement : tableElementList) {
       if (sqlTableElement instanceof SQLColumnDefinition) {
         SQLColumnDefinition columnDefinition = (SQLColumnDefinition) sqlTableElement;
         String columnName = columnDefinition.getColumnName();
         SQLDataType dataType = columnDefinition.getDataType();
-        SimpleColumnDefinition mycatColumnDefinition = new SimpleColumnDefinition(columnName,
+        TableColumnDefinition mycatColumnDefinition = new TableColumnDefinition(columnName,
             SQLTypeMap.toClass(dataType.jdbcType()));
         columnDefinitions.add(mycatColumnDefinition);
       } else if (sqlTableElement instanceof SQLColumnPrimaryKey) {
@@ -122,10 +126,10 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
     SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) x
         .getDbPartitionBy();//指定分库键和分库算法，不支持按照时间分库；
     if (dbPartitionBy != null) {
-      console.createTable(new MycatTable(tableName, columnDefinitions,
+      console.createTable(new MycatTable(currnetSchema,tableName, columnDefinitions,
           getMycatPartition(x, primaryKey, dbPartitionBy)));
     } else {
-      console.createTable(new MycatTable(tableName, columnDefinitions, x.isBroadCast()));
+      console.createTable(new MycatTable(currnetSchema,tableName, columnDefinitions, x.isBroadCast()));
     }
     return super.visit(x);
   }
@@ -183,7 +187,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
   @Override
   public boolean visit(MySqlDeleteStatement x) {
-    MycatTable table = console.getCurrnetSchema().getTableByName(x.getTableName().toString());
+    MycatTable table = console.getCurrentSchema().getTableByName(x.getTableName().toString());
     SQLExpr where = x.getWhere();
     return super.visit(x);
   }

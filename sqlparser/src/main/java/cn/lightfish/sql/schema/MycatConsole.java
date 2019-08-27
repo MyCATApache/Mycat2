@@ -1,10 +1,11 @@
 package cn.lightfish.sql.schema;
 
-import cn.lightfish.sql.context.RootSessionContext;
-import cn.lightfish.sql.ast.expr.SQLParser;
+import cn.lightfish.sql.ast.SQLParser;
 import cn.lightfish.sql.ast.statement.StatementDispatcher;
+import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.executor.DefExecutor;
-import cn.lightfish.sql.executor.UpdateExecutor;
+import cn.lightfish.sql.executor.EmptyExecutor;
+import cn.lightfish.sql.executor.PhysicsExecutorRunner;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.logTip.MycatLogger;
@@ -24,6 +25,7 @@ public class MycatConsole {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatConsole.class);
   final RootSessionContext context = new RootSessionContext();
+  final PhysicsExecutorRunner runner = new PhysicsExecutorRunner();
   MycatSchema currentSchema;
 
   public Iterator<Executor> input(String sql) {
@@ -44,7 +46,7 @@ public class MycatConsole {
 
       private Executor response(StatementDispatcher mycatStatementVisitor) {
         Executor consoleResult = mycatStatementVisitor.getConsoleResult();
-        return (consoleResult != null) ? consoleResult : UpdateExecutor.INSTACNE;
+        return (consoleResult != null) ? runner.run(MycatConsole.this) : EmptyExecutor.INSTACNE;
       }
     };
   }
@@ -66,7 +68,7 @@ public class MycatConsole {
       out.println("-------------------------------------------------------------------------");
       out.println("id:" + id);
       ++id;
-      if (result instanceof UpdateExecutor) {
+      if (result instanceof EmptyExecutor) {
         out.println("ok");
         continue;
       }
@@ -125,7 +127,7 @@ public class MycatConsole {
     currentSchema.dropTable(nameList);
   }
 
-  public MycatSchema getCurrnetSchema() {
+  public MycatSchema getCurrentSchema() {
     return currentSchema;
   }
 

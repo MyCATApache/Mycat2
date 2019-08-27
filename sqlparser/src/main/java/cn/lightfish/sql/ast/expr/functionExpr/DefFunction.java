@@ -4,7 +4,7 @@ import java.lang.invoke.MethodHandle;
 import java.util.function.Function;
 
 
-public class DefFunction implements Function<Object, Object> {
+public class DefFunction implements Function<Object[], Object> {
 
   final String methodName;
   final boolean varArgs;
@@ -44,7 +44,7 @@ public class DefFunction implements Function<Object, Object> {
   }
 
   @Override
-  public Object apply(Object objects) {
-    return objects==null? invoke(): invoke(objects);
+  public Object apply(Object[] objects) {
+    return  invoke(objects);
   }
 }

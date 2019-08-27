@@ -1,9 +1,10 @@
-package cn.lightfish.sql.executor.logicExecutor;
+package cn.lightfish.sql.executor;
 
+import cn.lightfish.sql.executor.logicExecutor.Executor;
 import cn.lightfish.sql.schema.SimpleColumnDefinition;
 
-public enum  EmptyExecutor implements Executor {
-INSTANCE;
+public enum EmptyExecutor implements Executor {
+  INSTACNE;
 
   @Override
   public SimpleColumnDefinition[] columnDefList() {

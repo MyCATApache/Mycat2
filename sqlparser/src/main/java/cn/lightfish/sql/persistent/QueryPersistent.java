@@ -1,10 +1,9 @@
-package cn.lightfish.sql.executor;
+package cn.lightfish.sql.persistent;
 
 import cn.lightfish.sql.executor.logicExecutor.Executor;
 import cn.lightfish.sql.schema.SimpleColumnDefinition;
 
-public enum UpdateExecutor implements Executor {
-  INSTACNE;
+public class QueryPersistent implements Executor {
 
   @Override
   public SimpleColumnDefinition[] columnDefList() {

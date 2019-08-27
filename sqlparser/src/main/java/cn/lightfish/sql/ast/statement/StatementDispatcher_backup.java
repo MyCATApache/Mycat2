@@ -62,7 +62,7 @@
 //
 //  @Override
 //  public boolean visit(MySqlInsertStatement x) {
-//    MycatTable table = console.getCurrnetSchema().getTableByName(x.getTableName().getSimpleName());
+//    MycatTable table = console.getCurrentSchema().getTableByName(x.getTableName().getSimpleName());
 //    List<SQLExpr> columns = x.getColumns();
 //    int count = columns.size();
 //    MycatPartition partition = table.getPartition();
@@ -123,7 +123,7 @@
 //
 //  @Override
 //  public boolean visit(MySqlCreateTableStatement x) {
-//    String tableName = x.getLogicTableSource().getSchemaObject().getName();
+//    String tableName = x.getLogicLeafTableSource().getSchemaObject().getName();
 //    List<SQLTableElement> tableElementList =
 //        x.getTableElementList() == null ? Collections.emptyList() : x.getTableElementList();
 //    List<MycatColumnDefinition> columnDefinitions = new ArrayList<>(tableElementList.size());
@@ -205,7 +205,7 @@
 //
 //  @Override
 //  public boolean visit(MySqlDeleteStatement x) {
-//    MycatTable table = console.getCurrnetSchema().getTableByName(x.getTableName().toString());
+//    MycatTable table = console.getCurrentSchema().getTableByName(x.getTableName().toString());
 //    SQLExpr where = x.getWhere();
 //    return super.visit(x);
 //  }

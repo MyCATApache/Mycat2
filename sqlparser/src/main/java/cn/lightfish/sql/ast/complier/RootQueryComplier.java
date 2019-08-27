@@ -25,19 +25,26 @@ public class RootQueryComplier {
   public Executor complieRootQuery(SQLSelectStatement x) {
     SQLSelectQueryBlock rootQuery = x.getSelect().getQueryBlock();
     ProjectComplier projectComplier = context.getProjectComplier();
-    TableSourceComplier tableSourceComplier = context.getTableSourceComplier();
     ExprComplier exprComplier = context.getExprComplier();
     List<String> aliasList = projectComplier.exractColumnName(rootQuery);
     optimizeAst(x);
     createColumnAllocator(x);
     collectSubQuery(x);
-    Executor rootTableSource = tableSourceComplier.createTableSource(rootQuery.getFrom(),
-        rootQuery.getWhere(), 0, -1);
+    Executor executor = context.createTableSource(rootQuery.getFrom(), rootQuery.getWhere(), 0, -1);
+    executor = createFilter(rootQuery, executor, exprComplier);
+    executor = projectComplier
+        .createProject(rootQuery.getSelectList(), aliasList, executor);
+    context.runtimeContext.setRootProject(executor);
+    return executor;
+  }
+
+  private Executor createFilter(SQLSelectQueryBlock rootQuery,
+      Executor rootTableSource, ExprComplier exprComplier) {
     if (rootQuery.getWhere() != null) {
       rootTableSource = new FilterExecutor(rootTableSource,
           (BooleanExpr) exprComplier.createExpr(rootQuery.getWhere()));
     }
-    return projectComplier.createProject(rootQuery.getSelectList(), aliasList, rootTableSource);
+    return rootTableSource;
   }
 
 

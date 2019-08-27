@@ -4,9 +4,19 @@ import cn.lightfish.sql.ast.optimizer.ColumnCollector;
 import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer;
 import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer.CorrelatedQuery;
 import cn.lightfish.sql.context.RootSessionContext;
+import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.executor.logicExecutor.LogicLeafTableExecutor;
+import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLLateralViewTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLSubqueryTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLUnionQueryTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLUnnestTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLValuesTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +34,7 @@ public class ComplierContext {
   private final RootQueryComplier rootQueryComplier = new RootQueryComplier(this);
   private final ExprComplier exprComplier = new ExprComplier(this);
   private final ProjectComplier projectComplier = new ProjectComplier(this);
+  private final SubQueryComplier subQueryComplier = new SubQueryComplier(this);
 
   public ComplierContext(RootSessionContext runtimeContext) {
     this.runtimeContext = runtimeContext;
@@ -54,6 +65,33 @@ public class ComplierContext {
     this.normalQueries = subqueryCollector.getNormalQueries();
   }
 
+
+  public Executor createTableSource(SQLTableSource tableSource, SQLExpr where,
+      long offset, long rowCount) {
+    if (tableSource == null) {
+      return null;
+    }
+    if (tableSource instanceof SQLExprTableSource) {
+      SQLExprTableSource table = (SQLExprTableSource) tableSource;
+      return tableSourceComplier.createLeafTableSource(table, where, offset, rowCount);
+    } else if (tableSource instanceof SQLSubqueryTableSource) {
+      tableSourceComplier.createTableSource((SQLSubqueryTableSource)tableSource);
+    } else if (tableSource instanceof SQLJoinTableSource) {
+      tableSourceComplier.createTableSource((SQLJoinTableSource)tableSource);
+    } else if (tableSource instanceof SQLUnionQueryTableSource) {
+      tableSourceComplier.createTableSource((SQLUnionQueryTableSource)tableSource);
+    } else if (tableSource instanceof SQLUnnestTableSource) {
+      tableSourceComplier.createTableSource((SQLUnnestTableSource)tableSource);
+    } else if (tableSource instanceof SQLLateralViewTableSource) {
+      tableSourceComplier.createTableSource((SQLLateralViewTableSource)tableSource);
+    } else if (tableSource instanceof SQLValuesTableSource) {
+      tableSourceComplier.createTableSource((SQLValuesTableSource)tableSource);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+    throw new UnsupportedOperationException();
+  }
+
   public TableSourceComplier getTableSourceComplier() {
     return tableSourceComplier;
   }
@@ -72,5 +110,13 @@ public class ComplierContext {
 
   public ColumnAllocator getColumnAllocatior() {
     return columnAllocatior;
+  }
+
+  public SubQueryComplier getSubQueryComplier() {
+    return subQueryComplier;
+  }
+
+  public void registerLeafExecutor(LogicLeafTableExecutor tableExecuter) {
+    runtimeContext.leafExecutor.add(tableExecuter);
   }
 }

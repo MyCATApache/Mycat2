@@ -2,7 +2,6 @@ package cn.lightfish.sql.ast.complier;
 
 import cn.lightfish.sql.ast.expr.ValueExpr;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
-import cn.lightfish.sql.executor.logicExecutor.LogicTableExecutor;
 import cn.lightfish.sql.executor.logicExecutor.OnlyProjectExecutor;
 import cn.lightfish.sql.executor.logicExecutor.ProjectExecutor;
 import cn.lightfish.sql.schema.SimpleColumnDefinition;

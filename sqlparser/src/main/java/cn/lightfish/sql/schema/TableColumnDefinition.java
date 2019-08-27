@@ -2,15 +2,17 @@ package cn.lightfish.sql.schema;
 
 public class TableColumnDefinition extends SimpleColumnDefinition {
 
-  final MycatTable table;
+  MycatTable table;
 
-  public TableColumnDefinition(String columnName, Class type,
-      MycatTable table) {
+  public TableColumnDefinition(String columnName, Class type) {
     super(columnName, type);
-    this.table = table;
   }
 
   public MycatTable getTable() {
     return table;
+  }
+
+  public void setTable(MycatTable table) {
+    this.table = table;
   }
 }

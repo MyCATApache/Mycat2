@@ -1,4 +1,4 @@
-package cn.lightfish.sql.ast.expr;
+package cn.lightfish.sql.ast;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.CheckColumnAmbiguous;
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveAllColumn;

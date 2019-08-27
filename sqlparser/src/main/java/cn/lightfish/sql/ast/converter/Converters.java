@@ -6,6 +6,7 @@ import cn.lightfish.sql.ast.expr.numberExpr.BigDecimalConstExpr;
 import cn.lightfish.sql.ast.expr.numberExpr.DoubleConstExpr;
 import cn.lightfish.sql.ast.expr.numberExpr.LongConstExpr;
 import cn.lightfish.sql.ast.expr.stringExpr.StringConstExpr;
+import cn.lightfish.sql.ast.expr.valueExpr.NullConstExpr;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
@@ -17,6 +18,9 @@ import java.sql.Date;
 public class Converters {
 
   public static ValueExpr transfor(Object value) {
+    if (value == null){
+      return NullConstExpr.INSTANCE;
+    }
     if (value instanceof String) {
       return new StringConstExpr(value.toString());
     } else if (value instanceof Long) {

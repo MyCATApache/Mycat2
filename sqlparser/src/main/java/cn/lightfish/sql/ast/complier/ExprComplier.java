@@ -32,7 +32,6 @@ import cn.lightfish.sql.ast.expr.stringExpr.StringExpr;
 import cn.lightfish.sql.ast.expr.valueExpr.NullConstExpr;
 import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
-import cn.lightfish.sql.executor.logicExecutor.LogicTableExecutor;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
@@ -43,18 +42,14 @@ import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
-import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.MessageFormat;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 public class ExprComplier {
 
@@ -166,8 +161,7 @@ public class ExprComplier {
     } else if (sqlExpr instanceof SQLCastExpr) {
       SQLCastExpr expr = (SQLCastExpr) sqlExpr;
       ValueExpr value = createExpr(expr.getExpr());
-      Class<?> targetType = SQLTypeMap.toClass(expr.getDataType().jdbcType());
-      return createCast(value, targetType);
+      return createCast(value, SQLTypeMap.toClass(expr.getDataType().jdbcType()));
     } else if (sqlExpr instanceof SQLExistsExpr) {
       SQLExistsExpr existsExpr = (SQLExistsExpr) sqlExpr;
       return createSQLExistsExpr(existsExpr);
@@ -176,49 +170,12 @@ public class ExprComplier {
   }
 
   public BooleanExpr createSQLExistsExpr(SQLExistsExpr existsExpr) {
-    return new BooleanExistsExpr(
-        createSubQuery(existsExpr.getSubQuery().getQueryBlock(), SubQueryType.EXISTS),
-        existsExpr.isNot());
+    Executor subQuery = complieContext.getSubQueryComplier()
+        .createSubQuery(existsExpr.getSubQuery().getQueryBlock(), SubQueryType.EXISTS);
+    return new BooleanExistsExpr(subQuery, existsExpr.isNot());
   }
 
-  public Executor createSubQuery(SQLSelectQueryBlock queryBlock,
-      SubQueryType type) {
-    long row;
-    List<SQLSelectItem> selectList = queryBlock.getSelectList();
-    SQLExpr where = queryBlock.getWhere();
-    SQLTableSource from = queryBlock.getFrom();
-    List<SQLColumnDefinition> sqlColumnDefinitions = null;
-    switch (type) {
-      case TABLE:
-        row = -1;
-        break;
-      case SCALAR:
-        if (selectList.size() != 1) {
-          throw new UnsupportedOperationException();
-        }
-        row = 2;
-        break;
-      case ROW:
-        row = 2;
-        break;
-      case EXISTS:
-        row = -1;
-        selectList = Collections.emptyList();
-        sqlColumnDefinitions = Collections.emptyList();
-        break;
-      case COLUMN:
-        if (selectList.size() != 1) {
-          throw new UnsupportedOperationException();
-        }
-        row = -1;
-        break;
-      default:
-        throw new UnsupportedOperationException();
-    }
-    Executor tableSource = complieContext.getTableSourceComplier()
-        .createTableSource(from, where, 0, row);
-    return complieContext.getProjectComplier().createProject(selectList, null, tableSource);
-  }
+
 
   public ValueExpr createCast(ValueExpr value, Class<?> targetType) {
     Objects.requireNonNull(targetType);
@@ -308,18 +265,19 @@ public class ExprComplier {
 
   public ValueExpr createMethod(SQLMethodInvokeExpr methodInvokeExpr) {
     String methodName = methodInvokeExpr.getMethodName();
+    Function function = FunctionManager.INSTANCE.getFunctionByName(methodName);
+    Objects.requireNonNull(function);
     List<SQLExpr> arguments = methodInvokeExpr.getArguments();
+    Object[] args;
     if (arguments == null || arguments.isEmpty()) {
-      Object value = FunctionManager.INSTANCE.getFunctionByName(methodName).apply(null);
-      return Converters.transfor(value);
+      args = new Object[]{};
     } else {
-      Object[] args = new Object[arguments.size()];
+      args = new Object[arguments.size()];
       for (int i = 0; i < args.length; i++) {
         args[i] = createExpr(arguments.get(i)).getValue();
       }
-      Object value = FunctionManager.INSTANCE.getFunctionByName(methodName).apply(args);
-      return Converters.transfor(value);
     }
+    return Converters.transfor(function.apply(args));
   }
 
   public void checkReturnType(ValueExpr leftExpr, ValueExpr rightExpr,
