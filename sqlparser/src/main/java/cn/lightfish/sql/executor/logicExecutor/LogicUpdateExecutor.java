@@ -1,13 +1,11 @@
-package cn.lightfish.sql.executor;
+package cn.lightfish.sql.executor.logicExecutor;
 
-import cn.lightfish.sql.executor.logicExecutor.Executor;
 import cn.lightfish.sql.schema.BaseColumnDefinition;
 
-public enum EmptyExecutor implements Executor {
-  INSTACNE;
-
+public class LogicUpdateExecutor implements Executor {
   @Override
   public BaseColumnDefinition[] columnDefList() {
+
     return new BaseColumnDefinition[0];
   }
 
@@ -19,5 +17,9 @@ public enum EmptyExecutor implements Executor {
   @Override
   public Object[] next() {
     return new Object[0];
+  }
+
+  public void replace(Object[] row){
+
   }
 }

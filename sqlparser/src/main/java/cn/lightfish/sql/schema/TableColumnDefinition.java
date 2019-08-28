@@ -1,6 +1,6 @@
 package cn.lightfish.sql.schema;
 
-public class TableColumnDefinition extends SimpleColumnDefinition {
+public class TableColumnDefinition extends BaseColumnDefinition {
 
   MycatTable table;
 
@@ -12,7 +12,7 @@ public class TableColumnDefinition extends SimpleColumnDefinition {
     return table;
   }
 
-  public void setTable(MycatTable table) {
+  void setTable(MycatTable table) {
     this.table = table;
   }
 }

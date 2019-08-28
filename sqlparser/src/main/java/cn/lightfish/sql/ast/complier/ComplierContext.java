@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
 public class ComplierContext {
 
@@ -30,14 +31,20 @@ public class ComplierContext {
   private List<CorrelatedQuery> correlateQueries;
   private List<MySqlSelectQueryBlock> normalQueries;
 
-  private final TableSourceComplier tableSourceComplier = new TableSourceComplier(this);
-  private final RootQueryComplier rootQueryComplier = new RootQueryComplier(this);
-  private final ExprComplier exprComplier = new ExprComplier(this);
-  private final ProjectComplier projectComplier = new ProjectComplier(this);
-  private final SubQueryComplier subQueryComplier = new SubQueryComplier(this);
+  private final TableSourceComplier tableSourceComplier ;
+  private final RootQueryComplier rootQueryComplier ;
+  private final ExprComplier exprComplier ;
+  private final ProjectComplier projectComplier;
+  private final SubQueryComplier subQueryComplier;
 
   public ComplierContext(RootSessionContext runtimeContext) {
+    Objects.requireNonNull(runtimeContext);
     this.runtimeContext = runtimeContext;
+    this. tableSourceComplier = new TableSourceComplier(this);
+    this.rootQueryComplier = new RootQueryComplier(this);
+    this. exprComplier = new ExprComplier(this);
+    this.projectComplier = new ProjectComplier(this);
+    this. subQueryComplier = new SubQueryComplier(this);
   }
 
   public void createColumnAllocator(
@@ -63,6 +70,10 @@ public class ComplierContext {
     x.accept(subqueryCollector);
     this.correlateQueries = subqueryCollector.getCorrelateQueries();
     this.normalQueries = subqueryCollector.getNormalQueries();
+  }
+
+  public boolean isNormalQuery(MySqlSelectQueryBlock queryBlock){
+    return this.normalQueries.contains(queryBlock);
   }
 
 
@@ -114,6 +125,10 @@ public class ComplierContext {
 
   public SubQueryComplier getSubQueryComplier() {
     return subQueryComplier;
+  }
+
+  public List<CorrelatedQuery> getCorrelateQueries() {
+    return correlateQueries;
   }
 
   public void registerLeafExecutor(LogicLeafTableExecutor tableExecuter) {

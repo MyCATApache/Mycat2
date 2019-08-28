@@ -12,7 +12,7 @@ public class MycatTable implements MycatSchemaObject {
 
   final MycatSchema schema;
   final String tableName;
-  final List<TableColumnDefinition> columnDefinitions;
+  final TableColumnDefinition[] columnDefinitions;
   final Map<String, TableColumnDefinition> columnDefinitionMap = new HashMap<>();
   final MycatPartition mycatPartition;
   private final boolean broadCast;
@@ -22,7 +22,7 @@ public class MycatTable implements MycatSchemaObject {
       MycatPartition mycatPartition) {
     this.schema = schema;
     this.tableName = tableName;
-    this.columnDefinitions = Collections.unmodifiableList(columnDefinitions);
+    this.columnDefinitions = columnDefinitions.toArray(new TableColumnDefinition[]{});
     this.mycatPartition = mycatPartition;
     this.broadCast = false;
     computeTableColumnMap(columnDefinitions);
@@ -33,7 +33,7 @@ public class MycatTable implements MycatSchemaObject {
       boolean broadCast) {
     this.schema = schema;
     this.tableName = tableName;
-    this.columnDefinitions =  Collections.unmodifiableList(columnDefinitions);
+    this.columnDefinitions = columnDefinitions.toArray(new TableColumnDefinition[]{});
     this.broadCast = broadCast;
     this.mycatPartition = null;
     computeTableColumnMap(columnDefinitions);
@@ -56,7 +56,7 @@ public class MycatTable implements MycatSchemaObject {
     return tableName;
   }
 
-  public List<TableColumnDefinition> getColumnDefinitions() {
+  public TableColumnDefinition[] getColumnDefinitions() {
     return columnDefinitions;
   }
 

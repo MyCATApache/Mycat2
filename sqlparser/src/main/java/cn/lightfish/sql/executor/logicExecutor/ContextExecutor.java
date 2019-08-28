@@ -1,7 +1,7 @@
 package cn.lightfish.sql.executor.logicExecutor;
 
 import cn.lightfish.sql.context.RootSessionContext;
-import cn.lightfish.sql.schema.SimpleColumnDefinition;
+import cn.lightfish.sql.schema.BaseColumnDefinition;
 
 public class ContextExecutor implements Executor {
 
@@ -16,7 +16,7 @@ public class ContextExecutor implements Executor {
   }
 
   @Override
-  public SimpleColumnDefinition[] columnDefList() {
+  public BaseColumnDefinition[] columnDefList() {
     return executor.columnDefList();
   }
 

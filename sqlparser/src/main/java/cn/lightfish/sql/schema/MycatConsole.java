@@ -1,12 +1,14 @@
 package cn.lightfish.sql.schema;
 
 import cn.lightfish.sql.ast.SQLParser;
+import cn.lightfish.sql.ast.complier.ComplierContext;
 import cn.lightfish.sql.ast.statement.StatementDispatcher;
 import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.executor.DefExecutor;
 import cn.lightfish.sql.executor.EmptyExecutor;
 import cn.lightfish.sql.executor.PhysicsExecutorRunner;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.persistent.PersistentManager;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -17,16 +19,24 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class MycatConsole {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatConsole.class);
-  final RootSessionContext context = new RootSessionContext();
+  final RootSessionContext context;
   final PhysicsExecutorRunner runner = new PhysicsExecutorRunner();
+  final ComplierContext complierContext;
   MycatSchema currentSchema;
+
+  public MycatConsole() {
+    context = new RootSessionContext();
+    complierContext = new ComplierContext(context);
+  }
 
   public Iterator<Executor> input(String sql) {
     Iterator<SQLStatement> statementIterator = SQLParser.INSTANCE.parse(sql);
@@ -84,9 +94,13 @@ public class MycatConsole {
       Iterator<Object[]> rowIterator = result;
       while (rowIterator.hasNext()) {
         Object[] rowList = rowIterator.next();
-        String rowText = Arrays.asList(rowList).stream().map(i -> i.toString())
-            .collect(Collectors.joining("|", "|", "|"));
-        out.println(rowText);
+        try {
+          String rowText = Arrays.asList(rowList).stream().map(i -> Objects.toString(i))
+              .collect(Collectors.joining("|", "|", "|"));
+          out.println(rowText);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       }
     }
     System.out.println();
@@ -102,8 +116,8 @@ public class MycatConsole {
   }
 
   public Executor showDatabase() {
-    SimpleColumnDefinition[] columnList = new SimpleColumnDefinition[]{
-        new SimpleColumnDefinition("Database", String.class)};
+    BaseColumnDefinition[] columnList = new BaseColumnDefinition[]{
+        new BaseColumnDefinition("Database", String.class)};
     List<String[]> list = new ArrayList<>();
     for (String database : MycatSchemaManager.INSTANCE.schemas.keySet()) {
       list.add(new String[]{database});
@@ -113,6 +127,7 @@ public class MycatConsole {
 
   public void createTable(MycatTable table) {
     currentSchema.createTable(table);
+    PersistentManager.INSTANCE.createPersistent(table, null, Collections.emptyMap());
   }
 
   public void dropDatabase(String databaseName) {
@@ -133,5 +148,9 @@ public class MycatConsole {
 
   public RootSessionContext getContext() {
     return context;
+  }
+
+  public ComplierContext getComplierContext() {
+    return complierContext;
   }
 }

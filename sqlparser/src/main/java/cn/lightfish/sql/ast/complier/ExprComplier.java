@@ -27,7 +27,6 @@ import cn.lightfish.sql.ast.expr.functionExpr.FunctionManager;
 import cn.lightfish.sql.ast.expr.numberExpr.BigDecimalExpr;
 import cn.lightfish.sql.ast.expr.numberExpr.DoubleExpr;
 import cn.lightfish.sql.ast.expr.numberExpr.LongExpr;
-import cn.lightfish.sql.ast.expr.stringExpr.StringConstExpr;
 import cn.lightfish.sql.ast.expr.stringExpr.StringExpr;
 import cn.lightfish.sql.ast.expr.valueExpr.NullConstExpr;
 import cn.lightfish.sql.context.RootSessionContext;
@@ -42,6 +41,9 @@ import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
@@ -57,6 +59,8 @@ public class ExprComplier {
   final RootSessionContext context;
 
   public ExprComplier(ComplierContext context) {
+    Objects.requireNonNull(context);
+    Objects.requireNonNull(context.runtimeContext);
     this.complieContext = context;
     this.context = context.runtimeContext;
   }
@@ -98,60 +102,20 @@ public class ExprComplier {
           checkReturnType(leftExpr, rightExpr, leftExpr.getType(), sqlExpr);
           return new BooleanEqualityExpr(context, leftExpr, rightExpr);
         case Add:
-          if (leftExpr.getType() == Long.class) {
-            return new LongAddExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == Double.class) {
-            return new DoubleAddExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == BigDecimal.class) {
-            return new BigDecimalAddExpr(context, leftExpr, rightExpr);
-          }
-          throw new UnsupportedOperationException();
+          return complieAdd(leftExpr, rightExpr);
         case Subtract:
-          if (leftExpr.getType() == Long.class) {
-            return new LongSubtractExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == Double.class) {
-            return new DoubleSubtractExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == BigDecimal.class) {
-            return new BigDecimalSubtractExpr(context, leftExpr, rightExpr);
-          }
-          throw new UnsupportedOperationException();
+          return complieSubract(leftExpr, rightExpr);
         case Multiply:
-          if (leftExpr.getType() == Long.class) {
-            return new LongMultipyExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == Double.class) {
-            return new DoubleMultipyExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == BigDecimal.class) {
-            return new BigDecimalMultipyExpr(context, leftExpr, rightExpr);
-          }
-          throw new UnsupportedOperationException();
+          return complieMultiply(leftExpr, rightExpr);
         case Divide:
-          if (leftExpr.getType() == Long.class) {
-            return new LongDivisionExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == Double.class) {
-            return new DoubleDivisionExpr(context, leftExpr, rightExpr);
-          }
-          if (leftExpr.getType() == BigDecimal.class) {
-            return new BigDecimalDivisionExpr(context, leftExpr, rightExpr);
-          }
-          throw new UnsupportedOperationException();
+          return complieDivide(leftExpr, rightExpr);
         default:
+          throw new UnsupportedOperationException();
       }
-    } else if (sqlExpr instanceof SQLIdentifierExpr) {
-      SQLIdentifierExpr expr = (SQLIdentifierExpr) sqlExpr;
-      return complieContext.getColumnAllocatior().getFieldExecutor(expr.getResolvedColumn());
-    } else if (sqlExpr instanceof SQLPropertyExpr) {
-      SQLPropertyExpr expr = (SQLPropertyExpr) sqlExpr;
-      return complieContext.getColumnAllocatior().getFieldExecutor(expr.getResolvedColumn());
     } else if (sqlExpr instanceof SQLName) {
-      throw new UnsupportedOperationException();
-    } else if (sqlExpr instanceof SQLValuableExpr) {
+      SQLName sqlName = (SQLName) sqlExpr;
+      return complieField(sqlName);
+    }  else if (sqlExpr instanceof SQLValuableExpr) {
       return Converters.transfor((SQLValuableExpr) sqlExpr);
     } else if (sqlExpr instanceof SQLVariantRefExpr) {
       SQLVariantRefExpr variantRefExpr = (SQLVariantRefExpr) sqlExpr;
@@ -169,13 +133,68 @@ public class ExprComplier {
     throw new UnsupportedOperationException();
   }
 
-  public BooleanExpr createSQLExistsExpr(SQLExistsExpr existsExpr) {
-    Executor subQuery = complieContext.getSubQueryComplier()
-        .createSubQuery(existsExpr.getSubQuery().getQueryBlock(), SubQueryType.EXISTS);
-    return new BooleanExistsExpr(subQuery, existsExpr.isNot());
+  private ValueExpr complieField(SQLName sqlName) {
+    SQLColumnDefinition resolvedColumn = sqlName.getResolvedColumn();
+    return complieContext.getColumnAllocatior().getFieldExecutor(resolvedColumn);
   }
 
+  private ValueExpr complieDivide(ValueExpr leftExpr, ValueExpr rightExpr) {
+    if (leftExpr.getType() == Long.class) {
+      return new LongDivisionExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == Double.class) {
+      return new DoubleDivisionExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == BigDecimal.class) {
+      return new BigDecimalDivisionExpr(context, leftExpr, rightExpr);
+    }
+    throw new UnsupportedOperationException();
+  }
 
+  private ValueExpr complieMultiply(ValueExpr leftExpr, ValueExpr rightExpr) {
+    if (leftExpr.getType() == Long.class) {
+      return new LongMultipyExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == Double.class) {
+      return new DoubleMultipyExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == BigDecimal.class) {
+      return new BigDecimalMultipyExpr(context, leftExpr, rightExpr);
+    }
+    throw new UnsupportedOperationException();
+  }
+
+  private ValueExpr complieSubract(ValueExpr leftExpr, ValueExpr rightExpr) {
+    if (leftExpr.getType() == Long.class) {
+      return new LongSubtractExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == Double.class) {
+      return new DoubleSubtractExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == BigDecimal.class) {
+      return new BigDecimalSubtractExpr(context, leftExpr, rightExpr);
+    }
+    throw new UnsupportedOperationException();
+  }
+
+  private ValueExpr complieAdd(ValueExpr leftExpr, ValueExpr rightExpr) {
+    if (leftExpr.getType() == Long.class) {
+      return new LongAddExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == Double.class) {
+      return new DoubleAddExpr(context, leftExpr, rightExpr);
+    }
+    if (leftExpr.getType() == BigDecimal.class) {
+      return new BigDecimalAddExpr(context, leftExpr, rightExpr);
+    }
+    throw new UnsupportedOperationException();
+  }
+
+  public BooleanExpr createSQLExistsExpr(SQLExistsExpr existsExpr) {
+    Executor subQuery = complieContext.getSubQueryComplier()
+        .createSubQuery((MySqlSelectQueryBlock)existsExpr.getSubQuery().getQueryBlock(), SubQueryType.EXISTS);
+    return new BooleanExistsExpr(subQuery, existsExpr.isNot());
+  }
 
   public ValueExpr createCast(ValueExpr value, Class<?> targetType) {
     Objects.requireNonNull(targetType);
@@ -255,9 +274,9 @@ public class ExprComplier {
 
   public ValueExpr createVariantRef(SQLVariantRefExpr variantRefExpr) {
     if (variantRefExpr.isGlobal()) {
-      return new StringConstExpr((String) context.getGlobalVariant(variantRefExpr.getName()));
+      return Converters.transfor(context.getGlobalVariant(variantRefExpr.getName()));
     } else if (variantRefExpr.isSession()) {
-      return new StringConstExpr((String) context.getSessionVariant(variantRefExpr.getName()));
+      return Converters.transfor(context.getSessionVariant(variantRefExpr.getName()));
     } else {
       throw new UnsupportedOperationException();
     }

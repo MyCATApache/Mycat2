@@ -1,14 +1,14 @@
 package cn.lightfish.sql.executor.logicExecutor;
 
 import cn.lightfish.sql.ast.expr.ValueExpr;
-import cn.lightfish.sql.schema.SimpleColumnDefinition;
+import cn.lightfish.sql.schema.BaseColumnDefinition;
 
 public class ProjectExecutor extends AbsractExecutor {
 
   private final ValueExpr[] exprs;
   final Executor executor;
 
-  public ProjectExecutor(SimpleColumnDefinition[] columnDefinitions, ValueExpr[] exprs,Executor executor) {
+  public ProjectExecutor(BaseColumnDefinition[] columnDefinitions, ValueExpr[] exprs,Executor executor) {
     super(columnDefinitions);
     this.exprs = exprs;
     this.executor = executor;

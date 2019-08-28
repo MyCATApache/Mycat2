@@ -4,7 +4,7 @@ import cn.lightfish.sql.ast.expr.ValueExpr;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
 import cn.lightfish.sql.executor.logicExecutor.OnlyProjectExecutor;
 import cn.lightfish.sql.executor.logicExecutor.ProjectExecutor;
-import cn.lightfish.sql.schema.SimpleColumnDefinition;
+import cn.lightfish.sql.schema.BaseColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import java.util.ArrayList;
@@ -30,18 +30,18 @@ public class ProjectComplier {
       List<String> aliasList,
       Executor rootTableSource) {
     int size = aliasList != null ? aliasList.size() : selectItems.size();
-    SimpleColumnDefinition[] columnDefinitions = new SimpleColumnDefinition[size];
+    BaseColumnDefinition[] columnDefinitions = new BaseColumnDefinition[size];
     ValueExpr[] exprs = new ValueExpr[size];
     for (int i = 0; i < size; i++) {
       SQLSelectItem item = selectItems.get(i);
       exprs[i] = complierContext.getExprComplier().createExpr(item.getExpr());
-      columnDefinitions[i] = new SimpleColumnDefinition(
+      columnDefinitions[i] = new BaseColumnDefinition(
           aliasList != null ? aliasList.get(i) : item.computeAlias(), exprs[i].getType());
     }
     return createProjectExecutor(columnDefinitions, exprs, rootTableSource);
   }
 
-  public Executor createProjectExecutor(SimpleColumnDefinition[] columnDefinitions,
+  public Executor createProjectExecutor(BaseColumnDefinition[] columnDefinitions,
       ValueExpr[] exprs, Executor rootTableSource) {
     if (rootTableSource != null) {
       return new ProjectExecutor(columnDefinitions, exprs, rootTableSource);

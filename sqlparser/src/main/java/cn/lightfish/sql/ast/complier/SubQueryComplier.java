@@ -1,53 +1,76 @@
 package cn.lightfish.sql.ast.complier;
 
+import cn.lightfish.sql.ast.expr.ValueExpr;
+import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
-import java.util.Collections;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class SubQueryComplier {
 
-  private ComplierContext complierContext;
+    private ComplierContext complierContext;
 
-  public SubQueryComplier(ComplierContext complierContext) {
-    this.complierContext = complierContext;
-  }
-  public Executor createSubQuery(SQLSelectQueryBlock queryBlock,
-      SubQueryType type) {
-    long row;
-    List<SQLSelectItem> selectList = queryBlock.getSelectList();
-    SQLExpr where = queryBlock.getWhere();
-    SQLTableSource from = queryBlock.getFrom();
-    switch (type) {
-      case TABLE:
-        row = -1;
-        break;
-      case SCALAR:
-        if (selectList.size() != 1) {
-          throw new UnsupportedOperationException();
-        }
-        row = 2;
-        break;
-      case ROW:
-        row = 2;
-        break;
-      case EXISTS:
-        row = -1;
-        selectList = Collections.emptyList();
-        break;
-      case COLUMN:
-        if (selectList.size() != 1) {
-          throw new UnsupportedOperationException();
-        }
-        row = -1;
-        break;
-      default:
-        throw new UnsupportedOperationException();
+    public SubQueryComplier(ComplierContext complierContext) {
+        this.complierContext = complierContext;
     }
-    Executor tableSource = complierContext.createTableSource(from, where, 0, row);
-    return complierContext.getProjectComplier().createProject(selectList, null, tableSource);
-  }
+
+    public Executor createSubQuery(MySqlSelectQueryBlock queryBlock, SubQueryType type) {
+        long row;
+        List<SQLSelectItem> selectList = queryBlock.getSelectList();
+        switch (type) {
+            case TABLE:
+                row = -1;
+                break;
+            case SCALAR:
+                if (selectList.size() != 1) throw new UnsupportedOperationException();
+                row = 2;
+                break;
+            case ROW:
+                row = 2;
+                break;
+            case EXISTS:
+                row = -1;
+                break;
+            case COLUMN:
+                if (selectList.size() != 1) throw new UnsupportedOperationException();
+                row = -1;
+                break;
+            default:
+                throw new UnsupportedOperationException();
+        }
+        return complierContext.isNormalQuery(queryBlock) ?
+                createNormalSubquery(queryBlock, row) :
+                createCorrelateSubquery(queryBlock, row);
+    }
+
+    private Executor createCorrelateSubquery(MySqlSelectQueryBlock queryBlock, long row) {
+        List<SubqueryOptimizer.CorrelatedQuery> correlateQueries = Objects.requireNonNull(complierContext.getCorrelateQueries());
+        SubqueryOptimizer.CorrelatedQuery correlatedQuery = correlateQueries.stream().filter(i -> i.getQueryBlock().equals(queryBlock)).findFirst().orElse(null);
+        if (correlatedQuery == null) {
+            List<SQLColumnDefinition> columnDefinitions = complierContext.getColumnAllocatior().getColumnDefinitionBySQLTableSource(queryBlock.getFrom());
+            ExprComplier exprComplier = complierContext.getExprComplier();
+            Map<SQLExpr, SQLTableSource> outColumn = correlatedQuery.getOutColumn();
+            ValueExpr[] args = new ValueExpr[outColumn.size()];
+            int index = 0;
+            for (SQLExpr sqlExpr : outColumn.keySet()) {
+                args[index] = exprComplier.createExpr(sqlExpr);
+                ++index;
+            }
+            return null;
+        } else {
+            return null;
+        }
+    }
+
+    private Executor createNormalSubquery(MySqlSelectQueryBlock queryBlock, long row) {
+        return complierContext.getProjectComplier().createProject(queryBlock.getSelectList(), null,
+                complierContext.createTableSource(queryBlock.getFrom(), queryBlock.getWhere(), 0, row));
+    }
 }

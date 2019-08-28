@@ -1,13 +1,17 @@
 package cn.lightfish.sql.executor.logicExecutor;
 
-import cn.lightfish.sql.schema.SimpleColumnDefinition;
+import cn.lightfish.sql.schema.BaseColumnDefinition;
+
 import java.util.Iterator;
 
 public interface Executor extends Iterator<Object[]> {
+    default public void apply() {
 
-  SimpleColumnDefinition[] columnDefList();
+    }
 
-  boolean hasNext();
+    BaseColumnDefinition[] columnDefList();
 
-  Object[] next();
+    boolean hasNext();
+
+    Object[] next();
 }

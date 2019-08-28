@@ -1,11 +1,11 @@
 package cn.lightfish.sql.schema;
 
-public class SimpleColumnDefinition {
+public class BaseColumnDefinition {
 
   final String columnName;
   final Class type;
 
-  public SimpleColumnDefinition(String columnName, Class type) {
+  public BaseColumnDefinition(String columnName, Class type) {
     this.columnName = columnName;
     this.type = type;
   }
