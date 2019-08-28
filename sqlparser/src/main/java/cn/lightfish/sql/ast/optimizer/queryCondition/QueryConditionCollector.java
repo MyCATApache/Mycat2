@@ -1,35 +1,80 @@
 package cn.lightfish.sql.ast.optimizer.queryCondition;
 
-import cn.lightfish.sql.ast.complier.ComplierContext;
 import cn.lightfish.sql.ast.converter.Converters;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 public class QueryConditionCollector extends MySqlASTVisitorAdapter {
+    private final LinkedList<QueryDataRange> stack = new LinkedList<>();
+    private QueryDataRange root;
+    private boolean isJoin;
 
-    private final List<ColumnValue> equalValues = new ArrayList<>();
-    private final List<ColumnRangeValue> rangeValues = new ArrayList<>();
 
+    public QueryConditionCollector() {
 
-
-    public QueryConditionCollector(ComplierContext complierContext) {
+    }
+    @Override
+    public boolean visit(SQLJoinTableSource x) {
+        isJoin = true;
+       return super.visit(x);
     }
 
-    public void failureBecauseIndeterminacy(SQLExpr sqlExpr) {
+    @Override
+    public void endVisit(SQLJoinTableSource x) {
+        isJoin = false;
+        super.endVisit(x);
+    }
 
+    private void addEqualValue(ColumnValue columnValue) {
+        QueryDataRange queryDataRange = Objects.requireNonNull(stack.peek());
+        if (isJoin){
+            queryDataRange.joinEqualValues.add(columnValue);
+        }else {
+            queryDataRange.equalValues.add(columnValue);
+        }
+    }
+
+    private void addRangeValues(ColumnRangeValue columnRangeValue) {
+        QueryDataRange queryDataRange = Objects.requireNonNull(stack.peek());
+        if (isJoin){
+            queryDataRange.joinEangeValues.add(columnRangeValue);
+        }else{
+            queryDataRange.rangeValues.add(columnRangeValue);
+        }
+    }
+    public void failureBecauseIndeterminacy(SQLExpr sqlExpr) {
+        Objects.requireNonNull(stack.peek()).messageList.add(sqlExpr.toString());
+    }
+
+    @Override
+    public boolean visit(MySqlSelectQueryBlock x) {
+        QueryDataRange queryDataRange = new QueryDataRange(x);
+        if (root == null) {
+            root = queryDataRange;
+        }
+        stack.push(queryDataRange);
+        return super.visit(x);
     }
 
     @Override
     public void endVisit(MySqlSelectQueryBlock x) {
-
+        QueryDataRange pop = stack.pop();
+        if (stack.isEmpty()) {
+            root = pop;
+        } else {
+            stack.peek().children.add(pop);
+        }
         super.endVisit(x);
     }
 
@@ -91,7 +136,7 @@ public class QueryConditionCollector extends MySqlASTVisitorAdapter {
             if (secondValue != null) {
                 if (firstValue.tableSource.equals(secondValue.tableSource) &&
                         firstValue.column.equals(secondValue.column) && firstValue.operator.equals(secondValue.operator)) {
-                    rangeValues.add(new ColumnRangeValue(firstValue.column, firstValue.value, secondValue.value, firstValue.tableSource));
+                    addRangeValues(new ColumnRangeValue(firstValue.column, firstValue.value, secondValue.value, firstValue.tableSource));
                 }
             }
         }
@@ -291,16 +336,17 @@ public class QueryConditionCollector extends MySqlASTVisitorAdapter {
                 SQLColumnDefinition columnDef = Converters.getColumnDef(leftExpr);
                 SQLTableSource columnTableSource = Converters.getColumnTableSource(leftExpr);
                 Object value = ((SQLValuableExpr) rightExpr).getValue();
-                equalValues.add(new ColumnValue(columnDef, SQLBinaryOperator.Equality, value, columnTableSource));
+                addEqualValue(new ColumnValue(columnDef, SQLBinaryOperator.Equality, value, columnTableSource));
             } else if ((leftExpr instanceof SQLValuableExpr) && (rightExpr instanceof SQLName)) {
                 SQLColumnDefinition columnDef = Converters.getColumnDef(rightExpr);
                 SQLTableSource columnTableSource = Converters.getColumnTableSource(rightExpr);
                 Object value = ((SQLValuableExpr) leftExpr).getValue();
-                equalValues.add(new ColumnValue(columnDef, SQLBinaryOperator.Equality, value, columnTableSource));
+                addEqualValue(new ColumnValue(columnDef, SQLBinaryOperator.Equality, value, columnTableSource));
             }
         }
         return super.visit(x);
     }
+
 
     public boolean visit(SQLUnaryExpr x) {
         SQLUnaryOperator operator = x.getOperator();
@@ -370,7 +416,7 @@ public class QueryConditionCollector extends MySqlASTVisitorAdapter {
                     Object beginValue = ((SQLValuableExpr) beginExpr).getValue();
                     Object endValue = ((SQLValuableExpr) endExpr).getValue();
                     if (column != null && beginValue != null && endValue != null) {
-                        this.rangeValues.add(new ColumnRangeValue(column, beginValue, endValue, source));
+                        addRangeValues(new ColumnRangeValue(column, beginValue, endValue, source));
                     }
                 }
             }
@@ -396,7 +442,7 @@ public class QueryConditionCollector extends MySqlASTVisitorAdapter {
                 for (SQLExpr sqlExpr : targetList) {
                     if (sqlExpr instanceof SQLValuableExpr) {
                         Object value = ((SQLValuableExpr) sqlExpr).getValue();
-                        equalValues.add(new ColumnValue(column,SQLBinaryOperator.Equality,value,columnTableSource));
+                        addEqualValue(new ColumnValue(column, SQLBinaryOperator.Equality, value, columnTableSource));
                     } else {
                         continue;
                     }
@@ -460,6 +506,19 @@ public class QueryConditionCollector extends MySqlASTVisitorAdapter {
             this.tableSource = tableSource;
         }
 
+    }
+
+    public class QueryDataRange {
+        private final List<ColumnValue> equalValues = new ArrayList<>();
+        private final List<ColumnRangeValue> rangeValues = new ArrayList<>();
+        private final MySqlSelectQueryBlock queryBlock;
+        private final List<QueryDataRange> children = new ArrayList<>();
+        private final List<String> messageList = new ArrayList<>();
+        private final List<ColumnValue> joinEqualValues = new ArrayList<>();
+        private final List<ColumnRangeValue> joinEangeValues = new ArrayList<>();
+        public QueryDataRange(MySqlSelectQueryBlock queryBlock) {
+            this.queryBlock = queryBlock;
+        }
     }
 
     public static void main(String[] args) {

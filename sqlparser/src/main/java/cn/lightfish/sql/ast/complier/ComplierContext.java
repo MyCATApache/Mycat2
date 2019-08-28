@@ -18,17 +18,14 @@ import com.alibaba.fastsql.sql.ast.statement.SQLUnionQueryTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLUnnestTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLValuesTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
+
+import java.util.*;
 
 public class ComplierContext {
 
   final RootSessionContext runtimeContext;
   private ColumnAllocator columnAllocatior;
-  private List<CorrelatedQuery> correlateQueries;
+  private Map<MySqlSelectQueryBlock,CorrelatedQuery> correlateQueries;
   private List<MySqlSelectQueryBlock> normalQueries;
 
   private final TableSourceComplier tableSourceComplier ;
@@ -49,7 +46,7 @@ public class ComplierContext {
 
   public void createColumnAllocator(
       SQLStatement x) {
-    ColumnCollector columnCollector = new ColumnCollector();
+    ColumnCollector columnCollector = new ColumnCollector(true);
     x.accept(columnCollector);
     HashMap<SQLColumnDefinition, Integer> columnIndexMap = new HashMap<>();
     HashMap<SQLTableSource, Integer> tableSourceColumnStartIndexMap = new HashMap<>();
@@ -127,7 +124,7 @@ public class ComplierContext {
     return subQueryComplier;
   }
 
-  public List<CorrelatedQuery> getCorrelateQueries() {
+  public Map<MySqlSelectQueryBlock,CorrelatedQuery> getCorrelateQueries() {
     return correlateQueries;
   }
 

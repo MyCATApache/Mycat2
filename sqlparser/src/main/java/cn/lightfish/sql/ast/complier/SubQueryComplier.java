@@ -51,8 +51,8 @@ public class SubQueryComplier {
     }
 
     private Executor createCorrelateSubquery(MySqlSelectQueryBlock queryBlock, long row) {
-        List<SubqueryOptimizer.CorrelatedQuery> correlateQueries = Objects.requireNonNull(complierContext.getCorrelateQueries());
-        SubqueryOptimizer.CorrelatedQuery correlatedQuery = correlateQueries.stream().filter(i -> i.getQueryBlock().equals(queryBlock)).findFirst().orElse(null);
+        Map<MySqlSelectQueryBlock,SubqueryOptimizer.CorrelatedQuery> correlateQueries = Objects.requireNonNull(complierContext.getCorrelateQueries());
+        SubqueryOptimizer.CorrelatedQuery correlatedQuery = correlateQueries.get(queryBlock);
         if (correlatedQuery == null) {
             List<SQLColumnDefinition> columnDefinitions = complierContext.getColumnAllocatior().getColumnDefinitionBySQLTableSource(queryBlock.getFrom());
             ExprComplier exprComplier = complierContext.getExprComplier();

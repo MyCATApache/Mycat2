@@ -1,6 +1,7 @@
 package cn.lightfish.sql.ast.complier;
 
 import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
+import cn.lightfish.sql.ast.optimizer.queryCondition.QueryConditionCollector;
 import cn.lightfish.sql.context.GlobalContext;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
 import cn.lightfish.sql.executor.logicExecutor.FilterExecutor;
@@ -30,6 +31,8 @@ public class RootQueryComplier {
     optimizeAst(x);
     createColumnAllocator(x);
     collectSubQuery(x);
+    QueryConditionCollector conditionCollector = new QueryConditionCollector();
+    x.accept(conditionCollector);
     Executor executor = context.createTableSource(rootQuery.getFrom(), rootQuery.getWhere(), 0, -1);
     executor = createFilter(rootQuery, executor, exprComplier);
     executor = projectComplier

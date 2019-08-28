@@ -118,6 +118,10 @@ public class SubqueryOptimizer extends MySqlASTVisitorAdapter {
         return normalQueries == null ? Collections.emptyList() : normalQueries;
     }
 
+    public Map<MySqlSelectQueryBlock,CorrelatedQuery> getCorrelateQueries() {
+        return correlateQueries;
+    }
+
     public static class CorrelatedQuery {
         final MySqlSelectQueryBlock queryBlock;
         final Map<SQLExpr, SQLTableSource> outColumn = new HashMap<>();
