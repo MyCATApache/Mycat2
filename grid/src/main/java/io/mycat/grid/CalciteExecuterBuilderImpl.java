@@ -3,7 +3,7 @@ package io.mycat.grid;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.resultset.MycatResultSet;
 import io.mycat.beans.resultset.SQLExecuter;
-import io.mycat.datasource.jdbc.GridRuntime;
+import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import java.util.Arrays;
@@ -11,9 +11,9 @@ import java.util.Arrays;
 public class CalciteExecuterBuilderImpl implements ExecuterBuilder {
 
   private final MycatSession session;
-  private final GridRuntime jdbcRuntime;
+  private final GRuntime jdbcRuntime;
 
-  public CalciteExecuterBuilderImpl(MycatSession session, GridRuntime jdbcRuntime) {
+  public CalciteExecuterBuilderImpl(MycatSession session, GRuntime jdbcRuntime) {
 
     this.session = session;
     this.jdbcRuntime = jdbcRuntime;

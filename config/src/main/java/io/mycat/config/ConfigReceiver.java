@@ -18,9 +18,12 @@ package io.mycat.config;
 
 
 public interface ConfigReceiver {
-    public String getResourcePath();
 
-    public int getConfigVersion();
-    public void putConfig(ConfigEnum configEnum, ConfigurableRoot config);
-    public <T extends ConfigurableRoot> T getConfig(ConfigEnum configEnum);
+  String getResourcePath();
+
+  int getConfigVersion();
+
+  void putConfig(ConfigFile configEnum, ConfigurableRoot config);
+
+  <T extends ConfigurableRoot> T getConfig(ConfigFile configEnum);
 }

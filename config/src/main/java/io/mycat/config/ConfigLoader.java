@@ -42,7 +42,7 @@ public class ConfigLoader {
 
   public static ConfigReceiver load(String root, int version) throws IOException {
     ConfigReceiver cr = new ConfigReceiverImpl(root,version);
-    for (ConfigEnum value : ConfigEnum.values()) {
+    for (ConfigFile value : ConfigFile.values()) {
       loadConfig(root, value, cr);
     }
     return cr;
@@ -54,7 +54,7 @@ public class ConfigLoader {
    * @param configEnum 加载的配置枚举值
    */
 
-  public static void loadConfig(String root, ConfigEnum configEnum, ConfigReceiver receiver) {
+  public static void loadConfig(String root, ConfigFile configEnum, ConfigReceiver receiver) {
     try {
       Path fileName = Paths.get(root).resolve(configEnum.getFileName()).toAbsolutePath();
 

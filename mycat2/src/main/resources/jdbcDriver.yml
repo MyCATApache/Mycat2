@@ -1,4 +1,6 @@
 datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
-jdbcDriver:
-  mysql: com.mysql.jdbc.Driver
-  mysql-xa: com.mysql.cj.jdbc.MysqlXADataSource
+maxPengdingLimit: -1
+waitTaskTimeout: 5
+timeUnit: SECONDS
+minThread: 2
+maxThread: 32

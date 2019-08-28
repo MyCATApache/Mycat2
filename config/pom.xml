@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.mycat</groupId>
         <artifactId>parent</artifactId>
-        <version>0.2-SNAPSHOT</version>
+      <version>0.3-SNAPSHOP</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 

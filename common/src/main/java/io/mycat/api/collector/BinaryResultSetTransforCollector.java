@@ -15,7 +15,6 @@
 package io.mycat.api.collector;
 
 
-import io.mycat.annotations.NoExcept;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.logTip.MycatLogger;
@@ -28,7 +27,7 @@ import java.math.BigDecimal;
  * @author jamie12221
  *  date 2019-05-10 13:21
  */
-@NoExcept
+
 public class BinaryResultSetTransforCollector implements ResultSetTransfor {
 
   final static MycatLogger LOGGER = MycatLoggerFactory

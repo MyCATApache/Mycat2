@@ -3,6 +3,8 @@ package io.mycat.proxy.session;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.buffer.CrossSwapThreadBufferPool;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
@@ -21,6 +23,8 @@ import java.util.Queue;
  **/
 public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServerSession<T> ,Session<T> {
 
+  MycatLogger MY_SQL_PROXY_SERVER_SESSION_LOGGER = MycatLoggerFactory
+      .getLogger(MySQLProxyServerSession.class);
 
   CrossSwapThreadBufferPool writeBufferPool();
 
@@ -64,6 +68,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
       while (!byteBuffers.offer(buffer)) { }
       if (end){
         while (!byteBuffers.offer(END_PACKET)) { }
+        MY_SQL_PROXY_SERVER_SESSION_LOGGER.debug("session id:{} has response", sessionId());
       }
       if (ioThread) {
         writeToChannel();

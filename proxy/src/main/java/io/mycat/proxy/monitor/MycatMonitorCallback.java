@@ -1,10 +1,10 @@
 package io.mycat.proxy.monitor;
 
 import io.mycat.MycatException;
-import io.mycat.annotations.NoExcept;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
@@ -14,7 +14,7 @@ import java.nio.channels.ClosedChannelException;
 /**
  * @author jamie12221 date 2019-05-20 11:32
  **/
-@NoExcept
+
 public interface MycatMonitorCallback {
 
   MycatMonitorCallback EMPTY = new AbstractMonitorCallback() {
@@ -27,8 +27,8 @@ public interface MycatMonitorCallback {
   }
 
   static Session getSession() {
-    MycatReactorThread thread = getThread();
-    Session curSession = thread.getReactorEnv().getCurSession();
+    SessionThread thread = getThread();
+    Session curSession = thread.getCurSession();
     if (curSession instanceof MycatSession) {
       return curSession;
     } else if (curSession instanceof MySQLClientSession) {

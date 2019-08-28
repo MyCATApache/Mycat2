@@ -27,7 +27,7 @@ public enum BalanceLeastActive implements LoadBalanceStrategy {
   INSTANCE {
     @Override
     public LoadBalanceElement select(LoadBalanceInfo info, List<LoadBalanceElement> entityList) {
-      if (null == entityList && entityList.size() == 0) {
+      if (null == entityList || entityList.isEmpty()) {
         return null;
       }
       int len = entityList.size();
@@ -51,9 +51,9 @@ public enum BalanceLeastActive implements LoadBalanceStrategy {
       if (1 == size) {
         return balanceList.get(0);
       }
-      int i = ThreadLocalRandom.current().nextInt(size);
+      int i = ThreadLocalRandom.current().nextInt(0, size);
       return balanceList.get(i);
     }
-  };
+  }
 }
 

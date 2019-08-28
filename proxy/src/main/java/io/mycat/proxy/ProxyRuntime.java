@@ -14,22 +14,18 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.MycatException;
+
+import io.mycat.ConfigRuntime;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
-import io.mycat.beans.mycat.MycatDataSource;
-import io.mycat.beans.mycat.MycatReplica;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.buffer.BufferPool;
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.ConfigReceiver;
 import io.mycat.config.ConfigurableRoot;
-import io.mycat.config.YamlUtil;
-import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
-import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.MysqlServerVariablesRootConfig;
 import io.mycat.config.proxy.ProxyConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
@@ -40,8 +36,6 @@ import io.mycat.config.user.UserRootConfig;
 import io.mycat.ext.MySQLAPIRuntimeImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.plug.loadBalance.LoadBalanceManager;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
 import io.mycat.proxy.callback.EmptyAsyncTaskCallBack;
@@ -52,23 +46,16 @@ import io.mycat.proxy.reactor.NIOAcceptor;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
-import io.mycat.util.StringUtil;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ProxyRuntime {
 
@@ -77,7 +64,6 @@ public class ProxyRuntime {
   private final Map<String, MySQLReplica> replicaMap = new HashMap<>();
   private final Map<String, MySQLDatasource> datasourceMap = new HashMap<>();
   private final Map<String, MycatDataNode> dataNodeMap = new HashMap<>();
-  private LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
   private MycatSecurityConfig securityManager;
   private MySQLVariables variables;
   private NIOAcceptor acceptor;
@@ -85,22 +71,21 @@ public class ProxyRuntime {
   private final ConfigReceiver config;
   private ProxyBeanProviders providers;
   private final Map<String, Object> defContext = new HashMap<>();
-  private MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
+  private final MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
 
   public ProxyRuntime(ConfigReceiver configReceiver)
       throws Exception {
     this.config = configReceiver;
-    ProxyRootConfig config = this.config.getConfig(ConfigEnum.PROXY);
+    ProxyRootConfig config = this.config.getConfig(ConfigFile.PROXY);
     Objects.requireNonNull(config, "mycat.yaml was not found");
     String proxyBeanProviders = config.getProxy().getProxyBeanProviders();
     Objects.requireNonNull(proxyBeanProviders, "proxyBeanProviders was not found");
     this.providers = (ProxyBeanProviders) Class.forName(proxyBeanProviders).newInstance();
     this.initCharset(configReceiver.getResourcePath());
     this.initMySQLVariables();
-    this.initPlug();
     this.initSecurityManager();
     this.initRepliac(this, providers);
-    this.initDataNode(providers, configReceiver.getConfig(ConfigEnum.DATANODE));
+    this.initDataNode(providers, configReceiver.getConfig(ConfigFile.DATANODE));
 
     providers.initRuntime(this, defContext);
   }
@@ -125,7 +110,6 @@ public class ProxyRuntime {
     this.replicaMap.clear();
     this.datasourceMap.clear();
     this.dataNodeMap.clear();
-    this.loadBalanceManager = new LoadBalanceManager();
     this.securityManager = null;
     this.variables = null;
     this.reactorThreads = null;
@@ -143,12 +127,12 @@ public class ProxyRuntime {
   }
 
   private void initMySQLVariables() {
-    MysqlServerVariablesRootConfig config = getConfig(ConfigEnum.VARIABLES);
+    MysqlServerVariablesRootConfig config = getConfig(ConfigFile.VARIABLES);
     Objects.requireNonNull(config.getVariables(), "variables config config not found");
     variables = new MySQLVariables(config.getVariables());
   }
 
-  public <T extends ConfigurableRoot> T getConfig(ConfigEnum configEnum) {
+  public <T extends ConfigurableRoot> T getConfig(ConfigFile configEnum) {
     ConfigurableRoot config = this.config.getConfig(configEnum);
     return (T) config;
   }
@@ -184,73 +168,22 @@ public class ProxyRuntime {
   }
 
 
-  public static Set<Integer> getReplicaIndexes(Map<String, String> replicaIndexes,
-      ReplicaConfig replicaConfig) {
-    String writeIndexText = replicaIndexes.get(replicaConfig.getName());
-    Set<Integer> writeIndex;
-    if (StringUtil.isEmpty(writeIndexText)) {
-      writeIndex = Collections.singleton(0);
-      LOGGER.warn("master indexes is empty and set  master of {} is 0 index",
-          replicaConfig.getName());
-    } else {
-      if (writeIndexText.contains(",")) {
-        List<String> strings = Arrays.asList(writeIndexText.split(","));
-        writeIndex = strings.stream().map(Integer::parseInt).collect(Collectors.toSet());
-      } else {
-        writeIndex = Collections.singleton(Integer.parseInt(writeIndexText));
-      }
-    }
-    return writeIndex;
-  }
-
   private void initRepliac(ProxyRuntime runtime, ProxyBeanProviders factory) {
-    ReplicasRootConfig dsConfig = getConfig(ConfigEnum.DATASOURCE);
-    MasterIndexesRootConfig replicaIndexConfig = getConfig(ConfigEnum.REPLICA_INDEX);
-    ////////////////////////////////////check/////////////////////////////////////////////////
-    Objects.requireNonNull(dsConfig, "replica config can not found");
-    Objects.requireNonNull(dsConfig.getReplicas(), "replica config can not be empty");
-    Objects.requireNonNull(replicaIndexConfig, "master indexes can not found");
-    Objects
-        .requireNonNull(replicaIndexConfig.getMasterIndexes(), "master indexes can not be empty");
-    ////////////////////////////////////check/////////////////////////////////////////////////
-    List<ReplicaConfig> replicas = dsConfig.getReplicas();
-    Map<String, String> replicaIndexes = replicaIndexConfig.getMasterIndexes();
-    int size = replicas.size();
-    for (int i = 0; i < size; i++) {
-      ReplicaConfig replicaConfig = replicas.get(i);
-      ////////////////////////////////////check/////////////////////////////////////////////////
-      Objects.requireNonNull(replicaConfig.getName(), "replica name can not be empty");
-      Objects.requireNonNull(replicaConfig.getRepType(), "replica message can not be empty");
-      Objects
-          .requireNonNull(replicaConfig.getSwitchType(), "replica switch message can not be empty");
-      Objects
-          .requireNonNull(replicaConfig.getBalanceName(), "replica balance name can not be empty");
-      Objects
-          .requireNonNull(replicaConfig.getBalanceType(),
-              "replica balance message can not be empty");
-      if (replicaConfig.getDatasources() == null) {
-        return;
-      }
-      ////////////////////////////////////check/////////////////////////////////////////////////
-      Set<Integer> writeIndex = getReplicaIndexes(replicaIndexes, replicaConfig);
-      MySQLReplica replica = factory
-          .createReplica(runtime, replicaConfig, writeIndex);
-      replicaMap.put(replica.getName(), replica);
-      List<MySQLDatasource> datasourceList = replica.getDatasourceList();
-      if (datasourceList != null) {
-        for (MySQLDatasource datasource : datasourceList) {
-          if (this.datasourceMap.containsKey(datasource.getName())) {
-            throw new MycatException("dataSource name:{} can noy duplicate", datasource.getName());
-          } else {
-            this.datasourceMap.put(datasource.getName(), datasource);
-          }
-        }
+    ReplicaSelectorRuntime.INSTCANE.load();
+    ReplicasRootConfig replicasRootConfig = ConfigRuntime.INSTCANE.getConfig(ConfigFile.DATASOURCE);
+
+    for (ReplicaConfig config : replicasRootConfig.getReplicas()) {
+      MySQLReplica replica = factory.createReplica(runtime, config,
+          ConfigRuntime.INSTCANE.getReplicaIndexes(config.getName()));
+      this.replicaMap.put(config.getName(), replica);
+      for (MySQLDatasource datasource : replica.getDatasourceList()) {
+        this.datasourceMap.put(datasource.getName(), datasource);
       }
     }
   }
 
   private io.mycat.config.proxy.ProxyConfig getProxy() {
-    ProxyRootConfig proxyRootConfig = getConfig(ConfigEnum.PROXY);
+    ProxyRootConfig proxyRootConfig = getConfig(ConfigFile.PROXY);
     ////////////////////////////////////check/////////////////////////////////////////////////
     Objects.requireNonNull(proxyRootConfig, "proxy(mycat) config can not found");
     Objects.requireNonNull(proxyRootConfig.getProxy(), "proxy config can not be empty");
@@ -386,7 +319,7 @@ public class ProxyRuntime {
 
 
   private void initSecurityManager() {
-    UserRootConfig userRootConfig = getConfig(ConfigEnum.USER);
+    UserRootConfig userRootConfig = getConfig(ConfigFile.USER);
     Objects.requireNonNull(userRootConfig, "user config can not found");
     this.securityManager = new MycatSecurityConfig(userRootConfig);
   }
@@ -405,62 +338,20 @@ public class ProxyRuntime {
     MycatMonitor.setCallback(callback);
   }
 
-  private void initPlug() {
-    PlugRootConfig plugRootConfig = getConfig(ConfigEnum.PLUG);
-    Objects.requireNonNull(plugRootConfig, "plug config can not found");
-    loadBalanceManager.load(plugRootConfig);
-  }
-
-  public LoadBalanceStrategy getLoadBalanceByBalanceName(String name) {
-    return loadBalanceManager.getLoadBalanceByBalanceName(name);
-  }
-
 
   public ConfigReceiver getConfig() {
     return config;
   }
-
-  private static final Logger REPLICA_MASTER_INDEXES_LOGGER = LoggerFactory
-      .getLogger("replicaIndexesLogger");
 
 
   public Map<String, Object> getDefContext() {
     return defContext;
   }
 
-  /**
-   * Getter for property 'providers'.
-   *
-   * @return Value for property 'providers'.
-   */
   public ProxyBeanProviders getProviders() {
     return providers;
   }
 
-  public <T extends MycatDataSource> void updateReplicaMasterIndexesConfig(
-      final MycatReplica replica,
-      List<T> writeDataSource) {
-
-    synchronized (REPLICA_MASTER_INDEXES_LOGGER) {
-      final MasterIndexesRootConfig config = getConfig(ConfigEnum.REPLICA_INDEX);
-      Map<String, String> masterIndexes = new HashMap<>(config.getMasterIndexes());
-      String name = replica.getName();
-      String old = masterIndexes.get(name);
-      String switchRes = writeDataSource.stream().map(i -> String.valueOf(i.getIndex()))
-          .collect(Collectors.joining(","));
-      if (old.equalsIgnoreCase(switchRes)) {
-        return;
-      }
-      String backup = YamlUtil.dump(config);
-      YamlUtil.dumpBackupToFile(config.getFilePath(), config.getVersion(), backup);
-      masterIndexes.put(name, switchRes);
-      config.setMasterIndexes(masterIndexes);
-      config.setVersion(config.getVersion() + 1);
-      String newContext = YamlUtil.dump(config);
-      YamlUtil.dumpToFile(config.getFilePath(), newContext);
-      REPLICA_MASTER_INDEXES_LOGGER.info("switchRes from:{}", old, switchRes);
-    }
-  }
 
   public MySQLAPIRuntimeImpl getMySQLAPIRuntime() {
     return mySQLAPIRuntime;

@@ -1,10 +1,14 @@
 package io.mycat.beans.mycat;
 
+import io.mycat.replica.PhysicsInstance;
+
 public interface MycatDataSource {
 
   int getIndex();
 
-  boolean isAlive();
+  String getName();
 
-  boolean asSelectRead();
+  MycatReplica getReplica();
+
+  PhysicsInstance instance();
 }

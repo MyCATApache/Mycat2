@@ -25,7 +25,7 @@ import io.mycat.beans.mycat.MycatTableRule;
 import io.mycat.beans.mycat.ShardingDatabseTableTable;
 import io.mycat.beans.mycat.ShardingDbTable;
 import io.mycat.beans.mycat.ShardingTableTable;
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.ConfigReceiver;
 import io.mycat.config.YamlUtil;
 import io.mycat.config.route.AnnotationType;
@@ -210,11 +210,11 @@ public class MycatRouterConfig {
   }
 
   public MycatRouterConfig(ConfigReceiver cr, MySQLAPIRuntime runtime) {
-    this(cr.getConfig(ConfigEnum.SCHEMA)
-        , cr.getConfig(ConfigEnum.FUNCTIONS),
-        cr.getConfig(ConfigEnum.DYNAMIC_ANNOTATION),
-        cr.getConfig(ConfigEnum.SEQUENCE_MODIFIER),
-        cr.getConfig(ConfigEnum.RULE), runtime);
+    this(cr.getConfig(ConfigFile.SCHEMA)
+        , cr.getConfig(ConfigFile.FUNCTIONS),
+        cr.getConfig(ConfigFile.DYNAMIC_ANNOTATION),
+        cr.getConfig(ConfigFile.SEQUENCE_MODIFIER),
+        cr.getConfig(ConfigFile.RULE), runtime);
   }
 
   private RuleAlgorithm getRuleAlgorithm(ShardingFuntion funtion)

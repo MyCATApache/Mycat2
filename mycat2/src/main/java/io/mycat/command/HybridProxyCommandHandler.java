@@ -20,13 +20,14 @@ import io.mycat.command.loaddata.LoaddataContext;
 import io.mycat.command.prepareStatement.PrepareStmtContext;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.grid.BlockProxyCommandHandler;
+import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
 import io.mycat.router.ProxyRouteResult;
-import io.mycat.sqlparser.util.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
 
 /**
  * @author jamie12221 date 2019-05-13 02:47
@@ -107,7 +108,7 @@ public class HybridProxyCommandHandler extends AbstractCommandHandler {
       return;
     }
     ProxyRouteResult route = resultRoute;
-    LoadBalanceStrategy balance = mycat.getRuntime()
+    LoadBalanceStrategy balance = PlugRuntime.INSTCANE
         .getLoadBalanceByBalanceName(resultRoute.getBalance());
     String dataNode = schema.getDefaultDataNode();
     mycat.switchDataNode(dataNode);

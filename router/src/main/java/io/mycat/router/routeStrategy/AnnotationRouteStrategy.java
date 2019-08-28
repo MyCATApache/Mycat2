@@ -25,7 +25,7 @@ import io.mycat.router.ProxyRouteResult;
 import io.mycat.router.RouteContext;
 import io.mycat.router.RouteStrategy;
 import io.mycat.router.RuleAlgorithm;
-import io.mycat.sqlparser.util.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
 import java.util.Objects;
 
 /**

@@ -45,16 +45,6 @@ public interface NIOHandler<T extends Session> {
 
   // void onClear(T session);
 
-  /**
-   * 在selector回调事件中,session会保存在ReactorEnv里,所以可以从线程获得当前session 0.用于读事件处理中获得当前的session
-   * 1.但是一连串多个session之间相互操作,回调过程中,ReactorEnv中的seesion并不会随着这些session相互操作而变化
-   */
-  default <T extends Session<T>> T getSessionCaller() {
-    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-    Session curSession = thread.getReactorEnv().getCurSession();
-    return (T) curSession;
-  }
-
   void onException(T session, Exception e);
 
   default ProxyRuntime getRuntime(){

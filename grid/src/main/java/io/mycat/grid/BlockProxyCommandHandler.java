@@ -1,31 +1,31 @@
 package io.mycat.grid;
 
+import io.mycat.bindThread.BindThreadKey;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.datasource.jdbc.transaction.TransactionProcessUnitManager;
+import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.datasource.TransactionSession;
+import io.mycat.datasource.jdbc.thread.GProcess;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.MycatSession;
 import java.util.function.Consumer;
 
 public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockProxyCommandHandler.class);
-//  final static ExecutorService service = Executors
-//      .newCachedThreadPool(r -> new ReactorEnvThread(r) {
-//      });
-
   final GridProxyCommandHandler handler;
+  private GRuntime jdbcRuntime;
 
   public BlockProxyCommandHandler() {
     handler = new GridProxyCommandHandler();
-
   }
 
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     handler.initRuntime(session, runtime);
+    this.jdbcRuntime = (GRuntime) runtime.getDefContext().get("gridRuntime");
   }
 
   @Override
@@ -37,19 +37,23 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
     });
   }
 
-  public void block(MycatSession session, Consumer<MycatSession> consumer) {
-    TransactionProcessUnitManager.INSTANCE.run(session,() -> {
-      ReactorEnvThread thread = null;
-      try {
-        thread = (ReactorEnvThread) Thread.currentThread();
-        session.deliverWorkerThread(thread);
-        consumer.accept(session);
-      } catch (Exception e) {
+  public void block(MycatSession mycat, Consumer<MycatSession> consumer) {
+    GRuntime.INSTACNE.run(mycat, new GProcess() {
+      @Override
+      public void accept(BindThreadKey key, TransactionSession session) {
+        try {
+          mycat.deliverWorkerThread((SessionThread) Thread.currentThread());
+          consumer.accept(mycat);
+        } finally {
+          mycat.backFromWorkerThread();
+        }
+      }
+
+      @Override
+      public void onException(BindThreadKey key, Exception e) {
         LOGGER.error("", e);
-        session.setLastMessage(e.toString());
-        session.writeErrorEndPacket();
-      } finally {
-        session.backFromWorkerThread();
+        mycat.setLastMessage(e.toString());
+        mycat.writeErrorEndPacket();
       }
     });
   }
