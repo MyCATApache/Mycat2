@@ -3,6 +3,7 @@ package cn.lightfish.sql.ast.complier;
 import cn.lightfish.sql.ast.expr.ValueExpr;
 import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.executor.logicExecutor.ExecutorType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
@@ -71,6 +72,6 @@ public class SubQueryComplier {
 
     private Executor createNormalSubquery(MySqlSelectQueryBlock queryBlock, long row) {
         return complierContext.getProjectComplier().createProject(queryBlock.getSelectList(), null,
-                complierContext.createTableSource(queryBlock.getFrom(), queryBlock.getWhere(), 0, row));
+                complierContext.createTableSource(queryBlock.getFrom(), queryBlock.getWhere(), 0, row, ExecutorType.QUERY));
     }
 }

@@ -1,32 +1,21 @@
 package cn.lightfish.sql.persistent;
 
+import cn.lightfish.sql.context.Navigation;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
 import cn.lightfish.sql.schema.MycatTable;
 import cn.lightfish.sql.schema.TableColumnDefinition;
 import java.util.Iterator;
 
-public class QueryPersistent implements Executor {
+public interface QueryPersistent extends Executor {
 
-  private final MycatTable table;
-  private final Iterator<Object[]> rows;
 
-  public QueryPersistent(MycatTable table, Iterator<Object[]> rows) {
-    this.table = table;
-    this.rows = rows;
+
+  public default TableColumnDefinition[] columnDefList(){
+    return new TableColumnDefinition[0];
   }
 
-  @Override
-  public TableColumnDefinition[] columnDefList() {
-    return table.getColumnDefinitions();
-  }
 
-  @Override
-  public boolean hasNext() {
-    return rows.hasNext();
-  }
+  public boolean hasNext();
 
-  @Override
-  public Object[] next() {
-    return rows.next();
-  }
+  public Object[] next();
 }

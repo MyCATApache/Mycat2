@@ -1,9 +1,7 @@
 package cn.lightfish.sql.persistent.impl;
 
-import cn.lightfish.sql.persistent.InsertPersistent;
-import cn.lightfish.sql.persistent.Persistent;
-import cn.lightfish.sql.persistent.QueryPersistent;
-import cn.lightfish.sql.persistent.UpdatePersistent;
+import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
+import cn.lightfish.sql.persistent.*;
 import cn.lightfish.sql.schema.MycatTable;
 import cn.lightfish.sql.schema.TableColumnDefinition;
 import java.util.ArrayList;
@@ -30,12 +28,11 @@ public class DefaultPersistentImpl implements Persistent {
   @Override
   public QueryPersistent createQueryPersistent(TableColumnDefinition[] columnNameList,
       Map<String, Object> persistentAttributes) {
-    return new QueryPersistent(table, Arrays.asList(new Object[]{1L},new Object[]{1L}).iterator());
+    return new QueryPersistentImpl(table,rows.iterator());
   }
 
   @Override
-  public UpdatePersistent createUpdatePersistent(TableColumnDefinition[] columnNameList,
-      Map<String, Object> persistentAttributes) {
-    return null;
+  public UpdatePersistent createUpdatePersistent(TableColumnDefinition[] columnNameList, Map<String, Object> persistentAttributes) {
+    return new UpdatePersistent(table,rows.iterator());
   }
 }

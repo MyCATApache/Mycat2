@@ -2,10 +2,7 @@ package cn.lightfish.sql.ast.complier;
 
 import cn.lightfish.sql.ast.converter.Converters;
 import cn.lightfish.sql.ast.expr.ValueExpr;
-import cn.lightfish.sql.executor.logicExecutor.ContextExecutor;
-import cn.lightfish.sql.executor.logicExecutor.Executor;
-import cn.lightfish.sql.executor.logicExecutor.LogicLeafTableExecutor;
-import cn.lightfish.sql.executor.logicExecutor.ValuesTable;
+import cn.lightfish.sql.executor.logicExecutor.*;
 import cn.lightfish.sql.schema.BaseColumnDefinition;
 import cn.lightfish.sql.schema.MycatSchemaManager;
 import cn.lightfish.sql.schema.TableColumnDefinition;
@@ -28,15 +25,16 @@ public class TableSourceComplier {
         this.complierContext = context;
     }
 
-    public Executor createLeafTableSource(SQLExprTableSource tableSource, SQLExpr where, long offset, long rowCount) {
+    public Executor createLeafTableSource(SQLExprTableSource tableSource, long offset, long rowCount,ExecutorType type) {
         String schema = tableSource.getSchemaObject().getSchema().getName();
-        String tableName = tableSource.getTableName();
+        String tableName =tableSource.getSchemaObject().getName();
         ColumnAllocator columnAllocatior = complierContext.getColumnAllocatior();
         TableColumnDefinition[] columns = columnAllocatior.getLeafTableColumnDefinition(tableSource);
-        LogicLeafTableExecutor tableExecuter = MycatSchemaManager.INSTANCE.getLogicLeafTableSource(schema, tableName, columns, offset, rowCount);
+        LogicLeafTableExecutor tableExecuter = MycatSchemaManager.INSTANCE.getLogicLeafTableSource(schema, tableName, columns, offset, rowCount,type);
         complierContext.registerLeafExecutor(tableExecuter);
         return new ContextExecutor(this.complierContext.runtimeContext, tableExecuter, columnAllocatior.getTableStartIndex(tableSource));
     }
+
 
     public void createTableSource(SQLSubqueryTableSource tableSource) {
 
@@ -49,8 +47,8 @@ public class TableSourceComplier {
         SQLExpr condition = tableSource.getCondition();
         List<SQLExpr> using = tableSource.getUsing();
 
-        Executor leftExecutor = complierContext.createTableSource(left, null, 0, -1);
-        Executor rightExecutor = complierContext.createTableSource(left, null, 0, -1);
+        Executor leftExecutor = complierContext.createTableSource(left, null, 0, -1,ExecutorType.QUERY);
+        Executor rightExecutor = complierContext.createTableSource(left, null, 0, -1,ExecutorType.QUERY);
 
         while (leftExecutor.hasNext()) {
             Object[] next = leftExecutor.next();

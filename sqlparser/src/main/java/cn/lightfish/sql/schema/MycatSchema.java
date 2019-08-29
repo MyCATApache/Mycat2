@@ -9,6 +9,10 @@ public class MycatSchema {
   private final String databaseName;
   private final Map<String,MycatTable> tables = new ConcurrentHashMap<>();
 
+  public String getDatabaseName() {
+    return databaseName;
+  }
+
   public MycatSchema(String databaseName) {
     this.databaseName = databaseName;
   }

@@ -2,50 +2,62 @@ package cn.lightfish.sql.executor.logicExecutor;
 
 import cn.lightfish.sql.schema.MycatTable;
 import cn.lightfish.sql.schema.TableColumnDefinition;
+
 import java.util.Map;
 
 public class LogicLeafTableExecutor implements Executor {
 
-  public Executor physicsExecutor;
-  public MycatTable table;
-  public Map<String, Object> persistentAttribute;
-  protected final TableColumnDefinition[] columnList;
+    public Executor physicsExecutor;
+    public MycatTable table;
+    public Map<String, Object> persistentAttribute;
+    protected final TableColumnDefinition[] columnList;
+    private final ExecutorType type;
 
-  public LogicLeafTableExecutor(TableColumnDefinition[] columnList,
-      MycatTable table, Map<String, Object> persistentAttribute) {
-    this.columnList = columnList;
-    this.table = table;
-    this.persistentAttribute = persistentAttribute;
-  }
+    public LogicLeafTableExecutor(TableColumnDefinition[] columnList,
+                                  MycatTable table, Map<String, Object> persistentAttribute, ExecutorType type) {
+        this.columnList = columnList;
+        this.table = table;
+        this.persistentAttribute = persistentAttribute;
+        this.type = type;
+    }
 
-  @Override
-  public TableColumnDefinition[] columnDefList() {
-    return columnList;
-  }
+    @Override
+    public TableColumnDefinition[] columnDefList() {
+        return columnList;
+    }
 
-  @Override
-  public boolean hasNext() {
-    return physicsExecutor.hasNext();
-  }
+    @Override
+    public boolean hasNext() {
+        return physicsExecutor.hasNext();
+    }
 
-  @Override
-  public Object[] next() {
-    return physicsExecutor.next();
-  }
+    @Override
+    public Object[] next() {
+        return physicsExecutor.next();
+    }
 
-  public void setPhysicsExecutor(Executor physicsExecutor) {
-    this.physicsExecutor = physicsExecutor;
-  }
+    public void delete() {
+        physicsExecutor.delete();
+    }
 
-  public MycatTable getTable() {
-    return table;
-  }
+    public void setPhysicsExecutor(Executor physicsExecutor) {
+        this.physicsExecutor = physicsExecutor;
+    }
 
-  public void putAttribute(String name, Object attribute) {
-    persistentAttribute.put(name, attribute);
-  }
+    @Override
+    public MycatTable getTable() {
+        return table;
+    }
 
-  public Map<String, Object> getPersistentAttribute() {
-    return persistentAttribute;
-  }
+    public void putAttribute(String name, Object attribute) {
+        persistentAttribute.put(name, attribute);
+    }
+
+    public Map<String, Object> getPersistentAttribute() {
+        return persistentAttribute;
+    }
+
+    public ExecutorType getType() {
+        return type;
+    }
 }

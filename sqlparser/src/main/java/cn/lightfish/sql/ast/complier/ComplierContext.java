@@ -5,6 +5,7 @@ import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer;
 import cn.lightfish.sql.ast.optimizer.SubqueryOptimizer.CorrelatedQuery;
 import cn.lightfish.sql.context.RootSessionContext;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.executor.logicExecutor.ExecutorType;
 import cn.lightfish.sql.executor.logicExecutor.LogicLeafTableExecutor;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
@@ -33,6 +34,7 @@ public class ComplierContext {
   private final ExprComplier exprComplier ;
   private final ProjectComplier projectComplier;
   private final SubQueryComplier subQueryComplier;
+
 
   public ComplierContext(RootSessionContext runtimeContext) {
     Objects.requireNonNull(runtimeContext);
@@ -75,13 +77,13 @@ public class ComplierContext {
 
 
   public Executor createTableSource(SQLTableSource tableSource, SQLExpr where,
-      long offset, long rowCount) {
+                                    long offset, long rowCount, ExecutorType type) {
     if (tableSource == null) {
       return null;
     }
     if (tableSource instanceof SQLExprTableSource) {
       SQLExprTableSource table = (SQLExprTableSource) tableSource;
-      return tableSourceComplier.createLeafTableSource(table, where, offset, rowCount);
+      return tableSourceComplier.createLeafTableSource(table,offset, rowCount,type);
     } else if (tableSource instanceof SQLSubqueryTableSource) {
       tableSourceComplier.createTableSource((SQLSubqueryTableSource)tableSource);
     } else if (tableSource instanceof SQLJoinTableSource) {

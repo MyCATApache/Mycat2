@@ -1,8 +1,10 @@
 package cn.lightfish.sql.schema;
 
-import cn.lightfish.sql.context.RootSessionContext;
+import cn.lightfish.sql.executor.logicExecutor.ExecutorType;
 import cn.lightfish.sql.executor.logicExecutor.LogicLeafTableExecutor;
+
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -15,10 +17,10 @@ public enum MycatSchemaManager {
   }
 
   public LogicLeafTableExecutor getLogicLeafTableSource(String schema,
-      String tableName,
-      TableColumnDefinition[] columnDefinitions, long offset, long rowCount) {
-    MycatTable table = schemas.get(schema).getTableByName(tableName);
-    return new LogicLeafTableExecutor(columnDefinitions, table, new HashMap<>());
+                                                        String tableName,
+                                                        TableColumnDefinition[] columnDefinitions, long offset, long rowCount, ExecutorType type) {
+    MycatTable table = Objects.requireNonNull(schemas.get(schema).getTableByName(tableName));
+    return new LogicLeafTableExecutor(columnDefinitions, table, new HashMap<>(), type);
   }
 
   public MycatTable getTable(String schemaName, String tableName) {

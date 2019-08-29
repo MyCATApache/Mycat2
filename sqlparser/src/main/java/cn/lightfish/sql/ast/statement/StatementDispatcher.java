@@ -5,10 +5,9 @@ import cn.lightfish.sql.ast.complier.ComplierContext;
 import cn.lightfish.sql.ast.complier.ExprComplier;
 import cn.lightfish.sql.ast.converter.Converters;
 import cn.lightfish.sql.ast.expr.ValueExpr;
-import cn.lightfish.sql.executor.logicExecutor.Executor;
-import cn.lightfish.sql.persistent.InsertPersistent;
-import cn.lightfish.sql.persistent.PersistentManager;
-import cn.lightfish.sql.persistent.UpdatePersistent;
+import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
+import cn.lightfish.sql.context.RootSessionContext;
+import cn.lightfish.sql.executor.logicExecutor.*;
 import cn.lightfish.sql.schema.*;
 import com.alibaba.fastsql.sql.ast.SQLDataType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
@@ -27,7 +26,6 @@ import java.util.*;
 public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
     final MycatConsole console;
-    Executor consoleResult;
 
     public StatementDispatcher(MycatConsole console) {
         this.console = console;
@@ -35,7 +33,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(SQLSelectStatement x) {
-        consoleResult = console.getComplierContext().getRootQueryComplier().complieRootQuery(x);
+        console.getContext().setQueryExecutor(console.getComplierContext().getRootQueryComplier().complieRootQuery(x));
         return super.visit(x);
     }
 
@@ -53,9 +51,8 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
             columnNameList[i] = table.getColumnByName(Converters.getColumnName((SQLName) columns.get(i)));
         }
         Map<String, Object> persistentAttribute = new HashMap<>();
-        InsertPersistent insertPersistent = PersistentManager.INSTANCE
-                .getInsertPersistent(console, table, columnNameList, persistentAttribute);
         List<ValuesClause> valuesList = x.getValuesList();
+        List<Object[]> rows = new ArrayList<>(valuesList.size());
         for (ValuesClause valuesClause : valuesList) {
             List<SQLExpr> values = valuesClause.getValues();
             Object[] row = new Object[count];
@@ -64,8 +61,11 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
                 ValueExpr expr = exprComplier.createExpr(valueExpr);
                 row[i] = expr.getValue();
             }
-            insertPersistent.insert(row);
+            rows.add(row);
         }
+        RootSessionContext context = console.getContext();
+        context.rootType = ExecutorType.INSERT;
+        console.getContext().setInsertExecutor(new InsertExecutor(table, columnNameList, persistentAttribute, rows.iterator()));
         return super.visit(x);
     }
 
@@ -165,22 +165,34 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(MySqlDeleteStatement x) {
+        console.getContext().rootType = ExecutorType.DELETE;
         ComplierContext complierContext = console.getComplierContext();
+
         ExprComplier exprComplier = complierContext.getExprComplier();
         SQLExprTableSource tableSource = (SQLExprTableSource) x.getTableSource();
+
         MycatTable table = console.getCurrentSchema()
                 .getTableByName(tableSource.getSchemaObject().getName());
         complierContext.createColumnAllocator(x);
-        ValueExpr expr = exprComplier.createExpr(x.getWhere());
+        BooleanExpr where = (BooleanExpr) exprComplier.createExpr(x.getWhere());
         TableColumnDefinition[] columnDefinition = complierContext.getColumnAllocatior()
                 .getLeafTableColumnDefinition(tableSource);
-        UpdatePersistent updatePersistent = PersistentManager.INSTANCE
-                .getUpdatePersistent(console, table, columnDefinition, Collections.emptyMap());
-
+        Executor executor = complierContext.getTableSourceComplier().createLeafTableSource(tableSource, 0, -1, ExecutorType.DELETE);
+        console.getContext().setDeleteExecutor(new DeleteExecutor(columnDefinition,table,new FilterExecutor(executor, where),Collections.emptyMap()));
         return super.visit(x);
     }
 
     public Executor getConsoleResult() {
-        return consoleResult;
+        switch (console.getContext().rootType) {
+            case QUERY:
+           return console.getContext().queryExecutor;
+            case UPDATE:
+                return console.getContext().updateExecutor;
+            case DELETE:
+                return console.getContext().deleteExecutor;
+            case INSERT:
+                return console.getContext().insertExecutor;
+                default:throw new UnsupportedOperationException();
+        }
     }
 }

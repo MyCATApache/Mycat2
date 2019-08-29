@@ -8,6 +8,7 @@ import cn.lightfish.sql.executor.DefExecutor;
 import cn.lightfish.sql.executor.EmptyExecutor;
 import cn.lightfish.sql.executor.PhysicsExecutorRunner;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.executor.logicExecutor.ExecutorType;
 import cn.lightfish.sql.persistent.PersistentManager;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import io.mycat.logTip.MycatLogger;
@@ -49,6 +50,7 @@ public class MycatConsole {
       @Override
       public Executor next() {
         SQLStatement statement = statementIterator.next();
+        context.rootType = ExecutorType.QUERY;
         StatementDispatcher statementDispatcher = new StatementDispatcher(MycatConsole.this);
         statement.accept(statementDispatcher);
         return response(statementDispatcher);

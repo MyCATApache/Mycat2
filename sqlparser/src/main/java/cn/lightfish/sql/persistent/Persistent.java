@@ -1,5 +1,7 @@
 package cn.lightfish.sql.persistent;
 
+import cn.lightfish.sql.ast.expr.ValueExpr;
+import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
 import cn.lightfish.sql.schema.TableColumnDefinition;
 import java.util.Map;
 
@@ -11,6 +13,5 @@ public interface Persistent {
   public QueryPersistent createQueryPersistent(TableColumnDefinition[] columnNameList,
       Map<String, Object> persistentAttributes);
 
-  public UpdatePersistent createUpdatePersistent(TableColumnDefinition[] columnNameList,
-      Map<String, Object> persistentAttributes);
+  public UpdatePersistent createUpdatePersistent(TableColumnDefinition[] columnNameList, Map<String, Object> persistentAttributes);
 }

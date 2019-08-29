@@ -1,9 +1,10 @@
 package cn.lightfish.sql.ast.complier;
 
 import cn.lightfish.sql.ast.expr.booleanExpr.BooleanExpr;
-import cn.lightfish.sql.ast.optimizer.queryCondition.QueryConditionCollector;
+import cn.lightfish.sql.ast.optimizer.queryCondition.ConditionCollector;
 import cn.lightfish.sql.context.GlobalContext;
 import cn.lightfish.sql.executor.logicExecutor.Executor;
+import cn.lightfish.sql.executor.logicExecutor.ExecutorType;
 import cn.lightfish.sql.executor.logicExecutor.FilterExecutor;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
@@ -31,13 +32,13 @@ public class RootQueryComplier {
     optimizeAst(x);
     createColumnAllocator(x);
     collectSubQuery(x);
-    QueryConditionCollector conditionCollector = new QueryConditionCollector();
+    ConditionCollector conditionCollector = new ConditionCollector();
     x.accept(conditionCollector);
-    Executor executor = context.createTableSource(rootQuery.getFrom(), rootQuery.getWhere(), 0, -1);
+    Executor executor = context.createTableSource(rootQuery.getFrom(), rootQuery.getWhere(), 0, -1, ExecutorType.QUERY);
     executor = createFilter(rootQuery, executor, exprComplier);
     executor = projectComplier
         .createProject(rootQuery.getSelectList(), aliasList, executor);
-    context.runtimeContext.setRootProject(executor);
+    context.runtimeContext.setQueryExecutor(executor);
     return executor;
   }
 

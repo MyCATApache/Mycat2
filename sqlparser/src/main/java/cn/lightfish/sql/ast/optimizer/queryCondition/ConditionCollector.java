@@ -10,24 +10,25 @@ import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-public class QueryConditionCollector extends MySqlASTVisitorAdapter {
+public class ConditionCollector extends MySqlASTVisitorAdapter {
+    private boolean failureIndeterminacy = false;
     private final LinkedList<QueryDataRange> stack = new LinkedList<>();
     private QueryDataRange root;
     private boolean isJoin;
 
 
-    public QueryConditionCollector() {
+    public ConditionCollector() {
 
     }
+
     @Override
     public boolean visit(SQLJoinTableSource x) {
         isJoin = true;
-       return super.visit(x);
+        return super.visit(x);
     }
 
     @Override
@@ -38,22 +39,24 @@ public class QueryConditionCollector extends MySqlASTVisitorAdapter {
 
     private void addEqualValue(ColumnValue columnValue) {
         QueryDataRange queryDataRange = Objects.requireNonNull(stack.peek());
-        if (isJoin){
+        if (isJoin) {
             queryDataRange.joinEqualValues.add(columnValue);
-        }else {
+        } else {
             queryDataRange.equalValues.add(columnValue);
         }
     }
 
     private void addRangeValues(ColumnRangeValue columnRangeValue) {
         QueryDataRange queryDataRange = Objects.requireNonNull(stack.peek());
-        if (isJoin){
+        if (isJoin) {
             queryDataRange.joinEangeValues.add(columnRangeValue);
-        }else{
+        } else {
             queryDataRange.rangeValues.add(columnRangeValue);
         }
     }
+
     public void failureBecauseIndeterminacy(SQLExpr sqlExpr) {
+        failureIndeterminacy = true;
         Objects.requireNonNull(stack.peek()).messageList.add(sqlExpr.toString());
     }
 
@@ -477,48 +480,12 @@ public class QueryConditionCollector extends MySqlASTVisitorAdapter {
         return super.visit(x);
     }
 
-    public class ColumnValue {
-
-        final SQLColumnDefinition column;
-        final SQLBinaryOperator operator;
-        final Object value;
-        final SQLTableSource tableSource;
-
-        public ColumnValue(SQLColumnDefinition column, SQLBinaryOperator operator, Object value, SQLTableSource tableSource) {
-            this.column = column;
-            this.operator = operator;
-            this.value = value;
-            this.tableSource = tableSource;
-        }
+    public boolean isFailureIndeterminacy() {
+        return failureIndeterminacy;
     }
 
-    public class ColumnRangeValue {
-
-        final SQLColumnDefinition column;
-        final Object begin;
-        final Object end;
-        final SQLTableSource tableSource;
-
-        public ColumnRangeValue(SQLColumnDefinition column, Object begin, Object end, SQLTableSource tableSource) {
-            this.column = column;
-            this.begin = begin;
-            this.end = end;
-            this.tableSource = tableSource;
-        }
-
-    }
-
-    public class QueryDataRange {
-        private final List<ColumnValue> equalValues = new ArrayList<>();
-        private final List<ColumnRangeValue> rangeValues = new ArrayList<>();
-        private final MySqlSelectQueryBlock queryBlock;
-        private final List<QueryDataRange> children = new ArrayList<>();
-        private final List<String> messageList = new ArrayList<>();
-        private final List<ColumnValue> joinEqualValues = new ArrayList<>();
-        private final List<ColumnRangeValue> joinEangeValues = new ArrayList<>();
-        public QueryDataRange(MySqlSelectQueryBlock queryBlock) {
-            this.queryBlock = queryBlock;
-        }
+    public void setFailureIndeterminacy(boolean failureIndeterminacy) {
+        this.failureIndeterminacy = failureIndeterminacy;
     }
 
     public static void main(String[] args) {
