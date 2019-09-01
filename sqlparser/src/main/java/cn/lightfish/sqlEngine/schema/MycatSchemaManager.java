@@ -12,7 +12,7 @@ public enum MycatSchemaManager {
   INSTANCE;
   final ConcurrentMap<String, MycatSchema> schemas = new ConcurrentHashMap<>();
 
-  MycatConsole createConsole() {
+    public MycatConsole createConsole() {
     return new MycatConsole();
   }
 
