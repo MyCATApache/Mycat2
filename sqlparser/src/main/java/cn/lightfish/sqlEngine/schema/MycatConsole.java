@@ -40,7 +40,7 @@ public class MycatConsole {
   }
 
   public Iterator<Executor> input(String sql) {
-    Iterator<SQLStatement> statementIterator = SQLParser.INSTANCE.parse(sql);
+    Iterator<SQLStatement> statementIterator = SQLParser.INSTANCE.parse(sql).iterator();
     return new Iterator<Executor>() {
       @Override
       public boolean hasNext() {

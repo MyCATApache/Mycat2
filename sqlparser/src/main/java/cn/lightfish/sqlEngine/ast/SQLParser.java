@@ -4,7 +4,12 @@ import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.Che
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveAllColumn;
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveIdentifierAlias;
 
+import cn.lightfish.sqlEngine.ast.extractor.Extractors;
+import cn.lightfish.sqlEngine.ast.extractor.MysqlTableExtractor;
 import cn.lightfish.sqlEngine.context.GlobalContext;
+import cn.lightfish.sqlEngine.schema.MycatSchema;
+import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.StatementType;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLAlterStatement;
@@ -14,10 +19,11 @@ import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 public enum SQLParser {
   INSTANCE;
-  public Iterator<SQLStatement> parse(String sql) {
+  public List<SQLStatement> parse(String sql) {
     SQLStatementParser parser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql,
         SQLParserFeature.EnableSQLBinaryOpExprGroup,
         SQLParserFeature.UseInsertColumnsCache,
@@ -32,6 +38,39 @@ public enum SQLParser {
           CheckColumnAmbiguous);
     }
 
-    return sqlStatements.iterator();
+    return sqlStatements;
+  }
+
+  public static void main(String[] args) {
+    List<SQLStatement> statements = SQLParser.INSTANCE.parse("WITH person_tom AS\n" +
+            "(\n" +
+            "SELECT * FROM `T_Person`\n" +
+            "WHERE FName='TOM'\n" +
+            ")\n" +
+            "SELECT * FROM  `T_Person`\n" +
+            "WHERE FAge=person_tom.FAge\n" +
+            "OR FSalary=person_tom.FSalary");
+    for (SQLStatement statement : statements) {
+      //判断statement类型
+      StatementType statementType = Extractors.getStatementType(statement);
+      switch (statementType){
+        case SQLSelectStatement:{
+          Set<MycatTable> tables = Extractors.getTables(statement);
+          if (tables==null||tables.isEmpty()){
+
+          }
+          System.out.println();
+        }
+        case SQLInsertStatement:
+        case MySqlInsertStatement:
+        case MySqlUpdateStatement:
+        case SQLDeleteStatement:
+        case MySqlDeleteStatement:
+
+        default:
+      }
+      System.out.println(statementType);
+    }
+
   }
 }

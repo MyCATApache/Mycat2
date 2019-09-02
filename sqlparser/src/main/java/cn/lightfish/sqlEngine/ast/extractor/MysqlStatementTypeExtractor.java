@@ -821,7 +821,7 @@ public class MysqlStatementTypeExtractor extends MySqlASTVisitorAdapter {
     
     @Override
     public boolean visit(SQLSelectStatement x) {
-        statementType = StatementType.MySqlCheckTableStatement;
+        statementType = StatementType.SQLSelectStatement;
         return false;
     }
 

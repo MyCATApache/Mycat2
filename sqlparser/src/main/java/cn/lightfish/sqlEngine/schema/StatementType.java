@@ -251,5 +251,6 @@ public enum StatementType {
     SQLDropFunctionStatement,
     SQLDropTableSpaceStatement,
     SQLDropProcedureStatement,
+    SQLSelectStatement,
     UNKNOW
 }
