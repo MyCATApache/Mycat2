@@ -4,24 +4,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MycatSchema {
+public class DbSchema {
 
   private final String databaseName;
-  private final Map<String,MycatTable> tables = new ConcurrentHashMap<>();
+  private final Map<String, DbTable> tables = new ConcurrentHashMap<>();
 
   public String getDatabaseName() {
     return databaseName;
   }
 
-  public MycatSchema(String databaseName) {
+  public DbSchema(String databaseName) {
     this.databaseName = databaseName;
   }
 
-  public MycatTable getTableByName(String tableName) {
+  public DbTable getTableByName(String tableName) {
     return tables.get(tableName);
   }
 
-  public void createTable(MycatTable table) {
+  public void createTable(DbTable table) {
     tables.put(table.tableName,table);
   }
 

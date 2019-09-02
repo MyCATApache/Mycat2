@@ -1,21 +1,21 @@
 package cn.lightfish.sqlEngine.executor.logicExecutor;
 
 import cn.lightfish.sqlEngine.persistent.InsertPersistent;
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import cn.lightfish.sqlEngine.schema.TableColumnDefinition;
 
 import java.util.Iterator;
 import java.util.Map;
 
 public class InsertExecutor implements Executor {
-    private final MycatTable table;
+    private final DbTable table;
     private final TableColumnDefinition[] columnNameList;
     private final Map<String, Object> persistentAttribute;
     InsertPersistent insertPersistent;
    final Iterator<Object[]> row;
 
 
-    public InsertExecutor(MycatTable table, TableColumnDefinition[] columnNameList, Map<String, Object> persistentAttribute, Iterator<Object[]> iterator) {
+    public InsertExecutor(DbTable table, TableColumnDefinition[] columnNameList, Map<String, Object> persistentAttribute, Iterator<Object[]> iterator) {
         this.table = table;
         this.columnNameList = columnNameList;
         this.persistentAttribute = persistentAttribute;
@@ -40,7 +40,7 @@ public class InsertExecutor implements Executor {
     }
 
     @Override
-    public MycatTable getTable() {
+    public DbTable getTable() {
         return table;
     }
 

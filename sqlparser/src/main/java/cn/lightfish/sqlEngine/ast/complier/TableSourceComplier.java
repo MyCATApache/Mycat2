@@ -4,7 +4,7 @@ import cn.lightfish.sqlEngine.ast.converter.Converters;
 import cn.lightfish.sqlEngine.ast.expr.ValueExpr;
 import cn.lightfish.sqlEngine.executor.logicExecutor.*;
 import cn.lightfish.sqlEngine.schema.BaseColumnDefinition;
-import cn.lightfish.sqlEngine.schema.MycatSchemaManager;
+import cn.lightfish.sqlEngine.schema.DbSchemaManager;
 import cn.lightfish.sqlEngine.schema.TableColumnDefinition;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
@@ -30,7 +30,7 @@ public class TableSourceComplier {
         String tableName =tableSource.getSchemaObject().getName();
         ColumnAllocator columnAllocatior = complierContext.getColumnAllocatior();
         TableColumnDefinition[] columns = columnAllocatior.getLeafTableColumnDefinition(tableSource);
-        LogicLeafTableExecutor tableExecuter = MycatSchemaManager.INSTANCE.getLogicLeafTableSource(schema, tableName, columns, offset, rowCount,type);
+        LogicLeafTableExecutor tableExecuter = DbSchemaManager.INSTANCE.getLogicLeafTableSource(schema, tableName, columns, offset, rowCount,type);
         complierContext.registerLeafExecutor(tableExecuter);
         return new ContextExecutor(this.complierContext.runtimeContext, tableExecuter, columnAllocatior.getTableStartIndex(tableSource));
     }

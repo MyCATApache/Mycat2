@@ -2,8 +2,8 @@ package cn.lightfish.sqlEngine.ast.complier;
 
 import cn.lightfish.sqlEngine.ast.SQLTypeMap;
 import cn.lightfish.sqlEngine.ast.expr.ValueExpr;
-import cn.lightfish.sqlEngine.schema.MycatSchemaManager;
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbSchemaManager;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import cn.lightfish.sqlEngine.schema.TableColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
@@ -52,7 +52,7 @@ public class ColumnAllocator {
 
     public TableColumnDefinition[] getLeafTableColumnDefinition(SQLExprTableSource tableSource) {
         SchemaObject tableObject = tableSource.getSchemaObject();
-        MycatTable table = MycatSchemaManager.INSTANCE
+        DbTable table = DbSchemaManager.INSTANCE
                 .getTable(tableObject.getSchema().getName(), tableObject.getName());
         List<SQLColumnDefinition> columnDefinitions = tableSourceColumnMap.get(tableSource);
         TableColumnDefinition[] mycatColumnDefinitions = new TableColumnDefinition[columnDefinitions

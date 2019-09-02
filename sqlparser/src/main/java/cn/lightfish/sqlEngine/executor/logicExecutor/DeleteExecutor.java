@@ -1,7 +1,7 @@
 package cn.lightfish.sqlEngine.executor.logicExecutor;
 
 import cn.lightfish.sqlEngine.persistent.UpdatePersistent;
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import cn.lightfish.sqlEngine.schema.TableColumnDefinition;
 
 import java.util.Map;
@@ -11,8 +11,8 @@ public class DeleteExecutor implements Executor {
     final FilterExecutor filter;
     private Map<String, Object> map;
     UpdatePersistent updatePersistent;
-    public MycatTable table;
-    public DeleteExecutor(TableColumnDefinition[] tableColumnDefinitions,MycatTable table,FilterExecutor filter, Map<String,Object> map) {
+    public DbTable table;
+    public DeleteExecutor(TableColumnDefinition[] tableColumnDefinitions, DbTable table, FilterExecutor filter, Map<String,Object> map) {
         this.tableColumnDefinitions = tableColumnDefinitions;
         this.table = table;
         this.filter = filter;
@@ -36,7 +36,7 @@ public class DeleteExecutor implements Executor {
     }
 
     @Override
-    public MycatTable getTable() {
+    public DbTable getTable() {
         return table;
     }
 

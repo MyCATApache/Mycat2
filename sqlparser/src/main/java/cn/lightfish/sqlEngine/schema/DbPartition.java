@@ -1,14 +1,14 @@
 package cn.lightfish.sqlEngine.schema;
 
-public class MycatPartition {
+public class DbPartition {
   private final String dbMethodName;
   private final String dbPartitionCoulumn;
   private final String tableMethodName;
   private final String tablePartitionCoulumn;
   private final int tablePartitions;
 
-  public MycatPartition(String dbMethodName, String dbPartitionCoulumn, String tableMethodName,
-      String tablePartitionCoulumn, int tablePartitions) {
+  public DbPartition(String dbMethodName, String dbPartitionCoulumn, String tableMethodName,
+                     String tablePartitionCoulumn, int tablePartitions) {
     this.dbMethodName = dbMethodName;
     this.dbPartitionCoulumn = dbPartitionCoulumn;
     this.tableMethodName = tableMethodName;

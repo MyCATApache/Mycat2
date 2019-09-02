@@ -5,10 +5,8 @@ import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.Res
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveIdentifierAlias;
 
 import cn.lightfish.sqlEngine.ast.extractor.Extractors;
-import cn.lightfish.sqlEngine.ast.extractor.MysqlTableExtractor;
 import cn.lightfish.sqlEngine.context.GlobalContext;
-import cn.lightfish.sqlEngine.schema.MycatSchema;
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import cn.lightfish.sqlEngine.schema.StatementType;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
@@ -17,7 +15,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLDDLStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserFeature;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
-import java.util.Iterator;
+
 import java.util.List;
 import java.util.Set;
 
@@ -55,7 +53,7 @@ public enum SQLParser {
       StatementType statementType = Extractors.getStatementType(statement);
       switch (statementType){
         case SQLSelectStatement:{
-          Set<MycatTable> tables = Extractors.getTables(statement);
+          Set<DbTable> tables = Extractors.getTables(defaultSchema.getSchemaName(), statement);
           if (tables==null||tables.isEmpty()){
 
           }

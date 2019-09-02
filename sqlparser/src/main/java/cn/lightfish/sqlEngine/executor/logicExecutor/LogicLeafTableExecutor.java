@@ -1,6 +1,6 @@
 package cn.lightfish.sqlEngine.executor.logicExecutor;
 
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import cn.lightfish.sqlEngine.schema.TableColumnDefinition;
 
 import java.util.Map;
@@ -8,13 +8,13 @@ import java.util.Map;
 public class LogicLeafTableExecutor implements Executor {
 
     public Executor physicsExecutor;
-    public MycatTable table;
+    public DbTable table;
     public Map<String, Object> persistentAttribute;
     protected final TableColumnDefinition[] columnList;
     private final ExecutorType type;
 
     public LogicLeafTableExecutor(TableColumnDefinition[] columnList,
-                                  MycatTable table, Map<String, Object> persistentAttribute, ExecutorType type) {
+                                  DbTable table, Map<String, Object> persistentAttribute, ExecutorType type) {
         this.columnList = columnList;
         this.table = table;
         this.persistentAttribute = persistentAttribute;
@@ -45,7 +45,7 @@ public class LogicLeafTableExecutor implements Executor {
     }
 
     @Override
-    public MycatTable getTable() {
+    public DbTable getTable() {
         return table;
     }
 

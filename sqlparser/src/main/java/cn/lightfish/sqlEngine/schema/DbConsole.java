@@ -26,15 +26,15 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public class MycatConsole {
+public class DbConsole {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatConsole.class);
+  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(DbConsole.class);
   final RootSessionContext context;
   final PhysicsExecutorRunner runner = new PhysicsExecutorRunner();
   final ComplierContext complierContext;
-  MycatSchema currentSchema;
+  DbSchema currentSchema;
 
-  public MycatConsole() {
+  public DbConsole() {
     context = new RootSessionContext();
     complierContext = new ComplierContext(context);
   }
@@ -51,23 +51,23 @@ public class MycatConsole {
       public Executor next() {
         SQLStatement statement = statementIterator.next();
         context.rootType = ExecutorType.QUERY;
-        StatementDispatcher statementDispatcher = new StatementDispatcher(MycatConsole.this);
+        StatementDispatcher statementDispatcher = new StatementDispatcher(DbConsole.this);
         statement.accept(statementDispatcher);
         return response(statementDispatcher);
       }
 
       private Executor response(StatementDispatcher mycatStatementVisitor) {
         Executor consoleResult = mycatStatementVisitor.getConsoleResult();
-        return (consoleResult != null) ? runner.run(MycatConsole.this) : EmptyExecutor.INSTACNE;
+        return (consoleResult != null) ? runner.run(DbConsole.this) : EmptyExecutor.INSTACNE;
       }
     };
   }
 
   public static void main(String[] args) throws IOException, URISyntaxException {
     PrintStream out = System.out;
-    MycatConsole console = MycatSchemaManager.INSTANCE.createConsole();
+    DbConsole console = DbSchemaManager.INSTANCE.createConsole();
     String text = new String(Files.readAllBytes(
-        Paths.get(MycatConsole.class.getClassLoader().getResource("test.txt").toURI())
+        Paths.get(DbConsole.class.getClassLoader().getResource("test.txt").toURI())
             .toAbsolutePath()));
     Iterator<Executor> iterator = console.input(text);
     int id = 1;
@@ -102,8 +102,8 @@ public class MycatConsole {
   }
 
   public boolean createSchema(String databaseName) {
-    MycatSchema mycatSchema = MycatSchemaManager.INSTANCE.schemas
-        .computeIfAbsent(databaseName, MycatSchema::new);
+    DbSchema mycatSchema = DbSchemaManager.INSTANCE.schemas
+        .computeIfAbsent(databaseName, DbSchema::new);
     if (currentSchema == null) {
       currentSchema = mycatSchema;
     }
@@ -114,19 +114,19 @@ public class MycatConsole {
     BaseColumnDefinition[] columnList = new BaseColumnDefinition[]{
         new BaseColumnDefinition("Database", String.class)};
     List<String[]> list = new ArrayList<>();
-    for (String database : MycatSchemaManager.INSTANCE.schemas.keySet()) {
+    for (String database : DbSchemaManager.INSTANCE.schemas.keySet()) {
       list.add(new String[]{database});
     }
     return new DefExecutor(columnList, list);
   }
 
-  public void createTable(MycatTable table) {
+  public void createTable(DbTable table) {
     currentSchema.createTable(table);
     PersistentManager.INSTANCE.createPersistent(table, null, Collections.emptyMap());
   }
 
   public void dropDatabase(String databaseName) {
-    MycatSchemaManager.INSTANCE.schemas.remove(databaseName);
+    DbSchemaManager.INSTANCE.schemas.remove(databaseName);
   }
 
   public void dropTable(String tableGroupName) {
@@ -137,7 +137,7 @@ public class MycatConsole {
     currentSchema.dropTable(nameList);
   }
 
-  public MycatSchema getCurrentSchema() {
+  public DbSchema getCurrentSchema() {
     return currentSchema;
   }
 

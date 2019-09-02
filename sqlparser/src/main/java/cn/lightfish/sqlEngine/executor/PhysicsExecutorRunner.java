@@ -7,13 +7,13 @@ import cn.lightfish.sqlEngine.executor.logicExecutor.InsertExecutor;
 import cn.lightfish.sqlEngine.executor.logicExecutor.LogicLeafTableExecutor;
 import cn.lightfish.sqlEngine.persistent.PersistentManager;
 import cn.lightfish.sqlEngine.persistent.UpdatePersistent;
-import cn.lightfish.sqlEngine.schema.MycatConsole;
+import cn.lightfish.sqlEngine.schema.DbConsole;
 
 import java.util.List;
 
 public class PhysicsExecutorRunner {
 
-    public Executor run(MycatConsole console) {
+    public Executor run(DbConsole console) {
         UpdatePersistent updatePersistent;
         List<LogicLeafTableExecutor> leafExecutor = console.getContext().getLeafExecutor();
         LogicLeafTableExecutor root = null;

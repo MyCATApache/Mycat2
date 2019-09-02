@@ -1,6 +1,5 @@
 package cn.lightfish.sqlEngine.ast.extractor;
 
-import cn.lightfish.sqlEngine.schema.MycatTable;
 import cn.lightfish.sqlEngine.schema.StatementType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 
@@ -13,9 +12,9 @@ public class Extractors {
         return mysqlStatementTypeExtractor.getStatementType();
     }
 
-    public final static Set<MycatTable> getTables(SQLStatement statement) {
-        MysqlTableExtractor tableExtractor = new MysqlTableExtractor();
+    public final static Set<SchemaTablePair> getTables(String schemaName, SQLStatement statement) {
+        MysqlTableExtractor tableExtractor = new MysqlTableExtractor(schemaName);
         statement.accept(tableExtractor);
-        return tableExtractor.getSet();
+        return tableExtractor.getDbSet();
     }
 }

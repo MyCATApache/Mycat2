@@ -311,7 +311,7 @@ public class BufferSQLParser {
 //        byte[] defaultByteArray = "insert tbl_A(id, val) valueStartIndex(1, 2);\ninsert tbl_B(id, val) valueStartIndex(2, 2);\nSELECT id, val FROM tbl_S where id=19;\n".getBytes(StandardCharsets.UTF_8);
 
     ByteArrayView src = new DefaultByteArray(
-        "/* mycat:balance*/select * into tbl_B from tbl_A;".getBytes());
+        "/* mycat:balance*/select * into tbl_B from tbl_A ;".getBytes());
 //        ByteArrayView src = new DefaultByteArray("select VERSION(), USER(), id from tbl_A;".getBytes());
 //        ByteArrayView src = new DefaultByteArray("select * into tbl_B from tbl_A;".getBytes());
 //        long min = 0;

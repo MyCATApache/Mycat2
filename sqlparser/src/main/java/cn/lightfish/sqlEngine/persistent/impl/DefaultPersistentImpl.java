@@ -1,7 +1,7 @@
 package cn.lightfish.sqlEngine.persistent.impl;
 
 import cn.lightfish.sqlEngine.persistent.*;
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import cn.lightfish.sqlEngine.schema.TableColumnDefinition;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +11,9 @@ public class DefaultPersistentImpl implements Persistent {
 
 
   final List<Object[]> rows = new ArrayList<>();
-  private MycatTable table;
+  private DbTable table;
 
-  public DefaultPersistentImpl(MycatTable table) {
+  public DefaultPersistentImpl(DbTable table) {
     this.table = table;
   }
 

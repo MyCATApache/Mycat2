@@ -1,16 +1,16 @@
 package cn.lightfish.sqlEngine.persistent;
 
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import cn.lightfish.sqlEngine.schema.TableColumnDefinition;
 
 import java.util.Iterator;
 
 public class UpdatePersistent implements QueryPersistent {
-    private final MycatTable table;
+    private final DbTable table;
     private final Iterator<Object[]> rows;
 
 
-    public UpdatePersistent(MycatTable table, Iterator<Object[]> rows) {
+    public UpdatePersistent(DbTable table, Iterator<Object[]> rows) {
         this.table = table;
         this.rows = rows;
     }
@@ -26,7 +26,7 @@ public class UpdatePersistent implements QueryPersistent {
     }
 
     @Override
-    public MycatTable getTable() {
+    public DbTable getTable() {
         return table;
     }
 

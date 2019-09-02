@@ -25,9 +25,9 @@ import java.util.*;
 
 public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
-    final MycatConsole console;
+    final DbConsole console;
 
-    public StatementDispatcher(MycatConsole console) {
+    public StatementDispatcher(DbConsole console) {
         this.console = console;
     }
 
@@ -42,7 +42,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
     public boolean visit(MySqlInsertStatement x) {
         ComplierContext complierContext = console.getComplierContext();
         ExprComplier exprComplier = complierContext.getExprComplier();
-        MycatTable table = console.getCurrentSchema()
+        DbTable table = console.getCurrentSchema()
                 .getTableByName(x.getTableSource().getSchemaObject().getName());
         List<SQLExpr> columns = x.getColumns();
         int count = columns.size();
@@ -83,7 +83,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
 
     @Override
     public boolean visit(MySqlCreateTableStatement x) {
-        MycatSchema currnetSchema = console.getCurrentSchema();
+        DbSchema currnetSchema = console.getCurrentSchema();
         Objects.requireNonNull(currnetSchema);
         String tableName = x.getTableSource().getSchemaObject().getName();
         List<SQLTableElement> tableElementList =
@@ -106,17 +106,17 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
         SQLMethodInvokeExpr dbPartitionBy = (SQLMethodInvokeExpr) x
                 .getDbPartitionBy();//指定分库键和分库算法，不支持按照时间分库；
         if (dbPartitionBy != null) {
-            console.createTable(new MycatTable(currnetSchema, tableName, columnDefinitions,
+            console.createTable(new DbTable(currnetSchema, tableName, columnDefinitions,
                     getMycatPartition(x, primaryKey, dbPartitionBy)));
         } else {
             console.createTable(
-                    new MycatTable(currnetSchema, tableName, columnDefinitions, x.isBroadCast()));
+                    new DbTable(currnetSchema, tableName, columnDefinitions, x.isBroadCast()));
         }
         return super.visit(x);
     }
 
-    private MycatPartition getMycatPartition(MySqlCreateTableStatement x, String primaryKey,
-                                             SQLMethodInvokeExpr dbPartitionBy) {
+    private DbPartition getMycatPartition(MySqlCreateTableStatement x, String primaryKey,
+                                          SQLMethodInvokeExpr dbPartitionBy) {
         String dbMethodName = dbPartitionBy.getMethodName();//分片算法名字
         String dbPartitionCoulumn = dbPartitionBy.getArguments() == null ? primaryKey
                 : dbPartitionBy.getArguments().get(0).toString();
@@ -136,7 +136,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
             tablePartitionCoulumn = dbPartitionCoulumn;
             tablePartitions = 1;
         }
-        return new MycatPartition(dbMethodName, dbPartitionCoulumn, tableMethodName, tablePartitionCoulumn, tablePartitions);
+        return new DbPartition(dbMethodName, dbPartitionCoulumn, tableMethodName, tablePartitionCoulumn, tablePartitions);
     }
 
     @Override
@@ -171,7 +171,7 @@ public class StatementDispatcher extends MySqlASTVisitorAdapter {
         ExprComplier exprComplier = complierContext.getExprComplier();
         SQLExprTableSource tableSource = (SQLExprTableSource) x.getTableSource();
 
-        MycatTable table = console.getCurrentSchema()
+        DbTable table = console.getCurrentSchema()
                 .getTableByName(tableSource.getSchemaObject().getName());
         complierContext.createColumnAllocator(x);
         BooleanExpr where = (BooleanExpr) exprComplier.createExpr(x.getWhere());

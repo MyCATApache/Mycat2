@@ -1,8 +1,8 @@
 package cn.lightfish.sqlEngine.persistent;
 
-import cn.lightfish.sqlEngine.schema.MycatTable;
+import cn.lightfish.sqlEngine.schema.DbTable;
 import java.util.Map;
 
 public interface PersistentProvider {
-  public Persistent create(MycatTable table, Map<String, Object> persistentAttributes);
+  public Persistent create(DbTable table, Map<String, Object> persistentAttributes);
 }

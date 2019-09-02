@@ -7,18 +7,18 @@ import java.util.Map;
 import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
-public class MycatTable implements MycatSchemaObject {
+public class DbTable implements DbSchemaObject {
 
-  final MycatSchema schema;
+  final DbSchema schema;
   final String tableName;
   final TableColumnDefinition[] columnDefinitions;
   final Map<String, TableColumnDefinition> columnDefinitionMap = new HashMap<>();
-  final MycatPartition mycatPartition;
+  final DbPartition mycatPartition;
   private final boolean broadCast;
 
-  public MycatTable(MycatSchema schema, String tableName,
-      List<TableColumnDefinition> columnDefinitions,
-      MycatPartition mycatPartition) {
+  public DbTable(DbSchema schema, String tableName,
+                 List<TableColumnDefinition> columnDefinitions,
+                 DbPartition mycatPartition) {
     this.schema = schema;
     this.tableName = tableName;
     this.columnDefinitions = columnDefinitions.toArray(new TableColumnDefinition[]{});
@@ -27,9 +27,9 @@ public class MycatTable implements MycatSchemaObject {
     computeTableColumnMap(columnDefinitions);
   }
 
-  public MycatTable(MycatSchema schema, String tableName,
-      List<TableColumnDefinition> columnDefinitions,
-      boolean broadCast) {
+  public DbTable(DbSchema schema, String tableName,
+                 List<TableColumnDefinition> columnDefinitions,
+                 boolean broadCast) {
     this.schema = schema;
     this.tableName = tableName;
     this.columnDefinitions = columnDefinitions.toArray(new TableColumnDefinition[]{});
@@ -38,7 +38,7 @@ public class MycatTable implements MycatSchemaObject {
     computeTableColumnMap(columnDefinitions);
   }
 
-  public MycatPartition getPartition() {
+  public DbPartition getPartition() {
     return mycatPartition;
   }
 
@@ -46,7 +46,7 @@ public class MycatTable implements MycatSchemaObject {
     return broadCast;
   }
 
-  public MycatSchema getSchema() {
+  public DbSchema getSchema() {
     return schema;
   }
 
@@ -59,7 +59,7 @@ public class MycatTable implements MycatSchemaObject {
     return columnDefinitions;
   }
 
-  public MycatPartition getMycatPartition() {
+  public DbPartition getMycatPartition() {
     return mycatPartition;
   }
 

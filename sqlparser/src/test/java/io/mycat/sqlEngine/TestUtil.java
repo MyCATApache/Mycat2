@@ -2,8 +2,8 @@ package io.mycat.sqlEngine;
 
 import cn.lightfish.sqlEngine.executor.logicExecutor.Executor;
 import cn.lightfish.sqlEngine.schema.BaseColumnDefinition;
-import cn.lightfish.sqlEngine.schema.MycatConsole;
-import cn.lightfish.sqlEngine.schema.MycatSchemaManager;
+import cn.lightfish.sqlEngine.schema.DbConsole;
+import cn.lightfish.sqlEngine.schema.DbSchemaManager;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 
@@ -18,7 +18,7 @@ public class TestUtil {
         TestUtil.class.getResourceAsStream("baseSQL.sql");
         List<String> lines = Files.lines(Paths.get("D:\\newgit2\\mycat3\\sqlparser\\src\\test\\resources\\baseSQL.sql")).collect(Collectors.toList());
         ListIterator<String> iterator = lines.listIterator();
-        MycatConsole console = MycatSchemaManager.INSTANCE.createConsole();
+        DbConsole console = DbSchemaManager.INSTANCE.createConsole();
         SQLTestExecutor testExecutor = new SQLTestExecutor() {
             String[] columnList;
             ArrayList<String[]> rows = new ArrayList<>();
