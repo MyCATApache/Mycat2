@@ -4,6 +4,8 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.sqlparser.util.SQLMapAnnotation;
 
+import java.util.Arrays;
+
 /**
  * Created by Kaiz on 2017/2/6.
  * <p>
@@ -382,6 +384,8 @@ public class BufferSQLParser {
   }
 
   public void parse(byte[] src, BufferSQLContext context) {
+    src = Arrays.copyOf(src,src.length);
+    UTF8Util.fixUTF8(src, 'm');
     this.defaultByteArray.setSrc(src);
     sql = this.defaultByteArray;
     hashArray = context.getHashArray();

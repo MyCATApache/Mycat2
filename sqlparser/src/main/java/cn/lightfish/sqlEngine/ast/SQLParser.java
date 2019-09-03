@@ -53,10 +53,10 @@ public enum SQLParser {
       StatementType statementType = Extractors.getStatementType(statement);
       switch (statementType){
         case SQLSelectStatement:{
-          Set<DbTable> tables = Extractors.getTables(defaultSchema.getSchemaName(), statement);
-          if (tables==null||tables.isEmpty()){
-
-          }
+//          Set<DbTable> tables = Extractors.getTables(defaultSchema.getSchemaName(), statement);
+//          if (tables==null||tables.isEmpty()){
+//
+//          }
           System.out.println();
         }
         case SQLInsertStatement:
