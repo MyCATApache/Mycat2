@@ -1,14 +1,13 @@
 package io.mycat.sqlparser.util.simpleParser;
 
-import com.google.common.base.Charsets;
-
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class UTF8Util {
 
     public static void main(String[] args) {
         String message = "哈糊糊";
-        byte[] bytes = message.getBytes(Charsets.UTF_8);
+        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
         int count = 0;
         int length = bytes.length;
         boolean needFill = false;
@@ -17,7 +16,7 @@ public class UTF8Util {
         boolean debug = false;
         boolean b = fixUTF8(bytes, count, length, needFill, fillCode);
         System.out.println("count:" + count);
-        System.out.println(new String(bytes, Charsets.UTF_8));
+        System.out.println(new String(bytes, StandardCharsets.UTF_8));
     }
 
     public static boolean fixUTF8(byte[] bytes, char fillCode) {
