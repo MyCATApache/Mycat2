@@ -128,4 +128,8 @@ public class DefaultConnection implements DsConnection {
       return true;
     }
   }
+
+  public Connection getRawConnection() {
+    return connection;
+  }
 }
