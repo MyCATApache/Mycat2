@@ -1,12 +1,8 @@
 package io.mycat.calcite.table;
 
+import com.google.common.collect.Lists;
 import io.mycat.calcite.BackEndTableInfo;
 import io.mycat.calcite.MyCatResultSetEnumerable;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.sql.SqlDialect;
-import com.google.common.collect.Lists;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
@@ -16,25 +12,20 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.*;
+import org.apache.calcite.rex.RexCall;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.runtime.ResultSetEnumerable;
 import org.apache.calcite.schema.*;
-import org.apache.calcite.sql.*;
-import org.apache.calcite.sql.parser.SqlParserPos;
-import org.apache.calcite.sql.pretty.SqlPrettyWriter;
+import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 
-import javax.sql.DataSource;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 public class JdbcTable implements TranslatableTable, ScannableTable, FilterableTable {
@@ -98,8 +89,7 @@ System.out.println("build table");
                     scale = resultSet.getInt(9); // SCALE
                     break;
             }
-            RelDataType sqlType =
-                    sqlType(typeFactory, dataType, precision, scale, typeString);
+            RelDataType sqlType = sqlType(typeFactory, dataType, precision, scale, typeString);
             boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
             fieldInfo.add(columnName, sqlType).nullable(nullable);
         }
