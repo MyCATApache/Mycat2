@@ -64,8 +64,15 @@ public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {
   private MySQLDataSourceQuery getDataSourceQuery(byte[] sql, MycatSession session) {
     boolean simpleSelect;
     MySQLDataSourceQuery query = new MySQLDataSourceQuery();
+    query.setRunOnMaster(true);
     try {
-      sqlParser.parse(sql, sqlContext);
+      try {
+        sqlParser.parse(sql, sqlContext);
+      } catch (Exception e) {
+        query.setRunOnMaster(true);
+        LOGGER.warn("sql:{} parse maybe occur wrong so route to master", new String(sql));
+        return query;
+      }
       simpleSelect = sqlContext.isSimpleSelect();
       MycatProxyStaticAnnotation sa = sqlContext.getStaticAnnotation()
           .toMapAndClear(map);
@@ -145,8 +152,8 @@ public class ReadAndWriteSeparationHandler extends AbstractCommandHandler {
 
   @Override
   public void handleInitDb(String db, MycatSession mycat) {
-    mycat.setLastMessage(UNSUPPORT_MESSAGE);
-    mycat.writeErrorEndPacket();
+    mycat.useSchema(db);
+    mycat.writeOkEndPacket();
   }
 
   @Override

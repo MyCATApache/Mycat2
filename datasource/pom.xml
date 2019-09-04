@@ -61,6 +61,23 @@
     <artifactId>druid</artifactId>
     <version>1.1.18</version>
   </dependency>
+  <!-- https://mvnrepository.com/artifact/com.atomikos/transactions-jdbc -->
+  <dependency>
+    <groupId>com.atomikos</groupId>
+    <artifactId>transactions-jdbc</artifactId>
+    <version>5.0.1</version>
+  </dependency>
+  <!-- https://mvnrepository.com/artifact/com.atomikos/transactions-api -->
+  <dependency>
+    <groupId>com.atomikos</groupId>
+    <artifactId>transactions-api</artifactId>
+    <version>5.0.1</version>
+  </dependency>
+  <dependency>
+    <groupId>javax.transaction</groupId>
+    <artifactId>jta</artifactId>
+    <version>1.1</version>
+  </dependency>
 
 </dependencies>
 </project>

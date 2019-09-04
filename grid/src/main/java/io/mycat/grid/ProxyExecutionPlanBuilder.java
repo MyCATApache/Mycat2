@@ -44,13 +44,14 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
   private final BufferSQLContext sqlContext;
   private final MycatRouter router;
   private GridRuntime jdbcRuntime;
-  private DataNodeSession dataNodeSession;
-  static final MycatLogger IGNORED_SQL_LOGGER = MycatLoggerFactory.getLogger("IGNORED_SQL_LOGGER");
+  private static final MycatLogger IGNORED_SQL_LOGGER = MycatLoggerFactory
+      .getLogger("IGNORED_SQL_LOGGER");
+  private final DataNodeSession dataNodeSession;
 
   public ProxyExecutionPlanBuilder(MycatSession session, GridRuntime jdbcRuntime) {
     this.mycat = session;
     this.jdbcRuntime = jdbcRuntime;
-    this.dataNodeSession = new DataNodeSession(jdbcRuntime);
+    this.dataNodeSession = jdbcRuntime.createDataNodeSession();
     this.parser = new BufferSQLParser();
     this.sqlContext = new BufferSQLContext();
     MycatRouterConfig routerConfig = (MycatRouterConfig) jdbcRuntime.getDefContext()
