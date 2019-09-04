@@ -384,6 +384,7 @@ public class BufferSQLParser {
   }
 
   public void parse(byte[] src, BufferSQLContext context) {
+    byte[] originSrc = src;
     src = Arrays.copyOf(src,src.length);
     UTF8Util.fixUTF8(src, 'm');
     this.defaultByteArray.setSrc(src);
@@ -393,6 +394,7 @@ public class BufferSQLParser {
     context.setCurBuffer(sql);
     tokenizer.tokenize(sql, hashArray);
     firstParse(context);
+    this.defaultByteArray.setSrc(originSrc);
   }
 
 //    static long RunBench(byte[] defaultByteArray, NewSQLParser parser) {
