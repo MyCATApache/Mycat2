@@ -159,7 +159,7 @@ public class MySQLTaskUtil {
     if (thread instanceof MycatReactorThread) {
       MySQLSessionManager manager = ((MycatReactorThread) thread)
           .getMySQLSessionManager();
-      if (datasource.isAlive()) {
+      if (datasource.instance().isAlive()) {
         manager.getIdleSessionsOfIdsOrPartial(
             datasource, ids, partialType
             , asynTaskCallBack);

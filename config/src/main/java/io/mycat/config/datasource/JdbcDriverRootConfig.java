@@ -2,22 +2,26 @@ package io.mycat.config.datasource;
 
 import io.mycat.config.ConfigurableRoot;
 import io.mycat.config.YamlUtil;
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class JdbcDriverRootConfig extends ConfigurableRoot {
-  Map<String,String> jdbcDriver;
-  String datasourceProviderClass;
-  public  Map<String,String> getJdbcDriver() {
-    return jdbcDriver;
-  }
 
-  public void setJdbcDriver(Map<String, String> jdbcDriver) {
-    this.jdbcDriver = jdbcDriver;
+  String datasourceProviderClass;
+  int minThread;
+  int maxThread;
+  int waitTaskTimeout;
+  String timeUnit;
+  int maxPengdingLimit;
+
+  public JdbcDriverRootConfig() {
+    this.datasourceProviderClass = "io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider";
+    this.minThread = 2;
+    this.maxThread = 32;
+    this.waitTaskTimeout = 5;
+    this.timeUnit = TimeUnit.SECONDS.name();
+    this.maxPengdingLimit = -1;
   }
 
   public String getDatasourceProviderClass() {
@@ -31,9 +35,48 @@ public class JdbcDriverRootConfig extends ConfigurableRoot {
   public static void main(String[] args) throws Exception {
     JdbcDriverRootConfig config = new JdbcDriverRootConfig();
     config.setDatasourceProviderClass("io.mycat.datasource.jdbc.DruidDatasourceProvider");
-    Map<String,String> map = new HashMap<>();
-    map.put("mysql","com.mysql.jdbc.Driver");
-    config.setJdbcDriver(map);
+    Map<String, String> map = new HashMap<>();
+    map.put("mysql", "com.mysql.jdbc.Driver");
     String dump = YamlUtil.dump(config);
+  }
+
+  public int getMinThread() {
+    return minThread;
+  }
+
+  public void setMinThread(int minThread) {
+    this.minThread = minThread;
+  }
+
+  public int getMaxThread() {
+    return maxThread;
+  }
+
+  public void setMaxThread(int maxThread) {
+    this.maxThread = maxThread;
+  }
+
+  public int getWaitTaskTimeout() {
+    return waitTaskTimeout;
+  }
+
+  public void setWaitTaskTimeout(int waitTaskTimeout) {
+    this.waitTaskTimeout = waitTaskTimeout;
+  }
+
+  public String getTimeUnit() {
+    return timeUnit;
+  }
+
+  public void setTimeUnit(String timeUnit) {
+    this.timeUnit = timeUnit;
+  }
+
+  public int getMaxPengdingLimit() {
+    return maxPengdingLimit;
+  }
+
+  public void setMaxPengdingLimit(int maxPengdingLimit) {
+    this.maxPengdingLimit = maxPengdingLimit;
   }
 }

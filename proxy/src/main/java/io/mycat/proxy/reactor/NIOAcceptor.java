@@ -43,22 +43,22 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
     this.runtime = runtime;
   }
 
-  protected void processAcceptKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processAcceptKey(SelectionKey curKey) throws IOException {
     ServerSocketChannel serverSocket = (ServerSocketChannel) curKey.channel();
     // 接收通道，设置为非阻塞模式
     final SocketChannel socketChannel = serverSocket.accept();
     socketChannel.configureBlocking(false);
     LOGGER.info("New Client connected:{}", socketChannel);
     // Mycat fontchannel connect
-    accept(reactorEnv, socketChannel);
+    accept( socketChannel);
 
   }
 
-  private void accept(ReactorEnv reactorEnv, SocketChannel socketChannel) throws IOException {
+  private void accept(SocketChannel socketChannel) throws IOException {
     // 找到一个可用的NIO Reactor Thread，交付托管
     MycatReactorThread[] reactorThreads = runtime.getMycatReactorThreads();
     MycatReactorThread nioReactor = reactorThreads[ThreadLocalRandom.current()
-                                                       .nextInt(reactorThreads.length)];
+        .nextInt(0, reactorThreads.length)];
     // 将通道注册到reactor对象上
     nioReactor.acceptNewSocketChannel(null, socketChannel);
   }
@@ -72,7 +72,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
    * 仅后台维护的主动创建的连接使用
    */
   @SuppressWarnings("unchecked")
-  protected void processConnectKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processConnectKey(SelectionKey curKey) throws IOException {
     // only from cluster server socket
     SocketChannel curChannel = (SocketChannel) curKey.channel();
     Object obj = curKey.attachment();
@@ -89,7 +89,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
    * 仅后台维护的主动创建的连接使用
    */
   @SuppressWarnings("unchecked")
-  protected void processReadKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processReadKey(SelectionKey curKey) throws IOException {
     // only from cluster server socket
     Session session = (Session) curKey.attachment();
     assert session != null;
@@ -99,7 +99,7 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
   /**
    * 仅后台维护的主动创建的连接使用
    */
-  protected void processWriteKey(ReactorEnv reactorEnv, SelectionKey curKey) throws IOException {
+  protected void processWriteKey(SelectionKey curKey) throws IOException {
     // only from cluster server socket
     Session session = (Session) curKey.attachment();
     assert session != null;

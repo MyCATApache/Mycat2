@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.3-SNAPSHOP</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
@@ -17,6 +17,7 @@
     <module>mycat2</module>
     <module>security</module>
     <module>grid</module>
+    <module>replica</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

@@ -35,7 +35,7 @@ mycat.yml
 
 commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
 
-启动jdbc路由,此时sql不会被路由到proxy模块的数据源
+启动jdbc路由,此时sql不会被路由到proxy模块的数据源,jdbc数据源默认配置支持分布式事务
 
 该路由不会把mysql语句改写成数据源目标SQL
 

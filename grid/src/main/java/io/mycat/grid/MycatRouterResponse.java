@@ -8,7 +8,7 @@ import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
 import io.mycat.router.MycatRouterConfig;
-import io.mycat.sqlparser.util.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
 import java.util.Collection;
 import java.util.Map.Entry;
 import java.util.Set;

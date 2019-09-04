@@ -15,6 +15,7 @@
 package io.mycat.beans.mycat;
 
 import io.mycat.config.datasource.ReplicaConfig;
+import io.mycat.replica.ReplicaSwitchType;
 
 /**
  * @author jamie12221 date 2019-05-07 11:29 抽象Mycat集群管理类,它的子类可能是mycat实现的mycat
@@ -27,4 +28,6 @@ public interface MycatReplica {
   boolean switchDataSourceIfNeed();
 
   String getName();
+
+  ReplicaSwitchType getSwitchType();
 }

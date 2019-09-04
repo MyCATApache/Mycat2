@@ -15,7 +15,7 @@
 package io.mycat.router;
 
 import io.mycat.router.routeStrategy.SqlParseRouteRouteStrategy;
-import io.mycat.sqlparser.util.BufferSQLContext;
+import io.mycat.sqlparser.util.simpleParser.BufferSQLContext;
 import java.util.Map;
 
 /**

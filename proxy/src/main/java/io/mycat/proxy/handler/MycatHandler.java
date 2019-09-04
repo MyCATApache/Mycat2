@@ -29,7 +29,7 @@ import java.nio.channels.SelectionKey;
  */
 public enum MycatHandler implements NIOHandler<MycatSession> {
   /**
-   * Instance mycat handler.
+   * PhysicsInstanceImpl mycat handler.
    */
   INSTANCE;
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatHandler.class);

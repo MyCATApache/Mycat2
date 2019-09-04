@@ -75,7 +75,7 @@ public interface MySQLPacketResolver extends OkPacket, EOFPacket, PreparedOKPack
   }
 
   /**
-   * A transaction is currently active
+   * A manager is currently active
    */
   static boolean hasTrans(int serverStatus) {
     return MySQLServerStatusFlags.statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION)

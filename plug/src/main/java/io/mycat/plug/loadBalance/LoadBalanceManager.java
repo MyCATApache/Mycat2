@@ -33,7 +33,7 @@ public class LoadBalanceManager {
 
   private final Map<String, LoadBalanceStrategy> map = new HashMap<>();
   private static final Logger LOGGER = LoggerFactory.getLogger(LoadBalanceManager.class);
-  private LoadBalanceStrategy defaultLoadBalanceStrategy = null;
+  private LoadBalanceStrategy defaultLoadBalanceStrategy = BalanceRandom.INSTANCE;
 
   public static LoadBalanceStrategy getLoadBalanceStrategy(String clazz)
       throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {

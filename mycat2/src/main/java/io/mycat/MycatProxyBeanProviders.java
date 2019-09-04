@@ -2,21 +2,19 @@ package io.mycat;
 
 import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.config.ConfigEnum;
+import io.mycat.config.ConfigFile;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.proxy.ProxyRootConfig;
 import io.mycat.config.schema.DataNodeConfig;
-import io.mycat.datasource.jdbc.GridRuntime;
+import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.replica.MySQLDataSourceEx;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
-import io.mycat.replica.MySQLReplicaEx;
 import io.mycat.router.MycatRouterConfig;
 import java.util.Map;
 import java.util.Objects;
@@ -33,23 +31,26 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
   }
 
   @Override
-  public void beforeAcceptConnectionProcess(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception {
+  public void beforeAcceptConnectionProcess(ProxyRuntime runtime, Map<String, Object> defContext)
+      throws Exception {
     defContext.put("routerConfig",
         new MycatRouterConfig(runtime.getConfig(), runtime.getMySQLAPIRuntime()));
-    defContext.put("gridRuntime", new GridRuntime(runtime));
+    GRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
+    GRuntime.INSTACNE.getDefContext().putAll(defContext);
   }
 
   @Override
   public MySQLDatasource createDatasource(ProxyRuntime runtime, int index,
       DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
-    return new MySQLDataSourceEx(runtime, index, datasourceConfig, replica);
+    return new MySQLDatasource(index, datasourceConfig, replica) {
+    };
   }
 
   @Override
   public MySQLReplica createReplica(ProxyRuntime runtime, ReplicaConfig replicaConfig,
       Set<Integer> writeIndex) {
-    return new MySQLReplicaEx(runtime, replicaConfig, writeIndex, this) {
+    return new MySQLReplica(runtime, replicaConfig, this) {
     };
   }
 
@@ -60,7 +61,7 @@ public class MycatProxyBeanProviders implements ProxyBeanProviders {
 
   @Override
   public CommandDispatcher createCommandDispatcher(ProxyRuntime runtime, MycatSession session) {
-    ProxyRootConfig config = runtime.getConfig(ConfigEnum.PROXY);
+    ProxyRootConfig config = runtime.getConfig(ConfigFile.PROXY);
     Objects.requireNonNull(config);
     String commandDispatcherClass = config.getProxy().getCommandDispatcherClass();
     CommandDispatcher commandDispatcher;
