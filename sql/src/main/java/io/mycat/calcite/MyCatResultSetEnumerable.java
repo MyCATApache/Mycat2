@@ -31,7 +31,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
             for (int i = 0; i <info.length; i++) {
                 connection = DriverManager
                         .getConnection("jdbc:mysql://127.0.0.1:3306/test?serverTimezone=UTC",
-                                "test","123456");
+                                "root","123456");
                 String sql;
                 if (filterSql != null) {
                     sql = "select * from " + info[i].schemaName + "." + info[i].tableName + " where " + filterSql;

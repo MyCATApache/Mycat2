@@ -70,6 +70,21 @@ public class RowSignature {
                 case INTEGER:
                     type = factory.createSqlType(SqlTypeName.INTEGER);
                     break;
+                case BIGINT:
+                    type = factory.createSqlType(SqlTypeName.BIGINT);
+                    break;
+                case DATE:
+                    type = factory.createSqlType(SqlTypeName.DATE);
+                    break;
+                case DECIMAL:
+                    type = factory.createSqlType(SqlTypeName.DECIMAL);
+                    break;
+                case LONGVARBINARY:
+                    type = factory.createSqlType(SqlTypeName.VARBINARY);
+                    break;
+                case DOUBLE:
+                    type = factory.createSqlType(SqlTypeName.DOUBLE);
+                    break;
                 default:
                     throw new Exception("");
             }

@@ -107,7 +107,7 @@ public enum ProxyDashboard {
     LOGGER.info("---------------------------datasource---------------------------");
     for (MySQLDatasource datasource : datasourceList) {
       String name = datasource.getName();
-      int sessionCounter = datasource.getSessionCounter();
+      int sessionCounter = datasource.instance().getSessionCounter();
       LOGGER.info("dataSourceName:{} sessionCounter:{}", name, sessionCounter);
     }
   }

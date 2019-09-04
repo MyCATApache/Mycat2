@@ -50,8 +50,9 @@ replicas:
   - name: repli                      # 复制组 名称   必须唯一
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
-    balanceName: BalanceRoundRobin   # 负载均衡算法名字
-    balanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
+    readBalanceName: BalanceRoundRobin   # 负载均衡算法名字
+    writeBalanceName: BalanceRoundRobin 
+    readbalanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
     datasources:
       - name: mytest3306              # mysql 主机名
         ip: 127.0.0.1               # i
@@ -83,8 +84,8 @@ replicas:
   - name: repli                      # 复制组 名称   必须唯一
     repType: SINGLE_NODE           # 复制类型
     switchType: SWITCH              # 切换类型
-  	balanceName: BalanceRoundRobin   # 负载均衡算法名字
-    balanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
+  	readBalanceName: BalanceRoundRobin   # 负载均衡算法名字
+    readbalanceType: BALANCE_ALL #负载均衡类型 BALANCE_ALL BALANCE_ALL_READ  BALANCE_NONE
 ```
 
 #### name
@@ -125,11 +126,11 @@ NOT_SWITCH
 SWITCH
 ```
 
-#### balanceName
+#### readBalanceName
 
-负载均衡算法的名称,引用(plug)插件配置的负载均衡算法,用于选择节点的算法
+负载均衡算法的名称,引用(plug)插件配置的负载均衡算法,用于选择读节点的算法
 
-#### balanceType
+#### readbalanceType
 
 负载均衡算法的类型
 
@@ -150,6 +151,10 @@ BALANCE_ALL_READ
 ```
 BALANCE_NONE
 ```
+
+#### writeBalanceName
+
+负载均衡算法的名称,引用(plug)插件配置的负载均衡算法,用于选择写节点的算法
 
 ### 数据源属性
 
@@ -187,11 +192,11 @@ mysql连接登录用户名
 
 #### minCon
 
-初始化该数据源的创建的连接数量,保持的最小连接数
+初始化该数据源的创建的连接数量,保持的最小连接数,该属性在jdbc数据源下生效
 
 #### maxCon
 
-数据源连接最大的限制连接数量
+数据源连接最大的限制连接数量,该属性在jdbc数据源下生效
 
 #### weight
 
@@ -199,11 +204,11 @@ mysql连接登录用户名
 
 #### initSQL
 
- 该属性一般不写,作用是创建连接后马上执行一段初始化SQL,支持多语句
+ 该属性一般不写,作用是创建连接后马上执行一段初始化SQL,支持多语句,该属性在jdbc数据源下生效
 
 #### initDb
 
- 后端连接数据库的初始化的database
+ 后端连接数据库的初始化的database,该属性在jdbc下不生效,db的设置再连接字符串
 
 #### slaveThreshold
 
@@ -215,9 +220,15 @@ mysql连接登录用户名
 
 当dbType中有mysql字符串或者不设置该属性的时候,proxy创建此数据源配置的连接
 
+jdbc模块有可能使用该属性查找数据源
+
 #### url
 
 jdbc连接的url,当设置该属性的时候,会使用jdbc创建连接,jdbc的连接,集群管理是与proxy的连接,集群管理是互不影响独立的.
+
+#### maxRetryCount
+
+连接重试次数
 
 ## 数据源主节点下标记录(masterIndexes.yml)
 

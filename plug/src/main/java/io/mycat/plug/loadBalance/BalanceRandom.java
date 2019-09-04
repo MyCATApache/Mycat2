@@ -28,12 +28,12 @@ public enum BalanceRandom implements LoadBalanceStrategy{
   INSTANCE {
     @Override
     public LoadBalanceElement select(LoadBalanceInfo info, List<LoadBalanceElement> entityList) {
-      if(null == entityList && entityList.size() == 0) {
+      if (null == entityList || entityList.isEmpty()) {
           return null;
       }
       int size = entityList.size();
-      int randomIndex = ThreadLocalRandom.current().nextInt(size);
+      int randomIndex = ThreadLocalRandom.current().nextInt(0, size);
       return entityList.get(randomIndex);
     }
-  };
+  }
 }

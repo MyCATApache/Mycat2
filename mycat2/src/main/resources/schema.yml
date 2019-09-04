@@ -1,8 +1,12 @@
-defaultSchemaName: db1
+defaultSchemaName: test2
 schemas:
-  - name: db1
-    schemaType: DB_IN_ONE_SERVER
-    defaultDataNode: dn1
+  - name: test2
+    schemaType: DB_IN_MULTI_SERVER
+    tables:
+      - name: travelrecord
+        dataNodes: dn1
+      - name: travelrecord2
+        dataNodes: dn2
 #      - name: company
 #  - name: test2
 #    schemaType: DB_IN_MULTI_SERVER

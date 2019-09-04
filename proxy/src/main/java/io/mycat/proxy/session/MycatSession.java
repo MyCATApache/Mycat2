@@ -18,10 +18,12 @@ import io.mycat.MycatException;
 import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
+import io.mycat.bindThread.BindThreadKey;
 import io.mycat.buffer.BufferPool;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.command.CommandResolver;
@@ -33,8 +35,7 @@ import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
-import io.mycat.proxy.reactor.ReactorEnv;
-import io.mycat.proxy.reactor.ReactorEnvThread;
+import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.security.MycatUser;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
@@ -44,7 +45,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
-    MySQLProxyServerSession<MycatSession> {
+    MySQLProxyServerSession<MycatSession>, BindThreadKey {
 
   private CommandDispatcher commandHandler;
   int resultSetCount;
@@ -88,11 +89,6 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     this.packetId = 0;
   }
 
-  /**
-   * Setter for property 'commandHandler'.
-   *
-   * @param commandHandler Value to set for property 'commandHandler'.
-   */
   public void setCommandHandler(CommandDispatcher commandHandler) {
     this.commandHandler = commandHandler;
   }
@@ -169,7 +165,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
       if (dataNode.equals(this.dataNode)) {
         return;
       } else {
-        throw new MycatException("cannot switch dataNode  maybe session in transaction");
+        throw new MycatException("cannot switch dataNode  maybe session in manager");
       }
     }
   }
@@ -193,11 +189,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     assert hint != null;
     try {
       if (crossSwapThreadBufferPool != null) {
-        ReactorEnvThread source = crossSwapThreadBufferPool.getSource();
+        SessionThread source = crossSwapThreadBufferPool.getSource();
         if (source != null) {
-          ReactorEnv reactorEnv = source.getReactorEnv();
-          source.interrupt();
-          reactorEnv.close();
+          source.setCurSession(null);
         }
       }
     } catch (Exception e) {
@@ -540,10 +534,10 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   /**
    * 在业务线程使用,在业务线程运行的时候设置业务线程当前的session,方便监听类获取session记录
    */
-  public void deliverWorkerThread(ReactorEnvThread thread) {
+  public void deliverWorkerThread(SessionThread thread) {
+    LOGGER.info("@@@@@@@@@@@@@@@@@@@@@@{}", thread);
     crossSwapThreadBufferPool.bindSource(thread);
     assert thread == Thread.currentThread();
-    thread.getReactorEnv().setCurSession(this);
   }
 
   /**
@@ -551,9 +545,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
    */
   @Override
   public void backFromWorkerThread() {
-    ReactorEnvThread thread = (ReactorEnvThread)Thread.currentThread();
-    assert getIOThread()!= thread;
-    thread.getReactorEnv().setCurSession(null);
+    Thread thread = Thread.currentThread();
+    assert getIOThread() != thread && thread instanceof SessionThread;
     writeBufferPool().bindSource(null);
   }
 
@@ -577,5 +570,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   public void setAutoCommit(boolean autocommit) {
     this.setAutoCommit(autocommit ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF);
+  }
+
+  public boolean isInTransaction() {
+    return serverStatus.isServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
   }
 }

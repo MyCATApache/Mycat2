@@ -22,10 +22,9 @@ package io.mycat.plug.loadBalance;
  * @version V1.0
  * date Date : 2019年06月01日 14:02
  */
-public interface LoadBalanceElement {
+public interface LoadBalanceElement extends SessionCounter {
 
     String getName();
-
 
     boolean isMaster();
 

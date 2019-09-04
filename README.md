@@ -68,7 +68,7 @@ the the tableName of replica that can be reference by data node config in schema
 
 message of replica:x:
 
-- #### balanceName
+- #### readBalanceName
 
 
 reference load balance tableName that be in plug config
@@ -448,7 +448,7 @@ replicas:
   - tableName: repli                   # 
     repType: MASTER_SLAVE         # do not care
     switchType: SWITCH            # do not care
-    balanceName: BalanceAllRead   # do not care
+    readBalanceName: BalanceAllRead   # do not care
     datasources:
       - tableName: mytest3306             
         ip: 127.0.0.1               #

@@ -1,3 +1,6 @@
-datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.DruidDatasourceProvider
-jdbcDriver:
-  mysql: com.mysql.jdbc.Driver
+datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+maxPengdingLimit: -1
+waitTaskTimeout: 5
+timeUnit: SECONDS
+minThread: 2
+maxThread: 32

@@ -25,7 +25,7 @@ public abstract class ConfigurableRoot implements ConfigurableNode {
 
   String filePath;
   volatile int version;
-  ConfigEnum type;
+  ConfigFile type;
 
   public void setFilePath(String path) {
     filePath = path;
@@ -35,12 +35,12 @@ public abstract class ConfigurableRoot implements ConfigurableNode {
     return version;
   }
 
-  public ConfigEnum getType() {
+  public ConfigFile getType() {
     return type;
   }
 
 
-  public void setType(ConfigEnum type) {
+  public void setType(ConfigFile type) {
     this.type = type;
   }
 

@@ -17,8 +17,8 @@
     <module>mycat2</module>
     <module>security</module>
     <module>grid</module>
+    <module>replica</module>
     <module>sql</module>
-      <module>metadata</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
@@ -65,7 +65,6 @@
       <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </repository>
   </repositories>
-
 
   <build>
     <!--<resources>-->

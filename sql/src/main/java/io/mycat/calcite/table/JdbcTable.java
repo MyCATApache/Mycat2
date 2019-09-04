@@ -60,8 +60,8 @@ System.out.println("build table");
         // TODO: build a metadata service
         Class.forName("com.mysql.cj.jdbc.Driver");
         connection = DriverManager
-                .getConnection("jdbc:mysql://127.0.0.1:3306/test?serverTimezone=UTC",
-                        "test","123456");
+                .getConnection("jdbc:mysql://127.0.0.1:3306/db1?serverTimezone=UTC",
+                        "root","123456");
 
         this.info = info;
         metaData = connection.getMetaData();
@@ -71,7 +71,7 @@ System.out.println("build table");
     RelProtoDataType getRelDataType(DatabaseMetaData metaData, String catalogName,
                                     String schemaName, String tableName) throws Exception {
         final ResultSet resultSet =
-                metaData.getColumns("test", schemaName, tableName, null);
+                metaData.getColumns("db1", schemaName, tableName, null);
 
         // Temporary type factory, just for the duration of this method. Allowable
         // because we're creating a proto-type, not a type; before being used, the
@@ -81,7 +81,7 @@ System.out.println("build table");
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         RowSignature.Builder builder = RowSignature.builder();
         while (resultSet.next()) {
-            final String columnName = resultSet.getString(4);
+            final String columnName = resultSet.getString(4).toUpperCase();
             final int dataType = resultSet.getInt(5);
             builder.add(columnName, JDBCType.valueOf(dataType) );
             final String typeString = resultSet.getString(6);
@@ -266,7 +266,7 @@ System.out.println("build table");
                 System.out.println("rigth : " + right.getValue2().toString());
                 StringBuilder sb = new StringBuilder();
                 sb.append(rowSignature.getRowOrder().get(left.getIndex()));
-                sb.append(">");
+                sb.append(((RexCall) node).op);
                 sb.append(right.getValue2().toString());
 
                 filterSql = sb.toString();
