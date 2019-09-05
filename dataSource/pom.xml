@@ -91,6 +91,12 @@
         <version>1.18.8</version>
         <scope>provided</scope>
     </dependency>
+  <!-- https://mvnrepository.com/artifact/org.apache.calcite/calcite-core -->
+  <dependency>
+    <groupId>org.apache.calcite</groupId>
+    <artifactId>calcite-core</artifactId>
+    <version>1.20.0</version>
+  </dependency>
 
 </dependencies>
 </project>
