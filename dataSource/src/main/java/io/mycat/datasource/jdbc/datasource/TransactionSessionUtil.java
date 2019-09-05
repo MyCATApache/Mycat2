@@ -3,7 +3,7 @@ package io.mycat.datasource.jdbc.datasource;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.resultset.SingleDataNodeResultSetResponse;
+import io.mycat.datasource.jdbc.resultset.MysqlSingleDataNodeResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -17,7 +17,7 @@ public class TransactionSessionUtil {
     DsConnection connection = getConnection(dataNode,
         runOnMaster, strategy);
     if (connection.getDataSource().isMySQLType()) {
-      return new SingleDataNodeResultSetResponse(connection.executeQuery(sql));
+      return new MysqlSingleDataNodeResultSetResponse(connection.executeQuery(sql));
     } else {
       return new TextResultSetResponse(connection.executeQuery(sql));
     }

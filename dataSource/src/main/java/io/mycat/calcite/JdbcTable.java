@@ -57,15 +57,23 @@ public class JdbcTable implements TranslatableTable, FilterableTable {
         if (filters.isEmpty()) {
 
         } else {
+            StringBuilder sb = new StringBuilder("true");
             final String[] filterValues = new String[this.rowSignature.getColumnCount()];
             filters.removeIf((filter) -> this.addFilter(filter, filterValues));
+            for (int i = 0; i < filterValues.length; i++) {
+                String filterValue = filterValues[i];
+                if (filterValue == null) {
+                    continue;
+                }
+                sb.append(" and ").append(rowSignature.getRowOrder().get(i)).append("=").append(filterValue);
+            }
+
             for (RexNode filter : filters) {
                 if (filter instanceof RexCall) {
                     RexCall call = (RexCall) filter;
-                    if (call.isA(SqlKind.EQUALS) && call.getOperands().size() == 2) {
+                    if (call.getOperands().size() == 2) {
                         RexNode left = call.getOperands().get(0);
                         RexNode right = call.getOperands().get(1);
-
 
                         RexInputRef input = null;
                         RexLiteral literal = null;
@@ -79,16 +87,14 @@ public class JdbcTable implements TranslatableTable, FilterableTable {
                         } else {
                             continue;
                         }
-
-                        StringBuilder sb = new StringBuilder();
                         sb.append(rowSignature.getRowOrder().get(input.getIndex())).
-                                append("=")
+                                append(call.op)
                                 .append(literal.getValue2().toString());
-                        filterText = sb.toString();
-                    }
 
+                    }
                 }
             }
+            filterText = sb.toString();
         }
         return new MyCatResultSetEnumerable(backStoreList, filterText);
     }

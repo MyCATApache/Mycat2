@@ -20,11 +20,11 @@ import io.mycat.proxy.MySQLPacketUtil;
 import java.io.IOException;
 import java.util.Iterator;
 
-public class SingleDataNodeResultSetResponse implements MycatResultSetResponse {
+public class MysqlSingleDataNodeResultSetResponse implements MycatResultSetResponse {
 
   final RowBaseIterator rowBaseIterator;
 
-  public SingleDataNodeResultSetResponse(RowBaseIterator rowBaseIterator) {
+  public MysqlSingleDataNodeResultSetResponse(RowBaseIterator rowBaseIterator) {
     this.rowBaseIterator = rowBaseIterator;
   }
 
@@ -36,7 +36,7 @@ public class SingleDataNodeResultSetResponse implements MycatResultSetResponse {
   @Override
   public Iterator<byte[]> columnDefIterator() {
     return new Iterator<byte[]>() {
-      final int count = SingleDataNodeResultSetResponse.this.columnCount();
+      final int count = MysqlSingleDataNodeResultSetResponse.this.columnCount();
       int index = 1;
 
       @Override
@@ -48,7 +48,7 @@ public class SingleDataNodeResultSetResponse implements MycatResultSetResponse {
       public byte[] next() {
         return MySQLPacketUtil
             .generateColumnDefPayload(
-                SingleDataNodeResultSetResponse.this.rowBaseIterator.metaData(),
+                MysqlSingleDataNodeResultSetResponse.this.rowBaseIterator.metaData(),
                 index++);
       }
     };
@@ -57,7 +57,7 @@ public class SingleDataNodeResultSetResponse implements MycatResultSetResponse {
   @Override
   public Iterator<byte[]> rowIterator() {
     return new Iterator<byte[]>() {
-      final int count = SingleDataNodeResultSetResponse.this.columnCount();
+      final int count = MysqlSingleDataNodeResultSetResponse.this.columnCount();
 
       @Override
       public boolean hasNext() {
@@ -67,7 +67,7 @@ public class SingleDataNodeResultSetResponse implements MycatResultSetResponse {
       @Override
       public byte[] next() {
         //todo optimize to remove tmp array
-        RowBaseIterator rowBaseIterator = SingleDataNodeResultSetResponse.this.rowBaseIterator;
+        RowBaseIterator rowBaseIterator = MysqlSingleDataNodeResultSetResponse.this.rowBaseIterator;
         byte[][] bytes = new byte[count][];
         for (int i = 0, j = 1; i < count; i++, j++) {
           bytes[i] = rowBaseIterator.getBytes(j);

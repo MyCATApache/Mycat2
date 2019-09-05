@@ -180,7 +180,14 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
 
       }
       case Types.LONGVARCHAR: {
-
+        String string = rowBaseIterator.getString(columnIndex);
+        if (string == null){
+          return null;
+        }
+        res = string.getBytes();
+        if (rowBaseIterator.wasNull()) {
+          return null;
+        }
       }
       case Types.BLOB: {
 
@@ -194,7 +201,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
       }
       case Types.NULL: {
         res = null;
-        break;
+        return null;
       }
       default:
         throw new RuntimeException("unsupport!");

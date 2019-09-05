@@ -1,7 +1,5 @@
 package io.mycat.calcite;
 
-import io.mycat.ConfigRuntime;
-import io.mycat.datasource.jdbc.GRuntime;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
@@ -10,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -23,11 +20,11 @@ import java.util.concurrent.ConcurrentHashMap;
  **/
 public enum MetadataManager {
     INSATNCE;
-    final static Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap = new ConcurrentHashMap<>();
     final ConcurrentHashMap<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new ConcurrentHashMap<>();
 
-     MetadataManager() {
+    MetadataManager() {
         addSchema("TESTDB");
         List<BackEndTableInfo> tableInfos = Arrays.asList(
                 BackEndTableInfo.builder().hostname("mytest3306a").schemaName("db1").tableName("TRAVELRECORD").build(),
@@ -43,6 +40,9 @@ public enum MetadataManager {
                 BackEndTableInfo.builder().hostname("mytest3306a").schemaName("db3").tableName("TRAVELRECORD3").build()
         );
         addTable("TESTDB", "TRAVELRECORD", tableInfos);
+//        addTableDataMapping("TESTDB", "TRAVELRECORD", tableInfos);
+
+
 
         List<BackEndTableInfo> tableInfos2 = Arrays.asList(
                 BackEndTableInfo.builder().hostname("mytest3306a").schemaName("db1").tableName("address").build(),
@@ -50,7 +50,7 @@ public enum MetadataManager {
                 BackEndTableInfo.builder().hostname("mytest3306a").schemaName("db3").tableName("address").build()
         );
 
-        addTable("TESTDB", "address", tableInfos2);
+        addTable("TESTDB", "ADDRESS", tableInfos2);
 
         if (schemaColumnMetaMap.isEmpty()) {
             schemaColumnMetaMap.putAll(CalciteConvertors.columnInfoList(schemaBackendMetaMap));
@@ -58,23 +58,26 @@ public enum MetadataManager {
     }
 
 
-    public CalciteConnection getConnection() throws Exception {
-
-        Connection connection = DriverManager.getConnection("jdbc:calcite:");
-        CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
-
-        SchemaPlus rootSchema = calciteConnection.getRootSchema();
-        schemaBackendMetaMap.forEach((schemaName, tables) -> {
-            SchemaPlus currentSchema = rootSchema.add(schemaName, new AbstractSchema());
-            tables.forEach((tableName, value) -> {
-                List<SimpleColumnInfo> columnInfos = schemaColumnMetaMap.get(schemaName).get(tableName);
-                currentSchema.add(tableName, new JdbcTable(schemaName, tableName, value,
-                        CalciteConvertors.relDataType(columnInfos),
-                        CalciteConvertors.rowSignature(columnInfos)));
-                LOGGER.error("build {}.{} success", schemaName, tableName);
+    public CalciteConnection getConnection() {
+        try {
+            Connection connection = DriverManager.getConnection("jdbc:calcite:caseSensitive=false");
+            CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
+            SchemaPlus rootSchema = calciteConnection.getRootSchema();
+            schemaBackendMetaMap.forEach((schemaName, tables) -> {
+                SchemaPlus currentSchema = rootSchema.add(schemaName, new AbstractSchema());
+                tables.forEach((tableName, value) -> {
+                    List<SimpleColumnInfo> columnInfos = schemaColumnMetaMap.get(schemaName).get(tableName);
+                    currentSchema.add(tableName, new JdbcTable(schemaName, tableName, value,
+                            CalciteConvertors.relDataType(columnInfos),
+                            CalciteConvertors.rowSignature(columnInfos)));
+                    LOGGER.error("build {}.{} success", schemaName, tableName);
+                });
             });
-        });
-        return calciteConnection;
+            return calciteConnection;
+        } catch (Exception e) {
+            LOGGER.error("",e);
+            throw new RuntimeException(e);
+        }
     }
 
 

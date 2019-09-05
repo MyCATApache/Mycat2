@@ -5,6 +5,8 @@ import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.DsConnection;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,11 +14,9 @@ import java.util.List;
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private final List<BackEndTableInfo> backStoreList;
     private final String[] sqls;
-    private final String filterText;
-
+    private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
     public MyCatResultSetEnumerable(List<BackEndTableInfo> backStoreList, String filterText) {
         this.backStoreList = backStoreList;
-        this.filterText = filterText;
         this.sqls = new String[backStoreList.size()];
 
         for (int i = 0; i < this.sqls.length; i++) {
@@ -31,6 +31,11 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
             }
             this.sqls[i] = sql;
         }
+        for (String sql : sqls) {
+            LOGGER.info("run query:"+sql);
+        }
+
+
     }
 
     @Override
