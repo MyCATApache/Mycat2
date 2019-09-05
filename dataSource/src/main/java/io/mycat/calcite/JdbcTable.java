@@ -1,9 +1,11 @@
 package io.mycat.calcite;
 
+import io.mycat.api.collector.RowBaseIterator;
 import org.apache.calcite.DataContext;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -18,6 +20,9 @@ import org.apache.calcite.schema.*;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -27,6 +32,7 @@ public class JdbcTable implements TranslatableTable, FilterableTable {
     private final RelProtoDataType relProtoDataType;
     private final RowSignature rowSignature;
     private final List<BackEndTableInfo> backStoreList;
+    private final static Logger LOGGER = LoggerFactory.getLogger(JdbcTable.class);
 
     public JdbcTable(String schemaName, String tableName, List<BackEndTableInfo> value, RelProtoDataType relProtoDataType, RowSignature rowSignature) {
         this.schemaName = schemaName;
@@ -38,16 +44,53 @@ public class JdbcTable implements TranslatableTable, FilterableTable {
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters) {
-        final String[] filterValues = new String[this.rowSignature.getColumnCount()];
-        filters.removeIf((filter) -> this.addFilter(filter, filterValues));
-        final JavaTypeFactory typeFactory = root.getTypeFactory();
-        for (RexNode filter : filters) {
-            if (filter.isA(SqlKind.EQUALS)) {
+        List<Pair<ColumnMetaData.Rep, Integer>> list = CalciteConvertors.fieldClasses(relProtoDataType, root.getTypeFactory());
+        int columnCount = list.size();
+        Function1<RowBaseIterator, Object[]> transfor = a0 -> {
+            final Object[] values = new Object[columnCount];
+            for (int i = 0; i < columnCount; i++) {
+                values[i] = a0.getObject(columnCount);
+            }
+            return values;
+        };
+        String filterText = "";
+        if (filters.isEmpty()) {
 
+        } else {
+            final String[] filterValues = new String[this.rowSignature.getColumnCount()];
+            filters.removeIf((filter) -> this.addFilter(filter, filterValues));
+            for (RexNode filter : filters) {
+                if (filter instanceof RexCall) {
+                    RexCall call = (RexCall) filter;
+                    if (call.isA(SqlKind.EQUALS) && call.getOperands().size() == 2) {
+                        RexNode left = call.getOperands().get(0);
+                        RexNode right = call.getOperands().get(1);
+
+
+                        RexInputRef input = null;
+                        RexLiteral literal = null;
+
+                        if (left instanceof RexInputRef && right instanceof RexLiteral) {
+                            input = (RexInputRef) left;
+                            literal = (RexLiteral) right;
+                        } else if (right instanceof RexInputRef && left instanceof RexLiteral) {
+                            input = (RexInputRef) right;
+                            literal = (RexLiteral) left;
+                        } else {
+                            continue;
+                        }
+
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(rowSignature.getRowOrder().get(input.getIndex())).
+                                append("=")
+                                .append(literal.getValue2().toString());
+                        filterText = sb.toString();
+                    }
+
+                }
             }
         }
-
-        return null;
+        return new MyCatResultSetEnumerable(backStoreList, filterText);
     }
 
     private boolean addFilter(RexNode filter, Object[] filterValues) {
@@ -83,7 +126,12 @@ public class JdbcTable implements TranslatableTable, FilterableTable {
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return null;
+        try {
+            return this.rowSignature.getRelDataType(typeFactory);
+        } catch (Exception e) {
+            LOGGER.error("", e);
+            return null;
+        }
     }
 
 

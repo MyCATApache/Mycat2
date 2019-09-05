@@ -1,22 +1,28 @@
 package io.mycat.calcite;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import com.google.common.collect.Lists;
+import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.SqlType;
+import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.rel.type.*;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.DatabaseMetaData;
-import java.sql.JDBCType;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.sql.Date;
+import java.sql.*;
+import java.util.*;
 
 public class CalciteConvertors {
+    private final static Logger LOGGER = LoggerFactory.getLogger(CalciteConvertors.class);
+
     final static List<SimpleColumnInfo> convertfromDatabaseMetaData(DatabaseMetaData databaseMetaData, String catalog, String schema, String tableName) {
         try (ResultSet resultSet = databaseMetaData.getColumns(catalog, schema, tableName, null)) {
             ArrayList<SimpleColumnInfo> res = new ArrayList<>();
@@ -66,19 +72,8 @@ public class CalciteConvertors {
         return builder.build();
     }
 
-    @AllArgsConstructor
-    @Getter
-    static class SimpleColumnInfo {
-        String columnName;
-        int dataType;
-        int precision;
-        int scale;
-        String typeString;
-        boolean nullable;
-    }
 
-    private static RelDataType sqlType(RelDataTypeFactory typeFactory, int dataType,
-                                       int precision, int scale, String typeString) {
+    private static RelDataType sqlType(RelDataTypeFactory typeFactory, int dataType, int precision, int scale, String typeString) {
         // Fall back to ANY if type is unknown
         final SqlTypeName sqlTypeName =
                 Util.first(SqlTypeName.getNameForJdbcType(dataType), SqlTypeName.ANY);
@@ -110,8 +105,7 @@ public class CalciteConvertors {
         }
     }
 
-    private static RelDataType parseTypeString(RelDataTypeFactory typeFactory,
-                                               String typeString) {
+    private static RelDataType parseTypeString(RelDataTypeFactory typeFactory, String typeString) {
         int precision = -1;
         int scale = -1;
         int open = typeString.indexOf("(");
@@ -139,6 +133,86 @@ public class CalciteConvertors {
         } catch (IllegalArgumentException e) {
             return typeFactory.createTypeWithNullability(
                     typeFactory.createSqlType(SqlTypeName.ANY), true);
+        }
+    }
+
+    static List<SimpleColumnInfo> getColumnInfo(BackEndTableInfo tableInfo) {
+        List<SimpleColumnInfo> infos;
+        JdbcDataSource datasource = GRuntime.INSTACNE.getJdbcDatasourceByName(tableInfo.getHostname());
+        DefaultConnection defaultConnection = (DefaultConnection) datasource.getReplica().getDefaultConnection(datasource);
+        try (Connection rawConnection = defaultConnection.getRawConnection()) {
+            DatabaseMetaData metaData = rawConnection.getMetaData();
+            String schema = tableInfo.getSchemaName();
+            infos = CalciteConvertors.convertfromDatabaseMetaData(metaData, schema, schema, tableInfo.getTableName());
+        } catch (Exception e) {
+            LOGGER.error("", e);
+            return null;
+        }
+        return infos;
+    }
+
+    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoList(final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap) {
+        Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
+        schemaBackendMetaMap.forEach((schemaName, value) -> {
+            schemaColumnMetaMap.put(schemaName, new HashMap<>());
+            for (Map.Entry<String, List<BackEndTableInfo>> stringListEntry : value.entrySet()) {
+                String tableName = stringListEntry.getKey();
+                List<BackEndTableInfo> backs = stringListEntry.getValue();
+                if (backs == null || backs.isEmpty()) return;
+                List<SimpleColumnInfo> info = null;
+                for (BackEndTableInfo back : backs) {
+                    info = getColumnInfo(back);
+                    if (info == null) continue;
+                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
+                }
+                if (info == null) {
+                    schemaColumnMetaMap.remove(tableName);
+                    LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build table", schemaName, tableName);
+                }
+            }
+        });
+        return schemaColumnMetaMap;
+    }
+
+    public static List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses(final RelProtoDataType protoRowType,
+                                                                       final JavaTypeFactory typeFactory) {
+        final RelDataType rowType = protoRowType.apply(typeFactory);
+        return Lists.transform(rowType.getFieldList(), f -> {
+            final RelDataType type = f.getType();
+            final Class clazz = (Class) typeFactory.getJavaClass(type);
+            final ColumnMetaData.Rep rep =
+                    Util.first(ColumnMetaData.Rep.of(clazz),
+                            ColumnMetaData.Rep.OBJECT);
+            return Pair.of(rep, type.getSqlTypeName().getJdbcOrdinal());
+        });
+    }
+
+    static class DateConvertor {
+        private static Timestamp shift(Timestamp v) {
+            if (v == null) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset(time);
+            return new Timestamp(time + offset);
+        }
+
+        private static Time shift(Time v) {
+            if (v == null) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset(time);
+            return new Time((time + offset) % DateTimeUtils.MILLIS_PER_DAY);
+        }
+
+        private static Date shift(Date v) {
+            if (v == null) {
+                return null;
+            }
+            long time = v.getTime();
+            int offset = TimeZone.getDefault().getOffset(time);
+            return new Date(time + offset);
         }
     }
 }

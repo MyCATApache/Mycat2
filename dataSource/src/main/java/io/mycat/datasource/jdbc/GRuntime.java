@@ -164,7 +164,10 @@ public enum GRuntime {
         Objects.requireNonNull(jdbcReplica);
         return jdbcReplica;
     }
-
+    public DsConnection getJdbcDatasourceSessionByName(String datasourceName) {
+        JdbcDataSource datasource = getJdbcDatasourceByName(datasourceName);
+        return datasource.getReplica().getDefaultConnection(datasource);
+    }
     public JdbcDataSource getJdbcDatasourceByName(String datasourceName) {
         Objects.requireNonNull(datasourceName);
         JdbcDataSource jdbcDataSource = jdbcDataSourceMap.get(datasourceName);
