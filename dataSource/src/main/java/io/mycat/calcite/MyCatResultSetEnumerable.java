@@ -15,7 +15,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private final List<BackEndTableInfo> backStoreList;
     private final String[] sqls;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
-    public MyCatResultSetEnumerable(List<BackEndTableInfo> backStoreList, String filterText) {
+    public MyCatResultSetEnumerable(List<BackEndTableInfo> backStoreList, String text, String filterText) {
         this.backStoreList = backStoreList;
         this.sqls = new String[backStoreList.size()];
 
@@ -25,9 +25,11 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
             String tableName = endTableInfo.getTableName();
             String sql;
             if (filterText != null&&!"".equals(filterText)) {
-                sql = "select * from " + schemaName + "." + tableName + " where " + filterText;
+                sql = "select " +text+
+                        " from " + schemaName + "." + tableName + " where " + filterText;
             } else {
-                sql = "select * from " + schemaName + "." + tableName;
+                sql = "select " +text+
+                        " from " + schemaName + "." + tableName;
             }
             this.sqls[i] = sql;
         }
@@ -45,7 +47,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (int i = 0; i < length; i++) {
             BackEndTableInfo endTableInfo = backStoreList.get(i);
-            DsConnection session = GRuntime.INSTACNE.getJdbcDatasourceSessionByName(endTableInfo.getHostname());
+            DsConnection session = GRuntime.INSTACNE.getJdbcDatasourceSessionByName(endTableInfo.getHostName());
             dsConnections.add(session);
             iterators.add(session.executeQuery(sqls[i]));
         }

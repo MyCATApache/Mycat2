@@ -11,7 +11,7 @@ import lombok.Data;
 @Data
 @Builder
 public class BackEndTableInfo {
-    private String hostname;
+    private String hostName;
     private String schemaName;
     private String tableName;
 }
