@@ -49,10 +49,6 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
         byte[][] row = new byte[columnCount][];
         for (int columnIndex = 1, rowIndex = 0; rowIndex < columnCount; columnIndex++, rowIndex++) {
           int columnType = mycatRowMetaData.getColumnType(columnIndex);
-          if (rowBaseIterator.wasNull()) {
-            row[rowIndex] = null;
-            continue;
-          }
           row[rowIndex] = getValue(rowBaseIterator, convertor, columnIndex, columnType);
         }
         return MySQLPacketUtil.generateTextRow(row);

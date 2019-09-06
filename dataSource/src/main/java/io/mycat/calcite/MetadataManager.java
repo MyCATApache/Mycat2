@@ -4,9 +4,11 @@ import io.mycat.ConfigRuntime;
 import io.mycat.config.ConfigFile;
 import io.mycat.router.RuleAlgorithm;
 import io.mycat.router.function.PartitionRuleAlgorithmManager;
+import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.util.ConversionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 /**
  * @author Weiqing Xu
@@ -28,6 +29,10 @@ public enum MetadataManager {
     final ConcurrentHashMap<String, Map<String, DataMappingConfig>> schemaDataMappingMetaMap = new ConcurrentHashMap<>();
 
     MetadataManager() {
+        final String charset = "UTF-8";
+        System.setProperty("saffron.default.charset",charset);
+        System.setProperty("saffron.default.nationalcharset",charset);
+        System.setProperty("saffron.default.collat​​ion.name",charset +"$ en_US");
         addSchema("TESTDB");
         List<BackEndTableInfo> tableInfos = Arrays.asList(
                 BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("TRAVELRECORD").build(),
@@ -89,6 +94,8 @@ public enum MetadataManager {
 
     public CalciteConnection getConnection() {
         try {
+
+
             Connection connection = DriverManager.getConnection("jdbc:calcite:caseSensitive=false");
             CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
             SchemaPlus rootSchema = calciteConnection.getRootSchema();
@@ -102,24 +109,14 @@ public enum MetadataManager {
                     DataMappingEvaluator dataMappingEvaluator = null;
                     if (optional.isPresent()) {
                         DataMappingConfig dataMappingConfig = optional.get();
-                        int index = rowSignature.getRowOrder().indexOf(dataMappingConfig.columnName.get(0));
                         RuleAlgorithm ruleAlgorithm = dataMappingConfig.ruleAlgorithm;
-                        dataMappingEvaluator=   new DataMappingEvaluator(rowSignature, new Function<String[], int[]>() {
-                            @Override
-                            public int[] apply(String[] strings) {
-                                String value = strings[index];
-                                if (value == null){
-                                    return new int[]{};
-                                }
-                                return new int[]{ruleAlgorithm.calculate(value)};
-                            }
-                        });
+                        dataMappingEvaluator = new DataMappingEvaluator(rowSignature,dataMappingConfig.columnName, ruleAlgorithm);
                     } else {
                         dataMappingEvaluator = new DataMappingEvaluator(rowSignature);
                     }
                     currentSchema.add(tableName, new JdbcTable(schemaName, tableName, value,
-                            CalciteConvertors.relDataType(columnInfos), rowSignature,dataMappingEvaluator
-                            ));
+                            CalciteConvertors.relDataType(columnInfos), rowSignature, dataMappingEvaluator
+                    ));
                     LOGGER.error("build {}.{} success", schemaName, tableName);
                 });
             });
