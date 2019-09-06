@@ -184,6 +184,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
         if (rowBaseIterator.wasNull()) {
           return null;
         }
+        break;
       }
       case Types.BLOB: {
 

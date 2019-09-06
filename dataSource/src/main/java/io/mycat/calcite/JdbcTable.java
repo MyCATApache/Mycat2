@@ -43,39 +43,36 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         this.dataMappingRule = dataMappingRule;
     }
 
-    private boolean addFilter(RexNode filter) {
+    private boolean addFilter(RexNode filter, boolean or) {
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
-            if (operands.size() == 2) {
-                RexNode left = operands.get(0);
-                RexNode right = operands.get(1);
-                if (left instanceof RexCall && right instanceof RexCall) {
-                    if (left.isA(SqlKind.GREATER_THAN_OR_EQUAL) && right.isA(SqlKind.LESS_THAN_OR_EQUAL)) {
-                        RexNode fisrtExpr = ((RexCall) left).getOperands().get(0);
-                        RexNode secondExpr = ((RexCall) right).getOperands().get(0);
-                        if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
-                            int index = ((RexInputRef) fisrtExpr).getIndex();
-                            if (index == ((RexInputRef) secondExpr).getIndex()) {
-                                RexNode start = ((RexCall) left).getOperands().get(1);
-                                RexNode end = ((RexCall) right).getOperands().get(1);
-                                if (start instanceof RexLiteral && end instanceof RexLiteral) {
-                                    String startValue = ((RexLiteral) start).getValue2().toString();
-                                    String endValue = ((RexLiteral) end).getValue2().toString();
-                                    dataMappingRule.assignmentRange(false, index, startValue, endValue);
-                                    return true;
+            int size = operands.size();
+            if (size == 2) {
+                for (int i = 0, j = 1; i < size && j < size; i++, j++) {
+                    RexNode left = operands.get(i);
+                    RexNode right = operands.get(j);
+                    if (left instanceof RexCall && right instanceof RexCall) {
+                        if (left.isA(SqlKind.GREATER_THAN_OR_EQUAL) && right.isA(SqlKind.LESS_THAN_OR_EQUAL)) {
+                            RexNode fisrtExpr = ((RexCall) left).getOperands().get(0);
+                            RexNode secondExpr = ((RexCall) right).getOperands().get(0);
+                            if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
+                                int index = ((RexInputRef) fisrtExpr).getIndex();
+                                if (index == ((RexInputRef) secondExpr).getIndex()) {
+                                    RexNode start = ((RexCall) left).getOperands().get(1);
+                                    RexNode end = ((RexCall) right).getOperands().get(1);
+                                    if (start instanceof RexLiteral && end instanceof RexLiteral) {
+                                        String startValue = ((RexLiteral) start).getValue2().toString();
+                                        String endValue = ((RexLiteral) end).getValue2().toString();
+                                        dataMappingRule.assignmentRange(or, index, startValue, endValue);
+                                        return true;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            } else {
-                for (RexNode operand : operands) {
-                    if (!addFilter(operand)) {
-                        return false;
-                    }
-                }
-                return true;
             }
+            return false;
         } else if (filter.isA(SqlKind.EQUALS)) {
             RexCall call = (RexCall) filter;
             RexNode left = (RexNode) call.getOperands().get(0);
@@ -86,38 +83,27 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
-                return dataMappingRule.assignment(false, index, value);
+                dataMappingRule.assignment(or, index, value);
+                return true;
             }
         }
         return false;
     }
 
-    private boolean addOrFilter(RexNode filter) {
+    private boolean addOrRootFilter(RexNode filter) {
         if (filter.isA(SqlKind.OR)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
             int i = 0;
             for (; i < size; i++) {
-                RexCall f = (RexCall) operands.get(i);
-                if (f.isA(SqlKind.EQUALS)) {
-                    RexCall call = (RexCall) f;
-                    RexNode left = (RexNode) call.getOperands().get(0);
-                    if (left.isA(SqlKind.CAST)) {
-                        left = (RexNode) ((RexCall) left).operands.get(0);
-                    }
-                    RexNode right = (RexNode) call.getOperands().get(1);
-                    if (left instanceof RexInputRef && right instanceof RexLiteral) {
-                        int index = ((RexInputRef) left).getIndex();
-                        String value = ((RexLiteral) right).getValue2().toString();
-                        dataMappingRule.assignment(true, index, value);
-                        continue;
-                    }
+                if (addFilter(operands.get(i), true)) {
+                    continue;
                 }
                 break;
             }
             return i == size;
         }
-        return addFilter(filter);
+        return addFilter(filter, false);
     }
 
     @Override
@@ -172,13 +158,13 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
         String filterText = "";
         if (!filters.isEmpty()) {
-            filters.removeIf((filter) -> addOrFilter(filter));
+            filters.removeIf((filter) -> addOrRootFilter(filter));
             filterText = dataMappingRule.getFilterExpr();
         }
         List<BackEndTableInfo> backStoreList = this.backStoreList;
         int[] calculate = dataMappingRule.calculate();
 
-        if (filters.isEmpty()){
+        if (filters.isEmpty()) {
             if (calculate.length == 0) {
                 backStoreList = this.backStoreList;
             }
@@ -202,7 +188,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
         if (projects == null) {
 
-            return new MyCatResultSetEnumerable(cancelFlag,backStoreList, "*", filterText);
+            return new MyCatResultSetEnumerable(cancelFlag, backStoreList, "*", filterText);
         } else {
             StringBuilder projectText = new StringBuilder();
             List<String> rowOrder = rowSignature.getRowOrder();
