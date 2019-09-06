@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class JdbcTable implements TranslatableTable, ProjectableFilterableTable {
     private final String schemaName;
@@ -198,8 +199,10 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 }
             }
         }
+        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
         if (projects == null) {
-            return new MyCatResultSetEnumerable(backStoreList, "*", filterText);
+
+            return new MyCatResultSetEnumerable(cancelFlag,backStoreList, "*", filterText);
         } else {
             StringBuilder projectText = new StringBuilder();
             List<String> rowOrder = rowSignature.getRowOrder();
@@ -210,7 +213,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                     projectText.append(",").append(rowOrder.get(projects[i]));
                 }
             }
-            return new MyCatResultSetEnumerable(backStoreList, projectText.toString(), filterText);
+            return new MyCatResultSetEnumerable(cancelFlag, backStoreList, projectText.toString(), filterText);
         }
     }
 }

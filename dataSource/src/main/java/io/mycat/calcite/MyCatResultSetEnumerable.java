@@ -10,12 +10,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
+    private final AtomicBoolean cancelFlag;
     private final List<BackEndTableInfo> backStoreList;
     private final String[] sqls;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
-    public MyCatResultSetEnumerable(List<BackEndTableInfo> backStoreList, String text, String filterText) {
+
+    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<BackEndTableInfo> backStoreList, String text, String filterText) {
+        this.cancelFlag = cancelFlag;
         this.backStoreList = backStoreList;
         this.sqls = new String[backStoreList.size()];
 
@@ -24,17 +28,17 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
             String schemaName = endTableInfo.getSchemaName();
             String tableName = endTableInfo.getTableName();
             String sql;
-            if (filterText != null&&!"".equals(filterText)) {
-                sql = "select " +text+
+            if (filterText != null && !"".equals(filterText)) {
+                sql = "select " + text +
                         " from " + schemaName + "." + tableName + " where " + filterText;
             } else {
-                sql = "select " +text+
+                sql = "select " + text +
                         " from " + schemaName + "." + tableName;
             }
             this.sqls[i] = sql;
         }
         for (String sql : sqls) {
-            LOGGER.info("run query:"+sql);
+            LOGGER.info("run query:" + sql);
         }
 
 
@@ -59,7 +63,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
             public T current() {
                 final int columnCount = currentrs.metaData().getColumnCount();
                 Object[] res = new Object[columnCount];
-                for (int i = 0,j=1; i< columnCount; i++,j++) {
+                for (int i = 0, j = 1; i < columnCount; i++, j++) {
                     res[i] = currentrs.getObject(j);
                 }
                 return (T) res;
@@ -67,6 +71,9 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
             @Override
             public boolean moveNext() {
+                if (cancelFlag.get()) {
+                    return false;
+                }
                 boolean result = false;
                 while (!iterators.isEmpty()) {
                     currentrs = iterators.get(0);
