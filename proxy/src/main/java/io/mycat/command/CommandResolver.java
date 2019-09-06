@@ -1,15 +1,14 @@
 package io.mycat.command;
 
-import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
-
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
-import java.util.ArrayDeque;
+
 import java.util.HashMap;
-import java.util.Queue;
+
+import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 public class CommandResolver {
 
@@ -336,7 +335,11 @@ public class CommandResolver {
           assert false;
         }
       }
-    } finally {
+    }catch (Exception e){
+      mycat.setLastMessage(e);
+      mycat.writeErrorEndPacketBySyncInProcessError();
+      mycat.onHandlerFinishedClear();
+    }finally {
       MycatMonitor.onCommandEnd(mycat);
     }
   }
