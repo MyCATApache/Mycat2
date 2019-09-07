@@ -170,7 +170,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        LOGGER.info("origin  filters:{}",filters);
+        LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = JdbcTable.this.dataMappingRule;
         record.fail = false;
         String filterText = "";
@@ -179,23 +179,23 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 DataMappingEvaluator dataMappingRule = new DataMappingEvaluator(rowSignature, record.getColumnNameList(), record.getFunction());
                 dataMappingRule.fail = true;
                 boolean b = addOrRootFilter(dataMappingRule, filter);
-                if(!dataMappingRule.fail){
+                if (!dataMappingRule.fail) {
                     record.add(dataMappingRule);
                 }
                 return b;
             });
             filterText = dataMappingRule.getFilterExpr();
         }
-        LOGGER.info("optimize filters:{}",filters);
+        LOGGER.info("optimize filters:{}", filters);
         List<BackEndTableInfo> backStoreList = this.backStoreList;
         int[] calculate = dataMappingRule.calculate();
         if (calculate.length == 0) {
             backStoreList = this.backStoreList;
         }
         if (calculate.length == 1) {
-            if (calculate[0]==-1){
+            if (calculate[0] == -1) {
                 backStoreList = this.backStoreList;
-            }else {
+            } else {
                 backStoreList = Collections.singletonList(this.backStoreList.get(calculate[0]));
             }
         }
@@ -203,7 +203,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             backStoreList = new ArrayList<>(calculate.length);
             int size = this.backStoreList.size();
             for (int i1 : calculate) {
-                if (i1 >= size) {
+                if (i1 >= size || i1 == -1) {
                     backStoreList = this.backStoreList;
                     break;
                 } else {

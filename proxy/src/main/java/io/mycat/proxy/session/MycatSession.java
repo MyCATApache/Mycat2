@@ -38,6 +38,9 @@ import io.mycat.proxy.packet.FrontMySQLPacketResolver;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.security.MycatUser;
 import io.mycat.util.CharsetUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -46,7 +49,7 @@ import java.util.concurrent.LinkedTransferQueue;
 
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
     MySQLProxyServerSession<MycatSession>, BindThreadKey {
-
+  private final static Logger LOGGER = LoggerFactory.getLogger(MycatSession.class);
   private CommandDispatcher commandHandler;
   int resultSetCount;
 

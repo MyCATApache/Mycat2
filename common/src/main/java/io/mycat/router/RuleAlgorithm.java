@@ -26,6 +26,8 @@ import java.util.Map;
 public abstract class RuleAlgorithm {
 
   List<RuleAlgorithm> nextAlgorithm;
+  private Map<String, String> prot;
+  private Map<String, String> ranges;
 
   public abstract String name();
 
@@ -99,7 +101,12 @@ public abstract class RuleAlgorithm {
   /**
    * init
    */
-  public abstract void init(Map<String, String> prot, Map<String, String> ranges);
+  public  void callInit(Map<String, String> prot, Map<String, String> ranges){
+    this.prot = prot;
+    this.ranges = ranges;
+    init(prot, ranges);
+  }
+  protected abstract void init(Map<String, String> prot, Map<String, String> ranges);
 
   protected static int[] ints(List<Integer> list) {
     int[] ints = new int[list.size()];
@@ -109,4 +116,11 @@ public abstract class RuleAlgorithm {
     return ints;
   }
 
+  public Map<String, String> getProt() {
+    return prot;
+  }
+
+  public Map<String, String> getRanges() {
+    return ranges;
+  }
 }

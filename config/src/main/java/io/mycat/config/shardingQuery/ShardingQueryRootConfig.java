@@ -1,35 +1,50 @@
 package io.mycat.config.shardingQuery;
 
 import io.mycat.config.ConfigurableRoot;
+import lombok.AllArgsConstructor;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 public class ShardingQueryRootConfig extends ConfigurableRoot {
-    final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap = new ConcurrentHashMap<>();
 
-    public static class LogicTable {
-        List<BackEndTableInfo> backEndTableInfos;
+    public void setSchemas(Map<String, Map<String, LogicTableConfig>> schemas) {
+        this.schemas = schemas;
+    }
+
+    Map<String, Map<String, LogicTableConfig>> schemas = new HashMap<>();
+
+    @AllArgsConstructor
+    public static class LogicTableConfig {
+        List<BackEndTableInfoConfig> physicalTable;
+        List<String> columns;
         String function;
         Map<String, String> properties;
         Map<String, String> ranges;
 
-        public List<BackEndTableInfo> getBackEndTableInfos() {
-            return backEndTableInfos;
+        public LogicTableConfig() {
         }
 
-        public void setBackEndTableInfos(List<BackEndTableInfo> backEndTableInfos) {
-            this.backEndTableInfos = backEndTableInfos;
+        public List<BackEndTableInfoConfig> getPhysicalTable() {
+            return physicalTable;
+        }
+
+
+        public void setPhysicalTable(List<BackEndTableInfoConfig> physicalTable) {
+            this.physicalTable = physicalTable;
         }
 
         public String getFunction() {
             return function;
         }
 
+
         public void setFunction(String function) {
             this.function = function;
         }
+
 
         public Map<String, String> getProperties() {
             return properties;
@@ -39,21 +54,52 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
             this.properties = properties;
         }
 
+
         public Map<String, String> getRanges() {
             return ranges;
         }
 
+
         public void setRanges(Map<String, String> ranges) {
             this.ranges = ranges;
         }
+
+
+        public List<String> getColumns() {
+            return columns;
+        }
+
+        public void setColumns(List<String> columns) {
+            this.columns = columns;
+        }
     }
 
-    public static class BackEndTableInfo {
+    @AllArgsConstructor
+    public static class BackEndTableInfoConfig {
         private String dataNodeName;
         private String replicaName;
         private String hostName;
         private String schemaName;
         private String tableName;
+
+        public BackEndTableInfoConfig() {
+        }
+
+        public String getDataNodeName() {
+            return dataNodeName;
+        }
+
+        public void setDataNodeName(String dataNodeName) {
+            this.dataNodeName = dataNodeName;
+        }
+
+        public String getReplicaName() {
+            return replicaName;
+        }
+
+        public void setReplicaName(String replicaName) {
+            this.replicaName = replicaName;
+        }
 
         public String getHostName() {
             return hostName;
@@ -78,21 +124,9 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
         public void setTableName(String tableName) {
             this.tableName = tableName;
         }
+    }
 
-        public String getDataNodeName() {
-            return dataNodeName;
-        }
-
-        public void setDataNodeName(String dataNodeName) {
-            this.dataNodeName = dataNodeName;
-        }
-
-        public String getReplicaName() {
-            return replicaName;
-        }
-
-        public void setReplicaName(String replicaName) {
-            this.replicaName = replicaName;
-        }
+    public Map<String, Map<String, LogicTableConfig>> getSchemas() {
+        return schemas;
     }
 }

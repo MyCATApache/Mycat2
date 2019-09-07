@@ -2,5 +2,122 @@ functions:
   - clazz: io.mycat.router.function.PartitionByLong
     name: partitionByLong
     properties:
-      partitionCount: '4'
-      partitionLength: '256'
+      partitionCount: 2,1
+      partitionLength: 256,512
+  - clazz: io.mycat.router.function.PartitionByMod
+    name: PartitionByMod
+    properties:
+      count: '4'
+  - clazz: io.mycat.router.function.PartitionByFileMap
+    name: PartitionByFileMap
+    properties:
+      type: Integer
+      defaultNode: -1
+    ranges:
+      10000: 0
+      10010: 1
+  - clazz: io.mycat.router.function.AutoPartitionByLong
+    name: AutoPartitionByLong
+    properties:
+      defaultNode: -1
+    ranges:
+      0-500M: 0
+      500M-1000M: 1
+  - clazz: io.mycat.router.function.PartitionByDate
+    name: PartitionByDate
+    properties:
+      dateFormat: yyyy-MM-dd
+      beginDate: 2014-01-01
+      endDate: 2014-01-02
+      parttionDay: 10
+  - clazz: io.mycat.router.function.PartitionByPattern
+    name: PartitionByPattern
+    properties:
+      patternValue: 256
+      defaultNode: -1
+    ranges:
+      1-32: 0
+      33-64: 1
+  - clazz: io.mycat.router.function.PartitionByPrefixPattern
+    name: PartitionByPrefixPattern
+    properties:
+      patternValue: 256
+      prefixLength: 5
+    ranges:
+      1-4: 0
+      5-8: 1
+      9-12: 2
+      13-16: 3
+      17-20: 4
+      21-24: 5
+      25-28: 6
+      29-32: 7
+      0-0: 7
+  - clazz: io.mycat.router.function.PartitionDirectBySubString
+    name: PartitionDirectBySubString
+    properties:
+      startIndex: 0
+      size: 2
+      partitionCount: 8
+      defaultNode: 0
+  - clazz: io.mycat.router.function.PartitionByString
+    name: PartitionByString
+    properties:
+      partitionLength: 128,128,256
+      partitionCount: 2,2,2
+      hashSlice: -1:0
+  - clazz: io.mycat.router.function.PartitionByRangeMod
+    name: PartitionByRangeMod
+    properties:
+      defaultNode: -1
+    ranges:
+      0-200M: 5
+      200M-400M: 1
+      400M-600M: 4
+      600M-800M: 4
+      800M1-1000M: 6
+  - clazz: io.mycat.router.function.PartitionByHashMod
+    name: PartitionByHashMod
+    properties:
+      count: 2
+  - clazz: io.mycat.router.function.PartitionByMonth
+    name: PartitionByMonth
+    properties:
+      formatter: yyyy-MM-dd
+      beginDate: 2014-01-01
+      endDate: 2014-12-01
+  - clazz: io.mycat.router.function.PartitionByMonthAndHistory
+    name: PartitionByMonthAndHistory
+    properties:
+      formatter: yyyy-MM-dd
+      beginDate: 2014-01-01
+      endDate: 2014-12-01
+  - clazz: io.mycat.router.function.PartitionByJumpConsistentHash
+    name: PartitionByJumpConsistentHash
+    properties:
+      totalBuckets: 3
+  - clazz: io.mycat.router.function.PartitionByHotDate
+    name: PartitionByHotDate
+    properties:
+      dateFormat: yyyy-MM-dd
+      lastDay: 10
+      partionDay: 30
+  - clazz: io.mycat.router.function.PartitionByRangeDateHash
+    name: PartitionByRangeDateHash
+    properties:
+      dateFormat: yyyy-MM-dd HH:mm:ss
+      partionDay: 3
+      groupPartionSize: 6
+  - clazz: io.mycat.router.function.PartitionByLatestMonth
+    name: PartitionByLatestMonth
+    properties:
+      dateFormat: yyyymmddHH
+      splitOneDay: 24
+  - clazz: io.mycat.router.function.PartitionByMurmurHash
+    name: PartitionByMurmurHash
+    properties:
+      seed: 0
+      count: 2
+      virtualBucketTimes: 160
+    ranges:
+      1: 0 # 键:权重

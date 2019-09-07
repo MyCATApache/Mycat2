@@ -2,14 +2,13 @@ package io.mycat.calcite;
 
 import io.mycat.ConfigRuntime;
 import io.mycat.config.ConfigFile;
+import io.mycat.config.YamlUtil;
 import io.mycat.config.shardingQuery.ShardingQueryRootConfig;
 import io.mycat.router.RuleAlgorithm;
 import io.mycat.router.function.PartitionRuleAlgorithmManager;
-import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
-import org.apache.calcite.util.ConversionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,47 +30,89 @@ public enum MetadataManager {
 
     MetadataManager() {
         final String charset = "UTF-8";
-        System.setProperty("saffron.default.charset",charset);
-        System.setProperty("saffron.default.nationalcharset",charset);
-        System.setProperty("saffron.default.collat​​ion.name",charset +"$ en_US");
-        addSchema("TESTDB");
-        List<BackEndTableInfo> tableInfos = Arrays.asList(
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("TRAVELRECORD").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("TRAVELRECORD2").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("TRAVELRECORD3").build(),
+        System.setProperty("saffron.default.charset", charset);
+        System.setProperty("saffron.default.nationalcharset", charset);
+        System.setProperty("saffron.default.collat​​ion.name", charset + "$ en_US");
+        PartitionRuleAlgorithmManager.INSTANCE.initFunctions(ConfigRuntime.INSTCANE.load().getConfig(ConfigFile.FUNCTIONS));
+        ShardingQueryRootConfig shardingQueryRootConfig = (ShardingQueryRootConfig) ConfigRuntime.INSTCANE.getConfig(ConfigFile.SHARDING_QUERY);
+        if (shardingQueryRootConfig == null) {
+            addSchema("TESTDB");
+            List<BackEndTableInfo> tableInfos = Arrays.asList(
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("TRAVELRECORD").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("TRAVELRECORD2").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("TRAVELRECORD3").build(),
 
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("TRAVELRECORD").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("TRAVELRECORD2").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("TRAVELRECORD3").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("TRAVELRECORD").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("TRAVELRECORD2").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("TRAVELRECORD3").build(),
 
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("TRAVELRECORD").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("TRAVELRECORD2").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("TRAVELRECORD3").build()
-        );
-        addTable("TESTDB", "TRAVELRECORD", tableInfos);
-        Map<String, String> properties = new HashMap<>();
-        properties.put("partitionCount", "2,1");
-        properties.put("partitionLength", "256,512");
-        addTableDataMapping("TESTDB", "TRAVELRECORD", Arrays.asList("ID"), "partitionByLong", properties, Collections.emptyMap());
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("TRAVELRECORD").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("TRAVELRECORD2").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("TRAVELRECORD3").build()
+            );
+            addTable("TESTDB", "TRAVELRECORD", tableInfos);
+            Map<String, String> properties = new HashMap<>();
+            properties.put("partitionCount", "2,1");
+            properties.put("partitionLength", "256,512");
+            addTableDataMapping("TESTDB", "TRAVELRECORD", Arrays.asList("ID"), "partitionByLong", properties, Collections.emptyMap());
 
 
-        List<BackEndTableInfo> tableInfos2 = Arrays.asList(
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("address").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("address").build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("address").build()
-        );
+            List<BackEndTableInfo> tableInfos2 = Arrays.asList(
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db1").tableName("address").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db2").tableName("address").build(),
+                    BackEndTableInfo.builder().hostName("mytest3306a").schemaName("db3").tableName("address").build()
+            );
 
-        addTable("TESTDB", "ADDRESS", tableInfos2);
-        properties.put("partitionCount", "2,1");
-        properties.put("partitionLength", "256,512");
-        addTableDataMapping("TESTDB", "ADDRESS", Arrays.asList("ID"), "partitionByLong", properties, Collections.emptyMap());
+            addTable("TESTDB", "ADDRESS", tableInfos2);
+            properties.put("partitionCount", "2,1");
+            properties.put("partitionLength", "256,512");
+            addTableDataMapping("TESTDB", "ADDRESS", Arrays.asList("ID"), "partitionByLong", properties, Collections.emptyMap());
 
-        for (Map.Entry<String, Map<String, List<BackEndTableInfo>>> stringMapEntry : schemaBackendMetaMap.entrySet()) {
-            ShardingQueryRootConfig.BackEndTableInfo backEndTableInfo = new ShardingQueryRootConfig.BackEndTableInfo();
+            ShardingQueryRootConfig rootConfig = new ShardingQueryRootConfig();
+            Map<String, Map<String, ShardingQueryRootConfig.LogicTableConfig>> metaMap = rootConfig.getSchemas();
+            schemaBackendMetaMap.forEach((schemaName, tableList) -> {
+                Map<String, ShardingQueryRootConfig.LogicTableConfig> tableConfigs;
+                metaMap.put(schemaName, tableConfigs = new HashMap<>());
+                for (Map.Entry<String, List<BackEndTableInfo>> entry : tableList.entrySet()) {
+                    String tableName = entry.getKey();
+                    List<ShardingQueryRootConfig.BackEndTableInfoConfig> backEndTableInfoConfigList = new ArrayList<>();
+                    List<BackEndTableInfo> endTableInfos = entry.getValue();
+                    for (BackEndTableInfo b : endTableInfos) {
+                        backEndTableInfoConfigList.add(new ShardingQueryRootConfig.BackEndTableInfoConfig(
+                                b.getDataNodeName(), b.getReplicaName(), b.getHostName(), b.getSchemaName(), b.getTableName()));
+                    }
+                    DataMappingConfig dataMappingConfig = this.schemaDataMappingMetaMap.get(schemaName).get(tableName);
+                    ShardingQueryRootConfig.LogicTableConfig logicTableConfig = new ShardingQueryRootConfig.LogicTableConfig(backEndTableInfoConfigList,dataMappingConfig.columnName,
+                            dataMappingConfig.ruleAlgorithm.name(), dataMappingConfig.ruleAlgorithm.getProt(), dataMappingConfig.ruleAlgorithm.getRanges()
+                    );
+                    tableConfigs.put(entry.getKey(), logicTableConfig);
+                }
+            });
+
+            String dump = YamlUtil.dump(rootConfig);
+        } else {
+            for (Map.Entry<String, Map<String, ShardingQueryRootConfig.LogicTableConfig>> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
+                String schemaName = entry.getKey();
+                addSchema(schemaName);
+                for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> tableConfigEntry : entry.getValue().entrySet()) {
+                    String tableName = tableConfigEntry.getKey();
+                    ShardingQueryRootConfig.LogicTableConfig logicTableConfig = tableConfigEntry.getValue();
+                    ArrayList<BackEndTableInfo> list = new ArrayList<>();
+                    for (ShardingQueryRootConfig.BackEndTableInfoConfig b : logicTableConfig.getPhysicalTable()) {
+                        list.add(new BackEndTableInfo(b.getDataNodeName(), b.getReplicaName(), b.getHostName(), b.getSchemaName(), b.getTableName()));
+                    }
+                    addTable(schemaName, tableName, list);
+                    List<String> columns = logicTableConfig.getColumns();
+                    String function = logicTableConfig.getFunction();
+                    Map<String, String> properties = logicTableConfig.getProperties();
+                    Map<String, String> ranges = logicTableConfig.getRanges();
+                    addTableDataMapping(schemaName,tableName,columns,function,properties,ranges);
+                }
+            }
 
         }
 
-        PartitionRuleAlgorithmManager.INSTANCE.initFunctions(ConfigRuntime.INSTCANE.load().getConfig(ConfigFile.FUNCTIONS));
+
         if (schemaColumnMetaMap.isEmpty()) {
             schemaColumnMetaMap.putAll(CalciteConvertors.columnInfoList(schemaBackendMetaMap));
         }
@@ -114,7 +155,7 @@ public enum MetadataManager {
                     if (optional.isPresent()) {
                         DataMappingConfig dataMappingConfig = optional.get();
                         RuleAlgorithm ruleAlgorithm = dataMappingConfig.ruleAlgorithm;
-                        dataMappingEvaluator = new DataMappingEvaluator(rowSignature,dataMappingConfig.columnName, ruleAlgorithm);
+                        dataMappingEvaluator = new DataMappingEvaluator(rowSignature, dataMappingConfig.columnName, ruleAlgorithm);
                     } else {
                         dataMappingEvaluator = new DataMappingEvaluator(rowSignature);
                     }

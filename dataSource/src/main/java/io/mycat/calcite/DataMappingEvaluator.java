@@ -121,7 +121,6 @@ public class DataMappingEvaluator {
             for (Set<RangeVariable> value : values) {
                 value.clear();
             }
-
         }
     }
 

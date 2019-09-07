@@ -51,7 +51,7 @@ public enum PartitionRuleAlgorithmManager {
         properties = (properties == null) ? Collections.emptyMap() : properties;
         funtion.setProperties(properties);
         RuleAlgorithm rootFunction = createFunction(funtion.getName(), funtion.getClazz());
-        rootFunction.init(funtion.getProperties(), funtion.getRanges());
+        rootFunction.callInit(funtion.getProperties(), funtion.getRanges());
         return rootFunction;
     }
 
@@ -61,11 +61,14 @@ public enum PartitionRuleAlgorithmManager {
 
     public RuleAlgorithm getRuleAlgorithm(String name, Map<String, String> properties, Map<String, String> ranges) {
         try {
+            if (properties == null && ranges == null) {
+                return functions.get(name).get();
+            }
             RuleAlgorithm function = createFunction(name, functionClass.get(name));
-            function.init(properties==null?Collections.emptyMap():properties,ranges==null?Collections.emptyMap():ranges);
+            function.callInit(properties == null ? Collections.emptyMap() : properties, ranges == null ? Collections.emptyMap() : ranges);
             return function;
         } catch (Exception e) {
-           throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -103,7 +106,7 @@ public enum PartitionRuleAlgorithmManager {
         }
         for (int i = 0; i < partitionNum; i++) {
             RuleAlgorithm function = PartitionRuleAlgorithmManager.INSTANCE.createFunction(parent + funtion.toString(), funtion.getClazz());
-            function.init(properties, ranges);
+            function.callInit(properties, ranges);
             ruleAlgorithms.add(function);
             if (funtion.getSubFuntion() != null) {
                 function.setSubRuleAlgorithm(
