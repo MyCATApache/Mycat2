@@ -51,6 +51,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (int i = 0; i < length; i++) {
             BackEndTableInfo endTableInfo = backStoreList.get(i);
+            DsConnection session = endTableInfo.getSession();
             dsConnections.add(session);
             iterators.add(session.executeQuery(sqls[i]));
         }

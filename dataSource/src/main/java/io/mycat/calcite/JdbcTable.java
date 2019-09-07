@@ -43,34 +43,44 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         this.dataMappingRule = dataMappingRule;
     }
 
-    private boolean addFilter(RexNode filter, boolean or) {
+    private static boolean addFilter(DataMappingEvaluator evaluator, RexNode filter, boolean or) {
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
-            if (size == 2) {
-                for (int i = 0, j = 1; i < size && j < size; i++, j++) {
-                    RexNode left = operands.get(i);
-                    RexNode right = operands.get(j);
-                    if (left instanceof RexCall && right instanceof RexCall) {
-                        if (left.isA(SqlKind.GREATER_THAN_OR_EQUAL) && right.isA(SqlKind.LESS_THAN_OR_EQUAL)) {
-                            RexNode fisrtExpr = ((RexCall) left).getOperands().get(0);
-                            RexNode secondExpr = ((RexCall) right).getOperands().get(0);
-                            if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
-                                int index = ((RexInputRef) fisrtExpr).getIndex();
-                                if (index == ((RexInputRef) secondExpr).getIndex()) {
-                                    RexNode start = ((RexCall) left).getOperands().get(1);
-                                    RexNode end = ((RexCall) right).getOperands().get(1);
-                                    if (start instanceof RexLiteral && end instanceof RexLiteral) {
-                                        String startValue = ((RexLiteral) start).getValue2().toString();
-                                        String endValue = ((RexLiteral) end).getValue2().toString();
-                                        dataMappingRule.assignmentRange(or, index, startValue, endValue);
-                                        return true;
-                                    }
+            boolean[] trueList = new boolean[size];
+            for (int i = 0, j = 1; i < size && j < size; i++, j++) {
+                RexNode left = operands.get(i);
+                RexNode right = operands.get(j);
+                if (left instanceof RexCall && right instanceof RexCall) {
+                    if (left.isA(SqlKind.GREATER_THAN_OR_EQUAL) && right.isA(SqlKind.LESS_THAN_OR_EQUAL)) {
+                        RexNode fisrtExpr = ((RexCall) left).getOperands().get(0);
+                        RexNode secondExpr = ((RexCall) right).getOperands().get(0);
+                        if (fisrtExpr instanceof RexInputRef && secondExpr instanceof RexInputRef) {
+                            int index = ((RexInputRef) fisrtExpr).getIndex();
+                            if (index == ((RexInputRef) secondExpr).getIndex()) {
+                                RexNode start = ((RexCall) left).getOperands().get(1);
+                                RexNode end = ((RexCall) right).getOperands().get(1);
+                                if (start instanceof RexLiteral && end instanceof RexLiteral) {
+                                    String startValue = ((RexLiteral) start).getValue2().toString();
+                                    String endValue = ((RexLiteral) end).getValue2().toString();
+                                    evaluator.assignmentRange(or, index, startValue, endValue);
+                                    trueList[i] = trueList[i] || true;
+                                    trueList[j] = trueList[j] || true;
                                 }
                             }
                         }
                     }
                 }
+                for (int k = 0; k < size; k++) {
+                    if (!trueList[k]) {
+                        if (!addFilter(evaluator, operands.get(k), or)) {
+
+                            return false;
+                        }
+                    }
+                }
+                evaluator.fail = false;
+                return true;
             }
             return false;
         } else if (filter.isA(SqlKind.EQUALS)) {
@@ -83,27 +93,31 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
-                dataMappingRule.assignment(or, index, value);
+                evaluator.assignment(or, index, value);
+                evaluator.fail = false;
                 return true;
             }
+
         }
         return false;
     }
 
-    private boolean addOrRootFilter(RexNode filter) {
+    private static boolean addOrRootFilter(DataMappingEvaluator evaluator, RexNode filter) {
+        evaluator.fail = true;
         if (filter.isA(SqlKind.OR)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
             int i = 0;
             for (; i < size; i++) {
-                if (addFilter(operands.get(i), true)) {
+                if (addFilter(evaluator, operands.get(i), true)) {
                     continue;
                 }
                 break;
             }
-            return i == size;
+            evaluator.fail = i != size;
+            return false;
         }
-        return addFilter(filter, false);
+        return addFilter(evaluator, filter, false);
     }
 
     @Override
@@ -156,38 +170,49 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+        LOGGER.info("origin  filters:{}",filters);
+        DataMappingEvaluator record = JdbcTable.this.dataMappingRule;
+        record.fail = false;
         String filterText = "";
         if (!filters.isEmpty()) {
-            filters.removeIf((filter) -> addOrRootFilter(filter));
+            filters.removeIf((filter) -> {
+                DataMappingEvaluator dataMappingRule = new DataMappingEvaluator(rowSignature, record.getColumnNameList(), record.getFunction());
+                dataMappingRule.fail = true;
+                boolean b = addOrRootFilter(dataMappingRule, filter);
+                if(!dataMappingRule.fail){
+                    record.add(dataMappingRule);
+                }
+                return b;
+            });
             filterText = dataMappingRule.getFilterExpr();
         }
+        LOGGER.info("optimize filters:{}",filters);
         List<BackEndTableInfo> backStoreList = this.backStoreList;
         int[] calculate = dataMappingRule.calculate();
-
-        if (filters.isEmpty()) {
-            if (calculate.length == 0) {
+        if (calculate.length == 0) {
+            backStoreList = this.backStoreList;
+        }
+        if (calculate.length == 1) {
+            if (calculate[0]==-1){
                 backStoreList = this.backStoreList;
-            }
-            if (calculate.length == 1) {
+            }else {
                 backStoreList = Collections.singletonList(this.backStoreList.get(calculate[0]));
             }
-
-            if (calculate.length > 1) {
-                backStoreList = new ArrayList<>(calculate.length);
-                int size = this.backStoreList.size();
-                for (int i1 : calculate) {
-                    if (i1 >= size) {
-                        backStoreList = this.backStoreList;
-                        break;
-                    } else {
-                        backStoreList.add(this.backStoreList.get(i1));
-                    }
+        }
+        if (calculate.length > 1) {
+            backStoreList = new ArrayList<>(calculate.length);
+            int size = this.backStoreList.size();
+            for (int i1 : calculate) {
+                if (i1 >= size) {
+                    backStoreList = this.backStoreList;
+                    break;
+                } else {
+                    backStoreList.add(this.backStoreList.get(i1));
                 }
             }
         }
         final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
         if (projects == null) {
-
             return new MyCatResultSetEnumerable(cancelFlag, backStoreList, "*", filterText);
         } else {
             StringBuilder projectText = new StringBuilder();

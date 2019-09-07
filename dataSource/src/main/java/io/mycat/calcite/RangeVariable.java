@@ -5,25 +5,27 @@ import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 public class RangeVariable {
+    private final int index;
     private boolean or;
     private RangeVariableType operator;
     private Object value;
     private Object optionValue = null;
 
-    public RangeVariable(boolean or, RangeVariableType operator, Object value) {
+    public RangeVariable(int index,boolean or, RangeVariableType operator, Object value) {
+        this.index  = index;
         this.or = or;
-        assert operator == io.mycat.sqlparser.util.complie.RangeVariableType.EQUAL;
         this.operator = operator;
+        assert operator == io.mycat.sqlparser.util.complie.RangeVariableType.EQUAL;
         this.value = value;
     }
 
-    public RangeVariable(
-            boolean or, RangeVariableType operator, Object value, Object optionValue) {
+    public RangeVariable(int index, boolean or, RangeVariableType range, String begin, String end) {
+        this.index  = index;
         this.or = or;
+        this.operator = range;
         assert operator == io.mycat.sqlparser.util.complie.RangeVariableType.RANGE;
-        this.operator = operator;
-        this.value = value;
-        this.optionValue = optionValue;
+        this.value = begin;
+        this.optionValue = end;
     }
 
     public RangeVariableType getOperator() {

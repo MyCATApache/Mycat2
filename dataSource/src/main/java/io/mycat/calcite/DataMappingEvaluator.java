@@ -11,6 +11,7 @@ public class DataMappingEvaluator {
     private final List<String> columnNameList;
     private final RuleAlgorithm function;
     private static final int[] EMPTY = new int[]{};
+    boolean fail = true;
 
     ///////////////////optional//////////////////////////////
     private final int[] keys;
@@ -72,13 +73,13 @@ public class DataMappingEvaluator {
      */
     boolean assignment(boolean or, int index, String value) {
         boolean empty = values[index].isEmpty();
-        values[index].add(new RangeVariable(or, RangeVariableType.EQUAL, value));
+        values[index].add(new RangeVariable(index, or, RangeVariableType.EQUAL, value));
         return empty;
     }
 
     boolean assignmentRange(boolean or, int index, String begin, String end) {
         boolean empty = values[index].isEmpty();
-        values[index].add(new RangeVariable(or, RangeVariableType.RANGE, begin, end));
+        values[index].add(new RangeVariable(index, or, RangeVariableType.RANGE, begin, end));
         return empty;
     }
 
@@ -94,7 +95,7 @@ public class DataMappingEvaluator {
                         case EQUAL: {
                             int calculate = function.calculate(begin);
                             if (calculate == -1) {
-                                continue;
+                                return EMPTY;
                             }
                             res.add(calculate);
                             break;
@@ -102,9 +103,12 @@ public class DataMappingEvaluator {
                         case RANGE: {
                             int[] calculate = function.calculateRange(begin, end);
                             if (calculate == null || calculate.length == 0) {
-                                continue;
+                                return EMPTY;
                             }
                             for (int i : calculate) {
+                                if (i == -1) {
+                                    return EMPTY;
+                                }
                                 res.add(i);
                             }
                             break;
@@ -132,13 +136,13 @@ public class DataMappingEvaluator {
             Set<RangeVariable> value = values[i];
 
             for (RangeVariable rangeVariable : value) {
-                if(where.length()>0){
+                if (where.length() > 0) {
                     if (rangeVariable.isOr()) {
                         where.append(" or (");
                     } else {
                         where.append(" and (");
                     }
-                }else {
+                } else {
                     where.append("  (");
                 }
 
@@ -155,5 +159,20 @@ public class DataMappingEvaluator {
             }
         }
         return where.toString();
+    }
+
+
+    public RuleAlgorithm getFunction() {
+        return function;
+    }
+
+    public void add(DataMappingEvaluator dataMappingRule) {
+        Set<RangeVariable>[] values = dataMappingRule.values;
+        for (int i = 0; i < values.length; i++) {
+            Set<RangeVariable> value = values[i];
+            if (value != null) {
+                this.values[i].addAll(value);
+            }
+        }
     }
 }
