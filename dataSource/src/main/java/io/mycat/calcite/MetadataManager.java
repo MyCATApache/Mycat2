@@ -2,6 +2,7 @@ package io.mycat.calcite;
 
 import io.mycat.ConfigRuntime;
 import io.mycat.config.ConfigFile;
+import io.mycat.config.shardingQuery.ShardingQueryRootConfig;
 import io.mycat.router.RuleAlgorithm;
 import io.mycat.router.function.PartitionRuleAlgorithmManager;
 import org.apache.calcite.config.CalciteSystemProperty;
@@ -64,6 +65,12 @@ public enum MetadataManager {
         properties.put("partitionCount", "2,1");
         properties.put("partitionLength", "256,512");
         addTableDataMapping("TESTDB", "ADDRESS", Arrays.asList("ID"), "partitionByLong", properties, Collections.emptyMap());
+
+        for (Map.Entry<String, Map<String, List<BackEndTableInfo>>> stringMapEntry : schemaBackendMetaMap.entrySet()) {
+            ShardingQueryRootConfig.BackEndTableInfo backEndTableInfo = new ShardingQueryRootConfig.BackEndTableInfo();
+
+        }
+
         PartitionRuleAlgorithmManager.INSTANCE.initFunctions(ConfigRuntime.INSTCANE.load().getConfig(ConfigFile.FUNCTIONS));
         if (schemaColumnMetaMap.isEmpty()) {
             schemaColumnMetaMap.putAll(CalciteConvertors.columnInfoList(schemaBackendMetaMap));

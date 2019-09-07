@@ -138,8 +138,7 @@ public class CalciteConvertors {
 
     static List<SimpleColumnInfo> getColumnInfo(BackEndTableInfo tableInfo) {
         List<SimpleColumnInfo> infos;
-        JdbcDataSource datasource = GRuntime.INSTACNE.getJdbcDatasourceByName(tableInfo.getHostName());
-        DefaultConnection defaultConnection = (DefaultConnection) datasource.getReplica().getDefaultConnection(datasource);
+        DefaultConnection defaultConnection = tableInfo.getSession();
         try (Connection rawConnection = defaultConnection.getRawConnection()) {
             DatabaseMetaData metaData = rawConnection.getMetaData();
             String schema = tableInfo.getSchemaName();

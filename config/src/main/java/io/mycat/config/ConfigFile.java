@@ -28,6 +28,7 @@ import io.mycat.config.route.ShardingRuleRootConfig;
 import io.mycat.config.route.SharingFuntionRootConfig;
 import io.mycat.config.schema.DataNodeRootConfig;
 import io.mycat.config.schema.SchemaRootConfig;
+import io.mycat.config.shardingQuery.ShardingQueryRootConfig;
 import io.mycat.config.user.UserRootConfig;
 
 /**
@@ -51,7 +52,7 @@ public enum ConfigFile {
   DATANODE(15, "dataNode.yml", DataNodeRootConfig.class),
   SEQUENCE_MODIFIER(16, "sequenceModifier.yml", SchemaSequenceModifierRootConfig.class),
   JDBC_DRIVER(17, "jdbcDriver.yml", JdbcDriverRootConfig.class),
-  ;
+  SHARDING_QUERY(17, "shardingQuery.yml", ShardingQueryRootConfig.class);
   private byte type;
   private String fileName;
   private Class clazz;
