@@ -98,7 +98,7 @@ public enum MetadataManager {
                     String tableName = tableConfigEntry.getKey();
                     ShardingQueryRootConfig.LogicTableConfig logicTableConfig = tableConfigEntry.getValue();
                     ArrayList<BackEndTableInfo> list = new ArrayList<>();
-                    for (ShardingQueryRootConfig.BackEndTableInfoConfig b : logicTableConfig.getPhysicalTable()) {
+                    for (ShardingQueryRootConfig.BackEndTableInfoConfig b : logicTableConfig.getQueryPhysicalTable()) {
                         list.add(new BackEndTableInfo(b.getDataNodeName(), b.getReplicaName(), b.getHostName(), b.getSchemaName(), b.getTableName()));
                     }
                     addTable(schemaName, tableName, list);

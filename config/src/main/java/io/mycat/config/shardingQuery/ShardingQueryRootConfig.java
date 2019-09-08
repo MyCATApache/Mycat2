@@ -18,7 +18,7 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
 
     @AllArgsConstructor
     public static class LogicTableConfig {
-        List<BackEndTableInfoConfig> physicalTable;
+        List<BackEndTableInfoConfig> queryPhysicalTable;
         List<String> columns;
         String function;
         Map<String, String> properties;
@@ -27,13 +27,13 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
         public LogicTableConfig() {
         }
 
-        public List<BackEndTableInfoConfig> getPhysicalTable() {
-            return physicalTable;
+        public List<BackEndTableInfoConfig> getQueryPhysicalTable() {
+            return queryPhysicalTable;
         }
 
 
-        public void setPhysicalTable(List<BackEndTableInfoConfig> physicalTable) {
-            this.physicalTable = physicalTable;
+        public void setQueryPhysicalTable(List<BackEndTableInfoConfig> queryPhysicalTable) {
+            this.queryPhysicalTable = queryPhysicalTable;
         }
 
         public String getFunction() {

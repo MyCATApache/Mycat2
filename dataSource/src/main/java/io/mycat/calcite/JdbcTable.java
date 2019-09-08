@@ -115,7 +115,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 break;
             }
             evaluator.fail = i != size;
-            return false;
+            return !evaluator.fail;
         }
         return addFilter(evaluator, filter, false);
     }

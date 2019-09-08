@@ -3,7 +3,7 @@ schemas:
   TESTDB:
     ADDRESS: !!io.mycat.config.shardingQuery.ShardingQueryRootConfig$LogicTableConfig
       function: partitionByLong
-      physicalTable:
+      queryPhysicalTable:
         - dataNodeName: null
           hostName: mytest3306a
           replicaName: null
@@ -26,7 +26,7 @@ schemas:
         partitionLength: 256,512
       ranges: &id002 {}
     TRAVELRECORD: !!io.mycat.config.shardingQuery.ShardingQueryRootConfig$LogicTableConfig
-      physicalTable:
+      queryPhysicalTable:
         - dataNodeName: null
           hostName: mytest3306a
           replicaName: null
