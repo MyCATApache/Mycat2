@@ -31,6 +31,8 @@ jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=false&useCursorFetch=false
 
 2019-7-30,jdbc作为数据源处于测试阶段
 
+2019-9-9,分布式查询模块处于测试阶段
+
 mycat.yml
 
 commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
@@ -78,6 +80,8 @@ commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
 [负载均衡算法](16-load-balancing-algorithm.md)
 
 [全局序列号说明](14-mycat-sequence.md)
+
+[分布式查询](28-mycat-sharding-query.md)
 
 [打包](10-mycat-package.md)
 
