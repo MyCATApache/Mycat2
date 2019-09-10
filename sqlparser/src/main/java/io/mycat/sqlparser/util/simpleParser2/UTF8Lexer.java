@@ -1,98 +1,60 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class UTF8Lexer {
-    ByteBuffer buffer = ByteBuffer.allocate(1);
-    int startOffset = 0;
+    ByteBuffer buffer;
     int limit = 0;
     int position = 0;
-    int length = 0;
+    IdRecorder idRecorder;
     public static final byte DEMO = Byte.MIN_VALUE;
     public static final byte END = Byte.MAX_VALUE;
-    Map<Long, String> keywords = new HashMap<>();
-    List<String> tokens = new ArrayList<>();
-    StringBuilder sb = new StringBuilder();
 
-    public UTF8Lexer(ByteBuffer buffer, int startOffset, int length) {
+    public void init(ByteBuffer buffer, int startOffset, int length, IdRecorder recorder) {
         this.buffer = buffer;
-        this.startOffset = startOffset;
-        this.length = length;
+        this.position = startOffset;
         this.limit = startOffset + length;
-    }
-
-    public static void main(String[] args) {
-//        String message = "SELECT * FROM `db1`.`mycat_sequence` LIMIT 0, 1000;";
-        String message = "/*  9999*/ SELECT (10000.2+2,ssss,\'hahah少时诵诗书\') FROM (db1.`mycat_sequence222`)LIMIT 0, 1000;";
-        byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
-        UTF8Lexer utf8Lexer = new UTF8Lexer(ByteBuffer.wrap(bytes), 0, bytes.length);
-        while (utf8Lexer.nextToken()) {
-
-
-        }
-    }
-
-    private boolean isKeyword() {
-        return false;
-    }
-
-
-    private int readChar() {
-        return Byte.toUnsignedInt(buffer.get(position));
-    }
-
-    public void parse() {
-        while (nextToken()) {
-
-        }
+        this.idRecorder = recorder;
     }
 
     public boolean nextToken() {
         skipIgnore();
-        if (hasChar()) {
-            int c = nextChar();
-            if (c == '`') {
-                record(c);
-                c = nextChar();
-                record(c);
-                for (; hasChar() && c != '`'; ) {
-                    c = nextChar();
-                    record(c);
-                }
-                return true;
-            } else if (c == '\'') {
-                for (; hasChar(); ) {
-                    int peek = peekChar(1);
-                    if (c != '\\' && peek == '\'') {
-                        position += 2;
-                        record(c);
-                        return true;
-                    }
-                    c = peek;
-                    ++position;
-                }
-            }
-            {
-                boolean id = false;
-                while (Character.isLetterOrDigit(c) || c == '_' || c == '$') {
-                    record(c);
-                    c = nextChar();
-                    id = true;
-                }
-                if (id) {
-                    position--;
-                    return true;
-                }
-            }
-            record(c);
+        if (!hasChar()) return false;
+        idRecorder.startRecordTokenChar();
+        int c = nextChar();
+        if (c == '`' || c == '\'') {
+            idRecorder.recordTokenChar(c);
+            pickTo(c);
             return true;
         }
-        return false;
+        boolean id = false;
+        while (hasChar() && (Character.isLetterOrDigit(c) || c == '_' || c == '$')) {
+            idRecorder.recordTokenChar(c);
+            c = nextChar();
+            id = true;
+        }
+        if (id) {
+            --position;
+            idRecorder.endRecordTokenChar();
+            return true;
+        } else {
+            idRecorder.recordTokenChar(c);
+            idRecorder.endRecordTokenChar();
+            return true;
+        }
+    }
+
+    private void pickTo(final int t) {
+        int c = t;
+        do {
+            int peek = nextChar();
+            idRecorder.recordTokenChar(peek);
+            if (c != '\\' && peek == t) {
+                idRecorder.endRecordTokenChar();
+                break;
+            }
+            c = peek;
+        } while (hasChar());
     }
 
     private void skipIgnore() {
@@ -103,21 +65,23 @@ public class UTF8Lexer {
                 continue;
             } else if (b == '/') {
                 if (peekChar(1) == '*') {
-                    ++position;
+                    position += 2;
                     for (; hasChar(); ) {
                         if ('*' == peekChar(0) && '/' == peekChar(1)) {
-                            position = position + 2;
+                            position += 2;
                             break;
                         }
                         ++position;
                     }
                 } else if (peekChar(1) == '/') {
+                    position += 2;
                     skipSingleComment();
                 }
             } else if (b == '#') {
+                position += 1;
                 skipSingleComment();
             } else if (b == '-' && peekChar(1) == '-') {
-                ++position;
+                position += 2;
                 skipSingleComment();
             } else {
                 break;
@@ -126,10 +90,9 @@ public class UTF8Lexer {
     }
 
     private void skipSingleComment() {
-        ++position;
         for (; hasChar(); ) {
             if ('\n' == peekChar(1)) {
-                ++position;
+                position += 2;
                 break;
             }
             ++position;
@@ -137,53 +100,34 @@ public class UTF8Lexer {
     }
 
     public boolean hasChar() {
-        return (position < limit);
+        return position < limit;
     }
 
     public int peekChar(int step) {
         int ex = position + step;
-        if (ex < limit) {
-            return Byte.toUnsignedInt(buffer.get(ex));
-        } else {
-            return END;
-        }
+        return (ex < limit) ? Byte.toUnsignedInt(buffer.get(ex)) : END;
     }
 
     public int nextChar() {
-        if (position < limit) {
-            int aByte = readChar();
-            if (aByte <= 0x007F) {
-                position += 1;
-                return aByte;
-            } else {
-                if (aByte <= 0x07FF) {
-                    position += 2;
-                    return DEMO;
-                } else if (aByte <= 0xFFFF) {
-                    position += 3;
-                    return DEMO;
-                } else if (aByte <= 0x1FFFFF) {
-                    position += 4;
-                    return DEMO;
-                } else if (aByte <= 0x3FFFFFF) {
-                    position += 5;
-                    return DEMO;
-                } else {//0x7FFFFFFF
-                    position += 6;
-                    return DEMO;
-                }
+        if (!hasChar()) return END;
+        int aByte = Byte.toUnsignedInt(buffer.get(position));
+        if (aByte <= 0x007F) {
+            position += 1;
+            return aByte;
+        } else {
+            if (aByte <= 0x07FF) {
+                position += 3;
+            } else if (aByte <= 0xFFFF) {
+                position += 4;
+            } else if (aByte <= 0x1FFFFF) {
+                position += 5;
+            } else if (aByte <= 0x3FFFFFF) {
+                position += 6;
+            } else {//0x7FFFFFFF
+                position += 7;
             }
+            return DEMO;
         }
-        return END;
     }
-
-    private void startRecord() {
-        sb.setLength(0);
-    }
-
-    private void record(int c) {
-        sb.append((byte)c);
-    }
-
 
 }
