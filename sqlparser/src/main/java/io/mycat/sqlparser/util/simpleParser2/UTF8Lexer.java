@@ -1,6 +1,7 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 public class UTF8Lexer {
     ByteBuffer buffer;
@@ -26,14 +27,15 @@ public class UTF8Lexer {
         if (!hasChar()) return false;
         idRecorder.startRecordTokenChar(position);
         int c = nextChar();
+        char cc = (char)c;
         if (c == '`' || c == '\'') {
-            idRecorder.recordTokenChar(c);
+            idRecorder.append(c);
             pickTo(c);
             return true;
         }
         boolean id = false;
         while (hasChar() && (Character.isLetterOrDigit(c) || c == '_' || c == '$')) {
-            idRecorder.recordTokenChar(c);
+            idRecorder.append(c);
             c = nextChar();
             id = true;
         }
@@ -42,7 +44,7 @@ public class UTF8Lexer {
             idRecorder.endRecordTokenChar(position);
             return true;
         } else {
-            idRecorder.recordTokenChar(c);
+            idRecorder.append(c);
             idRecorder.endRecordTokenChar(position);
             return true;
         }
@@ -52,7 +54,7 @@ public class UTF8Lexer {
         int c = t;
         do {
             int peek = nextChar();
-            idRecorder.recordTokenChar(peek);
+            idRecorder.append(peek);
             if (c != '\\' && peek == t) {
                 idRecorder.endRecordTokenChar(position);
                 break;
@@ -140,4 +142,11 @@ public class UTF8Lexer {
         }
     }
 
+    public String getString(int start, int end) {
+        byte[] bytes = new byte[end-start];
+        for (int i = 0; start <end ; start++) {
+            bytes[i] = buffer.get(start);
+        }
+        return new String(bytes, StandardCharsets.UTF_8);
+    }
 }

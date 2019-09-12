@@ -8,7 +8,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 public interface DFG {
-    void addRule(Iterator<Token> format);
+    void addRule(Iterator<Seq> format);
 
     Matcher getMatcher();
 
@@ -19,21 +19,24 @@ public interface DFG {
         Map<String, Position> variables = new HashMap<>();
 
         @Override
-        public void addRule(Iterator<Token> format) {
+        public void addRule(Iterator<Seq> format) {
             State state = this.rootState;
             int length = 0;
             for (; format.hasNext(); ++length) {
-                Token token = format.next();
+                Seq token = format.next();
                 if (token == null) continue;
-                if ("{".equals(token.symbol)) {
+                if ("{".equals(token.getSymbol())) {
                     format.hasNext();
-                    String name = format.next().symbol;
+                    String name = format.next().getSymbol();
                     variables.put(name, null);
                     state.addWildcard(name, new State(state.depth + 1));
                     format.hasNext();
-                    if ("}".equals(format.next().symbol)) {
+                    Seq last = format.next();
+                    if ("}".equals(last.getSymbol())) {
                         state = state.matcher;
-                    } else throw new UnsupportedOperationException();
+                    } else {
+                        throw new UnsupportedOperationException();
+                    }
                 } else {
                     state = state.addState(token);
                 }
@@ -49,14 +52,14 @@ public interface DFG {
         public static class State {
             final int depth;
             private String name;
-            private HashMap<Token, State> success;
+            private HashMap<Seq, State> success;
             private State matcher;
 
             public State(int depth) {
                 this.depth = depth;
             }
 
-            public State addState(Token next) {
+            public State addState(Seq next) {
                 if (success == null) success = new HashMap<>();
                 if (success.containsKey(next)) {
                     return success.get(next);
@@ -74,7 +77,7 @@ public interface DFG {
                 } else throw new UnsupportedOperationException();
             }
 
-            public State accept(Token token, int startOffset, int endOffset, DFGImpl.PositionRecorder map) {
+            public State accept(Seq token, int startOffset, int endOffset, DFGImpl.PositionRecorder map) {
                 if (success != null && name == null) {
                     return success.get(token);
                 } else {
@@ -134,11 +137,19 @@ public interface DFG {
     }
 
     public interface Matcher {
-        boolean accept(Token token);
+        boolean accept(Seq token);
 
         Map<String, String> values(byte[] bytes1);
 
         public boolean acceptAll();
+    }
+
+    public interface Seq {
+        String getSymbol();
+
+        int getStartOffset();
+
+        int getEndOffset();
     }
 
     public class MatcherImpl implements Matcher {
@@ -149,10 +160,10 @@ public interface DFG {
             this.state = state;
         }
 
-        public boolean accept(Token token) {
+        public boolean accept(Seq token) {
             if (this.state == null) return false;
-            int startOffset = token.start;
-            int endOffset = token.end;
+            int startOffset = token.getStartOffset();
+            int endOffset = token.getEndOffset();
             return (this.state = state.accept(token, startOffset, endOffset, map)) != null;
         }
 
