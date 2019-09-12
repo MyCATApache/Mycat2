@@ -6,11 +6,14 @@ import java.util.Objects;
 
 public class IdRecorderImpl<T> implements IdRecorder {
     final byte[] word = new byte[8192];
-    final Map<Long, Token<T>> longTokenHashMap = new HashMap<>();
+    final Map<Integer, Token<T>> longTokenHashMap = new HashMap<>();
     final Map<String, Token<T>> tokenMap = new HashMap<>();
     int offset = 0;
-    long hash = 0;
-    Token currentAttr;
+    int hash = 0;
+    ///////////position//////////
+    int tokenStartOffset;
+    int tokenEndOffset;
+    private final Token tmp = new Token(0, null, null);
 
     final StringBuilder debugBuffer;
 
@@ -20,36 +23,29 @@ public class IdRecorderImpl<T> implements IdRecorder {
 
     public void load(Map<String, T> map) {
         Objects.requireNonNull(map);
-        for (Map.Entry<String, T> entry : map.entrySet()) {
-            String keyword = entry.getKey();
-            long hash = getHash(keyword);
-            Token<T> token = new Token<>(hash, keyword, entry.getValue());
-            if (longTokenHashMap.containsKey(hash)) {
-                throw new UnsupportedOperationException();
-            }
-            longTokenHashMap.put(hash, token);
-            tokenMap.put(keyword, token);
+        map.forEach((key, value) -> addKeyword(key, value));
+    }
+
+    private void addKeyword(String keyword, T attr) {
+        Token<T> token = new Token<>(getHash(keyword), keyword, attr);
+        if (longTokenHashMap.containsKey(token.hash)) {
+            throw new UnsupportedOperationException();
         }
+        longTokenHashMap.put(token.hash, token);
+        tokenMap.put(keyword, token);
     }
 
     public void append(int b) {
         debugAppend(b);
-        if (offset < 9) {
-            hash = hash << 8 | b;
-        } else {
-            word[offset] = (byte) b;
-        }
-        ++offset;
+        word[offset] = (byte) b;
+        hash = 31 * hash + b;
+        offset++;
     }
 
-    public boolean isSymbol() {
-        return (toCurToken() != null);
-    }
-
-    private static boolean equal(long curHash, int length, byte[] word, Token attr) {
-        if (curHash == attr.hash) {
-            String symbol = attr.getSymbol();
-            for (int i = 8; i < length; i++) {
+    private static boolean equal(long curHash, int length, byte[] word, Token constToken) {
+        if (curHash == constToken.hash) {
+            String symbol = constToken.symbol;
+            for (int i = 0; i < length; i++) {
                 if (symbol.charAt(i) != word[i]) {
                     return false;
                 }
@@ -59,18 +55,13 @@ public class IdRecorderImpl<T> implements IdRecorder {
         return false;
     }
 
-    public Token<T> getToken(String id) {
-        return tokenMap.get(id);
-    }
-
-    public T getCurrentAttr() {
-        return (currentAttr != null) ? (T) currentAttr.getAttr() : null;
-    }
-
     @Override
-    public void startRecordTokenChar() {
-        debugClear();
-        this.endRecordTokenChar();
+    public void startRecordTokenChar(int startOffset) {
+        this.debugClear();
+        this.offset = 0;
+        this.hash = 0;
+        this.tokenStartOffset = startOffset;
+        this.tokenEndOffset = startOffset;
     }
 
     @Override
@@ -79,10 +70,19 @@ public class IdRecorderImpl<T> implements IdRecorder {
     }
 
     @Override
-    public void endRecordTokenChar() {
-        offset = 0;
-        hash = 0;
-        currentAttr = null;
+    public void endRecordTokenChar(int endOffset) {
+        hash();
+        this.tokenEndOffset = endOffset;
+    }
+
+    private void hash() {
+        if (this.hash == 0) {
+            int h = 0;
+            for (int i = 0; i < offset; i++) {
+                h = 31 * h + word[i];
+            }
+            hash = h;
+        }
     }
 
     public boolean isToken(Token token) {
@@ -90,16 +90,15 @@ public class IdRecorderImpl<T> implements IdRecorder {
     }
 
     ///////////////////////util/////////////////////////
-    private static long getHash(String keyword) {
-        long hash = 0;
-        int length = Math.min(8, keyword.length());
+    private int getHash(String keyword) {
+        int length = keyword.length();
+        int hash = 0;
         for (int i = 0; i < length; i++) {
-            char c = keyword.charAt(i);
-            if (Character.isIdentifierIgnorable(c)) {
-                hash = hash << 8 | (byte) c;
-            } else {
+            int c = keyword.charAt(i) & 0xff;
+            if (0 >= c || c >= 127) {
                 throw new UnsupportedOperationException();
             }
+            hash = 31 * hash + c;
         }
         return hash;
     }
@@ -117,12 +116,33 @@ public class IdRecorderImpl<T> implements IdRecorder {
         return (this.debugBuffer != null) ? this.debugBuffer : "";
     }
 
-    public Token toCurToken() {
-        Token<T> attr = longTokenHashMap.get(hash);
-        if ((attr != null) && equal(hash, offset, word, attr)) {
-            return attr;
+    public Token toConstToken() {
+        Token<T> keyword = longTokenHashMap.get(hash);
+        if (keyword != null) {
+            return keyword;
         } else {
-            return null;
+            try {
+                return toCurToken().clone();
+            } catch (CloneNotSupportedException e) {
+                return null;
+            }
+        }
+    }
+
+    public Token toCurToken() {
+        hash();
+        tmp.start = this.tokenStartOffset;
+        tmp.end = this.tokenEndOffset;
+        tmp.hash = this.hash;
+        Token<T> keyword = longTokenHashMap.get(hash);
+        if ((keyword != null) && equal(hash, offset, word, keyword)) {
+            tmp.attr = keyword.attr;
+            tmp.symbol = keyword.symbol;
+            return tmp;
+        } else {
+            tmp.attr = null;
+            tmp.symbol = null;
+            return tmp;
         }
     }
 }

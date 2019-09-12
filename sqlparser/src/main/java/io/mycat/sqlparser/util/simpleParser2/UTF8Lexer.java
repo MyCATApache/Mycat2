@@ -6,21 +6,25 @@ public class UTF8Lexer {
     ByteBuffer buffer;
     int limit = 0;
     int position = 0;
-    IdRecorder idRecorder;
+    private final IdRecorder idRecorder;
     public static final byte DEMO = Byte.MIN_VALUE;
     public static final byte END = Byte.MAX_VALUE;
 
-    public void init(ByteBuffer buffer, int startOffset, int length, IdRecorder recorder) {
+    public UTF8Lexer(IdRecorder idRecorder) {
+        this.idRecorder = idRecorder;
+    }
+
+    public void init(ByteBuffer buffer, int startOffset, int length) {
         this.buffer = buffer;
         this.position = startOffset;
         this.limit = startOffset + length;
-        this.idRecorder = recorder;
+        this.idRecorder.startRecordTokenChar(position);
     }
 
     public boolean nextToken() {
         skipIgnore();
         if (!hasChar()) return false;
-        idRecorder.startRecordTokenChar();
+        idRecorder.startRecordTokenChar(position);
         int c = nextChar();
         if (c == '`' || c == '\'') {
             idRecorder.recordTokenChar(c);
@@ -35,11 +39,11 @@ public class UTF8Lexer {
         }
         if (id) {
             --position;
-            idRecorder.endRecordTokenChar();
+            idRecorder.endRecordTokenChar(position);
             return true;
         } else {
             idRecorder.recordTokenChar(c);
-            idRecorder.endRecordTokenChar();
+            idRecorder.endRecordTokenChar(position);
             return true;
         }
     }
@@ -50,7 +54,7 @@ public class UTF8Lexer {
             int peek = nextChar();
             idRecorder.recordTokenChar(peek);
             if (c != '\\' && peek == t) {
-                idRecorder.endRecordTokenChar();
+                idRecorder.endRecordTokenChar(position);
                 break;
             }
             c = peek;
@@ -73,17 +77,23 @@ public class UTF8Lexer {
                         }
                         ++position;
                     }
+                    continue;
                 } else if (peekChar(1) == '/') {
                     position += 2;
                     skipSingleComment();
+                    continue;
+                }else {
+                    break;
                 }
             } else if (b == '#') {
                 position += 1;
                 skipSingleComment();
+                continue;
             } else if (b == '-' && peekChar(1) == '-') {
                 position += 2;
                 skipSingleComment();
-            } else {
+                continue;
+            }else {
                 break;
             }
         }

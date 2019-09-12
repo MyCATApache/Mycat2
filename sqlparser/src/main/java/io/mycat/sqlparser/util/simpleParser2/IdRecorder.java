@@ -1,9 +1,9 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
 public interface IdRecorder {
-    void startRecordTokenChar();
+    void startRecordTokenChar(int startOffset);
 
     void recordTokenChar(int c);
 
-    void endRecordTokenChar();
+    void endRecordTokenChar(int endOffset);
 }

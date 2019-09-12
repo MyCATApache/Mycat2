@@ -1,48 +1,174 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
-import com.sun.source.tree.ExpressionTree;
+import lombok.Data;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
 
 public interface DFG {
     void addRule(Iterator<Token> format);
 
-    boolean accept(Token token);
+    Matcher getMatcher();
 
     static class DFGImpl implements DFG {
-        Map<Token, DFGImpl> status = new HashMap<>();
-        DFGImpl curDFG = null;
+        private final State rootState = new State(0);
+        private int index;
+        private int length[] = new int[8192];
+        Map<String, Position> variables = new HashMap<>();
 
         @Override
         public void addRule(Iterator<Token> format) {
-            Objects.requireNonNull(format);
-            while (format.hasNext()) {
-                insert(format.next());
+            State state = this.rootState;
+            int length = 0;
+            for (; format.hasNext(); ++length) {
+                Token token = format.next();
+                if (token == null) continue;
+                if ("{".equals(token.symbol)) {
+                    format.hasNext();
+                    String name = format.next().symbol;
+                    variables.put(name, null);
+                    state.addWildcard(name, new State(state.depth + 1));
+                    format.hasNext();
+                    if ("}".equals(format.next().symbol)) {
+                        state = state.matcher;
+                    } else throw new UnsupportedOperationException();
+                } else {
+                    state = state.addState(token);
+                }
             }
-        }
-
-        private void insert(Token token) {
-
+            this.length[++index] = length;
         }
 
         @Override
-        public boolean accept(Token token) {
-            if (curDFG == null) {
-                curDFG = status.get(token);
-            }
-            return curDFG != null;
+        public Matcher getMatcher() {
+            return new MatcherImpl(rootState);
         }
 
-        public boolean isTerminal(){
-           return curDFG.isTerminal();
+        public static class State {
+            final int depth;
+            private String name;
+            private HashMap<Token, State> success;
+            private State matcher;
+
+            public State(int depth) {
+                this.depth = depth;
+            }
+
+            public State addState(Token next) {
+                if (success == null) success = new HashMap<>();
+                if (success.containsKey(next)) {
+                    return success.get(next);
+                } else {
+                    State state = new State(depth + 1);
+                    success.put(next, state);
+                    return state;
+                }
+            }
+
+            public void addWildcard(String name, State matcher) {
+                if (success == null && this.name == null) {
+                    this.name = name;
+                    this.matcher = matcher;
+                } else throw new UnsupportedOperationException();
+            }
+
+            public State accept(Token token, int startOffset, int endOffset, DFGImpl.PositionRecorder map) {
+                if (success != null && name == null) {
+                    return success.get(token);
+                } else {
+                    if (name != null) {
+                        map.startRecordName(name, startOffset);
+                    }
+                    if (matcher != null) {
+                        State accept = matcher.accept(token, startOffset, endOffset, map);
+                        if (accept != null && name != null) {
+                            if (accept.success == null && accept.matcher == null) {
+                                map.record(endOffset);
+                            }
+                            map.endRecordName(name);
+                            return accept;
+                        }
+                        map.record(endOffset);
+                    } else if (name != null) {
+                        map.record(endOffset);
+                        map.endRecordName(name);
+                    }
+                    return this;
+                }
+            }
+        }
+
+        public static class PositionRecorder {
+            final Map<String, Position> map = new HashMap<>();
+            Position currentPosition;
+
+            public void startRecordName(String name, int startOffset) {
+                if (currentPosition == null) {
+                    currentPosition = new Position();
+                    currentPosition.start = Integer.MAX_VALUE;
+                }
+                currentPosition.start = Math.min(currentPosition.start, startOffset);
+            }
+
+            public void record(int endOffset) {
+                if (currentPosition != null) {
+                    currentPosition.end = Math.max(currentPosition.end, endOffset);
+                }
+            }
+
+            public void endRecordName(String name) {
+                if (currentPosition != null) {
+                    map.put(name, currentPosition);
+                    currentPosition = null;
+                }
+            }
+        }
+
+        @Data
+        public static class Position {
+            int start;
+            int end;
         }
     }
 
-    public static void main(String[] args) {
-        DFG dfg = new DFGImpl();
+    public interface Matcher {
+        boolean accept(Token token);
 
+        Map<String, String> values(byte[] bytes1);
+
+        public boolean acceptAll();
+    }
+
+    public class MatcherImpl implements Matcher {
+        private DFGImpl.State state;
+        private final DFGImpl.PositionRecorder map = new DFGImpl.PositionRecorder();
+
+        public MatcherImpl(DFGImpl.State state) {
+            this.state = state;
+        }
+
+        public boolean accept(Token token) {
+            if (this.state == null) return false;
+            int startOffset = token.start;
+            int endOffset = token.end;
+            return (this.state = state.accept(token, startOffset, endOffset, map)) != null;
+        }
+
+        public boolean acceptAll() {
+            return state != null && state.matcher == null && state.success == null;
+        }
+
+        @Override
+        public Map<String, String> values(byte[] bytes1) {
+            Map<String, String> res = new HashMap<>();
+            for (Map.Entry<String, DFGImpl.Position> entry : map.map.entrySet()) {
+                String key = entry.getKey();
+                DFGImpl.Position value = entry.getValue();
+                res.put(key, new String(bytes1, value.start, value.end - value.start, Charset.defaultCharset()));
+            }
+            return res;
+        }
     }
 }
