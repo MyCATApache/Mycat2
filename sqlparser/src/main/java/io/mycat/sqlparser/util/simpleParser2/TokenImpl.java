@@ -3,15 +3,15 @@ package io.mycat.sqlparser.util.simpleParser2;
 import lombok.ToString;
 
 @ToString
-public class TokenImpl<T> implements Cloneable, DFG.Seq {
+public class TokenImpl implements Cloneable, Seq {
     int hash;
     private String symbol;
-    T attr;
+    Object attr;
     int startOffset = -1;
     int endOffset = -1;
     UTF8Lexer lexer;
 
-    public TokenImpl(int hash, String symbol, T attr) {
+    public TokenImpl(int hash, String symbol, Object attr) {
         this.hash = hash;
         this.symbol = symbol;
         this.attr = attr;
@@ -41,7 +41,7 @@ public class TokenImpl<T> implements Cloneable, DFG.Seq {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TokenImpl<?> token = (TokenImpl<?>) o;
+        TokenImpl token = (TokenImpl) o;
         if (hash != token.hash) return false;
         return symbol != null ? symbol.equals(token.symbol) : token.symbol == null;
     }

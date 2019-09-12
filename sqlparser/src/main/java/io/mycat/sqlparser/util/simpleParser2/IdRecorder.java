@@ -6,4 +6,9 @@ public interface IdRecorder {
     void append(int c);
 
     void endRecordTokenChar(int endOffset);
+
+    Seq createConstToken(Object o);
+
+    Seq toCurToken();
+    public IdRecorder createCopyRecorder();
 }

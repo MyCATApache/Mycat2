@@ -1,8 +1,5 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
-import lombok.Data;
-
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -41,6 +38,7 @@ public interface DFG {
                     state = state.addState(token);
                 }
             }
+            state.end();
             this.length[++index] = length;
         }
 
@@ -54,6 +52,7 @@ public interface DFG {
             private String name;
             private HashMap<Seq, State> success;
             private State matcher;
+            private boolean end = false;
 
             public State(int depth) {
                 this.depth = depth;
@@ -77,109 +76,70 @@ public interface DFG {
                 } else throw new UnsupportedOperationException();
             }
 
-            public State accept(Seq token, int startOffset, int endOffset, DFGImpl.PositionRecorder map) {
-                if (success != null && name == null) {
-                    return success.get(token);
-                } else {
-                    if (name != null) {
-                        map.startRecordName(name, startOffset);
-                    }
-                    if (matcher != null) {
-                        State accept = matcher.accept(token, startOffset, endOffset, map);
-                        if (accept != null && name != null) {
-                            if (accept.success == null && accept.matcher == null) {
-                                map.record(endOffset);
-                            }
-                            map.endRecordName(name);
-                            return accept;
-                        }
-                        map.record(endOffset);
-                    } else if (name != null) {
-                        map.record(endOffset);
+            public State accept(Seq token, int startOffset, int endOffset, PositionRecorder map) {
+                State state = null;
+                if (success != null) {
+                    state = success.get(token);
+                }
+                if (state != null) {
+                    return state;
+                }
+
+                if (matcher != null) {
+                    State accept = matcher.accept(token, startOffset, endOffset, map);
+                    if (accept != null) {
                         map.endRecordName(name);
+                        return accept;
+                    } else {
+                        map.startRecordName(name, startOffset);
+                        map.record(endOffset);
+                        return this;
                     }
-                    return this;
                 }
+                return null;
+            }
+
+            public void end() {
+                this.end = true;
+            }
+
+            public boolean isEnd() {
+                return end;
             }
         }
-
-        public static class PositionRecorder {
-            final Map<String, Position> map = new HashMap<>();
-            Position currentPosition;
-
-            public void startRecordName(String name, int startOffset) {
-                if (currentPosition == null) {
-                    currentPosition = new Position();
-                    currentPosition.start = Integer.MAX_VALUE;
-                }
-                currentPosition.start = Math.min(currentPosition.start, startOffset);
-            }
-
-            public void record(int endOffset) {
-                if (currentPosition != null) {
-                    currentPosition.end = Math.max(currentPosition.end, endOffset);
-                }
-            }
-
-            public void endRecordName(String name) {
-                if (currentPosition != null) {
-                    map.put(name, currentPosition);
-                    currentPosition = null;
-                }
-            }
-        }
-
-        @Data
-        public static class Position {
-            int start;
-            int end;
-        }
-    }
-
-    public interface Matcher {
-        boolean accept(Seq token);
-
-        Map<String, String> values(byte[] bytes1);
-
-        public boolean acceptAll();
-    }
-
-    public interface Seq {
-        String getSymbol();
-
-        int getStartOffset();
-
-        int getEndOffset();
     }
 
     public class MatcherImpl implements Matcher {
+        private DFGImpl.State rootState;
         private DFGImpl.State state;
-        private final DFGImpl.PositionRecorder map = new DFGImpl.PositionRecorder();
+        private final PositionRecorder context = new PositionRecorder();
 
         public MatcherImpl(DFGImpl.State state) {
-            this.state = state;
+            this.rootState = state;
         }
 
         public boolean accept(Seq token) {
             if (this.state == null) return false;
-            int startOffset = token.getStartOffset();
-            int endOffset = token.getEndOffset();
-            return (this.state = state.accept(token, startOffset, endOffset, map)) != null;
+            DFGImpl.State orign = this.state;
+            DFGImpl.State state = this.state.accept(token, token.getStartOffset(), token.getEndOffset(), context);
+            System.out.println(orign + "->" + state);
+            boolean b = (orign) != state;
+            this.state = state;
+            return b;
         }
 
         public boolean acceptAll() {
-            return state != null && state.matcher == null && state.success == null;
+            return state != null && state.end;
         }
 
         @Override
-        public Map<String, String> values(byte[] bytes1) {
-            Map<String, String> res = new HashMap<>();
-            for (Map.Entry<String, DFGImpl.Position> entry : map.map.entrySet()) {
-                String key = entry.getKey();
-                DFGImpl.Position value = entry.getValue();
-                res.put(key, new String(bytes1, value.start, value.end - value.start, Charset.defaultCharset()));
-            }
-            return res;
+        public Map<String, Position> context() {
+            return context.map;
+        }
+
+        @Override
+        public void reset() {
+            this.state = rootState;
         }
     }
 }

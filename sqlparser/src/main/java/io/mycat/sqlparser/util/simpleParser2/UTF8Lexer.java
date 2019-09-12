@@ -144,7 +144,7 @@ public class UTF8Lexer {
 
     public String getString(int start, int end) {
         byte[] bytes = new byte[end-start];
-        for (int i = 0; start <end ; start++) {
+        for (int i = 0; start <end ; start++,i++) {
             bytes[i] = buffer.get(start);
         }
         return new String(bytes, StandardCharsets.UTF_8);

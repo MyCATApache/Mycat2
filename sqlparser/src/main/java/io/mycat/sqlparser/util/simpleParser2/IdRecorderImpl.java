@@ -5,10 +5,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class IdRecorderImpl<T> implements IdRecorder {
-    final byte[] word = new byte[8192];
-    final Map<Integer, TokenImpl<T>> longTokenHashMap = new HashMap<>();
-    final Map<String, TokenImpl<T>> tokenMap = new HashMap<>();
+public class IdRecorderImpl implements IdRecorder {
+    final byte[] word = new byte[64];
+    final Map<Integer, TokenImpl> longTokenHashMap = new HashMap<>();
+    final Map<String, TokenImpl> tokenMap = new HashMap<>();
     int offset = 0;
     int hash = 0;
     ///////////position//////////
@@ -22,9 +22,16 @@ public class IdRecorderImpl<T> implements IdRecorder {
         this.debugBuffer = debug ? new StringBuilder() : null;
     }
 
-    public void load(Map<String, T> map) {
+    public IdRecorder createCopyRecorder(){
+        IdRecorderImpl idRecorder = new IdRecorderImpl(false);
+        idRecorder.longTokenHashMap.putAll(this.longTokenHashMap);
+        idRecorder.tokenMap.putAll(this.tokenMap);
+        return idRecorder;
+    }
+
+    public void load(Map<String, Object> map) {
         Objects.requireNonNull(map);
-        for (Map.Entry<String, T> entry : map.entrySet()) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
             startRecordTokenChar(0);
             byte[] key = entry.getKey().getBytes(StandardCharsets.UTF_8);
             for (byte b : key) {
@@ -35,7 +42,7 @@ public class IdRecorderImpl<T> implements IdRecorder {
         }
     }
 
-    private void addToken(String keyword, TokenImpl<T> token) {
+    private void addToken(String keyword, TokenImpl token) {
         if (longTokenHashMap.containsKey(token.hash)) {
             throw new UnsupportedOperationException();
         }
@@ -101,19 +108,24 @@ public class IdRecorderImpl<T> implements IdRecorder {
         if (this.debugBuffer != null) this.debugBuffer.setLength(0);
     }
 
-    public TokenImpl createConstToken(T attr) {
-        TokenImpl<T> keyword = longTokenHashMap.get(hash);
+    public Seq createConstToken(Object attr) {
+        TokenImpl keyword = longTokenHashMap.get(hash);
         if (keyword != null) {
             return keyword;
         } else {
-            for (int i = tokenStartOffset; i < tokenEndOffset; i++) {
-                byte b = word[i];
-                if (0 > b) {
-                    throw new UnsupportedOperationException();
+            int length = tokenEndOffset- tokenStartOffset;
+            for (int i = 0; i < length; i++) {
+                try {
+                    byte b = word[i];
+                    if (0 > b) {
+                        throw new UnsupportedOperationException();
+                    }
+                }catch (Exception e){
+                    e.printStackTrace();
                 }
             }
             String symbol = new String(this.word, 0, tokenEndOffset - tokenStartOffset);
-            TokenImpl<T> token = new TokenImpl<>(this.hash, symbol, attr);
+            TokenImpl token = new TokenImpl(this.hash, symbol, attr);
             addToken(symbol, token);
             return token;
         }
@@ -124,7 +136,7 @@ public class IdRecorderImpl<T> implements IdRecorder {
         tmp.startOffset = this.tokenStartOffset;
         tmp.endOffset = this.tokenEndOffset;
         tmp.hash = this.hash;
-        TokenImpl<T> keyword = longTokenHashMap.get(hash);
+        TokenImpl keyword = longTokenHashMap.get(hash);
         if ((keyword != null) && equal(hash, offset, word, keyword)) {
             tmp.attr = keyword.attr;
             tmp.setSymbol(keyword.getSymbol());

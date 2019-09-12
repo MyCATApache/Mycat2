@@ -1,11 +1,11 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
+
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -19,45 +19,18 @@ public class UTF8LexerTest {
         String message = "{name} SELECT {name1} , {name299} FROM `db1`.`travelrecord` LIMIT 0,;";
         byte[] bytes = message.getBytes(StandardCharsets.UTF_8);
         Stream<String> lines = Files.lines(Paths.get("D:\\newgit2\\mycat4\\Mycat2\\sqlparser\\src\\test\\resources\\sql_tokens.txt"));
-        Map<String, String> collect = lines.map(i -> i.trim()).map(i -> new String[]{i.toUpperCase(), i.toLowerCase()}).flatMap(i -> Stream.of(i)).distinct().collect(Collectors.toMap(k -> k, v -> v));
+        Map<String, Object> collect = lines.map(i -> i.trim()).map(i -> new String[]{i.toUpperCase(), i.toLowerCase()}).flatMap(i -> Stream.of(i)).distinct().collect(Collectors.toMap(k -> k, v -> v));
 
-        IdRecorderImpl idRecorder = new IdRecorderImpl(true);
-        idRecorder.load(collect);
-        UTF8Lexer utf8Lexer = new UTF8Lexer(idRecorder);
-        DFG.DFGImpl dfg = new DFG.DFGImpl();
-        idRecorder.tmp.setLexer(utf8Lexer);
-        addRule(bytes, idRecorder, utf8Lexer, dfg);
-        idRecorder.tmp.setLexer(null);
-        byte[] bytes1 = "( '哈哈' SELECT  1 , 2 FROM `db1`.`travelrecord` LIMIT 0,;".getBytes();
-        utf8Lexer.init(ByteBuffer.wrap(bytes1), 0, bytes1.length);
+        GroupPatternBuilder patternBuilder = new GroupPatternBuilder();
+        patternBuilder.addRule( "SELECT {name1} FROM `db1`.`travelrecord` LIMIT 0,;");
+        patternBuilder.addRule( "SELECT 2,{name3} , {name4} FROM `db1`.{table} LIMIT 0,;");
 
-        DFG.Matcher matcher = dfg.getMatcher();
-        while (utf8Lexer.nextToken()){
-            TokenImpl token = idRecorder.toCurToken();
-            if(matcher.accept(token)){
-              System.out.println("accept:"+token);
-            }else {
-                System.out.println("reject:"+token);
-            }
-        }
+        GroupPattern groupPattern = patternBuilder.createGroupPattern();
+        Matcher matcher = groupPattern.matcher("SELECT 1, 1 , 3 FROM `db1`.`travelrecord` LIMIT 0,;");
+        Map<String, String> context = groupPattern.toContextMap(matcher);
         System.out.println(matcher.acceptAll());
-       Map<String,String>  res=  matcher.values(bytes1);
-        System.out.println(res);
+        context.entrySet().forEach(c-> System.out.println(c));
     }
 
-    private static void addRule(byte[] bytes, IdRecorderImpl idRecorder, UTF8Lexer utf8Lexer, DFG.DFGImpl dfg) {
-        utf8Lexer.init(ByteBuffer.wrap(bytes), 0, bytes.length);
-        dfg.addRule(new Iterator<DFG.Seq>() {
-            @Override
-            public boolean hasNext() {
-                return utf8Lexer.nextToken();
-            }
-
-            @Override
-            public DFG.Seq next() {
-                return idRecorder.createConstToken(null);
-            }
-        });
-    }
 
 }
