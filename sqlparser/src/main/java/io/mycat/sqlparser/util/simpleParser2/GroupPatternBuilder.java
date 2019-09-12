@@ -12,14 +12,17 @@ public class GroupPatternBuilder {
     private final PatternDFG dfg;
 
     public GroupPatternBuilder() {
-        this(Collections.emptyMap());
+        this(0);
+    }
+    public GroupPatternBuilder(int identifierGenerator) {
+        this(identifierGenerator,Collections.emptyMap());
     }
 
-    public GroupPatternBuilder(Map<String, Object> keywords) {
+    public GroupPatternBuilder(int identifierGenerator,Map<String, Object> keywords) {
         this.idRecorder = new IdRecorderImpl(true);
         ((IdRecorderImpl) this.idRecorder).load(keywords);
         this.utf8Lexer = new UTF8Lexer(idRecorder);
-        this.dfg = new PatternDFG.DFGImpl();
+        this.dfg = new PatternDFG.DFGImpl(identifierGenerator);
     }
 
     public int addRule(String pattern) {
