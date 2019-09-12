@@ -9,7 +9,7 @@ import java.util.Map;
 public class GroupPatternBuilder {
     private final IdRecorder idRecorder;
     private final UTF8Lexer utf8Lexer;
-    private final DFG dfg;
+    private final PatternDFG dfg;
 
     public GroupPatternBuilder() {
         this(Collections.emptyMap());
@@ -19,20 +19,20 @@ public class GroupPatternBuilder {
         this.idRecorder = new IdRecorderImpl(true);
         ((IdRecorderImpl) this.idRecorder).load(keywords);
         this.utf8Lexer = new UTF8Lexer(idRecorder);
-        this.dfg = new DFG.DFGImpl();
+        this.dfg = new PatternDFG.DFGImpl();
     }
 
-    public void addRule(String pattern) {
-        addRule(StandardCharsets.UTF_8.encode(pattern));
+    public int addRule(String pattern) {
+        return addRule(StandardCharsets.UTF_8.encode(pattern));
     }
 
-    public void addRule(byte[] buffer) {
-        addRule(ByteBuffer.wrap(buffer));
+    public int addRule(byte[] buffer) {
+        return addRule(ByteBuffer.wrap(buffer));
     }
 
-    public void addRule(ByteBuffer buffer) {
+    public int addRule(ByteBuffer buffer) {
         utf8Lexer.init(buffer, 0, buffer.limit());
-        dfg.addRule(new Iterator<Seq>() {
+        return dfg.addRule(new Iterator<Seq>() {
             @Override
             public boolean hasNext() {
                 return utf8Lexer.nextToken();
@@ -46,6 +46,6 @@ public class GroupPatternBuilder {
     }
 
     public GroupPattern createGroupPattern() {
-        return new GroupPattern(dfg,idRecorder.createCopyRecorder());
+        return new GroupPattern(dfg, idRecorder.createCopyRecorder());
     }
 }

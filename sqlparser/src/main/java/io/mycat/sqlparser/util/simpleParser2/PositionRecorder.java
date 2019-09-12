@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public  class PositionRecorder {
-            final Map<String, Position> map = new HashMap<>();
+            final HashMap<String, Position> map = new HashMap<>();
             Position currentPosition;
 
             public void startRecordName(String name, int startOffset) {

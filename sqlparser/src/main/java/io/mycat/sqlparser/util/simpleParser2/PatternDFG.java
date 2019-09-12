@@ -4,28 +4,26 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public interface DFG {
-    void addRule(Iterator<Seq> format);
+public interface PatternDFG {
+    int addRule(Iterator<Seq> format);
 
     Matcher getMatcher();
 
-    static class DFGImpl implements DFG {
+    static class DFGImpl implements PatternDFG {
         private final State rootState = new State(0);
-        private int index;
-        private int length[] = new int[8192];
         Map<String, Position> variables = new HashMap<>();
+        int identifierGenerator = 0;
 
         @Override
-        public void addRule(Iterator<Seq> format) {
+        public int addRule(Iterator<Seq> format) {
             State state = this.rootState;
-            int length = 0;
-            for (; format.hasNext(); ++length) {
+            for (; format.hasNext();) {
                 Seq token = format.next();
-                if (token == null) continue;
                 if ("{".equals(token.getSymbol())) {
                     format.hasNext();
                     String name = format.next().getSymbol();
-                    variables.put(name, null);
+                    if (!variables.containsKey(name)) variables.put(name, null);
+                    else throw new UnsupportedOperationException();
                     state.addWildcard(name, new State(state.depth + 1));
                     format.hasNext();
                     Seq last = format.next();
@@ -38,8 +36,8 @@ public interface DFG {
                     state = state.addState(token);
                 }
             }
-            state.end();
-            this.length[++index] = length;
+            state.end(identifierGenerator++);
+            return state.id;
         }
 
         @Override
@@ -52,7 +50,7 @@ public interface DFG {
             private String name;
             private HashMap<Seq, State> success;
             private State matcher;
-            private boolean end = false;
+            private int id = Integer.MIN_VALUE;
 
             public State(int depth) {
                 this.depth = depth;
@@ -84,7 +82,6 @@ public interface DFG {
                 if (state != null) {
                     return state;
                 }
-
                 if (matcher != null) {
                     State accept = matcher.accept(token, startOffset, endOffset, map);
                     if (accept != null) {
@@ -99,20 +96,20 @@ public interface DFG {
                 return null;
             }
 
-            public void end() {
-                this.end = true;
+            public void end(int id) {
+                this.id = id;
             }
 
             public boolean isEnd() {
-                return end;
+                return this.id > -1;
             }
         }
     }
 
     public class MatcherImpl implements Matcher {
-        private DFGImpl.State rootState;
-        private DFGImpl.State state;
+        private final DFGImpl.State rootState;
         private final PositionRecorder context = new PositionRecorder();
+        private DFGImpl.State state;
 
         public MatcherImpl(DFGImpl.State state) {
             this.rootState = state;
@@ -122,14 +119,18 @@ public interface DFG {
             if (this.state == null) return false;
             DFGImpl.State orign = this.state;
             DFGImpl.State state = this.state.accept(token, token.getStartOffset(), token.getEndOffset(), context);
-            System.out.println(orign + "->" + state);
             boolean b = (orign) != state;
             this.state = state;
             return b;
         }
 
         public boolean acceptAll() {
-            return state != null && state.end;
+            return state != null && state.isEnd();
+        }
+
+        @Override
+        public int id() {
+            return acceptAll()?state.id:Integer.MIN_VALUE;
         }
 
         @Override

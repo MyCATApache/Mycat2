@@ -1,7 +1,5 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
-import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,14 +20,14 @@ public class UTF8LexerTest {
         Map<String, Object> collect = lines.map(i -> i.trim()).map(i -> new String[]{i.toUpperCase(), i.toLowerCase()}).flatMap(i -> Stream.of(i)).distinct().collect(Collectors.toMap(k -> k, v -> v));
 
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder();
-        patternBuilder.addRule( "SELECT {name1} FROM `db1`.`travelrecord` LIMIT 0,;");
-        patternBuilder.addRule( "SELECT 2,{name3} , {name4} FROM `db1`.{table} LIMIT 0,;");
+        int id = patternBuilder.addRule("SELECT {name1} FROM `db1`.`travelrecord` LIMIT 0,;1111");
+        int id2 = patternBuilder.addRule("SELECT 2,{name3} , {name4} FROM `db1`.{table} LIMIT 0,;222");
 
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("SELECT 1, 1 , 3 FROM `db1`.`travelrecord` LIMIT 0,;");
+        Matcher matcher = groupPattern.matcher("SELECT 2, 1 , 3 FROM `db1`.`travelrecord` LIMIT 0,;");
         Map<String, String> context = groupPattern.toContextMap(matcher);
-        System.out.println(matcher.acceptAll());
-        context.entrySet().forEach(c-> System.out.println(c));
+        System.out.println(matcher.id());
+        context.entrySet().forEach(c -> System.out.println(c));
     }
 
 

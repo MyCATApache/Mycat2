@@ -10,5 +10,6 @@ public interface IdRecorder {
     Seq createConstToken(Object o);
 
     Seq toCurToken();
-    public IdRecorder createCopyRecorder();
+
+    IdRecorder createCopyRecorder();
 }

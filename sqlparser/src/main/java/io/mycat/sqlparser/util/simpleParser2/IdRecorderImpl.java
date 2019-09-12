@@ -22,7 +22,7 @@ public class IdRecorderImpl implements IdRecorder {
         this.debugBuffer = debug ? new StringBuilder() : null;
     }
 
-    public IdRecorder createCopyRecorder(){
+    public IdRecorder createCopyRecorder() {
         IdRecorderImpl idRecorder = new IdRecorderImpl(false);
         idRecorder.longTokenHashMap.putAll(this.longTokenHashMap);
         idRecorder.tokenMap.putAll(this.tokenMap);
@@ -49,6 +49,7 @@ public class IdRecorderImpl implements IdRecorder {
         longTokenHashMap.put(token.hash, token);
         tokenMap.put(keyword, token);
     }
+
     @Override
     public void append(int b) {
         debugAppend(b);
@@ -113,18 +114,14 @@ public class IdRecorderImpl implements IdRecorder {
         if (keyword != null) {
             return keyword;
         } else {
-            int length = tokenEndOffset- tokenStartOffset;
+            int length = tokenEndOffset - tokenStartOffset;
             for (int i = 0; i < length; i++) {
-                try {
-                    byte b = word[i];
-                    if (0 > b) {
-                        throw new UnsupportedOperationException();
-                    }
-                }catch (Exception e){
-                    e.printStackTrace();
+                byte b = word[i];
+                if (0 > b) {
+                    throw new UnsupportedOperationException();
                 }
             }
-            String symbol = new String(this.word, 0, tokenEndOffset - tokenStartOffset);
+            String symbol = new String(this.word, 0, tokenEndOffset - tokenStartOffset).intern();
             TokenImpl token = new TokenImpl(this.hash, symbol, attr);
             addToken(symbol, token);
             return token;

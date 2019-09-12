@@ -8,13 +8,11 @@ import java.util.Map;
 public class GroupPattern {
     private final IdRecorder idRecorder;
     private final UTF8Lexer utf8Lexer;
-    private final DFG dfg;
     private final Matcher matcher;
 
-    public GroupPattern(DFG dfg, IdRecorder copyRecorder) {
+    public GroupPattern(PatternDFG dfg, IdRecorder copyRecorder) {
         this.idRecorder = copyRecorder;
         this.utf8Lexer = new UTF8Lexer(this.idRecorder);
-        this.dfg = dfg;
         this.matcher = dfg.getMatcher();
     }
 
@@ -48,5 +46,4 @@ public class GroupPattern {
         }
         return res;
     }
-
 }
