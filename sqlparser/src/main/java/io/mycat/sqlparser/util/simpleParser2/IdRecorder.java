@@ -1,5 +1,7 @@
 package io.mycat.sqlparser.util.simpleParser2;
 
+import java.util.Map;
+
 public interface IdRecorder {
     void startRecordTokenChar(int startOffset);
 
@@ -7,9 +9,13 @@ public interface IdRecorder {
 
     void endRecordTokenChar(int endOffset);
 
-    Seq createConstToken(Object o);
+    Token createConstToken(Object o);
 
-    Seq toCurToken();
+    Token toCurToken();
 
     IdRecorder createCopyRecorder();
+
+    public void load(Map<String, Object> map);
+
+    Token getConstToken(String a);
 }

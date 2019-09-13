@@ -170,23 +170,6 @@ public class RuleGroupPatternTest {
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
         int id2 = patternBuilder.addRule("SELECT id FROM {table2} LIMIT 1;");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1;");
-        Assert.assertTrue(matcher.acceptAll());
-        Assert.assertEquals(0, id);
-        Assert.assertEquals("travelrecord", groupPattern.toContextMap(matcher).get("table"));
-    }
-
-    @Test
-    public void testAnnotation17() {
-        GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
-        int id = patternBuilder.addRule("SELECT  id FROM {table} LIMIT 1;");
-        int id2 = patternBuilder.addRule("{type} id FROM {table2} LIMIT 1;");
-        GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1;");
-        Assert.assertTrue(matcher.acceptAll());
-        Assert.assertEquals(0, id);
-        Assert.assertEquals(null, groupPattern.toContextMap(matcher).get("type"));
-        Assert.assertEquals("travelrecord", groupPattern.toContextMap(matcher).get("table"));
     }
 
     @Test
@@ -195,13 +178,27 @@ public class RuleGroupPatternTest {
         int id = patternBuilder.addRule("SELECT  id FROM {table} LIMIT 1;");
         int id2 = patternBuilder.addRule("{type} id FROM {table2} LIMIT 1;");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("select id FROM travelrecord LIMIT 1;");
-        Assert.assertTrue(matcher.acceptAll());
+
         Assert.assertEquals(0, id);
         Assert.assertEquals(1, id2);
-        Assert.assertEquals(1, matcher.id());
-        Assert.assertEquals("select", groupPattern.toContextMap(matcher).get("type"));
-        Assert.assertEquals("travelrecord", groupPattern.toContextMap(matcher).get("table2"));
+
+        Matcher matcher;
+        Map<String, String> map;
+
+        matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1;");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id, matcher.id());
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals(null, map.get("type"));
+        Assert.assertEquals("travelrecord", map.get("table"));
+
+
+        matcher = groupPattern.matcher("select id FROM travelrecord LIMIT 1;");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id2, matcher.id());
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals("select", map.get("type"));
+        Assert.assertEquals("travelrecord", map.get("table2"));
     }
 
     @Test
@@ -277,13 +274,27 @@ public class RuleGroupPatternTest {
         int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord  {any3}");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
-        Assert.assertTrue(matcher.acceptAll());
+
+        Assert.assertEquals(0, id);
         Assert.assertEquals(1, id2);
-        Map<String, String> map = groupPattern.toContextMap(matcher);
+
+
+        Matcher matcher;
+        Map<String, String> map;
+
+        matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
+        Assert.assertTrue(matcher.acceptAll());
+        map = groupPattern.toContextMap(matcher);
         Assert.assertEquals(id2, matcher.id());
         Assert.assertEquals(null, map.get("any"));
         Assert.assertEquals("LIMIT 1", map.get("any3"));
+
+        matcher = groupPattern.matcher("select id FROM travelrecord LIMIT 1");
+        Assert.assertTrue(matcher.acceptAll());
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals(id, matcher.id());
+        Assert.assertEquals("select id", map.get("any"));
+        Assert.assertEquals("LIMIT 1", map.get("any2"));
     }
 
     @Test
@@ -292,12 +303,25 @@ public class RuleGroupPatternTest {
         int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord  {any3}");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("select id FROM travelrecord LIMIT 1");
-        Assert.assertTrue(matcher.acceptAll());
+
+        Assert.assertEquals(0, id);
         Assert.assertEquals(1, id2);
-        Map<String, String> map = groupPattern.toContextMap(matcher);
+
+        Matcher matcher;
+        Map<String, String> map;
+
+        matcher = groupPattern.matcher("select id FROM travelrecord LIMIT 1");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id, matcher.id());
+        map = groupPattern.toContextMap(matcher);
         Assert.assertEquals("select id", map.get("any"));
         Assert.assertEquals("LIMIT 1", map.get("any2"));
+
+        matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id2, matcher.id());
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals("LIMIT 1", map.get("any3"));
     }
 
     @Test(expected = GroupPatternException.NameAmbiguityException.class)
@@ -344,10 +368,25 @@ public class RuleGroupPatternTest {
         int id = patternBuilder.addRule("SELECT id FROM travelrecord  {any2} 1");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord {any2} 2");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
+
+
+        Assert.assertEquals(0, id);
+        Assert.assertEquals(1, id2);
+
+        Matcher matcher;
+        Map<String, String> map;
+
+
+        matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
         Assert.assertTrue(matcher.acceptAll());
         Assert.assertEquals(id, matcher.id());
-        Map<String, String> map = groupPattern.toContextMap(matcher);
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals("LIMIT", map.get("any2"));
+
+        matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 2");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id2, matcher.id());
+        map = groupPattern.toContextMap(matcher);
         Assert.assertEquals("LIMIT", map.get("any2"));
     }
 
@@ -357,11 +396,24 @@ public class RuleGroupPatternTest {
         int id = patternBuilder.addRule("SELECT id FROM travelrecord  {any2}");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord {any2} 2");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
+
+        Assert.assertEquals(0, id);
+        Assert.assertEquals(1, id2);
+
+        Matcher matcher;
+        Map<String, String> map;
+
+        matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
         Assert.assertTrue(matcher.acceptAll());
         Assert.assertEquals(id, matcher.id());
-        Map<String, String> map = groupPattern.toContextMap(matcher);
+        map = groupPattern.toContextMap(matcher);
         Assert.assertEquals("LIMIT 1", map.get("any2"));
+
+        matcher = groupPattern.matcher("SELECT id FROM travelrecord LIMIT 2");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id2, matcher.id());
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals("LIMIT", map.get("any2"));
     }
 
     @Test
@@ -371,16 +423,33 @@ public class RuleGroupPatternTest {
         int id2 = patternBuilder.addRule("travelrecord {any2} 2");
         int id3 = patternBuilder.addRule("travelrecord {any2} 3");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
-        Matcher matcher = groupPattern.matcher("travelrecord LIMIT 3");
-        Assert.assertTrue(matcher.acceptAll());
-        Assert.assertEquals(id3, matcher.id());
-        Map<String, String> map = groupPattern.toContextMap(matcher);
-        Assert.assertEquals("LIMIT", map.get("any2"));
+
+        Assert.assertEquals(0, id);
+        Assert.assertEquals(1, id2);
+        Assert.assertEquals(2, id3);
+
+
+        Matcher matcher;
+        Map<String, String> map;
 
         matcher = groupPattern.matcher("travelrecord LIMIT 4");
         Assert.assertTrue(matcher.acceptAll());
         Assert.assertEquals(id, matcher.id());
         map = groupPattern.toContextMap(matcher);
         Assert.assertEquals("LIMIT 4", map.get("any2"));
+
+        matcher = groupPattern.matcher("travelrecord LIMIT 2");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id2, matcher.id());
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals("LIMIT", map.get("any2"));
+
+        matcher = groupPattern.matcher("travelrecord LIMIT 3");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id3, matcher.id());
+        map = groupPattern.toContextMap(matcher);
+        Assert.assertEquals("LIMIT", map.get("any2"));
+
+
     }
 }

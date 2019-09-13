@@ -3,7 +3,7 @@ package io.mycat.sqlparser.util.simpleParser2;
 import lombok.ToString;
 
 @ToString
-public class TokenImpl implements Cloneable, Seq {
+public class Token implements Cloneable, Seq {
     int hash;
     private String symbol;
     Object attr;
@@ -11,7 +11,7 @@ public class TokenImpl implements Cloneable, Seq {
     int endOffset = -1;
     UTF8Lexer lexer;
 
-    public TokenImpl(int hash, String symbol, Object attr) {
+    public Token(int hash, String symbol, Object attr) {
         this.hash = hash;
         this.symbol = symbol;
         this.attr = attr;
@@ -41,7 +41,7 @@ public class TokenImpl implements Cloneable, Seq {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        TokenImpl token = (TokenImpl) o;
+        Token token = (Token) o;
         if (hash != token.hash) return false;
         return symbol != null ? symbol.equals(token.symbol) : token.symbol == null;
     }
@@ -54,8 +54,8 @@ public class TokenImpl implements Cloneable, Seq {
     }
 
     @Override
-    protected TokenImpl clone() throws CloneNotSupportedException {
-        return (TokenImpl) super.clone();
+    protected Token clone() throws CloneNotSupportedException {
+        return (Token) super.clone();
     }
 
     public void setSymbol(String symbol) {
@@ -64,5 +64,9 @@ public class TokenImpl implements Cloneable, Seq {
 
     public void setLexer(UTF8Lexer lexer) {
         this.lexer = lexer;
+    }
+
+    public <T> T getAttr() {
+        return (T)attr;
     }
 }

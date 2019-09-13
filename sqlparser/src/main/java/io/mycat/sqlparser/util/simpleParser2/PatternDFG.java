@@ -31,31 +31,40 @@ public interface PatternDFG {
                 lastState = state;
                 Seq token = format.next();
                 if ("{".equals(token.getSymbol())) {
-                    if (!format.hasNext()) throw new PatternDFGException.NameSyntaxException("'{' name ends early");
+                    if (!format.hasNext()) throw new GroupPatternException.NameSyntaxException("'{' name ends early");
                     String name = format.next().getSymbol().trim();
                     if (lastName != null)
-                        throw new PatternDFGException.NameAdjacentException("'{'{0}'}' '{'{1}'}' is not allowed", lastName, name);
-                    if (!variables.containsKey(name)) variables.put(name, null);
-                    else throw new PatternDFGException.NameAmbiguityException("'{'{0}'}' has already existed", name);
+                        throw new GroupPatternException.NameAdjacentException("'{'{0}'}' '{'{1}'}' is not allowed", lastName, name);
+                    if (!variables.containsKey(name)) {
+                        variables.put(name, null);
+                    } else if ((!name.equals(state.name))) {
+                        throw new GroupPatternException.NameAmbiguityException("'{'{0}'}' has already existed", name);
+                    }
                     state.addWildcard(name, new State(state.depth + 1));
-                    if (!format.hasNext()) throw new PatternDFGException.NameSyntaxException("'{'{0} ends early", name);
+                    if (!format.hasNext())
+                        throw new GroupPatternException.NameSyntaxException("'{'{0} ends early", name);
                     Seq last = format.next();
                     if ("}".equals(last.getSymbol())) {
-                        state = state.matcher;
+                        if (state.matcher != null) {
+                            state = state.matcher;
+                        }
                         lastName = name;
                     } else
-                        throw new PatternDFGException.NameSyntaxException("'{'{0} {1}   The name can only identify one", name, last.getSymbol());
+                        throw new GroupPatternException.NameSyntaxException("'{'{0} {1}   The name can only identify one", name, last.getSymbol());
                 } else {
                     state = state.addState(token);
                     lastName = null;
                 }
             }
-            if (lastState != null && lastState.name != null && state.name == null && state.success == null) {
-                lastState.matcher = null;
+            int i = identifierGenerator++;
+            if (lastState != null && lastState.name != null && state.name == null && state.success == null && state.matcher == null) {
+                state.end(i);
                 state = lastState;
             }
-            state.end(identifierGenerator++);
-            return state.id;
+            if (!state.isEnd()){
+                state.end(i);
+            }
+            return i;
         }
 
         @Override
@@ -68,8 +77,9 @@ public interface PatternDFG {
             private String name;
             private HashMap<Seq, State> success;
             private State matcher;
-            private int id = Integer.MIN_VALUE;
-            private boolean end = false;
+            private int constId = Integer.MIN_VALUE;
+            private int matcherId = Integer.MIN_VALUE;
+            private boolean matcherEnd = false;
 
             public State(int depth) {
                 this.depth = depth;
@@ -90,21 +100,13 @@ public interface PatternDFG {
                 if (this.name == null) {
                     this.name = name;
                     this.matcher = matcher;
+                } else if (this.name.equals(name)) {
+
                 } else
-                    throw new PatternDFGException.NameLocationAmbiguityException("'{' {0} '}' '{' {1} '}' are ambiguous", this.name, name);
+                    throw new GroupPatternException.NameLocationAmbiguityException("'{' {0} '}' '{' {1} '}' are ambiguous", this.name, name);
             }
 
-            public State accept(Seq token, int startOffset, int endOffset, PositionRecorder map) {
-                if (isEnd()) {
-                    if (success != null && (success.get(token) != null)) {
-                        return this;
-                    }
-                    if (name != null) {   //该节点就是结束  pattern:{other}->任意值
-                        map.startRecordName(name, startOffset);
-                        map.record(endOffset);
-                        return this;
-                    }
-                }
+            public State accept(Seq token, int startOffset, int endOffset, MatcherImpl map) {
                 State state = null;
                 if (success != null) {
                     state = success.get(token);
@@ -118,8 +120,8 @@ public interface PatternDFG {
                     if (accept != null) {
                         return accept;
                     } else {
-                        map.startRecordName(name, startOffset);
-                        map.record(endOffset);
+                        map.context.startRecordName(name, startOffset);
+                        map.context.record(endOffset);
                         return this;
                     }
                 }
@@ -127,12 +129,14 @@ public interface PatternDFG {
             }
 
             public void end(int id) {
-                this.id = id;
-                this.end = true;
+                if (!matcherEnd) {
+                    this.constId = id;
+                    this.matcherEnd = true;
+                }
             }
 
             public boolean isEnd() {
-                return end;
+                return matcherEnd;
             }
         }
     }
@@ -149,7 +153,7 @@ public interface PatternDFG {
         public boolean accept(Seq token) {
             if (this.state == null) return false;
             DFGImpl.State orign = this.state;
-            DFGImpl.State state = this.state.accept(token, token.getStartOffset(), token.getEndOffset(), context);
+            DFGImpl.State state = this.state.accept(token, token.getStartOffset(), token.getEndOffset(), this);
             boolean b = ((orign) != state);
             this.state = state;
             return b;
@@ -161,7 +165,7 @@ public interface PatternDFG {
 
         @Override
         public int id() {
-            return acceptAll() ? state.id : Integer.MIN_VALUE;
+            return acceptAll() ? state.constId : Integer.MIN_VALUE;
         }
 
         @Override
@@ -172,6 +176,9 @@ public interface PatternDFG {
         @Override
         public void reset() {
             this.state = rootState;
+            this.context.map.clear();
+            this.context.name = null;
+            this.context.currentPosition = null;
         }
     }
 }

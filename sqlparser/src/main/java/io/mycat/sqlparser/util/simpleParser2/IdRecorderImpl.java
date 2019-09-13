@@ -6,15 +6,16 @@ import java.util.Map;
 import java.util.Objects;
 
 public class IdRecorderImpl implements IdRecorder {
-    final byte[] word = new byte[64];
-    final Map<Integer, TokenImpl> longTokenHashMap = new HashMap<>();
-    final Map<String, TokenImpl> tokenMap = new HashMap<>();
+    final static int WORD_LENGTH = 64;
+    final byte[] words = new byte[WORD_LENGTH];
+    final Map<Integer, Token> longTokenHashMap = new HashMap<>();
+    final Map<String, Token> tokenMap = new HashMap<>();
     int offset = 0;
     int hash = 0;
     ///////////position//////////
     int tokenStartOffset;
     int tokenEndOffset;
-    final TokenImpl tmp = new TokenImpl(0, null, null);
+    final Token tmp = new Token(0, null, null);
 
     final StringBuilder debugBuffer;
 
@@ -34,18 +35,23 @@ public class IdRecorderImpl implements IdRecorder {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             startRecordTokenChar(0);
             byte[] key = entry.getKey().getBytes(StandardCharsets.UTF_8);
+            if (key.length > WORD_LENGTH) throw new GroupPatternException.TooLongConstTokenException("{0}",entry.getKey());
             for (byte b : key) {
                 append(b);
             }
-            startRecordTokenChar(key.length);
+            endRecordTokenChar(key.length);
             createConstToken(entry.getValue());
         }
     }
 
-    private void addToken(String keyword, TokenImpl token) {
-        if (longTokenHashMap.containsKey(token.hash)) {
-            throw new UnsupportedOperationException();
-        }
+    @Override
+    public Token getConstToken(String a) {
+       return tokenMap.get(a);
+    }
+
+    private void addToken(String keyword, Token token) {
+        if (keyword.length() > WORD_LENGTH) throw new UnsupportedOperationException();
+        if (longTokenHashMap.containsKey(token.hash)) throw new UnsupportedOperationException();
         longTokenHashMap.put(token.hash, token);
         tokenMap.put(keyword, token);
     }
@@ -53,12 +59,12 @@ public class IdRecorderImpl implements IdRecorder {
     @Override
     public void append(int b) {
         debugAppend(b);
-        word[offset] = (byte) b;
+        words[offset] = (byte) b;
         hash = 31 * hash + b;
-        offset++;
+        offset = Math.min(++offset, WORD_LENGTH - 1);
     }
 
-    private static boolean equal(long curHash, int length, byte[] word, TokenImpl constToken) {
+    private static boolean equal(long curHash, int length, byte[] word, Token constToken) {
         if (curHash == constToken.hash) {
             String symbol = constToken.getSymbol();
             for (int i = 0; i < length; i++) {
@@ -89,15 +95,13 @@ public class IdRecorderImpl implements IdRecorder {
     private void hash() {
         if (this.hash == 0) {
             int h = 0;
-            for (int i = 0; i < offset; i++) {
-                h = 31 * h + word[i];
-            }
+            for (int i = 0; i < offset; i++) h = 31 * h + words[i];
             hash = h;
         }
     }
 
-    public boolean isToken(TokenImpl token) {
-        return equal(hash, offset, word, token);
+    public boolean isToken(Token token) {
+        return equal(hash, offset, words, token);
     }
 
     ///////////////////////////debug/////////////////////////////////
@@ -109,39 +113,38 @@ public class IdRecorderImpl implements IdRecorder {
         if (this.debugBuffer != null) this.debugBuffer.setLength(0);
     }
 
-    public Seq createConstToken(Object attr) {
-        TokenImpl keyword = longTokenHashMap.get(hash);
-        if (keyword != null) {
+    public Token createConstToken(Object attr) {
+        int length = tokenEndOffset - tokenStartOffset;
+        if (length>WORD_LENGTH) throw new GroupPatternException.TooLongConstTokenException("{0}",new String(words));
+        Token keyword = longTokenHashMap.get(hash);
+        if (keyword != null && equal(hash, length, words, keyword)) {
             return keyword;
-        } else {
-            int length = tokenEndOffset - tokenStartOffset;
+        } else if (keyword == null){
             for (int i = 0; i < length; i++) {
-                byte b = word[i];
-                if (0 > b) {
-                    throw new UnsupportedOperationException();
-                }
+                if (0 > words[i]) throw new GroupPatternException.NonASCIICharsetConstTokenException("{0}",new String(words,0,WORD_LENGTH));
             }
-            String symbol = new String(this.word, 0, tokenEndOffset - tokenStartOffset).intern();
-            TokenImpl token = new TokenImpl(this.hash, symbol, attr);
+            String symbol = new String(this.words, 0, tokenEndOffset - tokenStartOffset).intern();
+            Token token = new Token(this.hash, symbol, attr);
             addToken(symbol, token);
             return token;
+        }else {
+            throw new UnsupportedOperationException();
         }
     }
 
-    public TokenImpl toCurToken() {
+    public Token toCurToken() {
         hash();
         tmp.startOffset = this.tokenStartOffset;
         tmp.endOffset = this.tokenEndOffset;
         tmp.hash = this.hash;
-        TokenImpl keyword = longTokenHashMap.get(hash);
-        if ((keyword != null) && equal(hash, offset, word, keyword)) {
+        Token keyword = longTokenHashMap.get(hash);
+        if ((keyword != null) && equal(hash, offset, words, keyword)) {
             tmp.attr = keyword.attr;
             tmp.setSymbol(keyword.getSymbol());
-            return tmp;
         } else {
             tmp.attr = null;
             tmp.setSymbol(null);
-            return tmp;
         }
+        return tmp;
     }
 }
