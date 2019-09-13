@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class RuleGroupPatternTest {
     @Test
-    public void testAnnotation() {
+    public void test() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -22,7 +22,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation1() {
+    public void test1() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -31,7 +31,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation2() {
+    public void test2() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -42,7 +42,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation3() {
+    public void test3() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT {column} FROM {table} LIMIT 1;");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -55,7 +55,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation4() {
+    public void test4() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("{type} id FROM {table} LIMIT 1;");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -68,7 +68,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation5() {
+    public void test5() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("{other}");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -80,7 +80,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation6() {
+    public void test6() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("{other} aaaa");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -93,7 +93,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation7() {
+    public void test7() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("aaaa {other} ");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -106,7 +106,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation8() {
+    public void test8() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {other} aaaa {other1} bbbb");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -120,7 +120,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation9() {
+    public void test9() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {s1};{s2};{s3};");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -135,7 +135,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation10() {
+    public void test10() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {s1};;;;;{s2};{s3};");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -151,7 +151,7 @@ public class RuleGroupPatternTest {
 
 
     @Test(expected = GroupPatternException.NameAdjacentException.class)
-    public void testAnnotation11() {
+    public void test11() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {s1}{s2};{s3};");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -165,7 +165,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test(expected = GroupPatternException.NameLocationAmbiguityException.class)
-    public void testAnnotation12() {
+    public void test12() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
         int id2 = patternBuilder.addRule("SELECT id FROM {table2} LIMIT 1;");
@@ -173,7 +173,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation18() {
+    public void test18() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT  id FROM {table} LIMIT 1;");
         int id2 = patternBuilder.addRule("{type} id FROM {table2} LIMIT 1;");
@@ -202,7 +202,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation19() {
+    public void test19() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("LIMIT {count}");
         int id2 = patternBuilder.addRule("LIMIT 1");
@@ -216,7 +216,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test(expected = GroupPatternException.NameAmbiguityException.class)
-    public void testAnnotation20() {
+    public void test20() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT  id FROM travelrecord LIMIT {count}");
         int id2 = patternBuilder.addRule("SELECT {count} FROM travelrecord LIMIT 1");
@@ -224,7 +224,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation21() {
+    public void test21() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT  id FROM travelrecord LIMIT ");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -233,7 +233,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation22() {
+    public void test22() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("  id FROM travelrecord LIMIT ");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -242,7 +242,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation23() {
+    public void test23() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("{any} SELECT  id FROM travelrecord LIMIT {any2}");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -255,7 +255,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation24() {
+    public void test24() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -269,7 +269,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation25() {
+    public void test25() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord  {any3}");
@@ -298,7 +298,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation26() {
+    public void test26() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord  {any3}");
@@ -325,7 +325,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test(expected = GroupPatternException.NameAmbiguityException.class)
-    public void testAnnotation13() {
+    public void test13() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {s1};{s1};{s3};");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -338,7 +338,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test(expected = GroupPatternException.NameSyntaxException.class)
-    public void testAnnotation14() {
+    public void test14() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {s1 s2};{s3};");
         GroupPattern groupPattern = patternBuilder.createGroupPattern();
@@ -351,19 +351,19 @@ public class RuleGroupPatternTest {
     }
 
     @Test(expected = GroupPatternException.NameSyntaxException.class)
-    public void testAnnotation15() {
+    public void test15() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {");
     }
 
     @Test(expected = GroupPatternException.NameSyntaxException.class)
-    public void testAnnotation16() {
+    public void test16() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule(" {n");
     }
 
     @Test
-    public void testAnnotation27() {
+    public void test27() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM travelrecord  {any2} 1");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord {any2} 2");
@@ -391,7 +391,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation28() {
+    public void test28() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM travelrecord  {any2}");
         int id2 = patternBuilder.addRule("SELECT id FROM travelrecord {any2} 2");
@@ -417,7 +417,7 @@ public class RuleGroupPatternTest {
     }
 
     @Test
-    public void testAnnotation29() {
+    public void test29() {
         GroupPatternBuilder patternBuilder = new GroupPatternBuilder(0);
         int id = patternBuilder.addRule("travelrecord  {any2}");
         int id2 = patternBuilder.addRule("travelrecord {any2} 2");

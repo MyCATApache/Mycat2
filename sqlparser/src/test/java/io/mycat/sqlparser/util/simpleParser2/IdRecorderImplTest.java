@@ -26,6 +26,12 @@ public class IdRecorderImplTest {
         Assert.assertNotNull(a);
         Assert.assertEquals("a", a.getSymbol());
         Assert.assertEquals("1", a.getAttr());
+
+        IdRecorder copyRecorder = recorder.createCopyRecorder();
+        Token bbb = copyRecorder.getConstToken("bbb");
+        Assert.assertNotNull(bbb);
+        Assert.assertEquals("bbb", bbb.getSymbol());
+        Assert.assertEquals("2", bbb.getAttr());
     }
 
     @Test(expected = GroupPatternException.NonASCIICharsetConstTokenException.class)
@@ -38,6 +44,7 @@ public class IdRecorderImplTest {
         Assert.assertNotNull(a);
         Assert.assertEquals("a", a.getSymbol());
         Assert.assertEquals("1", a.getAttr());
+
     }
 
     @Test(expected = GroupPatternException.TooLongConstTokenException.class)
@@ -57,9 +64,21 @@ public class IdRecorderImplTest {
         recorder.append('z');
         recorder.endRecordTokenChar(2);
         Token token = recorder.createConstToken("1");
+
         Assert.assertNotNull(token);
         Assert.assertEquals("az", token.getSymbol());
         Assert.assertEquals("1", token.getAttr());
+
+        recorder.startRecordTokenChar(1);
+        recorder.append('a');
+        recorder.append('z');
+        recorder.endRecordTokenChar(3);
+
+        Token curToken = recorder.toCurToken();
+        Assert.assertEquals(token, curToken);
+        Assert.assertEquals("1", curToken.getAttr());
+        Assert.assertEquals(1, curToken.getStartOffset());
+        Assert.assertEquals(3, curToken.getEndOffset());
     }
 
     @Test(expected = GroupPatternException.TooLongConstTokenException.class)
@@ -70,6 +89,7 @@ public class IdRecorderImplTest {
         recorder.endRecordTokenChar(65);
         Token token = recorder.createConstToken("1");
     }
+
     @Test(expected = GroupPatternException.TooLongConstTokenException.class)
     public void append2() {
         IdRecorder recorder = new IdRecorderImpl(false);
@@ -78,8 +98,37 @@ public class IdRecorderImplTest {
         recorder.endRecordTokenChar(65);
         Token token = recorder.createConstToken("1");
     }
+
+    @Test
+    public void append3() {
+        IdRecorder recorder = new IdRecorderImpl(false);
+        recorder.startRecordTokenChar(0);
+        IntStream.range(0, 66).mapToObj(i -> '哈').forEach(recorder::append);
+        recorder.endRecordTokenChar(66);
+        Token token = recorder.toCurToken();
+
+        Assert.assertNotNull(token);
+        Assert.assertEquals(0, token.getStartOffset());
+        Assert.assertEquals(66, token.getEndOffset());
+    }
+
+    @Test
+    public void append4() {
+        IdRecorder recorder = new IdRecorderImpl(false);
+        recorder.startRecordTokenChar(0);
+        IntStream.range(0, 66).mapToObj(i -> '哈').forEach(recorder::append);
+        recorder.endRecordTokenChar(66);
+        Token token = recorder.toCurToken();
+
+        Assert.assertNotNull(token);
+        Assert.assertEquals(0, token.getStartOffset());
+        Assert.assertEquals(66, token.getEndOffset());
+    }
+
+
     @Test
     public void startRecordTokenChar() {
+
     }
 
     @Test

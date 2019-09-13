@@ -44,4 +44,9 @@ public class GroupPatternException extends UnsupportedOperationException {
             super(pattern, args);
         }
     }
+    public static class ConstTokenHashConflictException extends GroupPatternException {
+        public ConstTokenHashConflictException(String pattern, Object... args) {
+            super(pattern, args);
+        }
+    }
 }

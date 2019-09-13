@@ -35,7 +35,8 @@ public class IdRecorderImpl implements IdRecorder {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             startRecordTokenChar(0);
             byte[] key = entry.getKey().getBytes(StandardCharsets.UTF_8);
-            if (key.length > WORD_LENGTH) throw new GroupPatternException.TooLongConstTokenException("{0}",entry.getKey());
+            if (key.length > WORD_LENGTH)
+                throw new GroupPatternException.TooLongConstTokenException("{0}", entry.getKey());
             for (byte b : key) {
                 append(b);
             }
@@ -46,7 +47,7 @@ public class IdRecorderImpl implements IdRecorder {
 
     @Override
     public Token getConstToken(String a) {
-       return tokenMap.get(a);
+        return tokenMap.get(a);
     }
 
     private void addToken(String keyword, Token token) {
@@ -67,6 +68,9 @@ public class IdRecorderImpl implements IdRecorder {
     private static boolean equal(long curHash, int length, byte[] word, Token constToken) {
         if (curHash == constToken.hash) {
             String symbol = constToken.getSymbol();
+            if (length != symbol.length()) {
+                return false;
+            }
             for (int i = 0; i < length; i++) {
                 if (symbol.charAt(i) != word[i]) {
                     return false;
@@ -115,20 +119,21 @@ public class IdRecorderImpl implements IdRecorder {
 
     public Token createConstToken(Object attr) {
         int length = tokenEndOffset - tokenStartOffset;
-        if (length>WORD_LENGTH) throw new GroupPatternException.TooLongConstTokenException("{0}",new String(words));
+        if (length > WORD_LENGTH) throw new GroupPatternException.TooLongConstTokenException("{0}", new String(words));
         Token keyword = longTokenHashMap.get(hash);
         if (keyword != null && equal(hash, length, words, keyword)) {
             return keyword;
-        } else if (keyword == null){
+        } else if (keyword == null) {
             for (int i = 0; i < length; i++) {
-                if (0 > words[i]) throw new GroupPatternException.NonASCIICharsetConstTokenException("{0}",new String(words,0,WORD_LENGTH));
+                if (0 > words[i])
+                    throw new GroupPatternException.NonASCIICharsetConstTokenException("{0}", new String(words, 0, WORD_LENGTH));
             }
             String symbol = new String(this.words, 0, tokenEndOffset - tokenStartOffset).intern();
             Token token = new Token(this.hash, symbol, attr);
             addToken(symbol, token);
             return token;
-        }else {
-            throw new UnsupportedOperationException();
+        } else {
+            throw new GroupPatternException.ConstTokenHashConflictException(" {0} {1}", keyword.getSymbol(),new String(words, 0, WORD_LENGTH));
         }
     }
 
@@ -137,13 +142,12 @@ public class IdRecorderImpl implements IdRecorder {
         tmp.startOffset = this.tokenStartOffset;
         tmp.endOffset = this.tokenEndOffset;
         tmp.hash = this.hash;
+        tmp.attr = null;
+        tmp.symbol = null;
         Token keyword = longTokenHashMap.get(hash);
         if ((keyword != null) && equal(hash, offset, words, keyword)) {
             tmp.attr = keyword.attr;
-            tmp.setSymbol(keyword.getSymbol());
-        } else {
-            tmp.attr = null;
-            tmp.setSymbol(null);
+            tmp.symbol = keyword.getSymbol();
         }
         return tmp;
     }

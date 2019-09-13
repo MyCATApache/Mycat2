@@ -15,6 +15,11 @@ public class UTF8Lexer {
         this.idRecorder = idRecorder;
     }
 
+    public void init(String text) {
+        ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(text);
+        init(byteBuffer, 0, byteBuffer.limit());
+    }
+
     public void init(ByteBuffer buffer, int startOffset, int length) {
         this.buffer = buffer;
         this.position = startOffset;
@@ -27,7 +32,7 @@ public class UTF8Lexer {
         if (!hasChar()) return false;
         idRecorder.startRecordTokenChar(position);
         int c = nextChar();
-        char cc = (char)c;
+        char cc = (char) c;
         if (c == '`' || c == '\'') {
             idRecorder.append(c);
             pickTo(c);
@@ -84,7 +89,7 @@ public class UTF8Lexer {
                     position += 2;
                     skipSingleComment();
                     continue;
-                }else {
+                } else {
                     break;
                 }
             } else if (b == '#') {
@@ -95,7 +100,7 @@ public class UTF8Lexer {
                 position += 2;
                 skipSingleComment();
                 continue;
-            }else {
+            } else {
                 break;
             }
         }
@@ -142,9 +147,14 @@ public class UTF8Lexer {
         }
     }
 
+    public String getCurTokenString() {
+        Token token = idRecorder.toCurToken();
+        return getString(token.getStartOffset(), token.getEndOffset());
+    }
+
     public String getString(int start, int end) {
-        byte[] bytes = new byte[end-start];
-        for (int i = 0; start <end ; start++,i++) {
+        byte[] bytes = new byte[end - start];
+        for (int i = 0; start < end; start++, i++) {
             bytes[i] = buffer.get(start);
         }
         return new String(bytes, StandardCharsets.UTF_8);

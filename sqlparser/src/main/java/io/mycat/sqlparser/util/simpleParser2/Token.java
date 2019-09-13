@@ -5,7 +5,7 @@ import lombok.ToString;
 @ToString
 public class Token implements Cloneable, Seq {
     int hash;
-    private String symbol;
+    String symbol;
     Object attr;
     int startOffset = -1;
     int endOffset = -1;

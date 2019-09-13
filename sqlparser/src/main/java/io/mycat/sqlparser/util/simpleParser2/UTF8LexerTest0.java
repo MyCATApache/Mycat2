@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class UTF8LexerTest {
+public class UTF8LexerTest0 {
 
     public static void main(String[] args) throws IOException {
 //        String message = "SELECT * FROM `db1`.`mycat_sequence` LIMIT 0, 1000;";
