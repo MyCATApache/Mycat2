@@ -3,7 +3,9 @@ package cn.lightfish.sqlEngine.ast.optimizer.queryCondition;
 import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
-
+/**
+ * @author Junwen Chen
+ **/
 public class ColumnValue {
     final SQLColumnDefinition column;
     final SQLBinaryOperator operator;

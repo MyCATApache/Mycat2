@@ -4,7 +4,9 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock
 
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * @author Junwen Chen
+ **/
 public class QueryDataRange {
          final List<ColumnValue> equalValues = new ArrayList<>();
          final List<ColumnRangeValue> rangeValues = new ArrayList<>();

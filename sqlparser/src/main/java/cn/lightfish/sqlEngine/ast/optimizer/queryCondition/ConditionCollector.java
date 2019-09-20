@@ -13,7 +13,9 @@ import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-
+/**
+ * @author Junwen Chen
+ **/
 public class ConditionCollector extends MySqlASTVisitorAdapter {
     private boolean failureIndeterminacy = false;
     private final LinkedList<QueryDataRange> stack = new LinkedList<>();

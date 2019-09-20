@@ -22,7 +22,9 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
-
+/**
+ * @author Junwen Chen
+ **/
 public class DruidDatasourceProvider implements DatasourceProvider {
 
   @Override

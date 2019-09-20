@@ -21,7 +21,9 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum TextConvertorImpl implements TextConvertor {
   INSANTCE;
 

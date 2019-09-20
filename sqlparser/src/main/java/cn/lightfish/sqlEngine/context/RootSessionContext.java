@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * @author Junwen Chen
+ **/
 public class RootSessionContext {
 
   public Object[] scope = new Object[32];

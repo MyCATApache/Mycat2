@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import javax.transaction.SystemException;
 import javax.transaction.UserTransaction;
-
+/**
+ * @author Junwen Chen
+ **/
 public class JTATransactionSessionImpl implements TransactionSession {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory

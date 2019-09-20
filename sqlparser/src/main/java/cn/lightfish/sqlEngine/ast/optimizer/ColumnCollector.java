@@ -16,7 +16,9 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
+/**
+ * @author Junwen Chen
+ **/
 public class ColumnCollector extends MySqlASTVisitorAdapter {
     private boolean repairColumnNames;
 

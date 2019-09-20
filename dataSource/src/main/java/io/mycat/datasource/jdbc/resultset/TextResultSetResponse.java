@@ -24,7 +24,9 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Iterator;
-
+/**
+ * @author Junwen Chen
+ **/
 public class TextResultSetResponse extends AbstractMycatResultSetResponse {
 
   public TextResultSetResponse(RowBaseIterator iterator) {

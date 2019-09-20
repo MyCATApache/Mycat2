@@ -26,7 +26,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.sql.DataSource;
 import javax.transaction.UserTransaction;
-
+/**
+ * @author Junwen Chen
+ **/
 public class AtomikosDatasourceProvider implements DatasourceProvider {
 
   @Override

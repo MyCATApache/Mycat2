@@ -16,6 +16,9 @@ package io.mycat.datasource.jdbc.datasource;
 
 import java.sql.Connection;
 
+/**
+ * @author Junwen Chen
+ **/
 public interface ConnectionManager {
 
   Connection getConnection(JdbcDataSource key) throws Exception;

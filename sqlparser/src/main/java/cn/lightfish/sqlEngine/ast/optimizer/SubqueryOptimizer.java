@@ -9,7 +9,9 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 
 import java.util.*;
-
+/**
+ * @author Junwen Chen
+ **/
 public class SubqueryOptimizer extends MySqlASTVisitorAdapter {
 
     final List<SQLExpr> currentColumnList = new ArrayList<>();

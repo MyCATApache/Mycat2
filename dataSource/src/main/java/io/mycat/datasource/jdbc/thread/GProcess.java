@@ -17,7 +17,9 @@ package io.mycat.datasource.jdbc.thread;
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
-
+/**
+ * @author Junwen Chen
+ **/
 public abstract class GProcess<T extends BindThreadKey> implements BindThreadCallback<T, GThread> {
 
   @Override

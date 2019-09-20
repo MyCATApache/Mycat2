@@ -25,7 +25,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
+/**
+ * @author Junwen Chen
+ **/
 public class DefaultConnection implements DsConnection {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory

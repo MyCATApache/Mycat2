@@ -16,7 +16,9 @@ package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
-
+/**
+ * @author Junwen Chen
+ **/
 public interface DsConnection {
 
   MycatUpdateResponse executeUpdate(String sql, boolean needGeneratedKeys);

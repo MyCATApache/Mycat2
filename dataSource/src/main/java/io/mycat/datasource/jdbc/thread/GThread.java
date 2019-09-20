@@ -24,7 +24,9 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.Session;
-
+/**
+ * @author Junwen Chen
+ **/
 public class GThread extends BindThread implements SessionThread {
 
   protected final TransactionSession transactionSession;

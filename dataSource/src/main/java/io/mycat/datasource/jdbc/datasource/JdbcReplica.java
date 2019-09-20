@@ -30,7 +30,9 @@ import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
+/**
+ * @author Junwen Chen
+ **/
 public class JdbcReplica implements MycatReplica {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcReplica.class);

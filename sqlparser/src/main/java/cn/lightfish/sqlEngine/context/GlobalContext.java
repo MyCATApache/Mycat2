@@ -4,7 +4,9 @@ import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum GlobalContext {
   INSTANCE;
   final ConcurrentMap<String, Object> map = new ConcurrentHashMap<>();

@@ -17,7 +17,9 @@ package io.mycat.datasource.jdbc;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import javax.sql.DataSource;
 import javax.transaction.UserTransaction;
-
+/**
+ * @author Junwen Chen
+ **/
 public interface DatasourceProvider {
 
   DataSource createDataSource(JdbcDataSource dataSource);

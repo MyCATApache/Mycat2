@@ -8,7 +8,9 @@ import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import java.util.Objects;
-
+/**
+ * @author Junwen Chen
+ **/
 public class TransactionSessionUtil {
 
   public static MycatResultSetResponse executeQuery(String dataNode, String sql,

@@ -15,7 +15,9 @@
 package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-
+/**
+ * @author Junwen Chen
+ **/
 public class JdbcDataSourceQuery {
 
   boolean runOnMaster = true;

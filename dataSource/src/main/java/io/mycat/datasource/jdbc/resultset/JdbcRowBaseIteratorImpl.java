@@ -30,7 +30,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * @author Junwen Chen
+ **/
 public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
 
   private final static MycatLogger LOGGER = MycatLoggerFactory

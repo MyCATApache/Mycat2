@@ -16,7 +16,9 @@ package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.config.schema.DataNodeConfig;
-
+/**
+ * @author Junwen Chen
+ **/
 public class JdbcDataNode extends MycatDataNode {
 
   public final JdbcReplica replica;

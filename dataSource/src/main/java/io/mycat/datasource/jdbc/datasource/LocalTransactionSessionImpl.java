@@ -22,7 +22,9 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
-
+/**
+ * @author Junwen Chen
+ **/
 public class LocalTransactionSessionImpl implements TransactionSession {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory

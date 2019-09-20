@@ -41,7 +41,9 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
+/**
+ * @author Junwen Chen
+ **/
 public enum GRuntime {
     INSTACNE;
     private final MycatLogger LOGGER = MycatLoggerFactory.getLogger(GRuntime.class);

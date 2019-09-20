@@ -20,7 +20,9 @@ import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcReplica;
 import java.util.List;
 import java.util.Set;
-
+/**
+ * @author Junwen Chen
+ **/
 public interface GBeanProviders {
 
   <T extends JdbcDataSource> T createJdbcDataSource(GRuntime runtime, int index,

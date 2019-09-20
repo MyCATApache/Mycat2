@@ -13,7 +13,9 @@
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.datasource.jdbc.datasource;
-
+/**
+ * @author Junwen Chen
+ **/
 public interface TransactionSession {
 
   void setTransactionIsolation(int transactionIsolation);

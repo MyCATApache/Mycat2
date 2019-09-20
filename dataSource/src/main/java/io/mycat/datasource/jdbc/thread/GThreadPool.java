@@ -21,7 +21,9 @@ import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import java.util.concurrent.TimeUnit;
-
+/**
+ * @author Junwen Chen
+ **/
 public class GThreadPool<KEY extends BindThreadKey> extends BindThreadPool<KEY, BindThread> {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory

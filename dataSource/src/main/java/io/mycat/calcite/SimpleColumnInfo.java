@@ -2,7 +2,10 @@ package io.mycat.calcite;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-
+/**
+ * @author Weiqing Xu
+ * @author Junwen Chen
+ **/
 @AllArgsConstructor
 @Getter
 class SimpleColumnInfo {

@@ -19,7 +19,9 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.proxy.MySQLPacketUtil;
 import java.io.IOException;
 import java.util.Iterator;
-
+/**
+ * @author Junwen Chen
+ **/
 public abstract class AbstractMycatResultSetResponse implements MycatResultSetResponse {
 
   protected final RowBaseIterator iterator;
