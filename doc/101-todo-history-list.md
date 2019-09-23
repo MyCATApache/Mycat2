@@ -72,7 +72,7 @@
 - [x] Atomikos分布式事务支持（cjw-2019-8-16）
 - [x] proxy与jdbc集群/心跳处理类合拼（cjw-2019-8-16）
 - [x] UTF8编码中跳过非ASCII编码工具（cjw-2019-9-4）
-- [x] 分布式查询工具(cjw-2019-9-9)
+- [x] 分布式查询工具(Weiqing Xu,ChenJunwen-2019-9-9)
 
 
 
