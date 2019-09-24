@@ -1,0 +1,13 @@
+defaultSchema: db1
+sql:
+  - sql: select DB2.TABLE2.id from DB1.TABLE,DB2.TABLE2
+    code: return Integer.valueOf(0);
+  - sql: select 1;
+    code: return Integer.valueOf(1);
+
+schemas:
+  - schema: DB1.TABLE,DB2.TABLE2
+    defaultCode: return Integer.valueOf(3);
+    sql:
+      - sql: select * from {tables}
+        code: return Integer.valueOf(2);

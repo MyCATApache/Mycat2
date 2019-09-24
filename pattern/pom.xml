@@ -88,7 +88,11 @@
             <version>3.25.0-GA</version>
             <systemPath>${project.basedir}/lib/javassist.jar</systemPath>
         </dependency>
-
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>config</artifactId>
+            <version>0.3-SNAPSHOP</version>
+        </dependency>
     </dependencies>
 
 </project>

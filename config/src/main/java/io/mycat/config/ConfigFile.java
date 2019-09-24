@@ -18,6 +18,7 @@ package io.mycat.config;
 import io.mycat.config.datasource.JdbcDriverRootConfig;
 import io.mycat.config.datasource.MasterIndexesRootConfig;
 import io.mycat.config.datasource.ReplicasRootConfig;
+import io.mycat.config.pattern.PatternRootConfig;
 import io.mycat.config.heartbeat.HeartbeatRootConfig;
 import io.mycat.config.plug.PlugRootConfig;
 import io.mycat.config.proxy.MysqlServerVariablesRootConfig;
@@ -52,7 +53,9 @@ public enum ConfigFile {
   DATANODE(15, "dataNode.yml", DataNodeRootConfig.class),
   SEQUENCE_MODIFIER(16, "sequenceModifier.yml", SchemaSequenceModifierRootConfig.class),
   JDBC_DRIVER(17, "jdbcDriver.yml", JdbcDriverRootConfig.class),
-  SHARDING_QUERY(17, "shardingQuery.yml", ShardingQueryRootConfig.class);
+  SHARDING_QUERY(18, "shardingQuery.yml", ShardingQueryRootConfig.class),
+  PATTERN(19, "pattern.yml", PatternRootConfig.class)
+  ;
   private byte type;
   private String fileName;
   private Class clazz;
