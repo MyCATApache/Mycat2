@@ -105,4 +105,8 @@ public final class DynamicSQLMatcher {
     public GPatternMatcher getResult() {
         return getgPattern().getMatcher();
     }
+
+    public String getNameAsString(String name){
+        return getResult().getName(name);
+    }
 }

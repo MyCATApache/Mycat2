@@ -1,10 +1,12 @@
 sql:
+  - sql: use {schema}
+    code: useSchemaThenResponseOk(matcher.getNameAsString("schema"))
   - sql: /*!40101 set @@session.wait_timeout=28800 */
-    code: return responseOk();
-  - sql: select DB2.TABLE2.id from DB1.TABLE,DB2.TABLE2
-    code: return Integer.valueOf(0);
+    code: responseOk()
+  - sql: show databases
+    code: cacheLocalFileThenResponse("show_database")
   - sql: select 1;
-    code: return Integer.valueOf(1);
+    code: cacheLocalFileThenResponse("select_1")
 schema:
   - table: DB1.TABLE,DB2.TABLE2
     defaultCode: return Integer.valueOf(3);

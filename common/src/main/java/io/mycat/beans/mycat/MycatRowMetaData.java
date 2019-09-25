@@ -28,7 +28,7 @@ public interface MycatRowMetaData {
 
   int getColumnType(int column);
 
-  String getColumnLabel(int i);
+  String getColumnLabel(int column);
 
   ResultSetMetaData metaData();
 }
