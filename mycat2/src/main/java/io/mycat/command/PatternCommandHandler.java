@@ -1,22 +1,33 @@
 package io.mycat.command;
 
-import io.mycat.config.ConfigFile;
-import io.mycat.config.ConfigurableRoot;
-import io.mycat.config.pattern.PatternRootConfig;
+import cn.lightfish.pattern.DynamicSQLMatcher;
+import cn.lightfish.pattern.Instruction;
+import io.mycat.lib.Response;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.pattern.PatternRuntime;
 import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
 
-public class PatternCommandHandler extends AbstractCommandHandler{
+import java.nio.ByteBuffer;
 
+public class PatternCommandHandler extends AbstractCommandHandler{
+    DynamicSQLMatcher matcher;
+
+    static final MycatLogger LOGGER = MycatLoggerFactory
+            .getLogger(PatternCommandHandler.class);
     @Override
     public void initRuntime(MycatSession session, ProxyRuntime runtime) {
-        PatternRootConfig config = runtime.getConfig(ConfigFile.PATTERN);
-        String defaultSchema = config.getDefaultSchema();
+        matcher  = PatternRuntime.INSTANCE.createMatcher();
     }
 
     @Override
     public void handleQuery(byte[] sql, MycatSession session) {
-
+        String sqlText = new String(sql);
+        LOGGER.debug(sqlText);
+        Instruction match = matcher.match(sqlText);
+        Response response = match.execute(session, matcher);
+        response.apply(session,matcher);
     }
 
     @Override

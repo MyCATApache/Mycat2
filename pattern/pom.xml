@@ -58,7 +58,6 @@
             <artifactId>eclipse-collections-api</artifactId>
             <version>10.0.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.eclipse.collections</groupId>
             <artifactId>eclipse-collections</artifactId>
@@ -86,7 +85,8 @@
             <groupId>javassist</groupId>
             <artifactId>javassist</artifactId>
             <version>3.25.0-GA</version>
-            <systemPath>${project.basedir}/lib/javassist.jar</systemPath>
+            <scope>system</scope>
+            <systemPath>${pom.basedir}/lib/javassist.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>

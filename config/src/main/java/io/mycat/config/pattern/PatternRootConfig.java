@@ -5,9 +5,9 @@ import io.mycat.config.ConfigurableRoot;
 import java.util.List;
 
 public class PatternRootConfig extends ConfigurableRoot {
-    private String defaultSchema;
     private List<TextItemConfig> sql;
-    private List<SchemaConfig> schemas;
+    private List<SchemaConfig> schema;
+    private List<String> lib;
 
     public static class TextItemConfig {
         String sql;
@@ -31,17 +31,33 @@ public class PatternRootConfig extends ConfigurableRoot {
     }
 
     public static class SchemaConfig {
-        String schema;
+        String table;
         String defaultCode;
         List<TextItemConfig> sql;
-    }
 
-    public String getDefaultSchema() {
-        return defaultSchema;
-    }
+        public String getTable() {
+            return table;
+        }
 
-    public void setDefaultSchema(String defaultSchema) {
-        this.defaultSchema = defaultSchema;
+        public void setTable(String tables) {
+            this.table = tables;
+        }
+
+        public String getDefaultCode() {
+            return defaultCode;
+        }
+
+        public void setDefaultCode(String defaultCode) {
+            this.defaultCode = defaultCode;
+        }
+
+        public List<TextItemConfig> getSql() {
+            return sql;
+        }
+
+        public void setSql(List<TextItemConfig> sql) {
+            this.sql = sql;
+        }
     }
 
     public List<TextItemConfig> getSql() {
@@ -52,11 +68,19 @@ public class PatternRootConfig extends ConfigurableRoot {
         this.sql = sql;
     }
 
-    public List getSchemas() {
-        return schemas;
+    public List<SchemaConfig> getSchema() {
+        return schema;
     }
 
-    public void setSchemas(List<SchemaConfig> schemas) {
-        this.schemas = schemas;
+    public void setSchema(List<SchemaConfig> schemas) {
+        this.schema = schemas;
+    }
+
+    public List<String> getLib() {
+        return lib;
+    }
+
+    public void setLib(List<String> lib) {
+        this.lib = lib;
     }
 }

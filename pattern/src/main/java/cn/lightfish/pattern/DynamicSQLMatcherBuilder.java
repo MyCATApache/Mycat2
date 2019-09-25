@@ -14,10 +14,12 @@
  */
 package cn.lightfish.pattern;
 
+import java.text.MessageFormat;
 import java.util.*;
 
 /**
  * https://github.com/junwen12221/GPattern.git
+ *
  * @author Junwen Chen
  **/
 public class DynamicSQLMatcherBuilder {
@@ -47,10 +49,14 @@ public class DynamicSQLMatcherBuilder {
     }
 
     public void build(String packageName, boolean debug) throws Exception {
-        build(Collections.singletonList(packageName), debug);
+        build("java.util.Map", packageName, debug);
     }
 
-    public void build(List<String> packageNameList, boolean debug) throws Exception {
+    public void build(String contextClassName, String packageName, boolean debug) throws Exception {
+        build(contextClassName, Collections.singletonList(packageName), debug);
+    }
+
+    public void build(String contextClassName, List<String> packageNameList, boolean debug) throws Exception {
         dynamicMatcherInfoBuilder.build(patternComplier);
         this.runtimeMap = dynamicMatcherInfoBuilder.ruleInstructionMap;
         this.runtimeMap2 = dynamicMatcherInfoBuilder.tableInstructionMap;
@@ -62,7 +68,12 @@ public class DynamicSQLMatcherBuilder {
                 String code = item.getCode();
                 AddMehodClassFactory addMehodClassFactory = new AddMehodClassFactory(name, Instruction.class);
                 addMehodClassFactory.addExpender(packageNameList, InstructionSet.class);
-                addMehodClassFactory.implMethod("execute", "java.util.Map ctx = (java.util.Map)$1;" +
+
+                if (!code.endsWith(";")) {
+                    code = ("return " + code + " ;");
+                }
+
+                addMehodClassFactory.implMethod("execute", MessageFormat.format("{0} ctx= ({0})$1;", contextClassName) +
                         "cn.lightfish.pattern.DynamicSQLMatcher matcher = (cn.lightfish.pattern.DynamicSQLMatcher)$2;", code);
                 Class build = addMehodClassFactory.build(debug);
                 Instruction o = (Instruction) build.newInstance();

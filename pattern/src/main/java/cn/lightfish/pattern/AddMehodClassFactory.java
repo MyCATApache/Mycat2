@@ -68,7 +68,6 @@ public class AddMehodClassFactory {
     public void implMethod(String name, String init, String code) throws CannotCompileException, NotFoundException {
         CtMethod[] methods = cc.getMethods();
         for (CtMethod method : methods) {
-            MethodInfo methodInfo = method.getMethodInfo2();
             if (name.equals(method.getName())) {
                 CtMethod cm = new CtMethod(method.getReturnType(), name, method.getParameterTypes(), cc);
                 if (init != null && !"".equals(init)) {
@@ -101,11 +100,18 @@ public class AddMehodClassFactory {
         ClassClassPath classClassPath = new ClassClassPath(collections);
         this.pool.appendClassPath(classClassPath);
         CtClass ctClass = this.pool.get(collections.getName());
+//        CtField[] fields = ctClass.getFields();
+//        if (fields!=null) {
+//            for (CtField field : fields) {
+//                cc.addField(new CtField(field,cc));
+//            }
+//        }
         CtMethod[] methods = ctClass.getMethods();
         for (CtMethod method : methods) {
             int modifiers = method.getModifiers();
             if (Modifier.isStatic(modifiers) && Modifier.isPublic(modifiers)) {
-                cc.addMethod(CtNewMethod.copy(method, cc, null));
+                CtMethod copy = CtNewMethod.copy(method, cc, null);
+                cc.addMethod(copy);
             }
         }
     }
