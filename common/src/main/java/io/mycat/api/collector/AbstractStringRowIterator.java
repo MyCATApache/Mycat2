@@ -44,95 +44,83 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
 
     @Override
     public String getString(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         return o;
     }
 
     @Override
     public boolean getBoolean(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return false;
         return Boolean.parseBoolean(o);
     }
 
     @Override
     public byte getByte(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
         return Byte.parseByte(o);
     }
 
     @Override
     public short getShort(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
         return Short.parseShort(o);
     }
 
     @Override
     public int getInt(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
         return Integer.parseInt(o);
     }
 
     @Override
     public long getLong(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
         return Long.parseLong(o);
     }
 
     @Override
     public float getFloat(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
         return Float.parseFloat(o);
     }
 
     @Override
     public double getDouble(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
         return Double.parseDouble(o);
     }
 
     @Override
     public byte[] getBytes(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
         return o.getBytes();
     }
 
     @Override
     public Date getDate(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
         return java.sql.Date.valueOf(o);
     }
 
     @Override
     public Time getTime(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
         return java.sql.Time.valueOf(o);
     }
 
     @Override
     public Timestamp getTimestamp(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
         return java.sql.Timestamp.valueOf(o);
     }
@@ -144,12 +132,23 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
 
     @Override
     public InputStream getBinaryStream(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
+        String o = getString(currentRow[columnIndex - 1]);
         if (wasNull) return null;
         return new ByteArrayInputStream(o.getBytes());
     }
 
+    private String getString(String o1) {
+        String o = o1;
+        wasNull = o == null;
+        return o;
+    }
+
+    @Override
+    public BigDecimal getBigDecimal(int columnIndex) {
+        String o = getString(currentRow[columnIndex - 1]);
+        if (wasNull) return null;
+        return new BigDecimal(o);
+    }
     @Override
     public Object getObject(int columnIndex) {
         int columnType = mycatRowMetaData.getColumnType(columnIndex);
@@ -225,11 +224,4 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
         }
     }
 
-    @Override
-    public BigDecimal getBigDecimal(int columnIndex) {
-        String o = currentRow[columnIndex - 1];
-        wasNull = o == null;
-        if (wasNull) return null;
-        return new BigDecimal(o);
-    }
 }
