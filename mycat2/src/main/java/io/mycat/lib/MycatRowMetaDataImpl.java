@@ -12,16 +12,20 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
     final List<SQLColumnDefinition> columnInfo;
     final String tableName;
     final String schemaName;
+    final int columnCount;
 
     public MycatRowMetaDataImpl(List<SQLColumnDefinition> columnInfo, String schemaName, String tableName) {
         this.columnInfo = columnInfo;
         this.tableName = tableName;
         this.schemaName = schemaName;
+        this.columnCount = columnInfo.size();
+        this.columnInfo.add(0, null);
+
     }
 
     @Override
     public int getColumnCount() {
-        return columnInfo.size();
+        return columnCount;
     }
 
     @Override
@@ -51,7 +55,7 @@ public class MycatRowMetaDataImpl implements MycatRowMetaData {
 
     @Override
     public String getColumnName(int column) {
-        return columnInfo.get(column).getColumnName();
+        return columnInfo.get(column).computeAlias();
     }
 
     @Override

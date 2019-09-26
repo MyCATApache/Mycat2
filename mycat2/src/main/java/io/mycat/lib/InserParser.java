@@ -3,13 +3,14 @@ package io.mycat.lib;
 
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.expr.SQLCharExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.parser.MySqlStatementParser;
-import io.mycat.api.collector.AbstractRowIterator;
+import io.mycat.api.collector.AbstractObjectRowIterator;
+import io.mycat.api.collector.AbstractStringRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 
 import java.io.IOException;
@@ -21,7 +22,12 @@ import java.util.List;
 import java.util.Spliterators;
 import java.util.stream.StreamSupport;
 
-public class InserParser extends AbstractRowIterator {
+import static com.alibaba.fastsql.sql.parser.SQLParserFeature.*;
+
+public class InserParser extends AbstractStringRowIterator {
+    public InserParser(String path) throws Exception {
+        this(Files.lines(Paths.get(InserParser.class.getResource(path).toURI())).iterator());
+    }
 
     public InserParser(Iterator<String> source) {
         this(getCreateTableSQL(source), source);
@@ -40,22 +46,34 @@ public class InserParser extends AbstractRowIterator {
         return createTableStmtBuffer.toString();
     }
 
+    final static String[] EMPTY = new String[]{};
+
     public InserParser(String createTableStmttext, Iterator<String> lines) {
         super(getMycatRowMetaData(createTableStmttext), StreamSupport.stream(Spliterators.spliteratorUnknownSize(lines, 0), false).flatMap(s -> {
-            MySqlStatementParser sqlStatementParser = new MySqlStatementParser(s);
+            MySqlStatementParser sqlStatementParser = new MySqlStatementParser(s, UseInsertColumnsCache, InsertValueNative, OptimizedForParameterized, OptimizedForForParameterizedSkipValue, InsertValueCheckType);
             MySqlInsertStatement insertStatement = (MySqlInsertStatement) sqlStatementParser.parseInsert();
             return insertStatement.getValuesList().stream();
         }).map(valuesClause -> {
-            Object[] objects = new Object[valuesClause.getValues().size()];
-            int i = 0;
-            for (SQLExpr value : valuesClause.getValues()) {
-                if (value instanceof SQLValuableExpr) {
-                    objects[i++] = ((SQLValuableExpr) value).getValue();
+            List valuesClause1 = valuesClause.getValues();
+            if (valuesClause1.isEmpty()) {
+                return EMPTY;
+            } else {
+                Object o = valuesClause1.get(0);
+                if (o instanceof String) {
+                    return (String[]) valuesClause1.toArray(EMPTY);
                 } else {
-                    throw new UnsupportedOperationException();
+                    String[] objects = new String[valuesClause.getValues().size()];
+                    int i = 0;
+                    for (Object value : valuesClause.getValues()) {
+                        if (value instanceof SQLValuableExpr) {
+                            objects[i++] = ((SQLCharExpr) value).getText();
+                        } else if (value instanceof String) {
+                            throw new UnsupportedOperationException();
+                        }
+                    }
+                    return objects;
                 }
             }
-            return objects;
         }).iterator());
     }
 
@@ -70,6 +88,7 @@ public class InserParser extends AbstractRowIterator {
     public void close() {
 
     }
+
     public static void main(String[] args) throws IOException {
         Iterator<String> iterator = Files.lines(Paths.get("d:/show_databases.sql")).iterator();
         InserParser inserParser = new InserParser(iterator);
