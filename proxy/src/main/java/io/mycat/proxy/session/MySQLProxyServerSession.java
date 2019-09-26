@@ -68,10 +68,10 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             }
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             Queue<ByteBuffer> byteBuffers = writeQueue();
-            while (!byteBuffers.offer(buffer)) {
+            while (!byteBuffers.offer(buffer)) {//never loop
             }
             if (end) {
-                while (!byteBuffers.offer(END_PACKET)) {
+                while (!byteBuffers.offer(END_PACKET)) {//never loop
                 }
                 MY_SQL_PROXY_SERVER_SESSION_LOGGER.debug("session id:{} has response", sessionId());
             }
