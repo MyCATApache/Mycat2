@@ -98,7 +98,7 @@ public class MySQLFieldsType {
     initPut(Types.LONGVARBINARY, FIELD_TYPE_VARCHAR);
     initPut(Types.NULL, FIELD_TYPE_NULL);
     initPut(Types.BLOB, FIELD_TYPE_BLOB);
-
+    initPut(Types.OTHER, FIELD_TYPE_VARCHAR);
   }
 
   public static int fromJdbcType(int jdbcType) {

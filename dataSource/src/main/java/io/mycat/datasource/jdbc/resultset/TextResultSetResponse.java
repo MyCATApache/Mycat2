@@ -202,6 +202,17 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
         res = null;
         return null;
       }
+      case Types.OTHER: {
+        String string = rowBaseIterator.getString(columnIndex);
+        if (string == null){
+          return null;
+        }
+        res = string.getBytes();
+        if (rowBaseIterator.wasNull()) {
+          return null;
+        }
+        break;
+      }
       default:
         throw new RuntimeException("unsupport!");
     }

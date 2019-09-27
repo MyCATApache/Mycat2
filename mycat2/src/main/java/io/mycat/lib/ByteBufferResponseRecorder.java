@@ -9,10 +9,13 @@ import java.util.Iterator;
 public class ByteBufferResponseRecorder implements MycatResultSetResponse {
     private final ResultSetCacheRecorder cache;
     private final MycatResultSetResponse resultSetResponse;
+    private final Runnable runnable;
 
-    public ByteBufferResponseRecorder(ResultSetCacheRecorder cache, MycatResultSetResponse resultSetResponse) {
+
+    public ByteBufferResponseRecorder(ResultSetCacheRecorder cache, MycatResultSetResponse resultSetResponse, Runnable runnable) {
         this.cache = cache;
         this.resultSetResponse = resultSetResponse;
+        this.runnable = runnable;
     }
 
     @Override
@@ -39,7 +42,7 @@ public class ByteBufferResponseRecorder implements MycatResultSetResponse {
             @Override
             public byte[] next() {
                 byte[] next = iterator.next();
-                cache.addColumnDefBytes( next);
+                cache.addColumnDefBytes(next);
                 return next;
             }
         };
@@ -65,8 +68,8 @@ public class ByteBufferResponseRecorder implements MycatResultSetResponse {
 
     @Override
     public void close() throws IOException {
-       cache.sync();
-       cache.close();
+        cache.sync();
+        runnable.run();
     }
 
 
