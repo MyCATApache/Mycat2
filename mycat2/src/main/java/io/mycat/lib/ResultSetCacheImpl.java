@@ -1,7 +1,6 @@
 package io.mycat.lib;
 
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.command.ProxyQueryHandler;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
@@ -10,7 +9,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 
@@ -22,11 +20,15 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
     private final File flie;
     private final ByteBuffer tmp = ByteBuffer.allocate(4);
 
-    private  int startPosition;
+    private int startPosition;
     private int rowStartPosition;
 
-    public ResultSetCacheImpl(String flie) throws IOException {
-        this.flie = getFile(flie);
+    public ResultSetCacheImpl(String flie) {
+        try {
+            this.flie = getFile(flie);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static File getFile(String flie) throws IOException {
@@ -38,7 +40,7 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
     @Override
     public void open() throws IOException {
         if (channel == null || !channel.isOpen()) {
-            channel = FileChannel.open(flie.toPath(), StandardOpenOption.WRITE,StandardOpenOption.READ);
+            channel = FileChannel.open(flie.toPath(), StandardOpenOption.WRITE, StandardOpenOption.READ);
         } else {
             channel.position(0);
         }
@@ -60,64 +62,65 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
     }
 
     @Override
-    public void startRecordColumn(long columnCount)  {
+    public void startRecordColumn(int columnCount) {
         try {
             startPosition = (int) channel.position();
-            tmp.putInt(0, (int)columnCount);
+            tmp.putInt(0, columnCount);
             tmp.position(0);
             channel.write(tmp);
         } catch (IOException e) {
-            LOGGER.error("{}",e);
+            LOGGER.error("{}", e);
         }
 
     }
 
     @Override
-    public void addColumnDefBytes(byte[] bytes)  {
+    public void addColumnDefBytes(byte[] bytes) {
         try {
-            tmp.putInt(0, bytes.length);
-            tmp.position(0);
-            channel.write(new ByteBuffer[]{tmp, ByteBuffer.wrap(bytes)});
+            write(bytes);
         } catch (IOException e) {
-            LOGGER.error("{}",e);
+            LOGGER.error("{}", e);
         }
+    }
+
+    private void write(byte[] bytes) throws IOException {
+        tmp.putInt(0, bytes.length);
+        tmp.position(0);
+        channel.write(new ByteBuffer[]{tmp, ByteBuffer.wrap(bytes)});
     }
 
     @Override
     public void startRecordRow() {
         try {
-            this.rowStartPosition =(int) channel.position();
+            this.rowStartPosition = (int) channel.position();
         } catch (IOException e) {
-            LOGGER.error("{}",e);
+            LOGGER.error("{}", e);
         }
     }
 
     @Override
-    public void addRowBytes(byte[] bytes)  {
-
+    public void addRowBytes(byte[] bytes) {
         try {
-            tmp.putInt(0, bytes.length);
-            tmp.position(0);
-            channel.write(new ByteBuffer[]{tmp, ByteBuffer.wrap(bytes)});
+            write(bytes);
         } catch (IOException e) {
-            LOGGER.error("{}",e);
+            LOGGER.error("{}", e);
         }
     }
 
     @Override
-    public Token endRecord()  {
+    public Token endRecord() {
         try {
-            return new TokenImpl(this.startPosition,this.rowStartPosition,(int) channel.position());
+            return new TokenImpl(this.startPosition, this.rowStartPosition, (int) channel.position());
         } catch (IOException e) {
-            LOGGER.error("{}",e);
+            LOGGER.error("{}", e);
             return null;
         }
     }
 
     @Override
     public MycatResultSetResponse newMycatResultSetResponse(Token token) throws IOException {
-        TokenImpl t = (TokenImpl)token;
-        return newMycatResultSetResponse(t.startPosition,t.rowStartPosition,t.endPosition);
+        TokenImpl t = (TokenImpl) token;
+        return newMycatResultSetResponse(t.startPosition, t.rowStartPosition, t.endPosition);
     }
 
 
@@ -188,9 +191,11 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
         };
     }
 
-    static class TokenImpl implements Token{
-          int startPosition;
-         int rowStartPosition;
+
+    static class TokenImpl implements Token {
+        final int startPosition;
+        final int rowStartPosition;
+        final int endPosition;
 
         public TokenImpl(int startPosition, int rowStartPosition, int endPosition) {
             this.startPosition = startPosition;
@@ -198,7 +203,6 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
             this.endPosition = endPosition;
         }
 
-        int endPosition;
 
     }
 }

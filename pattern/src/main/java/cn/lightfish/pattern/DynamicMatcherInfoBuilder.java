@@ -28,7 +28,7 @@ public class DynamicMatcherInfoBuilder {
     final HashMap<Set<SchemaTable>, SchemaItem> tableInstructionMap = new HashMap<>();
     final HashMap<Integer, List<Item>> ruleInstructionMap = new HashMap<>();
 
-    private void addTable(String schemaName, String tableName) {
+    public void addTable(String schemaName, String tableName) {
         Collection<String> set = tableMap.computeIfAbsent(schemaName.toUpperCase(), (s) -> new HashSet<>());
         set.add(tableName.toUpperCase());
     }

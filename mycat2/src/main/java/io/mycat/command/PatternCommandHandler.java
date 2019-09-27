@@ -26,8 +26,19 @@ public class PatternCommandHandler extends AbstractCommandHandler{
         String sqlText = new String(sql);
         LOGGER.debug(sqlText);
         Instruction match = matcher.match(sqlText);
-        Response response = match.execute(session, matcher);
-        response.apply(session,matcher);
+        if (match != null){
+            try {
+                Response response = match.execute(session, matcher);
+                response.apply(session, matcher);
+            }catch (Exception e){
+                LOGGER.error("{}",e);
+                throw e;
+            }
+        }else {
+            LOGGER.error("unknown sql:{}",sqlText);
+            session.setLastMessage("unknown sql:"+sqlText);
+            session.writeErrorEndPacket();
+        }
     }
 
     @Override

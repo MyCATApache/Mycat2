@@ -47,7 +47,9 @@ public enum PatternRuntime {
             }
             List<String> lib = patternRootConfig.getLib();
             if (lib == null) lib = Collections.emptyList();
-            builder.build("io.mycat.proxy.session.MycatSession",lib, false);
+
+            String schemaName = patternRootConfig.getSchemaName();
+            builder.build("io.mycat.proxy.session.MycatSession",lib,schemaName, false);
             this.builder = builder;
         }
     }

@@ -4,7 +4,15 @@ sql:
   - sql: /*!40101 set @@session.wait_timeout=28800 */
     code: responseOk()
   - sql: show databases
-    code: cacheLocalFileThenResponse("show_database")
+    code: cacheLocalFileThenResponse("/sql/show_databases.sql")
+  - sql:  show full tables from `TESTDB1` where table_type = 'BASE TABLE'
+    code: cacheLocalFileThenResponse("/sql/sqlyog/show_full_tables_from _testdb1.sql")
+  - sql:  show full tables from `TESTDB2` where table_type = 'BASE TABLE'
+    code: cacheLocalFileThenResponse("/sql/sqlyog/show_full_tables_from _testdb2.sql")
+  - sql:  describe `TESTDB1`.`travelrecord`
+    code: cacheLocalFileThenResponse("/sql/sqlyog/describe _testdb1_travelrecord.sql")
+  - sql:  describe `TESTDB1`.`address`
+    code: cacheLocalFileThenResponse("/sql/sqlyog/describe _testdb1_address.sql")
   - sql: select 1;
     code: cacheLocalFileThenResponse("select_1")
 schema:
@@ -14,4 +22,5 @@ schema:
       - sql: select * from {tables}
         code: return Integer.valueOf(2);
 lib:
-  - io.mycat.lib.BaseLib
+  - io.mycat.lib.BaseLibExport
+schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*

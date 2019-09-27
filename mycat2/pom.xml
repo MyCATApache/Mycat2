@@ -59,6 +59,25 @@
       <artifactId>opencsv</artifactId>
       <version>2.4</version>
     </dependency>
+    <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>28.1-jre</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.apache.crail/crail-parent -->
+    <dependency>
+      <groupId>org.apache.crail</groupId>
+      <artifactId>crail-parent</artifactId>
+      <version>1.1-incubating</version>
+      <type>pom</type>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/org.apache.crail/crail-storage -->
+    <dependency>
+      <groupId>org.apache.crail</groupId>
+      <artifactId>crail-storage</artifactId>
+      <version>1.1-incubating</version>
+    </dependency>
 
   </dependencies>
   <build>

@@ -16,6 +16,7 @@ package cn.lightfish.pattern;
 
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * https://github.com/junwen12221/GPattern.git
@@ -53,10 +54,10 @@ public class DynamicSQLMatcherBuilder {
     }
 
     public void build(String contextClassName, String packageName, boolean debug) throws Exception {
-        build(contextClassName, Collections.singletonList(packageName), debug);
+        build(contextClassName, Collections.singletonList(packageName),null, debug);
     }
 
-    public void build(String contextClassName, List<String> packageNameList, boolean debug) throws Exception {
+    public void build(String contextClassName, List<String> packageNameList,String schemaName, boolean debug) throws Exception {
         dynamicMatcherInfoBuilder.build(patternComplier);
         this.runtimeMap = dynamicMatcherInfoBuilder.ruleInstructionMap;
         this.runtimeMap2 = dynamicMatcherInfoBuilder.tableInstructionMap;
@@ -80,7 +81,16 @@ public class DynamicSQLMatcherBuilder {
                 item.setInstruction(o);
             }
         }
-        this.tableCollctorbuilder = new TableCollectorBuilder(patternBuilder.geIdRecorder(), dynamicMatcherInfoBuilder.getTableMap());
+        Map<String, Collection<String>> tableMap = dynamicMatcherInfoBuilder.getTableMap();
+        if (schemaName!=null){
+            String[] split = schemaName.split(",");
+            for (String s : split) {
+                String[] split1 = s.split("\\.");
+                Collection<String> strings = tableMap.computeIfAbsent(split1[0], s1 -> new HashSet<>());
+                strings.add(split1[1]);
+            }
+        }
+        this.tableCollctorbuilder = new TableCollectorBuilder(patternBuilder.geIdRecorder(),tableMap);
     }
 
     public DynamicSQLMatcher createMatcher() {
@@ -91,6 +101,5 @@ public class DynamicSQLMatcherBuilder {
         GPattern gPattern = patternBuilder.createGroupPattern(tableCollector);
         return new DynamicSQLMatcher(tableCollector, gPattern, runtimeMap, runtimeMap2);
     }
-
 
 }

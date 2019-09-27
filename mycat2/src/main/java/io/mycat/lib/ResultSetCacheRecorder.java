@@ -11,7 +11,7 @@ public interface ResultSetCacheRecorder {
 
     void close() throws IOException;
 
-    void startRecordColumn(long columnCount);
+    void startRecordColumn(int columnCount);
 
     void addColumnDefBytes(byte[] bytes);
 

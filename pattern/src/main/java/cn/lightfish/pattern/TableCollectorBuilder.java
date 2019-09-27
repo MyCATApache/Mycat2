@@ -41,7 +41,6 @@ public class TableCollectorBuilder {
             for (String tableName : tableNames) {
                 Set<Integer> tableNameHashList = record(recorder, tableName);
                 for (Integer schemaNameHash : schemaHashList) {
-                    schemaHash.computeIfAbsent(schemaName, s -> schemaNameHash);
                     for (Integer tableNameHash : tableNameHashList) {
                         int hash = schemaNameHash;
                         hash = hash ^ tableNameHash;
@@ -70,11 +69,24 @@ public class TableCollectorBuilder {
         String lowerCase = text.toLowerCase();
         String upperCase = text.toUpperCase();
 
+
+        int hash ;
+
         Set<Integer> list = new HashSet<>();
+
         list.add(recorder.createConstToken(lowerCase).hashCode());
-        list.add(recorder.createConstToken(upperCase).hashCode());
-        list.add(recorder.createConstToken("`" + lowerCase + "`").hashCode());
-        list.add(recorder.createConstToken("`" + upperCase + "`").hashCode());
+        list.add(hash =recorder.createConstToken(upperCase).hashCode());
+
+        String s = "`" + lowerCase + "`";
+        list.add(recorder.createConstToken(s).hashCode());
+        String s1 = "`" + upperCase + "`";
+        list.add(recorder.createConstToken(s1).hashCode());
+
+        schemaHash.computeIfAbsent(lowerCase, ss -> hash);
+        schemaHash.computeIfAbsent(upperCase, ss -> hash);
+        schemaHash.computeIfAbsent(s, ss -> hash);
+        schemaHash.computeIfAbsent(s1, ss -> hash);
+
         return list;
     }
 
