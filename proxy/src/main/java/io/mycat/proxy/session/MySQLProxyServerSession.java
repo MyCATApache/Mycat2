@@ -54,14 +54,9 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
     MycatReactorThread getIOThread();
 
-
-    /**
-     * 写入payload
-     */
-    default void writeBytes(byte[] payload, boolean end) {
+    default void writeBytes(ByteBuffer buffer, boolean end) {
         try {
             switchMySQLServerWriteHandler();
-            ByteBuffer buffer = writeBufferPool().allocate(payload);
             boolean ioThread = Thread.currentThread() == getIOThread();
             if (!ioThread && end) {
                 backFromWorkerThread();
@@ -86,6 +81,14 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         } catch (Exception e) {
             this.close(false, setLastMessage(e));
         }
+    }
+
+    /**
+     * 写入payload
+     */
+    default void writeBytes(byte[] payload, boolean end) {
+        ByteBuffer buffer = writeBufferPool().allocate(payload);
+        writeBytes(buffer,end);
     }
 
     void backFromWorkerThread();

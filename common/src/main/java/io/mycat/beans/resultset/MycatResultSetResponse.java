@@ -2,7 +2,7 @@ package io.mycat.beans.resultset;
 
 import java.util.Iterator;
 
-public interface MycatResultSetResponse extends MycatResponse {
+public interface MycatResultSetResponse<T> extends MycatResponse {
 
   default MycatResultSetType getType() {
     return MycatResultSetType.RRESULTSET;
@@ -10,8 +10,8 @@ public interface MycatResultSetResponse extends MycatResponse {
 
   int columnCount();
 
-  Iterator<byte[]> columnDefIterator();
+  Iterator<T> columnDefIterator();
 
-  Iterator<byte[]> rowIterator();
+  Iterator<T> rowIterator();
 
 }

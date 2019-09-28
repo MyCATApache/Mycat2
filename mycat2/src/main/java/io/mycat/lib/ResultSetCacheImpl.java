@@ -1,6 +1,7 @@
 package io.mycat.lib;
 
 import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.beans.resultset.MycatResultSetType;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
@@ -134,52 +135,59 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
             final int count = (int) buffer.getInt(startOffset);
 
             @Override
+            public MycatResultSetType getType() {
+                return MycatResultSetType.RRESULTSET_BYTEBUFFER;
+            }
+
+            @Override
             public int columnCount() {
                 return count;
             }
 
             @Override
-            public Iterator<byte[]> columnDefIterator() {
-                return new Iterator<byte[]>() {
+            public Iterator<ByteBuffer> columnDefIterator() {
+                return new Iterator<ByteBuffer>() {
                     int index = 0;
                     int position = startOffset + 4;
 
                     @Override
                     public boolean hasNext() {
+                        buffer.clear();
                         return index < count;
                     }
 
                     @Override
-                    public byte[] next() {
+                    public ByteBuffer next() {
                         index++;
                         int length = buffer.getInt(position);
-                        buffer.position(position + 4);
-                        byte[] bytes = new byte[length];
-                        buffer.get(bytes);
-                        position = buffer.position();
-                        return bytes;
+                        int  startIndex = position + 4;
+                        buffer.position(startIndex);
+                        position = startIndex+ length;
+                        buffer.limit(position);
+                        return buffer.slice();
                     }
                 };
             }
 
             @Override
-            public Iterator<byte[]> rowIterator() {
-                return new Iterator<byte[]>() {
+            public Iterator<ByteBuffer> rowIterator() {
+                return new Iterator<ByteBuffer>() {
                     int position = rowStartOffset;
 
                     @Override
                     public boolean hasNext() {
+                        buffer.clear();
                         return position < endOffset;
                     }
 
                     @Override
-                    public byte[] next() {
+                    public ByteBuffer next() {
                         int length = buffer.getInt(position);
-                        buffer.position(position + 4);
-                        byte[] bytes = new byte[length];
-                        buffer.get(bytes);
-                        position =buffer.position();
-                        return bytes;
+                        int  startIndex = position + 4;
+                        buffer.position(startIndex);
+                        position = startIndex+ length;
+                        buffer.limit(position);
+                        return buffer.slice();
                     }
                 };
             }

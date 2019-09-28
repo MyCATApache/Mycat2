@@ -27,13 +27,15 @@ public class FinalCacheExport implements InstructionSet {
     public static class Lib {
         public final static ResultSetCacheImpl resultSetCache = new ResultSetCacheImpl("d:/baseCache");
         public final static ConcurrentHashMap<String, ResultSetCacheRecorder.Token> cache = new ConcurrentHashMap<>();
-static {
-    try {
-        resultSetCache.open();
-    } catch (IOException e) {
-        e.printStackTrace();
-    }
-}
+
+        static {
+            try {
+                resultSetCache.open();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         public static void finalCacheFile(String fileName) {
 
             InserParser inserParser = new InserParser(fileName);
@@ -46,11 +48,11 @@ static {
 
             byteBufferResponseRecorder.columnCount();
             Iterator<byte[]> iterator = byteBufferResponseRecorder.columnDefIterator();
-            while (iterator.hasNext()){
+            while (iterator.hasNext()) {
                 iterator.next();
             }
             Iterator<byte[]> iterator1 = byteBufferResponseRecorder.rowIterator();
-            while (iterator1.hasNext()){
+            while (iterator1.hasNext()) {
                 iterator1.next();
             }
             try {
