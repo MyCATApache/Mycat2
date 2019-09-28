@@ -178,7 +178,7 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
                         buffer.position(position + 4);
                         byte[] bytes = new byte[length];
                         buffer.get(bytes);
-                        position = buffer.position();
+                        position =buffer.position();
                         return bytes;
                     }
                 };

@@ -29,6 +29,10 @@ public class BaseLibExport implements InstructionSet {
         return Lib.responseOk;
     }
 
+    public static Response proxyOnMySQLDatasource(String dataSource) {
+        return null;
+    }
+
     public static class Lib {
         public final static Response responseOk = (session, matcher) -> session.writeOkEndPacket();
         public final static ResultSetCacheImpl resultSetCache = new ResultSetCacheImpl("d:/baseCache");
@@ -63,7 +67,7 @@ public class BaseLibExport implements InstructionSet {
             ByteBufferResponseRecorder byteBufferResponseRecorder = new ByteBufferResponseRecorder(resultSetCache, new TextResultSetResponse(inserParser), new Runnable() {
                 @Override
                 public void run() {
-                    cache.put(fileName,resultSetCache.endRecord());
+                    cache.put(fileName, resultSetCache.endRecord());
                 }
             });
             return getResponse(byteBufferResponseRecorder);
@@ -81,6 +85,10 @@ public class BaseLibExport implements InstructionSet {
                     });
                 }
             };
+        }
+
+        private void finalCacheFile(String file) {
+
         }
     }
 }

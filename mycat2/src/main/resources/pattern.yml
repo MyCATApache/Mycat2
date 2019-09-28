@@ -1,26 +1,39 @@
+lib:
+  - io.mycat.lib.BaseLibExport
+  - io.mycat.lib.FinalCacheExport
+schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
 sql:
   - sql: use {schema}
     code: useSchemaThenResponseOk(matcher.getNameAsString("schema"))
+
+  - sql: show databases
+    code: responseFinalCache("/sql/show_databases.sql")
+
+  - sql:  show full tables from `TESTDB1` where table_type = 'BASE TABLE'
+    code: responseFinalCache("/sql/show_full_tables_from_testdb1.sql")
+
+  - sql:  show full tables from `TESTDB2` where table_type = 'BASE TABLE'
+    code: responseFinalCache("/sql/show_full_tables_from_testdb2.sql")
+
+  - sql:  describe `TESTDB1`.`travelrecord`
+    code: responseFinalCache("/sql/describe_testdb1_travelrecord.sql")
+
+  - sql:  describe `TESTDB1`.`address`
+    code: responseFinalCache("/sql/describe_testdb1_address.sql")
+
   - sql: /*!40101 set @@session.wait_timeout=28800 */
     code: responseOk()
-  - sql: show databases
-    code: cacheLocalFileThenResponse("/sql/show_databases.sql")
-  - sql:  show full tables from `TESTDB1` where table_type = 'BASE TABLE'
-    code: cacheLocalFileThenResponse("/sql/sqlyog/show_full_tables_from _testdb1.sql")
-  - sql:  show full tables from `TESTDB2` where table_type = 'BASE TABLE'
-    code: cacheLocalFileThenResponse("/sql/sqlyog/show_full_tables_from _testdb2.sql")
-  - sql:  describe `TESTDB1`.`travelrecord`
-    code: cacheLocalFileThenResponse("/sql/sqlyog/describe _testdb1_travelrecord.sql")
-  - sql:  describe `TESTDB1`.`address`
-    code: cacheLocalFileThenResponse("/sql/sqlyog/describe _testdb1_address.sql")
-  - sql: select 1;
-    code: cacheLocalFileThenResponse("select_1")
+
 schema:
-  - table: DB1.TABLE,DB2.TABLE2
-    defaultCode: return Integer.valueOf(3);
+  - table: TESTDB1.TRAVELRECORD
+    defaultCode: proxyOnMySQLDatasource("mytest3306a")
     sql:
       - sql: select * from {tables}
         code: return Integer.valueOf(2);
-lib:
-  - io.mycat.lib.BaseLibExport
-schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
+initCode:
+  - finalCacheFile("/sql/show_databases.sql")
+  - finalCacheFile("/sql/show_full_tables_from_testdb1.sql")
+  - finalCacheFile("/sql/show_full_tables_from_testdb2.sql")
+  - finalCacheFile("/sql/describe_testdb1_travelrecord.sql")
+  - finalCacheFile("/sql/describe_testdb1_address.sql")
+

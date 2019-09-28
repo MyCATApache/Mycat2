@@ -36,7 +36,11 @@ public class ByteBufferResponseRecorder implements MycatResultSetResponse {
         return new Iterator<byte[]>() {
             @Override
             public boolean hasNext() {
-                return iterator.hasNext();
+                boolean b = iterator.hasNext();
+                if (!b) {
+                    cache.startRecordRow();
+                }
+                return b;
             }
 
             @Override

@@ -16,7 +16,6 @@ package cn.lightfish.pattern;
 
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.function.Function;
 
 /**
  * https://github.com/junwen12221/GPattern.git
@@ -54,35 +53,33 @@ public class DynamicSQLMatcherBuilder {
     }
 
     public void build(String contextClassName, String packageName, boolean debug) throws Exception {
-        build(contextClassName, Collections.singletonList(packageName),null, debug);
+        build(contextClassName, Collections.emptyList(), Collections.singletonList(packageName), null, debug);
     }
 
-    public void build(String contextClassName, List<String> packageNameList,String schemaName, boolean debug) throws Exception {
+    public void build(String contextClassName, List<String> codeList, List<String> packageNameList, String schemaName, boolean debug) throws Exception {
         dynamicMatcherInfoBuilder.build(patternComplier);
         this.runtimeMap = dynamicMatcherInfoBuilder.ruleInstructionMap;
         this.runtimeMap2 = dynamicMatcherInfoBuilder.tableInstructionMap;
         ArrayList<List<Item>> list = new ArrayList<>(runtimeMap.values());
         list.add(new ArrayList<>(this.runtimeMap2.values()));
+        AddMehodClassFactory addMehodClassFactory = new AddMehodClassFactory(Instruction.class.getSimpleName() + id++, Instruction.class);
+        addMehodClassFactory.addExpender(packageNameList, InstructionSet.class);
         for (List<Item> value : list) {
             for (Item item : value) {
                 String name = Instruction.class.getSimpleName() + id++;
                 String code = item.getCode();
-                AddMehodClassFactory addMehodClassFactory = new AddMehodClassFactory(name, Instruction.class);
-                addMehodClassFactory.addExpender(packageNameList, InstructionSet.class);
-
                 if (!code.endsWith(";")) {
                     code = ("return " + code + " ;");
                 }
-
                 addMehodClassFactory.implMethod("execute", MessageFormat.format("{0} ctx= ({0})$1;", contextClassName) +
                         "cn.lightfish.pattern.DynamicSQLMatcher matcher = (cn.lightfish.pattern.DynamicSQLMatcher)$2;", code);
-                Class build = addMehodClassFactory.build(debug);
+                Class build = addMehodClassFactory.build(name, debug);
                 Instruction o = (Instruction) build.newInstance();
                 item.setInstruction(o);
             }
         }
         Map<String, Collection<String>> tableMap = dynamicMatcherInfoBuilder.getTableMap();
-        if (schemaName!=null){
+        if (schemaName != null) {
             String[] split = schemaName.split(",");
             for (String s : split) {
                 String[] split1 = s.split("\\.");
@@ -90,7 +87,25 @@ public class DynamicSQLMatcherBuilder {
                 strings.add(split1[1]);
             }
         }
-        this.tableCollctorbuilder = new TableCollectorBuilder(patternBuilder.geIdRecorder(),tableMap);
+        this.tableCollctorbuilder = new TableCollectorBuilder(patternBuilder.geIdRecorder(), tableMap);
+
+        DynamicSQLMatcher matcher = createMatcher();
+
+        StringBuilder sb = new StringBuilder();
+        for (String line : codeList) {
+            if (!line.trim().endsWith(";")) {
+                line = line + ";";
+            }
+            sb.append(line);
+        }
+        sb.append(";return null;");
+        String name = Instruction.class.getSimpleName() + id++;
+        addMehodClassFactory = new AddMehodClassFactory(name, Runnable.class);
+        addMehodClassFactory.addExpender(packageNameList, InstructionSet.class);
+        addMehodClassFactory.implMethod("run", ";", sb.toString());
+        Class initCode = addMehodClassFactory.build(debug);
+        Runnable o = (Runnable) initCode.newInstance();
+        o.run();
     }
 
     public DynamicSQLMatcher createMatcher() {
