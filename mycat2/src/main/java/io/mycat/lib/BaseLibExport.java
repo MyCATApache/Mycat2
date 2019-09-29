@@ -23,11 +23,7 @@ public class BaseLibExport implements InstructionSet {
         return Lib.responseOk;
     }
 
-    public static Response useSchemaThenResponseOk() {
-        return Lib.responseOk;
-    }
-
-    public static Response proxyDatasource(String sql,String dataSource) {
+    public static Response proxyByDataSource(String sql, String dataSource) {
         return Lib.proxyQueryOnDatasource(sql,dataSource);
     }
 
