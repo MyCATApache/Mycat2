@@ -54,7 +54,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public void onRouteSQL(Session session, String dataNodeName, String sql) {
     if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataNode:{} sql:{}", session.sessionId(), dataNodeName, sql);
+      SQL_LOGGER.info("sessionId:{} dataTarget:{} sql:{}", session.sessionId(), dataNodeName, sql);
     }
   }
 
@@ -63,7 +63,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       String dataSourceName,
       byte[] payload) {
     if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataNode:{} replica:{} datasource:{}", session.sessionId(), dataNodeName,
+      SQL_LOGGER.info("sessionId:{} dataTarget:{} replica:{} datasource:{}", session.sessionId(), dataNodeName,
           replicaName,dataSourceName);
     }
   }
@@ -72,7 +72,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
       String dataSourceName, String sql) {
     if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataNode:{} replica:{} datasource:{}", session.sessionId(),
+      SQL_LOGGER.info("sessionId:{} dataTarget:{} replica:{} datasource:{}", session.sessionId(),
           dataNodeName,
           replicaName, dataSourceName);
     }

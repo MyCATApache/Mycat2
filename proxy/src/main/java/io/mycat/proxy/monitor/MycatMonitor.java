@@ -24,6 +24,7 @@ public final class MycatMonitor {
     callback.onOrginSQL(session, sql);
   }
 
+
   public final static void onRouteSQL(Session session, String dataNodeName,String sql){
     Objects.requireNonNull(session);
     Objects.requireNonNull(dataNodeName);

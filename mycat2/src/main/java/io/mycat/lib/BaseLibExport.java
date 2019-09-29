@@ -6,6 +6,7 @@ import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
+import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.SQLExecuterWriter;
 import io.mycat.proxy.session.MycatSession;
 
@@ -17,9 +18,6 @@ public class BaseLibExport implements InstructionSet {
         return Lib.useSchemaThenResponseOk(schema);
     }
 
-    public static Response cacheLocalFileThenResponse(String fileName) {
-        return Lib.cacheLocalFileThenResponse(fileName);
-    }
 
     public static Response responseOk() {
         return Lib.responseOk;
@@ -29,14 +27,24 @@ public class BaseLibExport implements InstructionSet {
         return Lib.responseOk;
     }
 
-    public static Response proxyOnMySQLDatasource(String dataSource) {
-        return null;
+    public static Response proxyDatasource(String sql,String dataSource) {
+        return Lib.proxyQueryOnDatasource(sql,dataSource);
     }
 
     public static class Lib {
         public final static Response responseOk = (session, matcher) -> session.writeOkEndPacket();
-        public final static ResultSetCacheImpl resultSetCache = new ResultSetCacheImpl("d:/baseCache");
+        public static ResultSetCacheImpl resultSetCache;
         public final static ConcurrentHashMap<String, ResultSetCacheRecorder.Token> cache = new ConcurrentHashMap<>();
+
+        public static Response proxyQueryOnDatasource(String sql,String dataSource) {
+            return new Response() {
+                @Override
+                public void apply(MycatSession session, DynamicSQLMatcher matcher) {
+                    MySQLTaskUtil.proxyBackend(session,sql,dataSource);
+                }
+            };
+        }
+
 
         public static Response useSchemaThenResponseOk(String schema) {
             return new Response() {
@@ -87,8 +95,5 @@ public class BaseLibExport implements InstructionSet {
             };
         }
 
-        private void finalCacheFile(String file) {
-
-        }
     }
 }

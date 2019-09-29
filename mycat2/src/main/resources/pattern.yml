@@ -1,6 +1,7 @@
 lib:
   - io.mycat.lib.BaseLibExport
   - io.mycat.lib.FinalCacheExport
+  - io.mycat.lib.SQLModifierExport
 schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
 sql:
   - sql: use {schema}
@@ -24,16 +25,24 @@ sql:
   - sql: /*!40101 set @@session.wait_timeout=28800 */
     code: responseOk()
 
+  - sql: commit
+    code: proxyDatasource(matcher.getSQLAsString(),"mytest3306a")
+
+  - sql: begin
+    code: proxyDatasource(matcher.getSQLAsString(),"mytest3306a")
+
 schema:
-  - table: TESTDB1.TRAVELRECORD
-    defaultCode: proxyOnMySQLDatasource("mytest3306a")
+  - table: TESTDB1.TRAVELRECORD,DB1.TRAVELRECORD
+    defaultCode: proxyDatasource(getSQLByMapTable(matcher.getSQLAsString(),"DB1.TRAVELRECORD"),"mytest3306a")
     sql:
-      - sql: select * from {tables}
-        code: return Integer.valueOf(2);
+      - sql: SELECT * FROM DB1.TRAVELRECORD LIMIT {n}
+        code:  proxyDatasource(getSQLByMapTable(matcher.getSQLAsString(),"DB1.TRAVELRECORD"),"mytest3306a")
+      - sql: SELECT * FROM DB2.TRAVELRECORD LIMIT {n}
+        code:  proxyDatasource(getSQLByMapTable(matcher.getSQLAsString(),"DB1.TRAVELRECORD"),"mytest3306a")
 initCode:
+  - initFinalCacheFile("d:/cache")
   - finalCacheFile("/sql/show_databases.sql")
   - finalCacheFile("/sql/show_full_tables_from_testdb1.sql")
   - finalCacheFile("/sql/show_full_tables_from_testdb2.sql")
   - finalCacheFile("/sql/describe_testdb1_travelrecord.sql")
   - finalCacheFile("/sql/describe_testdb1_address.sql")
-

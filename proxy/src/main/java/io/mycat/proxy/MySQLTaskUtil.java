@@ -40,6 +40,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK;
+
 /**
  * @author jamie12221 date 2019-05-12 22:41 dataNode执行器 该类本意是从路由获得dataNode名字之后,使用该执行器执行,
  * 解耦结果类和实际执行方法
@@ -51,7 +53,14 @@ public class MySQLTaskUtil {
     MySQLPacketExchanger.INSTANCE
         .proxyBackend(mycat, MySQLPacketUtil.generateComQuery(sql), dataNodeName, query, ResponseType.QUERY);
   }
-
+  public static void proxyBackend(MycatSession mycat, String sql, String dataSourceName) {
+    MycatMonitor.onRouteSQL(mycat,dataSourceName,sql);
+    assert (Thread.currentThread() instanceof MycatReactorThread);
+    MySQLDatasource mySQLDatasource = mycat.getRuntime().getDataSourceByDataSourceName(dataSourceName);
+    if (mySQLDatasource==null)throw new MycatException("{} is not existed",dataSourceName);
+    MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE
+            .proxyBackendByDataSource(mycat,MySQLPacketUtil.generateComQueryPacket(sql),mySQLDatasource,ResponseType.QUERY, MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE,DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
+  }
   public static void proxyBackend(MycatSession mycat, byte[] payload, String dataNodeName,
       MySQLDataSourceQuery query, ResponseType responseType) {
     MySQLPacketExchanger.INSTANCE

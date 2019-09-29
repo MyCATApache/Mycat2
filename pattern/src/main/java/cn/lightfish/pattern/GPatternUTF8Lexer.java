@@ -28,6 +28,7 @@ public class GPatternUTF8Lexer {
     ByteBuffer buffer;
     int limit = 0;
     int position = 0;
+    int startOffset;
     private final GPatternIdRecorder idRecorder;
     public static final int DEMO = 128;
 
@@ -43,7 +44,7 @@ public class GPatternUTF8Lexer {
 
     public void init(ByteBuffer buffer, int startOffset, int limit) {
         this.buffer = buffer;
-        this.position = startOffset;
+        this.startOffset = this.position = startOffset;
         this.limit = limit;
     }
 

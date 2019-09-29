@@ -11,6 +11,7 @@ import io.mycat.proxy.SQLExecuterWriter;
 import io.mycat.proxy.session.MycatSession;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,21 +24,23 @@ public class FinalCacheExport implements InstructionSet {
     public static void finalCacheFile(String fileName) {
         Lib.finalCacheFile(fileName);
     }
-
+    public static void initFinalCacheFile(String cachePath){
+        Lib.initFinalCacheFile(cachePath);
+    }
     public static class Lib {
-        public final static ResultSetCacheImpl resultSetCache = new ResultSetCacheImpl("d:/baseCache");
-        public final static ConcurrentHashMap<String, ResultSetCacheRecorder.Token> cache = new ConcurrentHashMap<>();
+        private static ResultSetCacheImpl resultSetCache;
+        private final static HashMap<String, ResultSetCacheRecorder.Token> cache = new HashMap<>();
 
-        static {
+        public static void initFinalCacheFile(String cachePath) {
             try {
+                resultSetCache = new ResultSetCacheImpl(cachePath);
                 resultSetCache.open();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new MycatException(e);
             }
         }
 
         public static void finalCacheFile(String fileName) {
-
             InserParser inserParser = new InserParser(fileName);
             ByteBufferResponseRecorder byteBufferResponseRecorder = new ByteBufferResponseRecorder(resultSetCache, new TextResultSetResponse(inserParser), new Runnable() {
                 @Override

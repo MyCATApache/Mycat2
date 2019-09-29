@@ -33,7 +33,7 @@ public class CrossSwapThreadBufferPool {
 
   private void check() {
     if (source != null && source != Thread.currentThread()) {
-      LOGGER.error("@@@@@@@@@@@@@@@@@@@@@@{}", Thread.currentThread());
+      LOGGER.error("{}", Thread.currentThread());
       throw new MycatException("Illegal state");
     }
   }

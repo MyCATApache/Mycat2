@@ -23,6 +23,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.MySQLTaskUtil;
+import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.callback.TaskCallBack;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
@@ -31,7 +32,9 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
+import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
+import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
 import java.io.IOException;
@@ -206,7 +209,28 @@ public enum MySQLPacketExchanger {
         .getLogger(MySQLProxyNIOHandler.class);
     static final MySQLPacketExchanger HANDLER = MySQLPacketExchanger.INSTANCE;
 
+    public void proxyBackendByDataSource(MycatSession mycat, byte[] packetData, MySQLDatasource datasource, ResponseType responseType, MySQLProxyNIOHandler proxyNIOHandler,
+                             PacketExchangerCallback finallyCallBack){
+      assert (Thread.currentThread() instanceof MycatReactorThread);
+      Objects.requireNonNull(datasource);
+      MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
+      MySQLSessionManager mySQLSessionManager = reactor.getMySQLSessionManager();
+      mySQLSessionManager.getIdleSessionsOfKey(datasource, new SessionCallBack<MySQLClientSession>() {
+        @Override
+        public void onSession(MySQLClientSession session, Object sender, Object attr) {
+          MySQLDatasource datasource = session.getDatasource();
+          MycatMonitor.onRouteResult(mycat, datasource.getName(),datasource.getReplica().getName(),datasource.getName(), packetData);
+          proxyNIOHandler.proxyBackend(session, finallyCallBack, responseType, mycat, packetData);
+        }
 
+        @Override
+        public void onException(Exception exception, Object sender, Object attr) {
+          MycatMonitor.onGettingBackendException(mycat, datasource.getName(), exception);
+          finallyCallBack.onRequestMySQLException(mycat, exception, attr);
+        }
+      });
+
+    }
     public void proxyBackend(MycatSession mycat, byte[] packetData, String dataNodeName,
         MySQLDataSourceQuery query, ResponseType responseType, MySQLProxyNIOHandler proxyNIOHandler,
         PacketExchangerCallback finallyCallBack) {

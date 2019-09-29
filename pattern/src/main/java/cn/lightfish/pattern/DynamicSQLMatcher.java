@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * https://github.com/junwen12221/GPattern.git
+ *
  * @author Junwen Chen
  **/
 public final class DynamicSQLMatcher {
@@ -106,7 +107,13 @@ public final class DynamicSQLMatcher {
         return getgPattern().getMatcher();
     }
 
-    public String getNameAsString(String name){
+    public String getNameAsString(String name) {
         return getResult().getName(name);
+    }
+
+    public String getSQLAsString() {
+        GPatternUTF8Lexer lexer = getLexer();
+        String string = lexer.getString(lexer.startOffset, lexer.limit);
+        return string;
     }
 }
