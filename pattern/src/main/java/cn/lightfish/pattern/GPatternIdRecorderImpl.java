@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 /**
  * https://github.com/junwen12221/GPattern.git
@@ -21,9 +22,16 @@ public final class GPatternIdRecorderImpl implements GPatternIdRecorder {
     public final static int PRIME = 0x01000193;
     final GPatternToken tmp = new GPatternToken(0, 0, null, null);
     private GPatternUTF8Lexer lexer;
+    private final boolean ignoreCase;
+    private boolean debug;
 
     public GPatternIdRecorderImpl(boolean debug) {
+        this(debug, true);
+    }
 
+    public GPatternIdRecorderImpl(boolean debug, boolean ignoreCase) {
+        this.debug = debug;
+        this.ignoreCase = ignoreCase;
     }
 
     public GPatternIdRecorder createCopyRecorder() {
@@ -69,13 +77,18 @@ public final class GPatternIdRecorderImpl implements GPatternIdRecorder {
         tokenMap.put(keyword, token);
     }
 
-    private static int fnv1a_32(byte[] input) {
+    private int fnv1a_32(byte[] input) {
         if (input == null) {
             return 0;
         }
         long hash = BASIC;
         for (byte c : input) {
-            hash ^= c & 0xff;
+            int cc = c & 0xff;
+            if (ignoreCase) {
+                hash ^= a2A[cc];
+            } else {
+                hash ^= cc;
+            }
             hash *= PRIME;
         }
         return (int) hash;
@@ -106,9 +119,21 @@ public final class GPatternIdRecorderImpl implements GPatternIdRecorder {
     @Override
     public final void append(int b) {
         int hash = tmp.hash;
-        hash ^= b & 0xff;
+        b = b & 0xff;
+        if (ignoreCase) {
+            hash ^= a2A[b];
+        } else {
+            hash ^= b;
+        }
         hash *= PRIME;
         tmp.hash = hash;
+    }
+
+    static final byte[] a2A = new byte[256];
+
+    static {
+        IntStream.range(0, 256).forEach(i -> a2A[i] = (byte) i);
+        IntStream.range(65, 90).forEach(i -> a2A[i] = (byte) (i + ('a' - 'A')));
     }
 
     public GPatternToken createConstToken(String keywordText) {

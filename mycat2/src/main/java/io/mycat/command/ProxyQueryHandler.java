@@ -40,7 +40,7 @@ import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
-import io.mycat.beans.resultset.SQLExecuter;
+import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.grid.MycatRouterResponse;
 import io.mycat.logTip.MycatLogger;
@@ -156,7 +156,7 @@ public class ProxyQueryHandler {
           return;
         }
         case SELECT_VARIABLES: {
-          SQLExecuter sqlExecuter = MycatRouterResponse.selectVariables(mycat, sqlContext);
+          MycatResponse sqlExecuter = MycatRouterResponse.selectVariables(mycat, sqlContext);
           if (sqlExecuter != null) {
             SQLExecuterWriter.writeToMycatSession(mycat,sqlExecuter);
             return;

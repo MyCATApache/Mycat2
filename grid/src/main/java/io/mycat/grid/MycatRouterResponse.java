@@ -2,8 +2,8 @@ package io.mycat.grid;
 
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLFieldsType;
+import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
-import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.router.MycatRouter;
@@ -15,7 +15,7 @@ import java.util.Set;
 
 public class MycatRouterResponse {
 
-  public static SQLExecuter showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
+  public static MycatResponse showDb(MycatSession mycat, Collection<MycatSchema> schemaList) {
     MycatResultSet resultSet = ResultSetProvider.INSTANCE
         .createDefaultResultSet(1, mycat.charsetIndex(), mycat.charset());
     resultSet.addColumnDef(0, "information_schema", "SCHEMATA", "SCHEMATA", "Database",
@@ -25,10 +25,10 @@ public class MycatRouterResponse {
     for (MycatSchema schema : schemaList) {
       resultSet.addTextRowPayload(schema.getSchemaName());
     }
-    return () -> resultSet;
+    return resultSet;
   }
 
-  public static SQLExecuter showTable(MycatRouter router, MycatSession mycat, String schemaName) {
+  public static MycatResponse showTable(MycatRouter router, MycatSession mycat, String schemaName) {
     MycatRouterConfig config = router.getConfig();
     MycatSchema schema = config.getSchemaOrDefaultBySchemaName(schemaName);
     MycatResultSet resultSet = ResultSetProvider.INSTANCE
@@ -38,10 +38,10 @@ public class MycatRouterResponse {
     for (String name : schema.getMycatTables().keySet()) {
       resultSet.addTextRowPayload(name, "BASE TABLE");
     }
-    return () -> resultSet;
+    return  resultSet;
   }
 
-  public static SQLExecuter showVariables(MycatSession mycat,  Set<Entry<String, String>> entries ) {
+  public static MycatResponse showVariables(MycatSession mycat, Set<Entry<String, String>> entries ) {
     MycatResultSet resultSet = ResultSetProvider.INSTANCE
         .createDefaultResultSet(2, mycat.charsetIndex(), mycat.charset());
     resultSet.addColumnDef(0, "Variable_name", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
@@ -49,20 +49,20 @@ public class MycatRouterResponse {
     for (Entry<String, String> entry : entries) {
       resultSet.addTextRowPayload(entry.getKey(), entry.getValue());
     }
-    return () -> resultSet;
+    return resultSet;
   }
 
-  public static SQLExecuter showWarnnings(MycatSession mycat) {
+  public static MycatResponse showWarnnings(MycatSession mycat) {
     MycatResultSet resultSet = ResultSetProvider.INSTANCE
         .createDefaultResultSet(3, mycat.charsetIndex(), mycat.charset());
     mycat.writeColumnCount(3);
     resultSet.addColumnDef(0, "Level", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
     resultSet.addColumnDef(1, "Code", MySQLFieldsType.FIELD_TYPE_LONG_BLOB);
     resultSet.addColumnDef(2, "CMessage", MySQLFieldsType.FIELD_TYPE_VAR_STRING);
-    return () -> resultSet;
+    return  resultSet;
   }
 
-  public static SQLExecuter selectVariables(MycatSession mycat, BufferSQLContext sqlContext) {
+  public static MycatResponse selectVariables(MycatSession mycat, BufferSQLContext sqlContext) {
     MycatResultSet resultSet = ResultSetProvider.INSTANCE
         .createDefaultResultSet(1, mycat.charsetIndex(), mycat.charset());
     if (sqlContext.isSelectAutocommit()) {
@@ -80,6 +80,6 @@ public class MycatRouterResponse {
     }else {
       return null;
     }
-    return () -> resultSet;
+    return  resultSet;
   }
 }

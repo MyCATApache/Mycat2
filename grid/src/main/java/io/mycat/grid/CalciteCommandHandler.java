@@ -1,6 +1,6 @@
 package io.mycat.grid;
 
-import io.mycat.beans.resultset.SQLExecuter;
+import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.command.AbstractCommandHandler;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.logTip.MycatLogger;
@@ -28,7 +28,7 @@ public class CalciteCommandHandler extends AbstractCommandHandler {
   public void handleQuery(byte[] sqlBytes, MycatSession session) {
     String sql = new String(sqlBytes);
     LOGGER.info(sql);
-    SQLExecuter[] executer = executionPlan.generate(sqlBytes);
+    MycatResponse[] executer = executionPlan.generate(sqlBytes);
     SQLExecuterWriter.writeToMycatSession(session, executer);
   }
 

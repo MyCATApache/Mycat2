@@ -1,4 +1,4 @@
-package io.mycat.lib;
+package io.mycat.lib.impl;
 
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatResultSetType;
@@ -75,6 +75,22 @@ public class ByteBufferResponseRecorder implements MycatResultSetResponse {
         cache.sync();
         runnable.run();
     }
-
+    public void cache() {
+        ByteBufferResponseRecorder byteBufferResponseRecorder = this;
+        byteBufferResponseRecorder.columnCount();
+        Iterator<byte[]> iterator = byteBufferResponseRecorder.columnDefIterator();
+        while (iterator.hasNext()) {
+            iterator.next();
+        }
+        Iterator<byte[]> iterator1 = byteBufferResponseRecorder.rowIterator();
+        while (iterator1.hasNext()) {
+            iterator1.next();
+        }
+        try {
+            byteBufferResponseRecorder.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
 }

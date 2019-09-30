@@ -1,93 +1,56 @@
 package io.mycat.lib;
 
-import cn.lightfish.pattern.DynamicSQLMatcher;
 import cn.lightfish.pattern.InstructionSet;
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.bindThread.BindThreadKey;
-import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.datasource.TransactionSession;
-import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
-import io.mycat.datasource.jdbc.thread.GProcess;
-import io.mycat.datasource.jdbc.thread.GThread;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.reactor.SessionThread;
-import io.mycat.proxy.session.MycatSession;
+import io.mycat.lib.impl.JdbcLib;
+import io.mycat.lib.impl.Response;
 
-import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class JdbcExport implements InstructionSet {
 
-    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcExport.class);
 
     public static Response beginOnJdbc() {
-        return JdbcExport.Lib.begin();
+        return JdbcLib.begin();
     }
 
     public static Response commitOnJdbc() {
-        return JdbcExport.Lib.commit();
+        return JdbcLib.commit();
     }
+
     public static Response rollbackOnJdbc() {
-        return JdbcExport.Lib.rollback();
-    }
-    public static Response queryOnJdbcByDataSource(String sql,String dataSource) {
-        return (session, matcher) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                    .getTransactionSession();
-            MycatResultSetResponse response = TransactionSessionUtil
-                    .executeQuery(dataSource, sql);
-        });
-    }
-    public static class Lib {
-        public static Response begin() {
-            return (session, matcher) -> block(session, (Consumer<MycatSession>) session1 -> {
-                TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                        .getTransactionSession();
-                transactionSession.begin();
-                session1.writeOkEndPacket();
-            });
-        }
-
-        public static Response commit() {
-            return (session, matcher) -> block(session, (Consumer<MycatSession>) session1 -> {
-                TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                        .getTransactionSession();
-                transactionSession.commit();
-                session1.writeOkEndPacket();
-            });
-        }
-
-        public static Response rollback() {
-            return new Response() {
-                @Override
-                public void apply(MycatSession session, DynamicSQLMatcher matcher) {
-                    TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                            .getTransactionSession();
-                    transactionSession.rollback();
-                    session.writeOkEndPacket();
-                }
-            };
-        }
+        return JdbcLib.rollback();
     }
 
-    public static void block(MycatSession mycat, Consumer<MycatSession> consumer) {
-        GRuntime.INSTACNE.run(mycat, new GProcess() {
-            @Override
-            public void accept(BindThreadKey key, TransactionSession session) {
-                try {
-                    mycat.deliverWorkerThread((SessionThread) Thread.currentThread());
-                    consumer.accept(mycat);
-                } finally {
-                    mycat.backFromWorkerThread();
-                }
-            }
+    public static Response responseQueryOnJdbcByDataSource(String dataSource, String sql) {
+        return JdbcLib.responseQueryOnJdbcByDataSource(dataSource, sql);
+    }
 
-            @Override
-            public void onException(BindThreadKey key, Exception e) {
-                LOGGER.error("", e);
-                mycat.setLastMessage(e.toString());
-                mycat.writeErrorEndPacket();
-            }
-        });
+    public static Response responseQueryOnJdbcByDataSource(String dataSource, String... sql) {
+        return JdbcLib.responseQueryOnJdbcByDataSource(dataSource, sql);
+    }
+
+    public static Response response(Supplier<MycatResultSetResponse[]> response) {
+        return JdbcLib.response(response);
+    }
+
+    public static Supplier<MycatResultSetResponse[]> queryJdbcByDataSource(String dataSource, String... sql) {
+        return JdbcLib.queryJdbcByDataSource(dataSource, sql);
+    }
+
+    public static Response updateJdbcByDataSource(String dataSource, boolean needGeneratedKeys, String... sql) {
+        return JdbcLib.responseUpdateOnJdbcByDataSource(dataSource, needGeneratedKeys, sql);
+    }
+
+    public static Response setTransactionIsolation(String text) {
+        return JdbcLib.setTransactionIsolation(text);
+    }
+
+    public static Response setTransactionIsolation(int transactionIsolation) {
+        return JdbcLib.setTransactionIsolation(transactionIsolation);
+    }
+
+    public static Response setAutocommit(boolean autocommit) {
+        return JdbcLib.setAutocommit(autocommit);
     }
 }

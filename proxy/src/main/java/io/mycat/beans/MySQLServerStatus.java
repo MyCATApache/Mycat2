@@ -218,4 +218,12 @@ public final class MySQLServerStatus {
   public boolean isServerStatusFlag(int flag) {
     return (this.getServerStatus() & flag) != 0;
   }
+
+  public void setInTranscation(boolean on) {
+    if (on) {
+      addServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    }else {
+      removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    }
+  }
 }

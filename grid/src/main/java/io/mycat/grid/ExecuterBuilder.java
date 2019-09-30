@@ -1,8 +1,8 @@
 package io.mycat.grid;
 
-import io.mycat.beans.resultset.SQLExecuter;
+import io.mycat.beans.resultset.MycatResponse;
 
 public interface ExecuterBuilder {
 
-  SQLExecuter[] generate(byte[] sqlBytes);
+  MycatResponse[] generate(byte[] sqlBytes);
 }

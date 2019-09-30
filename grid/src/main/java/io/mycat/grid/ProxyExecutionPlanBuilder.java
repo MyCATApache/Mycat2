@@ -18,9 +18,9 @@ import io.mycat.beans.MySQLServerStatus;
 import io.mycat.beans.mycat.MycatSchema;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
-import io.mycat.beans.resultset.SQLExecuter;
 import io.mycat.config.schema.SchemaType;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
@@ -63,7 +63,7 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
     this.router = new MycatRouter(routerConfig);
   }
 
-  public SQLExecuter[] generate(byte[] sqlBytes) {
+  public MycatResponse[] generate(byte[] sqlBytes) {
     TransactionSession transactionSession = ((GThread) Thread.currentThread())
         .getTransactionSession();
     MycatSchema schema = null;
@@ -113,13 +113,13 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
         return setTranscation(transactionSession);
       }
       case SHOW_DB_SQL:
-        return new SQLExecuter[]{
+        return new MycatResponse[]{
             MycatRouterResponse.showDb(mycat, router.getConfig().getSchemaList())};
       case SHOW_TB_SQL:
-        return new SQLExecuter[]{
+        return new MycatResponse[]{
             MycatRouterResponse.showTable(router, mycat, schema.getSchemaName())};
       case SHOW_WARNINGS:
-        return new SQLExecuter[]{
+        return new MycatResponse[]{
             MycatRouterResponse.showWarnnings(mycat)};
       case SHOW_SQL:
         return responseOk();
@@ -135,7 +135,7 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
       case SELECT_FOR_UPDATE_SQL:
       case SELECT_SQL: {
         if (router.existTable(schema, sqlContext.getTableName(0))) {
-          return new SQLExecuter[]{
+          return new MycatResponse[]{
               execute(sqlType, this.router.enterRoute(schema, sqlContext, sql))};
         } else if (SELECT_SQL == sqlType || SELECT_FOR_UPDATE_SQL == sqlType
             || schema.getSchemaType() == SchemaType.DB_IN_ONE_SERVER) {
@@ -148,19 +148,19 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
     }
   }
 
-  private SQLExecuter[] directSQL(MycatSchema schema, String sql) {
+  private MycatResponse[] directSQL(MycatSchema schema, String sql) {
     MycatResultSetResponse response = TransactionSessionUtil
         .executeQuery(router.getRandomDataNode(schema), sql, true, null);
-    return new SQLExecuter[]{() -> response};
+    return new MycatResponse[]{ response};
   }
 
-  private SQLExecuter[] useSchema() {
+  private MycatResponse[] useSchema() {
     String schemaName = sqlContext.getSchemaName(0);
     mycat.useSchema(schemaName);
     return responseOk();
   }
 
-  private SQLExecuter[] setTranscation(TransactionSession transactionSession) {
+  private MycatResponse[] setTranscation(TransactionSession transactionSession) {
     MySQLIsolation isolation = sqlContext.getIsolation();
     if (isolation == null) {
       throw new MycatException("unsupport!");
@@ -170,14 +170,14 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
     return responseOk();
   }
 
-  private SQLExecuter[] begin(TransactionSession transactionSession) {
+  private MycatResponse[] begin(TransactionSession transactionSession) {
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.addServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
     transactionSession.begin();
     return responseOk();
   }
 
-  private SQLExecuter[] commit(TransactionSession transactionSession) {
+  private MycatResponse[] commit(TransactionSession transactionSession) {
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
 //    try {
@@ -189,14 +189,14 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
     return responseOk();
   }
 
-  private SQLExecuter[] rollback(TransactionSession transactionSession) {
+  private MycatResponse[] rollback(TransactionSession transactionSession) {
     transactionSession.rollback();
     MySQLServerStatus serverStatus = mycat.getServerStatus();
     serverStatus.removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
     return responseOk();
   }
 
-  private SQLExecuter execute(byte sqlType, ProxyRouteResult routeResult) {
+  private MycatResponse execute(byte sqlType, ProxyRouteResult routeResult) {
     String dataNode = routeResult.getDataNode();
     String sql = routeResult.getSql();
     MycatMonitor.onRouteSQL(mycat, dataNode, sql);
@@ -209,21 +209,21 @@ public class ProxyExecutionPlanBuilder implements ExecuterBuilder {
       case INSERT_SQL: {
         MycatUpdateResponse response = TransactionSessionUtil
             .executeUpdate(dataNode, sql, sqlType == INSERT_SQL, true, loadBalanceByBalance);
-        return () -> response;
+        return  response;
       }
       case SELECT_FOR_UPDATE_SQL:
       case SELECT_SQL: {
         boolean runOnMaster = routeResult.isRunOnMaster(false) || !sqlContext.isSimpleSelect();
         MycatResultSetResponse response = TransactionSessionUtil
             .executeQuery(routeResult.getDataNode(), sql, runOnMaster, loadBalanceByBalance);
-        return () -> response;
+        return  response;
       }
       default:
     }
     throw new MycatException("unsupportSQL:{}", sql);
   }
 
-  private SQLExecuter[] responseOk() {
-    return new SQLExecuter[]{new UpdateResponseExecuter(mycat)};
+  private MycatResponse[] responseOk() {
+    return new MycatResponse[]{new UpdateResponse(mycat)};
   }
 }

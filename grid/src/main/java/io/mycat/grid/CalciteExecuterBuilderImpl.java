@@ -1,6 +1,6 @@
 package io.mycat.grid;
 
-import io.mycat.beans.resultset.SQLExecuter;
+import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.calcite.MetadataManager;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
@@ -24,14 +24,14 @@ public class CalciteExecuterBuilderImpl implements ExecuterBuilder {
     }
 
     @Override
-    public SQLExecuter[] generate(byte[] sqlBytes) {
+    public MycatResponse[] generate(byte[] sqlBytes) {
         CalciteConnection connection = MetadataManager.INSATNCE.getConnection();
         Statement statement = null;
         try {
             statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(new String(sqlBytes));
             JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);
-            return new SQLExecuter[]{() -> new TextResultSetResponse(jdbcRowBaseIterator)};
+            return new MycatResponse[]{ new TextResultSetResponse(jdbcRowBaseIterator)};
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

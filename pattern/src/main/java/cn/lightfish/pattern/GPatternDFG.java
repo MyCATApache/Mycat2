@@ -15,6 +15,8 @@
 package cn.lightfish.pattern;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -36,6 +38,7 @@ public interface GPatternDFG {
         private final State rootState = new State(0);
         private final Map<String, GPatternPosition> variables = new HashMap<>();
         int identifierGenerator = 0;
+        final Logger logger = LoggerFactory.getLogger(DFGImpl.class);
 
         public DFGImpl(int identifierGenerator) {
             this.identifierGenerator = identifierGenerator;
@@ -63,7 +66,7 @@ public interface GPatternDFG {
                     if (!variables.containsKey(name)) {
                         variables.put(name, null);
                     } else if ((!name.equals(state.name))) {
-                        throw new GPatternException.NameAmbiguityException("'{'{0}'}' has already existed", name);
+                        logger.warn("{} has already existed", name);
                     }
                     state.addWildcard(name, new State(state.depth + 1));
                     if (!format.hasNext())

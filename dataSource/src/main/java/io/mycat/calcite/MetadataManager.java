@@ -155,7 +155,7 @@ public enum MetadataManager {
 
     public CalciteConnection getConnection() {
         try {
-            Connection connection = DriverManager.getConnection("jdbc:calcite:caseSensitive=false;lex=MYSQL");
+            Connection connection = DriverManager.getConnection("jdbc:calcite:caseSensitive=false;lex=MYSQL;fun=mysql;conformance=MYSQL_5");
             CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
             SchemaPlus rootSchema = calciteConnection.getRootSchema();
             schemaBackendMetaMap.forEach((schemaName, tables) -> {

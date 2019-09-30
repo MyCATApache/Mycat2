@@ -1,4 +1,4 @@
-package io.mycat.lib;
+package io.mycat.lib.impl;
 
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatResultSetType;

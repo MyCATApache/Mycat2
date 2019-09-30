@@ -313,6 +313,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public int setServerStatus(int s) {
     return this.serverStatus.setServerStatus(s);
   }
+  public void setInTranscation(boolean on) {
+     this.serverStatus.setInTranscation(on);
+  }
   public MySQLServerStatus getServerStatus() {
     return this.serverStatus;
   }

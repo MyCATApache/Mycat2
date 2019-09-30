@@ -1,8 +1,11 @@
 lib:
-  - io.mycat.lib.BaseLibExport
+  - io.mycat.lib.ProxyExport
   - io.mycat.lib.FinalCacheExport
   - io.mycat.lib.SQLModifierExport
   - io.mycat.lib.JdbcExport
+  - io.mycat.lib.SessionMapExport
+  - io.mycat.lib.CalciteExport
+  - io.mycat.lib.CacheExport
 schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
 sql:
   - sql: use {schema}
@@ -26,21 +29,14 @@ sql:
   - sql: /*!40101 set @@session.wait_timeout=28800 */
     code: responseOk()
 
-  - sql: commit
+  - sql: commit {n}
     code: commitOnJdbc()
 
   - sql: begin
     code: beginOnJdbc()
-  - sql: SELECT * FROM DB1.TRAVELRECORD,DB2.TRAVELRECORD LIMIT {n1}
-    code: queryOnJdbc(getSQLByMapTable(matcher.getSQLAsString(),"DB1.TRAVELRECORD"),"mytest3306a")
 
-schema:
-  - table: TESTDB1.TRAVELRECORD,DB1.TRAVELRECORD
-    defaultCode: proxyByDataSource(getSQLByMapTable(matcher.getSQLAsString(),"DB1.TRAVELRECORD"),"mytest3306a")
-    sql:
-      - sql: SELECT * FROM DB1.TRAVELRECORD LIMIT {n}
-        code:  proxyByDataSource(getSQLByMapTable(matcher.getSQLAsString(),"DB1.TRAVELRECORD"),"mytest3306a")
-
+  - sql: select {n}
+    code: responseQueryCalcite(matcher.getSQLAsString())
 initCode:
   - initFinalCacheFile("d:/cache")
   - finalCacheFile("/sql/show_databases.sql")

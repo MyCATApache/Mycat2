@@ -1,4 +1,4 @@
-package io.mycat.lib;
+package io.mycat.lib.impl;
 
 
 import com.alibaba.fastsql.DbType;

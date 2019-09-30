@@ -22,6 +22,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -81,7 +82,12 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 final int columnCount = currentrs.metaData().getColumnCount();
                 Object[] res = new Object[columnCount];
                 for (int i = 0, j = 1; i < columnCount; i++, j++) {
-                    res[i] = currentrs.getObject(j);
+                    Object object = currentrs.getObject(j);
+                    if (object instanceof Date){
+                        res[i] = ((Date) object).getTime();
+                    }else {
+                        res[i] = object;
+                    }
                 }
                 return (T) res;
             }

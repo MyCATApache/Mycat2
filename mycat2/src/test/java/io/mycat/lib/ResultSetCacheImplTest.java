@@ -1,6 +1,8 @@
 package io.mycat.lib;
 
 import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.lib.impl.ResultSetCacheImpl;
+import io.mycat.lib.impl.ResultSetCacheRecorder;
 import org.junit.Assert;
 import org.junit.Test;
 

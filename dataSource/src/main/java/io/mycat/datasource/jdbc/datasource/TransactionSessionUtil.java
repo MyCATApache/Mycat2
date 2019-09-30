@@ -73,4 +73,16 @@ public class TransactionSessionUtil {
       transactionSession.afterDoAction();
     }
   }
+  public static MycatUpdateResponse executeUpdate(String datasource, String sql, boolean needGeneratedKeys) {
+
+    GThread processUnit = (GThread) Thread.currentThread();
+    TransactionSession transactionSession = processUnit.getTransactionSession();
+    try {
+      DsConnection connection = getConnectionByDataSource(datasource);
+      transactionSession.beforeDoAction();
+      return connection.executeUpdate(sql, needGeneratedKeys);
+    } finally {
+      transactionSession.afterDoAction();
+    }
+  }
 }

@@ -1,7 +1,7 @@
 #必须带上!!类名
 schemas:
 #逻辑库名字
-  TESTDB:
+  TESTDB1:
     #逻辑表名字,
     ADDRESS: !!io.mycat.config.shardingQuery.ShardingQueryRootConfig$LogicTableConfig
       #物理表关系

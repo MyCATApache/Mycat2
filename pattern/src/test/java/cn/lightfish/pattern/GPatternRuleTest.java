@@ -238,14 +238,14 @@ public class GPatternRuleTest {
         Assert.assertEquals(1, matcher.id());
         Assert.assertTrue(gPattern.toContextMap(matcher).isEmpty());
     }
-
-    @Test(expected = GPatternException.NameAmbiguityException.class)
-    public void test20() {
-        GPatternBuilder patternBuilder = new GPatternBuilder(0);
-        int id = patternBuilder.addRule("SELECT  id FROM travelrecord LIMIT {count}");
-        int id2 = patternBuilder.addRule("SELECT {count} FROM travelrecord LIMIT 1");
-        GPattern gPattern = patternBuilder.createGroupPattern();
-    }
+//warning
+//    @Test(expected = GPatternException.NameAmbiguityException.class)
+//    public void test20() {
+//        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+//        int id = patternBuilder.addRule("SELECT  id FROM travelrecord LIMIT {count}");
+//        int id2 = patternBuilder.addRule("SELECT {count} FROM travelrecord LIMIT 1");
+//        GPattern gPattern = patternBuilder.createGroupPattern();
+//    }
 
     @Test
     public void test21() {
@@ -369,18 +369,20 @@ public class GPatternRuleTest {
         Assert.assertEquals(id2, id);
 
     }
-    @Test(expected = GPatternException.NameAmbiguityException.class)
-    public void test13() {
-        GPatternBuilder patternBuilder = new GPatternBuilder(0);
-        int id = patternBuilder.addRule(" {s1};{s1};{s3};");
-        GPattern gPattern = patternBuilder.createGroupPattern();
-        GPatternMatcher matcher = gPattern.matcher("select 1;select 2; select 3;");
-        Assert.assertTrue(matcher.acceptAll());
-        Assert.assertEquals(0, id);
-        Map<String, String> map = gPattern.toContextMap(matcher);
-        Assert.assertEquals("select 1", map.get("s1"));
-        Assert.assertEquals("select 3", map.get("s3"));
-    }
+
+    //warnning
+//    @Test(expected = GPatternException.NameAmbiguityException.class)
+//    public void test13() {
+//        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+//        int id = patternBuilder.addRule(" {s1};{s1};{s3};");
+//        GPattern gPattern = patternBuilder.createGroupPattern();
+//        GPatternMatcher matcher = gPattern.matcher("select 1;select 2; select 3;");
+//        Assert.assertTrue(matcher.acceptAll());
+//        Assert.assertEquals(0, id);
+//        Map<String, String> map = gPattern.toContextMap(matcher);
+//        Assert.assertEquals("select 1", map.get("s1"));
+//        Assert.assertEquals("select 3", map.get("s3"));
+//    }
 
     @Test(expected = GPatternException.NameSyntaxException.class)
     public void test14() {

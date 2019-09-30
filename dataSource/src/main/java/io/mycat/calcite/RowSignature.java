@@ -77,6 +77,8 @@ public class RowSignature {
                         factory.createSqlType(SqlTypeName.VARCHAR),
                         Charset.defaultCharset(),
                         SqlCollation.IMPLICIT);
+            }else if (columnType == JDBCType.LONGVARBINARY){
+                type = factory.createSqlType(SqlTypeName.VARBINARY);
             } else {
                 SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(columnType.getVendorTypeNumber());
                 if (sqlTypeName == null) {
