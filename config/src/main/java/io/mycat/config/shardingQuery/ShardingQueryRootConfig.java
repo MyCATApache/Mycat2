@@ -3,26 +3,25 @@ package io.mycat.config.shardingQuery;
 import io.mycat.config.ConfigurableRoot;
 import lombok.AllArgsConstructor;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class ShardingQueryRootConfig extends ConfigurableRoot {
-
-    public void setSchemas(Map<String, Map<String, LogicTableConfig>> schemas) {
+    List<LogicSchemaConfig> schemas = new ArrayList<>();
+    public void setSchemas(List<LogicSchemaConfig> schemas) {
         this.schemas = schemas;
     }
 
-    Map<String, Map<String, LogicTableConfig>> schemas = new HashMap<>();
+
 
     @AllArgsConstructor
     public static class LogicTableConfig {
-        List<BackEndTableInfoConfig> queryPhysicalTable;
-        List<String> columns;
-        String function;
-        Map<String, String> properties;
-        Map<String, String> ranges;
+        String tableName = "";
+        List<BackEndTableInfoConfig> queryPhysicalTable = Collections.emptyList();
+        List<String> columns = Collections.emptyList();
+        String function = "";
+        Map<String, String> properties = new HashMap<>();
+        Map<String, String> ranges = new HashMap<>();
 
         public LogicTableConfig() {
         }
@@ -71,6 +70,14 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
 
         public void setColumns(List<String> columns) {
             this.columns = columns;
+        }
+
+        public String getTableName() {
+            return tableName;
+        }
+
+        public void setTableName(String tableName) {
+            this.tableName = tableName;
         }
     }
 
@@ -124,9 +131,36 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
         public void setTableName(String tableName) {
             this.tableName = tableName;
         }
+
     }
 
-    public Map<String, Map<String, LogicTableConfig>> getSchemas() {
+    public List<LogicSchemaConfig> getSchemas() {
         return schemas;
     }
+
+    @AllArgsConstructor
+    public static final class LogicSchemaConfig {
+        String schemaName = "";
+        List<LogicTableConfig> tables = Collections.emptyList();
+
+        public LogicSchemaConfig() {
+        }
+
+        public String getSchemaName() {
+            return schemaName;
+        }
+
+        public void setSchemaName(String schemaName) {
+            this.schemaName = schemaName;
+        }
+
+        public List<LogicTableConfig> getTables() {
+            return tables;
+        }
+
+        public void setTables(List<LogicTableConfig> tables) {
+            this.tables = tables;
+        }
+    }
+
 }

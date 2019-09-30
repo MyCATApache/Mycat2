@@ -1,91 +1,82 @@
-#必须带上!!类名
+filePath: null
 schemas:
-#逻辑库名字
-  TESTDB1:
-    #逻辑表名字,
-    ADDRESS: !!io.mycat.config.shardingQuery.ShardingQueryRootConfig$LogicTableConfig
-      #物理表关系
-      queryPhysicalTable:
-        #dataNode,数据源名字,集群名字,三个中配置一个即可
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          #物理库名
-          schemaName: db1
-          #物理表名
-          tableName: address
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db2
-          tableName: address
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db3
-          tableName: address
-      #分片算法,可以不配置,配置后会使用分片字段和分片算法进行拉取数据,不配置将会扫描所有节点
-      function: partitionByLong
-      #分片字段
-      columns:
-        - ID
-      #分片算法的参数,如果不配置将会读取分片算法配置中参数
-      properties: &id001
-        partitionCount: 2,1
-        partitionLength: 256,512
-      ranges: &id002 {}
-    TRAVELRECORD: !!io.mycat.config.shardingQuery.ShardingQueryRootConfig$LogicTableConfig
-      queryPhysicalTable:
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db1
-          tableName: TRAVELRECORD
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db1
-          tableName: TRAVELRECORD2
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db1
-          tableName: TRAVELRECORD3
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db2
-          tableName: TRAVELRECORD
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db2
-          tableName: TRAVELRECORD2
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db2
-          tableName: TRAVELRECORD3
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db3
-          tableName: TRAVELRECORD
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db3
-          tableName: TRAVELRECORD2
-        - dataNodeName: null
-          hostName: mytest3306a
-          replicaName: null
-          schemaName: db3
-          tableName: TRAVELRECORD3
-      columns:
-        - ID
-      function: partitionByLong
-      properties: *id001
-      ranges: *id002
+  - schemaName: TESTDB
+    tables:
+      - columns:
+          - ID
+        function: PartitionByLong
+        properties: &id001
+          partitionCount: 2,1
+          partitionLength: 256,512
+        queryPhysicalTable:
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: address
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: address
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: address
+        ranges: &id002 {}
+        tableName: ADDRESS
+      - columns:
+          - ID
+        function: PartitionByLong
+        properties: *id001
+        queryPhysicalTable:
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: TRAVELRECORD
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: TRAVELRECORD2
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: TRAVELRECORD3
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: TRAVELRECORD
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: TRAVELRECORD2
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: TRAVELRECORD3
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: TRAVELRECORD
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: TRAVELRECORD2
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: TRAVELRECORD3
+        ranges: *id002
+        tableName: TRAVELRECORD
 type: null
 version: 0
-filePath: null

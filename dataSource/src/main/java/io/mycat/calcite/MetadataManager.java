@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -82,10 +82,10 @@ public enum MetadataManager {
             addTableDataMapping("TESTDB", "ADDRESS", Arrays.asList("ID"), "partitionByLong", properties, Collections.emptyMap());
 
             ShardingQueryRootConfig rootConfig = new ShardingQueryRootConfig();
-            Map<String, Map<String, ShardingQueryRootConfig.LogicTableConfig>> metaMap = rootConfig.getSchemas();
+            List<ShardingQueryRootConfig.LogicSchemaConfig> metaMap = rootConfig.getSchemas();
             schemaBackendMetaMap.forEach((schemaName, tableList) -> {
-                Map<String, ShardingQueryRootConfig.LogicTableConfig> tableConfigs;
-                metaMap.put(schemaName, tableConfigs = new HashMap<>());
+                List<ShardingQueryRootConfig.LogicTableConfig> list =  new ArrayList<>();
+                metaMap.add(new ShardingQueryRootConfig.LogicSchemaConfig(schemaName,list));
                 for (Map.Entry<String, List<BackEndTableInfo>> entry : tableList.entrySet()) {
                     String tableName = entry.getKey();
                     List<ShardingQueryRootConfig.BackEndTableInfoConfig> backEndTableInfoConfigList = new ArrayList<>();
@@ -95,31 +95,31 @@ public enum MetadataManager {
                                 b.getDataNodeName(), b.getReplicaName(), b.getHostName(), b.getSchemaName(), b.getTableName()));
                     }
                     DataMappingConfig dataMappingConfig = this.schemaDataMappingMetaMap.get(schemaName).get(tableName);
-                    ShardingQueryRootConfig.LogicTableConfig logicTableConfig = new ShardingQueryRootConfig.LogicTableConfig(backEndTableInfoConfigList,dataMappingConfig.columnName,
+                    ShardingQueryRootConfig.LogicTableConfig logicTableConfig = new ShardingQueryRootConfig.LogicTableConfig(tableName, backEndTableInfoConfigList, dataMappingConfig.columnName,
                             dataMappingConfig.ruleAlgorithm.name(), dataMappingConfig.ruleAlgorithm.getProt(), dataMappingConfig.ruleAlgorithm.getRanges()
                     );
-                    tableConfigs.put(entry.getKey(), logicTableConfig);
+                    list.add(logicTableConfig);
                 }
             });
 
             String dump = YamlUtil.dump(rootConfig);
+            System.out.println(dump);
         } else {
-            for (Map.Entry<String, Map<String, ShardingQueryRootConfig.LogicTableConfig>> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
-                String schemaName = entry.getKey();
+            for (ShardingQueryRootConfig.LogicSchemaConfig entry : shardingQueryRootConfig.getSchemas()) {
+                String schemaName = entry.getSchemaName();
                 addSchema(schemaName);
-                for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> tableConfigEntry : entry.getValue().entrySet()) {
-                    String tableName = tableConfigEntry.getKey();
-                    ShardingQueryRootConfig.LogicTableConfig logicTableConfig = tableConfigEntry.getValue();
+                for (ShardingQueryRootConfig.LogicTableConfig tableConfigEntry : entry.getTables()) {
+                    String tableName = tableConfigEntry.getTableName();
                     ArrayList<BackEndTableInfo> list = new ArrayList<>();
-                    for (ShardingQueryRootConfig.BackEndTableInfoConfig b : logicTableConfig.getQueryPhysicalTable()) {
+                    for (ShardingQueryRootConfig.BackEndTableInfoConfig b : tableConfigEntry.getQueryPhysicalTable()) {
                         list.add(new BackEndTableInfo(b.getDataNodeName(), b.getReplicaName(), b.getHostName(), b.getSchemaName(), b.getTableName()));
                     }
                     addTable(schemaName, tableName, list);
-                    List<String> columns = logicTableConfig.getColumns();
-                    String function = logicTableConfig.getFunction();
-                    Map<String, String> properties = logicTableConfig.getProperties();
-                    Map<String, String> ranges = logicTableConfig.getRanges();
-                    addTableDataMapping(schemaName,tableName,columns,function,properties,ranges);
+                    List<String> columns = tableConfigEntry.getColumns();
+                    String function = tableConfigEntry.getFunction();
+                    Map<String, String> properties = tableConfigEntry.getProperties();
+                    Map<String, String> ranges = tableConfigEntry.getRanges();
+                    addTableDataMapping(schemaName, tableName, columns, function, properties, ranges);
                 }
             }
 
