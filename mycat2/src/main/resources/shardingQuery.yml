@@ -4,7 +4,7 @@ schemas:
     tables:
       - columns:
           - ID
-        function: PartitionByLong
+        function: partitionByLong
         properties: &id001
           partitionCount: 2,1
           partitionLength: 256,512
@@ -28,7 +28,7 @@ schemas:
         tableName: ADDRESS
       - columns:
           - ID
-        function: PartitionByLong
+        function: partitionByLong
         properties: *id001
         queryPhysicalTable:
           - dataNodeName: null

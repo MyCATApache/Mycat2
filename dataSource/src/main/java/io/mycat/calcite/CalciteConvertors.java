@@ -155,7 +155,7 @@ public class CalciteConvertors {
 
     static List<SimpleColumnInfo> getColumnInfo(BackEndTableInfo tableInfo) {
         List<SimpleColumnInfo> infos;
-        DefaultConnection defaultConnection = tableInfo.getSession();
+        DefaultConnection defaultConnection = tableInfo.getSession(true,null);
         try (Connection rawConnection = defaultConnection.getRawConnection()) {
             DatabaseMetaData metaData = rawConnection.getMetaData();
             String schema = tableInfo.getSchemaName();
@@ -183,7 +183,7 @@ public class CalciteConvertors {
                 }
                 if (info == null) {
                     schemaColumnMetaMap.remove(tableName);
-                    LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build table", schemaName, tableName);
+                    LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build targetTable", schemaName, tableName);
                 }
             }
         });
