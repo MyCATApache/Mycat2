@@ -8,8 +8,8 @@ import io.mycat.lib.impl.TransforFileLib;
 import java.io.IOException;
 
 public class TransforFileExport implements InstructionSet {
-    public static Response transferTo(String file) {
-        return TransforFileLib.transferTo(file);
+    public static Response transferFileTo(String file) {
+        return TransforFileLib.transferFileTo(file);
     }
 
     public static void saveToFile(String filePath, boolean eof, MycatResultSetResponse<byte[]> resultSetResponse) throws IOException {

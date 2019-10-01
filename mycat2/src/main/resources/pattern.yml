@@ -39,7 +39,7 @@ sql:
   - sql: select {n}
     code: responseQueryCalcite(matcher.getSQLAsString())
   - sql: select 1
-    code: transferTo("d:/tmp1")
+    code: transferFileTo("d:/tmp1")
 initCode:
   - initFinalCacheFile("d:/cache")
   - finalCacheFile("/sql/show_databases.sql")

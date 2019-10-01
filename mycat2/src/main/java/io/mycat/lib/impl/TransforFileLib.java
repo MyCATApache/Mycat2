@@ -17,7 +17,7 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 
 public class TransforFileLib {
-    public static Response transferTo(String file) {
+    public static Response transferFileTo(String file) {
         return new Response() {
             @Override
             public void apply(MycatSession session, DynamicSQLMatcher matcher) {
@@ -28,6 +28,7 @@ public class TransforFileLib {
                 } catch (IOException e) {
                     session.setLastMessage(e);
                     session.writeErrorEndPacketBySyncInProcessError();
+                    writeHandler.onException(session,e);
                     session.getCurNIOHandler().onException(session,e);
                 }
             }
@@ -103,6 +104,13 @@ public class TransforFileLib {
 
         @Override
         public void onException(MycatSession session, Exception e) {
+            if (fileChannel!=null){
+                try {
+                    fileChannel.close();
+                } catch (IOException e1) {
+
+                }
+            }
             MycatMonitor.onMycatServerWriteException(session, e);
             session.resetPacket();
         }
