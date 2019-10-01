@@ -3,6 +3,7 @@ package io.mycat.lib.impl;
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
@@ -51,11 +52,10 @@ public class CacheLib {
         CacheFile remove = map.remove(key);
         if (remove != null) {
             Path file = remove.file;
-            try {
-                Files.deleteIfExists(file);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            File file1 = file.toFile();
+            if (file1 .delete()){
+                file1.deleteOnExit();
+          }
         }
     }
 

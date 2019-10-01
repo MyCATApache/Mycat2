@@ -33,6 +33,8 @@ public class CacheLibTest {
         Iterator rowIterator1 = response1.rowIterator();
         Assert.assertEquals(rowIterator.next(),rowIterator1.next());
 
+        CacheExport.removeCache(cacheLib);
+
 
     }
 }
