@@ -7,6 +7,7 @@ lib:
   - io.mycat.lib.CalciteExport
   - io.mycat.lib.CacheExport
   - io.mycat.lib.TransforFileExport
+  - io.mycat.lib.ShardingQueryExport
 schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
 sql:
   - sql: use {schema}

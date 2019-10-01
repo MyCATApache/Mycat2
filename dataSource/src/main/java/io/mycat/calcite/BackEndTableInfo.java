@@ -51,12 +51,16 @@ public class BackEndTableInfo {
     }
 
     public BackEndTableInfo(String dataNodeName, String replicaName, String hostName, String schemaName, String tableName) {
-        this(dataNodeName,replicaName,hostName,schemaName,tableName,schemaName + "." + tableName);
+        this(dataNodeName, replicaName, hostName, schemaName, tableName, schemaName + "." + tableName);
     }
 
     public <T> T getSession(boolean runOnMaster, LoadBalanceStrategy balanceStrategy) {
         JdbcDataSource datasource = getDatasource(runOnMaster, balanceStrategy);
         return (T) datasource.getReplica().getDefaultConnection(datasource);
+    }
+
+    String getDatasourceName(boolean runOnMaster, LoadBalanceStrategy balanceStrategy) {
+        return getDatasource(runOnMaster, balanceStrategy).getName();
     }
 
     JdbcDataSource getDatasource(boolean runOnMaster, LoadBalanceStrategy balanceStrategy) {
