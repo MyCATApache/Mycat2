@@ -2,15 +2,19 @@ package io.mycat.lib.impl;
 
 import cn.lightfish.pattern.DynamicSQLMatcher;
 import io.mycat.MycatException;
+import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ProcessState;
 
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 
 public class TransforFileLib {
     public static Response transferTo(String file) {
@@ -28,6 +32,28 @@ public class TransforFileLib {
                 }
             }
         };
+    }
+    public static void saveToFile(String filePath,boolean eof,MycatResultSetResponse<byte[]> resultSetResponse) throws IOException {
+        int columnCount = resultSetResponse.columnCount();
+        byte packetId = 1;
+        byte[] bytes = MySQLPacketUtil.generateMySQLPacket(packetId++, MySQLPacketUtil.generateResultSetCount(columnCount));
+        RandomAccessFile file = new RandomAccessFile(filePath,"rw");
+        file.write(bytes);
+        Iterator columnDefIterator = resultSetResponse.columnDefIterator();
+        while (columnDefIterator.hasNext()){
+            byte[] next = (byte[]) columnDefIterator.next();
+            file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,next));
+        }
+        if (eof){
+            file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,MySQLPacketUtil.generateEof(0,0)));
+        }
+        Iterator rowIterator = resultSetResponse.rowIterator();
+        while (rowIterator.hasNext()){
+            byte[] next = (byte[]) rowIterator.next();
+            file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,next));
+        }
+        file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,MySQLPacketUtil.generateEof(0,0)));
+        file.close();
     }
     /**
      * 前端写入处理器

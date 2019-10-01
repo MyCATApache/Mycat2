@@ -309,8 +309,13 @@ public class MySQLPacketUtil {
 
   public static byte[] generateMySQLPacket(int packetId, byte[] packet) {
     try {
-      MycatReactorThread reactorThread = (MycatReactorThread) Thread.currentThread();
-      PacketSplitterImpl packetSplitter = reactorThread.getPacketSplitter();
+      PacketSplitterImpl packetSplitter;
+      if (Thread.currentThread() instanceof MycatReactorThread){
+        MycatReactorThread reactorThread = (MycatReactorThread)Thread.currentThread() ;
+        packetSplitter = reactorThread.getPacketSplitter();
+      }else {
+        packetSplitter = new PacketSplitterImpl();
+      }
       int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(packet.length);
       try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
           wholePacketSize)) {

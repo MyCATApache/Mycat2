@@ -3,7 +3,7 @@ package io.mycat.beans.resultset;
 import java.io.IOException;
 import java.util.Iterator;
 
-public interface MycatResultSet extends MycatResultSetResponse{
+public interface MycatResultSet extends MycatResultSetResponse<byte[]>{
 
   void addColumnDef(int index, String database, String table,
       String originalTable,

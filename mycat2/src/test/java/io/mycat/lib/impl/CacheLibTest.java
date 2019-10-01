@@ -37,4 +37,14 @@ public class CacheLibTest {
 
 
     }
+    @Test
+    public void test1() throws Exception {
+
+        DefResultSet resultSet = new DefResultSet(1,33, Charset.defaultCharset());
+        resultSet.addColumnDef(0,"c1",1);
+        resultSet.addTextRowPayload("1");
+        TransforFileLib.saveToFile("d:/tmp1",true,resultSet);
+
+
+    }
 }
