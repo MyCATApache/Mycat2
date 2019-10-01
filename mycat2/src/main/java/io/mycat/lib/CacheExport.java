@@ -10,7 +10,7 @@ import java.util.function.Supplier;
 
 public class CacheExport implements InstructionSet {
 
-    public static Supplier<MycatResultSetResponse[]> cacheResponse(String key, Supplier<MycatResultSetResponse[]> supplier) {
+    public static MycatResultSetResponse cacheResponse(String key, Supplier<MycatResultSetResponse> supplier) {
         return CacheLib.cacheResponse(key,supplier);
     }
 

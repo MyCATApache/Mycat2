@@ -211,6 +211,5 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
             this.endPosition = endPosition;
         }
 
-
     }
 }
