@@ -16,6 +16,7 @@ package cn.lightfish.pattern;
 
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * https://github.com/junwen12221/GPattern.git
@@ -57,6 +58,7 @@ public class DynamicSQLMatcherBuilder {
     }
 
     public void build(String contextClassName, List<String> codeList, List<String> packageNameList, String schemaName, boolean debug) throws Exception {
+        packageNameList = packageNameList.stream().distinct().collect(Collectors.toList());
         dynamicMatcherInfoBuilder.build(patternComplier);
         this.runtimeMap = dynamicMatcherInfoBuilder.ruleInstructionMap;
         this.runtimeMap2 = dynamicMatcherInfoBuilder.tableInstructionMap;

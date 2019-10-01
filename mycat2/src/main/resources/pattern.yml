@@ -6,6 +6,7 @@ lib:
   - io.mycat.lib.SessionMapExport
   - io.mycat.lib.CalciteExport
   - io.mycat.lib.CacheExport
+  - io.mycat.lib.TransforFileExport
 schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
 sql:
   - sql: use {schema}
@@ -37,6 +38,8 @@ sql:
 
   - sql: select {n}
     code: responseQueryCalcite(matcher.getSQLAsString())
+  - sql: select 1
+    code: transferTo("d:/tmp1")
 initCode:
   - initFinalCacheFile("d:/cache")
   - finalCacheFile("/sql/show_databases.sql")
