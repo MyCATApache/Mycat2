@@ -168,6 +168,11 @@ public class GPatternUTF8Lexer {
         HANDLER[DEMO] = ID_HANDLER;
 
         HANDLER[' '] = BLANK_SPACE_HANDLER;
+        HANDLER['\t'] = BLANK_SPACE_HANDLER;
+        HANDLER['\f'] = BLANK_SPACE_HANDLER;
+        HANDLER['\r'] = BLANK_SPACE_HANDLER;
+        HANDLER[11] = BLANK_SPACE_HANDLER;// \v
+
         HANDLER['#'] = SHARP_HANLDER;
         HANDLER['\''] = STRING_HANLDER;
         HANDLER['\"'] = STRING_HANLDER;
