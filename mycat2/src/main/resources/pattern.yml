@@ -11,7 +11,7 @@ lib:
 schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
 sql:
   - sql: use {schema}
-    code: useSchemaThenResponseOk(matcher.getNameAsString("schema"))
+    code: useSchemaThenResponseOk(matcher.group("schema"))
 
   - sql: show databases
     code: responseFinalCache("/sql/show_databases.sql")

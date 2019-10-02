@@ -107,6 +107,10 @@ public final class DynamicSQLMatcher {
         return getgPattern().getMatcher();
     }
 
+    public String group(String name) {
+        return getNameAsString(name);
+    }
+
     public String getNameAsString(String name) {
         return getResult().getName(name);
     }

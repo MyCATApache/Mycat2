@@ -5,7 +5,7 @@ import cn.lightfish.pattern.InstructionSet;
 import java.text.MessageFormat;
 
 public class SQLModifierExport implements InstructionSet {
-    public static String messageFormat(String pattern,Object ... arguments) {
+    public final static String messageFormat(String pattern,Object ... arguments) {
         return MessageFormat.format(pattern,arguments);
     }
 
