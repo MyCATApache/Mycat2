@@ -62,7 +62,7 @@ public class InserParser extends AbstractStringRowIterator {
     final static String[] EMPTY = new String[]{};
 
     public InserParser(String createTableStmttext, Iterator<String> lines) {
-        super(getMycatRowMetaData(createTableStmttext), StreamSupport.stream(Spliterators.spliteratorUnknownSize(lines, 0), false).flatMap(s -> {
+        super(SQL2ResultSetUtil.getMycatRowMetaData(createTableStmttext), StreamSupport.stream(Spliterators.spliteratorUnknownSize(lines, 0), false).flatMap(s -> {
             MySqlStatementParser sqlStatementParser = new MySqlStatementParser(s, UseInsertColumnsCache, InsertValueNative, OptimizedForParameterized, OptimizedForForParameterizedSkipValue, InsertValueCheckType);
             MySqlInsertStatement insertStatement = (MySqlInsertStatement) sqlStatementParser.parseInsert();
             return insertStatement.getValuesList().stream();
@@ -88,13 +88,6 @@ public class InserParser extends AbstractStringRowIterator {
                 }
             }
         }).iterator());
-    }
-
-    private static MycatRowMetaDataImpl getMycatRowMetaData(String createTableStmttext) {
-        List<SQLStatement> statements = SQLUtils.parseStatements(createTableStmttext, DbType.mysql);
-        MySqlCreateTableStatement mySqlCreateTableStatement = (MySqlCreateTableStatement) statements.get(statements.size() - 1);
-        String tableName = mySqlCreateTableStatement.getTableSource().computeAlias();
-        return new MycatRowMetaDataImpl(mySqlCreateTableStatement.getColumnDefinitions(), "", tableName);
     }
 
     @Override

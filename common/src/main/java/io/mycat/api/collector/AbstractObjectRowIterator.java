@@ -11,30 +11,30 @@ import java.util.Iterator;
 import java.util.Objects;
 
 public abstract class AbstractObjectRowIterator implements RowBaseIterator {
-    protected final MycatRowMetaData mycatRowMetaData;
-    protected final Iterator<Object[]> iterator;
-    private Object[] currentRow;
-    private boolean wasNull;
+//    protected final MycatRowMetaData mycatRowMetaData;
+//    protected final Iterator<Object[]> iterator;
+    protected Object[] currentRow;
+    protected boolean wasNull;
 
-    public AbstractObjectRowIterator(MycatRowMetaData mycatRowMetaData, Iterator<Object[]> iterator) {
-        this.mycatRowMetaData = mycatRowMetaData;
-        this.iterator = iterator;
-    }
-
-    @Override
-    public MycatRowMetaData metaData() {
-        return mycatRowMetaData;
-    }
-
-    @Override
-    public boolean next() {
-        if (this.iterator.hasNext()) {
-            this.currentRow = this.iterator.next();
-            return true;
-        } else {
-            return false;
-        }
-    }
+//    public AbstractObjectRowIterator(MycatRowMetaData mycatRowMetaData, Iterator<Object[]> iterator) {
+//        this.mycatRowMetaData = mycatRowMetaData;
+//        this.iterator = iterator;
+//    }
+//
+//    @Override
+//    public MycatRowMetaData metaData() {
+//        return mycatRowMetaData;
+//    }
+//
+//    @Override
+//    public boolean next() {
+//        if (this.iterator.hasNext()) {
+//            this.currentRow = this.iterator.next();
+//            return true;
+//        } else {
+//            return false;
+//        }
+//    }
 
     @Override
     public boolean wasNull() {
