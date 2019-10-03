@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
-public class CacheExport implements InstructionSet {
+public class CacheResultSetExport implements InstructionSet {
 
     public static MycatResultSetResponse cacheResponse(String key, Supplier<MycatResultSetResponse> supplier) {
         return CacheLib.cacheResponse(key,supplier);

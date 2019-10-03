@@ -4,17 +4,17 @@ import cn.lightfish.pattern.InstructionSet;
 import io.mycat.lib.impl.FinalCacheLib;
 import io.mycat.lib.impl.Response;
 
-public class FinalCacheExport implements InstructionSet {
+public class FinalSQLResultSetExport implements InstructionSet {
 
-    public static Response responseFinalCache(String key) {
+    public static Response responseFinalSQL(String key) {
         return FinalCacheLib.responseFinalCache(key);
     }
 
-    public static void finalCacheFile(String fileName) {
+    public static void finalSQLFile(String fileName) {
         FinalCacheLib.finalCacheFile(fileName);
     }
 
-    public static void initFinalCacheFile(String cachePath) {
+    public static void initFinalSQLCacheFile(String cachePath) {
         FinalCacheLib.initFinalCacheFile(cachePath);
     }
 }

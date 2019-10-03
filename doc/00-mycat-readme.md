@@ -83,6 +83,12 @@ commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
 
 [分布式查询](28-mycat-sharding-query.md)
 
+[注解路由](30-mycat-dynamic-annotation.md)
+
+[注解模式](29-mycat-gpattern.md)
+
+[注解指令](31-mycat-instructions.md)
+
 [打包](10-mycat-package.md)
 
 [合作者](12-collaborators.md)

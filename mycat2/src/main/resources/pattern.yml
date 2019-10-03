@@ -1,11 +1,11 @@
 lib:
   - io.mycat.lib.ProxyExport
-  - io.mycat.lib.FinalCacheExport
+  - io.mycat.lib.FinalSQLResultSetExport
   - io.mycat.lib.SQLModifierExport
   - io.mycat.lib.JdbcExport
   - io.mycat.lib.SessionMapExport
   - io.mycat.lib.CalciteExport
-  - io.mycat.lib.CacheExport
+  - io.mycat.lib.CacheResultSetExport
   - io.mycat.lib.TransforFileExport
   - io.mycat.lib.ShardingQueryExport
 schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
@@ -14,19 +14,19 @@ sql:
     code: useSchemaThenResponseOk(matcher.group("schema"))
 
   - sql: show databases
-    code: responseFinalCache("/sql/show_databases.sql")
+    code: responseFinalSQL("/sql/show_databases.sql")
 
   - sql:  show full tables from `TESTDB1` where table_type = 'BASE TABLE'
-    code: responseFinalCache("/sql/show_full_tables_from_testdb1.sql")
+    code: responseFinalSQL("/sql/show_full_tables_from_testdb1.sql")
 
   - sql:  show full tables from `TESTDB2` where table_type = 'BASE TABLE'
-    code: responseFinalCache("/sql/show_full_tables_from_testdb2.sql")
+    code: responseFinalSQL("/sql/show_full_tables_from_testdb2.sql")
 
   - sql:  describe `TESTDB1`.`travelrecord`
-    code: responseFinalCache("/sql/describe_testdb1_travelrecord.sql")
+    code: responseFinalSQL("/sql/describe_testdb1_travelrecord.sql")
 
   - sql:  describe `TESTDB1`.`address`
-    code: responseFinalCache("/sql/describe_testdb1_address.sql")
+    code: responseFinalSQL("/sql/describe_testdb1_address.sql")
 
   - sql: /*!40101 set @@session.wait_timeout=28800 */
     code: responseOk()
@@ -42,9 +42,9 @@ sql:
   - sql: select 1
     code: transferFileTo("d:/tmp1")
 initCode:
-  - initFinalCacheFile("d:/cache")
-  - finalCacheFile("/sql/show_databases.sql")
-  - finalCacheFile("/sql/show_full_tables_from_testdb1.sql")
-  - finalCacheFile("/sql/show_full_tables_from_testdb2.sql")
-  - finalCacheFile("/sql/describe_testdb1_travelrecord.sql")
-  - finalCacheFile("/sql/describe_testdb1_address.sql")
+  - initFinalSQLCacheFile("d:/cache")
+  - finalSQLFile("/sql/show_databases.sql")
+  - finalSQLFile("/sql/show_full_tables_from_testdb1.sql")
+  - finalSQLFile("/sql/show_full_tables_from_testdb2.sql")
+  - finalSQLFile("/sql/describe_testdb1_travelrecord.sql")
+  - finalSQLFile("/sql/describe_testdb1_address.sql")
