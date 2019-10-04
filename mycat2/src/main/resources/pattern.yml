@@ -45,6 +45,8 @@ sql:
 
   - sql: INSERT INTO `travelrecord` (`id`) VALUES ( {n} );
     code: updateOnJdbcByDataSource("mytest3306a",matcher.getSQLAsString())
+  - sql: select 1
+    code: responseQueryOnJdbcByDataSource("mytest3306a",matcher.getSQLAsString())
 initCode:
   - initFinalSQLCacheFile("d:/cache")
   - finalSQLFile("/sql/show_databases.sql")

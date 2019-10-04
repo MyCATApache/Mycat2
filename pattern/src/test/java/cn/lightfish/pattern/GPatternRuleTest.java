@@ -521,4 +521,15 @@ public class GPatternRuleTest {
         Assert.assertEquals("2", gPattern.toContextMap(matcher).get("bid"));
         Assert.assertEquals("1000", gPattern.toContextMap(matcher).get("limit"));
     }
+
+    @Test
+    public void test32() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("SELECT @@max_allowed_packet,@@system_time_zone,@@time_zone,@@auto_increment_increment");
+        int id2 = patternBuilder.addRule("select 1");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("select 1");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(matcher.id(), id2);
+    }
 }
