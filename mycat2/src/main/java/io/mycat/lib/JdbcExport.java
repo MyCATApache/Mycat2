@@ -36,21 +36,25 @@ public class JdbcExport implements InstructionSet {
 
     public static Supplier<MycatResultSetResponse[]> queryJdbcByDataSource(String dataSource, String... sql) {
         return JdbcLib.queryJdbcByDataSource(dataSource, sql);
+    }    public static Response updateOnJdbcByDataSource(String dataSource, String sql){
+        return updateOnJdbcByDataSource(dataSource,new String[]{sql});
     }
-
-    public static Response updateJdbcByDataSource(String dataSource, boolean needGeneratedKeys, String... sql) {
+    public static Response updateOnJdbcByDataSource(String dataSource, String... sql){
+        return updateOnJdbcByDataSource(dataSource,false,sql);
+    }
+    public static Response updateOnJdbcByDataSource(String dataSource, boolean needGeneratedKeys, String... sql) {
         return JdbcLib.responseUpdateOnJdbcByDataSource(dataSource, needGeneratedKeys, sql);
     }
 
-    public static Response setTransactionIsolation(String text) {
+    public static Response responseOnJdbcSetTransactionIsolation(String text) {
         return JdbcLib.setTransactionIsolation(text);
     }
 
-    public static Response setTransactionIsolation(int transactionIsolation) {
+    public static Response responseOnJdbcSetTransactionIsolation(int transactionIsolation) {
         return JdbcLib.setTransactionIsolation(transactionIsolation);
     }
 
-    public static Response setAutocommit(boolean autocommit) {
+    public static Response responseOnJdbcSetAutocommit(boolean autocommit) {
         return JdbcLib.setAutocommit(autocommit);
     }
 }
