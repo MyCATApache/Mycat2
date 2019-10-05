@@ -248,8 +248,8 @@ public enum GRuntime {
         return (T) config;
     }
 
-    public <K extends BindThreadKey, T extends BindThreadCallback> void run(K key, T processTask) {
-        gThreadPool.run(key, processTask);
+    public <K extends BindThreadKey, T extends BindThreadCallback> boolean run(K key, T processTask) {
+      return   gThreadPool.run(key, processTask);
     }
 
     public Map<String, Object> getDefContext() {
