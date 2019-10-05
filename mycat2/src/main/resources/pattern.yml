@@ -37,6 +37,8 @@ sql:
   - sql: begin
     code: beginOnJdbc()
 
+  - sql: set autocommit=0
+    code: responseOnJdbcSetAutocommit(false)
   - sql: set autocommit=1, sql_mode = concat(@@sql_mode,',STRICT_TRANS_TABLES')
     code: responseOnJdbcSetAutocommit(true)
 
@@ -45,8 +47,8 @@ sql:
 
   - sql: INSERT INTO `travelrecord` (`id`) VALUES ( {n} );
     code: updateOnJdbcByDataSource("mytest3306a",matcher.getSQLAsString())
-  - sql: select 1
-    code: responseQueryOnJdbcByDataSource("mytest3306a",matcher.getSQLAsString())
+  - sql: select * {n}
+    code: responseQueryCalcite(matcher.getSQLAsString())
 initCode:
   - initFinalSQLCacheFile("d:/cache")
   - finalSQLFile("/sql/show_databases.sql")

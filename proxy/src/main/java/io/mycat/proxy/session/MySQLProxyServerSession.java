@@ -181,6 +181,8 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             ByteBuffer first = byteBuffers.peek();
 
             if (END_PACKET == first) {
+
+                MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:"+session.sessionId());
                 break;
             }
 
@@ -235,6 +237,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                 }
             }
         } else {
+            MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:"+session.sessionId());
             byteBuffers.clear();
             session.writeFinished(session);
             return;

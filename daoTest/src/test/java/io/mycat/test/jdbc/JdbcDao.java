@@ -567,7 +567,7 @@ public class JdbcDao extends ModualTest {
   @Test
   public void jtaTest() throws InterruptedException, ExecutionException, IOException {
     AtomicInteger atomicInteger = new AtomicInteger(0);
-    int count = 10000;
+    int count = 100;
     CountDownLatch latch = new CountDownLatch(count);
     for (int i = 0; i < count; i++) {
       int index = i;
@@ -576,11 +576,11 @@ public class JdbcDao extends ModualTest {
           try (Connection connection = getConnection()) {
 //            connection.setAutoCommit(false);
             try (Statement statement = connection.createStatement()) {
-              statement.execute("select 1");
+              statement.execute("SELECT * FROM TESTDB1.TRAVELRECORD");
 //              statement.execute(" INSERT INTO `travelrecord` (`id`) VALUES ('2'); ");
 //              statement.execute(" INSERT INTO `travelrecord2` (`id`) VALUES ('3'); ");
             }
-            connection.commit();
+//            connection.commit();
             atomicInteger.incrementAndGet();
           } catch (Exception e) {
             LOGGER.error("{}", e);

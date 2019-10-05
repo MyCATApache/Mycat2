@@ -156,7 +156,7 @@ public enum MetadataManager {
             schemaColumnMetaMap.putAll(CalciteConvertors.columnInfoList(schemaBackendMetaMap));
         }
         String value ="2000";
-        BackEndTableInfo backEndTableInfo = getBackEndTableInfo("TESTDB", "TRAVELRECORD",value );
+        BackEndTableInfo backEndTableInfo = getBackEndTableInfo("TESTDB1", "TRAVELRECORD",value );
         String format = MessageFormat.format("select * from {0} where id = {1}", backEndTableInfo.getTargetSchemaTable(),value);
 
 

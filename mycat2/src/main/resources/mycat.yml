@@ -5,6 +5,6 @@ proxy:
   bufferPoolPageSize: 4194304     # 一页的大小，默认 1024*1024*4
   bufferPoolChunkSize: 8192       # chunk 大小 ， 默认 8192 chunk 为bufferpool 分配的最小单元,不能低于86
   bufferPoolPageNumber: 2        # 页数量. 默认 2
-  reactorNumber: 2        #  默认 1 取逻辑处理器数量
+  reactorNumber: 1        #  默认 1 取逻辑处理器数量
   commandDispatcherClass: io.mycat.command.PatternCommandHandler
   proxyBeanProviders: io.mycat.MycatProxyBeanProviders

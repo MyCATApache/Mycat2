@@ -1,6 +1,6 @@
 filePath: null
 schemas:
-  - schemaName: TESTDB
+  - schemaName: TESTDB1
     tables:
       - columns:
           - ID
