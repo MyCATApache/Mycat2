@@ -1,15 +1,25 @@
 package io.mycat.bindThread;
 
+import io.mycat.ConfigRuntime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.Time;
+import java.util.Date;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
 
 public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends BindThreadCallback> extends
     Thread {
-
-  final LinkedTransferQueue<PROCESS> blockingDeque = new LinkedTransferQueue<>();//todo optimization
+  final Logger LOGGER = LoggerFactory.getLogger(BindThread.class);
+  final BlockingQueue<PROCESS> blockingDeque = new LinkedTransferQueue<>();//todo optimization
   final BindThreadPool manager;
   long startTime;
   volatile KEY key;
+  private long endTime;
 
   public BindThread(BindThreadPool manager) {
     this.manager = manager;
@@ -19,7 +29,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
 
   void run(KEY key, PROCESS processTask) {
     Objects.requireNonNull(key);
-    if (!blockingDeque.isEmpty() && this.key != key) {
+    if (!blockingDeque.isEmpty() &&this.key!=null) {
       throw new RuntimeException("unknown state");
     } else if (this.key == null) {
       this.key = key;
@@ -44,13 +54,9 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         exception = null;
         callback = null;
 
-        try {
-          callback = blockingDeque.poll(manager.waitTaskTimeout, manager.timeoutUnit);
-        } catch (InterruptedException ignored) {
-        }
+        callback = blockingDeque.poll();
         if (callback != null) {
           processJob(exception, callback);
-
         }
 
         {
@@ -75,6 +81,8 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
       manager.exceptionHandler.accept(e);
       exception = e;
     }
+    this.endTime = System.currentTimeMillis();
+    LOGGER.debug("thread execute time:{} {} ", this.endTime-this.startTime,"Millis");
     if (exception != null) {
       poll.onException(key, exception);
     }
@@ -88,6 +96,8 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         close();
         manager.decThreadCount();
         manager.allSession.remove(this);
+      }else {
+        LOGGER.debug("thread recycle at time:{} ",new Date());
       }
     }
   }

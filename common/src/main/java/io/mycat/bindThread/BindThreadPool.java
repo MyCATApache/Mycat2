@@ -34,7 +34,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     this.waitTaskTimeout = waitTaskTimeout;
     this.timeoutUnit = timeoutUnit;
     this.minThread = minThread;
-    this.maxThread = maxThread;
+    this.maxThread = maxThread+1;
     this.pending = new LinkedBlockingQueue<>(
         maxPengdingLimit < 0 ? Integer.MAX_VALUE : maxPengdingLimit);
     this.processFactory = processFactory;
