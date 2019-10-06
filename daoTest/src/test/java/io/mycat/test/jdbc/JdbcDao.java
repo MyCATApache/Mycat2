@@ -308,20 +308,19 @@ public class JdbcDao extends ModualTest {
         (future) -> {
 //          Thread.sleep(TimeUnit.SECONDS.toMillis(5));
           int count = 1000;
-          AtomicInteger atomicInteger = new AtomicInteger(0);
-          AtomicInteger counter = new AtomicInteger(0);
+          CountDownLatch latch=new CountDownLatch(count);
           for (int i = 0; i < count; i++) {
             int index = i;
             new Thread(() -> {
               try (Connection connection = getConnection()) {
                 for (int j = 0; j < 1; j++) {
                   try (Statement statement = connection.createStatement()) {
-                    statement.execute("SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000");//"SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000"
+                    statement.execute("SELECT * FROM `TESTDB1`.`travelrecord`");//"SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000"
                   }
 //                  connection.commit();
                   LOGGER.info("{}", j);
                 }
-                atomicInteger.incrementAndGet();
+                latch.countDown();
                 LOGGER.info("connectId:{} end", index);
               } catch (Exception e) {
                 LOGGER.error("{}", e);
@@ -330,9 +329,7 @@ public class JdbcDao extends ModualTest {
             }).start();
           //  Thread.sleep(1000);
           }
-          while (atomicInteger.get() != count) {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(10));
-          }
+          latch.await();
           LOGGER.info("success!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
     );

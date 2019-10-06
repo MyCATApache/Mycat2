@@ -177,7 +177,10 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             throw new MycatException("");
         }
         Queue<ByteBuffer> byteBuffers = session.writeQueue();
-        if (writeMySQLPacket(session, byteBuffers)) return;
+        if (writeMySQLPacket(session, byteBuffers)) {
+            session.change2WriteOpts();
+            return;
+        }
         boolean lastPacket = byteBuffers.peek() == END_PACKET;
         if (!lastPacket) {
             session.change2WriteOpts();

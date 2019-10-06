@@ -3,4 +3,4 @@ maxPengdingLimit: -1
 waitTaskTimeout: 5
 timeUnit: SECONDS
 minThread: 1
-maxThread: 2
+maxThread: 32

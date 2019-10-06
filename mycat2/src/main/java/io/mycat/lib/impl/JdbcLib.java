@@ -125,7 +125,11 @@ public class JdbcLib {
                 mycat.getIOThread().addNIOJob(new NIOJob() {
                     @Override
                     public void run(ReactorEnvThread reactor) throws Exception {
-                        mycat.writeToChannel();
+                        try {
+
+                            mycat.writeToChannel();
+                        }catch (Exception e){
+                        }
                     }
 
                     @Override
