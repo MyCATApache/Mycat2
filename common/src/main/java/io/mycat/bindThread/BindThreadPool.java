@@ -1,23 +1,17 @@
 package io.mycat.bindThread;
 
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntUnaryOperator;
 
 public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThread> {
 
   final ConcurrentHashMap<KEY, PROCESS> map = new ConcurrentHashMap<>();
-  final LinkedTransferQueue<PROCESS> idleList = new LinkedTransferQueue<>();
-  final ConcurrentLinkedQueue<PROCESS> allSession = new ConcurrentLinkedQueue<>();
-  final LinkedBlockingQueue<PengdingJob> pending;
+  final ArrayBlockingQueue<PROCESS> idleList;
+  final ArrayBlockingQueue<PengdingJob> pending;
   final Function<BindThreadPool, PROCESS> processFactory;
   final Consumer<Exception> exceptionHandler;
   final AtomicInteger threadCounter = new AtomicInteger(0);
@@ -35,8 +29,9 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     this.timeoutUnit = timeoutUnit;
     this.minThread = minThread;
     this.maxThread = maxThread+1;
-    this.pending = new LinkedBlockingQueue<>(
-        maxPengdingLimit < 0 ? Integer.MAX_VALUE : maxPengdingLimit);
+    this.idleList = new ArrayBlockingQueue<>(maxThread);
+    this.pending = new ArrayBlockingQueue<>(
+        maxPengdingLimit < 0 ? 65535 : maxPengdingLimit);
     this.processFactory = processFactory;
     this.exceptionHandler = exceptionHandler;
     this.check = Executors.newScheduledThreadPool(1);
@@ -80,13 +75,19 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     }
     if (poll == null) {
       tryDecThread();
+      threadCounter.updateAndGet(new IntUnaryOperator() {
+          @Override
+          public int applyAsInt(int operand) {
+              return map.size()+       idleList .size();
+          }
+      });
     }
   }
 
 
   boolean tryIncThreadCount() {
     return threadCounter.updateAndGet(operand -> {
-      if (maxThread < operand) {
+      if (maxThread <= operand) {
         return maxThread;
       } else {
         return ++operand;
@@ -153,7 +154,6 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
       if (poll != null) {
         decThreadCount();
         poll.close();
-        allSession.remove(poll);
       }
     }
   }

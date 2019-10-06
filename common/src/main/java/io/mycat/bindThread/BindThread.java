@@ -95,7 +95,6 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
       if (!manager.idleList.offer(this)) {
         close();
         manager.decThreadCount();
-        manager.allSession.remove(this);
       }else {
         LOGGER.debug("thread recycle at time:{} ",new Date());
       }
