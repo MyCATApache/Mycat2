@@ -307,20 +307,18 @@ public class JdbcDao extends ModualTest {
     loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
         (future) -> {
 //          Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-          int count = 1;
+          int count = 1000;
           AtomicInteger atomicInteger = new AtomicInteger(0);
           AtomicInteger counter = new AtomicInteger(0);
           for (int i = 0; i < count; i++) {
             int index = i;
             new Thread(() -> {
               try (Connection connection = getConnection()) {
-                for (int j = 0; j < 10; j++) {
+                for (int j = 0; j < 1; j++) {
                   try (Statement statement = connection.createStatement()) {
-                    statement.execute("INSERT INTO `travelrecord` (`id`) VALUES ('"
-                        + counter.incrementAndGet()
-                        + "'); ");
+                    statement.execute("SELECT 1");//"SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000"
                   }
-                  connection.commit();
+//                  connection.commit();
                   LOGGER.info("{}", j);
                 }
                 atomicInteger.incrementAndGet();
@@ -330,7 +328,7 @@ public class JdbcDao extends ModualTest {
                 return;
               }
             }).start();
-            Thread.sleep(1000);
+          //  Thread.sleep(1000);
           }
           while (atomicInteger.get() != count) {
             Thread.sleep(TimeUnit.SECONDS.toMillis(10));
@@ -567,20 +565,21 @@ public class JdbcDao extends ModualTest {
   @Test
   public void jtaTest() throws InterruptedException, ExecutionException, IOException {
     AtomicInteger atomicInteger = new AtomicInteger(0);
-    int count = 100;
+    int count = 1;
     CountDownLatch latch = new CountDownLatch(count);
     for (int i = 0; i < count; i++) {
       int index = i;
       new Thread(() -> {
-        for (int j = 0; j < 1; j++) {
+        for (int j = 0; j < 1000; j++) {
           try (Connection connection = getConnection()) {
-//            connection.setAutoCommit(false);
+            connection.setAutoCommit(false);
             try (Statement statement = connection.createStatement()) {
-              statement.execute("SELECT * FROM TESTDB1.TRAVELRECORD");
+              statement.execute("SELECT 1");//SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000
 //              statement.execute(" INSERT INTO `travelrecord` (`id`) VALUES ('2'); ");
 //              statement.execute(" INSERT INTO `travelrecord2` (`id`) VALUES ('3'); ");
             }
-//            connection.commit();
+            connection.commit();
+            LOGGER.info("connectId:{} per", index);
             atomicInteger.incrementAndGet();
           } catch (Exception e) {
             LOGGER.error("{}", e);
@@ -590,7 +589,7 @@ public class JdbcDao extends ModualTest {
         LOGGER.info("connectId:{} end", index);
         latch.countDown();
       }).start();
-      Thread.sleep(100);
+    //  Thread.sleep(100);
     }
     latch.await();
     LOGGER.info("success!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");

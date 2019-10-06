@@ -1,16 +1,12 @@
 package io.mycat.bindThread;
 
-import io.mycat.ConfigRuntime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Time;
 import java.util.Date;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.TimeUnit;
 
 public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends BindThreadCallback> extends
     Thread {
@@ -38,6 +34,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     } else {
       throw new RuntimeException("unknown state");
     }
+    this.key = key;
     if (Thread.currentThread() == this) {
       processJob(null, processTask);
     } else {
@@ -54,7 +51,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         exception = null;
         callback = null;
 
-        callback = blockingDeque.poll();
+        callback = blockingDeque.poll(this.manager.waitTaskTimeout,this.manager.timeoutUnit);
         if (callback != null) {
           processJob(exception, callback);
         }
@@ -62,7 +59,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         {
           boolean bind = false;
           if (this.key != null && !(bind = continueBind())) {
-            recycleTransactionThread(callback);
+            recycleTransactionThread();
           } else if (this.key == null && bind) {
             throw new RuntimeException("unknown state");
           }
@@ -88,13 +85,12 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     }
   }
 
-  public void recycleTransactionThread(BindThreadCallback callback) {
-    if (!continueBind() && callback == null) {
+  public void recycleTransactionThread() {
+    if (!continueBind()) {
       manager.map.remove(this.key);
       this.key = null;
       if (!manager.idleList.offer(this)) {
         close();
-        manager.decThreadCount();
       }else {
         LOGGER.debug("thread recycle at time:{} ",new Date());
       }

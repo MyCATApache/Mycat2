@@ -1,5 +1,6 @@
 package io.mycat.proxy.session;
 
+import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -58,24 +59,19 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         try {
             switchMySQLServerWriteHandler();
             boolean ioThread = Thread.currentThread() == getIOThread();
-            if (!ioThread && end) {
-                backFromWorkerThread();
-            }
             setResponseFinished(end ? ProcessState.DONE : ProcessState.DOING);
             Queue<ByteBuffer> byteBuffers = writeQueue();
-            while (!byteBuffers.offer(buffer)) {//never loop
-            }
             if (end) {
                 while (!byteBuffers.offer(END_PACKET)) {//never loop
                 }
-                MY_SQL_PROXY_SERVER_SESSION_LOGGER.debug("session id:{} has response", sessionId());
+            }
+            while (!byteBuffers.offer(buffer)) {//never loop
             }
             if (ioThread) {
                 writeToChannel();
             } else {
-                this.change2WriteOpts();
-                if (end) {
-                    getIOThread().getSelector().wakeup();
+                if (!end) {
+                    if (writeMySQLPacket(this, byteBuffers)) return;
                 }
             }
         } catch (Exception e) {
@@ -88,7 +84,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      */
     default void writeBytes(byte[] payload, boolean end) {
         ByteBuffer buffer = writeBufferPool().allocate(payload);
-        writeBytes(buffer,end);
+        writeBytes(buffer, end);
     }
 
     void backFromWorkerThread();
@@ -142,7 +138,12 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
         @Override
         public void writeToChannel(MycatSession session) throws IOException {
-            MySQLProxyServerSession.writeToChannel(session);
+            try {
+                MySQLProxyServerSession.writeToChannel(session);
+            } catch (Exception e) {
+                onException(session, e);
+                throw e;
+            }
         }
 
         @Override
@@ -169,7 +170,27 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      * 应该互斥
      */
     static void writeToChannel(MySQLProxyServerSession session) throws IOException {
+        if (session.getIOThread() != Thread.currentThread()) {
+            throw new MycatException("");
+        }
         Queue<ByteBuffer> byteBuffers = session.writeQueue();
+        if (writeMySQLPacket(session, byteBuffers)) return;
+        boolean lastPacket = byteBuffers.peek() == END_PACKET;
+        if (!lastPacket) {
+            session.change2WriteOpts();
+        } else {
+            MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:" + session.sessionId());
+            byteBuffers.remove();
+            while (writeMySQLPacket(session, byteBuffers)) {
+
+            }
+            byteBuffers.clear();
+            session.writeFinished(session);
+            return;
+        }
+    }
+
+    static boolean writeMySQLPacket(MySQLProxyServerSession session, Queue<ByteBuffer> byteBuffers) throws IOException {
         ByteBuffer[] packetContainer = session.packetContainer();
         MySQLPacketSplitter packetSplitter = session.packetSplitter();
         long writed;
@@ -182,7 +203,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
 
             if (END_PACKET == first) {
 
-                MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:"+session.sessionId());
+                MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:" + session.sessionId());
                 break;
             }
 
@@ -196,7 +217,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                 assert packetContainer[1] != null;
                 writed = session.channel().write(packetContainer);
                 if (first.hasRemaining()) {
-                    return;
+                    return true;
                 } else {
                     continue;
                 }
@@ -205,13 +226,13 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                 assert packetContainer[1] != null;
                 writed = session.channel().write(packetContainer);
                 if (first.hasRemaining()) {
-                    return;
+                    return true;
                 } else {
                     if (packetSplitter.nextPacketInPacketSplitter()) {
                         splitPacket(session, packetContainer, packetSplitter, first);
                         writed = session.channel().write(packetContainer);
                         if (first.hasRemaining()) {
-                            return;
+                            return true;
                         } else {
                             continue;
                         }
@@ -225,23 +246,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         if (writed == -1) {
             throw new ClosedChannelException();
         }
-        boolean writeFinished = byteBuffers.peek() == END_PACKET;
-        if (!writeFinished) {
-            if (writed == 0 || !byteBuffers.isEmpty()) {
-                session.change2WriteOpts();
-            } else {
-                session.clearReadWriteOpts();
-                if (!byteBuffers.isEmpty()) {
-                    writeToChannel(session);
-                    return;
-                }
-            }
-        } else {
-            MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:"+session.sessionId());
-            byteBuffers.clear();
-            session.writeFinished(session);
-            return;
-        }
+        return false;
     }
 
     /**

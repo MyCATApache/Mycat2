@@ -49,6 +49,8 @@ sql:
     code: updateOnJdbcByDataSource("mytest3306a",matcher.getSQLAsString())
   - sql: select * {n}
     code: responseQueryCalcite(matcher.getSQLAsString())
+  - sql: select 1
+    code: responseQueryCalcite(matcher.getSQLAsString())
 initCode:
   - initFinalSQLCacheFile("d:/cache")
   - finalSQLFile("/sql/show_databases.sql")
