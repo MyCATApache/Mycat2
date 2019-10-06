@@ -64,7 +64,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }
         PengdingJob poll = null;
         try {
-            while ((poll = pending.poll()) != null) {
+            while ((poll = pending.poll(this.waitTaskTimeout, this.timeoutUnit)) != null) {
                 if (!poll.run()) {
                     break;
                 }

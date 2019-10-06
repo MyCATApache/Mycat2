@@ -400,7 +400,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
   @Override
   public void writeToChannel() throws IOException {
-    writeHandler.writeToChannel(this);
+    try {
+      writeHandler.writeToChannel(this);
+    }catch (Exception e){
+      writeHandler.onException(this,e);
+      resetPacket();
+      throw e;
+    }
   }
 
   @Override
