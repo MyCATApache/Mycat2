@@ -83,7 +83,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      * 写入payload
      */
     default void writeBytes(byte[] payload, boolean end) {
-        ByteBuffer buffer = writeBufferPool().allocate(payload);
+        ByteBuffer buffer = ByteBuffer.wrap(payload);
         writeBytes(buffer, end);
     }
 
