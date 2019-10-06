@@ -121,15 +121,12 @@ public class JdbcLib {
                     consumer.accept(mycat);
                 } finally {
                     mycat.backFromWorkerThread();
+                    session.reset();
                 }
                 mycat.getIOThread().addNIOJob(new NIOJob() {
                     @Override
                     public void run(ReactorEnvThread reactor) throws Exception {
-                        try {
-
                             mycat.writeToChannel();
-                        }catch (Exception e){
-                        }
                     }
 
                     @Override

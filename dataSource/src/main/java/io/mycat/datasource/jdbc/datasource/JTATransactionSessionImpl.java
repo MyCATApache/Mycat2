@@ -81,6 +81,14 @@ public class JTATransactionSessionImpl implements TransactionSession {
   }
 
   @Override
+  public void reset() {
+    if (isInTransaction()){
+      rollback();
+    }
+    afterDoAction();
+  }
+
+  @Override
   public void commit() {
     inTranscation = false;
     try {

@@ -1,5 +1,6 @@
 package io.mycat.bindThread;
 
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,6 +86,17 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }else {
             lastPollTaskTime = System.currentTimeMillis();
         }
+        /////////////////////////////////
+        for (Map.Entry<KEY, PROCESS> entry : map.entrySet()) {
+            KEY key = entry.getKey();
+            if (!key.checkOkInBind()){
+                map.remove(key);
+                entry.getValue().close();
+            }
+        }
+
+
+        ////////////////////////////////
 
         this.threadCounter.updateAndGet(operand -> this.map.size() + this.idleList.size());
 

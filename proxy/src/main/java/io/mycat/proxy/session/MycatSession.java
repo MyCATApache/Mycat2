@@ -456,6 +456,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   }
 
   @Override
+  public boolean checkOkInBind() {
+    return isOpen();
+  }
+
+  @Override
   public int hashCode() {
     return this.sessionId;
   }

@@ -36,4 +36,5 @@ public interface TransactionSession {
 
   DsConnection getConnection(JdbcDataSource jdbcDataSource);
 
+    void reset();
 }

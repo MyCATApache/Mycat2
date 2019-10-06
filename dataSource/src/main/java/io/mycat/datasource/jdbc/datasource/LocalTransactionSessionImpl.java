@@ -62,6 +62,14 @@ public class LocalTransactionSessionImpl implements TransactionSession {
   }
 
   @Override
+  public void reset() {
+    if (isInTransaction()){
+      rollback();
+    }
+    afterDoAction();
+  }
+
+  @Override
   public void setTransactionIsolation(int transactionIsolation) {
     this.transactionIsolation = transactionIsolation;
   }

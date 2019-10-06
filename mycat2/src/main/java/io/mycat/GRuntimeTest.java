@@ -61,6 +61,11 @@ public class GRuntimeTest {
       public boolean equals(Object obj) {
         return this == obj;
       }
+
+      @Override
+      public boolean checkOkInBind() {
+        return true;
+      }
     };
   }
 }

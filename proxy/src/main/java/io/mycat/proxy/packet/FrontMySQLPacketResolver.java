@@ -7,6 +7,7 @@ import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 
@@ -31,7 +32,9 @@ public class FrontMySQLPacketResolver {
   public boolean readFromChannel() throws IOException {
     SocketChannel socketChannel = session.channel();
     if (head.position() == 0) {
-      socketChannel.read(head);
+     if(-1==socketChannel.read(head)){
+       throw new ClosedChannelException();
+     }
       if (!head.hasRemaining()) {
         head.position(0);
         int length = MySQLPacket.readInt(head, 3);
@@ -41,7 +44,9 @@ public class FrontMySQLPacketResolver {
         return false;
       }
     }
-    socketChannel.read(payload);
+    if(-1==socketChannel.read(payload)){
+      throw new ClosedChannelException();
+    }
     if (payload.hasRemaining()) {
       return false;
     } else {

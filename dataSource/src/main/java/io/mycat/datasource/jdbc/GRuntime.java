@@ -105,6 +105,10 @@ public enum GRuntime {
                 datasources = Collections.emptyList();
             }
             final BindThreadKey key = new BindThreadKey() {
+                @Override
+                public boolean checkOkInBind() {
+                    return false;
+                }
             };
             for (DatasourceConfig datasource : Objects.requireNonNull(datasources)) {
                 existUpdate = existUpdate || ReplicaHeartbeatRuntime.INSTANCE
