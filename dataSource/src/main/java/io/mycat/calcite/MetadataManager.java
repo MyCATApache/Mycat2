@@ -230,7 +230,7 @@ public enum MetadataManager {
         }
     }
 
-    public ConcurrentHashMap<String, ConcurrentHashMap<String, JdbcTable>> getTableMap() {
+    public synchronized ConcurrentHashMap<String, ConcurrentHashMap<String, JdbcTable>> getTableMap() {
         if (logicTableMap.isEmpty()){
             buildLogicTable();
         }
