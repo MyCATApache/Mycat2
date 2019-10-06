@@ -56,7 +56,7 @@ public enum MetadataManager {
     final ConcurrentHashMap<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new ConcurrentHashMap<>();
     final ConcurrentHashMap<String, Map<String, DataMappingConfig>> schemaDataMappingMetaMap = new ConcurrentHashMap<>();
     final ConcurrentHashMap<JdbcDataSource, Set<SchemaInfo>> physicalTableMap = new ConcurrentHashMap<>();
-
+    final ConcurrentHashMap<String,ConcurrentHashMap<String,JdbcTable>> logicTableMap = new ConcurrentHashMap<>();
     MetadataManager() {
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);
@@ -155,12 +155,10 @@ public enum MetadataManager {
         if (schemaColumnMetaMap.isEmpty()) {
             schemaColumnMetaMap.putAll(CalciteConvertors.columnInfoList(schemaBackendMetaMap));
         }
+
         String value ="2000";
         BackEndTableInfo backEndTableInfo = getBackEndTableInfo("TESTDB1", "TRAVELRECORD",value );
         String format = MessageFormat.format("select * from {0} where id = {1}", backEndTableInfo.getTargetSchemaTable(),value);
-
-
-
     }
 
 
@@ -217,31 +215,52 @@ public enum MetadataManager {
             Connection connection = DriverManager.getConnection("jdbc:calcite:caseSensitive=false;lex=MYSQL;fun=mysql;conformance=MYSQL_5");
             CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
             SchemaPlus rootSchema = calciteConnection.getRootSchema();
-            schemaBackendMetaMap.forEach((schemaName, tables) -> {
-                SchemaPlus currentSchema = rootSchema.add(schemaName, new AbstractSchema());
-                tables.forEach((tableName, value) -> {
-                    List<SimpleColumnInfo> columnInfos = schemaColumnMetaMap.get(schemaName).get(tableName);
-                    RowSignature rowSignature = CalciteConvertors.rowSignature(columnInfos);
-                    Optional<DataMappingConfig> optional = Optional.ofNullable(schemaDataMappingMetaMap.get(schemaName)).flatMap(s -> Optional.ofNullable(s.get(tableName)));
-                    DataMappingEvaluator dataMappingEvaluator = null;
-                    if (optional.isPresent()) {
-                        DataMappingConfig dataMappingConfig = optional.get();
-                        RuleAlgorithm ruleAlgorithm = dataMappingConfig.ruleAlgorithm;
-                        dataMappingEvaluator = new DataMappingEvaluator(rowSignature, dataMappingConfig.columnName, ruleAlgorithm);
-                    } else {
-                        dataMappingEvaluator = new DataMappingEvaluator(rowSignature);
-                    }
-                    currentSchema.add(tableName, new JdbcTable(schemaName, tableName, value,
-                            CalciteConvertors.relDataType(columnInfos), rowSignature, dataMappingEvaluator
-                    ));
-                    LOGGER.error("build {}.{} success", schemaName, tableName);
-                });
+            rootSchema.setCacheEnabled(true);
+            ConcurrentHashMap<String, ConcurrentHashMap<String, JdbcTable>> schemaMap = getTableMap();
+            schemaMap.forEach((k,v)->{
+              SchemaPlus  schemaPlus =rootSchema.add(k, new AbstractSchema());
+              v.forEach((t,j)->{
+                  schemaPlus.add(t,j);
+              });
             });
             return calciteConnection;
         } catch (Exception e) {
             LOGGER.error("", e);
             throw new RuntimeException(e);
         }
+    }
+
+    public ConcurrentHashMap<String, ConcurrentHashMap<String, JdbcTable>> getTableMap() {
+        if (logicTableMap.isEmpty()){
+            buildLogicTable();
+        }
+        return logicTableMap;
+    }
+
+    public void buildLogicTable() {
+        schemaBackendMetaMap.forEach((schemaName, tables) -> {
+            ConcurrentHashMap<String, JdbcTable> tableMap;
+            logicTableMap.put(schemaName,tableMap =new ConcurrentHashMap<>());
+            for (Map.Entry<String, List<BackEndTableInfo>> entry : tables.entrySet()) {
+                String tableName = entry.getKey();
+                List<BackEndTableInfo> value = entry.getValue();
+                List<SimpleColumnInfo> columnInfos = schemaColumnMetaMap.get(schemaName).get(tableName);
+                RowSignature rowSignature = CalciteConvertors.rowSignature(columnInfos);
+                Optional<DataMappingConfig> optional = Optional.ofNullable(schemaDataMappingMetaMap.get(schemaName)).flatMap(s -> Optional.ofNullable(s.get(tableName)));
+                DataMappingEvaluator dataMappingEvaluator = null;
+                if (optional.isPresent()) {
+                    DataMappingConfig dataMappingConfig = optional.get();
+                    RuleAlgorithm ruleAlgorithm = dataMappingConfig.ruleAlgorithm;
+                    dataMappingEvaluator = new DataMappingEvaluator(rowSignature, dataMappingConfig.columnName, ruleAlgorithm);
+                } else {
+                    dataMappingEvaluator = new DataMappingEvaluator(rowSignature);
+                }
+                tableMap.put(tableName, new JdbcTable(schemaName, tableName, value,
+                        CalciteConvertors.relDataType(columnInfos), rowSignature, dataMappingEvaluator
+                ));
+                LOGGER.error("build {}.{} success", schemaName, tableName);
+            }
+        });
     }
 
 

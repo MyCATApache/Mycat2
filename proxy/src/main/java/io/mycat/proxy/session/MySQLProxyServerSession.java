@@ -123,6 +123,9 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                     counter++;
                 }
             }
+            if (counter >= 4){
+                this.close(false,"can not response data");
+            }
         } catch (IOException e) {
             LOGGER.error("", e);
         }

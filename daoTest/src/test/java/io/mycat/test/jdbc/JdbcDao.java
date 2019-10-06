@@ -316,7 +316,7 @@ public class JdbcDao extends ModualTest {
               try (Connection connection = getConnection()) {
                 for (int j = 0; j < 1; j++) {
                   try (Statement statement = connection.createStatement()) {
-                    statement.execute("SELECT 1");//"SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000"
+                    statement.execute("SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000");//"SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000"
                   }
 //                  connection.commit();
                   LOGGER.info("{}", j);
