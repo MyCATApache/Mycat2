@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * @author Weiqing Xu
@@ -52,6 +53,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     private final static Logger LOGGER = LoggerFactory.getLogger(JdbcTable.class);
 
     public JdbcTable(String schemaName, String tableName, List<BackEndTableInfo> value, RelProtoDataType relProtoDataType, RowSignature rowSignature, DataMappingEvaluator dataMappingRule) {
+        Objects.requireNonNull(value);
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.backStoreList = value;
@@ -243,5 +245,8 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             }
             return new MyCatResultSetEnumerable(cancelFlag, backStoreList, projectText.toString(), filterText);
         }
+    }
+    public List<BackEndTableInfo> getBackStoreList() {
+        return backStoreList;
     }
 }
