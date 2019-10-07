@@ -1,11 +1,12 @@
 package io.mycat.lib.impl;
 
 import io.mycat.MycatException;
-import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.calcite.MetadataManager;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
+import io.mycat.util.MycatRowMetaDataImpl;
+import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.interpreter.Interpreter;
 import org.apache.calcite.jdbc.CalciteConnection;

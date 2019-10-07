@@ -14,13 +14,9 @@
  */
 package io.mycat.calcite;
 
-import cn.lightfish.sqlEngine.ast.extractor.MysqlTableExtractor;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.parser.Lexer;
-import com.alibaba.fastsql.sql.parser.SQLParserUtils;
-import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import io.mycat.ConfigRuntime;
 import io.mycat.MycatException;
 import io.mycat.config.ConfigFile;
@@ -154,7 +150,7 @@ public enum MetadataManager {
 
         }
         if (schemaColumnMetaMap.isEmpty()) {
-            schemaColumnMetaMap.putAll(CalciteConvertors.columnInfoList(schemaBackendMetaMap));
+            schemaColumnMetaMap.putAll(CalciteConvertors.columnInfoListByDataSource(schemaBackendMetaMap));
         }
 
         String value = "2000";

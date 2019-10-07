@@ -14,10 +14,14 @@
  */
 package io.mycat.calcite;
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.google.common.collect.Lists;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.util.MycatRowMetaDataImpl;
+import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.SqlType;
@@ -167,7 +171,21 @@ public class CalciteConvertors {
         return infos;
     }
 
-    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoList(final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap) {
+    static List<SimpleColumnInfo> getColumnInfo(String sql) {
+        MycatRowMetaDataImpl mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(sql);
+        int columnCount = mycatRowMetaData.getColumnCount();
+        List<SimpleColumnInfo> list = new ArrayList<>();
+        for (int i = 1; i <= columnCount ; i++) {
+            String columnName = mycatRowMetaData.getColumnName(i);
+            int columnType = mycatRowMetaData.getColumnType(i);
+            int precision = mycatRowMetaData.getPrecision(i);
+            int scale = mycatRowMetaData.getScale(i);
+            String jdbcType = JDBCType.valueOf(columnType).getName();
+            list.add(new SimpleColumnInfo(columnName,columnType,precision,scale,jdbcType,true));
+        }
+        return list;
+    }
+    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListByDataSource(final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap) {
         Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
         schemaBackendMetaMap.forEach((schemaName, value) -> {
             schemaColumnMetaMap.put(schemaName, new HashMap<>());
@@ -185,6 +203,22 @@ public class CalciteConvertors {
                     schemaColumnMetaMap.remove(tableName);
                     LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build targetTable", schemaName, tableName);
                 }
+            }
+        });
+        return schemaColumnMetaMap;
+    }
+    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListBySQL(final Map<String, Map<String,String>> schemaBackendSQL) {
+        Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
+        schemaBackendSQL.forEach((schemaName, value) -> {
+            schemaColumnMetaMap.put(schemaName, new HashMap<>());
+            for (Map.Entry<String, String> stringListEntry : value.entrySet()) {
+                String tableName = stringListEntry.getKey();
+                String sql= stringListEntry.getValue();
+                if (sql == null || sql.isEmpty()) return;
+                List<SimpleColumnInfo> info = null;
+                    info = getColumnInfo(sql);
+                    if (info == null) continue;
+                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
             }
         });
         return schemaColumnMetaMap;

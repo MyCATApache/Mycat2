@@ -1,6 +1,7 @@
 package cn.lightfish.sqlEngine.ast.extractor;
 
 import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
@@ -27,10 +28,10 @@ public class MysqlTableExtractor extends MySqlASTVisitorAdapter {
             String schemaName = x.getSchema();
             String tableName = x.getTableName();
             if (schemaName != null) {
-                schemaName = SQLParserUtils.replaceBackQuote(schemaName, DbType.mysql);
+                schemaName = SQLUtils.normalize(schemaName, DbType.mysql);
             }
             if (tableName != null) {
-                tableName = SQLParserUtils.replaceBackQuote(tableName, DbType.mysql);
+                tableName = SQLUtils.normalize(tableName, DbType.mysql);
             }
             if (schemaName == null){
                 schemaName = this.schemaName;

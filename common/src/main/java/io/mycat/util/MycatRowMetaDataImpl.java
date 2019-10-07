@@ -1,4 +1,4 @@
-package io.mycat.lib.impl;
+package io.mycat.util;
 
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import io.mycat.beans.mycat.MycatRowMetaData;

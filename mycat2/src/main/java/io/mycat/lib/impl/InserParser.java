@@ -1,16 +1,13 @@
 package io.mycat.lib.impl;
 
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.expr.SQLCharExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.parser.MySqlStatementParser;
 import io.mycat.api.collector.AbstractStringRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.util.SQL2ResultSetUtil;
 
 import java.io.IOException;
 import java.net.URL;
