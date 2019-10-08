@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -39,6 +39,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * @author Weiqing Xu
  * @author Junwen Chen
@@ -48,7 +49,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     private final String tableName;
     private final RelProtoDataType relProtoDataType;
     private final RowSignature rowSignature;
-    private final DataMappingEvaluator dataMappingRule;
+    private final DataMappingEvaluator originaldataMappingRule;
     private final List<BackEndTableInfo> backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(JdbcTable.class);
 
@@ -59,7 +60,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         this.backStoreList = value;
         this.relProtoDataType = relProtoDataType;
         this.rowSignature = rowSignature;
-        this.dataMappingRule = dataMappingRule;
+        this.originaldataMappingRule = dataMappingRule;
     }
 
     private static boolean addFilter(DataMappingEvaluator evaluator, RexNode filter, boolean or) {
@@ -190,12 +191,12 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
         LOGGER.info("origin  filters:{}", filters);
-        DataMappingEvaluator record = JdbcTable.this.dataMappingRule;
+        DataMappingEvaluator record = this.originaldataMappingRule.copy();
         record.fail = false;
         String filterText = "";
         if (!filters.isEmpty()) {
             filters.removeIf((filter) -> {
-                DataMappingEvaluator dataMappingRule = new DataMappingEvaluator(rowSignature, record.getColumnNameList(), record.getFunction());
+                DataMappingEvaluator dataMappingRule = this.originaldataMappingRule.copy();
                 dataMappingRule.fail = true;
                 boolean b = addOrRootFilter(dataMappingRule, filter);
                 if (!dataMappingRule.fail) {
@@ -203,11 +204,11 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 }
                 return b;
             });
-            filterText = dataMappingRule.getFilterExpr();
+            filterText = record.getFilterExpr();
         }
         LOGGER.info("optimize filters:{}", filters);
         List<BackEndTableInfo> backStoreList = this.backStoreList;
-        int[] calculate = dataMappingRule.calculate();
+        int[] calculate = record.calculate();
         if (calculate.length == 0) {
             backStoreList = this.backStoreList;
         }
@@ -246,6 +247,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             return new MyCatResultSetEnumerable(cancelFlag, backStoreList, projectText.toString(), filterText);
         }
     }
+
     public List<BackEndTableInfo> getBackStoreList() {
         return backStoreList;
     }

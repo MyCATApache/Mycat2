@@ -490,7 +490,17 @@ public class ConditionCollector extends MySqlASTVisitorAdapter {
         this.failureIndeterminacy = failureIndeterminacy;
     }
 
+
+
     public static void main(String[] args) {
 
+    }
+
+    public QueryDataRange getRootQueryDataRange() {
+        return root;
+    }
+
+    public LinkedList<QueryDataRange> getStack() {
+        return stack;
     }
 }

@@ -28,10 +28,13 @@ public class DataMappingEvaluator {
     private final List<String> columnNameList;
     private final RuleAlgorithm function;
     private static final int[] EMPTY = new int[]{};
+    private final Map<String,Integer> columnMap = new HashMap<>();
     boolean fail = true;
 
     ///////////////////optional//////////////////////////////
     private final int[] keys;
+
+
 
     public DataMappingEvaluator(RowSignature rowSignature, List<String> columnNameList, RuleAlgorithm function) {
         this.rowSignature = rowSignature;
@@ -46,12 +49,17 @@ public class DataMappingEvaluator {
         int index = 0;
         for (String s : columnNameList) {
             this.keys[index] = rowOrder.indexOf(s);
+            columnMap.put(s,index);
             ++index;
         }
 
         for (int i = 0; i < values.length; i++) {
             values[i] = new HashSet<>();
         }
+    }
+
+    public DataMappingEvaluator copy(){
+       return new DataMappingEvaluator(rowSignature, this.getColumnNameList(), this.getFunction());
     }
 
     public DataMappingEvaluator(RowSignature rowSignature) {
@@ -82,7 +90,12 @@ public class DataMappingEvaluator {
             }
         });
     }
-
+    boolean assignment(boolean or, String columnName, String value){
+        return assignment(or,columnMap.get(columnName),value);
+    }
+    boolean assignmentRange(boolean or, String columnName, String begin, String end){
+        return assignmentRange(or,columnMap.get(columnName),begin,end);
+    }
     /**
      * @param index
      * @param value

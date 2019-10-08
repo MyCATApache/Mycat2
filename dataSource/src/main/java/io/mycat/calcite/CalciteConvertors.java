@@ -1,25 +1,21 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.calcite;
 
-import com.alibaba.fastsql.sql.SQLUtils;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.google.common.collect.Lists;
-import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -37,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Date;
 import java.sql.*;
 import java.util.*;
+
 /**
  * @author Weiqing Xu
  * @author Junwen Chen
@@ -159,7 +156,7 @@ public class CalciteConvertors {
 
     static List<SimpleColumnInfo> getColumnInfo(BackEndTableInfo tableInfo) {
         List<SimpleColumnInfo> infos;
-        DefaultConnection defaultConnection = tableInfo.getSession(true,null);
+        DefaultConnection defaultConnection = tableInfo.getSession(true, null);
         try (Connection rawConnection = defaultConnection.getRawConnection()) {
             DatabaseMetaData metaData = rawConnection.getMetaData();
             String schema = tableInfo.getSchemaName();
@@ -175,17 +172,19 @@ public class CalciteConvertors {
         MycatRowMetaDataImpl mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(sql);
         int columnCount = mycatRowMetaData.getColumnCount();
         List<SimpleColumnInfo> list = new ArrayList<>();
-        for (int i = 1; i <= columnCount ; i++) {
+        for (int i = 1; i <= columnCount; i++) {
             String columnName = mycatRowMetaData.getColumnName(i);
             int columnType = mycatRowMetaData.getColumnType(i);
             int precision = mycatRowMetaData.getPrecision(i);
             int scale = mycatRowMetaData.getScale(i);
             String jdbcType = JDBCType.valueOf(columnType).getName();
-            list.add(new SimpleColumnInfo(columnName,columnType,precision,scale,jdbcType,true));
+            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, true));
         }
         return list;
     }
-    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListByDataSource(final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap) {
+
+
+    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListByDataSourceWithCreateTableSQL(final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap, Map<String, Map<String, String>> sqlmap) {
         Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
         schemaBackendMetaMap.forEach((schemaName, value) -> {
             schemaColumnMetaMap.put(schemaName, new HashMap<>());
@@ -194,31 +193,39 @@ public class CalciteConvertors {
                 List<BackEndTableInfo> backs = stringListEntry.getValue();
                 if (backs == null || backs.isEmpty()) return;
                 List<SimpleColumnInfo> info = null;
-                for (BackEndTableInfo back : backs) {
-                    info = getColumnInfo(back);
-                    if (info == null) continue;
-                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
+                Map<String, String> sqlTableMap = sqlmap.get(schemaName);
+                if (sqlTableMap != null) {
+                    String sql = sqlTableMap.get(tableName);
+                    if (sql != null) {
+                      info = getColumnInfo(sql);
+                    }
+                }
+                if (info!=null){
+                    info = getColumnInfo( backs.get(0));
                 }
                 if (info == null) {
                     schemaColumnMetaMap.remove(tableName);
                     LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build targetTable", schemaName, tableName);
+                }else {
+                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
                 }
             }
         });
         return schemaColumnMetaMap;
     }
-    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListBySQL(final Map<String, Map<String,String>> schemaBackendSQL) {
+
+    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListBySQL(final Map<String, Map<String, String>> schemaBackendSQL) {
         Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
         schemaBackendSQL.forEach((schemaName, value) -> {
             schemaColumnMetaMap.put(schemaName, new HashMap<>());
             for (Map.Entry<String, String> stringListEntry : value.entrySet()) {
                 String tableName = stringListEntry.getKey();
-                String sql= stringListEntry.getValue();
+                String sql = stringListEntry.getValue();
                 if (sql == null || sql.isEmpty()) return;
                 List<SimpleColumnInfo> info = null;
-                    info = getColumnInfo(sql);
-                    if (info == null) continue;
-                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
+                info = getColumnInfo(sql);
+                if (info == null) continue;
+                schemaColumnMetaMap.get(schemaName).put(tableName, info);
             }
         });
         return schemaColumnMetaMap;

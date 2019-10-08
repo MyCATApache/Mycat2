@@ -34,25 +34,18 @@ public class BackEndTableInfo {
     private String dataNodeName;
     private String replicaName;
     private String hostName;
-    private String schemaName;
-    private String tableName;
-    private String targetSchemaTable;
+    private MetadataManager.SchemaInfo schemaInfo;
 
     public BackEndTableInfo() {
     }
 
-    public BackEndTableInfo(String dataNodeName, String replicaName, String hostName, String schemaName, String tableName, String targetSchemaTable) {
+    public BackEndTableInfo(String dataNodeName, String replicaName, String hostName,MetadataManager.SchemaInfo schemaInfo) {
         this.dataNodeName = dataNodeName;
         this.replicaName = replicaName;
         this.hostName = hostName;
-        this.schemaName = schemaName;
-        this.tableName = tableName;
-        this.targetSchemaTable = targetSchemaTable;
+        this.schemaInfo = schemaInfo;
     }
 
-    public BackEndTableInfo(String dataNodeName, String replicaName, String hostName, String schemaName, String tableName) {
-        this(dataNodeName, replicaName, hostName, schemaName, tableName, schemaName + "." + tableName);
-    }
 
     public <T> T getSession(boolean runOnMaster, LoadBalanceStrategy balanceStrategy) {
         JdbcDataSource datasource = getDatasource(runOnMaster, balanceStrategy);

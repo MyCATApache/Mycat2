@@ -18,5 +18,22 @@ public class ColumnValue {
         this.value = value;
         this.tableSource = tableSource;
     }
+
+
+    public SQLColumnDefinition getColumn() {
+        return column;
+    }
+
+    public SQLBinaryOperator getOperator() {
+        return operator;
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public SQLTableSource getTableSource() {
+        return tableSource;
+    }
 }
 

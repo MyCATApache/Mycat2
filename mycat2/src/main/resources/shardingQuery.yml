@@ -26,6 +26,7 @@ schemas:
             tableName: address
         ranges: &id002 {}
         tableName: ADDRESS
+        createTableSQL:
       - columns:
           - ID
         function: partitionByLong

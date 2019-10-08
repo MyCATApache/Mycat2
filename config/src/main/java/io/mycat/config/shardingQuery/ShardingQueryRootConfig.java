@@ -22,6 +22,7 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
         String function = "";
         Map<String, String> properties = new HashMap<>();
         Map<String, String> ranges = new HashMap<>();
+        String createTableSQL;
 
         public LogicTableConfig() {
         }
@@ -78,6 +79,14 @@ public class ShardingQueryRootConfig extends ConfigurableRoot {
 
         public void setTableName(String tableName) {
             this.tableName = tableName;
+        }
+
+        public String getCreateTableSQL() {
+            return createTableSQL;
+        }
+
+        public void setCreateTableSQL(String createTableSQL) {
+            this.createTableSQL = createTableSQL;
         }
     }
 

@@ -18,4 +18,21 @@ public class ColumnRangeValue {
         this.tableSource = tableSource;
     }
 
+    public SQLColumnDefinition getColumn() {
+        return column;
+    }
+
+
+    public Object getBegin() {
+        return begin;
+    }
+
+
+    public Object getEnd() {
+        return end;
+    }
+
+    public SQLTableSource getTableSource() {
+        return tableSource;
+    }
 }
