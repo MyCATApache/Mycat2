@@ -8,7 +8,7 @@ lib:
   - io.mycat.lib.CacheResultSetExport
   - io.mycat.lib.TransforFileExport
   - io.mycat.lib.ShardingQueryExport
-schemaName: TESTDB1.TRAVELRECORD,TESTDB1.ADDRESS,TESTDB2.*
+schemaName: TESTDB.TRAVELRECORD,TESTDB.ADDRESS,TESTDB2.*
 sql:
   - sql: use {schema}
     code: useSchemaThenResponseOk(matcher.group("schema"))
@@ -16,17 +16,17 @@ sql:
   - sql: show databases
     code: responseFinalSQL("/sql/show_databases.sql")
 
-  - sql:  show full tables from `TESTDB1` where table_type = 'BASE TABLE'
-    code: responseFinalSQL("/sql/show_full_tables_from_testdb1.sql")
+  - sql:  show full tables from `TESTDB` where table_type = 'BASE TABLE'
+    code: responseFinalSQL("/sql/show_full_tables_from_testdb.sql")
 
   - sql:  show full tables from `TESTDB2` where table_type = 'BASE TABLE'
     code: responseFinalSQL("/sql/show_full_tables_from_testdb2.sql")
 
-  - sql:  describe `TESTDB1`.`travelrecord`
-    code: responseFinalSQL("/sql/describe_testdb1_travelrecord.sql")
+  - sql:  describe `TESTDB`.`travelrecord`
+    code: responseFinalSQL("/sql/describe_testdb_travelrecord.sql")
 
-  - sql:  describe `TESTDB1`.`address`
-    code: responseFinalSQL("/sql/describe_testdb1_address.sql")
+  - sql:  describe `TESTDB`.`address`
+    code: responseFinalSQL("/sql/describe_testdb_address.sql")
 
   - sql: /*!40101 set @@session.wait_timeout=28800 */
     code: responseOk()
@@ -54,7 +54,7 @@ sql:
 initCode:
   - initFinalSQLCacheFile("d:/cache")
   - finalSQLFile("/sql/show_databases.sql")
-  - finalSQLFile("/sql/show_full_tables_from_testdb1.sql")
+  - finalSQLFile("/sql/show_full_tables_from_testdb.sql")
   - finalSQLFile("/sql/show_full_tables_from_testdb2.sql")
-  - finalSQLFile("/sql/describe_testdb1_travelrecord.sql")
-  - finalSQLFile("/sql/describe_testdb1_address.sql")
+  - finalSQLFile("/sql/describe_testdb_travelrecord.sql")
+  - finalSQLFile("/sql/describe_testdb_address.sql")

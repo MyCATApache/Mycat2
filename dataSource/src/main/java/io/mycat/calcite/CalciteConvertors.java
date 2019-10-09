@@ -42,10 +42,10 @@ public class CalciteConvertors {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteConvertors.class);
 
     final static List<SimpleColumnInfo> convertfromDatabaseMetaData(DatabaseMetaData databaseMetaData, String catalog, String schema, String tableName) {
-        try (ResultSet resultSet = databaseMetaData.getColumns(catalog, schema, tableName, null)) {
+        try (ResultSet resultSet = databaseMetaData.getColumns(catalog, schema.toLowerCase(), tableName.toLowerCase(), null)) {
             ArrayList<SimpleColumnInfo> res = new ArrayList<>();
             while (resultSet.next()) {
-                final String columnName = resultSet.getString(4).toUpperCase();
+                final String columnName = resultSet.getString(4).toLowerCase();
                 final int dataType = resultSet.getInt(5);
                 final String typeString = resultSet.getString(6);
                 final int precision;
@@ -62,7 +62,7 @@ public class CalciteConvertors {
                         break;
                 }
                 boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
-                res.add(new SimpleColumnInfo(columnName, dataType, precision, scale, typeString, nullable));
+                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale, typeString, nullable));
             }
             return res;
         } catch (SQLException e) {
@@ -159,8 +159,8 @@ public class CalciteConvertors {
         DefaultConnection defaultConnection = tableInfo.getSession(true, null);
         try (Connection rawConnection = defaultConnection.getRawConnection()) {
             DatabaseMetaData metaData = rawConnection.getMetaData();
-            String schema = tableInfo.getSchemaName();
-            infos = CalciteConvertors.convertfromDatabaseMetaData(metaData, schema, schema, tableInfo.getTableName());
+            String schema = tableInfo.getSchemaInfo().getTargetSchema();
+            infos = CalciteConvertors.convertfromDatabaseMetaData(metaData, schema, schema,  tableInfo.getSchemaInfo().getTargetTable());
         } catch (Exception e) {
             LOGGER.error("", e);
             return null;
@@ -189,7 +189,7 @@ public class CalciteConvertors {
         schemaBackendMetaMap.forEach((schemaName, value) -> {
             schemaColumnMetaMap.put(schemaName, new HashMap<>());
             for (Map.Entry<String, List<BackEndTableInfo>> stringListEntry : value.entrySet()) {
-                String tableName = stringListEntry.getKey();
+                String tableName = stringListEntry.getKey().toLowerCase();
                 List<BackEndTableInfo> backs = stringListEntry.getValue();
                 if (backs == null || backs.isEmpty()) return;
                 List<SimpleColumnInfo> info = null;
@@ -200,7 +200,7 @@ public class CalciteConvertors {
                       info = getColumnInfo(sql);
                     }
                 }
-                if (info!=null){
+                if (info==null){
                     info = getColumnInfo( backs.get(0));
                 }
                 if (info == null) {

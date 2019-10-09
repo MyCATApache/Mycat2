@@ -43,8 +43,8 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         for (int i = 0; i < this.sqls.length; i++) {
             BackEndTableInfo endTableInfo = backStoreList.get(i);
-            String schemaName = endTableInfo.getSchemaName();
-            String tableName = endTableInfo.getTableName();
+            String schemaName = endTableInfo.getSchemaInfo().getTargetSchema();
+            String tableName = endTableInfo.getSchemaInfo().getTargetTable();
             String sql;
             if (filterText != null && !"".equals(filterText)) {
                 sql = "select " + text +
