@@ -1,0 +1,84 @@
+filePath: null
+schemas:
+  - schemaName: testdb
+    tables:
+      - columns:
+          - id
+        createTableSQL: null
+        function: PartitionByLong
+        properties: &id001
+          partitionCount: 2,1
+          partitionLength: 256,512
+        queryPhysicalTable:
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: address
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: address
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: address
+        ranges: &id002 {}
+        tableName: address
+      - columns:
+          - id
+        createTableSQL: null
+        function: PartitionByLong
+        properties: *id001
+        queryPhysicalTable:
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: travelrecord
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: travelrecord2
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db1
+            tableName: travelrecord3
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: travelrecord
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: travelrecord2
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db2
+            tableName: travelrecord3
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: travelrecord
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: travelrecord2
+          - dataNodeName: null
+            hostName: mytest3306a
+            replicaName: null
+            schemaName: db3
+            tableName: travelrecord3
+        ranges: *id002
+        tableName: travelrecord
+type: null
+version: 0

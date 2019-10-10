@@ -20,9 +20,15 @@ import cn.lightfish.sqlEngine.ast.optimizer.queryCondition.ConditionCollector;
 import cn.lightfish.sqlEngine.ast.optimizer.queryCondition.QueryDataRange;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.dialect.mysql.parser.MySqlStatementParser;
 import com.alibaba.fastsql.sql.repository.Schema;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
@@ -34,10 +40,7 @@ import io.mycat.config.shardingQuery.ShardingQueryRootConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.router.RuleAlgorithm;
 import io.mycat.router.function.PartitionRuleAlgorithmManager;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.*;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
@@ -48,7 +51,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
@@ -66,7 +68,7 @@ public enum MetadataManager {
     final ConcurrentHashMap<String, Map<String, String>> logicTableCreateSQLMap = new ConcurrentHashMap<>();
     final ConcurrentHashMap<String, Map<String, DataMappingEvaluator>> logicTableDataMappingOiginalEvaluator = new ConcurrentHashMap<>();
     final ConcurrentHashMap<JdbcDataSource, Set<SchemaInfo>> physicalTableMap = new ConcurrentHashMap<>();
-//    final ConcurrentHashMap<BackEndTableInfo, Map<String, SchemaInfo>> backEndTableInfoTableMapping = new ConcurrentHashMap<>();
+    //    final ConcurrentHashMap<BackEndTableInfo, Map<String, SchemaInfo>> backEndTableInfoTableMapping = new ConcurrentHashMap<>();
     public final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
 
     MetadataManager() {
@@ -105,6 +107,10 @@ public enum MetadataManager {
                     "  `blob` longblob DEFAULT NULL,\n" +
                     "  `d` double DEFAULT NULL\n" +
                     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            addCreateTableSQL("TESTDB", "ADDRESS", "create table `address` (\n" +
+                    "\t`id` int (11),\n" +
+                    "\t`addressname` varchar (80)\n" +
+                    "); \n");
 
             List<BackEndTableInfo> tableInfos2 = Arrays.asList(
                     BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("address").build()).build(),
@@ -138,7 +144,7 @@ public enum MetadataManager {
             });
 
             String dump = YamlUtil.dump(rootConfig);
-
+            System.out.println(dump);
         } else {
             for (ShardingQueryRootConfig.LogicSchemaConfig entry : shardingQueryRootConfig.getSchemas()) {
                 String schemaName = entry.getSchemaName();
@@ -164,7 +170,7 @@ public enum MetadataManager {
         for (Map.Entry<String, Map<String, List<BackEndTableInfo>>> entry : this.schemaBackendMetaMap.entrySet()) {
             String schemaName = entry.getKey();
 
-            HashMap<String,List<BackEndTableInfo>> res = new HashMap<>();
+            HashMap<String, List<BackEndTableInfo>> res = new HashMap<>();
             Map<String, List<BackEndTableInfo>> tableList = entry.getValue();
             for (Map.Entry<String, List<BackEndTableInfo>> listEntry : tableList.entrySet()) {
                 String tableName = listEntry.getKey();
@@ -177,8 +183,8 @@ public enum MetadataManager {
                     schemaInfo.logicSchema = schemaInfo.logicSchema.toLowerCase();
                     addTable(physicalTableMap, physical, next.getSchemaInfo());
 
-                    res.put(tableName,listEntry.getValue());
-                    res.put(tableName.toLowerCase(),listEntry.getValue());
+                    res.put(tableName, listEntry.getValue());
+                    res.put(tableName.toLowerCase(), listEntry.getValue());
                 }
             }
             entry.setValue(res);
@@ -204,16 +210,93 @@ public enum MetadataManager {
 //        Set<SchemaInfo> phySchemaInfos = physicalTableMap.get(datasource);
 
         String sql = "select * from TESTDB.travelrecord where id between 1 and 999";
-        Map<BackEndTableInfo, String> sqls = rewriteUpdateSQL("testdb",sql);
+        Map<BackEndTableInfo, String> sqls = rewriteUpdateSQL("testdb", sql);
 
         Collection<String> values = sqls.values();
 
-//        String s = SQLUtils.toSQLString(sqlStatement, DbType.mysql);
+        String insertSQL = "insert into `travelrecord` (`id`, `user_id`, `traveldate`, `fee`, `days`, `blob`, `d`) values('1','1','2019-09-12','222','9','ssss','666.666'),('999',NULL,NULL,NULL,NULL,NULL,NULL);";
+        String currentSchemaText = "TESTDB";
+        String currentSchemaName = currentSchemaText.toLowerCase();
+        MySqlStatementParser sqlStatementParser = new MySqlStatementParser(insertSQL);
+        List<SQLStatement> statementList = new LinkedList<>();
+        sqlStatementParser.parseStatementList(statementList, -1, null);
+        Iterator<MySqlInsertStatement> listIterator = (Iterator) statementList.listIterator();
+        Iterator<Map<BackEndTableInfo, String>> iterator = getInsertInfoIterator(currentSchemaName, listIterator);
 
-        // String format = MessageFormat.format("select * from {0} where id = {1}", backEndTableInfo.getTargetSchemaTable(), value);
+        Map<BackEndTableInfo, String> next = null;
+        while (iterator.hasNext()) {
+            next = iterator.next();
+            System.out.println(next);
+        }
+
     }
 
-    private Map<BackEndTableInfo, String> rewriteUpdateSQL(String currentSchema,String sql) {
+    private Iterator<Map<BackEndTableInfo, String>> getInsertInfoIterator(String currentSchemaName, Iterator<MySqlInsertStatement> listIterator) {
+        return new Iterator<Map<BackEndTableInfo, String>>() {
+            @Override
+            public boolean hasNext() {
+                return listIterator.hasNext();
+            }
+
+            @Override
+            public Map<BackEndTableInfo, String> next() {
+                MySqlInsertStatement statement = listIterator.next();
+                String s = statement.getTableSource().getSchema();
+                String schema = s == null ? currentSchemaName : s;
+                String tableName = SQLUtils.normalize(statement.getTableSource().getTableName()).toLowerCase();
+                List<SQLExpr> columns = statement.getColumns();
+                String[] columnList = new String[columns.size()];
+                int index = 0;
+                for (SQLExpr column : statement.getColumns()) {
+                    columnList[index] = SQLUtils.normalize(column.toString()).toLowerCase();
+                    index++;
+                }
+                DataMappingEvaluator dataMappingEvaluator = logicTableDataMappingOiginalEvaluator.get(schema).get(tableName).copy();
+                List<SQLInsertStatement.ValuesClause> valuesList = statement.getValuesList();
+                ArrayList<SQLInsertStatement.ValuesClause> valuesClauses = new ArrayList<>(valuesList);
+                valuesList.clear();
+                HashMap<BackEndTableInfo, List<SQLInsertStatement.ValuesClause>> res = new HashMap<>();
+                for (SQLInsertStatement.ValuesClause valuesClause : valuesClauses) {
+                    index = 0;
+                    for (SQLExpr valueText : valuesClause.getValues()) {
+                        String s1 = columnList[index++];
+                        if (valueText instanceof SQLValuableExpr) {
+                            String value = SQLUtils.normalize(Objects.toString(((SQLValuableExpr) valueText).getValue()));
+                            dataMappingEvaluator.assignment(false, s1, value);
+                        } else {
+                            throw new UnsupportedOperationException();
+                        }
+                    }
+                    int[] calculate = dataMappingEvaluator.calculate();
+                    int backendIndex = calculate[0];
+                    List<BackEndTableInfo> backEndTableInfos = schemaBackendMetaMap.get(schema).get(tableName);
+                    BackEndTableInfo endTableInfo = backEndTableInfos.get(backendIndex);
+                    List<SQLInsertStatement.ValuesClause> valuesGroup = res.computeIfAbsent(endTableInfo, backEndTableInfo -> new ArrayList<>());
+                    valuesGroup.add(valuesClause);
+                }
+                listIterator.remove();
+
+                //////////////////////////////////////////////////////////////////
+                HashMap<BackEndTableInfo, String> map = new HashMap<>();
+                for (
+                        Map.Entry<BackEndTableInfo, List<SQLInsertStatement.ValuesClause>> entry : res.entrySet()) {
+                    BackEndTableInfo key = entry.getKey();
+                    SchemaInfo schemaInfo = key.getSchemaInfo();
+                    SQLExprTableSource tableSource = statement.getTableSource();
+                    tableSource.setExpr(new SQLPropertyExpr(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()));
+                    statement.getValuesList().clear();
+                    statement.getValuesList().addAll(entry.getValue());
+                    map.put(key, statement.toString());
+                }
+
+                return map;
+            }
+        }
+
+                ;
+    }
+
+    public Map<BackEndTableInfo, String> rewriteUpdateSQL(String currentSchema, String sql) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
         ConditionCollector conditionCollector = new ConditionCollector();
@@ -222,13 +305,13 @@ public enum MetadataManager {
         String schemaName = rrs.getSchemaName();
         String tableName = rrs.getTableName();
         Map<String, SchemaInfo> replacerMap = new HashMap<>();
-        Map<BackEndTableInfo,String > sqls = new HashMap<>();
+        Map<BackEndTableInfo, String> sqls = new HashMap<>();
         for (BackEndTableInfo endTableInfo : rrs.getBackEndTableInfos()) {
             SchemaInfo schemaInfo = endTableInfo.getSchemaInfo();
             replacerMap.put(schemaName.toLowerCase() + "." + tableName.toLowerCase(), schemaInfo);
             SQLStatement clone = sqlStatement.clone();
             clone.accept(new MysqlTableReplacer(replacerMap, currentSchema.toLowerCase()));
-            sqls.put(endTableInfo,SQLUtils.toMySqlString(clone));
+            sqls.put(endTableInfo, SQLUtils.toMySqlString(clone));
         }
         return sqls;
     }
@@ -267,35 +350,38 @@ public enum MetadataManager {
                 }
             }
         }
-        List<ColumnRangeValue> rangeValues = queryDataRange.getRangeValues();
-        if (rangeValues != null && !rangeValues.isEmpty()) {
-            for (ColumnRangeValue rangeValue : rangeValues) {
-                SQLTableSource tableSource = rangeValue.getTableSource();
-                if (tableSource instanceof SQLExprTableSource) {
-                    SQLExprTableSource table = (SQLExprTableSource) tableSource;
-                    SchemaObject schemaObject = table.getSchemaObject();
-                    schemaName = SQLUtils.normalize(schemaObject.getSchema().getName()).toLowerCase();
-                    tableName = SQLUtils.normalize(schemaObject.getName()).toLowerCase();
+        if (backEndTableInfos1 == null) {
+            List<ColumnRangeValue> rangeValues = queryDataRange.getRangeValues();
+            if (rangeValues != null && !rangeValues.isEmpty()) {
+                for (ColumnRangeValue rangeValue : rangeValues) {
+                    SQLTableSource tableSource = rangeValue.getTableSource();
+                    if (tableSource instanceof SQLExprTableSource) {
+                        SQLExprTableSource table = (SQLExprTableSource) tableSource;
+                        SchemaObject schemaObject = table.getSchemaObject();
+                        schemaName = SQLUtils.normalize(schemaObject.getSchema().getName()).toLowerCase();
+                        tableName = SQLUtils.normalize(schemaObject.getName()).toLowerCase();
 
-                    if (fail) {
-                        break;
-                    }
+                        if (fail) {
+                            break;
+                        }
 
-                    DataMappingEvaluator dataMappingEvaluator = logicTableDataMappingOiginalEvaluator
-                            .get(schemaName)
-                            .get(tableName)
-                            .copy();
-                    dataMappingEvaluator.assignmentRange(false, SQLUtils.normalize(rangeValue.getColumn().getColumnName()), Objects.toString(rangeValue.getBegin()), Objects.toString(rangeValue.getEnd()));
-                    int[] calculate = dataMappingEvaluator.calculate();
-                    List<BackEndTableInfo> backEndTableInfos = schemaBackendMetaMap.get(schemaName).get(tableName);
-                    ArrayList<BackEndTableInfo> list = new ArrayList<>();
-                    for (int i : calculate) {
-                        list.add(backEndTableInfos.get(calculate[i]));
+                        DataMappingEvaluator dataMappingEvaluator = logicTableDataMappingOiginalEvaluator
+                                .get(schemaName)
+                                .get(tableName)
+                                .copy();
+                        dataMappingEvaluator.assignmentRange(false, SQLUtils.normalize(rangeValue.getColumn().getColumnName()), Objects.toString(rangeValue.getBegin()), Objects.toString(rangeValue.getEnd()));
+                        int[] calculate = dataMappingEvaluator.calculate();
+                        List<BackEndTableInfo> backEndTableInfos = schemaBackendMetaMap.get(schemaName).get(tableName);
+                        ArrayList<BackEndTableInfo> list = new ArrayList<>();
+                        for (int i : calculate) {
+                            list.add(backEndTableInfos.get(calculate[i]));
+                        }
+                        backEndTableInfos1 = list;
                     }
-                    backEndTableInfos1 = list;
                 }
             }
         }
+
         if (schemaName != null && tableName != null && backEndTableInfos1 == null) {
             backEndTableInfos1 = new ArrayList<>(schemaBackendMetaMap.get(schemaName).get(tableName));
         }
@@ -351,13 +437,12 @@ public enum MetadataManager {
     @EqualsAndHashCode
     @Getter
     @Builder
+    @ToString
     static class SchemaInfo {
         String logicSchema;
         String logicTable;
         String targetSchema;
         String targetTable;
-
-
     }
 
     private <T, K, V> void addTableDataMapping(String schemaName, String tableName, List<String> columnList, String rule, Map<String, String> properties, Map<String, String> ranges) {
@@ -483,6 +568,7 @@ public enum MetadataManager {
         public String getTableName() {
             return tableName;
         }
+
     }
 
     public static void main(String[] args) {

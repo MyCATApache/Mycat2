@@ -7,6 +7,7 @@ import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class MysqlTableReplacer extends MySqlASTVisitorAdapter {
     private final Map<String, MetadataManager.SchemaInfo> dbSet;
@@ -30,7 +31,8 @@ public class MysqlTableReplacer extends MySqlASTVisitorAdapter {
         if (schemaName == null) {
             schemaName = this.schemaName;
         }
-        MetadataManager.SchemaInfo mappingTable = getMappingTable(schemaName, tableName);
+        Objects.requireNonNull(tableName);
+        MetadataManager.SchemaInfo mappingTable = getMappingTable(schemaName.toLowerCase(), tableName.toLowerCase());
         if (mappingTable!=null){
             x.setExpr(new SQLPropertyExpr(mappingTable.targetSchema, mappingTable.targetTable));
         }
