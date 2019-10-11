@@ -15,6 +15,7 @@
 package io.mycat.calcite;
 
 
+import io.mycat.calcite.shardingQuery.SchemaInfo;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSourceQuery;
@@ -34,12 +35,12 @@ public class BackEndTableInfo {
     private String dataNodeName;
     private String replicaName;
     private String hostName;
-    private MetadataManager.SchemaInfo schemaInfo;
+    private SchemaInfo schemaInfo;
 
     public BackEndTableInfo() {
     }
 
-    public BackEndTableInfo(String dataNodeName, String replicaName, String hostName,MetadataManager.SchemaInfo schemaInfo) {
+    public BackEndTableInfo(String dataNodeName, String replicaName, String hostName,SchemaInfo schemaInfo) {
         this.dataNodeName = dataNodeName;
         this.replicaName = replicaName;
         this.hostName = hostName;

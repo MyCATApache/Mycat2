@@ -5,15 +5,16 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.calcite.shardingQuery.SchemaInfo;
 
 import java.util.Map;
 import java.util.Objects;
 
 public class MysqlTableReplacer extends MySqlASTVisitorAdapter {
-    private final Map<String, MetadataManager.SchemaInfo> dbSet;
+    private final Map<String, SchemaInfo> dbSet;
     private final String schemaName;
 
-    public MysqlTableReplacer(Map<String, MetadataManager.SchemaInfo> dbSet, String schemaName) {
+    public MysqlTableReplacer(Map<String, SchemaInfo> dbSet, String schemaName) {
         this.dbSet = dbSet;
         this.schemaName = schemaName;
     }
@@ -32,15 +33,15 @@ public class MysqlTableReplacer extends MySqlASTVisitorAdapter {
             schemaName = this.schemaName;
         }
         Objects.requireNonNull(tableName);
-        MetadataManager.SchemaInfo mappingTable = getMappingTable(schemaName.toLowerCase(), tableName.toLowerCase());
+        SchemaInfo mappingTable = getMappingTable(schemaName.toLowerCase(), tableName.toLowerCase());
         if (mappingTable!=null){
-            x.setExpr(new SQLPropertyExpr(mappingTable.targetSchema, mappingTable.targetTable));
+            x.setExpr(new SQLPropertyExpr(mappingTable.getTargetSchema(), mappingTable.getTargetTable()));
         }
         return super.visit(x);
     }
 
 
-    public MetadataManager.SchemaInfo getMappingTable(String schemaName, String tableName) {
+    public SchemaInfo getMappingTable(String schemaName, String tableName) {
         String key = schemaName.toLowerCase() + "." + tableName.toLowerCase();
         return dbSet.get(key);
     }

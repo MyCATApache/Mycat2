@@ -5,14 +5,18 @@ import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+
 /**
  * @author Junwen Chen
  **/
@@ -40,7 +44,8 @@ public class ConditionCollector extends MySqlASTVisitorAdapter {
     }
 
     private void addEqualValue(ColumnValue columnValue) {
-        QueryDataRange queryDataRange = Objects.requireNonNull(stack.peek());
+        QueryDataRange peek = stack.peek();
+        QueryDataRange queryDataRange = peek;
         if (isJoin) {
             queryDataRange.joinEqualValues.add(columnValue);
         } else {
@@ -82,6 +87,50 @@ public class ConditionCollector extends MySqlASTVisitorAdapter {
         }
         super.endVisit(x);
     }
+    @Override
+    public boolean visit(MySqlUpdateStatement x) {
+        SQLExprTableSource tableSource = (SQLExprTableSource)x.getTableSource();
+        QueryDataRange queryDataRange = new QueryDataRange(tableSource);
+        if (root == null) {
+            root = queryDataRange;
+        }
+        stack.push(queryDataRange);
+        return super.visit(x);
+    }
+
+    @Override
+    public void endVisit(MySqlUpdateStatement x) {
+        QueryDataRange pop = stack.pop();
+        if (stack.isEmpty()) {
+            root = pop;
+        } else {
+            stack.peek().children.add(pop);
+        }
+        super.endVisit(x);
+    }
+
+    @Override
+    public boolean visit(MySqlDeleteStatement x) {
+        SQLExprTableSource tableSource = (SQLExprTableSource)x.getTableSource();
+        QueryDataRange queryDataRange = new QueryDataRange(tableSource);
+        if (root == null) {
+            root = queryDataRange;
+        }
+        stack.push(queryDataRange);
+        return super.visit(x);
+    }
+
+    @Override
+    public void endVisit(MySqlDeleteStatement x) {
+        QueryDataRange pop = stack.pop();
+        if (stack.isEmpty()) {
+            root = pop;
+        } else {
+            stack.peek().children.add(pop);
+        }
+        super.endVisit(x);
+    }
+
 
     public boolean visit(SQLAggregateExpr x) {
         return super.visit(x);
@@ -491,13 +540,12 @@ public class ConditionCollector extends MySqlASTVisitorAdapter {
     }
 
 
-
     public static void main(String[] args) {
 
     }
 
     public QueryDataRange getRootQueryDataRange() {
-        return root;
+        return root == null ? stack.peek() : root;
     }
 
     public LinkedList<QueryDataRange> getStack() {

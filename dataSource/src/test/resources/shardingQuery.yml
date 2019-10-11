@@ -4,8 +4,9 @@ schemas:
     tables:
       - columns:
           - id
-        createTableSQL: null
-        function: PartitionByLong
+        createTableSQL: "create table `address` (\n\t`id` int (11),\n\t`addressname` varchar\
+      \ (80)\n); \n"
+        function: partitionByLong
         properties: &id001
           partitionCount: 2,1
           partitionLength: 256,512
@@ -29,8 +30,17 @@ schemas:
         tableName: address
       - columns:
           - id
-        createTableSQL: null
-        function: PartitionByLong
+        createTableSQL: |-
+          CREATE TABLE `travelrecord` (
+            `id` bigint(20) NOT NULL,
+            `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,
+            `traveldate` date DEFAULT NULL,
+            `fee` decimal(10,0) DEFAULT NULL,
+            `days` int(11) DEFAULT NULL,
+            `blob` longblob DEFAULT NULL,
+            `d` double DEFAULT NULL
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        function: partitionByLong
         properties: *id001
         queryPhysicalTable:
           - dataNodeName: null
