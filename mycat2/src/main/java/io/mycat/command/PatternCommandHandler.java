@@ -33,9 +33,16 @@ public class PatternCommandHandler extends AbstractCommandHandler{
                 throw e;
             }
         }else {
-            LOGGER.error("unknown sql:{}",sqlText);
-            session.setLastMessage("unknown sql:"+sqlText);
-            session.writeErrorEndPacket();
+            try {
+                Instruction defaultInstruction = PatternRuntime.INSTANCE.getDefaultInstruction();
+                Response response = defaultInstruction.execute(session, matcher);
+                response.apply(session,matcher);
+            }catch (Exception e) {
+                LOGGER.error("{}",e);
+                LOGGER.error("unknown sql:{}", sqlText);
+                session.setLastMessage("unknown sql:" + sqlText);
+                session.writeErrorEndPacket();
+            }
         }
     }
 

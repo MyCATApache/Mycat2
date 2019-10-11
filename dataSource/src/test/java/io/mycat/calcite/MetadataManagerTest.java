@@ -4,6 +4,7 @@ import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
+import io.mycat.ConfigRuntime;
 import io.mycat.calcite.shardingQuery.SchemaInfo;
 import org.junit.Assert;
 import org.junit.Test;
@@ -16,6 +17,10 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class MetadataManagerTest {
+    public MetadataManagerTest() {
+        ConfigRuntime.INSTCANE.load("/src/test/resources");
+    }
+
     static Map<BackendTableInfo, String> routeDelete(String currentSchema, String sql) {
         return MetadataManager.INSATNCE.rewriteUpdateSQL(currentSchema, sql);
     }

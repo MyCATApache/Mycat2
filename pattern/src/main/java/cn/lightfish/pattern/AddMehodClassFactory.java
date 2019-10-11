@@ -100,7 +100,12 @@ public class AddMehodClassFactory {
             addExpender(aClass);
         }
     }
-
+    public void addExpender(Reflections reflections, Class expenderInterface) throws CannotCompileException, NotFoundException {
+        Set<Class> set = reflections.getSubTypesOf(expenderInterface);
+        for (Class aClass : set) {
+            addExpender(aClass);
+        }
+    }
     public void addExpender(Class collections) throws CannotCompileException, NotFoundException {
         ClassClassPath classClassPath = new ClassClassPath(collections);
         this.pool.appendClassPath(classClassPath);

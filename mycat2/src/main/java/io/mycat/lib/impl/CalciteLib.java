@@ -2,6 +2,7 @@ package io.mycat.lib.impl;
 
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.calcite.CalciteEnvironment;
 import io.mycat.calcite.MetadataManager;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
@@ -26,7 +27,7 @@ public enum  CalciteLib {
     public Supplier<MycatResultSetResponse[]> queryCalcite(String sql) {
         return () -> {
             try {
-                CalciteConnection connection = MetadataManager.INSATNCE.getConnection();
+                CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection();
                 Statement statement = null;
                 statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery(sql);
@@ -40,7 +41,7 @@ public enum  CalciteLib {
     public Supplier<MycatResultSetResponse[]> queryCalcite(String columnSQL,RelNode rootRel) {
         return () -> {
             try {
-                CalciteConnection connection = MetadataManager.INSATNCE.getConnection();
+                CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection();
                 Statement statement = null;
                 statement = connection.createStatement();
                 CalcitePrepare.Context prepareContext = connection.createPrepareContext();

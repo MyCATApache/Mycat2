@@ -19,5 +19,5 @@ package cn.lightfish.pattern;
  * @author Junwen Chen
  **/
 public interface Instruction {
-    <T> T execute(Object context, DynamicSQLMatcher matcher);
+    <T> T execute(Object context, Object matcher);
 }

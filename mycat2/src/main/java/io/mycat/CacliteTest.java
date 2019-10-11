@@ -1,5 +1,6 @@
 package io.mycat;
 
+import io.mycat.calcite.CalciteEnvironment;
 import io.mycat.calcite.MetadataManager;
 import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
@@ -15,9 +16,8 @@ public class CacliteTest {
     public static void main(String[] args) {
         ReplicaSelectorRuntime.INSTCANE.load();
         GRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
-        MetadataManager insatnce = MetadataManager.INSATNCE;
         try {
-            CalciteConnection connection = insatnce.getConnection();
+            CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection();
             Statement statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery("select * from TESTDB.TRAVELRECORD limit 2");
             JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);

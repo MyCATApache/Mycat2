@@ -11,11 +11,16 @@ import java.sql.DriverManager;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class CalciteEnvironment {
+public enum  CalciteEnvironment {
+    INSTANCE;
     final Logger LOGGER = LoggerFactory.getLogger(CalciteEnvironment.class);
-    ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap;
+    final ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap;
 
-    CalciteEnvironment(ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap) {
+     CalciteEnvironment() {
+        this(MetadataManager.INSATNCE.logicTableMap);
+    }
+
+    private CalciteEnvironment(ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap) {
         this.logicTableMap = logicTableMap;
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);

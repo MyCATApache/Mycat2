@@ -10,6 +10,15 @@ public class PatternRootConfig extends ConfigurableRoot {
     private List<String> lib;
     private String schemaName;
     private List<String> initCode;
+    private String defaultCode;
+
+    public String getDefaultCode() {
+        return defaultCode;
+    }
+
+    public void setDefaultCode(String defaultCode) {
+        this.defaultCode = defaultCode;
+    }
 
     public static class TextItemConfig {
         String sql;

@@ -2,6 +2,7 @@ package io.mycat.pattern;
 
 import cn.lightfish.pattern.DynamicSQLMatcher;
 import cn.lightfish.pattern.DynamicSQLMatcherBuilder;
+import cn.lightfish.pattern.Instruction;
 import io.mycat.ConfigRuntime;
 import io.mycat.config.ConfigFile;
 import io.mycat.config.pattern.PatternRootConfig;
@@ -13,6 +14,7 @@ import java.util.Objects;
 public enum PatternRuntime {
     INSTANCE;
     volatile DynamicSQLMatcherBuilder builder;
+    private Instruction defaultInstruction;
 
     public void load() throws Exception {
         load(false);
@@ -48,11 +50,16 @@ public enum PatternRuntime {
             if (lib == null) lib = Collections.emptyList();
 
             String schemaName = patternRootConfig.getSchemaName();
-            builder.build("io.mycat.proxy.session.MycatSession",patternRootConfig.getInitCode()==null?Collections.emptyList():patternRootConfig.getInitCode(),lib,schemaName, false);
+            builder.build("io.mycat.proxy.session.MycatSession",patternRootConfig.getInitCode()==null?Collections.emptyList():patternRootConfig.getInitCode(),lib,schemaName,patternRootConfig.getDefaultCode(), false);
             this.builder = builder;
+            this.defaultInstruction = this.builder.getDefaultInstruction();
         }
     }
     public DynamicSQLMatcher createMatcher(){
         return builder.createMatcher();
+    }
+
+    public Instruction getDefaultInstruction() {
+        return defaultInstruction;
     }
 }
