@@ -15,7 +15,6 @@
 package io.mycat.calcite;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.datasource.DsConnection;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -32,17 +31,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
  **/
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private final AtomicBoolean cancelFlag;
-    private final List<BackEndTableInfo> backStoreList;
+    private final List<BackendTableInfo> backStoreList;
     private final String[] sqls;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
 
-    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<BackEndTableInfo> backStoreList, String text, String filterText) {
+    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<BackendTableInfo> backStoreList, String text, String filterText) {
         this.cancelFlag = cancelFlag;
         this.backStoreList = backStoreList;
         this.sqls = new String[backStoreList.size()];
 
         for (int i = 0; i < this.sqls.length; i++) {
-            BackEndTableInfo endTableInfo = backStoreList.get(i);
+            BackendTableInfo endTableInfo = backStoreList.get(i);
             String schemaName = endTableInfo.getSchemaInfo().getTargetSchema();
             String tableName = endTableInfo.getSchemaInfo().getTargetTable();
             String sql;
@@ -68,7 +67,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         ArrayList<DsConnection> dsConnections = new ArrayList<>(length);
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (int i = 0; i < length; i++) {
-            BackEndTableInfo endTableInfo = backStoreList.get(i);
+            BackendTableInfo endTableInfo = backStoreList.get(i);
             DsConnection session = endTableInfo.getSession(false,null);
             dsConnections.add(session);
             iterators.add(session.executeQuery(sqls[i]));

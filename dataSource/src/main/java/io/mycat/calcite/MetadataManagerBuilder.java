@@ -10,18 +10,18 @@ public class MetadataManagerBuilder {
 
     public static void exampleBuild(MetadataManager m) {
         m.addSchema("TESTDB");
-        List<BackEndTableInfo> tableInfos = Arrays.asList(
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("TRAVELRECORD").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("TRAVELRECORD2").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("TRAVELRECORD3").build()).build(),
+        List<BackendTableInfo> tableInfos = Arrays.asList(
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("TRAVELRECORD").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("TRAVELRECORD2").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("TRAVELRECORD3").build()).build(),
 
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("TRAVELRECORD").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("TRAVELRECORD2").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("TRAVELRECORD3").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("TRAVELRECORD").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("TRAVELRECORD2").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("TRAVELRECORD3").build()).build(),
 
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("TRAVELRECORD").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("TRAVELRECORD2").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("TRAVELRECORD3").build()).build()
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("TRAVELRECORD").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("TRAVELRECORD2").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("TRAVELRECORD3").build()).build()
         );
         m.addTable("TESTDB", "TRAVELRECORD", tableInfos);
         Map<String, String> properties = new HashMap<>();
@@ -42,10 +42,10 @@ public class MetadataManagerBuilder {
                 "`addressname` varchar (80)" +
                 ");");
 
-        List<BackEndTableInfo> tableInfos2 = Arrays.asList(
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("address").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("address").build()).build(),
-                BackEndTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("address").build()).build()
+        List<BackendTableInfo> tableInfos2 = Arrays.asList(
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db1").targetTable("address").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db2").targetTable("address").build()).build(),
+                BackendTableInfo.builder().hostName("mytest3306a").schemaInfo(SchemaInfo.builder().targetSchema("db3").targetTable("address").build()).build()
         );
 
         m.addTable("TESTDB", "ADDRESS", tableInfos2);
@@ -58,11 +58,11 @@ public class MetadataManagerBuilder {
         m.schemaBackendMetaMap.forEach((schemaName, tableList) -> {
             List<ShardingQueryRootConfig.LogicTableConfig> list = new ArrayList<>();
             metaMap.add(new ShardingQueryRootConfig.LogicSchemaConfig(schemaName, list));
-            for (Map.Entry<String, List<BackEndTableInfo>> entry : tableList.entrySet()) {
+            for (Map.Entry<String, List<BackendTableInfo>> entry : tableList.entrySet()) {
                 String tableName = entry.getKey().toLowerCase();
                 List<ShardingQueryRootConfig.BackEndTableInfoConfig> backEndTableInfoConfigList = new ArrayList<>();
-                List<BackEndTableInfo> endTableInfos = entry.getValue();
-                for (BackEndTableInfo b : endTableInfos) {
+                List<BackendTableInfo> endTableInfos = entry.getValue();
+                for (BackendTableInfo b : endTableInfos) {
                     backEndTableInfoConfigList.add(new ShardingQueryRootConfig.BackEndTableInfoConfig(
                             b.getDataNodeName(), b.getReplicaName(), b.getHostName(), b.getSchemaInfo().getTargetSchema(), b.getSchemaInfo().getTargetTable()));
                 }

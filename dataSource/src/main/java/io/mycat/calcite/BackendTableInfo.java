@@ -31,16 +31,16 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode
 @Builder
-public class BackEndTableInfo {
+public class BackendTableInfo {
     private String dataNodeName;
     private String replicaName;
     private String hostName;
     private SchemaInfo schemaInfo;
 
-    public BackEndTableInfo() {
+    public BackendTableInfo() {
     }
 
-    public BackEndTableInfo(String dataNodeName, String replicaName, String hostName,SchemaInfo schemaInfo) {
+    public BackendTableInfo(String dataNodeName, String replicaName, String hostName, SchemaInfo schemaInfo) {
         this.dataNodeName = dataNodeName;
         this.replicaName = replicaName;
         this.hostName = hostName;

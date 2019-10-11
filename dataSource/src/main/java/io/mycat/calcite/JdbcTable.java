@@ -50,10 +50,10 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     private final RelProtoDataType relProtoDataType;
     private final RowSignature rowSignature;
     private final DataMappingEvaluator originaldataMappingRule;
-    private final List<BackEndTableInfo> backStoreList;
+    private final List<BackendTableInfo> backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(JdbcTable.class);
 
-    public JdbcTable(String schemaName, String tableName, List<BackEndTableInfo> value, RelProtoDataType relProtoDataType, RowSignature rowSignature, DataMappingEvaluator dataMappingRule) {
+    public JdbcTable(String schemaName, String tableName, List<BackendTableInfo> value, RelProtoDataType relProtoDataType, RowSignature rowSignature, DataMappingEvaluator dataMappingRule) {
         Objects.requireNonNull(value);
         this.schemaName = schemaName;
         this.tableName = tableName;
@@ -207,7 +207,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             filterText = record.getFilterExpr();
         }
         LOGGER.info("optimize filters:{}", filters);
-        List<BackEndTableInfo> backStoreList = this.backStoreList;
+        List<BackendTableInfo> backStoreList = this.backStoreList;
         int[] calculate = record.calculate();
         if (calculate.length == 0) {
             backStoreList = this.backStoreList;
@@ -248,7 +248,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         }
     }
 
-    public List<BackEndTableInfo> getBackStoreList() {
+    public List<BackendTableInfo> getBackStoreList() {
         return backStoreList;
     }
 }

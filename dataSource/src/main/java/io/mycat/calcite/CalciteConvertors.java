@@ -154,7 +154,7 @@ public class CalciteConvertors {
         }
     }
 
-    static List<SimpleColumnInfo> getColumnInfo(BackEndTableInfo tableInfo) {
+    static List<SimpleColumnInfo> getColumnInfo(BackendTableInfo tableInfo) {
         List<SimpleColumnInfo> infos;
         DefaultConnection defaultConnection = tableInfo.getSession(true, null);
         try (Connection rawConnection = defaultConnection.getRawConnection()) {
@@ -184,13 +184,13 @@ public class CalciteConvertors {
     }
 
 
-    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListByDataSourceWithCreateTableSQL(final Map<String, Map<String, List<BackEndTableInfo>>> schemaBackendMetaMap, Map<String, Map<String, String>> sqlmap) {
+    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListByDataSourceWithCreateTableSQL(final Map<String, Map<String, List<BackendTableInfo>>> schemaBackendMetaMap, Map<String, Map<String, String>> sqlmap) {
         Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
         schemaBackendMetaMap.forEach((schemaName, value) -> {
             schemaColumnMetaMap.put(schemaName, new HashMap<>());
-            for (Map.Entry<String, List<BackEndTableInfo>> stringListEntry : value.entrySet()) {
+            for (Map.Entry<String, List<BackendTableInfo>> stringListEntry : value.entrySet()) {
                 String tableName = stringListEntry.getKey().toLowerCase();
-                List<BackEndTableInfo> backs = stringListEntry.getValue();
+                List<BackendTableInfo> backs = stringListEntry.getValue();
                 if (backs == null || backs.isEmpty()) return;
                 List<SimpleColumnInfo> info = null;
                 Map<String, String> sqlTableMap = sqlmap.get(schemaName);
