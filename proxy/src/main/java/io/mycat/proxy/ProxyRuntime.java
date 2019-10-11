@@ -43,6 +43,7 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.monitor.MycatMonitorCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOAcceptor;
+import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
@@ -50,6 +51,7 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.security.MycatSecurityConfig;
 import io.mycat.util.CharsetUtil;
 import java.io.IOException;
+import java.nio.channels.ServerSocketChannel;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
@@ -72,6 +74,7 @@ public class ProxyRuntime {
   private ProxyBeanProviders providers;
   private final Map<String, Object> defContext = new HashMap<>();
   private final MySQLAPIRuntimeImpl mySQLAPIRuntime = new MySQLAPIRuntimeImpl();
+  private volatile boolean gracefulShutdown = false;
 
   public ProxyRuntime(ConfigReceiver configReceiver)
       throws Exception {
@@ -355,5 +358,21 @@ public class ProxyRuntime {
 
   public MySQLAPIRuntimeImpl getMySQLAPIRuntime() {
     return mySQLAPIRuntime;
+  }
+
+  public void gracefulShutdown(){
+    this.gracefulShutdown = true;
+    ServerSocketChannel serverChannel = acceptor.getServerChannel();
+    if (serverChannel!=null){
+      try {
+        serverChannel.close();
+      } catch (IOException e) {
+       LOGGER.error("",e);
+      }
+    }
+  }
+
+  public boolean isGracefulShutdown() {
+    return gracefulShutdown;
   }
 }

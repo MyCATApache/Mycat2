@@ -80,6 +80,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   private final FrontMySQLPacketResolver frontResolver;
   private byte packetId = 0;
   private String dataNode;
+  private boolean gracefulShutdowning = false;
 
   public MycatSession(int sessionId, BufferPool bufferPool, NIOHandler nioHandler,
       SessionManager<MycatSession> sessionManager) {
@@ -110,6 +111,13 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
   public void onHandlerFinishedClear() {
     resetPacket();
     setResponseFinished(ProcessState.READY);
+    if (!isInTransaction()||!isBindMySQLSession()){
+      if(getRuntime().isGracefulShutdown()&&gracefulShutdowning==false){
+        gracefulShutdowning = true;
+        this.close(true,"gracefulShutdown");
+        return;
+      }
+    }
     this.change2ReadOpts();
   }
 

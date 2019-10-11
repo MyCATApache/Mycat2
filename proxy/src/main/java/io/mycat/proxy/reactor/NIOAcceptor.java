@@ -136,4 +136,8 @@ public final class NIOAcceptor extends ProxyReactorThread<Session> {
       LOGGER.warn("", e2);
     }
   }
+
+  public ServerSocketChannel getServerChannel() {
+    return serverChannel;
+  }
 }
