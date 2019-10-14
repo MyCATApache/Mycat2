@@ -73,21 +73,21 @@ public abstract class AbstractObjectRowIterator implements RowBaseIterator {
     public int getInt(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
-        return (Byte) o;
+        return (Integer) o;
     }
 
     @Override
     public long getLong(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
-        return (Byte) o;
+        return (Long) o;
     }
 
     @Override
     public float getFloat(int columnIndex) {
         Object o = getObject(currentRow[columnIndex - 1]);
         if (wasNull) return 0;
-        return (Byte) o;
+        return (Float) o;
     }
 
     @Override
