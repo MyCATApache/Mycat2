@@ -51,6 +51,8 @@ sql:
     code: responseQueryCalcite(matcher.getSQLAsString())
   - sql: select 1
     code: responseQueryCalcite(matcher.getSQLAsString())
+  - sql: test
+    code: responseTest()
 initCode:
   - initFinalSQLCacheFile("d:/cache")
   - finalSQLFile("/sql/show_databases.sql")

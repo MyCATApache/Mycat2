@@ -34,18 +34,31 @@ public enum  CalciteEnvironment {
             CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
             SchemaPlus rootSchema = calciteConnection.getRootSchema();
             rootSchema.setCacheEnabled(true);
-            Map<String, Map<String, JdbcTable>> schemaMap = getTableMap();
-            schemaMap.forEach((k, v) -> {
-                SchemaPlus schemaPlus = rootSchema.add(k, new AbstractSchema());
-                v.forEach((t, j) -> {
-                    schemaPlus.add(t, j);
-                });
-            });
+            setSchemaMap(rootSchema);
             return calciteConnection;
         } catch (Exception e) {
             LOGGER.error("", e);
             throw new RuntimeException(e);
         }
+    }
+    public CalciteConnection getRawConnection() {
+        try {
+            Connection connection = DriverManager.getConnection("jdbc:calcite:caseSensitive=false;lex=MYSQL;fun=mysql;conformance=MYSQL_5");
+            CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
+            return calciteConnection;
+        } catch (Exception e) {
+            LOGGER.error("", e);
+            throw new RuntimeException(e);
+        }
+    }
+    public void setSchemaMap(SchemaPlus rootSchema) {
+        Map<String, Map<String, JdbcTable>> schemaMap = getTableMap();
+        schemaMap.forEach((k, v) -> {
+            SchemaPlus schemaPlus = rootSchema.add(k, new AbstractSchema());
+            v.forEach((t, j) -> {
+                schemaPlus.add(t, j);
+            });
+        });
     }
 
     public Map<String, Map<String, JdbcTable>> getTableMap() {

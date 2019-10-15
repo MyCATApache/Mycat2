@@ -9,6 +9,7 @@ import io.mycat.calcite.shardingQuery.SchemaInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -100,10 +101,10 @@ public class MetadataManagerTest {
 
     @Test
     public void test7() {
-        BackendTableInfo backEndTableInfo = getBackEndTableInfo("TESTDB", "travelrecord", "1");
-        SchemaInfo schemaInfo = backEndTableInfo.getSchemaInfo();
-        String targetSchemaTable = schemaInfo.getTargetSchemaTable();
-        Assert.assertEquals("db1.travelrecord", targetSchemaTable);
+        String sql = "DELETE FROM travelrecord WHERE id = '2' ";
+        String id = "2";
+        BackendTableInfo backEndTableInfo = getBackEndTableInfo("TESTDB", "travelrecord", id);
+        String newSQL = MessageFormat.format("DELETE FROM {0} WHERE user_id = {1} ", backEndTableInfo.getSchemaInfo().getTargetSchemaTable(), id);
     }
 
     @Test

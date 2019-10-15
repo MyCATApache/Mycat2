@@ -231,7 +231,10 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 }
             }
         }
-        final AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
+         AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
+        if (cancelFlag == null){
+            cancelFlag = new AtomicBoolean(false);
+        }
         if (projects == null) {
             return new MyCatResultSetEnumerable(cancelFlag, backStoreList, "*", filterText);
         } else {
