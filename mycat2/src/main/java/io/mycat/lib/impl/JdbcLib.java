@@ -119,7 +119,13 @@ public class JdbcLib {
                 try {
                     mycat.deliverWorkerThread((SessionThread) Thread.currentThread());
                     consumer.accept(mycat);
-                } finally {
+                }catch (Exception e){
+                    LOGGER.error("",e);
+                    mycat.setLastMessage(e);
+                    mycat.writeErrorEndPacketBySyncInProcessError();
+                    mycat.close(false,e);
+                    throw e;
+                }finally {
                     mycat.backFromWorkerThread();
                     session.reset();
                 }
