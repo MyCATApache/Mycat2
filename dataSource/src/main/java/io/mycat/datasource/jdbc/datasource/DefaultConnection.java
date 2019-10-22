@@ -21,10 +21,9 @@ import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+
+import java.sql.*;
+
 /**
  * @author Junwen Chen
  **/
@@ -69,7 +68,10 @@ public class DefaultConnection implements DsConnection {
       int lastInsertId = 0;
       if (needGeneratedKeys) {
         ResultSet generatedKeys = statement.getGeneratedKeys();
-        lastInsertId = (int) (generatedKeys.next() ? generatedKeys.getLong(0) : 0L);
+        ResultSetMetaData metaData = generatedKeys.getMetaData();
+        if (metaData.getColumnCount() == 1){
+          lastInsertId = (int) (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
+        }
       }
       return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId,
           MySQLServerStatusFlags.AUTO_COMMIT);
