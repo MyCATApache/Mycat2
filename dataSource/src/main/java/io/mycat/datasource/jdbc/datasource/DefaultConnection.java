@@ -65,12 +65,12 @@ public class DefaultConnection implements DsConnection {
     try (Statement statement = connection.createStatement()) {
       statement.execute(sql,
           needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-      int lastInsertId = 0;
+      long lastInsertId = 0;
       if (needGeneratedKeys) {
         ResultSet generatedKeys = statement.getGeneratedKeys();
         ResultSetMetaData metaData = generatedKeys.getMetaData();
         if (metaData.getColumnCount() == 1){
-          lastInsertId = (int) (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
+          lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
         }
       }
       return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId,
