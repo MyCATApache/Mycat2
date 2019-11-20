@@ -14,23 +14,26 @@
  */
 package io.mycat.calcite;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
+import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelProtoDataType;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.schema.*;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,7 +145,12 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext toRelContext, RelOptTable relOptTable) {
-        return LogicalTableScan.create(toRelContext.getCluster(), relOptTable);
+        LogicalTableScan logicalTableScan = LogicalTableScan.create(toRelContext.getCluster(), relOptTable);
+        RelToSqlConverter relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
+        SqlImplementor.Result visit = relToSqlConverter.visitChild(0,logicalTableScan);
+        SqlNode sqlNode = visit.asStatement();
+        System.out.println(sqlNode);
+        return logicalTableScan;
     }
 
 
@@ -190,6 +198,25 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+        QueryProvider queryProvider = root.getQueryProvider();
+        final RexSqlStandardConvertletTable convertletTable = new RexSqlStandardConvertletTable();
+        RexToSqlNodeConverter converter = new RexToSqlNodeConverterImpl(convertletTable);
+        SqlImplementor relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
+
+        SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, JdbcTable.this.rowSignature.getColumnCount()) {
+            @Override
+            public SqlNode field(int ordinal) {
+                String fieldName = JdbcTable.this.rowSignature.getRowOrder().get(ordinal);
+                return new SqlIdentifier(ImmutableList.of(JdbcTable.this.schemaName, JdbcTable.this.tableName, fieldName),
+                        SqlImplementor.POS);
+            }
+        };
+        for (RexNode filter : filters) {
+            SqlNode sqlNode2= context.toSql(null, filter);
+            System.out.println(sqlNode2);
+        }
+
+
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = this.originaldataMappingRule.copy();
         record.fail = false;
@@ -231,8 +258,8 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 }
             }
         }
-         AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
-        if (cancelFlag == null){
+        AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
+        if (cancelFlag == null) {
             cancelFlag = new AtomicBoolean(false);
         }
         if (projects == null) {

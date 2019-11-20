@@ -226,7 +226,7 @@ public class JdbcDao extends ModualTest {
     );
   }
 
-  final static String url = "jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=true&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+  final static String url = "jdbc:mysql://localhost:8066/scott?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
   final static String username = "root";
   final static String password = "123456";
 
@@ -307,16 +307,30 @@ public class JdbcDao extends ModualTest {
     loadModule(DB_IN_ONE_SERVER, new MycatProxyBeanProviders(), new MycatMonitorLogCallback(),
         (future) -> {
 //          Thread.sleep(TimeUnit.SECONDS.toMillis(5));
-          int count = 5000;
+          int count = 1;
           CountDownLatch latch=new CountDownLatch(count);
           for (int i = 0; i < count; i++) {
             int index = i;
             new Thread(() -> {
+              //"SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000"
               try (Connection connection = getConnection()) {
                 for (int j = 0; j < 1; j++) {
-                  connection.setAutoCommit(false);
-                  try (Statement statement = connection.createStatement()) {
-                    statement.execute("SELECT 1");//"SELECT * FROM `TESTDB1`.`travelrecord` LIMIT 0, 100000"
+                  try (PreparedStatement statement = connection.prepareStatement("/*#mycat: sql=SELECT 1 FROM travelrecord where id=1 */set @out='2222222222',@id='111111111111'; call pro_2 (@id,@out);select @out")) {
+                    statement.execute();
+                    ResultSet resultSet = statement.getResultSet();
+                    while (resultSet.next()){
+                      String string = resultSet.getString(1);
+                      System.out.println(string+":"+string);
+                    }
+                  }
+                  try (PreparedStatement statement = connection.prepareStatement("/*#mycat: sql=Update travelrecord set id = 1 where id=1 , list_fields='@out1'*/set @id = 1; call pro_data3 (@id,@out1);select @out1")) {
+                    statement.execute();
+                    ResultSet resultSet = statement.getResultSet();
+                    while (resultSet.next()){
+                      String string = resultSet.getString(1);
+                      System.out.println(string+":"+string);
+                    }
+                    System.out.println("-----");
                   }
                   connection.commit();
                   LOGGER.info("{}", j);

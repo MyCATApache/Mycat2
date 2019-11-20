@@ -53,12 +53,16 @@ public enum  CalciteEnvironment {
     }
     public void setSchemaMap(SchemaPlus rootSchema) {
         Map<String, Map<String, JdbcTable>> schemaMap = getTableMap();
-        schemaMap.forEach((k, v) -> {
+        for (Map.Entry<String, Map<String, JdbcTable>> e : schemaMap.entrySet()) {
+            String k = e.getKey();
+            Map<String, JdbcTable> v = e.getValue();
             SchemaPlus schemaPlus = rootSchema.add(k, new AbstractSchema());
-            v.forEach((t, j) -> {
+            for (Map.Entry<String, JdbcTable> entry : v.entrySet()) {
+                String t = entry.getKey();
+                JdbcTable j = entry.getValue();
                 schemaPlus.add(t, j);
-            });
-        });
+            }
+        }
     }
 
     public Map<String, Map<String, JdbcTable>> getTableMap() {

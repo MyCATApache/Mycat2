@@ -6,6 +6,10 @@ import io.mycat.datasource.jdbc.GRuntime;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.tools.RelBuilderFactory;
 
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -19,7 +23,9 @@ public class CacliteTest {
         try {
             CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection();
             Statement statement = connection.createStatement();
-            ResultSet resultSet = statement.executeQuery("select * from TESTDB.TRAVELRECORD limit 2");
+            ResultSet resultSet = statement.executeQuery("select (select count(t.id) from  TESTDB.TRAVELRECORD as t    where t.id not between 1 and 2 and t.user_id = t2.id or " +
+                    "((not exists (select t.user_id from  TESTDB.TRAVELRECORD as t3  where t3.id = 4))) ) from TESTDB.TRAVELRECORD as t2 limit 2");
+            RelBuilderFactory proto = RelBuilder.proto(connection.createPrepareContext().getDataContext());
             JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);
             List<Map<String, Object>> resultSetMap = jdbcRowBaseIterator.getResultSetMap();
             for (Map<String, Object> map : resultSetMap) {
