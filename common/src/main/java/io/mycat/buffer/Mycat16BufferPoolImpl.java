@@ -28,7 +28,7 @@ import sun.nio.ch.DirectBuffer;
  *
  * buffer池
  **/
-public class BufferPoolImpl implements BufferPool {
+public class Mycat16BufferPoolImpl implements BufferPool {
 
   private final int chunkSize;
   private final int pageSize;
@@ -41,7 +41,7 @@ public class BufferPoolImpl implements BufferPool {
   // private int prevAllocatedPage = 0;
   private final AtomicInteger prevAllocatedPage;
 
-  public BufferPoolImpl(int pageSize, int chunkSize, int pageCount) {
+  public Mycat16BufferPoolImpl(int pageSize, int chunkSize, int pageCount) {
     allPages = new ByteBufferPage[pageCount];
     this.chunkSize = chunkSize;
     this.pageSize = pageSize;

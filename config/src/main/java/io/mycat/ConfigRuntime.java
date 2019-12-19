@@ -1,6 +1,5 @@
 package io.mycat;
 
-import static jdk.nashorn.internal.objects.NativeMath.log;
 
 import io.mycat.config.ConfigFile;
 import io.mycat.config.ConfigLoader;
@@ -46,7 +45,7 @@ public enum ConfigRuntime {
       }
     }
     LOGGER.info("config folder path:{}", resourcesPath);
-    log(configResourceKeyName, resourcesPath);
+    LOGGER.info(configResourceKeyName, resourcesPath);
     if (resourcesPath == null || Boolean.getBoolean("DEBUG")) {
       try {
         resourcesPath = getResourcesPath(Class.forName("io.mycat.MycatCore"));

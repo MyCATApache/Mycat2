@@ -1,8 +1,7 @@
 package io.mycat.proxy.buffer;
 
-import io.mycat.buffer.BufferPoolImpl;
+import io.mycat.buffer.Mycat16BufferPoolImpl;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.Session;
 import java.nio.ByteBuffer;
@@ -11,7 +10,7 @@ import java.nio.ByteBuffer;
  * @author jamie12221
  *  date 2019-05-16 10:09
  **/
-public final class ProxyBufferPoolMonitor extends BufferPoolImpl {
+public final class ProxyBufferPoolMonitor extends Mycat16BufferPoolImpl {
 
   public ProxyBufferPoolMonitor(int pageSize, int chunkSize, int pageCount) {
     super(pageSize, chunkSize, pageCount);
