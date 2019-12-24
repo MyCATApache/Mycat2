@@ -16,8 +16,8 @@ public class ShardingQueryRootConfig {
     @Data
     public static class LogicTableConfig {
         String tableName = "";
-        List<BackEndTableInfoConfig> queryPhysicalTable = Collections.emptyList();
-        List<String> columns = Collections.emptyList();
+        List<BackEndTableInfoConfig> queryPhysicalTable = new ArrayList<>();
+        List<String> columns = new ArrayList<>();
         String function = "";
         Map<String, String> properties = new HashMap<>();
         Map<String, String> ranges = new HashMap<>();

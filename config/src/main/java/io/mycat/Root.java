@@ -1,6 +1,6 @@
 package io.mycat;
 
-import io.mycat.config.YamlUtil;
+import io.mycat.util.YamlUtil;
 
 import java.util.HashMap;
 import java.util.Map;
