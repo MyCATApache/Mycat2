@@ -21,6 +21,7 @@ import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLVariables;
 import io.mycat.buffer.BufferPool;
+import io.mycat.buffer.HeapBufferPool;
 import io.mycat.config.ConfigFile;
 import io.mycat.config.ConfigReceiver;
 import io.mycat.config.ConfigurableRoot;
@@ -242,9 +243,16 @@ public class ProxyRuntime {
     MycatReactorThread[] mycatReactorThreads = new MycatReactorThread[reactorNumber];
     this.setMycatReactorThreads(mycatReactorThreads);
     for (int i = 0; i < mycatReactorThreads.length; i++) {
-      BufferPool bufferPool = new ProxyBufferPoolMonitor(getBufferPoolPageSize(),
-          getBufferPoolChunkSize(),
-          getBufferPoolPageNumber());
+      int bufferPoolPageSize = getBufferPoolPageSize();
+      int bufferPoolChunkSize = getBufferPoolChunkSize();
+      int bufferPoolPageNumber = getBufferPoolPageNumber();
+      HeapBufferPool heapBufferPool = new HeapBufferPool();
+      HashMap<String, String> config = new HashMap<>();
+      config.put(HeapBufferPool.CHUNK_SIZE,String.valueOf(bufferPoolChunkSize));
+      config.put(HeapBufferPool.PAGE_COUNT,String.valueOf(bufferPoolPageNumber));
+      config.put(HeapBufferPool.PAGE_SIZE,String.valueOf(bufferPoolPageSize));
+      heapBufferPool.init(config);
+      BufferPool bufferPool = new ProxyBufferPoolMonitor(heapBufferPool);
       mycatReactorThreads[i] = new MycatReactorThread(bufferPool,
           new MycatSessionManager(runtime, providers), runtime);
       mycatReactorThreads[i].start();

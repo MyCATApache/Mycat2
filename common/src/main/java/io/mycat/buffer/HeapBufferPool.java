@@ -10,11 +10,14 @@ public class HeapBufferPool  implements BufferPool  {
     private int pageSize;
     private int pageCount;
 
+    public final static String CHUNK_SIZE = "chunkSize";
+    public final static String PAGE_SIZE = "pageSize";
+    public final static String PAGE_COUNT = "pageCount";
     @Override
     public void init(Map<String, String> args) {
-        String chunkSizeText = args.get("chunkSize");
-        String pageSizeText = args.get("pageSize");
-        String pageCountText = args.get("pageCount");
+        String chunkSizeText = args.get(CHUNK_SIZE);
+        String pageSizeText = args.get(PAGE_SIZE);
+        String pageCountText = args.get(PAGE_COUNT);
 
         this.chunkSize = Integer.parseInt(chunkSizeText);
         this.pageSize = Integer.parseInt(pageSizeText);
