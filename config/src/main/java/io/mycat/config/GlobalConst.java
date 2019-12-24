@@ -1,22 +1,20 @@
 /**
  * Copyright (C) <2019>  <gaozhiwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.config;
-
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Desc:
@@ -24,9 +22,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * date: 24/09/2017,10/4/2019
  * @author: gaozhiwen
  */
-public class GlobalConfig {
+public class GlobalConst {
 
-    static final AtomicInteger VERSION = new AtomicInteger(0);
 
     public static final String SINGLE_NODE_HEARTBEAT_SQL = "select 1";
     public static final String MASTER_SLAVE_HEARTBEAT_SQL = "show slave status";
@@ -46,9 +43,6 @@ public class GlobalConfig {
 
     public static final String[] MYSQL_CLUSTER_STAUTS_COLMS = {"Variable_name", "Value"};
 
-    public static final int INIT_VERSION = 1;
-    // 默认的重试次数
-    public static final int MAX_RETRY_COUNT = 5;
 
     private static MySQLServerCapabilityFlags capabilityFlags = new MySQLServerCapabilityFlags(initClientFlags());
 
@@ -88,14 +82,5 @@ public class GlobalConfig {
         // flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_STATEMENTS;
         // flag |= MySQLServerCapabilityFlags.CLIENT_MULTI_RESULTS;
         return flag;
-    }
-
-    /**
-     * Getter for property 'VERSION'.
-     *
-     * @return Value for property 'VERSION'.
-     */
-    public static int genVersion() {
-        return VERSION.getAndIncrement();
     }
 }

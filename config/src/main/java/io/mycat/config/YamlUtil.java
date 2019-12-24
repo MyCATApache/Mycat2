@@ -14,8 +14,6 @@
  */
 package io.mycat.config;
 
-import io.mycat.config.route.DynamicAnnotationConfig;
-import io.mycat.config.route.DynamicAnnotationRootConfig;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -87,16 +85,6 @@ public class YamlUtil {
     return yaml.dump(obj);
   }
 
-  public static void main(String[] args) {
-    DynamicAnnotationRootConfig rootConfig = new DynamicAnnotationRootConfig();
-    rootConfig.setDynamicAnnotations(new ArrayList<>());
-    List<DynamicAnnotationConfig> dynamicAnnotationConfig = rootConfig.getDynamicAnnotations();
-    DynamicAnnotationConfig dynamicAnnotation = new DynamicAnnotationConfig();
-    dynamicAnnotationConfig.add(dynamicAnnotation);
-    dynamicAnnotation.setName("expr");
-    dynamicAnnotation.setPattern("sssss");
-    String dump = dump(rootConfig);
-  }
 
   /**
    * 将对象dump成yaml格式并保存成指定文件，文件名格式：confName + "-" + version，如mycat.yml-1
