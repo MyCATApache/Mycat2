@@ -16,8 +16,7 @@
  */
 package io.mycat.plug.sequence;
 
-import io.mycat.beans.mycat.MycatTable;
-import io.mycat.config.plug.PlugRootConfig;
+import io.mycat.config.PlugRootConfig;
 import java.util.HashMap;
 import java.util.Map;
 
