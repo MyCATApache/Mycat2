@@ -15,6 +15,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.Lists;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
@@ -156,7 +157,7 @@ public class CalciteConvertors {
 
     static List<SimpleColumnInfo> getColumnInfo(BackendTableInfo tableInfo) {
         List<SimpleColumnInfo> infos;
-        DefaultConnection defaultConnection = tableInfo.getSession(true, null);
+        DefaultConnection defaultConnection = JdbcRuntime.INSTANCE.getConnection(tableInfo.getDatasourceName());
         try (Connection rawConnection = defaultConnection.getRawConnection()) {
             DatabaseMetaData metaData = rawConnection.getMetaData();
             String schema = tableInfo.getSchemaInfo().getTargetSchema();

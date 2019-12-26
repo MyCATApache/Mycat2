@@ -18,9 +18,11 @@ import com.alibaba.druid.pool.xa.DruidXADataSource;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.jdbc.AtomikosDataSourceBean;
-import io.mycat.config.datasource.DatasourceConfig;
+
+import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -32,8 +34,7 @@ import javax.transaction.UserTransaction;
 public class AtomikosDatasourceProvider implements DatasourceProvider {
 
   @Override
-  public DataSource createDataSource(JdbcDataSource jdbcDataSource) {
-    DatasourceConfig config = jdbcDataSource.getConfig();
+  public JdbcDataSource createDataSource(DatasourceRootConfig.DatasourceConfig config) {
     String username = config.getUser();
     String password = config.getPassword();
     String url = config.getUrl();
@@ -51,7 +52,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     AtomikosDataSourceBean ds = new AtomikosDataSourceBean();
     ds.setXaProperties(p);
     ds.setConcurrentConnectionValidation(true);
-    ds.setUniqueResourceName(jdbcDataSource.getName());
+    ds.setUniqueResourceName(config.getName());
     ds.setPoolSize(minCon);
     ds.setMaxPoolSize(maxCon);
     ds.setLocalTransactionMode(true);
@@ -84,7 +85,12 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
       datasource.setDriverClassName(jdbcDriver);
     }
     ds.setXaDataSource(datasource);
-    return datasource;
+    return new JdbcDataSource(config,ds);
+  }
+
+  @Override
+  public void closeDataSource(JdbcDataSource dataSource) {
+
   }
 
   @Override

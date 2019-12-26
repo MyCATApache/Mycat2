@@ -16,9 +16,7 @@ package io.mycat.datasource.jdbc.thread;
 
 import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadPool;
-import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.datasource.DsConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -35,7 +33,7 @@ public class GThread extends BindThread implements SessionThread {
   private static MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(GThread.class);
 
-  public GThread(GRuntime runtime, BindThreadPool manager) {
+  public GThread(JdbcRuntime runtime, BindThreadPool manager) {
     super(manager);
     this.transactionSession = runtime.createTransactionSession(this);
   }
@@ -45,16 +43,6 @@ public class GThread extends BindThread implements SessionThread {
     boolean inTransaction = transactionSession.isInTransaction();
     LOGGER.debug("-->{} inTransaction:{}", transactionSession, inTransaction);
     return inTransaction;
-  }
-
-  public DsConnection getConnection(JdbcDataSource dataSource,
-      int transactionIsolation) {
-    return dataSource.getReplica().getConnection(dataSource, true, transactionIsolation);
-  }
-
-  public DsConnection getConnection(JdbcDataSource dataSource, boolean autocommit,
-      int transactionIsolation) {
-    return dataSource.getReplica().getConnection(dataSource, autocommit, transactionIsolation);
   }
 
   public TransactionSession getTransactionSession() {

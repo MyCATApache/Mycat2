@@ -16,7 +16,7 @@ package io.mycat.datasource.jdbc.datasourceProvider;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
-import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import java.util.concurrent.TimeUnit;
@@ -28,8 +28,7 @@ import javax.sql.DataSource;
 public class DruidDatasourceProvider implements DatasourceProvider {
 
   @Override
-  public DataSource createDataSource(JdbcDataSource jdbcDataSource) {
-    DatasourceConfig config = jdbcDataSource.getConfig();
+  public JdbcDataSource createDataSource(DatasourceRootConfig.DatasourceConfig config) {
     String username = config.getUser();
     String password = config.getPassword();
     String url = config.getUrl();
@@ -69,6 +68,11 @@ public class DruidDatasourceProvider implements DatasourceProvider {
       datasource.setDriverClassName(jdbcDriver);
     }
 
-    return datasource;
+    return new JdbcDataSource(config,datasource);
+  }
+
+  @Override
+  public void closeDataSource(JdbcDataSource dataSource) {
+
   }
 }

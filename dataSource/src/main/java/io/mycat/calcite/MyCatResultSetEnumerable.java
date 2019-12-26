@@ -15,7 +15,10 @@
 package io.mycat.calcite;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.datasource.DsConnection;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
+import io.mycat.datasource.jdbc.thread.GThread;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.slf4j.Logger;
@@ -64,11 +67,12 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     @Override
     public Enumerator<T> enumerator() {
         int length = sqls.length;
-        ArrayList<DsConnection> dsConnections = new ArrayList<>(length);
+        ArrayList<DefaultConnection> dsConnections = new ArrayList<>(length);
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (int i = 0; i < length; i++) {
             BackendTableInfo endTableInfo = backStoreList.get(i);
-            DsConnection session = endTableInfo.getSession(false,null);
+            GThread gThread = (GThread) Thread.currentThread();
+            DefaultConnection session = gThread.getTransactionSession().getConnection(endTableInfo.getDatasourceName());
             dsConnections.add(session);
             iterators.add(session.executeQuery(sqls[i]));
         }
@@ -119,7 +123,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
                     iterator.close();
                 }
                 iterators.clear();
-                for (DsConnection dsConnection : dsConnections) {
+                for (DefaultConnection dsConnection : dsConnections) {
                     dsConnection.close();
                 }
                 dsConnections.clear();

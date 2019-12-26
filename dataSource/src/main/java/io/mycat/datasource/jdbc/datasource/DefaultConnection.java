@@ -27,7 +27,7 @@ import java.sql.*;
 /**
  * @author Junwen Chen
  **/
-public class DefaultConnection implements DsConnection {
+public class DefaultConnection  {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(DefaultConnection.class);
@@ -103,7 +103,7 @@ public class DefaultConnection implements DsConnection {
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("close {}", connection);
         }
-        connectionManager.closeConnection(jdbcDataSource, connection);
+        connectionManager.closeConnection(this);
       }
     } catch (Exception e) {
       LOGGER.error("", e);
