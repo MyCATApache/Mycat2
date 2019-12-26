@@ -19,9 +19,7 @@ import io.mycat.plug.loadBalance.SessionCounter;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance {
-
   final InstanceType type;
-  final int index;
   final String name;
   final ReplicaDataSourceSelector selector;
   final int weight;
@@ -29,11 +27,10 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
   volatile boolean alive;
   volatile boolean selectRead;
 
-  public PhysicsInstanceImpl(int index, String name, InstanceType type, boolean alive,
-      boolean selectRead,
-      int weight, ReplicaDataSourceSelector selector) {
+  public PhysicsInstanceImpl(String name, InstanceType type, boolean alive,
+                             boolean selectRead,
+                             int weight, ReplicaDataSourceSelector selector) {
     this.type = type;
-    this.index = index;
     this.name = name;
     this.alive = alive;
     this.selectRead = selectRead;
@@ -47,10 +44,6 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
 
   public InstanceType getType() {
     return type;
-  }
-
-  public int getIndex() {
-    return index;
   }
 
   public String getName() {
@@ -99,16 +92,12 @@ public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance 
     }
 
     PhysicsInstanceImpl instance = (PhysicsInstanceImpl) o;
-
-    if (index != instance.index) {
-      return false;
-    }
     return name != null ? name.equals(instance.name) : instance.name == null;
   }
 
   @Override
   public int hashCode() {
-    int result = index;
+    int result = 0;
     result = 31 * result + (name != null ? name.hashCode() : 0);
     return result;
   }

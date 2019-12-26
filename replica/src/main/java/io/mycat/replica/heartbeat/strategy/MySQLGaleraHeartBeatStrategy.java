@@ -14,7 +14,7 @@
  */
 package io.mycat.replica.heartbeat.strategy;
 
-import io.mycat.config.GlobalConfig;
+import io.mycat.GlobalConst;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.heartbeat.DatasourceStatus;
@@ -33,7 +33,7 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
       MySQLGaleraHeartBeatStrategy.class);
 
   public String getSql() {
-    return GlobalConfig.GARELA_CLUSTER_HEARTBEAT_SQL;
+    return GlobalConst.GARELA_CLUSTER_HEARTBEAT_SQL;
   }
 
   @Override

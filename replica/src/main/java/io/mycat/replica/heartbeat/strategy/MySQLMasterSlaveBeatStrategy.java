@@ -14,7 +14,7 @@
  */
 package io.mycat.replica.heartbeat.strategy;
 
-import io.mycat.config.GlobalConfig;
+import io.mycat.GlobalConst;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.heartbeat.DatasourceStatus;
@@ -32,7 +32,7 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
       MySQLMasterSlaveBeatStrategy.class);
 
   public String getSql() {
-    return GlobalConfig.MASTER_SLAVE_HEARTBEAT_SQL;
+    return GlobalConst.MASTER_SLAVE_HEARTBEAT_SQL;
   }
 
   public void process(List<Map<String, Object>> resultList) {
