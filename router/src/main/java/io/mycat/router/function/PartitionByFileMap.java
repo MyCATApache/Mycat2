@@ -3,7 +3,7 @@ package io.mycat.router.function;
 import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
-public class PartitionByFileMap extends RuleAlgorithm {
+public class PartitionByFileMap extends RuleFunction {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(PartitionByFileMap.class);
   /**

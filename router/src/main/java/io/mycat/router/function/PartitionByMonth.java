@@ -1,7 +1,7 @@
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import io.mycat.router.util.StringUtil;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class PartitionByMonth extends RuleAlgorithm {
+public class PartitionByMonth extends RuleFunction {
 
   private int partition;
   private Type type = Type.DEFAULT;

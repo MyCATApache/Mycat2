@@ -1,9 +1,9 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.util.Map;
 
-public class PartitionByJumpConsistentHash extends RuleAlgorithm {
+public class PartitionByJumpConsistentHash extends RuleFunction {
 
   private static final long UNSIGNED_MASK = 0x7fffffffffffffffL;
   private static final long JUMP = 1L << 31;

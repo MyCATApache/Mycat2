@@ -1,13 +1,13 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import io.mycat.router.util.PartitionUtil;
 import java.util.Map;
 
 /**
  * @author jamie12221 date 2019-05-02 23:36
  **/
-public class PartitionByLong extends RuleAlgorithm {
+public class PartitionByLong extends RuleFunction {
 
   private PartitionUtil partitionUtil;
   @Override
@@ -36,7 +36,7 @@ public class PartitionByLong extends RuleAlgorithm {
 
   @Override
   public int[] calculateRange(String beginValue, String endValue) {
-    return RuleAlgorithm.calculateSequenceRange(this, beginValue, endValue);
+    return RuleFunction.calculateSequenceRange(this, beginValue, endValue);
   }
 
   @Override

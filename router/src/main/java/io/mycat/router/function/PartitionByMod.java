@@ -1,11 +1,11 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.math.BigInteger;
 import java.util.Map;
 import java.util.Objects;
 
-public class PartitionByMod extends RuleAlgorithm {
+public class PartitionByMod extends RuleFunction {
 
   private BigInteger count;
 

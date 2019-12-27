@@ -1,10 +1,10 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.math.BigInteger;
 import java.util.Map;
 
-public class PartitionByHashMod extends RuleAlgorithm {
+public class PartitionByHashMod extends RuleFunction {
 
   private int count;
   private boolean watch;

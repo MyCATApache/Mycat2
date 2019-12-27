@@ -1,6 +1,6 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import io.mycat.router.util.StringUtil;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class PartitionByMonthAndHistory extends RuleAlgorithm {
+public class PartitionByMonthAndHistory extends RuleFunction {
 
   private DateTimeFormatter formatter;
   private LocalDate beginDate;

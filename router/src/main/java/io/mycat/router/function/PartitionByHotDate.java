@@ -1,6 +1,6 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * todo check
  */
-public class PartitionByHotDate extends RuleAlgorithm {
+public class PartitionByHotDate extends RuleFunction {
 
   private long lastTime;
   private long partionTime;

@@ -1,10 +1,10 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.math.BigInteger;
 import java.util.Map;
 
-public class PartitionByRangeMod extends RuleAlgorithm {
+public class PartitionByRangeMod extends RuleFunction {
 
   private GroupSizeRange[] longRanges;
   private int defaultNode = -1;

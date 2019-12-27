@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.4-SNAPSHOP</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -20,17 +20,17 @@
     <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.4-SNAPSHOP</version>
     </dependency>
     <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>common</artifactId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.4-SNAPSHOP</version>
     </dependency>
     <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>sqlparser</artifactId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.4-SNAPSHOP</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.yevdo/jwildcard -->
     <dependency>

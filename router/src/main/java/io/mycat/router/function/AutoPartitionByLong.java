@@ -1,9 +1,9 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.util.Map;
 
-public class AutoPartitionByLong extends RuleAlgorithm {
+public class AutoPartitionByLong extends RuleFunction {
 
   private NodeIndexRange[] longRanges;
   private int defaultNode = -1;

@@ -1,9 +1,9 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.util.Map;
 
-public class PartitionDirectBySubString extends RuleAlgorithm {
+public class PartitionDirectBySubString extends RuleFunction {
 
   // 字符子串起始索引（zero-based)
   private int startIndex;

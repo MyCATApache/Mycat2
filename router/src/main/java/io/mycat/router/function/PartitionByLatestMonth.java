@@ -1,12 +1,12 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.Map;
 
-public class PartitionByLatestMonth extends RuleAlgorithm {
+public class PartitionByLatestMonth extends RuleFunction {
 
   private int splitOneDay;
   private int hourSpan;

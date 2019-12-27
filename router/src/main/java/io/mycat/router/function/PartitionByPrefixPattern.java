@@ -1,9 +1,9 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.util.Map;
 
-public class PartitionByPrefixPattern extends RuleAlgorithm {
+public class PartitionByPrefixPattern extends RuleFunction {
 
   private static final int PARTITION_LENGTH = 1024;
   private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值(默认为1024)

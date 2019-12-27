@@ -1,6 +1,6 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import io.mycat.router.util.StringUtil;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
-public class PartitionByDate extends RuleAlgorithm {
+public class PartitionByDate extends RuleFunction {
 
   private static final long ONE_DAY = 86400000;
   private long beginDate;

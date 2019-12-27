@@ -1,10 +1,10 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-public class PartitionByPattern extends RuleAlgorithm {
+public class PartitionByPattern extends RuleFunction {
 
   private static final int PARTITION_LENGTH = 1024;
   private static final Pattern PATTERN = Pattern.compile("[0-9]*");

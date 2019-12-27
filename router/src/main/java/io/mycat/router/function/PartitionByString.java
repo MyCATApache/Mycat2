@@ -1,12 +1,12 @@
 package io.mycat.router.function;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
 import io.mycat.router.util.PartitionUtil;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
 import java.util.Map;
 
-public class PartitionByString extends RuleAlgorithm {
+public class PartitionByString extends RuleFunction {
 
   private int hashSliceStart;
   private int hashSliceEnd;
