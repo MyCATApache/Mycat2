@@ -1,0 +1,26 @@
+let main =
+join (travelrecord as t,address as a, t.id = a.id)
+.filter (t.id = 1 or a.id = 2)
+.map(t.id,t.user_id);
+
+/*
+let main =
+join (travelrecord as t,address as a, t.id = a.id)
+.filter (t.id = 1 or a.id = 2)
+.map(t.id,t.user_id);
+
+let main =
+join (travelrecord as t,address as a, t.id = a.id)
+.filter (t.id = 1 or a.id = 2)
+.map(t.id,t.user_id);
+
+
+let main =
+join (table(travelrecord) as t,address as a, t.id = a.id)
+.filter (t.id = 1)
+.map(t.id,t.user_id);
+
+let main = t.id = a.id;
+let v = 1;
+let plan = builder().select(t.id,t.user_id).where(td.id = 1);
+*/
