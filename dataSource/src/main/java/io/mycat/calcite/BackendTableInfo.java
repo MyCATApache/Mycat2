@@ -16,13 +16,9 @@ package io.mycat.calcite;
 
 
 import io.mycat.calcite.shardingQuery.SchemaInfo;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import io.mycat.replica.ReplicaSelectorRuntime;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Setter;
 
 /**
  * @author Weiqing Xu
@@ -33,15 +29,10 @@ import lombok.Setter;
 @Builder
 public class BackendTableInfo {
     private String replicaName;
-    private String datasourceName;
     private SchemaInfo schemaInfo;
 
-    public BackendTableInfo() {
-    }
-
-    public BackendTableInfo(String replicaName, String hostName, SchemaInfo schemaInfo) {
-        this.replicaName = replicaName;
-        this.datasourceName = hostName;
+    public BackendTableInfo(String targetName, SchemaInfo schemaInfo) {
+        this.replicaName = targetName;
         this.schemaInfo = schemaInfo;
     }
 
@@ -53,21 +44,8 @@ public class BackendTableInfo {
 //    }
 
     //    String getDatasourceName(boolean runOnMaster, LoadBalanceStrategy balanceStrategy) {
-//        return getDatasource(runOnMaster, balanceStrategy).getName();
+//        return getDatasource(runOnMaster, balanceStrategy).getTableName();
 //    }
 //
-    public String getDatasourceName(LoadBalanceStrategy balanceStrategy) {
-        if (datasourceName != null) {
-            return datasourceName;
-        }
-        if (replicaName != null) {
-            return ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(replicaName, balanceStrategy).getName();
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
 
-    public String getDatasourceName() {
-        return getDatasourceName(null);
-    }
 }

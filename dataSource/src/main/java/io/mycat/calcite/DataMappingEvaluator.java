@@ -14,218 +14,149 @@
  */
 package io.mycat.calcite;
 
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.calcite.shardingQuery.SchemaInfo;
+import io.mycat.router.RuleFunction;
 import io.mycat.sqlparser.util.complie.RangeVariableType;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Weiqing Xu
  * @author Junwen Chen
  **/
 public class DataMappingEvaluator {
-    private final Set<RangeVariable>[] values;
-    private final RowSignature rowSignature;
-    private final List<String> columnNameList;
-    private final RuleAlgorithm function;
-    private static final int[] EMPTY = new int[]{};
-    private final Map<String, Integer> columnMap;
-    boolean fail = true;
-
-    ///////////////////optional//////////////////////////////
-    private final int[] keys;
-
-
-    private DataMappingEvaluator(RowSignature rowSignature, List<String> columnNameList, RuleAlgorithm function, int[] keys, Map<String, Integer> columnMap) {
-        this.rowSignature = rowSignature;
-        this.columnNameList = columnNameList;
-        this.function = function;
-        this.keys = keys;
-        this.columnMap = columnMap;
-        this.values = new Set[rowSignature.getColumnCount()];
-        for (int i = 0; i < values.length; i++) {
-            values[i] = new HashSet<>(1);
-        }
-    }
-
-    public DataMappingEvaluator copy() {
-        return new DataMappingEvaluator(this.rowSignature, this.columnNameList, function, keys, columnMap);
-    }
-
-    public DataMappingEvaluator(RowSignature rowSignature, List<String> columnNameList, RuleAlgorithm function) {
-        this.rowSignature = rowSignature;
-        this.columnNameList = columnNameList == null ? Collections.emptyList() : columnNameList;
-        this.function = function;
-
-
-        List<String> rowOrder = rowSignature.getRowOrder();
-
-        /////////////////////////////////////////////////////
-        this.keys = new int[columnNameList.size()];
-        int index = 0;
-        columnMap = new HashMap<>(this.keys.length);
-        for (String s : columnNameList) {
-            this.keys[index] = rowOrder.indexOf(s);
-            columnMap.put(s, index);
-            ++index;
-        }
-
-        this.values = new Set[rowSignature.getColumnCount()];
-        for (int i = 0; i < values.length; i++) {
-            values[i] = new HashSet<>(1);
-        }
-    }
-
-
-    public DataMappingEvaluator(RowSignature rowSignature) {
-        this(rowSignature, Collections.emptyList(), new RuleAlgorithm() {
-            @Override
-            public String name() {
-                return null;
-            }
-
-            @Override
-            public int calculate(String columnValue) {
-                return -1;
-            }
-
-            @Override
-            public int[] calculateRange(String beginValue, String endValue) {
-                return new int[0];
-            }
-
-            @Override
-            public int getPartitionNum() {
-                return -1;
-            }
-
-            @Override
-            public void init(Map<String, String> prot, Map<String, String> ranges) {
-
-            }
-        });
-    }
+    private final Map<String, SortedSet<RangeVariable>> columnMap = new HashMap<>();
 
     void assignment(boolean or, String columnName, String value) {
-        Integer integer = columnMap.get(columnName);
-        if (integer!=null) {
-            assignment(or,integer , value);
-        }
+        getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.EQUAL, value));
     }
 
     void assignmentRange(boolean or, String columnName, String begin, String end) {
-        Integer integer = columnMap.get(columnName);
-        if (integer!=null) {
-            assignmentRange(or, integer, begin, end);
+        getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.RANGE, begin, end));
+    }
+
+    private SortedSet<RangeVariable> getRangeVariables(String columnName) {
+        return columnMap.computeIfAbsent(columnName, s -> new TreeSet<>());
+    }
+
+    public List<BackendTableInfo> calculate(MetadataManager.LogicTable logicTable) {
+        if (logicTable.getNatureTableColumnInfo() != null) {
+            return getBackendTableInfosByNatureDatabaseTable(logicTable);
+        } else {
+            return getBackendTableInfosByMap(logicTable);
         }
     }
 
-    /**
-     * @param index
-     * @param value
-     * @return isFirst
-     */
-    boolean assignment(boolean or, int index, String value) {
-        boolean empty = values[index].isEmpty();
-        values[index].add(new RangeVariable(index, or, RangeVariableType.EQUAL, value));
-        return empty;
+    private List<BackendTableInfo> getBackendTableInfosByMap(MetadataManager.LogicTable logicTable) {
+        List<String> targetSet = Collections.emptyList();
+        List<String> databaseSet = Collections.emptyList();
+        List<String> tableSet = Collections.emptyList();
+        if (logicTable.getReplicaColumnInfo() != null) {
+            targetSet = getRouteColumnSortedSet(logicTable.getReplicaColumnInfo());
+        }
+        if (logicTable.getDatabaseColumnInfo() != null) {
+            databaseSet = getRouteColumnSortedSet(logicTable.getDatabaseColumnInfo());
+        }
+        if (logicTable.getTableColumnInfo() != null) {
+            tableSet = getRouteColumnSortedSet(logicTable.getTableColumnInfo());
+        }
+
+        List<BackendTableInfo> res = new ArrayList<>();
+
+        for (String targetName : targetSet) {
+            for (String databaseName : databaseSet) {
+                for (String tableName : tableSet) {
+                    res.add(new BackendTableInfo(targetName, new SchemaInfo(databaseName, tableName)));
+                }
+            }
+        }
+        return res.isEmpty()?logicTable.backends:res;
     }
 
-    boolean assignmentRange(boolean or, int index, String begin, String end) {
-        boolean empty = values[index].isEmpty();
-        values[index].add(new RangeVariable(index, or, RangeVariableType.RANGE, begin, end));
-        return empty;
+    private List<BackendTableInfo> getBackendTableInfosByNatureDatabaseTable(MetadataManager.LogicTable logicTable) {
+        List<Integer> routeIndexSortedSet = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
+        if (routeIndexSortedSet.isEmpty()) {
+            return logicTable.backends;
+        } else {
+            return routeIndexSortedSet.stream().map(logicTable.backends::get).collect(Collectors.toList());
+        }
     }
 
-    public int[] calculate() {
-        try {
-            Set<Integer> res = new HashSet<>();
-            for (int index : this.keys) {
-                Set<RangeVariable> value = values[index];
-                for (RangeVariable rangeVariable : value) {
-                    String begin = Objects.toString(rangeVariable.getBegin());
-                    String end = Objects.toString(rangeVariable.getEnd());
-                    switch (rangeVariable.getOperator()) {
-                        case EQUAL: {
-                            int calculate = function.calculate(begin);
-                            if (calculate == -1) {
-                                return EMPTY;
-                            }
-                            res.add(calculate);
-                            break;
-                        }
-                        case RANGE: {
-                            int[] calculate = function.calculateRange(begin, end);
-                            if (calculate == null || calculate.length == 0) {
-                                return EMPTY;
-                            }
-                            for (int i : calculate) {
-                                if (i == -1) {
-                                    return EMPTY;
-                                }
-                                res.add(i);
-                            }
-                            break;
-                        }
+    private List<String> getRouteColumnSortedSet(SimpleColumnInfo.ShardingInfo target) {
+        return getRouteIndexSortedSet(target).stream().map(i -> target.map.get(i)).collect(Collectors.toList());
+    }
+
+    private List<Integer> getRouteIndexSortedSet(SimpleColumnInfo.ShardingInfo target) {
+        SortedSet<RangeVariable> rangeVariables = columnMap.get(target.columnInfo.columnName);
+        if (rangeVariables == null) {
+            throw new UnsupportedOperationException();
+        } else {
+            return calculate(target.getFunction(), rangeVariables).stream().sorted().collect(Collectors.toList());
+        }
+    }
+
+    private Set<Integer> calculate(RuleFunction ruleFunction, SortedSet<RangeVariable> value) {
+        HashSet<Integer> res = new HashSet<>();
+        for (RangeVariable rangeVariable : value) {
+            String begin = Objects.toString(rangeVariable.getBegin());
+            String end = Objects.toString(rangeVariable.getEnd());
+            switch (rangeVariable.getOperator()) {
+                case EQUAL: {
+                    int calculate = ruleFunction.calculate(begin);
+                    if (calculate == -1) {
+                        return Collections.emptySet();
                     }
+                    res.add(calculate);
+                    break;
                 }
-            }
-            return res.stream().mapToInt(i -> i).toArray();
-        } finally {
-            for (Set<RangeVariable> value : values) {
-                value.clear();
-            }
-        }
-    }
-
-    public List<String> getColumnNameList() {
-        return columnNameList;
-    }
-
-    public String getFilterExpr() {
-        StringBuilder where = new StringBuilder("");
-        List<String> rowOrder = rowSignature.getRowOrder();
-        for (int i = 0; i < values.length; i++) {
-            Set<RangeVariable> value = values[i];
-
-            for (RangeVariable rangeVariable : value) {
-                if (where.length() > 0) {
-                    if (rangeVariable.isOr()) {
-                        where.append(" or (");
-                    } else {
-                        where.append(" and (");
+                case RANGE: {
+                    int[] calculate = ruleFunction.calculateRange(begin, end);
+                    if (calculate == null || calculate.length == 0) {
+                        return Collections.emptySet();
                     }
-                } else {
-                    where.append("  (");
+                    for (int i : calculate) {
+                        if (i == -1) {
+                            return Collections.emptySet();
+                        }
+                        res.add(i);
+                    }
+                    break;
                 }
-
-                String columnName = rowOrder.get(i);
-                switch (rangeVariable.getOperator()) {
-                    case EQUAL:
-                        where.append(columnName).append(" = ").append(rangeVariable.getBegin());
-                        break;
-                    case RANGE:
-                        where.append(columnName).append(" between ").append(rangeVariable.getBegin()).append(" and ").append(rangeVariable.getEnd());
-                        break;
-                }
-                where.append(" ) ");
             }
         }
-        return where.toString();
+        return res;
     }
+//
+//    public String getFilterExpr(List<String> rowOrder) {
+//        StringBuilder where = new StringBuilder();
+//        for (String columnName : rowOrder) {
+//            SortedSet<RangeVariable> value = columnMap.get(columnName);
+//            for (RangeVariable rangeVariable : value) {
+//                if (where.length() > 0) {
+//                    if (rangeVariable.isOr()) {
+//                        where.append(" or (");
+//                    } else {
+//                        where.append(" and (");
+//                    }
+//                } else {
+//                    where.append("  (");
+//                }
+//                switch (rangeVariable.getOperator()) {
+//                    case EQUAL:
+//                        where.append(columnName).append(" = ").append(rangeVariable.getBegin());
+//                        break;
+//                    case RANGE:
+//                        where.append(columnName).append(" between ").append(rangeVariable.getBegin()).append(" and ").append(rangeVariable.getEnd());
+//                        break;
+//                }
+//                where.append(" ) ");
+//            }
+//        }
+//        return where.toString();
+//    }
 
-
-    public RuleAlgorithm getFunction() {
-        return function;
-    }
-
-    public void add(DataMappingEvaluator dataMappingRule) {
-        Set<RangeVariable>[] values = dataMappingRule.values;
-        for (int i = 0; i < values.length; i++) {
-            Set<RangeVariable> value = values[i];
-            if (value != null) {
-                this.values[i].addAll(value);
-            }
-        }
+    public void merge(DataMappingEvaluator arg) {
+        arg.columnMap.forEach((key, value) -> this.getRangeVariables(key).addAll(value));
     }
 }

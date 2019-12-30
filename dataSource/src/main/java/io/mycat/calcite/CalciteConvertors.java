@@ -15,11 +15,13 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.Lists;
+import com.mysql.cj.jdbc.JdbcConnection;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
@@ -155,18 +157,14 @@ public class CalciteConvertors {
         }
     }
 
-    static List<SimpleColumnInfo> getColumnInfo(BackendTableInfo tableInfo) {
-        List<SimpleColumnInfo> infos;
-        DefaultConnection defaultConnection = JdbcRuntime.INSTANCE.getConnection(tableInfo.getDatasourceName());
-        try (Connection rawConnection = defaultConnection.getRawConnection()) {
+    public static List<SimpleColumnInfo> getSimpleColumnInfos(String schemaName, String tableName, String url, String user, String password) {
+        try (Connection rawConnection = DriverManager.getConnection(url, user, password)) {
             DatabaseMetaData metaData = rawConnection.getMetaData();
-            String schema = tableInfo.getSchemaInfo().getTargetSchema();
-            infos = CalciteConvertors.convertfromDatabaseMetaData(metaData, schema, schema,  tableInfo.getSchemaInfo().getTargetTable());
+            return CalciteConvertors.convertfromDatabaseMetaData(metaData, schemaName, schemaName, tableName);
         } catch (Exception e) {
-            LOGGER.error("", e);
-            return null;
+            e.printStackTrace();
         }
-        return infos;
+        return null;
     }
 
     static List<SimpleColumnInfo> getColumnInfo(String sql) {
@@ -184,36 +182,36 @@ public class CalciteConvertors {
         return list;
     }
 
-
-    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListByDataSourceWithCreateTableSQL(final Map<String, Map<String, List<BackendTableInfo>>> schemaBackendMetaMap, Map<String, Map<String, String>> sqlmap) {
-        Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
-        schemaBackendMetaMap.forEach((schemaName, value) -> {
-            schemaColumnMetaMap.put(schemaName, new HashMap<>());
-            for (Map.Entry<String, List<BackendTableInfo>> stringListEntry : value.entrySet()) {
-                String tableName = stringListEntry.getKey().toLowerCase();
-                List<BackendTableInfo> backs = stringListEntry.getValue();
-                if (backs == null || backs.isEmpty()) return;
-                List<SimpleColumnInfo> info = null;
-                Map<String, String> sqlTableMap = sqlmap.get(schemaName);
-                if (sqlTableMap != null) {
-                    String sql = sqlTableMap.get(tableName);
-                    if (sql != null) {
-                      info = getColumnInfo(sql);
-                    }
-                }
-                if (info==null){
-                    info = getColumnInfo( backs.get(0));
-                }
-                if (info == null) {
-                    schemaColumnMetaMap.remove(tableName);
-                    LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build targetTable", schemaName, tableName);
-                }else {
-                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
-                }
-            }
-        });
-        return schemaColumnMetaMap;
-    }
+//
+//    public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListByDataSourceWithCreateTableSQL(final Map<String, Map<String, List<BackendTableInfo>>> schemaBackendMetaMap, Map<String, Map<String, String>> sqlmap) {
+//        Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();
+//        schemaBackendMetaMap.forEach((schemaName, value) -> {
+//            schemaColumnMetaMap.put(schemaName, new HashMap<>());
+//            for (Map.Entry<String, List<BackendTableInfo>> stringListEntry : value.entrySet()) {
+//                String tableName = stringListEntry.getKey().toLowerCase();
+//                List<BackendTableInfo> backs = stringListEntry.getValue();
+//                if (backs == null || backs.isEmpty()) return;
+//                List<SimpleColumnInfo> info = null;
+//                Map<String, String> sqlTableMap = sqlmap.get(schemaName);
+//                if (sqlTableMap != null) {
+//                    String sql = sqlTableMap.get(tableName);
+//                    if (sql != null) {
+//                      info = getColumnInfo(sql);
+//                    }
+//                }
+//                if (info==null){
+//                    info = getColumnInfo( backs.get(0));
+//                }
+//                if (info == null) {
+//                    schemaColumnMetaMap.remove(tableName);
+//                    LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build targetTable", schemaName, tableName);
+//                }else {
+//                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
+//                }
+//            }
+//        });
+//        return schemaColumnMetaMap;
+//    }
 
     public final static Map<String, Map<String, List<SimpleColumnInfo>>> columnInfoListBySQL(final Map<String, Map<String, String>> schemaBackendSQL) {
         Map<String, Map<String, List<SimpleColumnInfo>>> schemaColumnMetaMap = new HashMap<>();

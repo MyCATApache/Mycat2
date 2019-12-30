@@ -15,10 +15,11 @@
 package io.mycat.calcite;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.calcite.shardingQuery.BackendTask;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
 import io.mycat.datasource.jdbc.thread.GThread;
+import io.mycat.replica.PhysicsInstanceImpl;
+import io.mycat.replica.ReplicaSelectorRuntime;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.slf4j.Logger;
@@ -34,47 +35,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
  **/
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private final AtomicBoolean cancelFlag;
-    private final List<BackendTableInfo> backStoreList;
-    private final String[] sqls;
+    private final  List<BackendTask>  backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
 
-    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<BackendTableInfo> backStoreList, String text, String filterText) {
+    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<BackendTask> res) {
         this.cancelFlag = cancelFlag;
-        this.backStoreList = backStoreList;
-        this.sqls = new String[backStoreList.size()];
-
-        for (int i = 0; i < this.sqls.length; i++) {
-            BackendTableInfo endTableInfo = backStoreList.get(i);
-            String schemaName = endTableInfo.getSchemaInfo().getTargetSchema();
-            String tableName = endTableInfo.getSchemaInfo().getTargetTable();
-            String sql;
-            if (filterText != null && !"".equals(filterText)) {
-                sql = "select " + text +
-                        " from " + schemaName + "." + tableName + " where " + filterText;
-            } else {
-                sql = "select " + text +
-                        " from " + schemaName + "." + tableName;
-            }
-            this.sqls[i] = sql;
+        this.backStoreList = res;
+        for (BackendTask sql : res) {
+            LOGGER.info("prepare query:{}", sql);
         }
-        for (String sql : sqls) {
-            LOGGER.info("run query:" + sql);
-        }
-
-
     }
 
     @Override
     public Enumerator<T> enumerator() {
-        int length = sqls.length;
+        int length = backStoreList.size();
         ArrayList<DefaultConnection> dsConnections = new ArrayList<>(length);
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
-        for (int i = 0; i < length; i++) {
-            BackendTableInfo endTableInfo = backStoreList.get(i);
+        for (BackendTask endTableInfo : backStoreList) {
             GThread gThread = (GThread) Thread.currentThread();
-            DefaultConnection session = gThread.getTransactionSession().getConnection(endTableInfo.getDatasourceName());
+            PhysicsInstanceImpl datasourceByReplicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(endTableInfo.getBackendTableInfo().getReplicaName());
+            DefaultConnection session = gThread.getTransactionSession().getConnection(datasourceByReplicaName.getName());
             dsConnections.add(session);
-            iterators.add(session.executeQuery(sqls[i]));
+            iterators.add(session.executeQuery(endTableInfo.getSql()));
+            LOGGER.info("runing query:{}", endTableInfo.getSql());
         }
 
         return new Enumerator<T>() {

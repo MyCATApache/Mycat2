@@ -2,6 +2,8 @@ package io.mycat.calcite.shardingQuery;
 
 import lombok.*;
 
+import java.util.Objects;
+
 
 @EqualsAndHashCode
 @Getter
@@ -10,33 +12,14 @@ import lombok.*;
 @ToString
 @AllArgsConstructor
 public class SchemaInfo {
-    String logicSchema;
-    String logicTable;
-    String targetSchema;
-    String targetTable;
-    String targetSchemaTable;
+    final String targetSchema;
+    final String targetTable;
+    final String targetSchemaTable;
 
-    public SchemaInfo(String logicSchema, String logicTable, String targetSchema, String targetTable) {
-        this.logicSchema = logicSchema;
-        this.logicTable = logicTable;
-        this.targetSchema = targetSchema;
-        this.targetTable = targetTable;
+    public SchemaInfo(String targetSchema, String targetTable) {
+        this.targetSchema = Objects.requireNonNull(targetSchema).toLowerCase();
+        this.targetTable = Objects.requireNonNull(targetTable).toLowerCase();
         this.targetSchemaTable = this.targetSchema + "." + this.targetTable;
     }
 
-    public void toLowCase() {
-        this.logicSchema = this.logicSchema.toLowerCase();
-        this.targetTable = this.targetTable.toLowerCase();
-        this.targetSchema = this.targetSchema.toLowerCase();
-        this.logicTable = this.logicTable.toLowerCase();
-        this.logicSchema = this.logicSchema.toLowerCase();
-        this.targetSchemaTable = this.targetSchema + "." + this.targetTable;
-    }
-
-    public String getTargetSchemaTable() {
-        if (this.targetSchemaTable == null){
-            this.targetSchemaTable = this.targetSchema + "." + this.targetTable;
-        }
-        return this.targetSchemaTable ;
-    }
 }

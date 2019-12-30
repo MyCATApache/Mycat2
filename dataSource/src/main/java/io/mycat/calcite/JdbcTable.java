@@ -15,6 +15,8 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.shardingQuery.BackendTask;
+import io.mycat.calcite.shardingQuery.SchemaInfo;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
@@ -37,36 +39,32 @@ import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * @author Weiqing Xu
  * @author Junwen Chen
  **/
 public class JdbcTable implements TranslatableTable, ProjectableFilterableTable {
-    private final String schemaName;
-    private final String tableName;
+    private MetadataManager.LogicTable table;
     private final RelProtoDataType relProtoDataType;
     private final RowSignature rowSignature;
-    private final DataMappingEvaluator originaldataMappingRule;
-    private final List<BackendTableInfo> backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(JdbcTable.class);
-
-    public JdbcTable(String schemaName, String tableName, List<BackendTableInfo> value, RelProtoDataType relProtoDataType, RowSignature rowSignature, DataMappingEvaluator dataMappingRule) {
-        Objects.requireNonNull(value);
-        this.schemaName = schemaName;
-        this.tableName = tableName;
-        this.backStoreList = value;
+    public JdbcTable(MetadataManager.LogicTable table, RelProtoDataType relProtoDataType, RowSignature rowSignature) {
+        this.table = table;
         this.relProtoDataType = relProtoDataType;
         this.rowSignature = rowSignature;
-        this.originaldataMappingRule = dataMappingRule;
+
     }
 
-    private static boolean addFilter(DataMappingEvaluator evaluator, RexNode filter, boolean or) {
+    private boolean addFilter(DataMappingEvaluator evaluator, RexNode filter, boolean or) {
+        List<String> rowOrder = rowSignature.getRowOrder();
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
@@ -86,7 +84,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                                 if (start instanceof RexLiteral && end instanceof RexLiteral) {
                                     String startValue = ((RexLiteral) start).getValue2().toString();
                                     String endValue = ((RexLiteral) end).getValue2().toString();
-                                    evaluator.assignmentRange(or, index, startValue, endValue);
+                                    evaluator.assignmentRange(or, rowOrder.get(index), startValue, endValue);
                                     trueList[i] = trueList[i] || true;
                                     trueList[j] = trueList[j] || true;
                                 }
@@ -102,7 +100,6 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                         }
                     }
                 }
-                evaluator.fail = false;
                 return true;
             }
             return false;
@@ -116,8 +113,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();
-                evaluator.assignment(or, index, value);
-                evaluator.fail = false;
+                evaluator.assignment(or, rowOrder.get(index), value);
                 return true;
             }
 
@@ -125,20 +121,17 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         return false;
     }
 
-    private static boolean addOrRootFilter(DataMappingEvaluator evaluator, RexNode filter) {
-        evaluator.fail = true;
+    private boolean addOrRootFilter(DataMappingEvaluator evaluator, RexNode filter) {
         if (filter.isA(SqlKind.OR)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
-            int i = 0;
-            for (; i < size; i++) {
-                if (addFilter(evaluator, operands.get(i), true)) {
-                    continue;
+            int count = 0;
+            for (RexNode operand : operands) {
+                if (addFilter(evaluator, operand, true)) {
+                    ++count;
                 }
-                break;
             }
-            evaluator.fail = i != size;
-            return !evaluator.fail;
+            return count == size;
         }
         return addFilter(evaluator, filter, false);
     }
@@ -147,7 +140,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     public RelNode toRel(RelOptTable.ToRelContext toRelContext, RelOptTable relOptTable) {
         LogicalTableScan logicalTableScan = LogicalTableScan.create(toRelContext.getCluster(), relOptTable);
         RelToSqlConverter relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
-        SqlImplementor.Result visit = relToSqlConverter.visitChild(0,logicalTableScan);
+        SqlImplementor.Result visit = relToSqlConverter.visitChild(0, logicalTableScan);
         SqlNode sqlNode = visit.asStatement();
         System.out.println(sqlNode);
         return logicalTableScan;
@@ -156,12 +149,8 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        try {
-            return this.rowSignature.getRelDataType(typeFactory);
-        } catch (Exception e) {
-            LOGGER.error("", e);
-            return null;
-        }
+        return this.rowSignature.getRelDataType(typeFactory);
+
     }
 
 
@@ -197,88 +186,65 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     }
 
     @Override
-    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        QueryProvider queryProvider = root.getQueryProvider();
-        final RexSqlStandardConvertletTable convertletTable = new RexSqlStandardConvertletTable();
-        RexToSqlNodeConverter converter = new RexToSqlNodeConverterImpl(convertletTable);
-        SqlImplementor relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
+    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, final int[] projects) {
+        LOGGER.info("origin  filters:{}", filters);
+        DataMappingEvaluator record = new DataMappingEvaluator();
+        filters.removeIf((filter) -> {
+            DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
+            boolean success = addOrRootFilter(dataMappingRule, filter);
+            if (success) {
+                record.merge(dataMappingRule);
+            }
+            return success;
+        });
+        LOGGER.info("optimize filters:{}", filters);
+        List<BackendTableInfo> calculate = record.calculate(table);
+        return new MyCatResultSetEnumerable(getCancelFlag(root), getBackendTasks(getColumnList(projects),filters, calculate));
+    }
 
+    private List<BackendTask> getBackendTasks(  List<String> columnList ,List<RexNode> filters, List<BackendTableInfo> calculate) {
+        List<BackendTask> res = new ArrayList<>();
+        for (BackendTableInfo backendTableInfo : calculate) {
+            SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
+            String targetSchemaTable = schemaInfo.getTargetSchemaTable();
+            StringBuilder sql = new StringBuilder();
+            String selectItems = columnList.stream().map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
+            sql.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
+            sql.append(getFilterSQLText(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable(), filters));
+            res.add(new BackendTask(sql.toString(),false, backendTableInfo));
+        }
+        return res;
+    }
+
+    private List<String> getColumnList(final int[] projects) {
+        List<String> rowOrder = this.rowSignature.getRowOrder();
+        if (projects == null) {
+            return rowOrder;
+        } else {
+            return Arrays.stream(projects).mapToObj(rowOrder::get).collect(Collectors.toList());
+        }
+    }
+
+    private String getFilterSQLText(String schemaName, String tableName, List<RexNode> filters) {
         SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, JdbcTable.this.rowSignature.getColumnCount()) {
             @Override
             public SqlNode field(int ordinal) {
                 String fieldName = JdbcTable.this.rowSignature.getRowOrder().get(ordinal);
-                return new SqlIdentifier(ImmutableList.of(JdbcTable.this.schemaName, JdbcTable.this.tableName, fieldName),
+                return new SqlIdentifier(ImmutableList.of(schemaName, tableName, fieldName),
                         SqlImplementor.POS);
             }
         };
-        for (RexNode filter : filters) {
-            SqlNode sqlNode2= context.toSql(null, filter);
-            System.out.println(sqlNode2);
-        }
-
-
-        LOGGER.info("origin  filters:{}", filters);
-        DataMappingEvaluator record = this.originaldataMappingRule.copy();
-        record.fail = false;
-        String filterText = "";
-        if (!filters.isEmpty()) {
-            filters.removeIf((filter) -> {
-                DataMappingEvaluator dataMappingRule = this.originaldataMappingRule.copy();
-                dataMappingRule.fail = true;
-                boolean b = addOrRootFilter(dataMappingRule, filter);
-                if (!dataMappingRule.fail) {
-                    record.add(dataMappingRule);
-                }
-                return b;
-            });
-            filterText = record.getFilterExpr();
-        }
-        LOGGER.info("optimize filters:{}", filters);
-        List<BackendTableInfo> backStoreList = this.backStoreList;
-        int[] calculate = record.calculate();
-        if (calculate.length == 0) {
-            backStoreList = this.backStoreList;
-        }
-        if (calculate.length == 1) {
-            if (calculate[0] == -1) {
-                backStoreList = this.backStoreList;
-            } else {
-                backStoreList = Collections.singletonList(this.backStoreList.get(calculate[0]));
-            }
-        }
-        if (calculate.length > 1) {
-            backStoreList = new ArrayList<>(calculate.length);
-            int size = this.backStoreList.size();
-            for (int i1 : calculate) {
-                if (i1 >= size || i1 == -1) {
-                    backStoreList = this.backStoreList;
-                    break;
-                } else {
-                    backStoreList.add(this.backStoreList.get(i1));
-                }
-            }
-        }
-        AtomicBoolean cancelFlag = DataContext.Variable.CANCEL_FLAG.get(root);
-        if (cancelFlag == null) {
-            cancelFlag = new AtomicBoolean(false);
-        }
-        if (projects == null) {
-            return new MyCatResultSetEnumerable(cancelFlag, backStoreList, "*", filterText);
-        } else {
-            StringBuilder projectText = new StringBuilder();
-            List<String> rowOrder = rowSignature.getRowOrder();
-            for (int i = 0; i < projects.length; i++) {
-                if (i == 0) {
-                    projectText.append(rowOrder.get(projects[i]));
-                } else {
-                    projectText.append(",").append(rowOrder.get(projects[i]));
-                }
-            }
-            return new MyCatResultSetEnumerable(cancelFlag, backStoreList, projectText.toString(), filterText);
-        }
+        return filters.stream().map(i -> context.toSql(null, i).toSqlString(MysqlSqlDialect.DEFAULT))
+                .map(i -> i.getSql())
+                .collect(Collectors.joining(" and ", " where ", ""));
     }
 
-    public List<BackendTableInfo> getBackStoreList() {
-        return backStoreList;
+    private AtomicBoolean getCancelFlag(DataContext root) {
+        AtomicBoolean tempFlag = DataContext.Variable.CANCEL_FLAG.get(root);
+        if (tempFlag == null) {
+            return new AtomicBoolean(false);
+        } else {
+            return tempFlag;
+        }
     }
 }

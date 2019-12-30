@@ -17,7 +17,7 @@ public enum  CalciteEnvironment {
     final ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap;
 
      CalciteEnvironment() {
-        this(MetadataManager.INSATNCE.logicTableMap);
+        this(MetadataManager.INSATNCE.jdbcTableMap);
     }
 
     private CalciteEnvironment(ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap) {
@@ -25,7 +25,7 @@ public enum  CalciteEnvironment {
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
-        System.setProperty("saffron.default.collat​​ion.name", charset + "$ en_US");
+        System.setProperty("saffron.default.collat​​ion.tableName", charset + "$ en_US");
     }
 
     public CalciteConnection getConnection() {

@@ -4,8 +4,6 @@ import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
-import io.mycat.ConfigRuntime;
-import io.mycat.calcite.shardingQuery.SchemaInfo;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -19,26 +17,28 @@ import static org.junit.Assert.assertEquals;
 
 public class MetadataManagerTest {
     public MetadataManagerTest() {
-        ConfigRuntime.INSTCANE.load("/src/test/resources");
+        MetadataManager instance = MetadataManager.INSTANCE;
+        instance.removeSchema("");
+        instance.addSchema("");
     }
 
     static Map<BackendTableInfo, String> routeDelete(String currentSchema, String sql) {
-        return MetadataManager.INSATNCE.rewriteUpdateSQL(currentSchema, sql);
+        return MetadataManager.INSTANCE.rewriteUpdateSQL(currentSchema, sql);
     }
 
     public List<BackendTableInfo> getBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
-        return MetadataManager.INSATNCE.getBackEndTableInfo(schemaName, tableName, startValue, endValue);
+        return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, startValue, endValue);
     }
 
     public BackendTableInfo getBackEndTableInfo(String schemaName, String tableName, String partitionValue) {
-        return MetadataManager.INSATNCE.getBackEndTableInfo(schemaName, tableName, partitionValue);
+        return MetadataManager.INSTANCE.getNatrueBackEndTableInfo(schemaName, tableName, partitionValue);
     }
 
     static Iterator<Map<BackendTableInfo, String>> routeInsert(String currentSchema, String sql) {
         SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql);
         List list = new LinkedList();
         sqlStatementParser.parseStatementList(list);
-        return MetadataManager.INSATNCE.getInsertInfoIterator(currentSchema, (Iterator<MySqlInsertStatement>) list.iterator());
+        return MetadataManager.INSTANCE.getInsertInfoIterator(currentSchema, (Iterator<MySqlInsertStatement>) list.iterator());
     }
 
     @Test

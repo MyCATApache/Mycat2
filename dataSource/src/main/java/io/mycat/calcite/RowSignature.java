@@ -67,7 +67,7 @@ public class RowSignature {
         return columnNames;
     }
 
-    public RelDataType getRelDataType(final RelDataTypeFactory factory) throws Exception {
+    public RelDataType getRelDataType(final RelDataTypeFactory factory) {
         final RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(factory);
         for (final String columnName : columnNames) {
             final JDBCType columnType = getColumnType(columnName);
