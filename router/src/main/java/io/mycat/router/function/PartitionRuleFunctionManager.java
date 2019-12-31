@@ -8,19 +8,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public enum PartitionRuleFunctionManager {
     INSTANCE;
-    private final ConcurrentHashMap<String, Factory> functions = new ConcurrentHashMap<>();
+//    private final ConcurrentHashMap<String, Factory> functions = new ConcurrentHashMap<>();
+//
+//    public void putFunction(SharingFuntionRootConfig.ShardingFuntion funtion) {
+//        ////////////////////////////////////check/////////////////////////////////////////////////
+//        Objects.requireNonNull(funtion.getName(), "name of function can not be empty");
+//        Objects.requireNonNull(funtion.getClazz(), "poolName of function can not be empty");
+//        ////////////////////////////////////check/////////////////////////////////////////////////
+//        putRuleAlgorithm(funtion);
+//    }
 
-    public void putFunction(SharingFuntionRootConfig.ShardingFuntion funtion) {
-        ////////////////////////////////////check/////////////////////////////////////////////////
-        Objects.requireNonNull(funtion.getName(), "name of function can not be empty");
-        Objects.requireNonNull(funtion.getClazz(), "poolName of function can not be empty");
-        ////////////////////////////////////check/////////////////////////////////////////////////
-        putRuleAlgorithm(funtion);
-    }
-
-    public void removeFunction(String name) {
-        functions.remove(name);
-    }
+//    public void removeFunction(String name) {
+//        functions.remove(name);
+//    }
 
     public static RuleFunction createFunction(String name, String clazz)
             throws Exception {
@@ -43,20 +43,20 @@ public enum PartitionRuleFunctionManager {
         return rootFunction;
     }
 
-    public RuleFunction getRuleAlgorithm(String name, Map<String, String> properties, Map<String, String> ranges) {
-        Optional<String> clazz = functions.values().stream().filter(i -> name.equals(i.funtion.getName())).findFirst().map(i -> i.getFuntion().getClazz());
-        if (!clazz.isPresent()){
-            throw new IllegalArgumentException("can not found function:"+name);
-        }
-        return getRuleAlgorithm(name,clazz.get(),properties,ranges);
-    }
+//    public RuleFunction getRuleAlgorithm(String name, Map<String, String> properties, Map<String, String> ranges) {
+//        Optional<String> clazz = functions.values().stream().filter(i -> name.equals(i.funtion.getName())).findFirst().map(i -> i.getFuntion().getClazz());
+//        if (!clazz.isPresent()){
+//            throw new IllegalArgumentException("can not found function:"+name);
+//        }
+//        return getRuleAlgorithm(name,clazz.get(),properties,ranges);
+//    }
 
     public RuleFunction getRuleAlgorithm(String name, String clazz, Map<String, String> properties, Map<String, String> ranges) {
         try {
-            Factory factory = functions.get(name);
-            if (factory != null) {
-                factory.get();
-            }
+//            Factory factory = functions.get(name);
+//            if (factory != null&&) {
+//                factory.get();
+//            }
             RuleFunction function = createFunction(name, clazz);
             function.callInit(properties == null ? Collections.emptyMap() : properties, ranges == null ? Collections.emptyMap() : ranges);
             return function;
@@ -65,9 +65,9 @@ public enum PartitionRuleFunctionManager {
         }
     }
 
-    public void putRuleAlgorithm(SharingFuntionRootConfig.ShardingFuntion funtion) {
-        functions.put(funtion.getName(), new Factory(funtion));
-    }
+//    public void putRuleAlgorithm(SharingFuntionRootConfig.ShardingFuntion funtion) {
+//        functions.put(funtion.getName(), new Factory(funtion));
+//    }
 
     private static class Factory {
         final SharingFuntionRootConfig.ShardingFuntion funtion;

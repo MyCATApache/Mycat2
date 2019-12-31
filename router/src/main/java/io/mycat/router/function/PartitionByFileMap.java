@@ -29,7 +29,7 @@ public class PartitionByFileMap extends RuleFunction {
    * 默认节点:小于0表示不设置默认节点，大于等于0表示设置默认节点
    *
    * 默认节点的作用：枚举分片时，如果碰到不识别的枚举值，就让它路由到默认节点 如果不配置默认节点（defaultNode值小于0表示不配置默认节点），碰到 不识别的枚举值就会报错， like
-   * this：can't find datanode for sharding column:column_name val:ffffffff
+   * this：can't find datanode for matadata column:column_name val:ffffffff
    */
   private int defaultNode = -1;
 

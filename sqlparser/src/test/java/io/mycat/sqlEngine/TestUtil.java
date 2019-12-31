@@ -1,9 +1,9 @@
 package io.mycat.sqlEngine;
 
-import cn.lightfish.sqlEngine.executor.logicExecutor.Executor;
-import cn.lightfish.sqlEngine.schema.BaseColumnDefinition;
-import cn.lightfish.sqlEngine.schema.DbConsole;
-import cn.lightfish.sqlEngine.schema.DbSchemaManager;
+import io.mycat.sqlEngine.executor.logicExecutor.Executor;
+import io.mycat.sqlEngine.schema.BaseColumnDefinition;
+import io.mycat.sqlEngine.schema.DbConsole;
+import io.mycat.sqlEngine.schema.DbSchemaManager;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 
