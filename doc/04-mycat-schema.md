@@ -1,6 +1,6 @@
 
 
-# mycat 2.0-schema(schema.yml,逻辑库,dataNode.yml,数据分片)
+# mycat 2.0-schema(schema.yml,逻辑库,deafultDatabase.yml,数据分片)
 
 author:junwen 2019-6-1
 
@@ -45,7 +45,7 @@ commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
 
 在mycat中,一个逻辑库描述了逻辑表的组织方式,在mycat 2.0更进一步地,schema指定了SQL的路由方式.
 
-#### 分片节点(dataNode)
+#### 分片节点(deafultDatabase)
 
 分片节点一般指数据库分片节点,
 
@@ -178,7 +178,7 @@ SQL中的逻辑表必须在mycat proxy session中的当前的逻辑库
 
 ## 配置
 
-### 分片节点配置(dataNode.yaml)
+### 分片节点配置(deafultDatabase.yaml)
 
 ```yaml
 dataNodes:

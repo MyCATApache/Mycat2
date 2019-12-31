@@ -72,7 +72,7 @@ schemas:
     ADDRESS: !!io.mycat.config.shardingQuery.ShardingQueryRootConfig$LogicTableConfig
       #物理表关系
       queryPhysicalTable:
-        #dataNode,数据源名字,集群名字,三个中配置一个即可
+        #deafultDatabase,数据源名字,集群名字,三个中配置一个即可
         - dataNodeName: null
           hostName: mytest3306a
           replicaName: null

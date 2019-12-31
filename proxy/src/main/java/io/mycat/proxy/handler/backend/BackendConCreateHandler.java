@@ -21,7 +21,7 @@ import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.HandshakePacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
-import io.mycat.config.GlobalConfig;
+import io.mycat.GlobalConst;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
@@ -200,7 +200,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     }
 
     public void writeClientAuth(MySQLClientSession mysql) throws IOException {
-        int serverCapabilities = GlobalConfig.getClientCapabilityFlags().value;
+        int serverCapabilities = GlobalConst.getClientCapabilityFlags().value;
         mysql.getBackendPacketResolver().setCapabilityFlags(serverCapabilities);
         HandshakePacket hs = new HandshakePacket();
         MySQLPacket payload = mysql.currentProxyPayload();

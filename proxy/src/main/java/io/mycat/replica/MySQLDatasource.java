@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class MySQLDatasource implements MycatDataSource {
 
   protected static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
-  protected final int index;
   protected final DatasourceConfig datasourceConfig;
   protected final MySQLReplica replica;
   protected final AtomicInteger connectionCounter = new AtomicInteger(0);
@@ -43,7 +42,6 @@ public abstract class MySQLDatasource implements MycatDataSource {
 
   public MySQLDatasource(int index, DatasourceConfig datasourceConfig,
       MySQLReplica replica) {
-    this.index = index;
     this.datasourceConfig = datasourceConfig;
     this.replica = replica;
     this.instance = ReplicaSelectorRuntime.INSTCANE
@@ -199,7 +197,7 @@ public abstract class MySQLDatasource implements MycatDataSource {
     return this.datasourceConfig.getMaxRetryCount();
   }
 
-  public PhysicsInstance instance() {
-    return instance;
+  public boolean isAlive() {
+   return instance.isAlive();
   }
 }

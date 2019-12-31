@@ -14,7 +14,7 @@ import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.FrontSessionManager;
 import io.mycat.replica.MySQLDatasource;
-import io.mycat.security.MycatUser;
+import io.mycat.proxy.session.MycatUser;
 import io.mycat.util.JavaUtils;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -67,7 +67,7 @@ public enum ProxyDashboard {
         if (schema != null) {
           LOGGER.info("schema :{}", schema);
         }
-        String dataNode = mycat.getDataNode();
+        String dataNode = mycat.getDafaultDatabase();
         LOGGER.info("dataNode :{}", dataNode);
         MySQLClientSession mySQLSession = mycat.getMySQLSession();
         if (mySQLSession != null) {

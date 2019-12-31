@@ -1,13 +1,12 @@
 package io.mycat;
 
-import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.command.CommandDispatcher;
+import io.mycat.config.DatasourceRootConfig;
+import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.datasource.DatasourceConfig;
 import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.config.schema.DataNodeConfig;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
-import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
@@ -20,20 +19,16 @@ import java.util.Set;
  **/
 public interface ProxyBeanProviders {
 
-  void initRuntime(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception;
+  void initRuntime( Map<String, Object> defContext) throws Exception;
 
-  void beforeAcceptConnectionProcess(ProxyRuntime runtime, Map<String, Object> defContext) throws Exception;
+  void beforeAcceptConnectionProcess(Map<String, Object> defContext) throws Exception;
 
-  MySQLDatasource createDatasource(ProxyRuntime runtime, int index,
-      DatasourceConfig datasourceConfig,
-      MySQLReplica replica);
+  MySQLDatasource createDatasource(DatasourceRootConfig.DatasourceConfig  datasourceConfig);
 
-  MySQLReplica createReplica(ProxyRuntime runtime, ReplicaConfig replicaConfig,
-      Set<Integer> writeIndex);
+  MySQLReplica createReplica(ClusterRootConfig replicaConfig,
+                             Set<Integer> writeIndex);
 
-  MySQLDataNode createMySQLDataNode(ProxyRuntime runtime, DataNodeConfig config);
-
-  CommandDispatcher createCommandDispatcher(ProxyRuntime runtime, MycatSession session);
+  CommandDispatcher createCommandDispatcher(MycatSession session);
 
   MySQLSynContext createMySQLSynContext(MycatSession mycat);
 

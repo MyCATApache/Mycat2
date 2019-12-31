@@ -25,21 +25,22 @@ public final class MycatMonitor {
   }
 
 
-  public final static void onRouteSQL(Session session, String dataNodeName,String sql){
+  public final static void onRouteSQL(Session session, String replicaName,String defaultDatabase,String sql){
     Objects.requireNonNull(session);
-    Objects.requireNonNull(dataNodeName);
+    Objects.requireNonNull(replicaName);
+    Objects.requireNonNull(defaultDatabase);
     Objects.requireNonNull(sql);
-    callback.onRouteSQL(session, dataNodeName,sql);
+    callback.onRouteSQL(session, replicaName,defaultDatabase,sql);
   }
 
-  public final static void onRouteResult(Session session, String dataNodeName, String replicaName,
+  public final static void onRouteResult(Session session, String replicaName, String defaultDatabase,
       String dataSourceName,
       String sql) {
     Objects.requireNonNull(session);
-    Objects.requireNonNull(dataNodeName);
     Objects.requireNonNull(replicaName);
+    Objects.requireNonNull(defaultDatabase);
     Objects.requireNonNull(dataSourceName);
-    callback.onRouteSQLResult(session, dataNodeName, replicaName, dataSourceName, sql);
+    callback.onRouteSQLResult(session, replicaName, defaultDatabase, dataSourceName, sql);
   }
 
   public final static void onRouteResult(Session session, String dataNodeName, String replicaName,
@@ -216,9 +217,9 @@ public final class MycatMonitor {
     callback.onPacketExchangerClear(session);
   }
 
-  public final static void onGettingBackendException(Session session, String dataNode,
+  public final static void onGettingBackendException(Session session, String replicaName,String defaultDatabase,
       Exception e) {
-    callback.onGettingBackend(session, dataNode, e);
+    callback.onGettingBackend(session, replicaName,defaultDatabase, e);
   }
 
   public final static void onMycatHandlerWriteException(Session session, Exception e) {
@@ -528,5 +529,9 @@ public final class MycatMonitor {
 
   public static void onResultSetEnd(MySQLClientSession mysql) {
     callback.onResultSetEnd(mysql);
+  }
+
+  public static void onRouteSQL(MycatSession mycat, String dataSourceName, String sql) {
+    callback.onRouteSQL(mycat, dataSourceName,sql);
   }
 }

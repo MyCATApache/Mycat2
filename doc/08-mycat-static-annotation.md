@@ -133,10 +133,10 @@ shardingKey=后面的两个值作为分片算法的范围查询的值
 ### DataNode路由注解
 
 ```sql
-/*! mycat:dataNode=dn1*/ create table travelrecord(id int);
+/*! mycat:deafultDatabase=dn1*/ create table travelrecord(id int);
 ```
 
-dataNode=后面就是最终路由的节点,此sql不经过路由处理,而非注释sql则是真正发送到mysql服务器执行sql
+deafultDatabase=后面就是最终路由的节点,此sql不经过路由处理,而非注释sql则是真正发送到mysql服务器执行sql
 
 
 

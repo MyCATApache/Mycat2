@@ -4,14 +4,13 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>0.3-SNAPSHOP</version>
+  <version>0.4-SNAPSHOP</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
     <module>plug</module>
     <module>router</module>
     <module>sqlparser</module>
-    <module>expression</module>
     <module>common</module>
     <module>datasource</module>
     <module>mycat2</module>
@@ -19,6 +18,7 @@
     <module>grid</module>
     <module>replica</module>
       <module>pattern</module>
+      <module>hbt</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>

@@ -59,22 +59,22 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   }
 
   @Override
-  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+  public void onRouteSQLResult(Session session, String dataNodeName, String defaultDataBase,
       String dataSourceName,
       byte[] payload) {
     if (onSQL) {
       SQL_LOGGER.info("sessionId:{} dataTarget:{} replica:{} datasource:{}", session.sessionId(), dataNodeName,
-          replicaName,dataSourceName);
+              defaultDataBase,dataSourceName);
     }
   }
 
   @Override
-  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+  public void onRouteSQLResult(Session session, String dataNodeName, String defaultDataBase,
       String dataSourceName, String sql) {
     if (onSQL) {
       SQL_LOGGER.info("sessionId:{} dataTarget:{} replica:{} datasource:{}", session.sessionId(),
           dataNodeName,
-          replicaName, dataSourceName);
+              defaultDataBase, dataSourceName);
     }
   }
 
@@ -350,7 +350,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       MySQLSynContextImpl c = new MySQLSynContextImpl(session);
       LOGGER.debug(
           "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
-          session.sessionId(), c.getDataNode() != null ? c.getDataNode().getName() : null,
+          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase().getName() : null,
           c.getIsolation(), c.getCharset(), c.getAutoCommit(),
           c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
     }

@@ -202,15 +202,15 @@ a logic table in mycat.Corresponding to the table on the mysql server, we call i
 
   - GLOBAL:x:
 
-    Except DB IN ONE SERVER or DB IN MULTI SERVER,it routes a sql to a data node.Global table routes a update SQL to multiple dataNode and query SQL by loading balance.Consistency is required here.
+    Except DB IN ONE SERVER or DB IN MULTI SERVER,it routes a sql to a data node.Global table routes a update SQL to multiple deafultDatabase and query SQL by loading balance.Consistency is required here.
 
 
 
 - ##### data node
 
-In MySQL connection,a dataNode is a meta data, a connection with a current schema that as session info.
+In MySQL connection,a deafultDatabase is a meta data, a connection with a current schema that as session info.
 
-That's why you can only use one schema to access MySQL server once with dataNode by a SQL without schema .
+That's why you can only use one schema to access MySQL server once with deafultDatabase by a SQL without schema .
 
  
 

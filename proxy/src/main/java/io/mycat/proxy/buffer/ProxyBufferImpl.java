@@ -283,7 +283,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
 //        this.compactOrExpendIfNeedRemainsBytesInWriting(added);
 //        packet.buffer.position(packet.channelWriteStartIndex());
 //        packet.buffer.limit(packet.channelWriteEndIndex());
-//        this.buffer.put(packet.buffer);
+//        this.buffer.putHeartbeatFlow(packet.buffer);
 //        channelWriteEndIndex(channelWriteEndIndex() + added);
 //        packet.applyChannelWritingIndex();
 //        return this;
@@ -357,7 +357,7 @@ public final class ProxyBufferImpl implements ProxyBuffer, MySQLPacket<ProxyBuff
 //        int position = buffer.position();
 //        buffer.position(0);
 //        ByteBuffer allocate = writeBufferPool().allocate(len);
-//        allocate.put(buffer);
+//        allocate.putHeartbeatFlow(buffer);
 //        allocate.position(position);
 //        writeBufferPool().recycle(buffer);
 //        this.buffer = allocate;

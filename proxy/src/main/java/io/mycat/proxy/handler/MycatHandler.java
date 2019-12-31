@@ -25,11 +25,11 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 
 /**
- * The enum Mycat handler.
+ * The enum Mycat handlerName.
  */
 public enum MycatHandler implements NIOHandler<MycatSession> {
   /**
-   * PhysicsInstanceImpl mycat handler.
+   * PhysicsInstanceImpl mycat handlerName.
    */
   INSTANCE;
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MycatHandler.class);

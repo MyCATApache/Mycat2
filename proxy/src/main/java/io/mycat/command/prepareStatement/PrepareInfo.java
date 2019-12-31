@@ -1,6 +1,5 @@
 package io.mycat.command.prepareStatement;
 
-import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -50,7 +49,7 @@ public class PrepareInfo {
     this.manager = manager;
   }
 
-  public void getPrepareSession(String dataNodeName,boolean runOnMaster, LoadBalanceStrategy strategy,PrepareSessionCallback callBack, boolean proxyPrepareResponse) {
+  public void getPrepareSession(String replicaName,String defaultDatabaseName,boolean runOnMaster, LoadBalanceStrategy strategy,PrepareSessionCallback callBack, boolean proxyPrepareResponse) {
     List<PrepareMySQLSessionInfo> prepareMySQLSessionInfos = checkVaildAndGetIdleMySQLSessionIds();
     List<SessionIdAble> ids = (List) prepareMySQLSessionInfos;
     MySQLDataNode node = mycat.getRuntime().getDataNodeByName(dataNodeName);
@@ -270,7 +269,7 @@ public class PrepareInfo {
   private void innerExecute(long statementId, byte flags, int numParams, byte[] rest) {
     MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
             .generateExecutePayload(statementId, flags, numParams, rest),
-        mycat.getDataNode(), null, ResponseType.QUERY);
+        mycat.getDafaultDatabase(), null, ResponseType.QUERY);
   }
 
   /**
@@ -291,7 +290,7 @@ public class PrepareInfo {
     }
     MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
             .generateFetchPayload(mySQLSession.getCursorStatementId(), numOfRows),
-        mycat.getDataNode(), null, ResponseType.MULTI_RESULTSET);
+        mycat.getDafaultDatabase(), null, ResponseType.MULTI_RESULTSET);
   }
 
   public boolean existLongData() {

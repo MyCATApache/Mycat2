@@ -32,8 +32,7 @@ import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.security.MycatSecurityConfig;
-import io.mycat.security.MycatUser;
+import io.mycat.proxy.session.MycatUser;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.util.StringUtil;
@@ -68,7 +67,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             if (!mycat.readFromChannel()) {
                 return;
             }
-            MycatSecurityConfig securityManager = runtime.getSecurityManager();
+//            MycatSecurityConfig securityManager = runtime.getSecurityManager();
             byte[] input = null;
             if(!isChangeAuthPlugin) {
                 //密码读取与验证
@@ -108,19 +107,18 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             Map<String, String> attrs = auth.getClientConnectAttrs();
 
 
-            if (!securityManager.isIgnorePassword()) {
-                String password = runtime.getSecurityManager()
-                        .getPasswordByUserName(username);
-
-                if (!checkPassword(password, input)) {
-                    String message = "password is wrong!";
-                    failture(mycat, message);
-                    return;
-                }
-            }
-            MycatUser user = securityManager
-                    .getUser(mycat.channel().socket().getRemoteSocketAddress().toString(),
-                            username);
+            //login connect direct
+//            if (!securityManager.isIgnorePassword()) {
+//                String password = runtime.getSecurityManager()
+//                        .getPasswordByUserName(username);
+//
+//                if (!checkPassword(password, input)) {
+//                    String message = "password is wrong!";
+//                    failture(mycat, message);
+//                    return;
+//                }
+//            }
+            MycatUser user = new MycatUser(username,mycat.channel().socket().getRemoteSocketAddress().toString());
             int capabilities = auth.getCapabilities();
             if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
                 String message = "Can Not Use Compression Protocol!";

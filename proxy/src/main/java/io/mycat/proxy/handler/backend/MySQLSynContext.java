@@ -1,6 +1,5 @@
 package io.mycat.proxy.handler.backend;
 
-import io.mycat.beans.mycat.MySQLDataNode;
 import io.mycat.proxy.session.MySQLClientSession;
 
 public abstract class MySQLSynContext {
@@ -15,5 +14,5 @@ public abstract class MySQLSynContext {
 
   public abstract void onSynchronizationStateLog(MySQLClientSession mysql);
 
-  public abstract MySQLDataNode getDataNode();
+  public abstract String getDefaultDatabase();
 }

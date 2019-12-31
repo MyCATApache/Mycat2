@@ -86,7 +86,7 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   }
 
   @Override
-  public void onGettingBackend(Session session, String dataNode, Exception e) {
+  public void onGettingBackend(Session session, String replicaName, String defaultDataBase, Exception e) {
 
   }
 
@@ -221,13 +221,18 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
 
   }
 
+  @Override
+  public void onRouteSQL(Session session, String replicaName, String defaultDataBase, String sql) {
+
+  }
+
 
   public void onCloseMysqlSession(MySQLClientSession session,boolean noraml,String reson) {
 
   }
 
 
-  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+  public void onRouteSQLResult(Session session, String dataNodeName, String defaultDataBase,
       String dataNode,
       byte[] payload) {
 
@@ -598,12 +603,13 @@ public abstract class AbstractMonitorCallback implements MycatMonitorCallback{
   }
 
   @Override
-  public void onRouteSQL(Session session, String dataNodeName, String sql) {
+  public void onRouteSQL(MycatSession mycat, String dataSourceName, String sql) {
 
   }
 
+
   @Override
-  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+  public void onRouteSQLResult(Session session, String dataNodeName, String defaultDataBase,
       String dataSource, String sql) {
 
   }

@@ -92,12 +92,12 @@ public class BackendMySQLPacketResolver implements MySQLPacketResolver {
 
   @Override
   public final boolean readFromChannel() throws IOException {
-    throw new MycatException("");
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final void writeToChannel() throws IOException {
-    throw new MycatException("");
+    throw new UnsupportedOperationException();
   }
 
 

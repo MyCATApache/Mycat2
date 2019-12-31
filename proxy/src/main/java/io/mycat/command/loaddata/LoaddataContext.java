@@ -25,7 +25,7 @@ public class LoaddataContext {
     context.writeBytes(data);
   }
 
-  public void proxy(MycatSession mycat) {
+  public void proxy(MycatSession mycat,String replicaName,String defaultDataBaseName) {
     int packetId = 2;
     MySQLPacketSplitter splitter = new PacketSplitterImpl();
     splitter.init(context.size());
@@ -47,7 +47,7 @@ public class LoaddataContext {
       public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
         byte[] emptyPacket = MySQLPacketUtil.generateMySQLPacket(emptyPacketId, new byte[]{});
         MySQLProxyNIOHandler
-            .INSTANCE.proxyBackend(mycat, emptyPacket, session.getDataNode().getName(), null, ResponseType.QUERY,
+            .INSTANCE.proxyBackend(mycat, emptyPacket, replicaName,defaultDataBaseName, null, ResponseType.QUERY,
             MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
         );
       }

@@ -31,6 +31,10 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * 集中管理MySQL LocalInFileSession 是在mycat proxy中,唯一能够创建mysql session以及关闭mysqlsession的对象
@@ -41,14 +45,12 @@ import java.util.List;
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
+  final static AtomicInteger COUNTER = new AtomicInteger(1);
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
-  final ProxyRuntime runtime;
-  private final ProxyBeanProviders providers;
+  private final Function<MycatSession,CommandDispatcher> function;
 
-  public MycatSessionManager(ProxyRuntime runtime,
-      ProxyBeanProviders providers) {
-    this.runtime = runtime;
-    this.providers = providers;
+  public MycatSessionManager(Function<MycatSession,CommandDispatcher> function) {
+    this.function = function;
   }
 
 
@@ -82,10 +84,9 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler();
-    MycatSession mycat = new MycatSession(runtime.genSessionId(), bufPool,
+    MycatSession mycat = new MycatSession(COUNTER.getAndIncrement(), bufPool,
         mySQLClientAuthHandler, this);
-    CommandDispatcher commandDispatcher = providers
-        .createCommandDispatcher(runtime, mycat);
+    CommandDispatcher commandDispatcher = function.apply(mycat);
     mycat.setCommandHandler(commandDispatcher);
 
     //用于monitor监控获取session

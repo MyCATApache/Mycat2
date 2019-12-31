@@ -21,7 +21,7 @@ public enum PlugRuntime {
       PlugRootConfig plugRootConfig = mycatConfig.getPlug();
       Objects.requireNonNull(plugRootConfig, "plug config can not found");
       LoadBalanceManager loadBalanceManager = new LoadBalanceManager();
-      loadBalanceManager.load(plugRootConfig);
+      loadBalanceManager.load(mycatConfig.getPlug().getLoadBalance());
       this.manager = loadBalanceManager;
     }
   }
