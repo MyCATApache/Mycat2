@@ -2,8 +2,6 @@ package io.mycat.replica;
 
 public interface PhysicsInstance {
 
-  int getIndex();
-
   String getName();
 
   boolean isMaster();

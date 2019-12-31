@@ -14,7 +14,6 @@
  */
 package io.mycat.router;
 
-import io.mycat.beans.mycat.MycatTable;
 import java.util.List;
 import java.util.Map;
 
@@ -23,9 +22,7 @@ import java.util.Map;
  * @author cjw
  * 路由算法接口
  */
-public abstract class RuleAlgorithm {
-
-  List<RuleAlgorithm> nextAlgorithm;
+public abstract class RuleFunction {
   private Map<String, String> prot;
   private Map<String, String> ranges;
 
@@ -41,7 +38,7 @@ public abstract class RuleAlgorithm {
   }
 
   /**
-   * return sharding nodes's id columnValue is column's value
+   * return matadata nodes's id columnValue is column's value
    *
    * @return never null
    */
@@ -49,30 +46,12 @@ public abstract class RuleAlgorithm {
 
   public abstract int[] calculateRange(String beginValue, String endValue);
 
-  /**
-   * 分片表所跨的节点数与分片算法分区数一致性校验
-   *
-   * @return -1 if table datanode size &lt; rule function partition size 0 if table datanode size ==
-   * rule function partition size 1 if table datanode size &gt; rule function partition size
-   */
-  public int suitableFor(MycatTable tableConf) {
-    int nPartition = getPartitionNum();
-    if (nPartition > 0) { // 对于有限制分区数的规则,进行检查
-      int dnSize = tableConf.getDataNodes().size();
-      if (dnSize < nPartition) {
-        return -1;
-      } else if (dnSize > nPartition) {
-        return 1;
-      }
-    }
-    return 0;
-  }
 
   /**
    * 对于存储数据按顺序存放的字段做范围路由，可以使用这个函数
    */
-  public static int[] calculateSequenceRange(RuleAlgorithm algorithm, String beginValue,
-      String endValue) {
+  public static int[] calculateSequenceRange(RuleFunction algorithm, String beginValue,
+                                             String endValue) {
     int begin = 0, end = 0;
     begin = algorithm.calculate(beginValue);
     end = algorithm.calculate(endValue);
@@ -89,14 +68,6 @@ public abstract class RuleAlgorithm {
   }
 
   public abstract int getPartitionNum();
-
-  public List<RuleAlgorithm> getSubRuleAlgorithm() {
-    return nextAlgorithm;
-  }
-
-  public void setSubRuleAlgorithm(List<RuleAlgorithm> ruleAlgorithm) {
-    nextAlgorithm = ruleAlgorithm;
-  }
 
   /**
    * init

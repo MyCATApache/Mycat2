@@ -1,13 +1,10 @@
 package io.mycat.api.collector;
 
-import io.mycat.beans.mycat.MycatRowMetaData;
-
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
-import java.util.Iterator;
 import java.util.Objects;
 
 public abstract class AbstractObjectRowIterator implements RowBaseIterator {

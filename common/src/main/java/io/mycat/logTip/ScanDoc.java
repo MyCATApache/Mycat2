@@ -14,7 +14,7 @@ public class ScanDoc {
     Pattern pattern = Pattern.compile(
         "((warn|info|error|debug|errorPacket|MycatException)\\((\"[\\s\\S]+?\\\")+?)|((errorPacket|MycatException)\\([0-9],(\"[\\s\\S]+?\\\")+?)"
     );
-    Files.walk(Paths.get("D:\\newgit\\f")).filter(i -> i.getFileName().toString().endsWith(".java"))
+    Files.walk(Paths.get(args[0])).filter(i -> i.getFileName().toString().endsWith(".java"))
         .forEach(i -> {
           try {
             if (Files.isDirectory(i)) {

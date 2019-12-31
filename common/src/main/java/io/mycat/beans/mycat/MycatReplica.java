@@ -1,3 +1,4 @@
+  
 /**
  * Copyright (C) <2019>  <chen junwen>
  *
@@ -14,7 +15,6 @@
  */
 package io.mycat.beans.mycat;
 
-import io.mycat.config.datasource.ReplicaConfig;
 import io.mycat.replica.ReplicaSwitchType;
 
 /**
@@ -22,8 +22,6 @@ import io.mycat.replica.ReplicaSwitchType;
  * 集群管理以及jdbc实现的集群管理,前者在proxy中运行
  **/
 public interface MycatReplica {
-
-  ReplicaConfig getReplicaConfig();
 
   boolean switchDataSourceIfNeed();
 

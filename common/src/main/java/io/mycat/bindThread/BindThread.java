@@ -127,6 +127,6 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
 //
 //
 //  public GRuntime getRuntime() {
-//    return manager.runtime;
+//    return manager.metadata;
 //  }
 }
