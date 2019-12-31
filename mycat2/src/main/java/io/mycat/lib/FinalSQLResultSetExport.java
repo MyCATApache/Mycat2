@@ -1,6 +1,6 @@
 package io.mycat.lib;
 
-import cn.lightfish.pattern.InstructionSet;
+import io.mycat.pattern.InstructionSet;
 import io.mycat.lib.impl.FinalCacheLib;
 import io.mycat.lib.impl.Response;
 

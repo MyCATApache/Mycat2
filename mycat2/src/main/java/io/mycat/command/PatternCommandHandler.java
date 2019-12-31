@@ -1,7 +1,7 @@
 package io.mycat.command;
 
-import cn.lightfish.pattern.DynamicSQLMatcher;
-import cn.lightfish.pattern.Instruction;
+import io.mycat.pattern.DynamicSQLMatcher;
+import io.mycat.pattern.Instruction;
 import io.mycat.lib.impl.Response;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;

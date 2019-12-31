@@ -4,7 +4,7 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.bindThread.BindThreadKey;
-import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
 import io.mycat.datasource.jdbc.thread.GProcess;
@@ -113,7 +113,7 @@ public class JdbcLib {
     }
 
     public static void block(MycatSession mycat, Consumer<MycatSession> consumer) {
-        GRuntime.INSTACNE.run(mycat, new GProcess() {
+        JdbcRuntime.INSTANCE.run(mycat, new GProcess() {
             @Override
             public void accept(BindThreadKey key, TransactionSession session) {
                 try {

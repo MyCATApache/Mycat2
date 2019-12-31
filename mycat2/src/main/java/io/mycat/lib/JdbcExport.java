@@ -1,6 +1,6 @@
 package io.mycat.lib;
 
-import cn.lightfish.pattern.InstructionSet;
+import io.mycat.pattern.InstructionSet;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.lib.impl.JdbcLib;
 import io.mycat.lib.impl.Response;
@@ -36,12 +36,16 @@ public class JdbcExport implements InstructionSet {
 
     public static Supplier<MycatResultSetResponse[]> queryJdbcByDataSource(String dataSource, String... sql) {
         return JdbcLib.queryJdbcByDataSource(dataSource, sql);
-    }    public static Response updateOnJdbcByDataSource(String dataSource, String sql){
-        return updateOnJdbcByDataSource(dataSource,new String[]{sql});
     }
-    public static Response updateOnJdbcByDataSource(String dataSource, String... sql){
-        return updateOnJdbcByDataSource(dataSource,false,sql);
+
+    public static Response updateOnJdbcByDataSource(String dataSource, String sql) {
+        return updateOnJdbcByDataSource(dataSource, new String[]{sql});
     }
+
+    public static Response updateOnJdbcByDataSource(String dataSource, String... sql) {
+        return updateOnJdbcByDataSource(dataSource, false, sql);
+    }
+
     public static Response updateOnJdbcByDataSource(String dataSource, boolean needGeneratedKeys, String... sql) {
         return JdbcLib.responseUpdateOnJdbcByDataSource(dataSource, needGeneratedKeys, sql);
     }

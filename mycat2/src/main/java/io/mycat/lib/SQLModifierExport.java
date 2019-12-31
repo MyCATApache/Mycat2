@@ -1,6 +1,6 @@
 package io.mycat.lib;
 
-import cn.lightfish.pattern.InstructionSet;
+import io.mycat.pattern.InstructionSet;
 
 import java.text.MessageFormat;
 

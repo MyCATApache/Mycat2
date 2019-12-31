@@ -1,8 +1,7 @@
 package io.mycat;
 
 import io.mycat.bindThread.BindThreadKey;
-import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.datasource.DsConnection;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
@@ -17,13 +16,13 @@ public class GRuntimeTest {
 
   public static void main(String[] args) throws InterruptedException {
     ReplicaSelectorRuntime.INSTCANE.load();
-    GRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
-    JdbcDataSource ds1 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn1", null);
-    JdbcDataSource ds2 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn2", null);
+    JdbcRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
+    JdbcDataSource ds1 = JdbcRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn1", null);
+    JdbcDataSource ds2 = JdbcRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn2", null);
     CountDownLatch countDownLatch = new CountDownLatch(1000);
     for (int i = 0; i < 1000; i++) {
       BindThreadKey id = id();
-      GRuntime.INSTACNE.run(id, new GProcess() {
+      JdbcRuntime.INSTACNE.run(id, new GProcess() {
 
         @Override
         public void accept(BindThreadKey key, TransactionSession session) {

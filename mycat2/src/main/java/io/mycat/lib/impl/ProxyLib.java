@@ -1,12 +1,10 @@
 package io.mycat.lib.impl;
 
-import cn.lightfish.pattern.DynamicSQLMatcher;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.SQLExecuterWriter;
-import io.mycat.proxy.session.MycatSession;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;

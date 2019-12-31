@@ -1,13 +1,10 @@
 package io.mycat;
 
 import io.mycat.calcite.CalciteEnvironment;
-import io.mycat.calcite.MetadataManager;
-import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import org.apache.calcite.jdbc.CalciteConnection;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.tools.Program;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
@@ -19,7 +16,7 @@ import java.util.Map;
 public class CacliteTest {
     public static void main(String[] args) {
         ReplicaSelectorRuntime.INSTCANE.load();
-        GRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
+        JdbcRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
         try {
             CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection();
             Statement statement = connection.createStatement();
