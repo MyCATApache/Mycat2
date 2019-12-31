@@ -2,8 +2,7 @@ package io.mycat.grid;
 
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.calcite.CalciteEnvironment;
-import io.mycat.calcite.MetadataManager;
-import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.proxy.session.MycatSession;
@@ -16,9 +15,9 @@ import java.sql.Statement;
 public class CalciteExecuterBuilderImpl implements ExecuterBuilder {
 
     private final MycatSession session;
-    private final GRuntime jdbcRuntime;
+    private final JdbcRuntime jdbcRuntime;
 
-    public CalciteExecuterBuilderImpl(MycatSession session, GRuntime jdbcRuntime) {
+    public CalciteExecuterBuilderImpl(MycatSession session, JdbcRuntime jdbcRuntime) {
 
         this.session = session;
         this.jdbcRuntime = jdbcRuntime;

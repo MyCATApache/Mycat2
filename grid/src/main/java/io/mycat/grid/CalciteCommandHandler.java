@@ -2,7 +2,7 @@ package io.mycat.grid;
 
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ProxyRuntime;
@@ -20,7 +20,7 @@ public class CalciteCommandHandler extends AbstractCommandHandler {
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     Map<String, Object> defContext = runtime.getDefContext();
-    GRuntime jdbcRuntime = (GRuntime) defContext.get("gridRuntime");
+    JdbcRuntime jdbcRuntime = (JdbcRuntime) defContext.get("gridRuntime");
     this.executionPlan = new CalciteExecuterBuilderImpl(session, jdbcRuntime);
   }
 

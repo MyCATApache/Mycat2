@@ -2,7 +2,7 @@ package io.mycat.grid;
 
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.command.AbstractCommandHandler;
-import io.mycat.datasource.jdbc.GRuntime;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.thread.GProcess;
 import io.mycat.logTip.MycatLogger;
@@ -16,7 +16,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(BlockProxyCommandHandler.class);
   final GridProxyCommandHandler handler;
-  private GRuntime jdbcRuntime;
+  private JdbcRuntime jdbcRuntime;
 
   public BlockProxyCommandHandler() {
     handler = new GridProxyCommandHandler();
@@ -25,7 +25,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
   @Override
   public void initRuntime(MycatSession session, ProxyRuntime runtime) {
     handler.initRuntime(session, runtime);
-    this.jdbcRuntime = (GRuntime) runtime.getDefContext().get("gridRuntime");
+    this.jdbcRuntime = (JdbcRuntime) runtime.getDefContext().get("gridRuntime");
   }
 
   @Override
@@ -38,7 +38,7 @@ public class BlockProxyCommandHandler extends AbstractCommandHandler {
   }
 
   public void block(MycatSession mycat, Consumer<MycatSession> consumer) {
-    GRuntime.INSTACNE.run(mycat, new GProcess() {
+    JdbcRuntime.INSTANCE.run(mycat, new GProcess() {
       @Override
       public void accept(BindThreadKey key, TransactionSession session) {
         try {
