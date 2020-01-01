@@ -1,6 +1,5 @@
 package io.mycat.pattern.benchmarks;
 
-import cn.lightfish.pattern.*;
 import io.mycat.pattern.*;
 import org.openjdk.jmh.annotations.*;
 

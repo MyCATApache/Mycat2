@@ -15,7 +15,7 @@ public class PlugRootConfig {
 
     @Data
     public static class LoadBalance {
-        String defaultLoadBalance;
+        String defaultLoadBalance = "balanceRandom";
         List<LoadBalanceConfig> loadBalances = new ArrayList<>();
     }
 

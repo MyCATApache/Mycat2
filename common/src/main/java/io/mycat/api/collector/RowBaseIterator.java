@@ -1,6 +1,7 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+
 import java.io.Closeable;
 import java.math.BigDecimal;
 

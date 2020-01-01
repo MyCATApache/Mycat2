@@ -19,6 +19,7 @@ package io.mycat.util;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
 import java.security.NoSuchAlgorithmException;
 
 /**

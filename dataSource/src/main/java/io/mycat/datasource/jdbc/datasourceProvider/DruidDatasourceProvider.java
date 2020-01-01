@@ -19,9 +19,9 @@ import com.alibaba.druid.sql.parser.SQLParserUtils;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
 /**
  * @author Junwen Chen
  **/

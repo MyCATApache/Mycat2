@@ -1,10 +1,10 @@
 package io.mycat.sqlparser.util;
 
-import static io.mycat.sqlparser.util.simpleParser.Tokenizer.DIGITS;
-import static io.mycat.sqlparser.util.simpleParser.Tokenizer.STRINGS;
-
 import io.mycat.sqlparser.util.simpleParser.ByteArrayView;
 import io.mycat.sqlparser.util.simpleParser.HashArray;
+
+import static io.mycat.sqlparser.util.simpleParser.Tokenizer.DIGITS;
+import static io.mycat.sqlparser.util.simpleParser.Tokenizer.STRINGS;
 
 public class SQLMapAnnotation {
 

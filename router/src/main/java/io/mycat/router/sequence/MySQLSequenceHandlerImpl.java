@@ -10,6 +10,7 @@ import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;

@@ -1,8 +1,8 @@
 package io.mycat.sqlEngine.ast.expr.arithmeticExpr.longOperator;
 
-import io.mycat.sqlEngine.context.RootSessionContext;
-import io.mycat.sqlEngine.ast.expr.numberExpr.DoubleExpr;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
+import io.mycat.sqlEngine.ast.expr.numberExpr.DoubleExpr;
+import io.mycat.sqlEngine.context.RootSessionContext;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor

@@ -19,12 +19,11 @@ import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
+import javax.transaction.UserTransaction;
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
-import javax.transaction.SystemException;
-import javax.transaction.UserTransaction;
 /**
  * @author Junwen Chen
  **/

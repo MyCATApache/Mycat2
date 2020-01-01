@@ -15,6 +15,7 @@
 package io.mycat.replica;
 
 import io.mycat.MycatConfig;
+import io.mycat.ScheduleUtil;
 import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.plug.PlugRuntime;
@@ -81,7 +82,7 @@ public enum ReplicaSelectorRuntime {
             schedule = null;
         }
         ClusterRootConfig.TimerConfig timerConfig = config.getReplicas().getTimer();
-        this.schedule = this.timer.scheduleAtFixedRate(() -> {
+        this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
             Stream<PhysicsInstanceImpl> stream = map.values().stream().flatMap(i -> i.datasourceMap.values().stream());
             stream.forEach(c -> {
                 HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(c.getName());
@@ -314,4 +315,5 @@ public enum ReplicaSelectorRuntime {
         }
         return strategyProvider;
     }
+
 }

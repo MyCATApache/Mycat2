@@ -14,13 +14,6 @@
  */
 package io.mycat.sqlEngine.ast.complier;
 
-import io.mycat.sqlEngine.ast.converter.Converters;
-import io.mycat.sqlEngine.ast.expr.ValueExpr;
-import cn.lightfish.sqlEngine.executor.logicExecutor.*;
-import io.mycat.sqlEngine.executor.logicExecutor.*;
-import io.mycat.sqlEngine.schema.BaseColumnDefinition;
-import io.mycat.sqlEngine.schema.DbSchemaManager;
-import io.mycat.sqlEngine.schema.TableColumnDefinition;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.SQLListExpr;
@@ -28,6 +21,12 @@ import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource.JoinType;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import io.mycat.sqlEngine.ast.converter.Converters;
+import io.mycat.sqlEngine.ast.expr.ValueExpr;
+import io.mycat.sqlEngine.executor.logicExecutor.*;
+import io.mycat.sqlEngine.schema.BaseColumnDefinition;
+import io.mycat.sqlEngine.schema.DbSchemaManager;
+import io.mycat.sqlEngine.schema.TableColumnDefinition;
 
 import java.util.List;
 import java.util.Set;

@@ -21,7 +21,6 @@ import io.mycat.beans.mysql.MySQLFieldsType;
 
 import java.sql.ResultSetMetaData;
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * @author jamie12221 date 2019-05-07 13:58

@@ -46,6 +46,7 @@ import java.nio.charset.Charset;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
+//tcp.port in {8066} or tcp.port in  {3066}
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
         MySQLProxyServerSession<MycatSession>, BindThreadKey {
     private final static Logger LOGGER = LoggerFactory.getLogger(MycatSession.class);
@@ -111,11 +112,12 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         resetPacket();
         setResponseFinished(ProcessState.READY);
         if (!isInTransaction() || !isBindMySQLSession()) {
-            if (getRuntime().isGracefulShutdown() && gracefulShutdowning == false) {
-                gracefulShutdowning = true;
-                this.close(true, "gracefulShutdown");
-                return;
-            }
+            //todo
+//            if (getRuntime().isGracefulShutdown() && gracefulShutdowning == false) {
+//                gracefulShutdowning = true;
+//                this.close(true, "gracefulShutdown");
+//                return;
+//            }
         }
         this.change2ReadOpts();
     }
@@ -200,7 +202,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         if (this.getMySQLSession() != null) {
             this.getMySQLSession().close(normal, hint);
         }
-        closed = true;
+        hasClosed = true;
         try {
             getSessionManager().removeSession(this, normal, hint);
         } catch (Exception e) {
@@ -446,7 +448,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public boolean checkOkInBind() {
-        return isOpen();
+        return checkOpen();
     }
 
     @Override
@@ -581,4 +583,5 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     public boolean isInTransaction() {
         return serverStatus.isServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
     }
+
 }

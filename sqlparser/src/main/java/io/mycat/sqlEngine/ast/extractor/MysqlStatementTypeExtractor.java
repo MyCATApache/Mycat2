@@ -14,11 +14,11 @@
  */
 package io.mycat.sqlEngine.ast.extractor;
 
-import io.mycat.sqlEngine.schema.StatementType;
 import com.alibaba.fastsql.sql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.clause.*;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.*;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.sqlEngine.schema.StatementType;
 
 /**
  * chenjunwen 294712221@qq.com

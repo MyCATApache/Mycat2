@@ -17,7 +17,6 @@ package io.mycat.pattern;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * https://github.com/junwen12221/GPattern.git

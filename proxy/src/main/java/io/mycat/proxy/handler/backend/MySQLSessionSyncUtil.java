@@ -16,53 +16,53 @@ public class MySQLSessionSyncUtil {
 
   public static void sync(MySQLSynContext mycatContext, MySQLClientSession mysql, Object sender,
       SessionSyncCallback callBack) {
-    MySQLSynContext mySQLSynContext = mysql.getRuntime().getProviders()
-        .createMySQLSynContext(mysql);
-    if (mySQLSynContext.equals(mycatContext)) {
-      callBack.onSession(mysql, sender, null);
-      return;
-    } else {
-      String syncSQL = mycatContext.getSyncSQL();
-      MycatMonitor.onSyncSQL(mycatContext, syncSQL, mysql);
-      ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, syncSQL,
-          new ResultSetCallBack<MySQLClientSession>() {
-
-            @Override
-            public void onFinished(boolean monopolize, MySQLClientSession mysql,
-                Object sender, Object attr) {
-              mycatContext.successSyncMySQLClientSession(mysql);
-              mycatContext.onSynchronizationStateLog(mysql);
-              callBack.onSession(mysql, sender, attr);
-            }
-
-            @Override
-            public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                MySQLClientSession mysql, Object sender, Object attr) {
-              String messageString = errorPacket.getErrorMessageString();
-              LOGGER.error("sync session fail:{}",messageString);
-              mysql.close(false, messageString);
-              if (monopolize) {
-                callBack.onException(new MycatException(messageString), this, null);
-                return;
-              } else {
-                callBack.onErrorPacket(errorPacket, false, mysql, this, null);
-                return;
-              }
-            }
-
-            @Override
-            public void onFinishedSendException(Exception exception, Object sender,
-                Object attr) {
-              LOGGER.error("sync session fail:",exception);
-              callBack.onException(exception, sender, attr);
-            }
-
-            @Override
-            public void onFinishedException(Exception exception, Object sender, Object attr) {
-              LOGGER.error("sync session fail:",exception);
-              callBack.onException(exception, sender, attr);
-            }
-          });
-    }
+//    MySQLSynContext mySQLSynContext = mysql.getRuntime().getProviders()
+//        .createMySQLSynContext(mysql);
+//    if (mySQLSynContext.equals(mycatContext)) {
+//      callBack.onSession(mysql, sender, null);
+//      return;
+//    } else {
+//      String syncSQL = mycatContext.getSyncSQL();
+//      MycatMonitor.onSyncSQL(mycatContext, syncSQL, mysql);
+//      ResultSetHandler.DEFAULT.request(mysql, MySQLCommandType.COM_QUERY, syncSQL,
+//          new ResultSetCallBack<MySQLClientSession>() {
+//
+//            @Override
+//            public void onFinished(boolean monopolize, MySQLClientSession mysql,
+//                Object sender, Object attr) {
+//              mycatContext.successSyncMySQLClientSession(mysql);
+//              mycatContext.onSynchronizationStateLog(mysql);
+//              callBack.onSession(mysql, sender, attr);
+//            }
+//
+//            @Override
+//            public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+//                MySQLClientSession mysql, Object sender, Object attr) {
+//              String messageString = errorPacket.getErrorMessageString();
+//              LOGGER.error("sync session fail:{}",messageString);
+//              mysql.close(false, messageString);
+//              if (monopolize) {
+//                callBack.onException(new MycatException(messageString), this, null);
+//                return;
+//              } else {
+//                callBack.onErrorPacket(errorPacket, false, mysql, this, null);
+//                return;
+//              }
+//            }
+//
+//            @Override
+//            public void onFinishedSendException(Exception exception, Object sender,
+//                Object attr) {
+//              LOGGER.error("sync session fail:",exception);
+//              callBack.onException(exception, sender, attr);
+//            }
+//
+//            @Override
+//            public void onFinishedException(Exception exception, Object sender, Object attr) {
+//              LOGGER.error("sync session fail:",exception);
+//              callBack.onException(exception, sender, attr);
+//            }
+//          });
+//    }
   }
 }

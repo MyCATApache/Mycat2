@@ -1,16 +1,14 @@
 package io.mycat;
 
 import io.mycat.command.CommandDispatcher;
-import io.mycat.config.DatasourceRootConfig;
 import io.mycat.config.ClusterRootConfig;
-import io.mycat.config.datasource.DatasourceConfig;
-import io.mycat.config.datasource.ReplicaConfig;
-import io.mycat.config.schema.DataNodeConfig;
+import io.mycat.config.DatasourceRootConfig;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.replica.MySQLReplica;
+
 import java.util.Map;
 import java.util.Set;
 

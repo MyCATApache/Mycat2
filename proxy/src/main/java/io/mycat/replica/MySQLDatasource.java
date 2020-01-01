@@ -15,7 +15,7 @@
 package io.mycat.replica;
 
 import io.mycat.beans.mycat.MycatDataSource;
-import io.mycat.config.datasource.DatasourceConfig;
+import io.mycat.config.DatasourceRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
@@ -24,6 +24,7 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
+
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,18 +36,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class MySQLDatasource implements MycatDataSource {
 
   protected static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLDatasource.class);
-  protected final DatasourceConfig datasourceConfig;
-  protected final MySQLReplica replica;
+  protected final DatasourceRootConfig.DatasourceConfig datasourceConfig;
   protected final AtomicInteger connectionCounter = new AtomicInteger(0);
-  protected final PhysicsInstance instance;
 
-  public MySQLDatasource(int index, DatasourceConfig datasourceConfig,
-      MySQLReplica replica) {
+  public MySQLDatasource(DatasourceRootConfig.DatasourceConfig datasourceConfig) {
     this.datasourceConfig = datasourceConfig;
-    this.replica = replica;
-    this.instance = ReplicaSelectorRuntime.INSTCANE
-        .registerDatasource(replica.getName(), datasourceConfig, index,
-            () -> connectionCounter.get());
   }
 
   public int getSessionLimitCount() {
@@ -55,68 +49,6 @@ public abstract class MySQLDatasource implements MycatDataSource {
 
   public int getSessionMinCount() {
     return datasourceConfig.getMinCon();
-  }
-
-
-  /**
-   * 回调表示获取此数据源的信息成功 信息需要包含字符集内容,如果字符集获取失败,则集群也是启动失败 字符集只有第一个Session获取,此后新建的session就不会获取,因为字符集是集群使用,集群对外应该表现为一个mysql
-   *
-   * @param callback 回调函数
-   */
-  public void init(MycatReactorThread[] threads, AsyncTaskCallBackCounter callback) {
-    Objects.requireNonNull(callback);
-    int minCon = datasourceConfig.getMinCon();
-    Objects.requireNonNull(threads);
-    if (minCon < 1) {
-      callback.onCountSuccess();
-    }
-    for (int index = 0; index < minCon; index++) {
-      MycatReactorThread thread = threads[index % threads.length];
-      thread.addNIOJob(createMySQLSession(thread, new SessionCallBack<MySQLClientSession>() {
-        @Override
-        public void onSession(MySQLClientSession session, Object sender, Object attr) {
-          session.getSessionManager().addIdleSession(session);
-          callback.onCountSuccess();
-        }
-
-        @Override
-        public void onException(Exception exception, Object sender, Object attr) {
-          LOGGER.error(exception.getMessage());
-          callback.onCountFail();
-        }
-      }));
-    }
-  }
-
-
-  /**
-   * 创建session辅助函数
-   *
-   * @param thread 执行的线程
-   * @param callback 回调函数
-   */
-  protected NIOJob createMySQLSession(MycatReactorThread thread,
-      SessionCallBack<MySQLClientSession> callback) {
-    Objects.requireNonNull(thread);
-    Objects.requireNonNull(callback);
-    MySQLDatasource datasource = this;
-    return new NIOJob() {
-      @Override
-      public void run(ReactorEnvThread reactor) throws Exception {
-        thread.getMySQLSessionManager()
-            .createSession(datasource, callback);
-      }
-
-      @Override
-      public void stop(ReactorEnvThread reactor, Exception reason) {
-        callback.onException(reason, this, null);
-      }
-
-      @Override
-      public String message() {
-        return "createMySQLSession";
-      }
-    };
   }
 
   @Override
@@ -139,11 +71,6 @@ public abstract class MySQLDatasource implements MycatDataSource {
   public String getPassword() {
     return this.datasourceConfig.getPassword();
   }
-
-  public MySQLReplica getReplica() {
-    return replica;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -185,19 +112,11 @@ public abstract class MySQLDatasource implements MycatDataSource {
     return datasourceConfig.getInitSQL();
   }
 
-  public int getIndex() {
-    return index;
-  }
-
   public String getInitDb() {
     return datasourceConfig.getInitDb();
   }
 
   public int gerMaxRetry() {
     return this.datasourceConfig.getMaxRetryCount();
-  }
-
-  public boolean isAlive() {
-   return instance.isAlive();
   }
 }

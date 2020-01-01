@@ -14,6 +14,9 @@
  */
 package io.mycat.sqlEngine.ast.converter;
 
+import com.alibaba.fastsql.sql.ast.expr.*;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
 import io.mycat.sqlEngine.ast.expr.booleanExpr.BooleanValueExpr;
 import io.mycat.sqlEngine.ast.expr.dateExpr.DateConstExpr;
@@ -22,27 +25,6 @@ import io.mycat.sqlEngine.ast.expr.numberExpr.DoubleConstExpr;
 import io.mycat.sqlEngine.ast.expr.numberExpr.LongConstExpr;
 import io.mycat.sqlEngine.ast.expr.stringExpr.StringConstExpr;
 import io.mycat.sqlEngine.ast.expr.valueExpr.NullConstExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLBigIntExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLBooleanExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLCharExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLDateExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLDateTimeExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLDecimalExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLDoubleExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLFloatExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLHexExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLIntegerExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLJSONExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLNullExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLNumberExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLRealExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLSmallIntExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLTimeExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLTimestampExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLTinyIntExpr;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.expr.MySqlCharExpr;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 
 import java.math.BigDecimal;
 /**

@@ -17,6 +17,7 @@ package io.mycat.replica.heartbeat;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
+
 import java.util.function.Consumer;
 import java.util.function.Function;
 

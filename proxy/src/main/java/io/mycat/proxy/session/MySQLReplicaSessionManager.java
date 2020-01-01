@@ -1,6 +1,5 @@
 package io.mycat.proxy.session;
 
-import io.mycat.MycatConfig;
 import io.mycat.ProxyBeanProviders;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.logTip.MycatLogger;

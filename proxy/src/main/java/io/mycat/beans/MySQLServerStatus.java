@@ -17,6 +17,7 @@ package io.mycat.beans;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+
 import java.nio.charset.Charset;
 
 

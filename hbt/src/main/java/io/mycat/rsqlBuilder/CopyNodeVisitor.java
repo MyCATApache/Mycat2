@@ -1,7 +1,5 @@
 package io.mycat.rsqlBuilder;
 
-import cn.lightfish.describer.*;
-import cn.lightfish.describer.literal.*;
 import io.mycat.describer.*;
 import io.mycat.describer.literal.*;
 

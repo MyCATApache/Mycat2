@@ -1,7 +1,5 @@
 package io.mycat.command.loaddata;
 
-import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK;
-
 import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -13,6 +11,8 @@ import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+
+import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK;
 
 public class LoaddataContext {
 
@@ -46,10 +46,10 @@ public class LoaddataContext {
       @Override
       public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
         byte[] emptyPacket = MySQLPacketUtil.generateMySQLPacket(emptyPacketId, new byte[]{});
-        MySQLProxyNIOHandler
-            .INSTANCE.proxyBackend(mycat, emptyPacket, replicaName,defaultDataBaseName, null, ResponseType.QUERY,
-            MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
-        );
+//        MySQLProxyNIOHandler
+//            .INSTANCE.proxyBackend(mycat, emptyPacket, replicaName,defaultDataBaseName, null, ResponseType.QUERY,
+//            MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
+//        );
       }
 
       @Override

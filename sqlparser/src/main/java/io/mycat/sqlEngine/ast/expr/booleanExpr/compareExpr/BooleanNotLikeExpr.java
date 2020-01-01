@@ -1,8 +1,8 @@
 package io.mycat.sqlEngine.ast.expr.booleanExpr.compareExpr;
 
-import io.mycat.sqlEngine.context.RootSessionContext;
-import io.mycat.sqlEngine.ast.expr.booleanExpr.BooleanExpr;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
+import io.mycat.sqlEngine.ast.expr.booleanExpr.BooleanExpr;
+import io.mycat.sqlEngine.context.RootSessionContext;
 
 
 public class BooleanNotLikeExpr implements BooleanExpr {

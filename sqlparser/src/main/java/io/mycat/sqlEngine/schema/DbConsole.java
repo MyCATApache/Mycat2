@@ -1,5 +1,8 @@
 package io.mycat.sqlEngine.schema;
 
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.sqlEngine.ast.SQLParser;
 import io.mycat.sqlEngine.ast.complier.ComplierContext;
 import io.mycat.sqlEngine.ast.statement.StatementDispatcher;
@@ -10,21 +13,13 @@ import io.mycat.sqlEngine.executor.PhysicsExecutorRunner;
 import io.mycat.sqlEngine.executor.logicExecutor.Executor;
 import io.mycat.sqlEngine.executor.logicExecutor.ExecutorType;
 import io.mycat.sqlEngine.persistent.PersistentManager;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 /**
  * @author Junwen Chen

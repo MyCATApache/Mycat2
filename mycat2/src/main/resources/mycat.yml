@@ -1,10 +1,45 @@
-proxy:
+datasource:
+  datasourceProviderClass: null
+  datasources: [{
+                name: defaultDatasourceName,
+                ip: 0.0.0.0,
+                port: 3306,
+                user: root,
+                password: 123456,
+                maxCon: 1000,
+                minCon: 0,
+                maxRetryCount: 3,
+                dbType: mysql,
+                url:,
+                weight: 1,
+                initSQL:,
+                initDb:,
+                instanceType:,
+                jdbcDriverClass:
+                }]
+interceptor:
+  defaultHanlder: {explain: null, tags: {datasourceName: defaultDatasourceName},type: proxyDatasource}
+  handlers: []
+  schemas: []
+  sqls: []
+matadata:
+  dataNodes: {}
+  prototype: null
+  schemas: {}
+packageNameList: []
+plug:
+  loadBalance:
+    defaultLoadBalance: balanceRandom
+    loadBalances: [{name: balanceRandom, clazz: io.mycat.plug.loadBalance.BalanceRunOnMaster}]
+replicas:
+  replicas: []
+  timer: {initialDelay: 1000, period: 10000, timeUnit: MILLISECONDS}
+server:
+  bufferPool:
+    args: {}
+    poolName: null
+  handlerName: null
   ip: 0.0.0.0
   port: 8066
-  # 以下bufferPool是每个reactor1独立一个,不共享
-  bufferPoolPageSize: 4194304     # 一页的大小，默认 1024*1024*4
-  bufferPoolChunkSize: 8192       # chunk 大小 ， 默认 8192 chunk 为bufferpool 分配的最小单元,不能低于86
-  bufferPoolPageNumber: 2        # 页数量. 默认 2
-  reactorNumber: 1        #  默认 1 取逻辑处理器数量
-  commandDispatcherClass: io.mycat.command.PatternCommandHandler
-  proxyBeanProviders: io.mycat.MycatProxyBeanProviders
+  reactorNumber: 1
+  worker: null

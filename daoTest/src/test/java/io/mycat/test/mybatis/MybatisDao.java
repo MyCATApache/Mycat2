@@ -19,10 +19,11 @@ import io.mycat.proxy.monitor.MycatMonitorLogCallback;
 import io.mycat.test.ModualTest;
 import io.mycat.test.jdbc.TestGettingConnetionCallback;
 import io.mycat.test.pojo.TravelRecord;
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 import org.apache.ibatis.session.SqlSession;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 /**
  * @author jamie12221 date 2019-05-19 18:02

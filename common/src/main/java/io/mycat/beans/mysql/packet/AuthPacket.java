@@ -18,6 +18,7 @@ package io.mycat.beans.mysql.packet;
 
 
 import io.mycat.config.MySQLServerCapabilityFlags;
+
 import java.util.HashMap;
 import java.util.Map;
 

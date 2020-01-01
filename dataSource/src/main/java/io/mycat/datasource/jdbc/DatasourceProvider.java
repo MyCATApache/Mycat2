@@ -16,7 +16,7 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import javax.sql.DataSource;
+
 import javax.transaction.UserTransaction;
 /**
  * @author Junwen Chen

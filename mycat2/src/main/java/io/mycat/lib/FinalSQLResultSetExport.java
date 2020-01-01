@@ -1,8 +1,8 @@
 package io.mycat.lib;
 
-import io.mycat.pattern.InstructionSet;
 import io.mycat.lib.impl.FinalCacheLib;
 import io.mycat.lib.impl.Response;
+import io.mycat.pattern.InstructionSet;
 
 public class FinalSQLResultSetExport implements InstructionSet {
 

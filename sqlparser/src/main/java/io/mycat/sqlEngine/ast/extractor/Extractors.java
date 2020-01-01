@@ -1,7 +1,7 @@
 package io.mycat.sqlEngine.ast.extractor;
 
-import io.mycat.sqlEngine.schema.StatementType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
+import io.mycat.sqlEngine.schema.StatementType;
 
 import java.util.Set;
 

@@ -1,8 +1,8 @@
 package io.mycat.lib;
 
-import io.mycat.pattern.InstructionSet;
 import io.mycat.lib.impl.ProxyLib;
 import io.mycat.lib.impl.Response;
+import io.mycat.pattern.InstructionSet;
 
 public class ProxyExport implements InstructionSet {
     public static Response useSchemaThenResponseOk(String schema) {

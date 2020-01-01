@@ -1,6 +1,5 @@
 package io.mycat.sqlEngine.persistent.impl;
 
-import cn.lightfish.sqlEngine.persistent.*;
 import io.mycat.sqlEngine.persistent.*;
 import io.mycat.sqlEngine.schema.DbTable;
 import io.mycat.sqlEngine.schema.TableColumnDefinition;

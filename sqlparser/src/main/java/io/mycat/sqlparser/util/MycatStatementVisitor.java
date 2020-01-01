@@ -18,6 +18,7 @@ import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
 import io.mycat.beans.resultset.MycatResponse;
+
 import java.util.List;
 
 public class MycatStatementVisitor extends MySqlASTVisitorAdapter {

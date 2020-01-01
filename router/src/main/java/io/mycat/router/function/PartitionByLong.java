@@ -2,6 +2,7 @@ package io.mycat.router.function;
 
 import io.mycat.router.RuleFunction;
 import io.mycat.router.util.PartitionUtil;
+
 import java.util.Map;
 
 /**

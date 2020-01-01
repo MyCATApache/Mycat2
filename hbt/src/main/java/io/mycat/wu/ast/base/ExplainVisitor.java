@@ -4,7 +4,6 @@ import io.mycat.wu.Op;
 import io.mycat.wu.ast.AggregateCall;
 import io.mycat.wu.ast.Direction;
 import io.mycat.wu.ast.modify.ModifyTable;
-import cn.lightfish.wu.ast.query.*;
 import io.mycat.wu.ast.query.*;
 import org.apache.calcite.avatica.util.ByteString;
 

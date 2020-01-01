@@ -1,27 +1,20 @@
 package io.mycat.sqlparser.util.complie;
 
-import static com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator.Equality;
-
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.SQLObject;
-import com.alibaba.fastsql.sql.ast.expr.SQLBetweenExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExprGroup;
-import com.alibaba.fastsql.sql.ast.expr.SQLInListExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLInSubQueryExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLListExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLUnaryExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLUnaryOperator;
-import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
+import com.alibaba.fastsql.sql.ast.expr.*;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelect;
 import com.alibaba.fastsql.sql.visitor.SQLASTVisitorAdapter;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.alibaba.fastsql.sql.ast.expr.SQLBinaryOperator.Equality;
 
 public class WherePartRangeCollector extends SQLASTVisitorAdapter {
 

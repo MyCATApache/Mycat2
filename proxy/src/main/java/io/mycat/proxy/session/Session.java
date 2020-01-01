@@ -14,11 +14,11 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
+
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
@@ -36,7 +36,7 @@ public interface Session<T extends Session> {
   /**
    * 判断session是否已经关闭,一般采用通道关闭来判断,判断该方法可以实现关闭幂等
    */
-  boolean isClosed();
+  boolean hasClosed();
 
   /**
    * 获取1当前session的处理句柄
@@ -87,11 +87,11 @@ public interface Session<T extends Session> {
    * 获取当前线程池
    */
   MycatReactorThread getIOThread();
-
-  default ProxyRuntime getRuntime() {
-    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-    return thread.getRuntime();
-  }
+//
+//  default ProxyRuntime getRuntime() {
+//    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+//    return thread.getRuntime();
+//  }
 
   /**
    * 获取上下文设置的错误信息

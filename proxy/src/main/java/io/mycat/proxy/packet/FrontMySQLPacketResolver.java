@@ -5,6 +5,7 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.session.MycatSession;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;

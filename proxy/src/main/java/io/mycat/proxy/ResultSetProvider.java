@@ -1,6 +1,7 @@
 package io.mycat.proxy;
 
 import io.mycat.beans.resultset.MycatResultSet;
+
 import java.nio.charset.Charset;
 
 public enum ResultSetProvider {

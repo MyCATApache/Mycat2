@@ -4,7 +4,6 @@ import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlCreateTableStatement;
-import io.mycat.util.MycatRowMetaDataImpl;
 
 import java.util.List;
 

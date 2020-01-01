@@ -3,6 +3,7 @@ package io.mycat.router.function;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
 import io.mycat.router.RuleFunction;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;

@@ -24,10 +24,10 @@ import java.util.Map;
 public class ServerConfig {
     private String ip = "0.0.0.0";
     private int port = 8066;
-    private int reactorNumber = -1;
+    private int reactorNumber = 1;
     private String handlerName;
     private Worker worker;
-    private BufferPoolConfig bufferPool;
+    private BufferPoolConfig bufferPool= new BufferPoolConfig();
 
     @Data
     public static class Worker {

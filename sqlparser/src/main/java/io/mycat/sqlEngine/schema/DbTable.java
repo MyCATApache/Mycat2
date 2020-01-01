@@ -1,10 +1,10 @@
 package io.mycat.sqlEngine.schema;
 
+import lombok.EqualsAndHashCode;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import lombok.EqualsAndHashCode;
 
 @EqualsAndHashCode
 public class DbTable implements DbSchemaObject {

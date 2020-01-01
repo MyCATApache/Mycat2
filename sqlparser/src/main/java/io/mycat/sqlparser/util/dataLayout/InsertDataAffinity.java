@@ -3,6 +3,7 @@ package io.mycat.sqlparser.util.dataLayout;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;

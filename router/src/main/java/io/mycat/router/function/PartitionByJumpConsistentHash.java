@@ -1,6 +1,7 @@
 package io.mycat.router.function;
 
 import io.mycat.router.RuleFunction;
+
 import java.util.Map;
 
 public class PartitionByJumpConsistentHash extends RuleFunction {

@@ -58,10 +58,13 @@ public enum ClientRuntime {
 
             @Override
             public Context analysis(String sql) {
+
                 @NonNull GPattern currentPattern = getCurrentPattern();
                 RuntimeInfo runtime = this.runtime;
                 TableCollector tableMatcher = currentPattern.getCollector();
-                tableMatcher.useSchema(defaultSchemaName);
+                if (defaultSchemaName!=null) {
+                    tableMatcher.useSchema(defaultSchemaName);
+                }
                 GPatternMatcher matcher = currentPattern.matcherAndCollect(sql);
                 boolean sqlMatch = matcher.acceptAll();
                 boolean tableMatch = tableMatcher.isMatch();
@@ -73,10 +76,10 @@ public enum ClientRuntime {
                     if (tableInfo != null) {
                         PatternRootConfig.TextItemConfig textItemConfig = tableInfo.map.get(matcher.id());
                         if (textItemConfig != null) {
-                            return getContext(collectionMap,map,textItemConfig);
+                            return getContext(sql,collectionMap,map,textItemConfig);
                         }
                         if (tableInfo.handler != null) {
-                            return getContext(collectionMap,map,tableInfo.handler);
+                            return getContext(sql,collectionMap,map,tableInfo.handler);
                         }
                     }
                 }
@@ -85,7 +88,7 @@ public enum ClientRuntime {
                     Map<Integer, PatternRootConfig.TextItemConfig> idToItem = runtime.idToItem;
                     PatternRootConfig.TextItemConfig textItemConfig = idToItem.get(matcher.id());
                     if (textItemConfig != null) {
-                        return getContext(collectionMap,map,textItemConfig);
+                        return getContext(sql,collectionMap,map,textItemConfig);
                     }
                 }
 
@@ -93,28 +96,31 @@ public enum ClientRuntime {
                     TableInfo tableInfo = this.runtime.tableToItem.get(tableMatcher.geTableMap());
                     if (tableInfo != null) {
                         if (tableInfo.handler != null)
-                            return getContext(collectionMap,map,tableInfo.handler);
+                            return getContext(sql,collectionMap,map,tableInfo.handler);
                     }
                 }
                 if (!sqlMatch && !tableMatch) {
-                    return getContext(collectionMap,map,runtime.defaultHandler);
+                    return getContext(sql,collectionMap,map,runtime.defaultHandler);
+                }
+                if (runtimeInfo.defaultHandler!=null){
+                 return    getContext(sql,collectionMap,map,runtimeInfo.defaultHandler);
                 }
                 throw new UnsupportedOperationException();
             }
 
-            private Context getContext(Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
-                return new Context(geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain());
+            private Context getContext(String sql,Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
+                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain());
             }
 
 
             @NotNull
-            private Context getContext(Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
-                return new Context(geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain());
+            private Context getContext(String sql,Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
+                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain());
             }
 
             @Override
             public List<String> explain(String sql) {
-                return analysis(sql).explain();
+                return null;
             }
 
             @Override
@@ -153,14 +159,29 @@ public enum ClientRuntime {
             List<String> tables = handler.getTables();
             if (tables.isEmpty()){
                 for (String sql : handler.getSqls()) {
-                    sqls.add(new PatternRootConfig.TextItemConfig(name,sql,tags,type,explain));
+                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
+                    textItemConfig.setName(name);
+                    textItemConfig.setSql(sql);
+                    textItemConfig.setTags(tags);
+                    textItemConfig.setExplain(explain);
+                    sqls.add(textItemConfig);
                 }
             }else {
                 ArrayList<PatternRootConfig.TextItemConfig> textItemConfigs = new ArrayList<PatternRootConfig.TextItemConfig>();
                 for (String sql : handler.getSqls()) {
-                    textItemConfigs.add(new PatternRootConfig.TextItemConfig(name,sql,tags,type,explain));
+                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
+                    textItemConfig.setName(name);
+                    textItemConfig.setSql(sql);
+                    textItemConfig.setTags(tags);
+                    textItemConfig.setExplain(explain);
+                    textItemConfigs.add(textItemConfig);
                 }
-                schemas.add( new PatternRootConfig.SchemaConfig(name,tables,textItemConfigs,null));
+                PatternRootConfig.SchemaConfig schemaConfig = new PatternRootConfig.SchemaConfig();
+                schemaConfig.setDefaultHanlder(null);
+                schemaConfig.setName(name);
+                schemaConfig.setTables(tables);
+                schemaConfig.setSqls(textItemConfigs);
+                schemas.add(schemaConfig);
             }
         }
         //build
@@ -213,6 +234,10 @@ public enum ClientRuntime {
 
     }
 
+    public void load(PatternRootConfig interceptor) {
+        wapper.setPatternRootConfig(interceptor);
+    }
+
     @AllArgsConstructor
     @Getter
     static class TableInfo {
@@ -230,6 +255,10 @@ public enum ClientRuntime {
 
     private static class BuilderInfo {
         volatile PatternRootConfig patternRootConfig = new PatternRootConfig();
+
+        public void setPatternRootConfig(PatternRootConfig patternRootConfig) {
+            this.patternRootConfig = patternRootConfig;
+        }
 
         public synchronized void replaceDefaultHanlder(PatternRootConfig.Handler handler) {
             Objects.requireNonNull(handler);

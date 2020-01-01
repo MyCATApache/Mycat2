@@ -14,7 +14,10 @@
  */
 package io.mycat.pattern;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 
 @ToString
 @EqualsAndHashCode

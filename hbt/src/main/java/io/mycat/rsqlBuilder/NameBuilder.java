@@ -1,8 +1,8 @@
 package io.mycat.rsqlBuilder;
 
 import io.mycat.describer.CallExpr;
-import io.mycat.describer.ParseNode;
 import io.mycat.describer.ParenthesesExpr;
+import io.mycat.describer.ParseNode;
 import io.mycat.describer.literal.IdLiteral;
 import io.mycat.describer.literal.PropertyLiteral;
 import io.mycat.rsqlBuilder.schema.SchemaMatcher;

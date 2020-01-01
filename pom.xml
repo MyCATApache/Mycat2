@@ -14,7 +14,6 @@
     <module>common</module>
     <module>datasource</module>
     <module>mycat2</module>
-    <module>security</module>
     <module>grid</module>
     <module>replica</module>
       <module>pattern</module>

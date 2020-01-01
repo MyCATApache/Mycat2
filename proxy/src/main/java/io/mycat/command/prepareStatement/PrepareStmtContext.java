@@ -4,6 +4,7 @@ import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
+
 import java.util.HashMap;
 
 public class PrepareStmtContext {
@@ -25,24 +26,24 @@ public class PrepareStmtContext {
     final long currentStmtId = stmtId++;
     PrepareInfo prepareInfo = new PrepareInfo(currentStmtId, sql,mycat,
         mycat.getIOThread().getMySQLSessionManager());
-    prepareInfo.getPrepareSession(dataNode,runOnMaster,strategy,new PrepareSessionCallback() {
-      @Override
-      public void onPrepare(long actualStatementId, MySQLClientSession session) {
-
-      }
-
-      @Override
-      public void onException(Exception exception, Object sender, Object attr) {
-
-      }
-
-      @Override
-      public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-          MySQLClientSession mysql, Object sender, Object attr) {
-
-      }
-    },true);
-    prepareMap.put(currentStmtId,prepareInfo);
+//    prepareInfo.getPrepareSession(dataNode,runOnMaster,strategy,new PrepareSessionCallback() {
+//      @Override
+//      public void onPrepare(long actualStatementId, MySQLClientSession session) {
+//
+//      }
+//
+//      @Override
+//      public void onException(Exception exception, Object sender, Object attr) {
+//
+//      }
+//
+//      @Override
+//      public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+//          MySQLClientSession mysql, Object sender, Object attr) {
+//
+//      }
+//    },true);
+//    prepareMap.put(currentStmtId,prepareInfo);
 
   }
 

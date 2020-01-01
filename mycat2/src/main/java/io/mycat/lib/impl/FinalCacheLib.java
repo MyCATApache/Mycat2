@@ -1,9 +1,9 @@
 package io.mycat.lib.impl;
 
-import io.mycat.pattern.DynamicSQLMatcher;
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
+import io.mycat.pattern.DynamicSQLMatcher;
 import io.mycat.proxy.SQLExecuterWriter;
 import io.mycat.proxy.session.MycatSession;
 

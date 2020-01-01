@@ -1,9 +1,6 @@
 package io.mycat.metadata;
 
 import io.mycat.MycatConfig;
-import io.mycat.config.SecurityConfig;
-
-import java.util.Objects;
 
 public class MycatInstance {
     volatile MycatConfig config;

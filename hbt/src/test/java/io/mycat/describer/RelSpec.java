@@ -1,5 +1,7 @@
 package io.mycat.describer;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.ImmutableList;
 import io.mycat.DesRelNodeHandler;
 import io.mycat.rsqlBuilder.Db1;
 import io.mycat.rsqlBuilder.DesBuilder;
@@ -11,8 +13,6 @@ import io.mycat.wu.ast.AggregateCall;
 import io.mycat.wu.ast.base.*;
 import io.mycat.wu.ast.query.FieldType;
 import io.mycat.wu.ast.query.SetOpSchema;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;

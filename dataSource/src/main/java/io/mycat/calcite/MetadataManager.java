@@ -14,10 +14,6 @@
  */
 package io.mycat.calcite;
 
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnRangeValue;
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnValue;
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.ConditionCollector;
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.QueryDataRange;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
@@ -38,6 +34,10 @@ import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.router.RuleFunction;
 import io.mycat.router.function.PartitionRuleFunctionManager;
+import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnRangeValue;
+import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnValue;
+import io.mycat.sqlEngine.ast.optimizer.queryCondition.ConditionCollector;
+import io.mycat.sqlEngine.ast.optimizer.queryCondition.QueryDataRange;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -81,6 +81,10 @@ public enum MetadataManager {
         }
     }
 
+    public List<String> getDatabases(){
+     return    logicTableMap.keySet().stream().sorted().collect(Collectors.toList());
+    }
+
 
 
     @Getter
@@ -122,7 +126,7 @@ public enum MetadataManager {
 
     @SneakyThrows
     MetadataManager() {
-        MycatConfig mycatConfig = RootHelper.INSTCANE.bootConfig().currentConfig();
+        MycatConfig mycatConfig = RootHelper.INSTCANE.bootConfig(MetadataManager.class).currentConfig();
         ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMatadata();
         Map<String,List<BackendTableInfo>> dataNodeMap = new HashMap<>();
         for (Map.Entry<String, List<ShardingQueryRootConfig.BackEndTableInfoConfig>> stringListEntry : shardingQueryRootConfig.getDataNodes().entrySet()) {

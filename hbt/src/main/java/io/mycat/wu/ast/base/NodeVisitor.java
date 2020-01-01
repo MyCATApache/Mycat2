@@ -2,7 +2,6 @@ package io.mycat.wu.ast.base;
 
 import io.mycat.wu.ast.AggregateCall;
 import io.mycat.wu.ast.modify.ModifyTable;
-import cn.lightfish.wu.ast.query.*;
 import io.mycat.wu.ast.query.*;
 
 public interface NodeVisitor {

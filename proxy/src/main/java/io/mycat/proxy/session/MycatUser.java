@@ -7,5 +7,6 @@ import lombok.Data;
 @AllArgsConstructor
 public class MycatUser {
   String userName;
+  String password;
   String host;
 }

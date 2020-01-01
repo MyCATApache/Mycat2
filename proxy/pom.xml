@@ -12,11 +12,6 @@
     <artifactId>proxy</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>io.mycat</groupId>
-          <artifactId>security</artifactId>
-          <version>0.4-SNAPSHOP</version>
-        </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>

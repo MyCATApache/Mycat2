@@ -18,16 +18,14 @@ import com.alibaba.druid.pool.xa.DruidXADataSource;
 import com.alibaba.druid.sql.parser.SQLParserUtils;
 import com.atomikos.icatch.jta.UserTransactionImp;
 import com.atomikos.jdbc.AtomikosDataSourceBean;
-
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.DatasourceProvider;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 
+import javax.transaction.UserTransaction;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.sql.DataSource;
-import javax.transaction.UserTransaction;
 /**
  * @author Junwen Chen
  **/

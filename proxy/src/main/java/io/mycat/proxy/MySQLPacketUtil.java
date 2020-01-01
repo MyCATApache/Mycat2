@@ -4,15 +4,10 @@ import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
-import io.mycat.beans.mysql.packet.ErrorPacketImpl;
-import io.mycat.beans.mysql.packet.MySQLPacket;
-import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
-import io.mycat.beans.mysql.packet.PacketSplitterImpl;
-import io.mycat.beans.mysql.packet.PreparedOKPacket;
+import io.mycat.beans.mysql.packet.*;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.proxy.reactor.MycatReactorThread;
+
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.sql.ResultSetMetaData;
@@ -281,13 +276,7 @@ public class MySQLPacketUtil {
     byte[] bytes = writer.toByteArray();
     try {
       Thread thread = Thread.currentThread();
-      PacketSplitterImpl packetSplitter;
-      if (thread instanceof MycatReactorThread) {
-        MycatReactorThread reactorThread = (MycatReactorThread) thread;
-        packetSplitter = reactorThread.getPacketSplitter();
-      } else {
-        packetSplitter = new PacketSplitterImpl();
-      }
+      PacketSplitterImpl  packetSplitter = new PacketSplitterImpl();
       int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(bytes.length);
       try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
           wholePacketSize)) {
@@ -309,13 +298,7 @@ public class MySQLPacketUtil {
 
   public static byte[] generateMySQLPacket(int packetId, byte[] packet) {
     try {
-      PacketSplitterImpl packetSplitter;
-      if (Thread.currentThread() instanceof MycatReactorThread){
-        MycatReactorThread reactorThread = (MycatReactorThread)Thread.currentThread() ;
-        packetSplitter = reactorThread.getPacketSplitter();
-      }else {
-        packetSplitter = new PacketSplitterImpl();
-      }
+      PacketSplitterImpl  packetSplitter = new PacketSplitterImpl();
       int wholePacketSize = MySQLPacketSplitter.caculWholePacketSize(packet.length);
       try (MySQLPayloadWriter byteArray = new MySQLPayloadWriter(
           wholePacketSize)) {

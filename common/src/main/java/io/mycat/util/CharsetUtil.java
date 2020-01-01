@@ -25,6 +25,7 @@ package io.mycat.util;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
 import java.io.FileInputStream;
 import java.nio.file.Paths;
 import java.util.HashMap;

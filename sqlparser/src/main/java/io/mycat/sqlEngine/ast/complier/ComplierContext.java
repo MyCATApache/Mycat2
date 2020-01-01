@@ -14,24 +14,16 @@
  */
 package io.mycat.sqlEngine.ast.complier;
 
+import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.*;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import io.mycat.sqlEngine.ast.optimizer.ColumnCollector;
 import io.mycat.sqlEngine.ast.optimizer.SubqueryOptimizer;
 import io.mycat.sqlEngine.context.RootSessionContext;
 import io.mycat.sqlEngine.executor.logicExecutor.Executor;
 import io.mycat.sqlEngine.executor.logicExecutor.ExecutorType;
 import io.mycat.sqlEngine.executor.logicExecutor.LogicLeafTableExecutor;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLJoinTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLLateralViewTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLSubqueryTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLUnionQueryTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLUnnestTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLValuesTableSource;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 
 import java.util.*;
 /**

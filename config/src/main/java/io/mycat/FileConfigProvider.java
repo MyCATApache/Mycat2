@@ -1,5 +1,6 @@
 package io.mycat;
 
+import io.mycat.util.YamlUtil;
 import org.yaml.snakeyaml.Yaml;
 
 import java.nio.file.Files;
@@ -35,9 +36,7 @@ public class FileConfigProvider implements ConfigProvider {
         if (!Files.exists(asbPath)) {
             throw new IllegalArgumentException(MessageFormat.format("path not found: {0}", Objects.toString(asbPath)));
         }
-        String text = new String(Files.readAllBytes(asbPath));
-        Yaml yaml = new Yaml();
-        config = (MycatConfig) yaml.load(text);
+        config = YamlUtil.load(asbPath.toString(),MycatConfig.class);
     }
 
 

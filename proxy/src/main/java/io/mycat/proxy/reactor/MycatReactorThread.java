@@ -14,9 +14,7 @@
  */
 package io.mycat.proxy.reactor;
 
-import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.buffer.BufferPool;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;

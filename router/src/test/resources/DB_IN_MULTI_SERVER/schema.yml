@@ -1,8 +1,0 @@
-schemas:
-  - name: db1
-    schemaType: DB_IN_MULTI_SERVER
-    tables:
-      - name: travelrecord
-        dataNodes: dn1
-      - name: travelrecord2
-        dataNodes: dn2

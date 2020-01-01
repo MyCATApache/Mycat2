@@ -1,13 +1,13 @@
 package io.mycat.logTip;
 
-import static io.mycat.beans.mysql.MySQLErrorCode.ER_UNKNOWN_ERROR;
-
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
+
+import static io.mycat.beans.mysql.MySQLErrorCode.ER_UNKNOWN_ERROR;
 
 public class MycatLogger {
 

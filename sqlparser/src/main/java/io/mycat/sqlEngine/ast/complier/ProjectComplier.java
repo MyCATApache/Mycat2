@@ -14,13 +14,13 @@
  */
 package io.mycat.sqlEngine.ast.complier;
 
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
 import io.mycat.sqlEngine.executor.logicExecutor.Executor;
 import io.mycat.sqlEngine.executor.logicExecutor.OnlyProjectExecutor;
 import io.mycat.sqlEngine.executor.logicExecutor.ProjectExecutor;
 import io.mycat.sqlEngine.schema.BaseColumnDefinition;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
 
 import java.util.ArrayList;
 import java.util.List;

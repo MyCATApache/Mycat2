@@ -1,6 +1,7 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
+
 import java.math.BigDecimal;
 
 /**

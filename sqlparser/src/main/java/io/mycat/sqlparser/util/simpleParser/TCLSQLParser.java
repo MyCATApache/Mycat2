@@ -1,12 +1,12 @@
 package io.mycat.sqlparser.util.simpleParser;
 
-import static io.mycat.sqlparser.util.simpleParser.TokenizerUtil.debug;
-
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
+import static io.mycat.sqlparser.util.simpleParser.TokenizerUtil.debug;
 
 /**
  * Created by jamie on 2017/8/31.

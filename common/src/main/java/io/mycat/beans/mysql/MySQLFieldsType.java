@@ -14,10 +14,10 @@
  */
 package io.mycat.beans.mysql;
 
-import static io.mycat.beans.mysql.MySQLType.FIELD_TYPE_NEWDECIMAL;
-
 import java.sql.Types;
 import java.util.HashMap;
+
+import static io.mycat.beans.mysql.MySQLType.FIELD_TYPE_NEWDECIMAL;
 
 /**
  * 字段类型及标识定义

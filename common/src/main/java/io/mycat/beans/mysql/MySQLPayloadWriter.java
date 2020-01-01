@@ -1,8 +1,8 @@
 package io.mycat.beans.mysql;
 
 import io.mycat.beans.mysql.packet.MySQLPayloadWriteView;
-import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.util.ByteArrayOutput;
+
 import java.io.Closeable;
 
 /**

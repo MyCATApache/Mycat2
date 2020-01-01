@@ -1,10 +1,11 @@
 package io.mycat.sqlEngine.ast.expr.arithmeticExpr.doubleOperator;
 
-import io.mycat.sqlEngine.context.RootSessionContext;
-import io.mycat.sqlEngine.ast.expr.numberExpr.DoubleExpr;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
-import java.math.BigDecimal;
+import io.mycat.sqlEngine.ast.expr.numberExpr.DoubleExpr;
+import io.mycat.sqlEngine.context.RootSessionContext;
 import lombok.AllArgsConstructor;
+
+import java.math.BigDecimal;
 
 @AllArgsConstructor
 public class DoubleIntegerDivsionExpr implements DoubleExpr {

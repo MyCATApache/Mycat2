@@ -14,15 +14,15 @@
  */
 package io.mycat.sqlEngine.ast.complier;
 
-import io.mycat.sqlEngine.ast.expr.ValueExpr;
-import io.mycat.sqlEngine.ast.optimizer.SubqueryOptimizer;
-import io.mycat.sqlEngine.executor.logicExecutor.Executor;
-import io.mycat.sqlEngine.executor.logicExecutor.ExecutorType;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
 import com.alibaba.fastsql.sql.ast.statement.SQLSelectItem;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
+import io.mycat.sqlEngine.ast.expr.ValueExpr;
+import io.mycat.sqlEngine.ast.optimizer.SubqueryOptimizer;
+import io.mycat.sqlEngine.executor.logicExecutor.Executor;
+import io.mycat.sqlEngine.executor.logicExecutor.ExecutorType;
 
 import java.util.List;
 import java.util.Map;

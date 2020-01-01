@@ -3,7 +3,6 @@ package io.mycat.lib.impl;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
-import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.SQLExecuterWriter;
 
 import java.io.IOException;
@@ -15,7 +14,9 @@ public class ProxyLib {
     public final static ConcurrentHashMap<String, ResultSetCacheRecorder.Token> cache = new ConcurrentHashMap<>();
 
     public static Response proxyQueryOnDatasource(String dataSource,String sql) {
-        return (session, matcher) -> MySQLTaskUtil.proxyBackend(session,sql,dataSource);
+//        return (session, matcher) -> MySQLTaskUtil.proxyBackend(session,sql,dataSource);
+
+        return null;
     }
 
 

@@ -1,6 +1,7 @@
 package io.mycat.proxy;
 
 import io.mycat.beans.resultset.MycatResultSet;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;

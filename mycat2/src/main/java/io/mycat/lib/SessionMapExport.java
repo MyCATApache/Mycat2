@@ -1,7 +1,7 @@
 package io.mycat.lib;
 
-import io.mycat.pattern.InstructionSet;
 import io.mycat.lib.impl.MapLib;
+import io.mycat.pattern.InstructionSet;
 
 public class SessionMapExport implements InstructionSet {
 

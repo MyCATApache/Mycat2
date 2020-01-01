@@ -1,7 +1,7 @@
 package io.mycat.sqlEngine.ast.expr.booleanExpr.logicalExpr;
 
-import io.mycat.sqlEngine.context.RootSessionContext;
 import io.mycat.sqlEngine.ast.expr.booleanExpr.BooleanExpr;
+import io.mycat.sqlEngine.context.RootSessionContext;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor

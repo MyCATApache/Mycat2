@@ -1,6 +1,5 @@
 package io.mycat.sqlEngine.ast.optimizer.queryCondition;
 
-import io.mycat.sqlEngine.ast.converter.Converters;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.SQLName;
 import com.alibaba.fastsql.sql.ast.expr.*;
@@ -12,6 +11,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlDeleteStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import io.mycat.sqlEngine.ast.converter.Converters;
 
 import java.util.LinkedList;
 import java.util.List;

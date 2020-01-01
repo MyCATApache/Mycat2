@@ -14,15 +14,15 @@
  */
 package io.mycat.sqlEngine.ast.complier;
 
+import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
+import com.alibaba.fastsql.sql.repository.SchemaObject;
 import io.mycat.sqlEngine.ast.SQLTypeMap;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
 import io.mycat.sqlEngine.schema.DbSchemaManager;
 import io.mycat.sqlEngine.schema.DbTable;
 import io.mycat.sqlEngine.schema.TableColumnDefinition;
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
-import com.alibaba.fastsql.sql.repository.SchemaObject;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -2,6 +2,7 @@ package io.mycat.sqlparser.util.simpleParser;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
 import java.util.function.Supplier;
 
 /**

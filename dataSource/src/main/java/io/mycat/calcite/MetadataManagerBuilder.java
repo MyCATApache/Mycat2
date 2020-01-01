@@ -1,9 +1,7 @@
 package io.mycat.calcite;
 
-import io.mycat.calcite.shardingQuery.SchemaInfo;
-import io.mycat.config.SharingFuntionRootConfig;
-import io.mycat.util.YamlUtil;
 import io.mycat.config.ShardingQueryRootConfig;
+import io.mycat.config.SharingFuntionRootConfig;
 
 import java.util.*;
 

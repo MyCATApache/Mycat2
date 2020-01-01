@@ -1,11 +1,7 @@
 package io.mycat.command;
 
-import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.reactor.MycatReactorThread;
-import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.SessionManager.FrontSessionManager;
+
 import java.util.Map;
 
 public abstract class AbstractCommandHandler implements CommandDispatcher {
@@ -120,37 +116,38 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
 
   @Override
   public void handleProcessKill(long connectionId, MycatSession mycat) {
-    ProxyRuntime runtime = mycat.getIOThread().getRuntime();
-    MycatReactorThread[] mycatReactorThreads = runtime.getMycatReactorThreads();
-    MycatReactorThread currentThread = mycat.getIOThread();
-    for (MycatReactorThread mycatReactorThread : mycatReactorThreads) {
-      FrontSessionManager<MycatSession> frontManager = mycatReactorThread.getFrontManager();
-      for (MycatSession allSession : frontManager.getAllSessions()) {
-        if (allSession.sessionId() == connectionId) {
-          if (currentThread == mycatReactorThread) {
-            allSession.close(true, "processKill");
-          } else {
-            mycatReactorThread.addNIOJob(new NIOJob() {
-              @Override
-              public void run(ReactorEnvThread reactor) throws Exception {
-                allSession.close(true, "processKill");
-              }
-
-              public void stop(ReactorEnvThread reactor, Exception reason) {
-                allSession.close(true, "processKill");
-              }
-
-              @Override
-              public String message() {
-                return "processKill";
-              }
-            });
-          }
-          mycat.writeOkEndPacket();
-          return;
-        }
-      }
-    }
-    mycat.writeErrorEndPacket();
+    //todo
+//    ProxyRuntime runtime = mycat.getIOThread().getRuntime();
+//    MycatReactorThread[] mycatReactorThreads = runtime.getMycatReactorThreads();
+//    MycatReactorThread currentThread = mycat.getIOThread();
+//    for (MycatReactorThread mycatReactorThread : mycatReactorThreads) {
+//      FrontSessionManager<MycatSession> frontManager = mycatReactorThread.getFrontManager();
+//      for (MycatSession allSession : frontManager.getAllSessions()) {
+//        if (allSession.sessionId() == connectionId) {
+//          if (currentThread == mycatReactorThread) {
+//            allSession.close(true, "processKill");
+//          } else {
+//            mycatReactorThread.addNIOJob(new NIOJob() {
+//              @Override
+//              public void run(ReactorEnvThread reactor) throws Exception {
+//                allSession.close(true, "processKill");
+//              }
+//
+//              public void stop(ReactorEnvThread reactor, Exception reason) {
+//                allSession.close(true, "processKill");
+//              }
+//
+//              @Override
+//              public String message() {
+//                return "processKill";
+//              }
+//            });
+//          }
+//          mycat.writeOkEndPacket();
+//          return;
+//        }
+//      }
+//    }
+//    mycat.writeErrorEndPacket();
   }
 }

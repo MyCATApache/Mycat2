@@ -16,8 +16,6 @@ package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.config.DatasourceRootConfig;
 
-import java.sql.Connection;
-
 /**
  * @author Junwen Chen
  **/

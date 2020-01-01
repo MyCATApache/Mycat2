@@ -14,6 +14,13 @@
  */
 package io.mycat.sqlEngine.ast.converter;
 
+import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.SQLName;
+import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
+import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
+import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
 import io.mycat.sqlEngine.ast.SQLTypeMap;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
 import io.mycat.sqlEngine.ast.expr.dateExpr.DateConstExpr;
@@ -23,13 +30,6 @@ import io.mycat.sqlEngine.ast.expr.numberExpr.LongConstExpr;
 import io.mycat.sqlEngine.ast.expr.stringExpr.StringConstExpr;
 import io.mycat.sqlEngine.ast.expr.valueExpr.NullConstExpr;
 import io.mycat.sqlEngine.schema.BaseColumnDefinition;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLName;
-import com.alibaba.fastsql.sql.ast.expr.SQLIdentifierExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLPropertyExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
 
 import java.math.BigDecimal;
 import java.sql.Date;

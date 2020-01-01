@@ -1,8 +1,8 @@
 package io.mycat.lib.impl;
 
-import io.mycat.pattern.DynamicSQLMatcher;
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.pattern.DynamicSQLMatcher;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.monitor.MycatMonitor;

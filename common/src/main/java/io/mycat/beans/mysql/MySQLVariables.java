@@ -1,11 +1,7 @@
 package io.mycat.beans.mysql;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
 
 /**
  * @author jamie12221

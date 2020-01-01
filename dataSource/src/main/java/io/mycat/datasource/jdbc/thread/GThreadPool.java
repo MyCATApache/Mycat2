@@ -20,6 +20,7 @@ import io.mycat.bindThread.BindThreadPool;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
 import java.util.concurrent.TimeUnit;
 /**
  * @author Junwen Chen

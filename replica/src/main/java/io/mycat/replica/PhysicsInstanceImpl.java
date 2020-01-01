@@ -16,6 +16,7 @@ package io.mycat.replica;
 
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.SessionCounter;
+
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance {

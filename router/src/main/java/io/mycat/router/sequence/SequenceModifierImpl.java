@@ -5,6 +5,7 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.sequenceModifier.ModifyCallback;
 import io.mycat.sequenceModifier.SequenceModifier;
+
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

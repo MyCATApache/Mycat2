@@ -14,8 +14,6 @@
  */
 package io.mycat.proxy.handler.front;
 
-import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
-
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -27,16 +25,19 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.handler.MycatHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.proxy.session.MycatUser;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.util.StringUtil;
+
 import java.util.Map;
+
+import static io.mycat.beans.mysql.MySQLErrorCode.ER_ACCESS_DENIED_ERROR;
 
 /**
  * @author jamie12221 date 2019-05-07 13:58
@@ -53,13 +54,18 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
     private AuthPacket auth ;
     public String clientAuthPluginName = CachingSha2PasswordPlugin.PROTOCOL_PLUGIN_NAME;
     public boolean isChangeAuthPlugin = false;
+    private MycatSessionManager mycatSessionManager;
+
+    public MySQLClientAuthHandler(MycatSessionManager mycatSessionManager) {
+        this.mycatSessionManager = mycatSessionManager;
+    }
+
     public void setMycatSession(MycatSession mycatSession) {
         this.mycat = mycatSession;
     }
 
     @Override
     public void onSocketRead(MycatSession mycat) {
-        ProxyRuntime runtime = mycat.getRuntime();
         try {
             if (mycat.getCurNIOHandler() != this) {
                 return;
@@ -68,7 +74,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                 return;
             }
 //            MycatSecurityConfig securityManager = runtime.getSecurityManager();
-            byte[] input = null;
+            byte[] password = new byte[]{};
             if(!isChangeAuthPlugin) {
                 //密码读取与验证
                 this.auth = readResponseAuthPacket(mycat);
@@ -92,11 +98,11 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
                         return;
                     }
                     //握手包中的加密密码
-                    input = auth.getPassword();
+                    password = auth.getPassword();
                 }
             }  else {
                 MySQLPacket mySQLPacket = mycat.currentProxyPayload();
-                input = mySQLPacket.readNULStringBytes();
+                password = mySQLPacket.readNULStringBytes();
             }
 
             String username = auth.getUsername();
@@ -118,7 +124,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
 //                    return;
 //                }
 //            }
-            MycatUser user = new MycatUser(username,mycat.channel().socket().getRemoteSocketAddress().toString());
+            MycatUser user = new MycatUser(username,new String(password),mycat.channel().socket().getRemoteSocketAddress().toString());
             int capabilities = auth.getCapabilities();
             if (MySQLServerCapabilityFlags.isCanUseCompressionProtocol(capabilities)) {
                 String message = "Can Not Use Compression Protocol!";
@@ -129,6 +135,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
           if (user == null) {
             String message = "user name is not existed";
             failture(mycat, message);
+            return;
           }
             mycat.setUser(user);
             mycat.setSchema(database);
@@ -137,7 +144,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
             mycat.setCharset(characterSet);
             finished = true;
-
+            mycatSessionManager.initCommandDispatcher(mycat);
             mycat.writeOkEndPacket();
         } catch (Exception e) {
             LOGGER.error("",e);

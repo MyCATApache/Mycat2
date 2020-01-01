@@ -3,8 +3,8 @@ package io.mycat.router.function;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.router.RuleFunction;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Collections;
+import java.util.Map;
 
 public enum PartitionRuleFunctionManager {
     INSTANCE;

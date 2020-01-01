@@ -1,30 +1,16 @@
 package io.mycat.command.prepareStatement;
 
 import io.mycat.beans.mysql.MySQLPayloadWriter;
-import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.proxy.MySQLPacketUtil;
-import io.mycat.proxy.MySQLTaskUtil;
-import io.mycat.proxy.callback.RequestCallback;
-import io.mycat.proxy.callback.ResultSetCallBack;
-import io.mycat.proxy.callback.SessionCallBack;
-import io.mycat.proxy.handler.ResponseType;
-import io.mycat.proxy.handler.backend.MySQLSessionSyncUtil;
-import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
-import io.mycat.proxy.handler.backend.PrepareStmtTask;
-import io.mycat.proxy.handler.backend.RequestHandler;
-import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.CheckResult;
-import io.mycat.proxy.session.SessionManager.PartialType;
-import io.mycat.proxy.session.SessionManager.SessionIdAble;
-import io.mycat.replica.MySQLDatasource;
-import io.mycat.replica.MySQLReplica;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,101 +36,101 @@ public class PrepareInfo {
   }
 
   public void getPrepareSession(String replicaName,String defaultDatabaseName,boolean runOnMaster, LoadBalanceStrategy strategy,PrepareSessionCallback callBack, boolean proxyPrepareResponse) {
-    List<PrepareMySQLSessionInfo> prepareMySQLSessionInfos = checkVaildAndGetIdleMySQLSessionIds();
-    List<SessionIdAble> ids = (List) prepareMySQLSessionInfos;
-    MySQLDataNode node = mycat.getRuntime().getDataNodeByName(dataNodeName);
-    MySQLReplica replica = (MySQLReplica) node.getReplica();
-    MySQLDatasource datasource = replica.getMySQLSessionByBalance(runOnMaster,strategy);
-    manager.getIdleSessionsOfIdsOrPartial(datasource, ids, PartialType.RANDOM_ID,
-        new SessionCallBack<MySQLClientSession>() {
-          @Override
-          public void onSession(MySQLClientSession session, Object sender, Object attr) {
-            MySQLSynContextImpl mySQLSyn = new MySQLSynContextImpl(mycat);
-            MySQLSessionSyncUtil.sync(mySQLSyn, session,
-                this, new SessionSyncCallback() {
-              @Override
-              public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                int id = session.sessionId();
-                long statementId = Long.MIN_VALUE;
-                boolean found = false;
-                int size = prepareMySQLSessionInfos.size();
-                for (int i = 0; i < size; i++) {
-                  PrepareMySQLSessionInfo info = prepareMySQLSessionInfos.get(i);
-                  if (id == info.getSessionId()) {
-                    statementId = info.getStatementId();
-                    found = true;
-                  }
-                }
-                if (found) {
-                  callBack.onPrepare(statementId, session);
-                  return;
-                } else {
-                  final long stmtId = statementId;
-                  PrepareStmtTask prepareStmtTask = new PrepareStmtTask(mycat, mycatStmtId, sql,
-                      proxyPrepareResponse);
-                  prepareStmtTask.requestPrepareStatement(session,
-                      new ResultSetCallBack<MySQLClientSession>() {
-                        @Override
-                        public void onFinishedSendException(Exception exception, Object sender,
-                            Object attr) {
-                          callBack.onException(exception, sender, attr);
-                        }
-
-                        @Override
-                        public void onFinishedException(Exception exception, Object sender,
-                            Object attr) {
-                          callBack.onException(exception, sender, attr);
-                        }
-
-                        @Override
-                        public void onFinished(boolean monopolize, MySQLClientSession mysql,
-                            Object sender, Object attr) {
-                          long statementId = prepareStmtTask.getMysqlStatementId();
-                          sessionInfos
-                              .add(new PrepareMySQLSessionInfo(statementId, mysql.sessionId()));
-                          if (numOfParams < 0) {
-                            numOfParams = prepareStmtTask.getNumOdParmas();
-                          } else {
-                            assert numOfParams == prepareStmtTask.getNumOdParmas();
-                          }
-                          if (monopolize){
-                            mycat.setMySQLSession(mysql);
-                          }else {
-                            mysql.setCallBack(null);
-                            mysql.setMycatSession(null);
-                            mysql.switchNioHandler(null);
-                            manager.addIdleSession(mysql);
-                            mycat.onHandlerFinishedClear();
-                          }
-                        }
-
-                        @Override
-                        public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                            MySQLClientSession mysql, Object sender, Object attr) {
-                          callBack.onErrorPacket(errorPacket, monopolize, mysql, this, attr);
-                        }
-                      });
-                }
-              }
-
-              @Override
-              public void onException(Exception exception, Object sender, Object attr) {
-                callBack.onException(exception, sender, attr);
-              }
-
-              @Override
-              public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-                  MySQLClientSession mysql, Object sender, Object attr) {
-                callBack.onErrorPacket(errorPacket, monopolize, mysql, sender, attr);
-              }
-            });
-          }
-
-          @Override
-          public void onException(Exception exception, Object sender, Object attr) {
-            callBack.onException(exception, sender, attr);
-          }
-        });
+//    List<PrepareMySQLSessionInfo> prepareMySQLSessionInfos = checkVaildAndGetIdleMySQLSessionIds();
+//    List<SessionIdAble> ids = (List) prepareMySQLSessionInfos;
+//    MySQLDataNode node = mycat.getRuntime().getDataNodeByName(dataNodeName);
+//    MySQLReplica replica = (MySQLReplica) node.getReplica();
+//    MySQLDatasource datasource = replica.getMySQLSessionByBalance(runOnMaster,strategy);
+//    manager.getIdleSessionsOfIdsOrPartial(datasource, ids, PartialType.RANDOM_ID,
+//        new SessionCallBack<MySQLClientSession>() {
+//          @Override
+//          public void onSession(MySQLClientSession session, Object sender, Object attr) {
+//            MySQLSynContextImpl mySQLSyn = new MySQLSynContextImpl(mycat);
+//            MySQLSessionSyncUtil.sync(mySQLSyn, session,
+//                this, new SessionSyncCallback() {
+//              @Override
+//              public void onSession(MySQLClientSession session, Object sender, Object attr) {
+//                int id = session.sessionId();
+//                long statementId = Long.MIN_VALUE;
+//                boolean found = false;
+//                int size = prepareMySQLSessionInfos.size();
+//                for (int i = 0; i < size; i++) {
+//                  PrepareMySQLSessionInfo info = prepareMySQLSessionInfos.get(i);
+//                  if (id == info.getSessionId()) {
+//                    statementId = info.getStatementId();
+//                    found = true;
+//                  }
+//                }
+//                if (found) {
+//                  callBack.onPrepare(statementId, session);
+//                  return;
+//                } else {
+//                  final long stmtId = statementId;
+//                  PrepareStmtTask prepareStmtTask = new PrepareStmtTask(mycat, mycatStmtId, sql,
+//                      proxyPrepareResponse);
+//                  prepareStmtTask.requestPrepareStatement(session,
+//                      new ResultSetCallBack<MySQLClientSession>() {
+//                        @Override
+//                        public void onFinishedSendException(Exception exception, Object sender,
+//                            Object attr) {
+//                          callBack.onException(exception, sender, attr);
+//                        }
+//
+//                        @Override
+//                        public void onFinishedException(Exception exception, Object sender,
+//                            Object attr) {
+//                          callBack.onException(exception, sender, attr);
+//                        }
+//
+//                        @Override
+//                        public void onFinished(boolean monopolize, MySQLClientSession mysql,
+//                            Object sender, Object attr) {
+//                          long statementId = prepareStmtTask.getMysqlStatementId();
+//                          sessionInfos
+//                              .add(new PrepareMySQLSessionInfo(statementId, mysql.sessionId()));
+//                          if (numOfParams < 0) {
+//                            numOfParams = prepareStmtTask.getNumOdParmas();
+//                          } else {
+//                            assert numOfParams == prepareStmtTask.getNumOdParmas();
+//                          }
+//                          if (monopolize){
+//                            mycat.setMySQLSession(mysql);
+//                          }else {
+//                            mysql.setCallBack(null);
+//                            mysql.setMycatSession(null);
+//                            mysql.switchNioHandler(null);
+//                            manager.addIdleSession(mysql);
+//                            mycat.onHandlerFinishedClear();
+//                          }
+//                        }
+//
+//                        @Override
+//                        public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+//                            MySQLClientSession mysql, Object sender, Object attr) {
+//                          callBack.onErrorPacket(errorPacket, monopolize, mysql, this, attr);
+//                        }
+//                      });
+//                }
+//              }
+//
+//              @Override
+//              public void onException(Exception exception, Object sender, Object attr) {
+//                callBack.onException(exception, sender, attr);
+//              }
+//
+//              @Override
+//              public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+//                  MySQLClientSession mysql, Object sender, Object attr) {
+//                callBack.onErrorPacket(errorPacket, monopolize, mysql, sender, attr);
+//              }
+//            });
+//          }
+//
+//          @Override
+//          public void onException(Exception exception, Object sender, Object attr) {
+//            callBack.onException(exception, sender, attr);
+//          }
+//        });
   }
 
   private List<PrepareMySQLSessionInfo> checkVaildAndGetIdleMySQLSessionIds() {
@@ -188,19 +174,19 @@ public class PrepareInfo {
   }
 
   public void reset() {
-    for (Entry<Integer, MySQLPayloadWriter> entry : parmaMap.entrySet()) {
-      MySQLPayloadWriter remove = entry.getValue();
-      if (remove != null) {
-        remove.close();
-      }
-    }
-    if (mycat.isBindMySQLSession()) {
-      MySQLClientSession session = mycat.getMySQLSession();
-      long statementId = session.getCursorStatementId();
-      MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateResetPacket(statementId),
-          session.getDataNode().getName(), null, ResponseType.QUERY);
-      return;
-    }
+//    for (Entry<Integer, MySQLPayloadWriter> entry : parmaMap.entrySet()) {
+//      MySQLPayloadWriter remove = entry.getValue();
+//      if (remove != null) {
+//        remove.close();
+//      }
+//    }
+//    if (mycat.isBindMySQLSession()) {
+//      MySQLClientSession session = mycat.getMySQLSession();
+//      long statementId = session.getCursorStatementId();
+//      MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil.generateResetPacket(statementId),
+//          session.getDataNode().getName(), null, ResponseType.QUERY);
+//      return;
+//    }
   }
 
   public void close() {
@@ -224,52 +210,52 @@ public class PrepareInfo {
 
   public void execute(byte flags, int numParams,
       byte[] rest,String dataNodeName,boolean runOnMaster, LoadBalanceStrategy strategy) {
-    getPrepareSession(dataNodeName,runOnMaster,strategy,new PrepareSessionCallback() {
-      @Override
-      public void onPrepare(long actualStatementId, MySQLClientSession session) {
-        session.setCursorStatementId(actualStatementId);
-        if (existLongData()){
-          RequestHandler.INSTANCE.request(session, generateAllLongDataPacket(session),
-              new RequestCallback() {
-                @Override
-                public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
-                  mycat.setMySQLSession(session);
-                  innerExecute(actualStatementId, flags, numParams,rest);
-                }
-
-                @Override
-                public void onFinishedSendException(Exception e, Object sender, Object attr) {
-                  mycat.setLastMessage(e.toString());
-                  mycat.writeErrorEndPacket();
-                }
-              });
-        }else {
-          mycat.setMySQLSession(session);
-          innerExecute(actualStatementId, flags, numParams, rest);
-        }
-        return;
-      }
-
-      @Override
-      public void onException(Exception exception, Object sender, Object attr) {
-        mycat.setLastMessage(exception.getMessage());
-        mycat.writeErrorEndPacket();
-      }
-
-      @Override
-      public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-          MySQLClientSession mysql, Object sender, Object attr) {
-        mycat.setLastMessage(errorPacket.getErrorMessageString());
-        mycat.writeErrorEndPacket();
-      }
-    }, false);
-    return;
+//    getPrepareSession(dataNodeName,runOnMaster,strategy,new PrepareSessionCallback() {
+//      @Override
+//      public void onPrepare(long actualStatementId, MySQLClientSession session) {
+//        session.setCursorStatementId(actualStatementId);
+//        if (existLongData()){
+//          RequestHandler.INSTANCE.request(session, generateAllLongDataPacket(session),
+//              new RequestCallback() {
+//                @Override
+//                public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
+//                  mycat.setMySQLSession(session);
+//                  innerExecute(actualStatementId, flags, numParams,rest);
+//                }
+//
+//                @Override
+//                public void onFinishedSendException(Exception e, Object sender, Object attr) {
+//                  mycat.setLastMessage(e.toString());
+//                  mycat.writeErrorEndPacket();
+//                }
+//              });
+//        }else {
+//          mycat.setMySQLSession(session);
+//          innerExecute(actualStatementId, flags, numParams, rest);
+//        }
+//        return;
+//      }
+//
+//      @Override
+//      public void onException(Exception exception, Object sender, Object attr) {
+//        mycat.setLastMessage(exception.getMessage());
+//        mycat.writeErrorEndPacket();
+//      }
+//
+//      @Override
+//      public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
+//          MySQLClientSession mysql, Object sender, Object attr) {
+//        mycat.setLastMessage(errorPacket.getErrorMessageString());
+//        mycat.writeErrorEndPacket();
+//      }
+//    }, false);
+//    return;
   }
 
   private void innerExecute(long statementId, byte flags, int numParams, byte[] rest) {
-    MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
-            .generateExecutePayload(statementId, flags, numParams, rest),
-        mycat.getDafaultDatabase(), null, ResponseType.QUERY);
+//    MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
+//            .generateExecutePayload(statementId, flags, numParams, rest),
+//        mycat.getDafaultDatabase(), null, ResponseType.QUERY);
   }
 
   /**
@@ -282,15 +268,15 @@ public class PrepareInfo {
   }
 
   public void fetch(long numOfRows) {
-    MySQLClientSession mySQLSession = mycat.getMySQLSession();
-    if (mySQLSession == null){
-      mycat.setLastMessage("not fetch");
-      mycat.writeErrorEndPacket();
-      return;
-    }
-    MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
-            .generateFetchPayload(mySQLSession.getCursorStatementId(), numOfRows),
-        mycat.getDafaultDatabase(), null, ResponseType.MULTI_RESULTSET);
+//    MySQLClientSession mySQLSession = mycat.getMySQLSession();
+//    if (mySQLSession == null){
+//      mycat.setLastMessage("not fetch");
+//      mycat.writeErrorEndPacket();
+//      return;
+//    }
+//    MySQLTaskUtil.proxyBackend(mycat, MySQLPacketUtil
+//            .generateFetchPayload(mySQLSession.getCursorStatementId(), numOfRows),
+//        mycat.getDafaultDatabase(), null, ResponseType.MULTI_RESULTSET);
   }
 
   public boolean existLongData() {

@@ -1,6 +1,7 @@
 package io.mycat.sqlEngine.persistent;
 
 import io.mycat.sqlEngine.schema.TableColumnDefinition;
+
 import java.util.Map;
 
 public interface Persistent {

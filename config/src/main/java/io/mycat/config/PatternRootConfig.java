@@ -17,7 +17,8 @@ public class PatternRootConfig {
     private List<HandlerToSQLs> handlers = new ArrayList<>();
     private Handler defaultHanlder;
 
-    @Getter
+
+    @Data
     public static class HandlerToSQLs {
         String name;
         List<String> tables = new ArrayList<>();
@@ -27,8 +28,9 @@ public class PatternRootConfig {
         String explain;
     }
 
-    @Getter
-    @AllArgsConstructor
+
+    @Data
+
     public static class TextItemConfig {
         String name;
         String sql;
@@ -38,17 +40,16 @@ public class PatternRootConfig {
         String explain;
     }
 
-    @Builder
+
     @Data
     public static class Handler {
-        final Map<String, String> tags = new HashMap<>();
-        final String type;
-        final String explain;
+         Map<String, String> tags;
+         String type;
+         String explain;
     }
 
-    @Builder
+
     @Data
-    @AllArgsConstructor
     public static class SchemaConfig {
         String name;
         List<String> tables = new ArrayList<>();

@@ -13,7 +13,7 @@ public class ReactorThreadManager {
     }
 
     public synchronized MycatReactorThread getRandomReactor() {
-        return list.get(ThreadLocalRandom.current().nextInt(0, list.size() + 1));
+        return list.get(ThreadLocalRandom.current().nextInt(0, list.size() ));
     }
 
     public synchronized void add(MycatReactorThread thread) {

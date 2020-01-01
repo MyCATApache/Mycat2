@@ -10,6 +10,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
 import io.mycat.util.DumpUtil;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
@@ -50,13 +51,13 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       SQL_LOGGER.info("sessionId:{}  orginSQL:{} ", session.sessionId(), sql);
     }
   }
-
-  @Override
-  public void onRouteSQL(Session session, String dataNodeName, String sql) {
-    if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataTarget:{} sql:{}", session.sessionId(), dataNodeName, sql);
-    }
-  }
+//
+//  @Override
+//  public void onRouteSQL(Session session, String dataNodeName, String sql) {
+//    if (onSQL) {
+//      SQL_LOGGER.info("sessionId:{} dataTarget:{} sql:{}", session.sessionId(), dataNodeName, sql);
+//    }
+//  }
 
   @Override
   public void onRouteSQLResult(Session session, String dataNodeName, String defaultDataBase,
@@ -284,11 +285,16 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   }
 
   @Override
-  public void onGettingBackend(Session session, String dataNode, Exception e) {
-    if (onException) {
-      LOGGER.info("onGettingBackend sessionId:{}", session.sessionId());
-    }
+  public void onGettingBackend(Session session, String replicaName, String defaultDataBase, Exception e) {
+
   }
+//
+//  @Override
+//  public void onGettingBackend(Session session, String dataNode, Exception e) {
+//    if (onException) {
+//      LOGGER.info("onGettingBackend sessionId:{}", session.sessionId());
+//    }
+//  }
 
   @Override
   public final void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
@@ -350,7 +356,7 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       MySQLSynContextImpl c = new MySQLSynContextImpl(session);
       LOGGER.debug(
           "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
-          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase().getName() : null,
+          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase() : null,
           c.getIsolation(), c.getCharset(), c.getAutoCommit(),
           c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
     }
@@ -425,6 +431,12 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       LOGGER.debug("onGetIdleMysqlSession sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
+  }
+
+  //todo
+  @Override
+  public void onRouteSQL(Session session, String replicaName, String defaultDataBase, String sql) {
+
   }
 
   @Override
@@ -885,5 +897,10 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
     if (recordDump){
       LOGGER.debug("sessionId:{} onResultOk", mysql.sessionId());
     }
+  }
+
+  @Override
+  public void onRouteSQL(MycatSession mycat, String dataSourceName, String sql) {
+
   }
 }

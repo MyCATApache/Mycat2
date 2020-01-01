@@ -5,6 +5,7 @@ import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 

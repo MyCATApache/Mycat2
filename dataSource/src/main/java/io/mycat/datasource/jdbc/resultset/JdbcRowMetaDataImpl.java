@@ -16,6 +16,7 @@ package io.mycat.datasource.jdbc.resultset;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
+
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 /**

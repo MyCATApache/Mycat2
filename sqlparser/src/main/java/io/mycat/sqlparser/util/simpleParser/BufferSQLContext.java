@@ -4,6 +4,7 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLIsolationLevel;
 import io.mycat.sqlparser.util.SQLMapAnnotation;
+
 import java.util.Arrays;
 
 /**

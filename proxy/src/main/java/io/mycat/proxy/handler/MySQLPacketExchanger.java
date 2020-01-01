@@ -21,13 +21,9 @@ import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.MySQLPacketUtil;
-import io.mycat.proxy.MySQLTaskUtil;
 import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.callback.TaskCallBack;
 import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
-import io.mycat.proxy.handler.backend.MySQLDataSourceQuery;
-import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
@@ -37,6 +33,7 @@ import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.MySQLDatasource;
+
 import java.io.IOException;
 import java.util.Objects;
 
@@ -94,45 +91,7 @@ public enum MySQLPacketExchanger {
     MycatMonitor.onPacketExchangerClear(mycatSession);
   }
 
-  public void proxyBackend(MycatSession mycat, byte[] payload, String replicaName,String defaultDatabase,
-      MySQLDataSourceQuery query, ResponseType responseType) {
-    proxyBackend(mycat, payload, replicaName,defaultDatabase, query, responseType,
-        DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
 
-  }
-
-  public void proxyBackend(MycatSession mycat, byte[] payload, String replicaName,String defaultDatabase,
-      MySQLDataSourceQuery query, ResponseType responseType, PacketExchangerCallback finallyCallBack) {
-    byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
-    MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, bytes, replicaName,defaultDatabase, query, responseType,
-        MySQLProxyNIOHandler.INSTANCE, finallyCallBack
-    );
-  }
-
-  public void proxyBackendWithRawPacket(MycatSession mycat, byte[] packet, String replicaName,String defaultDatabase,
-      MySQLDataSourceQuery query, ResponseType responseType) {
-    MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, packet, replicaName,defaultDatabase, query, responseType,
-        MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
-    );
-  }
-
-  public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String replicaName,String defaultDatabase,
-      MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketCallback callback) {
-    proxyWithCollectorCallback(mycat, payload, replicaName,defaultDatabase, query, responseType, callback,
-        DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK);
-  }
-
-  public void proxyWithCollectorCallback(MycatSession mycat, byte[] payload, String replicaName,String defaultDatabase,
-      MySQLDataSourceQuery query, ResponseType responseType, MySQLPacketCallback callback,
-      PacketExchangerCallback finallyCallBack) {
-    byte[] bytes = MySQLPacketUtil.generateMySQLPacket(0, payload);
-    MySQLProxyNIOHandler
-        .INSTANCE.proxyBackend(mycat, bytes, replicaName,defaultDatabase, query, responseType,
-        new MySQLCollectorExchanger(callback), finallyCallBack
-    );
-  }
 
   private void onBackendResponse(MySQLClientSession mysql) throws IOException {
     MycatSession mycatSession = mysql.getMycat();
@@ -218,43 +177,23 @@ public enum MySQLPacketExchanger {
       mySQLSessionManager.getIdleSessionsOfKey(datasource, new SessionCallBack<MySQLClientSession>() {
         @Override
         public void onSession(MySQLClientSession session, Object sender, Object attr) {
+          //todo
           MySQLDatasource datasource = session.getDatasource();
-          MycatMonitor.onRouteResult(mycat, datasource.getName(),datasource.getReplica().getName(),datasource.getName(), packetData);
+          MycatMonitor.onRouteResult(mycat, datasource.getName(), datasource.getName(), datasource.getName(), packetData);
           proxyNIOHandler.proxyBackend(session, finallyCallBack, responseType, mycat, packetData);
+
+
         }
 
         @Override
         public void onException(Exception exception, Object sender, Object attr) {
-          MycatMonitor.onGettingBackendException(mycat, datasource.getReplica().getName(),datasource.getInitDb(), exception);
+
+          //todo
+          MycatMonitor.onGettingBackendException(mycat, datasource.getName(),datasource.getInitDb(), exception);
           finallyCallBack.onRequestMySQLException(mycat, exception, attr);
         }
       });
 
-    }
-    public void proxyBackend(MycatSession mycat, byte[] packetData, String replicaName,String defaultDatabaseName,
-        MySQLDataSourceQuery query, ResponseType responseType, MySQLProxyNIOHandler proxyNIOHandler,
-        PacketExchangerCallback finallyCallBack) {
-      MySQLTaskUtil.withBackend(mycat, replicaName,defaultDatabaseName, query, new SessionSyncCallback() {
-        @Override
-        public void onSession(MySQLClientSession mysql, Object sender, Object attr) {
-          MySQLDatasource datasource = mysql.getDatasource();
-          MycatMonitor.onRouteResult(mycat, replicaName,defaultDatabaseName,datasource.getName(), packetData);
-          proxyNIOHandler.proxyBackend(mysql, finallyCallBack, responseType, mycat, packetData);
-        }
-
-        @Override
-        public void onException(Exception exception, Object sender, Object attr) {
-          MycatMonitor.onGettingBackendException(mycat, replicaName,defaultDatabaseName, exception);
-          finallyCallBack.onRequestMySQLException(mycat, exception, attr);
-        }
-
-        @Override
-        public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize,
-            MySQLClientSession mysql, Object sender, Object attr) {
-          finallyCallBack.onRequestMySQLException(mycat,
-              new MycatException(errorPacket.getErrorMessageString()), attr);
-        }
-      });
     }
 
     public void proxyBackend(MySQLClientSession mysql, PacketExchangerCallback finallyCallBack,
@@ -338,7 +277,7 @@ public enum MySQLPacketExchanger {
     }
   }
 
-  private static class MySQLCollectorExchanger extends MySQLProxyNIOHandler {
+  public static class MySQLCollectorExchanger extends MySQLProxyNIOHandler {
 
     final MySQLPacketCallback callback;
 

@@ -14,6 +14,11 @@
  */
 package io.mycat.sqlEngine.ast.complier;
 
+import com.alibaba.fastsql.sql.ast.SQLExpr;
+import com.alibaba.fastsql.sql.ast.SQLName;
+import com.alibaba.fastsql.sql.ast.expr.*;
+import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
+import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 import io.mycat.sqlEngine.ast.SQLTypeMap;
 import io.mycat.sqlEngine.ast.converter.Converters;
 import io.mycat.sqlEngine.ast.expr.ValueExpr;
@@ -45,16 +50,6 @@ import io.mycat.sqlEngine.ast.expr.stringExpr.StringExpr;
 import io.mycat.sqlEngine.ast.expr.valueExpr.NullConstExpr;
 import io.mycat.sqlEngine.context.RootSessionContext;
 import io.mycat.sqlEngine.executor.logicExecutor.Executor;
-import com.alibaba.fastsql.sql.ast.SQLExpr;
-import com.alibaba.fastsql.sql.ast.SQLName;
-import com.alibaba.fastsql.sql.ast.expr.SQLBinaryOpExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLCastExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLExistsExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLMethodInvokeExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLValuableExpr;
-import com.alibaba.fastsql.sql.ast.expr.SQLVariantRefExpr;
-import com.alibaba.fastsql.sql.ast.statement.SQLColumnDefinition;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
 
 import java.math.BigDecimal;
 import java.sql.Date;

@@ -1,6 +1,5 @@
 package io.mycat.describer;
 
-import cn.lightfish.describer.literal.*;
 import io.mycat.describer.literal.*;
 
 import java.util.List;

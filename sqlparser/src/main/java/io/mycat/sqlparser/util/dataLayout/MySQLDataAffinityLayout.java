@@ -4,6 +4,7 @@ package io.mycat.sqlparser.util.dataLayout;
 import com.alibaba.fastsql.sql.ast.SQLExpr;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement.ValuesClause;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

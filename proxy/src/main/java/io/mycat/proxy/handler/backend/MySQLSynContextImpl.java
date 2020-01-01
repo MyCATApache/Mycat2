@@ -3,14 +3,11 @@ package io.mycat.proxy.handler.backend;
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-
-import java.util.Objects;
 
 @Getter
 @EqualsAndHashCode

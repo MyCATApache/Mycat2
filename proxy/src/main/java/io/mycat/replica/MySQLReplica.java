@@ -15,12 +15,10 @@
 package io.mycat.replica;
 
 import io.mycat.ProxyBeanProviders;
-import io.mycat.config.DatasourceRootConfig;
 import io.mycat.config.ClusterRootConfig;
+import io.mycat.config.DatasourceRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.ProxyRuntime;
-
 import java.util.List;
 
 /**
@@ -31,7 +29,7 @@ import java.util.List;
 public abstract class MySQLReplica {
 
   protected static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(MySQLReplica.class);
-  protected final ReplicaDataSourceSelector selector;
+  protected final ReplicaDataSourceSelector selector = null;
 
   /**
    * 初始化mycat集群管理
@@ -39,26 +37,26 @@ public abstract class MySQLReplica {
    * @param replicaConfig the config of replica
    * @param dataSourceFactory a factory to create dataSource
    */
-  public MySQLReplica(ProxyRuntime runtime, ClusterRootConfig.ClusterConfig replicaConfig,
+  public MySQLReplica(ClusterRootConfig.ClusterConfig replicaConfig,
       ProxyBeanProviders dataSourceFactory) {
-    assert replicaConfig != null;
-    List<DatasourceRootConfig.DatasourceConfig> mysqls = replicaConfig.getReplicas();
-    assert mysqls != null;
-    this.runtime = runtime;
-    this.config = replicaConfig;
-    this.selector = ReplicaSelectorRuntime.INSTCANE
-        .getDataSourceSelector(replicaConfig.getName());
-    List<DatasourceConfig> datasources = config.getDatasources();
-    if (datasources != null) {
-      for (int i = 0; i < datasources.size(); i++) {
-        MySQLDatasource mySQLDatasource = null;
-        DatasourceConfig datasourceConfig = datasources.get(i);
-        if (MycatConfigUtil.isMySQLType(datasourceConfig)) {
-          mySQLDatasource = dataSourceFactory.createDatasource(runtime, i, datasourceConfig, this);
-        }
-        mySQLDatasources.add(mySQLDatasource);
-      }
-    }
+//    assert replicaConfig != null;
+//    List<DatasourceRootConfig.DatasourceConfig> mysqls = replicaConfig.getReplicas();
+//    assert mysqls != null;
+//    this.runtime = runtime;
+//    this.config = replicaConfig;
+//    this.selector = ReplicaSelectorRuntime.INSTCANE
+//        .getDataSourceSelector(replicaConfig.getName());
+//    List<DatasourceConfig> datasources = config.getDatasources();
+//    if (datasources != null) {
+//      for (int i = 0; i < datasources.size(); i++) {
+//        MySQLDatasource mySQLDatasource = null;
+//        DatasourceConfig datasourceConfig = datasources.get(i);
+//        if (MycatConfigUtil.isMySQLType(datasourceConfig)) {
+//          mySQLDatasource = dataSourceFactory.createDatasource(runtime, i, datasourceConfig, this);
+//        }
+//        mySQLDatasources.add(mySQLDatasource);
+//      }
+//    }
   }
 
 }

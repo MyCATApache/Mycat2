@@ -26,8 +26,8 @@ import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.BackendMySQLPacketResolver;
+import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.replica.MySQLDatasource;
 import lombok.Getter;
@@ -116,11 +116,11 @@ public class MySQLClientSession extends
    */
   @Override
   public void close(boolean normal, String hint) {
-    if (closed) {
+    if (hasClosed) {
       return;
     }
     resetPacket();
-    closed = true;
+    hasClosed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
@@ -302,14 +302,6 @@ public class MySQLClientSession extends
    */
   public MySQLPayloadType getPayloadType() {
     return this.packetResolver.getMySQLPayloadType();
-  }
-
-  /**
-   * 判断该session是否活跃
-   */
-  public boolean isActivated() {
-    long timeInterval = currentTimeMillis() - this.lastActiveTime;
-    return (timeInterval < 60 * 1000);//60 second
   }
 
   /**

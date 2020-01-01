@@ -16,10 +16,6 @@ package io.mycat.test.hibernate;
 
 import io.mycat.MycatProxyBeanProviders;
 import io.mycat.proxy.monitor.MycatMonitorLogCallback;
-
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-
 import io.mycat.test.jdbc.TestGettingConnetionCallback;
 import io.mycat.test.mybatis.DataConnection;
 import io.mycat.test.pojo.TravelRecord;
@@ -29,6 +25,9 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import static io.mycat.test.ModualTest.compelete;
 import static io.mycat.test.ModualTest.loadModule;

@@ -18,6 +18,7 @@ package io.mycat.plug.sequence.sequenceFile;
 
 import io.mycat.plug.sequence.SequenceCallback;
 import io.mycat.plug.sequence.SequenceHandler;
+
 import java.io.IOException;
 
 public class SequenceFileHandler implements SequenceHandler {

@@ -14,13 +14,6 @@
  */
 package io.mycat.sqlEngine.ast;
 
-import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.CheckColumnAmbiguous;
-import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveAllColumn;
-import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.ResolveIdentifierAlias;
-
-import io.mycat.sqlEngine.ast.extractor.Extractors;
-import io.mycat.sqlEngine.context.GlobalContext;
-import io.mycat.sqlEngine.schema.StatementType;
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLAlterStatement;
@@ -28,8 +21,13 @@ import com.alibaba.fastsql.sql.ast.statement.SQLDDLStatement;
 import com.alibaba.fastsql.sql.parser.SQLParserFeature;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
+import io.mycat.sqlEngine.ast.extractor.Extractors;
+import io.mycat.sqlEngine.context.GlobalContext;
+import io.mycat.sqlEngine.schema.StatementType;
 
 import java.util.List;
+
+import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
 
 /**
  * @author Junwen Chen

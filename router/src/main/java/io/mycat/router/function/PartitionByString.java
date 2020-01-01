@@ -4,6 +4,7 @@ import io.mycat.router.RuleFunction;
 import io.mycat.router.util.PartitionUtil;
 import io.mycat.util.Pair;
 import io.mycat.util.StringUtil;
+
 import java.util.Map;
 
 public class PartitionByString extends RuleFunction {

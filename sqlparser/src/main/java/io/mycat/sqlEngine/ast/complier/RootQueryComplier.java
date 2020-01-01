@@ -14,16 +14,16 @@
  */
 package io.mycat.sqlEngine.ast.complier;
 
+import com.alibaba.fastsql.DbType;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
+import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.fastsql.sql.optimizer.Optimizers;
 import io.mycat.sqlEngine.ast.expr.booleanExpr.BooleanExpr;
 import io.mycat.sqlEngine.ast.optimizer.queryCondition.ConditionCollector;
 import io.mycat.sqlEngine.context.GlobalContext;
 import io.mycat.sqlEngine.executor.logicExecutor.Executor;
 import io.mycat.sqlEngine.executor.logicExecutor.ExecutorType;
 import io.mycat.sqlEngine.executor.logicExecutor.FilterExecutor;
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectQueryBlock;
-import com.alibaba.fastsql.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.fastsql.sql.optimizer.Optimizers;
 
 import java.util.List;
 /**

@@ -1,15 +1,16 @@
 package io.mycat.proxy.monitor;
 
-import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
-
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
+
+import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
 
 /**
  * @author jamie12221 date 2019-05-14 11:51

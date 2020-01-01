@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,7 +18,7 @@ public enum  CalciteEnvironment {
     final ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap;
 
      CalciteEnvironment() {
-        this(MetadataManager.INSATNCE.jdbcTableMap);
+        this(null);
     }
 
     private CalciteEnvironment(ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap) {

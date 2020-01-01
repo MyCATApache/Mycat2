@@ -14,8 +14,6 @@
  */
 package io.mycat.replica.heartbeat;
 
-import lombok.Data;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 

@@ -2,7 +2,6 @@ package io.mycat.wu;
 
 import io.mycat.wu.ast.base.Node;
 import io.mycat.wu.ast.base.Schema;
-import cn.lightfish.wu.ast.modify.*;
 import io.mycat.wu.ast.modify.*;
 
 import java.util.Arrays;

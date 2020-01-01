@@ -1,12 +1,10 @@
 package io.mycat.wu;
 
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableList;
 import io.mycat.rsqlBuilder.DesBuilder;
 import io.mycat.wu.ast.AggregateCall;
 import io.mycat.wu.ast.Direction;
-import cn.lightfish.wu.ast.base.*;
-import cn.lightfish.wu.ast.query.*;
-import com.google.common.collect.HashBiMap;
-import com.google.common.collect.ImmutableList;
 import io.mycat.wu.ast.base.*;
 import io.mycat.wu.ast.query.*;
 import org.apache.calcite.rel.RelNode;
@@ -31,6 +29,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.builder;
+import static io.mycat.wu.Op.*;
 
 public class QueryOp {
     private final DesBuilder relBuilder;
@@ -131,40 +130,40 @@ public class QueryOp {
         relBuilder.clear();
         try {
             switch (input.getOp()) {
-                case Op.FROM:
+                case FROM:
                     return from((FromSchema) input);
-                case Op.MAP:
+                case MAP:
                     return map((MapSchema) input);
-                case Op.FILTER:
+                case FILTER:
                     return filter((FilterSchema) input);
-                case Op.LIMIT:
+                case LIMIT:
                     return limit((LimitSchema) input);
-                case Op.ORDER:
+                case ORDER:
                     return order((OrderSchema) input);
-                case Op.GROUP:
+                case GROUP:
                     return group((GroupSchema) input);
-                case Op.VALUES:
+                case VALUES:
                     return values((ValuesSchema) input);
-                case Op.DISTINCT:
+                case DISTINCT:
                     return distinct((DistinctSchema) input);
-                case Op.UNION_ALL:
-                case Op.UNION_DISTINCT:
-                case Op.EXCEPT_ALL:
-                case Op.EXCEPT_DISTINCT:
+                case UNION_ALL:
+                case UNION_DISTINCT:
+                case EXCEPT_ALL:
+                case EXCEPT_DISTINCT:
                     return setSchema((SetOpSchema) input);
-                case Op.LEFT_JOIN:
-                case Op.RIGHT_JOIN:
-                case Op.FULL_JOIN:
-                case Op.SEMI_JOIN:
-                case Op.ANTI_JOIN:
-                case Op.INNER_JOIN:
+                case LEFT_JOIN:
+                case RIGHT_JOIN:
+                case FULL_JOIN:
+                case SEMI_JOIN:
+                case ANTI_JOIN:
+                case INNER_JOIN:
 //                    return join((JoinSchema) input);
 
                     return correlateJoin((JoinSchema) input);
-                case Op.PROJECT:
+                case PROJECT:
                     return project((ProjectSchema) input);
-                case Op.CORRELATE_INNER_JOIN:
-                case Op.CORRELATE_LEFT_JOIN:
+                case CORRELATE_INNER_JOIN:
+                case CORRELATE_LEFT_JOIN:
                     return correlate((CorrelateSchema) input);
                 default:
             }
@@ -265,17 +264,17 @@ public class QueryOp {
         int size = input.getSchemas().size();
         RelBuilder relBuilder = this.relBuilder.pushAll(handle(input.getSchemas()));
         switch (input.getOp()) {
-            case Op.UNION_DISTINCT:
+            case UNION_DISTINCT:
                 return relBuilder.union(false, size).build();
-            case Op.UNION_ALL:
+            case UNION_ALL:
                 return relBuilder.union(true, size).build();
-            case Op.EXCEPT_DISTINCT:
+            case EXCEPT_DISTINCT:
                 return relBuilder.minus(false, size).build();
-            case Op.EXCEPT_ALL:
+            case EXCEPT_ALL:
                 return relBuilder.minus(true, size).build();
-            case Op.INTERSECT_DISTINCT:
+            case INTERSECT_DISTINCT:
                 return relBuilder.intersect(false, size).build();
-            case Op.INTERSECT_ALL:
+            case INTERSECT_ALL:
                 return relBuilder.intersect(true, size).build();
             default:
                 throw new UnsupportedOperationException();
@@ -396,7 +395,7 @@ public class QueryOp {
 
     public RexNode toRex(Expr node) {
         switch (node.getOp()) {
-            case Op.IDENTIFIER: {
+            case IDENTIFIER: {
                 String value = ((Identifier) node).getValue();
                 if (value.startsWith("$")) {
                     return relBuilder.field(Integer.parseInt(value.substring(1)));
@@ -415,24 +414,24 @@ public class QueryOp {
                     }
                 }
             }
-            case Op.LITERAL: {
+            case LITERAL: {
                 Literal node1 = (Literal) node;
                 return relBuilder.literal(node1.getValue());
             }
             default: {
-                if (node.op == Op.AS_COLUMNNAME) {
+                if (node.op == AS_COLUMNNAME) {
                     Identifier id = (Identifier) node.getNodes().get(1);
                     return this.relBuilder.alias(toRex(node.getNodes().get(0)), id.getValue());
-                } else if (node.op == Op.REF) {
+                } else if (node.op == REF) {
                     String tableName = ((Identifier) node.getNodes().get(0)).getValue();
                     String fieldName = ((Identifier) node.getNodes().get(1)).getValue();
                     RexCorrelVariable relNode = correlVariableMap.getOrDefault(tableName, null);
                     return relBuilder.field(relNode, fieldName);
-                } else if (node.op == Op.CAST) {
+                } else if (node.op == CAST) {
                     RexNode rexNode = toRex(node.getNodes().get(0));
                     Identifier type = (Identifier) node.getNodes().get(1);
                     return relBuilder.cast(rexNode, toType(type.getValue()).getSqlTypeName());
-                } else if (node.op == Op.FUN) {
+                } else if (node.op == FUN) {
                     Fun node2 = (Fun) node;
                     return this.relBuilder.call(op(node2.getFunctionName()), toRex(node.getNodes()));
                 } else {

@@ -1,9 +1,9 @@
 package io.mycat.grid;
 
-import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetType;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.proxy.session.MycatSession;
+
 import java.io.IOException;
 
 public class UpdateResponse implements MycatUpdateResponse {

@@ -18,6 +18,7 @@ package io.mycat.plug.sequence.sequenceMySQL;
 
 import io.mycat.plug.sequence.SequenceCallback;
 import io.mycat.plug.sequence.SequenceHandler;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
