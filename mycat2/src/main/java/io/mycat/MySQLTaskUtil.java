@@ -233,6 +233,12 @@ public class MySQLTaskUtil {
 //            }
 //        });
     }
+
+    public static void proxyBackend(MycatSession session, String sql) {
+        MySQLClientSession mySQLSession = session.getMySQLSession();
+        MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.
+                proxyBackend(mySQLSession,DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK,ResponseType.QUERY,session,MySQLPacketUtil.generateComQueryPacket(sql));
+    }
 //    public void proxyBackend(MycatSession mycat, byte[] payload, String replicaName,String defaultDatabase,
 //                             MySQLDataSourceQuery query, ResponseType responseType) {
 //        proxyBackend(mycat, payload, replicaName,defaultDatabase, query, responseType,

@@ -16,6 +16,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         MycatUser user = session.getUser();
         this.client = ClientRuntime.INSTANCE.login(user.getUserName(), user.getPassword());
         this.client.useSchema(session.getSchema());
+        this.client.useTransactionType(ContextRunner.PROXY_TRANSACTION_TYPE);
     }
 
     @Override

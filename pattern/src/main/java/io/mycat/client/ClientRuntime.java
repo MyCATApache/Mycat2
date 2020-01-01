@@ -54,6 +54,7 @@ public enum ClientRuntime {
             private RuntimeInfo runtime = Objects.requireNonNull(runtimeInfo);
             private GPattern pattern = runtime.supplier.get();
             private String defaultSchemaName;
+            private String transactionType;
             ///////////////////////////////////////////////
 
             @Override
@@ -126,6 +127,15 @@ public enum ClientRuntime {
             @Override
             public void useSchema(String schemaName) {
                 this.defaultSchemaName = schemaName;
+            }
+
+            @Override
+            public String getTransactionType() {
+                return transactionType;
+            }
+            @Override
+            public void useTransactionType(String transactionType){
+                this.transactionType = transactionType;
             }
 
             @NonNull
