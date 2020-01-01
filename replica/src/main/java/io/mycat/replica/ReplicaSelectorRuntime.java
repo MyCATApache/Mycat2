@@ -82,18 +82,27 @@ public enum ReplicaSelectorRuntime {
             schedule = null;
         }
         ClusterRootConfig.TimerConfig timerConfig = config.getReplicas().getTimer();
-        this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+
+        if(timerConfig.isClose()){
             Stream<PhysicsInstanceImpl> stream = map.values().stream().flatMap(i -> i.datasourceMap.values().stream());
             stream.forEach(c -> {
-                HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(c.getName());
-                if (heartbeatFlow == null) {
-                    c.notifyChangeSelectRead(false);
-                    c.notifyChangeAlive(false);
-                } else {
-                    heartbeatFlow.heartbeat();
-                }
+                c.notifyChangeSelectRead(true);
+                c.notifyChangeAlive(true);
             });
-        }, timerConfig.getInitialDelay(), timerConfig.getPeriod(), TimeUnit.valueOf(timerConfig.getTimeUnit()));
+        }else {
+            this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+                Stream<PhysicsInstanceImpl> stream = map.values().stream().flatMap(i -> i.datasourceMap.values().stream());
+                stream.forEach(c -> {
+                    HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(c.getName());
+                    if (heartbeatFlow == null) {
+                        c.notifyChangeSelectRead(false);
+                        c.notifyChangeAlive(false);
+                    } else {
+                        heartbeatFlow.heartbeat();
+                    }
+                });
+            }, timerConfig.getInitialDelay(), timerConfig.getPeriod(), TimeUnit.valueOf(timerConfig.getTimeUnit()));
+        }
     }
 
 
