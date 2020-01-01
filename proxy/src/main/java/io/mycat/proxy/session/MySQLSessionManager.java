@@ -16,9 +16,9 @@ package io.mycat.proxy.session;
 
 import io.mycat.GlobalConst;
 import io.mycat.MycatException;
+import io.mycat.ScheduleUtil;
 import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.api.collector.TextResultSetTransforCollector;
-import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.logTip.MycatLogger;
@@ -39,6 +39,7 @@ import io.mycat.util.nio.NIOUtil;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
@@ -58,7 +59,7 @@ public class MySQLSessionManager implements
     final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
     public final static AtomicInteger SESSIONID = new AtomicInteger(0);
 
-    static class DataSourceInfo{
+    static class DataSourceInfo {
 
     }
 
@@ -96,12 +97,12 @@ public class MySQLSessionManager implements
         LinkedList<MySQLClientSession> sessions = idleDatasourcehMap.get(datasource);
         try {
             for (; ; ) {
-                if (sessions== null||sessions.isEmpty()){
-                    createSession(datasource,asyncTaskCallBack);
+                if (sessions == null || sessions.isEmpty()) {
+                    createSession(datasource, asyncTaskCallBack);
                     return;
                 }
                 MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids, partialType);
-                if (mySQLSession==null){
+                if (mySQLSession == null) {
                     continue;
                 }
                 if (mySQLSession.checkOpen()) {
@@ -501,6 +502,7 @@ public class MySQLSessionManager implements
         } else {
             createCon(key, new SessionCallBack<MySQLClientSession>() {
                 int retryCount = 0;
+                final long startTime = System.currentTimeMillis();
 
                 @Override
                 public void onSession(MySQLClientSession session, Object sender, Object attr) {
@@ -509,11 +511,33 @@ public class MySQLSessionManager implements
 
                 @Override
                 public void onException(Exception exception, Object sender, Object attr) {
+                    long now = System.currentTimeMillis();
+                    long maxConnectTimeout = key.getMaxConnectTimeout();
                     ++retryCount;
-                    if (retryCount >= maxRetry) {
+                    if (retryCount >= maxRetry || startTime + maxConnectTimeout > now) {
                         callBack.onException(exception, sender, attr);
                     } else {
-                        createCon(key, this);
+                        long waitTime = (maxConnectTimeout + startTime - now) / (maxRetry - retryCount);//剩余时间减去剩余次数为下次重试间隔
+                        MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+                        SessionCallBack<MySQLClientSession> sessionCallBack = this;
+                        Runnable runnable = (() -> thread.addNIOJob(new NIOJob() {
+                            @Override
+                            public void run(ReactorEnvThread reactor) throws Exception {
+                                createCon(key, sessionCallBack);
+                            }
+
+                            @Override
+                            public void stop(ReactorEnvThread reactor, Exception reason) {
+                                callBack.onException(reason, sender, attr);
+                            }
+
+                            @Override
+                            public String message() {
+                                return "waitTime";
+                            }
+                        }));
+                        ScheduleUtil.getTimer().schedule(runnable,
+                                waitTime, TimeUnit.MILLISECONDS);
                     }
                 }
             });

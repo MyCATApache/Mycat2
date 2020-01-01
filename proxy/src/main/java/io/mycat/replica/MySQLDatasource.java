@@ -119,4 +119,8 @@ public abstract class MySQLDatasource implements MycatDataSource {
   public int gerMaxRetry() {
     return this.datasourceConfig.getMaxRetryCount();
   }
+
+  public long getMaxConnectTimeout(){
+    return this.datasourceConfig.getMaxConnectTimeout();
+  }
 }

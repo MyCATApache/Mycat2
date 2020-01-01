@@ -9,6 +9,7 @@ datasource:
                 maxCon: 1000,
                 minCon: 0,
                 maxRetryCount: 3,
+                maxConnectTimeout: 1000,
                 dbType: mysql,
                 url:,
                 weight: 1,
