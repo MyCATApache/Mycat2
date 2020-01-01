@@ -497,52 +497,47 @@ public class MySQLSessionManager implements
             return;
         }
         int maxRetry = key.gerMaxRetry();
-        if (maxRetry == 0) {
-            createCon(key, callBack);
-        } else {
-            createCon(key, new SessionCallBack<MySQLClientSession>() {
-                int retryCount = 0;
-                final long startTime = System.currentTimeMillis();
+        createCon(key, new SessionCallBack<MySQLClientSession>() {
+            int retryCount = 0;
+            final long startTime = System.currentTimeMillis();
 
-                @Override
-                public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                    callBack.onSession(session, sender, attr);
-                }
+            @Override
+            public void onSession(MySQLClientSession session, Object sender, Object attr) {
+                callBack.onSession(session, sender, attr);
+            }
 
-                @Override
-                public void onException(Exception exception, Object sender, Object attr) {
-                    long now = System.currentTimeMillis();
-                    long maxConnectTimeout = key.getMaxConnectTimeout();
+            @Override
+            public void onException(Exception exception, Object sender, Object attr) {
+                long now = System.currentTimeMillis();
+                long maxConnectTimeout = key.getMaxConnectTimeout();
+                if (retryCount > maxRetry || startTime + maxConnectTimeout > now) {
+                    callBack.onException(exception, sender, attr);
+                } else {
                     ++retryCount;
-                    if (retryCount >= maxRetry || startTime + maxConnectTimeout > now) {
-                        callBack.onException(exception, sender, attr);
-                    } else {
-                        long waitTime = (maxConnectTimeout + startTime - now) / (maxRetry - retryCount);//剩余时间减去剩余次数为下次重试间隔
-                        MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-                        SessionCallBack<MySQLClientSession> sessionCallBack = this;
-                        Runnable runnable = (() -> thread.addNIOJob(new NIOJob() {
-                            @Override
-                            public void run(ReactorEnvThread reactor) throws Exception {
-                                createCon(key, sessionCallBack);
-                            }
+                    long waitTime = (maxConnectTimeout + startTime - now) / (maxRetry - retryCount);//剩余时间减去剩余次数为下次重试间隔
+                    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+                    SessionCallBack<MySQLClientSession> sessionCallBack = this;
+                    Runnable runnable = (() -> thread.addNIOJob(new NIOJob() {
+                        @Override
+                        public void run(ReactorEnvThread reactor) throws Exception {
+                            createCon(key, sessionCallBack);
+                        }
 
-                            @Override
-                            public void stop(ReactorEnvThread reactor, Exception reason) {
-                                callBack.onException(reason, sender, attr);
-                            }
+                        @Override
+                        public void stop(ReactorEnvThread reactor, Exception reason) {
+                            callBack.onException(reason, sender, attr);
+                        }
 
-                            @Override
-                            public String message() {
-                                return "waitTime";
-                            }
-                        }));
-                        ScheduleUtil.getTimer().schedule(runnable,
-                                waitTime, TimeUnit.MILLISECONDS);
-                    }
+                        @Override
+                        public String message() {
+                            return "waitTime";
+                        }
+                    }));
+                    ScheduleUtil.getTimer().schedule(runnable,
+                            waitTime, TimeUnit.MILLISECONDS);
                 }
-            });
-        }
-
+            }
+        });
     }
 
     private void createCon(MySQLDatasource key,
