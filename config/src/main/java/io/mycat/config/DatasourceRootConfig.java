@@ -33,6 +33,10 @@ public class DatasourceRootConfig {
         public boolean isMySQLType() {
             return this.getDbType() == null || this.getDbType().toUpperCase().contains("MYSQL");
         }
+
+        public boolean isJdbcType(){
+          return   getUrl()!=null;
+        }
     }
 
 }

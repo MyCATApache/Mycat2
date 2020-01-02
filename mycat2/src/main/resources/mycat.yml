@@ -11,7 +11,7 @@ datasource:
                 maxRetryCount: 3,
                 maxConnectTimeout: 1000,
                 dbType: mysql,
-                url:,
+                url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',
                 weight: 1,
                 initSQL:,
                 initDb:,
@@ -20,10 +20,16 @@ datasource:
                 }]
 interceptor:
   defaultHanlder: {explain: null, tags: {datasourceName: defaultDatasourceName},type: proxyDatasource}
-  handlers: []
+  handlers:
+    - explain: null
+      name: query
+      tags: {datasourceName: defaultDatasourceName}
+      sqls: ['select {any}']
+      tables: ['db1.travelrecord']
+      type: jdbcDatasource
   schemas: []
   sqls: []
-matadata:
+metadata:
   dataNodes: {}
   prototype: null
   schemas: {}
@@ -43,4 +49,4 @@ server:
   ip: 0.0.0.0
   port: 8066
   reactorNumber: 1
-  worker: null
+  worker: {close: false, maxPengdingLimit: 65535, maxThread: 2, minThread: 2, timeUnit: SECONDS,waitTaskTimeout: 5}

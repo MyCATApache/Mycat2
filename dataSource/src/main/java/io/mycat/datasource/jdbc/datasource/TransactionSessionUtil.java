@@ -31,6 +31,7 @@ public class TransactionSessionUtil {
     }
 
     public static MycatResultSetResponse executeQuery(String datasource, String sql) {
+        Objects.requireNonNull(datasource);
         DefaultConnection connection = getConnectionByDataSource(datasource);
         if (connection.getDataSource().isMySQLType()) {
             return new MysqlSingleDataNodeResultSetResponse(connection.executeQuery(sql));
@@ -48,6 +49,7 @@ public class TransactionSessionUtil {
     }
 
     public static DefaultConnection getConnectionByDataSource(String datasource) {
+        Objects.requireNonNull(datasource);
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = processUnit.getTransactionSession();
         transactionSession.beforeDoAction();

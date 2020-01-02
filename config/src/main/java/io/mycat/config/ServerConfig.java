@@ -19,6 +19,7 @@ import lombok.Data;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Data
 public class ServerConfig {
@@ -26,16 +27,17 @@ public class ServerConfig {
     private int port = 8066;
     private int reactorNumber = 1;
     private String handlerName;
-    private Worker worker;
+    private Worker worker = new Worker();
     private BufferPoolConfig bufferPool= new BufferPoolConfig();
 
     @Data
     public static class Worker {
-        private int minThread;
-        private int maxThread;
-        private int waitTaskTimeout;
-        private String timeUnit;
-        private int maxPengdingLimit;
+        private int minThread = 2;
+        private int maxThread = 2;
+        private int waitTaskTimeout = 5;
+        private String timeUnit = TimeUnit.SECONDS.toString();
+        private int maxPengdingLimit = 65535;
+        private boolean close = false;
     }
     @Data
     public static class BufferPoolConfig {

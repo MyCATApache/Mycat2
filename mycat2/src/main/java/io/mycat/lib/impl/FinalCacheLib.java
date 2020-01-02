@@ -4,7 +4,7 @@ import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.pattern.DynamicSQLMatcher;
-import io.mycat.proxy.SQLExecuterWriter;
+import io.mycat.SQLExecuterWriter;
 import io.mycat.proxy.session.MycatSession;
 
 import java.io.IOException;
@@ -52,7 +52,7 @@ public class FinalCacheLib {
     private static Response getResponse(MycatResultSetResponse response) {
         return new Response() {
             @Override
-            public void apply(MycatSession session, DynamicSQLMatcher matcher) {
+            public void apply(MycatSession session) {
                 SQLExecuterWriter.writeToMycatSession(session, response);
             }
         };

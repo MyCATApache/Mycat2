@@ -33,6 +33,7 @@ import io.mycat.calcite.shardingQuery.SchemaInfo;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.router.RuleFunction;
+import io.mycat.router.function.PartitionByLong;
 import io.mycat.router.function.PartitionRuleFunctionManager;
 import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnRangeValue;
 import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnValue;
@@ -58,7 +59,7 @@ import static io.mycat.calcite.SimpleColumnInfo.ShardingType.*;
 public enum MetadataManager {
     INSTANCE;
     private final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
-    private final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
     private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
 
     public void removeSchema(String schemaName) {
@@ -69,22 +70,73 @@ public enum MetadataManager {
         logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());
     }
 
-    public void addTable(String schemaName, String tableName, ShardingQueryRootConfig.LogicTableConfig tableConfig, List<ShardingQueryRootConfig.BackEndTableInfoConfig> backends,ShardingQueryRootConfig.PrototypeServer prototypeServer){
+    public void addTable(String schemaName, String tableName, ShardingQueryRootConfig.LogicTableConfig tableConfig, List<ShardingQueryRootConfig.BackEndTableInfoConfig> backends, ShardingQueryRootConfig.PrototypeServer prototypeServer) {
         addSchema(schemaName);
-        addLogicTable(schemaName,tableName,tableConfig,prototypeServer,getBackendTableInfos(backends));
+        addLogicTable(schemaName, tableName, tableConfig, prototypeServer, getBackendTableInfos(backends));
     }
 
-    public void removeTable(String schemaName,String tableName){
+    public void removeTable(String schemaName, String tableName) {
         ConcurrentHashMap<String, LogicTable> stringLogicTableConcurrentHashMap = logicTableMap.get(schemaName);
-        if (stringLogicTableConcurrentHashMap!=null){
+        if (stringLogicTableConcurrentHashMap != null) {
             stringLogicTableConcurrentHashMap.remove(tableName);
         }
     }
 
-    public List<String> getDatabases(){
-     return    logicTableMap.keySet().stream().sorted().collect(Collectors.toList());
+    public List<String> getDatabases() {
+        return logicTableMap.keySet().stream().sorted().collect(Collectors.toList());
     }
 
+    public void load(MycatConfig mycatConfig) {
+        ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMetadata();
+//        Map<String, ShardingQueryRootConfig.LogicSchemaConfig> schemas = shardingQueryRootConfig.getSchemas();
+//        ShardingQueryRootConfig.LogicSchemaConfig logicSchemaConfig = new ShardingQueryRootConfig.LogicSchemaConfig();
+//        schemas.put("testdb", logicSchemaConfig);
+//        String ddl = "CREATE TABLE `travelrecord` (\n" +
+//                "            `id` bigint(20) NOT NULL,\n" +
+//                "            `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
+//                "            `traveldate` date DEFAULT NULL,\n" +
+//                "            `fee` decimal(10,0) DEFAULT NULL,\n" +
+//                "            `days` int(11) DEFAULT NULL,\n" +
+//                "            `blob` longblob DEFAULT NULL,\n" +
+//                "            `d` double DEFAULT NULL\n" +
+//                "          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+//        ShardingQueryRootConfig.LogicTableConfig.LogicTableConfigBuilder builder = ShardingQueryRootConfig.LogicTableConfig.builder()
+//                .createTableSQL(ddl);
+//
+//        HashMap<String,String> map = new HashMap<>();
+//        map.put("partitionCount","8");
+//        map.put("partitionLength","128");
+//        SharingFuntionRootConfig.ShardingFuntion funtion = SharingFuntionRootConfig.ShardingFuntion.builder()
+//                .name(PartitionByLong.class.getSimpleName())
+//                .clazz(PartitionByLong.class.getName())
+//                .properties(map)
+//                .ranges(Collections.emptyMap())
+//                .build();
+//        ShardingQueryRootConfig.Column id = ShardingQueryRootConfig.Column.builder().shardingType(NATURE_DATABASE_TABLE.name()).columnName("id").function(funtion).build();
+//        builder.columns(Arrays.asList(id));
+//
+//        Arrays.asList(ShardingQueryRootConfig.BackEndTableInfoConfig.builder().tableName(""))
+//        logicSchemaConfig.getTables().put("travelrecord", build);
+//
+
+
+
+
+        Map<String, List<BackendTableInfo>> dataNodeMap = new HashMap<>();
+        for (Map.Entry<String, List<ShardingQueryRootConfig.BackEndTableInfoConfig>> stringListEntry : shardingQueryRootConfig.getDataNodes().entrySet()) {
+            dataNodeMap.put(stringListEntry.getKey(), getBackendTableInfos(stringListEntry.getValue()));
+        }
+        for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
+            String orignalSchemaName = entry.getKey();
+            ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
+            final String schemaName = orignalSchemaName.toLowerCase();
+            for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> e : value.getTables().entrySet()) {
+                String tableName = e.getKey().toLowerCase();
+                ShardingQueryRootConfig.LogicTableConfig tableConfigEntry = e.getValue();
+                addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), dataNodeMap.get(tableConfigEntry.getDataNodeName()));
+            }
+        }
+    }
 
 
     @Getter
@@ -126,31 +178,14 @@ public enum MetadataManager {
 
     @SneakyThrows
     MetadataManager() {
-        MycatConfig mycatConfig = RootHelper.INSTCANE.bootConfig(MetadataManager.class).currentConfig();
-        ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMatadata();
-        Map<String,List<BackendTableInfo>> dataNodeMap = new HashMap<>();
-        for (Map.Entry<String, List<ShardingQueryRootConfig.BackEndTableInfoConfig>> stringListEntry : shardingQueryRootConfig.getDataNodes().entrySet()) {
-            dataNodeMap.put(stringListEntry.getKey(), getBackendTableInfos(stringListEntry.getValue()));
-        }
 
-
-        for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
-            String orignalSchemaName = entry.getKey();
-            ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
-            final String schemaName = orignalSchemaName.toLowerCase();
-            for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> e : value.getTables().entrySet()) {
-                String tableName = e.getKey().toLowerCase();
-                ShardingQueryRootConfig.LogicTableConfig tableConfigEntry = e.getValue();
-                addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(),dataNodeMap.get(tableConfigEntry.getDataNodeName()));
-            }
-        }
     }
 
     private List<BackendTableInfo> getBackendTableInfos(List<ShardingQueryRootConfig.BackEndTableInfoConfig> stringListEntry) {
         return stringListEntry.stream().map(t -> {
-                    SchemaInfo schemaInfo = new SchemaInfo(t.getSchemaName(), t.getTableName());
-                    return new BackendTableInfo(t.getReplicaName(), schemaInfo);
-                }).collect(Collectors.toList());
+            SchemaInfo schemaInfo = new SchemaInfo(t.getSchemaName(), t.getTableName());
+            return new BackendTableInfo(t.getReplicaName(), schemaInfo);
+        }).collect(Collectors.toList());
     }
 
     private synchronized void accrptDDL(String schemaName, String sql) {
@@ -158,7 +193,7 @@ public enum MetadataManager {
         TABLE_REPOSITORY.acceptDDL(sql);
     }
 
-    private void addLogicTable(String schemaName, String orignalTableName, ShardingQueryRootConfig.LogicTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer,  List<BackendTableInfo> backends) {
+    private void addLogicTable(String schemaName, String orignalTableName, ShardingQueryRootConfig.LogicTableConfig tableConfigEntry, ShardingQueryRootConfig.PrototypeServer prototypeServer, List<BackendTableInfo> backends) {
         //////////////////////////////////////////////
         final String tableName = orignalTableName.toLowerCase();
         String createTableSQL = tableConfigEntry.getCreateTableSQL();
@@ -346,7 +381,7 @@ public enum MetadataManager {
                 }
             }
         }
-        if (backEndTableInfos1.isEmpty()&&schemaName!=null) {
+        if (backEndTableInfos1.isEmpty() && schemaName != null) {
             LogicTable logicTable = logicTableMap.get(schemaName).get(tableName);
             backEndTableInfos1.addAll(logicTable.backends);
         }
@@ -360,7 +395,7 @@ public enum MetadataManager {
             LogicTable logicTable = this.logicTableMap.get(schemaName).get(tableName);
             DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
             for (Map.Entry<String, String> entry : map.entrySet()) {
-                dataMappingEvaluator.assignment(false,entry.getKey(),entry.getValue());
+                dataMappingEvaluator.assignment(false, entry.getKey(), entry.getValue());
             }
             return dataMappingEvaluator.calculate(logicTable);
         } catch (Exception e) {

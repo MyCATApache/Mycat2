@@ -3,13 +3,12 @@ package io.mycat.lib.impl;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
-import io.mycat.proxy.SQLExecuterWriter;
+import io.mycat.SQLExecuterWriter;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ProxyLib {
-    public final static Response responseOk = (session, matcher) -> session.writeOkEndPacket();
     public static ResultSetCacheImpl resultSetCache;
     public final static ConcurrentHashMap<String, ResultSetCacheRecorder.Token> cache = new ConcurrentHashMap<>();
 
@@ -19,13 +18,6 @@ public class ProxyLib {
         return null;
     }
 
-
-    public static Response useSchemaThenResponseOk(String schema) {
-        return (session, matcher) -> {
-            matcher.getTableCollector().useSchema(schema);
-            session.writeOkEndPacket();
-        };
-    }
 
     public static Response cacheLocalFileThenResponse(String fileName) {
         ResultSetCacheRecorder.Token token = cache.get(fileName);
@@ -53,13 +45,13 @@ public class ProxyLib {
     }
 
     private static Response getResponse(MycatResultSetResponse response) {
-        return (session, matcher) -> SQLExecuterWriter.writeToMycatSession(session, response);
+        return (session) -> SQLExecuterWriter.writeToMycatSession(session, response);
     }
 
-    public static Response setTransactionIsolationThenResponseOk(String text) {
-        return (session, matcher) -> {
-            session.setIsolation(MySQLIsolation.valueOf(text));
-            session.writeOkEndPacket();
-        };
-    }
+//    public static Response setTransactionIsolationThenResponseOk(String text) {
+//        return (session, matcher) -> {
+//            session.setIsolation(MySQLIsolation.valueOf(text));
+//            session.writeOkEndPacket();
+//        };
+//    }
 }

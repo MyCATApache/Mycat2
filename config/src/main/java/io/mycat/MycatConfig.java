@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 public class MycatConfig {
     PatternRootConfig interceptor = new PatternRootConfig();
-    ShardingQueryRootConfig matadata = new ShardingQueryRootConfig();
+    ShardingQueryRootConfig metadata = new ShardingQueryRootConfig();
     DatasourceRootConfig datasource = new DatasourceRootConfig();
     ClusterRootConfig replicas = new ClusterRootConfig();
     //    SecurityConfig security = new SecurityConfig();

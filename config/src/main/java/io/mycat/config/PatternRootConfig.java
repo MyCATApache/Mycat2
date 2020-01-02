@@ -23,7 +23,7 @@ public class PatternRootConfig {
         String name;
         List<String> tables = new ArrayList<>();
         List<String> sqls = new ArrayList<>();
-        final Map<String, String> tags = new HashMap<>();
+        Map<String, String> tags;
         String type;
         String explain;
     }

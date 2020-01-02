@@ -16,10 +16,14 @@ package io.mycat;
 
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
+import io.mycat.calcite.CalciteEnvironment;
+import io.mycat.calcite.MetadataManager;
 import io.mycat.client.ClientRuntime;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.DatasourceRootConfig;
+import io.mycat.config.PatternRootConfig;
 import io.mycat.config.ServerConfig;
+import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
@@ -30,7 +34,9 @@ import io.mycat.proxy.reactor.ReactorThreadManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.replica.MySQLDatasource;
+import io.mycat.util.YamlUtil;
 import lombok.SneakyThrows;
+import org.apache.calcite.jdbc.CalciteConnection;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -51,12 +57,15 @@ public enum MycatCore {
     @SneakyThrows
     public void init(ConfigProvider config) {
         this.config = config;
+
+
         MycatConfig mycatConfig = config.currentConfig();
 
         PlugRuntime.INSTCANE.load(mycatConfig);
-
-        ClientRuntime.INSTANCE.load(mycatConfig.interceptor);
-        ClientRuntime.INSTANCE.flash();
+        JdbcRuntime.INSTANCE.load(mycatConfig);
+        ClientRuntime.INSTANCE.load(mycatConfig);
+        MetadataManager.INSTANCE.load(mycatConfig);
+        ;
         ServerConfig serverConfig = mycatConfig.getServer();
 
         String bufferPoolText = Optional.ofNullable(mycatConfig.getServer()).map(i -> i.getBufferPool()).map(i -> i.getPoolName()).orElse(HeapBufferPool.class.getName());
@@ -97,6 +106,9 @@ public enum MycatCore {
     }
 
     public static void main(String[] args) throws Exception {
+        PatternRootConfig rootConfig = new PatternRootConfig();
+        rootConfig.getHandlers().add(new PatternRootConfig.HandlerToSQLs());
+        System.out.println(YamlUtil.dump(rootConfig));
         ConfigProvider bootConfig = RootHelper.INSTCANE.bootConfig(MycatCore.class);
         MycatCore.INSTANCE.init(bootConfig);
         MycatCore.INSTANCE.start();

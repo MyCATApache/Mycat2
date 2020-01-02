@@ -15,28 +15,21 @@ import java.util.concurrent.ConcurrentHashMap;
 public enum  CalciteEnvironment {
     INSTANCE;
     final Logger LOGGER = LoggerFactory.getLogger(CalciteEnvironment.class);
-    final ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap;
 
-     CalciteEnvironment() {
-        this(null);
-    }
 
-    private CalciteEnvironment(ConcurrentHashMap<String, Map<String, JdbcTable>> logicTableMap) {
-        this.logicTableMap = logicTableMap;
+    private CalciteEnvironment() {
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
         System.setProperty("saffron.default.collat​​ion.tableName", charset + "$ en_US");
     }
 
-    public CalciteConnection getConnection() {
+    public CalciteConnection getConnection(MetadataManager metadataManager) {
         try {
-            Connection connection = DriverManager.getConnection("jdbc:calcite:caseSensitive=false;lex=MYSQL;fun=mysql;conformance=MYSQL_5");
-            CalciteConnection calciteConnection = connection.unwrap(CalciteConnection.class);
-            SchemaPlus rootSchema = calciteConnection.getRootSchema();
-            rootSchema.setCacheEnabled(true);
-            setSchemaMap(rootSchema);
-            return calciteConnection;
+            CalciteConnection rawConnection = getRawConnection();
+            SchemaPlus rootSchema = rawConnection.getRootSchema();
+            init(rootSchema,metadataManager);
+            return rawConnection;
         } catch (Exception e) {
             LOGGER.error("", e);
             throw new RuntimeException(e);
@@ -52,21 +45,14 @@ public enum  CalciteEnvironment {
             throw new RuntimeException(e);
         }
     }
-    public void setSchemaMap(SchemaPlus rootSchema) {
-        Map<String, Map<String, JdbcTable>> schemaMap = getTableMap();
-        for (Map.Entry<String, Map<String, JdbcTable>> e : schemaMap.entrySet()) {
-            String k = e.getKey();
-            Map<String, JdbcTable> v = e.getValue();
-            SchemaPlus schemaPlus = rootSchema.add(k, new AbstractSchema());
-            for (Map.Entry<String, JdbcTable> entry : v.entrySet()) {
+    public void init(SchemaPlus rootSchema,MetadataManager metadataManager) {
+        for (Map.Entry<String, ConcurrentHashMap<String, MetadataManager.LogicTable>> stringConcurrentHashMapEntry : metadataManager.logicTableMap.entrySet()) {
+            SchemaPlus schemaPlus = rootSchema.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
+            for (Map.Entry<String, MetadataManager.LogicTable> entry : stringConcurrentHashMapEntry.getValue().entrySet()) {
                 String t = entry.getKey();
-                JdbcTable j = entry.getValue();
+                JdbcTable j = entry.getValue().jdbcTable;
                 schemaPlus.add(t, j);
             }
         }
-    }
-
-    public Map<String, Map<String, JdbcTable>> getTableMap() {
-        return logicTableMap;
     }
 }

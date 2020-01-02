@@ -1,15 +1,34 @@
-package io.mycat.proxy;
+package io.mycat;
 
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
+import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
+import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.proxy.session.MycatSession;
+import lombok.SneakyThrows;
 
 import java.nio.ByteBuffer;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Iterator;
 
 public class SQLExecuterWriter {
 
+    public static void executeQuery(MycatSession session, Connection connection, String sql) {
+        MycatResponse[] mycatResponses = executeQuery(connection, sql);
+        writeToMycatSession(session, mycatResponses);
+    }
+
+    @SneakyThrows
+    public static MycatResponse[] executeQuery(Connection connection, String sql) {
+        Statement statement = null;
+        statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql);
+        JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);
+        return new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)};
+    }
 
     public static void writeToMycatSession(MycatSession session, final MycatResponse... sqlExecuters) {
         if (sqlExecuters.length == 0) {

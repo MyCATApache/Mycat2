@@ -33,7 +33,7 @@ public class ShardingQueryRootConfig {
         private String tableName;
     }
 
-    @AllArgsConstructor
+
     @Data
     public static final class LogicSchemaConfig {
         Map<String,LogicTableConfig> tables = new HashMap<>();

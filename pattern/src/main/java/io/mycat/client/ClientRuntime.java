@@ -1,6 +1,7 @@
 package io.mycat.client;
 
 import io.mycat.EvalNodeVisitor2;
+import io.mycat.MycatConfig;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.pattern.*;
 import lombok.AllArgsConstructor;
@@ -73,7 +74,7 @@ public enum ClientRuntime {
                 Map<String, Collection<String>> collectionMap = tableMatcher.geTableMap();
                 Map<String, String> map = matcher.namesContext();
                 if (sqlMatch && tableMatch) {
-                    TableInfo tableInfo = this.runtime.tableToItem.get(tableMatcher.geTableMap());
+                    TableInfo tableInfo = this.runtime.tableToItem.get(collectionMap);
                     if (tableInfo != null) {
                         PatternRootConfig.TextItemConfig textItemConfig = tableInfo.map.get(matcher.id());
                         if (textItemConfig != null) {
@@ -174,6 +175,7 @@ public enum ClientRuntime {
                     textItemConfig.setSql(sql);
                     textItemConfig.setTags(tags);
                     textItemConfig.setExplain(explain);
+                    textItemConfig.setType(type);
                     sqls.add(textItemConfig);
                 }
             }else {
@@ -185,6 +187,7 @@ public enum ClientRuntime {
                     textItemConfig.setTags(tags);
                     textItemConfig.setExplain(explain);
                     textItemConfigs.add(textItemConfig);
+                    textItemConfig.setType(type);
                 }
                 PatternRootConfig.SchemaConfig schemaConfig = new PatternRootConfig.SchemaConfig();
                 schemaConfig.setDefaultHanlder(null);
@@ -216,11 +219,11 @@ public enum ClientRuntime {
 
     private Map<String, Set<String>> getTableMap(List<PatternRootConfig.SchemaConfig> schemaConfigs) {
         return schemaConfigs.stream().flatMap(i -> { return i.getTables().stream().map(commonTableName -> apply(commonTableName));
-        }).collect(Collectors.groupingBy(k -> k.getTableName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
+        }).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
     }
 
     private Map<String, Set<String>> getTableMap(PatternRootConfig.SchemaConfig schemaConfig) {
-        return schemaConfig.getTables().stream().map(ClientRuntime::apply).collect(Collectors.groupingBy(k -> k.getTableName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
+        return schemaConfig.getTables().stream().map(ClientRuntime::apply).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
 
     }
 
@@ -244,8 +247,9 @@ public enum ClientRuntime {
 
     }
 
-    public void load(PatternRootConfig interceptor) {
-        wapper.setPatternRootConfig(interceptor);
+    public void load(MycatConfig config) {
+        wapper.setPatternRootConfig(config.getInterceptor());
+        flash();
     }
 
     @AllArgsConstructor

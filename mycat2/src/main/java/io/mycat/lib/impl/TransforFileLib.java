@@ -20,7 +20,7 @@ public class TransforFileLib {
     public static Response transferFileTo(String file) {
         return new Response() {
             @Override
-            public void apply(MycatSession session, DynamicSQLMatcher matcher) {
+            public void apply(MycatSession session) {
                 TransforFileLib.WriteHandler writeHandler = new TransforFileLib.WriteHandler(session, file);
                 session.switchWriteHandler(writeHandler);
                 try {
