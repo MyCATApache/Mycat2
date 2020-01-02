@@ -27,6 +27,7 @@ public class AutoPartitionByLong extends RuleFunction {
   public int calculate(String columnValue) {
     try {
       long value = Long.parseLong(columnValue);
+      value = (value >>> 32) ^ value;
       for (NodeIndexRange longRang : this.longRanges) {
         if (value <= longRang.valueEnd && value >= longRang.valueStart) {
           return longRang.nodeIndex;

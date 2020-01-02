@@ -27,6 +27,7 @@ public class PartitionByLong extends RuleFunction {
   public int calculate(String columnValue) {
     try {
       long key = Long.parseLong(columnValue);
+      key = (key >>> 32) ^ key;
       return partitionUtil.partition(key);
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(
