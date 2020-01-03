@@ -1,6 +1,6 @@
 package io.mycat.client;
 
-import io.mycat.EvalNodeVisitor2;
+import io.mycat.EvalNodeVisitor;
 import io.mycat.MycatConfig;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.pattern.*;
@@ -19,7 +19,7 @@ public enum ClientRuntime {
     INSTANCE;
 
     final BuilderInfo wapper = new BuilderInfo();
-    final ConcurrentHashMap<String, List<EvalNodeVisitor2.FunctionSig>> libSharedMap = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, List<EvalNodeVisitor.FunctionSig>> libSharedMap = new ConcurrentHashMap<>();
     volatile RuntimeInfo runtimeInfo;
 
     private static SchemaTable apply(String commonTableName) {
@@ -111,13 +111,13 @@ public enum ClientRuntime {
             }
 
             private Context getContext(String sql,Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
-                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain());
+                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain(),handler.getTransactionType());
             }
 
 
             @NotNull
             private Context getContext(String sql,Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
-                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain());
+                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain(),handler.getTransactionType());
             }
 
             @Override
@@ -231,9 +231,9 @@ public enum ClientRuntime {
         Reflections reflections = new Reflections(packageNameList);
         Set<Class<? extends InstructionSet>> subTypesOf = reflections.getSubTypesOf(InstructionSet.class);
         if (subTypesOf == null) subTypesOf = Collections.emptySet();
-        Map<String, List<EvalNodeVisitor2.FunctionSig>> map = EvalNodeVisitor2.getMap((Set) subTypesOf);
+        Map<String, List<EvalNodeVisitor.FunctionSig>> map = EvalNodeVisitor.getMap((Set) subTypesOf);
 
-        for (Map.Entry<String, List<EvalNodeVisitor2.FunctionSig>> stringListEntry : map.entrySet()) {
+        for (Map.Entry<String, List<EvalNodeVisitor.FunctionSig>> stringListEntry : map.entrySet()) {
             libSharedMap.put(stringListEntry.getKey(), stringListEntry.getValue());
         }
     }

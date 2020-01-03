@@ -15,8 +15,9 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.shardingQuery.BackendTask;
-import io.mycat.calcite.shardingQuery.SchemaInfo;
+import io.mycat.BackendTableInfo;
+import io.mycat.QueryBackendTask;
+import io.mycat.SchemaInfo;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
@@ -203,8 +204,8 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         return new MyCatResultSetEnumerable(getCancelFlag(root), getBackendTasks(getColumnList(projects),filters, calculate));
     }
 
-    private List<BackendTask> getBackendTasks(  List<String> columnList ,List<RexNode> filters, List<BackendTableInfo> calculate) {
-        List<BackendTask> res = new ArrayList<>();
+    private List<QueryBackendTask> getBackendTasks(List<String> columnList , List<RexNode> filters, List<BackendTableInfo> calculate) {
+        List<QueryBackendTask> res = new ArrayList<>();
         for (BackendTableInfo backendTableInfo : calculate) {
             SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
             String targetSchemaTable = schemaInfo.getTargetSchemaTable();
@@ -212,7 +213,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
             String selectItems = columnList.stream().map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
             sql.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
             sql.append(getFilterSQLText(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable(), filters));
-            res.add(new BackendTask(sql.toString(),false, backendTableInfo));
+            res.add(new QueryBackendTask(sql.toString(), backendTableInfo));
         }
         return res;
     }
@@ -227,6 +228,9 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     }
 
     private String getFilterSQLText(String schemaName, String tableName, List<RexNode> filters) {
+        if (filters==null||filters.isEmpty()){
+            return "";
+        }
         SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, JdbcTable.this.rowSignature.getColumnCount()) {
             @Override
             public SqlNode field(int ordinal) {
@@ -235,6 +239,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                         SqlImplementor.POS);
             }
         };
+
         return filters.stream().map(i -> context.toSql(null, i).toSqlString(MysqlSqlDialect.DEFAULT))
                 .map(i -> i.getSql())
                 .collect(Collectors.joining(" and ", " where ", ""));

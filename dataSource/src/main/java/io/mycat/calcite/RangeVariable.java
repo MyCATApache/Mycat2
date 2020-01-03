@@ -23,9 +23,9 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode
 @Data
 public class RangeVariable {
-    private boolean or;
-    private RangeVariableType operator;
-    private Object value;
+    private final boolean or;
+    private final RangeVariableType operator;
+    private final Object value;
     private Object optionValue = null;
 
     public RangeVariable(boolean or, RangeVariableType operator, Object value) {
@@ -50,4 +50,5 @@ public class RangeVariable {
     public Object getEnd() {
         return optionValue;
     }
+
 }

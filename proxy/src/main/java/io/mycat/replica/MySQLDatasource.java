@@ -123,4 +123,8 @@ public abstract class MySQLDatasource implements MycatDataSource {
   public long getMaxConnectTimeout(){
     return this.datasourceConfig.getMaxConnectTimeout();
   }
+
+  public long getIdleTimeout(){
+    return this.datasourceConfig.getIdleTimeout();
+  }
 }

@@ -109,7 +109,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
     try {
       userTransaction.rollback();
     } catch (Exception e) {
-      throw new MycatException(e);
+      LOGGER.error("",e);
     }
     afterDoAction();
   }

@@ -18,6 +18,9 @@ import io.mycat.MycatConfig;
 import io.mycat.ScheduleUtil;
 import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceRootConfig;
+import io.mycat.config.TimerConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceElement;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
@@ -37,7 +40,6 @@ import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public enum ReplicaSelectorRuntime {
     INSTANCE;
@@ -45,6 +47,7 @@ public enum ReplicaSelectorRuntime {
     final ScheduledExecutorService timer = Executors.newScheduledThreadPool(1);
     volatile ScheduledFuture<?> schedule;
     volatile MycatConfig config;
+    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(ReplicaSelectorRuntime.class);
 
     public synchronized void load(MycatConfig config) {
         if (this.config == config) {
@@ -61,7 +64,6 @@ public enum ReplicaSelectorRuntime {
         Objects.requireNonNull(replicasRootConfig, "replica config can not found");
 
         List<ClusterRootConfig.ClusterConfig> replicaConfigList = replicasRootConfig.getReplicas();
-        ClusterRootConfig.TimerConfig timerConfig = replicasRootConfig.getTimer();
 
         List<DatasourceRootConfig.DatasourceConfig> datasources = config.getDatasource().getDatasources();
         Map<String, DatasourceRootConfig.DatasourceConfig> datasourceConfigMap = datasources.stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
@@ -81,14 +83,15 @@ public enum ReplicaSelectorRuntime {
             schedule.cancel(false);
             schedule = null;
         }
-        ClusterRootConfig.TimerConfig timerConfig = config.getReplicas().getTimer();
+        ClusterRootConfig replicas = config.getReplicas();
+        TimerConfig timerConfig = replicas.getTimer();
         List<PhysicsInstanceImpl> collect = map.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toList());
-        if(timerConfig.isClose()){
+        if (replicas.isClose()) {
             collect.forEach(c -> {
                 c.notifyChangeSelectRead(true);
                 c.notifyChangeAlive(true);
             });
-        }else {
+        } else {
             this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
                 collect.forEach(c -> {
                     HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(c.getName());
@@ -96,6 +99,9 @@ public enum ReplicaSelectorRuntime {
                         c.notifyChangeSelectRead(false);
                         c.notifyChangeAlive(false);
                     } else {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("heartbeat");
+                        }
                         heartbeatFlow.heartbeat();
                     }
                 });
@@ -237,6 +243,14 @@ public enum ReplicaSelectorRuntime {
         return getDatasourceByReplicaName(replicaName, null);
     }
 
+    public String getDatasourceNameByReplicaName(String replicaName) {
+        PhysicsInstanceImpl datasource = getDatasourceByReplicaName(replicaName, null);
+        if (datasource == null) {
+            return replicaName;
+        }
+        return datasource.getName();
+    }
+
     public PhysicsInstanceImpl getWriteDatasourceByReplicaName(String replicaName,
                                                                LoadBalanceStrategy balanceStrategy) {
         ReplicaDataSourceSelector selector = map.get(replicaName);
@@ -272,6 +286,9 @@ public enum ReplicaSelectorRuntime {
     public PhysicsInstanceImpl getDatasourceByReplicaName(String replicaName,
                                                           LoadBalanceStrategy balanceStrategy) {
         ReplicaDataSourceSelector selector = map.get(replicaName);
+        if (selector == null) {
+            return null;
+        }
         return getDatasource(balanceStrategy, selector,
                 selector.defaultReadLoadBalanceStrategy, selector.getDataSourceByLoadBalacneType());
     }

@@ -59,17 +59,12 @@ public class MySQLSessionManager implements
     final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
     public final static AtomicInteger SESSIONID = new AtomicInteger(0);
 
-    static class DataSourceInfo {
-
-    }
-
     public static int nextSessionId() {
         return SESSIONID.incrementAndGet();
     }
 //  private ProxyRuntime runtime;
 
     public MySQLSessionManager() {
-
     }
 
     /**
@@ -332,47 +327,40 @@ public class MySQLSessionManager implements
      */
     @Override
     public void idleConnectCheck() {
-        //@todo
-//        Collection<MySQLReplica> mysqlReplicaList = this.runtime.getMySQLReplicaList();
-//        HeartbeatRootConfig heartbeatRootConfig = this.runtime
-//                .getConfig(ConfigFile.HEARTBEAT);
-//        long idleTimeout = heartbeatRootConfig.getHeartbeat().getIdleTimeout();
-//        long hearBeatTime = System.currentTimeMillis() - idleTimeout;
-//        long hearBeatTime2 = System.currentTimeMillis() - 2 * idleTimeout;
-//
-//        for (MySQLReplica mySQLReplica : mysqlReplicaList) {
-//            List<MySQLDatasource> dataSourceList = mySQLReplica
-//                    .getDatasourceList();
-//
-//            for (MySQLDatasource mySQLDatasource : dataSourceList) {
-//                if (mySQLDatasource == null) {
-//                    continue;
-//                }
-//                int maxConsInOneCheck = Math.min(10, mySQLDatasource.getSessionMinCount());
-//                LinkedList<MySQLClientSession> group = this.idleDatasourcehMap.get(mySQLDatasource);
-//                List<MySQLClientSession> checkList = new ArrayList<>();
-//                //发送心跳
-//                if (null != group) {
-//                    checkIfNeedHeartBeat(hearBeatTime, hearBeatTime2, maxConsInOneCheck, group, checkList);
-//                    for (MySQLClientSession mySQLClientSession : checkList) {
-//                        sendPing(mySQLClientSession);
-//                    }
-//                }
-//                int idleCount = group == null ? 0 : group.size();
-//                int createCount = 0;
-//                if (mySQLDatasource.getSessionMinCount() > (idleCount + checkList.size())) {
-//                    createCount = (mySQLDatasource.getSessionMinCount() - idleCount) / 3;
-//                }
-//                if (createCount > 0 && idleCount < mySQLDatasource.getSessionMinCount()) {
-//                    createByLittle(mySQLDatasource, createCount);
-//                } else if (idleCount - checkList.size() > mySQLDatasource.getSessionMinCount()
-//                        && group != null) {
-//                    //关闭多余连接
-//                    closeByMany(mySQLDatasource,
-//                            idleCount - checkList.size() - mySQLDatasource.getSessionMinCount());
-//                }
-//            }
-//        }
+        MycatReactorThread thread = (MycatReactorThread)Thread.currentThread();
+        idleDatasourcehMap.forEach((mySQLDatasource,v)->{
+            if (v == null){
+                return;
+            }
+            long idleTimeout = mySQLDatasource.getIdleTimeout();
+            long hearBeatTime = System.currentTimeMillis() - idleTimeout;
+            long hearBeatTime2 = System.currentTimeMillis() - 2 * idleTimeout;
+            int maxConsInOneCheck = Math.min(10, mySQLDatasource.getSessionMinCount());//每次最多检测10个，分多次检测
+            LinkedList<MySQLClientSession> group = idleDatasourcehMap.get(mySQLDatasource);
+            List<MySQLClientSession> checkList = new ArrayList<>();
+            //发送心跳
+            if (null != group) {
+                checkIfNeedHeartBeat(hearBeatTime, hearBeatTime2, maxConsInOneCheck, group, checkList);
+                for (MySQLClientSession mySQLClientSession : checkList) {
+                    sendPing(mySQLClientSession);
+                }
+            }
+            int idleCount = group == null ? 0 : group.size();
+            int createCount = 0;
+            if (mySQLDatasource.getSessionMinCount() > (idleCount + checkList.size())) {
+                createCount = (mySQLDatasource.getSessionMinCount() - idleCount) / 3;
+            }
+            if (createCount > 0 && idleCount < mySQLDatasource.getSessionMinCount()) {
+                createByLittle(mySQLDatasource, createCount);
+            } else if (idleCount - checkList.size() > mySQLDatasource.getSessionMinCount()
+                    && group != null) {
+                //关闭多余连接
+                closeByMany(mySQLDatasource,
+                        idleCount - checkList.size() - mySQLDatasource.getSessionMinCount());
+            }
+
+        });
+
     }
 
     private void closeByMany(MySQLDatasource mySQLDatasource, int closeCount) {

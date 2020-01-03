@@ -20,10 +20,10 @@
 //            DynamicSQLMatcherBuilder builder = new DynamicSQLMatcherBuilder(null);
 //            PatternRootConfig patternRootConfig = Objects.requireNonNull(ConfigRuntime.INSTCANE.getConfig(ConfigFile.PATTERN),
 //                    "pattern config can not found");
-//            List<PatternRootConfig.TextItemConfig> sqlList = patternRootConfig.getSql();
+//            List<PatternRootConfig.TextItemConfig> sqlList = patternRootConfig.getCommand();
 //            if (sqlList != null) {
 //                for (PatternRootConfig.TextItemConfig textItemConfig : sqlList) {
-//                    builder.add(Objects.requireNonNull(textItemConfig.getSql(), "sql should not be empty"),
+//                    builder.add(Objects.requireNonNull(textItemConfig.getCommand(), "sql should not be empty"),
 //                            Objects.requireNonNull(textItemConfig.getCode(), "code should not be empty"));
 //                }
 //            }
@@ -31,9 +31,9 @@
 //            if (schema != null) {
 //                for (PatternRootConfig.SchemaConfig schemaConfig : schema) {
 //                    String table = Objects.requireNonNull(schemaConfig.getTable(), "table should not be empty");
-//                    sqlList = schemaConfig.getSql() == null ? Collections.emptyList() : schemaConfig.getSql();
+//                    sqlList = schemaConfig.getCommand() == null ? Collections.emptyList() : schemaConfig.getCommand();
 //                    for (PatternRootConfig.TextItemConfig textItemConfig : sqlList) {
-//                        builder.addSchema(table, Objects.requireNonNull(textItemConfig.getSql(), "sql should not be empty"),
+//                        builder.addSchema(table, Objects.requireNonNull(textItemConfig.getCommand(), "sql should not be empty"),
 //                                Objects.requireNonNull(textItemConfig.getCode(), "code should not be empty"));
 //                    }
 //                    String defaultCode = schemaConfig.getDefaultCode();

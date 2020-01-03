@@ -199,25 +199,25 @@ public interface MySQLServerSession<T> {
   /**
    * 根据session的信息写入错误包,所以错误包的信息要设置session
    */
-  default void writeErrorEndPacket() {
-    int lastErrorCode = getLastErrorCode();
-    if (lastErrorCode == 0) {
-      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
-    }
-    byte[] bytes = MySQLPacketUtil
-        .generateError(lastErrorCode, getLastMessage(), this.getServerStatusValue());
-    writeBytes(bytes,true);
-  }
-  default void writeErrorEndPacket(ErrorPacketImpl packet) {
-    int lastErrorCode = packet.getErrorCode();
-    if (lastErrorCode == 0) {
-      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
-    }
-    try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
-      packet.writePayload(writer,getCapabilities());
-      writeBytes(writer.toByteArray(),true);
-    }
-  }
+//  default void writeErrorEndPacket() {
+//    int lastErrorCode = getLastErrorCode();
+//    if (lastErrorCode == 0) {
+//      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
+//    }
+//    byte[] bytes = MySQLPacketUtil
+//        .generateError(lastErrorCode, getLastMessage(), this.getServerStatusValue());
+//    writeBytes(bytes,true);
+//  }
+//  default void writeErrorEndPacket(ErrorPacketImpl packet) {
+//    int lastErrorCode = packet.getErrorCode();
+//    if (lastErrorCode == 0) {
+//      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
+//    }
+//    try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
+//      packet.writePayload(writer,getCapabilities());
+//      writeBytes(writer.toByteArray(),true);
+//    }
+//  }
 
   void writeErrorEndPacketBySyncInProcessError();
 

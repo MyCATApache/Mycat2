@@ -8,42 +8,42 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
 
 
   public void handleSleep(MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
 
   public void handleRefresh(int subCommand, MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
 
   public void handleShutdown(int shutdownType, MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
 
   public void handleConnect(MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
 
   public void handleDebug(MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
 
   public void handleTime(MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
 
   public void handleDelayedInsert(MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
 
   public void handleDaemon(MycatSession session) {
-    session.writeErrorEndPacket();
+    session.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override
@@ -65,7 +65,7 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
   @Override
   public void handleFieldList(String table, String filedWildcard, MycatSession mycat) {
     mycat.setLastMessage("mycat unsupport  handleFieldList");
-    mycat.writeErrorEndPacket();
+    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override
@@ -78,25 +78,25 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
   @Override
   public void handleCreateDb(String schemaName, MycatSession mycat) {
     mycat.setLastMessage("mycat unsupport handleCreateDb");
-    mycat.writeErrorEndPacket();
+    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override
   public void handleDropDb(String schemaName, MycatSession mycat) {
     mycat.setLastMessage("mycat unsupport  handleDropDb");
-    mycat.writeErrorEndPacket();
+    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override
   public void handleStatistics(MycatSession mycat) {
     mycat.setLastMessage("mycat unsupport  handleStatistics");
-    mycat.writeErrorEndPacket();
+    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override
   public void handleProcessInfo(MycatSession mycat) {
     mycat.setLastMessage("mycat unsupport  handleProcessInfo");
-    mycat.writeErrorEndPacket();
+    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override
@@ -104,14 +104,14 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
       int charsetSet, String authPlugin, Map<String, String> clientConnectAttrs,
       MycatSession mycat) {
     mycat.setLastMessage("mycat unsupport  handleChangeUser");
-    mycat.writeErrorEndPacket();
+    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override
   public void handleResetConnection(MycatSession mycat) {
     mycat.resetSession();
     mycat.setLastMessage("mycat unsupport  handleResetConnection");
-    mycat.writeErrorEndPacket();
+    mycat.writeErrorEndPacketBySyncInProcessError();
   }
 
   @Override

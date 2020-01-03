@@ -1,4 +1,4 @@
-package io.mycat.calcite.shardingQuery;
+package io.mycat;
 
 import lombok.*;
 

@@ -137,8 +137,8 @@
 //      if (dataNodeType == DataNodeType.MYSQL) {
 //        MySQLDataNode mySQLDataNode = providers.createMySQLDataNode(this, dataNodeConfig);
 //        dataNodeMap.put(dataNodeConfig.getName(), mySQLDataNode);
-//        String replicaName = mySQLDataNode.getReplicaName();
-//        MySQLReplica mySQLReplica = replicaMap.get(replicaName);
+//        String targetName = mySQLDataNode.getTargetName();
+//        MySQLReplica mySQLReplica = replicaMap.get(targetName);
 //        mySQLDataNode.setReplica(mySQLReplica);
 //      }
 //    }

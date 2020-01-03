@@ -2,6 +2,7 @@ package io.mycat;
 
 import io.mycat.describer.*;
 import io.mycat.describer.literal.*;
+import io.mycat.rsqlBuilder.schema.SchemaObject;
 import io.mycat.wu.BaseQuery;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -15,15 +16,15 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class EvalNodeVisitor2 implements ParseNodeVisitor {
+public class EvalNodeVisitor implements ParseNodeVisitor {
     final LinkedList<Object> stack = new LinkedList<>();
     Map<String, List<FunctionSig>> mapping;
 
-    public EvalNodeVisitor2(Class clazz) throws IllegalAccessException {
+    public EvalNodeVisitor(Class clazz) throws IllegalAccessException {
         this(Collections.singletonList(clazz));
     }
 
-    public EvalNodeVisitor2(Collection<Class<?>> clazzList) throws IllegalAccessException {
+    public EvalNodeVisitor(Collection<Class<?>> clazzList) throws IllegalAccessException {
         this.mapping = getMap(clazzList);
     }
 
@@ -46,16 +47,18 @@ public class EvalNodeVisitor2 implements ParseNodeVisitor {
         return mapping;
     }
 
-    public EvalNodeVisitor2(Map<String, List<FunctionSig>> mapping) throws IllegalAccessException {
+    public EvalNodeVisitor(Map<String, List<FunctionSig>> mapping) throws IllegalAccessException {
         this.mapping = mapping;
     }
 
     public static void main(String[] args) throws IllegalAccessException {
-        EvalNodeVisitor2 evalNodeVisitor2 = new EvalNodeVisitor2(BaseQuery.class);
+        EvalNodeVisitor evalNodeVisitor2 = new EvalNodeVisitor(BaseQuery.class);
         String text = "distinct(valuesSchema(fields(fieldType(`id`,`int`)),values()))";
         Describer describer = new Describer(text);
         ParseNode expression = describer.expression();
         expression.accept(evalNodeVisitor2);
+        SchemaObject o = evalNodeVisitor2.geReturn();
+
     }
 
     private static FunctionSig functionSig(Method method) throws IllegalAccessException {

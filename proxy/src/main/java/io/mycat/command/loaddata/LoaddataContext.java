@@ -47,7 +47,7 @@ public class LoaddataContext {
       public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
         byte[] emptyPacket = MySQLPacketUtil.generateMySQLPacket(emptyPacketId, new byte[]{});
 //        MySQLProxyNIOHandler
-//            .INSTANCE.proxyBackend(mycat, emptyPacket, replicaName,defaultDataBaseName, null, ResponseType.QUERY,
+//            .INSTANCE.proxyBackend(mycat, emptyPacket, targetName,defaultDataBaseName, null, ResponseType.QUERY,
 //            MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
 //        );
       }
@@ -56,7 +56,7 @@ public class LoaddataContext {
       public void onFinishedSendException(Exception e, Object sender, Object attr) {
         mycat.setMySQLSession(null);
         mycat.setLastMessage(e.toString());
-        mycat.writeErrorEndPacket();
+        mycat.writeErrorEndPacketBySyncInProcessError();
       }
     });
   }

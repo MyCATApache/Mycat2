@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 @Data
 public class ClusterRootConfig {
     private List<ClusterConfig> replicas = new ArrayList<>();
+    private boolean close;
     private TimerConfig timer = new TimerConfig();
 
     @Data
@@ -47,15 +48,6 @@ public class ClusterRootConfig {
         private List<String> masters = new ArrayList<>();
         private List<String> replicas = new ArrayList<>();
         private HeartbeatConfig heartbeat;
-    }
-
-
-    @Data
-    public static class TimerConfig {
-        private long initialDelay = 1 * 1000L;
-        private long period = 10 * 1000L;
-        private String timeUnit = TimeUnit.MILLISECONDS.name();
-        private boolean close;
     }
 
 

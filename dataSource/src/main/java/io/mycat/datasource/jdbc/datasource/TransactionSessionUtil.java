@@ -83,16 +83,16 @@ public class TransactionSessionUtil {
         }
     }
 
-    public static MycatUpdateResponse executeUpdateByDatasouce(String sql, Collection<String> datasourceList) {
-       return executeUpdateByDatasouce(datasourceList.stream().collect(Collectors.toMap(k->k,v->sql)));
+    public static MycatUpdateResponse executeUpdateByDatasouceList(String sql, Collection<String> datasourceList,boolean needGeneratedKeys) {
+       return executeUpdateByDatasouce(datasourceList.stream().collect(Collectors.toMap(k->k,v->sql)),needGeneratedKeys);
     }
 
-    public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, String> map) {
+    public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, String> map,boolean needGeneratedKeys) {
         int lastId = 0;
         int count = 0;
         int serverStatus = 0;
         for (Map.Entry<String, String> backendTableInfoStringEntry : map.entrySet()) {
-            MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getValue(), backendTableInfoStringEntry.getKey(),true);
+            MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getValue(), backendTableInfoStringEntry.getKey(),needGeneratedKeys);
             long lastInsertId = mycatUpdateResponse.getLastInsertId();
             int updateCount = mycatUpdateResponse.getUpdateCount();
             lastId = Math.max((int) lastInsertId, lastId);
@@ -113,4 +113,29 @@ public class TransactionSessionUtil {
                 ReplicaSelectorRuntime.INSTANCE.getDataSourceSelector(replicaName).getDataSource(runOnMaster, strategy);
         return dataSource.getName();
     }
+
+    public static void commit() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.commit();
+    }
+
+    public static void setAutocommitOff() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.setAutocommit(false);
+    }
+
+    public static void rollback() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.rollback();
+    }
+
+    public static void setIsolation(int transactionIsolation) {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.setTransactionIsolation(transactionIsolation);
+    }
+
 }

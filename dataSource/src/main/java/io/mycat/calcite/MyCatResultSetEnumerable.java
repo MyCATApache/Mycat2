@@ -14,11 +14,10 @@
  */
 package io.mycat.calcite;
 
+import io.mycat.QueryBackendTask;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.calcite.shardingQuery.BackendTask;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.thread.GThread;
-import io.mycat.replica.PhysicsInstanceImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -35,13 +34,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
  **/
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     private final AtomicBoolean cancelFlag;
-    private final  List<BackendTask>  backStoreList;
+    private final  List<QueryBackendTask>  backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
 
-    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<BackendTask> res) {
+    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<QueryBackendTask> res) {
         this.cancelFlag = cancelFlag;
         this.backStoreList = res;
-        for (BackendTask sql : res) {
+        for (QueryBackendTask sql : res) {
             LOGGER.info("prepare query:{}", sql);
         }
     }
@@ -51,10 +50,11 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         int length = backStoreList.size();
         ArrayList<DefaultConnection> dsConnections = new ArrayList<>(length);
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
-        for (BackendTask endTableInfo : backStoreList) {
+        for (QueryBackendTask endTableInfo : backStoreList) {
             GThread gThread = (GThread) Thread.currentThread();
-            PhysicsInstanceImpl datasourceByReplicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(endTableInfo.getBackendTableInfo().getReplicaName());
-            DefaultConnection session = gThread.getTransactionSession().getConnection(datasourceByReplicaName.getName());
+
+            String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getBackendTableInfo().getTargetName());
+            DefaultConnection session = gThread.getTransactionSession().getConnection(datasourceName);
             dsConnections.add(session);
             iterators.add(session.executeQuery(endTableInfo.getSql()));
             LOGGER.info("runing query:{}", endTableInfo.getSql());

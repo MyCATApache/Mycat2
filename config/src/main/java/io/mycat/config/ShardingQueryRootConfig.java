@@ -4,10 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Data
 public class ShardingQueryRootConfig {
@@ -47,6 +44,10 @@ public class ShardingQueryRootConfig {
         SharingFuntionRootConfig.ShardingFuntion function;
         final String shardingType;
         final List<String> map;
+
+        public List<String> getMap() {
+            return map == null? Collections.emptyList():map;
+        }
     }
 
     @Data

@@ -14,9 +14,11 @@
  */
 package io.mycat.calcite;
 
-import io.mycat.calcite.shardingQuery.SchemaInfo;
+import io.mycat.BackendTableInfo;
+import io.mycat.SchemaInfo;
 import io.mycat.router.RuleFunction;
 import io.mycat.sqlparser.util.complie.RangeVariableType;
+import lombok.NonNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,7 +28,7 @@ import java.util.stream.Collectors;
  * @author Junwen Chen
  **/
 public class DataMappingEvaluator {
-    private final Map<String, SortedSet<RangeVariable>> columnMap = new HashMap<>();
+    private final Map<String, HashSet<RangeVariable>> columnMap = new HashMap<>();
 
     void assignment(boolean or, String columnName, String value) {
         getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.EQUAL, value));
@@ -36,8 +38,8 @@ public class DataMappingEvaluator {
         getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.RANGE, begin, end));
     }
 
-    private SortedSet<RangeVariable> getRangeVariables(String columnName) {
-        return columnMap.computeIfAbsent(columnName, s -> new TreeSet<>());
+    private Set<RangeVariable> getRangeVariables(String columnName) {
+        return columnMap.computeIfAbsent(columnName, s -> new HashSet<>());
     }
 
     public List<BackendTableInfo> calculate(MetadataManager.LogicTable logicTable) {
@@ -75,7 +77,10 @@ public class DataMappingEvaluator {
     }
 
     private List<BackendTableInfo> getBackendTableInfosByNatureDatabaseTable(MetadataManager.LogicTable logicTable) {
-        List<Integer> routeIndexSortedSet = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
+        List<Integer> routeIndexSortedSet = Collections.emptyList();
+        if (!columnMap.isEmpty()){
+            routeIndexSortedSet   = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
+        }
         if (routeIndexSortedSet.isEmpty()) {
             return logicTable.backends;
         } else {
@@ -88,15 +93,16 @@ public class DataMappingEvaluator {
     }
 
     private List<Integer> getRouteIndexSortedSet(SimpleColumnInfo.ShardingInfo target) {
-        SortedSet<RangeVariable> rangeVariables = columnMap.get(target.columnInfo.columnName);
+        @NonNull SimpleColumnInfo columnInfo = target.columnInfo;
+        Set<RangeVariable> rangeVariables = columnMap.get(columnInfo.columnName);
         if (rangeVariables == null) {
-            throw new UnsupportedOperationException();
+         return Collections.emptyList();
         } else {
             return calculate(target.getFunction(), rangeVariables).stream().sorted().collect(Collectors.toList());
         }
     }
 
-    private Set<Integer> calculate(RuleFunction ruleFunction, SortedSet<RangeVariable> value) {
+    private Set<Integer> calculate(RuleFunction ruleFunction, Set<RangeVariable> value) {
         HashSet<Integer> res = new HashSet<>();
         for (RangeVariable rangeVariable : value) {
             String begin = Objects.toString(rangeVariable.getBegin());

@@ -584,4 +584,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         return serverStatus.isServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
     }
 
+    public boolean isAutocommit() {
+        return serverStatus.isServerStatusFlag(MySQLServerStatusFlags.AUTO_COMMIT);
+    }
 }

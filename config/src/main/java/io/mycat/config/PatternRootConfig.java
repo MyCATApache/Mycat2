@@ -38,6 +38,7 @@ public class PatternRootConfig {
         Map<String, String> tags = new HashMap<>();
         String type;
         String explain;
+        String transactionType;
     }
 
 
@@ -46,6 +47,7 @@ public class PatternRootConfig {
          Map<String, String> tags;
          String type;
          String explain;
+         String transactionType;
     }
 
 

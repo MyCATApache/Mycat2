@@ -12,10 +12,9 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.calcite;
+package io.mycat;
 
 
-import io.mycat.calcite.shardingQuery.SchemaInfo;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -28,11 +27,11 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode
 @Builder
 public class BackendTableInfo {
-    private String replicaName;
+    private String targetName;
     private SchemaInfo schemaInfo;
 
     public BackendTableInfo(String targetName, SchemaInfo schemaInfo) {
-        this.replicaName = targetName;
+        this.targetName = targetName;
         this.schemaInfo = schemaInfo;
     }
 

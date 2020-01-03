@@ -263,7 +263,7 @@
 //    query.setStrategy(PlugRuntime.INSTCANE
 //        .getLoadBalanceByBalanceName(resultRoute.getBalance()));
 //    MySQLTaskUtil
-//        .proxyBackend(mycat, resultRoute.getSql(), resultRoute.getDataNode(), query);
+//        .proxyBackend(mycat, resultRoute.getCommand(), resultRoute.getDataNode(), query);
 //  }
 //
 //

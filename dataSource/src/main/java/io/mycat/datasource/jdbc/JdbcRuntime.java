@@ -178,4 +178,8 @@ public enum JdbcRuntime {
     public int getMaxPengdingLimit() {
         return config.getServer().getWorker().getMaxPengdingLimit();
     }
+
+    public boolean isBindingInTransaction(BindThreadKey key){
+      return   gThreadPool.isBind(key);
+    }
 }

@@ -12,6 +12,7 @@ import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.SQLExecuterWriter;
+import io.mycat.pattern.ContextRunner;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.reactor.SessionThread;
@@ -118,35 +119,56 @@ public class JdbcLib {
         JdbcRuntime.INSTANCE.run(mycat, new GProcess() {
             @Override
             public void accept(BindThreadKey key, TransactionSession session) {
+                Exception ex = null;
                 try {
+                    session.setTransactionIsolation(mycat.getIsolation().getJdbcValue());
                     mycat.deliverWorkerThread((SessionThread) Thread.currentThread());
                     consumer.accept(mycat);
                 }catch (Exception e){
-                    LOGGER.error("",e);
-                    mycat.setLastMessage(e);
-                    mycat.writeErrorEndPacketBySyncInProcessError();
-                    mycat.close(false,e);
-                    throw e;
+                    ex = e;
+                    session.reset();
                 }finally {
                     mycat.backFromWorkerThread();
-                    session.reset();
                 }
-                mycat.getIOThread().addNIOJob(new NIOJob() {
-                    @Override
-                    public void run(ReactorEnvThread reactor) throws Exception {
+                if (ex==null) {
+                    mycat.getIOThread().addNIOJob(new NIOJob() {
+                        @Override
+                        public void run(ReactorEnvThread reactor) throws Exception {
                             mycat.writeToChannel();
-                    }
+                        }
 
-                    @Override
-                    public void stop(ReactorEnvThread reactor, Exception reason) {
+                        @Override
+                        public void stop(ReactorEnvThread reactor, Exception reason) {
+                            mycat.setLastMessage(reason);
+                            mycat.close(false, reason);
+                        }
 
-                    }
+                        @Override
+                        public String message() {
+                            return "";
+                        }
+                    });
+                }else {
+                    Exception finalEx = ex;
+                    mycat.getIOThread().addNIOJob(new NIOJob() {
+                        @Override
+                        public void run(ReactorEnvThread reactor) throws Exception {
+                            LOGGER.error("",finalEx);
+                            mycat.setLastMessage(finalEx);
+                            mycat.writeErrorEndPacketBySyncInProcessError();
+                        }
 
-                    @Override
-                    public String message() {
-                        return "";
-                    }
-                });
+                        @Override
+                        public void stop(ReactorEnvThread reactor, Exception reason) {
+                            mycat.close(false,finalEx);
+                        }
+
+                        @Override
+                        public String message() {
+                            return "";
+                        }
+                    });
+                }
                 mycat.getIOThread().getSelector().wakeup();
             }
 
@@ -154,7 +176,7 @@ public class JdbcLib {
             public void onException(BindThreadKey key, Exception e) {
                 LOGGER.error("", e);
                 mycat.setLastMessage(e.toString());
-                mycat.writeErrorEndPacket();
+                mycat.writeErrorEndPacketBySyncInProcessError();
             }
         });
     }

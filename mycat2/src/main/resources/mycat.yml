@@ -19,14 +19,12 @@ datasource:
                 jdbcDriverClass:
                 }]
 interceptor:
-  defaultHanlder: {explain: null, tags: {datasourceName: defaultDatasourceName},type: proxyDatasource}
+  defaultHanlder: {explain: null, tags: {target: defaultDatasourceName},type: proxy}
   handlers:
-    - explain: null
-      name: query
-      tags: {datasourceName: defaultDatasourceName}
+    - tables: ['db1.travelrecord']
+      name: select
       sqls: ['select {any}']
-      tables: ['db1.travelrecord']
-      type: jdbcDatasource
+      type: select
   schemas: []
   sqls: []
 metadata:

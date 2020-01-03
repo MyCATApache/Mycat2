@@ -89,7 +89,9 @@ public class PrepareStmtTask implements ResultSetHandler {
   @Override
   public void onFirstError(ErrorPacketImpl packet) {
     if (proxy) {
-      mycat.writeErrorEndPacket(packet);
+      mycat.setLastMessage(packet.getErrorMessageString());
+      mycat.setLastErrorCode(packet.getErrorCode());
+      mycat.writeErrorEndPacketBySyncInProcessError();
     }
   }
 

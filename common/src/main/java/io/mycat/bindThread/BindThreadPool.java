@@ -23,6 +23,10 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
 
     long lastPollTaskTime = System.currentTimeMillis();
 
+    public boolean isBind(KEY key){
+       return map.containsKey(key);
+    }
+
     public BindThreadPool(int maxPengdingLimit, long waitTaskTimeout,
                           TimeUnit timeoutUnit, int minThread, int maxThread,
                           Function<BindThreadPool, PROCESS> processFactory,

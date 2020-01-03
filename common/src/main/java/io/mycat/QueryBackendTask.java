@@ -1,6 +1,5 @@
-package io.mycat.calcite.shardingQuery;
+package io.mycat;
 
-import io.mycat.calcite.BackendTableInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -8,8 +7,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 @Getter
-public class BackendTask {
+public class QueryBackendTask {
     String sql;
-    boolean update;
     BackendTableInfo backendTableInfo;
 }

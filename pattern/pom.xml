@@ -12,6 +12,12 @@
     <artifactId>pattern</artifactId>
 
     <dependencies>
+        <!-- https://mvnrepository.com/artifact/com.joanzapata.utils/string-format -->
+        <dependency>
+            <groupId>com.joanzapata.utils</groupId>
+            <artifactId>string-format</artifactId>
+            <version>1.0.2</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

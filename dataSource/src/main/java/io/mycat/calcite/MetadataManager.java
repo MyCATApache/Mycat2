@@ -24,16 +24,17 @@ import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.ast.statement.SQLInsertStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
+import com.alibaba.fastsql.sql.parser.SQLParserUtils;
+import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
+import io.mycat.BackendTableInfo;
 import io.mycat.MycatConfig;
 import io.mycat.MycatException;
-import io.mycat.RootHelper;
-import io.mycat.calcite.shardingQuery.SchemaInfo;
+import io.mycat.SchemaInfo;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.router.RuleFunction;
-import io.mycat.router.function.PartitionByLong;
 import io.mycat.router.function.PartitionRuleFunctionManager;
 import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnRangeValue;
 import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnValue;
@@ -60,6 +61,16 @@ public enum MetadataManager {
     INSTANCE;
     private final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
+    private String defaultTransactionType = "";
+
+    public String getDefaultTransactionType() {
+        return defaultTransactionType;
+    }
+
+    public void setDefaultTransactionType(String defaultTransactionType) {
+        this.defaultTransactionType = defaultTransactionType;
+    }
+
     private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
 
     public void removeSchema(String schemaName) {
@@ -118,8 +129,6 @@ public enum MetadataManager {
 //        Arrays.asList(ShardingQueryRootConfig.BackEndTableInfoConfig.builder().tableName(""))
 //        logicSchemaConfig.getTables().put("travelrecord", build);
 //
-
-
 
 
         Map<String, List<BackendTableInfo>> dataNodeMap = new HashMap<>();
@@ -220,6 +229,8 @@ public enum MetadataManager {
                     getRuleAlgorithm(entry1.getColumnName(), function.getClazz(), function.getProperties(), function.getRanges());
             SimpleColumnInfo.ShardingType shardingType = SimpleColumnInfo.ShardingType.valueOf(entry1.getShardingType());
             SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(columns.stream().filter(i -> entry1.getColumnName().equals(i.getColumnName())).findFirst().get());
+
+
             return new SimpleColumnInfo.ShardingInfo(simpleColumnInfo, shardingType, entry1.getMap(), ruleAlgorithm);
         }).collect(Collectors.toMap(k -> k.getShardingType(), k -> k));
     }
@@ -237,18 +248,24 @@ public enum MetadataManager {
         return columns;
     }
 
+    public static Iterator<Map<String, String>> routeInsert(String currentSchema, String sql) {
+        SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql);
+        List list = new LinkedList();
+        sqlStatementParser.parseStatementList(list);
+        return MetadataManager.INSTANCE.getInsertInfoIterator(currentSchema, (Iterator<MySqlInsertStatement>) list.iterator());
+    }
 
     //////////////////////////////////////////////////////function/////////////////////////////////////////////////////
-    public Iterator<Map<BackendTableInfo, String>> getInsertInfoIterator(String currentSchemaNameText, Iterator<MySqlInsertStatement> listIterator) {
+    public Iterator<Map<String, String>> getInsertInfoIterator(String currentSchemaNameText, Iterator<MySqlInsertStatement> listIterator) {
         final String currentSchemaName = currentSchemaNameText.toLowerCase();
-        return new Iterator<Map<BackendTableInfo, String>>() {
+        return new Iterator<Map<String, String>>() {
             @Override
             public boolean hasNext() {
                 return listIterator.hasNext();
             }
 
             @Override
-            public Map<BackendTableInfo, String> next() {
+            public Map<String, String> next() {
                 MySqlInsertStatement statement = listIterator.next();
                 String s = statement.getTableSource().getSchema();
                 String schema = s == null ? currentSchemaName : s;
@@ -288,7 +305,7 @@ public enum MetadataManager {
                 listIterator.remove();
 
                 //////////////////////////////////////////////////////////////////
-                HashMap<BackendTableInfo, String> map = new HashMap<>();
+                HashMap<String, String> map = new HashMap<>();
                 for (Map.Entry<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> entry : res.entrySet()) {
                     BackendTableInfo key = entry.getKey();
                     SchemaInfo schemaInfo = key.getSchemaInfo();
@@ -296,25 +313,25 @@ public enum MetadataManager {
                     tableSource.setExpr(new SQLPropertyExpr(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()));
                     statement.getValuesList().clear();
                     statement.getValuesList().addAll(entry.getValue());
-                    map.put(key, statement.toString());
+                    map.put(key.getTargetName(), statement.toString());
                 }
                 return map;
             }
         };
     }
 
-    public Map<BackendTableInfo, String> rewriteUpdateSQL(String currentSchema, String sql) {
+    public Map<String, String> rewriteUpdateSQL(String currentSchema, String sql) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
         ConditionCollector conditionCollector = new ConditionCollector();
         sqlStatement.accept(conditionCollector);
         Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange());
-        Map<BackendTableInfo, String> sqls = new HashMap<>();
+        Map<String, String> sqls = new HashMap<>();
         for (BackendTableInfo endTableInfo : rrs.getBackEndTableInfos()) {
             SchemaInfo schemaInfo = endTableInfo.getSchemaInfo();
             SQLExprTableSource table = rrs.getTable();
             table.setExpr(new SQLPropertyExpr(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()));
-            sqls.put(endTableInfo, SQLUtils.toMySqlString(sqlStatement));
+            sqls.put(endTableInfo.getTargetName(), SQLUtils.toMySqlString(sqlStatement));
         }
         return sqls;
     }

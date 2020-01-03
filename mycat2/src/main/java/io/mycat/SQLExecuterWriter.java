@@ -7,6 +7,7 @@ import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.proxy.session.MycatSession;
 import lombok.SneakyThrows;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.ByteBuffer;
 import java.sql.Connection;
@@ -23,9 +24,13 @@ public class SQLExecuterWriter {
 
     @SneakyThrows
     public static MycatResponse[] executeQuery(Connection connection, String sql) {
-        Statement statement = null;
-        statement = connection.createStatement();
+        Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
+        return getMycatResponses(statement, resultSet);
+    }
+
+    @NotNull
+    public static MycatResponse[] getMycatResponses(Statement statement, ResultSet resultSet) {
         JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);
         return new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)};
     }
@@ -89,8 +94,8 @@ public class SQLExecuterWriter {
             return;
         } catch (Exception e) {
             session.setLastMessage(e);
+            session.writeErrorEndPacketBySyncInProcessError();
         }
-        session.writeErrorEndPacket();
         return;
     }
 }

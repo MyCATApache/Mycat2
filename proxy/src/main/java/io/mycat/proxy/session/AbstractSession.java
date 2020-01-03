@@ -128,7 +128,7 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
         SocketChannel channel = channel();
         boolean open = !hasClosed() && channel.isOpen() && channel.isConnected();
         if (open) {
-            ByteBuffer allocate = ByteBuffer.allocate(1);
+            ByteBuffer allocate = ByteBuffer.allocate(0);
 
             boolean close;
             try {
