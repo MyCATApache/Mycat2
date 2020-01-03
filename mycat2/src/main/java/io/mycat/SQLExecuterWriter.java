@@ -17,9 +17,12 @@ import java.util.Iterator;
 
 public class SQLExecuterWriter {
 
+    @SneakyThrows
     public static void executeQuery(MycatSession session, Connection connection, String sql) {
-        MycatResponse[] mycatResponses = executeQuery(connection, sql);
-        writeToMycatSession(session, mycatResponses);
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery(sql);
+        JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet,connection);
+        writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)});
     }
 
     @SneakyThrows

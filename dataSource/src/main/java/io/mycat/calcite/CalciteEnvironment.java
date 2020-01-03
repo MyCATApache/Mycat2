@@ -1,5 +1,6 @@
 package io.mycat.calcite;
 
+import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;

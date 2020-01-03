@@ -7,11 +7,13 @@ import io.mycat.pattern.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
+import org.eclipse.collections.api.block.function.Function2;
 import org.jetbrains.annotations.NotNull;
 import org.reflections.Reflections;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -74,15 +76,19 @@ public enum ClientRuntime {
                 Map<String, Collection<String>> collectionMap = tableMatcher.geTableMap();
                 Map<String, String> map = matcher.namesContext();
                 if (sqlMatch && tableMatch) {
-                    TableInfo tableInfo = this.runtime.tableToItem.get(collectionMap);
+                    List<TableInfo> tableInfo = this.runtime.tableToItem.get(collectionMap);
                     if (tableInfo != null) {
-                        PatternRootConfig.TextItemConfig textItemConfig = tableInfo.map.get(matcher.id());
-                        if (textItemConfig != null) {
-                            return getContext(sql,collectionMap,map,textItemConfig);
+                        for (TableInfo info : tableInfo) {
+                            PatternRootConfig.TextItemConfig textItemConfig =info .map.get(matcher.id());
+                            if (textItemConfig != null) {
+                                return getContext(sql,collectionMap,map,textItemConfig);
+                            }
+                            if (info.handler != null) {
+                                return getContext(sql,collectionMap,map,info.handler);
+                            }
                         }
-                        if (tableInfo.handler != null) {
-                            return getContext(sql,collectionMap,map,tableInfo.handler);
-                        }
+
+
                     }
                 }
 
@@ -95,10 +101,10 @@ public enum ClientRuntime {
                 }
 
                 if (!sqlMatch && tableMatch) {
-                    TableInfo tableInfo = this.runtime.tableToItem.get(tableMatcher.geTableMap());
-                    if (tableInfo != null) {
-                        if (tableInfo.handler != null)
-                            return getContext(sql,collectionMap,map,tableInfo.handler);
+                    List<TableInfo> tableInfo = this.runtime.tableToItem.get(tableMatcher.geTableMap());
+                    if (tableInfo != null&&tableInfo.size()==1) {
+                        if (tableInfo.get(0).handler != null)
+                            return getContext(sql,collectionMap,map,tableInfo.get(0).handler);
                     }
                 }
                 if (!sqlMatch && !tableMatch) {
@@ -202,13 +208,14 @@ public enum ClientRuntime {
         for (PatternRootConfig.TextItemConfig textItemConfig : sqls) {
             itemMap.put(patternBuilder.addRule(textItemConfig.getSql()), textItemConfig);
         }
-        Map<Map<String, Set<String>>, TableInfo> tableMap = new HashMap<>();
+        Map<Map<String, Set<String>>, List<TableInfo>> tableMap = new HashMap<>();
         for (PatternRootConfig.SchemaConfig schema : schemas) {
             HashMap<Integer, PatternRootConfig.TextItemConfig> map = new HashMap<>();
             for (PatternRootConfig.TextItemConfig sql : schema.getSqls()) {
                 map.put(patternBuilder.addRule(sql.getSql()), sql);
             }
-            tableMap.put(getTableMap(schema), new TableInfo(map, schema.getDefaultHanlder()));
+            List<TableInfo> tableInfos1 = tableMap.computeIfAbsent(getTableMap(schema), stringSetMap -> new ArrayList<>());
+            tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder()));
         }
 
 
@@ -263,7 +270,7 @@ public enum ClientRuntime {
     private static class RuntimeInfo {
         final Supplier<GPattern> supplier;
         final Map<Integer, PatternRootConfig.TextItemConfig> idToItem;
-        final Map<Map<String, Set<String>>, TableInfo> tableToItem;
+        final Map<Map<String, Set<String>>, List<TableInfo>> tableToItem;
         final PatternRootConfig.Handler defaultHandler;
     }
 

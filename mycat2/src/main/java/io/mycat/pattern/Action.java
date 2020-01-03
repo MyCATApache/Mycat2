@@ -20,6 +20,8 @@ public enum  Action {
     EXECUTE("execute",Type.GLOBAL),
 
     SET_TRANSACTION_TYPE("setTransactionType",Type.GLOBAL),
+    SET_PROXY_ON("setProxyTransactionType",Type.GLOBAL),
+    SET_XA_ON("setXATransactionType",Type.GLOBAL),
     SET_AUTOCOMMIT_OFF("setAutoCommitOff",Type.GLOBAL),
     SET_AUTOCOMMIT_ON("setAutoCommitOn",Type.GLOBAL),
     UNKNOWN("unknown",Type.GLOBAL),

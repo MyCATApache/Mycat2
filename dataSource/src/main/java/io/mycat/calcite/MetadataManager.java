@@ -79,6 +79,7 @@ public enum MetadataManager {
 
     public void addSchema(String schemaName) {
         logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());
+        logicTableMap.computeIfAbsent("`" + schemaName + "`", s -> new ConcurrentHashMap<>());
     }
 
     public void addTable(String schemaName, String tableName, ShardingQueryRootConfig.LogicTableConfig tableConfig, List<ShardingQueryRootConfig.BackEndTableInfoConfig> backends, ShardingQueryRootConfig.PrototypeServer prototypeServer) {
@@ -215,9 +216,15 @@ public enum MetadataManager {
 
         LogicTable logicTable = new LogicTable(schemaName, tableName, backends, columns, shardingInfo, createTableSQL);
         logicTable.setJdbcTable(new JdbcTable(logicTable, CalciteConvertors.relDataType(columns), rowSignature));
-        Map<String, LogicTable> tableMap = logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());
-        tableMap.put(tableName, logicTable);
 
+        Map<String, LogicTable> tableMap;
+        tableMap = logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());
+        tableMap.put(tableName, logicTable);
+        tableMap.put("`" + tableName + "`", logicTable);
+
+        tableMap = logicTableMap.computeIfAbsent("`"+schemaName+"`", s -> new ConcurrentHashMap<>());
+        tableMap.put(tableName, logicTable);
+        tableMap.put("`" + tableName + "`", logicTable);
         accrptDDL(schemaName, createTableSQL);
 
     }

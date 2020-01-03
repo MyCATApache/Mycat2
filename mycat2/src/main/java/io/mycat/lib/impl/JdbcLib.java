@@ -121,7 +121,6 @@ public class JdbcLib {
             public void accept(BindThreadKey key, TransactionSession session) {
                 Exception ex = null;
                 try {
-                    session.setTransactionIsolation(mycat.getIsolation().getJdbcValue());
                     mycat.deliverWorkerThread((SessionThread) Thread.currentThread());
                     consumer.accept(mycat);
                 }catch (Exception e){

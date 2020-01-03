@@ -22,6 +22,7 @@ import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
+import javax.annotation.Nullable;
 import java.sql.*;
 
 /**
@@ -136,4 +137,5 @@ public class DefaultConnection  {
   public Connection getRawConnection() {
     return connection;
   }
+
 }

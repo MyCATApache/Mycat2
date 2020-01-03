@@ -138,4 +138,9 @@ public class TransactionSessionUtil {
         transactionSession.setTransactionIsolation(transactionIsolation);
     }
 
+    public static void reset() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.reset();
+    }
 }

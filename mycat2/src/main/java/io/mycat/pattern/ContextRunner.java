@@ -32,22 +32,23 @@ import java.util.stream.StreamSupport;
 
 public class ContextRunner {
 
-    MycatLogger LOGGER = MycatLoggerFactory.getLogger(ContextRunner.class);
+  public  static  final   MycatLogger LOGGER = MycatLoggerFactory.getLogger(ContextRunner.class);
     //inst type
     //item
     public static final String PROXY_TRANSACTION_TYPE = "proxy";
     public static final String JDBC_TRANSACTION_TYPE = "jdbc";
-    public static final String SCHEMA_NAME = "schemaName";
+    public static final String SCHEMA_NAME = "schema";
     public static final String TARGETS = "target";
     public static final String TRANSACTION_TYPE = "transactionType";
     public static final String TRANSACTION_ISOLATION = "transactionIsolation";
 
     public static final String MESSAGE = "Unknown transaction status";
 
-    public static final HashMap<String,Action> map = new HashMap<>();
+    public static final HashMap<String, Action> map = new HashMap<>();
+
     static {
         for (Action value : Action.values()) {
-            map.put(value.name,value);
+            map.put(value.name, value);
         }
 
     }
@@ -67,6 +68,7 @@ public class ContextRunner {
                 block(session, mycat -> {
                     CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);
                     SQLExecuterWriter.executeQuery(mycat, connection, context.getCommand());
+                    TransactionSessionUtil.reset();
                 });
                 return;
             }
@@ -160,6 +162,22 @@ public class ContextRunner {
                 session.writeOkEndPacket();
                 return;
             }
+            case SET_PROXY_ON: {
+                if (session.isInTransaction()) {
+                    throw new IllegalArgumentException();
+                }
+                client.useTransactionType(PROXY_TRANSACTION_TYPE);
+                session.writeOkEndPacket();
+                return;
+            }
+            case SET_XA_ON: {
+                if (session.isInTransaction()) {
+                    throw new IllegalArgumentException();
+                }
+                client.useTransactionType(JDBC_TRANSACTION_TYPE);
+                session.writeOkEndPacket();
+                return;
+            }
             case SET_AUTOCOMMIT_OFF: {
                 session.setAutoCommit(false);
                 session.writeOkEndPacket();
@@ -214,12 +232,18 @@ public class ContextRunner {
             case COMMIT: {
                 session.setInTranscation(false);
                 if (PROXY_TRANSACTION_TYPE.equals(transactionType)) {
+                    if (!session.isBindMySQLSession()){
+                        session.writeOkEndPacket();
+                        return;
+                    }
                     MySQLTaskUtil.proxyBackend(session, context.getCommand());
+                    LOGGER.debug("proxy commit");
                     return;
                 }
                 if (JDBC_TRANSACTION_TYPE.equals(transactionType)) {
                     block(session, mycat -> {
                         TransactionSessionUtil.commit();
+                        LOGGER.debug("jdbc commit");
                         mycat.writeOkEndPacket();
                     });
                     return;
@@ -230,7 +254,7 @@ public class ContextRunner {
             }
             case PROXY_ONLY: {
                 String tagret = context.getVariable(TARGETS);
-                MySQLTaskUtil.proxyBackendByReplicaName(session, command, tagret, false, MySQLIsolation.DEFAULT);
+                MySQLTaskUtil.proxyBackendByReplicaName(session, tagret,command, false, MySQLIsolation.DEFAULT);
                 return;
             }
             case JDBC_QUERY_ONLY: {
@@ -253,7 +277,7 @@ public class ContextRunner {
                         normal(session, transactionType, isolation, executeType, res);
                         return;
                 }
-                normal(session,transactionType,isolation,executeType,tagret,command);
+                normal(session, transactionType, isolation, executeType, tagret, command);
                 return;
             case UNKNOWN:
                 break;

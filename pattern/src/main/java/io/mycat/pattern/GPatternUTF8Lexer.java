@@ -171,6 +171,7 @@ public class GPatternUTF8Lexer {
         HANDLER['\t'] = BLANK_SPACE_HANDLER;
         HANDLER['\f'] = BLANK_SPACE_HANDLER;
         HANDLER['\r'] = BLANK_SPACE_HANDLER;
+        HANDLER['\n'] = BLANK_SPACE_HANDLER;
         HANDLER[11] = BLANK_SPACE_HANDLER;// \v
 
         HANDLER['#'] = SHARP_HANLDER;

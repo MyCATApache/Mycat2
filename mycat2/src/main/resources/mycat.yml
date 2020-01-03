@@ -15,23 +15,46 @@ datasource:
                 weight: 1,
                 initSQL:,
                 initDb:,
-                instanceType:,
+                instanceType:,#READ,WRITE,READ_WRITE
                 jdbcDriverClass:
                 }]
 interceptor:
-  defaultHanlder: {explain: null, tags: {target: defaultDatasourceName},type: proxy}
+  defaultHanlder: {type: proxy , tags: {target: defaultDatasourceName}}
   handlers:
-    - tables: ['db1.travelrecord']
-      name: select
+    - name: selectTravelrecord
+      tables: ['db1.travelrecord']
       sqls: ['select {any}']
       type: select
+    - name: insertTravelrecord
+      tables: ['db1.travelrecord']
+      tags: {executeType: UPDATE}
+      sqls: ['insert {any}']
+      type: insert
+    - name: updateTravelrecord
+      tables: ['db1.travelrecord']
+      sqls: ['update {any}']
+      type: update
+    - name: deleteTravelrecord
+      tables: ['db1.travelrecord']
+      sqls: ['delete {any}']
+      type: delete
   schemas: []
-  sqls: []
+  sqls: [
+          {name: commit,sql: 'commit',type: commit},
+          {name: commit;,sql: 'commit;',type: commit},
+          {name: begin ,sql: 'begin;',type: begin},
+          {name: begin; ,sql: 'begin',type: begin},
+          {name: rollback ,sql: 'rollback {any}',type: rollback},
+          {name: useStatement ,sql: 'use {schema}',type: useStatement},
+          {name: setXA ,sql: 'set xa = on {any}',type: setXATransactionType},
+          {name: setProxy ,sql: 'set xa = off {any}',type: setProxyTransactionType},
+          {name: setAutoCommitOff ,sql: 'set autocommit=off {any}',type: setAutoCommitOff},
+          {name: setAutoCommitOn ,sql: 'set autocommit=on {any}',type: setAutoCommitOn},
+        ]
 metadata:
   dataNodes: {}
   prototype: null
   schemas: {}
-packageNameList: []
 plug:
   loadBalance:
     defaultLoadBalance: balanceRandom
@@ -40,10 +63,6 @@ replicas:
   replicas: []
   timer: {initialDelay: 1000, period: 10000, timeUnit: MILLISECONDS}
 server:
-  bufferPool:
-    args: {}
-    poolName: null
-  handlerName: null
   ip: 0.0.0.0
   port: 8066
   reactorNumber: 1

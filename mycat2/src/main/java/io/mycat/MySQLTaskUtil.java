@@ -59,7 +59,7 @@ public class MySQLTaskUtil {
 //    }
 
     //todo
-    public static void proxyBackendByReplicaName(MycatSession mycat, String sql, String replicaName, boolean transaction,
+    public static void proxyBackendByReplicaName(MycatSession mycat,String replicaName, String sql,  boolean transaction,
                                                  MySQLIsolation isolation) {
         //todo fix the log
         String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(replicaName);
