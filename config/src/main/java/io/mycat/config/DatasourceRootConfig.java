@@ -27,7 +27,6 @@ public class DatasourceRootConfig {
         private String url;
         private int weight = 0;
         private String initSQL;
-        private String initDb;
         private String instanceType;
         private String jdbcDriverClass;
         private long idleTimeout = TimeUnit.SECONDS.toMillis(60);

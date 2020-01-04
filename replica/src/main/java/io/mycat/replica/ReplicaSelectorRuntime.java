@@ -60,10 +60,10 @@ public enum ReplicaSelectorRuntime {
     private void innerThis(MycatConfig config) {
         PlugRuntime.INSTCANE.load(config);
 
-        ClusterRootConfig replicasRootConfig = config.getReplicas();
+        ClusterRootConfig replicasRootConfig = config.getCluster();
         Objects.requireNonNull(replicasRootConfig, "replica config can not found");
 
-        List<ClusterRootConfig.ClusterConfig> replicaConfigList = replicasRootConfig.getReplicas();
+        List<ClusterRootConfig.ClusterConfig> replicaConfigList = replicasRootConfig.getClusters();
 
         List<DatasourceRootConfig.DatasourceConfig> datasources = config.getDatasource().getDatasources();
         Map<String, DatasourceRootConfig.DatasourceConfig> datasourceConfigMap = datasources.stream().collect(Collectors.toMap(k -> k.getName(), v -> v));
@@ -83,7 +83,7 @@ public enum ReplicaSelectorRuntime {
             schedule.cancel(false);
             schedule = null;
         }
-        ClusterRootConfig replicas = config.getReplicas();
+        ClusterRootConfig replicas = config.getCluster();
         TimerConfig timerConfig = replicas.getTimer();
         List<PhysicsInstanceImpl> collect = map.values().stream().flatMap(i -> i.datasourceMap.values().stream()).collect(Collectors.toList());
         if (replicas.isClose()) {
@@ -304,7 +304,7 @@ public enum ReplicaSelectorRuntime {
         MycatConfig config = this.config;
         Objects.requireNonNull(config);
 
-        config.getReplicas().getReplicas().stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
+        config.getCluster().getClusters().stream().filter(i -> replicaName.equals(i.getName())).findFirst().ifPresent(c -> {
             ClusterRootConfig.HeartbeatConfig heartbeat = c.getHeartbeat();
             ReplicaDataSourceSelector selector = map.get(replicaName);
             PhysicsInstanceImpl physicsInstance = selector.datasourceMap.get(datasourceName);

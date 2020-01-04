@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Data
 public class ClusterRootConfig {
-    private List<ClusterConfig> replicas = new ArrayList<>();
+    private List<ClusterConfig> clusters = new ArrayList<>();
     private boolean close;
     private TimerConfig timer = new TimerConfig();
 
@@ -44,7 +44,6 @@ public class ClusterRootConfig {
         private String name;
         private String readBalanceName;
         private String writeBalanceName;
-        private long replicaThreshold;
         private List<String> masters = new ArrayList<>();
         private List<String> replicas = new ArrayList<>();
         private HeartbeatConfig heartbeat;

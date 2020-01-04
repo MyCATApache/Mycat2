@@ -112,9 +112,6 @@ public abstract class MySQLDatasource implements MycatDataSource {
     return datasourceConfig.getInitSQL();
   }
 
-  public String getInitDb() {
-    return datasourceConfig.getInitDb();
-  }
 
   public int gerMaxRetry() {
     return this.datasourceConfig.getMaxRetryCount();

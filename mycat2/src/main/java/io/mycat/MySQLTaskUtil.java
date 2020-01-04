@@ -120,7 +120,7 @@ public class MySQLTaskUtil {
             @Override
             public void onException(Exception exception, Object sender, Object attr) {
                 //todo
-                MycatMonitor.onGettingBackendException(mycat, datasource.getName(), datasource.getInitDb(), exception);
+//                MycatMonitor.onGettingBackendException(mycat, datasource.getName(), datasource.getInitDb(), exception);
                 finallyCallBack.onRequestMySQLException(mycat, exception, attr);
             }
         });

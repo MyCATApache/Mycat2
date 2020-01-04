@@ -1,5 +1,6 @@
 package io.mycat.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,15 +20,15 @@ public class SharingFuntionRootConfig {
 
     @Data
     @Builder
-    public static class ShardingFuntion implements Cloneable {
+    @AllArgsConstructor
+    public static class ShardingFuntion {
         String name;
         String clazz;
         Map<String, String> properties = new HashMap<>();
         Map<String, String> ranges = new HashMap<>();
 
-        @Override
-        public Object clone() throws CloneNotSupportedException {
-            return super.clone();
+
+        public ShardingFuntion() {
         }
     }
 

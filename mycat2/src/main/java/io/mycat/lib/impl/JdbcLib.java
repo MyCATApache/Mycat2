@@ -183,6 +183,6 @@ public class JdbcLib {
     }
 
     public static Response setTransactionIsolation(String text) {
-       return setTransactionIsolation(MySQLIsolation.valueOf(text).getJdbcValue());
+       return setTransactionIsolation(MySQLIsolation.valueOf(text.toUpperCase()).getJdbcValue());
     }
 }

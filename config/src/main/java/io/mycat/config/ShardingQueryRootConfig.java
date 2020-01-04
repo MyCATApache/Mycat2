@@ -9,25 +9,30 @@ import java.util.*;
 @Data
 public class ShardingQueryRootConfig {
     Map<String, LogicSchemaConfig> schemas = new HashMap<>();
-    Map<String,List<BackEndTableInfoConfig>> dataNodes = new HashMap<>();
     PrototypeServer prototype;
 
     @AllArgsConstructor
     @Data
     @Builder
     public static class LogicTableConfig {
-        String dataNodeName;
+        List<BackEndTableInfoConfig> dataNodes;
         List<Column> columns = new ArrayList<>();
         String createTableSQL;
+
+        public LogicTableConfig() {
+        }
     }
 
     @AllArgsConstructor
     @Data
     @Builder
     public static class BackEndTableInfoConfig {
-        private String replicaName;
+        private String targetName;
         private String schemaName;
         private String tableName;
+
+        public BackEndTableInfoConfig() {
+        }
     }
 
 
@@ -42,8 +47,11 @@ public class ShardingQueryRootConfig {
     public static final class Column {
         String columnName;
         SharingFuntionRootConfig.ShardingFuntion function;
-        final String shardingType;
-        final List<String> map;
+         String shardingType;
+         List<String> map;
+
+        public Column() {
+        }
 
         public List<String> getMap() {
             return map == null? Collections.emptyList():map;

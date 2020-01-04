@@ -130,12 +130,6 @@ public enum MetadataManager {
 //        Arrays.asList(ShardingQueryRootConfig.BackEndTableInfoConfig.builder().tableName(""))
 //        logicSchemaConfig.getTables().put("travelrecord", build);
 //
-
-
-        Map<String, List<BackendTableInfo>> dataNodeMap = new HashMap<>();
-        for (Map.Entry<String, List<ShardingQueryRootConfig.BackEndTableInfoConfig>> stringListEntry : shardingQueryRootConfig.getDataNodes().entrySet()) {
-            dataNodeMap.put(stringListEntry.getKey(), getBackendTableInfos(stringListEntry.getValue()));
-        }
         for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
             String orignalSchemaName = entry.getKey();
             ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
@@ -143,7 +137,7 @@ public enum MetadataManager {
             for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> e : value.getTables().entrySet()) {
                 String tableName = e.getKey().toLowerCase();
                 ShardingQueryRootConfig.LogicTableConfig tableConfigEntry = e.getValue();
-                addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), dataNodeMap.get(tableConfigEntry.getDataNodeName()));
+                addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(),getBackendTableInfos(tableConfigEntry.getDataNodes()));
             }
         }
     }
@@ -194,7 +188,7 @@ public enum MetadataManager {
     private List<BackendTableInfo> getBackendTableInfos(List<ShardingQueryRootConfig.BackEndTableInfoConfig> stringListEntry) {
         return stringListEntry.stream().map(t -> {
             SchemaInfo schemaInfo = new SchemaInfo(t.getSchemaName(), t.getTableName());
-            return new BackendTableInfo(t.getReplicaName(), schemaInfo);
+            return new BackendTableInfo(t.getTargetName(), schemaInfo);
         }).collect(Collectors.toList());
     }
 

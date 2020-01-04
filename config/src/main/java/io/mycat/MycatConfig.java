@@ -12,7 +12,7 @@ public class MycatConfig {
     PatternRootConfig interceptor = new PatternRootConfig();
     ShardingQueryRootConfig metadata = new ShardingQueryRootConfig();
     DatasourceRootConfig datasource = new DatasourceRootConfig();
-    ClusterRootConfig replicas = new ClusterRootConfig();
+    ClusterRootConfig cluster = new ClusterRootConfig();
     //    SecurityConfig security = new SecurityConfig();
     PlugRootConfig plug = new PlugRootConfig();
     ServerConfig server = new ServerConfig();

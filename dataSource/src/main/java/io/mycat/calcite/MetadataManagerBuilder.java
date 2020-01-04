@@ -2,6 +2,7 @@ package io.mycat.calcite;
 
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
+import io.mycat.util.YamlUtil;
 
 import java.util.*;
 
@@ -11,17 +12,17 @@ public class MetadataManagerBuilder {
         m.addSchema("db1");
         ShardingQueryRootConfig.BackEndTableInfoConfig.BackEndTableInfoConfigBuilder builder = backEndBuilder();
         List<ShardingQueryRootConfig.BackEndTableInfoConfig> tableInfos = Arrays.asList(
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db1").tableName("TRAVELRECORD").build(),
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db1").tableName("TRAVELRECORD2").build(),
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db1").tableName("TRAVELRECORD3").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db1").tableName("TRAVELRECORD").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db1").tableName("TRAVELRECORD2").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db1").tableName("TRAVELRECORD3").build(),
 
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db2").tableName("TRAVELRECORD").build(),
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db2").tableName("TRAVELRECORD2").build(),
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db2").tableName("TRAVELRECORD3").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db2").tableName("TRAVELRECORD").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db2").tableName("TRAVELRECORD2").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db2").tableName("TRAVELRECORD3").build(),
 
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db3").tableName("TRAVELRECORD").build(),
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db3").tableName("TRAVELRECORD2").build(),
-                backEndBuilder().replicaName("defaultDatasourceName").schemaName("db3").tableName("TRAVELRECORD3").build()
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db3").tableName("TRAVELRECORD").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db3").tableName("TRAVELRECORD2").build(),
+                backEndBuilder().targetName("defaultDatasourceName").schemaName("db3").tableName("TRAVELRECORD3").build()
         );
 
         Map<String, String> properties = new HashMap<>();
@@ -42,12 +43,13 @@ public class MetadataManagerBuilder {
                         "  `blob` longblob DEFAULT NULL,\n" +
                         "  `d` double DEFAULT NULL\n" +
                         ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;")
-                .dataNodeName("tmp").build();
+                .build();
+        System.out.println(YamlUtil.dump(build));
         m.addTable("db1", "travelrecord",build ,tableInfos,null);
         m.setDefaultTransactionType("jdbc");
     }
 
-    private static ShardingQueryRootConfig.BackEndTableInfoConfig.BackEndTableInfoConfigBuilder backEndBuilder() {
+    public static ShardingQueryRootConfig.BackEndTableInfoConfig.BackEndTableInfoConfigBuilder backEndBuilder() {
         return ShardingQueryRootConfig.BackEndTableInfoConfig.builder();
     }
 }

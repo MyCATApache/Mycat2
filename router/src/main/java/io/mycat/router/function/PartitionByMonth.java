@@ -116,13 +116,13 @@ public class PartitionByMonth extends RuleFunction {
   }
 
   /**
-   * For circulatory partition, calculated value of target partition needs to be rotated to fit the
+   * For circulatory partition, calculated value of targetName partition needs to be rotated to fit the
    * partition range
    */
   private int reCalculatePartition(int targetPartition) {
     /**
-     * If target date is previous of start time of partition setting, shift
-     * the delta range between target and start date to be positive value
+     * If targetName date is previous of start time of partition setting, shift
+     * the delta range between targetName and start date to be positive value
      */
     if (targetPartition < 0) {
       targetPartition = this.partition - (-targetPartition) % this.partition;

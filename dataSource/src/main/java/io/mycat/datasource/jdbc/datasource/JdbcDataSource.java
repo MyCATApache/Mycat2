@@ -53,9 +53,6 @@ public class JdbcDataSource implements MycatDataSource {
         return datasourceConfig.isMySQLType();
     }
 
-    public String getDb() {
-        return datasourceConfig.getInitDb();
-    }
 
     public int getMaxCon() {
         return datasourceConfig.getMaxCon();

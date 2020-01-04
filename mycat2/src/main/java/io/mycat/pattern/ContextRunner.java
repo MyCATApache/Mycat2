@@ -38,7 +38,7 @@ public class ContextRunner {
     public static final String PROXY_TRANSACTION_TYPE = "proxy";
     public static final String JDBC_TRANSACTION_TYPE = "jdbc";
     public static final String SCHEMA_NAME = "schema";
-    public static final String TARGETS = "target";
+    public static final String TARGETS = "targetName";
     public static final String TRANSACTION_TYPE = "transactionType";
     public static final String TRANSACTION_ISOLATION = "transactionIsolation";
 
@@ -63,6 +63,7 @@ public class ContextRunner {
         MySQLIsolation isolation = session.getIsolation();
         String type = context.getType();
         Action action = map.get(type);
+        boolean needStartTransaction = !session.isAutocommit()||session.isInTransaction();
         switch (action) {
             case EXPLAIN: {
                 break;
@@ -88,7 +89,7 @@ public class ContextRunner {
                             case UPDATE:
                             case UPDATE_INSERTID: {
                                 Map<String, String> backendTableInfoStringMap = MetadataManager.INSTANCE.rewriteUpdateSQL(schemaName, context.getCommand());
-                                normal(session, transactionType, isolation, executeType, backendTableInfoStringMap);
+                                normal(session, transactionType,needStartTransaction, isolation, executeType, backendTableInfoStringMap);
                                 return;
                             }
                             case GLOBAL_UPDATE:
@@ -98,7 +99,7 @@ public class ContextRunner {
                                 for (String target : targets) {
                                     sqls.put(target, command);
                                 }
-                                normal(session, transactionType, isolation, executeType, sqls);
+                                normal(session, transactionType,needStartTransaction, isolation, executeType, sqls);
                                 return;
                             }
                         }
@@ -120,7 +121,7 @@ public class ContextRunner {
                                 Iterable<Map<String, String>> iterable = () -> MetadataManager.INSTANCE.routeInsert(schemaName, context.getCommand());
                                 Stream<Map<String, String>> stream = StreamSupport.stream(iterable.spliterator(), false);
                                 Map<String, String> collect = stream.flatMap(i -> i.entrySet().stream()).collect(Collectors.groupingBy(k -> k.getKey(), Collectors.mapping(i -> i.getValue(), Collectors.joining(";"))));
-                                normal(session, transactionType, isolation, executeType, collect);
+                                normal(session, transactionType,needStartTransaction, isolation, executeType, collect);
                                 return;
                             }
                             case GLOBAL_UPDATE:
@@ -130,7 +131,7 @@ public class ContextRunner {
                                 for (String target : targets) {
                                     sqls.put(target, command);
                                 }
-                                normal(session, transactionType, isolation, executeType, sqls);
+                                normal(session, transactionType,needStartTransaction, isolation, executeType, sqls);
                                 return;
                             }
                         }
@@ -259,6 +260,11 @@ public class ContextRunner {
                 MySQLTaskUtil.proxyBackendByReplicaName(session, tagret,command, false, MySQLIsolation.DEFAULT);
                 return;
             }
+            case PROXY_QUERY: {
+                String tagret = context.getVariable(TARGETS);
+                MySQLTaskUtil.proxyBackendByReplicaName(session, tagret,command, false, MySQLIsolation.DEFAULT);
+                return;
+            }
             case JDBC_QUERY_ONLY: {
 
                 String tagret = context.getVariable(TARGETS);
@@ -276,10 +282,10 @@ public class ContextRunner {
                         for (String target : SplitUtil.split(tagret, ",")) {
                             res.put(target, command);
                         }
-                        normal(session, transactionType, isolation, executeType, res);
+                        normal(session, transactionType,needStartTransaction, isolation, executeType, res);
                         return;
                 }
-                normal(session, transactionType, isolation, executeType, tagret, command);
+                normal(session, transactionType,needStartTransaction, isolation, executeType, tagret, command);
                 return;
             case UNKNOWN:
                 break;
@@ -287,12 +293,12 @@ public class ContextRunner {
         throw new UnsupportedOperationException();
     }
 
-    private static void normal(MycatSession session, String transactionType, MySQLIsolation isolation, ExecuteType executeType, String datasourceName, String sql) {
-        normal(session, transactionType, isolation, executeType, Collections.singletonMap(datasourceName, sql));
+    private static void normal(MycatSession session, String transactionType,boolean needStartTransaction, MySQLIsolation isolation, ExecuteType executeType, String datasourceName, String sql) {
+        normal(session, transactionType,needStartTransaction, isolation, executeType, Collections.singletonMap(datasourceName, sql));
     }
 
-    private static void normal(MycatSession session, String transactionType, MySQLIsolation isolation, ExecuteType executeType, Map<String, String> sqls) {
-        boolean needStartTransaction = !session.isAutocommit()||session.isInTransaction();
+    private static void normal(MycatSession session, String transactionType,boolean needStartTransaction, MySQLIsolation isolation, ExecuteType executeType, Map<String, String> sqls) {
+
         if (PROXY_TRANSACTION_TYPE.equals(transactionType)) {
             if (executeType == ExecuteType.GLOBAL_UPDATE || executeType == ExecuteType.GLOBAL_UPDATEID || sqls.size() != 1 || sqls.isEmpty()) {
                 throw new IllegalArgumentException();

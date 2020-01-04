@@ -33,7 +33,6 @@ public class DruidDatasourceProvider implements DatasourceProvider {
     String password = config.getPassword();
     String url = config.getUrl();
     String dbType = config.getDbType();
-    String initDb = config.getInitDb();
     int maxRetryCount = config.getMaxRetryCount();
     String initSQL = config.getInitSQL();
 
@@ -60,9 +59,6 @@ public class DruidDatasourceProvider implements DatasourceProvider {
           SQLParserUtils.createSQLStatementParser(initSQL, dbType).parseStatementList().stream()
               .map(Object::toString).collect(
               Collectors.toList()));
-    }
-    if (initDb != null) {
-
     }
     if (jdbcDriver != null) {
       datasource.setDriverClassName(jdbcDriver);

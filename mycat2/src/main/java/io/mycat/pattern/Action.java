@@ -17,6 +17,7 @@ public enum  Action {
     ROLLBACK("rollback",Type.GLOBAL),
 
     PROXY_ONLY("proxy",Type.GLOBAL),
+    PROXY_QUERY("proxyQuery",Type.GLOBAL),
     JDBC_QUERY_ONLY("jdbcQuery",Type.GLOBAL),
     EXECUTE("execute",Type.GLOBAL),
 
