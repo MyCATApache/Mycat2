@@ -116,6 +116,7 @@ public abstract class AbstractCommandHandler implements CommandDispatcher {
 
   @Override
   public void handleProcessKill(long connectionId, MycatSession mycat) {
+    mycat.writeErrorEndPacketBySyncInProcessError();
     //todo
 //    ProxyRuntime runtime = mycat.getIOThread().getRuntime();
 //    MycatReactorThread[] mycatReactorThreads = runtime.getMycatReactorThreads();

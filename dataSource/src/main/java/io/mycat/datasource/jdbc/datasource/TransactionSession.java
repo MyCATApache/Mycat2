@@ -38,4 +38,5 @@ public interface TransactionSession {
     DefaultConnection getConnection(String jdbcDataSource);
 
     void reset();
+
 }

@@ -20,6 +20,7 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.*;
@@ -37,13 +38,13 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
             .getLogger(JdbcRowBaseIteratorImpl.class);
     private final Statement statement;
     private final ResultSet resultSet;
-    private final Connection connection;
+    private final AutoCloseable connection;
 
     public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet) {
         this(statement, resultSet, null);
     }
 
-    public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet, Connection connection) {
+    public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet, AutoCloseable connection) {
         this.statement = statement;
         this.resultSet = resultSet;
         this.connection = connection;

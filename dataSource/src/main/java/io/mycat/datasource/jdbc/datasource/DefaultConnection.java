@@ -24,11 +24,12 @@ import io.mycat.logTip.MycatLoggerFactory;
 
 import javax.annotation.Nullable;
 import java.sql.*;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * @author Junwen Chen
  **/
-public class DefaultConnection  {
+public class DefaultConnection  implements AutoCloseable{
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(DefaultConnection.class);
@@ -85,7 +86,7 @@ public class DefaultConnection  {
   public JdbcRowBaseIteratorImpl executeQuery(String sql) {
     try {
       Statement statement = connection.createStatement();
-      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql));
+      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql),this);
     } catch (Exception e) {
       throw new MycatException(e);
     }

@@ -143,4 +143,15 @@ public class TransactionSessionUtil {
         TransactionSession transactionSession = processUnit.getTransactionSession();
         transactionSession.reset();
     }
+    public static void afterDoAction() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.afterDoAction();
+    }
+
+    public static void beforeDoAction() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.beforeDoAction();
+    }
 }

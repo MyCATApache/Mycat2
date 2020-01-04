@@ -40,7 +40,7 @@ public final class MySQLServerStatus {
   private String charsetName;
   private Charset charset;
   private int charsetIndex;
-  private MySQLAutoCommit autoCommit;
+  private MySQLAutoCommit autoCommit = MySQLAutoCommit.ON;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
   protected boolean localInFileRequestState = false;
   private long selectLimit = -1;

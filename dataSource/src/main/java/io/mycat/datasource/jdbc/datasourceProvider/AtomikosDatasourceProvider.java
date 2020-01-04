@@ -53,7 +53,7 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
     ds.setUniqueResourceName(config.getName());
     ds.setPoolSize(minCon);
     ds.setMaxPoolSize(maxCon);
-    ds.setLocalTransactionMode(true);
+    ds.setLocalTransactionMode(false);
     ds.setBorrowConnectionTimeout(60);
 
     DruidXADataSource datasource = new DruidXADataSource();

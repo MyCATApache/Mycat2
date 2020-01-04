@@ -4,6 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum  Action {
+    EXPLAIN("explain",Type.GLOBAL),
     SELECT("select",Type.GLOBAL),
     UPDATE("update",Type.GLOBAL),
     DELETE("delete",Type.GLOBAL),

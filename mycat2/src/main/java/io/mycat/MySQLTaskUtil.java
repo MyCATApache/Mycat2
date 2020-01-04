@@ -93,6 +93,16 @@ public class MySQLTaskUtil {
         assert (Thread.currentThread() instanceof MycatReactorThread);
         Objects.requireNonNull(datasourceName);
         MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
+
+        if (mycat.isBindMySQLSession()){
+            MySQLClientSession mySQLSession = mycat.getMySQLSession();
+            if( datasourceName.equals(mySQLSession.getDatasource().getName())){
+               proxyNIOHandler.proxyBackend(mySQLSession, finallyCallBack, responseType, mycat, packetData);
+               return;
+           }else {
+               throw new RuntimeException();
+           }
+        }
         MySQLSessionManager mySQLSessionManager = reactor.getMySQLSessionManager();
         BiConsumer<MySQLDatasource, SessionCallBack<MySQLClientSession>> f = !needTransaction ?
                 mySQLSessionManager::getIdleSessionsOfKey :

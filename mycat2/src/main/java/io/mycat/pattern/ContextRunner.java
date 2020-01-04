@@ -64,11 +64,14 @@ public class ContextRunner {
         String type = context.getType();
         Action action = map.get(type);
         switch (action) {
+            case EXPLAIN: {
+                break;
+            }
             case SELECT: {
                 block(session, mycat -> {
                     CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);
                     SQLExecuterWriter.executeQuery(mycat, connection, context.getCommand());
-                    TransactionSessionUtil.reset();
+                    TransactionSessionUtil.afterDoAction();
                 });
                 return;
             }
@@ -189,7 +192,6 @@ public class ContextRunner {
                 return;
             }
             case BEGIN: {
-                session.setAutoCommit(false);
                 session.setInTranscation(true);
                 session.writeOkEndPacket();
                 return;
@@ -290,7 +292,7 @@ public class ContextRunner {
     }
 
     private static void normal(MycatSession session, String transactionType, MySQLIsolation isolation, ExecuteType executeType, Map<String, String> sqls) {
-        boolean needStartTransaction = !session.isAutocommit();
+        boolean needStartTransaction = !session.isAutocommit()||session.isInTransaction();
         if (PROXY_TRANSACTION_TYPE.equals(transactionType)) {
             if (executeType == ExecuteType.GLOBAL_UPDATE || executeType == ExecuteType.GLOBAL_UPDATEID || sqls.size() != 1 || sqls.isEmpty()) {
                 throw new IllegalArgumentException();
