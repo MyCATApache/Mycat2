@@ -203,11 +203,11 @@ public class GPatternRuleTest {
         Assert.assertEquals("travelrecord", map.get("table"));
 
 
-        matcher = gPattern.matcher("select id FROM travelrecord LIMIT 1;");
+        matcher = gPattern.matcher("selectxxx id FROM travelrecord LIMIT 1;");
         Assert.assertTrue(matcher.acceptAll());
         Assert.assertEquals(id2, matcher.id());
         map = gPattern.toContextMap(matcher);
-        Assert.assertEquals("select", map.get("type"));
+        Assert.assertEquals("selectxxx", map.get("type"));
         Assert.assertEquals("travelrecord", map.get("table2"));
     }
 
@@ -313,11 +313,11 @@ public class GPatternRuleTest {
         Assert.assertEquals(null, map.get("any"));
         Assert.assertEquals("LIMIT 1", map.get("any3"));
 
-        matcher = gPattern.matcher("select id FROM travelrecord LIMIT 1");
+        matcher = gPattern.matcher("selectxxx id FROM travelrecord LIMIT 1");
         Assert.assertTrue(matcher.acceptAll());
         map = gPattern.toContextMap(matcher);
         Assert.assertEquals(id, matcher.id());
-        Assert.assertEquals("select id", map.get("any"));
+        Assert.assertEquals("selectxxx id", map.get("any"));
         Assert.assertEquals("LIMIT 1", map.get("any2"));
     }
 
@@ -334,11 +334,11 @@ public class GPatternRuleTest {
         GPatternMatcher matcher;
         Map<String, String> map;
 
-        matcher = gPattern.matcher("select id FROM travelrecord LIMIT 1");
+        matcher = gPattern.matcher("selectxxx id FROM travelrecord LIMIT 1");
         Assert.assertTrue(matcher.acceptAll());
         Assert.assertEquals(id, matcher.id());
         map = gPattern.toContextMap(matcher);
-        Assert.assertEquals("select id", map.get("any"));
+        Assert.assertEquals("selectxxx id", map.get("any"));
         Assert.assertEquals("LIMIT 1", map.get("any2"));
 
         matcher = gPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
