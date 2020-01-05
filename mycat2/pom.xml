@@ -24,7 +24,7 @@
     </dependency>
     <dependency>
       <groupId>io.mycat</groupId>
-      <artifactId>grid</artifactId>
+      <artifactId>datasource</artifactId>
       <version>0.4-SNAPSHOP</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->

@@ -14,7 +14,6 @@
  */
 package io.mycat.calcite;
 
-import io.mycat.sqlparser.util.complie.RangeVariableType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 /**
@@ -31,14 +30,14 @@ public class RangeVariable {
     public RangeVariable(boolean or, RangeVariableType operator, Object value) {
         this.or = or;
         this.operator = operator;
-        assert operator == io.mycat.sqlparser.util.complie.RangeVariableType.EQUAL;
+        assert operator == RangeVariableType.EQUAL;
         this.value = value;
     }
 
     public RangeVariable(boolean or, RangeVariableType range, String begin, String end) {
         this.or = or;
         this.operator = range;
-        assert operator == io.mycat.sqlparser.util.complie.RangeVariableType.RANGE;
+        assert operator == RangeVariableType.RANGE;
         this.value = begin;
         this.optionValue = end;
     }

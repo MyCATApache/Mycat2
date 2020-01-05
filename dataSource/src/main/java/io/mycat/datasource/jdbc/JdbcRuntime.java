@@ -95,7 +95,7 @@ public enum JdbcRuntime {
                }
             }
 
-            for (ClusterRootConfig.ClusterConfig replica : config.getReplicas().getReplicas()) {
+            for (ClusterRootConfig.ClusterConfig replica : config.getCluster().getClusters()) {
                 if ("jdbc".equals(replica.getHeartbeat().getReuqestType())) {
                     String replicaName = replica.getName();
                     for (String datasource : replica.getMasters()) {

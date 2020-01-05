@@ -48,6 +48,10 @@ interceptor: #拦截器
       tables: ['db1.travelrecord','db1.address']
       sqls: ['update {any}','delete {any}']
       type: update
+    - name: hbt
+      sqls: ['select hbt']
+      explain: valuesSchema(fields(fieldType(`1`,`int`)),values())
+      type: hbt
   schemas: []
   sqls: [
   {name: commit,sql: 'commit',type: commit},{name: commit;,sql: 'commit;',type: commit},

@@ -17,7 +17,6 @@ package io.mycat.calcite;
 import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
 import io.mycat.router.RuleFunction;
-import io.mycat.sqlparser.util.complie.RangeVariableType;
 import lombok.NonNull;
 
 import java.util.*;

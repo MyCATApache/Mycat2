@@ -34,12 +34,12 @@ import io.mycat.MycatException;
 import io.mycat.SchemaInfo;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
+import io.mycat.queryCondition.ColumnRangeValue;
+import io.mycat.queryCondition.ColumnValue;
+import io.mycat.queryCondition.ConditionCollector;
+import io.mycat.queryCondition.QueryDataRange;
 import io.mycat.router.RuleFunction;
 import io.mycat.router.function.PartitionRuleFunctionManager;
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnRangeValue;
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.ColumnValue;
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.ConditionCollector;
-import io.mycat.sqlEngine.ast.optimizer.queryCondition.QueryDataRange;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -170,7 +170,7 @@ public enum MetadataManager {
 
             this.natureTableColumnInfo = shardingInfo.get(NATURE_DATABASE_TABLE);
 
-            this.replicaColumnInfo = shardingInfo.get(MAP_CLUSTER);
+            this.replicaColumnInfo = shardingInfo.get(MAP_TARGET);
             this.databaseColumnInfo = shardingInfo.get(MAP_DATABASE);
             this.tableColumnInfo = shardingInfo.get(MAP_TABLE);
         }
