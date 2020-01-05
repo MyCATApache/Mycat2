@@ -1,9 +1,22 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat;
 
 import io.mycat.describer.*;
 import io.mycat.describer.literal.*;
-import io.mycat.rsqlBuilder.schema.SchemaObject;
-import io.mycat.wu.BaseQuery;
+import io.mycat.hbt.BaseQuery;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -51,15 +64,6 @@ public class EvalNodeVisitor implements ParseNodeVisitor {
         this.mapping = mapping;
     }
 
-    public static void main(String[] args) throws IllegalAccessException {
-        EvalNodeVisitor evalNodeVisitor2 = new EvalNodeVisitor(BaseQuery.class);
-        String text = "distinct(valuesSchema(fields(fieldType(`id`,`int`)),values()))";
-        Describer describer = new Describer(text);
-        ParseNode expression = describer.expression();
-        expression.accept(evalNodeVisitor2);
-        SchemaObject o = evalNodeVisitor2.geReturn();
-
-    }
 
     private static FunctionSig functionSig(Method method) throws IllegalAccessException {
         return new FunctionSig(method.getName(), method);

@@ -18,6 +18,7 @@
 
 package io.mycat.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -31,22 +32,32 @@ import java.util.concurrent.TimeUnit;
  * @author: chenunwen
  */
 @Data
+@AllArgsConstructor
 public class ClusterRootConfig {
     private List<ClusterConfig> clusters = new ArrayList<>();
     private boolean close;
     private TimerConfig timer = new TimerConfig();
 
+    public ClusterRootConfig() {
+    }
+
+
+    @AllArgsConstructor
     @Data
-    public class ClusterConfig {
+    public static class ClusterConfig {
         private String replicaType;
         private String switchType;
         private String readBalanceType;
         private String name;
         private String readBalanceName;
         private String writeBalanceName;
-        private List<String> masters = new ArrayList<>();
-        private List<String> replicas = new ArrayList<>();
+        private List<String> masters;
+        private List<String> replicas;
         private HeartbeatConfig heartbeat;
+
+        public ClusterConfig() {
+        }
+
     }
 
 

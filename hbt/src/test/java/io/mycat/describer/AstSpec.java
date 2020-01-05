@@ -1,10 +1,10 @@
 package io.mycat.describer;
 
 import io.mycat.DesRelNodeHandler;
-import io.mycat.wu.BaseQuery;
-import io.mycat.wu.ast.base.ExplainVisitor;
-import io.mycat.wu.ast.base.Expr;
-import io.mycat.wu.ast.base.Schema;
+import io.mycat.hbt.BaseQuery;
+import io.mycat.hbt.ast.base.ExplainVisitor;
+import io.mycat.hbt.ast.base.Expr;
+import io.mycat.hbt.ast.base.Schema;
 import org.junit.Assert;
 import org.junit.Test;
 

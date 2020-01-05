@@ -157,7 +157,7 @@ public enum MycatCore {
         ShardingQueryRootConfig.LogicSchemaConfig logicSchemaConfig = new ShardingQueryRootConfig.LogicSchemaConfig();
         config.getMetadata().getSchemas().put("a",logicSchemaConfig);
         logicSchemaConfig.setTables(Collections.singletonMap("1",build));
-        System.out.println(YamlUtil.dump(config));
+        System.out.println(Arrays.asList());
         ConfigProvider bootConfig = RootHelper.INSTCANE.bootConfig(MycatCore.class);
         MycatCore.INSTANCE.init(bootConfig);
         MycatCore.INSTANCE.start();

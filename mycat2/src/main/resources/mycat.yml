@@ -3,35 +3,30 @@ metadata: #元数据
     db1: #逻辑库名
       tables:
         travelrecord: #逻辑表名
-          columns:
-            - columnName: id #分片字段信息,显式提供,升级计划:通过createTableSQL提供该信息
-              shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列或者多个列的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
-              function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
-              #提供表的字段信息,升级计划:通过已有数据库拉取该信息
-          createTableSQL: |-
-            CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-          dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},{targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
-                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},{targetName: repli2 ,schemaName: db2, tableName: travelrecord}]
-          #数据分片,targetName,分片目标,可以是数据源或者集群的名字,schemaName:目标库的名字,tableName:目标表的名字
+         columns:
+           - columnName: id #分片字段信息,显式提供,升级计划:通过createTableSQL提供该信息
+             shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列或者多个列的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
+             function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
+             #提供表的字段信息,升级计划:通过已有数据库拉取该信息
+         createTableSQL: |-
+          CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+         dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},{targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
+                     {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},{targetName: repli2 ,schemaName: db2, tableName: travelrecord}]
         address:
           columns:
             - columnName: id
               shardingType: MAP_TARGET #动态分片类型,通过任意值映射分片目标,目标库,目标表,要求查询条件要求包列信息,否则可能路由失败
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}} #映射到第一个元素
+              map: [defaultDs]
+            - columnName: addressName
+              shardingType: MAP_DATABASE
               function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}}
-              map:
-                 1: defaultDs
+              map: [db1]
             - columnName: addressName
-                shardingType: MAP_DATABASE
-                function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}}
-                map:
-                  1: db1
-            - columnName: addressName
-                shardingType: MAP_TABLE
-                function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}}
-                map:
-                  1: address
-          createTableSQL: |-
-            CREATE TABLE `address` (`id` int(11) NOT NULL,`addressname` varchar(20) DEFAULT NULL,PRIMARY KEY (`id`))
+              shardingType: MAP_TABLE
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}}
+              map: [address]
+          createTableSQL: CREATE TABLE `address` (`id` int(11) NOT NULL,`addressname` varchar(20) DEFAULT NULL,PRIMARY KEY (`id`))
 interceptor: #拦截器
   defaultHanlder: {type: proxy , tags: {target: defaultDs}}
   handlers:
@@ -83,7 +78,7 @@ datasource:
   ]
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
   timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS}
-clusters: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
+cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
   close: true #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
   clusters: [
   {name: repli2 ,
@@ -106,7 +101,7 @@ server:
   ip: 0.0.0.0
   port: 8066
   reactorNumber: 1
-#用于多线程任务的线程池,
+  #用于多线程任务的线程池,
   worker: {close: false, #禁用多线程池,jdbc等功能将不能使用
            maxPengdingLimit: 65535, #每个线程处理任务队列的最大长度
            maxThread: 2,

@@ -3,16 +3,14 @@ package io.mycat.describer;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.ImmutableList;
 import io.mycat.DesRelNodeHandler;
-import io.mycat.rsqlBuilder.Db1;
 import io.mycat.rsqlBuilder.DesBuilder;
-import io.mycat.rsqlBuilder.Rel2Des;
-import io.mycat.wu.BaseQuery;
-import io.mycat.wu.Op;
-import io.mycat.wu.QueryOp;
-import io.mycat.wu.ast.AggregateCall;
-import io.mycat.wu.ast.base.*;
-import io.mycat.wu.ast.query.FieldType;
-import io.mycat.wu.ast.query.SetOpSchema;
+import io.mycat.hbt.BaseQuery;
+import io.mycat.hbt.Op;
+import io.mycat.hbt.QueryOp;
+import io.mycat.hbt.ast.AggregateCall;
+import io.mycat.hbt.ast.base.*;
+import io.mycat.hbt.ast.query.FieldType;
+import io.mycat.hbt.ast.query.SetOpSchema;
 import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -1149,7 +1147,6 @@ public class RelSpec extends BaseQuery {
 //
 //        Assert.assertEquals("LogicalValues(type=[RecordType(INTEGER 1)], tuples=[[]])\n", toString(relNode));
 
-        Rel2Des rel2Des = new Rel2Des();
 
 
         Schema schema = getSchema(relNode);
