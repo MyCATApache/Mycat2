@@ -1,6 +1,0 @@
-datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
-maxPengdingLimit: -1
-waitTaskTimeout: 5
-timeUnit: SECONDS
-minThread: 1
-maxThread: 32
