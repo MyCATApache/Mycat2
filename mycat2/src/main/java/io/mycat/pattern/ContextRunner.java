@@ -7,6 +7,7 @@ import io.mycat.SQLExecuterWriter;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.calcite.CalciteEnvironment;
 import io.mycat.calcite.MetadataManager;
+import io.mycat.client.ClientRuntime;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
 import io.mycat.datasource.jdbc.JdbcRuntime;
@@ -59,7 +60,7 @@ public class ContextRunner {
 
     public static void run(MycatClient client, Context context, MycatSession session) {
         String command = context.getCommand();
-        String transactionType = Objects.requireNonNull(client.getTransactionType() != null ? client.getTransactionType() : MetadataManager.INSTANCE.getDefaultTransactionType());
+        String transactionType = Objects.requireNonNull(client.getTransactionType() != null ? client.getTransactionType() : ClientRuntime.INSTANCE.getTransactionType());
         MySQLIsolation isolation = session.getIsolation();
         String type = context.getType();
         Action action = map.get(type);
@@ -152,6 +153,9 @@ public class ContextRunner {
                     SQLExecuterWriter.writeToMycatSession(mycat, SQLExecuterWriter.getMycatResponses(handle, handle.getResultSet()));
                 });
                 return;
+            }
+            case LOAD: {
+                break;
             }
             case USE_STATEMENT: {
                 String schemaName = Objects.requireNonNull(context.getVariable(SCHEMA_NAME));
@@ -329,8 +333,9 @@ public class ContextRunner {
             }
             block(session, mycat -> {
                 TransactionSessionUtil.setIsolation(isolation.getJdbcValue());
-                if (needStartTransaction && !JdbcRuntime.INSTANCE.isBindingInTransaction(session)) {
+                if (needStartTransaction) {
                     TransactionSessionUtil.setAutocommitOff();
+                    session.setInTranscation(true);
                 }
                 switch (executeType) {
                     case QUERY: {
@@ -364,6 +369,7 @@ public class ContextRunner {
                     }
                 }
             });
+            return;
         }
         throw new IllegalArgumentException();
     }

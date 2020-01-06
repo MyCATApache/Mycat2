@@ -61,15 +61,6 @@ public enum MetadataManager {
     INSTANCE;
     private final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
     final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
-    private String defaultTransactionType = "";
-
-    public String getDefaultTransactionType() {
-        return defaultTransactionType;
-    }
-
-    public void setDefaultTransactionType(String defaultTransactionType) {
-        this.defaultTransactionType = defaultTransactionType;
-    }
 
     private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
 

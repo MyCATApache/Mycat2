@@ -46,7 +46,6 @@ public class MetadataManagerBuilder {
                 .build();
         System.out.println(YamlUtil.dump(build));
         m.addTable("db1", "travelrecord",build ,tableInfos,null);
-        m.setDefaultTransactionType("jdbc");
     }
 
     public static ShardingQueryRootConfig.BackEndTableInfoConfig.BackEndTableInfoConfigBuilder backEndBuilder() {

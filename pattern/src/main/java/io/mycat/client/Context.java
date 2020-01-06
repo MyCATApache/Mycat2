@@ -7,7 +7,7 @@ import lombok.Getter;
 import java.util.Collection;
 import java.util.Map;
 
-@AllArgsConstructor
+
 public class Context {
     private final String sql;
     private  final java.util.Map<String, Collection<String>> tables;
@@ -17,11 +17,21 @@ public class Context {
     private  final String explain;
     private  final String transactionType;
 
+    public Context(String sql, Map<String, Collection<String>> tables, Map<String, String> names, Map<String, String> tags, String type, String explain, String transactionType) {
+        this.sql = sql;
+        this.tables = tables;
+        this.names = names;
+        this.tags = tags;
+        this.type = type;
+        this.explain = explain;
+        this.transactionType = transactionType;
+    }
+
     public String getCommand() {
         if (explain == null){
             return sql;
         }else {
-            Strings.Builder format = Strings.format(explain, "{", "}").strictMode(true);
+            Strings.Builder format = Strings.format(explain, "{", "}").strictMode(false);
             for (Map.Entry<String, String> entry : names.entrySet()) {
                 format .with(entry.getKey(), entry.getValue());
             }

@@ -25,6 +25,7 @@ public enum ClientRuntime {
     final BuilderInfo wapper = new BuilderInfo();
     final ConcurrentHashMap<String, List<EvalNodeVisitor.FunctionSig>> libSharedMap = new ConcurrentHashMap<>();
     volatile RuntimeInfo runtimeInfo;
+    String transactionType = "jdbc";
 
     private static SchemaTable apply(String commonTableName) {
         String[] split1 = commonTableName.split("\\.");
@@ -234,6 +235,7 @@ public enum ClientRuntime {
 
         TableCollectorBuilder tableCollctorbuilder = new TableCollectorBuilder(patternBuilder.geIdRecorder(), (Map) getTableMap(schemas));
         runtimeInfo = new RuntimeInfo(() -> patternBuilder.createGroupPattern(tableCollctorbuilder.create()), itemMap, tableMap, defaultHanlder);
+        this.transactionType = patternRootConfig.getTransactionType();
     }
 
     private Map<String, Set<String>> getTableMap(List<PatternRootConfig.SchemaConfig> schemaConfigs) {
@@ -322,5 +324,7 @@ public enum ClientRuntime {
         }
     }
 
-
+    public String getTransactionType() {
+        return transactionType;
+    }
 }

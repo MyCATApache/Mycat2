@@ -10,6 +10,7 @@ public enum  Action {
     DELETE("delete",Type.GLOBAL),
     INSERT("insert",Type.GLOBAL),
     HBT("hbt",Type.GLOBAL),
+    LOAD("load",Type.GLOBAL),
     USE_STATEMENT("useStatement",Type.GLOBAL),
     COMMIT("commit",Type.GLOBAL),
     BEGIN("begin",Type.GLOBAL),

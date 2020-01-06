@@ -12,13 +12,6 @@
   <artifactId>datasource</artifactId>
 
 <dependencies>
-  <!-- https://mvnrepository.com/artifact/mysql/mysql-connector-java -->
-  <dependency>
-    <groupId>mysql</groupId>
-    <artifactId>mysql-connector-java</artifactId>
-    <!--<version>5.1.38</version>-->
-    <version>8.0.11</version>
-  </dependency>
   <dependency>
     <groupId>io.mycat</groupId>
     <artifactId>config</artifactId>
@@ -50,11 +43,11 @@
     <version>3.3.1</version>
   </dependency>
   <!-- https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client -->
-  <dependency>
-    <groupId>org.mariadb.jdbc</groupId>
-    <artifactId>mariadb-java-client</artifactId>
-    <version>2.5.2</version>
-  </dependency>
+  <!--<dependency>-->
+    <!--<groupId>org.mariadb.jdbc</groupId>-->
+    <!--<artifactId>mariadb-java-client</artifactId>-->
+    <!--<version>2.5.2</version>-->
+  <!--</dependency>-->
   <!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
   <dependency>
     <groupId>com.alibaba</groupId>

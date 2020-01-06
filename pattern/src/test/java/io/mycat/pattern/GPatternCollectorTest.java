@@ -62,7 +62,21 @@ public class GPatternCollectorTest {
         Assert.assertTrue(res.get("db1").contains("333333"));
         Assert.assertTrue(res.get("db1").contains("info"));
     }
+    @Test
+    public void test3333() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        String message = "/* mysql-connector-java-8.0.11 (Revision: 6d4eaa273bc181b4cf1c8ad0821a2227f116fedf) */SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout";
+        int id = patternBuilder.addRule(message);
 
+        GPatternIdRecorder recorder = patternBuilder.geIdRecorder();
+        TableCollectorBuilder builder = new TableCollectorBuilder(recorder, infos);
+        TableCollector tableCollector = builder.create();
+        GPattern gPattern = patternBuilder.createGroupPattern(tableCollector);
+        GPatternMatcher matcher = gPattern.matcherAndCollect(message);
+        Assert.assertTrue(matcher.acceptAll());
+        Map<String, Collection<String>> res = tableCollector.geTableMap();
+
+    }
     @Test
     public void test() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);

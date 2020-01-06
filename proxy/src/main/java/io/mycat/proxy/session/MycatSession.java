@@ -119,7 +119,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 //                return;
 //            }
         }
-        this.change2ReadOpts();
+        try {
+            this.change2ReadOpts();
+        } catch (Exception e) {
+            LOGGER.warn("", e);
+        }
     }
 
     public MySQLAutoCommit getAutoCommit() {

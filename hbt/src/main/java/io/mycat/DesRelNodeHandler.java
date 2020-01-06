@@ -67,7 +67,7 @@ public class DesRelNodeHandler {
         }
     }
 
-    private static void dump(ResultSet resultSet, boolean newline, PrintWriter writer)
+    public static void dump(ResultSet resultSet, boolean newline, PrintWriter writer)
             throws SQLException {
         final int columnCount = resultSet.getMetaData().getColumnCount();
         int r = 0;
