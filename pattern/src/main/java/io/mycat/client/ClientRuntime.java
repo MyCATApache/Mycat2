@@ -13,6 +13,7 @@ import org.reflections.Reflections;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -217,17 +218,17 @@ public enum ClientRuntime {
             }
         }
         //build
-        HashMap<Integer, PatternRootConfig.TextItemConfig> itemMap = new HashMap<>();
+        ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> itemMap = new ConcurrentHashMap<>();
         for (PatternRootConfig.TextItemConfig textItemConfig : sqls) {
             itemMap.put(patternBuilder.addRule(textItemConfig.getSql()), textItemConfig);
         }
-        Map<Map<String, Set<String>>, List<TableInfo>> tableMap = new HashMap<>();
+        Map<Map<String, Set<String>>, List<TableInfo>> tableMap = new ConcurrentHashMap<>();
         for (PatternRootConfig.SchemaConfig schema : schemas) {
-            HashMap<Integer, PatternRootConfig.TextItemConfig> map = new HashMap<>();
+            ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> map = new ConcurrentHashMap<>();
             for (PatternRootConfig.TextItemConfig sql : schema.getSqls()) {
                 map.put(patternBuilder.addRule(sql.getSql()), sql);
             }
-            List<TableInfo> tableInfos1 = tableMap.computeIfAbsent(getTableMap(schema), stringSetMap -> new ArrayList<>());
+            List<TableInfo> tableInfos1 = tableMap.computeIfAbsent(getTableMap(schema), stringSetMap -> new CopyOnWriteArrayList<>());
             tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder()));
         }
 
@@ -280,12 +281,19 @@ public enum ClientRuntime {
         final PatternRootConfig.Handler handler;
     }
 
-    @AllArgsConstructor
+
     private static class RuntimeInfo {
         final Supplier<GPattern> supplier;
         final Map<Integer, PatternRootConfig.TextItemConfig> idToItem;
         final Map<Map<String, Set<String>>, List<TableInfo>> tableToItem;
         final PatternRootConfig.Handler defaultHandler;
+
+        public RuntimeInfo(Supplier<GPattern> supplier, Map<Integer, PatternRootConfig.TextItemConfig> idToItem, Map<Map<String, Set<String>>, List<TableInfo>> tableToItem, PatternRootConfig.Handler defaultHandler) {
+            this.supplier = supplier;
+            this.idToItem = idToItem;
+            this.tableToItem = tableToItem;
+            this.defaultHandler = defaultHandler;
+        }
     }
 
     private static class BuilderInfo {

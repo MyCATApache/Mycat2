@@ -39,7 +39,7 @@ interceptor: #拦截器
               ],
             }]
   sqls: [
-  {name: hbt,sql: 'execute {hbt}' , explain: '{hbt}' ,type: hbt},
+  {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,type: hbt},
   {name: commit,sql: 'commit',type: commit},{name: commit;,sql: 'commit;',type: commit},
   {name: begin; ,sql: 'begin',type: begin},{name: begin ,sql: 'begin;',type: begin},
   {name: rollback ,sql: 'rollback',type: rollback},{name: rollback;,sql: 'rollback;',type: rollback},

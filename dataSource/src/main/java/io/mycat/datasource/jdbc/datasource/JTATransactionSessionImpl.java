@@ -78,7 +78,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
                         return absractConnection;
                     } else {
                         return JdbcRuntime.INSTANCE
-                                .getConnection(jdbcDataSource, !autocommit, transactionIsolation);
+                                .getConnection(jdbcDataSource, autocommit, transactionIsolation);
                     }
                 });
     }

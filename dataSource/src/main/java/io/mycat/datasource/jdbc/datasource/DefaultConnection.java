@@ -65,7 +65,7 @@ public class DefaultConnection  implements AutoCloseable{
 
   public MycatUpdateResponse executeUpdate(String sql, boolean needGeneratedKeys) {
     try (Statement statement = connection.createStatement()) {
-      statement.execute(sql,
+      statement.executeUpdate(sql,
           needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
       long lastInsertId = 0;
       if (needGeneratedKeys) {
