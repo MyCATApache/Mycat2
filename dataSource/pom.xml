@@ -91,10 +91,5 @@
     <artifactId>calcite-core</artifactId>
     <version>1.21.0</version>
   </dependency>
-  <dependency>
-    <groupId>io.mycat</groupId>
-    <artifactId>sqlparser</artifactId>
-    <version>0.4-SNAPSHOP</version>
-  </dependency>
 </dependencies>
 </project>

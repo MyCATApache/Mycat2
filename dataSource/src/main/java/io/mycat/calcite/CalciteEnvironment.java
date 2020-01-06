@@ -22,6 +22,7 @@ public enum  CalciteEnvironment {
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
+        System.setProperty("calcite.default.charset",charset);
         System.setProperty("saffron.default.collat​​ion.tableName", charset + "$ en_US");
     }
 

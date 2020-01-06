@@ -3,52 +3,43 @@ metadata: #元数据
     db1: #逻辑库名
       tables:
         travelrecord: #逻辑表名
-         columns:
-           - columnName: id #分片字段信息,显式提供,升级计划:通过createTableSQL提供该信息
-             shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列或者多个列的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
-             function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
-             #提供表的字段信息,升级计划:通过已有数据库拉取该信息
-         createTableSQL: |-
-          CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-         dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},{targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
-                     {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},{targetName: repli2 ,schemaName: db2, tableName: travelrecord}]
+          columns:
+            - columnName: id #分片字段信息,显式提供,升级计划:通过createTableSQL提供该信息
+              shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列或者多个列的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
+              function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
+              #提供表的字段信息,升级计划:通过已有数据库拉取该信息
+          createTableSQL: |-
+            CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+          dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},{targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
+                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},{targetName: repli2 ,schemaName: db2, tableName: travelrecord}]
         address:
           columns:
             - columnName: id
               shardingType: MAP_TARGET #动态分片类型,通过任意值映射分片目标,目标库,目标表,要求查询条件要求包列信息,否则可能路由失败
-              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}} #映射到第一个元素
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
               map: [defaultDs]
-            - columnName: addressName
+            - columnName: addressname
               shardingType: MAP_DATABASE
-              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}}
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
               map: [db1]
-            - columnName: addressName
+            - columnName: addressname
               shardingType: MAP_TABLE
-              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '1'}}
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
               map: [address]
           createTableSQL: CREATE TABLE `address` (`id` int(11) NOT NULL,`addressname` varchar(20) DEFAULT NULL,PRIMARY KEY (`id`))
 interceptor: #拦截器
-  defaultHanlder: {type: proxy , tags: {target: defaultDs}}
-  handlers:
-    - name: selectTravelrecord
-      tables: ['db1.travelrecord','db1.address']
-      sqls: ['select {any}']
-      type: select
-    - name: insertTravelrecord
-      tables: ['db1.travelrecord','db1.address']
-      tags: {executeType: UPDATE}
-      sqls: ['insert {any}']
-      type: insert
-    - name: updateTravelrecord
-      tables: ['db1.travelrecord','db1.address']
-      sqls: ['update {any}','delete {any}']
-      type: update
-    - name: hbt
-      sqls: ['select hbt']
-      explain: valuesSchema(fields(fieldType(`1`,`int`)),values())
-      type: hbt
-  schemas: []
+  defaultHanlder: {type: proxy , tags: {targets: defaultDs}}
+  schemas: [{
+              tables:[ 'db1.travelrecord','db1.address'],
+              sqls: [
+              {sql: 'select {any}',type: select,transactionType: jdbc},
+              {sql: 'insert {any}',type: insert, tags: {executeType: UPDATE},transactionType: jdbc},
+              {sql: 'update {any}',type: update,transactionType: jdbc},
+              {sql: 'delete {any}',type: update,transactionType: jdbc}
+              ],
+            }]
   sqls: [
+  {name: hbt,sql: 'select hbt' , explain: 'valuesSchema(fields(fieldType(`1`,`int`)),values())' ,type: hbt},
   {name: commit,sql: 'commit',type: commit},{name: commit;,sql: 'commit;',type: commit},
   {name: begin; ,sql: 'begin',type: begin},{name: begin ,sql: 'begin;',type: begin},
   {name: rollback ,sql: 'rollback',type: rollback},{name: rollback;,sql: 'rollback;',type: rollback},

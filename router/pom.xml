@@ -27,11 +27,6 @@
         <artifactId>common</artifactId>
       <version>0.4-SNAPSHOP</version>
     </dependency>
-    <dependency>
-        <groupId>io.mycat</groupId>
-        <artifactId>sqlparser</artifactId>
-      <version>0.4-SNAPSHOP</version>
-    </dependency>
     <!-- https://mvnrepository.com/artifact/com.yevdo/jwildcard -->
     <dependency>
         <groupId>com.yevdo</groupId>

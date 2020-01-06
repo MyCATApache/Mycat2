@@ -21,6 +21,7 @@ import lombok.NonNull;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author Weiqing Xu
@@ -62,7 +63,15 @@ public class DataMappingEvaluator {
         if (logicTable.getTableColumnInfo() != null) {
             tableSet = getRouteColumnSortedSet(logicTable.getTableColumnInfo());
         }
-
+//        if (targetSet.isEmpty()){
+//            throw new IllegalArgumentException("not targetSet");
+//        }
+//        if (databaseSet.isEmpty()){
+//            throw new IllegalArgumentException("not databaseSet");
+//        }
+//        if (tableSet.isEmpty()){
+//            throw new IllegalArgumentException("not tableSet");
+//        }
         List<BackendTableInfo> res = new ArrayList<>();
 
         for (String targetName : targetSet) {
@@ -95,7 +104,7 @@ public class DataMappingEvaluator {
         @NonNull SimpleColumnInfo columnInfo = target.columnInfo;
         Set<RangeVariable> rangeVariables = columnMap.get(columnInfo.columnName);
         if (rangeVariables == null) {
-         return Collections.emptyList();
+         return IntStream.range(0,target.map.size()).boxed().collect(Collectors.toList());
         } else {
             return calculate(target.getFunction(), rangeVariables).stream().sorted().collect(Collectors.toList());
         }

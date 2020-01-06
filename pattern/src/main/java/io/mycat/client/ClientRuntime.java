@@ -17,6 +17,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static javax.swing.UIManager.get;
+
 public enum ClientRuntime {
     INSTANCE;
 
@@ -76,22 +78,27 @@ public enum ClientRuntime {
                 Map<String, Collection<String>> collectionMap = tableMatcher.geTableMap();
                 Map<String, String> map = matcher.namesContext();
                 if (sqlMatch && tableMatch) {
-                    List<TableInfo> tableInfo = this.runtime.tableToItem.get(collectionMap);
-                    if (tableInfo != null) {
-                        for (TableInfo info : tableInfo) {
-                            PatternRootConfig.TextItemConfig textItemConfig =info .map.get(matcher.id());
-                            if (textItemConfig != null) {
-                                return getContext(sql,collectionMap,map,textItemConfig);
-                            }
-                            if (info.handler != null) {
-                                return getContext(sql,collectionMap,map,info.handler);
+
+                    for (Map.Entry<String, Collection<String>> stringCollectionEntry : collectionMap.entrySet()) {
+                        for (Map.Entry<Map<String, Set<String>>, List<TableInfo>> mapListEntry : this.runtime.tableToItem.entrySet()) {
+                            Set<String> strings = mapListEntry.getKey().get(stringCollectionEntry.getKey());
+                            if(strings.containsAll(stringCollectionEntry.getValue())){
+                                List<TableInfo> tableInfo = mapListEntry.getValue();
+                                if (tableInfo != null) {
+                                    for (TableInfo info : tableInfo) {
+                                        PatternRootConfig.TextItemConfig textItemConfig =info .map.get(matcher.id());
+                                        if (textItemConfig != null) {
+                                            return getContext(sql,collectionMap,map,textItemConfig);
+                                        }
+                                        if (info.handler != null) {
+                                            return getContext(sql,collectionMap,map,info.handler);
+                                        }
+                                    }
+                                }
                             }
                         }
-
-
                     }
                 }
-
                 if (sqlMatch && !tableMatch) {
                     Map<Integer, PatternRootConfig.TextItemConfig> idToItem = runtime.idToItem;
                     PatternRootConfig.TextItemConfig textItemConfig = idToItem.get(matcher.id());

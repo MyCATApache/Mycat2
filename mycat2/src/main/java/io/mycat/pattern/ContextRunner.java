@@ -38,7 +38,7 @@ public class ContextRunner {
     public static final String PROXY_TRANSACTION_TYPE = "proxy";
     public static final String JDBC_TRANSACTION_TYPE = "jdbc";
     public static final String SCHEMA_NAME = "schema";
-    public static final String TARGETS = "targetName";
+    public static final String TARGETS = "targets";
     public static final String TRANSACTION_TYPE = "transactionType";
     public static final String TRANSACTION_ISOLATION = "transactionIsolation";
 

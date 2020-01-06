@@ -137,7 +137,7 @@ public enum MetadataManager {
             for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> e : value.getTables().entrySet()) {
                 String tableName = e.getKey().toLowerCase();
                 ShardingQueryRootConfig.LogicTableConfig tableConfigEntry = e.getValue();
-                addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(),getBackendTableInfos(tableConfigEntry.getDataNodes()));
+                addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
             }
         }
     }
@@ -186,6 +186,9 @@ public enum MetadataManager {
     }
 
     private List<BackendTableInfo> getBackendTableInfos(List<ShardingQueryRootConfig.BackEndTableInfoConfig> stringListEntry) {
+        if (stringListEntry == null) {
+            return Collections.emptyList();
+        }
         return stringListEntry.stream().map(t -> {
             SchemaInfo schemaInfo = new SchemaInfo(t.getSchemaName(), t.getTableName());
             return new BackendTableInfo(t.getTargetName(), schemaInfo);
@@ -216,7 +219,7 @@ public enum MetadataManager {
         tableMap.put(tableName, logicTable);
         tableMap.put("`" + tableName + "`", logicTable);
 
-        tableMap = logicTableMap.computeIfAbsent("`"+schemaName+"`", s -> new ConcurrentHashMap<>());
+        tableMap = logicTableMap.computeIfAbsent("`" + schemaName + "`", s -> new ConcurrentHashMap<>());
         tableMap.put(tableName, logicTable);
         tableMap.put("`" + tableName + "`", logicTable);
         accrptDDL(schemaName, createTableSQL);
@@ -229,9 +232,14 @@ public enum MetadataManager {
             RuleFunction ruleAlgorithm = PartitionRuleFunctionManager.INSTANCE.
                     getRuleAlgorithm(entry1.getColumnName(), function.getClazz(), function.getProperties(), function.getRanges());
             SimpleColumnInfo.ShardingType shardingType = SimpleColumnInfo.ShardingType.valueOf(entry1.getShardingType());
-            SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(columns.stream().filter(i -> entry1.getColumnName().equals(i.getColumnName())).findFirst().get());
-
-
+            SimpleColumnInfo found = null;
+            for (SimpleColumnInfo i : columns) {
+                if (entry1.getColumnName().equals(i.getColumnName())) {
+                    found = i;
+                    break;
+                }
+            }
+            SimpleColumnInfo simpleColumnInfo = Objects.requireNonNull(found);
             return new SimpleColumnInfo.ShardingInfo(simpleColumnInfo, shardingType, entry1.getMap(), ruleAlgorithm);
         }).collect(Collectors.toMap(k -> k.getShardingType(), k -> k));
     }

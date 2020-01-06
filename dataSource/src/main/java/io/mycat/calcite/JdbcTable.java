@@ -191,13 +191,12 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, final int[] projects) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
-        filters.removeIf((filter) -> {
+        filters.forEach((filter) -> {
             DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
             boolean success = addOrRootFilter(dataMappingRule, filter);
             if (success) {
                 record.merge(dataMappingRule);
             }
-            return success;
         });
         LOGGER.info("optimize filters:{}", filters);
         List<BackendTableInfo> calculate = record.calculate(table);

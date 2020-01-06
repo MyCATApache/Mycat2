@@ -62,8 +62,9 @@ public final class TableCollector implements GPatternTokenCollector {
 
     public void useSchema(String schema) {
         Integer intHash = builder.schemaHash.get(schema);
-        if (intHash == null) throw new UnsupportedOperationException();
-        currentSchemaHash = intHash;
+        if (intHash != null) {
+            currentSchemaHash = intHash;
+        }
     }
 
 

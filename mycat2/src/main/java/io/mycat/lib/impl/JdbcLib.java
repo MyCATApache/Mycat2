@@ -157,6 +157,7 @@ public class JdbcLib {
                             LOGGER.error("",finalEx);
                             mycat.setLastMessage(finalEx);
                             mycat.writeErrorEndPacketBySyncInProcessError();
+                            mycat.close(false,"");
                         }
 
                         @Override
