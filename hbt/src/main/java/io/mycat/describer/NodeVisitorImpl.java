@@ -44,8 +44,8 @@ public class NodeVisitorImpl implements ParseNodeVisitor {
 
     @Override
     public void visit(IdLiteral id) {
-        //sb.append("new Identifier(\"").append(id.getId()).append("\")");
-        sb.append("id(\"").append(id.getId()).append("\")");
+        //sb.append("new Identifier(").append(id.getId()).append(")");
+        sb.append("id(").append(id.getId()).append(")");
     }
 
     @Override
@@ -85,7 +85,7 @@ public class NodeVisitorImpl implements ParseNodeVisitor {
 
     @Override
     public void visit(StringLiteral stringLiteral) {
-        sb.append("literal(\"").append(stringLiteral.getString()).append("\")");
+        sb.append("literal(").append(stringLiteral.getString()).append(")");
     }
 
     @Override
@@ -106,7 +106,7 @@ public class NodeVisitorImpl implements ParseNodeVisitor {
     @Override
     public void visit(PropertyLiteral propertyLiteral) {
         sb.append("property(");
-        sb.append(String.join(",", "\"" + propertyLiteral.getValue() + "\""));
+        sb.append(String.join(",", "" + propertyLiteral.getValue() + ""));
         sb.append("))");
     }
 
