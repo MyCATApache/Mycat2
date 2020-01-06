@@ -1,8 +1,6 @@
 package io.mycat.client;
 
 import com.joanzapata.utils.Strings;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 import java.util.Collection;
 import java.util.Map;
@@ -10,12 +8,12 @@ import java.util.Map;
 
 public class Context {
     private final String sql;
-    private  final java.util.Map<String, Collection<String>> tables;
-    private  final Map<String, String> names;
+    private final java.util.Map<String, Collection<String>> tables;
+    private final Map<String, String> names;
     private final Map<String, String> tags;
-    private  final String type;
-    private  final String explain;
-    private  final String transactionType;
+    private final String type;
+    private final String explain;
+    private final String transactionType;
 
     public Context(String sql, Map<String, Collection<String>> tables, Map<String, String> names, Map<String, String> tags, String type, String explain, String transactionType) {
         this.sql = sql;
@@ -28,15 +26,15 @@ public class Context {
     }
 
     public String getCommand() {
-        if (explain == null){
+        if (explain == null) {
             return sql;
-        }else {
+        } else {
             Strings.Builder format = Strings.format(explain, "{", "}").strictMode(false);
             for (Map.Entry<String, String> entry : names.entrySet()) {
-                format .with(entry.getKey(), entry.getValue());
+                format.with(entry.getKey(), entry.getValue());
             }
             for (Map.Entry<String, String> entry : tags.entrySet()) {
-                format .with(entry.getKey(), entry.getValue());
+                format.with(entry.getKey(), entry.getValue());
             }
             return format.build();
         }
@@ -67,12 +65,19 @@ public class Context {
     }
 
 
-
     public String getVariable(String name) {
+        return getVariable(name, null);
+    }
+
+    public String getVariable(String name, String defaultName) {
         String s = names.get(name);
-        if (s == null) {
-            return tags.get(name);
+        if (s != null) {
+            return s;
         }
-        return s;
+        String s1 = tags.get(name);
+        if (s1 != null) {
+            return s1;
+        }
+        return defaultName;
     }
 }

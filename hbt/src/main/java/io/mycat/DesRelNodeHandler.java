@@ -128,8 +128,8 @@ public class DesRelNodeHandler {
         return new QueryOp(DesBuilder.create(config)).complie(node);
     }
 
-    public PreparedStatement handle(String text) {
-        return RelRunners.run(toRelNode(complieFlatSyntaxAstText(syntaxAstToFlatSyntaxAstText(parse2SyntaxAst(text)))));
+    public RelNode handle(String text) {
+        return toRelNode(complieFlatSyntaxAstText(syntaxAstToFlatSyntaxAstText(parse2SyntaxAst(text))));
     }
 
     public String dump(String text) {

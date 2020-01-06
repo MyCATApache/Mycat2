@@ -5,6 +5,7 @@ import io.mycat.MySQLTaskUtil;
 import io.mycat.MycatException;
 import io.mycat.SQLExecuterWriter;
 import io.mycat.beans.mysql.MySQLIsolation;
+import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.calcite.CalciteEnvironment;
 import io.mycat.calcite.MetadataManager;
 import io.mycat.client.ClientRuntime;
@@ -12,6 +13,8 @@ import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
+import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
+import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.lib.impl.JdbcLib;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -20,9 +23,11 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.util.SplitUtil;
 import lombok.SneakyThrows;
 import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.RelRunner;
 
 import java.sql.PreparedStatement;
 import java.util.*;
@@ -30,6 +35,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static io.mycat.SQLExecuterWriter.writeToMycatSession;
 
 public class ContextRunner {
 
@@ -85,7 +92,7 @@ public class ContextRunner {
                 if (tables.size() == 1) {
                     for (Map.Entry<String, Collection<String>> stringCollectionEntry : tables.entrySet()) {
                         String schemaName = stringCollectionEntry.getKey();
-                        ExecuteType executeType = ExecuteType.valueOf(context.getVariable("executeType"));
+                        ExecuteType executeType = ExecuteType.valueOf(context.getVariable("executeType",ExecuteType.UPDATE_INSERTID.name()));
                         switch (executeType) {
                             case QUERY:
                                 break;
@@ -144,13 +151,22 @@ public class ContextRunner {
             }
             case HBT: {
                 block(session, mycat -> {
-                    final SchemaPlus rootSchema = Frameworks.createRootSchema(false);
-                    CalciteEnvironment.INSTANCE.init(rootSchema, MetadataManager.INSTANCE);
+
+                    CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);
+                    String schema = client.getDefaultSchema();
+                    connection.setSchema(schema);
+                    RelRunner runner = connection.unwrap(RelRunner.class);
+
                     final FrameworkConfig config = Frameworks.newConfigBuilder()
-                            .defaultSchema(rootSchema).build();
+                            .defaultSchema(connection.getRootSchema()).build();
                     DesRelNodeHandler desRelNodeHandler = new DesRelNodeHandler(config);
-                    PreparedStatement handle = desRelNodeHandler.handle(command);
-                    SQLExecuterWriter.writeToMycatSession(mycat, SQLExecuterWriter.getMycatResponses(handle, handle.getResultSet()));
+                    RelNode handle = desRelNodeHandler.handle(command);
+
+                    PreparedStatement prepare = runner.prepare(handle);
+
+                    JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(prepare,    prepare.executeQuery(),connection);
+                    writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)});
+                    TransactionSessionUtil.afterDoAction();
                 });
                 return;
             }
@@ -275,7 +291,7 @@ public class ContextRunner {
 
                 String tagret = context.getVariable(TARGETS);
                 String datasourceName = Objects.requireNonNull(ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(tagret));
-                SQLExecuterWriter.writeToMycatSession(session, TransactionSessionUtil.executeQuery(datasourceName, command));
+                writeToMycatSession(session, TransactionSessionUtil.executeQuery(datasourceName, command));
                 return;
             }
             case EXECUTE:
@@ -341,7 +357,7 @@ public class ContextRunner {
                     case QUERY: {
                         for (Map.Entry<String, String> entry : sqls.entrySet()) {
                             String datasourceName = Objects.requireNonNull(ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(entry.getKey()));
-                            SQLExecuterWriter.writeToMycatSession(session, TransactionSessionUtil.executeQuery(datasourceName, entry.getValue()));
+                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(datasourceName, entry.getValue()));
                             return;
                         }
                         break;
@@ -351,7 +367,7 @@ public class ContextRunner {
                         boolean id = executeType == ExecuteType.UPDATE_INSERTID;
                         for (Map.Entry<String, String> entry : sqls.entrySet()) {
                             String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(entry.getKey());
-                            SQLExecuterWriter.writeToMycatSession(session, TransactionSessionUtil.executeUpdate(datasourceName, entry.getValue(), id));
+                            writeToMycatSession(session, TransactionSessionUtil.executeUpdate(datasourceName, entry.getValue(), id));
                             return;
                         }
                     }
@@ -364,7 +380,7 @@ public class ContextRunner {
                             String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(entry.getKey());
                             finalMap.put(datasourceName, entry.getValue());
                         }
-                        SQLExecuterWriter.writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(finalMap, id));
+                        writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(finalMap, id));
                         return;
                     }
                 }

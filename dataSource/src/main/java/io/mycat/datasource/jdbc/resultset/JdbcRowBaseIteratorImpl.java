@@ -24,10 +24,8 @@ import java.io.Closeable;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.sql.Date;
+import java.util.*;
 
 /**
  * @author Junwen Chen
@@ -46,7 +44,7 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
 
     public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet, AutoCloseable connection) {
         this.statement = statement;
-        this.resultSet = resultSet;
+        this.resultSet = Objects.requireNonNull(resultSet);
         this.connection = connection;
     }
 

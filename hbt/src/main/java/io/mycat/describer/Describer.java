@@ -167,7 +167,7 @@ public class Describer {
         switch (token) {
             default:
             case IDENTIFIER: {
-                String id = lexer.tokenString();
+                String id = lexer.tokenIdentifier();
                 lexer.nextToken();
                 if (lexer.token() == Token.LPAREN) {
                     return new CallExpr(id, parentheresExpr());

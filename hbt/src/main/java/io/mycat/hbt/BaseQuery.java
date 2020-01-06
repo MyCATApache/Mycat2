@@ -24,10 +24,7 @@ import java.io.PrintStream;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -173,6 +170,14 @@ public class BaseQuery {
         return new Identifier(value);
     }
 
+    public static Identifier id(Identifier value) {
+        return value;
+    }
+
+    public static Identifier id(Literal value) {
+        return new Identifier(Objects.toString(value.getValue()));
+    }
+
     public static FieldType fieldType(Identifier fieldName, Identifier type) {
         return new FieldType(fieldName.getValue(), type.getValue());
     }
@@ -180,7 +185,6 @@ public class BaseQuery {
     public static FieldType fieldType(String fieldName, String type) {
         return new FieldType(fieldName, type);
     }
-
 
     public static FromSchema from(Identifier... names) {
         return from(list(names));
@@ -419,6 +423,13 @@ public class BaseQuery {
 
     public static GroupItem regular(Expr... nodes) {
         return regular(list(nodes));
+    }
+    public static Expr in(Identifier column, Literal one, Literal two) {
+        return in(column.getValue(), one,two);
+    }
+
+    public static Expr in(Identifier column, Literal... values) {
+        return in(column.getValue(), values[0], Arrays.asList(values).subList(1,values.length));
     }
 
     public static Expr in(String column, Object... values) {

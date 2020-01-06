@@ -22,14 +22,15 @@ public class DesComplier {
     String importClass = " static cn.lightfish.hbt.Ast.*";
 
     public DesComplier() {
-        this("codeSrc", "Lj", " static cn.lightfish.hbt.Ast.* ");
+        this(Paths.get("codeSrc").toAbsolutePath().toString(), "Lj", " static io.mycat.hbt.BaseQuery.* ");
     }
 
     public DesComplier(String complierDir, String packageName, String importClass) {
         try {
             src = Paths.get(complierDir);
-            FileUtils.forceDelete(src.toFile());
-            Files.deleteIfExists(src);
+            if (Files.exists(src)){
+                FileUtils.forceDelete(src.toFile());
+            }
             Files.createDirectories(src);
             src = Files.createDirectories(src.resolve(packageName));
             this.complierDir = complierDir;

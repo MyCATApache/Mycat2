@@ -33,11 +33,12 @@ public class EvalNodeVisitor implements ParseNodeVisitor {
     final LinkedList<Object> stack = new LinkedList<>();
     Map<String, List<FunctionSig>> mapping;
 
-    public EvalNodeVisitor(Class clazz) throws IllegalAccessException {
+    public EvalNodeVisitor(Class clazz)  {
         this(Collections.singletonList(clazz));
     }
 
-    public EvalNodeVisitor(Collection<Class<?>> clazzList) throws IllegalAccessException {
+    @SneakyThrows
+    public EvalNodeVisitor(Collection<Class<?>> clazzList) {
         this.mapping = getMap(clazzList);
     }
 
