@@ -152,6 +152,11 @@ public enum ClientRuntime {
                 this.transactionType = transactionType;
             }
 
+            @Override
+            public String getDefaultSchema() {
+                return defaultSchemaName;
+            }
+
             @NonNull
             private GPattern getCurrentPattern() {
                 RuntimeInfo newSourceSupplier = Objects.requireNonNull(ClientRuntime.INSTANCE.runtimeInfo);

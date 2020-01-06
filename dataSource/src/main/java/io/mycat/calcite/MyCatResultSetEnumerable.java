@@ -40,6 +40,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
     public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<QueryBackendTask> res) {
         this.cancelFlag = cancelFlag;
         this.backStoreList = res;
+        LOGGER.info("prepare query-----------------------------------------------------------------------");
         for (QueryBackendTask sql : res) {
             LOGGER.info("prepare query:{}", sql);
         }

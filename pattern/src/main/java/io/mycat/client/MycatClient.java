@@ -8,4 +8,7 @@ public interface MycatClient {
     public void useSchema(String schemaName);
     public String getTransactionType();
     public void useTransactionType(String transactionType);
+
+    String getDefaultSchema();
+
 }

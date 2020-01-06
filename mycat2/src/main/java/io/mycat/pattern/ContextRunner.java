@@ -32,7 +32,7 @@ import java.util.stream.StreamSupport;
 
 public class ContextRunner {
 
-  public  static  final   MycatLogger LOGGER = MycatLoggerFactory.getLogger(ContextRunner.class);
+    public static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ContextRunner.class);
     //inst type
     //item
     public static final String PROXY_TRANSACTION_TYPE = "proxy";
@@ -63,7 +63,7 @@ public class ContextRunner {
         MySQLIsolation isolation = session.getIsolation();
         String type = context.getType();
         Action action = map.get(type);
-        boolean needStartTransaction = !session.isAutocommit()||session.isInTransaction();
+        boolean needStartTransaction = !session.isAutocommit() || session.isInTransaction();
         switch (action) {
             case EXPLAIN: {
                 break;
@@ -71,6 +71,8 @@ public class ContextRunner {
             case SELECT: {
                 block(session, mycat -> {
                     CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);
+                    String schema = client.getDefaultSchema();
+                    connection.setSchema(schema);
                     SQLExecuterWriter.executeQuery(mycat, connection, context.getCommand());
                     TransactionSessionUtil.afterDoAction();
                 });
@@ -89,7 +91,7 @@ public class ContextRunner {
                             case UPDATE:
                             case UPDATE_INSERTID: {
                                 Map<String, String> backendTableInfoStringMap = MetadataManager.INSTANCE.rewriteUpdateSQL(schemaName, context.getCommand());
-                                normal(session, transactionType,needStartTransaction, isolation, executeType, backendTableInfoStringMap);
+                                normal(session, transactionType, needStartTransaction, isolation, executeType, backendTableInfoStringMap);
                                 return;
                             }
                             case GLOBAL_UPDATE:
@@ -99,7 +101,7 @@ public class ContextRunner {
                                 for (String target : targets) {
                                     sqls.put(target, command);
                                 }
-                                normal(session, transactionType,needStartTransaction, isolation, executeType, sqls);
+                                normal(session, transactionType, needStartTransaction, isolation, executeType, sqls);
                                 return;
                             }
                         }
@@ -121,7 +123,7 @@ public class ContextRunner {
                                 Iterable<Map<String, String>> iterable = () -> MetadataManager.INSTANCE.routeInsert(schemaName, context.getCommand());
                                 Stream<Map<String, String>> stream = StreamSupport.stream(iterable.spliterator(), false);
                                 Map<String, String> collect = stream.flatMap(i -> i.entrySet().stream()).collect(Collectors.groupingBy(k -> k.getKey(), Collectors.mapping(i -> i.getValue(), Collectors.joining(";"))));
-                                normal(session, transactionType,needStartTransaction, isolation, executeType, collect);
+                                normal(session, transactionType, needStartTransaction, isolation, executeType, collect);
                                 return;
                             }
                             case GLOBAL_UPDATE:
@@ -131,7 +133,7 @@ public class ContextRunner {
                                 for (String target : targets) {
                                     sqls.put(target, command);
                                 }
-                                normal(session, transactionType,needStartTransaction, isolation, executeType, sqls);
+                                normal(session, transactionType, needStartTransaction, isolation, executeType, sqls);
                                 return;
                             }
                         }
@@ -235,7 +237,7 @@ public class ContextRunner {
             case COMMIT: {
                 session.setInTranscation(false);
                 if (PROXY_TRANSACTION_TYPE.equals(transactionType)) {
-                    if (!session.isBindMySQLSession()){
+                    if (!session.isBindMySQLSession()) {
                         session.writeOkEndPacket();
                         return;
                     }
@@ -257,12 +259,12 @@ public class ContextRunner {
             }
             case PROXY_ONLY: {
                 String tagret = context.getVariable(TARGETS);
-                MySQLTaskUtil.proxyBackendByReplicaName(session, tagret,command, false, MySQLIsolation.DEFAULT);
+                MySQLTaskUtil.proxyBackendByReplicaName(session, tagret, command, false, MySQLIsolation.DEFAULT);
                 return;
             }
             case PROXY_QUERY: {
                 String tagret = context.getVariable(TARGETS);
-                MySQLTaskUtil.proxyBackendByReplicaName(session, tagret,command, false, MySQLIsolation.DEFAULT);
+                MySQLTaskUtil.proxyBackendByReplicaName(session, tagret, command, false, MySQLIsolation.DEFAULT);
                 return;
             }
             case JDBC_QUERY_ONLY: {
@@ -282,10 +284,10 @@ public class ContextRunner {
                         for (String target : SplitUtil.split(tagret, ",")) {
                             res.put(target, command);
                         }
-                        normal(session, transactionType,needStartTransaction, isolation, executeType, res);
+                        normal(session, transactionType, needStartTransaction, isolation, executeType, res);
                         return;
                 }
-                normal(session, transactionType,needStartTransaction, isolation, executeType, tagret, command);
+                normal(session, transactionType, needStartTransaction, isolation, executeType, tagret, command);
                 return;
             case UNKNOWN:
                 break;
@@ -293,11 +295,11 @@ public class ContextRunner {
         throw new UnsupportedOperationException();
     }
 
-    private static void normal(MycatSession session, String transactionType,boolean needStartTransaction, MySQLIsolation isolation, ExecuteType executeType, String datasourceName, String sql) {
-        normal(session, transactionType,needStartTransaction, isolation, executeType, Collections.singletonMap(datasourceName, sql));
+    private static void normal(MycatSession session, String transactionType, boolean needStartTransaction, MySQLIsolation isolation, ExecuteType executeType, String datasourceName, String sql) {
+        normal(session, transactionType, needStartTransaction, isolation, executeType, Collections.singletonMap(datasourceName, sql));
     }
 
-    private static void normal(MycatSession session, String transactionType,boolean needStartTransaction, MySQLIsolation isolation, ExecuteType executeType, Map<String, String> sqls) {
+    private static void normal(MycatSession session, String transactionType, boolean needStartTransaction, MySQLIsolation isolation, ExecuteType executeType, Map<String, String> sqls) {
 
         if (PROXY_TRANSACTION_TYPE.equals(transactionType)) {
             if (executeType == ExecuteType.GLOBAL_UPDATE || executeType == ExecuteType.GLOBAL_UPDATEID || sqls.size() != 1 || sqls.isEmpty()) {
