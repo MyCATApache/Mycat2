@@ -72,6 +72,8 @@ public class MySQLTaskUtil {
         }
         String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(target,master,loadBalanceStrategy);
         if (datasourceName == null) throw new MycatException("{} is not existed", target);
+        LOGGER.debug("session id:{} proxy target:{},sql:{},transaction:{},isolation:{},master:{},balance:{}",
+                mycat.sessionId(),target,sql,transaction,isolation,master,loadBalanceStrategy);
         proxyBackendByDatasourceName(mycat, sql, datasourceName,transaction,isolation);
     }
 

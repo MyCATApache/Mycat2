@@ -50,4 +50,13 @@ public enum MySQLIsolation {
   }
 
  public static MySQLIsolation DEFAULT = REPEATED_READ;
+
+  public static MySQLIsolation parse(String name){
+    for (MySQLIsolation value : values()) {
+      if (value.getText().equalsIgnoreCase(name)){
+        return value;
+      }
+    }
+    return null;
+  }
 }

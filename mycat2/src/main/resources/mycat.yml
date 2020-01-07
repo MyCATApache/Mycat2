@@ -11,7 +11,7 @@ metadata: #元数据
           createTableSQL: |-
             CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
           dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},{targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
-                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},{targetName: repli2 ,schemaName: db2, tableName: travelrecord}]
+                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},{targetName: repli ,schemaName: db2, tableName: travelrecord}]
         address:
           columns:
             - columnName: id
@@ -32,10 +32,18 @@ interceptor: #拦截器
   schemas: [{
               tables:[ 'db1.travelrecord','db1.address'],
               sqls: [
-              {sql: 'select {any}',command: select },
+              {sql: 'select {selectItems} from {any}',command: select },
               {sql: 'insert {any}',command: insert, tags: {executeType: INSERT_INSERTID}},
               {sql: 'update {any}',command: update,tags: {executeType: UPDATE}},
               {sql: 'delete {any}',command: update,tags: {executeType: UPDATE}}
+              ],
+            },
+            {
+              tables:[ 'db1.company'],
+              sqls: [
+              {sql: 'select {selectItems} from {any}',command: pass ,tags: {type: proxy,targets: defaultDs2,needTransaction: false}},
+              {sql: 'select {selectItems} from {any} for update',command: pass ,tags: {type: proxy,targets: defaultDs}},
+              {sql: '{any}',command: pass, tags: {type: proxy,targets: defaultDs,needTransaction: true}}
               ],
             }]
   sqls: [
@@ -44,11 +52,12 @@ interceptor: #拦截器
   {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
   {name: rollback ,sql: 'rollback',command: rollback},{name: rollback;,sql: 'rollback;',command: rollback},
   {name: useStatement ,sql: 'use {schema}',command: useStatement},{name: useStatement; ,sql: 'use {schema};',command: useStatement},
-  {name: setXA ,sql: 'set xa = on',command: setXATransactionType},{name: setXA; ,sql: 'set xa = on;',command: setXATransactionType},
-  {name: setProxy ,sql: 'set xa = off',command: setProxyTransactionType},{name: setProxy; ,sql: 'set xa = off;',command: setProxyTransactionType},
+  {name: setXA ,sql: 'set xa = on',command: onXA},
+  {name: setProxy ,sql: 'set xa = off',command: offXA},
   {name: setAutoCommitOff ,sql: 'set autocommit=off',command: setAutoCommitOff},
   {name: setAutoCommitOn ,sql: 'set autocommit=on',command: setAutoCommitOn},
   {name: setTransactionIsolation ,sql: 'SET SESSION TRANSACTION ISOLATION LEVEL {transactionIsolation}',command: setTransactionIsolation},
+
 
   #mariadb-java-client 2.5.2
   #mariadb set autocommit=1, sql_mode = concat(@@sql_mode,',STRICT_TRANS_TABLES')
@@ -71,9 +80,9 @@ interceptor: #拦截器
   #mysql-connector-java-8.0.11 SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE
   #mysql-connector-java-8.0.11 rollback
   {name: mysql-variables,
-   sql: '/* mysql-connector-java-8.0.11 (Revision: 6d4eaa273bc181b4cf1c8ad0821a2227f116fedf) */SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout',
+   sql: 'SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout',
     explain: 'SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@tx_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout'
-    ,command: proxy , tags: {targets: defaultDs}},
+    ,command: pass , tags: {targets: defaultDs}},
   {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',explain: 'SELECT @@session.tx_read_only' ,command: pass , tags: {targets: defaultDs}},
   {name: 'mysql set names utf8', sql: 'SET NAMES utf8',command: pass , tags: {targets: defaultDs}},
   {name: 'mysql SET character_set_results = NULL', sql: 'SET NAMES utf8',command: pass , tags: {targets: defaultDs}},
@@ -100,14 +109,14 @@ datasource:
 cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
   close: true #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
   clusters: [
-  {name: repli2 ,
+  {name: repli ,
    replicaType: SINGLE_NODE , # SINGLE_NODE:单一节点 ,MASTER_SLAVE:普通主从 GARELA_CLUSTER:garela cluster
    switchType: NOT_SWITCH , #NOT_SWITCH:不进行主从切换,SWITCH:进行主从切换
    readBalanceType: BALANCE_ALL  , #对于查询请求的负载均衡类型
    readBalanceName: BalanceRoundRobin , #对于查询请求的负载均衡类型
    writeBalanceName: BalanceRoundRobin ,  #对于修改请求的负载均衡类型
-   masters:[defaultDs2], #主节点列表
-   replicas:[],#从节点列表
+   masters:[defaultDs], #主节点列表
+   replicas:[defaultDs2],#从节点列表
    heartbeat:{maxRetry: 3, #心跳重试次数
               minSwitchTimeInterval: 12000 , #最小主从切换间隔
               heartbeatTimeout: 12000 , #心跳超时值,毫秒

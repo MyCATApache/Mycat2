@@ -58,6 +58,7 @@ public class ContextRunner {
     public static final String BALANCE = "balance";
 
     //inst command
+    public static final String ERROR = "error";
     public static final String EXPLAIN = "explain";
     public static final String SELECT = ("select");
     public static final String EXECUTE_PLAN = ("plan");
@@ -68,13 +69,15 @@ public class ContextRunner {
     public static final String ROLLBACK = ("rollback");
     public static final String EXECUTE = ("execute");
     public static final String PASS = ("pass");
-    public static final String SET_TRANSACTION_TYPE = ("setTransactionType");
+    //    public static final String SET_TRANSACTION_TYPE = ("setTransactionType");
+    public static final String ON_XA = ("onXA");
+    public static final String OFF_XA = ("offXA");
     public static final String SET_AUTOCOMMIT_OFF = ("setAutoCommitOff");
     public static final String SET_AUTOCOMMIT_ON = ("setAutoCommitOn");
     static final ConcurrentHashMap<String, Command> map;
 
     public static void run(MycatClient client, Context analysis, MycatSession session) {
-        Command command = Objects.requireNonNull(map.get(analysis.getCommand()));
+        Command command = Objects.requireNonNull(map.getOrDefault(analysis.getCommand(), ERROR_COMMAND));
         command.apply(client, analysis, session).run();
     }
 
@@ -91,6 +94,25 @@ public class ContextRunner {
         }
     }
 
+    public static final Command ERROR_COMMAND = new Command() {
+        @Override
+        public Runnable apply(MycatClient client, Context context, MycatSession session) {
+            return new Runnable() {
+                @Override
+                public void run() {
+                    session.setLastMessage("error hanlder");
+                    session.writeErrorEndPacketBySyncInProcessError();
+                }
+            };
+        }
+
+        @Override
+        public Runnable explain(MycatClient client, Context context, MycatSession session) {
+            return () -> {
+                writePlan(session, "error");
+            };
+        }
+    };
 
 
     static {
@@ -122,10 +144,11 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> block(session, mycat -> {
                     String defaultSchema = client.getDefaultSchema();
-                    String command = context.getExplain();
+                    String explain = context.getExplain();
                     CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);
                     connection.setSchema(defaultSchema);
-                    SQLExecuterWriter.executeQuery(mycat, connection, command);
+                    LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
+                    SQLExecuterWriter.executeQuery(mycat, connection, explain);
                     TransactionSessionUtil.afterDoAction();//移除已经关闭的连接,
                 });
             }
@@ -165,7 +188,9 @@ public class ContextRunner {
                                     .defaultSchema(connection.getRootSchema()).build();
                             DesRelNodeHandler desRelNodeHandler = new DesRelNodeHandler(config);
                             RelRunner runner = connection.unwrap(RelRunner.class);
-                            PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(context.getExplain()));
+                            String explain = context.getExplain();
+                            PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(explain));
+                            LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
                             writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery(), connection))});
                             TransactionSessionUtil.afterDoAction();
                         }
@@ -197,6 +222,7 @@ public class ContextRunner {
                         return () -> {
                             String schemaName = Objects.requireNonNull(context.getVariable(SCHEMA_NAME));
                             client.useSchema(schemaName);
+                            LOGGER.debug("session id:{} action: use {}", session.sessionId(), schemaName);
                             session.writeOkEndPacket();
                         };
                     }
@@ -211,14 +237,36 @@ public class ContextRunner {
                 }
         );
         /**
-         * 参数:transactionType
+         * 参数:无
          */
-        map.put(SET_TRANSACTION_TYPE, new Command() {
+        map.put(ON_XA, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     if (session.isInTransaction()) throw new IllegalArgumentException();
-                    client.useTransactionType(TransactionType.parse(context.getVariable(TRANSACTION_TYPE)));
+                    client.useTransactionType(TransactionType.JDBC_TRANSACTION_TYPE);
+                    LOGGER.debug("session id:{} action:{}", session.sessionId(), "set xa = 1 exe success");
+                    session.writeOkEndPacket();
+                };
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    writePlan(session, context.getVariable(TRANSACTION_TYPE));
+                };
+            }
+        });
+        /**
+         * 参数:无
+         */
+        map.put(OFF_XA, new Command() {
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    if (session.isInTransaction()) throw new IllegalArgumentException();
+                    client.useTransactionType(TransactionType.PROXY_TRANSACTION_TYPE);
+                    LOGGER.debug("session id:{} action:{}", session.sessionId(), "set xa = 0 exe success");
                     session.writeOkEndPacket();
                 };
             }
@@ -238,6 +286,7 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     session.setAutoCommit(false);
+                    LOGGER.debug("session id:{} action:set autocommit = 0 exe success", session.sessionId() );
                     session.writeOkEndPacket();
                 };
             }
@@ -257,6 +306,7 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     session.setAutoCommit(true);
+                    LOGGER.debug("session id:{} action:set autocommit = 1 exe success", session.sessionId());
                     session.writeOkEndPacket();
                 };
             }
@@ -276,6 +326,7 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     session.setInTranscation(true);
+                    LOGGER.debug("session id:{} action:{}", session.sessionId(), "begin exe success");
                     session.writeOkEndPacket();
                 };
             }
@@ -295,25 +346,17 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     TransactionType transactionType = client.getTransactionType();
-                    MySQLIsolation mySQLIsolation = MySQLIsolation.valueOf(Objects.requireNonNull(context.getVariable(TRANSACTION_ISOLATION)));
+                    MySQLIsolation mySQLIsolation = MySQLIsolation.parse(Objects.requireNonNull(context.getVariable(TRANSACTION_ISOLATION)));
                     session.setIsolation(mySQLIsolation);
-                    switch (transactionType) {
-                        case PROXY_TRANSACTION_TYPE:
-                            MySQLTaskUtil.proxyBackend(session, context.getExplain());
-                            return;
-                        case JDBC_TRANSACTION_TYPE:
-                            block(session, mycat -> {
-                                TransactionSessionUtil.setIsolation(mySQLIsolation.getJdbcValue());
-                                mycat.writeOkEndPacket();
-                            });
-                    }
+                    LOGGER.debug("session id:{} action: set isolation = {}", session.sessionId(), mySQLIsolation);
+                    session.writeOkEndPacket();
                 };
             }
 
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
                 return () -> {
-                    writePlan(session,  Objects.requireNonNull(context.getVariable(TRANSACTION_ISOLATION)));
+                    writePlan(session, Objects.requireNonNull(context.getVariable(TRANSACTION_ISOLATION)));
                 };
             }
         });
@@ -330,14 +373,17 @@ public class ContextRunner {
                         case PROXY_TRANSACTION_TYPE:
                             if (session.isBindMySQLSession()) {
                                 MySQLTaskUtil.proxyBackend(session, "ROLLBACK");
+                                LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
                                 return;
                             } else {
                                 session.writeOkEndPacket();
+                                LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
                                 return;
                             }
                         case JDBC_TRANSACTION_TYPE:
                             block(session, mycat -> {
                                 TransactionSessionUtil.rollback();
+                                LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
                                 mycat.writeOkEndPacket();
                             });
                             return;
@@ -360,22 +406,22 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     TransactionType transactionType = client.getTransactionType();
-                    MySQLIsolation mySQLIsolation = MySQLIsolation.valueOf(Objects.requireNonNull(context.getVariable(TRANSACTION_ISOLATION)));
-                    session.setIsolation(mySQLIsolation);
                     session.setInTranscation(false);
                     switch (transactionType) {
                         case PROXY_TRANSACTION_TYPE:
                             if (!session.isBindMySQLSession()) {
+                                LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
                                 session.writeOkEndPacket();
                                 return;
                             } else {
                                 MySQLTaskUtil.proxyBackend(session, "COMMIT");
-                                LOGGER.debug("proxy commit");
+                                LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
                                 return;
                             }
                         case JDBC_TRANSACTION_TYPE:
                             block(session, mycat -> {
                                 TransactionSessionUtil.commit();
+                                LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
                                 mycat.writeOkEndPacket();
                             });
                     }
@@ -384,7 +430,9 @@ public class ContextRunner {
 
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
-                return () -> { writePlan(session, "COMMIT"); };
+                return () -> {
+                    writePlan(session, "COMMIT");
+                };
             }
         });
         /**
@@ -394,6 +442,7 @@ public class ContextRunner {
          * targets 一个目标
          * update:true|false
          * needGeneratedKeys:true|false
+         * needTransaction:true|false
          */
         map.put(PASS, new Command() {
             @Override
@@ -401,15 +450,35 @@ public class ContextRunner {
                 boolean isProxy = "proxy".equalsIgnoreCase(context.getVariable("type", "proxy"));
                 String balance = context.getVariable(BALANCE);
                 String targets = context.getVariable(TARGETS);
+                boolean master = "true".equalsIgnoreCase(context.getVariable("master"));
                 boolean isUpdate = "true".equalsIgnoreCase(context.getVariable("update"));
                 boolean needGeneratedKeys = "true".equalsIgnoreCase(context.getVariable("needGeneratedKeys"));
+                boolean needTransactionConfig = "true".equalsIgnoreCase(context.getVariable("needTransaction", "true"));
+                boolean needStartTransaction;
+                if (needTransactionConfig){
+                    needStartTransaction = !session.isAutocommit() || session.isInTransaction();
+                    if (needStartTransaction){
+                        master = true;
+                    }
+                }else {
+                    needStartTransaction = false;
+                }
                 String command = context.getExplain();
+                boolean finalMaster = master;
                 return () -> {
                     if (isProxy) {
-                        MySQLTaskUtil.proxyBackendByTargetName(session, targets, context.getExplain(), false, MySQLIsolation.DEFAULT, isUpdate, balance);
+                        LOGGER.debug("session id:{} pass proxy target:{},sql:{}", session.sessionId(), targets, command);
+                        MySQLTaskUtil.proxyBackendByTargetName(session, targets, context.getExplain(), needStartTransaction, MySQLIsolation.DEFAULT, isUpdate, balance);
                     } else {
-                        String datasourceName = Objects.requireNonNull(ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targets, isUpdate, balance));
+                        String datasourceName = Objects.requireNonNull(ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(targets, finalMaster, balance));
+                        LOGGER.debug("session id:{} pass jdbc target:{},sql:{},needGeneratedKeys:{}", session.sessionId(), datasourceName, command, needGeneratedKeys);
                         block(session, mycat -> {
+                            TransactionSessionUtil.setIsolation(session.getIsolation().getJdbcValue());
+                            if (needStartTransaction) {
+                                LOGGER.debug("session id:{} startTransaction", session.sessionId());
+                                TransactionSessionUtil.setAutocommitOff();
+                                session.setInTranscation(true);
+                            }
                             writeToMycatSession(session, isUpdate ? TransactionSessionUtil.executeQuery(datasourceName, command) : TransactionSessionUtil.executeUpdate(datasourceName, command, needGeneratedKeys));
                         });
                     }
@@ -426,9 +495,8 @@ public class ContextRunner {
          * type:proxy|jdbc
          * balance
          * targets 一个目标
-         * update:true|false
+         * executeType:
          * needGeneratedKeys:true|false
-         * pass:true|false
          */
         map.put(EXECUTE, new Command() {
             @Override
@@ -439,6 +507,8 @@ public class ContextRunner {
                 String balance = details.balance;
                 ExecuteType executeType = details.executeType;
                 MySQLIsolation isolation = session.getIsolation();
+
+                LOGGER.debug("session id:{} execute :{}", session.sessionId(), details.toString());
                 switch (client.getTransactionType()) {
                     case PROXY_TRANSACTION_TYPE: {
                         if (tasks.size() != 1) throw new IllegalArgumentException();
@@ -450,9 +520,11 @@ public class ContextRunner {
                         };
                     }
                     case JDBC_TRANSACTION_TYPE: {
-                        return () -> { block(session, mycat -> {
+                        return () -> {
+                            block(session, mycat -> {
                                         TransactionSessionUtil.setIsolation(isolation.getJdbcValue());
                                         if (needStartTransaction) {
+                                            LOGGER.debug("session id:{} startTransaction", session.sessionId());
                                             TransactionSessionUtil.setAutocommitOff();
                                             session.setInTranscation(true);
                                         }

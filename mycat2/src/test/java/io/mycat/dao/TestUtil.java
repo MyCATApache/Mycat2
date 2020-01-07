@@ -1,21 +1,44 @@
 package io.mycat.dao;
 
+import com.mysql.cj.jdbc.MysqlDataSource;
 import io.mycat.DesRelNodeHandler;
-import io.mycat.util.DumpUtil;
+import lombok.SneakyThrows;
 
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
 import java.sql.*;
 import java.util.Properties;
 
-public class Util {
+public class TestUtil {
+
+    @SneakyThrows
+    public static Connection getMySQLConnection() {
+        String username = "root";
+        String password = "123456";
+
+        Properties properties = new Properties();
+        properties.put("user", username);
+        properties.put("password", password);
+        properties.put("useBatchMultiSend", "false");
+        properties.put("usePipelineAuth", "false");
+
+        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+
+        MysqlDataSource mysqlDataSource = new MysqlDataSource();
+        mysqlDataSource.setUrl(url);
+        mysqlDataSource.setUser(username);
+        mysqlDataSource.setPassword(password);
+
+        return DriverManager.getConnection(url, properties);
+    }
+
     public static void main(String[] args) throws SQLException, ClassNotFoundException {
 
         String username = "root";
         String password = "123456";
 
         Properties properties = new Properties();
-        properties.put("user",username);
+        properties.put("user", username);
         properties.put("password", password);
         properties.put("useBatchMultiSend", "false");
         properties.put("usePipelineAuth", "false");
@@ -23,7 +46,7 @@ public class Util {
         Class.forName("com.mysql.jdbc.Driver");
         Connection connection = DriverManager.getConnection("jdbc:mysql://0.0.0.0:8066/scott?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8", properties);
         connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-        try(Statement statement = connection.createStatement()) {
+        try (Statement statement = connection.createStatement()) {
             ResultSet resultSet = statement.executeQuery("select 1");
 
             String s = getString(resultSet);
@@ -36,9 +59,9 @@ public class Util {
 
     }
 
-    private static String getString(ResultSet resultSet) throws SQLException {
+    public static String getString(ResultSet resultSet) throws SQLException {
         CharArrayWriter writer = new CharArrayWriter(8192);
-        DesRelNodeHandler.            dump(resultSet, true, new PrintWriter(writer));
+        DesRelNodeHandler.dump(resultSet, false, new PrintWriter(writer));
         return writer.toString();
     }
 

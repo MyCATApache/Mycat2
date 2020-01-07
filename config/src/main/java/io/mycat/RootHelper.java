@@ -35,10 +35,4 @@ public enum RootHelper {
 
         return tmpConfigProvider;
     }
-
-    public static void main(String[] args) {
-        Map<String, String> c = new HashMap<>();
-        c.put("aa", "1111111111111");
-        String dump = YamlUtil.dump(c);
-    }
 }
