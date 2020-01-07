@@ -1,13 +1,15 @@
 package io.mycat.client;
 
+import io.mycat.beans.mycat.TransactionType;
+
 import java.util.List;
 
 public interface MycatClient {
     public Context analysis(String sql) ;
     public List<String> explain(String sql);
     public void useSchema(String schemaName);
-    public String getTransactionType();
-    public void useTransactionType(String transactionType);
+    public TransactionType getTransactionType();
+    public void useTransactionType(TransactionType transactionType);
 
     String getDefaultSchema();
 

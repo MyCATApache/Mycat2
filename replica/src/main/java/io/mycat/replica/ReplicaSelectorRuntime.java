@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -235,25 +236,30 @@ public enum ReplicaSelectorRuntime {
     }
 //////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
 
-    public PhysicsInstanceImpl getWriteDatasourceByReplicaName(String replicaName) {
-        return getWriteDatasourceByReplicaName(replicaName, null);
-    }
 
-    public PhysicsInstanceImpl getDatasourceByReplicaName(String replicaName) {
-        return getDatasourceByReplicaName(replicaName, null);
-    }
-
-    public String getDatasourceNameByReplicaName(String replicaName) {
-        PhysicsInstanceImpl datasource = getDatasourceByReplicaName(replicaName, null);
-        if (datasource == null) {
+    public String getDatasourceNameByReplicaName(String replicaName, boolean master, String loadBalanceStrategy) {
+        BiFunction<LoadBalanceStrategy, ReplicaDataSourceSelector, PhysicsInstanceImpl> function = master ? this::getWriteDatasource : this::getDatasource;
+        ReplicaDataSourceSelector replicaDataSourceSelector = map.get(replicaName);
+        if (replicaDataSourceSelector == null) {
             return replicaName;
         }
-        return datasource.getName();
+        LoadBalanceStrategy loadBalanceByBalance = null;
+        if (loadBalanceStrategy != null) {
+            loadBalanceByBalance = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(loadBalanceStrategy);
+        }//传null集群配置的负载均衡生效
+        PhysicsInstanceImpl writeDatasource = function.apply(loadBalanceByBalance, replicaDataSourceSelector);
+        if (writeDatasource == null) {
+            return replicaName;
+        }
+        return writeDatasource.getName();
     }
 
     public PhysicsInstanceImpl getWriteDatasourceByReplicaName(String replicaName,
                                                                LoadBalanceStrategy balanceStrategy) {
         ReplicaDataSourceSelector selector = map.get(replicaName);
+        if (selector == null) {
+            return null;
+        }
         return getDatasource(balanceStrategy, selector,
                 selector.defaultWriteLoadBalanceStrategy, selector.getWriteDataSource());
     }
@@ -283,14 +289,17 @@ public enum ReplicaSelectorRuntime {
         return (PhysicsInstanceImpl) select;
     }
 
-    public PhysicsInstanceImpl getDatasourceByReplicaName(String replicaName,
-                                                          LoadBalanceStrategy balanceStrategy) {
+    public PhysicsInstanceImpl getDatasourceByReplicaName(String replicaName, boolean master, LoadBalanceStrategy balanceStrategy) {
         ReplicaDataSourceSelector selector = map.get(replicaName);
         if (selector == null) {
             return null;
         }
-        return getDatasource(balanceStrategy, selector,
-                selector.defaultReadLoadBalanceStrategy, selector.getDataSourceByLoadBalacneType());
+        if (master) {
+            return getWriteDatasourceByReplicaName(replicaName, balanceStrategy);
+        }else {
+            return getDatasource(balanceStrategy, selector,
+                    selector.defaultReadLoadBalanceStrategy, selector.getDataSourceByLoadBalacneType());
+        }
     }
 
     public ReplicaDataSourceSelector getDataSourceSelector(String replicaName) {

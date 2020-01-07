@@ -12,6 +12,11 @@
     <artifactId>pattern</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>io.mycat</groupId>
+            <artifactId>common</artifactId>
+            <version>0.4-SNAPSHOP</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/com.joanzapata.utils/string-format -->
         <dependency>
             <groupId>com.joanzapata.utils</groupId>

@@ -2,23 +2,20 @@ package io.mycat.client;
 
 import io.mycat.EvalNodeVisitor;
 import io.mycat.MycatConfig;
+import io.mycat.beans.mycat.TransactionType;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.pattern.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import org.eclipse.collections.api.block.function.Function2;
 import org.jetbrains.annotations.NotNull;
 import org.reflections.Reflections;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static javax.swing.UIManager.get;
 
 public enum ClientRuntime {
     INSTANCE;
@@ -26,7 +23,7 @@ public enum ClientRuntime {
     final BuilderInfo wapper = new BuilderInfo();
     final ConcurrentHashMap<String, List<EvalNodeVisitor.FunctionSig>> libSharedMap = new ConcurrentHashMap<>();
     volatile RuntimeInfo runtimeInfo;
-    String transactionType = "jdbc";
+    TransactionType transactionType = TransactionType.JDBC_TRANSACTION_TYPE;
 
     private static SchemaTable apply(String commonTableName) {
         String[] split1 = commonTableName.split("\\.");
@@ -61,7 +58,7 @@ public enum ClientRuntime {
             private RuntimeInfo runtime = Objects.requireNonNull(runtimeInfo);
             private GPattern pattern = runtime.supplier.get();
             private String defaultSchemaName;
-            private String transactionType;
+            private TransactionType transactionType;
             ///////////////////////////////////////////////
 
             @Override
@@ -70,7 +67,7 @@ public enum ClientRuntime {
                 @NonNull GPattern currentPattern = getCurrentPattern();
                 RuntimeInfo runtime = this.runtime;
                 TableCollector tableMatcher = currentPattern.getCollector();
-                if (defaultSchemaName!=null) {
+                if (defaultSchemaName != null) {
                     tableMatcher.useSchema(defaultSchemaName);
                 }
                 GPatternMatcher matcher = currentPattern.matcherAndCollect(sql);
@@ -84,16 +81,16 @@ public enum ClientRuntime {
                     for (Map.Entry<String, Collection<String>> stringCollectionEntry : collectionMap.entrySet()) {
                         for (Map.Entry<Map<String, Set<String>>, List<TableInfo>> mapListEntry : this.runtime.tableToItem.entrySet()) {
                             Set<String> strings = mapListEntry.getKey().get(stringCollectionEntry.getKey());
-                            if(strings.containsAll(stringCollectionEntry.getValue())){
+                            if (strings.containsAll(stringCollectionEntry.getValue())) {
                                 List<TableInfo> tableInfo = mapListEntry.getValue();
                                 if (tableInfo != null) {
                                     for (TableInfo info : tableInfo) {
-                                        PatternRootConfig.TextItemConfig textItemConfig =info .map.get(matcher.id());
+                                        PatternRootConfig.TextItemConfig textItemConfig = info.map.get(matcher.id());
                                         if (textItemConfig != null) {
-                                            return getContext(sql,collectionMap,map,textItemConfig);
+                                            return getContext(sql, collectionMap, map, textItemConfig);
                                         }
                                         if (info.handler != null) {
-                                            return getContext(sql,collectionMap,map,info.handler);
+                                            return getContext(sql, collectionMap, map, info.handler);
                                         }
                                     }
                                 }
@@ -105,34 +102,34 @@ public enum ClientRuntime {
                     Map<Integer, PatternRootConfig.TextItemConfig> idToItem = runtime.idToItem;
                     PatternRootConfig.TextItemConfig textItemConfig = idToItem.get(matcher.id());
                     if (textItemConfig != null) {
-                        return getContext(sql,collectionMap,map,textItemConfig);
+                        return getContext(sql, collectionMap, map, textItemConfig);
                     }
                 }
 
                 if (!sqlMatch && tableMatch) {
                     List<TableInfo> tableInfo = this.runtime.tableToItem.get(tableMatcher.geTableMap());
-                    if (tableInfo != null&&tableInfo.size()==1) {
+                    if (tableInfo != null && tableInfo.size() == 1) {
                         if (tableInfo.get(0).handler != null)
-                            return getContext(sql,collectionMap,map,tableInfo.get(0).handler);
+                            return getContext(sql, collectionMap, map, tableInfo.get(0).handler);
                     }
                 }
                 if (!sqlMatch && !tableMatch) {
-                    return getContext(sql,collectionMap,map,runtime.defaultHandler);
+                    return getContext(sql, collectionMap, map, runtime.defaultHandler);
                 }
-                if (runtimeInfo.defaultHandler!=null){
-                 return    getContext(sql,collectionMap,map,runtimeInfo.defaultHandler);
+                if (runtimeInfo.defaultHandler != null) {
+                    return getContext(sql, collectionMap, map, runtimeInfo.defaultHandler);
                 }
                 throw new UnsupportedOperationException();
             }
 
-            private Context getContext(String sql,Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
-                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain(),handler.getTransactionType());
+            private Context getContext(String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
+                return new Context(sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
             }
 
 
             @NotNull
-            private Context getContext(String sql,Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
-                return new Context(sql,geTableMap,namesContext,handler.getTags(),handler.getType(),handler.getExplain(),handler.getTransactionType());
+            private Context getContext(String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
+                return new Context(sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
             }
 
             @Override
@@ -146,11 +143,12 @@ public enum ClientRuntime {
             }
 
             @Override
-            public String getTransactionType() {
-                return transactionType;
+            public TransactionType getTransactionType() {
+                return transactionType == null?ClientRuntime.INSTANCE.transactionType:transactionType;
             }
+
             @Override
-            public void useTransactionType(String transactionType){
+            public void useTransactionType(TransactionType transactionType) {
                 this.transactionType = transactionType;
             }
 
@@ -175,7 +173,7 @@ public enum ClientRuntime {
     public void flash() {
         //config
         final PatternRootConfig patternRootConfig = wapper.patternRootConfig;
-        List<PatternRootConfig.TextItemConfig> sqls = new ArrayList<>( patternRootConfig.getSqls());
+        List<PatternRootConfig.TextItemConfig> sqls = new ArrayList<>(patternRootConfig.getSqls());
         List<PatternRootConfig.SchemaConfig> schemas = new ArrayList<>(patternRootConfig.getSchemas());
         PatternRootConfig.Handler defaultHanlder = patternRootConfig.getDefaultHanlder();
         //builder
@@ -188,17 +186,17 @@ public enum ClientRuntime {
             String type = handler.getType();
 
             List<String> tables = handler.getTables();
-            if (tables.isEmpty()){
+            if (tables.isEmpty()) {
                 for (String sql : handler.getSqls()) {
                     PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
                     textItemConfig.setName(name);
                     textItemConfig.setSql(sql);
                     textItemConfig.setTags(tags);
                     textItemConfig.setExplain(explain);
-                    textItemConfig.setType(type);
+                    textItemConfig.setCommand(type);
                     sqls.add(textItemConfig);
                 }
-            }else {
+            } else {
                 ArrayList<PatternRootConfig.TextItemConfig> textItemConfigs = new ArrayList<PatternRootConfig.TextItemConfig>();
                 for (String sql : handler.getSqls()) {
                     PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
@@ -207,7 +205,7 @@ public enum ClientRuntime {
                     textItemConfig.setTags(tags);
                     textItemConfig.setExplain(explain);
                     textItemConfigs.add(textItemConfig);
-                    textItemConfig.setType(type);
+                    textItemConfig.setCommand(type);
                 }
                 PatternRootConfig.SchemaConfig schemaConfig = new PatternRootConfig.SchemaConfig();
                 schemaConfig.setDefaultHanlder(null);
@@ -233,14 +231,14 @@ public enum ClientRuntime {
         }
 
 
-
         TableCollectorBuilder tableCollctorbuilder = new TableCollectorBuilder(patternBuilder.geIdRecorder(), (Map) getTableMap(schemas));
         runtimeInfo = new RuntimeInfo(() -> patternBuilder.createGroupPattern(tableCollctorbuilder.create()), itemMap, tableMap, defaultHanlder);
-        this.transactionType = patternRootConfig.getTransactionType();
+        this.transactionType =TransactionType.parse(patternRootConfig.getTransactionType());
     }
 
     private Map<String, Set<String>> getTableMap(List<PatternRootConfig.SchemaConfig> schemaConfigs) {
-        return schemaConfigs.stream().flatMap(i -> { return i.getTables().stream().map(commonTableName -> apply(commonTableName));
+        return schemaConfigs.stream().flatMap(i -> {
+            return i.getTables().stream().map(commonTableName -> apply(commonTableName));
         }).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
     }
 
@@ -332,7 +330,7 @@ public enum ClientRuntime {
         }
     }
 
-    public String getTransactionType() {
+    public TransactionType getTransactionType() {
         return transactionType;
     }
 }

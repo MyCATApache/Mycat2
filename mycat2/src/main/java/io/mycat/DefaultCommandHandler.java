@@ -13,12 +13,14 @@ import io.mycat.proxy.session.MycatUser;
 public class DefaultCommandHandler extends AbstractCommandHandler {
     private MycatClient client;
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
+
     @Override
     public void initRuntime(MycatSession session) {
         MycatUser user = session.getUser();
         this.client = ClientRuntime.INSTANCE.login(user.getUserName(), user.getPassword());
         this.client.useSchema(session.getSchema());
-        this.client.useTransactionType(ContextRunner.JDBC_TRANSACTION_TYPE);
+
+        this.client.useTransactionType(ClientRuntime.INSTANCE.getTransactionType());
     }
 
     @Override
@@ -27,12 +29,12 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         String sql = new String(bytes);
         LOGGER.debug(sql);
         Context analysis = client.analysis(sql);
-        ContextRunner.run(client,analysis,session);
+        ContextRunner.run(client, analysis, session);
     }
 
     @Override
     public void handleContentOfFilename(byte[] sql, MycatSession session) {
-session.writeErrorEndPacketBySyncInProcessError();
+        session.writeErrorEndPacketBySyncInProcessError();
     }
 
     @Override

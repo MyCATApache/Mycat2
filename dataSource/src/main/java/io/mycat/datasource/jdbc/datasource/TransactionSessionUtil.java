@@ -6,6 +6,7 @@ import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.datasource.jdbc.resultset.MysqlSingleDataNodeResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.datasource.jdbc.thread.GThread;
+import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.PhysicsInstanceImpl;
@@ -21,8 +22,8 @@ import java.util.stream.Collectors;
  **/
 public class TransactionSessionUtil {
 
-    public static MycatResultSetResponse executeQuery(String replicaName, String sql, LoadBalanceStrategy strategy) {
-        DefaultConnection connection = getConnectionByReplicaName(replicaName, strategy);
+    public static MycatResultSetResponse executeQuery(String replicaName, String sql, boolean update, String strategy) {
+        DefaultConnection connection = getConnectionByReplicaName(replicaName, update, strategy);
         if (connection.getDataSource().isMySQLType()) {
             return new MysqlSingleDataNodeResultSetResponse(connection.executeQuery(sql));
         } else {
@@ -40,12 +41,19 @@ public class TransactionSessionUtil {
         }
     }
 
-    public static DefaultConnection getConnectionByReplicaName(String replicaName, LoadBalanceStrategy strategy) {
+    public static DefaultConnection getConnectionByReplicaName(String replicaName, boolean update, String strategy) {
+        LoadBalanceStrategy loadBalanceByBalanceName = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(strategy);
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = processUnit.getTransactionSession();
         transactionSession.beforeDoAction();
-        PhysicsInstanceImpl datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(replicaName, strategy);
-        return transactionSession.getConnection(Objects.requireNonNull(datasource.getName()));
+        PhysicsInstanceImpl datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(replicaName, update, loadBalanceByBalanceName);
+        String name;
+        if (datasource == null) {
+            name = replicaName;
+        } else {
+            name = datasource.getName();
+        }
+        return transactionSession.getConnection(Objects.requireNonNull(name));
     }
 
     public static DefaultConnection getConnectionByDataSource(String datasource) {
@@ -58,14 +66,14 @@ public class TransactionSessionUtil {
 
     public static MycatUpdateResponse executeUpdate(String replicaName,
                                                     String sql,
-                                                    boolean insert,
-                                                    LoadBalanceStrategy strategy) {
+                                                    boolean needGeneratedKeys,
+                                                    String strategy) {
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = processUnit.getTransactionSession();
         try {
-            DefaultConnection connection = getConnectionByReplicaName(replicaName, strategy);
+            DefaultConnection connection = getConnectionByReplicaName(replicaName,true, strategy);
             transactionSession.beforeDoAction();
-            return connection.executeUpdate(sql, insert);
+            return connection.executeUpdate(sql, needGeneratedKeys);
         } finally {
             transactionSession.afterDoAction();
         }
@@ -83,16 +91,16 @@ public class TransactionSessionUtil {
         }
     }
 
-    public static MycatUpdateResponse executeUpdateByDatasouceList(String sql, Collection<String> datasourceList,boolean needGeneratedKeys) {
-       return executeUpdateByDatasouce(datasourceList.stream().collect(Collectors.toMap(k->k,v->sql)),needGeneratedKeys);
+    public static MycatUpdateResponse executeUpdateByDatasouceList(String sql, Collection<String> datasourceList, boolean needGeneratedKeys) {
+        return executeUpdateByDatasouce(datasourceList.stream().collect(Collectors.toMap(k -> k, v -> sql)), needGeneratedKeys);
     }
 
-    public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, String> map,boolean needGeneratedKeys) {
+    public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, String> map, boolean needGeneratedKeys) {
         int lastId = 0;
         int count = 0;
         int serverStatus = 0;
         for (Map.Entry<String, String> backendTableInfoStringEntry : map.entrySet()) {
-            MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getValue(), backendTableInfoStringEntry.getKey(),needGeneratedKeys);
+            MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getValue(), backendTableInfoStringEntry.getKey(), needGeneratedKeys);
             long lastInsertId = mycatUpdateResponse.getLastInsertId();
             int updateCount = mycatUpdateResponse.getUpdateCount();
             lastId = Math.max((int) lastInsertId, lastId);
@@ -143,6 +151,7 @@ public class TransactionSessionUtil {
         TransactionSession transactionSession = processUnit.getTransactionSession();
         transactionSession.reset();
     }
+
     public static void afterDoAction() {
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = processUnit.getTransactionSession();

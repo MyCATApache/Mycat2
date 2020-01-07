@@ -109,7 +109,7 @@ public final class MySQLServerStatus {
   }
 
   public MySQLIsolation getIsolation() {
-    return isolation;
+    return isolation== null?MySQLIsolation.DEFAULT:isolation;
   }
 
   public void setIsolation(MySQLIsolation isolation) {

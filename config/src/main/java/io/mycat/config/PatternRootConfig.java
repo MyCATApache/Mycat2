@@ -37,18 +37,18 @@ public class PatternRootConfig {
         String sql;
         //handler
         Map<String, String> tags = new HashMap<>();
-        String type;
+        String command;
         String explain;
-        String transactionType;
+//        String transactionType;
     }
 
 
     @Data
     public static class Handler {
          Map<String, String> tags;
-         String type;
+         String command;
          String explain;
-         String transactionType;
+//         String transactionType;
     }
 
 

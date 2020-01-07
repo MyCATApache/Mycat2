@@ -54,7 +54,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         for (QueryBackendTask endTableInfo : backStoreList) {
             GThread gThread = (GThread) Thread.currentThread();
 
-            String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getBackendTableInfo().getTargetName());
+            String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getBackendTableInfo().getTargetName(),false,null);
             DefaultConnection session = gThread.getTransactionSession().getConnection(datasourceName);
             dsConnections.add(session);
             iterators.add(session.executeQuery(endTableInfo.getSql()));

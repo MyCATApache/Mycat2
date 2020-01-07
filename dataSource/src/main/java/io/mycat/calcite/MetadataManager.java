@@ -325,7 +325,7 @@ public enum MetadataManager {
         TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
         ConditionCollector conditionCollector = new ConditionCollector();
         sqlStatement.accept(conditionCollector);
-        Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange());
+        Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange(),currentSchema);
         Map<String, String> sqls = new HashMap<>();
         for (BackendTableInfo endTableInfo : rrs.getBackEndTableInfos()) {
             SchemaInfo schemaInfo = endTableInfo.getSchemaInfo();
@@ -339,8 +339,8 @@ public enum MetadataManager {
     //////////////////////////////////////////calculate///////////////////////////////
     private Rrs assignment(
             boolean fail,
-            QueryDataRange queryDataRange) {
-        String schemaName = null;
+            QueryDataRange queryDataRange,String wapperSchemaName) {
+        String schemaName = wapperSchemaName;
         String tableName = null;
         SQLExprTableSource table = null;
         if (queryDataRange.getTableSource() != null) {
