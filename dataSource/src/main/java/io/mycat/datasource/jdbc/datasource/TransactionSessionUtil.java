@@ -100,7 +100,7 @@ public class TransactionSessionUtil {
         int count = 0;
         int serverStatus = 0;
         for (Map.Entry<String, String> backendTableInfoStringEntry : map.entrySet()) {
-            MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getValue(), backendTableInfoStringEntry.getKey(), needGeneratedKeys);
+            MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getKey(), backendTableInfoStringEntry.getValue(), needGeneratedKeys);
             long lastInsertId = mycatUpdateResponse.getLastInsertId();
             int updateCount = mycatUpdateResponse.getUpdateCount();
             lastId = Math.max((int) lastInsertId, lastId);
@@ -141,6 +141,7 @@ public class TransactionSessionUtil {
     }
 
     public static void setIsolation(int transactionIsolation) {
+        beforeDoAction();
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = processUnit.getTransactionSession();
         transactionSession.setTransactionIsolation(transactionIsolation);
@@ -162,5 +163,11 @@ public class TransactionSessionUtil {
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = processUnit.getTransactionSession();
         transactionSession.beforeDoAction();
+    }
+
+    public static void begin() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.begin();
     }
 }

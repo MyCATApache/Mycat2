@@ -1,23 +1,18 @@
 package io.mycat.dao;
 
 import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 
-public class ReadWriteSeparationTest {
-    private static final Logger logger = LoggerFactory.getLogger(ReadWriteSeparationTest.class);
-
+public class XaTest {
     public static void main(String[] args) throws Exception {
 
         try (Connection connection = TestUtil.getMySQLConnection()) {
             try (Statement statement = connection.createStatement()) {
-                statement.execute("set xa = off");
-                //action:set xa = 0 exe success
+                statement.execute("set xa = on");
+                //session id:1 action:set xa = 1 exe success
             }
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery("select * from db1.company");
@@ -48,7 +43,7 @@ public class ReadWriteSeparationTest {
                 Assert.assertEquals("", string);
                 statement.executeUpdate("INSERT INTO `db1`.`company` (`id`) VALUES ('4');",Statement.RETURN_GENERATED_KEYS);
                 ResultSet generatedKeys = statement.getGeneratedKeys();
-                  long  lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
+                long  lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
                 // session id:1 proxy target:defaultDs,sql:INSERT INTO `db1`.`company` (`id`) VALUES ('4');,transaction:true,isolation:REPEATED_READ,master:true,balance:null
                 connection.commit();
                 //session id:1 action: commit from binding session
@@ -62,5 +57,4 @@ public class ReadWriteSeparationTest {
             }
         }
     }
-
 }
