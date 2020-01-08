@@ -28,10 +28,7 @@ import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
-import io.mycat.BackendTableInfo;
-import io.mycat.MycatConfig;
-import io.mycat.MycatException;
-import io.mycat.SchemaInfo;
+import io.mycat.*;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.queryCondition.ColumnRangeValue;
@@ -43,6 +40,13 @@ import io.mycat.router.function.PartitionRuleFunctionManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
+import org.apache.calcite.interpreter.Bindables;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.prepare.RelOptTableImpl;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.RelVisitor;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +70,43 @@ public enum MetadataManager {
 
     public void removeSchema(String schemaName) {
         logicTableMap.remove(schemaName);
+    }
+
+    public List<String> explain(RelNode scan) {
+        String message = RelOptUtil.toString(scan);
+        List<String> list = new ArrayList<>(Arrays.asList(message.split("\n")));
+        List<TableScan> tableScans = new ArrayList<>();
+        scan.childrenAccept(new RelVisitor() {
+            @Override
+            public void visit(RelNode node, int ordinal, RelNode parent) {
+                if (node instanceof Bindables.BindableTableScan) {
+                    tableScans.add((TableScan) node);
+                }
+                if (node instanceof LogicalTableScan) {
+                    tableScans.add((TableScan) node);
+                }
+                super.visit(node, ordinal, parent);
+            }
+        });
+        for (TableScan tableScan : tableScans) {
+            RelOptTableImpl table = (RelOptTableImpl) tableScan.getTable();
+            list.add("node:" + RelOptUtil.toString(tableScan));
+            JdbcTable unwrap = table.unwrap(JdbcTable.class);
+            List<QueryBackendTask> queryBackendTasks;
+            if (tableScan instanceof Bindables.BindableTableScan) {
+                Bindables.BindableTableScan tableScan1 = (Bindables.BindableTableScan) tableScan;
+                queryBackendTasks = unwrap.getQueryBackendTasks(new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
+            } else {
+                queryBackendTasks = unwrap.getQueryBackendTasks(Collections.emptyList(), null);
+            }
+            for (QueryBackendTask queryBackendTask : queryBackendTasks) {
+                String targetName = queryBackendTask.getBackendTableInfo().getTargetName();
+                String sql = queryBackendTask.getSql();
+                list.add(" targetName:" + targetName);
+                list.add("  sql:" + sql);
+            }
+        }
+        return list;
     }
 
     public void addSchema(String schemaName) {
@@ -164,6 +205,10 @@ public enum MetadataManager {
             this.replicaColumnInfo = shardingInfo.get(MAP_TARGET);
             this.databaseColumnInfo = shardingInfo.get(MAP_DATABASE);
             this.tableColumnInfo = shardingInfo.get(MAP_TABLE);
+        }
+
+        public boolean isNatureTable() {
+            return natureTableColumnInfo != null;
         }
 
         public void setJdbcTable(JdbcTable jdbcTable) {
@@ -325,14 +370,14 @@ public enum MetadataManager {
         TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
         ConditionCollector conditionCollector = new ConditionCollector();
         sqlStatement.accept(conditionCollector);
-        Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange(),currentSchema);
-        Map<String,List< String>> sqls = new HashMap<>();
+        Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange(), currentSchema);
+        Map<String, List<String>> sqls = new HashMap<>();
         for (BackendTableInfo endTableInfo : rrs.getBackEndTableInfos()) {
             SchemaInfo schemaInfo = endTableInfo.getSchemaInfo();
             SQLExprTableSource table = rrs.getTable();
             table.setExpr(new SQLPropertyExpr(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()));
             List<String> list = sqls.computeIfAbsent(endTableInfo.getTargetName(), s -> new ArrayList<>());
-            list.add( SQLUtils.toMySqlString(sqlStatement));
+            list.add(SQLUtils.toMySqlString(sqlStatement));
         }
         return sqls;
     }
@@ -340,7 +385,7 @@ public enum MetadataManager {
     //////////////////////////////////////////calculate///////////////////////////////
     private Rrs assignment(
             boolean fail,
-            QueryDataRange queryDataRange,String wapperSchemaName) {
+            QueryDataRange queryDataRange, String wapperSchemaName) {
         String schemaName = wapperSchemaName;
         String tableName = null;
         SQLExprTableSource table = null;

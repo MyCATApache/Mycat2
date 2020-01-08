@@ -141,10 +141,10 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext toRelContext, RelOptTable relOptTable) {
         LogicalTableScan logicalTableScan = LogicalTableScan.create(toRelContext.getCluster(), relOptTable);
-        RelToSqlConverter relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
-        SqlImplementor.Result visit = relToSqlConverter.visitChild(0, logicalTableScan);
-        SqlNode sqlNode = visit.asStatement();
-        System.out.println(sqlNode);
+//        RelToSqlConverter relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
+//        SqlImplementor.Result visit = relToSqlConverter.visitChild(0, logicalTableScan);
+//        SqlNode sqlNode = visit.asStatement();
+//        System.out.println(sqlNode);
         return logicalTableScan;
     }
 
@@ -189,18 +189,38 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, final int[] projects) {
+        List<QueryBackendTask> backendTasks = getQueryBackendTasks(filters, projects);
+        return new MyCatResultSetEnumerable(getCancelFlag(root), backendTasks);
+    }
+
+    public List<QueryBackendTask> getQueryBackendTasks(List<RexNode> filters, int[] projects) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
-        filters.forEach((filter) -> {
-            DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
-            boolean success = addOrRootFilter(dataMappingRule, filter);
-            if (success) {
-                record.merge(dataMappingRule);
-            }
-        });
+        ArrayList<RexNode> where  = new ArrayList<>();
+        if(this.table.isNatureTable()){
+            filters.removeIf((filter) -> {
+                DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
+                boolean success = addOrRootFilter(dataMappingRule, filter);
+                if (success) {
+                    record.merge(dataMappingRule);
+                    where.add(filter);
+                }
+                return success;
+            });
+        }else {
+            filters.forEach((filter) -> {
+                DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
+                boolean success = addOrRootFilter(dataMappingRule, filter);
+                if (success) {
+                    record.merge(dataMappingRule);
+                    where.add(filter);
+                }
+            });
+        }
+
         LOGGER.info("optimize filters:{}", filters);
         List<BackendTableInfo> calculate = record.calculate(table);
-        return new MyCatResultSetEnumerable(getCancelFlag(root), getBackendTasks(getColumnList(projects),filters, calculate));
+        return getBackendTasks(getColumnList(projects), where, calculate);
     }
 
     private List<QueryBackendTask> getBackendTasks(List<String> columnList , List<RexNode> filters, List<BackendTableInfo> calculate) {

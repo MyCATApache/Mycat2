@@ -74,7 +74,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
         beforeDoAction();
         return connectionMap.compute(jdbcDataSource,
                 (dataSource, absractConnection) -> {
-                    if (absractConnection != null) {
+                    if (absractConnection != null&&!absractConnection.isClosed()) {
                         return absractConnection;
                     } else {
                         return JdbcRuntime.INSTANCE
