@@ -97,7 +97,7 @@ public class MySQLClientSession extends
   }
 
   /**
-   * 把bytes吸入通道
+   * 把bytes写入通道
    */
   static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
       throws IOException {

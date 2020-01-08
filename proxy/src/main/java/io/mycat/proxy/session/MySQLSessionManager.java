@@ -218,13 +218,7 @@ public class MySQLSessionManager implements
             session.setIdle(true);
             session.switchNioHandler(IdleHandler.INSTANCE);
             session.change2ReadOpts();
-            idleDatasourcehMap.compute(session.getDatasource(), (k, l) -> {
-                if (l == null) {
-                    l = new LinkedList<>();
-                }
-                l.addLast(session);
-                return l;
-            });
+            idleDatasourcehMap.computeIfAbsent(session.getDatasource(), (l) -> new LinkedList<>()).add(session);
             MycatMonitor.onAddIdleMysqlSession(session);
         } catch (Exception e) {
             LOGGER.error("{}", e);
@@ -327,9 +321,9 @@ public class MySQLSessionManager implements
      */
     @Override
     public void idleConnectCheck() {
-        MycatReactorThread thread = (MycatReactorThread)Thread.currentThread();
-        idleDatasourcehMap.forEach((mySQLDatasource,v)->{
-            if (v == null){
+        MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+        idleDatasourcehMap.forEach((mySQLDatasource, v) -> {
+            if (v == null) {
                 return;
             }
             long idleTimeout = mySQLDatasource.getIdleTimeout();
