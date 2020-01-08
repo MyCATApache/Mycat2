@@ -1,16 +1,10 @@
 package io.mycat.calcite;
 
-import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
-import com.alibaba.fastsql.sql.parser.SQLParserUtils;
-import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import io.mycat.BackendTableInfo;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.text.MessageFormat;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +17,8 @@ public class MetadataManagerTest {
         instance.addSchema("");
     }
 
-    static Map<String, String> routeDelete(String currentSchema, String sql) {
-        return MetadataManager.INSTANCE.rewriteUpdateSQL(currentSchema, sql);
+    static Map<String, List<String>> routeDelete(String currentSchema, String sql) {
+        return MetadataManager.INSTANCE.rewriteSQL(currentSchema, sql);
     }
 
     public List<BackendTableInfo> getBackEndTableInfo(String schemaName, String tableName, String startValue, String endValue) {
@@ -39,15 +33,15 @@ public class MetadataManagerTest {
 
    // @Test
     public void test() {
-        Map<String, String> rs = routeDelete("TESTDB", "DELETE FROM travelrecord WHERE id = 1");
-        Map.Entry<String, String> next = rs.entrySet().iterator().next();
-        String sql = next.getValue();
+        Map<String, List<String>> rs = routeDelete("TESTDB", "DELETE FROM travelrecord WHERE id = 1");
+        Map.Entry<String,List< String>> next = rs.entrySet().iterator().next();
+        List< String> sql = next.getValue();
         Assert.assertTrue(sql.contains("db1.travelrecord"));
     }
 
    // @Test
     public void test1() {
-        Map<String, String> rs = routeDelete("TESTDB", "DELETE FROM travelrecord WHERE user_id = '2' ");
+        Map<String, List<String>> rs = routeDelete("TESTDB", "DELETE FROM travelrecord WHERE user_id = '2' ");
         System.out.println(rs);
         Assert.assertTrue(rs.containsValue("DELETE FROM db2.travelrecord3\n" +
                 "WHERE user_id = '2'"));
@@ -58,7 +52,7 @@ public class MetadataManagerTest {
 
    // @Test
     public void test2() {
-        Map<String, String> rs = routeDelete("TESTDB", "DELETE FROM travelrecord");
+        Map<String,List<String>> rs = routeDelete("TESTDB", "DELETE FROM travelrecord");
         System.out.println(rs);
         assertEquals(9, rs.size());
     }

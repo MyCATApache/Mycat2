@@ -76,12 +76,13 @@ public enum ClientRuntime {
 
                 Map<String, Collection<String>> collectionMap = tableMatcher.geTableMap();
                 Map<String, String> map = matcher.namesContext();
-                if (sqlMatch && tableMatch) {
-
+                if (tableMatch) {
                     for (Map.Entry<String, Collection<String>> stringCollectionEntry : collectionMap.entrySet()) {
                         for (Map.Entry<Map<String, Set<String>>, List<TableInfo>> mapListEntry : this.runtime.tableToItem.entrySet()) {
-                            Set<String> strings = mapListEntry.getKey().get(stringCollectionEntry.getKey());
-                            if (strings.containsAll(stringCollectionEntry.getValue())) {
+                            Set<String> tableConfigs = mapListEntry.getKey().get(stringCollectionEntry.getKey());
+                            Collection<String> currentTables = stringCollectionEntry.getValue();
+
+                            if (tableConfigs.containsAll(currentTables)) {
                                 List<TableInfo> tableInfo = mapListEntry.getValue();
                                 if (tableInfo != null) {
                                     for (TableInfo info : tableInfo) {
@@ -98,23 +99,11 @@ public enum ClientRuntime {
                         }
                     }
                 }
-                if (sqlMatch && !tableMatch) {
-                    Map<Integer, PatternRootConfig.TextItemConfig> idToItem = runtime.idToItem;
-                    PatternRootConfig.TextItemConfig textItemConfig = idToItem.get(matcher.id());
-                    if (textItemConfig != null) {
-                        return getContext(sql, collectionMap, map, textItemConfig);
+                if (sqlMatch){
+                    PatternRootConfig.TextItemConfig textItemConfig = runtime.idToItem.get(matcher.id());
+                    if (textItemConfig!=null){
+                        return getContext(sql, collectionMap, map,textItemConfig);
                     }
-                }
-
-                if (!sqlMatch && tableMatch) {
-                    List<TableInfo> tableInfo = this.runtime.tableToItem.get(tableMatcher.geTableMap());
-                    if (tableInfo != null && tableInfo.size() == 1) {
-                        if (tableInfo.get(0).handler != null)
-                            return getContext(sql, collectionMap, map, tableInfo.get(0).handler);
-                    }
-                }
-                if (!sqlMatch && !tableMatch) {
-                    return getContext(sql, collectionMap, map, runtime.defaultHandler);
                 }
                 if (runtimeInfo.defaultHandler != null) {
                     return getContext(sql, collectionMap, map, runtimeInfo.defaultHandler);
@@ -272,11 +261,16 @@ public enum ClientRuntime {
         flash();
     }
 
-    @AllArgsConstructor
+
     @Getter
     static class TableInfo {
         final Map<Integer, PatternRootConfig.TextItemConfig> map;
         final PatternRootConfig.Handler handler;
+
+        public TableInfo(Map<Integer, PatternRootConfig.TextItemConfig> map, PatternRootConfig.Handler handler) {
+            this.map = map;
+            this.handler = handler;
+        }
     }
 
 

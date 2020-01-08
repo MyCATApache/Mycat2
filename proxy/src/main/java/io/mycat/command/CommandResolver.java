@@ -336,6 +336,7 @@ public class CommandResolver {
         }
       }
     }catch (Exception e){
+      e.printStackTrace();
       mycat.setLastMessage(e);
       mycat.writeErrorEndPacketBySyncInProcessError();
       mycat.onHandlerFinishedClear();

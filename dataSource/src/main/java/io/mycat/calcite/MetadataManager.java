@@ -320,18 +320,19 @@ public enum MetadataManager {
         };
     }
 
-    public Map<String, String> rewriteUpdateSQL(String currentSchema, String sql) {
+    public Map<String, List<String>> rewriteSQL(String currentSchema, String sql) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
         TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
         ConditionCollector conditionCollector = new ConditionCollector();
         sqlStatement.accept(conditionCollector);
         Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange(),currentSchema);
-        Map<String, String> sqls = new HashMap<>();
+        Map<String,List< String>> sqls = new HashMap<>();
         for (BackendTableInfo endTableInfo : rrs.getBackEndTableInfos()) {
             SchemaInfo schemaInfo = endTableInfo.getSchemaInfo();
             SQLExprTableSource table = rrs.getTable();
             table.setExpr(new SQLPropertyExpr(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()));
-            sqls.put(endTableInfo.getTargetName(), SQLUtils.toMySqlString(sqlStatement));
+            List<String> list = sqls.computeIfAbsent(endTableInfo.getTargetName(), s -> new ArrayList<>());
+            list.add( SQLUtils.toMySqlString(sqlStatement));
         }
         return sqls;
     }

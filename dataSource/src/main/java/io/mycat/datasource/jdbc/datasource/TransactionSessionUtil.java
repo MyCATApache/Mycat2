@@ -13,6 +13,7 @@ import io.mycat.replica.PhysicsInstanceImpl;
 import io.mycat.replica.ReplicaSelectorRuntime;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -91,21 +92,19 @@ public class TransactionSessionUtil {
         }
     }
 
-    public static MycatUpdateResponse executeUpdateByDatasouceList(String sql, Collection<String> datasourceList, boolean needGeneratedKeys) {
-        return executeUpdateByDatasouce(datasourceList.stream().collect(Collectors.toMap(k -> k, v -> sql)), needGeneratedKeys);
-    }
-
-    public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, String> map, boolean needGeneratedKeys) {
+    public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, List<String>> map, boolean needGeneratedKeys) {
         int lastId = 0;
         int count = 0;
         int serverStatus = 0;
-        for (Map.Entry<String, String> backendTableInfoStringEntry : map.entrySet()) {
-            MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getKey(), backendTableInfoStringEntry.getValue(), needGeneratedKeys);
-            long lastInsertId = mycatUpdateResponse.getLastInsertId();
-            int updateCount = mycatUpdateResponse.getUpdateCount();
-            lastId = Math.max((int) lastInsertId, lastId);
-            count += updateCount;
-            serverStatus = mycatUpdateResponse.serverStatus();
+        for (Map.Entry<String, List<String>> backendTableInfoStringEntry : map.entrySet()) {
+            for (String s : backendTableInfoStringEntry.getValue()) {
+                MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getKey(),s , needGeneratedKeys);
+                long lastInsertId = mycatUpdateResponse.getLastInsertId();
+                int updateCount = mycatUpdateResponse.getUpdateCount();
+                lastId = Math.max((int) lastInsertId, lastId);
+                count += updateCount;
+                serverStatus = mycatUpdateResponse.serverStatus();
+            }
         }
         return new MycatUpdateResponseImpl( count,lastId, serverStatus);
     }

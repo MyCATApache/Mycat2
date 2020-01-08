@@ -51,8 +51,8 @@ interceptor: #拦截器
             {
               tables:[ 'db1.company'],#读写分离例子,不使用metaData进行分析,metaData: false,直接发送到targets
               sqls: [
-              {sql: 'select {selectItems} from {any}',command: execute ,tags: {targets: defaultDs2,executeType: QUERY ,needTransaction: false}},
-              {sql: 'select {selectItems} from {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: defaultDs}},
+              {sql: 'select {selectItems} from {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
+              {sql: 'select {selectItems} from {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
               {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
               {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
               ],
