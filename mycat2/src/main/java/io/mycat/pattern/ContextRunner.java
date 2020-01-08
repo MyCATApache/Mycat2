@@ -511,9 +511,9 @@ public class ContextRunner {
                     return () -> {
                         block(session, mycat -> {
                                     if (needStartTransaction) {
-                                        TransactionSessionUtil.setIsolation(isolation.getJdbcValue());
                                         LOGGER.debug("session id:{} startTransaction", session.sessionId());
                                         TransactionSessionUtil.reset();
+                                        TransactionSessionUtil.setIsolation(isolation.getJdbcValue());
                                         TransactionSessionUtil.begin();
                                         session.setInTranscation(true);
                                     } else if (!session.isInTransaction()) {
