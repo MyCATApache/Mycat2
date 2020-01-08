@@ -3,6 +3,7 @@ package io.mycat.dao;
 import com.mysql.cj.jdbc.MysqlDataSource;
 import io.mycat.DesRelNodeHandler;
 import lombok.SneakyThrows;
+import org.mariadb.jdbc.MariaDbDataSource;
 
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
@@ -25,6 +26,26 @@ public class TestUtil {
         String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
 
         MysqlDataSource mysqlDataSource = new MysqlDataSource();
+        mysqlDataSource.setUrl(url);
+        mysqlDataSource.setUser(username);
+        mysqlDataSource.setPassword(password);
+
+        return DriverManager.getConnection(url, properties);
+    }
+    @SneakyThrows
+    public static Connection getMariaDBConnection() {
+        String username = "root";
+        String password = "123456";
+
+        Properties properties = new Properties();
+        properties.put("user", username);
+        properties.put("password", password);
+        properties.put("useBatchMultiSend", "false");
+        properties.put("usePipelineAuth", "false");
+
+        String url = "jdbc:mysql://0.0.0.0:8066/db1?useServerPrepStmts=false&useCursorFetch=true&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8";
+
+        MariaDbDataSource mysqlDataSource = new MariaDbDataSource();
         mysqlDataSource.setUrl(url);
         mysqlDataSource.setUser(username);
         mysqlDataSource.setPassword(password);

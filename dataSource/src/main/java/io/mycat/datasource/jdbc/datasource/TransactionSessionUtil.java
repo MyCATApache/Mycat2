@@ -107,7 +107,7 @@ public class TransactionSessionUtil {
             count += updateCount;
             serverStatus = mycatUpdateResponse.serverStatus();
         }
-        return new MycatUpdateResponseImpl(lastId, count, serverStatus);
+        return new MycatUpdateResponseImpl( count,lastId, serverStatus);
     }
 
     public static String getDataSourceByBalance(String replicaName, JdbcDataSourceQuery query) {

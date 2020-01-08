@@ -68,7 +68,7 @@ public class SQLExecuterWriter {
                             MycatUpdateResponse currentUpdateResponse = (MycatUpdateResponse) resultSet;
                             int updateCount = currentUpdateResponse.getUpdateCount();
                             long lastInsertId1 = currentUpdateResponse.getLastInsertId();
-                            session.setWarningCount(updateCount);
+                            session.setAffectedRows(updateCount);
                             session.setLastInsertId(lastInsertId1);
                             session.writeOk(endSqlExecuter != sqlExecuter);
                             break;
