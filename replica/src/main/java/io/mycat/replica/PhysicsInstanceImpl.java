@@ -19,6 +19,9 @@ import io.mycat.plug.loadBalance.SessionCounter;
 
 import java.util.concurrent.CopyOnWriteArraySet;
 
+/**
+ * @author : chenjunwen date Date : 2019年05月15日 21:34
+ */
 public class PhysicsInstanceImpl implements LoadBalanceElement, PhysicsInstance {
   final InstanceType type;
   final String name;

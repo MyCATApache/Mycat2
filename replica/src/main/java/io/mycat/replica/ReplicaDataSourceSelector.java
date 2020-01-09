@@ -24,6 +24,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * @author : chenjunwen date Date : 2019年05月15日 21:34
+ */
 public class ReplicaDataSourceSelector implements LoadBalanceInfo {
 
     protected static final MycatLogger LOGGER = MycatLoggerFactory

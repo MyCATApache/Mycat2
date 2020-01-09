@@ -42,6 +42,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * @author : chenjunwen date Date : 2019年05月15日 21:34
+ */
 public enum ReplicaSelectorRuntime {
     INSTANCE;
     final ConcurrentMap<String, ReplicaDataSourceSelector> map = new ConcurrentHashMap<>();
