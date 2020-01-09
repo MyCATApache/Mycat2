@@ -29,6 +29,7 @@ import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
+import io.mycat.proxy.session.SessionManager;
 import io.mycat.replica.MySQLDatasource;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.CharsetUtil;
@@ -66,7 +67,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         Objects.requireNonNull(callback);
         this.datasource = datasource;
         this.callback = callback;
-        MySQLClientSession mysql = new MySQLClientSession(MySQLSessionManager.nextSessionId(),datasource, this, sessionManager);
+        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(),datasource, this, sessionManager);
         mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
         SocketChannel channel = null;
         try {
@@ -104,7 +105,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             handle(mysql);
 
         } catch (Exception e) {
-            LOGGER.error("create mysql connection error {} {}", datasource, e);
+            LOGGER.error("create mysql connection error {} {}", datasource, e.getMessage());
             MycatMonitor.onBackendConCreateReadException(mysql,e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);

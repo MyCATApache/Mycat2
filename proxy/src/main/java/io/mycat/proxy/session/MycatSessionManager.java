@@ -42,7 +42,6 @@ import java.util.function.Function;
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
-  final static AtomicInteger COUNTER = new AtomicInteger(1);
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
   private final Function<MycatSession,CommandDispatcher> function;
 
@@ -81,7 +80,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
       Selector nioSelector, SocketChannel frontChannel) throws IOException {
     MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler(this);
-    MycatSession mycat = new MycatSession(COUNTER.getAndIncrement(), bufPool,
+    MycatSession mycat = new MycatSession(SessionManager.nextSessionId(), bufPool,
         mySQLClientAuthHandler, this);
 
 

@@ -22,9 +22,9 @@ public interface MycatMonitorCallback {
 
     };
 
-    static MycatReactorThread getThread() {
+    static SessionThread getThread() {
         Thread thread = Thread.currentThread();
-        return (MycatReactorThread) thread;
+        return (SessionThread) thread;
     }
 
     static Session getSession() {

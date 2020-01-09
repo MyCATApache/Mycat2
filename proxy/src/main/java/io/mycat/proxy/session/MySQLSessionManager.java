@@ -57,11 +57,7 @@ public class MySQLSessionManager implements
     final HashMap<Integer, MySQLClientSession> allSessions = new HashMap<>();
     final HashMap<MySQLDatasource, LinkedList<MySQLClientSession>> idleDatasourcehMap = new HashMap<>();
     final HashMap<Integer, MySQLPayloadWriter> clearTask = new HashMap<>();
-    public final static AtomicInteger SESSIONID = new AtomicInteger(0);
 
-    public static int nextSessionId() {
-        return SESSIONID.incrementAndGet();
-    }
 //  private ProxyRuntime runtime;
 
     public MySQLSessionManager() {
@@ -89,18 +85,15 @@ public class MySQLSessionManager implements
                                               PartialType partialType,
                                               SessionCallBack<MySQLClientSession> asyncTaskCallBack) {
         Objects.requireNonNull(datasource);
-        LinkedList<MySQLClientSession> sessions = idleDatasourcehMap.get(datasource);
+
         try {
             for (; ; ) {
-                if (sessions == null || sessions.isEmpty()) {
+                MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids, partialType);
+                if (mySQLSession == null ) {
                     createSession(datasource, asyncTaskCallBack);
                     return;
                 }
-                MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids, partialType);
-                if (mySQLSession == null) {
-                    continue;
-                }
-                if (mySQLSession.checkOpen()) {
+                if (!mySQLSession.checkOpen()) {
                     continue;
                 }
                 assert mySQLSession.getCurNIOHandler() == IdleHandler.INSTANCE;
@@ -112,6 +105,7 @@ public class MySQLSessionManager implements
                     continue;
                 }
                 asyncTaskCallBack.onSession(mySQLSession, this, null);
+                return;
             }
         } catch (Exception e) {
             LOGGER.error("", e);
@@ -515,8 +509,7 @@ public class MySQLSessionManager implements
                             return "waitTime";
                         }
                     }));
-                    ScheduleUtil.getTimer().schedule(runnable,
-                            waitTime, TimeUnit.MILLISECONDS);
+                    runnable.run();
                 }
             }
         });

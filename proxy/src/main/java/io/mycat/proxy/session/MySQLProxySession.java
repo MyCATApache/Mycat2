@@ -24,6 +24,7 @@ public interface MySQLProxySession<T extends Session<T>> extends Session<T> {
    */
   default boolean readFromChannel() throws IOException {
     ProxyBuffer proxyBuffer = currentProxyBuffer();
+//    proxyBuffer.newBufferIfNeed();
     proxyBuffer.compactInChannelReadingIfNeed();
     boolean b = proxyBuffer.readFromChannel(this.channel());
     updateLastActiveTime();
