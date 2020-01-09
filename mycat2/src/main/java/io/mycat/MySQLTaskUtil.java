@@ -36,7 +36,7 @@ import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
-import io.mycat.replica.MySQLDatasource;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.replica.ReplicaSelectorRuntime;
 
 import java.util.List;

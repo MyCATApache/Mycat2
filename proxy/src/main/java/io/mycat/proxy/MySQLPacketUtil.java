@@ -6,7 +6,6 @@ import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.*;
 import io.mycat.config.MySQLServerCapabilityFlags;
-import io.mycat.proxy.reactor.MycatReactorThread;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;

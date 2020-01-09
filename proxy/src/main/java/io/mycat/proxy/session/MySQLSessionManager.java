@@ -18,6 +18,7 @@ import io.mycat.GlobalConst;
 import io.mycat.MycatException;
 import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.api.collector.TextResultSetTransforCollector;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.logTip.MycatLogger;
@@ -32,7 +33,6 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
-import io.mycat.beans.MySQLDatasource;
 import io.mycat.util.StringUtil;
 import io.mycat.util.nio.NIOUtil;
 

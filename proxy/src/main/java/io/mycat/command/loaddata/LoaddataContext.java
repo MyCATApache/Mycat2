@@ -6,13 +6,9 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.callback.RequestCallback;
-import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
-import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-
-import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK;
 
 public class LoaddataContext {
 

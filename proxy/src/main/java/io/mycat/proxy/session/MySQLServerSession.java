@@ -1,10 +1,8 @@
 package io.mycat.proxy.session;
 
-import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
-import io.mycat.beans.mysql.packet.ErrorPacketImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MySQLPacketUtil;
 

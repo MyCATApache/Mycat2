@@ -3,7 +3,6 @@ package io.mycat.proxy.monitor;
 import io.mycat.MycatException;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;

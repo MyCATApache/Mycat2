@@ -15,6 +15,7 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatException;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
@@ -29,7 +30,6 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.BackendMySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.beans.MySQLDatasource;
 import lombok.Getter;
 import lombok.Setter;
 
