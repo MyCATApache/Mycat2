@@ -12,20 +12,13 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.replica;
+package io.mycat.beans;
 
 import io.mycat.beans.mycat.MycatDataSource;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.proxy.callback.AsyncTaskCallBackCounter;
-import io.mycat.proxy.callback.SessionCallBack;
-import io.mycat.proxy.reactor.MycatReactorThread;
-import io.mycat.proxy.reactor.NIOJob;
-import io.mycat.proxy.reactor.ReactorEnvThread;
-import io.mycat.proxy.session.MySQLClientSession;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

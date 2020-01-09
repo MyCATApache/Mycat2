@@ -16,7 +16,6 @@ package io.mycat.proxy.session;
 
 import io.mycat.GlobalConst;
 import io.mycat.MycatException;
-import io.mycat.ScheduleUtil;
 import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.api.collector.TextResultSetTransforCollector;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -33,14 +32,12 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.SessionManager.BackendSessionManager;
-import io.mycat.replica.MySQLDatasource;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.util.StringUtil;
 import io.mycat.util.nio.NIOUtil;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.mycat.beans.mysql.MySQLCommandType.COM_QUERY;
 

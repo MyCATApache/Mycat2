@@ -29,7 +29,7 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.BackendMySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.replica.MySQLDatasource;
+import io.mycat.beans.MySQLDatasource;
 import lombok.Getter;
 import lombok.Setter;
 

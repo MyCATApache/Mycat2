@@ -30,7 +30,7 @@ import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.SessionManager;
-import io.mycat.replica.MySQLDatasource;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
