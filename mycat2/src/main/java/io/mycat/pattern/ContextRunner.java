@@ -25,7 +25,6 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import org.apache.calcite.config.Lex;
-import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.hep.HepPlanner;
@@ -33,9 +32,6 @@ import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelVisitor;
-import org.apache.calcite.rel.logical.LogicalFilter;
-import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.rules.CalcSplitRule;
 import org.apache.calcite.rel.rules.FilterTableScanRule;
 import org.apache.calcite.rel.rules.ProjectTableScanRule;
@@ -644,15 +640,22 @@ public class ContextRunner {
         String tableName = next.getValue().iterator().next();
         ExecuteType executeType = ExecuteType.valueOf(context.getVariable(EXECUTE_TYPE));
         String balance = context.getVariable(BALANCE);
-        String command = context.getExplain();
+//        String command = context.getExplain();
 
         Map<String, List<String>> mid = Collections.emptyMap();
         boolean master = executeType != ExecuteType.QUERY || needStartTransaction;
         switch (executeType) {
             case INSERT:
-                Iterable<Map<String, String>> iterable = () -> MetadataManager.INSTANCE.routeInsert(schemaName, context.getExplain());
-                Stream<Map<String, String>> stream = StreamSupport.stream(iterable.spliterator(), false);
-                mid = stream.flatMap(i -> i.entrySet().stream()).collect(Collectors.groupingBy(k -> k.getKey(), Collectors.mapping(i -> i.getValue(), Collectors.toList())));
+                Iterable<Map<String, List<String>>> iterable = MetadataManager.INSTANCE.routeInsert(schemaName, context.getExplain());
+                Stream<Map<String, List<String>>> stream = StreamSupport.stream(iterable.spliterator(), false);
+//                Map<String, List<String>> collect2 = stream.flatMap(i -> i.entrySet().stream())
+//                        .collect(Collectors.groupingBy(k -> k.getKey(), Collectors.flatMapping(i -> i.getValue().stream(),Collectors.toList())));JDK9
+                Map<String, List<String>> collect = stream.flatMap(i -> i.entrySet().stream())
+                        .collect(Collectors.groupingBy(k -> k.getKey(), Collectors.mapping(i -> i.getValue(), Collectors.reducing(new ArrayList<>(), (list, list2) -> {
+                    list.addAll(list2);
+                    return list;
+                }))));
+                mid = collect;
                 break;
             case QUERY:
             case QUERY_MASTER:
