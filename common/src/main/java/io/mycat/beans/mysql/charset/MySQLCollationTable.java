@@ -19,6 +19,12 @@ package io.mycat.beans.mysql.charset;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author jamie12221
+ *  date 2019-05-05 16:22
+ *
+ * mysql 状态 字符集 LCollationTable
+ **/
 public class MySQLCollationTable {
     final Map<Integer, MySQLCollation> indexMap = new HashMap<>();
     final Map<String, MySQLCollation> collationNameMap = new HashMap<>();
@@ -26,10 +32,6 @@ public class MySQLCollationTable {
     public MySQLCollation getCollationById(Integer id) {
         return indexMap.get(id);
     }
-
-//    public MySQLCollation getByCharsetName(String charsetName) {
-//        return charsetNameMap.get(charsetName);
-//    }
 
     public MySQLCollation getByCollationName(String collationName) {
         return collationNameMap.get(collationName);

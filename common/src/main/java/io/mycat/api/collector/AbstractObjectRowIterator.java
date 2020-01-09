@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.mycat.api.collector;
 
 import java.io.InputStream;
@@ -7,31 +22,17 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.Objects;
 
+
+/**
+ *
+ * chen junwen
+ *
+ * a iterator,like jdbc result set
+ */
 public abstract class AbstractObjectRowIterator implements RowBaseIterator {
-//    protected final MycatRowMetaData mycatRowMetaData;
-//    protected final Iterator<Object[]> iterator;
+
     protected Object[] currentRow;
     protected boolean wasNull;
-
-//    public AbstractObjectRowIterator(MycatRowMetaData mycatRowMetaData, Iterator<Object[]> iterator) {
-//        this.mycatRowMetaData = mycatRowMetaData;
-//        this.iterator = iterator;
-//    }
-//
-//    @Override
-//    public MycatRowMetaData metaData() {
-//        return mycatRowMetaData;
-//    }
-//
-//    @Override
-//    public boolean next() {
-//        if (this.iterator.hasNext()) {
-//            this.currentRow = this.iterator.next();
-//            return true;
-//        } else {
-//            return false;
-//        }
-//    }
 
     @Override
     public boolean wasNull() {

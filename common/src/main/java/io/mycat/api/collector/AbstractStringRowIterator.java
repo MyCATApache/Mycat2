@@ -1,6 +1,8 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -11,7 +13,16 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.Iterator;
 
+/**
+ *
+ * chen junwen
+ *
+ * a iterator,transform text to object
+ */
 public abstract class AbstractStringRowIterator implements RowBaseIterator {
+    final static MycatLogger LOGGER = MycatLoggerFactory
+            .getLogger(AbstractStringRowIterator.class);
+
     protected final MycatRowMetaData mycatRowMetaData;
     protected final Iterator<String[]> iterator;
     private String[] currentRow;

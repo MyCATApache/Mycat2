@@ -35,16 +35,4 @@ public class BackendTableInfo {
         this.schemaInfo = schemaInfo;
     }
 
-
-//
-//    public <T> T getSession(boolean runOnMaster, LoadBalanceStrategy balanceStrategy) {
-//        JdbcDataSource datasource = getDatasource(runOnMaster, balanceStrategy);
-//        return (T) datasource.getReplica().getDefaultConnection(datasource);
-//    }
-
-    //    String getDatasourceName(boolean runOnMaster, LoadBalanceStrategy balanceStrategy) {
-//        return getDatasource(runOnMaster, balanceStrategy).getTableName();
-//    }
-//
-
 }
