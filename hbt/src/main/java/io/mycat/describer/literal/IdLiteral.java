@@ -20,6 +20,9 @@ import lombok.Getter;
 
 import java.util.Objects;
 
+/**
+ * @author jamie12221
+ **/
 @EqualsAndHashCode
 @Getter
 public class IdLiteral implements Literal {

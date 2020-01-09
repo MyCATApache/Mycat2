@@ -21,6 +21,9 @@ import lombok.Getter;
 import java.math.BigInteger;
 import java.util.Objects;
 
+/**
+ * @author jamie12221
+ **/
 @EqualsAndHashCode
 @Getter
 public class IntegerLiteral implements Literal {

@@ -21,6 +21,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * @author jamie12221
+ **/
 @Data
 public class Expr extends Node {
     List<Expr> nodes;

@@ -20,6 +20,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * @author jamie12221
+ **/
 @Data
 public abstract class Schema extends Node {
     public Schema(Op op) {

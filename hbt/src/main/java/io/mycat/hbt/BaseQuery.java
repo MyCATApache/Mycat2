@@ -27,7 +27,9 @@ import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
+/**
+ * @author jamie12221
+ **/
 public class BaseQuery {
     public static Schema empty() {
         return new ValuesSchema(Collections.emptyList(), Collections.emptyList());

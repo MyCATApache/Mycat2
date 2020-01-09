@@ -21,6 +21,9 @@ import lombok.Getter;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author jamie12221
+ **/
 @EqualsAndHashCode
 @Getter
 public class PropertyLiteral implements Literal {

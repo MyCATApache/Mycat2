@@ -19,6 +19,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * @author jamie12221
+ **/
 @Data
 public class Property extends Expr {
     final List<String> value;

@@ -20,6 +20,9 @@ import lombok.Setter;
 import java.text.MessageFormat;
 import java.util.Objects;
 
+/**
+ * @author jamie12221
+ **/
 @Getter
 @Setter
 public class Bind implements ParseNode {

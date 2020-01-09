@@ -19,6 +19,9 @@ import lombok.Data;
 
 import java.util.Objects;
 
+/**
+ * @author jamie12221
+ **/
 @Data
 public class Identifier extends Expr {
     final String value;

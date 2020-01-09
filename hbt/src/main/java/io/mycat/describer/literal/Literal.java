@@ -16,6 +16,9 @@ package io.mycat.describer.literal;
 
 import io.mycat.describer.ParseNode;
 
+/**
+ * @author jamie12221
+ **/
 public interface Literal extends ParseNode {
 
 }

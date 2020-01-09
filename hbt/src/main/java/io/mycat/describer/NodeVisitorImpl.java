@@ -18,6 +18,9 @@ import io.mycat.describer.literal.*;
 
 import java.util.List;
 
+/**
+ * @author jamie12221
+ **/
 public class NodeVisitorImpl implements ParseNodeVisitor {
     final StringBuilder sb = new StringBuilder();
 

@@ -21,6 +21,9 @@ import io.mycat.describer.ParseNode;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * @author jamie12221
+ **/
 public class DotCallResolver extends CopyNodeVisitor {
 
     public DotCallResolver() {

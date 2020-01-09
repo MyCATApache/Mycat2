@@ -16,6 +16,9 @@ package io.mycat.describer;
 
 import io.mycat.describer.literal.*;
 
+/**
+ * @author jamie12221
+ **/
 public interface ParseNodeVisitor {
 
     void visit(Bind bind);

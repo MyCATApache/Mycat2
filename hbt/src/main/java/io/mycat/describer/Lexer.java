@@ -19,6 +19,9 @@ import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.Token;
 
+/**
+ * @author jamie12221
+ **/
 public class Lexer {
     final com.alibaba.fastsql.sql.parser.Lexer lexer;
 

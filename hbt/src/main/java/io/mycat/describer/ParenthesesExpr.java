@@ -23,6 +23,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+/**
+ * @author jamie12221
+ **/
 @Getter
 public class ParenthesesExpr implements ParseNode {
 

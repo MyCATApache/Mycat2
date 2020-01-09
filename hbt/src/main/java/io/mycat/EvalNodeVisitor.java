@@ -29,6 +29,9 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * @author jamie12221
+ **/
 public class EvalNodeVisitor implements ParseNodeVisitor {
     final LinkedList<Object> stack = new LinkedList<>();
     Map<String, List<FunctionSig>> mapping;

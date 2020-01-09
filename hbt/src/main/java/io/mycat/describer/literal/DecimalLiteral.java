@@ -20,6 +20,9 @@ import lombok.EqualsAndHashCode;
 import java.math.BigDecimal;
 import java.util.Objects;
 
+/**
+ * @author jamie12221
+ **/
 @EqualsAndHashCode
 public class DecimalLiteral implements Literal {
     private final BigDecimal number;

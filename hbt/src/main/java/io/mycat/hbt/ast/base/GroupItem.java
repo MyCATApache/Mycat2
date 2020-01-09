@@ -19,6 +19,9 @@ import lombok.Data;
 
 import java.util.List;
 
+/**
+ * @author jamie12221
+ **/
 @Data
 public class GroupItem extends Node {
     private final List<Expr> exprs;

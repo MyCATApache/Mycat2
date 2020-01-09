@@ -20,6 +20,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+/**
+ * @author jamie12221
+ **/
 @Data
 public class Literal extends Expr {
     final Object value;

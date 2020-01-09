@@ -34,6 +34,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
+/**
+ * @author jamie12221
+ **/
 public class DesRelNodeHandler {
     final FrameworkConfig config;
     final DesComplier complier = new DesComplier();

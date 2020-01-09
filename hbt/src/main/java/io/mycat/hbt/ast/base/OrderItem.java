@@ -18,6 +18,9 @@ import io.mycat.hbt.ast.Direction;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+/**
+ * @author jamie12221
+ **/
 @AllArgsConstructor
 @Data
 public class OrderItem {

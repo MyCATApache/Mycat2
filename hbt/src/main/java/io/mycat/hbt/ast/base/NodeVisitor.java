@@ -18,6 +18,9 @@ import io.mycat.hbt.ast.AggregateCall;
 import io.mycat.hbt.ast.modify.ModifyTable;
 import io.mycat.hbt.ast.query.*;
 
+/**
+ * @author jamie12221
+ **/
 public interface NodeVisitor {
     void visit(MapSchema mapSchema);
 

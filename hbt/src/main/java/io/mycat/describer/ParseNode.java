@@ -14,6 +14,9 @@
  */
 package io.mycat.describer;
 
+/**
+ * @author jamie12221
+ **/
 public interface ParseNode {
     void accept(ParseNodeVisitor visitor);
 

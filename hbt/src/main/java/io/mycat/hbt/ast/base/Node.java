@@ -16,6 +16,9 @@ package io.mycat.hbt.ast.base;
 
 import io.mycat.hbt.Op;
 
+/**
+ * @author jamie12221
+ **/
 public abstract class Node {
     public final Op op;
 

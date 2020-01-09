@@ -22,6 +22,9 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
 
+/**
+ * @author jamie12221
+ **/
 public class Describer {
 
     private final Lexer lexer;

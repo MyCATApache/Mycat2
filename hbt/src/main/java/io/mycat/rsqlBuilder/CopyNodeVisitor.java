@@ -22,6 +22,9 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * @author jamie12221
+ **/
 public class CopyNodeVisitor implements ParseNodeVisitor {
 
     protected final LinkedList<ParseNode> stack = new LinkedList<>();

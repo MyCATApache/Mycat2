@@ -285,7 +285,7 @@ public class RelSpec extends BaseQuery {
 
         String text = "from(db1,travelrecord) unionAll  from(\"db1\", \"travelrecord\")";
         String s = getS(parse2SyntaxAst(text));
-        Assert.assertEquals("unionAll(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"\"db1\"\"),id(\"\"travelrecord\"\")))", s);
+        Assert.assertEquals("unionAll(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord\")))", s);
 
         Assert.assertEquals("LogicalUnion(all=[true])\n" +
                 "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
@@ -302,7 +302,7 @@ public class RelSpec extends BaseQuery {
         Assert.assertEquals("SetOpSchema(op=UNION_DISTINCT,list=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])])", select.toString());
 
         String text = "from(db1,travelrecord) unionDistinct  from(\"db1\", \"travelrecord\")";
-        Assert.assertEquals("unionDistinct(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"\"db1\"\"),id(\"\"travelrecord\"\")))", getS(parse2SyntaxAst(text)));
+        Assert.assertEquals("unionDistinct(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
 
         Assert.assertEquals("LogicalUnion(all=[false])\n" +
                 "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
@@ -362,7 +362,7 @@ public class RelSpec extends BaseQuery {
         Assert.assertEquals("SetOpSchema(op=EXCEPT_ALL,list=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])])", select.toString());
 
         String text = "from(db1,travelrecord) exceptAll  from(\"db1\", \"travelrecord\")";
-        Assert.assertEquals("exceptAll(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"\"db1\"\"),id(\"\"travelrecord\"\")))", getS(parse2SyntaxAst(text)));
+        Assert.assertEquals("exceptAll(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
 
         Assert.assertEquals("LogicalMinus(all=[true])\n" +
                 "  LogicalTableScan(table=[[db1, travelrecord]])\n" +

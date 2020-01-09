@@ -16,6 +16,9 @@ package io.mycat.rsqlBuilder;
 
 import io.mycat.describer.ParseNode;
 
+/**
+ * @author jamie12221
+ **/
 public interface DotAble extends ParseNode {
     <T> T dot(String o);
 }

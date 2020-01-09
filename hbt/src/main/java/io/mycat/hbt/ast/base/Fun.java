@@ -20,6 +20,9 @@ import lombok.Data;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * @author jamie12221
+ **/
 @Data
 public class Fun extends Expr {
     final String functionName;
