@@ -50,8 +50,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- * @author Weiqing Xu
+ *
  * @author Junwen Chen
+ * @author Weiqing Xu
+ *
  **/
 public class JdbcTable implements TranslatableTable, ProjectableFilterableTable {
     private MetadataManager.LogicTable table;

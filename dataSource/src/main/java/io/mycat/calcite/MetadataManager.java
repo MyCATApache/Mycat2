@@ -53,6 +53,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
 import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
@@ -177,13 +179,13 @@ public enum MetadataManager {
 
     @Getter
     static class LogicTable {
-        final String schemaName;
-        final String tableName;
-        final List<BackendTableInfo> backends;
-        final List<SimpleColumnInfo> rawColumns;
-        final String createTableSQL;
+        private final String schemaName;
+        private final String tableName;
+        private final List<BackendTableInfo> backends;
+        private final List<SimpleColumnInfo> rawColumns;
+        private final String createTableSQL;
         //////////////optional/////////////////
-        JdbcTable jdbcTable;
+        private JdbcTable jdbcTable;
         //////////////optional/////////////////
         private final SimpleColumnInfo.ShardingInfo natureTableColumnInfo;
         private final SimpleColumnInfo.ShardingInfo replicaColumnInfo;
@@ -195,7 +197,7 @@ public enum MetadataManager {
                           Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo, String createTableSQL) {
             this.schemaName = schemaName;
             this.tableName = name;
-            this.backends = backends;
+            this.backends = backends == null ? Collections.emptyList() : backends;
             this.rawColumns = rawColumns;
             this.createTableSQL = createTableSQL;
 
@@ -213,6 +215,11 @@ public enum MetadataManager {
 
         public void setJdbcTable(JdbcTable jdbcTable) {
             this.jdbcTable = jdbcTable;
+        }
+
+        @NonNull
+        public List<BackendTableInfo> getBackends() {
+            return backends;
         }
     }
 
@@ -293,24 +300,34 @@ public enum MetadataManager {
         return columns;
     }
 
-    public static Iterator<Map<String, String>> routeInsert(String currentSchema, String sql) {
+    public static Iterable<Map<String, List<String>>> routeInsert(String currentSchema, String sql) {
         SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql);
         List list = new LinkedList();
         sqlStatementParser.parseStatementList(list);
         return MetadataManager.INSTANCE.getInsertInfoIterator(currentSchema, (Iterator<MySqlInsertStatement>) list.iterator());
     }
 
+    public static Map<String, List<String>> routeInsertFlat(String currentSchema, String sql) {
+        Iterable<Map<String, List<String>>> maps = routeInsert(currentSchema, sql);
+        Stream<Map<String, List<String>>> stream = StreamSupport.stream(maps.spliterator(), false);
+        return stream.flatMap(i -> i.entrySet().stream())
+                .collect(Collectors.groupingBy(k -> k.getKey(), Collectors.mapping(i -> i.getValue(), Collectors.reducing(new ArrayList<String>(), (list, list2) -> {
+                    list.addAll(list2);
+                    return list;
+                }))));
+    }
+
     //////////////////////////////////////////////////////function/////////////////////////////////////////////////////
-    public Iterator<Map<String, String>> getInsertInfoIterator(String currentSchemaNameText, Iterator<MySqlInsertStatement> listIterator) {
+    public Iterable<Map<String, List<String>>> getInsertInfoIterator(String currentSchemaNameText, Iterator<MySqlInsertStatement> listIterator) {
         final String currentSchemaName = currentSchemaNameText.toLowerCase();
-        return new Iterator<Map<String, String>>() {
+        return () -> new Iterator<Map<String, List<String>>>() {
             @Override
             public boolean hasNext() {
                 return listIterator.hasNext();
             }
 
             @Override
-            public Map<String, String> next() {
+            public Map<String, List<String>> next() {
                 MySqlInsertStatement statement = listIterator.next();
                 String s = statement.getTableSource().getSchema();
                 String schema = s == null ? currentSchemaName : s;
@@ -350,7 +367,7 @@ public enum MetadataManager {
                 listIterator.remove();
 
                 //////////////////////////////////////////////////////////////////
-                HashMap<String, String> map = new HashMap<>();
+                Map<String, List<String>> map = new HashMap<>();
                 for (Map.Entry<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> entry : res.entrySet()) {
                     BackendTableInfo key = entry.getKey();
                     SchemaInfo schemaInfo = key.getSchemaInfo();
@@ -358,7 +375,8 @@ public enum MetadataManager {
                     tableSource.setExpr(new SQLPropertyExpr(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()));
                     statement.getValuesList().clear();
                     statement.getValuesList().addAll(entry.getValue());
-                    map.put(key.getTargetName(), statement.toString());
+                    List<String> list = map.computeIfAbsent(key.getTargetName(), s12 -> new ArrayList<>());
+                    list.add(statement.toString());
                 }
                 return map;
             }

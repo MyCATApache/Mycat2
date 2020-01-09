@@ -2,19 +2,24 @@ package io.mycat.calcite;
 
 import io.mycat.BackendTableInfo;
 import org.junit.Assert;
+import org.junit.Test;
 
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static io.mycat.calcite.MetadataManager.routeInsert;
+import static io.mycat.calcite.MetadataManager.routeInsertFlat;
 import static org.junit.Assert.assertEquals;
 
 public class MetadataManagerTest {
     public MetadataManagerTest() {
         MetadataManager instance = MetadataManager.INSTANCE;
-        instance.addSchema("");
+        MetadataManagerBuilder.exampleBuild(instance);
     }
 
     static Map<String, List<String>> routeDelete(String currentSchema, String sql) {
@@ -30,76 +35,80 @@ public class MetadataManagerTest {
     }
 
 
-
-   // @Test
+    @Test
     public void test() {
-        Map<String, List<String>> rs = routeDelete("TESTDB", "DELETE FROM travelrecord WHERE id = 1");
-        Map.Entry<String,List< String>> next = rs.entrySet().iterator().next();
-        List< String> sql = next.getValue();
-        Assert.assertTrue(sql.contains("db1.travelrecord"));
+        Map<String, List<String>> rs = routeDelete("db1", "DELETE FROM travelrecord WHERE id = 1");
+        Map.Entry<String, List<String>> next = rs.entrySet().iterator().next();
+        List<String> sql = next.getValue();
+        Assert.assertTrue(sql.get(0).contains("db1.travelrecord"));
     }
 
-   // @Test
+    @Test
     public void test1() {
-        Map<String, List<String>> rs = routeDelete("TESTDB", "DELETE FROM travelrecord WHERE user_id = '2' ");
-        System.out.println(rs);
-        Assert.assertTrue(rs.containsValue("DELETE FROM db2.travelrecord3\n" +
+        Map<String, List<String>> rs = routeDelete("db1", "DELETE FROM travelrecord WHERE user_id = '2' ");
+        List<String> collect = getStrings(rs);
+        Assert.assertTrue(collect.contains("DELETE FROM db2.travelrecord3\n" +
                 "WHERE user_id = '2'"));
-        Assert.assertTrue(rs.containsValue("DELETE FROM db2.travelrecord2\n" +
+        Assert.assertTrue(collect.contains("DELETE FROM db2.travelrecord2\n" +
                 "WHERE user_id = '2'"));
-        assertEquals(9, rs.size());
+        assertEquals(9, collect.size());
     }
 
-   // @Test
+    @Test
     public void test2() {
-        Map<String,List<String>> rs = routeDelete("TESTDB", "DELETE FROM travelrecord");
-        System.out.println(rs);
-        assertEquals(9, rs.size());
+        Map<String, List<String>> rs = routeDelete("db1", "DELETE FROM travelrecord");
+        List<String> collect = getStrings(rs);
+        assertEquals(9, collect.size());
     }
 
-   // @Test
+    private List<String> getStrings(Map<String, List<String>> rs) {
+        return rs.values().stream().flatMap(i -> i.stream()).collect(Collectors.toList());
+    }
+
+    @Test
     public void test3() {
-        Iterator<Map<String, String>> iterator = routeInsert("TESTDB", "INSERT INTO `travelrecord` (`id`) VALUES ('4'); ");
-        Map<String, String> next = iterator.next();
-        Assert.assertTrue(next.containsValue("INSERT INTO db1.travelrecord (`id`)\n" +
+        List<String> strings = getStrings(routeInsertFlat("db1", "INSERT INTO `travelrecord` (`id`) VALUES ('4'); "));
+        Assert.assertTrue(strings.contains("INSERT INTO db1.travelrecord (`id`)\n" +
                 "VALUES ('4');"));
     }
 
-   // @Test
+    @Test
     public void test4() {
-        Iterator<Map<String, String>> iterator = routeInsert("TESTDB", "INSERT INTO `travelrecord` (`id`) VALUES ('4'); ");
-        Map<String, String> next = iterator.next();
-        Assert.assertTrue(next.containsValue("INSERT INTO db1.travelrecord (`id`)\n" +
+        List<String> strings = getStrings(routeInsertFlat("db1", "INSERT INTO `travelrecord` (`id`) VALUES ('4'); "));
+        Assert.assertTrue(strings.contains("INSERT INTO db1.travelrecord (`id`)\n" +
                 "VALUES ('4');"));
     }
 
-   // @Test
+    @Test
     public void test5() {
-        Iterator<Map<String, String>> iterator = routeInsert("TESTDB", "INSERT INTO `travelrecord` (`id`) VALUES ('4'),('999'); ");
-        Map<String, String> next = iterator.next();
-        assertEquals(2, next.size());
+        List<String> strings = getStrings(routeInsertFlat("db1", "INSERT INTO `travelrecord` (`id`) VALUES ('4'),('999'); "));
+        assertEquals(2, strings.size());
     }
 
-   // @Test
+    @Test
     public void test6() {
-        Iterator<Map<String, String>> iterator = routeInsert("TESTDB", "INSERT INTO `travelrecord` (`id`) VALUES ('4'),('999'); INSERT INTO `travelrecord` (`id`) VALUES ('2000');");
-        Map<String, String> next = iterator.next();
-        assertEquals(2, next.size());
-        Map<String, String> next2 = iterator.next();
-        assertEquals(1, next2.size());
+        Iterable<Map<String, List<String>>> iterable = routeInsert("db1", "INSERT INTO `travelrecord` (`id`) VALUES ('4'),('999'); INSERT INTO `travelrecord` (`id`) VALUES ('2000');");
+        Iterator<Map<String, List<String>>> iterator = iterable.iterator();
+        Map<String, List<String>> next = iterator.next();
+        Map<String, List<String>> next2 = iterator.next();
+        assertEquals("{defaultDatasourceName=[INSERT INTO db1.travelrecord3 (`id`)\n" +
+                "VALUES ('999');, INSERT INTO db1.travelrecord (`id`)\n" +
+                "VALUES ('4');]}", next.toString());
+        assertEquals("{defaultDatasourceName=[INSERT INTO db1.travelrecord3 (`id`)\n" +
+                "VALUES ('2000');]}", next2.toString());
     }
 
-   // @Test
+    @Test
     public void test7() {
         String sql = "DELETE FROM travelrecord WHERE id = '2' ";
         String id = "2";
-        BackendTableInfo backEndTableInfo = getBackEndTableInfo("TESTDB", "travelrecord", id);
+        BackendTableInfo backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", id);
         String newSQL = MessageFormat.format("DELETE FROM {0} WHERE user_id = {1} ", backEndTableInfo.getSchemaInfo().getTargetSchemaTable(), id);
     }
 
-   // @Test
+    @Test
     public void test8() {
-        List<BackendTableInfo> backEndTableInfo = getBackEndTableInfo("TESTDB", "travelrecord", "1",String.valueOf(Integer.MAX_VALUE));
-        Assert.assertEquals(3, backEndTableInfo.size());
+        List<BackendTableInfo> backEndTableInfo = getBackEndTableInfo("db1", "travelrecord", "1", String.valueOf(Integer.MAX_VALUE));
+        Assert.assertEquals(9, backEndTableInfo.size());
     }
 }

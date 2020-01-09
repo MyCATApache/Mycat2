@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2020>  <chen junwen>
  * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -24,8 +24,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
- * @author Weiqing Xu
  * @author Junwen Chen
+ * @author Weiqing Xu
+ *
  **/
 public class DataMappingEvaluator {
     private final Map<String, HashSet<RangeVariable>> columnMap = new HashMap<>();
@@ -63,16 +64,9 @@ public class DataMappingEvaluator {
         if (logicTable.getTableColumnInfo() != null) {
             tableSet = getRouteColumnSortedSet(logicTable.getTableColumnInfo());
         }
-//        if (targetSet.isEmpty()){
-//            throw new IllegalArgumentException("not targetSet");
-//        }
-//        if (databaseSet.isEmpty()){
-//            throw new IllegalArgumentException("not databaseSet");
-//        }
-//        if (tableSet.isEmpty()){
-//            throw new IllegalArgumentException("not tableSet");
-//        }
         List<BackendTableInfo> res = new ArrayList<>();
+
+        @NonNull List<BackendTableInfo> backends = logicTable.getBackends();
 
         for (String targetName : targetSet) {
             for (String databaseName : databaseSet) {
@@ -81,7 +75,7 @@ public class DataMappingEvaluator {
                 }
             }
         }
-        return res.isEmpty()?logicTable.backends:res;
+        return res.isEmpty()?backends:res.stream().filter(backends::contains).collect(Collectors.toList());
     }
 
     private List<BackendTableInfo> getBackendTableInfosByNatureDatabaseTable(MetadataManager.LogicTable logicTable) {
@@ -90,9 +84,9 @@ public class DataMappingEvaluator {
             routeIndexSortedSet   = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
         }
         if (routeIndexSortedSet.isEmpty()) {
-            return logicTable.backends;
+            return logicTable.getBackends();
         } else {
-            return routeIndexSortedSet.stream().map(logicTable.backends::get).collect(Collectors.toList());
+            return routeIndexSortedSet.stream().map(logicTable.getBackends()::get).collect(Collectors.toList());
         }
     }
 

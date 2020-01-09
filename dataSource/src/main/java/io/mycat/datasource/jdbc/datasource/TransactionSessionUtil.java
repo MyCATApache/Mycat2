@@ -109,18 +109,6 @@ public class TransactionSessionUtil {
         return new MycatUpdateResponseImpl( count,lastId, serverStatus);
     }
 
-    public static String getDataSourceByBalance(String replicaName, JdbcDataSourceQuery query) {
-        boolean runOnMaster = false;
-        LoadBalanceStrategy strategy = null;
-        if (query != null) {
-            runOnMaster = query.isRunOnMaster();
-            strategy = query.getStrategy();
-        }
-        PhysicsInstance dataSource =
-                ReplicaSelectorRuntime.INSTANCE.getDataSourceSelector(replicaName).getDataSource(runOnMaster, strategy);
-        return dataSource.getName();
-    }
-
     public static void commit() {
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = processUnit.getTransactionSession();
