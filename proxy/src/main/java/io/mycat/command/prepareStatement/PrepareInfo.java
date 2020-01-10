@@ -17,6 +17,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
+
+/**
+ * @author jamie12221
+ *  date 2019-04-30 16:24
+ *  预处理管理
+ **/
 public class PrepareInfo {
 
   private long mycatStmtId;

@@ -26,6 +26,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 
 /**
+ * @author jamie12221
  * The enum Mycat handlerName.
  */
 public enum MycatHandler implements NIOHandler<MycatSession> {
@@ -53,8 +54,6 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
          } else {
            return;
          }
-       }else {
-         System.out.println();
        }
 
 

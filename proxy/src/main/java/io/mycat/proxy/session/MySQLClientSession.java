@@ -127,16 +127,6 @@ public class MySQLClientSession extends
       LOGGER.error("channel close occur exception:{}", e);
     }
   }
-
-//  /**
-//   * 执行透传时候设置
-//   */
-//  public void switchProxyNioHandler() {
-//    assert this.mycat != null;
-//    this.mycat.switchWriteHandler(WriteHandler.INSTANCE);
-//    this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
-//  }
-
   /**
    * 准备接收响应时候
    */
@@ -257,7 +247,7 @@ public class MySQLClientSession extends
    */
   @Override
   public String getLastMessage() {
-    return this.lastMessage;
+    return this.lastMessage == null?"empty message":this.lastMessage;
   }
 
   /**

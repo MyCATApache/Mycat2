@@ -1,6 +1,5 @@
 package io.mycat.proxy.session;
 
-import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -176,7 +175,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
      */
     static void writeToChannel(MySQLProxyServerSession session) throws IOException {
         if (session.getIOThread() != Thread.currentThread()) {
-            throw new MycatException("");
+            throw new AssertionError();
         }
         Queue<ByteBuffer> byteBuffers = session.writeQueue();
         if (writeMySQLPacket(session, byteBuffers)) {
@@ -187,11 +186,11 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         if (!lastPacket) {
             session.change2WriteOpts();
         } else {
-            MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:" + session.sessionId());
             byteBuffers.remove();
             while (writeMySQLPacket(session, byteBuffers)) {
 
             }
+            MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------has response--------------:" + session.sessionId());
             byteBuffers.clear();
             session.writeFinished(session);
             return;
@@ -210,8 +209,6 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             ByteBuffer first = byteBuffers.peek();
 
             if (END_PACKET == first) {
-
-                MY_SQL_PROXY_SERVER_SESSION_LOGGER.info("------------end--------------:" + session.sessionId());
                 break;
             }
 

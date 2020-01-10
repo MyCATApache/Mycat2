@@ -84,7 +84,7 @@ public class MySQLSessionManager implements
         Objects.requireNonNull(datasource);
 
         try {
-            for (; ; ) {
+            for (; ; ) {//禁止循环里没有return
                 MySQLClientSession mySQLSession = getIdleMySQLClientSessionsByIds(datasource, ids, partialType);
                 if (mySQLSession == null ) {
                     createSession(datasource, asyncTaskCallBack);

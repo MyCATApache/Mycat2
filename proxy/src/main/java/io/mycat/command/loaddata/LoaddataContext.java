@@ -10,6 +10,11 @@ import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 
+/**
+ * @author jamie12221
+ *  date 2019-04-30 16:24
+ * long data值容器
+ **/
 public class LoaddataContext {
 
   MySQLPayloadWriter context;

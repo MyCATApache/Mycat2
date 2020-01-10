@@ -3,6 +3,11 @@ package io.mycat.command.prepareStatement;
 
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
 
+/**
+ * @author jamie12221
+ *  date 2019-04-30 16:24
+ *  预处理句柄与session绑定
+ **/
 public final class PrepareMySQLSessionInfo implements SessionIdAble {
   long statementId;
   int sessionId;

@@ -5,6 +5,11 @@ import io.mycat.proxy.session.MycatSession;
 
 import java.util.HashMap;
 
+/**
+ * @author jamie12221
+ *  date 2019-04-30 16:24
+ *  预处理语句对象
+ **/
 public class PrepareStmtContext {
   long stmtId = 0L;
   private MycatSession mycat;

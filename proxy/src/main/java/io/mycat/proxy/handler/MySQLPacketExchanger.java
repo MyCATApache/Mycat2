@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- *
+ *@author jamie12221
  */
 public enum MySQLPacketExchanger {
     INSTANCE;
@@ -76,7 +76,7 @@ public enum MySQLPacketExchanger {
     private static void onClearInNormalResponse(MycatSession mycatSession, MySQLClientSession mysql) {
         mycatSession.resetPacket();
         mysql.resetPacket();
-        LOGGER.debug("释放 mycat session " + mycatSession.sessionId() + " mysql:" + mysql.sessionId());
+        LOGGER.debug("unbind mycat session " + mycatSession.sessionId() + " mysql:" + mysql.sessionId());
         if (!mysql.isMonopolized()) {
             mycatSession.setMySQLSession(null);
             mysql.setMycatSession(null);
@@ -110,8 +110,8 @@ public enum MySQLPacketExchanger {
         }
         proxyBuffer.channelWriteStartIndex(startIndex);
         proxyBuffer.channelWriteEndIndex(endPos);
-        LOGGER.debug("--------------------------------------session:" + mysql.sessionId());
-        LOGGER.debug(DumpUtil.dumpAsHex(proxyBuffer.currentByteBuffer()));
+//        LOGGER.debug("--------------------------------------session:" + mysql.sessionId());
+//        LOGGER.debug(DumpUtil.dumpAsHex(proxyBuffer.currentByteBuffer()));
         mycatSession.writeToChannel();
         return;
     }
@@ -174,6 +174,7 @@ public enum MySQLPacketExchanger {
 
 
             try {
+                //对于判断是否mycat session重复绑定多个mysql session
                 if (mysql.getMycat()==mycat&&mycat.getMySQLSession()==mysql){
 
                 }else if (mysql.getMycat() == null&&mycat.getMySQLSession() == null){
@@ -208,7 +209,6 @@ public enum MySQLPacketExchanger {
                 mysql.setMycatSession(mycat);
                 mysql.writeProxyBufferToChannel(mycat.currentProxyBuffer());
 
-                System.out.println(new String(packetData));
                 MycatMonitor.onBindMySQLSession(mycat, mysql);
             } catch (Exception e) {
                 onExceptionClearCloseInRequest(mycat, e, finallyCallBack);
@@ -421,7 +421,6 @@ public enum MySQLPacketExchanger {
                 ProxyBuffer proxyBuffer = mycat.currentProxyBuffer();
                 int oldIndex = proxyBuffer.channelWriteStartIndex();
                 int endIndex = proxyBuffer.channelWriteEndIndex();
-                System.out.println(DumpUtil.dumpAsHex(proxyBuffer.currentByteBuffer()));
                 MycatMonitor.onPacketExchangerWrite(mycat);
                 proxyBuffer.writeToChannel(mycat.channel());
 
@@ -434,7 +433,7 @@ public enum MySQLPacketExchanger {
                 } else {
                     MySQLClientSession mysql = mycat.getMySQLSession();
                     if (mysql == null) {
-                        assert false;
+                       throw new  AssertionError();
                     } else {
                         boolean b = MySQLPacketExchanger.INSTANCE.onFrontWriteFinished(mycat);
                         if (b) {

@@ -124,6 +124,10 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
         return sessionManager;
     }
 
+    /**
+     * todo: check that  code is right
+     * @return
+     */
     public boolean checkOpen() {
         SocketChannel channel = channel();
         boolean open = !hasClosed() && channel.isOpen() && channel.isConnected();
