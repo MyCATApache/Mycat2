@@ -26,7 +26,6 @@ import java.util.stream.IntStream;
 /**
  * @author Junwen Chen
  * @author Weiqing Xu
- *
  **/
 public class DataMappingEvaluator {
     private final Map<String, HashSet<RangeVariable>> columnMap = new HashMap<>();
@@ -75,13 +74,20 @@ public class DataMappingEvaluator {
                 }
             }
         }
-        return res.isEmpty()?backends:res.stream().filter(backends::contains).collect(Collectors.toList());
+        if (res.isEmpty()) {
+            return backends;
+        } else {
+            if (backends.isEmpty()) {
+                return res;
+            }
+            return res.stream().filter(backends::contains).collect(Collectors.toList());
+        }
     }
 
     private List<BackendTableInfo> getBackendTableInfosByNatureDatabaseTable(MetadataManager.LogicTable logicTable) {
         List<Integer> routeIndexSortedSet = Collections.emptyList();
-        if (!columnMap.isEmpty()){
-            routeIndexSortedSet   = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
+        if (!columnMap.isEmpty()) {
+            routeIndexSortedSet = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
         }
         if (routeIndexSortedSet.isEmpty()) {
             return logicTable.getBackends();
@@ -98,7 +104,7 @@ public class DataMappingEvaluator {
         @NonNull SimpleColumnInfo columnInfo = target.columnInfo;
         Set<RangeVariable> rangeVariables = columnMap.get(columnInfo.columnName);
         if (rangeVariables == null) {
-         return IntStream.range(0,target.map.size()).boxed().collect(Collectors.toList());
+            return IntStream.range(0, target.map.size()).boxed().collect(Collectors.toList());
         } else {
             return calculate(target.getFunction(), rangeVariables).stream().sorted().collect(Collectors.toList());
         }
