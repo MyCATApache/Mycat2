@@ -6,6 +6,7 @@ import io.mycat.lib.impl.ResultSetCacheRecorder;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 public class ResultSetCacheImplTest {
@@ -27,13 +28,13 @@ public class ResultSetCacheImplTest {
 
         Assert.assertEquals(1, response.columnCount());
 
-        Iterator<byte[]> columnDefIterator = response.columnDefIterator();
-        byte[] next = columnDefIterator.next();
-        Assert.assertArrayEquals("1111".getBytes(),next );
+        Iterator<ByteBuffer> columnDefIterator = response.columnDefIterator();
+        ByteBuffer next = columnDefIterator.next();
+        Assert.assertEquals(ByteBuffer.wrap("1111".getBytes()), next);
         Assert.assertFalse(columnDefIterator.hasNext());
 
-        Iterator<byte[]> iterator = response.rowIterator();
-        Assert.assertArrayEquals("2222".getBytes(), iterator.next());
+        Iterator<ByteBuffer> iterator = response.rowIterator();
+        Assert.assertEquals(ByteBuffer.wrap("2222".getBytes()), iterator.next());
         Assert.assertFalse(iterator.hasNext());
 
 
