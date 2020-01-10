@@ -37,6 +37,8 @@ public enum RootHelper {
         if (path == null){
             URI uri = rootClass.getResource("/mycat.yml").toURI();
             path = Paths.get( uri).toAbsolutePath().toString();
+        }else {
+            path = Paths.get(path).resolve("mycat.yml").toAbsolutePath().toString();
         }
         ConfigProvider tmpConfigProvider = null;
 
