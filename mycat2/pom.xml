@@ -98,7 +98,7 @@
         <artifactId>maven-assembly-plugin</artifactId>
         <version>3.1.1</version>
         <configuration>
-          <finalName>mycat2-${project.version}-${timestamp}-single</finalName>
+          <finalName>mycat2-${project.version}</finalName>
           <appendAssemblyId>false</appendAssemblyId>
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -211,11 +211,11 @@
                 <mkdir dir="${project.build.directory}"/>
                 <mkdir dir="${project.build.directory}/jsw/mycat/logs"/>
                 <tar basedir="${project.build.directory}/jsw"
-                  destfile="${project.build.directory}/mycat2-${project.version}-${timestamp}.tar.gz"
+                  destfile="${project.build.directory}/mycat2-${project.version}.tar.gz"
                   includes="mycat/bin/**,mycat/conf/**,mycat/logs,mycat/lib/mycat2**,mycat/lib/wrapper**">
                 </tar>
                 <tar basedir="${project.basedir}/src/main/resources"
-                  destfile="${project.build.directory}/mycat2-${project.version}-${timestamp}-resources.tar.gz"
+                  destfile="${project.build.directory}/mycat2-${project.version}-resources.tar.gz"
                   includes="**">
                 </tar>
               </target>
@@ -243,6 +243,97 @@
           <doCheck>false</doCheck>
           <doUpdate>false</doUpdate>
           <timestampFormat>{0,date,yyyyMMddHHmmss}</timestampFormat>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.google.code.maven-replacer-plugin</groupId>
+        <artifactId>replacer</artifactId>
+        <version>1.5.3</version>
+        <executions>
+          <execution>
+            <id>version</id>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>replace</goal>
+            </goals>
+            <configuration>
+              <file>${project.basedir}/${version.template.file}</file>
+              <outputFile>${project.basedir}/src/main/resources/${version.file}</outputFile>
+              <replacements>
+                <replacement>
+                  <token>@buildnumber@</token>
+                  <value>${buildNumber}</value>
+                </replacement>
+                <replacement>
+                  <token>@buildtime@</token>
+                  <value>${maven.build.timestamp}</value>
+                </replacement>
+                <replacement>
+                  <token>@pomversion@</token>
+                  <value>${project.version}</value>
+                </replacement>
+                <replacement>
+                  <token>@giturl@</token>
+                  <value>https://github.com/MyCATApache/Mycat2.git</value>
+                </replacement>
+                <replacement>
+                  <token>@mycatsite@</token>
+                  <value>http://www.mycat.io/</value>
+                </replacement>
+                <replacement>
+                  <token>@qqgroup@</token>
+                  <value>332702697</value>
+                </replacement>
+              </replacements>
+            </configuration>
+          </execution>
+          <execution>
+            <id>version2</id>
+
+            <phase>process-sources</phase>
+            <goals>
+              <goal>replace</goal>
+            </goals>
+            <configuration>
+              <!--<file>${project.basedir}/src/main/java/io/mycat/config/Versions.template</file>-->
+              <!--<outputFile>${project.basedir}/src/main/java/io/mycat/config/Versions.java</outputFile>-->
+              <!--<replacements>-->
+              <!--<replacement>-->
+              <!--<token>@server-version@</token>-->
+              <!--<value>5.6.29-mycat-${project.version}-${timestamp}</value>-->
+              <!--</replacement>-->
+              <!--</replacements>-->
+            </configuration>
+          </execution>
+        </executions>
+
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <version>1.4</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <format>{1}</format>
+          <items>
+            <item>timestamp</item>
+            <item>scmVersion</item>
+          </items>
+          <doCheck>false</doCheck>
+          <doUpdate>false</doUpdate>
+          <timestampFormat>{0,date,yyyyMMddHHmmss}</timestampFormat>
+          <providerImplementations>
+            <git>git</git>
+          </providerImplementations>
+
         </configuration>
       </plugin>
     </plugins>
