@@ -55,8 +55,9 @@ public enum MycatCore {
 
         PlugRuntime.INSTCANE.load(mycatConfig);
         JdbcRuntime.INSTANCE.load(mycatConfig);
-        ClientRuntime.INSTANCE.load(mycatConfig);
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
+        ClientRuntime.INSTANCE.load(mycatConfig);
+
 
         MetadataManager.INSTANCE.load(mycatConfig);
         ServerConfig serverConfig = mycatConfig.getServer();
@@ -113,7 +114,7 @@ public enum MycatCore {
     }
 
     public static void main(String[] args) throws Exception {
-        ConfigProvider bootConfig = RootHelper.INSTCANE.bootConfig(MycatCore.class);
+        ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(MycatCore.class);
         MycatCore.INSTANCE.init(bootConfig);
     }
 

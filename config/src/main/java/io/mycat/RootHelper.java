@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum RootHelper {
-    INSTCANE;
+    INSTANCE;
 
     public ConfigProvider bootConfig(Class rootClass) throws Exception {
         String configProviderKeyName = "MYCAT_CONFIG_PROVIER";
