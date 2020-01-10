@@ -55,6 +55,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.nio.charset.Charset;
 import java.sql.PreparedStatement;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -132,10 +133,13 @@ public class ContextRunner {
     public static final Command ERROR_COMMAND = new Command() {
         @Override
         public Runnable apply(MycatClient client, Context context, MycatSession session) {
+            String errorMessage = context.getVariable("errorMessage", "may be unknown command");
+            int errorCode = Integer.parseInt(context.getVariable("errorCode","-1"));
             return new Runnable() {
                 @Override
                 public void run() {
-                    session.setLastMessage("error hanlder");
+                    session.setLastMessage(errorMessage);
+                    session.setLastErrorCode(errorCode);
                     session.writeErrorEndPacketBySyncInProcessError();
                 }
             };
@@ -143,8 +147,10 @@ public class ContextRunner {
 
         @Override
         public Runnable explain(MycatClient client, Context context, MycatSession session) {
+            String errorMessage = context.getVariable("errorMessage", "may be unknown command");
+            int errorCode = Integer.parseInt(context.getVariable("errorCode","-1"));
             return () -> {
-                writePlan(session, "error");
+                writePlan(session, MessageFormat.format("errorMessage:{0} errorCode:{1}",errorMessage,errorCode));
             };
         }
     };
@@ -152,6 +158,7 @@ public class ContextRunner {
 
     static {
         map = new ConcurrentHashMap<>();
+        map.put(ERROR,ERROR_COMMAND);
         /**
          * 参数:statement
          */
