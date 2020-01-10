@@ -36,7 +36,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
 #              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
 #              dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: comany}]
 #          createTableSQL: CREATE TABLE `company` (`id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4
-interceptor: #拦截器
+interceptor: #拦截器,如果拦截不了,尝试use schema
   defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
   schemas: [{
               tables:[ 'db1.travelrecord','db1.address'],#sql中包含一个表名
