@@ -77,19 +77,26 @@ public enum MetadataManager {
     public List<String> explain(RelNode scan) {
         String message = RelOptUtil.toString(scan);
         List<String> list = new ArrayList<>(Arrays.asList(message.split("\n")));
+        //根节点与子节点
         List<TableScan> tableScans = new ArrayList<>();
-        scan.childrenAccept(new RelVisitor() {
-            @Override
-            public void visit(RelNode node, int ordinal, RelNode parent) {
-                if (node instanceof Bindables.BindableTableScan) {
-                    tableScans.add((TableScan) node);
+        if (scan instanceof Bindables.BindableTableScan) {
+            tableScans.add((TableScan) scan);
+        } else if (scan instanceof LogicalTableScan) {
+            tableScans.add((TableScan) scan);
+        }else {
+            scan.childrenAccept(new RelVisitor() {
+                @Override
+                public void visit(RelNode node, int ordinal, RelNode parent) {
+                    if (node instanceof Bindables.BindableTableScan) {
+                        tableScans.add((TableScan) node);
+                    }
+                    if (node instanceof LogicalTableScan) {
+                        tableScans.add((TableScan) node);
+                    }
+                    super.visit(node, ordinal, parent);
                 }
-                if (node instanceof LogicalTableScan) {
-                    tableScans.add((TableScan) node);
-                }
-                super.visit(node, ordinal, parent);
-            }
-        });
+            });
+        }
         for (TableScan tableScan : tableScans) {
             RelOptTableImpl table = (RelOptTableImpl) tableScan.getTable();
             list.add("node:" + RelOptUtil.toString(tableScan));
