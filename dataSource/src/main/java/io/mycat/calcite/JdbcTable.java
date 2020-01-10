@@ -205,8 +205,8 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 boolean success = addOrRootFilter(dataMappingRule, filter);
                 if (success) {
                     record.merge(dataMappingRule);
-                    where.add(filter);
                 }
+                where.add(filter);
                 return success;
             });
         }else {
@@ -215,8 +215,8 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 boolean success = addOrRootFilter(dataMappingRule, filter);
                 if (success) {
                     record.merge(dataMappingRule);
-                    where.add(filter);
                 }
+                where.add(filter);
             });
         }
 
