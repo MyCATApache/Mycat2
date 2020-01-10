@@ -16,6 +16,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
 
+/**
+ * @author chen junwen
+ */
 public class TransforFileLib {
     public static Response transferFileTo(String file) {
         return new Response() {

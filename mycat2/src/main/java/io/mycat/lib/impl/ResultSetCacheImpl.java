@@ -13,6 +13,9 @@ import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 
+/**
+ * @author chen junwen
+ */
 public class ResultSetCacheImpl implements ResultSetCacheRecorder {
     static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ResultSetCacheImpl.class);
     FileChannel channel;

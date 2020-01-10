@@ -10,6 +10,9 @@ import io.mycat.proxy.session.MycatSession;
 import java.io.IOException;
 import java.util.HashMap;
 
+/**
+ * @author chen junwen
+ */
 public class FinalCacheLib {
     private static ResultSetCacheImpl resultSetCache;
     private final static HashMap<String, ResultSetCacheRecorder.Token> cache = new HashMap<>();

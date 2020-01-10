@@ -22,6 +22,9 @@ import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.parser.SQLParserFeature.*;
 
+/**
+ * @author chen junwen
+ */
 public class InserParser extends AbstractStringRowIterator {
     public InserParser(String path) {
         this(getLines(path).map(i->i.trim()).filter(i->!i.isEmpty()).iterator());

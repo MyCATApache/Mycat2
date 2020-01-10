@@ -6,6 +6,9 @@ import io.mycat.beans.resultset.MycatResultSetType;
 import java.io.IOException;
 import java.util.Iterator;
 
+/**
+ * @author chen junwen
+ */
 public class ByteBufferResponseRecorder implements MycatResultSetResponse {
     private final ResultSetCacheRecorder cache;
     private final MycatResultSetResponse resultSetResponse;

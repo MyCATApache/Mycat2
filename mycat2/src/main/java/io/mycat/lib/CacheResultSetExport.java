@@ -6,6 +6,9 @@ import io.mycat.pattern.InstructionSet;
 
 import java.util.function.Supplier;
 
+/**
+ * @author chen junwen
+ */
 public class CacheResultSetExport implements InstructionSet {
 
     public static MycatResultSetResponse cacheResponse(String key, Supplier<MycatResultSetResponse> supplier) {

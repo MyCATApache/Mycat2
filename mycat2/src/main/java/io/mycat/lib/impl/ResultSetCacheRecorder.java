@@ -4,6 +4,9 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 
 import java.io.IOException;
 
+/**
+ * @author chen junwen
+ */
 public interface ResultSetCacheRecorder {
     void open() throws IOException;
 

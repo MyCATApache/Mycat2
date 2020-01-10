@@ -4,6 +4,9 @@ import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import org.apache.calcite.linq4j.Enumerator;
 
+/**
+ * @author chen junwen
+ */
 public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     protected final MycatRowMetaData mycatRowMetaData;
     protected final Enumerator<Object[]> iterator;

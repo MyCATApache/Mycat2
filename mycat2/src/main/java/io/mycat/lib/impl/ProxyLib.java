@@ -8,6 +8,9 @@ import io.mycat.SQLExecuterWriter;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * @author chen junwen
+ */
 public class ProxyLib {
     public static ResultSetCacheImpl resultSetCache;
     public final static ConcurrentHashMap<String, ResultSetCacheRecorder.Token> cache = new ConcurrentHashMap<>();

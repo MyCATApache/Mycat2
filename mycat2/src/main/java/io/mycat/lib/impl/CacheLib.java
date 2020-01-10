@@ -11,6 +11,9 @@ import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+/**
+ * @author chen junwen
+ */
 public class CacheLib {
 
     final static ConcurrentHashMap<String, CacheFile> map = new ConcurrentHashMap<>();

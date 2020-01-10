@@ -2,7 +2,9 @@ package io.mycat.lib;
 
 import io.mycat.lib.impl.MapLib;
 import io.mycat.pattern.InstructionSet;
-
+/**
+ * @author chen junwen
+ */
 public class SessionMapExport implements InstructionSet {
 
     public void put(int ctx, Object key, Object value) {

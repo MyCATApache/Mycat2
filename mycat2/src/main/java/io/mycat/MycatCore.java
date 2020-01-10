@@ -103,7 +103,7 @@ public enum MycatCore {
 
                     @Override
                     public String message() {
-                        return "";
+                        return "idleConnectCheck";
                     }
                 });
             }

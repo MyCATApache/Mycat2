@@ -3,6 +3,9 @@ package io.mycat.lib.impl;
 import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * @author chen junwen
+ */
 public enum  MapLib {
     INSTANCE;
     final  ConcurrentHashMap<Integer, HashMap<Object, Object>> map = new ConcurrentHashMap<>();
