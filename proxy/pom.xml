@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.mycat</groupId>
         <artifactId>parent</artifactId>
-      <version>0.4-SNAPSHOP</version>
+      <version>0.5-SNAPSHOP</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,17 +15,17 @@
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
-        <version>0.4-SNAPSHOP</version>
+        <version>0.5-SNAPSHOP</version>
       </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>plug</artifactId>
-          <version>0.4-SNAPSHOP</version>
+          <version>0.5-SNAPSHOP</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-          <version>0.4-SNAPSHOP</version>
+          <version>0.5-SNAPSHOP</version>
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
@@ -35,12 +35,12 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
-          <version>0.4-SNAPSHOP</version>
+          <version>0.5-SNAPSHOP</version>
         </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>replica</artifactId>
-        <version>0.4-SNAPSHOP</version>
+        <version>0.5-SNAPSHOP</version>
       </dependency>
 
     </dependencies>
