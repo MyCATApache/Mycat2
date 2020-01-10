@@ -40,6 +40,13 @@
   </scm>
 
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/org.realityforge.org.jetbrains.annotations/org.jetbrains.annotations -->
+    <dependency>
+      <groupId>org.realityforge.org.jetbrains.annotations</groupId>
+      <artifactId>org.jetbrains.annotations</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+
     <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
     <dependency>
       <groupId>org.projectlombok</groupId>
