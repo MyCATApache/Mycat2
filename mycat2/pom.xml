@@ -39,7 +39,11 @@
       <version>0.5-SNAPSHOP</version>
     </dependency>
 
-
+    <dependency>
+      <groupId>io.mycat</groupId>
+      <artifactId>proxy</artifactId>
+      <version>0.5-SNAPSHOP</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.collections</groupId>
       <artifactId>eclipse-collections-api</artifactId>

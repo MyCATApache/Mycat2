@@ -15,6 +15,8 @@
 package io.mycat.calcite;
 
 import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.slf4j.Logger;
@@ -31,6 +33,7 @@ public enum  CalciteEnvironment {
 
 
     private CalciteEnvironment() {
+        Driver driver = new Driver();//触发驱动注册
         final String charset = "UTF-8";
         System.setProperty("saffron.default.charset", charset);
         System.setProperty("saffron.default.nationalcharset", charset);
