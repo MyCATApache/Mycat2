@@ -532,4 +532,13 @@ public class GPatternRuleTest {
         Assert.assertTrue(matcher.acceptAll());
         Assert.assertEquals(matcher.id(), id2);
     }
+
+    @Test
+    public void test33() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("select {any}");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("select 1;");
+        Assert.assertTrue(matcher.acceptAll());
+    }
 }
