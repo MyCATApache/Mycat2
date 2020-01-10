@@ -1,103 +1,80 @@
 # mycat 2.0-readme
 
-author:junwen,zhangwy 2019-6-2
+author:junwen  2020-1-10
 
-author:junwen 2019-7-4
-
-author:junwen 2019-7-30
+联系: qq:  294712221
 
 [![Creative Commons License](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
 
 项目地址:<https://github.com/MyCATApache/Mycat2>
 
-## 优势
+## 特点
 
-为单节点路由而优化的结果集响应透传
+1.proxy透传报文,使用buffer大小与结果集无关
+
+2.proxy透传事务,支持XA事务,jdbc本地事务
+
+3.支持分布式查询
 
 ## 限制
 
-- 暂不支持MySQL压缩协议
-- 有限的SQL路由支持
-- 暂不支持跨节点修改SQL和查询SQL(计划中)
+暂不支持MySQL压缩协议,预处理,游标等(实验状态)
 
 
 
-客户端JDBC推荐连接字符串
+测试版本的mycat2无需账户密码即可登录
 
-```
-jdbc:mysql://localhost:8066/TESTDB?useServerPrepStmts=false&useCursorFetch=false&serverTimezone=UTC&allowMultiQueries=false&useBatchMultiSend=false&characterEncoding=utf8
-```
+``
 
-2019-7-30,jdbc作为数据源处于测试阶段
-
-2019-9-9,分布式查询模块处于测试阶段
-
-mycat.yml
-
-commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
-
-启动jdbc路由,此时sql不会被路由到proxy模块的数据源,jdbc数据源默认配置支持分布式事务
-
-该路由不会把mysql语句改写成数据源目标SQL
+## 表
 
 
 
-## 配置说明
+#### 分片类型
 
-[快速开始](11-mycat-quick-start.md)
+##### 自然分片
 
-[功能测试](13-mycat-function-test.md)
+单列或者多列的值映射单值,**分片算法**使用该值计算数据节点范围
 
-[代理配置(mycat.yml)](01-mycat-proxy.md)
+##### 动态分片
 
-[用户配置(user.yml)](02-mycat-user.md)
-
-[mysql集群配置(replicas.yml)](03-mycat-replica.md)
-
-[逻辑库配置(schema.yml)](04-mycat-schema.md)
-
-[路由行为说明](20-mycat-router.md)
-
-[JDBC内部SQL处理说明](18-proxy-sql.md)
-
-[路由规则配置(rule.yml)](05-mycat-dynamic-annotation.md)
-
-[分片算法配置(function.yml)](06-mycat-function.md)
-
-[心跳配置(heartbeat.yml)](07-mycat-heartbeat.md)
-
-[插件配置(plug.yaml](09-mycat-plug.md)
-
-[日志](19-mycat-log.md)
-
-[静态注解说明](08-mycat-static-annotation.md)
-
-[分片算法说明](17-partitioning-algorithm.md)
-
-[负载均衡说明](15-mycat-balance.md)
-
-[负载均衡算法](16-load-balancing-algorithm.md)
-
-[全局序列号说明](14-mycat-sequence.md)
-
-[分布式查询](28-mycat-sharding-query.md)
-
-[注解路由](30-mycat-dynamic-annotation.md)
-
-[注解模式](29-mycat-gpattern.md)
-
-[注解指令](31-mycat-instructions.md)
-
-[打包](10-mycat-package.md)
-
-[合作者](12-collaborators.md)
-
-## [待办事项与开发历史记录](101-todo-history-list.md)
+单列或者多列的值在分片算法计算下通过**关联关系**映射分片目标,目标库,目标表,得到有效的数据节点范围
 
 
 
-## [文档编辑指南](99-edit-guide.md)
+#### 存储节点
 
-------
 
+dataNode是数据节点,库名,表名组成的三元组
+
+targetName是目标名字,它可以是数据源的名字或者集群的名字
+
+分片必然分库
+分库必然分表
+
+
+| 目标 targetName| 库schemaName   | 表tableName   | 类型   |
+| ---- | ---- | ---- | ------ |
+| 唯一 | 唯一 | 唯一 | 非分片 |
+| 唯一 | 多目标 | 相同名字 |   非分片分库分表     |
+|  唯一    |  唯一    |  不同名字    |   非分片单库分表     |
+| 跨实例 | 多目标 | 不同名字 | 分片分库分表 |
+
+在跨实例情况下,计算要聚合,事务要协调
+
+
+
+## 事务
+
+XA事务使用基于JDBC数据源实现,具体请参考Java Transaction API
+
+Proxy事务即通过Proxy操作MySQL进行事务操作,本质上与直接操作MySQL没有差异.
+
+为了方便上层逻辑操作事务,所以统一JDBC和Proxy操作,,参考JDBC的接口,定下mycat2的事务接口
+
+
+
+### commit
+
+如果
