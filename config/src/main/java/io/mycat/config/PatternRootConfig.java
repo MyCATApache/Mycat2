@@ -13,7 +13,7 @@ public class PatternRootConfig {
     private List<TextItemConfig> sqls = new ArrayList<>();
     private List<HandlerToSQLs> handlers = new ArrayList<>();
     private Handler defaultHanlder;
-    private String transactionType = "jdbc";
+    private String transactionType;
 
 
     @Data
