@@ -36,12 +36,13 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
 #              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
 #              dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: comany}]
 #          createTableSQL: CREATE TABLE `company` (`id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4
-interceptor: #拦截器,如果拦截不了,尝试use schema
+interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
   defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
   schemas: [{
               tables:[ 'db1.travelrecord','db1.address'],#sql中包含一个表名
               sqls: [
               {sql: 'select {selectItems} from {any}',command: distributedQuery },
+              {sql: 'select {selectItems} from {any};',command: distributedQuery },#如果匹配不了,看看是不是;的问题
               {sql: 'select {selectItems} from {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
               {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
               {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
@@ -59,7 +60,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema
             },
   ]
   sqls: [
-  {name: explain,sql: 'EXPLAIN {statement}' ,command: explain},
+  {name: explain,sql: 'EXPLAIN {statement}' ,command: explain}, #explain一定要写库名
   {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: hbt},
   {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
   {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
