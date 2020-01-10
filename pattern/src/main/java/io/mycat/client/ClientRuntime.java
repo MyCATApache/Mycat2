@@ -105,11 +105,14 @@ public enum ClientRuntime {
                                 if (tableInfo != null) {
                                     for (TableInfo info : tableInfo) {
                                         PatternRootConfig.TextItemConfig textItemConfig = info.map.get(matcher.id());
+
                                         if (textItemConfig != null) {
-                                            return getContext(sql, collectionMap, map, textItemConfig);
+                                            String name = textItemConfig.getName();
+                                            return getContext(name,sql, collectionMap, map, textItemConfig);
                                         }
                                         if (info.handler != null) {
-                                            return getContext(sql, collectionMap, map, info.handler);
+                                            String name = Objects.toString(info);
+                                            return getContext(name,sql, collectionMap, map, info.handler);
                                         }
                                     }
                                 }
@@ -120,23 +123,25 @@ public enum ClientRuntime {
                 if (sqlMatch){
                     PatternRootConfig.TextItemConfig textItemConfig = runtime.idToItem.get(matcher.id());
                     if (textItemConfig!=null){
-                        return getContext(sql, collectionMap, map,textItemConfig);
+                        String name = Objects.toString(textItemConfig);
+                        return getContext(name,sql, collectionMap, map,textItemConfig);
                     }
                 }
                 if (runtimeInfo.defaultHandler != null) {
-                    return getContext(sql, collectionMap, map, runtimeInfo.defaultHandler);
+                    String name = "defaultHandler";
+                    return getContext(name,sql, collectionMap, map, runtimeInfo.defaultHandler);
                 }
                 throw new UnsupportedOperationException();
             }
 
-            private Context getContext(String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
-                return new Context(sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
+            private Context getContext(String name,String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
+                return new Context(name,sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
             }
 
 
             @NotNull
-            private Context getContext(String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
-                return new Context(sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
+            private Context getContext(String name,String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
+                return new Context(name,sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
             }
 
             @Override

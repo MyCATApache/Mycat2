@@ -26,6 +26,7 @@ import java.util.Objects;
  * @author Junwen Chen
  **/
 public class Context {
+    private String name;
     private final String sql;
     private final java.util.Map<String, Collection<String>> tables;
     private final Map<String, String> names;
@@ -33,7 +34,8 @@ public class Context {
     private final String command;
     private final String explain;
 
-    public Context(String sql, Map<String, Collection<String>> tables, Map<String, String> names, Map<String, String> tags, String type, String explain) {
+    public Context(String name,String sql, Map<String, Collection<String>> tables, Map<String, String> names, Map<String, String> tags, String type, String explain) {
+        this.name = name;
         this.sql = sql;
         this.tables = tables;
         this.names = names;
@@ -88,5 +90,9 @@ public class Context {
 
     public String getCommand() {
         return command;
+    }
+
+    public String getName() {
+        return name;
     }
 }

@@ -575,7 +575,9 @@ public class ContextRunner {
         } else {
             String balance = context.getVariable(BALANCE);
             ExecuteType executeType = ExecuteType.valueOf(context.getVariable(EXECUTE_TYPE, ExecuteType.DEFAULT.name()));
-            String replicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(context.getVariable(TARGETS), needStartTransaction, balance);
+            String replicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(
+                   Objects.requireNonNull(context.getVariable(TARGETS),"can not get "+TARGETS+" of "+context.getName()),
+                    needStartTransaction, balance);
             details = new Details(executeType, Collections.singletonMap(replicaName, Collections.singletonList(context.getExplain())), balance);
         }
         return details;
