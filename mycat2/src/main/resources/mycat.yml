@@ -161,3 +161,6 @@ plug:
     {name: BalanceRunOnMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnMaster},
     {name: BalanceRunOnRandomMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnRandomMaster}
     ]
+
+
+    #10.3.15-MariaDB
