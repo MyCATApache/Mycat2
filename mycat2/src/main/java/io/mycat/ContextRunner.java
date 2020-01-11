@@ -186,7 +186,10 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> block(session, mycat -> {
                     String defaultSchema = client.getDefaultSchema();
-                    String explain = context.getExplain();
+                    String explain = context.getExplain().trim();
+                    if (explain.endsWith(";")){
+                        explain = explain.substring(0,explain.length()-1);
+                    }
                     CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);
                     connection.setSchema(defaultSchema);
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
