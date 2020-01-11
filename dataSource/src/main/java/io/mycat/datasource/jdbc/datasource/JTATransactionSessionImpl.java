@@ -94,12 +94,15 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
     @Override
     public void commit() {
-        inTranscation = false;
-        try {
-            userTransaction.commit();
+        try {//真正开启事务才提交
+            if (isInTransaction()) {
+                userTransaction.commit();
+            }
         } catch (Exception e) {
             LOGGER.error("", e);
             throw new MycatException(e);
+        }finally {
+            inTranscation = false;
         }
         afterDoAction();
     }
