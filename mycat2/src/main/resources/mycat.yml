@@ -17,7 +17,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
         address1:
           columns:
             - columnName: id
-              shardingType: MAP_TARGET #动态分片类型,通过任意值映射分片目标,目标库,目标表,要求查询条件要求包列信息,否则可能路由失败
+              shardingType: MAP_TARGET #动态分片类型,通过任意值映射分片目标,目标库,目标表,要求查询条件要求包列信息,否则可能路由失败,如果配置了dataNode,则会使用dataNode校验
               function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
               map: [defaultDs]
             - columnName: addressname
