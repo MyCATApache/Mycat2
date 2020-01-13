@@ -303,7 +303,21 @@ public class MySQLTaskUtil {
         });
 
     }
-
+    public static void getMySQLSessionForTryConnect(String datasource,
+                                                    SessionCallBack<MySQLClientSession> asynTaskCallBack) {
+        Objects.requireNonNull(datasource);
+        Objects.requireNonNull(asynTaskCallBack);
+        Thread thread = Thread.currentThread();
+        if (thread instanceof MycatReactorThread) {
+            MySQLSessionManager manager = ((MycatReactorThread) thread)
+                    .getMySQLSessionManager();
+            manager.getIdleSessionsOfIdsOrPartial(
+                    MycatCore.INSTANCE.getDatasource(datasource), null, PartialType.SMALL_ID
+                    , asynTaskCallBack);
+        } else {
+            throw new MycatException("Replica must running in MycatReactorThread");
+        }
+    }
     public static void getMySQLSessionForTryConnect(MySQLDatasource datasource,
                                                     List<SessionIdAble> ids,
                                                     PartialType partialType,

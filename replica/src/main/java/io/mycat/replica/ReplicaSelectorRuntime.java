@@ -32,10 +32,7 @@ import io.mycat.replica.heartbeat.strategy.MySQLGaleraHeartBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLMasterSlaveBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -48,7 +45,6 @@ import java.util.stream.Collectors;
 public enum ReplicaSelectorRuntime {
     INSTANCE;
     final ConcurrentMap<String, ReplicaDataSourceSelector> map = new ConcurrentHashMap<>();
-    final ScheduledExecutorService timer = Executors.newScheduledThreadPool(1);
     volatile ScheduledFuture<?> schedule;
     volatile MycatConfig config;
     final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(ReplicaSelectorRuntime.class);
@@ -96,20 +92,25 @@ public enum ReplicaSelectorRuntime {
                 c.notifyChangeAlive(true);
             });
         } else {
+            collect.forEach(c->{
+                c.notifyChangeSelectRead(true);
+                c.notifyChangeAlive(true);
+            });
             this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
-                collect.forEach(c -> {
-                    HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(c.getName());
-                    if (heartbeatFlow == null) {
-                        c.notifyChangeSelectRead(false);
-                        c.notifyChangeAlive(false);
-                    } else {
-                        if (LOGGER.isDebugEnabled()) {
-                            LOGGER.debug("heartbeat");
+                    for (Map.Entry<String, ReplicaDataSourceSelector> stringReplicaDataSourceSelectorEntry : map.entrySet()) {
+                        for (String datasourceName : stringReplicaDataSourceSelectorEntry.getValue().datasourceMap.keySet()) {
+                            String replicaName = stringReplicaDataSourceSelectorEntry.getKey();
+                            HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(replicaName+"."+datasourceName);
+                            if (heartbeatFlow != null) {
+                                if (LOGGER.isDebugEnabled()) {
+                                    LOGGER.debug("heartbeat");
+                                }
+                                heartbeatFlow.heartbeat();
+                            }
                         }
-                        heartbeatFlow.heartbeat();
                     }
-                });
-            }, timerConfig.getInitialDelay(), timerConfig.getPeriod(), TimeUnit.valueOf(timerConfig.getTimeUnit()));
+                }
+            , timerConfig.getInitialDelay(), timerConfig.getPeriod(), TimeUnit.valueOf(timerConfig.getTimeUnit()));
         }
     }
 

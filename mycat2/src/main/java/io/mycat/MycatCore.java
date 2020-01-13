@@ -14,6 +14,14 @@
  */
 package io.mycat;
 
+import io.mycat.api.MySQLAPI;
+import io.mycat.api.callback.MySQLAPIExceptionCallback;
+import io.mycat.api.collector.CollectorUtil;
+import io.mycat.api.collector.OneResultSetCollector;
+import io.mycat.beans.mysql.packet.ErrorPacket;
+import io.mycat.bindThread.BindThread;
+import io.mycat.bindThread.BindThreadCallback;
+import io.mycat.bindThread.BindThreadKey;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
 import io.mycat.calcite.MetadataManager;
@@ -21,21 +29,32 @@ import io.mycat.client.ClientRuntime;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.*;
 import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
+import io.mycat.ext.MySQLAPIImpl;
+import io.mycat.ext.MySQLAPIRuntimeImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
+import io.mycat.proxy.callback.SessionCallBack;
+import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.reactor.*;
+import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.replica.heartbeat.HeartBeatStrategy;
+import lombok.NonNull;
 import lombok.SneakyThrows;
+import sun.plugin2.main.server.ResultHandler;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -54,8 +73,9 @@ public enum MycatCore {
         MycatConfig mycatConfig = config.currentConfig();
 
         PlugRuntime.INSTCANE.load(mycatConfig);
-        JdbcRuntime.INSTANCE.load(mycatConfig);
+
         ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
+        JdbcRuntime.INSTANCE.load(mycatConfig);
         ClientRuntime.INSTANCE.load(mycatConfig);
 
 
@@ -109,6 +129,64 @@ public enum MycatCore {
                 });
             }
         },timer.getInitialDelay(),timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
+
+        for (ClusterRootConfig.ClusterConfig cluster : mycatConfig.getCluster().getClusters()) {
+           if("mysql".equalsIgnoreCase(cluster.getHeartbeat().getReuqestType())){
+               String replicaName = cluster.getName();
+               for (String datasource : cluster.getMasters())
+                   ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, heartBeatStrategy -> reactorManager.getRandomReactor().addNIOJob(new NIOJob() {
+                       @Override
+                       public void run(ReactorEnvThread reactor) throws Exception {
+                           MySQLTaskUtil.getMySQLSessionForTryConnect(datasource, new SessionCallBack<MySQLClientSession>() {
+                               @Override
+                               public void onSession(MySQLClientSession session, Object sender, Object attr) {
+                                   MySQLAPIImpl mySQLAPI = new MySQLAPIImpl(session);
+                                   OneResultSetCollector objects = new OneResultSetCollector();
+                                   mySQLAPI.query(heartBeatStrategy.getSql(), objects, new MySQLAPIExceptionCallback() {
+                                       @Override
+                                       public void onException(Exception exception, @NonNull MySQLAPI mySQLAPI) {
+                                           heartBeatStrategy.onException(exception);
+                                       }
+
+                                       @Override
+                                       public void onFinished(boolean monopolize, @NonNull MySQLAPI mySQLAPI) {
+                                           try {
+                                               List<Map<String, Object>> maps = CollectorUtil.toList(objects);
+                                               LOGGER.debug("proxy heartbeat {}", Objects.toString(maps));
+                                               heartBeatStrategy.process(maps);
+                                           }finally {
+                                               mySQLAPI.close();
+                                           }
+                                       }
+
+                                       @Override
+                                       public void onErrorPacket(@NonNull ErrorPacket errorPacket, boolean monopolize, @NonNull MySQLAPI mySQLAPI) {
+                                           heartBeatStrategy.onError(errorPacket.getErrorMessageString());
+                                       }
+                                   });
+                               }
+
+                               @Override
+                               public void onException(Exception exception, Object sender, Object attr) {
+                                   heartBeatStrategy.onException(exception);
+                               }
+                           });
+                       }
+
+                       @Override
+                       public void stop(ReactorEnvThread reactor, Exception reason) {
+
+                       }
+
+                       @Override
+                       public String message() {
+                           return "heartbeat";
+                       }
+                   }));
+           }
+        }
+
+
         NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
         acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
     }

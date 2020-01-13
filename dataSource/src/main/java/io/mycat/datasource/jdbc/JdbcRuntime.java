@@ -35,6 +35,7 @@ import io.mycat.replica.heartbeat.HeartBeatStrategy;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -74,7 +75,7 @@ public enum JdbcRuntime {
     }
 
     public void load(MycatConfig config) {
-        if(!config.getServer().getWorker().isClose()) {
+        if (!config.getServer().getWorker().isClose()) {
             PlugRuntime.INSTCANE.load(config);
             ReplicaSelectorRuntime.INSTANCE.load(config);
             this.config = config;
@@ -90,9 +91,9 @@ public enum JdbcRuntime {
             gThreadPool = new GThreadPool(this);
 
             for (DatasourceRootConfig.DatasourceConfig datasource : config.getDatasource().getDatasources()) {
-               if( datasource.isJdbcType()){
-                   addDatasource(datasource);
-               }
+                if (datasource.isJdbcType()) {
+                    addDatasource(datasource);
+                }
             }
 
             for (ClusterRootConfig.ClusterConfig replica : config.getCluster().getClusters()) {
@@ -127,21 +128,22 @@ public enum JdbcRuntime {
             private void heartbeat(HeartBeatStrategy heartBeatStrategy) {
                 DefaultConnection connection = null;
                 try {
-                    connection  = getConnection(datasource);
-                        List<Map<String, Object>> resultList;
-                        try (JdbcRowBaseIteratorImpl iterator = connection
-                                .executeQuery(heartBeatStrategy.getSql())) {
-                            resultList = iterator.getResultSetMap();
-                        }
-                        heartBeatStrategy.process(resultList);
-                    } catch (Exception e) {
-                        heartBeatStrategy.onException(e);
-                        throw e;
-                    } finally {
-                        if (connection != null) {
-                            connection.close();
-                        }
+                    connection = getConnection(datasource);
+                    List<Map<String, Object>> resultList;
+                    try (JdbcRowBaseIteratorImpl iterator = connection
+                            .executeQuery(heartBeatStrategy.getSql())) {
+                        resultList = iterator.getResultSetMap();
                     }
+                    LOGGER.debug("jdbc heartbeat {}", Objects.toString(resultList));
+                    heartBeatStrategy.process(resultList);
+                } catch (Exception e) {
+                    heartBeatStrategy.onException(e);
+                    throw e;
+                } finally {
+                    if (connection != null) {
+                        connection.close();
+                    }
+                }
             }
         });
     }
@@ -179,7 +181,7 @@ public enum JdbcRuntime {
         return config.getServer().getWorker().getMaxPengdingLimit();
     }
 
-    public boolean isBindingInTransaction(BindThreadKey key){
-      return   gThreadPool.isBind(key);
+    public boolean isBindingInTransaction(BindThreadKey key) {
+        return gThreadPool.isBind(key);
     }
 }
