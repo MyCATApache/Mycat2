@@ -1,24 +1,6 @@
-# GPattern模式匹配
+# 模式匹配
 
 author:junwen 2019-10-2
-
-qq:294712221
-
-<https://github.com/junwen12221/GPattern>
-
-## 快速入门
-
-```java
-GPatternBuilder patternBuilder = new GPatternBuilder(0);
-int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
-GPattern gPattern = patternBuilder.createGroupPattern();
-GPatternMatcher matcher = gPattern.matcher("SELECT id FROM travelrecord LIMIT 1;");
-Assert.assertTrue(matcher.acceptAll());
-Assert.assertEquals(0, id);
-Assert.assertEquals("travelrecord", gPattern.toContextMap(matcher).get("table"));
-```
-
-
 
 ## 词法分析器
 
@@ -168,25 +150,6 @@ SELECT id FROM travelrecord LIMIT 1;
 模式1匹配
 
 
-
-## 模式ID
-
-```java
-GPatternBuilder patternBuilder = new GPatternBuilder(0);
-int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");//一个模式对应一个id
-GPattern gPattern = patternBuilder.createGroupPattern();
-GPatternMatcher matcher = gPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
-Assert.assertTrue(matcher.acceptAll());
-Assert.assertEquals(0, id);
-Assert.assertEquals(id, matcher.id());//模式匹配成功后,可以根据匹配器获取模式对应的id
-Map<String, String> map = gPattern.toContextMap(matcher);
-Assert.assertEquals("SELECT id", map.get("any"));
-Assert.assertEquals("LIMIT 1", map.get("any2"));
-```
-
-## License
-
-GPLv3
 
 [![Creative Commons License](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 
