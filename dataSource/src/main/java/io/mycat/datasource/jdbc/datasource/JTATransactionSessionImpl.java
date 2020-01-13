@@ -56,16 +56,18 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
     @Override
     public void begin() {
-        inTranscation = true;
-        for (DefaultConnection c : connectionMap.values()) {
-            c.close();
-        }
-        connectionMap.clear();
-        try {
-            LOGGER.debug("{} begin", userTransaction);
-            userTransaction.begin();
-        } catch (Exception e) {
-            throw new MycatException(e);
+        if (!isInTransaction()) {
+            inTranscation = true;
+            for (DefaultConnection c : connectionMap.values()) {
+                c.close();
+            }
+            connectionMap.clear();
+            try {
+                LOGGER.debug("{} begin", userTransaction);
+                userTransaction.begin();
+            } catch (Exception e) {
+                throw new MycatException(e);
+            }
         }
     }
 
