@@ -105,8 +105,8 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   transactionType: xa #xa.proxy
 datasource:
   datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,
-   maxRetryCount: 1000000000, #连接重试次数
-   maxConnectTimeout: 1000000000, #连接超时时间
+   maxRetryCount: 3, #连接重试次数
+   maxConnectTimeout: 10000, #连接超时时间 毫秒
    dbType: mysql, #
    url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',
    weight: 1, #负载均衡权重
@@ -114,7 +114,7 @@ datasource:
     jdbcDriverClass:, #jdbc驱动
    instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写
   },
-  {name: defaultDs2, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 1000000000,maxConnectTimeout: 1000000000,dbType: mysql,
+  {name: defaultDs2, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
    url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
   }
   ]
