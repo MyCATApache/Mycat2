@@ -1,6 +1,6 @@
 package io.mycat.router.migrate;
 
-import io.mycat.router.function.NodeIndexRange;
+import io.mycat.router.NodeIndexRange;
 import lombok.Getter;
 
 import java.util.List;

@@ -1,5 +1,6 @@
 package io.mycat.router.function;
 
+import io.mycat.router.NodeIndexRange;
 import io.mycat.router.RuleFunction;
 
 import java.nio.charset.Charset;

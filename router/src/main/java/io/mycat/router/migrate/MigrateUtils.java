@@ -1,11 +1,11 @@
 package io.mycat.router.migrate;
 
-import io.mycat.router.function.NodeIndexRange;
+import io.mycat.router.NodeIndexRange;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Created by magicdoom on 2016/9/16.
@@ -21,10 +21,10 @@ public class MigrateUtils {
      * @param slotsTotalNum
      * @return
      */
-    public static Map<String, List<MigrateTask>> balanceExpand(Map<Integer, List<NodeIndexRange>> integerListMap, List<String> oldDataNodes, List<String> newDataNodes, int slotsTotalNum) {
+    public static SortedMap<String, List<MigrateTask>> balanceExpand(List<List<NodeIndexRange>> integerListMap, List<String> oldDataNodes, List<String> newDataNodes, int slotsTotalNum) {
         int newNodeSize = oldDataNodes.size() + newDataNodes.size();
         int newSlotPerNode = slotsTotalNum / newNodeSize;
-        Map<String, List<MigrateTask>> newNodeTask = new HashMap<>();
+        TreeMap<String, List<MigrateTask>> newNodeTask = new TreeMap<>();
         int remainder = slotsTotalNum - newSlotPerNode * (newNodeSize);
         for (int oldNodeIndex = 0; oldNodeIndex < integerListMap.size(); oldNodeIndex++) {
             List<NodeIndexRange> rangeList = integerListMap.get(oldNodeIndex);
