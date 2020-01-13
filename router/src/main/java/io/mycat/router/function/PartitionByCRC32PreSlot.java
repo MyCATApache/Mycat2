@@ -4,20 +4,23 @@ import io.mycat.router.RuleFunction;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 /**
  * 自动迁移御用分片算法，预分slot 102400个，映射到dn上，再conf下会保存映射文件，请不要修改
  *
  * @author nange magicdoom@gmail.com
- * @author chenjunwen
+ * @author chenjunwen 294712221@qq.com
  */
 public class PartitionByCRC32PreSlot extends RuleFunction {
 
     private static final int DEFAULT_SLOTS_NUM = 102400;
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
     private final int[] rangeMap2 = new int[DEFAULT_SLOTS_NUM];
+    private List<List<NodeIndexRange>> longRanges;
 
     @Override
     public String name() {
@@ -50,27 +53,28 @@ public class PartitionByCRC32PreSlot extends RuleFunction {
     @Override
     protected void init(Map<String, String> prot, Map<String, String> ranges) {
         String countText = prot.get("count");
-        NodeIndexRange[] longRanges;
         if (countText != null) {
             int count = Integer.parseInt(countText);
             int slotSize = DEFAULT_SLOTS_NUM / count;
-            longRanges = new NodeIndexRange[count];
+            longRanges = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
                 if (i == count - 1) {
-                    longRanges[i]= new NodeIndexRange(i,i * slotSize,(DEFAULT_SLOTS_NUM - 1));
+                    longRanges.add(new ArrayList<>(Collections.singletonList(new NodeIndexRange(i, i * slotSize, (DEFAULT_SLOTS_NUM - 1)))));
                 } else {
-                    longRanges[i]= new NodeIndexRange(i,i * slotSize,((i + 1) * slotSize - 1));
+                    longRanges.add(new ArrayList<>(Collections.singletonList(new NodeIndexRange(i,i * slotSize,((i + 1) * slotSize - 1)))));
                 }
             }
         } else {
-            longRanges = NodeIndexRange.getLongRanges(ranges);
+            longRanges = NodeIndexRange.getSplitLongRanges(ranges);
         }
-        for (NodeIndexRange longRange : longRanges) {
-            int valueStart = (int) longRange.valueStart;
-            int valueEnd = (int) longRange.valueEnd;
-            int nodeIndex = longRange.nodeIndex;
-            for (int i = valueStart; i <= valueEnd; i++) {
-                rangeMap2[i] = nodeIndex;
+        for (List<NodeIndexRange> longRanges : longRanges) {
+            for (NodeIndexRange longRange : longRanges) {
+                int valueStart = (int) longRange.valueStart;
+                int valueEnd = (int) longRange.valueEnd;
+                int nodeIndex = longRange.nodeIndex;
+                for (int i = valueStart; i <= valueEnd; i++) {
+                    rangeMap2[i] = nodeIndex;
+                }
             }
         }
     }

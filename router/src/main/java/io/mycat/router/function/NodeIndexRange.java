@@ -15,40 +15,62 @@
 package io.mycat.router.function;
 
 import io.mycat.util.NumberParseUtil;
+import lombok.Value;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Stream;
 
-final class NodeIndexRange {
+@Value
+public final class NodeIndexRange {
+    public final int nodeIndex;
+    public final long valueStart;
+    public final long valueEnd;
 
-  public final int nodeIndex;
-  public final long valueStart;
-  public final long valueEnd;
-
-  public NodeIndexRange(int nodeIndex, long valueStart, long valueEnd) {
-    super();
-    this.nodeIndex = nodeIndex;
-    this.valueStart = valueStart;
-    this.valueEnd = valueEnd;
-  }
-
-  public static int getPartitionCount(NodeIndexRange[] ranges) {
-    return (int) Stream.of(ranges).mapToInt(i -> i.nodeIndex).distinct().count();
-  }
-
-  public static NodeIndexRange[] getLongRanges(Map<String, String> ranges) {
-    ArrayList<NodeIndexRange> longRangeList = new ArrayList<>();
-    for (Entry<String, String> entry : ranges.entrySet()) {
-      String[] pair = entry.getKey().split("-");
-      long longStart = NumberParseUtil.parseLong(pair[0].trim());
-      long longEnd = NumberParseUtil.parseLong(pair[1].trim());
-      int nodeId = Integer.parseInt(entry.getValue().trim());
-      longRangeList.add(new NodeIndexRange(nodeId, longStart, longEnd));
+    public NodeIndexRange(int nodeIndex, long valueStart, long valueEnd) {
+        super();
+        this.nodeIndex = nodeIndex;
+        this.valueStart = valueStart;
+        this.valueEnd = valueEnd;
     }
-    longRangeList.sort(Comparator.comparing(x -> x.valueStart));
-    return longRangeList.toArray(new NodeIndexRange[0]);
-  }
+
+    public static int getPartitionCount(List<NodeIndexRange> ranges) {
+        return (int)ranges.stream().mapToInt(i -> i.getNodeIndex()).distinct().count();
+    }
+
+    public static List<NodeIndexRange> getLongRanges(Map<String, String> ranges) {
+        ArrayList<NodeIndexRange> longRangeList = new ArrayList<>();
+        for (Entry<String, String> entry : ranges.entrySet()) {
+            String[] pair = entry.getKey().split("-");
+            long longStart = NumberParseUtil.parseLong(pair[0].trim());
+            long longEnd = NumberParseUtil.parseLong(pair[1].trim());
+            int nodeId = Integer.parseInt(entry.getValue().trim());
+            longRangeList.add(new NodeIndexRange(nodeId, longStart, longEnd));
+        }
+        longRangeList.sort(Comparator.comparing(x -> x.valueStart));
+        return longRangeList;
+    }
+    public static List<List<NodeIndexRange>> getSplitLongRanges(Map<String, String> ranges) {
+        ArrayList<List<NodeIndexRange>> lists = new ArrayList<>();
+        for (Entry<String, String> entry : ranges.entrySet()) {
+            String[] split = entry.getKey().split(",");
+            ArrayList<NodeIndexRange> longRangeList = new ArrayList<>();
+            for (String s : split) {
+                String[] pair =s.split("-");
+                long longStart = NumberParseUtil.parseLong(pair[0].trim());
+                long longEnd = NumberParseUtil.parseLong(pair[1].trim());
+                int nodeId = Integer.parseInt(entry.getValue().trim());
+                longRangeList.add(new NodeIndexRange(nodeId, longStart, longEnd));
+                longRangeList.sort(Comparator.comparing(x -> x.valueStart));//顺序
+            }
+            lists.add(longRangeList);
+        }
+
+        return lists;
+    }
+    public long getSize() {
+        return this.valueEnd - this.valueStart + 1;
+    }
 }

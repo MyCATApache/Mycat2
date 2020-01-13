@@ -16,6 +16,7 @@ package io.mycat.router.function;
 
 import io.mycat.router.RuleFunction;
 
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -24,7 +25,7 @@ public class PartitionByPattern extends RuleFunction {
   private static final int PARTITION_LENGTH = 1024;
   private static final Pattern PATTERN = Pattern.compile("[0-9]*");
   private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值
-  private NodeIndexRange[] longRanges;
+  private List<NodeIndexRange> longRanges;
   private int nPartition;
   private int defaultNode = 0;// 包含非数值字符，默认存储节点
 
