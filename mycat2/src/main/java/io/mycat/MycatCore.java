@@ -108,6 +108,18 @@ public enum MycatCore {
         }
 
         final ReactorThreadManager reactorManager = new ReactorThreadManager(list);
+        idleConnectCheck(mycatConfig, reactorManager);
+        heartbeat(mycatConfig, reactorManager);
+
+        TimerConfig timer = mycatConfig.getCluster().getTimer();
+        NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
+        long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay() + TimeUnit.SECONDS.toMillis(1));
+        Thread.sleep(wait);
+        acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
+        LOGGER.info("mycat starts successful");
+    }
+
+    private void idleConnectCheck(MycatConfig mycatConfig, ReactorThreadManager reactorManager) {
         TimerConfig timer = mycatConfig.getDatasource().getTimer();
         ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
             for (MycatReactorThread thread : reactorManager.getList()) {
@@ -129,7 +141,9 @@ public enum MycatCore {
                 });
             }
         },timer.getInitialDelay(),timer.getPeriod(), TimeUnit.valueOf(timer.getTimeUnit()));
+    }
 
+    private void heartbeat(MycatConfig mycatConfig, ReactorThreadManager reactorManager) {
         for (ClusterRootConfig.ClusterConfig cluster : mycatConfig.getCluster().getClusters()) {
            if("mysql".equalsIgnoreCase(cluster.getHeartbeat().getReuqestType())){
                String replicaName = cluster.getName();
@@ -161,6 +175,7 @@ public enum MycatCore {
 
                                        @Override
                                        public void onErrorPacket(@NonNull ErrorPacket errorPacket, boolean monopolize, @NonNull MySQLAPI mySQLAPI) {
+                                           mySQLAPI.close();
                                            heartBeatStrategy.onError(errorPacket.getErrorMessageString());
                                        }
                                    });
@@ -185,10 +200,6 @@ public enum MycatCore {
                    }));
            }
         }
-
-
-        NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
-        acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
     }
 
     public static void main(String[] args) throws Exception {
