@@ -13,7 +13,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
           dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
                       {targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
                       {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},
-                      {targetName: repli ,schemaName: db2, tableName: travelrecord}] #9999999999
+                      {targetName: defaultDs2 ,schemaName: db2, tableName: travelrecord}] #9999999999
         address1:
           columns:
             - columnName: id

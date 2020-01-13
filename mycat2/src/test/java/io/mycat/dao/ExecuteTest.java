@@ -16,15 +16,15 @@ public class ExecuteTest {
 
     public static void main(String[] args) throws Exception {
         List<String> initList = Arrays.asList("set xa = off");
-        test(TestUtil.getMySQLConnection(), initList);
-        test(TestUtil.getMariaDBConnection(), initList);
+        test(TestUtil.getMySQLConnection(), initList,false);
+        test(TestUtil.getMariaDBConnection(), initList,false);
 
         List<String> initList2 = Arrays.asList("set xa = on");
-        test(TestUtil.getMySQLConnection(), initList2);
-        test(TestUtil.getMariaDBConnection(), initList2);
+        test(TestUtil.getMySQLConnection(), initList2,true);
+        test(TestUtil.getMariaDBConnection(), initList2,true);
     }
 
-    private static void test(Connection mySQLConnection, List<String> initList) throws SQLException {
+    private static void test(Connection mySQLConnection, List<String> initList,boolean crossConnection) throws SQLException {
         //action:set xa = 0 exe success
         try (Connection connection = mySQLConnection) {
             try (Statement statement = connection.createStatement()) {
@@ -42,7 +42,9 @@ public class ExecuteTest {
             //session id:1 action:set autocommit = 0 exe success
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('4');");
-                statement.executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('9999999999');");
+                if (crossConnection) {
+                    statement.executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('9999999999');");
+                }
                 // session id:1 proxy target:defaultDs,sql:INSERT INTO `db1`.`company` (`id`) VALUES ('4');,transaction:true,isolation:REPEATED_READ,master:true,balance:null
                 connection.rollback();
                 //session id:1 action: rollback from binding session
@@ -59,7 +61,9 @@ public class ExecuteTest {
                 String string = TestUtil.getString(resultSet);
                 Assert.assertEquals("(1,null,null,null,null,null)", string);
                 statement.executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('4');");
-                statement.executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('9999999999');");
+                if (crossConnection) {
+                    statement.executeUpdate("INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('9999999999');");
+                }
                 connection.commit();
             }
             connection.setAutoCommit(true);
