@@ -428,14 +428,16 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     TransactionType transactionType = client.getTransactionType();
-                    session.setInTranscation(false);
+
                     switch (transactionType) {
                         case PROXY_TRANSACTION_TYPE:
                             if (session.isBindMySQLSession()) {
+                                session.setInTranscation(false);
                                 MySQLTaskUtil.proxyBackend(session, "ROLLBACK");
                                 LOGGER.debug("session id:{} action: rollback from binding session", session.sessionId());
                                 return;
                             } else {
+                                session.setInTranscation(false);
                                 session.writeOkEndPacket();
                                 LOGGER.debug("session id:{} action: rollback from unbinding session", session.sessionId());
                                 return;
@@ -443,6 +445,7 @@ public class ContextRunner {
                         case JDBC_TRANSACTION_TYPE:
                             block(session, mycat -> {
                                 TransactionSessionUtil.rollback();
+                                session.setInTranscation(false);
                                 LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
                                 mycat.writeOkEndPacket();
                             });
@@ -466,14 +469,15 @@ public class ContextRunner {
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
                     TransactionType transactionType = client.getTransactionType();
-                    session.setInTranscation(false);
                     switch (transactionType) {
                         case PROXY_TRANSACTION_TYPE:
                             if (!session.isBindMySQLSession()) {
+                                session.setInTranscation(false);
                                 LOGGER.debug("session id:{} action: commit from unbinding session", session.sessionId());
                                 session.writeOkEndPacket();
                                 return;
                             } else {
+                                session.setInTranscation(false);
                                 MySQLTaskUtil.proxyBackend(session, "COMMIT");
                                 LOGGER.debug("session id:{} action: commit from binding session", session.sessionId());
                                 return;
@@ -482,6 +486,7 @@ public class ContextRunner {
                             block(session, mycat -> {
                                 TransactionSessionUtil.commit();
                                 LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
+                                session.setInTranscation(false);
                                 mycat.writeOkEndPacket();
                             });
                     }
