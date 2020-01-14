@@ -182,7 +182,7 @@ public class GPatternRuleTest {
         GPattern gPattern = patternBuilder.createGroupPattern();
     }
 
-    @Test
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test18() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT  id FROM {table} LIMIT 1;");
@@ -211,7 +211,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("travelrecord", map.get("table2"));
     }
 
-    @Test
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test19() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("LIMIT {count}");
@@ -292,7 +292,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("LIMIT 1", map.get("any2"));
     }
 
-    @Test
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test25() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");
@@ -321,7 +321,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("LIMIT 1", map.get("any2"));
     }
 
-    @Test
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test26() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("{any} FROM travelrecord  {any2}");

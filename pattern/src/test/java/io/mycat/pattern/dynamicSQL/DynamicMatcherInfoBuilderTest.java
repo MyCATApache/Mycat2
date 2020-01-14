@@ -15,7 +15,7 @@ import java.util.Map;
  * @author Junwen Chen
  **/
 public class DynamicMatcherInfoBuilderTest {
-    @Test
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         DynamicMatcherInfoBuilder builder = new DynamicMatcherInfoBuilder();

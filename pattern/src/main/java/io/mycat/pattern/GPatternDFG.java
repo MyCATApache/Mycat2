@@ -136,6 +136,9 @@ public interface GPatternDFG {
             }
 
             public State addState(GPatternToken next) {
+                if (name != null) {
+                    throw new GPatternException.PatternConflictException("'has {' {0} '}' but try match const token",name,next.getSymbol());
+                }
                 if (success.containsKey(next)) {
                     return success.get(next);
                 } else {
@@ -146,6 +149,9 @@ public interface GPatternDFG {
             }
 
             public void addWildcard(String name, State matcher) {
+                if (!success.isEmpty()) {
+                    throw new GPatternException.PatternConflictException("'{' {0} '}' '{' {1} '}' are ambiguous", this.success, name);
+                }
                 if (this.name == null) {
                     this.name = name;
                     this.matcher = matcher;
