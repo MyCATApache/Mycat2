@@ -14,8 +14,6 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.logTip.MycatLogger;
-import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.reactor.MycatReactorThread;
@@ -35,7 +33,6 @@ import java.nio.channels.SocketChannel;
  */
 public abstract class AbstractSession<T extends AbstractSession> implements Session<T> {
 
-    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
     protected SocketChannel channel;
     protected SelectionKey channelKey;
     protected final SessionManager<T> sessionManager;
