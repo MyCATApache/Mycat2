@@ -1,5 +1,6 @@
 package io.mycat.lib.impl;
 
+import io.mycat.SQLExecuterWriter;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
@@ -11,7 +12,6 @@ import io.mycat.datasource.jdbc.thread.GProcess;
 import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.SQLExecuterWriter;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.reactor.SessionThread;
@@ -125,6 +125,7 @@ public class JdbcLib {
                     consumer.accept(mycat);
                 }catch (Exception e){
                     ex = e;
+                    TransactionSessionUtil.reset();
                     session.reset();
                 }finally {
                     TransactionSessionUtil.afterDoAction();
