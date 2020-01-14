@@ -72,9 +72,6 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   {name: start transaction ,sql: ' START TRANSACTION; ',command: begin},
   {name: setAutoCommitOn ,sql: 'set autocommit=on',command: setAutoCommitOn},
   {name: setTransactionIsolation ,sql: 'SET SESSION TRANSACTION ISOLATION LEVEL {transactionIsolation}',command: setTransactionIsolation},
-  {name: natureValueHint,sql: 'select 1 from {schemaName}.{tableName} where id = {equalValue}' ,hints: [natureValue] ,explain: 'select 1 from {targetSchemaTable} where id = {equalValue}',command: execute ,tags: {executeType: QUERY ,needTransaction: true}},
-  {name: globalSequenceHint,sql: 'select 2 from db1.travelrecord where id = 1' ,
-   hints: [globalSequence] ,explain: 'select {sequenceValue} from db1.travelrecord where id = 1',command: execute ,tags: {targets: $sequenceValue,executeType: QUERY ,needTransaction: true}},
     #mariadb-java-client 2.5.2
   #mariadb set autocommit=1, sql_mode = concat(@@sql_mode,',STRICT_TRANS_TABLES')
   #mariadb SELECT @@max_allowed_packet,@@system_time_zone,@@time_zone,@@auto_increment_increment
@@ -83,7 +80,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   #mariadb ROLLBACK
   {name: mariadb-setAutoCommitOn,sql: 'set autocommit=1',command: setAutoCommitOn},
 
-  {name: mariadb-variables,sql: 'SELECT @@max_allowed_packet {any}',command: execute , tags: {targets: defaultDs}},
+  {name: mariadb-variables,sql: 'SELECT {selectItems}max_allowed_packet {any}',command: execute , tags: {targets: defaultDs}},
   {name: mariadb-setAutoCommitOff,sql: 'set autocommit=0',command: setAutoCommitOff },
 
 
@@ -96,13 +93,13 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   #mysql-connector-java-8.0.11 SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE
   #mysql-connector-java-8.0.11 rollback
   {name: mysql-variables,
-   sql: 'SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout',
-    explain: 'SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@tx_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout'
+   sql: 'SELECT  {selectItems}.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout',
+    explain: 'SELECT  {selectItems}.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@tx_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout'
     ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
-  {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',explain: 'SELECT @@session.tx_read_only' ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql SELECT {selectItems}.transaction_read_only',sql: 'SELECT {selectItems}.transaction_read_only',explain: 'SELECT {selectItems}.tx_read_only' ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
   {name: 'mysql set names utf8', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
   {name: 'mysql SET character_set_results = NULL', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
-  {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql SELECT {selectItems}.autocommit', sql: 'SELECT {selectItems}.autocommit',command: execute , tags: {targets: defaultDs,forceProxy: true}},
   ]
   transactionType: xa #xa.proxy
   defaultSchema: db1
