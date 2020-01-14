@@ -35,7 +35,7 @@ public interface GPatternDFG {
     Map<String, GPatternPosition> getVariables();
 
     final class DFGImpl implements GPatternDFG {
-        private final State rootState = new State(false,0);
+        private final State rootState = new State(0);
         private final Map<String, GPatternPosition> variables = new HashMap<>();
         int identifierGenerator = 0;
         final static Logger logger = LoggerFactory.getLogger(DFGImpl.class);
@@ -68,7 +68,7 @@ public interface GPatternDFG {
                     } else if ((!name.equals(state.name))) {
                         logger.warn("{} has already existed", name);
                     }
-                    state.addWildcard(name, new State(false,state.depth + 1));
+                    state.addWildcard(name, new State(state.depth + 1));
                     if (!format.hasNext())
                         throw new GPatternException.NameSyntaxException("'{'{0} ends early", name);
                     GPatternSeq last = format.next();
@@ -125,23 +125,21 @@ public interface GPatternDFG {
             final int depth;
             public GPatternSeq nextToken;
             public State nextState;
-            public boolean preIsName;
             private String name;
             private final Object2ObjectOpenHashMap<GPatternToken, State> success = new Object2ObjectOpenHashMap<GPatternToken, State>();
             private State matcher;
             private int id = Integer.MIN_VALUE;
             private boolean end = false;
 
-            public State(boolean preIsName,int depth) {
+            public State(int depth) {
                 this.depth = depth;
-                this.preIsName = preIsName;
             }
 
             public State addState(GPatternToken next) {
                 if (success.containsKey(next)) {
                     return success.get(next);
                 } else {
-                    State state = new State(name!=null,depth + 1);
+                    State state = new State(depth + 1);
                     success.put(next, state);
                     return state;
                 }
