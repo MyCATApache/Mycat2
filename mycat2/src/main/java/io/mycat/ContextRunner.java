@@ -282,6 +282,7 @@ public class ContextRunner {
                         return () -> {
                             String schemaName = Objects.requireNonNull(context.getVariable(SCHEMA_NAME));
                             client.useSchema(schemaName);
+                            session.setSchema(schemaName);
                             LOGGER.debug("session id:{} action: use {}", session.sessionId(), schemaName);
                             session.writeOkEndPacket();
                         };

@@ -33,6 +33,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     @Override
     public void handleInitDb(String db, MycatSession mycat) {
         client.useSchema(db);
+        mycat.setSchema(db);
         LOGGER.info("handleInitDb:"+db);
         super.handleInitDb(db, mycat);
     }
