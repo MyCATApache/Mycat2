@@ -156,6 +156,8 @@ public enum ClientRuntime {
             public void useSchema(String schemaName) {
                 if (schemaName != null){
                     this.defaultSchemaName = schemaName;
+                    TableCollector collector = pattern.getCollector();
+                    collector.useSchema(schemaName);
                 }else {
                     LOGGER.warn("use null schema");
                 }

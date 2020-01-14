@@ -45,7 +45,12 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
         String sql = new String(bytes);
         LOGGER.debug(sql);
         Context analysis = client.analysis(sql);
-        ContextRunner.run(client, analysis, session);
+        try {
+            ContextRunner.run(client, analysis, session);
+        }catch (Exception e){
+            session.setLastMessage(e);
+            session.writeErrorEndPacketBySyncInProcessError();
+        }
     }
 
     @Override
