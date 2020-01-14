@@ -16,35 +16,67 @@
 package io.mycat.client;
 
 import com.joanzapata.utils.Strings;
-import io.mycat.beans.mycat.TransactionType;
+import io.mycat.hint.GlobalSequenceHint;
+import io.mycat.hint.Hint;
+import io.mycat.hint.NatureValueHint;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Junwen Chen
  **/
 public class Context {
+    public static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(Context.class);
     private String name;
     private final String sql;
     private final java.util.Map<String, Collection<String>> tables;
     private final Map<String, String> names;
     private final Map<String, String> tags;
+    private List<String> hints;
     private final String command;
     private final String explain;
+    private static final ConcurrentHashMap<String, Hint> HINTS = new ConcurrentHashMap<>();
+    //cache
+    private String res;
 
-    public Context(String name,String sql, Map<String, Collection<String>> tables, Map<String, String> names, Map<String, String> tags, String type, String explain) {
+    static {
+        HINTS.put(NatureValueHint.INSTANCE.getName(), NatureValueHint.INSTANCE);
+        HINTS.put(GlobalSequenceHint.INSTANCE.getName(), GlobalSequenceHint.INSTANCE);
+    }
+
+    public Context(String name, String sql, Map<String, Collection<String>> tables, Map<String, String> names, Map<String, String> tags, List<String> hints, String type, String explain) {
         this.name = name;
         this.sql = sql;
         this.tables = tables;
-        this.names = names;
+        this.names = Objects.requireNonNull(names);
         this.tags = tags;
+        this.hints = hints;
         this.command = type;
         this.explain = explain;
     }
 
     public String getExplain() {
+        if (res == null) {
+            return res = innerExplain();
+        } else {
+            return res;
+        }
+    }
+
+    private String innerExplain() {
+        if (this.hints != null) {
+            for (String hint : this.hints) {
+                LOGGER.debug("hint:{}", hint);
+                Hint hint1 = HINTS.get(hint);
+                hint1.accept(this);
+            }
+        }
         if (explain == null) {
             return sql;
         } else {
@@ -94,5 +126,9 @@ public class Context {
 
     public String getName() {
         return name;
+    }
+
+    public void putVaribale(String name, String var) {
+        this.names.put(name, var);
     }
 }

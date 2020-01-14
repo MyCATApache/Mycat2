@@ -96,10 +96,10 @@ public class ContextRunner {
     public static final String OFF_XA = ("offXA");
     public static final String SET_AUTOCOMMIT_OFF = ("setAutoCommitOff");
     public static final String SET_AUTOCOMMIT_ON = ("setAutoCommitOn");
-    static final ConcurrentHashMap<String, Command> map;
+    static final ConcurrentHashMap<String, Command> COMMANDS;
 
     public static void run(MycatClient client, Context analysis, MycatSession session) {
-        Command command = Objects.requireNonNull(map.getOrDefault(analysis.getCommand(), ERROR_COMMAND));
+        Command command = Objects.requireNonNull(COMMANDS.getOrDefault(analysis.getCommand(), ERROR_COMMAND));
         Runnable apply = command.apply(client, analysis, session);
         apply.run();
     }
@@ -157,17 +157,17 @@ public class ContextRunner {
 
 
     static {
-        map = new ConcurrentHashMap<>();
-        map.put(ERROR,ERROR_COMMAND);
+        COMMANDS = new ConcurrentHashMap<>();
+        COMMANDS.put(ERROR,ERROR_COMMAND);
         /**
          * 参数:statement
          */
-        map.put(EXPLAIN, new Command() {
+        COMMANDS.put(EXPLAIN, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 String sql = context.getVariable("statement");
                 Context analysis = client.analysis(sql);
-                Command command = map.get(analysis.getCommand());
+                Command command = COMMANDS.get(analysis.getCommand());
                 return command.explain(client, analysis, session);
             }
 
@@ -181,7 +181,7 @@ public class ContextRunner {
         /**
          * 参数:接收的sql
          */
-        map.put(DISTRIBUTED_QUERY, new Command() {
+        COMMANDS.put(DISTRIBUTED_QUERY, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> block(session, mycat -> {
@@ -237,7 +237,7 @@ public class ContextRunner {
         /**
          * 参数:接收的sql
          */
-        map.put(EXECUTE_PLAN, new Command() {
+        COMMANDS.put(EXECUTE_PLAN, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -276,7 +276,7 @@ public class ContextRunner {
         /**
          * 参数:SCHEMA_NAME
          */
-        map.put(USE_STATEMENT, new Command() {
+        COMMANDS.put(USE_STATEMENT, new Command() {
                     @Override
                     public Runnable apply(MycatClient client, Context context, MycatSession session) {
                         return () -> {
@@ -299,7 +299,7 @@ public class ContextRunner {
         /**
          * 参数:无
          */
-        map.put(ON_XA, new Command() {
+        COMMANDS.put(ON_XA, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -320,7 +320,7 @@ public class ContextRunner {
         /**
          * 参数:无
          */
-        map.put(OFF_XA, new Command() {
+        COMMANDS.put(OFF_XA, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -341,7 +341,7 @@ public class ContextRunner {
         /**
          * 参数:无
          */
-        map.put(SET_AUTOCOMMIT_OFF, new Command() {
+        COMMANDS.put(SET_AUTOCOMMIT_OFF, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -361,7 +361,7 @@ public class ContextRunner {
         /**
          * 参数:无
          */
-        map.put(SET_AUTOCOMMIT_ON, new Command() {
+        COMMANDS.put(SET_AUTOCOMMIT_ON, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -381,7 +381,7 @@ public class ContextRunner {
         /**
          * 参数:无
          */
-        map.put(BEGIN, new Command() {
+        COMMANDS.put(BEGIN, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -401,7 +401,7 @@ public class ContextRunner {
         /**
          * 参数:transactionIsolation
          */
-        map.put(SET_TRANSACTION_ISOLATION, new Command() {
+        COMMANDS.put(SET_TRANSACTION_ISOLATION, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -423,7 +423,7 @@ public class ContextRunner {
         /**
          * 参数:无
          */
-        map.put(ROLLBACK, new Command() {
+        COMMANDS.put(ROLLBACK, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -461,7 +461,7 @@ public class ContextRunner {
         /**
          * 参数:无
          */
-        map.put(COMMIT, new Command() {
+        COMMANDS.put(COMMIT, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 return () -> {
@@ -504,7 +504,7 @@ public class ContextRunner {
          * forceProxy:true:false
          * needTransaction:true|false
          */
-        map.put(EXECUTE, new Command() {
+        COMMANDS.put(EXECUTE, new Command() {
             @Override
             public Runnable apply(MycatClient client, Context context, MycatSession session) {
                 boolean forceProxy = "true".equalsIgnoreCase(context.getVariable("forceProxy", "false"));
@@ -572,6 +572,7 @@ public class ContextRunner {
 
     @NotNull
     private static Details getDetails(Context context, boolean needStartTransaction, boolean metaData) {
+        String explain = context.getExplain();//触发注解解析并缓存
         Details details;
         if (metaData) {
             details = getDetails(needStartTransaction, context);
@@ -581,7 +582,7 @@ public class ContextRunner {
             String replicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(
                    Objects.requireNonNull(context.getVariable(TARGETS),"can not get "+TARGETS+" of "+context.getName()),
                     needStartTransaction, balance);
-            details = new Details(executeType, Collections.singletonMap(replicaName, Collections.singletonList(context.getExplain())), balance);
+            details = new Details(executeType, Collections.singletonMap(replicaName, Collections.singletonList(explain)), balance);
         }
         return details;
     }

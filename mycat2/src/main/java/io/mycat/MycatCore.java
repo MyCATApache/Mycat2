@@ -18,43 +18,36 @@ import io.mycat.api.MySQLAPI;
 import io.mycat.api.callback.MySQLAPIExceptionCallback;
 import io.mycat.api.collector.CollectorUtil;
 import io.mycat.api.collector.OneResultSetCollector;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.packet.ErrorPacket;
-import io.mycat.bindThread.BindThread;
-import io.mycat.bindThread.BindThreadCallback;
-import io.mycat.bindThread.BindThreadKey;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
 import io.mycat.calcite.MetadataManager;
 import io.mycat.client.ClientRuntime;
 import io.mycat.command.CommandDispatcher;
-import io.mycat.config.*;
+import io.mycat.config.ClusterRootConfig;
+import io.mycat.config.DatasourceRootConfig;
+import io.mycat.config.ServerConfig;
+import io.mycat.config.TimerConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.ext.MySQLAPIImpl;
-import io.mycat.ext.MySQLAPIRuntimeImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.proxy.buffer.ProxyBufferPoolMonitor;
 import io.mycat.proxy.callback.SessionCallBack;
-import io.mycat.proxy.handler.backend.ResultSetHandler;
 import io.mycat.proxy.reactor.*;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
-import io.mycat.beans.MySQLDatasource;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import sun.plugin2.main.server.ResultHandler;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -113,7 +106,7 @@ public enum MycatCore {
 
         TimerConfig timer = mycatConfig.getCluster().getTimer();
         NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
-        long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay() + TimeUnit.SECONDS.toMillis(1));
+        long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay())+ TimeUnit.SECONDS.toMillis(1);
         Thread.sleep(wait);
         acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
         LOGGER.info("mycat starts successful");

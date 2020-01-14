@@ -20,7 +20,6 @@ import io.mycat.MycatConfig;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.pattern.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
@@ -135,13 +134,13 @@ public enum ClientRuntime {
             }
 
             private Context getContext(String name,String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
-                return new Context(name,sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
+                return new Context(name,sql, geTableMap, namesContext, handler.getTags(),handler.getHints(), handler.getCommand(), handler.getExplain());
             }
 
 
             @NotNull
             private Context getContext(String name,String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
-                return new Context(name,sql, geTableMap, namesContext, handler.getTags(), handler.getCommand(), handler.getExplain());
+                return new Context(name,sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain());
             }
 
             @Override
@@ -191,42 +190,42 @@ public enum ClientRuntime {
         //builder
         final GPatternBuilder patternBuilder = new GPatternBuilder(0);
         //pre
-        for (PatternRootConfig.HandlerToSQLs handler : patternRootConfig.getHandlers()) {
-            String name = handler.getName();
-            String explain = handler.getExplain();
-            Map<String, String> tags = handler.getTags();
-            String type = handler.getType();
-
-            List<String> tables = handler.getTables();
-            if (tables.isEmpty()) {
-                for (String sql : handler.getSqls()) {
-                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
-                    textItemConfig.setName(name);
-                    textItemConfig.setSql(sql);
-                    textItemConfig.setTags(tags);
-                    textItemConfig.setExplain(explain);
-                    textItemConfig.setCommand(type);
-                    sqls.add(textItemConfig);
-                }
-            } else {
-                ArrayList<PatternRootConfig.TextItemConfig> textItemConfigs = new ArrayList<PatternRootConfig.TextItemConfig>();
-                for (String sql : handler.getSqls()) {
-                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
-                    textItemConfig.setName(name);
-                    textItemConfig.setSql(sql);
-                    textItemConfig.setTags(tags);
-                    textItemConfig.setExplain(explain);
-                    textItemConfigs.add(textItemConfig);
-                    textItemConfig.setCommand(type);
-                }
-                PatternRootConfig.SchemaConfig schemaConfig = new PatternRootConfig.SchemaConfig();
-                schemaConfig.setDefaultHanlder(null);
-                schemaConfig.setName(name);
-                schemaConfig.setTables(tables);
-                schemaConfig.setSqls(textItemConfigs);
-                schemas.add(schemaConfig);
-            }
-        }
+//        for (PatternRootConfig.HandlerToSQLs handler : patternRootConfig.getHandlers()) {
+//            String name = handler.getName();
+//            String explain = handler.getExplain();
+//            Map<String, String> tags = handler.getTags();
+//            String type = handler.getType();
+//
+//            List<String> tables = handler.getTables();
+//            if (tables.isEmpty()) {
+//                for (String sql : handler.getSqls()) {
+//                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
+//                    textItemConfig.setName(name);
+//                    textItemConfig.setSql(sql);
+//                    textItemConfig.setTags(tags);
+//                    textItemConfig.setExplain(explain);
+//                    textItemConfig.setCommand(type);
+//                    sqls.add(textItemConfig);
+//                }
+//            } else {
+//                ArrayList<PatternRootConfig.TextItemConfig> textItemConfigs = new ArrayList<PatternRootConfig.TextItemConfig>();
+//                for (String sql : handler.getSqls()) {
+//                    PatternRootConfig.TextItemConfig textItemConfig = new PatternRootConfig.TextItemConfig();
+//                    textItemConfig.setName(name);
+//                    textItemConfig.setSql(sql);
+//                    textItemConfig.setTags(tags);
+//                    textItemConfig.setExplain(explain);
+//                    textItemConfigs.add(textItemConfig);
+//                    textItemConfig.setCommand(type);
+//                }
+//                PatternRootConfig.SchemaConfig schemaConfig = new PatternRootConfig.SchemaConfig();
+//                schemaConfig.setDefaultHanlder(null);
+//                schemaConfig.setName(name);
+//                schemaConfig.setTables(tables);
+//                schemaConfig.setSqls(textItemConfigs);
+//                schemas.add(schemaConfig);
+//            }
+//        }
         //build
         ConcurrentHashMap<Integer, PatternRootConfig.TextItemConfig> itemMap = new ConcurrentHashMap<>();
         for (PatternRootConfig.TextItemConfig textItemConfig : sqls) {
