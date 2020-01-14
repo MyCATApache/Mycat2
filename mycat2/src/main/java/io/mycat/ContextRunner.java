@@ -536,9 +536,10 @@ public class ContextRunner {
                                         TransactionSessionUtil.setIsolation(isolation.getJdbcValue());
                                         TransactionSessionUtil.begin();
                                         session.setInTranscation(true);
-                                    } else if (!session.isInTransaction()) {
-                                        TransactionSessionUtil.reset();
                                     }
+//                                    else if (!session.isInTransaction()) {
+//                                        TransactionSessionUtil.reset();
+//                                    }
                                     switch (executeType) {
 //                                        case RANDOM_QUERY:
                                         case QUERY_MASTER:
