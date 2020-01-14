@@ -21,6 +21,7 @@ import io.mycat.hint.Hint;
 import io.mycat.hint.NatureValueHint;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -109,6 +110,19 @@ public class Context {
     }
 
     public String getVariable(String name, String defaultName) {
+        String s2 = getInnerVariable(name);
+        if (s2 != null) {
+            if (s2.startsWith("$")) {
+                return getVariable(s2.substring(1), defaultName);
+            }else {
+                return s2;
+            }
+        }
+        return defaultName;
+    }
+
+    @Nullable
+    private String getInnerVariable(String name) {
         String s = names.get(name);
         if (s != null) {
             return s;
@@ -117,7 +131,7 @@ public class Context {
         if (s1 != null) {
             return s1;
         }
-        return defaultName;
+        return null;
     }
 
     public String getCommand() {

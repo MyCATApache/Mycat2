@@ -122,7 +122,7 @@ public class ContextRunner {
             list.add("executeType = " + executeType);
             for (Map.Entry<String, List<String>> stringListEntry : targets.entrySet()) {
                 for (String s : stringListEntry.getValue()) {
-                    list.add("target: " + stringListEntry.getKey() + " " + s);
+                    list.add("target: " + stringListEntry.getKey() + " sql:" + s);
                 }
                 list.add("balance = " + balance);
             }

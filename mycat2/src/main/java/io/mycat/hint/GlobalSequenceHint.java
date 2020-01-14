@@ -8,8 +8,8 @@ public enum GlobalSequenceHint implements Hint {
     @Override
     public void accept(Context context) {
         String nextSequence = context.getVariable("sequenceKey");
-        long next = SequenceGenerator.INSTANCE.next(nextSequence);
-        context.putVaribale("sequenceValue",Long.toString(next));
+        String next = SequenceGenerator.INSTANCE.next(nextSequence);
+        context.putVaribale("sequenceValue",next);
     }
 
     @Override

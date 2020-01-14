@@ -3,29 +3,29 @@ package io.mycat.plug.sequence;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 public enum SequenceGenerator {
     INSTANCE;
-    final ConcurrentMap<String, LongSupplier> map = new ConcurrentHashMap<>();
-    final LongSupplier defaultSequenceGenerator = new LongSupplier() {
-        final AtomicLong counter = new AtomicLong();
-
+    final ConcurrentMap<String, Supplier<String>> map = new ConcurrentHashMap<>();
+    final Supplier<String> defaultSequenceGenerator = new Supplier<String>() {
         @Override
-        public long getAsLong() {
-            return counter.getAndIncrement();
+        public String get() {
+            return Long.toString(counter.getAndIncrement());
         }
+
+        final AtomicLong counter = new AtomicLong();
     };
 
-    public void register(String key, LongSupplier supplier) {
+    public void register(String key, Supplier supplier) {
         map.put(key, supplier);
     }
 
-    public long next(String key) {
+    public String next(String key) {
         if (key == null) {
-            return defaultSequenceGenerator.getAsLong();
+            return defaultSequenceGenerator.get();
         } else {
-            return map.getOrDefault(key, defaultSequenceGenerator).getAsLong();
+            return map.getOrDefault(key, defaultSequenceGenerator).get();
         }
     }
 }
