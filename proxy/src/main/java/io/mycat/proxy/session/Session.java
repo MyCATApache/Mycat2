@@ -14,6 +14,8 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
@@ -27,7 +29,7 @@ import java.text.MessageFormat;
  * @author jamie12221 chen junwen date 2019-05-10 21:13 Session
  **/
 public interface Session<T extends Session> {
-
+   static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(Session.class);
   /**
    * 通道
    */
@@ -108,6 +110,7 @@ public interface Session<T extends Session> {
   }
 
   default String setLastMessage(Throwable e) {
+    LOGGER.error("",e);
     String string = getThrowableString(e);
     setLastMessage(string);
     return string;
