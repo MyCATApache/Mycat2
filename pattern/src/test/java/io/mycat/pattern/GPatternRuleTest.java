@@ -541,4 +541,16 @@ public class GPatternRuleTest {
         GPatternMatcher matcher = gPattern.matcher("select 1;");
         Assert.assertTrue(matcher.acceptAll());
     }
+
+    @Test
+    public void test34() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("select {selectItems} from {any}");
+        int id2 = patternBuilder.addRule("select 1 from {schemaName}.{tableName} where id = {equalValue}");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("select 1 from {schemaName}.{tableName} where id = {equalValue}");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id2,matcher.id());
+    }
+
 }
