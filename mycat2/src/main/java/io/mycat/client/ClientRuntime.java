@@ -41,6 +41,7 @@ public enum ClientRuntime {
     final ConcurrentHashMap<String, List<EvalNodeVisitor.FunctionSig>> libSharedMap = new ConcurrentHashMap<>();
     volatile RuntimeInfo runtimeInfo;
     TransactionType transactionType = TransactionType.JDBC_TRANSACTION_TYPE;
+    private String defaultSchema;
 
     private static SchemaTable apply(String commonTableName) {
         String[] split1 = commonTableName.split("\\.");
@@ -74,7 +75,7 @@ public enum ClientRuntime {
         return new MycatClient() {
             private RuntimeInfo runtime = Objects.requireNonNull(runtimeInfo);
             private GPattern pattern = runtime.supplier.get();
-            private String defaultSchemaName;
+            private String defaultSchemaName = ClientRuntime.INSTANCE.getDefaultSchema();
             private TransactionType transactionType;
             ///////////////////////////////////////////////
 
@@ -84,7 +85,9 @@ public enum ClientRuntime {
                 @NonNull GPattern currentPattern = getCurrentPattern();
                 RuntimeInfo runtime = this.runtime;
                 TableCollector tableMatcher = currentPattern.getCollector();
-                if (defaultSchemaName != null) {
+                if (defaultSchemaName == null){
+                    throw new IllegalArgumentException();
+                }else {
                     tableMatcher.useSchema(defaultSchemaName);
                 }
                 GPatternMatcher matcher = currentPattern.matcherAndCollect(sql);
@@ -150,7 +153,9 @@ public enum ClientRuntime {
 
             @Override
             public void useSchema(String schemaName) {
-                this.defaultSchemaName = schemaName;
+                if (schemaName != null){
+                    this.defaultSchemaName = schemaName;
+                }
             }
 
             @Override
@@ -165,6 +170,9 @@ public enum ClientRuntime {
 
             @Override
             public String getDefaultSchema() {
+                if (defaultSchemaName == null){
+                    throw new IllegalArgumentException();
+                }
                 return defaultSchemaName;
             }
 
@@ -245,6 +253,7 @@ public enum ClientRuntime {
         TableCollectorBuilder tableCollctorbuilder = new TableCollectorBuilder(patternBuilder.geIdRecorder(), (Map) getTableMap(schemas));
         runtimeInfo = new RuntimeInfo(() -> patternBuilder.createGroupPattern(tableCollctorbuilder.create()), itemMap, tableMap, defaultHanlder);
         this.transactionType =TransactionType.parse(patternRootConfig.getTransactionType());
+        this.defaultSchema = patternRootConfig.getDefaultSchema();
     }
 
     private Map<String, Set<String>> getTableMap(List<PatternRootConfig.SchemaConfig> schemaConfigs) {
@@ -349,4 +358,7 @@ public enum ClientRuntime {
     public TransactionType getTransactionType() {
         return transactionType;
     }
-}
+
+    public String getDefaultSchema() {
+        return defaultSchema;
+    }}

@@ -105,6 +105,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: execute , tags: {targets: defaultDs,forceProxy: true}},
   ]
   transactionType: xa #xa.proxy
+  defaultSchema: db1
 datasource:
   datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,
    maxRetryCount: 3, #连接重试次数
@@ -123,7 +124,7 @@ datasource:
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
   timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS}
 cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
-  close: false #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
+  close: true #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
   clusters: [
   {name: repli ,
    replicaType: SINGLE_NODE , # SINGLE_NODE:单一节点 ,MASTER_SLAVE:普通主从 GARELA_CLUSTER:garela cluster

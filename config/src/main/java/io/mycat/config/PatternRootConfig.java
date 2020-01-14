@@ -14,6 +14,7 @@ public class PatternRootConfig {
 //    private List<HandlerToSQLs> handlers = new ArrayList<>();
     private Handler defaultHanlder;
     private String transactionType;
+    private String defaultSchema;
 
 
     @Data
