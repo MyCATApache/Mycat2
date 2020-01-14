@@ -19,6 +19,8 @@ import io.mycat.EvalNodeVisitor;
 import io.mycat.MycatConfig;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.config.PatternRootConfig;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.pattern.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -36,7 +38,7 @@ import java.util.stream.Collectors;
  **/
 public enum ClientRuntime {
     INSTANCE;
-
+    private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ClientRuntime.class);
     final BuilderInfo wapper = new BuilderInfo();
     final ConcurrentHashMap<String, List<EvalNodeVisitor.FunctionSig>> libSharedMap = new ConcurrentHashMap<>();
     volatile RuntimeInfo runtimeInfo;
@@ -81,12 +83,11 @@ public enum ClientRuntime {
 
             @Override
             public Context analysis(String sql) {
-
                 @NonNull GPattern currentPattern = getCurrentPattern();
                 RuntimeInfo runtime = this.runtime;
                 TableCollector tableMatcher = currentPattern.getCollector();
                 if (defaultSchemaName == null){
-                    throw new IllegalArgumentException();
+//                    throw new IllegalArgumentException("unknown schema");
                 }else {
                     tableMatcher.useSchema(defaultSchemaName);
                 }
@@ -155,6 +156,8 @@ public enum ClientRuntime {
             public void useSchema(String schemaName) {
                 if (schemaName != null){
                     this.defaultSchemaName = schemaName;
+                }else {
+                    LOGGER.warn("use null schema");
                 }
             }
 

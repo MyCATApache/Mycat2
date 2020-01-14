@@ -53,6 +53,7 @@ public final class TableCollector implements GPatternTokenCollector {
     private int currentSchemaHash;
     private int first;
     private int second;
+    private String schema;
 
     public TableCollector(TableCollectorBuilder builder) {
         this.builder = builder;
@@ -61,9 +62,12 @@ public final class TableCollector implements GPatternTokenCollector {
     }
 
     public void useSchema(String schema) {
+        this.schema = schema;
         Integer intHash = builder.schemaHash.get(schema);
         if (intHash != null) {
             currentSchemaHash = intHash;
+        }else {
+            throw new IllegalArgumentException("unknown schema:"+schema);
         }
     }
 

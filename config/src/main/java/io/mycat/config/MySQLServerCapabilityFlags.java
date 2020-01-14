@@ -30,7 +30,7 @@ public class MySQLServerCapabilityFlags {
         flag |= MySQLServerCapabilityFlags.CLIENT_FOUND_ROWS;
         flag |= MySQLServerCapabilityFlags.CLIENT_LONG_FLAG;
         flag |= MySQLServerCapabilityFlags.CLIENT_CONNECT_WITH_DB;
-        flag |= MySQLServerCapabilityFlags.CLIENT_NO_SCHEMA;
+//        flag |= MySQLServerCapabilityFlags.CLIENT_NO_SCHEMA;
         // boolean usingCompress = MycatServer.getInstance().getConfig()
         // .getSystem().getUseCompression() == 1;
         // if (usingCompress) {

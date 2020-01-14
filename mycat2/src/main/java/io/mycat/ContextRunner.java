@@ -615,7 +615,7 @@ public class ContextRunner {
     }
 
     private static void writePlan(MycatSession session, String message) {
-        writePlan(session, message);
+        writePlan(session, Arrays.asList(message));
     }
 
     private static void writePlan(MycatSession session, List<String> messages) {
