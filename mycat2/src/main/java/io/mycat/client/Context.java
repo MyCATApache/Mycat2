@@ -15,7 +15,6 @@
 
 package io.mycat.client;
 
-import com.joanzapata.utils.Strings;
 import io.mycat.hint.GlobalSequenceHint;
 import io.mycat.hint.Hint;
 import io.mycat.hint.NatureValueHint;
@@ -81,7 +80,7 @@ public class Context {
         if (explain == null) {
             return sql;
         } else {
-            Strings.Builder format = Strings.format(explain, "{", "}").strictMode(false);
+            Builder format = new Builder(explain);
             for (Map.Entry<String, String> entry : names.entrySet()) {
                 format.with(entry.getKey(), entry.getValue());
             }
@@ -114,7 +113,7 @@ public class Context {
         if (s2 != null) {
             if (s2.startsWith("$")) {
                 return getVariable(s2.substring(1), defaultName);
-            }else {
+            } else {
                 return s2;
             }
         }
@@ -144,5 +143,25 @@ public class Context {
 
     public void putVaribale(String name, String var) {
         this.names.put(name, var);
+    }
+
+    public static class Builder {
+        private String baseString;
+
+
+        private Builder(String string) {
+            baseString = string;
+        }
+
+        public Builder with(String key, Object value) {
+            if (value == null) value = "";
+            baseString = baseString.replace("{" + key + "}", value.toString());
+            return this;
+        }
+
+        public String build() {
+            return baseString;
+        }
+
     }
 }
