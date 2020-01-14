@@ -17,6 +17,7 @@ package io.mycat.router.function;
 import io.mycat.util.NumberParseUtil;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
@@ -47,6 +48,7 @@ final class NodeIndexRange {
       int nodeId = Integer.parseInt(entry.getValue().trim());
       longRangeList.add(new NodeIndexRange(nodeId, longStart, longEnd));
     }
-    return longRangeList.toArray(new NodeIndexRange[longRangeList.size()]);
+    longRangeList.sort(Comparator.comparing(x -> x.valueStart));
+    return longRangeList.toArray(new NodeIndexRange[0]);
   }
 }
