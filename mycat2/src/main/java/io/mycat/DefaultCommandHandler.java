@@ -41,11 +41,11 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void handleQuery(byte[] bytes, MycatSession session) {
-        LOGGER.debug("-----------------reveice--------------------");
-        String sql = new String(bytes);
-        LOGGER.debug(sql);
-        Context analysis = client.analysis(sql);
         try {
+            LOGGER.debug("-----------------reveice--------------------");
+            String sql = new String(bytes);
+            LOGGER.debug(sql);
+            Context analysis = client.analysis(sql);
             ContextRunner.run(client, analysis, session);
         }catch (Exception e){
             session.setLastMessage(e);
