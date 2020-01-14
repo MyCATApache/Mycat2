@@ -31,6 +31,13 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(DefaultCommandHandler.class);
 
     @Override
+    public void handleInitDb(String db, MycatSession mycat) {
+        client.useSchema(db);
+        LOGGER.info("handleInitDb:"+db);
+        super.handleInitDb(db, mycat);
+    }
+
+    @Override
     public void initRuntime(MycatSession session) {
         MycatUser user = session.getUser();
         this.client = ClientRuntime.INSTANCE.login(user.getUserName(), user.getPassword());
