@@ -416,7 +416,7 @@ public enum MetadataManager {
         SQLExprTableSource table = null;
         if (queryDataRange.getTableSource() != null) {
             table = queryDataRange.getTableSource();
-            SchemaObject schemaObject = table.getSchemaObject();
+            SchemaObject schemaObject = Objects.requireNonNull(table.getSchemaObject(),"meet unknown table "+ table);
             schemaName = SQLUtils.normalize(schemaObject.getSchema().getName()).toLowerCase();
             tableName = SQLUtils.normalize(schemaObject.getName()).toLowerCase();
         }
