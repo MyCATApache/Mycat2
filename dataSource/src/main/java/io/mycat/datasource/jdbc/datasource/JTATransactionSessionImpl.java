@@ -22,6 +22,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 
 import javax.transaction.UserTransaction;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -50,7 +51,14 @@ public class JTATransactionSessionImpl implements TransactionSession {
     public void setTransactionIsolation(int transactionIsolation) {
         this.transactionIsolation = transactionIsolation;
         for (DefaultConnection c : this.connectionMap.values()) {
-            c.setTransactionIsolation(transactionIsolation);
+            try {
+                if (c.getRawConnection().getTransactionIsolation()!=transactionIsolation){
+                    c.setTransactionIsolation(transactionIsolation);
+                }
+            } catch (SQLException e) {
+               throw new MycatException(e);
+            }
+
         }
     }
 
