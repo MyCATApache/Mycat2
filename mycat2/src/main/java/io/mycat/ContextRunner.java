@@ -531,7 +531,9 @@ public class ContextRunner {
                     if (tasks.size() != 1) throw new IllegalArgumentException();
                     String[] strings = checkThenGetOne(tasks);
                     return () -> {
-                        MySQLTaskUtil.proxyBackendByTargetName(session, strings[0], strings[1], needStartTransaction && !session.isBindMySQLSession(), session.getIsolation(), details.executeType.isMaster(), balance);
+                        MySQLTaskUtil.proxyBackendByTargetName(session, strings[0], strings[1],
+                                MySQLTaskUtil.TransactionSyncType.create(session.getAutoCommit(),session.isInTransaction()),
+                                session.getIsolation(), details.executeType.isMaster(), balance);
                     };
                 } else {
                     return () -> {

@@ -14,6 +14,8 @@
  */
 package io.mycat;
 
+import io.mycat.beans.MySQLDatasource;
+import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.ErrorPacketImpl;
@@ -36,8 +38,8 @@ import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.SessionManager.PartialType;
 import io.mycat.proxy.session.SessionManager.SessionIdAble;
-import io.mycat.beans.MySQLDatasource;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import lombok.ToString;
 
 import java.util.List;
 import java.util.Objects;
@@ -62,12 +64,12 @@ public class MySQLTaskUtil {
     public static void proxyBackendByTargetName(MycatSession mycat,
                                                 String target,
                                                 String sql,
-                                                boolean transaction,
+                                                TransactionSyncType transaction,
                                                 MySQLIsolation isolation,
                                                 boolean master,
                                                 String loadBalanceStrategy) {
         //todo fix the log
-        if (transaction) {
+        if (transaction.inTransaction) {
             master = true;
         }
         String datasourceName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(target, master, loadBalanceStrategy);
@@ -80,14 +82,12 @@ public class MySQLTaskUtil {
     public static void proxyBackendByDatasourceName(MycatSession mycat,
                                                     String sql,
                                                     String datasourceName,
-                                                    boolean transaction,
+                                                    TransactionSyncType transaction,
                                                     MySQLIsolation isolation) {
         //todo fix the log
         proxyBackendByDataSource(mycat,
                 MySQLPacketUtil.generateComQueryPacket(sql),
                 datasourceName,
-                ResponseType.QUERY,
-                MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE,
                 DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK,
                 transaction, isolation);
     }
@@ -95,10 +95,8 @@ public class MySQLTaskUtil {
     public static void proxyBackendByDataSource(MycatSession mycat,
                                                 byte[] packetData,
                                                 String datasourceName,
-                                                ResponseType responseType,
-                                                MySQLPacketExchanger.MySQLProxyNIOHandler proxyNIOHandler,
                                                 MySQLPacketExchanger.PacketExchangerCallback finallyCallBack,
-                                                boolean needTransaction,
+                                                TransactionSyncType transactionType,
                                                 MySQLIsolation isolation) {
         assert (Thread.currentThread() instanceof MycatReactorThread);
         Objects.requireNonNull(datasourceName);
@@ -107,16 +105,16 @@ public class MySQLTaskUtil {
         BiConsumer<MySQLDatasource, SessionCallBack<MySQLClientSession>> getSession = (datasource, mySQLClientSessionSessionCallBack) -> {
             if (mycat.isBindMySQLSession()) {
                 MySQLClientSession mySQLSession = mycat.getMySQLSession();
-                if (datasourceName.equals(mySQLSession.getDatasource().getName()) && mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
-                    mySQLClientSessionSessionCallBack.onSession(mySQLSession,null,null);
+                if (datasourceName.equals(mySQLSession.getDatasourceName()) && mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
+                    mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
                 } else {
-                    mySQLClientSessionSessionCallBack.onException(new Exception("is binding"),null,null);
+                    mySQLClientSessionSessionCallBack.onException(new Exception("is binding"), null, null);
                 }
-            }else {
-                if (mycat.isBindMySQLSession()){
+            } else {
+                if (mycat.isBindMySQLSession()) {
                     throw new AssertionError();
                 }
-                mySQLSessionManager.getIdleSessionsOfKey(datasource,mySQLClientSessionSessionCallBack);
+                mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
             }
         };
         MySQLDatasource datasource = MycatCore.INSTANCE.getDatasource(datasourceName);
@@ -135,18 +133,56 @@ public class MySQLTaskUtil {
                         finallyCallBack.onRequestMySQLException(mycat, exception, null);
                     }
                 };
-                if (needTransaction){
-                    begin(session, isolation, sessionCallBack);
-                }else {
-                    sessionCallBack.onSession(session,this,null);
+                if (transactionType.equals(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
+                    sessionCallBack.onSession(session, this, null);
+                    return;
+                } else {
+                    syncState(session, transactionType, isolation, sessionCallBack);
+                    return;
                 }
             }
 
             @Override
             public void onException(Exception exception, Object sender, Object attr) {
-                finallyCallBack.onRequestMySQLException(mycat,exception, attr);
+                finallyCallBack.onRequestMySQLException(mycat, exception, attr);
             }
         });
+    }
+
+    @ToString
+    public enum TransactionSyncType {
+        SET_AUTOCOMMIT_ON(MySQLAutoCommit.ON, false, "set autocommit = 1;"),
+        SET_AUTOCOMMIT_ON_BEGIN(MySQLAutoCommit.ON, true, "set autocommit = 1;begin;"),
+        SET_AUTOCOMMIT_OFF(MySQLAutoCommit.OFF, false, "set autocommit = 0;");
+        MySQLAutoCommit automCommit;
+        boolean inTransaction;
+        String text;
+
+        TransactionSyncType(MySQLAutoCommit automCommit, boolean inTransaction, String text) {
+            this.automCommit = automCommit;
+            this.inTransaction = inTransaction;
+            this.text = text;
+        }
+
+       public boolean equals(MySQLAutoCommit automCommit, boolean inTransaction) {
+            return this.automCommit == automCommit && this.inTransaction == inTransaction;
+        }
+
+        public static  TransactionSyncType create(MySQLAutoCommit automCommit, boolean inTransaction) {
+            if (automCommit == MySQLAutoCommit.ON) {
+                if (inTransaction) {
+                    return SET_AUTOCOMMIT_ON_BEGIN;
+                } else {
+                    return SET_AUTOCOMMIT_ON;
+                }
+            } else {
+                if (!inTransaction) {
+                    return SET_AUTOCOMMIT_OFF;
+                } else {
+                    throw new UnsupportedOperationException();
+                }
+            }
+        }
     }
 
     //todo
@@ -221,88 +257,43 @@ public class MySQLTaskUtil {
 //        });
     }
 
-    private static void setIsolation(MySQLClientSession session, MySQLIsolation isolation, SessionCallBack<MySQLClientSession> callBack) {
-        if (session.getIsolation() != isolation) {
-            ResultSetHandler.DEFAULT.request(session, MySQLCommandType.COM_QUERY, isolation.getCmd(), new ResultSetCallBack<MySQLClientSession>() {
-                @Override
-                public void onFinishedSendException(Exception exception, Object sender, Object attr) {
-                    callBack.onException(exception, sender, attr);
-                }
-
-                @Override
-                public void onFinishedException(Exception exception, Object sender, Object attr) {
-                    callBack.onException(exception, sender, attr);
-                }
-
-                @Override
-                public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender, Object attr) {
-                    session.setIsolation(isolation);
-                    callBack.onSession(mysql, sender, attr);
-                }
-
-                @Override
-                public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize, MySQLClientSession mysql, Object sender, Object attr) {
-                    error(mysql, sender, attr, errorPacket.getErrorMessageString());
-                }
-
-                private void error(MySQLClientSession mysql, Object sender, Object attr, String message) {
-                    LOGGER.error(message);
-                    mysql.close(false, message);
-                    callBack.onException(new MycatException(message), sender, attr);
-                }
-            });
-        } else {
-            callBack.onSession(session, null, null);
-        }
-    }
-
-    public static void begin(MySQLClientSession session, MySQLIsolation isolation, SessionCallBack<MySQLClientSession> callBack) {
-        switch (session.getMonopolizeType()) {
-            case TRANSACTION:
-                setIsolation(session, isolation, callBack);
-                return;
-            default:
-                break;
-        }
-        setIsolation(session, isolation, new SessionCallBack<MySQLClientSession>() {
+    private static void syncState(MySQLClientSession session, TransactionSyncType transactionType, MySQLIsolation isolation, SessionCallBack<MySQLClientSession> callBack) {
+        ResultSetHandler.DEFAULT.request(session, MySQLCommandType.COM_QUERY, isolation.getCmd() + transactionType.text, new ResultSetCallBack<MySQLClientSession>() {
             @Override
-            public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                ResultSetHandler.DEFAULT.request(session, MySQLCommandType.COM_QUERY, "begin", new ResultSetCallBack<MySQLClientSession>() {
-                    @Override
-                    public void onFinishedSendException(Exception exception, Object sender, Object attr) {
-                        callBack.onException(exception, sender, attr);
-                    }
-
-                    @Override
-                    public void onFinishedException(Exception exception, Object sender, Object attr) {
-                        callBack.onException(exception, sender, attr);
-                    }
-
-                    @Override
-                    public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender, Object attr) {
-                        callBack.onSession(mysql, sender, attr);
-                    }
-
-                    @Override
-                    public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize, MySQLClientSession mysql, Object sender, Object attr) {
-                        error(mysql, sender, attr, errorPacket.getErrorMessageString());
-                    }
-
-                    private void error(MySQLClientSession mysql, Object sender, Object attr, String message) {
-                        LOGGER.error(message);
-                        mysql.close(false, message);
-                        callBack.onException(new MycatException(message), sender, attr);
-                    }
-                });
-            }
-
-            @Override
-            public void onException(Exception exception, Object sender, Object attr) {
+            public void onFinishedSendException(Exception exception, Object sender, Object attr) {
                 callBack.onException(exception, sender, attr);
             }
-        });
 
+            @Override
+            public void onFinishedException(Exception exception, Object sender, Object attr) {
+                callBack.onException(exception, sender, attr);
+            }
+
+            @Override
+            public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender, Object attr) {
+                session.setIsolation(isolation);
+                if (transactionType.equals(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
+                    callBack.onSession(mysql, sender, attr);
+                } else {
+                    callBack.onException(new Exception("sync state " + transactionType + " " + isolation), sender, attr);
+                }
+
+            }
+
+            @Override
+            public void onErrorPacket(ErrorPacketImpl errorPacket, boolean monopolize, MySQLClientSession mysql, Object sender, Object attr) {
+                error(mysql, sender, attr, errorPacket.getErrorMessageString());
+            }
+
+            private void error(MySQLClientSession mysql, Object sender, Object attr, String message) {
+                LOGGER.error(message);
+                mysql.close(false, message);
+                callBack.onException(new MycatException(message), sender, attr);
+            }
+        });
     }
+
+
     public static void getMySQLSessionForTryConnect(String datasource,
                                                     SessionCallBack<MySQLClientSession> asynTaskCallBack) {
         Objects.requireNonNull(datasource);
@@ -318,6 +309,7 @@ public class MySQLTaskUtil {
             throw new MycatException("Replica must running in MycatReactorThread");
         }
     }
+
     public static void getMySQLSessionForTryConnect(MySQLDatasource datasource,
                                                     List<SessionIdAble> ids,
                                                     PartialType partialType,

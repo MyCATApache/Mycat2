@@ -30,7 +30,6 @@ import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.BackendMySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import lombok.Getter;
 import lombok.Setter;
 
 import java.io.IOException;
@@ -43,7 +42,7 @@ import java.util.Objects;
  *
  * 后端MySQL Session
  **/
-@Getter
+
 @Setter
 public class MySQLClientSession extends
     AbstractBackendSession<MySQLClientSession> implements MySQLProxySession<MySQLClientSession> {
@@ -166,6 +165,12 @@ public class MySQLClientSession extends
       this.monopolizeType = (MySQLSessionMonopolizeType.NONE);
       return false;
     }
+  }
+
+  public boolean isMonopolizedByTransaction(){
+    int serverStatus = getBackendPacketResolver().getServerStatus();
+    return MySQLServerStatusFlags
+            .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION);
   }
 
   /**
@@ -456,5 +461,33 @@ public class MySQLClientSession extends
 
   public void prepareReveiceMultiResultSetResponse() {
     this.getPacketResolver().prepareReveiceMultiResultSetResponse();
+  }
+
+  private MySQLPacketResolver getPacketResolver() {
+    return packetResolver;
+  }
+
+  public String getDatasourceName() {
+    return datasource.getName();
+  }
+
+  public MycatSession getMycat() {
+    return mycat;
+  }
+
+  public ResponseType getResponseType() {
+    return responseType;
+  }
+
+  public MySQLDatasource getDatasource() {
+    return datasource;
+  }
+
+  public long getCursorStatementId() {
+    return cursorStatementId;
+  }
+
+  public boolean isRequestSuccess() {
+    return requestSuccess;
   }
 }

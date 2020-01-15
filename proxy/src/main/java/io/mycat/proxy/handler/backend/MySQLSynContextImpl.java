@@ -34,16 +34,16 @@ public class MySQLSynContextImpl extends MySQLSynContext{
     this.netWriteTimeout = session.getNetWriteTimeout();
     this.readOnly = session.isAccessModeReadOnly();
   }
-
-  public MySQLSynContextImpl(MySQLClientSession session) {
-    this( session.getDefaultDatabase(),
-        session.getIsolation(),
-        session.isAutomCommit(),
-        session.getCharset(),
-        session.getCharacterSetResult(), session.getSelectLimit(), session.getNetWriteTimeout(),
-        session.isReadOnly());
-
-  }
+//
+//  public MySQLSynContextImpl(MySQLClientSession session) {
+//    this( session.getDefaultDatabase(),
+//        session.getIsolation(),
+//        session.isAutomCommit(),
+//        session.getCharset(),
+//        session.getCharacterSetResult(), session.getSelectLimit(), session.getNetWriteTimeout(),
+//        session.isReadOnly());
+//
+//  }
 
 
   public MySQLSynContextImpl(String deafultDatabase, MySQLIsolation isolation,

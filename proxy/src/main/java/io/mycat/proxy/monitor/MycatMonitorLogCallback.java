@@ -17,7 +17,6 @@ package io.mycat.proxy.monitor;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
-import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
@@ -366,13 +365,13 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public final void onSynchronizationState(MySQLClientSession session) {
     if (onBind) {
-      //    Thread.dumpStack();
-      MySQLSynContextImpl c = new MySQLSynContextImpl(session);
-      LOGGER.debug(
-          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
-          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase() : null,
-          c.getIsolation(), c.getCharset(), c.getAutoCommit(),
-          c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
+//      //    Thread.dumpStack();
+//      MySQLSynContextImpl c = new MySQLSynContextImpl(session);
+//      LOGGER.debug(
+//          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
+//          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase() : null,
+//          c.getIsolation(), c.getCharset(), c.getAutoCommit(),
+//          c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
     }
   }
 
