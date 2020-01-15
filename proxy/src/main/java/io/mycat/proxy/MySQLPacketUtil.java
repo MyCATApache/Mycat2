@@ -14,7 +14,6 @@
  */
 package io.mycat.proxy;
 
-import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
@@ -151,13 +150,14 @@ public class MySQLPacketUtil {
       } else if (isKnowsAboutTransactions) {
         writer.writeFixInt(2, serverStatus);
       }
-      if (sessionVariableTracking) {
-        throw new MycatException("unsupport!!");
-      } else {
+//      if (sessionVariableTracking) {
+//        throw new MycatException("unsupport!!");
+//      } else {
+//
+//      }
         if (message != null) {
-          writer.writeBytes(message.getBytes());
+            writer.writeBytes(message.getBytes());
         }
-      }
       return writer.toByteArray();
     }
   }
