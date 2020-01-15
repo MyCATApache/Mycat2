@@ -32,6 +32,6 @@ public enum InstanceType {
   }
 
   public boolean isReadType() {
-    return writeType;
+    return readType;
   }
 }
