@@ -69,7 +69,9 @@ public class GPattern {
         }
         return matcher;
     }
-
+    public void collect(String pattern) {
+        collect(StandardCharsets.UTF_8.encode(pattern));
+    }
     public void collect(ByteBuffer buffer) {
         utf8Lexer.init(buffer, 0, buffer.limit());
         collector.onCollectStart();
