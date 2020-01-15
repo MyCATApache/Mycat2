@@ -60,10 +60,11 @@ public class GPattern {
         matcher.reset();
         while (utf8Lexer.nextToken()) {
             GPatternSeq token = idRecorder.toCurToken();
+            if (DEBUG_ENABLED) LOGGER.debug("will:{}" , token.getSymbol());
             if (matcher.accept(token)) {
-                if (DEBUG_ENABLED) LOGGER.debug("accept:{}" + token);
+                if (DEBUG_ENABLED) LOGGER.debug("accept:{}" , token.getSymbol());
             } else {
-                if (DEBUG_ENABLED) LOGGER.debug("reject:{}" + token);
+                if (DEBUG_ENABLED) LOGGER.debug("reject:{}" ,token.getSymbol());
             }
         }
         return matcher;
@@ -85,10 +86,11 @@ public class GPattern {
         collector.onCollectStart();
         while (utf8Lexer.nextToken()) {
             GPatternSeq token = idRecorder.toCurToken();
+            if (DEBUG_ENABLED) LOGGER.debug("will:{}" , token.getSymbol());
             if (matcher.accept(token)) {
-                if (DEBUG_ENABLED) LOGGER.debug("accept:{}" + token);
+                if (DEBUG_ENABLED) LOGGER.debug("accept:{}" , token.getSymbol());
             } else {
-                if (DEBUG_ENABLED) LOGGER.debug("reject:{}" + token);
+                if (DEBUG_ENABLED) LOGGER.debug("reject:{}", token.getSymbol());
             }
             collector.collect(token);
         }
