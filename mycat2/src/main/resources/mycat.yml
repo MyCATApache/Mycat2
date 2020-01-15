@@ -39,7 +39,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
 interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
   defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
   schemas: [{
-              tables:[ 'db1.travelrecord','db1.address1'],#sql中包含一个表名
+              tables:[ 'db1.travelrecord','db1.address1'],#sql中包含一个表名,注意sql中;分号
               sqls: [
               {sql: 'select {any}',command: distributedQuery },
               {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
