@@ -41,9 +41,8 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   schemas: [{
               tables:[ 'db1.travelrecord','db1.address1'],#sql中包含一个表名
               sqls: [
-              {sql: 'select {selectItems} from {any}',command: distributedQuery },
-              {sql: 'select {selectItems} from {any};',command: distributedQuery },#如果匹配不了,看看是不是;的问题
-              {sql: 'select {selectItems} from {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
+              {sql: 'select {any}',command: distributedQuery },
+              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
               {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
               {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
               {sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }}
@@ -52,8 +51,8 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
             {
               tables:[ 'db1.company'],#读写分离例子,不使用metaData进行分析,metaData: false,直接发送到targets
               sqls: [
-              {sql: 'select {selectItems} from {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
-              {sql: 'select {selectItems} from {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
+              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
+              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
               {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
               {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
               ],
@@ -80,7 +79,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   #mariadb ROLLBACK
   {name: mariadb-setAutoCommitOn,sql: 'set autocommit=1',command: setAutoCommitOn},
 
-  {name: mariadb-variables,sql: 'SELECT @@max_allowed_packet {any}',command: execute , tags: {targets: defaultDs}},
+  {name: mariadb-variables,sql: 'SELECT @@max_allowed_packet,@@system_time_zone,@@time_zone,@@auto_increment_increment',command: execute , tags: {targets: defaultDs}},
   {name: mariadb-setAutoCommitOff,sql: 'set autocommit=0',command: setAutoCommitOff },
 
 
