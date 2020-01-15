@@ -40,7 +40,7 @@ public class GThread extends BindThread implements SessionThread {
 
   @Override
   protected boolean continueBind() {
-    boolean inTransaction = transactionSession.isInTransaction();
+    boolean inTransaction = transactionSession.isInTransaction()&&session!=null;
     LOGGER.debug("-->{} inTransaction:{}", transactionSession, inTransaction);
     return inTransaction;
   }

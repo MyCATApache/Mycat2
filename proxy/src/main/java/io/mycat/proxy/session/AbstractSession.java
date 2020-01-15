@@ -141,8 +141,9 @@ public abstract class AbstractSession<T extends AbstractSession> implements Sess
                 this.close(false,"check open");
                 return false;
             }
+            return true;
         }
-        return true;
+        return false;
     }
 
     @Override

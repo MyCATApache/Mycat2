@@ -17,13 +17,16 @@ package io.mycat.datasource.jdbc.thread;
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
+import io.mycat.proxy.session.Session;
+
 /**
  * @author Junwen Chen
  **/
-public abstract class GProcess<T extends BindThreadKey> implements BindThreadCallback<T, GThread> {
+public abstract class GProcess<T extends BindThreadKey& Session> implements BindThreadCallback<T, GThread> {
 
   @Override
   public void accept(T key, GThread context) {
+    context.setCurSession(key);
     accept(key, context.transactionSession);
   }
 
