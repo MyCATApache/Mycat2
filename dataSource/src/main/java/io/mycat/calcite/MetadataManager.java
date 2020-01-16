@@ -262,7 +262,7 @@ public enum MetadataManager {
         RowSignature rowSignature = CalciteConvertors.rowSignature(columns);
 
         LogicTable logicTable = new LogicTable(schemaName, tableName, backends, columns, shardingInfo, createTableSQL);
-        logicTable.setJdbcTable(new JdbcTable(logicTable, CalciteConvertors.relDataType(columns), rowSignature));
+        logicTable.setJdbcTable(new JdbcTable(logicTable, rowSignature));
 
         Map<String, LogicTable> tableMap;
         tableMap = logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());

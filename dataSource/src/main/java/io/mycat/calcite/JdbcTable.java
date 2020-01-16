@@ -24,11 +24,9 @@ import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.rel2sql.RelToSqlConverter;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
@@ -50,21 +48,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
- *
  * @author Junwen Chen
  * @author Weiqing Xu
- *
  **/
 public class JdbcTable implements TranslatableTable, ProjectableFilterableTable {
     private MetadataManager.LogicTable table;
-    private final RelProtoDataType relProtoDataType;
     private final RowSignature rowSignature;
     private final static Logger LOGGER = LoggerFactory.getLogger(JdbcTable.class);
-    public JdbcTable(MetadataManager.LogicTable table, RelProtoDataType relProtoDataType, RowSignature rowSignature) {
-        this.table = table;
-        this.relProtoDataType = relProtoDataType;
-        this.rowSignature = rowSignature;
 
+    public JdbcTable(MetadataManager.LogicTable table, RowSignature rowSignature) {
+        this.table = table;
+        this.rowSignature = rowSignature;
     }
 
     private boolean addFilter(DataMappingEvaluator evaluator, RexNode filter, boolean or) {
@@ -142,19 +136,13 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext toRelContext, RelOptTable relOptTable) {
-        LogicalTableScan logicalTableScan = LogicalTableScan.create(toRelContext.getCluster(), relOptTable);
-//        RelToSqlConverter relToSqlConverter = new RelToSqlConverter(MysqlSqlDialect.DEFAULT);
-//        SqlImplementor.Result visit = relToSqlConverter.visitChild(0, logicalTableScan);
-//        SqlNode sqlNode = visit.asStatement();
-//        System.out.println(sqlNode);
-        return logicalTableScan;
+        return LogicalTableScan.create(toRelContext.getCluster(), relOptTable);
     }
 
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
         return this.rowSignature.getRelDataType(typeFactory);
-
     }
 
 
@@ -198,8 +186,8 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     public List<QueryBackendTask> getQueryBackendTasks(List<RexNode> filters, int[] projects) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
-        ArrayList<RexNode> where  = new ArrayList<>();
-        if(this.table.isNatureTable()){
+        ArrayList<RexNode> where = new ArrayList<>();
+        if (this.table.isNatureTable()) {
             filters.removeIf((filter) -> {
                 DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
                 boolean success = addOrRootFilter(dataMappingRule, filter);
@@ -209,7 +197,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
                 where.add(filter);
                 return success;
             });
-        }else {
+        } else {
             filters.forEach((filter) -> {
                 DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
                 boolean success = addOrRootFilter(dataMappingRule, filter);
@@ -225,7 +213,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
         return getBackendTasks(getColumnList(projects), where, calculate);
     }
 
-    private List<QueryBackendTask> getBackendTasks(List<String> columnList , List<RexNode> filters, List<BackendTableInfo> calculate) {
+    private List<QueryBackendTask> getBackendTasks(List<String> columnList, List<RexNode> filters, List<BackendTableInfo> calculate) {
         List<QueryBackendTask> res = new ArrayList<>();
         for (BackendTableInfo backendTableInfo : calculate) {
             SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
@@ -249,7 +237,7 @@ public class JdbcTable implements TranslatableTable, ProjectableFilterableTable 
     }
 
     private String getFilterSQLText(String schemaName, String tableName, List<RexNode> filters) {
-        if (filters==null||filters.isEmpty()){
+        if (filters == null || filters.isEmpty()) {
             return "";
         }
         SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, JdbcTable.this.rowSignature.getColumnCount()) {
