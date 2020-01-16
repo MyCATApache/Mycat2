@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 
+import java.sql.JDBCType;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +24,7 @@ public class SimpleColumnInfo {
     final int precision;
     final int scale;
     @NonNull
-    final String typeString;
+    final JDBCType jdbcType;
     final boolean nullable;
     @NonNull
     final List<ShardingInfo> shardingInfo = new ArrayList<>();

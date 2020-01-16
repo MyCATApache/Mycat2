@@ -61,7 +61,7 @@ public class CalciteConvertors {
                         break;
                 }
                 boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
-                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale, typeString, nullable));
+                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale,JDBCType.valueOf(typeString), nullable));
             }
             return res;
         } catch (SQLException e) {
@@ -74,21 +74,11 @@ public class CalciteConvertors {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         for (SimpleColumnInfo info : infos) {
-            RelDataType relDataType = sqlType(typeFactory, info.dataType, info.precision, info.scale, info.typeString);
+            RelDataType relDataType = sqlType(typeFactory, info.dataType, info.precision, info.scale, info.jdbcType.getName());
             fieldInfo.add(info.columnName, relDataType).nullable(info.nullable);
         }
         return RelDataTypeImpl.proto(fieldInfo.build());
     }
-
-    public static RowSignature rowSignature(List<SimpleColumnInfo> infos) {
-        Objects.requireNonNull(infos);
-        RowSignature.Builder builder = RowSignature.builder();
-        for (SimpleColumnInfo info : infos) {
-            builder.add(info.columnName, JDBCType.valueOf(info.dataType));
-        }
-        return builder.build();
-    }
-
 
     private static RelDataType sqlType(RelDataTypeFactory typeFactory, int dataType, int precision, int scale, String typeString) {
         // Fall back to ANY if type is unknown
@@ -172,8 +162,7 @@ public class CalciteConvertors {
             int columnType = mycatRowMetaData.getColumnType(i);
             int precision = mycatRowMetaData.getPrecision(i);
             int scale = mycatRowMetaData.getScale(i);
-            String jdbcType = JDBCType.valueOf(columnType).getName();
-            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, true));
+            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, JDBCType.valueOf(columnType), true));
         }
         return list;
     }

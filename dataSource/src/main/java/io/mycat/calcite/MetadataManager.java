@@ -104,9 +104,10 @@ public enum MetadataManager {
             List<QueryBackendTask> queryBackendTasks;
             if (tableScan instanceof Bindables.BindableTableScan) {
                 Bindables.BindableTableScan tableScan1 = (Bindables.BindableTableScan) tableScan;
-                queryBackendTasks = unwrap.getQueryBackendTasks(new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
+
+                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(),new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
             } else {
-                queryBackendTasks = unwrap.getQueryBackendTasks(Collections.emptyList(), null);
+                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(),Collections.emptyList(), null);
             }
             for (QueryBackendTask queryBackendTask : queryBackendTasks) {
                 String targetName = queryBackendTask.getBackendTableInfo().getTargetName();
@@ -259,10 +260,8 @@ public enum MetadataManager {
 
         List<ShardingQueryRootConfig.Column> columnMap = tableConfigEntry.getColumns();
         Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo = getShardingInfo(columns, columnMap);
-        RowSignature rowSignature = CalciteConvertors.rowSignature(columns);
-
         LogicTable logicTable = new LogicTable(schemaName, tableName, backends, columns, shardingInfo, createTableSQL);
-        logicTable.setJdbcTable(new JdbcTable(logicTable, rowSignature));
+        logicTable.setJdbcTable(new JdbcTable(logicTable));
 
         Map<String, LogicTable> tableMap;
         tableMap = logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());
