@@ -16,9 +16,12 @@ package io.mycat.datasource.jdbc.resultset;
 
 import io.mycat.MycatException;
 import io.mycat.beans.mycat.MycatRowMetaData;
+
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-
+/**
+ * @author Junwen Chen
+ **/
 public class JdbcRowMetaDataImpl implements MycatRowMetaData {
 
   final ResultSetMetaData resultSetMetaData;

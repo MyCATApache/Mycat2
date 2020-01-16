@@ -14,8 +14,6 @@
  */
 package io.mycat.proxy.handler;
 
-import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.Session;
 
 /**
@@ -47,8 +45,4 @@ public interface NIOHandler<T extends Session> {
 
   void onException(T session, Exception e);
 
-  default ProxyRuntime getRuntime(){
-    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-    return thread.getRuntime();
-  }
 }

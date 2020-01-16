@@ -17,14 +17,15 @@ package io.mycat.beans.mysql;
 import java.sql.Connection;
 
 public enum MySQLIsolation {
-  READ_UNCOMMITTED("READ-UNCOMMITTED", "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;",
+  READ_UNCOMMITTED("READ UNCOMMITTED", "SET SESSION TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;",
       Connection.TRANSACTION_READ_UNCOMMITTED),
-  READ_COMMITTED("READ-COMMITTED", "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;",
+  READ_COMMITTED("READ COMMITTED", "SET SESSION TRANSACTION ISOLATION LEVEL READ COMMITTED;",
       Connection.TRANSACTION_READ_COMMITTED),
-  REPEATED_READ("REPEATABLE-READ", "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;",
+  REPEATED_READ("REPEATABLE READ", "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ;",
       Connection.TRANSACTION_REPEATABLE_READ),
   SERIALIZABLE("SERIALIZABLE", "SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE;",
       Connection.TRANSACTION_SERIALIZABLE),
+
   ;
   private final String text;
   private final String cmd;
@@ -46,5 +47,16 @@ public enum MySQLIsolation {
 
   public int getJdbcValue() {
     return jdbcValue;
+  }
+
+ public static MySQLIsolation DEFAULT = REPEATED_READ;
+
+  public static MySQLIsolation parse(String name){
+    for (MySQLIsolation value : values()) {
+      if (value.getText().equalsIgnoreCase(name)){
+        return value;
+      }
+    }
+    return null;
   }
 }

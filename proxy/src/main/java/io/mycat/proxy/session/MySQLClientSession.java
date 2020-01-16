@@ -15,8 +15,8 @@
 package io.mycat.proxy.session;
 
 import io.mycat.MycatException;
+import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.MySQLSessionMonopolizeType;
-import io.mycat.beans.mycat.MycatDataNode;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
@@ -27,10 +27,11 @@ import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.monitor.MycatMonitor;
-import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.BackendMySQLPacketResolver;
+import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.replica.MySQLDatasource;
+import lombok.Setter;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -41,9 +42,10 @@ import java.util.Objects;
  *
  * 后端MySQL Session
  **/
+
+@Setter
 public class MySQLClientSession extends
     AbstractBackendSession<MySQLClientSession> implements MySQLProxySession<MySQLClientSession> {
-
 
   protected final MySQLPacketResolver packetResolver = new BackendMySQLPacketResolver(this);
   /**
@@ -61,7 +63,7 @@ public class MySQLClientSession extends
    */
   private boolean noResponse = false;
   private boolean requestSuccess = false;
-  private MycatDataNode dataNode;
+
   private long cursorStatementId;
   /**
    * 错误信息
@@ -69,13 +71,10 @@ public class MySQLClientSession extends
   private String lastMessage;
   private boolean isIdle;
 
-
+  private String defaultDatabase;
   private String charset;
-
   private MySQLIsolation isolation;
-
   private String characterSetResult;
-
   private long selectLimit = -1;
   private long netWriteTimeout = -1;
   /**
@@ -84,16 +83,6 @@ public class MySQLClientSession extends
    */
   private MySQLSessionMonopolizeType monopolizeType = MySQLSessionMonopolizeType.NONE;
   private ResponseType responseType;
-
-
-  public MycatSession getMycatSeesion() {
-    return mycat;
-  }
-
-  public void setMycatSession(MycatSession mycat) {
-    this.mycat = mycat;
-  }
-
 
   /**
    * 构造函数
@@ -107,7 +96,7 @@ public class MySQLClientSession extends
   }
 
   /**
-   * 把bytes吸入通道
+   * 把bytes写入通道
    */
   static void writeProxyBufferToChannel(MySQLProxySession proxySession, byte[] bytes)
       throws IOException {
@@ -126,81 +115,17 @@ public class MySQLClientSession extends
    */
   @Override
   public void close(boolean normal, String hint) {
-    if (closed) {
+    if (hasClosed) {
       return;
     }
     resetPacket();
-    closed = true;
+    hasClosed = true;
     try {
       getSessionManager().removeSession(this, normal, hint);
     } catch (Exception e) {
       LOGGER.error("channel close occur exception:{}", e);
     }
   }
-
-
-  /**
-   * 解除与mycat session的绑定 如果遇到事务等状态会解除失败 如果是isCLose = true则强制解除 本函数不实现关闭通道,如果强制解除绑定应该是close方法调用
-   *
-   * //   * @param isClose 是否关闭事件
-   */
-//  public boolean unbindMycatIfNeed(boolean isClose) {
-//    assert this.mycat != null;
-//    setResponseFinished(false);
-//    setNoResponse(false);
-//    MycatSession mycat = this.mycat;
-//    boolean monopolized = isMonopolized();
-//    try {
-//      if (monopolized && !isClose) {
-//        return false;
-//      }
-//
-//      this.resetPacket();
-//      setCurrentProxyBuffer(null);
-//
-//      switchNioHandler(null);
-//
-//      this.mycat.setMySQLSession(null);
-//      this.mycat.resetPacket();
-//      this.mycat.switchWriteHandler(MySQLProxyServerSession.WriteHandler.INSTANCE);
-//      this.mycat = null;
-//
-//      if (!isClose) {
-//        getSessionManager().addIdleSession(this);
-//      }
-//      return true;
-//    } catch (Exception e) {
-//      mycat.setLastMessage(e.getMessage());
-//      mycat.writeErrorEndPacketBySyncInProcessError();
-//      mycat.close(false, e.getMessage());
-//    }
-//    return true;
-//  }
-  public MycatDataNode getDataNode() {
-    return dataNode;
-  }
-
-  public void setDataNode(MycatDataNode dataNode) {
-    this.dataNode = dataNode;
-  }
-
-  public MySQLDatasource getDatasource() {
-    return datasource;
-  }
-
-  public MycatSession getMycatSession() {
-    return mycat;
-  }
-
-//  /**
-//   * 执行透传时候设置
-//   */
-//  public void switchProxyNioHandler() {
-//    assert this.mycat != null;
-//    this.mycat.switchWriteHandler(WriteHandler.INSTANCE);
-//    this.nioHandler = MySQLProxyNIOHandler.INSTANCE;
-//  }
-
   /**
    * 准备接收响应时候
    */
@@ -240,6 +165,12 @@ public class MySQLClientSession extends
       this.monopolizeType = (MySQLSessionMonopolizeType.NONE);
       return false;
     }
+  }
+
+  public boolean isMonopolizedByTransaction(){
+    int serverStatus = getBackendPacketResolver().getServerStatus();
+    return MySQLServerStatusFlags
+            .statusCheck(serverStatus, MySQLServerStatusFlags.IN_TRANSACTION);
   }
 
   /**
@@ -289,7 +220,7 @@ public class MySQLClientSession extends
   public int hashCode() {
     int result = mycat != null ? mycat.hashCode() : 0;
     result = 31 * result + (datasource != null ? datasource.hashCode() : 0);
-    result = 31 * result + (dataNode != null ? dataNode.hashCode() : 0);
+    result = 31 * result + (defaultDatabase != null ? defaultDatabase.hashCode() : 0);
     result = 31 * result + (monopolizeType != null ? monopolizeType.hashCode() : 0);
     return result;
   }
@@ -321,7 +252,7 @@ public class MySQLClientSession extends
    */
   @Override
   public String getLastMessage() {
-    return this.lastMessage;
+    return this.lastMessage == null?"empty message":this.lastMessage;
   }
 
   /**
@@ -366,14 +297,6 @@ public class MySQLClientSession extends
    */
   public MySQLPayloadType getPayloadType() {
     return this.packetResolver.getMySQLPayloadType();
-  }
-
-  /**
-   * 判断该session是否活跃
-   */
-  public boolean isActivated() {
-    long timeInterval = currentTimeMillis() - this.lastActiveTime;
-    return (timeInterval < 60 * 1000);//60 second
   }
 
   /**
@@ -515,7 +438,6 @@ public class MySQLClientSession extends
     return b;
   }
 
-
   public MySQLAutoCommit isAutomCommit() {
     boolean b = (MySQLServerStatusFlags.AUTO_COMMIT & packetResolver.getServerStatus()) != 0;
     return b ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF;
@@ -525,27 +447,6 @@ public class MySQLClientSession extends
     return (MySQLServerStatusFlags.IN_TRANS_READONLY & packetResolver.getServerStatus()) != 0;
   }
 
-
-  public String getCharset() {
-    return charset;
-  }
-
-  public void setCharset(String charset) {
-    this.charset = charset;
-  }
-
-  public MySQLIsolation getIsolation() {
-    return isolation;
-  }
-
-  public void setIsolation(MySQLIsolation isolation) {
-    this.isolation = isolation;
-  }
-
-  public boolean isRequestSuccess() {
-    return requestSuccess;
-  }
-
   /**
    * 非阻塞nio,向mysql服务器通道写入数据后,通道已经关闭的情况下,会在响应得到写入异常,该标记是确认收到响应不是异常
    */
@@ -553,67 +454,40 @@ public class MySQLClientSession extends
     this.requestSuccess = requestSuccess;
   }
 
-  public String getCharacterSetResult() {
-    return characterSetResult;
+  public void setMycatSession(MycatSession o) {
+    this.mycat = o;
   }
 
-  public void setCharacterSetResult(String characterSetResult) {
-    this.characterSetResult = characterSetResult;
+
+  public void prepareReveiceMultiResultSetResponse() {
+    this.getPacketResolver().prepareReveiceMultiResultSetResponse();
   }
 
-  /**
-   * Getter for property 'monopolizeType'.
-   *
-   * @return Value for property 'monopolizeType'.
-   */
-  public MySQLSessionMonopolizeType getMonopolizeType() {
-    return monopolizeType;
+  private MySQLPacketResolver getPacketResolver() {
+    return packetResolver;
   }
 
-  /**
-   * Getter for property 'cursorStatementId'.
-   *
-   * @return Value for property 'cursorStatementId'.
-   */
+  public String getDatasourceName() {
+    return datasource.getName();
+  }
+
+  public MycatSession getMycat() {
+    return mycat;
+  }
+
+  public ResponseType getResponseType() {
+    return responseType;
+  }
+
+  public MySQLDatasource getDatasource() {
+    return datasource;
+  }
+
   public long getCursorStatementId() {
     return cursorStatementId;
   }
 
-  /**
-   * Setter for property 'cursorStatementId'.
-   *
-   * @param cursorStatementId Value to set for property 'cursorStatementId'.
-   */
-  public void setCursorStatementId(long cursorStatementId) {
-    this.cursorStatementId = cursorStatementId;
+  public boolean isRequestSuccess() {
+    return requestSuccess;
   }
-
-  /**
-   * Setter for property 'selectLimit'.
-   *
-   * @param selectLimit Value to set for property 'selectLimit'.
-   */
-  public void setSelectLimit(long selectLimit) {
-    this.selectLimit = selectLimit;
-  }
-
-  public long getNetWriteTimeout() {
-    return netWriteTimeout;
-  }
-
-  public void setNetWriteTimeout(long netWriteTimeout) {
-    this.netWriteTimeout = netWriteTimeout;
-  }
-
-  public void prepareReveiceMultiResultSetResponse() {
-    this.getBackendPacketResolver().prepareReveiceMultiResultSetResponse();
-  }
-
-  public ResponseType getResponseType(){
-    return this.responseType;
-  }
-  public void setResponseType(ResponseType responseType) {
-    this.responseType = responseType;
-  }
-
 }

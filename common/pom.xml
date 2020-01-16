@@ -5,7 +5,7 @@
   <parent>
     <artifactId>parent</artifactId>
     <groupId>io.mycat</groupId>
-    <version>0.3-SNAPSHOP</version>
+    <version>0.5-SNAPSHOP</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
@@ -15,7 +15,7 @@
     <dependency>
       <groupId>io.mycat</groupId>
       <artifactId>config</artifactId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.5-SNAPSHOP</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/joda-time/joda-time -->
     <dependency>
@@ -28,6 +28,12 @@
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
       <version>27.1-jre</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/com.alibaba.fastsql/fastsql -->
+    <dependency>
+      <groupId>com.alibaba.fastsql</groupId>
+      <artifactId>fastsql</artifactId>
+      <version>2.0.0_preview_973</version>
     </dependency>
 
   </dependencies>

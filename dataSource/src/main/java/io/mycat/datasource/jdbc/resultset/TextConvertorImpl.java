@@ -15,13 +15,10 @@
 package io.mycat.datasource.jdbc.resultset;
 
 import java.math.BigDecimal;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Date;
-import java.sql.SQLException;
-import java.sql.Time;
-import java.sql.Timestamp;
-
+import java.sql.*;
+/**
+ * @author Junwen Chen
+ **/
 public enum TextConvertorImpl implements TextConvertor {
   INSANTCE;
 

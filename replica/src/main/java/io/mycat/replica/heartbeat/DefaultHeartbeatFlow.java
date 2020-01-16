@@ -17,6 +17,7 @@ package io.mycat.replica.heartbeat;
 import io.mycat.replica.PhysicsInstance;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.ReplicaSwitchType;
+
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -30,7 +31,7 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
   private final ReplicaSwitchType switchType;
   private final Consumer<HeartBeatStrategy> executer;
   private final Function<HeartbeatFlow, HeartBeatStrategy> strategyProvider;
-  private HeartBeatStrategy strategy;
+  private volatile HeartBeatStrategy strategy;
 
   public DefaultHeartbeatFlow(PhysicsInstance instance, String replica, String datasouceName,
       int maxRetry,
@@ -61,14 +62,14 @@ public class DefaultHeartbeatFlow extends HeartbeatFlow {
       this.dsStatus = currentDatasourceStatus;
       LOGGER.error("{} heartStatus {}", datasouceName, dsStatus);
     }
-    ReplicaSelectorRuntime.INSTCANE
+    ReplicaSelectorRuntime.INSTANCE
         .updateInstanceStatus(replicaName, datasouceName, isAlive(instance.isMaster()),
             instance.asSelectRead());
     if (switchType.equals(ReplicaSwitchType.SWITCH)
         && instance.isMaster() && dsStatus.isError()
         && canSwitchDataSource()) {
       //replicat 进行选主
-      if (ReplicaSelectorRuntime.INSTCANE.notifySwitchReplicaDataSource(replicaName)) {
+      if (ReplicaSelectorRuntime.INSTANCE.notifySwitchReplicaDataSource(replicaName)) {
         //updataSwitchTime
         this.hbStatus.setLastSwitchTime(System.currentTimeMillis());
       }

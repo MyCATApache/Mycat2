@@ -22,9 +22,14 @@ import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLProxySession;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * @author jamie12221 date 2019-05-20 11:52
+ * mysql响应报文解析器
+ **/
 public class BackendMySQLPacketResolver implements MySQLPacketResolver {
 
   MySQLPacket mySQLPacket;
@@ -92,12 +97,12 @@ public class BackendMySQLPacketResolver implements MySQLPacketResolver {
 
   @Override
   public final boolean readFromChannel() throws IOException {
-    throw new MycatException("");
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final void writeToChannel() throws IOException {
-    throw new MycatException("");
+    throw new UnsupportedOperationException();
   }
 
 
@@ -206,7 +211,7 @@ public class BackendMySQLPacketResolver implements MySQLPacketResolver {
   @Override
   public final int setRemainsBytes(int remainsBytes) {
     if (remainsBytes < 0) {
-      throw new MycatException("");
+      throw new MycatException("unknown state");
     }
     return this.remainsBytes = remainsBytes;
   }
@@ -269,12 +274,7 @@ public class BackendMySQLPacketResolver implements MySQLPacketResolver {
           }
           append.position(payloadStartIndex);
           append.limit(payloadEndIndex);
-
-          try {
-            payload.put(append);
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
+          payload.put(append);
         }
       }
     }finally {

@@ -14,10 +14,10 @@
  */
 package io.mycat.beans.mysql;
 
-import static io.mycat.beans.mysql.MySQLType.FIELD_TYPE_NEWDECIMAL;
-
 import java.sql.Types;
 import java.util.HashMap;
+
+import static io.mycat.beans.mysql.MySQLType.FIELD_TYPE_NEWDECIMAL;
 
 /**
  * 字段类型及标识定义
@@ -87,18 +87,18 @@ public class MySQLFieldsType {
     initPut(Types.DOUBLE, FIELD_TYPE_DOUBLE);
     initPut(Types.NUMERIC, FIELD_TYPE_NEWDECIMAL);
     initPut(Types.DECIMAL, FIELD_TYPE_NEWDECIMAL);
-    initPut(Types.CHAR, FIELD_TYPE_VARCHAR);
-    initPut(Types.VARCHAR, FIELD_TYPE_VARCHAR);
-    initPut(Types.LONGVARCHAR, FIELD_TYPE_VARCHAR);
+    initPut(Types.CHAR, FIELD_TYPE_STRING);
+    initPut(Types.VARCHAR, FIELD_TYPE_STRING);
+    initPut(Types.LONGVARCHAR, FIELD_TYPE_STRING);
     initPut(Types.DATE, FIELD_TYPE_DATE);
     initPut(Types.TIME, FIELD_TYPE_TIME);
     initPut(Types.TIMESTAMP, FIELD_TYPE_TIMESTAMP);
-    initPut(Types.BINARY, FIELD_TYPE_VARCHAR);
-    initPut(Types.VARBINARY, FIELD_TYPE_VARCHAR);
-    initPut(Types.LONGVARBINARY, FIELD_TYPE_VARCHAR);
+    initPut(Types.BINARY, FIELD_TYPE_STRING);
+    initPut(Types.VARBINARY, FIELD_TYPE_STRING);
+    initPut(Types.LONGVARBINARY, FIELD_TYPE_STRING);
     initPut(Types.NULL, FIELD_TYPE_NULL);
     initPut(Types.BLOB, FIELD_TYPE_BLOB);
-
+    initPut(Types.OTHER, FIELD_TYPE_STRING);
   }
 
   public static int fromJdbcType(int jdbcType) {

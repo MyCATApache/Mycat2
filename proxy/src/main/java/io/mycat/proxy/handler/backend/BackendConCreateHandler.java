@@ -14,14 +14,10 @@
  */
 package io.mycat.proxy.handler.backend;
 
+import io.mycat.GlobalConst;
 import io.mycat.MycatException;
-import io.mycat.beans.mysql.packet.AuthPacket;
-import io.mycat.beans.mysql.packet.AuthSwitchRequestPacket;
-import io.mycat.beans.mysql.packet.ErrorPacketImpl;
-import io.mycat.beans.mysql.packet.HandshakePacket;
-import io.mycat.beans.mysql.packet.MySQLPacket;
-import io.mycat.beans.mysql.packet.ProxyBuffer;
-import io.mycat.config.GlobalConfig;
+import io.mycat.beans.MySQLDatasource;
+import io.mycat.beans.mysql.packet.*;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
@@ -34,10 +30,11 @@ import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
-import io.mycat.replica.MySQLDatasource;
+import io.mycat.proxy.session.SessionManager;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.CharsetUtil;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -62,6 +59,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     String authPluginName = null;
     int charsetIndex;
 
+    //todo
     public BackendConCreateHandler(MySQLDatasource datasource, MySQLSessionManager sessionManager,
             MycatReactorThread curThread, CommandCallBack callback) {
         Objects.requireNonNull(datasource);
@@ -69,7 +67,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         Objects.requireNonNull(callback);
         this.datasource = datasource;
         this.callback = callback;
-        MySQLClientSession mysql = new MySQLClientSession(getRuntime().genSessionId(),datasource, this, sessionManager);
+        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(),datasource, this, sessionManager);
         mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
         SocketChannel channel = null;
         try {
@@ -107,7 +105,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
             handle(mysql);
 
         } catch (Exception e) {
-            LOGGER.error("create mysql connection error {} {}", datasource, e);
+            LOGGER.error("create mysql connection error {} {}", datasource, e.getMessage());
             MycatMonitor.onBackendConCreateReadException(mysql,e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);
@@ -200,7 +198,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     }
 
     public void writeClientAuth(MySQLClientSession mysql) throws IOException {
-        int serverCapabilities = GlobalConfig.getClientCapabilityFlags().value;
+        int serverCapabilities = GlobalConst.getClientCapabilityFlags().value;
         mysql.getBackendPacketResolver().setCapabilityFlags(serverCapabilities);
         HandshakePacket hs = new HandshakePacket();
         MySQLPacket payload = mysql.currentProxyPayload();
@@ -222,10 +220,9 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         this.charsetIndex = hs.getCharacterSet();
         AuthPacket packet = new AuthPacket();
         packet.setCapabilities(serverCapabilities);
-        packet.setMaxPacketSize(getRuntime().getMaxAllowedPacket());
+        packet.setMaxPacketSize(32*1024*1024);
         packet.setCharacterSet((byte) charsetIndex);
         packet.setUsername(datasource.getUsername());
-        packet.setDatabase(datasource.getInitDb());
         this.seed = hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo();
         //加密密码
         this.authPluginName = hs.getAuthPluginName();

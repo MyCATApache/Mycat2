@@ -16,6 +16,9 @@ package io.mycat.replica.heartbeat;
 
 import io.mycat.api.collector.CommonSQLCallback;
 
+/**
+ * @author : zhangwy date Date : 2019年05月15日 21:34
+ */
 public abstract class HeartBeatStrategy implements CommonSQLCallback {
 
   protected HeartbeatFlow heartbeatFlow;

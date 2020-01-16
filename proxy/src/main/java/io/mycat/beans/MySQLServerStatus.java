@@ -17,6 +17,7 @@ package io.mycat.beans;
 import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
+
 import java.nio.charset.Charset;
 
 
@@ -39,7 +40,7 @@ public final class MySQLServerStatus {
   private String charsetName;
   private Charset charset;
   private int charsetIndex;
-  private MySQLAutoCommit autoCommit;
+  private MySQLAutoCommit autoCommit = MySQLAutoCommit.ON;
   private MySQLIsolation isolation = MySQLIsolation.REPEATED_READ;
   protected boolean localInFileRequestState = false;
   private long selectLimit = -1;
@@ -108,7 +109,7 @@ public final class MySQLServerStatus {
   }
 
   public MySQLIsolation getIsolation() {
-    return isolation;
+    return isolation== null?MySQLIsolation.DEFAULT:isolation;
   }
 
   public void setIsolation(MySQLIsolation isolation) {
@@ -217,5 +218,13 @@ public final class MySQLServerStatus {
 
   public boolean isServerStatusFlag(int flag) {
     return (this.getServerStatus() & flag) != 0;
+  }
+
+  public void setInTranscation(boolean on) {
+    if (on) {
+      addServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    }else {
+      removeServerStatusFlag(MySQLServerStatusFlags.IN_TRANSACTION);
+    }
   }
 }

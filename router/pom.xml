@@ -5,28 +5,22 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.5-SNAPSHOP</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>router</artifactId>
 
 <dependencies>
-
     <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.5-SNAPSHOP</version>
     </dependency>
     <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>common</artifactId>
-      <version>0.3-SNAPSHOP</version>
-    </dependency>
-    <dependency>
-        <groupId>io.mycat</groupId>
-        <artifactId>sqlparser</artifactId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.5-SNAPSHOP</version>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.yevdo/jwildcard -->
     <dependency>
@@ -35,13 +29,7 @@
         <version>1.4</version>
       <scope>test</scope>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/junit/junit -->
-    <dependency>
-        <groupId>junit</groupId>
-        <artifactId>junit</artifactId>
-        <version>4.12</version>
-        <scope>test</scope>
-    </dependency>
+
 
 </dependencies>
 </project>

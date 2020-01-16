@@ -2,57 +2,159 @@ package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
-import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.resultset.SingleDataNodeResultSetResponse;
+import io.mycat.beans.resultset.MycatUpdateResponseImpl;
+import io.mycat.datasource.jdbc.resultset.MysqlSingleDataNodeResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.datasource.jdbc.thread.GThread;
+import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
-import java.util.Objects;
+import io.mycat.replica.PhysicsInstance;
+import io.mycat.replica.PhysicsInstanceImpl;
+import io.mycat.replica.ReplicaSelectorRuntime;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+
+/**
+ * @author Junwen Chen
+ **/
 public class TransactionSessionUtil {
 
-  public static MycatResultSetResponse executeQuery(String dataNode, String sql,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy) {
-    DsConnection connection = getConnection(dataNode,
-        runOnMaster, strategy);
-    if (connection.getDataSource().isMySQLType()) {
-      return new SingleDataNodeResultSetResponse(connection.executeQuery(sql));
-    } else {
-      return new TextResultSetResponse(connection.executeQuery(sql));
+    public static MycatResultSetResponse executeQuery(String replicaName, String sql, boolean update, String strategy) {
+        DefaultConnection connection = getConnectionByReplicaName(replicaName, update, strategy);
+        if (connection.getDataSource().isMySQLType()) {
+            return new MysqlSingleDataNodeResultSetResponse(connection.executeQuery(sql));
+        } else {
+            return new TextResultSetResponse(connection.executeQuery(sql));
+        }
     }
-  }
 
-  public static DsConnection getConnection(String dataNode,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy) {
-    GThread processUnit = (GThread) Thread.currentThread();
-    TransactionSession transactionSession = processUnit.getTransactionSession();
-    transactionSession.beforeDoAction();
-    GRuntime runtime = GRuntime.INSTACNE;
-    Objects.requireNonNull(dataNode);
-    JdbcDataSource dataSource = runtime
-        .getJdbcDatasourceByDataNodeName(dataNode,
-            new JdbcDataSourceQuery()
-                .setRunOnMaster(runOnMaster)
-                .setStrategy(strategy));
-    return transactionSession.getConnection(dataSource);
-  }
-
-  public static MycatUpdateResponse executeUpdate(String dataNode,
-      String sql,
-      boolean insert,
-      boolean runOnMaster,
-      LoadBalanceStrategy strategy) {
-    GThread processUnit = (GThread) Thread.currentThread();
-    TransactionSession transactionSession = processUnit.getTransactionSession();
-    try {
-      DsConnection connection = getConnection(dataNode,
-          runOnMaster, strategy);
-      transactionSession.beforeDoAction();
-      return connection.executeUpdate(sql, insert);
-    } finally {
-      transactionSession.afterDoAction();
+    public static MycatResultSetResponse executeQuery(String datasource, String sql) {
+        Objects.requireNonNull(datasource);
+        DefaultConnection connection = getConnectionByDataSource(datasource);
+        if (connection.getDataSource().isMySQLType()) {
+            return new MysqlSingleDataNodeResultSetResponse(connection.executeQuery(sql));
+        } else {
+            return new TextResultSetResponse(connection.executeQuery(sql));
+        }
     }
-  }
+
+    public static DefaultConnection getConnectionByReplicaName(String replicaName, boolean update, String strategy) {
+        LoadBalanceStrategy loadBalanceByBalanceName = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(strategy);
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.beforeDoAction();
+        PhysicsInstanceImpl datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(replicaName, update, loadBalanceByBalanceName);
+        String name;
+        if (datasource == null) {
+            name = replicaName;
+        } else {
+            name = datasource.getName();
+        }
+        return transactionSession.getConnection(Objects.requireNonNull(name));
+    }
+
+    public static DefaultConnection getConnectionByDataSource(String datasource) {
+        Objects.requireNonNull(datasource);
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.beforeDoAction();
+        return transactionSession.getConnection(datasource);
+    }
+
+    public static MycatUpdateResponse executeUpdate(String replicaName,
+                                                    String sql,
+                                                    boolean needGeneratedKeys,
+                                                    String strategy) {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        try {
+            DefaultConnection connection = getConnectionByReplicaName(replicaName,true, strategy);
+            transactionSession.beforeDoAction();
+            return connection.executeUpdate(sql, needGeneratedKeys);
+        } finally {
+            transactionSession.afterDoAction();
+        }
+    }
+
+    public static MycatUpdateResponse executeUpdate(String datasource, String sql, boolean needGeneratedKeys) {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        try {
+            DefaultConnection connection = getConnectionByDataSource(datasource);
+            transactionSession.beforeDoAction();
+            return connection.executeUpdate(sql, needGeneratedKeys);
+        } finally {
+            transactionSession.afterDoAction();
+        }
+    }
+
+    public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, List<String>> map, boolean needGeneratedKeys) {
+        int lastId = 0;
+        int count = 0;
+        int serverStatus = 0;
+        for (Map.Entry<String, List<String>> backendTableInfoStringEntry : map.entrySet()) {
+            for (String s : backendTableInfoStringEntry.getValue()) {
+                MycatUpdateResponse mycatUpdateResponse = executeUpdate(backendTableInfoStringEntry.getKey(),s , needGeneratedKeys);
+                long lastInsertId = mycatUpdateResponse.getLastInsertId();
+                int updateCount = mycatUpdateResponse.getUpdateCount();
+                lastId = Math.max((int) lastInsertId, lastId);
+                count += updateCount;
+                serverStatus = mycatUpdateResponse.serverStatus();
+            }
+        }
+        return new MycatUpdateResponseImpl( count,lastId, serverStatus);
+    }
+
+    public static void commit() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.commit();
+    }
+
+    public static void setAutocommitOff() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.setAutocommit(false);
+    }
+
+    public static void rollback() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.rollback();
+    }
+
+    public static void setIsolation(int transactionIsolation) {
+        beforeDoAction();
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.setTransactionIsolation(transactionIsolation);
+    }
+
+    public static void reset() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.reset();
+    }
+
+    public static void afterDoAction() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.afterDoAction();
+    }
+
+    public static void beforeDoAction() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.beforeDoAction();
+    }
+
+    public static void begin() {
+        GThread processUnit = (GThread) Thread.currentThread();
+        TransactionSession transactionSession = processUnit.getTransactionSession();
+        transactionSession.begin();
+    }
 }

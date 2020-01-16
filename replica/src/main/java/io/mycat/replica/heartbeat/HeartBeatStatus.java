@@ -17,6 +17,9 @@ package io.mycat.replica.heartbeat;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * @author : zhangwy date Date : 2019年05月15日 21:34
+ */
 public class HeartBeatStatus {
 
   protected final AtomicBoolean isChecking = new AtomicBoolean(false); //是否正在检查

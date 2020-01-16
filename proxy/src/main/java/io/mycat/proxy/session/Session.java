@@ -14,11 +14,13 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.proxy.ProxyRuntime;
+import io.mycat.logTip.MycatLogger;
+import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
+
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.text.MessageFormat;
@@ -27,7 +29,7 @@ import java.text.MessageFormat;
  * @author jamie12221 chen junwen date 2019-05-10 21:13 Session
  **/
 public interface Session<T extends Session> {
-
+   static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(Session.class);
   /**
    * 通道
    */
@@ -36,7 +38,7 @@ public interface Session<T extends Session> {
   /**
    * 判断session是否已经关闭,一般采用通道关闭来判断,判断该方法可以实现关闭幂等
    */
-  boolean isClosed();
+  boolean hasClosed();
 
   /**
    * 获取1当前session的处理句柄
@@ -87,11 +89,11 @@ public interface Session<T extends Session> {
    * 获取当前线程池
    */
   MycatReactorThread getIOThread();
-
-  default ProxyRuntime getRuntime() {
-    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-    return thread.getRuntime();
-  }
+//
+//  default ProxyRuntime getRuntime() {
+//    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+//    return thread.getRuntime();
+//  }
 
   /**
    * 获取上下文设置的错误信息
@@ -108,6 +110,7 @@ public interface Session<T extends Session> {
   }
 
   default String setLastMessage(Throwable e) {
+    LOGGER.error("",e);
     String string = getThrowableString(e);
     setLastMessage(string);
     return string;

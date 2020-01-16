@@ -1,36 +1,47 @@
+/**
+ * Copyright (C) <2020>  <chenjunwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.ext;
 
 import io.mycat.api.callback.MySQLAPISessionCallback;
 import io.mycat.api.callback.MySQLJobCallback;
-import io.mycat.proxy.ProxyRuntime;
-import io.mycat.proxy.callback.SessionCallBack;
 import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.ReactorEnvThread;
-import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.SessionManager.PartialType;
-import java.util.Collections;
 
 public class MySQLAPIRuntimeImpl implements io.mycat.api.MySQLAPIRuntime {
 
   @Override
   public void create(String dataSourceName, MySQLAPISessionCallback callback) {
-    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
-    ProxyRuntime runtime = thread.getRuntime();
-    thread.getMySQLSessionManager().getIdleSessionsOfIdsOrPartial(
-        runtime.getDataSourceByDataSourceName(dataSourceName),
-        Collections.emptyList(), PartialType.RANDOM_ID, new SessionCallBack<MySQLClientSession>() {
-          @Override
-          public void onSession(MySQLClientSession session, Object sender, Object attr) {
-            MySQLAPIImpl mySQLAPI = new MySQLAPIImpl(session);
-            callback.onSession(mySQLAPI);
-          }
 
-          @Override
-          public void onException(Exception exception, Object sender, Object attr) {
-            callback.onException(exception);
-          }
-        });
+      //todo
+//    MycatReactorThread thread = (MycatReactorThread) Thread.currentThread();
+//    ProxyRuntime runtime = thread.getRuntime();
+//    thread.getMySQLSessionManager().getIdleSessionsOfIdsOrPartial(
+//        runtime.getDataSourceByDataSourceName(dataSourceName),
+//        Collections.emptyList(), PartialType.RANDOM_ID, new SessionCallBack<MySQLClientSession>() {
+//          @Override
+//          public void onSession(MySQLClientSession session, Object sender, Object attr) {
+//            MySQLAPIImpl mySQLAPI = new MySQLAPIImpl(session);
+//            callback.onSession(mySQLAPI);
+//          }
+//
+//          @Override
+//          public void onException(Exception exception, Object sender, Object attr) {
+//            callback.onException(exception);
+//          }
+//        });
   }
 
   @Override

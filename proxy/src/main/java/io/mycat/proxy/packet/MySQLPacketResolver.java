@@ -14,41 +14,16 @@
  */
 package io.mycat.proxy.packet;
 
-import static io.mycat.proxy.packet.MySQLPayloadType.BINARY_ROW;
-import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_COUNT;
-import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_DEF;
-import static io.mycat.proxy.packet.MySQLPayloadType.COLUMN_EOF;
-import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_EOF;
-import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_ERROR;
-import static io.mycat.proxy.packet.MySQLPayloadType.FIRST_OK;
-import static io.mycat.proxy.packet.MySQLPayloadType.LOAD_DATA_REQUEST;
-import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK;
-import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_COLUMN_DEF;
-import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_COLUMN_DEF_EOF;
-import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_PARAMER_DEF;
-import static io.mycat.proxy.packet.MySQLPayloadType.PREPARE_OK_PARAMER_DEF_EOF;
-import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST;
-import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_COM_QUERY;
-import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_COM_STMT_CLOSE;
-import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_PREPARE;
-import static io.mycat.proxy.packet.MySQLPayloadType.REQUEST_SEND_LONG_DATA;
-import static io.mycat.proxy.packet.MySQLPayloadType.ROW_EOF;
-import static io.mycat.proxy.packet.MySQLPayloadType.ROW_ERROR;
-import static io.mycat.proxy.packet.MySQLPayloadType.ROW_OK;
-import static io.mycat.proxy.packet.MySQLPayloadType.TEXT_ROW;
-
 import io.mycat.MycatException;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.beans.mysql.packet.EOFPacket;
-import io.mycat.beans.mysql.packet.MySQLPacket;
-import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
-import io.mycat.beans.mysql.packet.OkPacket;
-import io.mycat.beans.mysql.packet.PreparedOKPacket;
-import io.mycat.beans.mysql.packet.ProxyBuffer;
+import io.mycat.beans.mysql.packet.*;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
 import java.io.IOException;
+
+import static io.mycat.proxy.packet.MySQLPayloadType.*;
 
 /**
  * 报文处理类 该类实现报文解析

@@ -21,12 +21,15 @@ import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 
-public class DefaultConnection implements DsConnection {
+import javax.annotation.Nullable;
+import java.sql.*;
+import java.util.concurrent.ThreadFactory;
+
+/**
+ * @author Junwen Chen
+ **/
+public class DefaultConnection  implements AutoCloseable{
 
   private static final MycatLogger LOGGER = MycatLoggerFactory
       .getLogger(DefaultConnection.class);
@@ -62,12 +65,15 @@ public class DefaultConnection implements DsConnection {
 
   public MycatUpdateResponse executeUpdate(String sql, boolean needGeneratedKeys) {
     try (Statement statement = connection.createStatement()) {
-      statement.execute(sql,
+      statement.executeUpdate(sql,
           needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
-      int lastInsertId = 0;
+      long lastInsertId = 0;
       if (needGeneratedKeys) {
         ResultSet generatedKeys = statement.getGeneratedKeys();
-        lastInsertId = (int) (generatedKeys.next() ? generatedKeys.getLong(0) : 0L);
+        ResultSetMetaData metaData = generatedKeys.getMetaData();
+        if (metaData.getColumnCount() == 1){
+          lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
+        }
       }
       return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId,
           MySQLServerStatusFlags.AUTO_COMMIT);
@@ -80,7 +86,7 @@ public class DefaultConnection implements DsConnection {
   public JdbcRowBaseIteratorImpl executeQuery(String sql) {
     try {
       Statement statement = connection.createStatement();
-      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql));
+      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql),this);
     } catch (Exception e) {
       throw new MycatException(e);
     }
@@ -99,7 +105,7 @@ public class DefaultConnection implements DsConnection {
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("close {}", connection);
         }
-        connectionManager.closeConnection(jdbcDataSource, connection);
+        connectionManager.closeConnection(this);
       }
     } catch (Exception e) {
       LOGGER.error("", e);
@@ -128,4 +134,9 @@ public class DefaultConnection implements DsConnection {
       return true;
     }
   }
+
+  public Connection getRawConnection() {
+    return connection;
+  }
+
 }

@@ -1,9 +1,0 @@
-modifiers:
-  ANNOTATION_ROUTE:
-    sequenceModifierClazz: io.mycat.router.sequence.SequenceModifierImpl
-    sequenceModifierProperties:
-      pattern: (?:(\s*next\s+value\s+for\s*MYCATSEQ_(\w+))(,|\)|\s)*)+
-      sequenceHandlerClass: io.mycat.router.sequence.MySQLSequenceHandlerImpl
-      mysqlSeqTimeout: 1000
-      mysqlSeqSource-ANNOTATION_ROUTE-travelrecord: mytest3306-db1-GLOBAL
-      mysqlSeqSource-ANNOTATION_ROUTE-GLOBAL: mytest3306-db1-GLOBAL

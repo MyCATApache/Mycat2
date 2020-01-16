@@ -1,15 +1,29 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.proxy.monitor;
 
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
-import io.mycat.proxy.handler.backend.MySQLSynContextImpl;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
 import io.mycat.util.DumpUtil;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
@@ -50,31 +64,31 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       SQL_LOGGER.info("sessionId:{}  orginSQL:{} ", session.sessionId(), sql);
     }
   }
+//
+//  @Override
+//  public void onRouteSQL(Session session, String dataNodeName, String sql) {
+//    if (onSQL) {
+//      SQL_LOGGER.info("sessionId:{} dataTarget:{} sql:{}", session.sessionId(), dataNodeName, sql);
+//    }
+//  }
 
   @Override
-  public void onRouteSQL(Session session, String dataNodeName, String sql) {
-    if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataNode:{} sql:{}", session.sessionId(), dataNodeName, sql);
-    }
-  }
-
-  @Override
-  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+  public void onRouteSQLResult(Session session, String dataNodeName, String defaultDataBase,
       String dataSourceName,
       byte[] payload) {
     if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataNode:{} replica:{} datasource:{}", session.sessionId(), dataNodeName,
-          replicaName,dataSourceName);
+      SQL_LOGGER.info("sessionId:{} dataTarget:{} replica:{} datasource:{}", session.sessionId(), dataNodeName,
+              defaultDataBase,dataSourceName);
     }
   }
 
   @Override
-  public void onRouteSQLResult(Session session, String dataNodeName, String replicaName,
+  public void onRouteSQLResult(Session session, String dataNodeName, String defaultDataBase,
       String dataSourceName, String sql) {
     if (onSQL) {
-      SQL_LOGGER.info("sessionId:{} dataNode:{} replica:{} datasource:{}", session.sessionId(),
+      SQL_LOGGER.info("sessionId:{} dataTarget:{} replica:{} datasource:{}", session.sessionId(),
           dataNodeName,
-          replicaName, dataSourceName);
+              defaultDataBase, dataSourceName);
     }
   }
 
@@ -284,11 +298,16 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   }
 
   @Override
-  public void onGettingBackend(Session session, String dataNode, Exception e) {
-    if (onException) {
-      LOGGER.info("onGettingBackend sessionId:{}", session.sessionId());
-    }
+  public void onGettingBackend(Session session, String replicaName, String defaultDataBase, Exception e) {
+
   }
+//
+//  @Override
+//  public void onGettingBackend(Session session, String dataNode, Exception e) {
+//    if (onException) {
+//      LOGGER.info("onGettingBackend sessionId:{}", session.sessionId());
+//    }
+//  }
 
   @Override
   public final void onFrontRead(Session session, ByteBuffer view, int startIndex, int len) {
@@ -346,13 +365,13 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
   @Override
   public final void onSynchronizationState(MySQLClientSession session) {
     if (onBind) {
-      //    Thread.dumpStack();
-      MySQLSynContextImpl c = new MySQLSynContextImpl(session);
-      LOGGER.debug(
-          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
-          session.sessionId(), c.getDataNode() != null ? c.getDataNode().getName() : null,
-          c.getIsolation(), c.getCharset(), c.getAutoCommit(),
-          c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
+//      //    Thread.dumpStack();
+//      MySQLSynContextImpl c = new MySQLSynContextImpl(session);
+//      LOGGER.debug(
+//          "sessionId:{} dataNode:{} isolation: {} charset:{} automCommit:{} characterSetResult:{} sqlSelectLimit:{} netWriteTimeout:{}",
+//          session.sessionId(), c.getDefaultDatabase() != null ? c.getDefaultDatabase() : null,
+//          c.getIsolation(), c.getCharset(), c.getAutoCommit(),
+//          c.getCharacterSetResult(), c.getSqlSelectLimit(), c.getNetWriteTimeout());
     }
   }
 
@@ -425,6 +444,12 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
       LOGGER.debug("onGetIdleMysqlSession sessionId:{} dataSourceName:{}", session.sessionId(),
           session.getDatasource().getName());
     }
+  }
+
+  //todo
+  @Override
+  public void onRouteSQL(Session session, String replicaName, String defaultDataBase, String sql) {
+
   }
 
   @Override
@@ -885,5 +910,10 @@ public class MycatMonitorLogCallback implements MycatMonitorCallback {
     if (recordDump){
       LOGGER.debug("sessionId:{} onResultOk", mysql.sessionId());
     }
+  }
+
+  @Override
+  public void onRouteSQL(MycatSession mycat, String dataSourceName, String sql) {
+
   }
 }

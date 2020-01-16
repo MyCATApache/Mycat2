@@ -4,21 +4,20 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
-  <version>0.3-SNAPSHOT</version>
+  <version>0.5-SNAPSHOP</version>
   <modules>
     <module>config</module>
     <module>proxy</module>
     <module>plug</module>
     <module>router</module>
-    <module>sqlparser</module>
-    <module>expression</module>
+    <!--<module>sqlparser</module>-->
     <module>common</module>
     <module>datasource</module>
     <module>mycat2</module>
-    <module>security</module>
-    <module>grid</module>
+    <!--<module>grid</module>-->
     <module>replica</module>
-    <module>sql</module>
+      <module>pattern</module>
+      <module>hbt</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
@@ -40,10 +39,31 @@
   </scm>
 
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/org.realityforge.org.jetbrains.annotations/org.jetbrains.annotations -->
+    <dependency>
+      <groupId>org.realityforge.org.jetbrains.annotations</groupId>
+      <artifactId>org.jetbrains.annotations</artifactId>
+      <version>1.2.0</version>
+    </dependency>
+
+    <!-- https://mvnrepository.com/artifact/org.projectlombok/lombok -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.8</version>
+      <scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
       <version>1.7.26</version>
+    </dependency>
+    <!-- https://mvnrepository.com/artifact/junit/junit -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
   </dependencies>
@@ -152,6 +172,7 @@
         <artifactId>maven-install-plugin</artifactId>
         <version>2.5.2</version>
       </plugin>
+
     </plugins>
   </build>
 </project>

@@ -13,7 +13,9 @@
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.datasource.jdbc.resultset;
-
+/**
+ * @author Junwen Chen
+ **/
 import java.math.BigDecimal;
 
 public interface TextConvertor {

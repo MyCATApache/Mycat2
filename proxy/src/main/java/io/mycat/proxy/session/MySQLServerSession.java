@@ -1,12 +1,25 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.proxy.session;
 
-import io.mycat.beans.mysql.MySQLErrorCode;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLServerStatusFlags;
-import io.mycat.beans.mysql.packet.ErrorPacketImpl;
+import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.MySQLPacketUtil;
-import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
+
 import java.nio.charset.Charset;
 
 public interface MySQLServerSession<T> {
@@ -198,25 +211,25 @@ public interface MySQLServerSession<T> {
   /**
    * 根据session的信息写入错误包,所以错误包的信息要设置session
    */
-  default void writeErrorEndPacket() {
-    int lastErrorCode = getLastErrorCode();
-    if (lastErrorCode == 0) {
-      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
-    }
-    byte[] bytes = MySQLPacketUtil
-        .generateError(lastErrorCode, getLastMessage(), this.getServerStatusValue());
-    writeBytes(bytes,true);
-  }
-  default void writeErrorEndPacket(ErrorPacketImpl packet) {
-    int lastErrorCode = packet.getErrorCode();
-    if (lastErrorCode == 0) {
-      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
-    }
-    try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
-      packet.writePayload(writer,getCapabilities());
-      writeBytes(writer.toByteArray(),true);
-    }
-  }
+//  default void writeErrorEndPacket() {
+//    int lastErrorCode = getLastErrorCode();
+//    if (lastErrorCode == 0) {
+//      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
+//    }
+//    byte[] bytes = MySQLPacketUtil
+//        .generateError(lastErrorCode, getLastMessage(), this.getServerStatusValue());
+//    writeBytes(bytes,true);
+//  }
+//  default void writeErrorEndPacket(ErrorPacketImpl packet) {
+//    int lastErrorCode = packet.getErrorCode();
+//    if (lastErrorCode == 0) {
+//      lastErrorCode = MySQLErrorCode.ER_UNKNOWN_ERROR;
+//    }
+//    try(MySQLPayloadWriter writer = new MySQLPayloadWriter()){
+//      packet.writePayload(writer,getCapabilities());
+//      writeBytes(writer.toByteArray(),true);
+//    }
+//  }
 
   void writeErrorEndPacketBySyncInProcessError();
 

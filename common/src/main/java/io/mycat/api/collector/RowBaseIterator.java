@@ -1,9 +1,14 @@
 package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+
 import java.io.Closeable;
 import java.math.BigDecimal;
-
+/**
+ * @author jamie12221
+ *  date 2019-05-22 01:17
+ *  a simple proxy collector as map
+ **/
 public interface RowBaseIterator extends Closeable {
 
   MycatRowMetaData metaData();

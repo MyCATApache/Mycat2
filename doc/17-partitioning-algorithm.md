@@ -30,6 +30,16 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 以下内容引用mycat权威指南的一部分内容
 
+## 非分片
+
+不计算分片值,指定dataNode的下标
+
+```yaml
+   function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个dataNode
+```
+
+
+
 
 
 ## 分片枚举

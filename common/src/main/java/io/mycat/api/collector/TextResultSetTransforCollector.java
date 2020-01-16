@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2020>  <chen junwen>
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -16,6 +16,7 @@ package io.mycat.api.collector;
 
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
+
 import java.math.BigDecimal;
 import java.sql.Date;
 

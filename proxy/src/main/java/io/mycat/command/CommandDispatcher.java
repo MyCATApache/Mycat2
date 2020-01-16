@@ -14,8 +14,8 @@
  */
 package io.mycat.command;
 
-import io.mycat.proxy.ProxyRuntime;
 import io.mycat.proxy.session.MycatSession;
+
 import java.util.Map;
 
 /**
@@ -25,7 +25,7 @@ import java.util.Map;
  **/
 public interface CommandDispatcher extends LocalInFileRequestParseHelper,
     PrepareStatementParserHelper {
-  void initRuntime(MycatSession session,ProxyRuntime runtime);
+  void initRuntime(MycatSession session);
   void handleQuery(byte[] sql, MycatSession session);
 
   void handleSleep(MycatSession session);

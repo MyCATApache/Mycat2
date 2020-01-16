@@ -69,7 +69,7 @@ replicas:
 
 ### 步骤3
 
-修改schema.yaml,dataNode.yaml,以下两个架构选一个配置
+修改schema.yaml,deafultDatabase.yaml,以下两个架构选一个配置
 
 
 
@@ -109,7 +109,7 @@ schemas:
     defaultDataNode: dn1
 ```
 
-dataNode.yaml
+deafultDatabase.yaml
 
 ```yaml
 dataNodes:
@@ -189,7 +189,7 @@ schemas:
     tables:
 ```
 
-dataNode.yaml
+deafultDatabase.yaml
 
 ```yaml
 dataNodes:
@@ -252,7 +252,7 @@ schemas:
         dataNodes: dn1
       - name: travelrecord2
         dataNodes: dn2
-dataNode.yaml
+deafultDatabase.yaml
 
 dataNodes:
   - name: dn1

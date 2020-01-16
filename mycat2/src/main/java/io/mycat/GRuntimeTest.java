@@ -1,66 +1,91 @@
+/**
+ * Copyright (C) <2019>  <chen junwen>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat;
 
 import io.mycat.bindThread.BindThreadKey;
-import io.mycat.datasource.jdbc.GRuntime;
-import io.mycat.datasource.jdbc.datasource.DsConnection;
-import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.thread.GProcess;
+import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * @author cjw
+ **/
 public class GRuntimeTest {
 
-  public static void main(String[] args) throws InterruptedException {
-    ReplicaSelectorRuntime.INSTCANE.load();
-    GRuntime.INSTACNE.load(ConfigRuntime.INSTCANE.load());
-    JdbcDataSource ds1 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn1", null);
-    JdbcDataSource ds2 = GRuntime.INSTACNE.getJdbcDatasourceByDataNodeName("dn2", null);
-    CountDownLatch countDownLatch = new CountDownLatch(1000);
-    for (int i = 0; i < 1000; i++) {
-      BindThreadKey id = id();
-      GRuntime.INSTACNE.run(id, new GProcess() {
+    public static void main(String[] args) throws Exception {
+        ConfigProvider bootConfig = RootHelper.INSTANCE.bootConfig(MycatCore.class);
+        MycatConfig mycatConfig = bootConfig.currentConfig();
+        PlugRuntime.INSTCANE.load(mycatConfig);
+        JdbcRuntime.INSTANCE.load(mycatConfig);
+        ReplicaSelectorRuntime.INSTANCE.load(mycatConfig);
+        CountDownLatch countDownLatch = new CountDownLatch(1000);
+        for (int i = 0; i < 1000; i++) {
+            BindThreadKey id = id();
+            JdbcRuntime.INSTANCE.run(id, new GProcess() {
 
-        @Override
-        public void accept(BindThreadKey key, TransactionSession session) {
-          session.begin();
-          DsConnection c1 = session.getConnection(ds1);
-          JdbcRowBaseIteratorImpl jdbcRowBaseIterator = c1.executeQuery("select 1");
-          List<Map<String, Object>> resultSetMap = jdbcRowBaseIterator.getResultSetMap();
-          DsConnection c2 = session.getConnection(ds2);
-          List<Map<String, Object>> resultSetMap1 = c2.executeQuery("select 1").getResultSetMap();
-          session.commit();
-          System.out.println(resultSetMap1);
-          countDownLatch.countDown();
-          System.out.println("-----------------" + countDownLatch);
+                @Override
+                public void accept(BindThreadKey key, TransactionSession session) {
+                    session.begin();
+                    DefaultConnection defaultDs = session.getConnection("defaultDs");
+                    JdbcRowBaseIteratorImpl jdbcRowBaseIterator = defaultDs.executeQuery("select 1");
+                    List<Map<String, Object>> resultSetMap = jdbcRowBaseIterator.getResultSetMap();
+                    DefaultConnection c2 = session.getConnection("defaultDs2");
+                    List<Map<String, Object>> resultSetMap1 = c2.executeQuery("select 1").getResultSetMap();
+                    session.commit();
+                    System.out.println(resultSetMap1);
+                    countDownLatch.countDown();
+                    System.out.println("-----------------" + countDownLatch);
+                }
+
+                @Override
+                public void onException(BindThreadKey key, Exception e) {
+                    System.out.println(e);
+                }
+            });
         }
-        @Override
-        public void onException(BindThreadKey key, Exception e) {
-          System.out.println(e);
-        }
-      });
+        countDownLatch.await();
+        System.out.println("----------------------end-------------------------");
     }
-    countDownLatch.await();
-    System.out.println("----------------------end-------------------------");
-  }
 
-  private static BindThreadKey id() {
-    return new BindThreadKey() {
-      final int id = ThreadLocalRandom.current().nextInt();
+    private static BindThreadKey id() {
+        return new BindThreadKey() {
+            final int id = ThreadLocalRandom.current().nextInt();
 
-      @Override
-      public int hashCode() {
-        return id;
-      }
+            @Override
+            public int hashCode() {
+                return id;
+            }
 
-      @Override
-      public boolean equals(Object obj) {
-        return this == obj;
-      }
-    };
-  }
+            @Override
+            public boolean equals(Object obj) {
+                return this == obj;
+            }
+
+            @Override
+            public boolean checkOkInBind() {
+                return true;
+            }
+        };
+    }
 }

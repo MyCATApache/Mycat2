@@ -29,6 +29,7 @@ import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
+
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
@@ -165,7 +166,7 @@ public interface ResultSetHandler extends BackendNIOHandler<MySQLClientSession>,
   @Override
   default void onSocketRead(MySQLClientSession mysql) {
     assert mysql.getCurNIOHandler() == this;
-    if (!mysql.isOpen()) {
+    if (!mysql.checkOpen()) {
       ResultSetCallBack callBackAndReset = mysql.getCallBack();
       ClosedChannelException closedChannelException = new ClosedChannelException();
       onException(mysql, closedChannelException);

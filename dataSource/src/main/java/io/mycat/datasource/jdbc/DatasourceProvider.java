@@ -14,14 +14,17 @@
  */
 package io.mycat.datasource.jdbc;
 
+import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.datasource.JdbcDataSource;
-import javax.sql.DataSource;
-import javax.transaction.UserTransaction;
 
+import javax.transaction.UserTransaction;
+/**
+ * @author Junwen Chen
+ **/
 public interface DatasourceProvider {
 
-  DataSource createDataSource(JdbcDataSource dataSource);
-
+  JdbcDataSource createDataSource(DatasourceRootConfig.DatasourceConfig  dataSource);
+  void closeDataSource(JdbcDataSource dataSource);
   default boolean isJTA() {
     return false;
   }

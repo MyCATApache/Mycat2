@@ -1,15 +1,36 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
+
 package io.mycat.bindThread;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Date;
 import java.util.Objects;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedTransferQueue;
 
 public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends BindThreadCallback> extends
     Thread {
-
-  final LinkedTransferQueue<PROCESS> blockingDeque = new LinkedTransferQueue<>();//todo optimization
+  final Logger LOGGER = LoggerFactory.getLogger(BindThread.class);
+  final BlockingQueue<PROCESS> blockingDeque = new LinkedTransferQueue<>();//todo optimization
   final BindThreadPool manager;
   long startTime;
   volatile KEY key;
+  private long endTime;
 
   public BindThread(BindThreadPool manager) {
     this.manager = manager;
@@ -19,7 +40,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
 
   void run(KEY key, PROCESS processTask) {
     Objects.requireNonNull(key);
-    if (!blockingDeque.isEmpty() && this.key != key) {
+    if (!blockingDeque.isEmpty() &&this.key!=null) {
       throw new RuntimeException("unknown state");
     } else if (this.key == null) {
       this.key = key;
@@ -28,6 +49,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     } else {
       throw new RuntimeException("unknown state");
     }
+    this.key = key;
     if (Thread.currentThread() == this) {
       processJob(null, processTask);
     } else {
@@ -44,19 +66,15 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         exception = null;
         callback = null;
 
-        try {
-          callback = blockingDeque.poll(manager.waitTaskTimeout, manager.timeoutUnit);
-        } catch (InterruptedException ignored) {
-        }
+        callback = blockingDeque.poll(this.manager.waitTaskTimeout,this.manager.timeoutUnit);
         if (callback != null) {
           processJob(exception, callback);
-
         }
 
         {
           boolean bind = false;
-          if (this.key != null && !(bind = continueBind())) {
-            recycleTransactionThread(callback);
+          if (this.key != null &&this.key.checkOkInBind()&& !(bind = continueBind())) {
+            recycleTransactionThread();
           } else if (this.key == null && bind) {
             throw new RuntimeException("unknown state");
           }
@@ -75,19 +93,21 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
       manager.exceptionHandler.accept(e);
       exception = e;
     }
+    this.endTime = System.currentTimeMillis();
+    LOGGER.debug("thread execute time:{} {} ", this.endTime-this.startTime,"Millis");
     if (exception != null) {
       poll.onException(key, exception);
     }
   }
 
-  public void recycleTransactionThread(BindThreadCallback callback) {
-    if (!continueBind() && callback == null) {
+  public void recycleTransactionThread() {
+    if (!continueBind()) {
       manager.map.remove(this.key);
       this.key = null;
       if (!manager.idleList.offer(this)) {
         close();
-        manager.decThreadCount();
-        manager.allSession.remove(this);
+      }else {
+        LOGGER.debug("thread recycle at time:{} ",new Date());
       }
     }
   }
@@ -122,6 +142,6 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
 //
 //
 //  public GRuntime getRuntime() {
-//    return manager.runtime;
+//    return manager.metadata;
 //  }
 }

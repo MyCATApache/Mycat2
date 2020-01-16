@@ -1,3 +1,17 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.proxy.packet;
 
 import io.mycat.beans.mysql.packet.MySQLPacket;
@@ -5,11 +19,17 @@ import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.buffer.BufferPool;
 import io.mycat.proxy.buffer.ProxyBufferImpl;
 import io.mycat.proxy.session.MycatSession;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 
+/**
+ * @author jamie12221 date 2019-05-20 11:52
+ * mysql请求报文解析器
+ **/
 public class FrontMySQLPacketResolver {
 
   final ByteBuffer head = ByteBuffer.allocate(4);
@@ -31,7 +51,9 @@ public class FrontMySQLPacketResolver {
   public boolean readFromChannel() throws IOException {
     SocketChannel socketChannel = session.channel();
     if (head.position() == 0) {
-      socketChannel.read(head);
+     if(-1==socketChannel.read(head)){
+       throw new ClosedChannelException();
+     }
       if (!head.hasRemaining()) {
         head.position(0);
         int length = MySQLPacket.readInt(head, 3);
@@ -41,7 +63,9 @@ public class FrontMySQLPacketResolver {
         return false;
       }
     }
-    socketChannel.read(payload);
+    if(-1==socketChannel.read(payload)){
+      throw new ClosedChannelException();
+    }
     if (payload.hasRemaining()) {
       return false;
     } else {

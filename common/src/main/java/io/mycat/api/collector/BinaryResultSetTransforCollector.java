@@ -1,5 +1,5 @@
 /**
- * Copyright (C) <2019>  <chen junwen>
+ * Copyright (C) <2020>  <chen junwen>
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
@@ -19,6 +19,7 @@ import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+
 import java.math.BigDecimal;
 
 /**
@@ -28,6 +29,12 @@ import java.math.BigDecimal;
  *  date 2019-05-10 13:21
  */
 
+/**
+ *
+ * chen junwen
+ *
+ * a proxy packet collector,collecting mysql binary row
+ */
 public class BinaryResultSetTransforCollector implements ResultSetTransfor {
 
   final static MycatLogger LOGGER = MycatLoggerFactory

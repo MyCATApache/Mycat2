@@ -1,15 +1,28 @@
+/**
+ * Copyright (C) <2020>  <chenjunwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.command;
-
-import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 import io.mycat.beans.mysql.MySQLCommandType;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.config.MySQLServerCapabilityFlags;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
-import java.util.ArrayDeque;
+
 import java.util.HashMap;
-import java.util.Queue;
+
+import static io.mycat.beans.mysql.packet.AuthPacket.calcLenencLength;
 
 public class CommandResolver {
 
@@ -336,7 +349,12 @@ public class CommandResolver {
           assert false;
         }
       }
-    } finally {
+    }catch (Exception e){
+      e.printStackTrace();
+      mycat.setLastMessage(e);
+      mycat.writeErrorEndPacketBySyncInProcessError();
+      mycat.onHandlerFinishedClear();
+    }finally {
       MycatMonitor.onCommandEnd(mycat);
     }
   }

@@ -1,9 +1,24 @@
+/**
+ * Copyright (C) <2020>  <mycat>
+ * <p>
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ * <p>
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ * <p>
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.router.function;
 
 import io.mycat.MycatException;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.router.RuleAlgorithm;
+import io.mycat.router.RuleFunction;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -12,7 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.Function;
 
-public class PartitionByFileMap extends RuleAlgorithm {
+public class PartitionByFileMap extends RuleFunction {
 
   private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(PartitionByFileMap.class);
   /**
@@ -29,7 +44,7 @@ public class PartitionByFileMap extends RuleAlgorithm {
    * 默认节点:小于0表示不设置默认节点，大于等于0表示设置默认节点
    *
    * 默认节点的作用：枚举分片时，如果碰到不识别的枚举值，就让它路由到默认节点 如果不配置默认节点（defaultNode值小于0表示不配置默认节点），碰到 不识别的枚举值就会报错， like
-   * this：can't find datanode for sharding column:column_name val:ffffffff
+   * this：can't find datanode for matadata column:column_name val:ffffffff
    */
   private int defaultNode = -1;
 

@@ -1,15 +1,30 @@
+/**
+ * Copyright (C) <2020>  <chen junwen>
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * GNU General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program.  If
+ * not, see <http://www.gnu.org/licenses/>.
+ */
 package io.mycat.proxy.monitor;
-
-import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
 
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
+
+import static io.mycat.proxy.monitor.MycatMonitorCallback.EMPTY;
 
 /**
  * @author jamie12221 date 2019-05-14 11:51
@@ -24,21 +39,23 @@ public final class MycatMonitor {
     callback.onOrginSQL(session, sql);
   }
 
-  public final static void onRouteSQL(Session session, String dataNodeName,String sql){
+
+  public final static void onRouteSQL(Session session, String replicaName,String defaultDatabase,String sql){
     Objects.requireNonNull(session);
-    Objects.requireNonNull(dataNodeName);
+    Objects.requireNonNull(replicaName);
+    Objects.requireNonNull(defaultDatabase);
     Objects.requireNonNull(sql);
-    callback.onRouteSQL(session, dataNodeName,sql);
+    callback.onRouteSQL(session, replicaName,defaultDatabase,sql);
   }
 
-  public final static void onRouteResult(Session session, String dataNodeName, String replicaName,
+  public final static void onRouteResult(Session session, String replicaName, String defaultDatabase,
       String dataSourceName,
       String sql) {
     Objects.requireNonNull(session);
-    Objects.requireNonNull(dataNodeName);
     Objects.requireNonNull(replicaName);
+    Objects.requireNonNull(defaultDatabase);
     Objects.requireNonNull(dataSourceName);
-    callback.onRouteSQLResult(session, dataNodeName, replicaName, dataSourceName, sql);
+    callback.onRouteSQLResult(session, replicaName, defaultDatabase, dataSourceName, sql);
   }
 
   public final static void onRouteResult(Session session, String dataNodeName, String replicaName,
@@ -215,9 +232,9 @@ public final class MycatMonitor {
     callback.onPacketExchangerClear(session);
   }
 
-  public final static void onGettingBackendException(Session session, String dataNode,
+  public final static void onGettingBackendException(Session session, String replicaName,String defaultDatabase,
       Exception e) {
-    callback.onGettingBackend(session, dataNode, e);
+    callback.onGettingBackend(session, replicaName,defaultDatabase, e);
   }
 
   public final static void onMycatHandlerWriteException(Session session, Exception e) {
@@ -527,5 +544,9 @@ public final class MycatMonitor {
 
   public static void onResultSetEnd(MySQLClientSession mysql) {
     callback.onResultSetEnd(mysql);
+  }
+
+  public static void onRouteSQL(MycatSession mycat, String dataSourceName, String sql) {
+    callback.onRouteSQL(mycat, dataSourceName,sql);
   }
 }

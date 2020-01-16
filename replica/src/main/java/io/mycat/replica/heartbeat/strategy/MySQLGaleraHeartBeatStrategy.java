@@ -14,11 +14,12 @@
  */
 package io.mycat.replica.heartbeat.strategy;
 
-import io.mycat.config.GlobalConfig;
+import io.mycat.GlobalConst;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
       MySQLGaleraHeartBeatStrategy.class);
 
   public String getSql() {
-    return GlobalConfig.GARELA_CLUSTER_HEARTBEAT_SQL;
+    return GlobalConst.GARELA_CLUSTER_HEARTBEAT_SQL;
   }
 
   @Override

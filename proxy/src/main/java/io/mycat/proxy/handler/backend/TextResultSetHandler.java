@@ -14,40 +14,15 @@
  */
 package io.mycat.proxy.handler.backend;
 
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_BIT;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_BLOB;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_DATE;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_DATETIME;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_DECIMAL;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_DOUBLE;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_ENUM;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_FLOAT;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_GEOMETRY;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_INT24;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_LONG;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_LONGLONG;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_LONG_BLOB;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_MEDIUM_BLOB;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_NEWDATE;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_NEW_DECIMAL;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_NULL;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_SET;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_SHORT;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_STRING;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TIME;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TIMESTAMP;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_TINY_BLOB;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VARCHAR;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_VAR_STRING;
-import static io.mycat.beans.mysql.MySQLFieldsType.FIELD_TYPE_YEAR;
-
 import io.mycat.MycatException;
 import io.mycat.api.collector.ResultSetTransfor;
 import io.mycat.beans.mysql.packet.ColumnDefPacket;
 import io.mycat.beans.mysql.packet.ColumnDefPacketImpl;
 import io.mycat.beans.mysql.packet.MySQLPacket;
+
 import java.util.function.IntPredicate;
+
+import static io.mycat.beans.mysql.MySQLFieldsType.*;
 
 /**
  * @author jamie12221

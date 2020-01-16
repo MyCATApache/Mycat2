@@ -5,7 +5,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>io.mycat</groupId>
-      <version>0.3-SNAPSHOP</version>
+      <version>0.5-SNAPSHOP</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>plug</artifactId>
@@ -13,12 +13,12 @@
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>router</artifactId>
-          <version>0.3-SNAPSHOP</version>
+          <version>0.5-SNAPSHOP</version>
         </dependency>
       <dependency>
         <groupId>io.mycat</groupId>
         <artifactId>common</artifactId>
-        <version>0.3-SNAPSHOP</version>
+        <version>0.5-SNAPSHOP</version>
       </dependency>
     </dependencies>
 

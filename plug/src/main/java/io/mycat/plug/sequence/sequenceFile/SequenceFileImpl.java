@@ -17,6 +17,7 @@
 package io.mycat.plug.sequence.sequenceFile;
 
 import io.mycat.plug.sequence.sequenceFile.SequenceFileHandler.SequenceFile;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;

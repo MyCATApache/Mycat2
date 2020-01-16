@@ -1,10 +1,166 @@
-proxy:
+metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免去繁琐配置,
+  schemas:
+    db1: #逻辑库名
+      tables:
+        travelrecord: #逻辑表名
+          columns:
+            - columnName: id #分片字段信息,显式提供,
+              shardingType: NATURE_DATABASE_TABLE #类型:自然分片,即根据一列(支持)或者多个列(暂不支持)的值映射成一个值,再根据该值通过单维度的分片算法计算出数据分片范围
+              function: { clazz: io.mycat.router.function.PartitionByLong , name: partitionByLong, properties: {partitionCount: '4', partitionLength: '256'}, ranges: {}}
+              #提供表的字段信息,升级计划:通过已有数据库拉取该信息
+          createTableSQL: |-
+            CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+          dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
+                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
+                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},
+                      {targetName: defaultDs2 ,schemaName: db2, tableName: travelrecord}] #9999999999
+        address1:
+          columns:
+            - columnName: id
+              shardingType: MAP_TARGET #动态分片类型,通过任意值映射分片目标,目标库,目标表,要求查询条件要求包列信息,否则可能路由失败,如果配置了dataNode,则会使用dataNode校验
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
+              map: [defaultDs]
+            - columnName: addressname
+              shardingType: MAP_DATABASE
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
+              map: [db1]
+            - columnName: addressname
+              shardingType: MAP_TABLE
+              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}}
+              map: [address]
+          createTableSQL: CREATE TABLE `address` (`id` int(11) NOT NULL,`addressname` varchar(20) DEFAULT NULL,PRIMARY KEY (`id`))
+#        comany: #普通表
+#          columns:
+#            - columnName: id
+#              shardingType: NATURE_DATABASE_TABLE
+#              function: { clazz: io.mycat.router.function.PartitionConstant , properties: {defaultNode: '0'}} #映射到第一个元素
+#              dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: comany}]
+#          createTableSQL: CREATE TABLE `company` (`id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`)) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4
+interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
+  defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
+  schemas: [{
+              tables:[ 'db1.travelrecord','db1.address1'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
+              sqls: [
+              {sql: 'select {any}',command: distributedQuery },
+              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
+              {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
+              {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
+              {sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }}
+              ],
+            },
+            {
+              tables:[ 'db1.company'],#读写分离例子,不使用metaData进行分析,metaData: false,直接发送到targets
+              sqls: [
+              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
+              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
+              {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
+              {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
+              ],
+            },
+  ]
+  sqls: [
+  {name: explain,sql: 'EXPLAIN {statement}' ,command: explain}, #explain一定要写库名
+  {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: plan},
+  {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
+  {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
+  {name: rollback ,sql: 'rollback',command: rollback},{name: rollback;,sql: 'rollback;',command: rollback},
+  {name: useStatement ,sql: 'use {schema}',command: useStatement},{name: useStatement; ,sql: 'use {schema};',command: useStatement},
+  {name: setXA ,sql: 'set xa = on',command: onXA},
+  {name: setProxy ,sql: 'set xa = off',command: offXA},
+  {name: setAutoCommitOff ,sql: 'set autocommit=off',command: setAutoCommitOff},
+  {name: start transaction ,sql: ' START TRANSACTION; ',command: begin},
+  {name: setAutoCommitOn ,sql: 'set autocommit=on',command: setAutoCommitOn},
+  {name: setTransactionIsolation ,sql: 'SET SESSION TRANSACTION ISOLATION LEVEL {transactionIsolation}',command: setTransactionIsolation},
+    #mariadb-java-client 2.5.2
+  #mariadb set autocommit=1, sql_mode = concat(@@sql_mode,',STRICT_TRANS_TABLES')
+  #mariadb SELECT @@max_allowed_packet,@@system_time_zone,@@time_zone,@@auto_increment_increment
+  #mariadb SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE
+  #mariadb commit
+  #mariadb ROLLBACK
+  {name: mariadb-setAutoCommitOn,sql: 'set autocommit=1',command: setAutoCommitOn},
+
+  {name: mariadb-variables,sql: 'SELECT @@max_allowed_packet,@@system_time_zone,@@time_zone,@@auto_increment_increment',command: execute , tags: {targets: defaultDs}},
+  {name: mariadb-setAutoCommitOff,sql: 'set autocommit=0',command: setAutoCommitOff },
+
+
+  #mysql-connector-java-8.0.11  tx_isolation=>transaction_isolation,transaction_read_only =>ession.tx_read_only
+  #/* mysql-connector-java-8.0.11 (Revision: 6d4eaa273bc181b4cf1c8ad0821a2227f116fedf) */SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout
+  # mysql-connector-java-8.0.11  set autocommit=1, sql_mode = concat(@@sql_mode,',STRICT_TRANS_TABLES')
+  #mysql-connector-java-8.0.11 SELECT @@session.transaction_read_only =>SELECT @@session.tx_read_only
+  #mysql-connector-java-8.0.11 SET autocommit=1
+  #mysql-connector-java-8.0.11 SET autocommit=0
+  #mysql-connector-java-8.0.11 SET SESSION TRANSACTION ISOLATION LEVEL SERIALIZABLE
+  #mysql-connector-java-8.0.11 rollback
+  {name: mysql-variables,
+   sql: 'SELECT  @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@transaction_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout',
+    explain: 'SELECT @@session.auto_increment_increment AS auto_increment_increment, @@character_set_client AS character_set_client, @@character_set_connection AS character_set_connection, @@character_set_results AS character_set_results, @@character_set_server AS character_set_server, @@collation_server AS collation_server, @@init_connect AS init_connect, @@interactive_timeout AS interactive_timeout, @@license AS license, @@lower_case_table_names AS lower_case_table_names, @@max_allowed_packet AS max_allowed_packet, @@net_write_timeout AS net_write_timeout, @@sql_mode AS sql_mode, @@system_time_zone AS system_time_zone, @@time_zone AS time_zone, @@tx_isolation AS transaction_isolation, @@wait_timeout AS wait_timeout'
+    ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql SELECT @@session.transaction_read_only',sql: 'SELECT @@session.transaction_read_only',explain: 'SELECT @@session.tx_read_only' ,command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql set names utf8', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql SET character_set_results = NULL', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: execute , tags: {targets: defaultDs,forceProxy: true}},
+  ]
+  transactionType: xa #xa.proxy
+  defaultSchema: db1
+datasource:
+  datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,
+   maxRetryCount: 3, #连接重试次数
+   maxConnectTimeout: 10000, #连接超时时间 毫秒
+   dbType: mysql, #
+   url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',
+   weight: 1, #负载均衡权重
+   initSQL: 'use db1', #建立连接后执行的sql,在此可以写上use xxx初始化默认database
+    jdbcDriverClass:, #jdbc驱动
+   instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写
+  },
+  {name: defaultDs2, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
+   url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
+  }
+  ]
+  datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
+  timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS}
+cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
+  close: true  #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
+  clusters: [
+  {name: repli ,
+   replicaType: SINGLE_NODE , # SINGLE_NODE:单一节点 ,MASTER_SLAVE:普通主从 GARELA_CLUSTER:garela cluster
+   switchType: NOT_SWITCH , #NOT_SWITCH:不进行主从切换,SWITCH:进行主从切换
+   readBalanceType: BALANCE_ALL  , #对于查询请求的负载均衡类型
+   readBalanceName: BalanceRoundRobin , #对于查询请求的负载均衡类型
+   writeBalanceName: BalanceRoundRobin ,  #对于修改请求的负载均衡类型
+   masters:[defaultDs], #主节点列表
+   replicas:[defaultDs2],#从节点列表
+   heartbeat:{maxRetry: 3, #心跳重试次数
+              minSwitchTimeInterval: 12000 , #最小主从切换间隔
+              heartbeatTimeout: 12000 , #心跳超时值,毫秒
+              slaveThreshold: 0 , # mysql binlog延迟值
+              reuqestType: 'mysql' #进行心跳的方式,mysql或者jdbc两种
+   }}
+  ]
+  timer: {initialDelay: 0, period: 3, timeUnit: SECONDS} #心跳定时器 initialDelay一般为0,mycat会在开启集群心跳,一个initialDelay+1秒之后开启服务器端口
+server:
   ip: 0.0.0.0
   port: 8066
-  # 以下bufferPool是每个reactor1独立一个,不共享
-  bufferPoolPageSize: 4194304     # 一页的大小，默认 1024*1024*4
-  bufferPoolChunkSize: 8192       # chunk 大小 ， 默认 8192 chunk 为bufferpool 分配的最小单元,不能低于86
-  bufferPoolPageNumber: 2        # 页数量. 默认 2
-  reactorNumber: 2        #  默认 1 取逻辑处理器数量
-  commandDispatcherClass: io.mycat.grid.BlockProxyCommandHandler
-  proxyBeanProviders: io.mycat.MycatProxyBeanProviders
+  reactorNumber: 1
+  #用于多线程任务的线程池,
+  worker: {close: false, #禁用多线程池,jdbc等功能将不能使用
+           maxPengdingLimit: 65535, #每个线程处理任务队列的最大长度
+           maxThread: 2,
+           minThread: 2,
+           timeUnit: SECONDS,
+           waitTaskTimeout: 5 #超时后将结束闲置的线程
+  }
+#负载均衡类型 BALANCE_ALL:所有数据源参与负载均衡 BALANCE_ALL_READ:所以非master数据源参与负载均衡 BALANCE_NONE:只有master(一个)参与负载
+plug:
+  loadBalance:
+    defaultLoadBalance: balanceRandom
+    loadBalances: [
+    {name: BalanceRunOnMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnMaster},
+    {name: BalanceLeastActive, clazz: io.mycat.plug.loadBalance.BalanceLeastActive},
+    {name: BalanceRoundRobin, clazz: io.mycat.plug.loadBalance.BalanceRoundRobin},
+    {name: BalanceRunOnReplica, clazz: io.mycat.plug.loadBalance.BalanceRunOnReplica},
+    {name: BalanceRunOnRandomMaster, clazz: io.mycat.plug.loadBalance.BalanceRunOnRandomMaster}
+    ]
+
+
+    #10.3.15-MariaDB

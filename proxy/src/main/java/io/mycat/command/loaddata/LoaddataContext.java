@@ -1,19 +1,20 @@
 package io.mycat.command.loaddata;
 
-import static io.mycat.proxy.handler.MySQLPacketExchanger.DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK;
-
 import io.mycat.beans.MySQLSessionMonopolizeType;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
 import io.mycat.beans.mysql.packet.PacketSplitterImpl;
 import io.mycat.proxy.MySQLPacketUtil;
 import io.mycat.proxy.callback.RequestCallback;
-import io.mycat.proxy.handler.MySQLPacketExchanger.MySQLProxyNIOHandler;
-import io.mycat.proxy.handler.ResponseType;
 import io.mycat.proxy.handler.backend.RequestHandler;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 
+/**
+ * @author jamie12221
+ *  date 2019-04-30 16:24
+ * long data值容器
+ **/
 public class LoaddataContext {
 
   MySQLPayloadWriter context;
@@ -25,7 +26,7 @@ public class LoaddataContext {
     context.writeBytes(data);
   }
 
-  public void proxy(MycatSession mycat) {
+  public void proxy(MycatSession mycat,String replicaName,String defaultDataBaseName) {
     int packetId = 2;
     MySQLPacketSplitter splitter = new PacketSplitterImpl();
     splitter.init(context.size());
@@ -46,17 +47,18 @@ public class LoaddataContext {
       @Override
       public void onFinishedSend(MySQLClientSession session, Object sender, Object attr) {
         byte[] emptyPacket = MySQLPacketUtil.generateMySQLPacket(emptyPacketId, new byte[]{});
-        MySQLProxyNIOHandler
-            .INSTANCE.proxyBackend(mycat, emptyPacket, session.getDataNode().getName(), null, ResponseType.QUERY,
-            MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
-        );
+        //@todo
+//        MySQLProxyNIOHandler
+//            .INSTANCE.proxyBackend(mycat, emptyPacket, targetName,defaultDataBaseName, null, ResponseType.QUERY,
+//            MySQLProxyNIOHandler.INSTANCE, DEFAULT_BACKEND_SESSION_REQUEST_FAILED_CALLBACK
+//        );
       }
 
       @Override
       public void onFinishedSendException(Exception e, Object sender, Object attr) {
         mycat.setMySQLSession(null);
         mycat.setLastMessage(e.toString());
-        mycat.writeErrorEndPacket();
+        mycat.writeErrorEndPacketBySyncInProcessError();
       }
     });
   }

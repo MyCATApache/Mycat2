@@ -3,11 +3,11 @@ package io.mycat.proxy.monitor;
 import io.mycat.MycatException;
 import io.mycat.proxy.handler.backend.MySQLSynContext;
 import io.mycat.proxy.packet.MySQLPayloadType;
-import io.mycat.proxy.reactor.MycatReactorThread;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.Session;
+
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
@@ -17,275 +17,280 @@ import java.nio.channels.ClosedChannelException;
 
 public interface MycatMonitorCallback {
 
-  MycatMonitorCallback EMPTY = new AbstractMonitorCallback() {
+    final MycatMonitorCallback EMPTY = new AbstractMonitorCallback() {
 
-  };
+    };
 
-  static MycatReactorThread getThread() {
-    Thread thread = Thread.currentThread();
-    return (MycatReactorThread) thread;
-  }
-
-  static Session getSession() {
-    SessionThread thread = getThread();
-    Session curSession = thread.getCurSession();
-    if (curSession instanceof MycatSession) {
-      return curSession;
-    } else if (curSession instanceof MySQLClientSession) {
-      MycatSession mycatSession = ((MySQLClientSession) curSession).getMycatSession();
-      if (mycatSession == null) {
-        return curSession;
-      } else {
-        return mycatSession;
-      }
-    } else {
-      throw new MycatException("unknown session");
+    static SessionThread getThread() {
+        Thread thread = Thread.currentThread();
+        return (SessionThread) thread;
     }
-  }
 
-  void onOrginSQL(Session session, String sql);
+    static Session getSession() {
+        SessionThread thread = getThread();
+        Session curSession = thread.getCurSession();
+        if (curSession instanceof MycatSession) {
+            return curSession;
+        } else if (curSession instanceof MySQLClientSession) {
+            MycatSession mycatSession = ((MySQLClientSession) curSession).getMycat();
+            if (mycatSession == null) {
+                return curSession;
+            } else {
+                return mycatSession;
+            }
+        } else {
+            throw new MycatException("unknown session");
+        }
+    }
 
-  void onFrontRead(Session session, ByteBuffer view, int startIndex, int len);
+    void onOrginSQL(Session session, String sql);
 
-  void onPayloadType(Session session, MySQLPayloadType type
-      //,ByteBuffer view, int startIndex, int len
-  );
+    void onFrontRead(Session session, ByteBuffer view, int startIndex, int len);
 
-  void onBackendWrite(Session session, ByteBuffer view, int startIndex,
-      int len);
+    void onPayloadType(Session session, MySQLPayloadType type
+                       //,ByteBuffer view, int startIndex, int len
+    );
 
-  void onBackendRead(Session session, ByteBuffer view, int startIndex,
-      int len);
+    void onBackendWrite(Session session, ByteBuffer view, int startIndex,
+                        int len);
 
-  void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len);
+    void onBackendRead(Session session, ByteBuffer view, int startIndex,
+                       int len);
 
-  void onMySQLSessionServerStatusChanged(Session session, int serverStatus);
+    void onFrontWrite(Session session, ByteBuffer view, int startIndex, int len);
 
-  void onAllocateByteBuffer(ByteBuffer buffer, Session session);
+    void onMySQLSessionServerStatusChanged(Session session, int serverStatus);
 
-  void onSyncSQL(MySQLSynContext mycatSession, String sql, MySQLClientSession session);
+    void onAllocateByteBuffer(ByteBuffer buffer, Session session);
 
-  void onSynchronizationState(MySQLClientSession session);
+    void onSyncSQL(MySQLSynContext mycatSession, String sql, MySQLClientSession session);
 
-  void onRecycleByteBuffer(ByteBuffer buffer, Session session);
+    void onSynchronizationState(MySQLClientSession session);
 
-  void onExpandByteBuffer(ByteBuffer buffer, Session session);
+    void onRecycleByteBuffer(ByteBuffer buffer, Session session);
 
-  void onNewMycatSession(MycatSession session);
+    void onExpandByteBuffer(ByteBuffer buffer, Session session);
 
-  void onBindMySQLSession(MycatSession mycat, MySQLClientSession session);
+    void onNewMycatSession(MycatSession session);
 
-  void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session);
+    void onBindMySQLSession(MycatSession mycat, MySQLClientSession session);
+
+    void onUnBindMySQLSession(MycatSession mycat, MySQLClientSession session);
 
 
-  void onNewMySQLSession(MySQLClientSession session);
+    void onNewMySQLSession(MySQLClientSession session);
 
-  void onAddIdleMysqlSession(MySQLClientSession session);
+    void onAddIdleMysqlSession(MySQLClientSession session);
 
-  void onGetIdleMysqlSession(MySQLClientSession session);
-  void onRouteSQL(Session session, String dataNodeName,String sql);
-  void onRouteSQLResult(Session session, String dataNodeName, String replicaName, String dataSource,
-      byte[] payload);
+    void onGetIdleMysqlSession(MySQLClientSession session);
 
-  void onRouteSQLResult(Session session, String dataNodeName, String replicaName, String dataSource,
-      String sql);
-  /**
-   * exception
-   */
-  void onBackendConCreateWriteException(Session session, Exception e);
+    void onRouteSQL(Session session, String replicaName, String defaultDataBase, String sql);
 
-  void onBackendConCreateConnectException(Session session, Exception e);
+    void onRouteSQLResult(Session session, String replicaName, String defaultDataBase, String dataSource,
+                          byte[] payload);
 
-  void onBackendConCreateReadException(Session session, Exception e);
+    void onRouteSQLResult(Session session, String replicaName, String defaultDataBase, String dataSource,
+                          String sql);
 
-  void onBackendConCreateClear(Session session);
+    /**
+     * exception
+     */
+    void onBackendConCreateWriteException(Session session, Exception e);
 
-  void onBackendResultSetReadException(Session session, Exception e);
+    void onBackendConCreateConnectException(Session session, Exception e);
 
-  void onBackendResultSetWriteException(Session session, Exception e);
+    void onBackendConCreateReadException(Session session, Exception e);
 
-  void onBackendResultSetWriteClear(Session session);
+    void onBackendConCreateClear(Session session);
 
-  void onResultSetWriteException(Session session, Exception e);
+    void onBackendResultSetReadException(Session session, Exception e);
 
-  void onResultSetReadException(Session session, Exception e);
+    void onBackendResultSetWriteException(Session session, Exception e);
 
-  void onResultSetClear(Session session);
+    void onBackendResultSetWriteClear(Session session);
 
-  void onIdleReadException(Session session, Exception e);
+    void onResultSetWriteException(Session session, Exception e);
 
-  void onAuthHandlerWriteException(Session session, Exception e);
+    void onResultSetReadException(Session session, Exception e);
 
-  void onAuthHandlerReadException(Session session, Exception e);
+    void onResultSetClear(Session session);
 
-  void onAuthHandlerClear(Session session);
+    void onIdleReadException(Session session, Exception e);
 
-  void onPacketExchangerWriteException(Session session, Exception e);
+    void onAuthHandlerWriteException(Session session, Exception e);
 
-  void onPacketExchangerException(Session session, Exception e);
+    void onAuthHandlerReadException(Session session, Exception e);
 
-  void onPacketExchangerClear(Session session);
+    void onAuthHandlerClear(Session session);
 
-  void onMycatHandlerWriteException(Session session, Exception e);
+    void onPacketExchangerWriteException(Session session, Exception e);
+
+    void onPacketExchangerException(Session session, Exception e);
+
+    void onPacketExchangerClear(Session session);
+
+    void onMycatHandlerWriteException(Session session, Exception e);
 
 //  void onMycatHandlerExchangerException(Session session, Exception e);
 
-  void onMycatHandlerClear(Session session);
+    void onMycatHandlerClear(Session session);
 
-  void onCloseMysqlSession(MySQLClientSession session, boolean noraml, String reson);
+    void onCloseMysqlSession(MySQLClientSession session, boolean normal, String reson);
 
 
-  void onRequestException(MySQLClientSession session, Exception e);
+    void onRequestException(MySQLClientSession session, Exception e);
 
-  void onRequestClear(MySQLClientSession session);
+    void onRequestClear(MySQLClientSession session);
 
-  void onBackendConCreateException(Session session, Exception e);
+    void onBackendConCreateException(Session session, Exception e);
 
-  void onResultSetException(MySQLClientSession session, Exception e);
+    void onResultSetException(MySQLClientSession session, Exception e);
 
-  void onMycatHandlerReadException(MycatSession mycat, Exception e);
+    void onMycatHandlerReadException(MycatSession mycat, Exception e);
 
-  void onMycatHandlerException(MycatSession mycat, Exception e);
+    void onMycatHandlerException(MycatSession mycat, Exception e);
 
-  void onMycatHandlerCloseException(MycatSession mycat, ClosedChannelException e);
+    void onMycatHandlerCloseException(MycatSession mycat, ClosedChannelException e);
 
-  void onMycatServerWriteException(MycatSession session, Exception e);
+    void onMycatServerWriteException(MycatSession session, Exception e);
 
-  void onGettingBackend(Session session, String dataNode, Exception e);
+    void onGettingBackend(Session session, String replicaName, String defaultDataBase, Exception e);
 
-  void onCloseMycatSession(MycatSession mycat, boolean normal, String reason);
+    void onCloseMycatSession(MycatSession mycat, boolean normal, String reason);
 
-  //command
-  void onCommandStart(MycatSession mycat);
+    //command
+    void onCommandStart(MycatSession mycat);
 
-  void onCommandEnd(MycatSession mycat);
+    void onCommandEnd(MycatSession mycat);
 
-  void onSleepCommandStart(MycatSession mycat);
+    void onSleepCommandStart(MycatSession mycat);
 
-  void onSleepCommandEnd(MycatSession mycat);
+    void onSleepCommandEnd(MycatSession mycat);
 
-  void onQuitCommandStart(MycatSession mycat);
+    void onQuitCommandStart(MycatSession mycat);
 
-  void onQuitCommandEnd(MycatSession mycat);
+    void onQuitCommandEnd(MycatSession mycat);
 
-  void onQueryCommandStart(MycatSession mycat);
+    void onQueryCommandStart(MycatSession mycat);
 
-  void onQueryCommandEnd(MycatSession mycat);
+    void onQueryCommandEnd(MycatSession mycat);
 
-  void onInitDbCommandStart(MycatSession mycat);
+    void onInitDbCommandStart(MycatSession mycat);
 
-  void onInitDbCommandEnd(MycatSession mycat);
+    void onInitDbCommandEnd(MycatSession mycat);
 
-  void onPingCommandStart(MycatSession mycat);
+    void onPingCommandStart(MycatSession mycat);
 
-  void onPingCommandEnd(MycatSession mycat);
+    void onPingCommandEnd(MycatSession mycat);
 
-  void onFieldListCommandStart(MycatSession mycat);
+    void onFieldListCommandStart(MycatSession mycat);
 
-  void onFieldListCommandEnd(MycatSession mycat);
+    void onFieldListCommandEnd(MycatSession mycat);
 
-  void onSetOptionCommandStart(MycatSession mycat);
+    void onSetOptionCommandStart(MycatSession mycat);
 
-  void onSetOptionCommandEnd(MycatSession mycat);
+    void onSetOptionCommandEnd(MycatSession mycat);
 
-  void onPrepareCommandStart(MycatSession mycat);
+    void onPrepareCommandStart(MycatSession mycat);
 
-  void onPrepareCommandEnd(MycatSession mycat);
+    void onPrepareCommandEnd(MycatSession mycat);
 
-  void onSendLongDataCommandStart(MycatSession mycat);
+    void onSendLongDataCommandStart(MycatSession mycat);
 
-  void onSendLongDataCommandEnd(MycatSession mycat);
+    void onSendLongDataCommandEnd(MycatSession mycat);
 
-  void onExecuteCommandStart(MycatSession mycat);
+    void onExecuteCommandStart(MycatSession mycat);
 
-  void onExecuteCommandEnd(MycatSession mycat);
+    void onExecuteCommandEnd(MycatSession mycat);
 
-  void onCloseCommandStart(MycatSession mycat);
+    void onCloseCommandStart(MycatSession mycat);
 
-  void onCloseCommandEnd(MycatSession mycat);
+    void onCloseCommandEnd(MycatSession mycat);
 
-  void onResetCommandStart(MycatSession mycat);
+    void onResetCommandStart(MycatSession mycat);
 
-  void onResetCommandEnd(MycatSession mycat);
+    void onResetCommandEnd(MycatSession mycat);
 
-  void onCreateDbCommandStart(MycatSession mycat);
+    void onCreateDbCommandStart(MycatSession mycat);
 
-  void onCreateDbCommandEnd(MycatSession mycat);
+    void onCreateDbCommandEnd(MycatSession mycat);
 
 
-  void onDropDbCommandStart(MycatSession mycat);
+    void onDropDbCommandStart(MycatSession mycat);
 
-  void onDropDbCommandEnd(MycatSession mycat);
+    void onDropDbCommandEnd(MycatSession mycat);
 
-  void onRefreshCommandStart(MycatSession mycat);
+    void onRefreshCommandStart(MycatSession mycat);
 
-  void onRefreshCommandEnd(MycatSession mycat);
+    void onRefreshCommandEnd(MycatSession mycat);
 
-  void onShutdownCommandStart(MycatSession mycat);
+    void onShutdownCommandStart(MycatSession mycat);
 
-  void onStatisticsCommandEnd(MycatSession mycat);
+    void onStatisticsCommandEnd(MycatSession mycat);
 
-  void onProcessInfoCommandStart(MycatSession mycat);
+    void onProcessInfoCommandStart(MycatSession mycat);
 
-  void onProcessInfoCommandEnd(MycatSession mycat);
+    void onProcessInfoCommandEnd(MycatSession mycat);
 
-  void onConnectCommandStart(MycatSession mycat);
+    void onConnectCommandStart(MycatSession mycat);
 
-  void onConnectCommandEnd(MycatSession mycat);
+    void onConnectCommandEnd(MycatSession mycat);
 
-  void onProcessKillCommandStart(MycatSession mycat);
+    void onProcessKillCommandStart(MycatSession mycat);
 
-  void onProcessKillCommandEnd(MycatSession mycat);
+    void onProcessKillCommandEnd(MycatSession mycat);
 
-  void onDebugCommandStart(MycatSession mycat);
+    void onDebugCommandStart(MycatSession mycat);
 
-  void onDebugCommandEnd(MycatSession mycat);
+    void onDebugCommandEnd(MycatSession mycat);
 
-  void onTimeCommandStart(MycatSession mycat);
+    void onTimeCommandStart(MycatSession mycat);
 
-  void onTimeCommandEnd(MycatSession mycat);
+    void onTimeCommandEnd(MycatSession mycat);
 
-  void onDelayedInsertCommandStart(MycatSession mycat);
+    void onDelayedInsertCommandStart(MycatSession mycat);
 
-  void onDelayedInsertCommandEnd(MycatSession mycat);
+    void onDelayedInsertCommandEnd(MycatSession mycat);
 
-  void onChangeUserCommandStart(MycatSession mycat);
+    void onChangeUserCommandStart(MycatSession mycat);
 
-  void onChangeUserCommandEnd(MycatSession mycat);
+    void onChangeUserCommandEnd(MycatSession mycat);
 
-  void onResetConnectionCommandStart(MycatSession mycat);
+    void onResetConnectionCommandStart(MycatSession mycat);
 
-  void onResetConnectionCommandEnd(MycatSession mycat);
+    void onResetConnectionCommandEnd(MycatSession mycat);
 
-  void onDaemonCommandStart(MycatSession mycat);
+    void onDaemonCommandStart(MycatSession mycat);
 
-  void onDaemonCommandEnd(MycatSession mycat);
+    void onDaemonCommandEnd(MycatSession mycat);
 
-  void onShutdownCommandEnd(MycatSession mycat);
+    void onShutdownCommandEnd(MycatSession mycat);
 
-  void onStatisticsCommandStart(MycatSession mycat);
+    void onStatisticsCommandStart(MycatSession mycat);
 
-  void onPacketExchangerRead(Session session);
+    void onPacketExchangerRead(Session session);
 
-  void onPacketExchangerWrite(Session session);
+    void onPacketExchangerWrite(Session session);
 
-  void onFetchCommandStart(MycatSession mycat);
+    void onFetchCommandStart(MycatSession mycat);
 
-  void onFetchCommandEnd(MycatSession mycat);
+    void onFetchCommandEnd(MycatSession mycat);
 
-  void onLoadDataLocalInFileEmptyPacketStart(MycatSession mycat);
+    void onLoadDataLocalInFileEmptyPacketStart(MycatSession mycat);
 
-  void onLoadDataLocalInFileEmptyPacketEnd(MycatSession mycat);
+    void onLoadDataLocalInFileEmptyPacketEnd(MycatSession mycat);
 
-  void onLoadDataLocalInFileContextStart(MycatSession mycat);
+    void onLoadDataLocalInFileContextStart(MycatSession mycat);
 
-  void onLoadDataLocalInFileContextEnd(MycatSession mycat);
+    void onLoadDataLocalInFileContextEnd(MycatSession mycat);
 
-  void onChange2ReadOpts(Session session);
+    void onChange2ReadOpts(Session session);
 
-  void onChange2WriteOpts(Session session);
+    void onChange2WriteOpts(Session session);
 
-  void onClearReadWriteOpts(Session session);
+    void onClearReadWriteOpts(Session session);
 
-  void onResultSetEnd(MySQLClientSession mysql);
+    void onResultSetEnd(MySQLClientSession mysql);
+
+    void onRouteSQL(MycatSession mycat, String dataSourceName, String sql);
 }
