@@ -5,7 +5,6 @@
   <groupId>io.mycat</groupId>
   <artifactId>parent</artifactId>
   <version>0.5-SNAPSHOP</version>
-  <!--mvn versions:set -DnewVersion=0.5-SNAPSHOP-->
   <modules>
     <module>config</module>
     <module>proxy</module>
