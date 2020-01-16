@@ -14,11 +14,6 @@
 <dependencies>
     <dependency>
         <groupId>io.mycat</groupId>
-        <artifactId>logTip</artifactId>
-        <version>0.1</version>
-    </dependency>
-    <dependency>
-        <groupId>io.mycat</groupId>
         <artifactId>config</artifactId>
       <version>0.5-SNAPSHOP</version>
     </dependency>

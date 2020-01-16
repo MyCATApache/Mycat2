@@ -29,11 +29,6 @@
         </dependency>
         <dependency>
             <groupId>io.mycat</groupId>
-            <artifactId>expression</artifactId>
-          <version>0.3-SNAPSHOP</version>
-        </dependency>
-        <dependency>
-            <groupId>io.mycat</groupId>
             <artifactId>common</artifactId>
           <version>0.5-SNAPSHOP</version>
         </dependency>
