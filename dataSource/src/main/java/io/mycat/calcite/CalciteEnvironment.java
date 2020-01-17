@@ -27,6 +27,7 @@ import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rules.CalcSplitRule;
 import org.apache.calcite.rel.rules.FilterTableScanRule;
 import org.apache.calcite.rel.rules.ProjectTableScanRule;
 import org.apache.calcite.schema.SchemaPlus;
@@ -73,17 +74,25 @@ public enum CalciteEnvironment {
         RelNode convert = planner.convert(validate);
 
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+        hepProgramBuilder.addRuleInstance(FilterTableScanRule.INTERPRETER)
+                .addRuleInstance(CalcSplitRule.INSTANCE)
+                .addRuleInstance(FilterTableScanRule.INSTANCE)
+                .addRuleInstance(FilterTableScanRule.INTERPRETER)
+                .addRuleInstance(ProjectTableScanRule.INSTANCE)
+                .addRuleInstance(ProjectTableScanRule.INTERPRETER);
         hepProgramBuilder.addRuleInstance(FilterTableScanRule.INSTANCE);
         hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT_ON_FILTER2);
         hepProgramBuilder.addRuleInstance(ProjectTableScanRule.INTERPRETER);
+        hepProgramBuilder.addRuleInstance(ProjectTableScanRule.INSTANCE);
 //        hepProgramBuilder.addRuleInstance(PushDownFilter.FILTER_ON_PROJECT);
 //        hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT);
 //        hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT_ON_FILTER);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
-        RelOptUtil.registerDefaultRules(planner2, true, true);
 
         planner2.setRoot(convert);
         RelNode bestExp = planner2.findBestExp();
+        planner2.setRoot(bestExp);
+        bestExp = planner2.findBestExp();
         System.out.println(RelOptUtil.toString(bestExp));
 //        scan.childrenAccept(new RelVisitor() {
 //            @Override

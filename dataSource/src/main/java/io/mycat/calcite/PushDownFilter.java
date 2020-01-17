@@ -66,19 +66,12 @@ public class PushDownFilter extends RelOptRule {
             ImmutableList<RexNode> filters = bindableTableScan.filters == null ? ImmutableList.of() : bindableTableScan.filters;
             List<Integer> list = bindableTableScan.projects == null ? ImmutableList.of() : bindableTableScan.projects;
             List<QueryBackendTask> queryBackendTasks = CalciteUtls.getQueryBackendTasks(logicTable.logicTable(), new ArrayList<>(filters), list.stream().mapToInt(i -> i).toArray());
-
-            if (queryBackendTasks.size() == 1) {
-                RelNode bindableTableScan1 = getBindableTableScan(bindableTableScan, cluster, relOptSchema, queryBackendTasks.get(0));
-                call.transformTo(bindableTableScan1);
-                return;
-            } else {
                 HashMap<String,List<RelNode>> bindTableGroup = new HashMap<>();
                 for (QueryBackendTask queryBackendTask : queryBackendTasks) {
                     String targetName = queryBackendTask.getBackendTableInfo().getTargetName();
                     List<RelNode> queryBackendTasksList = bindTableGroup.computeIfAbsent(targetName, (s) -> new ArrayList<>());
                     queryBackendTasksList.add( getBindableTableScan(bindableTableScan, cluster, relOptSchema, queryBackendTask));
                 }
-
                 HashMap<String,RelNode> relNodeGroup = new HashMap<>();
                 for (Map.Entry<String, List<RelNode>> stringListEntry : bindTableGroup.entrySet()) {
                     builder.pushAll(stringListEntry.getValue());
@@ -94,7 +87,6 @@ public class PushDownFilter extends RelOptRule {
                 SqlNode sqlNode = visit.asStatement();
                 System.out.println(sqlNode);
                 call.transformTo(build);
-            }
             // push down filter
 
         }
@@ -105,11 +97,8 @@ public class PushDownFilter extends RelOptRule {
     private RelNode getBindableTableScan(Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, QueryBackendTask queryBackendTask) {
         String uniqueName = queryBackendTask.getBackendTableInfo().getUniqueName();
         RelOptTable dataNodes = relOptSchema.getTableForMember(Arrays.asList(MetadataManager.DATA_NODES, uniqueName));
-        LogicalTableScan logicalTableScan = LogicalTableScan.create(cluster, dataNodes);
-        LogicalFilter logicalFilter = LogicalFilter.create(logicalTableScan,cluster.getRexBuilder().makeLiteral(true));
-        for (RexNode filter : bindableTableScan.filters) {
-            logicalFilter = LogicalFilter.create(logicalFilter,filter);
-        }
-        return logicalFilter;
+        RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNodes);
+        RelNode project = RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
+        return project;
     }
 }
