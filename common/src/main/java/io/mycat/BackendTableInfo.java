@@ -18,6 +18,7 @@ package io.mycat;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 /**
  * @author Weiqing Xu
@@ -25,6 +26,7 @@ import lombok.EqualsAndHashCode;
  **/
 @Data
 @EqualsAndHashCode
+@ToString
 @Builder
 public class BackendTableInfo {
     private String targetName;
@@ -34,5 +36,9 @@ public class BackendTableInfo {
         this.targetName = targetName;
         this.schemaInfo = schemaInfo;
     }
+
+   public String getUniqueName(){
+        return targetName+"."+schemaInfo.getTargetSchemaTable();
+   }
 
 }

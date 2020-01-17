@@ -69,6 +69,7 @@ public enum MetadataManager {
     final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
 
     private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
+    public static String DATA_NODES = "dataNodes";
 
     public void removeSchema(String schemaName) {
         logicTableMap.remove(schemaName);
@@ -83,7 +84,7 @@ public enum MetadataManager {
             tableScans.add((TableScan) scan);
         } else if (scan instanceof LogicalTableScan) {
             tableScans.add((TableScan) scan);
-        }else {
+        } else {
             scan.childrenAccept(new RelVisitor() {
                 @Override
                 public void visit(RelNode node, int ordinal, RelNode parent) {
@@ -105,9 +106,9 @@ public enum MetadataManager {
             if (tableScan instanceof Bindables.BindableTableScan) {
                 Bindables.BindableTableScan tableScan1 = (Bindables.BindableTableScan) tableScan;
 
-                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(),new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
+                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
             } else {
-                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(),Collections.emptyList(), null);
+                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), Collections.emptyList(), null);
             }
             for (QueryBackendTask queryBackendTask : queryBackendTasks) {
                 String targetName = queryBackendTask.getBackendTableInfo().getTargetName();
@@ -186,14 +187,14 @@ public enum MetadataManager {
 
 
     @Getter
-   public static class LogicTable {
+    public static class LogicTable {
         private final String schemaName;
         private final String tableName;
         private final List<BackendTableInfo> backends;
         private final List<SimpleColumnInfo> rawColumns;
         private final String createTableSQL;
         //////////////optional/////////////////
-        private JdbcTable jdbcTable;
+//        private JdbcTable jdbcTable;
         //////////////optional/////////////////
         private final SimpleColumnInfo.ShardingInfo natureTableColumnInfo;
         private final SimpleColumnInfo.ShardingInfo replicaColumnInfo;
@@ -221,9 +222,6 @@ public enum MetadataManager {
             return natureTableColumnInfo != null;
         }
 
-        public void setJdbcTable(JdbcTable jdbcTable) {
-            this.jdbcTable = jdbcTable;
-        }
 
         @NonNull
         public List<BackendTableInfo> getBackends() {
@@ -261,8 +259,6 @@ public enum MetadataManager {
         List<ShardingQueryRootConfig.Column> columnMap = tableConfigEntry.getColumns();
         Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo = getShardingInfo(columns, columnMap);
         LogicTable logicTable = new LogicTable(schemaName, tableName, backends, columns, shardingInfo, createTableSQL);
-        logicTable.setJdbcTable(new JdbcTable(logicTable));
-
         Map<String, LogicTable> tableMap;
         tableMap = logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());
         tableMap.put(tableName, logicTable);
@@ -415,7 +411,7 @@ public enum MetadataManager {
         SQLExprTableSource table = null;
         if (queryDataRange.getTableSource() != null) {
             table = queryDataRange.getTableSource();
-            SchemaObject schemaObject = Objects.requireNonNull(table.getSchemaObject(),"meet unknown table "+ table);
+            SchemaObject schemaObject = Objects.requireNonNull(table.getSchemaObject(), "meet unknown table " + table);
             schemaName = SQLUtils.normalize(schemaObject.getSchema().getName()).toLowerCase();
             tableName = SQLUtils.normalize(schemaObject.getName()).toLowerCase();
         }

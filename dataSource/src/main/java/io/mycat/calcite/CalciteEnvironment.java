@@ -14,7 +14,9 @@
  */
 package io.mycat.calcite;
 
+import io.mycat.BackendTableInfo;
 import io.mycat.calcite.logic.MycatLogicTable;
+import io.mycat.calcite.logic.MycatPhysicalTable;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import org.apache.calcite.config.Lex;
 import org.apache.calcite.interpreter.Interpreter;
@@ -25,6 +27,8 @@ import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.rules.FilterTableScanRule;
+import org.apache.calcite.rel.rules.ProjectTableScanRule;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.SqlNode;
@@ -69,11 +73,31 @@ public enum CalciteEnvironment {
         RelNode convert = planner.convert(validate);
 
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+        hepProgramBuilder.addRuleInstance(FilterTableScanRule.INSTANCE);
+        hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT_ON_FILTER2);
+        hepProgramBuilder.addRuleInstance(ProjectTableScanRule.INTERPRETER);
+//        hepProgramBuilder.addRuleInstance(PushDownFilter.FILTER_ON_PROJECT);
+//        hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT);
+//        hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT_ON_FILTER);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
         RelOptUtil.registerDefaultRules(planner2, true, true);
+
         planner2.setRoot(convert);
         RelNode bestExp = planner2.findBestExp();
         System.out.println(RelOptUtil.toString(bestExp));
+//        scan.childrenAccept(new RelVisitor() {
+//            @Override
+//            public void visit(RelNode node, int ordinal, RelNode parent) {
+//                if (node instanceof Bindables.BindableTableScan) {
+//                    parent.replaceInput(ordinal,);
+//                    tableScans.add((TableScan) node);
+//                }
+//                if (node instanceof LogicalTableScan) {
+//                    tableScans.add((TableScan) node);
+//                }
+//                super.visit(node, ordinal, parent);
+//            }
+//        });
         CalciteDataContext dataContext = new CalciteDataContext(ROOT_SCHEMA, planner);
         final Interpreter interpreter = new Interpreter(dataContext, bestExp);
         EnumeratorRowIterator enumeratorRowIterator = new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(bestExp.getRowType()), interpreter.enumerator());
@@ -94,10 +118,19 @@ public enum CalciteEnvironment {
 
     public void flash() {
         SchemaPlus rootSchema = Frameworks.createRootSchema(false);
+        SchemaPlus dataNodes = rootSchema.add(MetadataManager.DATA_NODES, new AbstractSchema());
         for (Map.Entry<String, ConcurrentHashMap<String, MetadataManager.LogicTable>> stringConcurrentHashMapEntry : MetadataManager.INSTANCE.logicTableMap.entrySet()) {
-            SchemaPlus schemaPlus = rootSchema.add(stringConcurrentHashMapEntry.getKey(),new AbstractSchema());
+            SchemaPlus schemaPlus = rootSchema.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
             for (Map.Entry<String, MetadataManager.LogicTable> entry : stringConcurrentHashMapEntry.getValue().entrySet()) {
-                rootSchema.add(entry.getKey(), new MycatLogicTable(entry.getValue()));
+                MetadataManager.LogicTable logicTable = entry.getValue();
+                MycatLogicTable mycatLogicTable = new MycatLogicTable(logicTable);
+                schemaPlus.add(entry.getKey(), mycatLogicTable);
+
+                for (BackendTableInfo backend : logicTable.getBackends()) {
+                    String uniqueName = backend.getUniqueName();
+                    MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(mycatLogicTable, backend);
+                    dataNodes.add(uniqueName, mycatPhysicalTable);
+                }
             }
         }
         this.ROOT_SCHEMA = rootSchema;

@@ -21,6 +21,6 @@ import java.util.List;
 
 public class MycatRules {
     public final static List<RelOptRule> RULES = Arrays.asList(
-            new MycatLimitRule()
+
     );
 }
