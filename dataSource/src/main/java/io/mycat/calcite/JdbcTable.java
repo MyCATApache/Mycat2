@@ -32,8 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import static io.mycat.calcite.CalciteConvertors.getRelDataType;
 import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
-import static io.mycat.calcite.CalciteUtls.getRelDataType;
 
 /**
  * @author Junwen Chen

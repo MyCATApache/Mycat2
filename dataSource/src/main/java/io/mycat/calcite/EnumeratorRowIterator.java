@@ -1,4 +1,4 @@
-package io.mycat.lib.impl;
+package io.mycat.calcite;
 
 import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;

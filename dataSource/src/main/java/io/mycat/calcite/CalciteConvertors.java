@@ -15,6 +15,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.Lists;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -22,6 +23,7 @@ import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.avatica.util.DateTimeUtils;
 import org.apache.calcite.rel.type.*;
+import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
@@ -29,6 +31,7 @@ import org.apache.calcite.util.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.*;
 import java.util.*;
@@ -61,7 +64,7 @@ public class CalciteConvertors {
                         break;
                 }
                 boolean nullable = resultSet.getInt(11) != DatabaseMetaData.columnNoNulls;
-                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale,JDBCType.valueOf(typeString), nullable));
+                res.add(new SimpleColumnInfo(columnName.toLowerCase(), dataType, precision, scale, JDBCType.valueOf(typeString), nullable));
             }
             return res;
         } catch (SQLException e) {
@@ -228,6 +231,11 @@ public class CalciteConvertors {
         });
     }
 
+    public static MycatRowMetaData getMycatRowMetaData(RelDataType rowType) {
+        return new CalciteRowMetaData(rowType.getFieldList());
+
+    }
+
     static class DateConvertor {
         private static Timestamp shift(Timestamp v) {
             if (v == null) {
@@ -255,5 +263,29 @@ public class CalciteConvertors {
             int offset = TimeZone.getDefault().getOffset(time);
             return new Date(time + offset);
         }
+    }
+
+    public static RelDataType getRelDataType(final List<SimpleColumnInfo> columnInfos, final RelDataTypeFactory factory) {
+        final RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(factory);
+        for (SimpleColumnInfo columnInfo : columnInfos) {
+            final JDBCType columnType = columnInfo.getJdbcType();
+            final RelDataType type;
+            if (columnType == JDBCType.VARCHAR) {
+                type = factory.createTypeWithCharsetAndCollation(
+                        factory.createSqlType(SqlTypeName.VARCHAR),
+                        Charset.defaultCharset(),
+                        SqlCollation.IMPLICIT);
+            } else if (columnType == JDBCType.LONGVARBINARY) {
+                type = factory.createSqlType(SqlTypeName.VARBINARY);
+            } else {
+                SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(columnType.getVendorTypeNumber());
+                if (sqlTypeName == null) {
+                    throw new UnsupportedOperationException();
+                }
+                type = factory.createSqlType(sqlTypeName);
+            }
+            builder.add(columnInfo.getColumnName(), type);
+        }
+        return builder.build();
     }
 }

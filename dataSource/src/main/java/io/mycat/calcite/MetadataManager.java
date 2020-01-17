@@ -186,7 +186,7 @@ public enum MetadataManager {
 
 
     @Getter
-    static class LogicTable {
+   public static class LogicTable {
         private final String schemaName;
         private final String tableName;
         private final List<BackendTableInfo> backends;

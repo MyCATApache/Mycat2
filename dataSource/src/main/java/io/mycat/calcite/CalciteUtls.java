@@ -6,26 +6,21 @@ import io.mycat.QueryBackendTask;
 import io.mycat.SchemaInfo;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlCollation;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
-import java.sql.JDBCType;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -63,35 +58,34 @@ public class CalciteUtls {
         return getBackendTasks(table, projects, where, calculate);
     }
 
-    private static List<QueryBackendTask> getBackendTasks(MetadataManager.LogicTable table, int[] projects, List<RexNode> filters, List<BackendTableInfo> calculate) {
+    public static List<QueryBackendTask> getBackendTasks(MetadataManager.LogicTable table, int[] projects, List<RexNode> filters, List<BackendTableInfo> calculate) {
         List<SimpleColumnInfo> columnList = getColumnList(table, projects);
         List<QueryBackendTask> res = new ArrayList<>();
         for (BackendTableInfo backendTableInfo : calculate) {
             SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
             String targetSchemaTable = schemaInfo.getTargetSchemaTable();
             StringBuilder sql = new StringBuilder();
-            String selectItems = columnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
+            String selectItems = columnList.isEmpty()?"*":columnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
             sql.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
-            sql.append(getFilterSQLText(table, schemaInfo.getTargetSchema(), schemaInfo.getTargetTable(), filters));
+            sql.append(getFilterSQLText(table.getRawColumns(), schemaInfo.getTargetSchema(), schemaInfo.getTargetTable(), filters));
             res.add(new QueryBackendTask(sql.toString(), backendTableInfo));
         }
         return res;
     }
 
-    private static List<SimpleColumnInfo> getColumnList(MetadataManager.LogicTable table, final int[] projects) {
+    public static List<SimpleColumnInfo> getColumnList(MetadataManager.LogicTable table, final int[] projects) {
         if (projects == null) {
-            return table.getRawColumns();
+            return Collections.emptyList();
         } else {
             List<SimpleColumnInfo> rawColumns = table.getRawColumns();
             return Arrays.stream(projects).mapToObj(rawColumns::get).collect(Collectors.toList());
         }
     }
 
-    private static String getFilterSQLText(MetadataManager.LogicTable table, String schemaName, String tableName, List<RexNode> filters) {
+    public static String getFilterSQLText(List<SimpleColumnInfo> rawColumns, String schemaName, String tableName, List<RexNode> filters) {
         if (filters == null || filters.isEmpty()) {
             return "";
         }
-        List<SimpleColumnInfo> rawColumns = table.getRawColumns();
         SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, rawColumns.size()) {
             @Override
             public SqlNode field(int ordinal) {
@@ -100,13 +94,12 @@ public class CalciteUtls {
                         SqlImplementor.POS);
             }
         };
-
         return filters.stream().map(i -> context.toSql(null, i).toSqlString(MysqlSqlDialect.DEFAULT))
                 .map(i -> i.getSql())
                 .collect(Collectors.joining(" and ", " where ", ""));
     }
 
-    private static boolean addOrRootFilter(MetadataManager.LogicTable table, DataMappingEvaluator evaluator, RexNode filter) {
+    public static boolean addOrRootFilter(MetadataManager.LogicTable table, DataMappingEvaluator evaluator, RexNode filter) {
         if (filter.isA(SqlKind.OR)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
@@ -121,7 +114,7 @@ public class CalciteUtls {
         return addFilter(table, evaluator, filter, false);
     }
 
-    private static boolean addFilter(MetadataManager.LogicTable table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
+    public static boolean addFilter(MetadataManager.LogicTable table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
         List<SimpleColumnInfo> rowOrder = table.getRawColumns();
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
@@ -178,30 +171,6 @@ public class CalciteUtls {
         return false;
     }
 
-
-    public static RelDataType getRelDataType(final List<SimpleColumnInfo> columnInfos, final RelDataTypeFactory factory) {
-        final RelDataTypeFactory.Builder builder = new RelDataTypeFactory.Builder(factory);
-        for (SimpleColumnInfo columnInfo : columnInfos) {
-            final JDBCType columnType = columnInfo.getJdbcType();
-            final RelDataType type;
-            if (columnType == JDBCType.VARCHAR) {
-                type = factory.createTypeWithCharsetAndCollation(
-                        factory.createSqlType(SqlTypeName.VARCHAR),
-                        Charset.defaultCharset(),
-                        SqlCollation.IMPLICIT);
-            } else if (columnType == JDBCType.LONGVARBINARY) {
-                type = factory.createSqlType(SqlTypeName.VARBINARY);
-            } else {
-                SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(columnType.getVendorTypeNumber());
-                if (sqlTypeName == null) {
-                    throw new UnsupportedOperationException();
-                }
-                type = factory.createSqlType(sqlTypeName);
-            }
-            builder.add(columnInfo.getColumnName(), type);
-        }
-        return builder.build();
-    }
 
     public static AtomicBoolean getCancelFlag(DataContext root) {
         AtomicBoolean tempFlag = DataContext.Variable.CANCEL_FLAG.get(root);
