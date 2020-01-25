@@ -26,7 +26,7 @@ import io.mycat.replica.ReplicaSelectorRuntime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author cjw
@@ -68,9 +68,10 @@ public class GRuntimeTest {
         System.out.println("----------------------end-------------------------");
     }
 
+   final static AtomicInteger COUNTER = new AtomicInteger();
     private static BindThreadKey id() {
         return new BindThreadKey() {
-            final int id = ThreadLocalRandom.current().nextInt();
+            final int id = COUNTER.incrementAndGet();
 
             @Override
             public int hashCode() {
