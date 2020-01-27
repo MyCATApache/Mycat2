@@ -8,7 +8,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class MycatPhysicalTable implements MycatTableBase {
+public class MycatPhysicalTable extends MycatTableBase {
     final MycatLogicTable logicTable;
     final BackendTableInfo backendTableInfo;
 

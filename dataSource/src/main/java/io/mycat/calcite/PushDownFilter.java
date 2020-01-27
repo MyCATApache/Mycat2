@@ -3,6 +3,7 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableList;
 import io.mycat.QueryBackendTask;
 import io.mycat.calcite.logic.MycatLogicTable;
+import io.mycat.calcite.relBuilder.MyRelBuilder;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
@@ -86,7 +87,9 @@ public class PushDownFilter extends RelOptRule {
                 SqlImplementor.Result visit = relToSqlConverter.visitChild(0,build);
                 SqlNode sqlNode = visit.asStatement();
                 System.out.println(sqlNode);
-                call.transformTo(build);
+
+                String tableName = String.join(".",relOptTable.getQualifiedName());
+            call.transformTo(MyRelBuilder.makeTransientSQLScan(builder,tableName,build));
             // push down filter
 
         }

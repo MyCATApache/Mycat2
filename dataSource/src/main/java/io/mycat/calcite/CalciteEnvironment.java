@@ -34,6 +34,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.validate.SqlConformanceEnum;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.slf4j.Logger;
@@ -47,7 +48,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public enum CalciteEnvironment {
     INSTANCE;
     final Logger LOGGER = LoggerFactory.getLogger(CalciteEnvironment.class);
-    final static SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL).setCaseSensitive(false).build();
+    final static SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
+            .setConformance(SqlConformanceEnum.MYSQL_5)
+            .setCaseSensitive(false).build();
     volatile SchemaPlus ROOT_SCHEMA;
 
     private CalciteEnvironment() {
@@ -82,11 +85,6 @@ public enum CalciteEnvironment {
                 .addRuleInstance(ProjectTableScanRule.INTERPRETER);
         hepProgramBuilder.addRuleInstance(FilterTableScanRule.INSTANCE);
         hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT_ON_FILTER2);
-        hepProgramBuilder.addRuleInstance(ProjectTableScanRule.INTERPRETER);
-        hepProgramBuilder.addRuleInstance(ProjectTableScanRule.INSTANCE);
-//        hepProgramBuilder.addRuleInstance(PushDownFilter.FILTER_ON_PROJECT);
-//        hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT);
-//        hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT_ON_FILTER);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
 
         planner2.setRoot(convert);

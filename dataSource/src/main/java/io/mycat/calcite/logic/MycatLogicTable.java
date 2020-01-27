@@ -2,7 +2,7 @@ package io.mycat.calcite.logic;
 
 import io.mycat.calcite.MetadataManager;
 
-public class MycatLogicTable implements MycatTableBase {
+public class MycatLogicTable extends MycatTableBase {
     final MetadataManager.LogicTable table;
 
     public MycatLogicTable(MetadataManager.LogicTable table) {

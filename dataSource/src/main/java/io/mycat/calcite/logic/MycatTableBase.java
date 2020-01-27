@@ -1,13 +1,13 @@
 package io.mycat.calcite.logic;
 
-import io.mycat.QueryBackendTask;
 import io.mycat.calcite.CalciteConvertors;
-import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MetadataManager;
-import io.mycat.calcite.MyCatResultSetEnumerable;
 import org.apache.calcite.DataContext;
+import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.linq4j.QueryProvider;
+import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -18,47 +18,65 @@ import org.apache.calcite.schema.*;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlNode;
 
+import java.lang.reflect.Type;
 import java.util.List;
 
-import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
+public  abstract class MycatTableBase extends AbstractQueryableTable implements TranslatableTable,ProjectableFilterableTable {
+    protected MycatTableBase() {
+        super(Object[].class);
+    }
 
-public  interface MycatTableBase extends TranslatableTable, ProjectableFilterableTable {
+    protected MycatTableBase(Type elementType) {
+        super(elementType);
+    }
 
-        public MetadataManager.LogicTable logicTable();
+    @Override
+    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+        return null;
+    }
+
+    public abstract MetadataManager.LogicTable logicTable();
 
         @Override
-        default public RelDataType getRowType(RelDataTypeFactory typeFactory) {
+         public RelDataType getRowType(RelDataTypeFactory typeFactory) {
             return CalciteConvertors.getRelDataType(logicTable().getRawColumns(), typeFactory);
         }
 
         @Override
-        default public Statistic getStatistic() {
+         public Statistic getStatistic() {
             return Statistics.UNKNOWN;
         }
 
         @Override
-        default Schema.TableType getJdbcTableType() {
+        public   Schema.TableType getJdbcTableType() {
             return Schema.TableType.TABLE;
         }
 
         @Override
-        default boolean isRolledUp(String column) {
+        public  boolean isRolledUp(String column) {
             return false;
         }
 
         @Override
-        default boolean rolledUpColumnValidInsideAgg(String column, SqlCall call, SqlNode parent, CalciteConnectionConfig config) {
+        public  boolean rolledUpColumnValidInsideAgg(String column, SqlCall call, SqlNode parent, CalciteConnectionConfig config) {
             return false;
         }
 
-        @Override
-        default public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-            List<QueryBackendTask> backendTasks = getQueryBackendTasks(logicTable(),  filters, projects);
-            return new MyCatResultSetEnumerable(CalciteUtls.getCancelFlag(root), backendTasks);
-        }
+//        @Override
+//        default public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+//            List<QueryBackendTask> backendTasks = getQueryBackendTasks(logicTable(),  filters, projects);
+//            return new MyCatResultSetEnumerable(CalciteUtls.getCancelFlag(root), backendTasks);
+//        }
 
         @Override
-        default public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-            return LogicalTableScan.create(context.getCluster(), relOptTable);
+         public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
+          //  return new MycatFetchSource(context.getCluster(),context.getCluster().traitSet(), relOptTable,relOptTable.getRowType());
+       return LogicalTableScan.create(context.getCluster(),relOptTable);
         }
+
+    @Override
+    public   <T> Queryable<T> asQueryable(QueryProvider queryProvider, SchemaPlus schema, String tableName){
+            return new SplunkTableQueryable(queryProvider,schema,tableName,this);
     }
+
+}
