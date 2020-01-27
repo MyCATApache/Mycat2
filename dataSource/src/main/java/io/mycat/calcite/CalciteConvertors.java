@@ -14,7 +14,6 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.collect.Lists;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -32,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Date;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Weiqing Xu
@@ -229,14 +229,14 @@ public class CalciteConvertors {
     public static List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses(final RelProtoDataType protoRowType,
                                                                        final JavaTypeFactory typeFactory) {
         final RelDataType rowType = protoRowType.apply(typeFactory);
-        return Lists.transform(rowType.getFieldList(), f -> {
+        return rowType.getFieldList().stream().map(f -> {
             final RelDataType type = f.getType();
             final Class clazz = (Class) typeFactory.getJavaClass(type);
             final ColumnMetaData.Rep rep =
                     Util.first(ColumnMetaData.Rep.of(clazz),
                             ColumnMetaData.Rep.OBJECT);
             return Pair.of(rep, type.getSqlTypeName().getJdbcOrdinal());
-        });
+        }).collect(Collectors.toList());
     }
 
     static class DateConvertor {
