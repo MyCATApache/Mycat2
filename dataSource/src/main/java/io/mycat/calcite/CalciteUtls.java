@@ -14,6 +14,7 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,23 @@ public class CalciteUtls {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteUtls.class);
 
     public static List<QueryBackendTask> getQueryBackendTasks(MetadataManager.LogicTable table, List<RexNode> filters, int[] projects) {
+        List<BackendTableInfo> calculate = getBackendTableInfos(table, filters);
+
+
+        //
+        List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
+        List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
+        List<QueryBackendTask> list = new ArrayList<>();
+        for (BackendTableInfo backendTableInfo : calculate) {
+            String backendTaskSQL = getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
+            QueryBackendTask queryBackendTask = new QueryBackendTask(backendTaskSQL, backendTableInfo.getTargetName());
+            list.add(queryBackendTask);
+        }
+        return list;
+
+    }
+
+    public static List<BackendTableInfo> getBackendTableInfos(MetadataManager.LogicTable table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
         ArrayList<RexNode> where = new ArrayList<>();
@@ -54,23 +72,30 @@ public class CalciteUtls {
         }
 
         LOGGER.info("optimize filters:{}", filters);
-        List<BackendTableInfo> calculate = record.calculate(table);
-        return getBackendTasks(table, projects, where, calculate);
+        return record.calculate(table);
     }
 
-    public static List<QueryBackendTask> getBackendTasks(MetadataManager.LogicTable table, int[] projects, List<RexNode> filters, List<BackendTableInfo> calculate) {
-        List<SimpleColumnInfo> columnList = getColumnList(table, projects);
-        List<QueryBackendTask> res = new ArrayList<>();
-        for (BackendTableInfo backendTableInfo : calculate) {
-            SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
-            String targetSchemaTable = schemaInfo.getTargetSchemaTable();
-            StringBuilder sql = new StringBuilder();
-            String selectItems = columnList.isEmpty()?"*":columnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
-            sql.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
-            sql.append(getFilterSQLText(table.getRawColumns(), schemaInfo.getTargetSchema(), schemaInfo.getTargetTable(), filters));
-            res.add(new QueryBackendTask(sql.toString(), backendTableInfo));
-        }
-        return res;
+    @NotNull
+    private static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, BackendTableInfo backendTableInfo) {
+        SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
+        String targetSchema = schemaInfo.getTargetSchema();
+        String targetTable = schemaInfo.getTargetTable();
+        String targetSchemaTable = schemaInfo.getTargetSchemaTable();
+        return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
+    }
+
+    public static String getBackendTaskSQL( MetadataManager.LogicTable table,BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
+        List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
+        List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
+        return getBackendTaskSQL(filters,rawColumnList,projectColumnList,backendTableInfo);
+    }
+
+    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, String targetSchema, String targetTable, String targetSchemaTable) {
+        StringBuilder sqlBuilder = new StringBuilder();
+        String selectItems = projectColumnList.isEmpty() ? "*" : projectColumnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
+        sqlBuilder.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
+        sqlBuilder.append(getFilterSQLText(rawColumnList, targetSchema, targetTable, filters));
+        return sqlBuilder.toString();
     }
 
     public static List<SimpleColumnInfo> getColumnList(MetadataManager.LogicTable table, final int[] projects) {

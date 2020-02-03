@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 /**
@@ -44,6 +45,9 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
             LOGGER.info("prepare query:{}", sql);
         }
     }
+    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, QueryBackendTask res) {
+       this(cancelFlag, Collections.singletonList(res));
+    }
 
     @Override
     public Enumerator<T> enumerator() {
@@ -53,7 +57,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         for (QueryBackendTask endTableInfo : backStoreList) {
             GThread gThread = (GThread) Thread.currentThread();
 
-            String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getBackendTableInfo().getTargetName(),false,null);
+            String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getTargetName(),false,null);
             DefaultConnection session = gThread.getTransactionSession().getConnection(datasourceName);
             dsConnections.add(session);
             iterators.add(session.executeQuery(endTableInfo.getSql()));

@@ -27,7 +27,6 @@ import org.apache.calcite.plan.hep.HepPlanner;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.rules.CalcSplitRule;
 import org.apache.calcite.rel.rules.FilterTableScanRule;
 import org.apache.calcite.rel.rules.ProjectTableScanRule;
 import org.apache.calcite.schema.SchemaPlus;
@@ -77,13 +76,9 @@ public enum CalciteEnvironment {
         RelNode convert = planner.convert(validate);
 
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-        hepProgramBuilder.addRuleInstance(FilterTableScanRule.INTERPRETER)
-                .addRuleInstance(CalcSplitRule.INSTANCE)
+        hepProgramBuilder
                 .addRuleInstance(FilterTableScanRule.INSTANCE)
-                .addRuleInstance(FilterTableScanRule.INTERPRETER)
-                .addRuleInstance(ProjectTableScanRule.INSTANCE)
-                .addRuleInstance(ProjectTableScanRule.INTERPRETER);
-        hepProgramBuilder.addRuleInstance(FilterTableScanRule.INSTANCE);
+                .addRuleInstance(ProjectTableScanRule.INSTANCE);
         hepProgramBuilder.addRuleInstance(PushDownFilter.PROJECT_ON_FILTER2);
         final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
 

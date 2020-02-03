@@ -1,7 +1,6 @@
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableList;
-import io.mycat.QueryBackendTask;
+import io.mycat.BackendTableInfo;
 import io.mycat.calcite.logic.MycatLogicTable;
 import io.mycat.calcite.relBuilder.MyRelBuilder;
 import org.apache.calcite.interpreter.Bindables;
@@ -10,9 +9,7 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.RelBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -51,8 +48,8 @@ public class PushDownFilter extends RelOptRule {
                             operand(LogicalTableScan.class, none())), "proj");
 
     /**
-     *
      * @param call
+     * todo result set with order，backend
      */
     @Override
     public void onMatch(RelOptRuleCall call) {
@@ -62,46 +59,43 @@ public class PushDownFilter extends RelOptRule {
         RelOptSchema relOptSchema = bindableTableScan.getTable().getRelOptSchema();//schema信息
         RelBuilder builder = call.builder();//关系表达式构建工具
         MycatLogicTable logicTable = relOptTable.unwrap(MycatLogicTable.class);
+        String tableName = String.join(".", relOptTable.getQualifiedName());
 
         if (logicTable != null) {
-            ImmutableList<RexNode> filters = bindableTableScan.filters == null ? ImmutableList.of() : bindableTableScan.filters;
-            List<Integer> list = bindableTableScan.projects == null ? ImmutableList.of() : bindableTableScan.projects;
-            List<QueryBackendTask> queryBackendTasks = CalciteUtls.getQueryBackendTasks(logicTable.logicTable(), new ArrayList<>(filters), list.stream().mapToInt(i -> i).toArray());
-                HashMap<String,List<RelNode>> bindTableGroup = new HashMap<>();
-                for (QueryBackendTask queryBackendTask : queryBackendTasks) {
-                    String targetName = queryBackendTask.getBackendTableInfo().getTargetName();
-                    List<RelNode> queryBackendTasksList = bindTableGroup.computeIfAbsent(targetName, (s) -> new ArrayList<>());
-                    queryBackendTasksList.add( getBindableTableScan(bindableTableScan, cluster, relOptSchema, queryBackendTask));
-                }
-                HashMap<String,RelNode> relNodeGroup = new HashMap<>();
-                for (Map.Entry<String, List<RelNode>> stringListEntry : bindTableGroup.entrySet()) {
-                    builder.pushAll(stringListEntry.getValue());
-                    builder.union(true,stringListEntry.getValue().size());
-                    relNodeGroup.put(stringListEntry.getKey(),builder.build());
-                }
+            ArrayList<RexNode> filters =new ArrayList<>( bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
+            List<BackendTableInfo> backendTableInfos = CalciteUtls.getBackendTableInfos(logicTable.logicTable(), filters);
+            HashMap<String, List<RelNode>> bindTableGroupMapByTargetName = new HashMap<>();
+            for (BackendTableInfo backendTableInfo : backendTableInfos) {
+                String targetName = backendTableInfo.getTargetName();
+                List<RelNode> queryBackendTasksList = bindTableGroupMapByTargetName.computeIfAbsent(targetName, (s) -> new ArrayList<>());
+                queryBackendTasksList.add(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
+            }
+            HashMap<String, RelNode> relNodeGroup = new HashMap<>();
+            for (Map.Entry<String, List<RelNode>> entry : bindTableGroupMapByTargetName.entrySet()) {
+                String targetName = entry.getKey();
+                builder.pushAll(entry.getValue());
+                builder.union(true, entry.getValue().size());
+                relNodeGroup.put(targetName, MyRelBuilder.makeTransientSQLScan(builder, targetName, tableName, builder.build()));
+            }
+            if (relNodeGroup.size() == 1) {
+                Map.Entry<String, RelNode> next = relNodeGroup.entrySet().iterator().next();
+                call.transformTo(next.getValue());
+                return;
+            } else {
                 builder.pushAll(relNodeGroup.values());
-                builder.union(true,relNodeGroup.size());
-
-                RelNode build = builder.build();
-                DataNodeSqlConverter relToSqlConverter = new DataNodeSqlConverter();
-                SqlImplementor.Result visit = relToSqlConverter.visitChild(0,build);
-                SqlNode sqlNode = visit.asStatement();
-                System.out.println(sqlNode);
-
-                String tableName = String.join(".",relOptTable.getQualifiedName());
-            call.transformTo(MyRelBuilder.makeTransientSQLScan(builder,tableName,build));
-            // push down filter
-
+                builder.union(true, relNodeGroup.size());
+                call.transformTo(builder.build());
+                return;
+            }
         }
 
     }
 
     @NotNull
-    private RelNode getBindableTableScan(Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, QueryBackendTask queryBackendTask) {
-        String uniqueName = queryBackendTask.getBackendTableInfo().getUniqueName();
-        RelOptTable dataNodes = relOptSchema.getTableForMember(Arrays.asList(MetadataManager.DATA_NODES, uniqueName));
-        RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNodes);
-        RelNode project = RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
-        return project;
+    private RelNode getBindableTableScan(Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, BackendTableInfo backendTableInfo) {
+        String uniqueName = backendTableInfo.getUniqueName();
+        RelOptTable dataNode = relOptSchema.getTableForMember(Arrays.asList(MetadataManager.DATA_NODES, uniqueName));
+        RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode);
+        return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }
 }

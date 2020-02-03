@@ -111,7 +111,7 @@ public enum MetadataManager {
                 queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), Collections.emptyList(), null);
             }
             for (QueryBackendTask queryBackendTask : queryBackendTasks) {
-                String targetName = queryBackendTask.getBackendTableInfo().getTargetName();
+                String targetName = queryBackendTask.getTargetName();
                 String sql = queryBackendTask.getSql();
                 list.add(" targetName:" + targetName);
                 list.add("  sql:" + sql);
