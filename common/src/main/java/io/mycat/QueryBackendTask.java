@@ -23,5 +23,5 @@ import lombok.ToString;
 @Getter
 public class QueryBackendTask {
     String sql;
-    BackendTableInfo backendTableInfo;
+    String targetName;
 }

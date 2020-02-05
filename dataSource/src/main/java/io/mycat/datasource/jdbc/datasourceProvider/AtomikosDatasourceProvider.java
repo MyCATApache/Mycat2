@@ -90,11 +90,6 @@ public class AtomikosDatasourceProvider implements DatasourceProvider {
   }
 
   @Override
-  public boolean isJTA() {
-    return true;
-  }
-
-  @Override
   public UserTransaction createUserTransaction() {
     return new UserTransactionImp();
   }

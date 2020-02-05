@@ -96,8 +96,4 @@ public class JdbcConnectionManager implements ConnectionManager {
     public Map<String, JdbcDataSource> getDatasourceInfo() {
         return Collections.unmodifiableMap(dataSourceMap);
     }
-
-    public boolean isJTA() {
-        return datasourceProvider.isJTA();
-    }
 }

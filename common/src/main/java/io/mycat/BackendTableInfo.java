@@ -37,8 +37,8 @@ public class BackendTableInfo {
         this.schemaInfo = schemaInfo;
     }
 
-   public String getUniqueName(){
-        return targetName+"."+schemaInfo.getTargetSchemaTable();
-   }
+    public String getUniqueName() {
+        return targetName + "." + schemaInfo.getTargetSchemaTable();
+    }
 
 }
