@@ -284,7 +284,7 @@ public class CalciteConvertors {
                 }
                 type = factory.createSqlType(sqlTypeName);
             }
-            builder.add(columnInfo.getColumnName(), type);
+            builder.add(columnInfo.getColumnName(),  factory.createTypeWithNullability(type, columnInfo.nullable));
         }
         return builder.build();
     }
