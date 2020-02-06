@@ -23,9 +23,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 import javax.transaction.UserTransaction;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author Junwen Chen
@@ -36,7 +34,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
             .getLogger(JTATransactionSessionImpl.class);
     private final UserTransaction userTransaction;
     private final GThread gThread;
-    private final Map<String, DefaultConnection> connectionMap = new HashMap<>();
+    private final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
     private volatile boolean autocommit = true;
     private volatile boolean inTranscation = false;
     private volatile int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
@@ -50,13 +48,13 @@ public class JTATransactionSessionImpl implements TransactionSession {
     @Override
     public void setTransactionIsolation(int transactionIsolation) {
         this.transactionIsolation = transactionIsolation;
-        for (DefaultConnection c : this.connectionMap.values()) {
+        for (DefaultConnection c : this.updateConnectionMap.values()) {
             try {
-                if (c.getRawConnection().getTransactionIsolation()!=transactionIsolation){
+                if (c.getRawConnection().getTransactionIsolation() != transactionIsolation) {
                     c.setTransactionIsolation(transactionIsolation);
                 }
             } catch (SQLException e) {
-               throw new MycatException(e);
+                throw new MycatException(e);
             }
 
         }
@@ -66,10 +64,10 @@ public class JTATransactionSessionImpl implements TransactionSession {
     public void begin() {
         if (!isInTransaction()) {
             inTranscation = true;
-            for (DefaultConnection c : connectionMap.values()) {
+            for (DefaultConnection c : updateConnectionMap.values()) {
                 c.close();
             }
-            connectionMap.clear();
+            updateConnectionMap.clear();
             try {
                 LOGGER.debug("{} begin", userTransaction);
                 userTransaction.begin();
@@ -82,9 +80,9 @@ public class JTATransactionSessionImpl implements TransactionSession {
     public DefaultConnection getConnection(String jdbcDataSource) {
         Objects.requireNonNull(jdbcDataSource);
         beforeDoAction();
-        return connectionMap.compute(jdbcDataSource,
+        return updateConnectionMap.compute(jdbcDataSource,
                 (dataSource, absractConnection) -> {
-                    if (absractConnection != null&&!absractConnection.isClosed()) {
+                    if (absractConnection != null && !absractConnection.isClosed()) {
                         return absractConnection;
                     } else {
                         return JdbcRuntime.INSTANCE
@@ -92,6 +90,23 @@ public class JTATransactionSessionImpl implements TransactionSession {
                     }
                 });
     }
+
+    @Override
+    public DefaultConnection getDisposableConnection(String jdbcDataSource) {
+        return JdbcRuntime.INSTANCE
+                .getConnection(jdbcDataSource, autocommit, transactionIsolation);
+    }
+
+    @Override
+    public DisposQueryConnection getDisposableConnection(List<String> jdbcDataSourceList) {
+        Map<String,LinkedList<DefaultConnection>> map = new HashMap<>();
+        for (String s : jdbcDataSourceList) {
+            List<DefaultConnection> defaultConnections = map.computeIfAbsent(s, s1 -> new LinkedList<>());
+            defaultConnections.add(JdbcRuntime.INSTANCE.getConnection(s, autocommit, transactionIsolation));
+        }
+        return new DisposQueryConnection(map);
+    }
+
 
     @Override
     public void reset() {
@@ -111,7 +126,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
         } catch (Exception e) {
             LOGGER.error("", e);
             throw new MycatException(e);
-        }finally {
+        } finally {
             inTranscation = false;
         }
         afterDoAction();
@@ -154,7 +169,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
 
 
     public void close() {
-        connectionMap.values().forEach(DefaultConnection::close);
-        connectionMap.clear();
+        updateConnectionMap.values().forEach(DefaultConnection::close);
+        updateConnectionMap.clear();
     }
 }

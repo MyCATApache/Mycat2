@@ -3,45 +3,64 @@ package io.mycat.calcite.relBuilder;
 import io.mycat.QueryBackendTask;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MyCatResultSetEnumerable;
+import io.mycat.calcite.MycatImplementor;
+import io.mycat.calcite.logic.MycatConvention;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.schema.ScannableTable;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.TransientTable;
+import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
+
+import java.util.List;
 
 
 /**
  * chenjunwen
  */
 public class MycatTransientSQLTable extends AbstractTable
-        implements TransientTable, ScannableTable {
-    private String targetName;
-    private final String name;
-    private final RelDataType protoRowType;
-    private RelNode input;
-    private String sqlSelect;
+        implements TransientTable, ProjectableFilterableTable, TranslatableTable {
+    private final MycatConvention convention;
+    private final RelNode input;
 
-    public MycatTransientSQLTable(String targetName, String name, RelNode input, String sqlSelect) {
-        this.targetName = targetName;
-        this.name = name;
-        this.protoRowType = input.getRowType();
+    public MycatTransientSQLTable(MycatConvention convention, RelNode input) {
         this.input = input;
-        this.sqlSelect = sqlSelect;
+        this.convention = convention;
     }
 
-    @Override
-    public Enumerable<Object[]> scan(DataContext root) {
-        // add the table into the schema, so that it is accessible by any potential operator
-        root.getRootSchema().add(name, this);
-        return new MyCatResultSetEnumerable(CalciteUtls.getCancelFlag(root), new QueryBackendTask(sqlSelect, targetName));
+    public String getExplainSQL() {
+        String sql = new MycatImplementor(convention.dialect).implement(input).asStatement().toSqlString(convention.dialect, false).getSql();
+        sql =  sql.replaceAll("\r"," ");
+        sql =  sql.replaceAll("\n"," ");
+        return sql;
     }
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return typeFactory.copyType(protoRowType);
+        return typeFactory.copyType(input.getRowType());
     }
 
+    public String getTargetName() {
+        return convention.targetName;
+    }
+
+    public RelNode getRelNode() {
+        return input;
+    }
+
+    @Override
+    public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
+        return new MycatTransientSQLTableScan(context.getCluster(), convention, relOptTable, input);
+    }
+
+    @Override
+    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
+        String sql = getExplainSQL();
+        return new MyCatResultSetEnumerable(CalciteUtls.getCancelFlag(root), new QueryBackendTask(sql, convention.targetName));
+    }
 }

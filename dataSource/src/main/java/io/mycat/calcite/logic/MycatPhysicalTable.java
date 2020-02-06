@@ -30,4 +30,8 @@ public class MycatPhysicalTable extends MycatTableBase {
         String backendTaskSQL = CalciteUtls.getBackendTaskSQL(logicTable(), backendTableInfo, projects, filters);
         return new MyCatResultSetEnumerable(CalciteUtls.getCancelFlag(root), new QueryBackendTask(backendTaskSQL,backendTableInfo.getTargetName()));
     }
+
+    public String getTargetName() {
+        return backendTableInfo.getTargetName();
+    }
 }

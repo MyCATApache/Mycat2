@@ -45,11 +45,16 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
+import org.apache.calcite.rel.RelWriter;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.externalize.RelWriterImpl;
 import org.apache.calcite.rel.logical.LogicalTableScan;
+import org.apache.calcite.sql.SqlExplainLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -77,6 +82,12 @@ public enum MetadataManager {
 
     public List<String> explain(RelNode scan) {
         String message = RelOptUtil.toString(scan);
+        final StringWriter sw = new StringWriter();
+        final RelWriter planWriter =
+                new RelWriterImpl(
+                        new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
+        scan.explain(planWriter);
+        System.out.println(sw.toString());
         List<String> list = new ArrayList<>(Arrays.asList(message.split("\n")));
         //根节点与子节点
         List<TableScan> tableScans = new ArrayList<>();

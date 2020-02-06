@@ -14,6 +14,8 @@
  */
 package io.mycat.datasource.jdbc.datasource;
 
+import java.util.List;
+
 /**
  * @author Junwen Chen
  **/
@@ -36,6 +38,8 @@ public interface TransactionSession {
     void setAutocommit(boolean autocommit);
 
     DefaultConnection getConnection(String jdbcDataSource);
+    DefaultConnection getDisposableConnection(String jdbcDataSource);
+    DisposQueryConnection getDisposableConnection(List<String> jdbcDataSourceList);
 
     void reset();
 

@@ -20,7 +20,8 @@ public abstract class MycatTableBase extends AbstractTable implements Projectabl
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
-        return CalciteConvertors.getRelDataType(logicTable().getRawColumns(), typeFactory);
+        RelDataType relDataType = CalciteConvertors.getRelDataType(logicTable().getRawColumns(), typeFactory);
+        return relDataType;
     }
 
     @Override
