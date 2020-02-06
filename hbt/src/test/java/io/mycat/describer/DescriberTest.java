@@ -10,7 +10,7 @@ import java.util.List;
 
 public class DescriberTest {
 
-    @Test
+
     public void test() throws IOException {
         Describer describer = new Describer(new String(Files.readAllBytes(Paths.get("D:\\git\\describer\\src\\test\\java\\resources\\expr.des"))));
         describer.addOperator("+", 1, true);
