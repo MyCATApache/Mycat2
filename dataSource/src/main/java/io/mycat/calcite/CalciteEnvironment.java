@@ -14,64 +14,47 @@
  */
 package io.mycat.calcite;
 
-import io.mycat.BackendTableInfo;
-import io.mycat.calcite.logic.MycatLogicTable;
+import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.logic.MycatPhysicalTable;
-import io.mycat.calcite.relBuilder.MyRelBuilder;
 import io.mycat.calcite.relBuilder.MycatTransientSQLTable;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
-import org.apache.calcite.config.Lex;
-import org.apache.calcite.interpreter.Interpreter;
+import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.jdbc.CalciteConnection;
-import org.apache.calcite.jdbc.Driver;
+import org.apache.calcite.plan.RelOptPlanner;
+import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.hep.HepPlanner;
+import org.apache.calcite.plan.hep.HepProgram;
 import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.prepare.PlannerImpl;
 import org.apache.calcite.rel.RelHomogeneousShuttle;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelShuttleImpl;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
-import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.core.Union;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalUnion;
-import org.apache.calcite.rel.rules.*;
-import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.rel.logical.ToLogicalConverter;
+import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.parser.SqlParser;
-import org.apache.calcite.sql.validate.SqlConformanceEnum;
-import org.apache.calcite.tools.FrameworkConfig;
-import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.tools.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public enum CalciteEnvironment {
     INSTANCE;
     final Logger LOGGER = LoggerFactory.getLogger(CalciteEnvironment.class);
-    final static SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
-            .setConformance(SqlConformanceEnum.MYSQL_5)
-            .setCaseSensitive(false).build();
-    volatile SchemaPlus ROOT_SCHEMA;
-    private final EnumMap<SqlKind, Boolean>
-            SUPPORTED_AGGREGATES = new EnumMap<>(SqlKind.class);
+
+    private final EnumMap<SqlKind, Boolean> SUPPORTED_AGGREGATES = new EnumMap<>(SqlKind.class);
+
 
     private CalciteEnvironment() {
-        Driver driver = new Driver();//触发驱动注册
-        final String charset = "UTF-8";
-        System.setProperty("saffron.default.charset", charset);
-        System.setProperty("saffron.default.nationalcharset", charset);
-        System.setProperty("calcite.default.charset", charset);
-        System.setProperty("saffron.default.collat​​ion.tableName", charset + "$ en_US");
-
         SUPPORTED_AGGREGATES.put(SqlKind.MIN, true);
         SUPPORTED_AGGREGATES.put(SqlKind.MAX, true);
         SUPPORTED_AGGREGATES.put(SqlKind.COUNT, true);
@@ -80,64 +63,91 @@ public enum CalciteEnvironment {
         SUPPORTED_AGGREGATES.put(SqlKind.ANY_VALUE, true);
         SUPPORTED_AGGREGATES.put(SqlKind.BIT_AND, true);
         SUPPORTED_AGGREGATES.put(SqlKind.BIT_OR, true);
-        flash();
     }
 
     public TextResultSetResponse getConnection(String defaultSchema, String sql) throws Exception {
-        Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
-        if (defaultSchema != null) {
-            configBuilder.defaultSchema(ROOT_SCHEMA.getSubSchema(defaultSchema));
-        }
-        configBuilder.parserConfig(SQL_PARSER_CONFIG);
-        FrameworkConfig config = configBuilder.build();
-        RelBuilder relBuilder = RelBuilder.create(config);
+        FrameworkConfig config = MycatCalciteContext.INSTANCE.create(defaultSchema);
         PlannerImpl planner = new PlannerImpl(config);
         SqlNode parse = planner.parse(sql);
         SqlNode validate = planner.validate(parse);
         RelNode convert = planner.convert(validate);
+        HepProgram program =  new HepProgramBuilder().build();
+        HepPlanner hepPlanner = new HepPlanner(program);
+//        Arrays.asList(
+//                FilterTableScanRule.INSTANCE,
+//                ProjectTableScanRule.INSTANCE,
+////                FilterSetOpTransposeRule.INSTANCE,
+//// ProjectRemoveRule.INSTANCE,
+//////        planner2.addRule(JoinUnionTransposeRule.LEFT_UNION,
+//////        planner2.addRule(JoinUnionTransposeRule.RIGHT_UNION.
+////    JoinExtractFilterRule.INSTANCE,
+////        planner2.addRule(JoinPushTransitivePredicatesRule.INSTANCE,
+////                AggregateUnionTransposeRule.INSTANCE,
+////                AggregateUnionAggregateRule.AGG_ON_FIRST_INPUT,
+////                AggregateUnionAggregateRule.AGG_ON_SECOND_INPUT,
+////                AggregateUnionAggregateRule.INSTANCE,
+////                AggregateProjectMergeRule.INSTANCE,
+////                AggregateProjectPullUpConstantsRule.INSTANCE,
+//                PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable
+////                AggregateValuesRule.INSTANCE
+//        ).forEach(i -> hepProgramBuilder.addRuleInstance(i));
+////        hepProgramBuilder.addRuleInstance(PushDownLogicTable.INSTANCE_FOR_PushDownLogicTable);
 
-        HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
+//             RelShuttleImpl relShuttle = new RelShuttleImpl() {
+//            @Override
+//            public RelNode visit(TableScan scan) {
+//                MycatLogicTable unwrap = scan.getTable().unwrap(MycatLogicTable.class);
+//                if (unwrap != null) {
+//                    return PushDownLogicTable.toPhyTable(relBuilder, scan);
+//                }
+//                return super.visit(scan);
+//            }
+//        };
+//        bestExp = relShuttle.visit(bestExp);
+//        bestExp = pushDownBySQL(relBuilder, bestExp);
+//        collectMycatTransientSQLTable(bestExp);
+        System.out.println(convert);
+        ResultSet resultSet = RelRunners.run(convert).executeQuery();
+        while (resultSet.next()){
 
-        Arrays.asList(
-                FilterTableScanRule.INSTANCE,
-                ProjectTableScanRule.INSTANCE,
-                FilterSetOpTransposeRule.INSTANCE,
- ProjectRemoveRule.INSTANCE,
-//        planner2.addRule(JoinUnionTransposeRule.LEFT_UNION,
-//        planner2.addRule(JoinUnionTransposeRule.RIGHT_UNION.
-    JoinExtractFilterRule.INSTANCE,
-//        planner2.addRule(JoinPushTransitivePredicatesRule.INSTANCE,
-//                AggregateUnionTransposeRule.INSTANCE,
-//                AggregateUnionAggregateRule.AGG_ON_FIRST_INPUT,
-//                AggregateUnionAggregateRule.AGG_ON_SECOND_INPUT,
-                AggregateUnionAggregateRule.INSTANCE,
-                AggregateProjectMergeRule.INSTANCE,
-                AggregateProjectPullUpConstantsRule.INSTANCE,
-                PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable,
-                AggregateValuesRule.INSTANCE
-        ).forEach(i -> hepProgramBuilder.addRuleInstance(i));
-//        hepProgramBuilder.addRuleInstance(PushDownLogicTable.INSTANCE_FOR_PushDownLogicTable);
-
-        final HepPlanner planner2 = new HepPlanner(hepProgramBuilder.build());
-
-        planner2.setRoot(convert);
-        RelNode bestExp = planner2.findBestExp();
-             RelShuttleImpl relShuttle = new RelShuttleImpl() {
-            @Override
-            public RelNode visit(TableScan scan) {
-                MycatLogicTable unwrap = scan.getTable().unwrap(MycatLogicTable.class);
-                if (unwrap != null) {
-                    return PushDownLogicTable.toPhyTable(relBuilder, scan);
-                }
-                return super.visit(scan);
-            }
         };
-        planner2.setRoot(bestExp);
-        bestExp = planner2.findBestExp();
+        CalciteDataContext dataContext = new CalciteDataContext(config.getDefaultSchema(), planner);
+        System.out.println("---------------------------------------------");
+        RelNode phy = toPhysical(convert, relOptPlanner -> RelOptUtil.registerDefaultRules(relOptPlanner, true, true));
+        //修复变成物理表达式后无法运行,所以重新编译成逻辑表达式
+        RelNode fixLogic = new ToLogicalConverter(RelBuilder.proto( RelFactories.LOGICAL_BUILDER).create(convert.getCluster(),null)) {
+            @Override
+            public RelNode visit(RelNode relNode) {
+                if (relNode instanceof MycatTransientSQLTable) {
+                    return relNode;
+                }
+                return super.visit(relNode);
+            }
+        }.visit(phy);
+        final Map<String, Object> map = new HashMap<>(1);
+        ArrayBindable bindable1 = Interpreters.bindable(fixLogic);
+        EnumeratorRowIterator enumeratorRowIterator = new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(convert.getRowType()), bindable1.bind(dataContext).enumerator());
 
-        bestExp = bestExp.accept(relShuttle);
-        bestExp = relShuttle.visit(bestExp);
+//        RelShuttleImpl relHomogeneousShuttle = new RelShuttleImpl() {
+//            @Override
+//            public RelNode visit(LogicalAggregate aggregate) {
+//                List<AggregateCall> aggCallList = aggregate.getAggCallList();
+//                List<Integer> a = new ArrayList<>();
+//                for (AggregateCall aggregateCall : aggCallList) {
+//                    if(aggregateCall.getAggregation().getKind() == SqlKind.AVG){
+//                        a.add(aggregateCall.getArgList().get(0);
+//                    }
+//                }
+//
+//                aggregate.copy(aggregate.getTraitSet(),)
+//                return super.visit(aggregate);
+//            }
+//        };
+//
+     return new TextResultSetResponse(enumeratorRowIterator);
+    }
 
+    private RelNode pushDownBySQL(MycatRelBuilder relBuilder, RelNode bestExp) {
         //子节点运算的节点是同一个目标的,就把它们的父节点标记为可以变成SQL
         IdentityHashMap<RelNode, Boolean> cache = new IdentityHashMap<>();
         IdentityHashMap<RelNode, List<String>> margeList = new IdentityHashMap<>();
@@ -168,7 +178,6 @@ public enum CalciteEnvironment {
                 return res;
             }
         };
-        bestExp.accept(relHomogeneousShuttle);
         relHomogeneousShuttle.visit(bestExp);
 
 
@@ -186,8 +195,6 @@ public enum CalciteEnvironment {
                             RelNode res;
                             if (cache.get(input)) {
                                 res = LogicalAggregate.create(input, aggregate.getGroupSet(), aggregate.getGroupSets(), aggregate.getAggCallList());
-                                planner2.setRoot(res);
-                                res = planner2.findBestExp();
                                 cache.put(res, Boolean.TRUE);
                                 margeList.put(res, margeList.get(input));
                             } else {
@@ -211,13 +218,16 @@ public enum CalciteEnvironment {
                 if (cache.get(other) == Boolean.TRUE) {
                     List<String> strings = margeList.get(other);
                     String targetName = strings.get(0);
-                    return MyRelBuilder.makeTransientSQLScan(relBuilder, targetName, other);
+                    return relBuilder.makeTransientSQLScan( targetName, other);
                 }
                 return super.visit(other);
             }
         };
         bestExp = bestExp.accept(relHomogeneousShuttle1);
-        //收集MycatTransientSQLTable
+        return bestExp;
+    }
+
+    private void collectMycatTransientSQLTable(RelNode bestExp) {
         List<MycatTransientSQLTable> list = new ArrayList<>();
         bestExp.accept(new RelShuttleImpl() {
 
@@ -232,39 +242,6 @@ public enum CalciteEnvironment {
                 return super.visit(scan);
             }
         });
-//        RelShuttleImpl projectShuttle = new RelHomogeneousShuttle() {
-//
-//            @Override
-//            public RelNode visit(RelNode other) {
-//                RelDataType rowType = other.getRowType();
-//                RelOptUtil.c()
-//                return super.visit(other);
-//            }
-//        };
-//       bestExp =  bestExp.accept(projectShuttle);
-//        bestExp=    projectShuttle.visit(bestExp);
-        try {
-            List<String> explain = MetadataManager.INSTANCE.explain(bestExp);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-//        scan.childrenAccept(new RelVisitor() {
-//            @Override
-//            public void visit(RelNode node, int ordinal, RelNode parent) {
-//                if (node instanceof Bindables.BindableTableScan) {
-//                    parent.replaceInput(ordinal,);
-//                    tableScans.add((TableScan) node);
-//                }
-//                if (node instanceof LogicalTableScan) {
-//                    tableScans.add((TableScan) node);
-//                }
-//                super.visit(node, ordinal, parent);
-//            }
-//        });
-        CalciteDataContext dataContext = new CalciteDataContext(ROOT_SCHEMA, planner);
-        final Interpreter interpreter = new Interpreter(dataContext, bestExp);
-        EnumeratorRowIterator enumeratorRowIterator = new EnumeratorRowIterator(CalciteConvertors.getMycatRowMetaData(bestExp.getRowType()), interpreter.enumerator());
-        return new TextResultSetResponse(enumeratorRowIterator);
     }
 
     public CalciteConnection getRawConnection() {
@@ -278,28 +255,12 @@ public enum CalciteEnvironment {
         }
     }
 
-
-    public void flash() {
-        SchemaPlus rootSchema = Frameworks.createRootSchema(false);
-        SchemaPlus dataNodes = rootSchema.add(MetadataManager.DATA_NODES, new AbstractSchema());
-        for (Map.Entry<String, ConcurrentHashMap<String, MetadataManager.LogicTable>> stringConcurrentHashMapEntry : MetadataManager.INSTANCE.logicTableMap.entrySet()) {
-            SchemaPlus schemaPlus = rootSchema.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
-            for (Map.Entry<String, MetadataManager.LogicTable> entry : stringConcurrentHashMapEntry.getValue().entrySet()) {
-                MetadataManager.LogicTable logicTable = entry.getValue();
-                MycatLogicTable mycatLogicTable = new MycatLogicTable(logicTable);
-                schemaPlus.add(entry.getKey(), mycatLogicTable);
-
-                for (BackendTableInfo backend : logicTable.getBackends()) {
-                    String uniqueName = backend.getUniqueName();
-                    MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(mycatLogicTable, backend);
-                    dataNodes.add(uniqueName, mycatPhysicalTable);
-                }
-            }
-        }
-        this.ROOT_SCHEMA = rootSchema;
-    }
-
-    public SchemaPlus getRootSchema() {
-        return ROOT_SCHEMA;
+    private static RelNode toPhysical(RelNode rel, Consumer<RelOptPlanner> setting) {
+        final RelOptPlanner planner = rel.getCluster().getPlanner();
+        planner.clear();
+        setting.accept(planner);
+        final Program program = Programs.of(RuleSets.ofList(planner.getRules()));
+        return program.run(planner, rel, rel.getTraitSet().replace(EnumerableConvention.INSTANCE),
+                ImmutableList.of(), ImmutableList.of());
     }
 }

@@ -28,7 +28,10 @@ import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.SQLStatementParser;
 import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.repository.SchemaRepository;
-import io.mycat.*;
+import io.mycat.BackendTableInfo;
+import io.mycat.MycatConfig;
+import io.mycat.MycatException;
+import io.mycat.SchemaInfo;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.queryCondition.ColumnRangeValue;
@@ -42,7 +45,6 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.RelWriter;
@@ -109,25 +111,25 @@ public enum MetadataManager {
                 }
             });
         }
-        for (TableScan tableScan : tableScans) {
-            RelOptTableImpl table = (RelOptTableImpl) tableScan.getTable();
-            list.add("node:" + RelOptUtil.toString(tableScan));
-            JdbcTable unwrap = table.unwrap(JdbcTable.class);
-            List<QueryBackendTask> queryBackendTasks;
-            if (tableScan instanceof Bindables.BindableTableScan) {
-                Bindables.BindableTableScan tableScan1 = (Bindables.BindableTableScan) tableScan;
-
-                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
-            } else {
-                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), Collections.emptyList(), null);
-            }
-            for (QueryBackendTask queryBackendTask : queryBackendTasks) {
-                String targetName = queryBackendTask.getTargetName();
-                String sql = queryBackendTask.getSql();
-                list.add(" targetName:" + targetName);
-                list.add("  sql:" + sql);
-            }
-        }
+//        for (TableScan tableScan : tableScans) {
+//            RelOptTableImpl table = (RelOptTableImpl) tableScan.getTable();
+//            list.add("node:" + RelOptUtil.toString(tableScan));
+//            JdbcTable unwrap = table.unwrap(JdbcTable.class);
+//            List<QueryBackendTask> queryBackendTasks;
+//            if (tableScan instanceof Bindables.BindableTableScan) {
+//                Bindables.BindableTableScan tableScan1 = (Bindables.BindableTableScan) tableScan;
+//
+//                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
+//            } else {
+//                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), Collections.emptyList(), null);
+//            }
+//            for (QueryBackendTask queryBackendTask : queryBackendTasks) {
+//                String targetName = queryBackendTask.getTargetName();
+//                String sql = queryBackendTask.getSql();
+//                list.add(" targetName:" + targetName);
+//                list.add("  sql:" + sql);
+//            }
+//        }
         return list;
     }
 
