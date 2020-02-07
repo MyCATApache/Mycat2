@@ -173,7 +173,7 @@ public class CalciteConvertors {
             int precision = mycatRowMetaData.getPrecision(i);
             int scale = mycatRowMetaData.getScale(i);
             String jdbcType = JDBCType.valueOf(columnType).getName();
-            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, true));
+            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, mycatRowMetaData.isNull(i)));
         }
         return list;
     }
