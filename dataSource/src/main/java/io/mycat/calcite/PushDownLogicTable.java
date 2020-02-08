@@ -1,8 +1,5 @@
 package io.mycat.calcite;
 
-import com.google.common.collect.ImmutableRangeSet;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
 import io.mycat.BackendTableInfo;
 import io.mycat.calcite.logic.MycatLogicTable;
 import org.apache.calcite.interpreter.Bindables;
@@ -11,15 +8,10 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
-import org.apache.calcite.rex.RexExecutor;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexSimplify;
-import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.Util;
 import org.jetbrains.annotations.NotNull;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 
@@ -64,29 +56,6 @@ public class PushDownLogicTable extends RelOptRule {
         RelNode value = null;
         if (logicTable != null) {
             ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
-            Map<Integer, RangeSet<Comparable<?>>> res = new HashMap<>();
-            Range<BigDecimal> integerRange = Range.closedOpen(BigDecimal.ZERO, BigDecimal.TEN);
-
-            final RexExecutor executor =
-                    Util.first(cluster.getPlanner().getExecutor(), RexUtil.EXECUTOR);
-            final RelOptPredicateList predicates = RelOptPredicateList.EMPTY;
-            final RexSimplify simplify =
-                    new RexSimplify(cluster.getRexBuilder(), predicates, executor);
-
-            for (RexNode filter : filters) {
-            filter.accept(    new RangeExtractShuttle(res, new RangeExtractShuttle.RangeSetColumnProvider() {
-                    @Override
-                    public RangeSet getAllByIndex(int index) {
-                        return ImmutableRangeSet.of(integerRange);
-                    }
-                },simplify));
-
-            }
-            for (Map.Entry<Integer, RangeSet<Comparable<?>>> integerRangeSetEntry : res.entrySet()) {
-                System.out.println(integerRangeSetEntry);
-            }
-
-
             List<BackendTableInfo> backendTableInfos = CalciteUtls.getBackendTableInfos(logicTable.logicTable(), filters);
             HashMap<String, List<RelNode>> bindTableGroupMapByTargetName = new HashMap<>();
             for (BackendTableInfo backendTableInfo : backendTableInfos) {
@@ -119,7 +88,7 @@ public class PushDownLogicTable extends RelOptRule {
         String uniqueName = backendTableInfo.getUniqueName();
 //        relOptSchema.
         RelOptTable dataNode = relOptSchema.getTableForMember(Arrays.asList(MetadataManager.DATA_NODES, uniqueName));
-//        RelOptTable relOptTable = RelOptTableImpl.create(
+//        RelOptTable relOptTable = RelOptTableImpl.createFrameworkConfig(
 ////                relBuilder.getRelOptSchema(),
 ////                rowType,
 ////                transientTable,

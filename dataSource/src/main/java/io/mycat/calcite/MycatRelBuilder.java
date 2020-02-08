@@ -3,13 +3,13 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.logic.MycatConvention;
 import io.mycat.calcite.relBuilder.MycatTransientSQLTable;
-import io.mycat.calcite.relBuilder.MycatTransientSQLTableScan;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptSchema;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.tools.RelBuilder;
@@ -27,7 +27,7 @@ public class MycatRelBuilder extends RelBuilder {
                 rowType,
                 transientTable,
                 ImmutableList.of(targetName,String.valueOf(input.getId())));
-        return new MycatTransientSQLTableScan(relBuilder.getCluster(), convention, relOptTable, input);
+        return LogicalTableScan.create(relBuilder.getCluster(), relOptTable);
     }
     public  RelNode makeTransientSQLScan(String targetName, RelNode input) {
         return makeTransientSQLScan(this,targetName,input);

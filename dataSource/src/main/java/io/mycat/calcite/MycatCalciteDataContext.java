@@ -1,16 +1,24 @@
 package io.mycat.calcite;
 
-import lombok.AllArgsConstructor;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.tools.Planner;
 
-@AllArgsConstructor
-public class CalciteDataContext implements DataContext {
+import java.util.Map;
+
+
+public class MycatCalciteDataContext implements DataContext {
     private final SchemaPlus rootSchema;
     private final Planner planner;
+    private final Map<String,Object> variables;
+
+    public MycatCalciteDataContext(SchemaPlus rootSchema, Planner planner) {
+        this.rootSchema = rootSchema;
+        this.planner = planner;
+        this.variables = null;
+    }
 
     public SchemaPlus getRootSchema() {
         return rootSchema;
@@ -25,6 +33,9 @@ public class CalciteDataContext implements DataContext {
     }
 
     public Object get(String name) {
-        return null;
+        if (variables==null){
+            return null;
+        }
+        return variables.get(name);
     }
 }
