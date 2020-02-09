@@ -23,7 +23,6 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
-import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -47,6 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public enum MycatCalciteContext implements Context {
     INSTANCE;
+
+    public final Driver DRIVER = new Driver();//触发驱动注册
     final FrameworkConfig config;
     final CalciteConnectionConfig calciteConnectionConfig;
     final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
@@ -93,12 +94,10 @@ public enum MycatCalciteContext implements Context {
 
     MycatCalciteContext() {
 
-        Driver driver = new Driver();//触发驱动注册
         Frameworks.ConfigBuilder configBuilder = Frameworks.newConfigBuilder();
         configBuilder.parserConfig(SQL_PARSER_CONFIG);
         configBuilder.typeSystem(TypeSystem);
         configBuilder.sqlToRelConverterConfig(sqlToRelConverterConfig);
-
         SqlStdOperatorTable instance = SqlStdOperatorTable.instance();
         instance.init();
         configBuilder.operatorTable(new SqlOperatorTable() {
@@ -221,12 +220,11 @@ public enum MycatCalciteContext implements Context {
         return new MycatCalciteFrameworkConfig(ROOT_SCHEMA.getSubSchema(defaultSchemaName));
     }
 
-    public MycatCalcitePlanner createPlanner(String defaultSchemaName) throws SqlParseException {
+    public MycatCalcitePlanner createPlanner(String defaultSchemaName) {
         SchemaPlus currentRootSchema = ROOT_SCHEMA;
-        return new MycatCalcitePlanner(currentRootSchema,defaultSchemaName);
+        return new MycatCalcitePlanner(currentRootSchema, defaultSchemaName);
     }
 
 
-    ;
 
 }
