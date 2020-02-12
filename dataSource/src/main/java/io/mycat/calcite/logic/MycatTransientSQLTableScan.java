@@ -1,8 +1,7 @@
-package io.mycat.calcite.relBuilder;
+package io.mycat.calcite.logic;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatImplementor;
-import io.mycat.calcite.logic.MycatConvention;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;

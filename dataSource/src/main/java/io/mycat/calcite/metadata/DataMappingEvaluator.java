@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.calcite;
+package io.mycat.calcite.metadata;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
@@ -25,16 +25,15 @@ import java.util.stream.IntStream;
 
 /**
  * @author Junwen Chen
- * @author Weiqing Xu
  **/
 public class DataMappingEvaluator {
     private final Map<String, HashSet<RangeVariable>> columnMap = new HashMap<>();
 
-    void assignment(boolean or, String columnName, String value) {
+    public  void assignment(boolean or, String columnName, String value) {
         getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.EQUAL, value));
     }
 
-    void assignmentRange(boolean or, String columnName, String begin, String end) {
+    public    void assignmentRange(boolean or, String columnName, String begin, String end) {
         getRangeVariables(columnName).add(new RangeVariable(or, RangeVariableType.RANGE, begin, end));
     }
 

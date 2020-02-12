@@ -1,10 +1,9 @@
-package io.mycat.calcite.relBuilder;
+package io.mycat.calcite.logic;
 
 import io.mycat.QueryBackendTask;
-import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MyCatResultSetEnumerable;
+import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatImplementor;
-import io.mycat.calcite.logic.MycatConvention;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
@@ -34,9 +33,13 @@ public class MycatTransientSQLTable extends AbstractTable
     }
 
     public String getExplainSQL() {
+        return getExplainSQL(input);
+    }
+
+    public String getExplainSQL(RelNode input) {
         String sql = new MycatImplementor(convention.dialect).implement(input).asStatement().toSqlString(convention.dialect, false).getSql();
-        sql =  sql.replaceAll("\r"," ");
-        sql =  sql.replaceAll("\n"," ");
+        sql = sql.replaceAll("\r", " ");
+        sql = sql.replaceAll("\n", " ");
         return sql;
     }
 
@@ -61,6 +64,6 @@ public class MycatTransientSQLTable extends AbstractTable
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
         String sql = getExplainSQL();
-        return new MyCatResultSetEnumerable(CalciteUtls.getCancelFlag(root), new QueryBackendTask(sql, convention.targetName));
+        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(sql, convention.targetName));
     }
 }

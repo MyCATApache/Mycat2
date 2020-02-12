@@ -1,9 +1,8 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.BackendTableInfo;
 import io.mycat.calcite.logic.MycatLogicTable;
-import io.mycat.calcite.logic.MycatPhysicalTable;
+import io.mycat.calcite.metadata.MetadataManager;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -23,6 +22,7 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.*;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlAbstractParserImpl;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -38,6 +38,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
 
+import java.io.Reader;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,14 +48,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public enum MycatCalciteContext implements Context {
     INSTANCE;
 
-    public final Driver DRIVER = new Driver();//触发驱动注册
+    public static final Driver DRIVER = new Driver();//触发驱动注册
     final FrameworkConfig config;
     final CalciteConnectionConfig calciteConnectionConfig;
     final IdentityHashMap<Class, Object> map = new IdentityHashMap<>();
     final SqlParser.Config SQL_PARSER_CONFIG = SqlParser.configBuilder().setLex(Lex.MYSQL)
             .setConformance(SqlConformanceEnum.MYSQL_5)
             .setCaseSensitive(false).build();
-
     public MycatTypeSystem TypeSystem = new MycatTypeSystem();
     public JavaTypeFactoryImpl TypeFactory = new JavaTypeFactoryImpl(TypeSystem);
     public RexBuilder RexBuilder = new RexBuilder(TypeFactory);
@@ -65,7 +65,7 @@ public enum MycatCalciteContext implements Context {
         }
     };
 
-    final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
+    public final SqlToRelConverter.Config sqlToRelConverterConfig = SqlToRelConverter.configBuilder()
             .withConfig(SqlToRelConverter.Config.DEFAULT)
             .withTrimUnusedFields(true)
             .withRelBuilderFactory(relBuilderFactory).build();
@@ -74,22 +74,19 @@ public enum MycatCalciteContext implements Context {
 
     public void flash() {
         SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();
-        SchemaPlus dataNodes = plus.add(MetadataManager.DATA_NODES, new AbstractSchema());
-        for (Map.Entry<String, ConcurrentHashMap<String, MetadataManager.LogicTable>> stringConcurrentHashMapEntry : MetadataManager.INSTANCE.logicTableMap.entrySet()) {
+        for (Map.Entry<String, ConcurrentHashMap<String, MetadataManager.LogicTable>> stringConcurrentHashMapEntry : MetadataManager.INSTANCE.getLogicTableMap().entrySet()) {
             SchemaPlus schemaPlus = plus.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
             for (Map.Entry<String, MetadataManager.LogicTable> entry : stringConcurrentHashMapEntry.getValue().entrySet()) {
                 MetadataManager.LogicTable logicTable = entry.getValue();
                 MycatLogicTable mycatLogicTable = new MycatLogicTable(logicTable);
                 schemaPlus.add(entry.getKey(), mycatLogicTable);
-
-                for (BackendTableInfo backend : logicTable.getBackends()) {
-                    String uniqueName = backend.getUniqueName();
-                    MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(mycatLogicTable, backend);
-                    dataNodes.add(uniqueName, mycatPhysicalTable);
-                }
             }
         }
         ROOT_SCHEMA = plus;
+    }
+
+    public MycatCalciteDataContext create() {
+        return new MycatCalciteDataContext(ROOT_SCHEMA);
     }
 
     MycatCalciteContext() {
@@ -157,6 +154,10 @@ public enum MycatCalciteContext implements Context {
         return (C) o;
     }
 
+    public SqlAbstractParserImpl createSqlParser(Reader reader) {
+        return config.getParserConfig().parserFactory().getParser(reader);
+    }
+
 
     public static class MycatTypeSystem extends DelegatingTypeSystem {
 
@@ -217,7 +218,13 @@ public enum MycatCalciteContext implements Context {
     }
 
     public MycatCalciteFrameworkConfig createFrameworkConfig(String defaultSchemaName) {
-        return new MycatCalciteFrameworkConfig(ROOT_SCHEMA.getSubSchema(defaultSchemaName));
+        SchemaPlus schemaPlus;
+        if (defaultSchemaName == null) {
+            schemaPlus = ROOT_SCHEMA;
+        } else {
+            schemaPlus = ROOT_SCHEMA.getSubSchema(defaultSchemaName);
+        }
+        return new MycatCalciteFrameworkConfig(schemaPlus);
     }
 
     public MycatCalcitePlanner createPlanner(String defaultSchemaName) {
@@ -225,6 +232,7 @@ public enum MycatCalciteContext implements Context {
         return new MycatCalcitePlanner(currentRootSchema, defaultSchemaName);
     }
 
-
-
+    public CalciteConnectionConfig getCalciteConnectionConfig() {
+        return calciteConnectionConfig;
+    }
 }

@@ -22,7 +22,7 @@ import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.packet.ErrorPacket;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
-import io.mycat.calcite.MetadataManager;
+import io.mycat.calcite.metadata.MetadataManager;
 import io.mycat.client.ClientRuntime;
 import io.mycat.command.CommandDispatcher;
 import io.mycat.config.ClusterRootConfig;

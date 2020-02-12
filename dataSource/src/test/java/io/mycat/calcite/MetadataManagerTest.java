@@ -1,6 +1,8 @@
 package io.mycat.calcite;
 
 import io.mycat.BackendTableInfo;
+import io.mycat.calcite.metadata.MetadataManager;
+import io.mycat.calcite.metadata.MetadataManagerBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -9,11 +11,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
-import static io.mycat.calcite.MetadataManager.routeInsert;
-import static io.mycat.calcite.MetadataManager.routeInsertFlat;
+import static io.mycat.calcite.metadata.MetadataManager.routeInsert;
+import static io.mycat.calcite.metadata.MetadataManager.routeInsertFlat;
 import static org.junit.Assert.assertEquals;
 
 public class MetadataManagerTest {

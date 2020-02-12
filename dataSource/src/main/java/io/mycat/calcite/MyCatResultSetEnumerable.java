@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -17,8 +17,7 @@ package io.mycat.calcite;
 import io.mycat.QueryBackendTask;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.thread.GThread;
-import io.mycat.replica.ReplicaSelectorRuntime;
+import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
 import org.slf4j.Logger;
@@ -29,37 +28,37 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * @author Weiqing Xu
  * @author Junwen Chen
  **/
 public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
-    private final AtomicBoolean cancelFlag;
-    private final  List<QueryBackendTask>  backStoreList;
+    private final MycatCalciteDataContext dataContext;
+    private final AtomicBoolean CANCEL_FLAG;
+    private final List<QueryBackendTask> backStoreList;
     private final static Logger LOGGER = LoggerFactory.getLogger(MyCatResultSetEnumerable.class);
 
-    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, List<QueryBackendTask> res) {
-        this.cancelFlag = cancelFlag;
+    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext, List<QueryBackendTask> res) {
+        this.dataContext = dataContext;
         this.backStoreList = res;
+        this.CANCEL_FLAG = DataContext.Variable.CANCEL_FLAG.get(dataContext);
         for (QueryBackendTask sql : res) {
             LOGGER.info("prepare query:{}", sql);
         }
     }
-    public MyCatResultSetEnumerable(AtomicBoolean cancelFlag, QueryBackendTask res) {
-       this(cancelFlag, Collections.singletonList(res));
+
+    public MyCatResultSetEnumerable(MycatCalciteDataContext dataContext, QueryBackendTask res) {
+        this(dataContext, Collections.singletonList(res));
     }
 
     @Override
     public Enumerator<T> enumerator() {
         int length = backStoreList.size();
-        ArrayList<DefaultConnection> dsConnections = new ArrayList<>(length);
+
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (QueryBackendTask endTableInfo : backStoreList) {
-            GThread gThread = (GThread) Thread.currentThread();
-
-            String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getTargetName(),false,null);
-            DefaultConnection session = gThread.getTransactionSession().getDisposableConnection(datasourceName);
-            dsConnections.add(session);
+            DefaultConnection session = dataContext.getTarget(endTableInfo);
             iterators.add(session.executeQuery(endTableInfo.getSql()));
             LOGGER.info("runing query:{}", endTableInfo.getSql());
         }
@@ -72,9 +71,9 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
                 Object[] res = new Object[columnCount];
                 for (int i = 0, j = 1; i < columnCount; i++, j++) {
                     Object object = currentrs.getObject(j);
-                    if (object instanceof Date){
+                    if (object instanceof Date) {
                         res[i] = ((Date) object).getTime();
-                    }else {
+                    } else {
                         res[i] = object;
                     }
                 }
@@ -83,7 +82,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
             @Override
             public boolean moveNext() {
-                if (cancelFlag.get()) {
+                if (CANCEL_FLAG.get()) {
                     return false;
                 }
                 boolean result = false;
@@ -105,14 +104,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
             @Override
             public void close() {
-                for (RowBaseIterator iterator : iterators) {
-                    iterator.close();
-                }
-                iterators.clear();
-                for (DefaultConnection dsConnection : dsConnections) {
-                    dsConnection.close();
-                }
-                dsConnections.clear();
+                currentrs.close();
             }
         };
     }

@@ -1,9 +1,12 @@
 package io.mycat.calcite;
 
+import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
 import io.mycat.calcite.logic.MycatLogicTable;
+import io.mycat.calcite.logic.MycatPhysicalTable;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.*;
+import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.logical.LogicalTableScan;
@@ -57,6 +60,13 @@ public class PushDownLogicTable extends RelOptRule {
         if (logicTable != null) {
             ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
             List<BackendTableInfo> backendTableInfos = CalciteUtls.getBackendTableInfos(logicTable.logicTable(), filters);
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+            //视图优化
+
+
+            ////////////////////////////////////////////////////////////////////////////////////////////////
+
             HashMap<String, List<RelNode>> bindTableGroupMapByTargetName = new HashMap<>();
             for (BackendTableInfo backendTableInfo : backendTableInfos) {
                 String targetName = backendTableInfo.getTargetName();
@@ -86,13 +96,13 @@ public class PushDownLogicTable extends RelOptRule {
     @NotNull
     private static RelNode getBindableTableScan(Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, BackendTableInfo backendTableInfo) {
         String uniqueName = backendTableInfo.getUniqueName();
-//        relOptSchema.
-        RelOptTable dataNode = relOptSchema.getTableForMember(Arrays.asList(MetadataManager.DATA_NODES, uniqueName));
-//        RelOptTable relOptTable = RelOptTableImpl.createFrameworkConfig(
-////                relBuilder.getRelOptSchema(),
-////                rowType,
-////                transientTable,
-////                ImmutableList.of(targetName,String.valueOf(input.getId())));
+        MycatLogicTable unwrap = bindableTableScan.getTable().unwrap(MycatLogicTable.class);
+        MycatPhysicalTable mycatPhysicalTable = unwrap.getMycatPhysicalTable(uniqueName);
+        RelOptTable dataNode = RelOptTableImpl.create(
+                relOptSchema,
+                mycatPhysicalTable.getRowType(cluster.getTypeFactory()),
+                mycatPhysicalTable,
+                ImmutableList.of(uniqueName));
         RelNode logicalTableScan = LogicalTableScan.create(cluster, dataNode);
         return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
     }

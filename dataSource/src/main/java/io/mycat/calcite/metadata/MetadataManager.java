@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.calcite;
+package io.mycat.calcite.metadata;
 
 import com.alibaba.fastsql.DbType;
 import com.alibaba.fastsql.sql.SQLUtils;
@@ -32,6 +32,7 @@ import io.mycat.BackendTableInfo;
 import io.mycat.MycatConfig;
 import io.mycat.MycatException;
 import io.mycat.SchemaInfo;
+import io.mycat.calcite.CalciteConvertors;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
 import io.mycat.queryCondition.ColumnRangeValue;
@@ -43,20 +44,9 @@ import io.mycat.router.function.PartitionRuleFunctionManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import org.apache.calcite.interpreter.Bindables;
-import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelVisitor;
-import org.apache.calcite.rel.RelWriter;
-import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.externalize.RelWriterImpl;
-import org.apache.calcite.rel.logical.LogicalTableScan;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -65,7 +55,7 @@ import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
 import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
-import static io.mycat.calcite.SimpleColumnInfo.ShardingType.*;
+import static io.mycat.calcite.metadata.SimpleColumnInfo.ShardingType.*;
 
 /**
  * @author Junwen Chen
@@ -76,61 +66,10 @@ public enum MetadataManager {
     final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
 
     private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
-    public static String DATA_NODES = "dataNodes";
+
 
     public void removeSchema(String schemaName) {
         logicTableMap.remove(schemaName);
-    }
-
-    public List<String> explain(RelNode scan) {
-        String message = RelOptUtil.toString(scan);
-        final StringWriter sw = new StringWriter();
-        final RelWriter planWriter =
-                new RelWriterImpl(
-                        new PrintWriter(sw), SqlExplainLevel.EXPPLAN_ATTRIBUTES, false);
-        scan.explain(planWriter);
-        System.out.println(sw.toString());
-        List<String> list = new ArrayList<>(Arrays.asList(message.split("\n")));
-        //根节点与子节点
-        List<TableScan> tableScans = new ArrayList<>();
-        if (scan instanceof Bindables.BindableTableScan) {
-            tableScans.add((TableScan) scan);
-        } else if (scan instanceof LogicalTableScan) {
-            tableScans.add((TableScan) scan);
-        } else {
-            scan.childrenAccept(new RelVisitor() {
-                @Override
-                public void visit(RelNode node, int ordinal, RelNode parent) {
-                    if (node instanceof Bindables.BindableTableScan) {
-                        tableScans.add((TableScan) node);
-                    }
-                    if (node instanceof LogicalTableScan) {
-                        tableScans.add((TableScan) node);
-                    }
-                    super.visit(node, ordinal, parent);
-                }
-            });
-        }
-//        for (TableScan tableScan : tableScans) {
-//            RelOptTableImpl table = (RelOptTableImpl) tableScan.getTable();
-//            list.add("node:" + RelOptUtil.toString(tableScan));
-//            JdbcTable unwrap = table.unwrap(JdbcTable.class);
-//            List<QueryBackendTask> queryBackendTasks;
-//            if (tableScan instanceof Bindables.BindableTableScan) {
-//                Bindables.BindableTableScan tableScan1 = (Bindables.BindableTableScan) tableScan;
-//
-//                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), new ArrayList<>(tableScan1.filters), tableScan1.projects.toIntArray());
-//            } else {
-//                queryBackendTasks = CalciteUtls.getQueryBackendTasks(unwrap.getTable(), Collections.emptyList(), null);
-//            }
-//            for (QueryBackendTask queryBackendTask : queryBackendTasks) {
-//                String targetName = queryBackendTask.getTargetName();
-//                String sql = queryBackendTask.getSql();
-//                list.add(" targetName:" + targetName);
-//                list.add("  sql:" + sql);
-//            }
-//        }
-        return list;
     }
 
     public void addSchema(String schemaName) {
@@ -236,7 +175,7 @@ public enum MetadataManager {
         }
 
 
-        @NonNull
+
         public List<BackendTableInfo> getBackends() {
             return backends;
         }
@@ -550,4 +489,6 @@ public enum MetadataManager {
         }
     }
 
-}
+    public ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> getLogicTableMap() {
+        return logicTableMap;
+    }}

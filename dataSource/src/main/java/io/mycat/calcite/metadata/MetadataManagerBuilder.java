@@ -1,4 +1,4 @@
-package io.mycat.calcite;
+package io.mycat.calcite.metadata;
 
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;

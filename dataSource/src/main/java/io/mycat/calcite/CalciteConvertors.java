@@ -16,6 +16,7 @@ package io.mycat.calcite;
 
 import com.google.common.collect.Lists;
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.calcite.metadata.SimpleColumnInfo;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -77,8 +78,8 @@ public class CalciteConvertors {
         final RelDataTypeFactory typeFactory = new SqlTypeFactoryImpl(RelDataTypeSystem.DEFAULT);
         final RelDataTypeFactory.Builder fieldInfo = typeFactory.builder();
         for (SimpleColumnInfo info : infos) {
-            RelDataType relDataType = sqlType(typeFactory, info.dataType, info.precision, info.scale, info.jdbcType.getName());
-            fieldInfo.add(info.columnName, relDataType).nullable(info.nullable);
+            RelDataType relDataType = sqlType(typeFactory, info.getDataType(), info.getPrecision(), info.getScale(), info.getJdbcType().getName());
+            fieldInfo.add(info.getColumnName(), relDataType).nullable(info.isNullable());
         }
         return RelDataTypeImpl.proto(fieldInfo.build());
     }
@@ -156,7 +157,7 @@ public class CalciteConvertors {
         return null;
     }
 
-    static List<SimpleColumnInfo> getColumnInfo(String sql) {
+   public static List<SimpleColumnInfo> getColumnInfo(String sql) {
         MycatRowMetaDataImpl mycatRowMetaData = SQL2ResultSetUtil.getMycatRowMetaData(sql);
         int columnCount = mycatRowMetaData.getColumnCount();
         List<SimpleColumnInfo> list = new ArrayList<>();
@@ -284,7 +285,7 @@ public class CalciteConvertors {
                 }
                 type = factory.createSqlType(sqlTypeName);
             }
-            builder.add(columnInfo.getColumnName(),  factory.createTypeWithNullability(type, columnInfo.nullable));
+            builder.add(columnInfo.getColumnName(),  factory.createTypeWithNullability(type, columnInfo.isNullable()));
         }
         return builder.build();
     }

@@ -4,12 +4,12 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
 import io.mycat.QueryBackendTask;
 import io.mycat.SchemaInfo;
+import io.mycat.calcite.metadata.DataMappingEvaluator;
+import io.mycat.calcite.metadata.MetadataManager;
+import io.mycat.calcite.metadata.SimpleColumnInfo;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
-import org.apache.calcite.rex.RexCall;
-import org.apache.calcite.rex.RexInputRef;
-import org.apache.calcite.rex.RexLiteral;
-import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.*;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
@@ -111,6 +111,7 @@ public class CalciteUtls {
         if (filters == null || filters.isEmpty()) {
             return "";
         }
+        RexNode rexNode = RexUtil.composeConjunction(MycatCalciteContext.INSTANCE.RexBuilder, filters);
         SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, rawColumns.size()) {
             @Override
             public SqlNode field(int ordinal) {
@@ -119,9 +120,7 @@ public class CalciteUtls {
                         SqlImplementor.POS);
             }
         };
-        return filters.stream().map(i -> context.toSql(null, i).toSqlString(MysqlSqlDialect.DEFAULT))
-                .map(i -> i.getSql())
-                .collect(Collectors.joining(" and ", " where ", ""));
+        return context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
     }
 
     public static boolean addOrRootFilter(MetadataManager.LogicTable table, DataMappingEvaluator evaluator, RexNode filter) {

@@ -2,7 +2,7 @@ package io.mycat.hint;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
-import io.mycat.calcite.MetadataManager;
+import io.mycat.calcite.metadata.MetadataManager;
 import io.mycat.client.Context;
 
 import java.util.Collection;

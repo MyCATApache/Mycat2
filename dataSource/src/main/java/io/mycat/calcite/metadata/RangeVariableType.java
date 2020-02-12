@@ -1,4 +1,4 @@
-package io.mycat.calcite;
+package io.mycat.calcite.metadata;
 
 public enum RangeVariableType {
   EQUAL,
