@@ -13,6 +13,14 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 项目地址:<https://github.com/MyCATApache/Mycat2>
 
+
+
+## 正在进行的任务
+
+正在实现loaddata与预处理
+
+
+
 ## 特点
 
 1.proxy透传报文,使用buffer大小与结果集无关
