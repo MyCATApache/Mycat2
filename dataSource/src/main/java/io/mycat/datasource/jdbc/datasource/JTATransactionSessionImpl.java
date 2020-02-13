@@ -16,7 +16,6 @@ package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.MycatException;
 import io.mycat.datasource.jdbc.JdbcRuntime;
-import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
@@ -33,16 +32,13 @@ public class JTATransactionSessionImpl implements TransactionSession {
     private static final MycatLogger LOGGER = MycatLoggerFactory
             .getLogger(JTATransactionSessionImpl.class);
     private final UserTransaction userTransaction;
-    private final GThread gThread;
     private final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
     private volatile boolean autocommit = true;
     private volatile boolean inTranscation = false;
     private volatile int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
 
-    public JTATransactionSessionImpl(UserTransaction userTransaction,
-                                     GThread gThread) {
+    public JTATransactionSessionImpl(UserTransaction userTransaction) {
         this.userTransaction = userTransaction;
-        this.gThread = gThread;
     }
 
     @Override

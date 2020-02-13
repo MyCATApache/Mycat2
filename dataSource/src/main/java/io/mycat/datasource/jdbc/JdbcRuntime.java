@@ -28,7 +28,6 @@ import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
-import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.datasource.jdbc.thread.GThreadPool;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -148,8 +147,8 @@ public enum JdbcRuntime {
     }
 
 
-    public TransactionSession createTransactionSession(GThread gThread) {
-        return new JTATransactionSessionImpl(datasourceProvider.createUserTransaction(), gThread);
+    public TransactionSession createTransactionSession() {
+        return new JTATransactionSessionImpl(datasourceProvider.createUserTransaction());
     }
 
     public DatasourceProvider getDatasourceProvider() {

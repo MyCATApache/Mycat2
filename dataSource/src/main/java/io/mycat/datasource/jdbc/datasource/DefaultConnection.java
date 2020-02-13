@@ -18,7 +18,6 @@ import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
-import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
@@ -73,8 +72,7 @@ public class DefaultConnection  implements AutoCloseable{
           lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
         }
       }
-      GThread thread = (GThread)Thread.currentThread();
-      int serverStatus = thread.getTransactionSession().getServerStatus();
+      int serverStatus = TransactionSessionUtil.currentTransactionSession().getServerStatus();
       return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId, serverStatus);
     } catch (Exception e) {
       throw new MycatException(e);

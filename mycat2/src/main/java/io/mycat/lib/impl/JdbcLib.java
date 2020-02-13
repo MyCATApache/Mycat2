@@ -9,7 +9,6 @@ import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
 import io.mycat.datasource.jdbc.thread.GProcess;
-import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.reactor.NIOJob;
@@ -68,8 +67,7 @@ public class JdbcLib {
 
     public static Response setTransactionIsolation(int transactionIsolation) {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                    .getTransactionSession();
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
             transactionSession.setTransactionIsolation(transactionIsolation);
             session1.writeOkEndPacket();
         });
@@ -77,8 +75,7 @@ public class JdbcLib {
 
     public static Response setAutocommit(boolean autocommit) {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                    .getTransactionSession();
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
             transactionSession.setAutocommit(autocommit);
             session1.writeOkEndPacket();
         });
@@ -86,8 +83,7 @@ public class JdbcLib {
 
     public static Response begin() {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                    .getTransactionSession();
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
             transactionSession.begin();
             session1.setInTranscation(true);
             session1.writeOkEndPacket();
@@ -96,8 +92,7 @@ public class JdbcLib {
 
     public static Response commit() {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                    .getTransactionSession();
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
             transactionSession.commit();
             session1.setInTranscation(false);
             session1.writeOkEndPacket();
@@ -106,8 +101,7 @@ public class JdbcLib {
 
     public static Response rollback() {
         return (session) -> {
-            TransactionSession transactionSession = ((GThread) Thread.currentThread())
-                    .getTransactionSession();
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
             transactionSession.rollback();
             session.setInTranscation(false);
             session.writeOkEndPacket();

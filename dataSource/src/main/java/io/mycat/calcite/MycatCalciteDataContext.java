@@ -3,7 +3,7 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableMap;
 import io.mycat.QueryBackendTask;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.thread.GThread;
+import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -87,8 +87,7 @@ public  class MycatCalciteDataContext implements DataContext, AutoCloseable {
 
     public DefaultConnection getTarget(QueryBackendTask endTableInfo) {
         String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getTargetName(),false,null);
-        GThread thread = (GThread)Thread.currentThread();
-        DefaultConnection session = thread.getTransactionSession().getDisposableConnection(datasourceName);
+        DefaultConnection session = TransactionSessionUtil.currentTransactionSession().getDisposableConnection(datasourceName);
         dsConnections.add(session);
         return session;
     }

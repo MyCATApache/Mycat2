@@ -17,6 +17,7 @@ package io.mycat.datasource.jdbc.thread;
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
+import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
 import io.mycat.proxy.session.Session;
 
 /**
@@ -27,7 +28,7 @@ public abstract class GProcess<T extends BindThreadKey& Session> implements Bind
   @Override
   public void accept(T key, GThread context) {
     context.setCurSession(key);
-    accept(key, context.transactionSession);
+    accept(key, TransactionSessionUtil.currentTransactionSession());
   }
 
   public abstract void accept(T key, TransactionSession session);

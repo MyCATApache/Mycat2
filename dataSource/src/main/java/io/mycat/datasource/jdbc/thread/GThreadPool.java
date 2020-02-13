@@ -32,7 +32,7 @@ public class GThreadPool<KEY extends BindThreadKey> extends BindThreadPool<KEY, 
   public GThreadPool(JdbcRuntime runtime) {
     super(runtime.getMaxPengdingLimit(), runtime.getWaitTaskTimeout(),
         TimeUnit.valueOf(runtime.getTimeUnit()), runtime.getMaxThread(), runtime.getMaxThread(),
-        bindThreadPool -> new GThread(runtime, bindThreadPool), (e) -> LOGGER.error("", e));
+        bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
   }
 
 }
