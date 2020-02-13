@@ -35,7 +35,7 @@ public class SQLExecuterWriter {
     public static void executeQuery(MycatSession session, Connection connection, String sql) {
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
-        JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet,connection);
+        JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);
         writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)});
     }
 

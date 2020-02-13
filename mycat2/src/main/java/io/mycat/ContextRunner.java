@@ -195,6 +195,7 @@ public class ContextRunner {
                 });
             }
         });
+//
 //        /**
 //         * 参数:接收的sql
 //         */
@@ -203,18 +204,18 @@ public class ContextRunner {
 //            public Runnable apply(MycatClient client, Context context, MycatSession session) {
 //                return () -> {
 //                    block(session, mycat -> {
-////                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-////                            connection.setSchema(client.getDefaultSchema());
-////                            final FrameworkConfig config = Frameworks.newConfigBuilder()
-////                                    .defaultSchema(connection.getRootSchema()).build();
-////                            DesRelNodeHandler desRelNodeHandler = new DesRelNodeHandler(config);
-////                            RelRunner runner = connection.unwrap(RelRunner.class);
-////                            String explain = context.getExplain();
-////                            PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(explain));
-////                            LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-////                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery(), connection))});
-////                            TransactionSessionUtil.afterDoAction();
-////                        }
+//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
+//                            connection.setSchema(client.getDefaultSchema());
+//                            final FrameworkConfig config = Frameworks.newConfigBuilder()
+//                                    .defaultSchema(connection.getRootSchema()).build();
+//                            DesRelNodeHandler desRelNodeHandler = new DesRelNodeHandler(config);
+//                            RelRunner runner = connection.unwrap(RelRunner.class);
+//                            String explain = context.getExplain();
+//                            PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(explain));
+//                            LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
+//                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery()))});
+//                            TransactionSessionUtil.afterDoAction();
+//                        }
 //                    });
 //                };
 //            }
@@ -223,12 +224,12 @@ public class ContextRunner {
 //            public Runnable explain(MycatClient client, Context context, MycatSession session) {
 //                return () -> {
 //                    block(session, mycat -> {
-////                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-////                            connection.setSchema(client.getDefaultSchema());
-////                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
-////                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
-////                            TransactionSessionUtil.afterDoAction();
-////                        }
+//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
+//                            connection.setSchema(client.getDefaultSchema());
+//                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
+//                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
+//                            TransactionSessionUtil.afterDoAction();
+//                        }
 //                    });
 //                    return;
 //                };

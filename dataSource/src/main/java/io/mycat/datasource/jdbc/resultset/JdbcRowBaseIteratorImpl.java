@@ -20,11 +20,10 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
-import java.io.Closeable;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
 import java.util.*;
 
 /**
@@ -36,16 +35,16 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
             .getLogger(JdbcRowBaseIteratorImpl.class);
     private final Statement statement;
     private final ResultSet resultSet;
-    private final AutoCloseable connection;
+    private final AutoCloseable closeCallback;
 
     public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet) {
         this(statement, resultSet, null);
     }
 
-    public JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet, AutoCloseable connection) {
+    private JdbcRowBaseIteratorImpl(Statement statement, ResultSet resultSet, AutoCloseable closeCallback) {
         this.statement = statement;
         this.resultSet = Objects.requireNonNull(resultSet);
-        this.connection = connection;
+        this.closeCallback = closeCallback;
     }
 
 
@@ -83,9 +82,9 @@ public class JdbcRowBaseIteratorImpl implements RowBaseIterator {
         } catch (Exception e) {
             LOGGER.error("", e);
         }
-        if (connection != null) {
+        if (closeCallback != null) {
             try {
-                connection.close();
+                closeCallback.close();
             } catch (Exception e) {
                 LOGGER.error("", e);
             }

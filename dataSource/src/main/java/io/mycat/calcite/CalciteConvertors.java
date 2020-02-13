@@ -14,7 +14,7 @@
  */
 package io.mycat.calcite;
 
-import com.google.common.collect.Lists;
+
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.metadata.SimpleColumnInfo;
 import io.mycat.util.MycatRowMetaDataImpl;
@@ -36,6 +36,7 @@ import java.nio.charset.Charset;
 import java.sql.Date;
 import java.sql.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Weiqing Xu
@@ -166,7 +167,8 @@ public class CalciteConvertors {
             int columnType = mycatRowMetaData.getColumnType(i);
             int precision = mycatRowMetaData.getPrecision(i);
             int scale = mycatRowMetaData.getScale(i);
-            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, JDBCType.valueOf(columnType), true));
+            JDBCType jdbcType = JDBCType.valueOf(columnType);
+            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, mycatRowMetaData.isNull(i)));
         }
         return list;
     }
@@ -222,14 +224,14 @@ public class CalciteConvertors {
     public static List<Pair<ColumnMetaData.Rep, Integer>> fieldClasses(final RelProtoDataType protoRowType,
                                                                        final JavaTypeFactory typeFactory) {
         final RelDataType rowType = protoRowType.apply(typeFactory);
-        return Lists.transform(rowType.getFieldList(), f -> {
+        return rowType.getFieldList().stream().map(f -> {
             final RelDataType type = f.getType();
             final Class clazz = (Class) typeFactory.getJavaClass(type);
             final ColumnMetaData.Rep rep =
                     Util.first(ColumnMetaData.Rep.of(clazz),
                             ColumnMetaData.Rep.OBJECT);
             return Pair.of(rep, type.getSqlTypeName().getJdbcOrdinal());
-        });
+        }).collect(Collectors.toList());
     }
 
     public static MycatRowMetaData getMycatRowMetaData(RelDataType rowType) {

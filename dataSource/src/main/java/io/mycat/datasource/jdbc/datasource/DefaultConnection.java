@@ -15,16 +15,14 @@
 package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.MycatException;
-import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
+import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
-import javax.annotation.Nullable;
 import java.sql.*;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * @author Junwen Chen
@@ -75,8 +73,9 @@ public class DefaultConnection  implements AutoCloseable{
           lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
         }
       }
-      return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId,
-          MySQLServerStatusFlags.AUTO_COMMIT);
+      GThread thread = (GThread)Thread.currentThread();
+      int serverStatus = thread.getTransactionSession().getServerStatus();
+      return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId, serverStatus);
     } catch (Exception e) {
       throw new MycatException(e);
     }
@@ -86,7 +85,7 @@ public class DefaultConnection  implements AutoCloseable{
   public JdbcRowBaseIteratorImpl executeQuery(String sql) {
     try {
       Statement statement = connection.createStatement();
-      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql),this);
+      return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql));
     } catch (Exception e) {
       throw new MycatException(e);
     }

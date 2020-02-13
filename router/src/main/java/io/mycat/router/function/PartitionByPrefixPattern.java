@@ -14,8 +14,10 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.NodeIndexRange;
 import io.mycat.router.RuleFunction;
 
+import java.util.List;
 import java.util.Map;
 
 public class PartitionByPrefixPattern extends RuleFunction {
@@ -23,7 +25,7 @@ public class PartitionByPrefixPattern extends RuleFunction {
   private static final int PARTITION_LENGTH = 1024;
   private int patternValue = PARTITION_LENGTH;// 分区长度，取模数值(默认为1024)
   private int prefixLength;// 字符前几位进行ASCII码取和
-  private NodeIndexRange[] longRongs;
+  private List<NodeIndexRange> longRongs;
   private int nPartition;
 
   @Override

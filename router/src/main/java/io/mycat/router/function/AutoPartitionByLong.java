@@ -14,13 +14,15 @@
  */
 package io.mycat.router.function;
 
+import io.mycat.router.NodeIndexRange;
 import io.mycat.router.RuleFunction;
 
+import java.util.List;
 import java.util.Map;
 
 public class AutoPartitionByLong extends RuleFunction {
 
-  private NodeIndexRange[] longRanges;
+  private List<NodeIndexRange> longRanges;
   private int defaultNode = -1;
   private int partitionCount;
 

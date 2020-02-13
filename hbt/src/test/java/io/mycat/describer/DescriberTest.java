@@ -1,7 +1,6 @@
 package io.mycat.describer;
 
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,7 +9,7 @@ import java.util.List;
 
 public class DescriberTest {
 
-    @Test
+
     public void test() throws IOException {
         Describer describer = new Describer(new String(Files.readAllBytes(Paths.get("D:\\git\\describer\\src\\test\\java\\resources\\expr.des"))));
         describer.addOperator("+", 1, true);
@@ -32,7 +31,7 @@ public class DescriberTest {
 //        Schema select = all(valuesSchema(fields(fieldType("1", "int")), values()));
 //        Assert.assertEquals("ValuesSchema(values=[], fieldNames=[FieldSchema(id=1, type=int)])", select.toString());
 //    }
-    @Test
+//    @Test
     public void test2() throws IOException {
         Describer describer = new Describer(new String(Files.readAllBytes(Paths.get("D:\\git\\describer\\src\\test\\java\\resources\\builder.des"))));
         describer.addOperator(".", "DOT", 16, true);

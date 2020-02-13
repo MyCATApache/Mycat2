@@ -117,6 +117,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
     }
 
 
+
     @Override
     public void commit() {
         try {//真正开启事务才提交
@@ -165,6 +166,11 @@ public class JTATransactionSessionImpl implements TransactionSession {
     @Override
     public void setAutocommit(boolean autocommit) {
         this.autocommit = autocommit;
+    }
+
+    @Override
+    public boolean isAutocommit() {
+        return this.autocommit ;
     }
 
 
