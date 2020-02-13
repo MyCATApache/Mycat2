@@ -128,4 +128,9 @@ public class LocalTransactionSessionImpl implements TransactionSession {
     public void setAutocommit(boolean autocommit) {
         this.autocommit = autocommit;
     }
+
+    @Override
+    public boolean isAutocommit() {
+        return autocommit;
+    }
 }
