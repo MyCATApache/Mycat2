@@ -133,7 +133,7 @@ public class MySQLTaskUtil {
                         finallyCallBack.onRequestMySQLException(mycat, exception, null);
                     }
                 };
-                if (transactionType.equals(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
+                if (transactionType.expect(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
                     sessionCallBack.onSession(session, this, null);
                     return;
                 } else {
@@ -153,7 +153,7 @@ public class MySQLTaskUtil {
     public enum TransactionSyncType {
         SET_AUTOCOMMIT_ON(MySQLAutoCommit.ON, false, "set autocommit = 1;"),
         SET_AUTOCOMMIT_ON_BEGIN(MySQLAutoCommit.ON, true, "set autocommit = 1;begin;"),
-        SET_AUTOCOMMIT_OFF(MySQLAutoCommit.OFF, false, "set autocommit = 0;");
+        SET_AUTOCOMMIT_OFF(MySQLAutoCommit.OFF, true, "set autocommit = 0;begin;");
         MySQLAutoCommit automCommit;
         boolean inTransaction;
         String text;
@@ -164,7 +164,7 @@ public class MySQLTaskUtil {
             this.text = text;
         }
 
-       public boolean equals(MySQLAutoCommit automCommit, boolean inTransaction) {
+       public boolean expect(MySQLAutoCommit automCommit, boolean inTransaction) {
             return this.automCommit == automCommit && this.inTransaction == inTransaction;
         }
 
@@ -214,7 +214,7 @@ public class MySQLTaskUtil {
                                    SessionSyncCallback finallyCallBack) {
 //        mycat.currentProxyBuffer().reset();
 //        if (mycat.getMySQLSession() != null) {
-//            if ((mycat.getMySQLSession().getDefaultDatabase().equals(databaseName))) {
+//            if ((mycat.getMySQLSession().getDefaultDatabase().expect(databaseName))) {
 //                //只要backend还有值,就说明上次命令因为事务或者遇到预处理,loadata这种跨多次命令的类型导致mysql不能释放
 //                finallyCallBack.onSession(mycat.getMySQLSession(), MySQLPacketExchanger.INSTANCE, null);
 //                return;
@@ -272,10 +272,10 @@ public class MySQLTaskUtil {
             @Override
             public void onFinished(boolean monopolize, MySQLClientSession mysql, Object sender, Object attr) {
                 session.setIsolation(isolation);
-                if (transactionType.equals(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
+                if (transactionType.expect(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
                     callBack.onSession(mysql, sender, attr);
                 } else {
-                    callBack.onException(new Exception("sync state " + transactionType + " " + isolation), sender, attr);
+                    callBack.onException(new MycatException("sync state " + transactionType + " " + isolation), sender, attr);
                 }
 
             }

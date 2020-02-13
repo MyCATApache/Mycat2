@@ -14,7 +14,9 @@
  */
 package io.mycat.datasource.jdbc.datasource;
 
+import com.alibaba.druid.sql.dialect.mysql.ast.MysqlForeignKey;
 import io.mycat.MycatException;
+import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.logTip.MycatLogger;
@@ -102,6 +104,7 @@ public class JTATransactionSessionImpl implements TransactionSession {
     }
 
 
+
     @Override
     public void commit() {
         try {//真正开启事务才提交
@@ -150,6 +153,11 @@ public class JTATransactionSessionImpl implements TransactionSession {
     @Override
     public void setAutocommit(boolean autocommit) {
         this.autocommit = autocommit;
+    }
+
+    @Override
+    public boolean isAutocommit() {
+        return this.autocommit ;
     }
 
 

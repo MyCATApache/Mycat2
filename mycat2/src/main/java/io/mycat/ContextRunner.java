@@ -251,7 +251,7 @@ public class ContextRunner {
                             String explain = context.getExplain();
                             PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(explain));
                             LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery(), connection))});
+                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery()))});
                             TransactionSessionUtil.afterDoAction();
                         }
                     });
