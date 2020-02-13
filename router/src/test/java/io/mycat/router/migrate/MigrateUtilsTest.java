@@ -352,13 +352,9 @@ public class MigrateUtilsTest {
                 "}], dn99=[MigrateTask{from='dn9'\n" +
                 ", to='dn99'\n" +
                 ", slots=[NodeIndexRange(nodeIndex=2, valueStart=66, valueEnd=66)]\n" +
-                "}]}",tasks2);
+                "}]}",tasks2.toString());
     }
 
-    @Test
-    public void balanceExpand3() {
-
-    }
 
     private void merge(List<List<NodeIndexRange>> copy, SortedMap<String, List<MigrateTask>> tasks) {
         List<List<MigrateTask>> collect = tasks.entrySet().stream().sorted(Comparator.comparing(x -> Integer.parseInt(x.getKey().substring(2)))).map(i -> i.getValue()).collect(Collectors.toList());

@@ -63,11 +63,11 @@ public class MigrateUtils {
                 continue;
             }
             if (range.getSize() == size) {
-                result.add(new NodeIndexRange(i, range.getValueStart(), range.getValueEnd()));
+                result.add(new NodeIndexRange(range.getNodeIndex(), range.getValueStart(), range.getValueEnd()));
                 rangeList.set(i, null);
                 break;
             } else if (range.getSize() < size) {
-                result.add(new NodeIndexRange(i, range.getValueStart(), range.getValueEnd()));
+                result.add(new NodeIndexRange(range.getNodeIndex(), range.getValueStart(), range.getValueEnd()));
                 size = size - range.getSize();
                 rangeList.set(i, null);
             } else if (range.getSize() > size) {
