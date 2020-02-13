@@ -50,26 +50,14 @@ public class CalciteUtls {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
         ArrayList<RexNode> where = new ArrayList<>();
-        if (table.isNatureTable()) {
-            filters.removeIf((filter) -> {
-                DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
-                boolean success = addOrRootFilter(table, dataMappingRule, filter);
-                if (success) {
-                    record.merge(dataMappingRule);
-                }
-                where.add(filter);
-                return success;
-            });
-        } else {
-            filters.forEach((filter) -> {
-                DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
-                boolean success = addOrRootFilter(table, dataMappingRule, filter);
-                if (success) {
-                    record.merge(dataMappingRule);
-                }
-                where.add(filter);
-            });
-        }
+        filters.forEach((filter) -> {
+            DataMappingEvaluator dataMappingRule = new DataMappingEvaluator();
+            boolean success = addOrRootFilter(table, dataMappingRule, filter);
+            if (success) {
+                record.merge(dataMappingRule);
+            }
+            where.add(filter);
+        });
 
         LOGGER.info("optimize filters:{}", filters);
         return record.calculate(table);
@@ -84,10 +72,10 @@ public class CalciteUtls {
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }
 
-    public static String getBackendTaskSQL( MetadataManager.LogicTable table,BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
+    public static String getBackendTaskSQL(MetadataManager.LogicTable table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
         List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
-        return getBackendTaskSQL(filters,rawColumnList,projectColumnList,backendTableInfo);
+        return getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
     }
 
     public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, String targetSchema, String targetTable, String targetSchemaTable) {
