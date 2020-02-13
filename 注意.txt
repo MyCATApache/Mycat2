@@ -1,0 +1,13 @@
+1.建议拉代码运行,这个包仅用于不会java和搭建环境的人使用
+2.mycat2暂时不需要账户密码登录
+3.使用方式与mycat1.6完全不一样,使用之前要理解原理
+4.配置文件是mycat.yml
+5.熟悉mycat的同学估计很快就上手,教程稍后放出
+6.db1.sql,db2.sql,db3.sql是测试用的表
+
+java -Dfile.encoding=UTF-8 -DMYCAT_HOME=mycat2\src\main\resources  -jar mycat2-0.5-SNAPSHOP.jar
+
+
+Mycat2\mycat2\src\main\resources 是mycat.yml所在的文件夹
+
+
