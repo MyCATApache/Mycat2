@@ -95,36 +95,6 @@ public enum MetadataManager {
 
     public void load(MycatConfig mycatConfig) {
         ShardingQueryRootConfig shardingQueryRootConfig = mycatConfig.getMetadata();
-//        Map<String, ShardingQueryRootConfig.LogicSchemaConfig> schemas = shardingQueryRootConfig.getSchemas();
-//        ShardingQueryRootConfig.LogicSchemaConfig logicSchemaConfig = new ShardingQueryRootConfig.LogicSchemaConfig();
-//        schemas.put("testdb", logicSchemaConfig);
-//        String ddl = "CREATE TABLE `travelrecord` (\n" +
-//                "            `id` bigint(20) NOT NULL,\n" +
-//                "            `user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,\n" +
-//                "            `traveldate` date DEFAULT NULL,\n" +
-//                "            `fee` decimal(10,0) DEFAULT NULL,\n" +
-//                "            `days` int(11) DEFAULT NULL,\n" +
-//                "            `blob` longblob DEFAULT NULL,\n" +
-//                "            `d` double DEFAULT NULL\n" +
-//                "          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-//        ShardingQueryRootConfig.LogicTableConfig.LogicTableConfigBuilder builder = ShardingQueryRootConfig.LogicTableConfig.builder()
-//                .createTableSQL(ddl);
-//
-//        HashMap<String,String> map = new HashMap<>();
-//        map.put("partitionCount","8");
-//        map.put("partitionLength","128");
-//        SharingFuntionRootConfig.ShardingFuntion funtion = SharingFuntionRootConfig.ShardingFuntion.builder()
-//                .name(PartitionByLong.class.getSimpleName())
-//                .clazz(PartitionByLong.class.getName())
-//                .properties(map)
-//                .ranges(Collections.emptyMap())
-//                .build();
-//        ShardingQueryRootConfig.Column id = ShardingQueryRootConfig.Column.builder().shardingType(NATURE_DATABASE_TABLE.name()).columnName("id").function(funtion).build();
-//        builder.columns(Arrays.asList(id));
-//
-//        Arrays.asList(ShardingQueryRootConfig.BackEndTableInfoConfig.builder().tableName(""))
-//        logicSchemaConfig.getTables().put("travelrecord", build);
-//
         for (Map.Entry<String, ShardingQueryRootConfig.LogicSchemaConfig> entry : shardingQueryRootConfig.getSchemas().entrySet()) {
             String orignalSchemaName = entry.getKey();
             ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
