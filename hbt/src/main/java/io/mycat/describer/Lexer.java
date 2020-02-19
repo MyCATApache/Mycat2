@@ -15,7 +15,6 @@
 package io.mycat.describer;
 
 import com.alibaba.fastsql.DbType;
-import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.parser.SQLParserUtils;
 import com.alibaba.fastsql.sql.parser.Token;
 
@@ -64,6 +63,9 @@ public class Lexer {
 
     public String tokenString() {
         Token token = this.lexer.token();
+//        if (token == Token.TRUE){
+//            return lexer.stringVal();
+//        }
         if (token.name != null) {
             return token.name.toLowerCase();
         } else {
@@ -76,6 +78,6 @@ public class Lexer {
     }
 
     public String tokenIdentifier() {
-        return  SQLUtils.normalize(tokenString());
+        return  tokenString();
     }
 }

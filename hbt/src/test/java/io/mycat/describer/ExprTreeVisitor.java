@@ -152,13 +152,13 @@ public class ExprTreeVisitor implements ParseNodeVisitor {
     }
 
     @Override
-    public void visit(PropertyLiteral propertyLiteral) {
+    public void visit(BooleanLiteral booleanLiteral) {
 
     }
 
     @Override
-    public void endVisit(PropertyLiteral propertyLiteral) {
-        stack.push(propertyLiteral.copy());
+    public void endVisit(BooleanLiteral booleanLiteral) {
+        stack.push(booleanLiteral);
     }
 
     @EqualsAndHashCode

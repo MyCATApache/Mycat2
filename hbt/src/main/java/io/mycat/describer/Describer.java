@@ -14,6 +14,7 @@
  */
 package io.mycat.describer;
 
+import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.parser.ParserException;
 import com.alibaba.fastsql.sql.parser.Token;
 import io.mycat.describer.literal.*;
@@ -69,12 +70,14 @@ public class Describer {
         addOperator("unionDistinct", 1, true);
         addOperator("unionDistinct", 1, true);
         addOperator("unionDistinct", 1, true);
-
-
-
-
-
-
+        addOperator("rename", 1, true);
+        addOperator("groupBy", 1, true);
+        addOperator("alias", 1, true);
+        addOperator("distinct", 1, true);
+        addOperator("approximate", 1, true);
+        addOperator("ignoreNulls", 1, true);
+        addOperator("filter", 1, true);
+        addOperator("orderBy", 1, true);
 
 
 //
@@ -86,7 +89,7 @@ public class Describer {
         addOperator("ne", 13, true);
 
         addOperator("or", 2, true);
-        addOperator("and", 2, true);
+        addOperator("and", 3, true);
         addOperator("as", 3, true);
     }
 
@@ -119,6 +122,8 @@ public class Describer {
         Precedence precedence = operators.get(op);
         if (precedence != null) {
             op = precedence.opText;
+        } else {
+            System.out.println();
         }
         return op;
     }
@@ -175,6 +180,15 @@ public class Describer {
                 if (lexer.token() == Token.LPAREN) {
                     return new CallExpr(id, parentheresExpr());
                 }
+                if (id.startsWith("`") && id.endsWith("`")) {
+                    return new IdLiteral(SQLUtils.normalize(id));
+                }
+                if ("true".equals(id)) {
+                    return new BooleanLiteral(true);
+                }
+                if ("false".equals(id)) {
+                    return new BooleanLiteral(false);
+                }
                 return new IdLiteral(id);
             }
             case LITERAL_FLOAT: {
@@ -201,6 +215,9 @@ public class Describer {
             }
             case LPAREN: {
                 return parentheresExpr();
+            }
+            case LBRACKET: {
+                return arrayExprExpr();
             }
             case EOF:
                 throw new ParserException(lexer.info());
@@ -273,6 +290,30 @@ public class Describer {
                 } else {
                     throw new ParserException(lexer.info());
                 }
+            }
+        }
+    }
+
+    private CallExpr arrayExprExpr() {
+        String funName = "array";
+        lexer.nextToken();
+        List<ParseNode> exprs = new ArrayList<>(3);
+        Token token1 = lexer.token();
+        if (token1 == Token.RBRACKET) {
+            lexer.nextToken();
+            return new CallExpr(funName,new ParenthesesExpr(Collections.emptyList()));
+        }
+        ParseNode expression = expression();
+        exprs.add(expression);
+        while (true) {
+            if (lexer.token() == Token.RBRACKET) {
+                lexer.nextToken();
+                return  new CallExpr(funName,new ParenthesesExpr(exprs));
+            } else if (lexer.token() == Token.COMMA) {
+                lexer.nextToken();
+                exprs.add(expression());
+            } else {
+                throw new ParserException(lexer.info());
             }
         }
     }

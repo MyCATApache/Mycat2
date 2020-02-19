@@ -14,7 +14,6 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
 import lombok.Data;
 
 import java.util.List;
@@ -23,16 +22,11 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
-public class GroupItem extends Node {
+public class GroupItem {
     private final List<Expr> exprs;
 
-    public GroupItem(Op op, List<Expr> exprs) {
-        super(op);
+    public GroupItem( List<Expr> exprs) {
         this.exprs = exprs;
     }
 
-    @Override
-    public void accept(NodeVisitor visitor) {
-
-    }
 }

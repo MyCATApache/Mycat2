@@ -20,7 +20,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,12 +29,14 @@ import java.util.List;
 @Data
 public class FilterSchema extends Schema {
     private final Schema schema;
-    private final List<Expr> exprs;
+    private final Expr exprs;
 
-    public FilterSchema(Schema schema, Expr... exprs) {
+
+
+    public FilterSchema(Schema schema, Expr exprs) {
         super(Op.FILTER);
         this.schema = schema;
-        this.exprs = Arrays.asList(exprs);
+        this.exprs = exprs;
     }
 
     @Override
@@ -47,12 +48,14 @@ public class FilterSchema extends Schema {
         return schema;
     }
 
-    public List<Expr> getExpr() {
-        return exprs;
-    }
 
     @Override
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);
     }
+
+    public Expr getExpr() {
+        return exprs;
+    }
+
 }

@@ -107,14 +107,12 @@ public class NodeVisitorImpl implements ParseNodeVisitor {
     }
 
     @Override
-    public void visit(PropertyLiteral propertyLiteral) {
-        sb.append("property(");
-        sb.append(String.join(",", "\"" + propertyLiteral.getValue() + "\""));
-        sb.append("))");
+    public void visit(BooleanLiteral booleanLiteral) {
+        sb.append("literal(").append(booleanLiteral.getValue().toString()).append(")");
     }
 
     @Override
-    public void endVisit(PropertyLiteral propertyLiteral) {
+    public void endVisit(BooleanLiteral booleanLiteral) {
 
     }
 

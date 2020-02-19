@@ -95,11 +95,12 @@ public class ExplainVisitor implements NodeVisitor {
     }
 
     private String aggregateAs(AggregateCall call) {
-        String s = aggregateArgs(call);
-        if (call.getAlias() != null) {
-            return MessageFormat.format("as({0},{1})", s, toId(call.getAlias()));
-        }
-        return s;
+//        String s = aggregateArgs(call);
+//        if (call.getAlias() != null) {
+//            return MessageFormat.format("as({0},{1})", s, toId(call.getAlias()));
+//        }
+//        return s;
+        return "";
     }
 
     private String aggregateArgs(AggregateCall call) {
@@ -123,7 +124,7 @@ public class ExplainVisitor implements NodeVisitor {
     public void visit(GroupSchema groupSchema) {
         List<AggregateCall> exprs = groupSchema.getExprs();
         List<GroupItem> keys = groupSchema.getKeys();
-        sb.append("group(");
+        sb.append("groupBy(");
         Schema schema = groupSchema.getSchema();
         schema.accept(this);
         sb.append(",");
@@ -144,8 +145,8 @@ public class ExplainVisitor implements NodeVisitor {
         for (int i = 0; i < size; i++) {
             sb.append("order(");
             OrderItem orderItem = orderKeys.get(i);
-            Identifier columnName = orderItem.getColumnName();
-            sb.append(columnName.getValue());
+            String columnName = orderItem.getColumnName();
+            sb.append(columnName);
             Direction direction = orderItem.getDirection();
             sb.append(",");
             sb.append(direction.getName());
@@ -162,14 +163,14 @@ public class ExplainVisitor implements NodeVisitor {
         int lastIndex = keys.size() - 1;
         for (int i = 0; i < size; i++) {
             GroupItem key = keys.get(i);
-            Op op = key.getOp();
-            if (op == Op.REGULAR) {
-                sb.append("regular(");
+//            if (op == Op.REGULAR) {
+//                sb.append("regular(");
+            sb.append("groupKey(");
                 joinNode(key.getExprs());
                 sb.append(")");
-            } else {
-                throw new UnsupportedOperationException();
-            }
+//            } else {
+//                throw new UnsupportedOperationException();
+//            }
             if (i != lastIndex) {
                 sb.append(",");
             }
@@ -181,18 +182,18 @@ public class ExplainVisitor implements NodeVisitor {
         sb.append("limit(");
         limitSchema.getSchema().accept(this);
         sb.append(",");
-        Literal offset = limitSchema.getOffset();
-        sb.append(offset.getValue());
+        Number offset = limitSchema.getOffset();
+        sb.append(offset);
         sb.append(",");
-        Literal limit = limitSchema.getLimit();
-        sb.append(limit.getValue());
+        Number limit = limitSchema.getLimit();
+        sb.append(limit);
         sb.append(")");
     }
 
     @Override
     public void visit(FromSchema fromSchema) {
         sb.append("from(");
-        sb.append(fromSchema.getNames().stream().map(i -> toId(i.getValue())).collect(Collectors.joining(",")));
+        sb.append(fromSchema.getNames().stream().map(i -> toId(i)).collect(Collectors.joining(",")));
         sb.append(")");
     }
 
@@ -216,21 +217,21 @@ public class ExplainVisitor implements NodeVisitor {
         Object value = literal.getValue();
         String target;
         if (value instanceof String) {
-            target = "literal('" + value + "')";
+            target = "'" + value + "'";
         } else if (value instanceof byte[]) {
             byte[] value1 = (byte[]) value;
             ByteString byteString = new ByteString(value1);
-            target = "literal(X'" + byteString.toString() + "')";
+            target = "X'" + byteString.toString() + "'";
         } else if (value instanceof Number) {
-            target = "literal(" + value + ")";
+            target = "" + value + "";
         } else if (value instanceof LocalDate) {
-            target = "dateLiteral(" + (value) + ")";
+            target = "" + (value) + "";
         } else if (value instanceof LocalDateTime) {
-            target = "timestampLiteral(" + (value) + ")";
+            target = "" + (value) + "";
         } else if (value instanceof LocalTime) {
-            target = "timeLiteral(" + (value) + ")";
+            target = "" + (value) + "";
         } else {
-            target = "literal(" + value + ")";
+            target = "" + value + "";
         }
         sb.append(target);
     }
@@ -244,13 +245,18 @@ public class ExplainVisitor implements NodeVisitor {
             sb.append("orderBy(");
             orderSchema.getSchema().accept(this);
             sb.append(",");
-            sb.append(orders.stream().map(i -> {
-                Identifier columnName = i.getColumnName();
-                String name = i.getDirection().name();
-                return "order(" + toId(columnName.getValue()) + "," + toId(name) + ")";
-            }).collect(Collectors.joining(",")));
+            String orderListText = getOrderListString(orders);
+            sb.append(orderListText);
             sb.append(")");
         }
+    }
+
+    private String getOrderListString(List<OrderItem> orders) {
+        return orders.stream().map(i -> {
+                    String columnName = i.getColumnName();
+                    String name = i.getDirection().name();
+                    return "order(" + toId(columnName) + "," + toId(name) + ")";
+                }).collect(Collectors.joining(","));
     }
 
     @Override
@@ -281,13 +287,13 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(ValuesSchema valuesSchema) {
-        sb.append("valuesSchema(");
+        sb.append("table(");
         sb.append("fields(");
         joinNode(valuesSchema.getFieldNames());
         sb.append(")");
         sb.append(",");
         sb.append("values(");
-        joinNode(valuesSchema.getValues());
+        joinNode(valuesSchema.getValues().stream().map(i->new Literal(i)).collect(Collectors.toList()));
         sb.append(")");
         sb.append(")");
     }
@@ -309,22 +315,50 @@ public class ExplainVisitor implements NodeVisitor {
     @Override
     public void visit(JoinSchema corJoinSchema) {
         Expr condition = corJoinSchema.getCondition();
-        sb.append("join").append("(")
-                .append(corJoinSchema.getOp().getFun());
-        if (condition != null) {
-            sb.append(",")
-                    .append(getExprString(condition));
-        }
+        sb.append(corJoinSchema.getOp().getFun()).append("(");
+        sb         .append(getExprString(condition));
+
 
         sb.append(",");
-        joinNode(corJoinSchema.getSchemas());
+        corJoinSchema.getLeft().accept(this);
+        sb.append(",");
+        corJoinSchema.getRight().accept(this);
         sb.append(")");
     }
 
 
     @Override
     public void visit(AggregateCall aggregateCall) {
-        sb.append(aggregateOrder(aggregateCall));
+         final String function = aggregateCall.getFunction();
+         final String alias = aggregateCall.getAlias(); // may be null
+         final List<Expr> operands = aggregateCall.getOperands(); // may be empty, never null
+         final Boolean distinct = aggregateCall.getDistinct();
+         final Boolean approximate = aggregateCall.getApproximate();
+         final Boolean ignoreNulls = aggregateCall.getIgnoreNulls();
+         final Expr filter = aggregateCall.getFilter(); // may be null
+         final List<OrderItem> orderKeys = aggregateCall.getOrderKeys(); // may be empty, never null
+
+        String res = function+"("+ operands.stream().map(i -> getExprString(i)).collect(Collectors.joining(","))+ ")";
+
+        if (alias!=null){
+            res += ".alias("+alias+")";
+        }
+        if (distinct!=null){
+            res  += ".distinct("+")";
+        }
+        if (approximate!=null){
+            res  += ".approximate("+")";
+        }
+        if (ignoreNulls!=null){
+            res  += ".ignoreNulls("+")";
+        }
+        if (filter!=null){
+            res  += ".filter("+getExprString(filter)+")";
+        }
+        if (orderKeys !=null&&!orderKeys.isEmpty()){
+            res  += ".orderBy("+getOrderListString(orderKeys)+")";
+        }
+        sb.append(res);
     }
 
     @Override
@@ -332,7 +366,7 @@ public class ExplainVisitor implements NodeVisitor {
         sb.append("filter(");
         filterSchema.getSchema().accept(this);
         sb.append(",");
-        joinNode(filterSchema.getExprs());
+      filterSchema.getExprs().accept(this);
         sb.append(")");
     }
 
@@ -343,13 +377,15 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(DistinctSchema distinctSchema) {
-
+        sb.append("distinct(");
+        distinctSchema.getSchema().accept(this);
+        sb.append(")");
     }
 
     @Override
-    public void visit(ProjectSchema projectSchema) {
+    public void visit(RenameSchema projectSchema) {
         List<String> columnNames = projectSchema.getColumnNames();
-        sb.append("projectNamed(");
+        sb.append("rename(");
         projectSchema.getSchema().accept(this);
         sb.append(",");
         sb.append(columnNames.stream().map(this::toId).collect(Collectors.joining(",")));
@@ -357,22 +393,21 @@ public class ExplainVisitor implements NodeVisitor {
     }
 
     private String toId(String i) {
-        return getExprString(new Identifier(i));
+        return i;
     }
 
     @Override
     public void visit(CorrelateSchema correlate) {
         sb.append(correlate.getOp().getFun())
                 .append("(")
-                .append(getExprString(correlate.getRefName()))
-                .append(",").append("keys(").append(correlate.getColumnName().stream().map(i -> getExprString(i)).collect(Collectors.joining(",")))
-                .append(")")
+                .append(correlate.getRefName())
                 .append(",");
         correlate.getLeft().accept(this);
         sb.append(",");
         correlate.getRight().accept(this);
         sb.append(")");
     }
+
 
     public String getSb() {
         return sb.toString();

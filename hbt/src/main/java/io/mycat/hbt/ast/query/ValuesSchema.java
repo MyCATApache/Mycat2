@@ -29,11 +29,11 @@ import java.util.List;
  **/
 @Data
 public class ValuesSchema extends Schema {
-    private final List<Literal> values;
+    private final List<Object> values;
     private final List<FieldType> fieldNames;
 
-    public ValuesSchema(List<FieldType> fieldNames, List<Literal> values) {
-        super(Op.VALUES);
+    public ValuesSchema(List<FieldType> fieldNames, List<Object> values) {
+        super(Op.TABLE);
         this.fieldNames = fieldNames;
         this.values = values;
     }

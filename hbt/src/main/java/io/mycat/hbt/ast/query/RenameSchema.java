@@ -27,13 +27,13 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
-public class ProjectSchema extends Schema {
+public class RenameSchema extends Schema {
     private final Schema schema;
     private final List<String> columnNames;
     private final List<FieldType> fieldSchemaList;
 
-    public ProjectSchema(Schema schema, List<String> alias) {
-        super(Op.PROJECT);
+    public RenameSchema(Schema schema, List<String> alias) {
+        super(Op.RENAME);
         this.schema = schema;
         this.columnNames = alias;
 

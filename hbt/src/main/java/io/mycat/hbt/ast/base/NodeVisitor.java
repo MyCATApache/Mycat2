@@ -54,7 +54,8 @@ public interface NodeVisitor {
 
     void visit(DistinctSchema distinctSchema);
 
-    void visit(ProjectSchema projectSchema);
+    void visit(RenameSchema projectSchema);
 
     void visit(CorrelateSchema correlate);
+
 }

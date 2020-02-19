@@ -89,6 +89,7 @@ public class CopyNodeVisitor implements ParseNodeVisitor {
         for (int i = 0; i < size; i++) {
             list.add(stack.pop());
         }
+        Collections.reverse(list);
         stack.push(new ParenthesesExpr(list));
     }
 
@@ -123,14 +124,15 @@ public class CopyNodeVisitor implements ParseNodeVisitor {
     }
 
     @Override
-    public void visit(PropertyLiteral propertyLiteral) {
+    public void visit(BooleanLiteral booleanLiteral) {
 
     }
 
     @Override
-    public void endVisit(PropertyLiteral propertyLiteral) {
-        stack.push(propertyLiteral.copy());
+    public void endVisit(BooleanLiteral booleanLiteral) {
+        stack.push(booleanLiteral);
     }
+
 
     public <T> T getStack() {
         return (T) stack.peek();
