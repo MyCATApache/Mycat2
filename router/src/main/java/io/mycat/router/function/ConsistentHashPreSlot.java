@@ -10,6 +10,11 @@ import lombok.Getter;
 
 import java.util.*;
 
+/**
+ *
+ * jamie12221
+ *
+ */
 public class ConsistentHashPreSlot extends RuleFunction {
 
     public ConsistentHashPreSlot(String name, int defaultSlotsNum, HashFunction hashFunction) {
@@ -45,7 +50,7 @@ public class ConsistentHashPreSlot extends RuleFunction {
 
     @Override
     public int getPartitionNum() {
-        return rangeMap2.length;
+       throw new UnsupportedOperationException();
     }
 
     public ConsistentHashBalanceExpandResult balanceExpand(List<String> oldDataNodes, List<String> newDataNodes) {
