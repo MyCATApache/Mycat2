@@ -70,15 +70,15 @@ public abstract class RuleFunction {
     public abstract int getPartitionNum();
 
     /**
-     * init
+     * init 防止并发
      */
-    public void callInit(Map<String, String> prot, Map<String, String> ranges) {
+    public synchronized void callInit(Map<String, String> prot, Map<String, String> ranges) {
         this.prot = prot;
         this.ranges = ranges;
         init(prot, ranges);
     }
 
-    protected abstract void init(Map<String, String> prot, Map<String, String> ranges);
+    protected  abstract  void init(Map<String, String> prot, Map<String, String> ranges);
 
     protected static int[] ints(List<Integer> list) {
         int[] ints = new int[list.size()];
