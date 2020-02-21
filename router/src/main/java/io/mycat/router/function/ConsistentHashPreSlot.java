@@ -3,10 +3,9 @@ package io.mycat.router.function;
 import io.mycat.router.NodeIndexRange;
 import io.mycat.router.RuleFunction;
 import io.mycat.router.hashFunction.HashFunction;
+import io.mycat.router.migrate.ConsistentHashBalanceExpandResult;
 import io.mycat.router.migrate.MigrateTask;
 import io.mycat.router.migrate.MigrateUtils;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 
 import java.util.*;
 
@@ -62,12 +61,6 @@ public class ConsistentHashPreSlot extends RuleFunction {
         return new ConsistentHashBalanceExpandResult(stringListSortedMap, consistentHash);
     }
 
-    @AllArgsConstructor
-    @Getter
-    public static class ConsistentHashBalanceExpandResult {
-        SortedMap<String, List<MigrateTask>> migrateTaskMap;
-        ConsistentHashPreSlot consistentHash;
-    }
 
     @Override
     protected void init(Map<String, String> prot, Map<String, String> ranges) {
