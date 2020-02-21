@@ -145,13 +145,13 @@ public class EvalNodeVisitor implements ParseNodeVisitor {
     }
 
     @Override
-    public void visit(PropertyLiteral propertyLiteral) {
-        stack.push(propertyLiteral.copy());
+    public void visit(BooleanLiteral booleanLiteral) {
+
     }
 
     @Override
-    public void endVisit(PropertyLiteral propertyLiteral) {
-
+    public void endVisit(BooleanLiteral booleanLiteral) {
+        stack.push(booleanLiteral);
     }
 
     @EqualsAndHashCode

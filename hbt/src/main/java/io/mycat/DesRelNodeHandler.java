@@ -17,11 +17,10 @@ package io.mycat;
 import io.mycat.describer.Describer;
 import io.mycat.describer.NodeVisitorImpl;
 import io.mycat.describer.ParseNode;
-import io.mycat.rsqlBuilder.DesBuilder;
-import io.mycat.rsqlBuilder.DotCallResolver;
-import io.mycat.hbt.DesComplier;
 import io.mycat.hbt.QueryOp;
 import io.mycat.hbt.ast.base.Schema;
+import io.mycat.rsqlBuilder.DesBuilder;
+import io.mycat.rsqlBuilder.DotCallResolver;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.RelRunners;
@@ -39,7 +38,6 @@ import java.sql.Types;
  **/
 public class DesRelNodeHandler {
     final FrameworkConfig config;
-    final DesComplier complier = new DesComplier();
 
     public DesRelNodeHandler(FrameworkConfig config) {
         this.config = config;
@@ -121,7 +119,7 @@ public class DesRelNodeHandler {
 
     public Schema complieFlatSyntaxAstText(String text) {
         try {
-            return complier.complie(text);
+           return null;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

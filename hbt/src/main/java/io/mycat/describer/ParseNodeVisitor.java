@@ -48,7 +48,7 @@ public interface ParseNodeVisitor {
 
     void endVisit(DecimalLiteral decimalLiteral);
 
-    void visit(PropertyLiteral propertyLiteral);
+    void visit(BooleanLiteral booleanLiteral);
 
-    void endVisit(PropertyLiteral propertyLiteral);
+    void endVisit(BooleanLiteral booleanLiteral);
 }

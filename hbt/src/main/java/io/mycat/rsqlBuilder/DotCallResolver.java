@@ -38,8 +38,10 @@ public class DotCallResolver extends CopyNodeVisitor {
             if (m instanceof CallExpr) {
                 List<ParseNode> exprs1 = ((CallExpr) m).getArgs().getExprs();
                 ArrayList<ParseNode> objects = new ArrayList<>();
-                objects.add(0, args.get(0));
-                objects.addAll(exprs1);
+                objects.add( args.get(0));
+                for (ParseNode parseNode : exprs1) {
+                    objects.add(parseNode);
+                }
                 CallExpr callExpr = new CallExpr(((CallExpr) m).getName(), new ParenthesesExpr(objects));
                 callExpr.accept(this);
                 return;

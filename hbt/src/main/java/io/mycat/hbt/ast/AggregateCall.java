@@ -37,6 +37,9 @@ public class AggregateCall extends Node {
     private final Expr filter; // may be null
     private final List<OrderItem> orderKeys; // may be empty, never null
 
+    public AggregateCall(String function,List<Expr> operands) {
+       this(function,null,operands,null,null,null,null,null);
+    }
     public AggregateCall(String function, String alias, List<Expr> operands, Boolean distinct, Boolean approximate, Boolean ignoreNulls, Expr filter, List<OrderItem> orderKeys) {
         super(Op.AggregateCall);
         this.function = function;
@@ -59,7 +62,7 @@ public class AggregateCall extends Node {
      * {@code orderKeys} before aggregating, as in SQL's {@code WITHIN GROUP}
      * clause.
      */
-    public AggregateCall sort(List<OrderItem> orderKeys) {
+    public AggregateCall orderBy(List<OrderItem> orderKeys) {
         return new AggregateCall(function, alias, operands, distinct, approximate, ignoreNulls, filter, orderKeys);
     }
 
@@ -70,18 +73,22 @@ public class AggregateCall extends Node {
     public AggregateCall approximate(boolean approximate) {
         return new AggregateCall(function, alias, operands, distinct, approximate, ignoreNulls, filter, orderKeys);
     }
-
+    public AggregateCall approximate() {
+        return approximate(true);
+    }
     /**
      * Returns a copy of this AggCall that ignores nulls.
      */
     public AggregateCall ignoreNulls(boolean ignoreNulls) {
         return new AggregateCall(function, alias, operands, distinct, approximate, ignoreNulls, filter, orderKeys);
     }
-
+    public AggregateCall ignoreNulls() {
+        return ignoreNulls(true);
+    }
     /**
      * Returns a copy of this AggCall with a given alias.
      */
-    public AggregateCall as(String alias) {
+    public AggregateCall alias(String alias) {
         return new AggregateCall(function, alias, operands, distinct, approximate, ignoreNulls, filter, orderKeys);
     }
 

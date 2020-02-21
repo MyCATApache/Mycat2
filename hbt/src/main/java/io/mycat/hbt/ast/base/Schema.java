@@ -24,7 +24,7 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
-public abstract class Schema extends Node {
+public abstract class Schema extends Node  {
     public Schema(Op op) {
         super(op);
     }

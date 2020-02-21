@@ -2,10 +2,8 @@ package io.mycat.router.migrate;
 
 import io.mycat.router.NodeIndexRange;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by magicdoom on 2016/9/16.
@@ -74,7 +72,7 @@ public class MigrateUtils {
                 result.add(new NodeIndexRange(range.getNodeIndex(), range.getValueStart(), range.getValueStart() + size - 1));
                 rangeList.set(i, new NodeIndexRange(range.getNodeIndex(), range.getValueStart() + size, range.getValueEnd()));
                 break;
-            }else {
+            } else {
                 throw new IllegalArgumentException();
             }
         }
@@ -87,13 +85,24 @@ public class MigrateUtils {
         return result;
     }
 
-    private static int getCurTotalSizeForTask(List<MigrateTask> rangeList) {
+    public static int getCurTotalSizeForTask(List<MigrateTask> rangeList) {
         return rangeList.stream().mapToInt(task -> getCurTotalSize(task.getSlots())).sum();
     }
 
-    private static int getCurTotalSize(List<NodeIndexRange> slots) {
+    public static int getCurTotalSize(List<NodeIndexRange> slots) {
         return slots.stream().map(i -> i.getSize()).mapToInt(i -> i.intValue()).sum();
     }
 
+    public static void merge(List<List<NodeIndexRange>> copy, SortedMap<String, List<MigrateTask>> tasks) {
+        List<List<MigrateTask>> collect = tasks.entrySet().stream().sorted(Comparator.comparing(x -> Integer.parseInt(x.getKey().substring(2)))).map(i -> i.getValue()).collect(Collectors.toList());
+        collect.forEach(i -> copy.add(i.stream().flatMap(j -> j.getSlots().stream()).collect(Collectors.toList())));
+    }
 
+    public static List<List<NodeIndexRange>> copy(List<List<NodeIndexRange>> integerListMap) {
+        List<List<NodeIndexRange>> copy = new ArrayList<>();
+        for (List<NodeIndexRange> nodeIndexRanges : integerListMap) {
+            copy.add(new ArrayList<>(nodeIndexRanges));
+        }
+        return copy;
+    }
 }

@@ -23,6 +23,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -32,26 +33,27 @@ import java.util.List;
 @Getter
 @Data
 public class JoinSchema extends Schema {
-    private final List<Schema> schemas;
     private final Expr condition;
+    private final Schema left;
+    private final Schema right;
 
-    public JoinSchema(Op op, List<Schema> schemas, Expr condition) {
+    public JoinSchema(Op op, Expr condition,Schema left,Schema right) {
         super(op);
-        this.schemas = schemas;
+        this.left = left;
+        this.right = right;
         this.condition = condition;
     }
 
     @Override
     public List<FieldType> fields() {
         ArrayList<FieldType> list = new ArrayList<>();
-        for (Schema schema : schemas) {
-            list.addAll(schema.fields());
-        }
+        list.addAll(left.fields());
+        list.addAll(right.fields());
         return list;
     }
 
     public List<Schema> getSchemas() {
-        return schemas;
+        return Arrays.asList(left,right);
     }
 
     @Override
@@ -63,7 +65,7 @@ public class JoinSchema extends Schema {
     public String toString() {
         return "JoinSchema(" +
                 "type=" + op +
-                ", schemas=" + schemas +
+                ", schemas=" + getSchemas() +
                 ", condition=" + condition +
                 ')';
     }

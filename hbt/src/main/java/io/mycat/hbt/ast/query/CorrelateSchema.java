@@ -15,7 +15,6 @@
 package io.mycat.hbt.ast.query;
 
 import io.mycat.hbt.Op;
-import io.mycat.hbt.ast.base.Identifier;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
@@ -27,16 +26,14 @@ import java.util.List;
  **/
 @Data
 public class CorrelateSchema extends Schema {
-    private final List<Identifier> columnName;
     private final Schema left;
     private final Schema right;
     private Op op;
-    private Identifier refName;
+    private String refName;
 
-    public CorrelateSchema(Op op, Identifier refName, List<Identifier> columnName, Schema left, Schema right) {
+    public CorrelateSchema(Op op, String refName,Schema left, Schema right) {
         super(op);
         this.op = op;
-        this.columnName = columnName;
         this.left = left;
         this.right = right;
         this.refName = refName;

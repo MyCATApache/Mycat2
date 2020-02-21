@@ -27,17 +27,17 @@ public enum Op {
     MINUS_DISTINCT("minusDistinct"),
     INTERSECT_DISTINCT("intersectDistinct"),
     INTERSECT_ALL("intersectAll"),
-
+//    ORDER_ITEM("orderItem"),
     //relational operators
     FROM("from"),
     MAP("map"),
     FILTER("filter"),
     LIMIT("limit"),
-    ORDER("order"),
-    GROUP("group"),
-    VALUES("values"),
+    ORDER("orderBy"),
+    GROUP("groupBy"),
+    TABLE("table"),
     DISTINCT("distinct"),
-    PROJECT("project"),
+    RENAME("reName"),
     INNER_JOIN("innerJoin"),
     LEFT_JOIN("leftJoin"),
     CORRELATE_INNER_JOIN("correlateInnerJoin"),
@@ -46,11 +46,10 @@ public enum Op {
     FULL_JOIN("fillJoin"),
     SEMI_JOIN("semiJoin"),
     ANTI_JOIN("antiJoin"),
-    CORRELATE("correlate"),
+//    CORRELATE("correlate"),
 
     // types
     SCHEMA("schema"),
-    SCALAR_TYPE("scalarType"),
     FIELD_SCHEMA("fieldSchema"),
 
     //atoms

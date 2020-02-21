@@ -54,9 +54,9 @@ public class StringUtil {
 	 * h = 31*h + s.charAt(i); =&gt; h = (h &lt;&lt; 5) - h + s.charAt(i);
 	 *
 	 * @param start
-	 *            hash for s.substring(start, end)
+	 *            hashFunction for s.substring(start, end)
 	 * @param end
-	 *            hash for s.substring(start, end)
+	 *            hashFunction for s.substring(start, end)
 	 */
 	public static long hash(String s, int start, int end) {
 		if (start < 0) {
