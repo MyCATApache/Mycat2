@@ -262,7 +262,7 @@ public enum MetadataManager {
                 }
                 String[] columnList = new String[columns.size()];
                 int index = 0;
-                for (SQLExpr column : statement.getColumns()) {
+                for (SQLExpr column : columns) {
                     columnList[index] = SQLUtils.normalize(column.toString()).toLowerCase();
                     index++;
                 }
