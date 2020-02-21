@@ -257,6 +257,9 @@ public enum MetadataManager {
                 String schema = s == null ? currentSchemaName : s;
                 String tableName = SQLUtils.normalize(statement.getTableSource().getTableName()).toLowerCase();
                 List<SQLExpr> columns = statement.getColumns();
+                if (columns == null){
+                    columns = (List)statement.getTableSource().getColumns();
+                }
                 String[] columnList = new String[columns.size()];
                 int index = 0;
                 for (SQLExpr column : statement.getColumns()) {
