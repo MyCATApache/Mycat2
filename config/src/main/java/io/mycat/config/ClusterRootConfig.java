@@ -23,7 +23,6 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -54,6 +53,7 @@ public class ClusterRootConfig {
         private List<String> masters;
         private List<String> replicas;
         private HeartbeatConfig heartbeat;
+        private Integer maxRequestCount;
 
         public ClusterConfig() {
         }

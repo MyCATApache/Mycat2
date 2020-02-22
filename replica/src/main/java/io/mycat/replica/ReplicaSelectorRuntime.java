@@ -32,8 +32,14 @@ import io.mycat.replica.heartbeat.strategy.MySQLGaleraHeartBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLMasterSlaveBeatStrategy;
 import io.mycat.replica.heartbeat.strategy.MySQLSingleHeartBeatStrategy;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -200,9 +206,9 @@ public enum ReplicaSelectorRuntime {
         LoadBalanceStrategy writeLB
                 = PlugRuntime.INSTCANE
                 .getLoadBalanceByBalanceName(replicaConfig.getWriteBalanceName());
-
+        int maxRequestCount = replicaConfig.getMaxRequestCount()==null?Integer.MAX_VALUE:replicaConfig.getMaxRequestCount();
         ReplicaDataSourceSelector selector = registerCluster(name, balanceType,
-                replicaType, switchType, readLB, writeLB);
+                replicaType, maxRequestCount,switchType, readLB, writeLB);
 
         registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true);
         registerDatasource(datasourceConfigMap, selector, replicaConfig.getReplicas(), false);
@@ -232,10 +238,11 @@ public enum ReplicaSelectorRuntime {
 
     private ReplicaDataSourceSelector registerCluster(String replicaName, BalanceType balanceType,
                                                       ReplicaType type,
+                                                      int maxRequestCount,
                                                       ReplicaSwitchType switchType, LoadBalanceStrategy readLB,
                                                       LoadBalanceStrategy writeLB) {
         return map.computeIfAbsent(replicaName,
-                s -> new ReplicaDataSourceSelector(replicaName, balanceType, type, switchType, readLB,
+                s -> new ReplicaDataSourceSelector(replicaName, balanceType, type,maxRequestCount, switchType, readLB,
                         writeLB));
     }
 //////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
