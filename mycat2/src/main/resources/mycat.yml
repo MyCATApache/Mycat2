@@ -40,7 +40,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
 interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
   defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
   schemas: [{
-              tables:[ 'db1.travelrecord','db1.address1'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
+              tables:[ 'db1.travelrecord','db1.address'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
               sqls: [
               {sql: 'select {any}',command: distributedQuery },
               {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
@@ -131,6 +131,7 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
    writeBalanceName: BalanceRoundRobin ,  #对于修改请求的负载均衡类型
    masters:[defaultDs], #主节点列表
    replicas:[defaultDs2],#从节点列表
+   maxRequestCount:, #集群
    heartbeat:{maxRetry: 3, #心跳重试次数
               minSwitchTimeInterval: 12000 , #最小主从切换间隔
               heartbeatTimeout: 12000 , #心跳超时值,毫秒

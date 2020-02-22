@@ -53,7 +53,7 @@ public class ClusterRootConfig {
         private List<String> masters;
         private List<String> replicas;
         private HeartbeatConfig heartbeat;
-        private Integer maxRequestCount;
+        private Integer maxCon;
 
         public ClusterConfig() {
         }

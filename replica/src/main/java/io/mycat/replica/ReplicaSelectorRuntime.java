@@ -206,7 +206,7 @@ public enum ReplicaSelectorRuntime {
         LoadBalanceStrategy writeLB
                 = PlugRuntime.INSTCANE
                 .getLoadBalanceByBalanceName(replicaConfig.getWriteBalanceName());
-        int maxRequestCount = replicaConfig.getMaxRequestCount()==null?Integer.MAX_VALUE:replicaConfig.getMaxRequestCount();
+        int maxRequestCount = replicaConfig.getMaxCon()==null?Integer.MAX_VALUE:replicaConfig.getMaxCon();
         ReplicaDataSourceSelector selector = registerCluster(name, balanceType,
                 replicaType, maxRequestCount,switchType, readLB, writeLB);
 
