@@ -17,6 +17,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## 正在进行的任务
 
+可用分支https://github.com/MyCATApache/Mycat2/tree/0.6-2020-2-13
+
 正在实现loaddata与预处理
 
 
