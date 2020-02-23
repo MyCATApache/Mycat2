@@ -15,7 +15,6 @@
 
 package io.mycat.client;
 
-import io.mycat.EvalNodeVisitor;
 import io.mycat.MycatConfig;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.config.PatternRootConfig;
@@ -24,7 +23,6 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.pattern.*;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
-import org.reflections.Reflections;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,7 +37,6 @@ public enum ClientRuntime {
     INSTANCE;
     private static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ClientRuntime.class);
     final BuilderInfo wapper = new BuilderInfo();
-    final ConcurrentHashMap<String, List<EvalNodeVisitor.FunctionSig>> libSharedMap = new ConcurrentHashMap<>();
     volatile RuntimeInfo runtimeInfo;
     TransactionType transactionType = TransactionType.JDBC_TRANSACTION_TYPE;
     private String defaultSchema;
@@ -260,21 +257,6 @@ public enum ClientRuntime {
     private Map<String, Set<String>> getTableMap(PatternRootConfig.SchemaConfig schemaConfig) {
         return schemaConfig.getTables().stream().map(ClientRuntime::apply).collect(Collectors.groupingBy(k -> k.getSchemaName(), Collectors.mapping(v -> v.getTableName(), Collectors.toSet())));
 
-    }
-
-    public void loadPackageList(List<String> packageNameList) throws IllegalAccessException {
-        Reflections reflections = new Reflections(packageNameList);
-        Set<Class<? extends InstructionSet>> subTypesOf = reflections.getSubTypesOf(InstructionSet.class);
-        if (subTypesOf == null) subTypesOf = Collections.emptySet();
-        Map<String, List<EvalNodeVisitor.FunctionSig>> map = EvalNodeVisitor.getMap((Set) subTypesOf);
-
-        for (Map.Entry<String, List<EvalNodeVisitor.FunctionSig>> stringListEntry : map.entrySet()) {
-            libSharedMap.put(stringListEntry.getKey(), stringListEntry.getValue());
-        }
-    }
-
-    public void clearPackage() {
-        libSharedMap.clear();
     }
 
 

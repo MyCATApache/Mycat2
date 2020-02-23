@@ -10,9 +10,9 @@ public enum SqldbRepl {
     INSTANCE;
     final PrepareManager prepareManager = new PrepareManager();
 
-   public  MycatPlan query(String defaultSchmeaName, String sql) {
+    public MycatPlan querySQL(String defaultSchmeaName, String sql) {
         MycatCalcitePrepare preare = prepareManager.preare(defaultSchmeaName, sql);
-        MycatPlan plan = preare.plan(Collections.emptyList());
-        return plan;
+        return preare.plan(Collections.emptyList());
     }
+
 }

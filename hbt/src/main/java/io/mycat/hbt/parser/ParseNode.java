@@ -12,16 +12,13 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.hbt.ast.modify;
-
-import io.mycat.hbt.parser.ParseNode;
-import lombok.AllArgsConstructor;
+package io.mycat.hbt.parser;
 
 /**
  * @author jamie12221
  **/
-@AllArgsConstructor
-public class Assign {
-    String identifier;
-    ParseNode expr;
+public interface ParseNode {
+    void accept(ParseNodeVisitor visitor);
+
+    <T extends ParseNode> T copy();
 }

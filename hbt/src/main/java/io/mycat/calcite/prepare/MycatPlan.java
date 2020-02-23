@@ -21,6 +21,9 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.*;
 import io.mycat.calcite.logic.MycatTransientSQLTable;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
+import io.mycat.hbt.RelNodeConvertor;
+import io.mycat.hbt.TextConvertor;
+import io.mycat.hbt.ast.base.Schema;
 import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.linq4j.Enumerator;
@@ -68,6 +71,8 @@ public class MycatPlan {
 
         this.relNode = cache.get(defaultSchemaName + ":" + sql, () -> complie(planner, defaultSchemaName, sql));
         this.tableScans = planner.collectMycatTransientSQLTableScan(this.relNode);
+
+
     }
 
     @SneakyThrows
@@ -114,7 +119,7 @@ public class MycatPlan {
                         new PrintWriter(sw), expplanAttributes, false);
 
         MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(defaultSchemaName);
-        relNode.accept(new RelShuttleImpl() {
+        RelNode origin = relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
                 MycatTransientSQLTable unwrap = scan.getTable().unwrap(MycatTransientSQLTable.class);
@@ -123,8 +128,14 @@ public class MycatPlan {
                 }
                 return super.visit(scan);
             }
-        }).explain(planWriter);
+        });
+        origin.explain(planWriter);
         String message = sw.toString();
-        return new ArrayList<>(Arrays.asList(message.split("\n")));
+        ArrayList<String> strings = new ArrayList<>(Arrays.asList(message.split("\n")));
+        Schema schema = RelNodeConvertor.convertRelNode(origin);
+        String s = TextConvertor.dump(schema);
+        strings.add(s);
+        return strings;
+
     }
 }

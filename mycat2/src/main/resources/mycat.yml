@@ -131,7 +131,7 @@ cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也
    writeBalanceName: BalanceRoundRobin ,  #对于修改请求的负载均衡类型
    masters:[defaultDs], #主节点列表
    replicas:[defaultDs2],#从节点列表
-   maxRequestCount:, #集群
+   maxCon:, #集群
    heartbeat:{maxRetry: 3, #心跳重试次数
               minSwitchTimeInterval: 12000 , #最小主从切换间隔
               heartbeatTimeout: 12000 , #心跳超时值,毫秒

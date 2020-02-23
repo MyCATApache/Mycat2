@@ -12,16 +12,42 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.hbt.ast.modify;
+package io.mycat.hbt.parser.literal;
 
-import io.mycat.hbt.parser.ParseNode;
-import lombok.AllArgsConstructor;
+import io.mycat.hbt.parser.ParseNodeVisitor;
+import lombok.EqualsAndHashCode;
+
+import java.math.BigDecimal;
+import java.util.Objects;
 
 /**
  * @author jamie12221
  **/
-@AllArgsConstructor
-public class Assign {
-    String identifier;
-    ParseNode expr;
+@EqualsAndHashCode
+public class DecimalLiteral implements Literal {
+    private final BigDecimal number;
+
+    public DecimalLiteral(BigDecimal number) {
+        this.number = number;
+    }
+
+    @Override
+    public void accept(ParseNodeVisitor visitor) {
+        visitor.visit(this);
+        visitor.endVisit(this);
+    }
+
+    @Override
+    public DecimalLiteral copy() {
+        return this;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toString(number);
+    }
+
+    public BigDecimal getNumber() {
+        return number;
+    }
 }

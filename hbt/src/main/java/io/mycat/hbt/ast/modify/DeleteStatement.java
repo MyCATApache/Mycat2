@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.modify;
 
-import io.mycat.describer.ParseNode;
+import io.mycat.hbt.parser.ParseNode;
 import lombok.AllArgsConstructor;
 
 import java.util.List;

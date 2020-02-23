@@ -44,7 +44,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         this.backStoreList = res;
         this.CANCEL_FLAG = DataContext.Variable.CANCEL_FLAG.get(dataContext);
         for (QueryBackendTask sql : res) {
-            LOGGER.info("prepare query:{}", sql);
+            LOGGER.info("prepare querySQL:{}", sql);
         }
     }
 
@@ -60,7 +60,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
         for (QueryBackendTask endTableInfo : backStoreList) {
             DefaultConnection session = dataContext.getTarget(endTableInfo);
             iterators.add(session.executeQuery(endTableInfo.getSql()));
-            LOGGER.info("runing query:{}", endTableInfo.getSql());
+            LOGGER.info("runing querySQL:{}", endTableInfo.getSql());
         }
 
         return new Enumerator<T>() {

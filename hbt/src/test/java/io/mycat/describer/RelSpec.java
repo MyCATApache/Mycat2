@@ -1,4 +1,4 @@
-//package io.mycat.describer;
+//package io.mycat.parser;
 //
 //import com.google.common.collect.BiMap;
 //import com.google.common.collect.ImmutableList;
@@ -9,8 +9,8 @@
 //import io.mycat.hbt.QueryOp;
 //import io.mycat.hbt.ast.AggregateCall;
 //import io.mycat.hbt.ast.base.*;
-//import io.mycat.hbt.ast.query.FieldType;
-//import io.mycat.hbt.ast.query.SetOpSchema;
+//import io.mycat.hbt.ast.querySQL.FieldType;
+//import io.mycat.hbt.ast.querySQL.SetOpSchema;
 //import org.apache.calcite.adapter.java.ReflectiveSchema;
 //import org.apache.calcite.plan.RelOptTable;
 //import org.apache.calcite.plan.RelOptUtil;
@@ -80,8 +80,8 @@
 //    }
 //
 //    private ParseNode getParseNode(String text) {
-//        Describer describer = new Describer(text);
-//        return describer.expression();
+//        Describer parser = new Describer(text);
+//        return parser.expression();
 //    }
 //
 //    @Test
@@ -564,7 +564,7 @@
 //    @Test
 //    public void selectUpperFrom() throws IOException {
 //        Schema schema = map(from("db1", "travelrecord"), upper("id"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[upper(Identifier(value=id))])", schema.toString());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[upper(Identifier(value=id))])", schema.toString());
 //
 //        String text2 = "from(db1,travelrecord).map(upper(id))";
 //        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),upper(id(\"id\")))", getS(parse2SyntaxAst(text2)));
@@ -576,7 +576,7 @@
 //    @Test
 //    public void selectLowerFrom() throws IOException {
 //        Schema schema = map(from("db1", "travelrecord"), lower("id"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[lower(Identifier(value=id))])", schema.toString());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[lower(Identifier(value=id))])", schema.toString());
 //
 //        String text2 = "from(db1,travelrecord).map(lower(id))";
 //        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),lower(id(\"id\")))", getS(parse2SyntaxAst(text2)));
@@ -588,7 +588,7 @@
 //    @Test
 //    public void selectMidFrom() throws IOException {
 //        Schema schema = map(from("db1", "travelrecord"), mid("id", 1));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[mid(Identifier(value=id),Literal(value=1))])", schema.toString());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[mid(Identifier(value=id),Literal(value=1))])", schema.toString());
 //
 //        String text2 = "from(db1,travelrecord).map(mid(id))";
 //        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),mid(id(\"id\")))", getS(parse2SyntaxAst(text2)));
@@ -597,7 +597,7 @@
 //    @Test
 //    public void selectLenFrom() throws IOException {
 //        Schema schema = map(from("db1", "travelrecord"), len("id"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[len(Identifier(value=id))])", schema.toString());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[len(Identifier(value=id))])", schema.toString());
 //
 //        String text2 = "from(db1,travelrecord).map(len(id))";
 //        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),len(id(\"id\")))", getS(parse2SyntaxAst(text2)));
@@ -606,7 +606,7 @@
 //    @Test
 //    public void selectRoundFrom() throws IOException {
 //        Schema schema = map(from("db1", "travelrecord"), round("id", 2));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[round(Identifier(value=id),Literal(value=2))])", schema.toString());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[round(Identifier(value=id),Literal(value=2))])", schema.toString());
 //
 //        String text2 = "from(db1,travelrecord).map(round(id,2))";
 //        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),round(id(\"id\"),literal(2)))", getS(parse2SyntaxAst(text2)));
@@ -618,7 +618,7 @@
 //    @Test
 //    public void selectNowFrom() throws IOException {
 //        Schema schema = map(from("db1", "travelrecord"), now());
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[now()])", schema.toString());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[now()])", schema.toString());
 //
 //        String text2 = "from(db1,travelrecord).map(now())";
 //        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),now())", getS(parse2SyntaxAst(text2)));
@@ -629,7 +629,7 @@
 //    @Test
 //    public void selectFormatFrom() throws IOException {
 //        Schema schema = map(from("db1", "travelrecord"), format(now(), "YYYY-MM-DD"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[format(now(),Literal(value=YYYY-MM-DD))])", schema.toString());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[format(now(),Literal(value=YYYY-MM-DD))])", schema.toString());
 //
 //        String text2 = "from(db1,travelrecord).map(format(now(),'YYYY-MM-DD'))";
 //        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),format(now(),literal(\"YYYY-MM-DD\")))", getS(parse2SyntaxAst(text2)));
@@ -675,8 +675,8 @@
 //        String text2 = "isnull(id)";
 //        Assert.assertEquals("isnull(id(\"id\"))", getS(parse2SyntaxAst(text2)));
 //
-//        Expr expr = isnull(literal(1));
-//        Assert.assertEquals("IS NULL(1)", toString(toRexNode(expr)));
+//        Expr convertRexNode = isnull(literal(1));
+//        Assert.assertEquals("IS NULL(1)", toString(toRexNode(convertRexNode)));
 //    }
 //
 //    @Test
@@ -690,8 +690,8 @@
 //
 //    @Test
 //    public void testNullif() throws IOException {
-//        Expr expr = nullif("id", "default");
-//        Assert.assertEquals("nullif(Identifier(value=id),Literal(value=default))", expr.toString());
+//        Expr convertRexNode = nullif("id", "default");
+//        Assert.assertEquals("nullif(Identifier(value=id),Literal(value=default))", convertRexNode.toString());
 //
 //        String text2 = "nullif(id)";
 //        Assert.assertEquals("nullif(id(\"id\"))", getS(parse2SyntaxAst(text2)));
@@ -701,8 +701,8 @@
 //
 //    @Test
 //    public void testIsNotNull() throws IOException {
-//        Expr expr = isnotnull("id");
-//        Assert.assertEquals("isnotnull(Identifier(value=id))", expr.toString());
+//        Expr convertRexNode = isnotnull("id");
+//        Assert.assertEquals("isnotnull(Identifier(value=id))", convertRexNode.toString());
 //
 //        String text2 = "isnotnull(id)";
 //        Assert.assertEquals("isnotnull(id(\"id\"))", getS(parse2SyntaxAst(text2)));
@@ -713,52 +713,52 @@
 //
 //    @Test
 //    public void testInteger() throws IOException {
-//        Expr expr = literal(1);
+//        Expr convertRexNode = literal(1);
 //        RexNode rexNode;
-//        Assert.assertEquals("Literal(value=1)", expr.toString());
+//        Assert.assertEquals("Literal(value=1)", convertRexNode.toString());
 //
 //        String text2 = "1";
 //        Assert.assertEquals("literal(1)", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("1", toString(rexNode = toRexNode(literal(Integer.valueOf(1)))));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=1)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testLong() throws IOException {
-//        Expr expr = literal(1L);
+//        Expr convertRexNode = literal(1L);
 //        RexNode rexNode;
 //
-//        Assert.assertEquals("Literal(value=1)", expr.toString());
+//        Assert.assertEquals("Literal(value=1)", convertRexNode.toString());
 //        String text2 = "1";
 //        Assert.assertEquals("literal(1)", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("1", toString(rexNode = toRexNode(literal(Long.valueOf(1)))));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=1)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testFloat() throws IOException {
-//        Expr expr = literal(Float.MAX_VALUE);
+//        Expr convertRexNode = literal(Float.MAX_VALUE);
 //        RexNode rexNode;
 //
-//        Assert.assertEquals("Literal(value=3.4028234663852886E+38)", expr.toString());
+//        Assert.assertEquals("Literal(value=3.4028234663852886E+38)", convertRexNode.toString());
 //        String text2 = String.valueOf(Float.MAX_VALUE);
 //        Assert.assertEquals("literal(3.4028235E+38)", getS(parse2SyntaxAst(text2)));
 //        Assert.assertEquals("1.0:DECIMAL(2, 1)", toString(rexNode = toRexNode(literal(Float.valueOf(1)))));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=1.0)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testId() throws IOException {
-//        Expr expr = id("id");
-//        Assert.assertEquals("Identifier(value=id)", expr.toString());
+//        Expr convertRexNode = id("id");
+//        Assert.assertEquals("Identifier(value=id)", convertRexNode.toString());
 //
 //        String text2 = "id";
 //        Assert.assertEquals("id(\"id\")", getS(parse2SyntaxAst(text2)));
@@ -766,8 +766,8 @@
 //
 //    @Test
 //    public void testString() throws IOException {
-//        Expr expr = literal("str");
-//        Assert.assertEquals("Literal(value=str)", expr.toString());
+//        Expr convertRexNode = literal("str");
+//        Assert.assertEquals("Literal(value=str)", convertRexNode.toString());
 //
 //        String text2 = "'str'";
 //        Assert.assertEquals("literal(\"str\")", getS(parse2SyntaxAst(text2)));
@@ -775,14 +775,14 @@
 //        RexNode rexNode = toRexNode(literal("str"));
 //        Assert.assertEquals("'str'", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=str)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testTime() throws IOException {
-//        Expr expr = literal(time("00:09:00"));
-//        Assert.assertEquals("Literal(value=00:09)", expr.toString());
+//        Expr convertRexNode = literal(time("00:09:00"));
+//        Assert.assertEquals("Literal(value=00:09)", convertRexNode.toString());
 //
 //        String text2 = "time('00:09:00')";
 //        Assert.assertEquals("time(literal(\"00:09:00\"))", getS(parse2SyntaxAst(text2)));
@@ -790,21 +790,21 @@
 //        RexNode rexNode = toRexNode(timeLiteral("00:09:00"));
 //        Assert.assertEquals("00:09:00", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=00:09)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testDate() throws IOException {
-//        Expr expr = literal(date("2019-11-17"));
-//        Assert.assertEquals("Literal(value=2019-11-17)", expr.toString());
+//        Expr convertRexNode = literal(date("2019-11-17"));
+//        Assert.assertEquals("Literal(value=2019-11-17)", convertRexNode.toString());
 //
 //        String text2 = "date('2019-11-17')";
 //        Assert.assertEquals("date(literal(\"2019-11-17\"))", getS(parse2SyntaxAst(text2)));
 //        RexNode rexNode = toRexNode(dateLiteral("2019-11-17"));
 //        Assert.assertEquals("2019-11-17", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=2019-11-17)", expr1.toString());
 //    }
 //
@@ -814,9 +814,9 @@
 //
 //        LocalDateTime now = LocalDateTime.parse("2019-11-22T12:12:03");
 //        String text = now.toString();
-//        Expr expr = literal(timeStamp(text));
+//        Expr convertRexNode = literal(timeStamp(text));
 //        Assert.assertEquals("Literal(value=" + text +
-//                ")", expr.toString());
+//                ")", convertRexNode.toString());
 //
 //        String text2 = "timeStamp('" +
 //                text +
@@ -827,7 +827,7 @@
 //        RexNode rexNode = toRexNode(timeStampLiteral(text));
 //        Assert.assertEquals("2019-11-22 12:12:03", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=" +
 //                text +
 //                ")", expr1.toString());
@@ -835,9 +835,9 @@
 //
 //    @Test
 //    public void testMinus() throws IOException {
-//        Expr expr = minus(id("id"), literal(1));
+//        Expr convertRexNode = minus(id("id"), literal(1));
 //        RexNode rexNode;
-//        Assert.assertEquals("minus(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Assert.assertEquals("minus(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id-1";
 //        Assert.assertEquals("minus(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -848,8 +848,8 @@
 //
 //    @Test
 //    public void testEqual() throws IOException {
-//        Expr expr = eq(id("id"), literal(1));
-//        Assert.assertEquals("eq(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = eq(id("id"), literal(1));
+//        Assert.assertEquals("eq(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id=1";
 //        Assert.assertEquals("eq(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -859,24 +859,24 @@
 //
 //    @Test
 //    public void testAnd() throws IOException {
-//        Expr expr = and(literal(1), literal(1));
-//        Assert.assertEquals("and(Literal(value=1),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = and(literal(1), literal(1));
+//        Assert.assertEquals("and(Literal(value=1),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "1 and 1";
 //        Assert.assertEquals("and(literal(1),literal(1))", getS(parse2SyntaxAst(text2)));
 //
-//        Assert.assertEquals("AND(1, 1)", toString(toRexNode(expr)));
+//        Assert.assertEquals("AND(1, 1)", toString(toRexNode(convertRexNode)));
 //    }
 //
 //    @Test
 //    public void testor() throws IOException {
-//        Expr expr = or(literal(1), literal(1));
-//        Assert.assertEquals("or(Literal(value=1),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = or(literal(1), literal(1));
+//        Assert.assertEquals("or(Literal(value=1),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "1 or 1";
 //        Assert.assertEquals("or(literal(1),literal(1))", getS(parse2SyntaxAst(text2)));
 //
-//        Assert.assertEquals("OR(1, 1)", toString(toRexNode(expr)));
+//        Assert.assertEquals("OR(1, 1)", toString(toRexNode(convertRexNode)));
 //    }
 //
 //    @Test
@@ -889,8 +889,8 @@
 //
 //    @Test
 //    public void testNot() throws IOException {
-//        Expr expr = not(literal(1));
-//        Assert.assertEquals("not(Literal(value=1))", expr.toString());
+//        Expr convertRexNode = not(literal(1));
+//        Assert.assertEquals("not(Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "not(1 = 1)";
 //        Assert.assertEquals("not(eq(literal(1),literal(1)))", getS(parse2SyntaxAst(text2)));
@@ -901,8 +901,8 @@
 //
 //    @Test
 //    public void testNotEqual() throws IOException {
-//        Expr expr = ne(id("id"), literal(1));
-//        Assert.assertEquals("ne(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = ne(id("id"), literal(1));
+//        Assert.assertEquals("ne(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id <> 1";
 //        Assert.assertEquals("ne(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -912,8 +912,8 @@
 //
 //    @Test
 //    public void testGreaterThan() throws IOException {
-//        Expr expr = gt(id("id"), literal(1));
-//        Assert.assertEquals("gt(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = gt(id("id"), literal(1));
+//        Assert.assertEquals("gt(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id > 1";
 //        Assert.assertEquals("gt(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -923,8 +923,8 @@
 //
 //    @Test
 //    public void testGreaterThanEqual() throws IOException {
-//        Expr expr = gte(id("id"), literal(true));
-//        Assert.assertEquals("gte(Identifier(value=id),Literal(value=true))", expr.toString());
+//        Expr convertRexNode = gte(id("id"), literal(true));
+//        Assert.assertEquals("gte(Identifier(value=id),Literal(value=true))", convertRexNode.toString());
 //
 //        String text2 = "id >= 1";
 //        Assert.assertEquals("gte(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -934,8 +934,8 @@
 //
 //    @Test
 //    public void testLessThan() throws IOException {
-//        Expr expr = lt(id("id"), literal(true));
-//        Assert.assertEquals("lt(Identifier(value=id),Literal(value=true))", expr.toString());
+//        Expr convertRexNode = lt(id("id"), literal(true));
+//        Assert.assertEquals("lt(Identifier(value=id),Literal(value=true))", convertRexNode.toString());
 //
 //        String text2 = "id < 1";
 //        Assert.assertEquals("lt(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -945,8 +945,8 @@
 //
 //    @Test
 //    public void testLessThanEqual() throws IOException {
-//        Expr expr = lte(id("id"), literal(true));
-//        Assert.assertEquals("lte(Identifier(value=id),Literal(value=true))", expr.toString());
+//        Expr convertRexNode = lte(id("id"), literal(true));
+//        Assert.assertEquals("lte(Identifier(value=id),Literal(value=true))", convertRexNode.toString());
 //
 //        String text2 = "id <= 1";
 //        Assert.assertEquals("lte(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -957,8 +957,8 @@
 //    @Test
 //    public void testAsColumnName() throws IOException {
 //        RelNode relNode;
-//        Expr expr = as(literal(1), id("column"));
-//        Assert.assertEquals("asColumnName(Literal(value=1),Identifier(value=column))", expr.toString());
+//        Expr convertRexNode = as(literal(1), id("column"));
+//        Assert.assertEquals("asColumnName(Literal(value=1),Identifier(value=column))", convertRexNode.toString());
 //
 //        String text2 = "1 as column";
 //        Assert.assertEquals("as(literal(1),id(\"column\"))", getS(parse2SyntaxAst(text2)));
@@ -973,13 +973,13 @@
 //    @Test
 //    public void testCast() throws IOException {
 //        RexNode rexNode;
-//        Expr expr = cast(literal(1), id("float"));
-//        Assert.assertEquals("cast(Literal(value=1),Identifier(value=float))", expr.toString());
+//        Expr convertRexNode = cast(literal(1), id("float"));
+//        Assert.assertEquals("cast(Literal(value=1),Identifier(value=float))", convertRexNode.toString());
 //
 //        String text2 = "cast(1,float)";
 //        Assert.assertEquals("cast(literal(1),id(\"float\"))", getS(parse2SyntaxAst(text2)));
 //
-//        Assert.assertEquals("1:FLOAT", toString(rexNode = toRexNode(expr)));
+//        Assert.assertEquals("1:FLOAT", toString(rexNode = toRexNode(convertRexNode)));
 //        Assert.assertEquals("Literal(value=1)", toDSL(rexNode));
 //
 //        Assert.assertEquals("map(from(`db1`,`travelrecord`),as(cast(`id`,`float`),`id`))", toDSL(toRelNode(map((from("db1", "travelrecord")), cast(id("id"), id("float"))))));
@@ -1149,7 +1149,7 @@
 //
 //
 //
-//        Schema schema = getSchema(relNode);
+//        Schema schema = convertRelNode(relNode);
 //        String sb = toString(schema);
 //        System.out.println(sb);
 //        System.out.println(schema.toString());
@@ -1158,19 +1158,19 @@
 //    private String toString(Schema schema) {
 //        ExplainVisitor explainVisitor = new ExplainVisitor();
 //        schema.accept(explainVisitor);
-//        return explainVisitor.getSb();
+//        return explainVisitor.getString();
 //    }
 //
 //    private String toDSL(RelNode relNode) {
-//        return toString(getSchema(relNode));
+//        return toString(convertRelNode(relNode));
 //    }
 //
 //    private String toDSL(RexNode rexNode) {
-//        return getExpr(rexNode).toString();
+//        return convertRexNode(rexNode).toString();
 //    }
 //
-//    private List<Expr> getExpr(List<RexNode> rexNodes) {
-//        return rexNodes.stream().map(i -> getExpr(i)).collect(Collectors.toList());
+//    private List<Expr> convertRexNode(List<RexNode> rexNodes) {
+//        return rexNodes.stream().map(i -> convertRexNode(i)).collect(Collectors.toList());
 //    }
 //
 //    @Test

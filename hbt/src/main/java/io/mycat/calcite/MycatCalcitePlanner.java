@@ -85,10 +85,12 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         }
         return reader;
     }
-
-
     public MycatRelBuilder createRelBuilder(RelOptCluster cluster) {
         return (MycatRelBuilder) MycatCalciteContext.INSTANCE.relBuilderFactory.create(cluster, createCalciteCatalogReader());
+    }
+
+    public MycatRelBuilder createRelBuilder() {
+        return (MycatRelBuilder) MycatCalciteContext.INSTANCE.relBuilderFactory.create(newCluster(), createCalciteCatalogReader());
     }
 
     public SqlValidatorImpl getSqlValidator() {

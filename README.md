@@ -55,6 +55,10 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 ## MetaData配置
 
+### 概念
+
+
+
 #### 存储节点
 
 
@@ -89,15 +93,15 @@ targetName是目标名字,它可以是数据源的名字或者集群的名字
 | 跨实例          | 多目标                       | 不同名字                   | 分片分库分表     |
 | 适合扩容的规则  | 多个字段多种规则缩小查询范围 | 单实例最大数据量适配的规则 | 分片分库分表索引 |
 
+### 
+
+####   Mycat2的分片分库分表运算
+
+​		在分片分库分表中运算分为两个部分,一部分是后端每个数据库的运算,这部分运算以SQL作为中间语言发送到后端服务器,一部分以HBT形式在mycat里执行,占用内存主要是驻留的结果集的总大小.如果结果集合拼的结果行是固定行,固定列,结果集每个值长度也是固定的,那意味着运算都是reduce的,可以边运算边丢弃已处理的值,无需保存完整的后端处理结果.
+
+​		当mycat2无法下推大部分运算的时候(主要是join,后面会继续优化),则可能拉取大结果集,处理还是很耗时的.所以尽量使用分片谓词靠近数据源风格编写SQL,便于mycat2识别可下推的谓词.
 
 
-
-
-## MetaData配置
-
-
-
-### 概念
 
 #### 分片类型
 
@@ -202,6 +206,130 @@ shardingType类型MAP_TARGET,MAP_DATABASE,MAP_TABLE和map必须一起配置
 
 
 NATURE_DATABASE_TABLE是单独配置,不与其他配置混合
+
+
+
+## HBT(Human Brain Tech)
+
+HBT在Mycat2中表现为关系表达式领域驱动语言(Relation DSL).
+
+在设计上是Mycat2的运行时的中间语言,关于查询的HBT可以实现与SQL,其他查询优化器,查询编译器的关系表达式相互甚至与SQL DSL框架中的DSL转换.HBT也支持直接从文本和编写代码的方式构建.
+
+
+
+## 使用HBT解决什么问题?
+
+1.允许用户直接编写关系表达式实现功能,不同的SQL方言可以对应同一套关系表达式
+
+2.运行用户运行自定义函数
+
+3.免去优化过程,用户编写的关系表达式可以就是最终的执行计划
+
+4.允许使用函数宏展开关系表达式,比如给逻辑表函数宏指定分片范围自动扩展成对应的物理表
+
+5.允许SQL与关系表达式一并编写,例如叶子是SQL,根是Mycat的运算节点
+
+6.可移植到其他平台运行
+
+7.使用DSL作为中间语言下发到其他Mycat节点上运行
+
+8.方便验证测试
+
+
+
+### 关系表达式
+
+
+
+#### From
+
+| name | 类型 | 参数数量 | 参数          |
+| ---- | ---- | -------- | ------------- |
+| from | rel  | 2        | 逻辑库,逻辑表 |
+
+获得逻辑表的数据源
+
+
+
+text
+
+```sql
+from(db1,travelrecord)
+```
+
+
+
+java
+
+```java
+from("db1", "travelrecord")
+```
+
+
+
+#### Table
+
+| 名称  | 类型 | 参数数量     | 参数                          |
+| ----- | ---- | ------------ | ----------------------------- |
+| table | rel  | at least one | 字段信息列表,值列表(一维列表) |
+
+匿名表,一种字面量构成的数据源
+
+
+
+text
+
+```sql
+table(fields(fieldType(`1`,`int`),fieldType(`2`,`varchar`)),values())
+table(fields(fieldType(id,int)),values(1,2,3))
+```
+
+
+
+java
+
+```java
+table(Arrays.asList(fieldType("1", "int"), fieldType("2", "varchar")), Arrays.asList())
+table(Arrays.asList(fieldType("id", "int")), Arrays.asList(1,2,3))
+```
+
+
+
+
+
+#### Map
+
+| 名称 | 类型 | 参数数量     | 参数          |
+| ---- | ---- | ------------ | ------------- |
+| map  | rel  | at least one | 逻辑库,逻辑表 |
+
+map,投影和计算的关系表达式
+
+
+
+text
+
+```sql
+table(fields(fieldType(id,int),fieldType(id2,int)),values(1,2)).map(id2 as id4)//sugar
+map(table(fields(fieldType(id,int),fieldType(id2,int)),values(1,2)),id2 as id4)
+
+table(fields(fieldType(id,int),fieldType(id2,int)).map(id + id2)//sugar
+map(table(fields(fieldType(id,int),fieldType(id2,int)),values(1,2)),id + id2)
+```
+
+
+
+java
+
+```java
+map(table(Arrays.asList(fieldType("id", "int"), fieldType("id2", "int")), Arrays.asList()),Arrays.asList(as(new Identifier("id2"), new Identifier("id4"))))
+
+map(table(Arrays.asList(fieldType("id", "int"), fieldType("id2", "int")), Arrays.asList()),Arrays.asList(add(new Identifier("id2"), new Identifier("id4"))))
+```
+
+
+
+
 
 
 

@@ -14,8 +14,8 @@
  */
 package io.mycat.hbt.ast.modify;
 
-import io.mycat.describer.ParseNode;
 import io.mycat.hbt.ast.base.Node;
+import io.mycat.hbt.parser.ParseNode;
 
 import java.util.List;
 

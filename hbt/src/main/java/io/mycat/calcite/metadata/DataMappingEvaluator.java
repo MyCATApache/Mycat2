@@ -64,7 +64,7 @@ public class DataMappingEvaluator {
         }
         List<BackendTableInfo> res = new ArrayList<>();
 
-        @NonNull List<BackendTableInfo> backends = logicTable.getBackends();
+        @NonNull List<BackendTableInfo> allBackends = logicTable.getBackends();
 
         for (String targetName : targetSet) {
             for (String databaseName : databaseSet) {
@@ -74,12 +74,12 @@ public class DataMappingEvaluator {
             }
         }
         if (res.isEmpty()) {
-            return backends;
+            return allBackends;
         } else {
-            if (backends.isEmpty()) {
+            if (allBackends.isEmpty()) {
                 return res;
             }
-            return res.stream().filter(backends::contains).collect(Collectors.toList());
+            return res.stream().filter(allBackends::contains).collect(Collectors.toList());
         }
     }
 

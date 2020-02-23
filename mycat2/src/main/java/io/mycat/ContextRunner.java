@@ -175,7 +175,7 @@ public class ContextRunner {
                         explain = explain.substring(0, explain.length() - 1);
                     }
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-                    MycatPlan query = SqldbRepl.INSTANCE.query(defaultSchema, explain);
+                    MycatPlan query = SqldbRepl.INSTANCE.querySQL(defaultSchema, explain);
                     TextResultSetResponse connection = new TextResultSetResponse(query.run(MycatCalciteContext.INSTANCE.create()).get());
                     SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
                     TransactionSessionUtil.afterDoAction();//移除已经关闭的连接,
@@ -189,7 +189,7 @@ public class ContextRunner {
                 String command = context.getExplain();
 
                 return () -> block(session, mycat -> {
-                    MycatPlan query = SqldbRepl.INSTANCE.query(defaultSchema, command);
+                    MycatPlan query = SqldbRepl.INSTANCE.querySQL(defaultSchema, command);
                     List<String> explain = query.explain();
                     writePlan(session, explain);
                 });

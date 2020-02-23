@@ -27,10 +27,14 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.DateString;
 import org.apache.calcite.util.TimeString;
@@ -40,6 +44,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Junwen Chen
@@ -48,6 +54,13 @@ public class MycatRelBuilder extends RelBuilder {
     public MycatRelBuilder(Context context, RelOptCluster cluster, RelOptSchema relOptSchema) {
         super(context, cluster, relOptSchema);
     }
+
+    public static MycatRelBuilder create(FrameworkConfig config) {
+        return Frameworks.withPrepare(config,
+                (cluster, relOptSchema, rootSchema, statement) ->
+                        new MycatRelBuilder(config.getContext(), cluster, relOptSchema));
+    }
+
     public static RelNode makeTransientSQLScan(RelBuilder relBuilder, String targetName, RelNode input) {
         RelDataType rowType = input.getRowType();
         MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
@@ -56,12 +69,14 @@ public class MycatRelBuilder extends RelBuilder {
                 relBuilder.getRelOptSchema(),
                 rowType,
                 transientTable,
-                ImmutableList.of(targetName,String.valueOf(input.getId())));
+                ImmutableList.of(targetName, String.valueOf(input.getId())));
         return new MycatTransientSQLTableScan(input.getCluster(), convention, relOptTable, input);
     }
-    public  RelNode makeTransientSQLScan(String targetName, RelNode input) {
-        return makeTransientSQLScan(this,targetName,input);
+
+    public RelNode makeTransientSQLScan(String targetName, RelNode input) {
+        return makeTransientSQLScan(this, targetName, input);
     }
+
     /**
      * Creates a literal (constant expression).
      */
@@ -108,5 +123,28 @@ public class MycatRelBuilder extends RelBuilder {
             return literal;
         }
     }
+
+    public RelBuilder values(RelDataType rowType, Object... columnValues) {
+        int columnCount = rowType.getFieldCount();
+        final ImmutableList.Builder<ImmutableList<RexLiteral>> listBuilder =
+                ImmutableList.builder();
+        final List<RexLiteral> valueList = new ArrayList<>();
+        List<RelDataTypeField> fieldList = rowType.getFieldList();
+        for (int i = 0; i < columnValues.length; i++) {
+            RelDataTypeField relDataTypeField = fieldList.get(valueList.size());
+            valueList.add((RexLiteral) literal(relDataTypeField.getType(), columnValues[i], false));
+            if ((i + 1) % columnCount == 0) {
+                listBuilder.add(ImmutableList.copyOf(valueList));
+                valueList.clear();
+            }
+        }
+        super.values(listBuilder.build(), rowType);
+        return this;
+    }
+
+    public RexNode literal(Object value) {
+        return literal(null, value, false);
+    }
+
 
 }

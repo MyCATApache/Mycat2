@@ -1,16 +1,14 @@
 package io.mycat.describer;
 
 
-import io.mycat.DesRelNodeHandler;
-import io.mycat.hbt.Op;
-import io.mycat.hbt.QueryOp;
-import io.mycat.hbt.QueryOp2;
+import io.mycat.calcite.MycatRelBuilder;
+import io.mycat.hbt.*;
 import io.mycat.hbt.ast.AggregateCall;
 import io.mycat.hbt.ast.Direction;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.JoinSchema;
 import io.mycat.hbt.ast.query.RenameSchema;
-import io.mycat.rsqlBuilder.DesBuilder;
+import io.mycat.hbt.parser.HBTParser;
 import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -24,9 +22,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.mycat.DesRelNodeHandler.parse2SyntaxAst;
-import static io.mycat.describer.AstSpec2.*;
 import static io.mycat.hbt.Op.CORRELATE_INNER_JOIN;
+import static io.mycat.hbt.SchemaConvertor.*;
 
 
 public class AstSpec2Test {
@@ -34,7 +31,7 @@ public class AstSpec2Test {
             .defaultSchema(Frameworks.createRootSchema(true).add("db1", new ReflectiveSchema(new Db1()))).build();
 
     public RelNode toRelNode(Schema node) {
-        return new QueryOp(DesBuilder.create(config)).complie(node);
+        return new HBTConvertor(MycatRelBuilder.create(config)).complie(node);
     }
 
     @Test
@@ -62,7 +59,7 @@ public class AstSpec2Test {
 
     //
     private Schema toDSL(RelNode relNode) {
-        return QueryOp2.getSchema(relNode);
+        return RelNodeConvertor.convertRelNode(relNode);
     }
 
     private void testText(String sugarText, String desugarText, Schema schema, String relText) {
@@ -100,7 +97,7 @@ public class AstSpec2Test {
 
     }
     public  void testDump(Schema schema,String resultset) {
-        String dump = DesRelNodeHandler.dump(toRelNode(schema));
+        String dump = TextConvertor.dump(toRelNode(schema));
         Assert.assertEquals(resultset.trim(),dump.trim());
     }
 
@@ -109,7 +106,7 @@ public class AstSpec2Test {
     public void selectDistinctWithoutFrom() throws IOException {
         String sugar = "from(db1,travelrecord) unionDistinct  from(`db1`, `travelrecord`)";
         String desugar = "unionDistinct(from(`db1`,`travelrecord`),from(`db1`,`travelrecord`))";
-        Schema code = set(Op.UNION_DISTINCT, Arrays.asList(AstSpec2.from("db1", "travelrecord"), AstSpec2.from("db1", "travelrecord")));
+        Schema code = set(Op.UNION_DISTINCT, Arrays.asList(SchemaConvertor.from("db1", "travelrecord"), SchemaConvertor.from("db1", "travelrecord")));
 
         testText(sugar, desugar, code,"LogicalUnion(all=[false])  LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
         testDump(code,"(2,20)\n" +
@@ -443,12 +440,11 @@ public class AstSpec2Test {
     private static String toNormalString(Schema desugar) {
         ExplainVisitor explainVisitor = new ExplainVisitor();
         desugar.accept(explainVisitor);
-        String sb = explainVisitor.getSb();
-        return sb;
+        return explainVisitor.getString();
     }
 
     private static Schema transfor(String text) {
-        ParseNode parseNode = parse2SyntaxAst(text);
-        return AstSpec2.transforSchema(parseNode);
+        HBTParser hbtParser = new HBTParser(text);
+        return SchemaConvertor.transforSchema( hbtParser.expression());
     }
 }
