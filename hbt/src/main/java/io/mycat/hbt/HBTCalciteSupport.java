@@ -102,7 +102,7 @@ public enum HBTCalciteSupport {
         sqlOperatorMap.put("and", SqlStdOperatorTable.AND);
         sqlOperatorMap.put("or", SqlStdOperatorTable.OR);
         sqlOperatorMap.put("not", SqlStdOperatorTable.NOT);
-        sqlOperatorMap.put("plus", SqlStdOperatorTable.PLUS);
+        sqlOperatorMap.put("add", SqlStdOperatorTable.PLUS);
         sqlOperatorMap.put("minus", SqlStdOperatorTable.MINUS);
         sqlOperatorMap.put("dot", SqlStdOperatorTable.DOT);
 
@@ -144,8 +144,8 @@ public enum HBTCalciteSupport {
         addOperator(".", "dot", 16, true);
         addOperator("dot", 16, true);
 
-        addOperator("+", "plus", 14, true);
-        addOperator("plus", 14, true);
+        addOperator("+", "add", 14, true);
+        addOperator("add", 14, true);
         addOperator("-", "minus", 14, true);
         addOperator("minus", 14, true);
 

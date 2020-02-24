@@ -72,7 +72,7 @@ public enum Op {
     LT("lt"),
     GTE("gte"),
     LTE("lte"),
-    PLUS("plus"),
+    ADD("add"),
     MINUS("minus"),
     AND("and"),
     OR("or"),

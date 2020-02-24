@@ -15,10 +15,10 @@
 package io.mycat.hbt;
 
 import io.mycat.hbt.ast.AggregateCall;
-import io.mycat.hbt.ast.Direction;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.modify.ModifyTable;
 import io.mycat.hbt.ast.query.*;
+import io.mycat.hbt.parser.HBTParser;
 import org.apache.calcite.avatica.util.ByteString;
 
 import java.text.MessageFormat;
@@ -26,6 +26,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -33,21 +35,61 @@ import java.util.stream.Collectors;
  **/
 public class ExplainVisitor implements NodeVisitor {
     final StringBuilder sb = new StringBuilder();
+    int tagCount = 0;
+    boolean dot = true;
+    boolean expr = false;
+
+    void enter() {
+        tagCount++;
+
+    }
+
+    void leave() {
+        --tagCount;
+    }
+
+    void append(String text) {
+        sb.append(text);
+    }
 
     public ExplainVisitor() {
+        this(false);
+    }
+
+    public ExplainVisitor(boolean expr) {
+        if (expr) {
+            expr = true;
+        } else {
+            expr = false;
+        }
     }
 
     @Override
     public void visit(MapSchema mapSchema) {
         Schema schema = mapSchema.getSchema();
         List<Expr> expr = mapSchema.getExpr();
-        sb.append("map");
-        sb.append("(");
-        schema.accept(this);
-        sb.append(",");
-        joinNode(expr);
-        sb.append(")");
 
+        String funName = "map";
+        writeSchema(schema, funName);
+        joinNode(expr);
+        append(")");
+        leave();
+
+    }
+
+    private void writeSchema(Schema schema, String funName) {
+        if (!dot) {
+            append(funName);
+            append("(");
+            schema.accept(this);
+            append(",");
+        } else {
+            schema.accept(this);
+            append(".");
+            append(funName);
+            append("(");
+        }
+        enter();
     }
 
 
@@ -55,87 +97,80 @@ public class ExplainVisitor implements NodeVisitor {
     public void visit(GroupSchema groupSchema) {
         List<AggregateCall> exprs = groupSchema.getExprs();
         List<GroupItem> keys = groupSchema.getKeys();
-        sb.append("groupBy(");
         Schema schema = groupSchema.getSchema();
+        writeSchema(schema, "groupBy");
+
         schema.accept(this);
-        sb.append(",");
-        sb.append("keys(");
+        append(",");
+        append("keys(");
         groupKey(keys);
-        sb.append(")");
-        sb.append(",");
-        sb.append("aggregating(");
+        append(")");
+        append(",");
+        append("aggregating(");
         joinNode(exprs);
-        sb.append(")");
-        sb.append(")");
+        append(")");
+        append(")");
+        leave();
+
     }
 
-    private String orderKeys(List<OrderItem> orderKeys) {
-        int size = orderKeys.size();
-        int lastIndex = orderKeys.size() - 1;
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < size; i++) {
-            sb.append("order(");
-            OrderItem orderItem = orderKeys.get(i);
-            String columnName = orderItem.getColumnName();
-            sb.append(columnName);
-            Direction direction = orderItem.getDirection();
-            sb.append(",");
-            sb.append(direction.getName());
-            sb.append(")");
-            if (i != lastIndex) {
-                sb.append(",");
-            }
-        }
-        return sb.toString();
-    }
 
     private void groupKey(List<GroupItem> keys) {
         int size = keys.size();
         int lastIndex = keys.size() - 1;
         for (int i = 0; i < size; i++) {
             GroupItem key = keys.get(i);
-            sb.append("groupKey(");
+            append("groupKey(");
             joinNode(key.getExprs());
-            sb.append(")");
+            append(")");
             if (i != lastIndex) {
-                sb.append(",");
+                append(",");
             }
         }
     }
 
     @Override
     public void visit(LimitSchema limitSchema) {
-        sb.append("limit(");
-        limitSchema.getSchema().accept(this);
-        sb.append(",");
+        writeSchema(limitSchema.getSchema(), "limit");
+        append(",");
         Number offset = limitSchema.getOffset();
-        sb.append(offset);
-        sb.append(",");
+        append(Objects.toString(offset));
+        append(",");
         Number limit = limitSchema.getLimit();
-        sb.append(limit);
-        sb.append(")");
+        append(Objects.toString(limit));
+        append(")");
+        leave();
     }
 
     @Override
     public void visit(FromTableSchema fromSchema) {
-        sb.append("fromTable(");
-        sb.append(fromSchema.getNames().stream().map(i -> toId(i)).collect(Collectors.joining(",")));
-        sb.append(")");
+        append("fromTable(");
+        append(fromSchema.getNames().stream().map(i -> toId(i)).collect(Collectors.joining(",")));
+        append(")");
     }
 
     @Override
     public void visit(SetOpSchema setOpSchema) {
         Op op = setOpSchema.getOp();
-        sb.append(op.getFun()).append("(");
-        joinNode(setOpSchema.getSchemas());
-        sb.append(")");
+        append(op.getFun());
+        enter();
+        append("(");
+        for (Schema schema : setOpSchema.getSchemas()) {
+            append("\n ");
+            schema.accept(this);
+            append(",");
+        }
+
+        append("\n");
+        append(")");
+        leave();
     }
 
     @Override
     public void visit(FieldType fieldSchema) {
         String id = fieldSchema.getId();
         String type = fieldSchema.getType();
-        sb.append(MessageFormat.format("fieldType({0},{1})", toId(id), toId(type)));
+        append(MessageFormat.format("fieldType({0},{1})", toId(id), toId(type)));
     }
 
     @Override
@@ -159,7 +194,7 @@ public class ExplainVisitor implements NodeVisitor {
         } else {
             target = "" + value + "";
         }
-        sb.append(target);
+        append(target);
     }
 
     @Override
@@ -168,13 +203,13 @@ public class ExplainVisitor implements NodeVisitor {
         if (orders.isEmpty()) {
             orderSchema.getSchema().accept(this);
         } else {
-            sb.append("orderBy(");
-            orderSchema.getSchema().accept(this);
-            sb.append(",");
+            writeSchema(orderSchema.getSchema(), "orderBy");
             String orderListText = getOrderListString(orders);
-            sb.append(orderListText);
-            sb.append(")");
+            append(orderListText);
+            append(")");
+            leave();
         }
+
     }
 
     private String getOrderListString(List<OrderItem> orders) {
@@ -188,40 +223,56 @@ public class ExplainVisitor implements NodeVisitor {
     @Override
     public void visit(Identifier identifier) {
         String value = identifier.getValue();
-        sb.append("`").append(value).append("`");
+        append("`");
+        append(value);
+        append("`");
     }
 
     @Override
     public void visit(Expr expr) {
+        String functionName = null;
         if (expr instanceof Fun) {
             Fun fun = (Fun) expr;
-            sb.append(fun.getFunctionName());
+            functionName = (fun.getFunctionName());
         } else if (expr.op == Op.AS_COLUMNNAME) {
-            sb.append("as");
+            functionName = ("as");
         } else if (expr.op == Op.CAST) {
-            sb.append("cast");
+            functionName = ("cast");
         } else if (expr.op == Op.DOT) {
-            sb.append("dot");
+            functionName = ("dot");
         } else if (expr.op == Op.REF) {
-            sb.append("ref");
+            functionName = ("ref");
+        }else {
+            throw new UnsupportedOperationException();
         }
-        sb.append("(");
-        joinNode(expr.getNodes());
-        sb.append(")");
+        Map<String, HBTParser.Precedence> operators = HBTCalciteSupport.INSTANCE.getOperators();
+        if(expr.getNodes().size()==2&&operators.containsKey(functionName)){
+            HBTParser.Precedence precedence = operators.get(functionName);
+            expr.getNodes().get(0).accept(this);
+            append(" ");
+            append(functionName);
+            append(" ");
+            expr.getNodes().get(1).accept(this);
+        }else {
+            append(functionName);
+            append("(");
+            joinNode(expr.getNodes());
+            append(")");
+        }
     }
 
 
     @Override
     public void visit(ValuesSchema valuesSchema) {
-        sb.append("table(");
-        sb.append("fields(");
+        append("table(");
+        append("fields(");
         joinNode(valuesSchema.getFieldNames());
-        sb.append(")");
-        sb.append(",");
-        sb.append("values(");
+        append(")");
+        append(",");
+        append("values(");
         joinNode(valuesSchema.getValues().stream().map(i -> new Literal(i)).collect(Collectors.toList()));
-        sb.append(")");
-        sb.append(")");
+        append(")");
+        append(")");
     }
 
     private void joinNode(List fieldNames) {
@@ -232,7 +283,7 @@ public class ExplainVisitor implements NodeVisitor {
         for (int i = 0; i < size - 1; i++) {
             Node o = (Node) fieldNames.get(i);
             o.accept(this);
-            sb.append(",");
+            append(",");
         }
         Node o = (Node) fieldNames.get(size - 1);
         o.accept(this);
@@ -241,19 +292,20 @@ public class ExplainVisitor implements NodeVisitor {
     @Override
     public void visit(JoinSchema corJoinSchema) {
         Expr condition = corJoinSchema.getCondition();
-        sb.append(corJoinSchema.getOp().getFun()).append("(");
-        sb.append(getExprString(condition));
+        append(corJoinSchema.getOp().getFun());
+        append("(");
+        append(getExprString(condition));
 
 
-        sb.append(",");
+        append(",");
         corJoinSchema.getLeft().accept(this);
-        sb.append(",");
+        append(",");
         corJoinSchema.getRight().accept(this);
-        sb.append(")");
+        append(")");
     }
 
     private String getExprString(Expr condition) {
-        ExplainVisitor explainVisitor = new ExplainVisitor();
+        ExplainVisitor explainVisitor = new ExplainVisitor(true);
         condition.accept(explainVisitor);
         return explainVisitor.getString();
     }
@@ -290,16 +342,15 @@ public class ExplainVisitor implements NodeVisitor {
         if (orderKeys != null && !orderKeys.isEmpty()) {
             res += ".orderBy(" + getOrderListString(orderKeys) + ")";
         }
-        sb.append(res);
+        append(res);
     }
 
     @Override
     public void visit(FilterSchema filterSchema) {
-        sb.append("filter(");
-        filterSchema.getSchema().accept(this);
-        sb.append(",");
+        writeSchema(filterSchema.getSchema(), "filter");
         filterSchema.getExprs().accept(this);
-        sb.append(")");
+        append(")");
+        leave();
     }
 
     @Override
@@ -309,19 +360,20 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(DistinctSchema distinctSchema) {
-        sb.append("distinct(");
-        distinctSchema.getSchema().accept(this);
-        sb.append(")");
+        writeSchema(distinctSchema.getSchema(), "distinct");
+        append(")");
+        leave();
     }
 
     @Override
     public void visit(RenameSchema projectSchema) {
         List<String> columnNames = projectSchema.getColumnNames();
-        sb.append("rename(");
+        writeSchema(projectSchema.getSchema(), projectSchema.getOp().getFun());
         projectSchema.getSchema().accept(this);
-        sb.append(",");
-        sb.append(columnNames.stream().map(this::toId).collect(Collectors.joining(",")));
-        sb.append(")");
+        append(",");
+        append(columnNames.stream().map(this::toId).collect(Collectors.joining(",")));
+        append(")");
+        leave();
     }
 
     private String toId(String i) {
@@ -330,60 +382,60 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(CorrelateSchema correlate) {
-        sb.append(correlate.getOp().getFun())
-                .append("(")
-                .append(correlate.getRefName())
-                .append(",");
+        append(correlate.getOp().getFun());
+        append("(");
+        append(correlate.getRefName());
+        append(",");
         correlate.getLeft().accept(this);
-        sb.append(",");
+        append(",");
         correlate.getRight().accept(this);
-        sb.append(")");
+        append(")");
     }
 
     @Override
     public void visit(FromSqlSchema fromSqlSchema) {
         String targetName = fromSqlSchema.getTargetName();
         String sql = fromSqlSchema.getSql();
-        sb.append(fromSqlSchema.getOp().getFun())
-                .append("(")
-                .append(targetName)
-                .append(",");
+        append(fromSqlSchema.getOp().getFun());
+        append("(");
+        append(targetName);
+        append(",");
         if (!fromSqlSchema.getFieldTypes().isEmpty()) {
-            sb.append("fields(");
+            append("fields(");
             joinNode(fromSqlSchema.getFieldTypes());
-            sb.append(")");
-            sb.append(",");
+            append(")");
+            append(",");
         }
-        sb.append("'");
-        sb.append(sql);
-        sb.append("'");
-        sb.append(")");
+        append("'");
+        append(sql);
+        append("'");
+        append(")");
 
     }
 
     @Override
     public void visit(FilterFromTableSchema filterFromTableSchema) {
         String exprString = getExprString(filterFromTableSchema.getFilter());
-        sb.append(filterFromTableSchema.getOp().getFun())
-                .append("(")
-                .append(exprString)
-                .append(",");
+        append(filterFromTableSchema.getOp().getFun());
+        append("(");
+        append(exprString);
+        append(",");
         List<String> names = filterFromTableSchema.getNames();
-        sb.append(names.get(0));
-        sb.append(",");
-        sb.append(names.get(1));
-        sb.append(")");
+        append(names.get(0));
+        append(",");
+        append(names.get(1));
+        append(")");
     }
 
     @Override
     public void visit(FromRelToSqlSchema fromRelSchema) {
         String targetName = fromRelSchema.getTargetName();
-        sb.append(fromRelSchema.getOp().getFun())
-                .append("(")
-                .append(targetName)
-                .append(",");
+        append(fromRelSchema.getOp().getFun());
+        append("(");
+        append(targetName);
+        append(",");
         fromRelSchema.getRel().accept(this);
-        sb.append(")");
+        append(")");
     }
 
 
