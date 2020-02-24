@@ -16,6 +16,7 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.logic.MycatConvention;
+import io.mycat.calcite.logic.MycatSQLTableScan;
 import io.mycat.calcite.logic.MycatTransientSQLTable;
 import io.mycat.calcite.logic.MycatTransientSQLTableScan;
 import org.apache.calcite.avatica.util.ByteString;
@@ -61,21 +62,18 @@ public class MycatRelBuilder extends RelBuilder {
                         new MycatRelBuilder(config.getContext(), cluster, relOptSchema));
     }
 
-    public static RelNode makeTransientSQLScan(RelBuilder relBuilder, String targetName, RelNode input) {
+    public  RelNode makeTransientSQLScan(String targetName, RelNode input) {
         RelDataType rowType = input.getRowType();
         MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
         MycatTransientSQLTable transientTable = new MycatTransientSQLTable(convention, input);
         RelOptTable relOptTable = RelOptTableImpl.create(
-                relBuilder.getRelOptSchema(),
+                this.getRelOptSchema(),
                 rowType,
                 transientTable,
                 ImmutableList.of(targetName, String.valueOf(input.getId())));
-        return new MycatTransientSQLTableScan(input.getCluster(), convention, relOptTable, input);
+        return new MycatTransientSQLTableScan(input.getCluster(), convention, relOptTable, () -> transientTable.getExplainSQL());
     }
 
-    public RelNode makeTransientSQLScan(String targetName, RelNode input) {
-        return makeTransientSQLScan(this, targetName, input);
-    }
 
     /**
      * Creates a literal (constant expression).
@@ -147,4 +145,14 @@ public class MycatRelBuilder extends RelBuilder {
     }
 
 
+    public RelNode makeBySql(String targetName,RelDataType relDataType, String sql) {
+        MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
+        MycatSQLTableScan transientTable = new MycatSQLTableScan(convention,relDataType,sql);
+        RelOptTable relOptTable = RelOptTableImpl.create(
+                this.getRelOptSchema(),
+                relDataType,
+                transientTable,
+                ImmutableList.of(targetName, sql));
+        return new MycatTransientSQLTableScan(this.getCluster(), convention, relOptTable, () -> sql);
+    }
 }

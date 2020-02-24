@@ -104,9 +104,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectDistinctWithoutFrom() throws IOException {
-        String sugar = "from(db1,travelrecord) unionDistinct  from(`db1`, `travelrecord`)";
-        String desugar = "unionDistinct(from(`db1`,`travelrecord`),from(`db1`,`travelrecord`))";
-        Schema code = set(Op.UNION_DISTINCT, Arrays.asList(SchemaConvertor.from("db1", "travelrecord"), SchemaConvertor.from("db1", "travelrecord")));
+        String sugar = "fromTable(db1,travelrecord) unionDistinct  fromTable(`db1`, `travelrecord`)";
+        String desugar = "unionDistinct(fromTable(`db1`,`travelrecord`),fromTable(`db1`,`travelrecord`))";
+        Schema code = set(Op.UNION_DISTINCT, Arrays.asList(SchemaConvertor.fromTable("db1", "travelrecord"), SchemaConvertor.fromTable("db1", "travelrecord")));
 
         testText(sugar, desugar, code,"LogicalUnion(all=[false])  LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
         testDump(code,"(2,20)\n" +
@@ -116,9 +116,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectDistinctWithoutFrom2() throws IOException {
-        String sugar = "from(db1,travelrecord).distinct()";
-        String desugar = "distinct(from(db1,travelrecord))";
-        Schema code = distinct(from("db1","travelrecord"));
+        String sugar = "fromTable(db1,travelrecord).distinct()";
+        String desugar = "distinct(fromTable(db1,travelrecord))";
+        Schema code = distinct(fromTable("db1","travelrecord"));
         testText(sugar, desugar, code);
         testSchema(code,"LogicalAggregate(group=[{0, 1}])  LogicalTableScan(table=[[db1, travelrecord]])");
         testDump(code,"(2,20)\n" +
@@ -155,8 +155,8 @@ public class AstSpec2Test {
 
     @Test
     public void testFrom() throws IOException {
-        String text = "from(db1,travelrecord)";
-        testText(text, text, from("db1", "travelrecord"),"LogicalTableScan(table=[[db1, travelrecord]])");
+        String text = "fromTable(db1,travelrecord)";
+        testText(text, text, fromTable("db1", "travelrecord"),"LogicalTableScan(table=[[db1, travelrecord]])");
 
         testDump(transfor(text),"(1,10)\n" +
                 "(2,20)");
@@ -164,9 +164,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectProjectFrom() throws IOException {
-        String sugar = "from(db1,travelrecord).map(id as id0)";
-        String desugar = "map(from(db1,travelrecord),id as id0)";
-        Schema code = map(from("db1", "travelrecord"), Arrays.asList(as(new Identifier("id"),new Identifier("id0"))));
+        String sugar = "fromTable(db1,travelrecord).map(id as id0)";
+        String desugar = "map(fromTable(db1,travelrecord),id as id0)";
+        Schema code = map(fromTable("db1", "travelrecord"), Arrays.asList(as(new Identifier("id"),new Identifier("id0"))));
         testText(sugar, desugar, code,"LogicalProject(id0=[$0])  LogicalTableScan(table=[[db1, travelrecord]])");
 
         testDump(transfor(sugar),"(1)\n" +
@@ -180,9 +180,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectUnionAll() throws IOException {
-        String sugar = "from(db1,travelrecord) unionAll  from(db1,travelrecord)";
-        Schema code = set(Op.UNION_ALL, Arrays.asList(from("db1", "travelrecord"), from("db1", "travelrecord")));
-        String text = "unionAll(from(db1,travelrecord),from(db1,travelrecord))";
+        String sugar = "fromTable(db1,travelrecord) unionAll  fromTable(db1,travelrecord)";
+        Schema code = set(Op.UNION_ALL, Arrays.asList(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord")));
+        String text = "unionAll(fromTable(db1,travelrecord),fromTable(db1,travelrecord))";
 
         testText(sugar, text, code,"LogicalUnion(all=[true])  LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
 
@@ -194,9 +194,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectUnionDistinct() throws IOException {
-        String sugar = "from(db1,travelrecord) unionDistinct from(db1,travelrecord)";
-        Schema code = set(Op.UNION_DISTINCT, Arrays.asList(from("db1", "travelrecord"), from("db1", "travelrecord")));
-        String text = "unionDistinct(from(db1,travelrecord),from(db1,travelrecord))";
+        String sugar = "fromTable(db1,travelrecord) unionDistinct fromTable(db1,travelrecord)";
+        Schema code = set(Op.UNION_DISTINCT, Arrays.asList(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord")));
+        String text = "unionDistinct(fromTable(db1,travelrecord),fromTable(db1,travelrecord))";
 
         testText(sugar, text, code,"LogicalUnion(all=[false])  LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
 
@@ -207,9 +207,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectExceptDistinct() throws IOException {
-        String sugar = "from(db1,travelrecord) exceptDistinct from(db1,travelrecord)";
-        Schema code = set(Op.EXCEPT_DISTINCT, Arrays.asList(from("db1", "travelrecord"), from("db1", "travelrecord")));
-        String text = "exceptDistinct(from(db1,travelrecord),from(db1,travelrecord))";
+        String sugar = "fromTable(db1,travelrecord) exceptDistinct fromTable(db1,travelrecord)";
+        Schema code = set(Op.EXCEPT_DISTINCT, Arrays.asList(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord")));
+        String text = "exceptDistinct(fromTable(db1,travelrecord),fromTable(db1,travelrecord))";
 
         testText(sugar, text, code,"LogicalMinus(all=[false])  LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
 
@@ -218,29 +218,29 @@ public class AstSpec2Test {
 
     @Test
     public void selectExceptAll() throws IOException {
-        String sugar = "from(db1,travelrecord) exceptAll from(db1,travelrecord)";
-        Schema code = set(Op.EXCEPT_ALL, Arrays.asList(from("db1", "travelrecord"), from("db1", "travelrecord")));
-        String text = "exceptAll(from(db1,travelrecord),from(db1,travelrecord))";
+        String sugar = "fromTable(db1,travelrecord) exceptAll fromTable(db1,travelrecord)";
+        Schema code = set(Op.EXCEPT_ALL, Arrays.asList(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord")));
+        String text = "exceptAll(fromTable(db1,travelrecord),fromTable(db1,travelrecord))";
 
         testText(sugar, text, code,"LogicalMinus(all=[true])  LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
 
-        testDump(transfor("exceptAll( from(db1,travelrecord), table(fields(fieldType(id,int),fieldType(id2,int)),values()))"),"(1,10)\n" +
+        testDump(transfor("exceptAll( fromTable(db1,travelrecord), table(fields(fieldType(id,int),fieldType(id2,int)),values()))"),"(1,10)\n" +
                 "(2,20)");
     }
 
     @Test
     public void selectFromOrder() throws IOException {
-        Schema schema = orderBy(from("db1", "travelrecord"), Arrays.asList(order("id", Direction.ASC), order("user_id", Direction.DESC)));
-        String sugar = "from(db1,travelrecord).orderBy(order(id,ASC), order(user_id,DESC))";
-        String text = "orderBy(from(db1,travelrecord),order(id,ASC), order(user_id,DESC))";
+        Schema schema = orderBy(fromTable("db1", "travelrecord"), Arrays.asList(order("id", Direction.ASC), order("user_id", Direction.DESC)));
+        String sugar = "fromTable(db1,travelrecord).orderBy(order(id,ASC), order(user_id,DESC))";
+        String text = "orderBy(fromTable(db1,travelrecord),order(id,ASC), order(user_id,DESC))";
         testText(sugar, text, schema,"LogicalSort(sort0=[$0], sort1=[$1], dir0=[ASC], dir1=[DESC])  LogicalTableScan(table=[[db1, travelrecord]])");
     }
 
     @Test
     public void selectFromLimit() throws IOException {
-        Schema schema = limit(from("db1", "travelrecord"), 1, 2);
-        String sugar = "from(db1,travelrecord).limit(1,2)";
-        String text = "limit(from(db1,travelrecord),1,2)";
+        Schema schema = limit(fromTable("db1", "travelrecord"), 1, 2);
+        String sugar = "fromTable(db1,travelrecord).limit(1,2)";
+        String text = "limit(fromTable(db1,travelrecord),1,2)";
         testText(sugar, text, schema,"LogicalSort(offset=[1], fetch=[2])  LogicalTableScan(table=[[db1, travelrecord]])");
 
         testDump(schema,"(2,20)");
@@ -248,9 +248,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectFromGroupByKey() throws IOException {
-        String sugar = "from(db1,travelrecord).groupBy(keys(groupKey(`id`))))";
-        String text = "groupBy(from(db1,travelrecord),keys(groupKey(`id`)))";
-        Schema schema = groupBy(from("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(id(("id"))))), Arrays.asList());
+        String sugar = "fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`))))";
+        String text = "groupBy(fromTable(db1,travelrecord),keys(groupKey(`id`)))";
+        Schema schema = groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(id(("id"))))), Arrays.asList());
         testText(sugar, text, schema,"LogicalAggregate(group=[{0}])  LogicalTableScan(table=[[db1, travelrecord]])");
 
         testDump(schema,"(1)\n" +
@@ -259,9 +259,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectFromGroupByKeyAvg() throws IOException {
-        String sugar = "from(db1,travelrecord).groupBy(keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
-        String text = "groupBy(from(db1,travelrecord),keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
-        Schema schema = groupBy(from("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(id(("id"))))),
+        String sugar = "fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
+        String text = "groupBy(fromTable(db1,travelrecord),keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
+        Schema schema = groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(id(("id"))))),
                 Arrays.asList(new AggregateCall("avg", Arrays.asList(id(("id")))).alias("a").distinct().approximate().ignoreNulls().filter(literal(true))
                         .orderBy(Arrays.asList(order("user_id", Direction.DESC)))));
         testText(sugar, text, schema);
@@ -280,9 +280,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectFromGroupByKeyAvg2() throws IOException {
-        String sugar = "from(db1,travelrecord).groupBy(keys(groupKey(`id`),groupKey(`user_id`)),aggregating(avg(`id`),avg(`user_id`))))";
-        String text = "groupBy(from(db1,travelrecord),keys(groupKey(`id`),groupKey(`user_id`)),aggregating(avg(`id`),avg(`user_id`)))";
-        Schema schema = groupBy(from("db1", "travelrecord"), Arrays.asList(
+        String sugar = "fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`),groupKey(`user_id`)),aggregating(avg(`id`),avg(`user_id`))))";
+        String text = "groupBy(fromTable(db1,travelrecord),keys(groupKey(`id`),groupKey(`user_id`)),aggregating(avg(`id`),avg(`user_id`)))";
+        Schema schema = groupBy(fromTable("db1", "travelrecord"), Arrays.asList(
                 groupKey(Arrays.asList(id(("id")))),
                 groupKey(Arrays.asList(id(("user_id"))))),
                 Arrays.asList(
@@ -304,9 +304,9 @@ public class AstSpec2Test {
 
     @Test
     public void selectCastFrom() throws IOException {
-        String sugar = "from(db1,travelrecord).map(cast(1,float) as a)";
-        String text = "map(from(db1,travelrecord),cast(1,float) as a)";
-        Schema schema = map(from("db1", "travelrecord"), Arrays.asList(as(cast(new Literal(1), new Identifier("float")),new Identifier("a"))));
+        String sugar = "fromTable(db1,travelrecord).map(cast(1,float) as a)";
+        String text = "map(fromTable(db1,travelrecord),cast(1,float) as a)";
+        Schema schema = map(fromTable("db1", "travelrecord"), Arrays.asList(as(cast(new Literal(1), new Identifier("float")),new Identifier("a"))));
         testText(sugar, text, schema,"LogicalProject(a=[1:FLOAT])  LogicalTableScan(table=[[db1, travelrecord]])");
 
         testDump(schema,"(1.0)\n" +
@@ -330,9 +330,9 @@ public class AstSpec2Test {
 
     @Test
     public void filterIn() throws IOException {
-        String sugar = "from(db1,travelrecord).filter(`id` = 1)";
-        String text = "filter(from(db1,travelrecord),`id` = 1)";
-        Schema schema = filter(from("db1", "travelrecord"), eq(new Identifier("id"), new Literal(1)));
+        String sugar = "fromTable(db1,travelrecord).filter(`id` = 1)";
+        String text = "filter(fromTable(db1,travelrecord),`id` = 1)";
+        Schema schema = filter(fromTable("db1", "travelrecord"), eq(new Identifier("id"), new Literal(1)));
         testText(sugar, text, schema);
         testSchema(schema,"LogicalFilter(condition=[=($0, 1)])  LogicalTableScan(table=[[db1, travelrecord]])");
 
@@ -341,9 +341,9 @@ public class AstSpec2Test {
 
     @Test
     public void filterAndOr() throws IOException {
-        String sugar = "from(db1,travelrecord).filter(`id` = 1 or `id` = 2 or `id` = 3)";
-        String text = "filter(from(db1,travelrecord),`id` = 1 or `id` = 2 or `id` = 3 )";
-        Schema schema = filter(from("db1", "travelrecord"),
+        String sugar = "fromTable(db1,travelrecord).filter(`id` = 1 or `id` = 2 or `id` = 3)";
+        String text = "filter(fromTable(db1,travelrecord),`id` = 1 or `id` = 2 or `id` = 3 )";
+        Schema schema = filter(fromTable("db1", "travelrecord"),
                 or(
                         or(
                                 eq(new Identifier("id"), new Literal(1)),
@@ -359,9 +359,9 @@ public class AstSpec2Test {
     }
     @Test
     public void filterAndOr2() throws IOException {
-        String sugar = "from(db1,travelrecord).filter(`id` = 1 or `id` = 2 and `id` = 3)";
-        String text = "filter(from(db1,travelrecord),`id` = 1 or `id` = 2 and `id` = 3 )";
-        Schema schema = filter(from("db1", "travelrecord"),
+        String sugar = "fromTable(db1,travelrecord).filter(`id` = 1 or `id` = 2 and `id` = 3)";
+        String text = "filter(fromTable(db1,travelrecord),`id` = 1 or `id` = 2 and `id` = 3 )";
+        Schema schema = filter(fromTable("db1", "travelrecord"),
                 or(eq(new Identifier("id"), new Literal(1)),
                         and(
                                 eq(new Identifier("id"), new Literal(2)),
@@ -376,11 +376,11 @@ public class AstSpec2Test {
     }
     @Test
     public void testInnerJoin() throws IOException {
-        String sugar = "innerJoin(`id0` = `id`,from(db1,travelrecord).map(`id` as `id0`),from(db1,travelrecord))";
+        String sugar = "innerJoin(`id0` = `id`,fromTable(db1,travelrecord).map(`id` as `id0`),fromTable(db1,travelrecord))";
         Schema schema = new JoinSchema(Op.INNER_JOIN,
                 eq(id("id0"), id("id"))
-                , map(from("db1", "travelrecord"), Arrays.asList( as(new Identifier("id"),new Identifier("id0")))),
-                from("db1", "travelrecord")
+                , map(fromTable("db1", "travelrecord"), Arrays.asList( as(new Identifier("id"),new Identifier("id0")))),
+                fromTable("db1", "travelrecord")
         );
         testText(sugar, sugar, schema);
         testSchema(schema,"LogicalJoin(condition=[=($1, $0)], joinType=[inner])  LogicalProject(id0=[$0])    LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
@@ -390,9 +390,9 @@ public class AstSpec2Test {
 
     @Test
     public void testCorrelateLeftJoCorrelateSchemain() throws IOException {
-        String sugar = "correlateInnerJoin(`t`,table(fields(fieldType(id0,int)),values(1,2,3,4)) , from(`db1`,`travelrecord`).filter(ref(`t`,`id0`) = `id`)))";
+        String sugar = "correlateInnerJoin(`t`,table(fields(fieldType(id0,int)),values(1,2,3,4)) , fromTable(`db1`,`travelrecord`).filter(ref(`t`,`id0`) = `id`)))";
         Schema db0 = table(Arrays.asList(fieldType("id0","int")),Arrays.asList(1,2,3,4));
-        Schema db1 = filter(from("db1", "travelrecord"), eq(ref("t", "id0"), new Identifier("id")));
+        Schema db1 = filter(fromTable("db1", "travelrecord"), eq(ref("t", "id0"), new Identifier("id")));
         Schema schema = correlate(CORRELATE_INNER_JOIN, "t", db0, db1);
         testText(sugar, sugar, schema);
         testSchema(schema,"LogicalCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{0}])  LogicalValues(tuples=[[{ 1 }, { 2 }, { 3 }, { 4 }]])  LogicalFilter(condition=[=($cor0.id0, $0)])    LogicalTableScan(table=[[db1, travelrecord]])");

@@ -41,11 +41,13 @@ public class ExplainVisitor implements NodeVisitor {
     public void visit(MapSchema mapSchema) {
         Schema schema = mapSchema.getSchema();
         List<Expr> expr = mapSchema.getExpr();
-        sb.append("map(");
+        sb.append("map");
+        sb.append("(");
         schema.accept(this);
         sb.append(",");
         joinNode(expr);
         sb.append(")");
+
     }
 
 
@@ -115,8 +117,8 @@ public class ExplainVisitor implements NodeVisitor {
     }
 
     @Override
-    public void visit(FromSchema fromSchema) {
-        sb.append("from(");
+    public void visit(FromTableSchema fromSchema) {
+        sb.append("fromTable(");
         sb.append(fromSchema.getNames().stream().map(i -> toId(i)).collect(Collectors.joining(",")));
         sb.append(")");
     }
@@ -335,6 +337,52 @@ public class ExplainVisitor implements NodeVisitor {
         correlate.getLeft().accept(this);
         sb.append(",");
         correlate.getRight().accept(this);
+        sb.append(")");
+    }
+
+    @Override
+    public void visit(FromSqlSchema fromSqlSchema) {
+        String targetName = fromSqlSchema.getTargetName();
+        String sql = fromSqlSchema.getSql();
+        sb.append(fromSqlSchema.getOp().getFun())
+                .append("(")
+                .append(targetName)
+                .append(",");
+        if (!fromSqlSchema.getFieldTypes().isEmpty()) {
+            sb.append("fields(");
+            joinNode(fromSqlSchema.getFieldTypes());
+            sb.append(")");
+            sb.append(",");
+        }
+        sb.append("'");
+        sb.append(sql);
+        sb.append("'");
+        sb.append(")");
+
+    }
+
+    @Override
+    public void visit(FilterFromTableSchema filterFromTableSchema) {
+        String exprString = getExprString(filterFromTableSchema.getFilter());
+        sb.append(filterFromTableSchema.getOp().getFun())
+                .append("(")
+                .append(exprString)
+                .append(",");
+        List<String> names = filterFromTableSchema.getNames();
+        sb.append(names.get(0));
+        sb.append(",");
+        sb.append(names.get(1));
+        sb.append(")");
+    }
+
+    @Override
+    public void visit(FromRelToSqlSchema fromRelSchema) {
+        String targetName = fromRelSchema.getTargetName();
+        sb.append(fromRelSchema.getOp().getFun())
+                .append("(")
+                .append(targetName)
+                .append(",");
+        fromRelSchema.getRel().accept(this);
         sb.append(")");
     }
 

@@ -26,11 +26,11 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
-public class FromSchema extends Schema {
+public class FromTableSchema extends Schema {
     private List<String> names;
 
-    public FromSchema(List<String> names) {
-        super(Op.FROM);
+    public FromTableSchema(List<String> names) {
+        super(Op.FROM_TABLE);
         this.names = names;
     }
 

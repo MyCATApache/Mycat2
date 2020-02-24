@@ -71,8 +71,6 @@ public class MycatPlan {
 
         this.relNode = cache.get(defaultSchemaName + ":" + sql, () -> complie(planner, defaultSchemaName, sql));
         this.tableScans = planner.collectMycatTransientSQLTableScan(this.relNode);
-
-
     }
 
     @SneakyThrows
@@ -133,8 +131,8 @@ public class MycatPlan {
         String message = sw.toString();
         ArrayList<String> strings = new ArrayList<>(Arrays.asList(message.split("\n")));
         Schema schema = RelNodeConvertor.convertRelNode(origin);
-        String s = TextConvertor.dump(schema);
-        strings.add(s);
+        List<String> strings1 = Arrays.asList(TextConvertor.dump(schema).split("\n"));
+        strings.addAll(strings1);
         return strings;
 
     }

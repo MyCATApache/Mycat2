@@ -98,7 +98,7 @@ public class CalciteUtls {
     public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, String targetSchema, String targetTable, String targetSchemaTable) {
         StringBuilder sqlBuilder = new StringBuilder();
         String selectItems = projectColumnList.isEmpty() ? "*" : projectColumnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
-        sqlBuilder.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
+        sqlBuilder.append(MessageFormat.format("select {0} fromTable {1}", selectItems, targetSchemaTable));
         sqlBuilder.append(getFilterSQLText(rawColumnList, targetSchema, targetTable, filters));
         return sqlBuilder.toString();
     }
@@ -184,11 +184,11 @@ public class CalciteUtls {
             return false;
         } else if (filter.isA(SqlKind.EQUALS)) {
             RexCall call = (RexCall) filter;
-            RexNode left = (RexNode) call.getOperands().get(0);
+            RexNode left = call.getOperands().get(0);
             if (left.isA(SqlKind.CAST)) {
-                left = (RexNode) ((RexCall) left).operands.get(0);
+                left = ((RexCall) left).operands.get(0);
             }
-            RexNode right = (RexNode) call.getOperands().get(1);
+            RexNode right = call.getOperands().get(1);
             if (left instanceof RexInputRef && right instanceof RexLiteral) {
                 int index = ((RexInputRef) left).getIndex();
                 String value = ((RexLiteral) right).getValue2().toString();

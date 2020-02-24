@@ -15,6 +15,8 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.logic.MycatSQLTableScan;
+import io.mycat.calcite.logic.MycatTransientSQLTable;
 import io.mycat.hbt.ast.Direction;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
@@ -23,9 +25,7 @@ import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.CorrelationId;
-import org.apache.calcite.rel.core.JoinRelType;
-import org.apache.calcite.rel.core.SetOp;
+import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -60,6 +60,7 @@ public class RelNodeConvertor {
     }
 
     public static Schema convertRelNode(RelNode relNode) {
+
         List<RelNode> inputs = relNode.getInputs();
         String relTypeName = relNode.getRelTypeName();
         String correlVariable = relNode.getCorrelVariable();
@@ -94,6 +95,18 @@ public class RelNodeConvertor {
             }
             case "LogicalCorrelate": {
                 return logicalCorrelate(relNode);
+            }
+        }
+        if (relNode instanceof TableScan){
+            List<FieldType> fields = getFields(relNode);
+            TableScan relNode1 = (TableScan) relNode;
+            MycatTransientSQLTable table1 = relNode1.getTable().unwrap(MycatTransientSQLTable.class);
+            if (table1!=null) {
+                return new FromSqlSchema(Collections.emptyList(), table1.getTargetName(), table1.getExplainSQL());
+            }
+            MycatSQLTableScan unwrap = relNode1.getTable().unwrap(MycatSQLTableScan.class);
+            if (unwrap!=null) {
+                return new FromSqlSchema(fields, unwrap.getTargetName(), unwrap.getSql());
             }
         }
         throw new UnsupportedOperationException();
@@ -225,7 +238,7 @@ public class RelNodeConvertor {
 
         List<String> qualifiedName = table.getQualifiedName();
 
-        return new FromSchema(new ArrayList<>(qualifiedName));
+        return new FromTableSchema(new ArrayList<>(qualifiedName));
     }
 
     private static Schema logicalAggregate(RelNode relNode) {
@@ -301,7 +314,7 @@ public class RelNodeConvertor {
 
     private static Schema logicValues(RelNode relNode) {
         LogicalValues logicalValues = (LogicalValues) relNode;
-        return new ValuesSchema(getFieldSchema(relNode), getValues(logicalValues));
+        return new ValuesSchema(getFields(relNode), getValues(logicalValues));
     }
 
     private static List<Object> getValues(LogicalValues relNode1) {
@@ -312,7 +325,7 @@ public class RelNodeConvertor {
         return tuples.stream().flatMap(Collection::stream).map(rexLiteral -> ExprExplain.unWrapper(rexLiteral)).collect(Collectors.toCollection(ArrayList::new));
     }
 
-    private static List<FieldType> getFieldSchema(RelNode relNode) {
+    private static List<FieldType> getFields(RelNode relNode) {
         RelDataType rowType = relNode.getRowType();
         List<RelDataTypeField> fieldList = rowType.getFieldList();
         ArrayList<FieldType> fieldSchemas = new ArrayList<>(fieldList.size());

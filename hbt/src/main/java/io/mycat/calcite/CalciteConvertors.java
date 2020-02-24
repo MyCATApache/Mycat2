@@ -195,7 +195,7 @@ public class CalciteConvertors {
 //                }
 //                if (info == null) {
 //                    schemaColumnMetaMap.remove(tableName);
-//                    LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build targetTable", schemaName, tableName);
+//                    LOGGER.error("can not fetch {}.{} column info fromTable datasource,may be failure to build targetTable", schemaName, tableName);
 //                }else {
 //                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
 //                }

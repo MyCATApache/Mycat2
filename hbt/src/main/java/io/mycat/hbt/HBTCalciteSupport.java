@@ -21,10 +21,6 @@ import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.type.SqlTypeName;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -123,17 +119,23 @@ public enum HBTCalciteSupport {
         sqlOperatorMap.put("cast", SqlStdOperatorTable.CAST);
 
 
-        put("boolean", SqlTypeName.BOOLEAN, Boolean.class);
+        for (SqlTypeName value : SqlTypeName.values()) {
+            put(value.getName().toLowerCase(), value);
+        }
 
-        put("int", SqlTypeName.INTEGER, Integer.class);
-        put("float", SqlTypeName.FLOAT, Double.class);
-        put("double", SqlTypeName.DOUBLE, BigDecimal.class);
-        put("long", SqlTypeName.BIGINT, Long.class);
-        put("date", SqlTypeName.DATE, LocalDate.class);
-        put("time", SqlTypeName.TIME, LocalTime.class);
-        put("timestamp", SqlTypeName.TIMESTAMP, LocalDateTime.class);
-        put("varbinary", SqlTypeName.VARBINARY, byte[].class);
-        put("varchar", SqlTypeName.VARCHAR, String.class);
+//        put("long", SqlTypeName.DECIMAL);
+//        put("boolean", SqlTypeName.BOOLEAN);
+//
+//        put("int", SqlTypeName.DECIMAL);
+//        put("int", SqlTypeName.INTEGER);
+//        put("float", SqlTypeName.FLOAT);
+//        put("double", SqlTypeName.DOUBLE);
+//        put("long", SqlTypeName.BIGINT);
+//        put("date", SqlTypeName.DATE);
+//        put("time", SqlTypeName.TIME);
+//        put("timestamp", SqlTypeName.TIMESTAMP);
+//        put("varbinary", SqlTypeName.VARBINARY);
+//        put("varchar", SqlTypeName.VARCHAR);
 
         operators = new HashMap<>();
 
@@ -194,7 +196,7 @@ public enum HBTCalciteSupport {
 
     }
 
-    private void put(String name, SqlTypeName sqlTypeName, Class clazz) {
+    private void put(String name, SqlTypeName sqlTypeName) {
         typeMap.put(name, sqlTypeName);
     }
 

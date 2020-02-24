@@ -29,7 +29,10 @@ public enum Op {
     INTERSECT_ALL("intersectAll"),
 //    ORDER_ITEM("orderItem"),
     //relational operators
-    FROM("from"),
+    FROM_TABLE("fromTable"),
+    FROM_SQL("fromSql"),
+    FROM_REL_TO_SQL("fromRelToSql"),
+    FILTER_FROM_TABLE("filterFromTable"),
     MAP("map"),
     FILTER("filter"),
     LIMIT("limit"),

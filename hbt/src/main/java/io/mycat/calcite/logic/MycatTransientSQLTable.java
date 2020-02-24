@@ -58,7 +58,7 @@ public class MycatTransientSQLTable extends AbstractTable
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return new MycatTransientSQLTableScan(context.getCluster(), convention, relOptTable, input);
+        return new MycatTransientSQLTableScan(context.getCluster(), convention, relOptTable, () -> getExplainSQL());
     }
 
     @Override
@@ -66,4 +66,5 @@ public class MycatTransientSQLTable extends AbstractTable
         String sql = getExplainSQL();
         return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(sql, convention.targetName));
     }
+
 }

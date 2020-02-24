@@ -15,21 +15,30 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.calcite.MycatCalciteContext;
+import io.mycat.calcite.MycatCalcitePlanner;
 import io.mycat.calcite.MycatRelBuilder;
+import io.mycat.calcite.PushDownLogicTable;
 import io.mycat.hbt.ast.AggregateCall;
 import io.mycat.hbt.ast.Direction;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
+import lombok.SneakyThrows;
+import org.apache.calcite.interpreter.Bindables;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.CorrelationId;
+import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.JoinRelType;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Holder;
@@ -75,8 +84,16 @@ public class HBTConvertor {
         relBuilder.clear();
         try {
             switch (input.getOp()) {
-                case FROM:
-                    return from((FromSchema) input);
+                case FROM_TABLE:
+                    return fromTable((FromTableSchema) input);
+                case FROM_SQL:
+                    return fromSql((FromSqlSchema) input);
+                case FROM_REL_TO_SQL: {
+                    return fromRelToSqlSchema((FromRelToSqlSchema) input);
+                }
+                case FILTER_FROM_TABLE:{
+                    return filterFromTable((FilterFromTableSchema) input);
+                }
                 case MAP:
                     return map((MapSchema) input);
                 case FILTER:
@@ -114,6 +131,41 @@ public class HBTConvertor {
             relBuilder.clear();
         }
         throw new UnsupportedOperationException();
+    }
+
+    public RelNode filterFromTable(FilterFromTableSchema input) {
+        List<String> names = input.getNames();
+        relBuilder.scan(names);
+        TableScan tableScan = (TableScan) relBuilder.peek();
+        RelOptTable table = tableScan.getTable();
+        relBuilder.as(names.get(names.size() - 1));
+        relBuilder.filter(toRex(input.getFilter()));
+        Filter build = (Filter)relBuilder.build();
+        Bindables.BindableTableScan bindableTableScan = Bindables.BindableTableScan.create(build.getCluster(), table, build.getChildExps(), TableScan.identity(table));
+        relBuilder.clear();
+        return PushDownLogicTable.toPhyTable(relBuilder,bindableTableScan);
+    }
+
+    private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
+        Schema rel = input.getRel();
+        RelNode handle = handle(rel);
+        return relBuilder.makeTransientSQLScan(input.getTargetName(), handle);
+    }
+
+    @SneakyThrows
+    public RelNode fromSql(FromSqlSchema input) {
+        String targetName = input.getTargetName();
+        String sql = input.getSql();
+        List<FieldType> fieldTypes = input.getFieldTypes();
+        RelDataType relDataType;
+        if (fieldTypes.isEmpty()) {
+            MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(null);
+            SqlNode parse = planner.parse(sql);
+            relDataType = planner.convert(parse).getRowType();
+        } else {
+            relDataType = toType(input.fields());
+        }
+        return relBuilder.makeBySql(targetName, relDataType, sql);
     }
 
     private RelNode correlate(CorrelateSchema input) {
@@ -276,7 +328,7 @@ public class HBTConvertor {
         return sqlAggFunction;
     }
 
-    private RelNode from(FromSchema input) {
+    private RelNode fromTable(FromTableSchema input) {
         List<String> collect = new ArrayList<>(input.getNames());
         return relBuilder.scan(collect).as(collect.get(collect.size() - 1)).build();
     }

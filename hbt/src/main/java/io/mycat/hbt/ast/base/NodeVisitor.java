@@ -28,7 +28,7 @@ public interface NodeVisitor {
 
     void visit(LimitSchema limitSchema);
 
-    void visit(FromSchema fromSchema);
+    void visit(FromTableSchema fromSchema);
 
     void visit(SetOpSchema setOpSchema);
 
@@ -58,4 +58,9 @@ public interface NodeVisitor {
 
     void visit(CorrelateSchema correlate);
 
+    void visit(FromSqlSchema fromSqlSchema);
+
+    void visit(FilterFromTableSchema filterFromTableSchema);
+
+    void visit(FromRelToSqlSchema fromRelSchema);
 }

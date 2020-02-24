@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-
 public class SchemaConvertor {
 
     final static Map<String, Op> map = new HashMap<>();
@@ -48,7 +47,7 @@ public class SchemaConvertor {
             if (exprs.size() == 1) {
                 return transforExpr(exprs.get(0));
             }
-        }else if (parseNode instanceof BooleanLiteral){
+        } else if (parseNode instanceof BooleanLiteral) {
             return new Literal(((BooleanLiteral) parseNode).getValue());
         }
         throw new UnsupportedOperationException();
@@ -77,7 +76,7 @@ public class SchemaConvertor {
     public static List<Object> values(ParseNode fields) {
         CallExpr callExpr = (CallExpr) fields;
         List<ParseNode> exprs = callExpr.getArgs().getExprs();
-        return exprs.stream().map(i -> ((Literal)transforExpr(i)).getValue()).collect(Collectors.toList());
+        return exprs.stream().map(i -> ((Literal) transforExpr(i)).getValue()).collect(Collectors.toList());
     }
 
     private static Object transforLiteral(ParseNode i) {
@@ -106,14 +105,44 @@ public class SchemaConvertor {
                     List<Schema> collect = exprList.stream().map(expr -> transforSchema(expr)).collect(Collectors.toList());
                     return set(op, collect);
                 }
-                case FROM: {
+                case FROM_TABLE: {
                     List<String> collect = exprList.stream().map(i -> i.toString()).collect(Collectors.toList());
-                    return from(collect);
+                    return fromTable(collect);
+                }
+                case FROM_REL_TO_SQL: {
+                    Schema schema = transforSchema(exprList.get(1));
+                    return new FromRelToSqlSchema(exprList.get(0).toString(),schema);
+                }
+                case FROM_SQL: {
+                    List<FieldType> fieldTypes;
+                    String targetName = null;
+                    String sql = null;
+                    switch (exprList.size()) {
+                        case 2: {
+                            fieldTypes = Collections.emptyList();
+                            targetName = exprList.get(0).toString();
+                            sql = exprList.get(1).toString();
+                            break;
+                        }
+                        case 3: {
+                            fieldTypes = fields(exprList.get(0));
+                            targetName = exprList.get(1).toString();
+                            sql = exprList.get(2).toString();
+                            break;
+                        }
+                        default:
+                            throw new IllegalArgumentException();
+                    }
+                    return new FromSqlSchema(fieldTypes, targetName,sql);
+                }
+                case FILTER_FROM_TABLE:{
+                    List<String> collect = exprList.subList(1,exprList.size()).stream().map(i -> i.toString()).collect(Collectors.toList());
+                    return new FilterFromTableSchema(transforExpr(exprList.get(0)), collect);
                 }
                 case MAP: {
                     List<Expr> collect = exprList.subList(1, exprList.size()).stream().map(i -> transforExpr(i)).collect(Collectors.toList());
                     Schema schema = transforSchema(exprList.get(0));
-                    return map(schema,collect);
+                    return map(schema, collect);
                 }
                 case FILTER: {
                     Schema schema = transforSchema(exprList.get(0));
@@ -176,7 +205,7 @@ public class SchemaConvertor {
                     Schema schema = transforSchema(exprList.get(1));
                     Schema schema2 = transforSchema(exprList.get(2));
 
-                    return join(op, expr,schema,schema2);
+                    return join(op, expr, schema, schema2);
                 }
                 case CORRELATE_INNER_JOIN:
                 case CORRELATE_LEFT_JOIN: {
@@ -213,8 +242,8 @@ public class SchemaConvertor {
     }
 
     @NotNull
-    public static Schema join(Op op,  Expr expr,Schema left,Schema right) {
-        return new JoinSchema(op, expr,left,right);
+    public static Schema join(Op op, Expr expr, Schema left, Schema right) {
+        return new JoinSchema(op, expr, left, right);
     }
 
 //    @NotNull
@@ -249,18 +278,17 @@ public class SchemaConvertor {
     }
 
 
-
     @NotNull
-    public static Schema map( Schema schema,List<Expr> collect) {
+    public static Schema map(Schema schema, List<Expr> collect) {
         return new MapSchema(schema, collect);
     }
 
-    public static Schema from(String schema, String table) {
-        return from(Arrays.asList(schema, table));
+    public static Schema fromTable(String schema, String table) {
+        return fromTable(Arrays.asList(schema, table));
     }
 
-    public static Schema from(List<String> collect) {
-        return new FromSchema(collect);
+    public static Schema fromTable(List<String> collect) {
+        return new FromTableSchema(collect);
     }
 
     @NotNull
@@ -281,7 +309,7 @@ public class SchemaConvertor {
     public static AggregateCall aggregateCall(ParseNode parseNode) {
         CallExpr callExpr = (CallExpr) parseNode;
 
-        List<ParseNode> exprs  = Collections.emptyList();
+        List<ParseNode> exprs = Collections.emptyList();
         List<ParseNode> orderBy = new ArrayList<>();
         ParseNode filter = null;
         Boolean ignoreNulls = null;
@@ -292,11 +320,11 @@ public class SchemaConvertor {
 
         while (true) {
             name = callExpr.getName();
-            exprs  = callExpr.getArgs().getExprs();
+            exprs = callExpr.getArgs().getExprs();
             if ("orderBy".equalsIgnoreCase(name)) {
                 orderBy.addAll(exprs.subList(1, exprs.size()));
                 callExpr = (CallExpr) exprs.get(0);
-             continue;
+                continue;
             }
             if ("filter".equalsIgnoreCase(name)) {
                 filter = exprs.get(1);
@@ -327,10 +355,10 @@ public class SchemaConvertor {
         }
         List<Expr> collect = callExpr.getArgs().getExprs().stream().map(i -> transforExpr(i)).collect(Collectors.toList());
         Expr filterExpr = null;
-        if (filter!=null){
+        if (filter != null) {
             filterExpr = transforExpr(filter);
         }
-        return new AggregateCall(callExpr.getName(),alias,collect,distinct,approximate,ignoreNulls,filterExpr,orderBy.stream().map(i->getOrderItem(i)).collect(Collectors.toList()));
+        return new AggregateCall(callExpr.getName(), alias, collect, distinct, approximate, ignoreNulls, filterExpr, orderBy.stream().map(i -> getOrderItem(i)).collect(Collectors.toList()));
     }
 
     public static List<GroupItem> keys(CallExpr keys) {
