@@ -19,7 +19,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,16 +31,6 @@ public class FromTableSchema extends Schema {
     public FromTableSchema(List<String> names) {
         super(Op.FROM_TABLE);
         this.names = names;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public String getAlias() {
-        return names.get(names.size() - 1);
     }
 
     @Override

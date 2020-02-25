@@ -5,7 +5,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Getter;
 
-import java.util.Collections;
 import java.util.List;
 
 @Getter
@@ -20,12 +19,6 @@ public class FromSqlSchema extends Schema {
         this.targetName = targetName;
         this.sql = sql;
     }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.emptyList();
-    }
-
     @Override
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);

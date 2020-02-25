@@ -17,7 +17,6 @@ package io.mycat.hbt.ast.modify;
 import io.mycat.hbt.Op;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
-import io.mycat.hbt.ast.query.FieldType;
 
 import java.util.List;
 
@@ -25,22 +24,16 @@ import java.util.List;
  * @author jamie12221
  **/
 public class ModifyTable extends Schema {
-    private final String schema;
-    private final String table;
-    private String primaryColumn;
+    private final List<String> names;
+    private final List<String> updateColumnList;
+    private final Schema schema;
 
-    public ModifyTable(String schema, String table, String primaryColumn) {
-        super(Op.SCHEMA);
+    public ModifyTable(Op op,List<String> names,List<String> updateColumnList,Schema schema) {
+        super(op);
         this.schema = schema;
-        this.table = table;
-        this.primaryColumn = primaryColumn;
+        this.names = names;
+        this.updateColumnList = updateColumnList;
     }
-
-    @Override
-    public List<FieldType> fields() {
-        return null;
-    }
-
     @Override
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);

@@ -30,6 +30,9 @@ public enum Op {
 //    ORDER_ITEM("orderItem"),
     //relational operators
     FROM_TABLE("fromTable"),
+    DELETE_BY_SQL("deleteBySql"),
+    UPDATE_BY_SQL("updateBySql"),
+    INSERT_BY_SQL("insertBySql"),
     FROM_SQL("fromSql"),
     FROM_REL_TO_SQL("fromRelToSql"),
     FILTER_FROM_TABLE("filterFromTable"),

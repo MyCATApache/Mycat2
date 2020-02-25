@@ -20,9 +20,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * @author jamie12221
  **/
@@ -31,17 +28,10 @@ public class FilterSchema extends Schema {
     private final Schema schema;
     private final Expr exprs;
 
-
-
     public FilterSchema(Schema schema, Expr exprs) {
         super(Op.FILTER);
         this.schema = schema;
         this.exprs = exprs;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
     }
 
     public Schema getSchema() {

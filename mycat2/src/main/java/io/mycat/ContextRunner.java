@@ -21,7 +21,7 @@ import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
 import io.mycat.calcite.MycatCalciteContext;
 import io.mycat.calcite.metadata.MetadataManager;
-import io.mycat.calcite.prepare.MycatPlan;
+import io.mycat.calcite.prepare.PlanRunner;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
 import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
@@ -175,7 +175,7 @@ public class ContextRunner {
                         explain = explain.substring(0, explain.length() - 1);
                     }
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-                    MycatPlan query = SqldbRepl.INSTANCE.querySQL(defaultSchema, explain);
+                    PlanRunner query = SqldbRepl.INSTANCE.querySQL(defaultSchema, explain);
                     TextResultSetResponse connection = new TextResultSetResponse(query.run(MycatCalciteContext.INSTANCE.create()).get());
                     SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
                     TransactionSessionUtil.afterDoAction();//移除已经关闭的连接,
@@ -189,7 +189,7 @@ public class ContextRunner {
                 String command = context.getExplain();
 
                 return () -> block(session, mycat -> {
-                    MycatPlan query = SqldbRepl.INSTANCE.querySQL(defaultSchema, command);
+                    PlanRunner query = SqldbRepl.INSTANCE.querySQL(defaultSchema, command);
                     List<String> explain = query.explain();
                     writePlan(session, explain);
                 });

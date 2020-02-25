@@ -19,8 +19,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.List;
-
 /**
  * @author jamie12221
  **/
@@ -40,17 +38,7 @@ public class CorrelateSchema extends Schema {
     }
 
     @Override
-    public List<FieldType> fields() {
-        return null;
-    }
-
-    @Override
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);
-    }
-
-    @Override
-    public String getAlias() {
-        return null;
     }
 }

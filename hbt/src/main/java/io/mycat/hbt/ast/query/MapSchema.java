@@ -20,7 +20,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,12 +35,6 @@ public class MapSchema extends Schema {
         this.schema = schema;
         this.expr = expr;
     }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
-    }
-
     public List<Expr> getExpr() {
         return expr;
     }

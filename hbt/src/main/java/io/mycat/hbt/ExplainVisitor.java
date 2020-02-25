@@ -367,7 +367,7 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(RenameSchema projectSchema) {
-        List<String> columnNames = projectSchema.getColumnNames();
+        List<String> columnNames = projectSchema.getAlias();
         writeSchema(projectSchema.getSchema(), projectSchema.getOp().getFun());
         projectSchema.getSchema().accept(this);
         append(",");

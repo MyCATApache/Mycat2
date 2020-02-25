@@ -5,8 +5,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Getter;
 
-import java.util.List;
-
 @Getter
 public class FromRelToSqlSchema extends Schema {
     String targetName;
@@ -16,11 +14,6 @@ public class FromRelToSqlSchema extends Schema {
         super(Op.FROM_REL_TO_SQL);
         this.targetName = targetName;
         this.rel = rel;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return null;
     }
 
     @Override

@@ -163,7 +163,7 @@ public class HBTConvertor {
             SqlNode parse = planner.parse(sql);
             relDataType = planner.convert(parse).getRowType();
         } else {
-            relDataType = toType(input.fields());
+            relDataType = toType(input.getFieldTypes());
         }
         return relBuilder.makeBySql(targetName, relDataType, sql);
     }
@@ -191,7 +191,7 @@ public class HBTConvertor {
     private RelNode rename(RenameSchema input) {
         RelNode origin = handle(input.getSchema());
         List<String> fieldNames = new ArrayList<>(origin.getRowType().getFieldNames());
-        List<String> alias = input.getColumnNames();
+        List<String> alias = input.getAlias();
         int size = alias.size();
         for (int i = 0; i < size; i++) {
             fieldNames.set(i, alias.get(i));

@@ -51,7 +51,7 @@ public class MycatCalcitePrepare {
     }
 
     @SneakyThrows
-    public MycatPlan plan(List<Object> params) {
+    public MycatSqlPlan plan(List<Object> params) {
         SqlNode accept = params.isEmpty() ? sqlNode : SqlNode.clone(sqlNode).accept(
                 new SqlShuttle() {
                     int index = 0;
@@ -62,7 +62,7 @@ public class MycatCalcitePrepare {
                         return literal(o);
                     }
                 });
-        return new MycatPlan(this.defaultSchemaName, accept.toSqlString(MysqlSqlDialect.DEFAULT).getSql());
+        return new MycatSqlPlan(this.defaultSchemaName, accept.toSqlString(MysqlSqlDialect.DEFAULT).getSql());
     }
 
     public static SqlNode literal(Object value) {

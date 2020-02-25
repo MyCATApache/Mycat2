@@ -56,7 +56,7 @@ import static io.mycat.calcite.MycatCalcitePlanner.toPhysical;
 /**
  * @author Junwen Chen
  **/
-public class MycatPlan {
+public class MycatSqlPlan implements PlanRunner{
     private String defaultSchemaName;
     private final String sql;
     private final List<MycatTransientSQLTable> tableScans;
@@ -64,7 +64,7 @@ public class MycatPlan {
     static final Cache<String, RelNode> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
 
     @SneakyThrows
-    public MycatPlan(String defaultSchemaName, String sql) throws ValidationException, RelConversionException, SqlParseException {
+    public MycatSqlPlan(String defaultSchemaName, String sql) throws ValidationException, RelConversionException, SqlParseException {
         this.sql = sql;
         this.defaultSchemaName = defaultSchemaName;
         MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(defaultSchemaName);
