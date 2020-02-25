@@ -80,7 +80,7 @@ targetName是目标名字,它可以是数据源的名字或者集群的名字
 
 ​		表属性与SQL优化有关.数据分片查询引擎在单实例上执行的SQL要根据实际的表属性的约束进行优化.如果表配置了分区表,影响的因素还会更多.分区表作为一种数据库提供的分片技术,它的利弊与分片分库分表很类似.
 
-​		不同的分片字段可能有着不同的分片范围,这些范围之间可能是有交集的,理想状态下这些范围满足偏序关系.多个SQL条件计算出范围,根据偏序关系得出具有最小范围的等价字段,使用该范围进行查询.例如如果分片字段直接就能计算出物理表的访问范围,则使用该路径访问.如果不能.则结合跨库与辅助的分片范围缩小查询物理表的范围.
+​		不同的分片字段可能有着不同的分片范围,这些范围之间可能是有交集的,多个SQL条件计算出范围,得出具有最小范围的等价字段,使用该范围进行查询.例如如果分片字段直接就能计算出物理表的访问范围,则使用该路径访问.如果不能.则结合跨库与辅助的分片范围缩小查询物理表的范围.
 
 
 
@@ -341,28 +341,6 @@ map(table(Arrays.asList(fieldType("id", "int"), fieldType("id2", "int")), Arrays
 
 ```yaml
 query:
-      values
-  |   WITH withItem [ , withItem ]* query
-  |   {
-          select
-      |   selectWithoutFrom
-      |   query UNION [ ALL | DISTINCT ] query
-      |   query EXCEPT [ ALL | DISTINCT ] query
-      |   query MINUS [ ALL | DISTINCT ] query
-      |   query INTERSECT [ ALL | DISTINCT ] query
-      }
-      [ ORDER BY orderItem [, orderItem ]* ]
-      [ LIMIT [ start, ] { count | ALL } ]
-      [ OFFSET start { ROW | ROWS } ]
-      [ FETCH { FIRST | NEXT } [ count ] { ROW | ROWS } ONLY ]
-
-withItem:
-      name
-      [ '(' column [, column ]* ')' ]
-      AS '(' query ')'
-
-orderItem:
-      expression [ ASC | DESC ] [ NULLS FIRST | NULLS LAST ]
 
 select:
       SELECT [ STREAM ] [ ALL | DISTINCT ]
