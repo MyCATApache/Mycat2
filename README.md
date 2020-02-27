@@ -48,6 +48,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 
 ## Mycat2流程
+启动 io.mycat.MycatCore
 
 客户端发送SQL到mycat2,mycat2拦截对应的SQL执行不同的命令,对于不需要拦截处理的SQL,透传到有逻辑表的mysql,这样,mycat2对外就伪装成mysql数据库
 
