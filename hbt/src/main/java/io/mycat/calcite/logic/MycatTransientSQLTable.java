@@ -2,8 +2,8 @@ package io.mycat.calcite.logic;
 
 import io.mycat.QueryBackendTask;
 import io.mycat.calcite.MyCatResultSetEnumerable;
+import io.mycat.calcite.MycatCalciteContext;
 import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.MycatImplementor;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
@@ -15,6 +15,7 @@ import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTable;
+import org.apache.calcite.sql.SqlDialect;
 
 import java.util.List;
 
@@ -37,11 +38,11 @@ public class MycatTransientSQLTable extends AbstractTable
     }
 
     public String getExplainSQL(RelNode input) {
-        String sql = new MycatImplementor(convention.dialect).implement(input).asStatement().toSqlString(convention.dialect, false).getSql();
-        sql = sql.replaceAll("\r", " ");
-        sql = sql.replaceAll("\n", " ");
-        return sql;
+        SqlDialect dialect = convention.dialect;
+        return MycatCalciteContext.INSTANCE.convertToSql(input, dialect);
     }
+
+
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {

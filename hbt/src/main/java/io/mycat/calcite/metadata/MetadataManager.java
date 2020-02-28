@@ -145,7 +145,6 @@ public enum MetadataManager {
         }
 
 
-
         public List<BackendTableInfo> getBackends() {
             return backends;
         }
@@ -224,6 +223,9 @@ public enum MetadataManager {
         return columns;
     }
 
+
+    //////////////////////////////////////////////////////function/////////////////////////////////////////////////////
+
     public static Iterable<Map<String, List<String>>> routeInsert(String currentSchema, String sql) {
         SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(sql, DbType.mysql);
         List list = new LinkedList();
@@ -241,7 +243,6 @@ public enum MetadataManager {
                 }))));
     }
 
-    //////////////////////////////////////////////////////function/////////////////////////////////////////////////////
     public Iterable<Map<String, List<String>>> getInsertInfoIterator(String currentSchemaNameText, Iterator<MySqlInsertStatement> listIterator) {
         final String currentSchemaName = currentSchemaNameText.toLowerCase();
         return () -> new Iterator<Map<String, List<String>>>() {
@@ -253,44 +254,7 @@ public enum MetadataManager {
             @Override
             public Map<String, List<String>> next() {
                 MySqlInsertStatement statement = listIterator.next();
-                String s = statement.getTableSource().getSchema();
-                String schema = s == null ? currentSchemaName : s;
-                String tableName = SQLUtils.normalize(statement.getTableSource().getTableName()).toLowerCase();
-                List<SQLExpr> columns = statement.getColumns();
-                if (columns == null){
-                    columns = (List)statement.getTableSource().getColumns();
-                }
-                String[] columnList = new String[columns.size()];
-                int index = 0;
-                for (SQLExpr column : columns) {
-                    columnList[index] = SQLUtils.normalize(column.toString()).toLowerCase();
-                    index++;
-                }
-                LogicTable logicTable = logicTableMap.get(schema).get(tableName);
-                List<SQLInsertStatement.ValuesClause> valuesList = statement.getValuesList();
-                ArrayList<SQLInsertStatement.ValuesClause> valuesClauses = new ArrayList<>(valuesList);
-                valuesList.clear();
-                HashMap<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> res = new HashMap<>();
-                for (SQLInsertStatement.ValuesClause valuesClause : valuesClauses) {
-                    DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-                    index = 0;
-                    for (SQLExpr valueText : valuesClause.getValues()) {
-                        String s1 = columnList[index++];
-                        if (valueText instanceof SQLValuableExpr) {
-                            String value = SQLUtils.normalize(Objects.toString(((SQLValuableExpr) valueText).getValue()));
-                            dataMappingEvaluator.assignment(false, s1, value);
-                        } else {
-                            throw new UnsupportedOperationException();
-                        }
-                    }
-                    List<BackendTableInfo> calculate = dataMappingEvaluator.calculate(logicTable);
-                    if (calculate.size() != 1) {
-                        throw new UnsupportedOperationException();
-                    }
-                    BackendTableInfo endTableInfo = calculate.get(0);
-                    List<SQLInsertStatement.ValuesClause> valuesGroup = res.computeIfAbsent(endTableInfo, backEndTableInfo -> new ArrayList<>());
-                    valuesGroup.add(valuesClause);
-                }
+                Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> res = getInsertInfoValuesClause(currentSchemaNameText, statement);
                 listIterator.remove();
 
                 //////////////////////////////////////////////////////////////////
@@ -310,9 +274,87 @@ public enum MetadataManager {
         };
     }
 
+    //////////////////////////////////////////////////////function/////////////////////////////////////////////////////
+    public Map<String, List<String>> getInsertInfoMap(String currentSchemaName, String statement) {
+        SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(statement, DbType.mysql);
+        MySqlInsertStatement sqlStatement = (MySqlInsertStatement)sqlStatementParser.parseStatement();
+        return getInsertInfoMap(currentSchemaName,sqlStatement);
+    }
+    public Map<String, List<String>> getInsertInfoIter(String currentSchemaName, String statement) {
+        SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(statement, DbType.mysql);
+        MySqlInsertStatement sqlStatement = (MySqlInsertStatement)sqlStatementParser.parseStatement();
+        return getInsertInfoMap(currentSchemaName,sqlStatement);
+    }
+    public Map<String, List<String>> getInsertInfoMap(String currentSchemaName, MySqlInsertStatement statement) {
+        Map<String, List<String>> res = new HashMap<>();
+        Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> insertInfo = getInsertInfoValuesClause(currentSchemaName, statement);
+        SQLExprTableSource tableSource = statement.getTableSource();
+        for (Map.Entry<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> backendTableInfoListEntry : insertInfo.entrySet()) {
+            statement.getValuesList().clear();
+            BackendTableInfo key = backendTableInfoListEntry.getKey();
+            statement.getValuesList().addAll(backendTableInfoListEntry.getValue());
+            SchemaInfo schemaInfo = key.getSchemaInfo();
+            tableSource.setExpr(new SQLPropertyExpr(schemaInfo.getTargetSchema(), schemaInfo.getTargetTable()));
+            List<String> strings = res.computeIfAbsent(key.getTargetName(), s -> new ArrayList<>());
+            strings.add(statement.toString());
+        }
+        return res;
+    }
+
+    public Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, String statement) {
+        SQLStatementParser sqlStatementParser = SQLParserUtils.createSQLStatementParser(statement, DbType.mysql);
+        MySqlInsertStatement sqlStatement = (MySqlInsertStatement)sqlStatementParser.parseStatement();
+        return getInsertInfoValuesClause(currentSchemaName,sqlStatement);
+    }
+    public Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> getInsertInfoValuesClause(String currentSchemaName, MySqlInsertStatement statement) {
+        String s = statement.getTableSource().getSchema();
+        String schema = s == null ? currentSchemaName : s;
+        String tableName = SQLUtils.normalize(statement.getTableSource().getTableName()).toLowerCase();
+        List<SQLExpr> columns = statement.getColumns();
+        if (columns == null) {
+            columns = (List) statement.getTableSource().getColumns();
+        }
+        String[] columnList = new String[columns.size()];
+        int index = 0;
+        for (SQLExpr column : columns) {
+            columnList[index] = SQLUtils.normalize(column.toString()).toLowerCase();
+            index++;
+        }
+        LogicTable logicTable = logicTableMap.get(Objects.requireNonNull(schema)).get(tableName);
+        List<SQLInsertStatement.ValuesClause> valuesList = statement.getValuesList();
+        return getBackendTableInfoListMap(columnList, logicTable, valuesList);
+    }
+
+    public Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> getBackendTableInfoListMap(String[] columnList, LogicTable logicTable, List<SQLInsertStatement.ValuesClause> valuesList) {
+        int index;
+        ArrayList<SQLInsertStatement.ValuesClause> valuesClauses = new ArrayList<>(valuesList);
+        HashMap<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> res = new HashMap<>(1);
+        for (SQLInsertStatement.ValuesClause valuesClause : valuesClauses) {
+            DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
+            index = 0;
+            for (SQLExpr valueText : valuesClause.getValues()) {
+                String s1 = columnList[index++];
+                if (valueText instanceof SQLValuableExpr) {
+                    String value = SQLUtils.normalize(Objects.toString(((SQLValuableExpr) valueText).getValue()));
+                    dataMappingEvaluator.assignment(false, s1, value);
+                } else {
+                    throw new UnsupportedOperationException();
+                }
+            }
+            List<BackendTableInfo> calculate = dataMappingEvaluator.calculate(logicTable);
+            if (calculate.size() != 1) {
+                throw new UnsupportedOperationException();
+            }
+            BackendTableInfo endTableInfo = calculate.get(0);
+            List<SQLInsertStatement.ValuesClause> valuesGroup = res.computeIfAbsent(endTableInfo, backEndTableInfo -> new ArrayList<>(1));
+            valuesGroup.add(valuesClause);
+        }
+        return res;
+    }
+
     public Map<String, List<String>> rewriteSQL(String currentSchema, String sql) {
         SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-        TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
+        resolveMetadata(sqlStatement);
         ConditionCollector conditionCollector = new ConditionCollector();
         sqlStatement.accept(conditionCollector);
         Rrs rrs = assignment(conditionCollector.isFailureIndeterminacy(), conditionCollector.getRootQueryDataRange(), currentSchema);
@@ -325,6 +367,10 @@ public enum MetadataManager {
             list.add(SQLUtils.toMySqlString(sqlStatement));
         }
         return sqls;
+    }
+
+    public void resolveMetadata(SQLStatement sqlStatement) {
+        TABLE_REPOSITORY.resolve(sqlStatement, ResolveAllColumn, ResolveIdentifierAlias, CheckColumnAmbiguous);
     }
 
     //////////////////////////////////////////calculate///////////////////////////////

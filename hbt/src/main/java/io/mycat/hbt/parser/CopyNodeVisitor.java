@@ -133,6 +133,26 @@ public class CopyNodeVisitor implements ParseNodeVisitor {
         stack.push(booleanLiteral);
     }
 
+    @Override
+    public void visit(NullLiteral nullLiteral) {
+
+    }
+
+    @Override
+    public void endVisit(NullLiteral nullLiteral) {
+        stack.push(nullLiteral);
+    }
+
+    @Override
+    public void visit(ParamLiteral paramLiteral) {
+
+    }
+
+    @Override
+    public void endVisit(ParamLiteral paramLiteral) {
+        stack.push(paramLiteral);
+    }
+
 
     public <T> T getStack() {
         return (T) stack.peek();

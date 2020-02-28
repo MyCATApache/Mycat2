@@ -58,7 +58,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (QueryBackendTask endTableInfo : backStoreList) {
-            DefaultConnection session = dataContext.getTarget(endTableInfo);
+            DefaultConnection session = dataContext.getDisposableConnection(endTableInfo);
             iterators.add(session.executeQuery(endTableInfo.getSql()));
             LOGGER.info("runing querySQL:{}", endTableInfo.getSql());
         }

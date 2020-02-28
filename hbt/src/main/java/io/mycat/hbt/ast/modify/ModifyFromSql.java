@@ -14,25 +14,24 @@
  */
 package io.mycat.hbt.ast.modify;
 
-import io.mycat.hbt.Op;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
+import lombok.Getter;
 
-import java.util.List;
+import static io.mycat.hbt.Op.MODIFY_FROM_SQL;
 
 /**
  * @author jamie12221
  **/
-public class ModifyTable extends Schema {
-    private final List<String> names;
-    private final List<String> updateColumnList;
-    private final Schema schema;
+@Getter
+public class ModifyFromSql extends Schema {
+    private final String targetName;
+    private final String sql;
 
-    public ModifyTable(Op op,List<String> names,List<String> updateColumnList,Schema schema) {
-        super(op);
-        this.schema = schema;
-        this.names = names;
-        this.updateColumnList = updateColumnList;
+    public ModifyFromSql(String targetName,String sql) {
+        super(MODIFY_FROM_SQL);
+        this.targetName = targetName;
+        this.sql = sql;
     }
     @Override
     public void accept(NodeVisitor visitor) {

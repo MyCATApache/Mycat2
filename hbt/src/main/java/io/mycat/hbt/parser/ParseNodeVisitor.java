@@ -52,4 +52,12 @@ public interface ParseNodeVisitor {
     void visit(BooleanLiteral booleanLiteral);
 
     void endVisit(BooleanLiteral booleanLiteral);
+
+    void visit(NullLiteral nullLiteral);
+
+    void endVisit(NullLiteral nullLiteral);
+
+    void visit(ParamLiteral paramLiteral);
+
+    void endVisit(ParamLiteral paramLiteral);
 }

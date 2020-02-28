@@ -40,6 +40,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -57,10 +58,16 @@ public class HBTConvertor {
     private final MycatRelBuilder relBuilder;
     private final Map<String, RexCorrelVariable> correlVariableMap = new HashMap<>();
     private int joinCount;
-
+    private int paramIndex = 0;
+    private final List<Object> params;
 
     public HBTConvertor(MycatRelBuilder relBuilder) {
+        this(relBuilder, Collections.emptyList());
+    }
+
+    public HBTConvertor(MycatRelBuilder relBuilder, List<Object> params) {
         this.relBuilder = relBuilder;
+        this.params = params;
         this.relBuilder.clear();
     }
 
@@ -91,7 +98,7 @@ public class HBTConvertor {
                 case FROM_REL_TO_SQL: {
                     return fromRelToSqlSchema((FromRelToSqlSchema) input);
                 }
-                case FILTER_FROM_TABLE:{
+                case FILTER_FROM_TABLE: {
                     return filterFromTable((FilterFromTableSchema) input);
                 }
                 case MAP:
@@ -140,10 +147,10 @@ public class HBTConvertor {
         RelOptTable table = tableScan.getTable();
         relBuilder.as(names.get(names.size() - 1));
         relBuilder.filter(toRex(input.getFilter()));
-        Filter build = (Filter)relBuilder.build();
+        Filter build = (Filter) relBuilder.build();
         Bindables.BindableTableScan bindableTableScan = Bindables.BindableTableScan.create(build.getCluster(), table, build.getChildExps(), TableScan.identity(table));
         relBuilder.clear();
-        return PushDownLogicTable.toPhyTable(relBuilder,bindableTableScan);
+        return PushDownLogicTable.toPhyTable(relBuilder, bindableTableScan);
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
@@ -212,7 +219,7 @@ public class HBTConvertor {
             ArrayList<RelNode> nodes = new ArrayList<>(schemas.size());
             HashSet<String> set = new HashSet<>();
             for (Schema schema : schemas) {
-                HBTConvertor queryOp = new HBTConvertor(relBuilder);
+                HBTConvertor queryOp = new HBTConvertor(relBuilder, params);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
                 if (!set.addAll(fieldNames)) {
@@ -427,9 +434,11 @@ public class HBTConvertor {
                 } else if (node.op == REF) {
                     return ref(node);
                 } else if (node.op == CAST) {
-                    RexNode rexNode = toRex(node.getNodes().get(0));
+                    RexNode rexNode = this.relBuilder.literal(params.get(paramIndex++));
                     Identifier type = (Identifier) node.getNodes().get(1);
                     return relBuilder.cast(rexNode, toType(type.getValue()).getSqlTypeName());
+                } else if (node.op == PARAM) {
+                    return relBuilder.literal(params.get(paramIndex++));
                 } else if (node.op == FUN) {
                     Fun node2 = (Fun) node;
                     if ("as".equals(node2.getFunctionName())) {
@@ -471,11 +480,34 @@ public class HBTConvertor {
         return typeFactory.createSqlType(HBTCalciteSupport.INSTANCE.getSqlTypeName(typeText));
     }
 
+    private RelDataType toType(String typeText, boolean nullable, Integer precision, Integer scale) {
+        final RelDataTypeFactory typeFactory = relBuilder.getTypeFactory();
+        SqlTypeName sqlTypeName = HBTCalciteSupport.INSTANCE.getSqlTypeName(typeText);
+        RelDataType sqlType = null;
+        if (precision != null && scale != null) {
+            sqlType = typeFactory.createSqlType(sqlTypeName, precision, scale);
+        }
+        if (precision != null && scale == null) {
+            sqlType = typeFactory.createSqlType(sqlTypeName, precision);
+        }
+        if (precision == null && scale == null) {
+            sqlType = typeFactory.createSqlType(sqlTypeName);
+        }
+        if (sqlType == null) {
+            throw new IllegalArgumentException();
+        }
+
+        return typeFactory.createTypeWithNullability(sqlType, nullable);
+    }
+
     private RelDataType toType(List<FieldType> fieldSchemaList) {
         final RelDataTypeFactory typeFactory = relBuilder.getTypeFactory();
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for (FieldType fieldSchema : fieldSchemaList) {
-            builder.add(fieldSchema.getId(), toType(fieldSchema.getType()));
+            boolean nullable = fieldSchema.isNullable();
+            Integer precision = fieldSchema.getPrecision();
+            Integer scale = fieldSchema.getScale();
+            builder.add(fieldSchema.getId(), toType(fieldSchema.getType(), nullable, precision, scale));
         }
         return builder.build();
     }

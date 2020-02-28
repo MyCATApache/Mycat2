@@ -32,6 +32,7 @@ import java.util.Map;
  **/
 public class HBTParser {
     private final Lexer lexer;
+    private int paramCount  = 0;
     private static final Map<String, Precedence> operators = HBTCalciteSupport.INSTANCE.getOperators();
 
     public HBTParser(String text) {
@@ -49,14 +50,14 @@ public class HBTParser {
     }
 
 
-    private ParseNode statement() {
+    public ParseNode statement() {
         ParseNode expression = expression();
         if (lexer.token() == Token.SEMI) {
             lexer.nextToken();
-            return expression;
-        } else {
+        } else if (!lexer.isEOF()) {
             throw new ParserException();
         }
+        return expression;
     }
 
     public ParseNode expression() {
@@ -109,6 +110,13 @@ public class HBTParser {
                 }
                 if ("false".equals(id)) {
                     return new BooleanLiteral(false);
+                }
+                if ("null".equals(id)) {
+                    return new NullLiteral();
+                }
+                if ("?".equals(id)) {
+                    paramCount++;
+                    return new ParamLiteral();
                 }
                 return new IdLiteral(id);
             }
@@ -219,5 +227,9 @@ public class HBTParser {
                 throw new ParserException(lexer.info());
             }
         }
+    }
+
+    public int getParamCount() {
+        return paramCount;
     }
 }

@@ -49,6 +49,8 @@ public class SchemaConvertor {
             }
         } else if (parseNode instanceof BooleanLiteral) {
             return new Literal(((BooleanLiteral) parseNode).getValue());
+        } else if (parseNode instanceof NullLiteral) {
+            return new Literal(null);
         }
         throw new UnsupportedOperationException();
     }
@@ -59,12 +61,23 @@ public class SchemaConvertor {
         List<ParseNode> exprs = parseNode1.getArgs().getExprs();
         String id = exprs.get(0).toString();
         String type = exprs.get(1).toString();
-        return fieldType(id, type);
+        final boolean nullable = Optional.ofNullable(getArg(exprs,2)).map(i->Boolean.parseBoolean(i)).orElse(true);
+        final Integer precision = Optional.ofNullable(getArg(exprs,3)).map(i->Integer.parseInt(i)).orElse(null);
+        final Integer scale  = Optional.ofNullable(getArg(exprs,4)).map(i->Integer.parseInt(i)).orElse(null);
+        return new FieldType(id, type, nullable, precision, scale);
+    }
+
+    public static  String getArg(List<ParseNode> exprs, int index) {
+        if (exprs.size() > index) {
+            return  exprs.get(index).toString();
+        } else {
+            return null;
+        }
     }
 
 
     public static FieldType fieldType(String id, String type) {
-        return new FieldType(id, type);
+        return new FieldType(id, type, true, null, null);
     }
 
     public static List<FieldType> fields(ParseNode fields) {
@@ -111,7 +124,7 @@ public class SchemaConvertor {
                 }
                 case FROM_REL_TO_SQL: {
                     Schema schema = transforSchema(exprList.get(1));
-                    return new FromRelToSqlSchema(exprList.get(0).toString(),schema);
+                    return new FromRelToSqlSchema(exprList.get(0).toString(), schema);
                 }
                 case FROM_SQL: {
                     List<FieldType> fieldTypes;
@@ -133,10 +146,10 @@ public class SchemaConvertor {
                         default:
                             throw new IllegalArgumentException();
                     }
-                    return new FromSqlSchema(fieldTypes, targetName,sql);
+                    return new FromSqlSchema(fieldTypes, targetName, sql);
                 }
-                case FILTER_FROM_TABLE:{
-                    List<String> collect = exprList.subList(1,exprList.size()).stream().map(i -> i.toString()).collect(Collectors.toList());
+                case FILTER_FROM_TABLE: {
+                    List<String> collect = exprList.subList(1, exprList.size()).stream().map(i -> i.toString()).collect(Collectors.toList());
                     return new FilterFromTableSchema(transforExpr(exprList.get(0)), collect);
                 }
                 case MAP: {

@@ -331,8 +331,18 @@ public class RelNodeConvertor {
         ArrayList<FieldType> fieldSchemas = new ArrayList<>(fieldList.size());
         for (RelDataTypeField relDataTypeField : fieldList) {
             String name = relDataTypeField.getName();
-            SqlTypeName sqlTypeName = relDataTypeField.getType().getSqlTypeName();
-            fieldSchemas.add(new FieldType(name, ExprExplain.type(sqlTypeName)));
+            RelDataType type = relDataTypeField.getType();
+            SqlTypeName sqlTypeName = type.getSqlTypeName();
+            boolean nullable = type.isNullable();
+            Integer precision = null;
+            Integer scale = null;
+            if(sqlTypeName.allowsPrec()){
+                precision = type.getPrecision();
+            }
+            if (sqlTypeName.allowsScale()){
+                scale = type.getScale();
+            }
+            fieldSchemas.add(new FieldType(name, ExprExplain.type(sqlTypeName),nullable,precision,scale));
         }
         return fieldSchemas;
     }

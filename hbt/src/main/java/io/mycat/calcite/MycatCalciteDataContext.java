@@ -16,6 +16,9 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableMap;
 import io.mycat.QueryBackendTask;
+import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.beans.resultset.MycatUpdateResponse;
+import io.mycat.calcite.prepare.TextUpdateInfo;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -24,6 +27,7 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.util.Holder;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -101,10 +105,38 @@ public  class MycatCalciteDataContext implements DataContext, AutoCloseable {
         dsConnections.clear();
     }
 
-    public DefaultConnection getTarget(QueryBackendTask endTableInfo) {
+    public DefaultConnection getDisposableConnection(QueryBackendTask endTableInfo) {
         String datasourceName= ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(endTableInfo.getTargetName(),false,null);
         DefaultConnection session = TransactionSessionUtil.currentTransactionSession().getDisposableConnection(datasourceName);
         dsConnections.add(session);
         return session;
+    }
+    @NotNull
+    public UpdateRowIterator getUpdateRowIterator(TextUpdateInfo next) {
+        String replicaName = next.targetName();
+        long updateCount = 0;
+        long lastInsertId = 0;
+        for (String s : next.sqls()) {
+            MycatUpdateResponse mycatUpdateResponse = TransactionSessionUtil.executeUpdateByReplicaName(replicaName, s, true, null);
+            updateCount += mycatUpdateResponse.getUpdateCount();
+            lastInsertId += mycatUpdateResponse.getLastInsertId();
+        }
+        return new UpdateRowIterator(updateCount, lastInsertId);
+    }
+
+    public String getDefaultSchemaName() {
+        return null;
+    }
+
+    public void rollback() {
+
+    }
+
+    public void useSchema(String normalize) {
+
+    }
+
+    public void commit() {
+
     }
 }

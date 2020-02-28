@@ -14,8 +14,9 @@
  */
 package io.mycat.calcite.prepare;
 
+import io.mycat.beans.mycat.MycatRowMetaData;
+import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -35,19 +36,29 @@ import java.util.List;
 /**
  * @author Junwen Chen
  **/
-public class MycatCalcitePrepare {
-    private final Long id;
-    private final String defaultSchemaName;
-    private final String sql;
+@Getter
+public class MycatCalcitePrepare extends MycatSQLPrepareObject {
     private final SqlNode sqlNode;
-    private final RelDataType parameterRowType;
+    private final MycatRowMetaData parameterRowType;
+    private final MycatRowMetaData resultSetRowType;
+    private boolean forUpdate;
 
-    public MycatCalcitePrepare(Long id, String defaultSchemaName, String sql, SqlNode sqlNode, RelDataType parameterRowType) {
-        this.id = id;
-        this.defaultSchemaName = defaultSchemaName;
-        this.sql = sql;
+    public MycatCalcitePrepare(Long id, String defaultSchemaName, String sql, SqlNode sqlNode, MycatRowMetaData parameterRowType, MycatRowMetaData resultSetRowType, boolean forUpdate) {
+        super(id,defaultSchemaName,sql);
         this.sqlNode = sqlNode;
         this.parameterRowType = parameterRowType;
+        this.resultSetRowType = resultSetRowType;
+        this.forUpdate = forUpdate;
+    }
+
+    @Override
+    public MycatRowMetaData prepareParams() {
+        return parameterRowType;
+    }
+
+    @Override
+    public MycatRowMetaData resultSetRowType() {
+        return resultSetRowType;
     }
 
     @SneakyThrows
@@ -55,6 +66,7 @@ public class MycatCalcitePrepare {
         SqlNode accept = params.isEmpty() ? sqlNode : SqlNode.clone(sqlNode).accept(
                 new SqlShuttle() {
                     int index = 0;
+
                     @Override
                     public SqlNode visit(SqlDynamicParam param) {
                         Object o = params.get(index);
@@ -62,7 +74,7 @@ public class MycatCalcitePrepare {
                         return literal(o);
                     }
                 });
-        return new MycatSqlPlan(this.defaultSchemaName, accept.toSqlString(MysqlSqlDialect.DEFAULT).getSql());
+        return new MycatSqlPlan(this, accept.toSqlString(MysqlSqlDialect.DEFAULT).getSql());
     }
 
     public static SqlNode literal(Object value) {
@@ -98,14 +110,6 @@ public class MycatCalcitePrepare {
                     + " (" + value.getClass() + ") to a constant");
         }
         return literal;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public String getSql() {
-        return sql;
     }
 
 

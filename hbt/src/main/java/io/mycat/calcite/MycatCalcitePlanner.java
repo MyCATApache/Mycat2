@@ -85,6 +85,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         }
         return reader;
     }
+
     public MycatRelBuilder createRelBuilder(RelOptCluster cluster) {
         return (MycatRelBuilder) MycatCalciteContext.INSTANCE.relBuilderFactory.create(cluster, createCalciteCatalogReader());
     }
@@ -374,5 +375,18 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
             }
         });
         return list;
+    }
+
+    public  RelNode convertToMycatRel(RelNode relNode) {
+        return relNode.accept(new RelShuttleImpl() {
+            @Override
+            public RelNode visit(TableScan scan) {
+                MycatTransientSQLTable unwrap = scan.getTable().unwrap(MycatTransientSQLTable.class);
+                if (unwrap != null) {
+                    return unwrap.toRel(ViewExpanders.toRelContext(planner, MycatCalcitePlanner.this.newCluster()), scan.getTable());
+                }
+                return super.visit(scan);
+            }
+        });
     }
 }

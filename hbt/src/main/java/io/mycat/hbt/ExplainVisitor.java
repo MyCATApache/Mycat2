@@ -16,7 +16,8 @@ package io.mycat.hbt;
 
 import io.mycat.hbt.ast.AggregateCall;
 import io.mycat.hbt.ast.base.*;
-import io.mycat.hbt.ast.modify.ModifyTable;
+import io.mycat.hbt.ast.modify.MergeModify;
+import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.hbt.parser.HBTParser;
 import org.apache.calcite.avatica.util.ByteString;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * @author jamie12221
@@ -170,7 +172,11 @@ public class ExplainVisitor implements NodeVisitor {
     public void visit(FieldType fieldSchema) {
         String id = fieldSchema.getId();
         String type = fieldSchema.getType();
-        append(MessageFormat.format("fieldType({0},{1})", toId(id), toId(type)));
+        boolean nullable = fieldSchema.isNullable();
+        Integer precision = fieldSchema.getPrecision();
+        Integer scale = fieldSchema.getScale();
+        append(MessageFormat.format("fieldType({0},{1},{2},{3},{4})", toId(id), toId(type), toId(Boolean.toString(nullable)),
+                toId(Integer.toString(precision)), toId(Integer.toString(scale))));
     }
 
     @Override
@@ -242,18 +248,18 @@ public class ExplainVisitor implements NodeVisitor {
             functionName = ("dot");
         } else if (expr.op == Op.REF) {
             functionName = ("ref");
-        }else {
+        } else {
             throw new UnsupportedOperationException();
         }
         Map<String, HBTParser.Precedence> operators = HBTCalciteSupport.INSTANCE.getOperators();
-        if(expr.getNodes().size()==2&&operators.containsKey(functionName)){
+        if (expr.getNodes().size() == 2 && operators.containsKey(functionName)) {
             HBTParser.Precedence precedence = operators.get(functionName);
             expr.getNodes().get(0).accept(this);
             append(" ");
             append(functionName);
             append(" ");
             expr.getNodes().get(1).accept(this);
-        }else {
+        } else {
             append(functionName);
             append("(");
             joinNode(expr.getNodes());
@@ -354,8 +360,15 @@ public class ExplainVisitor implements NodeVisitor {
     }
 
     @Override
-    public void visit(ModifyTable modifyTable) {
-
+    public void visit(ModifyFromSql modifyTable) {
+        String targetName = modifyTable.getTargetName();
+        String sql = modifyTable.getSql();
+        append(modifyTable.getOp().getFun());
+        append("(");
+        append(targetName);
+        append(",");
+        append(sql);
+        append(")");
     }
 
     @Override
@@ -436,6 +449,26 @@ public class ExplainVisitor implements NodeVisitor {
         append(",");
         fromRelSchema.getRel().accept(this);
         append(")");
+    }
+
+    @Override
+    public void visit(MergeModify mergeModify) {
+        append(mergeModify.getOp().getFun());
+        append("(");
+        List<ModifyFromSql> list = StreamSupport.stream(mergeModify.getList().spliterator(), false).collect(Collectors.toList());
+        int size = list.size();
+        for (int i = 0; i < size - 1; i++) {
+            ModifyFromSql modifyFromSql = list.get(i);
+            modifyFromSql.accept(this);
+            append(",");
+        }
+        list.get(size - 1).accept(this);
+        append(")");
+    }
+
+    @Override
+    public void visit(Param param) {
+        append("?");
     }
 
 

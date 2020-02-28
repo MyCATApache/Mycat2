@@ -66,15 +66,16 @@ public class TransactionSessionUtil {
         return transactionSession.getConnection(datasource);
     }
 
-    public static MycatUpdateResponse executeUpdate(String replicaName,
+    public static MycatUpdateResponse executeUpdateByReplicaName(String replicaName,
                                                     String sql,
                                                     boolean needGeneratedKeys,
                                                     String strategy) {
         GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
         try {
-            DefaultConnection connection = getConnectionByReplicaName(replicaName, true, strategy);
             transactionSession.beforeDoAction();
+            DefaultConnection connection = getConnectionByReplicaName(replicaName, true, strategy);
+
             return connection.executeUpdate(sql, needGeneratedKeys);
         } finally {
             transactionSession.afterDoAction();
@@ -84,8 +85,8 @@ public class TransactionSessionUtil {
     public static MycatUpdateResponse executeUpdate(String datasource, String sql, boolean needGeneratedKeys) {
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
         try {
-            DefaultConnection connection = getConnectionByDataSource(datasource);
             transactionSession.beforeDoAction();
+            DefaultConnection connection = getConnectionByDataSource(datasource);
             return connection.executeUpdate(sql, needGeneratedKeys);
         } finally {
             transactionSession.afterDoAction();

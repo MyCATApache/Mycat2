@@ -30,9 +30,8 @@ public enum Op {
 //    ORDER_ITEM("orderItem"),
     //relational operators
     FROM_TABLE("fromTable"),
-    DELETE_BY_SQL("deleteBySql"),
-    UPDATE_BY_SQL("updateBySql"),
-    INSERT_BY_SQL("insertBySql"),
+    MERGE_MODIFY("mergeModify"),
+    MODIFY_FROM_SQL("modifyFromSql"),
     FROM_SQL("fromSql"),
     FROM_REL_TO_SQL("fromRelToSql"),
     FILTER_FROM_TABLE("filterFromTable"),
@@ -86,6 +85,7 @@ public enum Op {
     REF("ref"),
     AggregateCall("aggregateCall"),
     REGULAR("regular"),
+    PARAM("param"),
     ;
 
     String fun;
