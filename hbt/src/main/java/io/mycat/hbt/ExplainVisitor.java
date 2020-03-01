@@ -100,7 +100,6 @@ public class ExplainVisitor implements NodeVisitor {
         List<GroupItem> keys = groupSchema.getKeys();
         Schema schema = groupSchema.getSchema();
         writeSchema(schema, "groupBy");
-        append(",");
         append("keys(");
         groupKey(keys);
         append(")");
