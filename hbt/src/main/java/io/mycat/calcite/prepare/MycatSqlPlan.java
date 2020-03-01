@@ -14,54 +14,45 @@
  */
 package io.mycat.calcite.prepare;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.calcite.MycatCalciteContext;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalcitePlanner;
-import io.mycat.calcite.logic.MycatTransientSQLTable;
+import io.mycat.calcite.logic.PreComputationSQLTable;
+import io.mycat.upondb.UponDBContext;
 import lombok.SneakyThrows;
 import org.apache.calcite.rel.RelNode;
 
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.function.Supplier;
 
 /**
  * @author Junwen Chen
  **/
 public class MycatSqlPlan implements PlanRunner {
-    private final List<MycatTransientSQLTable> tableScans;
+    private final List<PreComputationSQLTable> preComputationSQLTables;
     private final RelNode relNode;
-    static final Cache<String, RelNode> cache = CacheBuilder.newBuilder().maximumSize(65535).build();
     private final MycatCalcitePrepare prepare;
+    private final MycatCalciteDataContext mycatCalciteDataContext;
+    private final Supplier<RowBaseIterator> runner;
 
     @SneakyThrows
-    public MycatSqlPlan(MycatCalcitePrepare prepare, String sql) {
+    public MycatSqlPlan(MycatCalcitePrepare prepare, String sql, UponDBContext uponDBContext) {
         this.prepare = prepare;
-        MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(prepare.getDefaultSchemaName());
-        this.relNode = cache.get(prepare.getDefaultSchemaName() + ":" + sql, new Callable<RelNode>() {
-            @Override
-            public RelNode call() throws Exception {
-                return CalciteRunners.complie(planner, sql);
-            }
-        });
-        this.tableScans = planner.collectMycatTransientSQLTableScan(this.relNode);
+        this.mycatCalciteDataContext = MycatCalciteContext.INSTANCE.create(uponDBContext);
+        MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(mycatCalciteDataContext);
+        this.relNode = CalciteRunners.complie(planner, sql);
+        this.preComputationSQLTables = planner.preComputeSeq(this.relNode);
+        this.runner = CalciteRunners.run(this.mycatCalciteDataContext, preComputationSQLTables, relNode);
     }
-
-
-    @SneakyThrows
-    public Supplier<RowBaseIterator> run(MycatCalciteDataContext dataContext) {
-        return CalciteRunners.run(dataContext, relNode);
-    }
-
     public List<String> explain() {
-        return new ExpainObject(prepare.getSql(),
-                MycatCalciteContext.INSTANCE.convertToHBTText(relNode),
-                MycatCalciteContext.INSTANCE.convertToMycatRelNodeText(this.relNode))
-                .explain();
+        return ExpainObject.explain(prepare.getSql(),
+                MycatCalciteContext.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
+                MycatCalciteContext.INSTANCE.convertToMycatRelNodeText(this.relNode, mycatCalciteDataContext));
     }
 
-
+    @Override
+    public RowBaseIterator run() {
+        return runner.get();
+    }
 }

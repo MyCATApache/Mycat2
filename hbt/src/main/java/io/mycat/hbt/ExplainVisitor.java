@@ -26,6 +26,7 @@ import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,7 +40,9 @@ public class ExplainVisitor implements NodeVisitor {
     final StringBuilder sb = new StringBuilder();
     int tagCount = 0;
     boolean dot = true;
-    boolean expr = false;
+    boolean forceField = false;
+
+  final   List<String> comments = new ArrayList<>(1);
 
     void enter() {
         tagCount++;
@@ -58,12 +61,8 @@ public class ExplainVisitor implements NodeVisitor {
         this(false);
     }
 
-    public ExplainVisitor(boolean expr) {
-        if (expr) {
-            expr = true;
-        } else {
-            expr = false;
-        }
+    public ExplainVisitor(boolean forceField) {
+        this.forceField = forceField;
     }
 
     @Override
@@ -74,7 +73,7 @@ public class ExplainVisitor implements NodeVisitor {
         String funName = "map";
         writeSchema(schema, funName);
         joinNode(expr);
-        append(")");
+        append(")\n");
         leave();
 
     }
@@ -101,8 +100,6 @@ public class ExplainVisitor implements NodeVisitor {
         List<GroupItem> keys = groupSchema.getKeys();
         Schema schema = groupSchema.getSchema();
         writeSchema(schema, "groupBy");
-
-        schema.accept(this);
         append(",");
         append("keys(");
         groupKey(keys);
@@ -134,7 +131,6 @@ public class ExplainVisitor implements NodeVisitor {
     @Override
     public void visit(LimitSchema limitSchema) {
         writeSchema(limitSchema.getSchema(), "limit");
-        append(",");
         Number offset = limitSchema.getOffset();
         append(Objects.toString(offset));
         append(",");
@@ -175,8 +171,12 @@ public class ExplainVisitor implements NodeVisitor {
         boolean nullable = fieldSchema.isNullable();
         Integer precision = fieldSchema.getPrecision();
         Integer scale = fieldSchema.getScale();
-        append(MessageFormat.format("fieldType({0},{1},{2},{3},{4})", toId(id), toId(type), toId(Boolean.toString(nullable)),
-                toId(Integer.toString(precision)), toId(Integer.toString(scale))));
+        if (precision != null && precision > 0) {
+            append(MessageFormat.format("fieldType({0},{1},{2},{3},{4})", toId(id), toId(type), toId(Boolean.toString(nullable)),
+                    toId(Integer.toString(precision)), toId(Integer.toString(scale))));
+        } else {
+            append(MessageFormat.format("fieldType({0},{1},{2})", toId(id), toId(type), toId(Boolean.toString(nullable))));
+        }
     }
 
     @Override
@@ -310,8 +310,12 @@ public class ExplainVisitor implements NodeVisitor {
         append(")");
     }
 
-    private String getExprString(Expr condition) {
-        ExplainVisitor explainVisitor = new ExplainVisitor(true);
+    private String getExprString(List condition) {
+        return (String) condition.stream().map(i -> getExprString((Node) i)).collect(Collectors.joining(","));
+    }
+
+    private String getExprString(Node condition) {
+        ExplainVisitor explainVisitor = new ExplainVisitor(false);
         condition.accept(explainVisitor);
         return explainVisitor.getString();
     }
@@ -327,19 +331,20 @@ public class ExplainVisitor implements NodeVisitor {
         final Boolean ignoreNulls = aggregateCall.getIgnoreNulls();
         final Expr filter = aggregateCall.getFilter(); // may be null
         final List<OrderItem> orderKeys = aggregateCall.getOrderKeys(); // may be empty, never null
-
         String res = function + "(" + operands.stream().map(i -> getExprString(i)).collect(Collectors.joining(",")) + ")";
-
+        append(res);
+        append(")");
+        res ="";
         if (alias != null) {
             res += ".alias(" + alias + ")";
         }
-        if (distinct != null) {
+        if (distinct == Boolean.TRUE) {
             res += ".distinct(" + ")";
         }
-        if (approximate != null) {
+        if (approximate ==  Boolean.TRUE) {
             res += ".approximate(" + ")";
         }
-        if (ignoreNulls != null) {
+        if (ignoreNulls ==  Boolean.TRUE) {
             res += ".ignoreNulls(" + ")";
         }
         if (filter != null) {
@@ -348,7 +353,7 @@ public class ExplainVisitor implements NodeVisitor {
         if (orderKeys != null && !orderKeys.isEmpty()) {
             res += ".orderBy(" + getOrderListString(orderKeys) + ")";
         }
-        append(res);
+
     }
 
     @Override
@@ -413,12 +418,15 @@ public class ExplainVisitor implements NodeVisitor {
         append("(");
         append(targetName);
         append(",");
+        StringBuilder comment = new StringBuilder();
+        comment.append("targetName:").append(targetName).append("\n");
         if (!fromSqlSchema.getFieldTypes().isEmpty()) {
-            append("fields(");
-            joinNode(fromSqlSchema.getFieldTypes());
-            append(")");
-            append(",");
+            comment.append("fields(");
+            comment.append(getExprString(fromSqlSchema.getFieldTypes()));
+            comment.append(")\n\n");
+            comments.add(comment.toString());
         }
+        append("\n");
         append("'");
         append(sql);
         append("'");
@@ -473,6 +481,6 @@ public class ExplainVisitor implements NodeVisitor {
 
 
     public String getString() {
-        return sb.toString();
+        return comments.stream().collect(Collectors.joining("","\n",""))+sb.toString();
     }
 }

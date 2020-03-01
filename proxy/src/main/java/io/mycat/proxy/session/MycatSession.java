@@ -64,6 +64,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     private final ByteBuffer header = ByteBuffer.allocate(4);//gc
     private String schema;
     private MycatUser user;
+    private String transactionType = "xa";
     private final LinkedTransferQueue<ByteBuffer> writeQueue = new LinkedTransferQueue<>();//buffer recycle
     //  private final MySQLPacketResolver packetResolver = new BackendMySQLPacketResolver(this);//clearQueue
     private final CrossSwapThreadBufferPool crossSwapThreadBufferPool;
@@ -453,6 +454,16 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     @Override
     public boolean checkOkInBind() {
         return checkOpen();
+    }
+
+    @Override
+    public String getUniqueName() {
+        return String.valueOf(sessionId);
+    }
+
+    @Override
+    public String bindArg() {
+        return transactionType;
     }
 
     @Override

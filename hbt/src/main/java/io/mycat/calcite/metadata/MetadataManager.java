@@ -41,7 +41,6 @@ import io.mycat.queryCondition.ConditionCollector;
 import io.mycat.queryCondition.QueryDataRange;
 import io.mycat.router.RuleFunction;
 import io.mycat.router.function.PartitionRuleFunctionManager;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -55,7 +54,6 @@ import java.util.stream.StreamSupport;
 
 import static com.alibaba.fastsql.sql.repository.SchemaResolveVisitor.Option.*;
 import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
-import static io.mycat.calcite.metadata.SimpleColumnInfo.ShardingType.*;
 
 /**
  * @author Junwen Chen
@@ -66,6 +64,7 @@ public enum MetadataManager {
     final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
 
     private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
+
 
 
     public void removeSchema(String schemaName) {
@@ -107,48 +106,6 @@ public enum MetadataManager {
         }
     }
 
-
-    @Getter
-    public static class LogicTable {
-        private final String schemaName;
-        private final String tableName;
-        private final List<BackendTableInfo> backends;
-        private final List<SimpleColumnInfo> rawColumns;
-        private final String createTableSQL;
-        //////////////optional/////////////////
-//        private JdbcTable jdbcTable;
-        //////////////optional/////////////////
-        private final SimpleColumnInfo.ShardingInfo natureTableColumnInfo;
-        private final SimpleColumnInfo.ShardingInfo replicaColumnInfo;
-        private final SimpleColumnInfo.ShardingInfo databaseColumnInfo;
-        private final SimpleColumnInfo.ShardingInfo tableColumnInfo;
-
-
-        public LogicTable(String schemaName, String name, List<BackendTableInfo> backends, List<SimpleColumnInfo> rawColumns,
-                          Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo, String createTableSQL) {
-            this.schemaName = schemaName;
-            this.tableName = name;
-            this.backends = backends == null ? Collections.emptyList() : backends;
-            this.rawColumns = rawColumns;
-            this.createTableSQL = createTableSQL;
-
-
-            this.natureTableColumnInfo = shardingInfo.get(NATURE_DATABASE_TABLE);
-
-            this.replicaColumnInfo = shardingInfo.get(MAP_TARGET);
-            this.databaseColumnInfo = shardingInfo.get(MAP_DATABASE);
-            this.tableColumnInfo = shardingInfo.get(MAP_TABLE);
-        }
-
-        public boolean isNatureTable() {
-            return natureTableColumnInfo != null;
-        }
-
-
-        public List<BackendTableInfo> getBackends() {
-            return backends;
-        }
-    }
 
     @SneakyThrows
     MetadataManager() {
@@ -437,7 +394,7 @@ public enum MetadataManager {
         }
         if (backEndTableInfos1.isEmpty() && schemaName != null) {
             LogicTable logicTable = logicTableMap.get(schemaName).get(tableName);
-            backEndTableInfos1.addAll(logicTable.backends);
+            backEndTableInfos1.addAll(logicTable.getBackends());
         }
         return new Rrs(backEndTableInfos1, table);
     }
@@ -472,7 +429,7 @@ public enum MetadataManager {
 
     private BackendTableInfo getBackendTableInfo(String partitionValue, LogicTable logicTable) {
         DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
-        dataMappingEvaluator.assignment(false, logicTable.natureTableColumnInfo.getColumnInfo().getColumnName(), partitionValue);
+        dataMappingEvaluator.assignment(false, logicTable.getNatureTableColumnInfo().getColumnInfo().getColumnName(), partitionValue);
         return dataMappingEvaluator.calculate(logicTable).get(0);
     }
 

@@ -15,10 +15,7 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.logic.MycatLogicTable;
-import io.mycat.calcite.logic.MycatPhysicalTable;
-import io.mycat.calcite.logic.MycatTransientSQLTable;
-import io.mycat.calcite.logic.MycatTransientSQLTableScan;
+import io.mycat.calcite.logic.*;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -63,23 +60,29 @@ import static org.apache.calcite.plan.RelOptRule.operand;
  * @author Junwen Chen
  **/
 public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
-    final SchemaPlus rootSchema;
-    final PlannerImpl planner;
-    final String defaultSchemaName;
 
+    private final SchemaPlus rootSchema;
+    private final PlannerImpl planner;
     CalciteCatalogReader reader = null;
+    private MycatCalciteDataContext dataContext;
 
-    public MycatCalcitePlanner(SchemaPlus rootSchema, String defaultSchemaName) {
-        this.rootSchema = rootSchema;
-        this.planner = new PlannerImpl(MycatCalciteContext.INSTANCE.createFrameworkConfig(defaultSchemaName));
-        this.defaultSchemaName = defaultSchemaName;
+    public MycatCalcitePlanner(MycatCalciteDataContext dataContext) {
+        this.dataContext = dataContext;
+        this.rootSchema = dataContext.getRootSchema();
+        this.planner = new PlannerImpl(dataContext);
     }
 
     public CalciteCatalogReader createCalciteCatalogReader() {
         if (reader == null) {
+            List<String> path = Collections.emptyList();
+            SchemaPlus defaultSchema = dataContext.getDefaultSchema();
+            if (defaultSchema!=null){
+                String name = defaultSchema.getName();
+                path = Collections.singletonList(name);
+            }
             CalciteCatalogReader calciteCatalogReader = new CalciteCatalogReader(
                     CalciteSchema.from(rootSchema),
-                    Collections.singletonList(defaultSchemaName),
+                    path,
                     MycatCalciteContext.INSTANCE.TypeFactory, MycatCalciteContext.INSTANCE.calciteConnectionConfig);
             reader = calciteCatalogReader;
         }
@@ -362,22 +365,32 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
 
     }
 
-    public List<MycatTransientSQLTable> collectMycatTransientSQLTableScan(RelNode relNode2) {
-        List<MycatTransientSQLTable> list = new ArrayList<>();
-        relNode2.accept(new RelShuttleImpl() {
+    public List<PreComputationSQLTable> preComputeSeq(RelNode relNode) {
+        Map<String, List<PreComputationSQLTable>> map = new HashMap<>();
+        relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
-                MycatTransientSQLTable unwrap = scan.getTable().unwrap(MycatTransientSQLTable.class);
+                PreComputationSQLTable unwrap = scan.getTable().unwrap(PreComputationSQLTable.class);
                 if (unwrap != null) {
-                    list.add(unwrap);
+                    List<PreComputationSQLTable> preComputationSQLTables = map.computeIfAbsent(unwrap.getTargetName(), s -> new ArrayList<>(1));
+                    preComputationSQLTables.add(unwrap);
                 }
                 return super.visit(scan);
             }
         });
-        return list;
+        List<PreComputationSQLTable> preSeq = new ArrayList<>();
+        for (Map.Entry<String, List<PreComputationSQLTable>> stringListEntry : map.entrySet()) {
+            List<PreComputationSQLTable> value = stringListEntry.getValue();
+            int size = value.size() - 1;
+            for (int i = 0; i < size; i++) {
+                preSeq.add(value.get(i));
+            }
+        }
+        return preSeq;
     }
 
-    public  RelNode convertToMycatRel(RelNode relNode) {
+
+    public RelNode convertToMycatRel(RelNode relNode) {
         return relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {

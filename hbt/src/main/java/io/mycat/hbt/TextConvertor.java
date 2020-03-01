@@ -15,7 +15,7 @@ import java.sql.Types;
 public class TextConvertor {
 
     public static String dump(Schema schema){
-        ExplainVisitor explainVisitor = new ExplainVisitor();
+        ExplainVisitor explainVisitor = new ExplainVisitor(true);
         schema.accept(explainVisitor);
         return explainVisitor.getString();
     }

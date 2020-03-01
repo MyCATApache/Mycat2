@@ -1,14 +1,15 @@
 package io.mycat.calcite.prepare;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.upondb.UponDBContext;
 
 import java.util.List;
 
 public final class MycatDelegateSQLPrepareObject extends MycatSQLPrepareObject {
-    final MycatPrepareObject prepareObject;
+    final PrepareObject prepareObject;
 
-    public MycatDelegateSQLPrepareObject(String defaultSchemaName, String sql, MycatPrepareObject prepareObject) {
-        super(defaultSchemaName, sql);
+    public MycatDelegateSQLPrepareObject(Long id,UponDBContext uponDBContext, String sql, PrepareObject prepareObject) {
+        super(id,uponDBContext, sql);
         this.prepareObject = prepareObject;
     }
 
@@ -26,4 +27,5 @@ public final class MycatDelegateSQLPrepareObject extends MycatSQLPrepareObject {
     public PlanRunner plan(List<Object> params) {
         return prepareObject.plan(params);
     }
+
 }

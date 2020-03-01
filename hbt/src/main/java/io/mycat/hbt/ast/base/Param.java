@@ -2,7 +2,7 @@ package io.mycat.hbt.ast.base;
 
 import io.mycat.hbt.Op;
 
-public class Param extends Node {
+public class Param extends Expr {
     public Param() {
         super(Op.PARAM);
     }

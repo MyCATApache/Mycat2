@@ -197,9 +197,8 @@ public class HBTParser {
                 return new ParenthesesExpr(exprs);
             } else if (lexer.token() == Token.COMMA) {
                 lexer.nextToken();
-                exprs.add(expression());
             } else {
-                throw new ParserException(lexer.info());
+                exprs.add(expression());
             }
         }
 

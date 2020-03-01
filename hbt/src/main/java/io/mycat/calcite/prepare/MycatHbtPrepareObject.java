@@ -3,7 +3,7 @@ package io.mycat.calcite.prepare;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.PrepareMycatRowMetaData;
 
-public abstract class MycatHbtPrepareObject extends MycatPrepareObject {
+public abstract class MycatHbtPrepareObject extends PrepareObject {
     private final int paramCount;
 
 

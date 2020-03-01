@@ -5,26 +5,28 @@ import io.mycat.api.collector.UpdateRowIterator;
 import io.mycat.beans.mycat.EmptyMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.UpdateRowMetaData;
-import io.mycat.calcite.MycatCalciteDataContext;
+import io.mycat.upondb.UponDBContext;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Supplier;
 
-public abstract class PlanRunnerImpl extends MycatSQLPrepareObject implements PlanRunner {
+public abstract class QueryPlanRunnerImpl extends MycatSQLPrepareObject implements PlanRunner {
 
-    public PlanRunnerImpl(String defaultSchemaName, String sql) {
-        super(defaultSchemaName, sql);
+    public QueryPlanRunnerImpl(UponDBContext uponDBContext, String sql) {
+        super(null,uponDBContext, sql);
     }
 
-    public abstract void innerEun(MycatCalciteDataContext dataContext);
+    public abstract void innerEun();
 
     @Override
-    public Supplier<RowBaseIterator> run(MycatCalciteDataContext dataContext) {
-        return () -> {
-            innerEun(dataContext);
-            return UpdateRowIterator.EMPTY;
-        };
+    public RowBaseIterator run() {
+        innerEun();
+        return UpdateRowIterator.EMPTY;
+    }
+
+    @Override
+    public PlanRunner plan(List<Object> params) {
+        return this;
     }
 
     public abstract String innerExplain();
@@ -42,11 +44,6 @@ public abstract class PlanRunnerImpl extends MycatSQLPrepareObject implements Pl
     @Override
     public MycatRowMetaData resultSetRowType() {
         return UpdateRowMetaData.INSTANCE;
-    }
-
-    @Override
-    public PlanRunner plan(List<Object> params) {
-        return this;
     }
 
 }

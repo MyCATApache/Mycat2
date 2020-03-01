@@ -85,7 +85,17 @@ public class GRuntimeTest {
 
             @Override
             public boolean checkOkInBind() {
-                return true;
+                return false;
+            }
+
+            @Override
+            public String getUniqueName() {
+                return String.valueOf(id);
+            }
+
+            @Override
+            public String bindArg() {
+                return BindThreadKey.DEFAULT;
             }
         };
     }

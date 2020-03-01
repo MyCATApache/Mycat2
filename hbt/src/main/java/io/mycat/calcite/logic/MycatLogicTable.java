@@ -18,7 +18,8 @@ import io.mycat.BackendTableInfo;
 import io.mycat.QueryBackendTask;
 import io.mycat.calcite.MyCatResultSetEnumerable;
 import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.metadata.MetadataManager;
+import io.mycat.calcite.metadata.LogicTable;
+import lombok.Getter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.plan.RelOptTable;
@@ -37,12 +38,13 @@ import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
 /**
  * @author Junwen Chen
  **/
+@Getter
 public class MycatLogicTable extends MycatTableBase implements TranslatableTable {
-    final MetadataManager.LogicTable table;
+    final LogicTable table;
     final List<MycatPhysicalTable> dataNodes;
     final Map<String, MycatPhysicalTable> dataNodeMap = new HashMap<>();
 
-    public MycatLogicTable(MetadataManager.LogicTable table) {
+    public MycatLogicTable(LogicTable table) {
         this.table = table;
         this.dataNodes = new ArrayList<>(table.getBackends().size());
         for (BackendTableInfo backend : table.getBackends()) {
@@ -58,7 +60,7 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
 
 
     @Override
-    public MetadataManager.LogicTable logicTable() {
+    public LogicTable logicTable() {
         return table;
     }
 

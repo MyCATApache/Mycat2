@@ -6,8 +6,8 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public abstract class MycatPrepareObject {
-    public MycatPrepareObject(Long id) {
+public abstract class PrepareObject {
+    public PrepareObject(Long id) {
         this.id = id;
     }
 

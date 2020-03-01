@@ -29,10 +29,12 @@ public class ExpainObject {
             list.addAll(Arrays.asList(sql.split("\n")));
         }
         if (hbt!=null) {
+            list.add("");
             list.add("hbt:");
             list.addAll(Arrays.asList(hbt.split("\n")));
         }
         if (rel!=null) {
+            list.add("");
             list.add("rel:");
             list.addAll(Arrays.asList(rel.split("\n")));
         }

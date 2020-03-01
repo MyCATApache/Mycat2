@@ -6,7 +6,6 @@ import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.resultset.MysqlSingleDataNodeResultSetResponse;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
-import io.mycat.datasource.jdbc.thread.GThread;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.replica.PhysicsInstanceImpl;
@@ -48,7 +47,6 @@ public class TransactionSessionUtil {
     public static DefaultConnection getConnectionByReplicaName(String replicaName, boolean update, String strategy) {
         LoadBalanceStrategy loadBalanceByBalanceName = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(strategy);
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-        transactionSession.beforeDoAction();
         PhysicsInstanceImpl datasource = ReplicaSelectorRuntime.INSTANCE.getDatasourceByReplicaName(replicaName, update, loadBalanceByBalanceName);
         String name;
         if (datasource == null) {
@@ -62,7 +60,6 @@ public class TransactionSessionUtil {
     public static DefaultConnection getConnectionByDataSource(String datasource) {
         Objects.requireNonNull(datasource);
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-        transactionSession.beforeDoAction();
         return transactionSession.getConnection(datasource);
     }
 
@@ -70,27 +67,17 @@ public class TransactionSessionUtil {
                                                     String sql,
                                                     boolean needGeneratedKeys,
                                                     String strategy) {
-        GThread processUnit = (GThread) Thread.currentThread();
-        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
         try {
-            transactionSession.beforeDoAction();
             DefaultConnection connection = getConnectionByReplicaName(replicaName, true, strategy);
 
             return connection.executeUpdate(sql, needGeneratedKeys);
         } finally {
-            transactionSession.afterDoAction();
         }
     }
 
     public static MycatUpdateResponse executeUpdate(String datasource, String sql, boolean needGeneratedKeys) {
-        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-        try {
-            transactionSession.beforeDoAction();
-            DefaultConnection connection = getConnectionByDataSource(datasource);
-            return connection.executeUpdate(sql, needGeneratedKeys);
-        } finally {
-            transactionSession.afterDoAction();
-        }
+        DefaultConnection connection = getConnectionByDataSource(datasource);
+        return connection.executeUpdate(sql, needGeneratedKeys);
     }
 
     public static MycatUpdateResponse executeUpdateByDatasouce(Map<String, List<String>> map, boolean needGeneratedKeys) {
@@ -126,7 +113,6 @@ public class TransactionSessionUtil {
     }
 
     public static void setIsolation(int transactionIsolation) {
-        beforeDoAction();
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
         transactionSession.setTransactionIsolation(transactionIsolation);
     }
@@ -136,21 +122,23 @@ public class TransactionSessionUtil {
         transactionSession.reset();
     }
 
-    public static void afterDoAction() {
-        GThread processUnit = (GThread) Thread.currentThread();
-        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-        transactionSession.afterDoAction();
-    }
-
-    public static void beforeDoAction() {
-        GThread processUnit = (GThread) Thread.currentThread();
-        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-        transactionSession.beforeDoAction();
-    }
-
     public static void begin() {
-        GThread processUnit = (GThread) Thread.currentThread();
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
         transactionSession.begin();
+    }
+
+    public static int getTransactionIsolation() {
+        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+       return transactionSession.getTransactionIsolation();
+    }
+
+    public static boolean isAutocommit() {
+        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+        return transactionSession.isAutocommit();
+    }
+
+    public static void setAutocommit(boolean autocommit) {
+        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+        transactionSession.setAutocommit(autocommit);
     }
 }

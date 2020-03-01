@@ -19,7 +19,7 @@ import io.mycat.QueryBackendTask;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MyCatResultSetEnumerable;
 import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.metadata.MetadataManager;
+import io.mycat.calcite.metadata.LogicTable;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -43,7 +43,7 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
     }
 
     @Override
-    public MetadataManager.LogicTable logicTable() {
+    public LogicTable logicTable() {
         return logicTable.logicTable();
     }
 

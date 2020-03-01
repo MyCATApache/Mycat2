@@ -14,11 +14,16 @@
  */
 package io.mycat.hbt;
 
+import com.alibaba.fastsql.sql.SQLUtils;
+import com.alibaba.fastsql.sql.ast.SQLStatement;
+import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
+import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.fastsql.sql.optimizer.rules.TypeInference;
+import com.alibaba.fastsql.support.calcite.CalciteMySqlNodeVisitor;
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.MycatCalciteContext;
-import io.mycat.calcite.MycatCalcitePlanner;
-import io.mycat.calcite.MycatRelBuilder;
-import io.mycat.calcite.PushDownLogicTable;
+import io.mycat.calcite.*;
+import io.mycat.calcite.logic.MycatLogicTable;
+import io.mycat.calcite.metadata.LogicTable;
 import io.mycat.hbt.ast.AggregateCall;
 import io.mycat.hbt.ast.Direction;
 import io.mycat.hbt.ast.base.*;
@@ -37,10 +42,14 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableBitSet;
@@ -60,15 +69,18 @@ public class HBTConvertor {
     private int joinCount;
     private int paramIndex = 0;
     private final List<Object> params;
+    private MycatCalciteDataContext context;
+    private final Map<String, RelDataType> targetRelDataType = new HashMap<>();
 
-    public HBTConvertor(MycatRelBuilder relBuilder) {
-        this(relBuilder, Collections.emptyList());
+    public HBTConvertor(MycatCalciteDataContext context) {
+        this(Collections.emptyList(), context);
     }
 
-    public HBTConvertor(MycatRelBuilder relBuilder, List<Object> params) {
-        this.relBuilder = relBuilder;
+    public HBTConvertor(List<Object> params, MycatCalciteDataContext context) {
+        this.relBuilder = MycatRelBuilder.create(context);
         this.params = params;
         this.relBuilder.clear();
+        this.context = Objects.requireNonNull(context);
     }
 
     private SqlOperator op(String op) {
@@ -165,9 +177,33 @@ public class HBTConvertor {
         String sql = input.getSql();
         List<FieldType> fieldTypes = input.getFieldTypes();
         RelDataType relDataType;
-        if (fieldTypes.isEmpty()) {
-            MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(null);
+        if (true) {
+            MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(context);
+            SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
+            sqlStatement.accept(new TypeInference());
+            sqlStatement.accept(new MySqlASTVisitorAdapter() {
+                @Override
+                public boolean visit(SQLExprTableSource x) {
+                    return true;
+                }
+            });
+            SchemaPlus rootSchema = context.getRootSchema();
+            CalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor();
             SqlNode parse = planner.parse(sql);
+            parse =  parse.accept(new SqlShuttle() {
+                @Override
+                public SqlNode visit(SqlIdentifier id) {
+                    if (id.names.size() == 2) {
+                        String schema = id.names.get(0);
+                        String table = id.names.get(1);
+                        MycatLogicTable logicTable = context.getLogicTable(targetName, schema, table);
+                        LogicTable table1 = logicTable.getTable();
+                        return new SqlIdentifier(Arrays.asList(table1.getSchemaName(),table1.getTableName()),SqlParserPos.ZERO);
+                    }
+                    return super.visit(id);
+                }
+            });
+            parse = planner.validate(parse);
             relDataType = planner.convert(parse).getRowType();
         } else {
             relDataType = toType(input.getFieldTypes());
@@ -219,7 +255,7 @@ public class HBTConvertor {
             ArrayList<RelNode> nodes = new ArrayList<>(schemas.size());
             HashSet<String> set = new HashSet<>();
             for (Schema schema : schemas) {
-                HBTConvertor queryOp = new HBTConvertor(relBuilder, params);
+                HBTConvertor queryOp = new HBTConvertor(params, context);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
                 if (!set.addAll(fieldNames)) {
@@ -434,7 +470,7 @@ public class HBTConvertor {
                 } else if (node.op == REF) {
                     return ref(node);
                 } else if (node.op == CAST) {
-                    RexNode rexNode = this.relBuilder.literal(params.get(paramIndex++));
+                    RexNode rexNode = toRex(node.getNodes().get(0));
                     Identifier type = (Identifier) node.getNodes().get(1);
                     return relBuilder.cast(rexNode, toType(type.getValue()).getSqlTypeName());
                 } else if (node.op == PARAM) {

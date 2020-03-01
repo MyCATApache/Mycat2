@@ -41,7 +41,7 @@ public class DataMappingEvaluator {
         return columnMap.computeIfAbsent(columnName, s -> new HashSet<>());
     }
 
-    public List<BackendTableInfo> calculate(MetadataManager.LogicTable logicTable) {
+    public List<BackendTableInfo> calculate(LogicTable logicTable) {
         if (logicTable.getNatureTableColumnInfo() != null) {
             return getBackendTableInfosByNatureDatabaseTable(logicTable).stream().map(integer -> logicTable.getBackends().get(integer)).collect(Collectors.toList());
         } else {
@@ -49,7 +49,7 @@ public class DataMappingEvaluator {
         }
     }
 
-    private List<BackendTableInfo> getBackendTableInfosByMap(MetadataManager.LogicTable logicTable) {
+    private List<BackendTableInfo> getBackendTableInfosByMap(LogicTable logicTable) {
         List<String> targetSet = Collections.emptyList();
         List<String> databaseSet = Collections.emptyList();
         List<String> tableSet = Collections.emptyList();
@@ -83,7 +83,7 @@ public class DataMappingEvaluator {
         }
     }
 
-    private List<Integer> getBackendTableInfosByNatureDatabaseTable(MetadataManager.LogicTable logicTable) {
+    private List<Integer> getBackendTableInfosByNatureDatabaseTable(LogicTable logicTable) {
         List<Integer> routeIndexSortedSet = Collections.emptyList();
         if (!columnMap.isEmpty()) {
             routeIndexSortedSet = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());

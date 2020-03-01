@@ -10,21 +10,16 @@ import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.ProjectableFilterableTable;
 import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.schema.impl.AbstractTable;
 import org.apache.calcite.sql.SqlDialect;
-
-import java.util.List;
 
 
 /**
  * chenjunwen
  */
-public class MycatTransientSQLTable extends AbstractTable
-        implements TransientTable, ProjectableFilterableTable, TranslatableTable {
+public class MycatTransientSQLTable extends PreComputationSQLTable
+        implements TransientTable, TranslatableTable {
     private final MycatConvention convention;
     private final RelNode input;
 
@@ -41,8 +36,6 @@ public class MycatTransientSQLTable extends AbstractTable
         SqlDialect dialect = convention.dialect;
         return MycatCalciteContext.INSTANCE.convertToSql(input, dialect);
     }
-
-
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
@@ -62,10 +55,16 @@ public class MycatTransientSQLTable extends AbstractTable
         return new MycatTransientSQLTableScan(context.getCluster(), convention, relOptTable, () -> getExplainSQL());
     }
 
-    @Override
-    public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        String sql = getExplainSQL();
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(sql, convention.targetName));
-    }
 
+    @Override
+    public Enumerable<Object[]> scan(DataContext root) {
+        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
+        Enumerable<Object[]> preComputation = root1.removePreComputation(this);
+        if (preComputation!=null){
+            return preComputation;
+        }
+        String sql = getExplainSQL();
+        return new MyCatResultSetEnumerable(root1, new QueryBackendTask(sql, convention.targetName));
+
+    }
 }

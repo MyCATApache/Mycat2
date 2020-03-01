@@ -14,14 +14,14 @@
  */
 package io.mycat;
 
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
-import io.mycat.calcite.MycatCalciteContext;
 import io.mycat.calcite.metadata.MetadataManager;
-import io.mycat.calcite.prepare.PlanRunner;
+import io.mycat.calcite.prepare.PrepareObject;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
 import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
@@ -32,7 +32,8 @@ import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.sqldb.SqldbRepl;
+import io.mycat.upondb.UponDBClientForwarder;
+import io.mycat.upondb.UponDBs;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -175,10 +176,12 @@ public class ContextRunner {
                         explain = explain.substring(0, explain.length() - 1);
                     }
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-                    PlanRunner query = SqldbRepl.INSTANCE.querySQL(defaultSchema, explain);
-                    TextResultSetResponse connection = new TextResultSetResponse(query.run(MycatCalciteContext.INSTANCE.create()).get());
+                    UponDBClientForwarder client1 = UponDBs.createClient();
+                    client1.useSchema(defaultSchema);
+                    RowBaseIterator query = client1.query(explain);
+                    TextResultSetResponse connection = new TextResultSetResponse(query);
                     SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
-                    TransactionSessionUtil.afterDoAction();//移除已经关闭的连接,
+                    client1.endOfResponse();//移除已经关闭的连接,
                 });
             }
 
@@ -189,21 +192,29 @@ public class ContextRunner {
                 String command = context.getExplain();
 
                 return () -> block(session, mycat -> {
-                    PlanRunner query = SqldbRepl.INSTANCE.querySQL(defaultSchema, command);
-                    List<String> explain = query.explain();
+                    UponDBClientForwarder client1 = UponDBs.createClient();
+                    client1.useSchema(defaultSchema);
+                    PrepareObject prepare = client1.prepare(command);
+                    List<String> explain = prepare.plan(Collections.emptyList()).explain();
                     writePlan(session, explain);
                 });
             }
         });
-//
-//        /**
-//         * 参数:接收的sql
-//         */
-//        COMMANDS.put(EXECUTE_PLAN, new Command() {
-//            @Override
-//            public Runnable apply(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
+
+        /**
+         * 参数:接收的sql
+         */
+        COMMANDS.put(EXECUTE_PLAN, new Command() {
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
+                        String explain = context.getExplain();
+                        UponDBClientForwarder client1 = UponDBs.createClient();
+                        RowBaseIterator rowBaseIterator = client1.executeRel(explain);
+                        TextResultSetResponse connection = new TextResultSetResponse(rowBaseIterator);
+                        SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
+                        client1.endOfResponse();//移除已经关闭的连接,
 //                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
 //                            connection.setSchema(client.getDefaultSchema());
 //                            final FrameworkConfig config = Frameworks.newConfigBuilder()
@@ -216,25 +227,25 @@ public class ContextRunner {
 //                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery()))});
 //                            TransactionSessionUtil.afterDoAction();
 //                        }
-//                    });
-//                };
-//            }
-//
-//            @Override
-//            public Runnable explain(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
+                    });
+                };
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
 //                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
 //                            connection.setSchema(client.getDefaultSchema());
 //                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
 //                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
 //                            TransactionSessionUtil.afterDoAction();
 //                        }
-//                    });
-//                    return;
-//                };
-//            }
-//        });
+                    });
+                    return;
+                };
+            }
+        });
 
         /**
          * 参数:接收的sql

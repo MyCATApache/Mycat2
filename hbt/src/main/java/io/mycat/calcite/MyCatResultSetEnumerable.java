@@ -16,7 +16,6 @@ package io.mycat.calcite;
 
 import io.mycat.QueryBackendTask;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.AbstractEnumerable;
 import org.apache.calcite.linq4j.Enumerator;
@@ -58,8 +57,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
 
         ArrayList<RowBaseIterator> iterators = new ArrayList<>(length);
         for (QueryBackendTask endTableInfo : backStoreList) {
-            DefaultConnection session = dataContext.getDisposableConnection(endTableInfo);
-            iterators.add(session.executeQuery(endTableInfo.getSql()));
+            iterators.add(dataContext.getUponDBContext().query(endTableInfo.getTargetName(), endTableInfo.getSql()));
             LOGGER.info("runing querySQL:{}", endTableInfo.getSql());
         }
 

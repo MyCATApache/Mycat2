@@ -19,7 +19,7 @@ import io.mycat.BackendTableInfo;
 import io.mycat.QueryBackendTask;
 import io.mycat.SchemaInfo;
 import io.mycat.calcite.metadata.DataMappingEvaluator;
-import io.mycat.calcite.metadata.MetadataManager;
+import io.mycat.calcite.metadata.LogicTable;
 import io.mycat.calcite.metadata.SimpleColumnInfo;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 public class CalciteUtls {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteUtls.class);
 
-    public static List<QueryBackendTask> getQueryBackendTasks(MetadataManager.LogicTable table, List<RexNode> filters, int[] projects) {
+    public static List<QueryBackendTask> getQueryBackendTasks(LogicTable table, List<RexNode> filters, int[] projects) {
         List<BackendTableInfo> calculate = getBackendTableInfos(table, filters);
 
 
@@ -63,7 +63,7 @@ public class CalciteUtls {
 
     }
 
-    public static List<BackendTableInfo> getBackendTableInfos(MetadataManager.LogicTable table, List<RexNode> filters) {
+    public static List<BackendTableInfo> getBackendTableInfos(LogicTable table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
         ArrayList<RexNode> where = new ArrayList<>();
@@ -89,7 +89,7 @@ public class CalciteUtls {
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }
 
-    public static String getBackendTaskSQL(MetadataManager.LogicTable table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
+    public static String getBackendTaskSQL(LogicTable table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
         List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
@@ -103,7 +103,7 @@ public class CalciteUtls {
         return sqlBuilder.toString();
     }
 
-    public static List<SimpleColumnInfo> getColumnList(MetadataManager.LogicTable table, final int[] projects) {
+    public static List<SimpleColumnInfo> getColumnList(LogicTable table, final int[] projects) {
         if (projects == null) {
             return Collections.emptyList();
         } else {
@@ -128,7 +128,7 @@ public class CalciteUtls {
         return context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
     }
 
-    public static boolean addOrRootFilter(MetadataManager.LogicTable table, DataMappingEvaluator evaluator, RexNode filter) {
+    public static boolean addOrRootFilter(LogicTable table, DataMappingEvaluator evaluator, RexNode filter) {
         if (filter.isA(SqlKind.OR)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
@@ -143,7 +143,7 @@ public class CalciteUtls {
         return addFilter(table, evaluator, filter, false);
     }
 
-    public static boolean addFilter(MetadataManager.LogicTable table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
+    public static boolean addFilter(LogicTable table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
         List<SimpleColumnInfo> rowOrder = table.getRawColumns();
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();

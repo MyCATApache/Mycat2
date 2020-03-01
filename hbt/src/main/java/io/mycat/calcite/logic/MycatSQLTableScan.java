@@ -12,23 +12,18 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.ScannableTable;
 import org.apache.calcite.schema.TransientTable;
 import org.apache.calcite.schema.TranslatableTable;
-import org.apache.calcite.schema.impl.AbstractTable;
 
-public class MycatSQLTableScan extends AbstractTable implements ScannableTable, TransientTable, TranslatableTable {
+public class MycatSQLTableScan extends PreComputationSQLTable implements ScannableTable, TransientTable, TranslatableTable {
     final RelDataType relDataType;
     final String sql;
     final MycatConvention convention;
 
-    public MycatSQLTableScan(MycatConvention convention,RelDataType relDataType,  String sql) {
+    public MycatSQLTableScan(MycatConvention convention, RelDataType relDataType, String sql) {
         this.relDataType = relDataType;
         this.sql = sql;
         this.convention = convention;
     }
 
-    @Override
-    public Enumerable<Object[]> scan(DataContext root) {
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(sql, convention.targetName));
-    }
 
     @Override
     public RelDataType getRowType(RelDataTypeFactory typeFactory) {
@@ -37,12 +32,24 @@ public class MycatSQLTableScan extends AbstractTable implements ScannableTable, 
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return new MycatTransientSQLTableScan(context.getCluster(), convention, relOptTable,()-> sql);
+        return new MycatTransientSQLTableScan(context.getCluster(), convention, relOptTable, () -> sql);
     }
-    public String getTargetName(){
+
+    public String getTargetName() {
         return convention.targetName;
     }
-    public String getSql(){
+
+    public String getSql() {
         return sql;
+    }
+
+    @Override
+    public Enumerable<Object[]> scan(DataContext root) {
+        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
+        Enumerable<Object[]> preComputation = root1.removePreComputation(this);
+        if (preComputation != null) {
+            return preComputation;
+        }
+        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(sql, convention.targetName));
     }
 }

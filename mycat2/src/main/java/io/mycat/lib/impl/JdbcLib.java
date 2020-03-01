@@ -113,8 +113,8 @@ public class JdbcLib {
             @Override
             public void accept(BindThreadKey key, TransactionSession session) {
                 Exception ex = null;
+
                 try {
-                    TransactionSessionUtil.beforeDoAction();
                     mycat.deliverWorkerThread((SessionThread) Thread.currentThread());
                     consumer.accept(mycat);
                 }catch (Exception e){
@@ -122,7 +122,6 @@ public class JdbcLib {
                     TransactionSessionUtil.reset();
                     session.reset();
                 }finally {
-                    TransactionSessionUtil.afterDoAction();
                     mycat.backFromWorkerThread();
                 }
                 if (ex==null) {

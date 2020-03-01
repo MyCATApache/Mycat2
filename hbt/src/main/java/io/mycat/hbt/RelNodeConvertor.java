@@ -97,15 +97,15 @@ public class RelNodeConvertor {
                 return logicalCorrelate(relNode);
             }
         }
-        if (relNode instanceof TableScan){
+        if (relNode instanceof TableScan) {
             List<FieldType> fields = getFields(relNode);
             TableScan relNode1 = (TableScan) relNode;
             MycatTransientSQLTable table1 = relNode1.getTable().unwrap(MycatTransientSQLTable.class);
-            if (table1!=null) {
-                return new FromSqlSchema(Collections.emptyList(), table1.getTargetName(), table1.getExplainSQL());
+            if (table1 != null) {
+                return new FromSqlSchema(fields, table1.getTargetName(), table1.getExplainSQL());
             }
             MycatSQLTableScan unwrap = relNode1.getTable().unwrap(MycatSQLTableScan.class);
-            if (unwrap!=null) {
+            if (unwrap != null) {
                 return new FromSqlSchema(fields, unwrap.getTargetName(), unwrap.getSql());
             }
         }
@@ -287,25 +287,20 @@ public class RelNodeConvertor {
         List<Expr> expr = getExprs(project.getChildExps(), fieldNames);
         RelDataType outRowType = project.getRowType();
         List<String> outFieldNames = outRowType.getFieldNames();
-        int size = outFieldNames.size();
         ArrayList<Expr> outExpr = new ArrayList<>();
 
         List<RelDataTypeField> outputRel = relNode.getRowType().getFieldList();
-        List<RelDataTypeField> inputRel = project.getInput().getRowType().getFieldList();
-
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < outputRel.size(); i++) {
             Expr expr1 = expr.get(i);
-
             SqlTypeName outType = outputRel.get(i).getType().getSqlTypeName();
-            SqlTypeName inType = inputRel.get(i).getType().getSqlTypeName();
+            SqlTypeName inType = project.getChildExps().get(i).getType().getSqlTypeName();
             if (!outType.equals(inType)) {
                 expr1 = new Expr(Op.CAST, Arrays.asList(expr1, new Identifier(ExprExplain.type(outType))));
             }
             String outName = outputRel.get(i).getName();
-            String inName = inputRel.get(i).getName();
-
-            if ((outName != null) & !Objects.equals(outName, (inName))) {
-                expr1 = new Expr(Op.AS_COLUMNNAME, Arrays.asList(expr1, new Identifier(outName)));
+            Identifier identifier = new Identifier(outName);
+            if (!expr1.equals(identifier)){
+                expr1 = new Expr(Op.AS_COLUMNNAME, Arrays.asList(expr1,identifier ));
             }
             outExpr.add(expr1);
         }
@@ -336,13 +331,13 @@ public class RelNodeConvertor {
             boolean nullable = type.isNullable();
             Integer precision = null;
             Integer scale = null;
-            if(sqlTypeName.allowsPrec()){
+            if (sqlTypeName.allowsPrec()) {
                 precision = type.getPrecision();
             }
-            if (sqlTypeName.allowsScale()){
+            if (sqlTypeName.allowsScale()) {
                 scale = type.getScale();
             }
-            fieldSchemas.add(new FieldType(name, ExprExplain.type(sqlTypeName),nullable,precision,scale));
+            fieldSchemas.add(new FieldType(name, ExprExplain.type(sqlTypeName), nullable, precision, scale));
         }
         return fieldSchemas;
     }

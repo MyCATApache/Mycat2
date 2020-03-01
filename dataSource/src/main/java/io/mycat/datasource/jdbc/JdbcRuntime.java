@@ -23,23 +23,24 @@ import io.mycat.bindThread.BindThreadKey;
 import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JTATransactionSessionImpl;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
 import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.thread.GThreadPool;
+import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
+import io.mycat.datasource.jdbc.transactionSession.LocalTransactionSession;
+import io.mycat.datasource.jdbc.transactionSession.MultipleTransactionSession;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Consumer;
+
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 
 /**
  * @author Junwen Chen
@@ -60,12 +61,12 @@ public enum JdbcRuntime {
         connectionManager.removeDatasource(jdbcDataSourceName);
     }
 
-    public DefaultConnection getConnection(String name) {
-        return connectionManager.getConnection(name);
+    public DefaultConnection getConnection(String name, boolean autocommit, int transactionIsolation, boolean readOnly) {
+        return connectionManager.getConnection(name, autocommit, transactionIsolation,readOnly);
     }
 
-    public DefaultConnection getConnection(String name, boolean autocommit, int transactionIsolation) {
-        return connectionManager.getConnection(name, autocommit, transactionIsolation);
+    public DefaultConnection getConnection(String name) {
+        return connectionManager.getConnection(name, true, TRANSACTION_REPEATABLE_READ,false);
     }
 
     public void closeConnection(DefaultConnection connection) {
@@ -109,7 +110,22 @@ public enum JdbcRuntime {
         ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
-                gThreadPool.run(() -> false, new BindThreadCallback() {
+                gThreadPool.run(new BindThreadKey() {
+                    @Override
+                    public boolean checkOkInBind() {
+                        return false;
+                    }
+
+                    @Override
+                    public String getUniqueName() {
+                        return String.valueOf(hashCode());
+                    }
+
+                    @Override
+                    public String bindArg() {
+                        return BindThreadKey.DEFAULT;
+                    }
+                }, new BindThreadCallback() {
                     @Override
                     public void accept(BindThreadKey key, BindThread context) {
                         heartbeat(heartBeatStrategy);
@@ -148,7 +164,10 @@ public enum JdbcRuntime {
 
 
     public TransactionSession createTransactionSession() {
-        return new JTATransactionSessionImpl(datasourceProvider.createUserTransaction());
+        HashMap<String,TransactionSession>  map = new HashMap<>();
+        map.put("xa", new JTATransactionSession(datasourceProvider.createUserTransaction()));
+        map.put("local",new LocalTransactionSession());
+        return new MultipleTransactionSession(map);
     }
 
     public DatasourceProvider getDatasourceProvider() {

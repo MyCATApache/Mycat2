@@ -15,8 +15,8 @@
 package io.mycat.calcite.prepare;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.upondb.UponDBContext;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
@@ -42,13 +42,15 @@ public class MycatCalcitePrepare extends MycatSQLPrepareObject {
     private final MycatRowMetaData parameterRowType;
     private final MycatRowMetaData resultSetRowType;
     private boolean forUpdate;
+    private final UponDBContext dataContext;
 
-    public MycatCalcitePrepare(Long id, String defaultSchemaName, String sql, SqlNode sqlNode, MycatRowMetaData parameterRowType, MycatRowMetaData resultSetRowType, boolean forUpdate) {
-        super(id,defaultSchemaName,sql);
+    public MycatCalcitePrepare(Long id, String sql, SqlNode sqlNode, MycatRowMetaData parameterRowType, MycatRowMetaData resultSetRowType, boolean forUpdate, UponDBContext dataContext) {
+        super(id,dataContext,sql);
         this.sqlNode = sqlNode;
         this.parameterRowType = parameterRowType;
         this.resultSetRowType = resultSetRowType;
         this.forUpdate = forUpdate;
+        this.dataContext = dataContext;
     }
 
     @Override
@@ -61,8 +63,8 @@ public class MycatCalcitePrepare extends MycatSQLPrepareObject {
         return resultSetRowType;
     }
 
-    @SneakyThrows
-    public MycatSqlPlan plan(List<Object> params) {
+    @Override
+    public PlanRunner plan(List<Object> params) {
         SqlNode accept = params.isEmpty() ? sqlNode : SqlNode.clone(sqlNode).accept(
                 new SqlShuttle() {
                     int index = 0;
@@ -74,7 +76,7 @@ public class MycatCalcitePrepare extends MycatSQLPrepareObject {
                         return literal(o);
                     }
                 });
-        return new MycatSqlPlan(this, accept.toSqlString(MysqlSqlDialect.DEFAULT).getSql());
+        return new MycatSqlPlan(this, accept.toSqlString(MysqlSqlDialect.DEFAULT).getSql(),dataContext);
     }
 
     public static SqlNode literal(Object value) {
