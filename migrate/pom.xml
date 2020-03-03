@@ -12,7 +12,6 @@
     <artifactId>migrate</artifactId>
 
     <dependencies>
-
         <dependency>
             <groupId>io.mycat</groupId>
             <artifactId>datasource</artifactId>

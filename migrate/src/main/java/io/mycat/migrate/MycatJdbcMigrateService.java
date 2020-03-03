@@ -14,17 +14,31 @@ import java.util.stream.Stream;
 
 /**
  * data migrate service. jdbc operation read and write.
+ *
+ * example codes #{@link #main(String[])}
  * @author : wangzihaogithub Date : 2020-03-03 14:03
  */
 @Slf4j
-public class MycatJdbcMigrateService implements MycatMigrateService{
+public class MycatJdbcMigrateService implements MycatMigrateService {
     @Override
     public void onlineTransfer(TransferRequest request) {
         throw new UnsupportedOperationException("public void onlineTransfer(TransferRequest request)");
     }
 
+    /**
+     * Single-threaded operation, call those who choose their own multi-threaded operating outside the method.
+     * @param request row data will remain its reference data,
+     *                you can modify its,
+     */
     @Override
     public void offlineTransfer(TransferRequest request) {
+        try (DruidDataSource readDataSource = newDataSource(request.getReadDataNode());
+             DruidDataSource writeDataSource = newDataSource(request.getWriteDataNode())){
+            offlineTransfer(request,readDataSource,writeDataSource);
+        }
+    }
+
+    private void offlineTransfer(TransferRequest request, DataSource readDataSource, DataSource writeDataSource) {
         String readTableName = request.getReadDataNode().getTableName();
         DataNode readDataNode = request.getReadDataNode();
         DataNode writerDataNode = request.getWriteDataNode();
@@ -42,12 +56,16 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
 
         int columnCount;
         String readCatalogName;
-        Connection readConnection;
+        Connection readConnection = null;
+        Connection writeConnection;
         try {
-            DataSource readDataSource = newDataSource(readDataNode);
             readConnection = readDataSource.getConnection();
+            writeConnection = writeDataSource.getConnection();
+            writeConnection.setAutoCommit(false);
         } catch (SQLException e) {
-            String message = MessageFormat.format(MESSAGE_CONNECTION_OPEN_ERROR,readTableName, e.toString());
+            readDataNode.setPassword("*");
+            writerDataNode.setPassword("*");
+            String message = MessageFormat.format(MESSAGE_CONNECTION_OPEN_ERROR,readConnection == null? readDataNode: writerDataNode, e.toString());
             log.error(message,e);
             eventCallback.accept(new TransferEvent(EVENT_CONNECTION_OPEN_ERROR,message,0, Collections.singletonList(e),null));
             return;
@@ -98,13 +116,9 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
                 int unWriteCount = rowDataList.size();
                 if(!next || (unWriteCount > 0 && unWriteCount % bufferSize == 0)){
                     eventCallback.accept(new TransferEvent(EVENT_TRANSFER_WRITE_BEFORE_INFO, MESSAGE_TRANSFER_WRITE_BEFORE_INFO,totalWriteCount,exceptionList,rowDataList));
-
-                    DataSource writerDataSource = newDataSource(writerDataNode);
-                    Connection writerConnection = writerDataSource.getConnection();
-                    writerConnection.setAutoCommit(false);
                     try {
-                        write(rowDataList,writerConnection);
-                        writerConnection.commit();
+                        write(rowDataList,writeConnection);
+                        writeConnection.commit();
                         totalWriteCount += unWriteCount;
                         rowDataList.clear();
                     }catch (SQLException e){
@@ -112,7 +126,7 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
                         try {
                             onSQLException(skipWriteErrorAllFlag, e, skipErrorClassList);
                         }catch (SQLException stopWriteSQLException){
-                            writerConnection.rollback();
+                            writeConnection.rollback();
                             String message = MessageFormat.format(MESSAGE_TABLE_WRITE_ERROR,
                                     readCatalogName, readTableName, readConnection,
                                     totalWriteCount, rowDataList.size(), e.toString());
@@ -228,14 +242,14 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
         return columnJoiner.toString().concat(valuesJoiner.toString());
     }
 
-    private static DataSource newDataSource(DataNode dataNode){
+    private static DruidDataSource newDataSource(DataNode dataNode){
         DruidDataSource datasource = new DruidDataSource();
         datasource.setPassword(dataNode.getPassword());
         datasource.setUsername(dataNode.getUsername());
         datasource.setUrl(dataNode.getUrl());
         datasource.setDriverClassName(dataNode.getDriverClassName());
         datasource.setMaxWait(TimeUnit.SECONDS.toMillis(1));
-        datasource.setMaxActive(3);
+        datasource.setMaxActive(2);
         datasource.setMinIdle(1);
         return datasource;
     }
@@ -267,6 +281,10 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
     }
 
 
+    /**
+     * 接口使用示范 {@link #offlineTransfer}
+     * @param args args
+     */
     public static void main(String[] args) {
         TransferRequest request = new TransferRequest();
         request.setReadDataNode(new DataNode("jdbc:mysql://localhost:3306/db1?autoReconnectForPools=true&autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai",
@@ -275,27 +293,54 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
         request.setWriteDataNode(new DataNode("jdbc:mysql://localhost:3306/db2?autoReconnectForPools=true&autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai",
                 "root","root","company",
                 "com.mysql.cj.jdbc.Driver"));
+
+        //这里可以设置自己的逻辑
         request.setTransferEventCallback(event-> {
             switch (event.getEvent()){
+                case EVENT_TRANSFER_WRITE_BEFORE_INFO:{
+                    //如果是写入前的事件。则处理xxx逻辑， 比如改库，改表，改数据
+                    for (SQLException sqlException : event.getExceptionList()) {
+                        if(sqlException instanceof SQLIntegrityConstraintViolationException) {
+                            //xxx逻辑
+                            System.out.println("sqlException = " + sqlException);
+                        }
+                    }
+                    for (RowData rowData : event.getRowDataList()) {
+                        System.out.println("rowData = " + rowData + ";");
+                        if("table_xxx".equals(rowData.getTableName())) {
+                            rowData.setTableName("新表");
+                            rowData.setCatalogName("新库");
+                        }
+                        for (ColumnData columnData : rowData.getColumnDatas()) {
+                            columnData.setColumnName("新列名");
+                            if("java.lang.String".equals(columnData.getColumnClassName())){
+                                columnData.setColumnTypeId(Types.BIGINT);//"新类型"
+                                columnData.setColumnValue("新值");
+                            }
+                        }
+                    }
+                    break;
+                }
+                //执行成功后
                 case EVENT_SUCCESSFUL_INFO:
-                case EVENT_TRANSFER_WRITE_BEFORE_INFO:
+                //空表警告
                 case EVENT_TABLE_EMPTY_WARN:
+                //空列警告
                 case EVENT_COLUMN_EMPTY_WARN:
+                //数据库链接打不开
                 case EVENT_CONNECTION_OPEN_ERROR:
+                //元数据无法读取
                 case EVENT_METADATA_READ_ERROR:
+                //注解无法读取
                 case EVENT_PRIMARYKEY_READ_ERROR:
+                //读取数据出错
                 case EVENT_TABLE_READ_ERROR:
+                //写入数据出错
                 case EVENT_TABLE_WRITE_ERROR:
                 default:{
                     System.out.println("message = " + event.getMessage());
                     break;
                 }
-            }
-            for (SQLException sqlException : event.getExceptionList()) {
-                System.out.println("sqlException = " + sqlException);
-            }
-            for (RowData rowData : event.getRowDataList()) {
-                System.out.println("rowData = " + rowData + ";");
             }
         });
 
