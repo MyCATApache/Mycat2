@@ -23,15 +23,15 @@ public interface MycatMigrateService {
     int EVENT_COLUMN_EMPTY_WARN = 4001;
     String MESSAGE_COLUMN_EMPTY_WARN = "Mycat migrate warn#4001. a empty column. tableName={0},readConnection={1}\n";
     int EVENT_CONNECTION_OPEN_ERROR = 5000;
-    String MESSAGE_CONNECTION_OPEN_ERROR = "Mycat migrate error#5000. connection open failure. tableName={0},error={1}\n";
+    String MESSAGE_CONNECTION_OPEN_ERROR = "Mycat migrate error#5000. connection open failure. connection={0},error={1}\n";
     int EVENT_METADATA_READ_ERROR = 5001;
-    String MESSAGE_METADATA_READ_ERROR = "Mycat migrate error#5001. check metaData failure. tableName={0},readConnection={1},error={2}\n";
+    String MESSAGE_METADATA_READ_ERROR = "Mycat migrate error#5001. check metaData failure. tableName={0},connection={1},error={2}\n";
     int EVENT_PRIMARYKEY_READ_ERROR = 5002;
-    String MESSAGE_PRIMARYKEY_READ_ERROR = "Mycat migrate error#5002. getPkColumnNameList failure. catalogName={0},tableName={1},readConnection={2},error={3}\n";
+    String MESSAGE_PRIMARYKEY_READ_ERROR = "Mycat migrate error#5002. getPkColumnNameList failure. catalogName={0},tableName={1},connection={2},error={3}\n";
     int EVENT_TABLE_READ_ERROR = 5003;
-    String MESSAGE_TABLE_READ_ERROR = "Mycat migrate error#5003. select stream handle failure. catalogName={0},tableName={1},readConnection={2},totalWriteCount={3},unWriteCount={4},error={5}\n";
+    String MESSAGE_TABLE_READ_ERROR = "Mycat migrate error#5003. select stream handle failure. catalogName={0},tableName={1},connection={2},totalWriteCount={3},unWriteCount={4},error={5}\n";
     int EVENT_TABLE_WRITE_ERROR = 5004;
-    String MESSAGE_TABLE_WRITE_ERROR = "Mycat migrate error#5004. write data handle failure. catalogName={0},tableName={1},readConnection={2},totalWriteCount={3},unWriteCount={4},error={5}\n";
+    String MESSAGE_TABLE_WRITE_ERROR = "Mycat migrate error#5004. write data handle failure. catalogName={0},tableName={1},connection={2},totalWriteCount={3},unWriteCount={4},error={5}\n";
 
     /**
      * Offline data transfer. Copy the data node to another node
