@@ -25,8 +25,20 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
         throw new UnsupportedOperationException("public void onlineTransfer(TransferRequest request)");
     }
 
+    /**
+     * Single-threaded operation, call those who choose their own multi-threaded operating outside the method.
+     * @param request row data will remain its reference data,
+     *                you can modify its,
+     */
     @Override
     public void offlineTransfer(TransferRequest request) {
+        try (DruidDataSource readDataSource = newDataSource(request.getReadDataNode());
+             DruidDataSource writeDataSource = newDataSource(request.getWriteDataNode())){
+            offlineTransfer(request,readDataSource,writeDataSource);
+        }
+    }
+
+    private void offlineTransfer(TransferRequest request, DataSource readDataSource, DataSource writeDataSource) {
         String readTableName = request.getReadDataNode().getTableName();
         DataNode readDataNode = request.getReadDataNode();
         DataNode writerDataNode = request.getWriteDataNode();
@@ -44,12 +56,16 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
 
         int columnCount;
         String readCatalogName;
-        Connection readConnection;
+        Connection readConnection = null;
+        Connection writeConnection;
         try {
-            DataSource readDataSource = newDataSource(readDataNode);
             readConnection = readDataSource.getConnection();
+            writeConnection = writeDataSource.getConnection();
+            writeConnection.setAutoCommit(false);
         } catch (SQLException e) {
-            String message = MessageFormat.format(MESSAGE_CONNECTION_OPEN_ERROR,readTableName, e.toString());
+            readDataNode.setPassword("*");
+            writerDataNode.setPassword("*");
+            String message = MessageFormat.format(MESSAGE_CONNECTION_OPEN_ERROR,readConnection == null? readDataNode: writerDataNode, e.toString());
             log.error(message,e);
             eventCallback.accept(new TransferEvent(EVENT_CONNECTION_OPEN_ERROR,message,0, Collections.singletonList(e),null));
             return;
@@ -100,13 +116,9 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
                 int unWriteCount = rowDataList.size();
                 if(!next || (unWriteCount > 0 && unWriteCount % bufferSize == 0)){
                     eventCallback.accept(new TransferEvent(EVENT_TRANSFER_WRITE_BEFORE_INFO, MESSAGE_TRANSFER_WRITE_BEFORE_INFO,totalWriteCount,exceptionList,rowDataList));
-
-                    DataSource writerDataSource = newDataSource(writerDataNode);
-                    Connection writerConnection = writerDataSource.getConnection();
-                    writerConnection.setAutoCommit(false);
                     try {
-                        write(rowDataList,writerConnection);
-                        writerConnection.commit();
+                        write(rowDataList,writeConnection);
+                        writeConnection.commit();
                         totalWriteCount += unWriteCount;
                         rowDataList.clear();
                     }catch (SQLException e){
@@ -114,7 +126,7 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
                         try {
                             onSQLException(skipWriteErrorAllFlag, e, skipErrorClassList);
                         }catch (SQLException stopWriteSQLException){
-                            writerConnection.rollback();
+                            writeConnection.rollback();
                             String message = MessageFormat.format(MESSAGE_TABLE_WRITE_ERROR,
                                     readCatalogName, readTableName, readConnection,
                                     totalWriteCount, rowDataList.size(), e.toString());
@@ -230,14 +242,14 @@ public class MycatJdbcMigrateService implements MycatMigrateService {
         return columnJoiner.toString().concat(valuesJoiner.toString());
     }
 
-    private static DataSource newDataSource(DataNode dataNode){
+    private static DruidDataSource newDataSource(DataNode dataNode){
         DruidDataSource datasource = new DruidDataSource();
         datasource.setPassword(dataNode.getPassword());
         datasource.setUsername(dataNode.getUsername());
         datasource.setUrl(dataNode.getUrl());
         datasource.setDriverClassName(dataNode.getDriverClassName());
         datasource.setMaxWait(TimeUnit.SECONDS.toMillis(1));
-        datasource.setMaxActive(3);
+        datasource.setMaxActive(2);
         datasource.setMinIdle(1);
         return datasource;
     }
