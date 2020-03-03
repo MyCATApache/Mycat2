@@ -97,6 +97,11 @@ public interface MycatMigrateService {
     @Data
     class ColumnData implements Cloneable{
         private boolean primaryKey;
+        /**
+         * column type
+         * {@link java.sql.ResultSetMetaData#getColumnType(int)}}
+         * {@link java.sql.Types}
+         */
         private int columnTypeId;
         private String columnClassName;
         private String columnName;
