@@ -14,10 +14,12 @@ import java.util.stream.Stream;
 
 /**
  * data migrate service. jdbc operation read and write.
+ *
+ * example codes #{@link #main(String[])}
  * @author : wangzihaogithub Date : 2020-03-03 14:03
  */
 @Slf4j
-public class MycatJdbcMigrateService implements MycatMigrateService{
+public class MycatJdbcMigrateService implements MycatMigrateService {
     @Override
     public void onlineTransfer(TransferRequest request) {
         throw new UnsupportedOperationException("public void onlineTransfer(TransferRequest request)");
@@ -267,6 +269,10 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
     }
 
 
+    /**
+     * 接口使用示范 {@link #offlineTransfer}
+     * @param args args
+     */
     public static void main(String[] args) {
         TransferRequest request = new TransferRequest();
         request.setReadDataNode(new DataNode("jdbc:mysql://localhost:3306/db1?autoReconnectForPools=true&autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai",
@@ -275,27 +281,54 @@ public class MycatJdbcMigrateService implements MycatMigrateService{
         request.setWriteDataNode(new DataNode("jdbc:mysql://localhost:3306/db2?autoReconnectForPools=true&autoReconnect=true&useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai",
                 "root","root","company",
                 "com.mysql.cj.jdbc.Driver"));
+
+        //这里可以设置自己的逻辑
         request.setTransferEventCallback(event-> {
             switch (event.getEvent()){
+                case EVENT_TRANSFER_WRITE_BEFORE_INFO:{
+                    //如果是写入前的事件。则处理xxx逻辑， 比如改库，改表，改数据
+                    for (SQLException sqlException : event.getExceptionList()) {
+                        if(sqlException instanceof SQLIntegrityConstraintViolationException) {
+                            //xxx逻辑
+                            System.out.println("sqlException = " + sqlException);
+                        }
+                    }
+                    for (RowData rowData : event.getRowDataList()) {
+                        System.out.println("rowData = " + rowData + ";");
+                        if("table_xxx".equals(rowData.getTableName())) {
+                            rowData.setTableName("新表");
+                            rowData.setCatalogName("新库");
+                        }
+                        for (ColumnData columnData : rowData.getColumnDatas()) {
+                            columnData.setColumnName("新列名");
+                            if("java.lang.String".equals(columnData.getColumnClassName())){
+                                columnData.setColumnTypeId(Types.BIGINT);//"新类型"
+                                columnData.setColumnValue("新值");
+                            }
+                        }
+                    }
+                    break;
+                }
+                //执行成功后
                 case EVENT_SUCCESSFUL_INFO:
-                case EVENT_TRANSFER_WRITE_BEFORE_INFO:
+                //空表警告
                 case EVENT_TABLE_EMPTY_WARN:
+                //空列警告
                 case EVENT_COLUMN_EMPTY_WARN:
+                //数据库链接打不开
                 case EVENT_CONNECTION_OPEN_ERROR:
+                //元数据无法读取
                 case EVENT_METADATA_READ_ERROR:
+                //注解无法读取
                 case EVENT_PRIMARYKEY_READ_ERROR:
+                //读取数据出错
                 case EVENT_TABLE_READ_ERROR:
+                //写入数据出错
                 case EVENT_TABLE_WRITE_ERROR:
                 default:{
                     System.out.println("message = " + event.getMessage());
                     break;
                 }
-            }
-            for (SQLException sqlException : event.getExceptionList()) {
-                System.out.println("sqlException = " + sqlException);
-            }
-            for (RowData rowData : event.getRowDataList()) {
-                System.out.println("rowData = " + rowData + ";");
             }
         });
 
