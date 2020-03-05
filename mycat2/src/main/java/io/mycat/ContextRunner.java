@@ -89,7 +89,7 @@ public class ContextRunner {
     static final ConcurrentHashMap<String, Command> COMMANDS;
 
     public static void run(MycatClient client, Context analysis, MycatSession session) {
-        Command command = Objects.requireNonNull(COMMANDS.getOrDefault(analysis.getCommand(), ERROR_COMMAND));
+        Command command = Objects.requireNonNull(COMMANDS.getOrDefault(analysis.getCommand().toLowerCase(), ERROR_COMMAND));
         Runnable apply = command.apply(client, analysis, session);
         apply.run();
     }
@@ -659,6 +659,10 @@ public class ContextRunner {
                 return () -> writePlan(session, getDetails(context, session.isInTransaction(), metaData).toExplain());
             }
         });
+        for (Map.Entry<String, Command> stringCommandEntry : COMMANDS.entrySet()) {
+            COMMANDS.put(stringCommandEntry.getKey().toLowerCase(),stringCommandEntry.getValue());
+        }
+
     }
 
     @NotNull
