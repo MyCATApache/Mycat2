@@ -42,25 +42,15 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   schemas: [{
               tables:[ 'db1.travelrecord','db1.address'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
               sqls: [
-              {sql: 'select {any}',command: distributedQuery },
-              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
-              {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
-              {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
-              {sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }}
-              ],
-            },
-            {
-              tables:[ 'db1.company'],#读写分离例子,不使用metaData进行分析,metaData: false,直接发送到targets
-              sqls: [
-              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
-              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
-              {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
-              {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
+              {sql: 'select {any}',command: mycatdb },
+              {sql: 'insert {any}',command: mycatdb },
+              {sql: 'delete {any}',command: mycatdb },
+              {sql: 'update {any}',command: mycatdb }
               ],
             },
   ]
   sqls: [
-  {name: explain,sql: 'EXPLAIN {statement}' ,command: explain}, #explain一定要写库名
+  {name: explainSql,sql: 'EXPLAIN {statement}' ,command: explainSql}, #explain一定要写库名
   {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: plan},
   {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
   {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},

@@ -14,7 +14,6 @@
  */
 package io.mycat.hbt;
 
-import io.mycat.hbt.ast.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.modify.MergeModify;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
@@ -42,7 +41,7 @@ public class ExplainVisitor implements NodeVisitor {
     boolean dot = true;
     boolean forceField = false;
 
-  final   List<String> comments = new ArrayList<>(1);
+    final List<String> comments = new ArrayList<>(1);
 
     void enter() {
         tagCount++;
@@ -303,9 +302,9 @@ public class ExplainVisitor implements NodeVisitor {
 
 
         append(",");
-        corJoinSchema.getLeft().accept(this);
+        append(getExprString(corJoinSchema.getLeft()));
         append(",");
-        corJoinSchema.getRight().accept(this);
+        append(getExprString(corJoinSchema.getRight()));
         append(")");
     }
 
@@ -319,6 +318,11 @@ public class ExplainVisitor implements NodeVisitor {
         return explainVisitor.getString();
     }
 
+    private String getExprStringWithField(Node condition) {
+        ExplainVisitor explainVisitor = new ExplainVisitor(true);
+        condition.accept(explainVisitor);
+        return explainVisitor.getString();
+    }
 
     @Override
     public void visit(AggregateCall aggregateCall) {
@@ -333,17 +337,17 @@ public class ExplainVisitor implements NodeVisitor {
         String res = function + "(" + operands.stream().map(i -> getExprString(i)).collect(Collectors.joining(",")) + ")";
         append(res);
         append(")");
-        res ="";
+        res = "";
         if (alias != null) {
             res += ".alias(" + alias + ")";
         }
         if (distinct == Boolean.TRUE) {
             res += ".distinct(" + ")";
         }
-        if (approximate ==  Boolean.TRUE) {
+        if (approximate == Boolean.TRUE) {
             res += ".approximate(" + ")";
         }
-        if (ignoreNulls ==  Boolean.TRUE) {
+        if (ignoreNulls == Boolean.TRUE) {
             res += ".ignoreNulls(" + ")";
         }
         if (filter != null) {
@@ -366,7 +370,7 @@ public class ExplainVisitor implements NodeVisitor {
     @Override
     public void visit(ModifyFromSql modifyTable) {
         String targetName = modifyTable.getTargetName();
-        String sql = modifyTable.getSql();
+        String sql = modifyTable.getSql().replaceAll("\n", "");
         append(modifyTable.getOp().getFun());
         append("(");
         append(targetName);
@@ -386,8 +390,6 @@ public class ExplainVisitor implements NodeVisitor {
     public void visit(RenameSchema projectSchema) {
         List<String> columnNames = projectSchema.getAlias();
         writeSchema(projectSchema.getSchema(), projectSchema.getOp().getFun());
-        projectSchema.getSchema().accept(this);
-        append(",");
         append(columnNames.stream().map(this::toId).collect(Collectors.joining(",")));
         append(")");
         leave();
@@ -480,6 +482,6 @@ public class ExplainVisitor implements NodeVisitor {
 
 
     public String getString() {
-        return comments.stream().collect(Collectors.joining("","\n",""))+sb.toString();
+        return  sb.toString();
     }
 }

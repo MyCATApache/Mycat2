@@ -21,13 +21,16 @@ import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.optimizer.rules.TypeInference;
 import com.alibaba.fastsql.support.calcite.CalciteMySqlNodeVisitor;
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.*;
-import io.mycat.calcite.logic.MycatLogicTable;
-import io.mycat.calcite.metadata.LogicTable;
-import io.mycat.hbt.ast.AggregateCall;
-import io.mycat.hbt.ast.Direction;
+import io.mycat.calcite.MycatCalciteDataContext;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.MycatRelBuilder;
+import io.mycat.calcite.prepare.MycatCalcitePlanner;
+import io.mycat.calcite.rules.PushDownLogicTable;
+import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
+import io.mycat.metadata.LogicTable;
 import lombok.SneakyThrows;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.RelOptTable;
@@ -178,7 +181,7 @@ public class HBTConvertor {
         List<FieldType> fieldTypes = input.getFieldTypes();
         RelDataType relDataType;
         if (true) {
-            MycatCalcitePlanner planner = MycatCalciteContext.INSTANCE.createPlanner(context);
+            MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(context);
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             sqlStatement.accept(new TypeInference());
             sqlStatement.accept(new MySqlASTVisitorAdapter() {
@@ -242,8 +245,9 @@ public class HBTConvertor {
         if (alias.isEmpty()) {
             return origin;
         } else {
+            relBuilder.clear();
             relBuilder.push(origin);
-            relBuilder.projectNamed(relBuilder.fields(), fieldNames, true);
+            relBuilder.rename(fieldNames);
             return relBuilder.build();
         }
     }
@@ -258,9 +262,9 @@ public class HBTConvertor {
                 HBTConvertor queryOp = new HBTConvertor(params, context);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
-                if (!set.addAll(fieldNames)) {
-                    throw new UnsupportedOperationException();
-                }
+//                if (!set.addAll(fieldNames)) {
+//                    throw new UnsupportedOperationException();
+//                }
                 nodes.add(relNode);
             }
             for (RelNode relNode : nodes) {
@@ -438,7 +442,8 @@ public class HBTConvertor {
     }
 
     private RexNode toRex(Expr node) {
-        switch (node.getOp()) {
+        Op op = node.getOp();
+        switch (op) {
             case IDENTIFIER: {
                 String value = ((Identifier) node).getValue();
                 if (value.startsWith("$")) {
@@ -453,6 +458,14 @@ public class HBTConvertor {
                         int indexOf = fieldNames.indexOf(value);
                         if (indexOf > -1) {
                             return relBuilder.field(joinCount, i, indexOf);
+                        }else {
+                            char c = value.charAt(value.length() - 1);
+                            if(Character.isDigit(c)){
+                                value = value.substring(value.length() - 1);
+                                return relBuilder.field(Integer.parseInt(String.valueOf(c)));
+                            }else {
+                                throw new UnsupportedOperationException();
+                            }
                         }
                     }
                     throw new UnsupportedOperationException();
@@ -489,6 +502,7 @@ public class HBTConvertor {
                 }
             }
         }
+       // throw new UnsupportedOperationException();
     }
 
     private RexNode ref(Expr node) {

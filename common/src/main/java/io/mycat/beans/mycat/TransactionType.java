@@ -21,7 +21,8 @@ package io.mycat.beans.mycat;
  **/
 public enum TransactionType {
     PROXY_TRANSACTION_TYPE("proxy"),
-    JDBC_TRANSACTION_TYPE("xa");
+    JDBC_TRANSACTION_TYPE("xa"),
+    ;
 
     private String name;
 

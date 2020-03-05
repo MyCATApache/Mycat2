@@ -45,12 +45,15 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 //tcp.port in {8066} or tcp.port in  {3066}
 public final class MycatSession extends AbstractSession<MycatSession> implements LocalInFileSession,
         MySQLProxyServerSession<MycatSession>, BindThreadKey {
     private final static Logger LOGGER = LoggerFactory.getLogger(MycatSession.class);
     private CommandDispatcher commandHandler;
+    private BiConsumer<MycatSession, Consumer<MycatSession>> blocker;
     int resultSetCount;
 
     /**
@@ -94,10 +97,16 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         this.packetId = 0;
     }
 
+    public void block(MycatSession mycat, Consumer<MycatSession> consumer) {
+        blocker.accept(mycat, consumer);
+    }
+
     public void setCommandHandler(CommandDispatcher commandHandler) {
         this.commandHandler = commandHandler;
     }
-
+    public void setblocker(CommandDispatcher commandHandler) {
+        this.commandHandler = commandHandler;
+    }
 
     public void handle(MySQLPacket payload) {
         assert commandHandler != null;

@@ -2,14 +2,16 @@ package io.mycat.calcite.prepare;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.CalciteRowMetaData;
-import io.mycat.calcite.MycatCalciteContext;
+import io.mycat.calcite.CalciteRunners;
 import io.mycat.calcite.MycatCalciteDataContext;
-import io.mycat.calcite.MycatCalcitePlanner;
-import io.mycat.calcite.logic.PreComputationSQLTable;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.table.PreComputationSQLTable;
 import io.mycat.hbt.HBTConvertor;
 import io.mycat.hbt.ast.base.Schema;
-import io.mycat.upondb.UponDBContext;
+import io.mycat.upondb.MycatDBContext;
+import io.mycat.upondb.PlanRunner;
+import io.mycat.util.Explains;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.dialect.MysqlSqlDialect;
 
@@ -22,10 +24,10 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     private final MycatCalciteDataContext mycatCalciteDataContext;
     private List<PreComputationSQLTable> preComputationSQLTables;
 
-    public MycatHbtCalcitePrepareObject(Long id, int paramCount, Schema schema, UponDBContext uponDBContext) {
+    public MycatHbtCalcitePrepareObject(Long id, int paramCount, Schema schema, MycatDBContext uponDBContext) {
         super(id, paramCount);
         this.schema = schema;
-        this.mycatCalciteDataContext = MycatCalciteContext.INSTANCE.create(uponDBContext);
+        this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
     }
 
     @Override
@@ -46,15 +48,15 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
 
             @Override
             public List<String> explain() {
-                return ExpainObject.explain(MycatCalciteContext.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT),
-                        MycatCalciteContext.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
-                        MycatCalciteContext.INSTANCE.convertToMycatRelNodeText(relNode, mycatCalciteDataContext));
+                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT),null,
+                        MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
+                        MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode, mycatCalciteDataContext));
             }
         };
     }
 
     private RelNode getRelNode(List<Object> params) {
-        MycatCalcitePlanner planner1 = MycatCalciteContext.INSTANCE.createPlanner(mycatCalciteDataContext);
+        MycatCalcitePlanner planner1 = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
         HBTConvertor hbtConvertor = new HBTConvertor( params,mycatCalciteDataContext);
 
         RelNode handle = hbtConvertor.handle(schema);

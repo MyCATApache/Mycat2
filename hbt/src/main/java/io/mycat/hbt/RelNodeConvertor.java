@@ -15,16 +15,15 @@
 package io.mycat.hbt;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.logic.MycatSQLTableScan;
-import io.mycat.calcite.logic.MycatTransientSQLTable;
-import io.mycat.hbt.ast.Direction;
+import io.mycat.calcite.table.MycatSQLTableScan;
+import io.mycat.calcite.table.MycatTransientSQLTable;
+import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelFieldCollation;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.*;
 import org.apache.calcite.rel.logical.*;
 import org.apache.calcite.rel.type.RelDataType;
@@ -133,7 +132,55 @@ public class RelNodeConvertor {
         List<RelNode> inputs = join.getInputs();
         Schema left = convertRelNode(inputs.get(0));
         Schema right = convertRelNode(inputs.get(1));
+
+        ArrayList<String> list = new ArrayList<>();
+        Map<String, Integer> counter = new HashMap<>();
+        for (String s : fieldList) {
+            if (!counter.containsKey(s)) {
+                list.add(s);
+                counter.compute(s, (s1, integer) -> {
+                    if (integer == null) return 0;
+                    return integer + 1;
+                });
+            } else {
+                Integer compute = counter.compute(s, (s1, integer) -> {
+                    if (integer == null) return 0;
+                    return integer + 1;
+                });
+                list.add(s + compute);
+            }
+        }
+      //  right = getJoinRightExpr(inputs.get(0).getRowType().getFieldNames(), inputs.get(1).getRowType().getFieldNames(), list, right);
         return new JoinSchema(joinType(joinType, false), exprExplain.getExpr(condition), left, right);
+    }
+
+    private static Schema getJoinLeftExpr(List<String> leftFieldNames, Schema left, List<String> list) {
+        int size = leftFieldNames.size();
+        boolean needProject = false;
+        for (int i = 0; i < size; i++) {
+            if (!leftFieldNames.get(i).equals(list.get(i))) {
+                needProject = true;
+                break;
+            }
+        }
+        if (needProject) {
+            left = new RenameSchema(left, list.subList(0, size));
+        }
+        return left;
+    }
+
+    private static Schema getJoinRightExpr(List<String> leftFieldNames, List<String> rightFieldNames, List<String> list, Schema right) {
+        int size = list.size();
+        int start = leftFieldNames.size();
+        boolean needProject = false;
+        for (int i = 0; i < rightFieldNames.size(); i++) {
+            if (!rightFieldNames.get(i).equals(list.get(start + i))) {
+                needProject = true;
+                break;
+            }
+        }
+        if (needProject) right = new RenameSchema(right, list.subList(start, size));
+        return right;
     }
 
     private static Op joinType(JoinRelType joinType, boolean cor) {
@@ -248,11 +295,11 @@ public class RelNodeConvertor {
         return new GroupSchema(schema, getGroupItems(relNode1), getAggCallList(relNode1.getInput(), relNode1.getAggCallList()));
     }
 
-    private static List<io.mycat.hbt.ast.AggregateCall> getAggCallList(RelNode org, List<org.apache.calcite.rel.core.AggregateCall> aggCallList) {
+    private static List<AggregateCall> getAggCallList(RelNode org, List<org.apache.calcite.rel.core.AggregateCall> aggCallList) {
         return aggCallList.stream().map(i -> getAggCallList(org, i)).collect(Collectors.toList());
     }
 
-    private static io.mycat.hbt.ast.AggregateCall getAggCallList(RelNode inputRel, org.apache.calcite.rel.core.AggregateCall call) {
+    private static AggregateCall getAggCallList(RelNode inputRel, org.apache.calcite.rel.core.AggregateCall call) {
         List<String> fieldNames = inputRel.getRowType().getFieldNames();
         RelDataType type = call.getType();
         String alias = call.getName();
@@ -263,7 +310,7 @@ public class RelNodeConvertor {
         boolean ignoreNulls = call.ignoreNulls();
         Expr filter = call.hasFilter() ? new Identifier(inputRel.getRowType().getFieldNames().get(call.filterArg)) : null;
         List<OrderItem> orderby = getOrderby(inputRel, call.getCollation());
-        return new io.mycat.hbt.ast.AggregateCall(aggeName, argList).alias(alias).ignoreNulls(ignoreNulls).approximate(approximate).distinct(distinct).filter(filter).orderBy(orderby);
+        return new AggregateCall(aggeName, argList).alias(alias).ignoreNulls(ignoreNulls).approximate(approximate).distinct(distinct).filter(filter).orderBy(orderby);
     }
 
     private static List<GroupItem> getGroupItems(LogicalAggregate aggregate) {
@@ -299,8 +346,8 @@ public class RelNodeConvertor {
             }
             String outName = outputRel.get(i).getName();
             Identifier identifier = new Identifier(outName);
-            if (!expr1.equals(identifier)){
-                expr1 = new Expr(Op.AS_COLUMNNAME, Arrays.asList(expr1,identifier ));
+            if (!expr1.equals(identifier)) {
+                expr1 = new Expr(Op.AS_COLUMNNAME, Arrays.asList(expr1, identifier));
             }
             outExpr.add(expr1);
         }

@@ -64,9 +64,9 @@ public class TransactionSessionUtil {
     }
 
     public static MycatUpdateResponse executeUpdateByReplicaName(String replicaName,
-                                                    String sql,
-                                                    boolean needGeneratedKeys,
-                                                    String strategy) {
+                                                                 String sql,
+                                                                 boolean needGeneratedKeys,
+                                                                 String strategy) {
         try {
             DefaultConnection connection = getConnectionByReplicaName(replicaName, true, strategy);
 
@@ -129,7 +129,7 @@ public class TransactionSessionUtil {
 
     public static int getTransactionIsolation() {
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-       return transactionSession.getTransactionIsolation();
+        return transactionSession.getTransactionIsolation();
     }
 
     public static boolean isAutocommit() {
@@ -140,5 +140,10 @@ public class TransactionSessionUtil {
     public static void setAutocommit(boolean autocommit) {
         TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
         transactionSession.setAutocommit(autocommit);
+    }
+
+    public static int getServerStatus() {
+        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+        return transactionSession.getServerStatus();
     }
 }

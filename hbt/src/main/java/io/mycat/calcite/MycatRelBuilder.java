@@ -15,10 +15,9 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
-import io.mycat.calcite.logic.MycatConvention;
-import io.mycat.calcite.logic.MycatSQLTableScan;
-import io.mycat.calcite.logic.MycatTransientSQLTable;
-import io.mycat.calcite.logic.MycatTransientSQLTableScan;
+import io.mycat.calcite.table.MycatSQLTableScan;
+import io.mycat.calcite.table.MycatTransientSQLTable;
+import io.mycat.calcite.table.MycatTransientSQLTableScan;
 import org.apache.calcite.avatica.util.ByteString;
 import org.apache.calcite.jdbc.JavaTypeFactoryImpl;
 import org.apache.calcite.plan.Context;
@@ -79,8 +78,8 @@ public class MycatRelBuilder extends RelBuilder {
      * Creates a literal (constant expression).
      */
     public static RexNode literal(RelDataType type, Object value, boolean allowCast) {
-        final RexBuilder rexBuilder = MycatCalciteContext.INSTANCE.RexBuilder;
-        JavaTypeFactoryImpl typeFactory = MycatCalciteContext.INSTANCE.TypeFactory;
+        final RexBuilder rexBuilder = MycatCalciteSupport.INSTANCE.RexBuilder;
+        JavaTypeFactoryImpl typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
         RexNode literal;
         if (value == null) {
             literal = rexBuilder.makeNullLiteral(typeFactory.createSqlType(SqlTypeName.NULL));

@@ -14,11 +14,12 @@
  */
 package io.mycat;
 
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
+import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
-import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.thread.GProcess;
 import io.mycat.plug.PlugRuntime;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -48,7 +49,7 @@ public class GRuntimeTest {
                 public void accept(BindThreadKey key, TransactionSession session) {
                     session.begin();
                     DefaultConnection defaultDs = session.getConnection("defaultDs");
-                    JdbcRowBaseIteratorImpl jdbcRowBaseIterator = defaultDs.executeQuery("select 1");
+                    JdbcRowBaseIterator jdbcRowBaseIterator = defaultDs.executeQuery("select 1");
                     List<Map<String, Object>> resultSetMap = jdbcRowBaseIterator.getResultSetMap();
                     DefaultConnection c2 = session.getConnection("defaultDs2");
                     List<Map<String, Object>> resultSetMap1 = c2.executeQuery("select 1").getResultSetMap();
@@ -56,6 +57,11 @@ public class GRuntimeTest {
                     System.out.println(resultSetMap1);
                     countDownLatch.countDown();
                     System.out.println("-----------------" + countDownLatch);
+                }
+
+                @Override
+                public void finallyAccept(BindThreadKey key, BindThread context) {
+
                 }
 
                 @Override

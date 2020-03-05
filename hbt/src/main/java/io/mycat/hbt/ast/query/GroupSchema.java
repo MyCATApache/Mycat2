@@ -15,7 +15,7 @@
 package io.mycat.hbt.ast.query;
 
 import io.mycat.hbt.Op;
-import io.mycat.hbt.ast.AggregateCall;
+import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.GroupItem;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;

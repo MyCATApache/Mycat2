@@ -1,7 +1,5 @@
 package io.mycat.hbt;
 
-import io.mycat.hbt.ast.AggregateCall;
-import io.mycat.hbt.ast.Direction;
 import io.mycat.hbt.ast.base.Literal;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;

@@ -16,7 +16,7 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import io.mycat.SchemaInfo;
-import io.mycat.calcite.logic.MycatPhysicalTable;
+import io.mycat.calcite.table.MycatPhysicalTable;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rel2sql.RelToSqlConverter;

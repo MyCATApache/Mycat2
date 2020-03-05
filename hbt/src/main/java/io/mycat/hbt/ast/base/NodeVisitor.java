@@ -14,7 +14,6 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.ast.AggregateCall;
 import io.mycat.hbt.ast.modify.MergeModify;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;

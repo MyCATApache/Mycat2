@@ -6,10 +6,14 @@ import io.mycat.api.collector.UpdateRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.PrepareMycatRowMetaData;
 import io.mycat.beans.mycat.UpdateRowMetaData;
-import io.mycat.calcite.MycatCalciteContext;
+import io.mycat.calcite.MycatCalciteSupport;
+import io.mycat.hbt.TextUpdateInfo;
 import io.mycat.hbt.ast.modify.MergeModify;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
-import io.mycat.upondb.UponDBContext;
+import io.mycat.upondb.MycatDBContext;
+import io.mycat.upondb.PlanRunner;
+import io.mycat.upondb.PrepareObject;
+import io.mycat.util.Explains;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -22,9 +26,9 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
 
     private final int variantRefCount;
     private final BiFunction<MycatTextUpdatePrepareObject, List, Iterator<TextUpdateInfo>> textUpdateInfoProvider;
-    private final UponDBContext dbContext;
+    private final MycatDBContext dbContext;
 
-    public MycatTextUpdatePrepareObject(Long id, int variantRefCount, BiFunction<MycatTextUpdatePrepareObject, List, Iterator<TextUpdateInfo>> textUpdateInfoProvider, UponDBContext dbContext) {
+    public MycatTextUpdatePrepareObject(Long id, int variantRefCount, BiFunction<MycatTextUpdatePrepareObject, List, Iterator<TextUpdateInfo>> textUpdateInfoProvider, MycatDBContext dbContext) {
         super(id);
         this.variantRefCount = variantRefCount;
         this.textUpdateInfoProvider = textUpdateInfoProvider;
@@ -49,7 +53,7 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
             @Override
             public List<String> explain() {
                 MergeModify mergeModify = getMergeModify(params);
-                return ExpainObject.explain(null, MycatCalciteContext.INSTANCE.convertToHBTText(mergeModify),null);
+                return Explains.explain(null,null, MycatCalciteSupport.INSTANCE.convertToHBTText(mergeModify),null);
             }
 
             @Override

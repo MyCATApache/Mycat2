@@ -21,6 +21,8 @@ import io.mycat.config.PatternRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.pattern.*;
+import io.mycat.upondb.MycatDBClientApi;
+import io.mycat.upondb.MycatDBs;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
 
@@ -74,10 +76,12 @@ public enum ClientRuntime {
             private RuntimeInfo runtime = Objects.requireNonNull(runtimeInfo);
             private String defaultSchemaName = ClientRuntime.INSTANCE.getDefaultSchema();
             private TransactionType transactionType;
+            private final MycatDBClientApi db = MycatDBs.createClient();
             ///////////////////////////////////////////////
 
             @Override
             public Context analysis(String sql) {
+
                 RuntimeInfo runtime = this.runtime;
                 GPattern tableCollectorPattern = this.runtime.tableCollector.get();
 
@@ -142,17 +146,63 @@ public enum ClientRuntime {
             }
 
             @Override
-            public List<String> explain(String sql) {
-                return null;
+            public String getSchema() {
+                return db.getSchema();
+            }
+
+            @Override
+            public void begin() {
+                db.begin();
+            }
+
+            @Override
+            public void rollback() {
+                db.rollback();
             }
 
             @Override
             public void useSchema(String schemaName) {
                 if (schemaName != null) {
+                    db.useSchema(schemaName);
                     this.defaultSchemaName = schemaName;
                 } else {
                     LOGGER.warn("use null schema");
                 }
+            }
+
+            @Override
+            public void commit() {
+                db.commit();
+            }
+
+            @Override
+            public void setTransactionIsolation(int value) {
+                db.setTransactionIsolation(value);
+            }
+
+            @Override
+            public int getTransactionIsolation() {
+                return db.getTransactionIsolation();
+            }
+
+            @Override
+            public boolean isAutocommit() {
+                return db.isAutocommit();
+            }
+
+            @Override
+            public long getMaxRow() {
+                return db.getMaxRow();
+            }
+
+            @Override
+            public void setMaxRow(long value) {
+                db.setMaxRow(value);
+            }
+
+            @Override
+            public void setAutocommit(boolean autocommit) {
+                db.setAutocommit(autocommit);
             }
 
             @Override
@@ -172,6 +222,11 @@ public enum ClientRuntime {
                 }
                 return defaultSchemaName;
             }
+
+            @Override
+            public MycatDBClientApi getMycatDb() {
+                return db;
+            }
         };
     }
 
@@ -187,7 +242,7 @@ public enum ClientRuntime {
         //pre
 //        for (PatternRootConfig.HandlerToSQLs handler : patternRootConfig.getHandlers()) {
 //            String name = handler.getName();
-//            String explain = handler.getExplain();
+//            String explainSql = handler.getExplain();
 //            Map<String, String> tags = handler.getTags();
 //            String type = handler.getType();
 //
@@ -198,7 +253,7 @@ public enum ClientRuntime {
 //                    textItemConfig.setName(name);
 //                    textItemConfig.setSql(sql);
 //                    textItemConfig.setTags(tags);
-//                    textItemConfig.setExplain(explain);
+//                    textItemConfig.setExplain(explainSql);
 //                    textItemConfig.setCommand(type);
 //                    sqls.add(textItemConfig);
 //                }
@@ -209,7 +264,7 @@ public enum ClientRuntime {
 //                    textItemConfig.setName(name);
 //                    textItemConfig.setSql(sql);
 //                    textItemConfig.setTags(tags);
-//                    textItemConfig.setExplain(explain);
+//                    textItemConfig.setExplain(explainSql);
 //                    textItemConfigs.add(textItemConfig);
 //                    textItemConfig.setCommand(type);
 //                }

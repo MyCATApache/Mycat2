@@ -20,7 +20,7 @@ import java.sql.*;
  * @author Junwen Chen
  **/
 public enum TextConvertorImpl implements TextConvertor {
-  INSANTCE;
+  INSTANCE;
 
   @Override
   public byte[] convertBigDecimal(BigDecimal v) {

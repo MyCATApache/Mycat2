@@ -15,9 +15,9 @@
 package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.MycatException;
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.resultset.MycatUpdateResponse;
 import io.mycat.beans.resultset.MycatUpdateResponseImpl;
-import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
@@ -74,10 +74,10 @@ public class DefaultConnection implements AutoCloseable {
     }
 
 
-    public JdbcRowBaseIteratorImpl executeQuery(String sql) {
+    public JdbcRowBaseIterator executeQuery(String sql) {
         try {
             Statement statement = connection.createStatement();
-            return new JdbcRowBaseIteratorImpl(statement, statement.executeQuery(sql));
+            return new JdbcRowBaseIterator(statement, statement.executeQuery(sql));
         } catch (Exception e) {
             throw new MycatException(e);
         }

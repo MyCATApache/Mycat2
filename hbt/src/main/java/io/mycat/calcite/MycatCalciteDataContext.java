@@ -17,13 +17,13 @@ package io.mycat.calcite;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import io.mycat.api.collector.UpdateRowIterator;
-import io.mycat.calcite.logic.MycatLogicTable;
-import io.mycat.calcite.logic.MycatPhysicalTable;
-import io.mycat.calcite.logic.PreComputationSQLTable;
-import io.mycat.calcite.metadata.LogicTable;
+import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.calcite.table.PreComputationSQLTable;
+import io.mycat.metadata.LogicTable;
 import io.mycat.upondb.Components;
-import io.mycat.upondb.UponDBClientBased;
-import io.mycat.upondb.UponDBContext;
+import io.mycat.upondb.MycatDBClientBased;
+import io.mycat.upondb.MycatDBContext;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -54,10 +54,10 @@ import java.util.*;
  **/
 
 public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
-    private final UponDBContext uponDBContext;
+    private final MycatDBContext uponDBContext;
     private Map<String, Object> variables;
 
-    public MycatCalciteDataContext(UponDBContext uponDBContext) {
+    public MycatCalciteDataContext(MycatDBContext uponDBContext) {
         this.uponDBContext = uponDBContext;
     }
 
@@ -90,7 +90,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     }
 
     public JavaTypeFactory getTypeFactory() {
-        return MycatCalciteContext.INSTANCE.TypeFactory;
+        return MycatCalciteSupport.INSTANCE.TypeFactory;
     }
 
     public QueryProvider getQueryProvider() {
@@ -117,11 +117,12 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
 
     public void preComputation(PreComputationSQLTable preComputationSQLTable) {
         List<Object[]> objects = preComputationSQLTable.scan(this).toList();
-        uponDBContext.cache(preComputationSQLTable, objects);
+        uponDBContext.cache(preComputationSQLTable, preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),
+                Collections.emptyList(),objects);
     }
 
     public Enumerable<Object[]> removePreComputation(PreComputationSQLTable preComputationSQLTable) {
-        Object o = uponDBContext.removeCache(preComputationSQLTable);
+        Object o = uponDBContext.removeCache(preComputationSQLTable,preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),Collections.emptyList());
         if (o != null) {
             return Linq4j.asEnumerable((List<Object[]>) o);
         } else {
@@ -133,7 +134,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
         return uponDBContext.update(targetName, sqls);
     }
 
-    public static SchemaPlus getSchema(UponDBClientBased based) {
+    public static SchemaPlus getSchema(MycatDBClientBased based) {
         SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();
         Map<String, Map<String, LogicTable>> logicTableMap = based.config();
         for (Map.Entry<String, Map<String, LogicTable>> stringConcurrentHashMapEntry : logicTableMap.entrySet()) {
@@ -149,12 +150,12 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
 
     @Override
     public SqlParser.Config getParserConfig() {
-        return MycatCalciteContext.INSTANCE.config.getParserConfig();
+        return MycatCalciteSupport.INSTANCE.config.getParserConfig();
     }
 
     @Override
     public SqlToRelConverter.Config getSqlToRelConverterConfig() {
-        return MycatCalciteContext.INSTANCE.config.getSqlToRelConverterConfig();
+        return MycatCalciteSupport.INSTANCE.config.getSqlToRelConverterConfig();
     }
 
     @Override
@@ -170,63 +171,63 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     @Override
     public RexExecutor getExecutor() {
         return (rexBuilder, constExps, reducedValues) -> {
-            RexExecutor executor = MycatCalciteContext.INSTANCE.config.getExecutor();
+            RexExecutor executor = MycatCalciteSupport.INSTANCE.config.getExecutor();
             executor.reduce(rexBuilder, constExps, reducedValues);
         };
     }
 
     @Override
     public ImmutableList<Program> getPrograms() {
-        return MycatCalciteContext.INSTANCE.config.getPrograms();
+        return MycatCalciteSupport.INSTANCE.config.getPrograms();
     }
 
     @Override
     public SqlOperatorTable getOperatorTable() {
-        return MycatCalciteContext.INSTANCE.config.getOperatorTable();
+        return MycatCalciteSupport.INSTANCE.config.getOperatorTable();
     }
 
     @Override
     public RelOptCostFactory getCostFactory() {
-        return MycatCalciteContext.INSTANCE.config.getCostFactory();
+        return MycatCalciteSupport.INSTANCE.config.getCostFactory();
     }
 
     @Override
     public ImmutableList<RelTraitDef> getTraitDefs() {
-        return MycatCalciteContext.INSTANCE.config.getTraitDefs();
+        return MycatCalciteSupport.INSTANCE.config.getTraitDefs();
     }
 
     @Override
     public SqlRexConvertletTable getConvertletTable() {
-        return MycatCalciteContext.INSTANCE.config.getConvertletTable();
+        return MycatCalciteSupport.INSTANCE.config.getConvertletTable();
     }
 
     @Override
     public Context getContext() {
-        return MycatCalciteContext.INSTANCE;
+        return MycatCalciteSupport.INSTANCE;
     }
 
     @Override
     public RelDataTypeSystem getTypeSystem() {
-        return MycatCalciteContext.INSTANCE.TypeSystem;
+        return MycatCalciteSupport.INSTANCE.TypeSystem;
     }
 
     @Override
     public boolean isEvolveLattice() {
-        return MycatCalciteContext.INSTANCE.config.isEvolveLattice();
+        return MycatCalciteSupport.INSTANCE.config.isEvolveLattice();
     }
 
     @Override
     public SqlStatisticProvider getStatisticProvider() {
-        return MycatCalciteContext.INSTANCE.config.getStatisticProvider();
+        return MycatCalciteSupport.INSTANCE.config.getStatisticProvider();
     }
 
     @Override
     public RelOptTable.ViewExpander getViewExpander() {
-        return MycatCalciteContext.INSTANCE.config.getViewExpander();
+        return MycatCalciteSupport.INSTANCE.config.getViewExpander();
     }
 
 
-    public UponDBContext getUponDBContext() {
+    public MycatDBContext getUponDBContext() {
         return uponDBContext;
     }
 

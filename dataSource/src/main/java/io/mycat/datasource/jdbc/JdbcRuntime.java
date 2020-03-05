@@ -17,6 +17,7 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatConfig;
 import io.mycat.MycatException;
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
@@ -26,7 +27,6 @@ import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
-import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.thread.GThreadPool;
 import io.mycat.datasource.jdbc.transactionSession.JTATransactionSession;
 import io.mycat.datasource.jdbc.transactionSession.LocalTransactionSession;
@@ -132,6 +132,11 @@ public enum JdbcRuntime {
                     }
 
                     @Override
+                    public void finallyAccept(BindThreadKey key, BindThread context) {
+
+                    }
+
+                    @Override
                     public void onException(BindThreadKey key, Exception e) {
                         heartBeatStrategy.onException(e);
                     }
@@ -144,7 +149,7 @@ public enum JdbcRuntime {
                 try {
                     connection = getConnection(datasource);
                     List<Map<String, Object>> resultList;
-                    try (JdbcRowBaseIteratorImpl iterator = connection
+                    try (JdbcRowBaseIterator iterator = connection
                             .executeQuery(heartBeatStrategy.getSql())) {
                         resultList = iterator.getResultSetMap();
                     }

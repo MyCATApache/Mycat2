@@ -18,9 +18,9 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
 import io.mycat.QueryBackendTask;
 import io.mycat.SchemaInfo;
-import io.mycat.calcite.metadata.DataMappingEvaluator;
-import io.mycat.calcite.metadata.LogicTable;
-import io.mycat.calcite.metadata.SimpleColumnInfo;
+import io.mycat.metadata.LogicTable;
+import io.mycat.queryCondition.DataMappingEvaluator;
+import io.mycat.queryCondition.SimpleColumnInfo;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.rel.rel2sql.SqlImplementor;
 import org.apache.calcite.rex.*;
@@ -116,7 +116,7 @@ public class CalciteUtls {
         if (filters == null || filters.isEmpty()) {
             return "";
         }
-        RexNode rexNode = RexUtil.composeConjunction(MycatCalciteContext.INSTANCE.RexBuilder, filters);
+        RexNode rexNode = RexUtil.composeConjunction(MycatCalciteSupport.INSTANCE.RexBuilder, filters);
         SqlImplementor.Context context = new SqlImplementor.Context(MysqlSqlDialect.DEFAULT, rawColumns.size()) {
             @Override
             public SqlNode field(int ordinal) {

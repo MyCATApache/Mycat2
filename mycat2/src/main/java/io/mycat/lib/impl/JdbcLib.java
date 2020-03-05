@@ -4,6 +4,7 @@ import io.mycat.SQLExecuterWriter;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
+import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.TransactionSession;
@@ -37,7 +38,7 @@ public class JdbcLib {
         });
     }
 
-    public static Supplier<MycatResultSetResponse[]> queryJdbcByDataSource(String dataSource, String... sql){
+    public static Supplier<MycatResultSetResponse[]> queryJdbcByDataSource(String dataSource, String... sql) {
         return () -> {
             MycatResultSetResponse[] res = new MycatResultSetResponse[sql.length];
             int i = 0;
@@ -48,11 +49,13 @@ public class JdbcLib {
             return res;
         };
     }
-    public static Response response(Supplier<MycatResultSetResponse[]> response){
+
+    public static Response response(Supplier<MycatResultSetResponse[]> response) {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            SQLExecuterWriter.writeToMycatSession(session1,  response.get());
+            SQLExecuterWriter.writeToMycatSession(session1, response.get());
         });
     }
+
     public static Response responseUpdateOnJdbcByDataSource(String dataSource, boolean needGeneratedKeys, String... sql) {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
             MycatUpdateResponse[] res = new MycatUpdateResponse[sql.length];
@@ -67,7 +70,8 @@ public class JdbcLib {
 
     public static Response setTransactionIsolation(int transactionIsolation) {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+            ;
             transactionSession.setTransactionIsolation(transactionIsolation);
             session1.writeOkEndPacket();
         });
@@ -75,7 +79,8 @@ public class JdbcLib {
 
     public static Response setAutocommit(boolean autocommit) {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+            ;
             transactionSession.setAutocommit(autocommit);
             session1.writeOkEndPacket();
         });
@@ -83,7 +88,8 @@ public class JdbcLib {
 
     public static Response begin() {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+            ;
             transactionSession.begin();
             session1.setInTranscation(true);
             session1.writeOkEndPacket();
@@ -92,7 +98,8 @@ public class JdbcLib {
 
     public static Response commit() {
         return (session) -> block(session, (Consumer<MycatSession>) session1 -> {
-            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+            ;
             transactionSession.commit();
             session1.setInTranscation(false);
             session1.writeOkEndPacket();
@@ -101,7 +108,8 @@ public class JdbcLib {
 
     public static Response rollback() {
         return (session) -> {
-            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();;
+            TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
+            ;
             transactionSession.rollback();
             session.setInTranscation(false);
             session.writeOkEndPacket();
@@ -110,24 +118,29 @@ public class JdbcLib {
 
     public static void block(MycatSession mycat, Consumer<MycatSession> consumer) {
         JdbcRuntime.INSTANCE.run(mycat, new GProcess() {
+            Exception ex = null;
+
             @Override
             public void accept(BindThreadKey key, TransactionSession session) {
-                Exception ex = null;
-
                 try {
                     mycat.deliverWorkerThread((SessionThread) Thread.currentThread());
                     consumer.accept(mycat);
-                }catch (Exception e){
+                } catch (Exception e) {
                     ex = e;
-                    TransactionSessionUtil.reset();
                     session.reset();
-                }finally {
-                    mycat.backFromWorkerThread();
                 }
-                if (ex==null) {
+            }
+
+            @Override
+            public void finallyAccept(BindThreadKey key, BindThread context) {
+                mycat.backFromWorkerThread();
+                if (ex == null) {
                     mycat.getIOThread().addNIOJob(new NIOJob() {
                         @Override
                         public void run(ReactorEnvThread reactor) throws Exception {
+                            if (mycat.writeQueue().size() != 2) {
+                                throw new AssertionError();
+                            }
                             mycat.switchMySQLServerWriteHandler();
                             mycat.writeToChannel();
                         }
@@ -143,20 +156,20 @@ public class JdbcLib {
                             return "";
                         }
                     });
-                }else {
+                } else {
                     Exception finalEx = ex;
                     mycat.getIOThread().addNIOJob(new NIOJob() {
                         @Override
                         public void run(ReactorEnvThread reactor) throws Exception {
-                            LOGGER.error("",finalEx);
+                            LOGGER.error("", finalEx);
                             mycat.setLastMessage(finalEx);
                             mycat.writeErrorEndPacketBySyncInProcessError();
-                            mycat.close(false,"");
+                            mycat.close(false, "");
                         }
 
                         @Override
                         public void stop(ReactorEnvThread reactor, Exception reason) {
-                            mycat.close(false,finalEx);
+                            mycat.close(false, finalEx);
                         }
 
                         @Override
@@ -178,6 +191,6 @@ public class JdbcLib {
     }
 
     public static Response setTransactionIsolation(String text) {
-       return setTransactionIsolation(MySQLIsolation.valueOf(text.toUpperCase()).getJdbcValue());
+        return setTransactionIsolation(MySQLIsolation.valueOf(text.toUpperCase()).getJdbcValue());
     }
 }

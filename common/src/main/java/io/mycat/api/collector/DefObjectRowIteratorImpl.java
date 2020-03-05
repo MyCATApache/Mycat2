@@ -1,14 +1,14 @@
 package io.mycat.api.collector;
 
+import io.mycat.beans.mycat.DefMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.beans.mycat.MycatRowMetaDataImpl;
 import lombok.AllArgsConstructor;
 
 import java.util.Iterator;
 
 @AllArgsConstructor
 public class DefObjectRowIteratorImpl extends AbstractObjectRowIterator {
-    final MycatRowMetaDataImpl mycatRowMetaData  ;
+    final DefMycatRowMetaData mycatRowMetaData  ;
     final Iterator<Object[]> iterator ;
     @Override
     public MycatRowMetaData metaData() {

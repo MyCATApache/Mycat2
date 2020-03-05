@@ -2,8 +2,8 @@ package io.mycat.hint;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
-import io.mycat.calcite.metadata.MetadataManager;
 import io.mycat.client.Context;
+import io.mycat.metadata.MetadataManager;
 
 import java.util.Collection;
 import java.util.Map;
