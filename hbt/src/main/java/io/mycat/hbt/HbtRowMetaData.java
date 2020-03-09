@@ -1,16 +1,26 @@
-package io.mycat.beans.mycat;
+package io.mycat.hbt;
+
+import io.mycat.beans.mycat.MycatRowMetaData;
+import io.mycat.hbt.ast.query.FieldType;
 
 import java.sql.ResultSetMetaData;
-import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
-public enum  UpdateRowMetaData implements MycatRowMetaData {
-    INSTANCE;
-    public static final String UPDATE_COUNT = "UPDATE_COUNT";
-    public static final String LAST_INSERT_ID = "LAST_INSERT_ID";
+
+public class HbtRowMetaData implements MycatRowMetaData {
+    final List<FieldType> fieldTypeList;
+
+    public HbtRowMetaData(List<FieldType> fieldTypeList) {
+        this.fieldTypeList = new ArrayList<>();
+        this.fieldTypeList.add(null);
+        this.fieldTypeList.addAll(fieldTypeList);
+    }
 
     @Override
     public int getColumnCount() {
-        return 2;
+        return fieldTypeList.size()-1;
     }
 
     @Override
@@ -25,12 +35,12 @@ public enum  UpdateRowMetaData implements MycatRowMetaData {
 
     @Override
     public boolean isNullable(int column) {
-        return false;
+        return fieldTypeList.get(column).isNullable();
     }
 
     @Override
     public boolean isSigned(int column) {
-        return false;
+        return true;
     }
 
     @Override
@@ -40,44 +50,33 @@ public enum  UpdateRowMetaData implements MycatRowMetaData {
 
     @Override
     public String getColumnName(int column) {
-        switch (column) {
-            case 1:
-                return UPDATE_COUNT;
-            case 2:
-                return LAST_INSERT_ID;
-        }
-        throw new IllegalArgumentException();
+        return fieldTypeList.get(column).getId();
     }
 
     @Override
     public String getSchemaName(int column) {
-        return null;
+        return "";
     }
 
     @Override
     public int getPrecision(int column) {
-        return 0;
+        return fieldTypeList.get(column).getPrecision();
     }
 
     @Override
     public int getScale(int column) {
-        return 0;
+        return fieldTypeList.get(column).getScale();
     }
 
     @Override
     public String getTableName(int column) {
-        return null;
+        return "";
     }
 
     @Override
     public int getColumnType(int column) {
-        switch (column) {
-            case 1:
-                return Types.BIGINT;
-            case 2:
-                return Types.BIGINT;
-        }
-        return 0;
+        String type = fieldTypeList.get(column).getType();
+        return Objects.requireNonNull(HBTCalciteSupport.INSTANCE.getSqlTypeName(type)).getJdbcOrdinal();
     }
 
     @Override

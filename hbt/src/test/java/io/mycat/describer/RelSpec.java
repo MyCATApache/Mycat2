@@ -49,7 +49,7 @@
 //import java.util.concurrent.TimeUnit;
 //import java.util.stream.Collectors;
 //
-//import static io.mycat.DesRelNodeHandler.dump;
+//import static io.mycat.DesRelNodeHandler.dumpColumnInfo;
 //import static io.mycat.DesRelNodeHandler.parse2SyntaxAst;
 //import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 //import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
@@ -226,7 +226,7 @@
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}])\n" +
 //                "  LogicalValues(type=[RecordType(INTEGER 1)], tuples=[[{ 2 }, { 2 }]])\n", toString(relNode));
-//        Assert.assertEquals("(2)\n", dump(relNode));
+//        Assert.assertEquals("(2)\n", dumpColumnInfo(relNode));
 //
 //        String dsl = toDSL(relNode);
 //        Assert.assertEquals("group(valuesSchema(fields(fieldType(`1`,`int`)),table(literal(2),literal(2))),keys(regular(`1`)),aggregating())", dsl);
@@ -1002,7 +1002,7 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //
 //        Assert.assertEquals("join(innerJoin,eq(`id`,`id0`),fromTable(`db1`,`travelrecord`),map(fromTable(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)))",
 //                toDSL(relNode));
@@ -1019,7 +1019,7 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id2=[$0], user_id2=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
@@ -1032,7 +1032,7 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
@@ -1046,7 +1046,7 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
@@ -1060,7 +1060,7 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
@@ -1075,7 +1075,7 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
@@ -1090,7 +1090,7 @@
 //                "  LogicalFilter(condition=[=($cor0.id, $0)])\n" +
 //                "    LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "      LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //        Assert.assertEquals("correlateInnerJoin(`$cor0`,keys(`id`),fromTable(`db1`,`travelrecord`),filter(map(fromTable(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)),eq(ref(`$cor0`,`id`),`id0`)))", toDSL(relNode));
 //    }
 //
@@ -1106,7 +1106,7 @@
 //                "  LogicalFilter(condition=[=($cor0.id, $0)])\n" +
 //                "    LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "      LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //        Assert.assertEquals("correlateLeftJoin(`$cor0`,keys(`id`),fromTable(`db1`,`travelrecord`),filter(map(fromTable(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)),eq(ref(`$cor0`,`id`),`id0`)))", toDSL(relNode));
 //    }
 //
@@ -1120,7 +1120,7 @@
 ////                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 ////                "  LogicalFilter(condition=[=($cor0.id, $0)])\n" +
 ////                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-////        dump(relNode);
+////        dumpColumnInfo(relNode);
 ////
 ////        Assert.assertEquals("projectNamed(join(correlateLeftJoin,correlate(as(fromTable(`db1`,`travelrecord`),`$cor0`)),as(filter(fromTable(`db1`,`travelrecord2`),eq(dot(`$cor0`,`id`),`id`)),`t1`)),`id`,`user_id`,`id0`,`user_id0`)", toDSL(relNode));
 ////        relNode = toRelNode(schema);
@@ -1134,7 +1134,7 @@
 ////        Assert.assertEquals("projectNamed(join(correlateLeftJoin,correlate(as(fromTable(`db1`,`travelrecord`),`$cor0`)),as(filter(fromTable(`db1`,`travelrecord2`),eq(dot(`$cor0`,`id`),`id`)),`t1`)),`id`,`user_id`,`id0`,`user_id0`)", toDSL(relNode));
 ////
 ////
-////        dump(relNode);
+////        dumpColumnInfo(relNode);
 ////
 ////    }
 //

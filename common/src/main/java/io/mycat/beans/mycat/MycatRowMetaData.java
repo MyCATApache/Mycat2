@@ -21,8 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static java.sql.ResultSetMetaData.columnNoNulls;
-
 /**
  * @author jamie12221
  * date 2020-01-09 23:18
@@ -35,8 +33,6 @@ public interface MycatRowMetaData {
     boolean isAutoIncrement(int column);
 
     boolean isCaseSensitive(int column);
-
-    int isNullable(int column);
 
     boolean isSigned(int column);
 
@@ -58,10 +54,7 @@ public interface MycatRowMetaData {
 
     ResultSetMetaData metaData();
 
-
-    default public boolean isNull(int column) {
-        return !(columnNoNulls == isNullable(column));
-    }
+    public boolean isNullable(int column);
 
     default String toSimpleText() {
         int columnCount = getColumnCount();
@@ -86,7 +79,7 @@ public interface MycatRowMetaData {
 
             boolean autoIncrement = isAutoIncrement(i);
             boolean caseSensitive = isCaseSensitive(i);
-            int nullable = isNullable(i);
+            boolean nullable = isNullable(i);
             boolean signed = isSigned(i);
             int columnDisplaySize = getColumnDisplaySize(i);
             int precision = getPrecision(i);

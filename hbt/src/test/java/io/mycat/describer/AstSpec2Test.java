@@ -97,8 +97,8 @@
 //
 //    }
 //    public  void testDump(Schema schema,String resultset) {
-//        String dump = TextConvertor.dump(toRelNode(schema));
-//        Assert.assertEquals(resultset.trim(),dump.trim());
+//        String dumpColumnInfo = TextConvertor.dumpColumnInfo(toRelNode(schema));
+//        Assert.assertEquals(resultset.trim(),dumpColumnInfo.trim());
 //    }
 //
 //

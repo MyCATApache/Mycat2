@@ -15,11 +15,18 @@
 package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.RowIteratorUtil;
+import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.calcite.table.PreComputationSQLTable;
+import io.mycat.hbt.ColumnInfoRowMetaData;
 import io.mycat.hbt.RelNodeConvertor;
 import io.mycat.hbt.TextConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.upondb.MycatDBContext;
+import io.mycat.util.Explains;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.config.CalciteConnectionProperty;
@@ -62,6 +69,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -260,5 +268,24 @@ public enum MycatCalciteSupport implements Context {
         RelNode relNode = MycatCalciteSupport.INSTANCE.createPlanner(dataContext).convertToMycatRel(node);
         relNode.explain(planWriter);
         return sw.toString();
+    }
+
+
+    public  String dumpMetaData(RelDataType mycatRowMetaData) {
+        return RowIteratorUtil.dumpColumnInfo(convertToRowIterator(mycatRowMetaData));
+    }
+
+    public  RowBaseIterator convertToRowIterator(RelDataType mycatRowMetaData) {
+        return ColumnInfoRowMetaData.INSTANCE.convertToRowIterator(new CalciteRowMetaData(mycatRowMetaData.getFieldList()));
+    }
+    public  String dumpMetaData(MycatRowMetaData mycatRowMetaData) {
+        return RowIteratorUtil.dumpColumnInfo(ColumnInfoRowMetaData.INSTANCE.convertToRowIterator(mycatRowMetaData));
+    }
+
+
+    public String convertToHBTText(List<PreComputationSQLTable> tables) {
+        return tables.stream()
+                .map(preComputationSQLTable ->
+                        new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));
     }
 }

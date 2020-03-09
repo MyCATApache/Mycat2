@@ -69,7 +69,8 @@ public class ContextRunner {
 
     //inst command
     public static final String ERROR = "error";
-    public static final String EXPLAIN = "explainSql";
+    public static final String EXPLAIN = "explainSQL";
+    public static final String EXPLAIN_HBT = "explainPlan";
     public static final String DISTRIBUTED_QUERY = ("distributedQuery");
     public static final String EXECUTE_PLAN = ("plan");
     public static final String USE_STATEMENT = ("useStatement");
@@ -212,7 +213,6 @@ public class ContextRunner {
             }
 
 
-
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
 
@@ -241,17 +241,17 @@ public class ContextRunner {
                         MycatDBClientApi mycatDb = client.getMycatDb();
                         Iterator<RowBaseIterator> rowBaseIteratorIterator = mycatDb.executeSqls(explain);
                         ArrayList<MycatResponse> responses = new ArrayList<>();
-                       while (rowBaseIteratorIterator.hasNext()){
-                           RowBaseIterator next = rowBaseIteratorIterator.next();
-                           if (next instanceof UpdateRowIterator){
-                               UpdateRowIterator next1 = (UpdateRowIterator) next;
-                               next.next();
-                               responses.add( new MycatUpdateResponseImpl((int)next1.getUpdateCount(),next1.getLastInsertId(),mycatDb.getServerStatus()));
-                           }else {
-                               TextResultSetResponse next1 = new TextResultSetResponse(next);
-                               responses.add(next1);
-                           }
-                       }
+                        while (rowBaseIteratorIterator.hasNext()) {
+                            RowBaseIterator next = rowBaseIteratorIterator.next();
+                            if (next instanceof UpdateRowIterator) {
+                                UpdateRowIterator next1 = (UpdateRowIterator) next;
+                                next.next();
+                                responses.add(new MycatUpdateResponseImpl((int) next1.getUpdateCount(), next1.getLastInsertId(), mycatDb.getServerStatus()));
+                            } else {
+                                TextResultSetResponse next1 = new TextResultSetResponse(next);
+                                responses.add(next1);
+                            }
+                        }
                         SQLExecuterWriter.writeToMycatSession(mycat, responses);
                         mycatDb.recycleResource();//移除已经关闭的连接,
                     });
@@ -263,14 +263,8 @@ public class ContextRunner {
                 return () -> {
                     block(session, mycat -> {
                         MycatDBClientApi mycatDb = client.getMycatDb();
-                        writePlan( session,mycatDb.explain(context.getExplain()));
+                        writePlan(session, mycatDb.explain(context.getExplain()));
                         mycatDb.recycleResource();//移除已经关闭的连接,
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
-//                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
                     });
                     return;
                 };
@@ -303,12 +297,6 @@ public class ContextRunner {
                         RowBaseIterator rowBaseIterator = mycatDb.executeRel(context.getExplain());
                         SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)});
                         mycatDb.recycleResource();//移除已经关闭的连接,
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
-//                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
                     });
                     return;
                 };
@@ -318,42 +306,26 @@ public class ContextRunner {
         /**
          * 参数:接收的sql
          */
-//        COMMANDS.put(EXECUTE_PLAN, new Command() {
-//            @Override
-//            public Runnable apply(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder()
-//                                    .defaultSchema(connection.getRootSchema()).build();
-//                            DesRelNodeHandler desRelNodeHandler = new DesRelNodeHandler(config);
-//                            RelRunner runner = connection.unwrap(RelRunner.class);
-//                            String explainSql = context.getExplain();
-//                            PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(explainSql));
-//                            LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explainSql);
-//                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery()))});
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
-//                    });
-//                };
-//            }
-//
-//            @Override
-//            public Runnable explainSql(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
-//                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
-//                    });
-//                    return;
-//                };
-//            }
-//        });
+        COMMANDS.put(EXPLAIN_HBT, new Command() {
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
+                        MycatDBClientApi mycatDb = client.getMycatDb();
+                        String explain = context.getExplain();
+                        RowBaseIterator rowBaseIterator = mycatDb.executeRel(explain);
+                        SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)});
+                        mycatDb.recycleResource();//移除已经关闭的连接,
+                    });
+                };
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                throw new UnsupportedOperationException();
+            }
+
+        });
 
         /**
          * 参数:SCHEMA_NAME
@@ -660,7 +632,7 @@ public class ContextRunner {
             }
         });
         for (Map.Entry<String, Command> stringCommandEntry : COMMANDS.entrySet()) {
-            COMMANDS.put(stringCommandEntry.getKey().toLowerCase(),stringCommandEntry.getValue());
+            COMMANDS.put(stringCommandEntry.getKey().toLowerCase(), stringCommandEntry.getValue());
         }
 
     }

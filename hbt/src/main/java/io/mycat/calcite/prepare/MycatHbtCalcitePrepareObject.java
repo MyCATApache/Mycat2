@@ -7,7 +7,7 @@ import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.calcite.table.PreComputationSQLTable;
-import io.mycat.hbt.HBTConvertor;
+import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.upondb.PlanRunner;
@@ -48,7 +48,9 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
 
             @Override
             public List<String> explain() {
-                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT),null,
+                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT),
+                        MycatCalciteSupport.INSTANCE.convertToHBTText(preComputationSQLTables),
+                        MycatCalciteSupport.INSTANCE.dumpMetaData(relNode.getRowType()),
                         MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
                         MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode, mycatCalciteDataContext));
             }
@@ -57,7 +59,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
 
     private RelNode getRelNode(List<Object> params) {
         MycatCalcitePlanner planner1 = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
-        HBTConvertor hbtConvertor = new HBTConvertor( params,mycatCalciteDataContext);
+        HBTQueryConvertor hbtConvertor = new HBTQueryConvertor( params,mycatCalciteDataContext);
 
         RelNode handle = hbtConvertor.handle(schema);
         this.preComputationSQLTables = planner1.preComputeSeq(handle);

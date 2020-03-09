@@ -15,24 +15,29 @@
 package io.mycat.calcite.resultset;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
+import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 
 import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author Junwen Chen
  **/
 public class CalciteRowMetaData  implements MycatRowMetaData {
-    final List<RelDataTypeField> fieldList;
+    final ArrayList<RelDataTypeField> fieldList;
 
     public CalciteRowMetaData(List<RelDataTypeField> fieldList) {
-        this.fieldList = fieldList;
+        ArrayList<RelDataTypeField> objects = new ArrayList<>();
+        objects.add(null);
+        objects.addAll(fieldList);
+        this.fieldList = objects;
     }
 
     @Override
     public int getColumnCount() {
-        return fieldList.size();
+        return fieldList.size()-1;
     }
 
     @Override
@@ -45,8 +50,10 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
         return false;
     }
     @Override
-    public int isNullable(int column) {
-        return getColumn(column).getType().isNullable() ? ResultSetMetaData.columnNullable : ResultSetMetaData.columnNoNulls;
+    public boolean isNullable(int column) {
+        RelDataTypeField column1 = getColumn(column);
+        RelDataType type = column1.getType();
+        return type.isNullable();
     }
 
 
@@ -100,6 +107,6 @@ public class CalciteRowMetaData  implements MycatRowMetaData {
         return null;
     }
     private RelDataTypeField getColumn(int column) {
-        return fieldList.get(column-1);
+        return fieldList.get(column);
     }
 };

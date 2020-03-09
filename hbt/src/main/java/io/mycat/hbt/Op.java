@@ -27,7 +27,7 @@ public enum Op {
     MINUS_DISTINCT("minusDistinct"),
     INTERSECT_DISTINCT("intersectDistinct"),
     INTERSECT_ALL("intersectAll"),
-//    ORDER_ITEM("orderItem"),
+    //    ORDER_ITEM("orderItem"),
     //relational operators
     FROM_TABLE("fromTable"),
     MERGE_MODIFY("mergeModify"),
@@ -51,8 +51,7 @@ public enum Op {
     FULL_JOIN("fillJoin"),
     SEMI_JOIN("semiJoin"),
     ANTI_JOIN("antiJoin"),
-//    CORRELATE("correlate"),
-
+    //    CORRELATE("correlate"),
     // types
     SCHEMA("schema"),
     FIELD_SCHEMA("fieldSchema"),
@@ -63,8 +62,7 @@ public enum Op {
     PROPERTY("property"),
 
     //debug
-    DESCRIBE("describe"),
-    DUMP("dump"),
+    EXPLAIN("explain"),
 
     // operators
     DOT("dot"),
@@ -79,11 +77,11 @@ public enum Op {
     AND("and"),
     OR("or"),
     NOT("not"),
-    AS_COLUMNNAME("as"),
+    AS_COLUMN_NAME("as"),
     CAST("cast"),
     FUN("fun"),
     REF("ref"),
-    AggregateCall("aggregateCall"),
+    AGGREGATE_CALL("aggregateCall"),
     REGULAR("regular"),
     PARAM("param"),
     ;

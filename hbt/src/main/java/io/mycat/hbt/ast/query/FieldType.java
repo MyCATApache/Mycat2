@@ -17,12 +17,14 @@ package io.mycat.hbt.ast.query;
 import io.mycat.hbt.Op;
 import io.mycat.hbt.ast.base.Node;
 import io.mycat.hbt.ast.base.NodeVisitor;
+import lombok.Builder;
 import lombok.Data;
 
 /**
  * @author jamie12221
  **/
 @Data
+@Builder
 public class FieldType extends Node {
     final String id;
     final String type;

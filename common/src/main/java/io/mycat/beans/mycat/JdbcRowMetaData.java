@@ -18,6 +18,9 @@ import io.mycat.MycatException;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+
+import static java.sql.DatabaseMetaData.columnNullable;
+
 /**
  * @author Junwen Chen
  **/
@@ -60,9 +63,9 @@ public class JdbcRowMetaData implements MycatRowMetaData {
   }
 
   @Override
-  public int isNullable(int column) {
+  public boolean isNullable(int column) {
     try {
-      return resultSetMetaData.isNullable(column);
+      return resultSetMetaData.isNullable(column)==columnNullable;
     } catch (SQLException e) {
       throw new MycatException(toMessage(e));
     }

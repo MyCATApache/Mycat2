@@ -13,6 +13,7 @@ import java.util.List;
 public class Explains {
     final String sql;
     final String prepareCompute;
+    final String resultSetRowType;
     final String hbt;
     final String rel;
 
@@ -32,14 +33,15 @@ public class Explains {
         }
     }
 
-    public Explains(String sql,String prepareCompute, String hbt, String rel) {
+    public Explains(String sql,String prepareCompute,String resultSetRowType, String hbt, String rel) {
         this.sql = sql;
         this.prepareCompute = prepareCompute;
+        this.resultSetRowType = resultSetRowType;
         this.hbt = hbt;
         this.rel = rel;
     }
-   public static List<String> explain(String sql,String prepareCompute, String hbt, String rel){
-       return new Explains(sql,prepareCompute, hbt, rel).explain();
+   public static List<String> explain(String sql,String prepareCompute,String resultSetRowType, String hbt, String rel){
+       return new Explains(sql,prepareCompute,resultSetRowType, hbt, rel).explain();
     }
 
     List<String> explain(){
@@ -52,6 +54,11 @@ public class Explains {
             list.add("");
             list.add("prepareCompute:");
             list.addAll(Arrays.asList(prepareCompute.split("\n")));
+        }
+        if (!StringUtil.isEmpty(resultSetRowType)) {
+            list.add("");
+            list.add("resultSetRowType:");
+            list.addAll(Arrays.asList(resultSetRowType.split("\n")));
         }
         if (!StringUtil.isEmpty(hbt)) {
             list.add("");

@@ -347,7 +347,7 @@ public class RelNodeConvertor {
             String outName = outputRel.get(i).getName();
             Identifier identifier = new Identifier(outName);
             if (!expr1.equals(identifier)) {
-                expr1 = new Expr(Op.AS_COLUMNNAME, Arrays.asList(expr1, identifier));
+                expr1 = new Expr(Op.AS_COLUMN_NAME, Arrays.asList(expr1, identifier));
             }
             outExpr.add(expr1);
         }

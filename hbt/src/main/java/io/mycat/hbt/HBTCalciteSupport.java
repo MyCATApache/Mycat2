@@ -203,4 +203,5 @@ public enum HBTCalciteSupport {
 
     public Map<String, HBTParser.Precedence> getOperators() {
         return operators;
-    }}
+    }
+}

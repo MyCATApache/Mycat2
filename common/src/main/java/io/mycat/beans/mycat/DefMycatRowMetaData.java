@@ -3,9 +3,6 @@ package io.mycat.beans.mycat;
 import java.sql.ResultSetMetaData;
 import java.util.List;
 
-import static java.sql.ResultSetMetaData.columnNoNulls;
-import static java.sql.ResultSetMetaData.columnNullable;
-
 
 
 /**
@@ -34,8 +31,8 @@ public class DefMycatRowMetaData implements MycatRowMetaData {
     }
 
     @Override
-    public int isNullable(int column) {
-        return columnInfos.get(column).isNullable()?columnNullable:columnNoNulls;
+    public boolean isNullable(int column) {
+        return columnInfos.get(column).isNullable();
     }
 
     @Override

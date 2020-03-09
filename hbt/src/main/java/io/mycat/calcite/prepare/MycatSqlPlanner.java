@@ -24,10 +24,10 @@ import io.mycat.upondb.PlanRunner;
 import io.mycat.util.Explains;
 import lombok.SneakyThrows;
 import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * @author Junwen Chen
@@ -50,16 +50,14 @@ public class MycatSqlPlanner implements PlanRunner {
     }
 
     public List<String> explain() {
-        String collect = preComputationSQLTables.stream()
-                .map(preComputationSQLTable ->
-                        new Explains.PrepareCompute(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), preComputationSQLTable.params()).toString()).collect(Collectors.joining(",\n"));
-
-
+        RelDataType rowType = relNode.getRowType();
         return Explains.explain(prepare.getSql(),
-                collect,
+                MycatCalciteSupport.INSTANCE.convertToHBTText(preComputationSQLTables),
+                MycatCalciteSupport.INSTANCE.dumpMetaData(rowType),
                 MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
                 MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(this.relNode, mycatCalciteDataContext));
     }
+
 
     @Override
     public RowBaseIterator run() {

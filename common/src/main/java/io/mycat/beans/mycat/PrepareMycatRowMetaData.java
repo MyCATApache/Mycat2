@@ -26,8 +26,8 @@ public class PrepareMycatRowMetaData implements MycatRowMetaData {
     }
 
     @Override
-    public int isNullable(int column) {
-        return 0;
+    public boolean isNullable(int column) {
+        return true;
     }
 
     @Override

@@ -37,7 +37,7 @@ public class AggregateCall extends Node {
        this(function,null,operands,null,null,null,null,null);
     }
     public AggregateCall(String function, String alias, List<Expr> operands, Boolean distinct, Boolean approximate, Boolean ignoreNulls, Expr filter, List<OrderItem> orderKeys) {
-        super(Op.AggregateCall);
+        super(Op.AGGREGATE_CALL);
         this.function = function;
         this.distinct = distinct;
         this.approximate = approximate;

@@ -238,7 +238,7 @@ public class ExplainVisitor implements NodeVisitor {
         if (expr instanceof Fun) {
             Fun fun = (Fun) expr;
             functionName = (fun.getFunctionName());
-        } else if (expr.op == Op.AS_COLUMNNAME) {
+        } else if (expr.op == Op.AS_COLUMN_NAME) {
             functionName = ("as");
         } else if (expr.op == Op.CAST) {
             functionName = ("cast");
@@ -478,6 +478,15 @@ public class ExplainVisitor implements NodeVisitor {
     @Override
     public void visit(Param param) {
         append("?");
+    }
+
+    @Override
+    public void visit(CommandSchema commandSchema) {
+        String fun = commandSchema.getOp().getFun();
+        append(fun);
+        append("(");
+        commandSchema.getSchema().accept(this);
+        append(")");
     }
 
 

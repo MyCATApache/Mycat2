@@ -17,17 +17,11 @@ import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
-import io.mycat.beans.mycat.UpdateRowMetaData;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.prepare.*;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.hbt.SchemaConvertor;
+import io.mycat.hbt.HBTRunners;
 import io.mycat.hbt.TextUpdateInfo;
-import io.mycat.hbt.ast.base.Schema;
-import io.mycat.hbt.ast.modify.MergeModify;
-import io.mycat.hbt.ast.modify.ModifyFromSql;
-import io.mycat.hbt.parser.HBTParser;
-import io.mycat.hbt.parser.ParseNode;
 import io.mycat.metadata.MetadataManager;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -138,7 +132,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
     @Override
     public UpdateRowIterator update(String sql, MycatDBContext dbContext) {
-        return (UpdateRowIterator)prepare(sql,null,dbContext).plan(Collections.emptyList()).run();
+        return (UpdateRowIterator) prepare(sql, null, dbContext).plan(Collections.emptyList()).run();
     }
 
     @Override
@@ -146,30 +140,32 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         Iterator<RowBaseIterator> rowBaseIteratorIterator = executeSqls(sql, dbContext);
         long lastInsertId = 0;
         long updateCount = 0;
-        while (rowBaseIteratorIterator.hasNext()){
+        while (rowBaseIteratorIterator.hasNext()) {
             RowBaseIterator next = rowBaseIteratorIterator.next();
-            if (next instanceof UpdateRowIterator){
+            if (next instanceof UpdateRowIterator) {
                 UpdateRowIterator next1 = (UpdateRowIterator) next;
                 lastInsertId += next1.getLastInsertId();
-                updateCount  += next1.getUpdateCount();
+                updateCount += next1.getUpdateCount();
             }
         }
-        return new UpdateRowIterator(updateCount,lastInsertId);
+        return new UpdateRowIterator(updateCount, lastInsertId);
     }
 
     @Override
     public RowBaseIterator executeRel(String hbt, MycatDBContext dbContext) {
-        return prepareHbt(hbt, null, dbContext).plan(Collections.emptyList()).run();
+        HBTRunners hbtRunners = new HBTRunners(dbContext);
+        return hbtRunners.run(hbt);
     }
 
     @Override
     public List<String> explain(String sql, MycatDBContext dbContext) {
-        return explainSqlAsListString(sql,dbContext);
+        return explainSqlAsListString(sql, dbContext);
     }
 
     @Override
     public List<String> explainRel(String sql, MycatDBContext dbContext) {
-        return prepareHbt(sql, null, dbContext).plan(Collections.emptyList()).explain();
+        HBTRunners hbtRunners = new HBTRunners(dbContext);
+        return hbtRunners.prepareHBT(null, sql).plan(Collections.emptyList()).explain();
     }
 
     @NotNull
@@ -207,7 +203,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         boolean ddl = sqlStatement instanceof SQLSelectStatement || sqlStatement instanceof MySqlInsertStatement
                 || sqlStatement instanceof MySqlUpdateStatement || sqlStatement instanceof MySqlDeleteStatement;
         if (ddl) {
-            return prepare(sql,null,null,  dbContext);
+            return prepare(sql, null, null, dbContext);
         }
         if (sqlStatement instanceof SQLCommitStatement) return commit(sql, dbContext);
         if (sqlStatement instanceof SQLRollbackStatement) return (rollback(sql, dbContext));
@@ -296,6 +292,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         PrepareObject prepare = prepare(sql, uponDBContext);
         return prepare.plan(Collections.emptyList()).explain();
     }
+
     public RowBaseIterator explainSql(String sql, MycatDBContext uponDBContext) {
         List<String> explain = explainSqlAsListString(sql, uponDBContext);
         ResultSetBuilder resultSetBuilder = ResultSetBuilder.create();
@@ -316,14 +313,6 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         return null;
     }
 
-    public PrepareObject prepareHbt(String hbt, Long id, MycatDBContext dbContext) {
-        HBTParser hbtParser = new HBTParser(hbt);
-        List<ParseNode> parseNodes = hbtParser.statementList();
-        if (parseNodes.size() != 1) {
-            throw new UnsupportedOperationException();
-        }
-        return complieHBT(parseNodes.get(0), id, hbtParser.getParamCount(), dbContext);
-    }
 
     @NotNull
     private MycatSQLPrepareObject complieQuery(String sql, Long id, SQLStatement
@@ -344,34 +333,6 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         return new MycatCalciteSQLPrepareObject(id, sql, sqlNode, parameterRowType, resultRowType, forUpdate, dataContext);
     }
 
-
-    private MycatHbtPrepareObject complieMergeModify(Long id, int paramCount, MergeModify mergeModify, MycatDBContext dbContext) {
-        return new MycatHbtPrepareObject(id, paramCount) {
-            @Override
-            public MycatRowMetaData resultSetRowType() {
-                return UpdateRowMetaData.INSTANCE;
-            }
-
-            @Override
-            public PlanRunner plan(List<Object> params) {
-                return new MycatTextUpdatePrepareObject(id, paramCount, (mycatTextUpdatePrepareObject, list) -> {
-                    Iterator<ModifyFromSql> iterator = mergeModify.getList().iterator();
-                    return new Iterator<TextUpdateInfo>() {
-                        @Override
-                        public boolean hasNext() {
-                            return iterator.hasNext();
-                        }
-
-                        @Override
-                        public TextUpdateInfo next() {
-                            ModifyFromSql next = iterator.next();
-                            return TextUpdateInfo.create(next.getTargetName(), Collections.singletonList(next.getSql()));
-                        }
-                    };
-                }, dbContext).plan(params);
-            }
-        };
-    }
 
     @NotNull
     private MycatSQLPrepareObject getMycatPrepareObject(
@@ -394,27 +355,6 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
     }
 
-    private MycatHbtPrepareObject complieHBT(ParseNode parseNode, Long id, int paramCount, MycatDBContext dbContext) {
-        SchemaConvertor schemaConvertor = new SchemaConvertor();
-        Schema originSchema = schemaConvertor.transforSchema(parseNode);
-        MycatHbtPrepareObject prepareObject = null;
-        switch (originSchema.getOp()) {
-            case MODIFY_FROM_SQL: {
-                ModifyFromSql originSchema1 = (ModifyFromSql) originSchema;
-                MergeModify mergeModify = new MergeModify(Collections.singleton(originSchema1));
-                prepareObject = complieMergeModify(id, paramCount, mergeModify, dbContext);
-                break;
-            }
-            case MERGE_MODIFY: {
-                MergeModify originSchema1 = (MergeModify) originSchema;
-                prepareObject = complieMergeModify(id, paramCount, originSchema1, dbContext);
-                break;
-            }
-            default:
-                prepareObject = new MycatHbtCalcitePrepareObject(id, paramCount, originSchema, dbContext);
-        }
-        return prepareObject;
-    }
 
     @NotNull
     private int getVariantRefCount(SQLStatement sqlStatement) {

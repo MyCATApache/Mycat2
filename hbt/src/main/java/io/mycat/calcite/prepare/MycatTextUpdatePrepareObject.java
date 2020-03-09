@@ -53,7 +53,7 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
             @Override
             public List<String> explain() {
                 MergeModify mergeModify = getMergeModify(params);
-                return Explains.explain(null,null, MycatCalciteSupport.INSTANCE.convertToHBTText(mergeModify),null);
+                return Explains.explain(null,null,MycatCalciteSupport.INSTANCE.dumpMetaData(resultSetRowType()), MycatCalciteSupport.INSTANCE.convertToHBTText(mergeModify),null);
             }
 
             @Override

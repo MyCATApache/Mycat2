@@ -27,7 +27,6 @@ import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.rules.PushDownLogicTable;
 import io.mycat.calcite.table.MycatLogicTable;
-import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.metadata.LogicTable;
@@ -66,7 +65,7 @@ import static io.mycat.hbt.Op.*;
 /**
  * @author jamie12221
  **/
-public class HBTConvertor {
+public class HBTQueryConvertor {
     private final MycatRelBuilder relBuilder;
     private final Map<String, RexCorrelVariable> correlVariableMap = new HashMap<>();
     private int joinCount;
@@ -75,11 +74,11 @@ public class HBTConvertor {
     private MycatCalciteDataContext context;
     private final Map<String, RelDataType> targetRelDataType = new HashMap<>();
 
-    public HBTConvertor(MycatCalciteDataContext context) {
+    public HBTQueryConvertor(MycatCalciteDataContext context) {
         this(Collections.emptyList(), context);
     }
 
-    public HBTConvertor(List<Object> params, MycatCalciteDataContext context) {
+    public HBTQueryConvertor(List<Object> params, MycatCalciteDataContext context) {
         this.relBuilder = MycatRelBuilder.create(context);
         this.params = params;
         this.relBuilder.clear();
@@ -259,12 +258,12 @@ public class HBTConvertor {
             ArrayList<RelNode> nodes = new ArrayList<>(schemas.size());
             HashSet<String> set = new HashSet<>();
             for (Schema schema : schemas) {
-                HBTConvertor queryOp = new HBTConvertor(params, context);
+                HBTQueryConvertor queryOp = new HBTQueryConvertor(params, context);
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
-//                if (!set.addAll(fieldNames)) {
-//                    throw new UnsupportedOperationException();
-//                }
+                if (!set.addAll(fieldNames)) {
+                    throw new UnsupportedOperationException();
+                }
                 nodes.add(relNode);
             }
             for (RelNode relNode : nodes) {
@@ -478,7 +477,7 @@ public class HBTConvertor {
                 return relBuilder.literal(node1.getValue());
             }
             default: {
-                if (node.op == AS_COLUMNNAME) {
+                if (node.op == AS_COLUMN_NAME) {
                     return as(node);
                 } else if (node.op == REF) {
                     return ref(node);
@@ -530,8 +529,8 @@ public class HBTConvertor {
         return typeFactory.createSqlType(HBTCalciteSupport.INSTANCE.getSqlTypeName(typeText));
     }
 
-    private RelDataType toType(String typeText, boolean nullable, Integer precision, Integer scale) {
-        final RelDataTypeFactory typeFactory = relBuilder.getTypeFactory();
+    public static RelDataType toType(String typeText, boolean nullable, Integer precision, Integer scale) {
+        final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
         SqlTypeName sqlTypeName = HBTCalciteSupport.INSTANCE.getSqlTypeName(typeText);
         RelDataType sqlType = null;
         if (precision != null && scale != null) {
@@ -550,8 +549,8 @@ public class HBTConvertor {
         return typeFactory.createTypeWithNullability(sqlType, nullable);
     }
 
-    private RelDataType toType(List<FieldType> fieldSchemaList) {
-        final RelDataTypeFactory typeFactory = relBuilder.getTypeFactory();
+    public static RelDataType toType(List<FieldType> fieldSchemaList) {
+        final RelDataTypeFactory typeFactory = MycatCalciteSupport.INSTANCE.TypeFactory;
         final RelDataTypeFactory.Builder builder = typeFactory.builder();
         for (FieldType fieldSchema : fieldSchemaList) {
             boolean nullable = fieldSchema.isNullable();

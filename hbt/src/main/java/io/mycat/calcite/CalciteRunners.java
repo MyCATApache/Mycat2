@@ -50,8 +50,10 @@ public class CalciteRunners {
             ArrayBindable bindable1 = Interpreters.bindable(relNode);
             Enumerator<Object[]> enumerator = bindable1.bind(dataContext).enumerator();
             return () -> {
-                for (PreComputationSQLTable preComputationSQLTable : preComputationSQLTables) {
-                    dataContext.preComputation(preComputationSQLTable);
+                if (preComputationSQLTables != null) {
+                    for (PreComputationSQLTable preComputationSQLTable : preComputationSQLTables) {
+                        dataContext.preComputation(preComputationSQLTable);
+                    }
                 }
                 return new EnumeratorRowIterator(mycatRowMetaData, enumerator);
             };

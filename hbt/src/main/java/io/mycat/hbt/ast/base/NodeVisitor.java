@@ -67,4 +67,6 @@ public interface NodeVisitor {
     void visit(MergeModify mergeModify);
 
     void visit(Param param);
+
+    void visit(CommandSchema commandSchema);
 }
