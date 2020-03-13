@@ -16,7 +16,7 @@ package io.mycat.calcite;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.PreComputationSQLTable;
@@ -80,7 +80,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
                 .put(Variable.STDIN.camelName, System.in)
                 .put(Variable.STDOUT.camelName, System.out)
                 .put(Variable.STDERR.camelName, System.err)
-                .put(Variable.CANCEL_FLAG.camelName, uponDBContext.cancleFlag());
+                .put(Variable.CANCEL_FLAG.camelName, uponDBContext.cancelFlag());
         return builder.build();
     }
 
@@ -130,7 +130,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
         }
     }
 
-    public UpdateRowIterator getUpdateRowIterator(String targetName, List<String> sqls) {
+    public UpdateRowIteratorResponse getUpdateRowIterator(String targetName, List<String> sqls) {
         return uponDBContext.update(targetName, sqls);
     }
 

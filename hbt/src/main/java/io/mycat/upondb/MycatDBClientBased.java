@@ -2,7 +2,7 @@ package io.mycat.upondb;
 
 import io.mycat.Identical;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.metadata.LogicTable;
 
 import java.util.List;
@@ -25,13 +25,13 @@ public interface MycatDBClientBased {
 
     RowBaseIterator prepareQuery(String targetName, String sql, List<Object> params);
 
-    UpdateRowIterator prepareUpdate(String targetName, String sql, List<Object> params);
+    UpdateRowIteratorResponse prepareUpdate(String targetName, String sql, List<Object> params);
 
-    UpdateRowIterator update(String targetName, String sql);
+    UpdateRowIteratorResponse update(String targetName, String sql);
 
     RowBaseIterator query(String targetName, String sql);
 
-    UpdateRowIterator update(String targetName, List<String> sqls);
+    UpdateRowIteratorResponse update(String targetName, List<String> sqls);
 
     void begin();
 
@@ -49,5 +49,5 @@ public interface MycatDBClientBased {
 
     void close();
 
-    AtomicBoolean cancleFlag();
+    AtomicBoolean cancelFlag();
 }

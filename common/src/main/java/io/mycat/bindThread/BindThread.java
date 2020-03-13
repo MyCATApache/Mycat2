@@ -36,8 +36,6 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
         this.manager = manager;
     }
 
-    protected abstract boolean continueBind();
-
     void run(KEY key, PROCESS processTask) {
         Objects.requireNonNull(key);
         if (!blockingDeque.isEmpty() && this.key != null) {
@@ -72,7 +70,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
                         processJob(exception, callback);
                     }
                     boolean bind = false;
-                    if (this.key != null && this.key.checkOkInBind() && !(bind = continueBind())) {
+                    if (this.key != null && this.key.isRunning() && !(bind = this.key.continueBind())) {
                         recycleTransactionThread();
                     } else if (this.key == null && bind) {
                         throw new RuntimeException("unknown state");
@@ -104,7 +102,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     }
 
     public void recycleTransactionThread() {
-        if (!continueBind()) {
+        if (!this.key.continueBind()) {
             manager.map.remove(this.key);
             this.key = null;
             if (!manager.idleList.offer(this)) {

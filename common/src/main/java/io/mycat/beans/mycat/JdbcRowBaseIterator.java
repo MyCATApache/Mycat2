@@ -21,9 +21,8 @@ import io.mycat.logTip.MycatLoggerFactory;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.sql.Date;
 import java.sql.*;
-import java.util.*;
+import java.util.Objects;
 
 /**
  * @author Junwen Chen
@@ -243,22 +242,6 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
         }
     }
 
-    public List<Map<String, Object>> getResultSetMap() {
-        return getResultSetMap(this);
-    }
 
-    private List<Map<String, Object>> getResultSetMap(JdbcRowBaseIterator iterator) {
-        MycatRowMetaData metaData = iterator.metaData();
-        int columnCount = metaData.getColumnCount();
-        List<Map<String, Object>> resultList = new ArrayList<>();
-        while (iterator.next()) {
-            HashMap<String, Object> row = new HashMap<>(columnCount);
-            for (int i = 1; i <= columnCount; i++) {
-                row.put(metaData.getColumnName(i), iterator.getObject(i));
-            }
-            resultList.add(row);
-        }
-        return resultList;
-    }
 
 }

@@ -1,15 +1,12 @@
 package io.mycat.api.collector;
 
-import io.mycat.beans.resultset.MycatUpdateResponse;
-import io.mycat.beans.resultset.MycatUpdateResponseImpl;
-
 import java.util.Iterator;
 
-public class MergeUpdateRowIterator extends UpdateRowIterator {
-    private Iterator<UpdateRowIterator> iteratorIterator;
+public class MergeUpdateRowIterator extends UpdateRowIteratorResponse {
+    private Iterator<UpdateRowIteratorResponse> iteratorIterator;
 
-    public MergeUpdateRowIterator(Iterator<UpdateRowIterator> iteratorIterator) {
-        super(0, 0);
+    public MergeUpdateRowIterator(Iterator<UpdateRowIteratorResponse> iteratorIterator,int serverStatus) {
+        super(0, 0, serverStatus);
         this.iteratorIterator = iteratorIterator;
     }
 
@@ -18,7 +15,7 @@ public class MergeUpdateRowIterator extends UpdateRowIterator {
         if (!next) {
             next = true;
             while (iteratorIterator.hasNext()) {
-                try (UpdateRowIterator next = iteratorIterator.next()) {
+                try (UpdateRowIteratorResponse next = iteratorIterator.next()) {
                     this.updateCount += next.getUpdateCount();
                     this.lastInsertId += next.getLastInsertId();
                 }
@@ -29,8 +26,4 @@ public class MergeUpdateRowIterator extends UpdateRowIterator {
         }
     }
 
-    MycatUpdateResponse nextToMycatUpdateResponse(int serverstatus) {
-        next();
-        return new MycatUpdateResponseImpl((int) this.updateCount, this.lastInsertId, serverstatus);
-    }
 }

@@ -2,9 +2,8 @@ package io.mycat.lib.impl;
 
 import io.mycat.MycatException;
 import io.mycat.beans.resultset.MycatResultSetResponse;
-import io.mycat.pattern.DynamicSQLMatcher;
 import io.mycat.proxy.MySQLPacketUtil;
-import io.mycat.proxy.handler.MycatHandler;
+import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.ProcessState;
@@ -62,7 +61,7 @@ public class TransforFileLib {
     /**
      * 前端写入处理器
      */
-    public static class WriteHandler implements MycatHandler.MycatSessionWriteHandler {
+    public static class WriteHandler implements MycatSessionWriteHandler {
         final MycatSession session;
         final String file;
         final FileChannel fileChannel;
@@ -116,6 +115,16 @@ public class TransforFileLib {
             }
             MycatMonitor.onMycatServerWriteException(session, e);
             session.resetPacket();
+        }
+
+        @Override
+        public void onLastPacket(MycatSession session) {
+
+        }
+
+        @Override
+        public WriteType getType() {
+            return WriteType.PROXY;
         }
 
     }

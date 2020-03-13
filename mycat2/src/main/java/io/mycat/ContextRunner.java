@@ -15,17 +15,14 @@
 package io.mycat;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
-import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
-import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
-import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.lib.impl.JdbcLib;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
@@ -33,6 +30,8 @@ import io.mycat.metadata.MetadataManager;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
+import io.mycat.resultset.TextResultSetResponse;
+import io.mycat.runtime.TransactionSessionUtil;
 import io.mycat.upondb.MycatDBClientApi;
 import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
@@ -203,7 +202,7 @@ public class ContextRunner {
                         explain = explain.substring(0, explain.length() - 1);
                     }
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-                    MycatDBClientMediator client1 = MycatDBs.createClient();
+                    MycatDBClientMediator client1 = MycatDBs.createClient(session.unwrap(MycatDataContext.class));
                     client1.useSchema(defaultSchema);
                     RowBaseIterator query = client1.query(explain);
                     TextResultSetResponse connection = new TextResultSetResponse(query);
@@ -220,7 +219,7 @@ public class ContextRunner {
                 String command = context.getExplain();
 
                 return () -> block(session, mycat -> {
-                    MycatDBClientMediator client1 = MycatDBs.createClient();
+                    MycatDBClientMediator client1 = MycatDBs.createClient(session.unwrap(MycatDataContext.class));
                     client1.useSchema(defaultSchema);
                     PrepareObject prepare = client1.prepare(command);
                     List<String> explain = prepare.plan(Collections.emptyList()).explain();
@@ -243,10 +242,10 @@ public class ContextRunner {
                         ArrayList<MycatResponse> responses = new ArrayList<>();
                         while (rowBaseIteratorIterator.hasNext()) {
                             RowBaseIterator next = rowBaseIteratorIterator.next();
-                            if (next instanceof UpdateRowIterator) {
-                                UpdateRowIterator next1 = (UpdateRowIterator) next;
+                            if (next instanceof UpdateRowIteratorResponse) {
+                                UpdateRowIteratorResponse next1 = (UpdateRowIteratorResponse) next;
                                 next.next();
-                                responses.add(new MycatUpdateResponseImpl((int) next1.getUpdateCount(), next1.getLastInsertId(), mycatDb.getServerStatus()));
+                                responses.add(new UpdateRowIteratorResponse((int) next1.getUpdateCount(), next1.getLastInsertId(), mycatDb.getServerStatus()));
                             } else {
                                 TextResultSetResponse next1 = new TextResultSetResponse(next);
                                 responses.add(next1);
@@ -499,8 +498,8 @@ public class ContextRunner {
                             }
                         case JDBC_TRANSACTION_TYPE:
                             block(session, mycat -> {
-                                TransactionSessionUtil.rollback();
-                                session.setInTranscation(false);
+                                TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+                                transactionSession.rollback();
                                 LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
                                 mycat.writeOkEndPacket();
                             });
@@ -539,7 +538,8 @@ public class ContextRunner {
                             }
                         case JDBC_TRANSACTION_TYPE:
                             block(session, mycat -> {
-                                TransactionSessionUtil.commit();
+                                TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+                                transactionSession.commit();
                                 LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
                                 session.setInTranscation(false);
                                 mycat.writeOkEndPacket();
@@ -586,17 +586,18 @@ public class ContextRunner {
                     String[] strings = checkThenGetOne(tasks);
                     return () -> {
                         MySQLTaskUtil.proxyBackendByTargetName(session, strings[0], strings[1],
-                                MySQLTaskUtil.TransactionSyncType.create(session.getAutoCommit(), session.isInTransaction()),
+                                MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
                                 session.getIsolation(), details.executeType.isMaster(), balance);
                     };
                 } else {
                     return () -> {
                         block(session, mycat -> {
+                                    TransactionSession transactionSession = session.getDataContext().getTransactionSession();
                                     if (needStartTransaction) {
                                         LOGGER.debug("session id:{} startTransaction", session.sessionId());
                                         // TransactionSessionUtil.reset();
-                                        TransactionSessionUtil.setIsolation(isolation.getJdbcValue());
-                                        TransactionSessionUtil.begin();
+                                        transactionSession.setTransactionIsolation(isolation.getJdbcValue());
+                                        transactionSession.begin();
                                         session.setInTranscation(true);
                                     }
 //                                    else if (!session.isInTransaction()) {
@@ -607,15 +608,16 @@ public class ContextRunner {
                                         case QUERY_MASTER:
                                         case QUERY: {
                                             Map<String, List<String>> backendTableInfos = details.targets;
+
                                             String[] infos = checkThenGetOne(backendTableInfos);
-                                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(infos[0], infos[1]));
+                                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession,infos[0], infos[1]));
                                             return;
                                         }
 
                                         case INSERT:
                                         case UPDATE:
 //                                        case BROADCAST_UPDATE:
-                                            writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(tasks, true));
+                                            writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession,tasks, true));
                                             return;
                                     }
                                     throw new IllegalArgumentException();

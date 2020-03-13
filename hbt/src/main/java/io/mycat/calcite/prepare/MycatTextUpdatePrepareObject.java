@@ -2,7 +2,7 @@ package io.mycat.calcite.prepare;
 
 import io.mycat.api.collector.MergeUpdateRowIterator;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.PrepareMycatRowMetaData;
 import io.mycat.beans.mycat.UpdateRowMetaData;
@@ -59,18 +59,18 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
             @Override
             public RowBaseIterator run() {
                 Iterator<TextUpdateInfo> iterator = textUpdateInfoProvider.apply(MycatTextUpdatePrepareObject.this, params);
-                return new MergeUpdateRowIterator(new Iterator<UpdateRowIterator>() {
+                return new MergeUpdateRowIterator(new Iterator<UpdateRowIteratorResponse>() {
                     @Override
                     public boolean hasNext() {
                         return iterator.hasNext();
                     }
 
                     @Override
-                    public UpdateRowIterator next() {
+                    public UpdateRowIteratorResponse next() {
                         TextUpdateInfo next = iterator.next();
                         return dbContext.update(next.targetName(),next.sqls());
                     }
-                });
+                },dbContext.getServerStatus());
             }
         };
     }

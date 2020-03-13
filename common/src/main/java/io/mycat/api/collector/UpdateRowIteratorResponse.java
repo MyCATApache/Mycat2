@@ -2,7 +2,7 @@ package io.mycat.api.collector;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.UpdateRowMetaData;
-import lombok.Getter;
+import io.mycat.beans.resultset.MycatUpdateResponse;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -10,17 +10,17 @@ import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
 
-@Getter
-public class UpdateRowIterator implements RowBaseIterator {
+
+public class UpdateRowIteratorResponse implements RowBaseIterator, MycatUpdateResponse {
     protected boolean next = false;
     protected long updateCount;
     protected long lastInsertId;
+    public final int serverStatus;
 
-   public final static UpdateRowIterator EMPTY = new UpdateRowIterator(0, 0);
-
-    public UpdateRowIterator(long updateCount, long lastInsertId) {
+    public UpdateRowIteratorResponse(long updateCount, long lastInsertId, int serverStatus) {
         this.updateCount = updateCount;
         this.lastInsertId = lastInsertId;
+        this.serverStatus = serverStatus;
         this.next = false;
     }
 
@@ -134,5 +134,20 @@ public class UpdateRowIterator implements RowBaseIterator {
     @Override
     public BigDecimal getBigDecimal(int columnIndex) {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long getUpdateCount() {
+        return updateCount;
+    }
+
+    @Override
+    public long getLastInsertId() {
+        return lastInsertId;
+    }
+
+    @Override
+    public int serverStatus() {
+        return serverStatus;
     }
 }

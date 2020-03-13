@@ -12,12 +12,10 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.datasource.jdbc.thread;
+package io.mycat.thread;
 
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
-import io.mycat.datasource.jdbc.datasource.TransactionSession;
-import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
 import io.mycat.proxy.session.Session;
 
 /**
@@ -28,11 +26,8 @@ public abstract class GProcess<T extends BindThreadKey & Session> implements Bin
     @Override
     public void accept(T key, GThread context) {
         context.setCurSession(key);
-        TransactionSession transactionSession = TransactionSessionUtil.currentTransactionSession();
-        transactionSession.bind(key.getUniqueName(),key.bindArg());
-        accept(key, transactionSession);
-        transactionSession.onEndOfResponse();
+        accept(key);
     }
 
-    public abstract void accept(T key, TransactionSession session);
+    public abstract void accept(T key);
 }

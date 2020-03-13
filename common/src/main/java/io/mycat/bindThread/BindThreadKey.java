@@ -21,11 +21,7 @@ public interface BindThreadKey {
 
     boolean equals(Object obj);
 
-    boolean checkOkInBind();
+    boolean isRunning();
 
-    String getUniqueName();
-
-    <T> T bindArg();
-
-    String DEFAULT = "default";
+    boolean continueBind();
 }

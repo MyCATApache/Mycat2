@@ -15,9 +15,9 @@
 package io.mycat.datasource.jdbc.datasource;
 
 import io.mycat.MycatException;
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
-import io.mycat.beans.resultset.MycatUpdateResponse;
-import io.mycat.beans.resultset.MycatUpdateResponseImpl;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
@@ -54,7 +54,7 @@ public class DefaultConnection implements AutoCloseable {
     }
 
 
-    public MycatUpdateResponse executeUpdate(String sql, boolean needGeneratedKeys) {
+    public UpdateRowIteratorResponse executeUpdate(String sql, boolean needGeneratedKeys,int serverStatus) {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql,
                     needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);
@@ -66,15 +66,14 @@ public class DefaultConnection implements AutoCloseable {
                     lastInsertId = (generatedKeys.next() ? generatedKeys.getLong(1) : 0L);
                 }
             }
-            int serverStatus = TransactionSessionUtil.currentTransactionSession().getServerStatus();
-            return new MycatUpdateResponseImpl(statement.getUpdateCount(), lastInsertId, serverStatus);
+            return new UpdateRowIteratorResponse(statement.getUpdateCount(), lastInsertId, serverStatus);
         } catch (Exception e) {
             throw new MycatException(e);
         }
     }
 
 
-    public JdbcRowBaseIterator executeQuery(String sql) {
+    public RowBaseIterator executeQuery(String sql) {
         try {
             Statement statement = connection.createStatement();
             return new JdbcRowBaseIterator(statement, statement.executeQuery(sql));

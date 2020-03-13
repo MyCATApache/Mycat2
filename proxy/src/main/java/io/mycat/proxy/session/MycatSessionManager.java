@@ -42,10 +42,9 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
   final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
   final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
-  private final Function<MycatSession,CommandDispatcher> function;
-
+  private final Function<MycatSession,CommandDispatcher> commandDispatcher;
   public MycatSessionManager(Function<MycatSession,CommandDispatcher> function) {
-    this.function = function;
+    this.commandDispatcher = function;
   }
 
 
@@ -99,6 +98,6 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
   }
 
   public void initCommandDispatcher(MycatSession session){
-    session.setCommandHandler(function.apply(session));
+    session.setCommandHandler(commandDispatcher.apply(session));
   }
 }

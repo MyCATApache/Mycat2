@@ -1,32 +1,34 @@
 package io.mycat.datasource.jdbc.transactionSession;
 
-import io.mycat.beans.mysql.MySQLServerStatusFlags;
+import io.mycat.MycatDataContext;
+import io.mycat.TransactionSession;
+import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 
-import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class TransactionSessionTemplate {
+public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
-    protected volatile boolean autocommit = true;
-    protected volatile boolean inTranscation = false;
-    protected volatile int transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
-    protected volatile boolean readOnly = false;
+   final MycatDataContext dataContext;
+
+    public TransactionSessionTemplate(MycatDataContext dataContext) {
+        this.dataContext = dataContext;
+    }
 
     public boolean isInTransaction() {
-        return inTranscation;
+        return dataContext.isInTransaction();
     }
 
     public void setAutocommit(boolean autocommit) {
         if (isInTransaction() && autocommit) {
             throw new IllegalArgumentException("is in transcation");
         }
-        this.autocommit = autocommit;
+        dataContext.setAutoCommit( autocommit);
     }
 
     public boolean isAutocommit() {
-        return autocommit;
+        return dataContext.isAutoCommit();
     }
 
     public void begin() {
@@ -36,7 +38,7 @@ public abstract class TransactionSessionTemplate {
         if (!isInTransaction()) {
             callBackBegin();
         }
-        setInTranscation(true);
+        dataContext.setInTransaction(true);
     }
 
     public void commit() {
@@ -57,12 +59,13 @@ public abstract class TransactionSessionTemplate {
         updateConnectionMap.clear();
     }
 
-    public DefaultConnection getConnection(
+    @Override
+    public <T> T getConnection(
             String jdbcDataSource) {
         if (!isAutocommit() && !isInTransaction()) {
             begin();
         }
-        return callBackConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);
+        return(T) callBackConnection(jdbcDataSource,isAutocommit(),getTransactionIsolation() , isReadOnly());
     }
 
     abstract protected void callBackBegin();
@@ -74,19 +77,12 @@ public abstract class TransactionSessionTemplate {
     abstract protected DefaultConnection callBackConnection(String jdbcDataSource, boolean autocommit, int transactionIsolation, boolean readOnly);
 
     public int getServerStatus() {
-        int serverStatus = 0;
-        if (isAutocommit()) {
-            serverStatus |= MySQLServerStatusFlags.AUTO_COMMIT;
-        }
-        if (isInTransaction()) {
-            serverStatus |= MySQLServerStatusFlags.IN_TRANSACTION;
-        }
-        return serverStatus;
+        return dataContext.serverStatus();
     }
 
 
     public boolean isReadOnly() {
-        return readOnly;
+        return dataContext.isReadOnly();
     }
 
 
@@ -95,12 +91,12 @@ public abstract class TransactionSessionTemplate {
     }
 
     public boolean isInTranscation() {
-        return inTranscation;
+        return dataContext.isInTransaction();
     }
 
 
     private void setInTranscation(boolean inTranscation) {
-        this.inTranscation = inTranscation;
+        this.dataContext.setInTransaction(inTranscation);
     }
 
     public void close() {
@@ -126,11 +122,11 @@ public abstract class TransactionSessionTemplate {
     }
 
     public int getTransactionIsolation() {
-        return transactionIsolation;
+        return dataContext.getIsolation().getJdbcValue();
     }
 
     public void setTransactionIsolation(int transactionIsolation) {
-        this.transactionIsolation = transactionIsolation;
+        this.dataContext.setIsolation(MySQLIsolation.parseJdbcValue(transactionIsolation));
         this.updateConnectionMap.forEach((key, value) -> value.setTransactionIsolation(transactionIsolation));
     }
 
@@ -142,9 +138,5 @@ public abstract class TransactionSessionTemplate {
             }
         }
         this.updateConnectionMap.clear();
-        this.autocommit = true;
-        this.inTranscation = false;
-        this.transactionIsolation = Connection.TRANSACTION_REPEATABLE_READ;
-        this.readOnly = false;
     }
 }

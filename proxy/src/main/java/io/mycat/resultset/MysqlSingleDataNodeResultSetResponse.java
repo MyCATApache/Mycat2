@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.datasource.jdbc.resultset;
+package io.mycat.resultset;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.resultset.MycatResultSetResponse;
@@ -23,23 +23,23 @@ import java.util.Iterator;
 /**
  * @author Junwen Chen
  **/
-public abstract class AbstractMycatResultSetResponse implements MycatResultSetResponse {
+public class MysqlSingleDataNodeResultSetResponse implements MycatResultSetResponse {
 
-  protected final RowBaseIterator iterator;
+  final RowBaseIterator rowBaseIterator;
 
-  public AbstractMycatResultSetResponse(RowBaseIterator iterator) {
-    this.iterator = iterator;
+  public MysqlSingleDataNodeResultSetResponse(RowBaseIterator rowBaseIterator) {
+    this.rowBaseIterator = rowBaseIterator;
   }
 
   @Override
   public int columnCount() {
-    return iterator.metaData().getColumnCount();
+    return rowBaseIterator.metaData().getColumnCount();
   }
 
   @Override
   public Iterator<byte[]> columnDefIterator() {
     return new Iterator<byte[]>() {
-      final int count = columnCount();
+      final int count = MysqlSingleDataNodeResultSetResponse.this.columnCount();
       int index = 1;
 
       @Override
@@ -51,14 +51,37 @@ public abstract class AbstractMycatResultSetResponse implements MycatResultSetRe
       public byte[] next() {
         return MySQLPacketUtil
             .generateColumnDefPayload(
-                iterator.metaData(),
+                MysqlSingleDataNodeResultSetResponse.this.rowBaseIterator.metaData(),
                 index++);
       }
     };
   }
 
   @Override
+  public Iterator<byte[]> rowIterator() {
+    return new Iterator<byte[]>() {
+      final int count = MysqlSingleDataNodeResultSetResponse.this.columnCount();
+
+      @Override
+      public boolean hasNext() {
+        return rowBaseIterator.next();
+      }
+
+      @Override
+      public byte[] next() {
+        //todo optimize to remove tmp array
+        RowBaseIterator rowBaseIterator = MysqlSingleDataNodeResultSetResponse.this.rowBaseIterator;
+        byte[][] bytes = new byte[count][];
+        for (int i = 0, j = 1; i < count; i++, j++) {
+          bytes[i] = rowBaseIterator.getBytes(j);
+        }
+        return MySQLPacketUtil.generateTextRow(bytes);
+      }
+    };
+  }
+
+  @Override
   public void close() throws IOException {
-    iterator.close();
+    rowBaseIterator.close();
   }
 }

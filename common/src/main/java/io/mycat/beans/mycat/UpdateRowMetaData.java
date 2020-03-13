@@ -8,6 +8,7 @@ public enum  UpdateRowMetaData implements MycatRowMetaData {
     public static final String UPDATE_COUNT = "UPDATE_COUNT";
     public static final String LAST_INSERT_ID = "LAST_INSERT_ID";
 
+
     @Override
     public int getColumnCount() {
         return 2;

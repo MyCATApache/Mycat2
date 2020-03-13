@@ -14,9 +14,11 @@
  */
 package io.mycat.datasource.jdbc.transactionSession;
 
+import io.mycat.MycatDataContext;
+import io.mycat.ThreadUsageEnum;
+import io.mycat.TransactionSession;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
@@ -33,7 +35,8 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
     private final UserTransaction userTransaction;
 
 
-    public JTATransactionSession(UserTransaction userTransaction) {
+    public JTATransactionSession(MycatDataContext dataContext,UserTransaction userTransaction) {
+        super(dataContext);
         this.userTransaction = userTransaction;
     }
 
@@ -70,16 +73,19 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
     }
 
 
-
     @Override
-    public void bind(String key, String type) {
-
+    public String name() {
+        return "xa";
     }
-
 
     @Override
     public boolean needBindThread() {
         return isInTransaction();
+    }
+
+    @Override
+    public ThreadUsageEnum getThreadUsageEnum() {
+        return ThreadUsageEnum.BINDING_THREADING;
     }
 
 }

@@ -33,6 +33,8 @@ import io.mycat.proxy.handler.backend.SessionSyncCallback;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MySQLSessionManager;
 import io.mycat.proxy.session.MycatSession;
@@ -100,53 +102,71 @@ public class MySQLTaskUtil {
                                                 MySQLIsolation isolation) {
         assert (Thread.currentThread() instanceof MycatReactorThread);
         Objects.requireNonNull(datasourceName);
-        MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
-        MySQLSessionManager mySQLSessionManager = reactor.getMySQLSessionManager();
-        BiConsumer<MySQLDatasource, SessionCallBack<MySQLClientSession>> getSession = (datasource, mySQLClientSessionSessionCallBack) -> {
-            if (mycat.isBindMySQLSession()) {
-                MySQLClientSession mySQLSession = mycat.getMySQLSession();
-                if (datasourceName.equals(mySQLSession.getDatasourceName()) && mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
-                    mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
-                } else {
-                    mySQLClientSessionSessionCallBack.onException(new Exception("is binding"), null, null);
-                }
-            } else {
-                if (mycat.isBindMySQLSession()) {
-                    throw new AssertionError();
-                }
-                mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
-            }
-        };
-        MySQLDatasource datasource = MycatCore.INSTANCE.getDatasource(datasourceName);
-        getSession.accept(datasource, new SessionCallBack<MySQLClientSession>() {
+        mycat.switchProxyWriteHandler();
+        mycat.getIOThread().addNIOJob(new NIOJob() {
             @Override
-            public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                MycatMonitor.onRouteResult(mycat, datasource.getName(), datasource.getName(), datasource.getName(), packetData);
-                SessionCallBack<MySQLClientSession> sessionCallBack = new SessionCallBack<MySQLClientSession>() {
+            public void run(ReactorEnvThread reactor2) throws Exception {
+                MycatReactorThread reactor = (MycatReactorThread) Thread.currentThread();
+                MySQLSessionManager mySQLSessionManager = reactor.getMySQLSessionManager();
+                BiConsumer<MySQLDatasource, SessionCallBack<MySQLClientSession>> getSession = (datasource, mySQLClientSessionSessionCallBack) -> {
+                    if (mycat.isBindMySQLSession()) {
+                        MySQLClientSession mySQLSession = mycat.getMySQLSession();
+                        if (datasourceName.equals(mySQLSession.getDatasourceName()) && mycat.getMySQLSession() == mySQLSession && mySQLSession.getMycat() == mycat) {
+                            mySQLClientSessionSessionCallBack.onSession(mySQLSession, null, null);
+                        } else {
+                            mySQLClientSessionSessionCallBack.onException(new Exception("is binding"), null, null);
+                        }
+                    } else {
+                        if (mycat.isBindMySQLSession()) {
+                            throw new AssertionError();
+                        }
+                        mySQLSessionManager.getIdleSessionsOfKey(datasource, mySQLClientSessionSessionCallBack);
+                    }
+                };
+                MySQLDatasource datasource = MycatCore.INSTANCE.getDatasource(datasourceName);
+                getSession.accept(datasource, new SessionCallBack<MySQLClientSession>() {
                     @Override
                     public void onSession(MySQLClientSession session, Object sender, Object attr) {
-                        MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.proxyBackend(session, finallyCallBack, ResponseType.QUERY, mycat, packetData);
+                        MycatMonitor.onRouteResult(mycat, datasource.getName(), datasource.getName(), datasource.getName(), packetData);
+                        SessionCallBack<MySQLClientSession> sessionCallBack = new SessionCallBack<MySQLClientSession>() {
+                            @Override
+                            public void onSession(MySQLClientSession session, Object sender, Object attr) {
+                                MySQLPacketExchanger.MySQLProxyNIOHandler.INSTANCE.proxyBackend(session, finallyCallBack, ResponseType.QUERY, mycat, packetData);
+                            }
+
+                            @Override
+                            public void onException(Exception exception, Object sender, Object attr) {
+                                finallyCallBack.onRequestMySQLException(mycat, exception, null);
+                            }
+                        };
+                        if (transactionType.expect(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
+                            sessionCallBack.onSession(session, this, null);
+                            return;
+                        } else {
+                            syncState(session, transactionType, isolation, sessionCallBack);
+                            return;
+                        }
                     }
 
                     @Override
                     public void onException(Exception exception, Object sender, Object attr) {
-                        finallyCallBack.onRequestMySQLException(mycat, exception, null);
+                        finallyCallBack.onRequestMySQLException(mycat, exception, attr);
                     }
-                };
-                if (transactionType.expect(session.isAutomCommit(), session.isMonopolizedByTransaction())) {
-                    sessionCallBack.onSession(session, this, null);
-                    return;
-                } else {
-                    syncState(session, transactionType, isolation, sessionCallBack);
-                    return;
-                }
+                });
             }
 
             @Override
-            public void onException(Exception exception, Object sender, Object attr) {
-                finallyCallBack.onRequestMySQLException(mycat, exception, attr);
+            public void stop(ReactorEnvThread reactor, Exception reason) {
+                mycat.setLastMessage(reason);
+                mycat.writeErrorEndPacketBySyncInProcessError();
+            }
+
+            @Override
+            public String message() {
+                return "proxyBackendByDataSource";
             }
         });
+
     }
 
     @ToString
@@ -164,12 +184,16 @@ public class MySQLTaskUtil {
             this.text = text;
         }
 
-       public boolean expect(MySQLAutoCommit automCommit, boolean inTransaction) {
+        public boolean expect(MySQLAutoCommit automCommit, boolean inTransaction) {
             return this.automCommit == automCommit && this.inTransaction == inTransaction;
         }
 
-        public static  TransactionSyncType create(MySQLAutoCommit automCommit, boolean inTransaction) {
-            if (automCommit == MySQLAutoCommit.ON) {
+        public static TransactionSyncType create(boolean autoCommit, boolean inTransaction) {
+            return create(autoCommit ? MySQLAutoCommit.ON : MySQLAutoCommit.OFF, inTransaction);
+        }
+
+        public static TransactionSyncType create(MySQLAutoCommit autoCommit, boolean inTransaction) {
+            if (autoCommit == MySQLAutoCommit.ON) {
                 if (inTransaction) {
                     return SET_AUTOCOMMIT_ON_BEGIN;
                 } else {
@@ -241,7 +265,7 @@ public class MySQLTaskUtil {
 //        int i = ThreadLocalRandom.current().nextInt(0, threads.length);
 //        threads[i].addNIOJob(new NIOJob() {
 //            @Override
-//            public void run(ReactorEnvThread reactor) throws Exception {
+//            public void runOnBinding(ReactorEnvThread reactor) throws Exception {
 //                getMySQLSession(synContext, query, asynTaskCallBack);
 //            }
 //
@@ -337,7 +361,7 @@ public class MySQLTaskUtil {
 //        int i = ThreadLocalRandom.current().nextInt(0, threads.length);
 //        threads[i].addNIOJob(new NIOJob() {
 //            @Override
-//            public void run(ReactorEnvThread reactor) throws Exception {
+//            public void runOnBinding(ReactorEnvThread reactor) throws Exception {
 //                getMySQLSessionForTryConnect(datasource, ids, partialType, asynTaskCallBack);
 //            }
 //
@@ -361,7 +385,7 @@ public class MySQLTaskUtil {
 //        int i = ThreadLocalRandom.current().nextInt(0, threads.length);
 //        threads[i].addNIOJob(new NIOJob() {
 //            @Override
-//            public void run(ReactorEnvThread reactor) throws Exception {
+//            public void runOnBinding(ReactorEnvThread reactor) throws Exception {
 //                getMySQLSessionForTryConnect(datasource, null, partialType, asynTaskCallBack);
 //            }
 //

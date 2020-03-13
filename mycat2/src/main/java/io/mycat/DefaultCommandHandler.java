@@ -21,7 +21,6 @@ import io.mycat.command.AbstractCommandHandler;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.proxy.session.MycatUser;
 
 /**
  * @author chen junwen
@@ -40,8 +39,7 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
 
     @Override
     public void initRuntime(MycatSession session) {
-        MycatUser user = session.getUser();
-        this.client = ClientRuntime.INSTANCE.login(user.getUserName(), user.getPassword());
+        this.client = ClientRuntime.INSTANCE.login((MycatDataContext)session.unwrap(MycatDataContext.class));
         this.client.useSchema(session.getSchema());
 
         this.client.useTransactionType(ClientRuntime.INSTANCE.getTransactionType());
@@ -53,6 +51,8 @@ public class DefaultCommandHandler extends AbstractCommandHandler {
             LOGGER.debug("-----------------reveice--------------------");
             String sql = new String(bytes);
             LOGGER.debug(sql);
+            MycatDataContext unwrap = session.unwrap(MycatDataContext.class);
+            TransactionSession transactionSession = unwrap.getTransactionSession();
             Context analysis = client.analysis(sql);
             ContextRunner.run(client, analysis, session);
         }catch (Exception e){

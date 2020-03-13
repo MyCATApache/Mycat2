@@ -5,7 +5,6 @@ import io.mycat.beans.mysql.MySQLAutoCommit;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MySQLClientSession;
-import io.mycat.proxy.session.MycatSession;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
@@ -23,17 +22,6 @@ public class MySQLSynContextImpl extends MySQLSynContext{
   long netWriteTimeout = -1;
   boolean readOnly;
 
-
-  public MySQLSynContextImpl(MycatSession session,String defaultDatabase) {
-    this.isolation = session.getIsolation();
-    this.autoCommit = session.getAutoCommit();
-    this.charset = session.getCharsetName();
-    this.characterSetResult = session.getCharacterSetResults();
-    this.deafultDatabase = defaultDatabase;
-    this.sqlSelectLimit = session.getSelectLimit();
-    this.netWriteTimeout = session.getNetWriteTimeout();
-    this.readOnly = session.isAccessModeReadOnly();
-  }
 //
 //  public MySQLSynContextImpl(MySQLClientSession session) {
 //    this( session.getDefaultDatabase(),

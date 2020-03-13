@@ -1,7 +1,7 @@
 package io.mycat.calcite.prepare;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.EmptyMycatRowMetaData;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.UpdateRowMetaData;
@@ -22,7 +22,7 @@ public abstract class SimpleSQLPrepareObjectPlanner extends MycatSQLPrepareObjec
     @Override
     public RowBaseIterator run() {
         innerEun();
-        return UpdateRowIterator.EMPTY;
+        return new UpdateRowIteratorResponse(0,0,uponDBContext.getServerStatus());
     }
 
     @Override

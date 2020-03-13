@@ -46,15 +46,6 @@ public interface MySQLServerSession<T> {
    */
   long affectedRows();
 
-  int setServerStatus(int s);
-
-  long incrementWarningCount();
-
-  /**
-   * ok packet
-   */
-  long incrementAffectedRows();
-
   /**
    * ok eof
    */

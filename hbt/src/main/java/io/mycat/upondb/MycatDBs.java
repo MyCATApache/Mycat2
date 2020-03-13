@@ -1,11 +1,9 @@
 package io.mycat.upondb;
 
 import io.mycat.Identical;
+import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
-import io.mycat.beans.resultset.MycatUpdateResponse;
-import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.metadata.LogicTable;
 import io.mycat.metadata.MetadataManager;
 
@@ -18,7 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MycatDBs {
 
 
-    public static MycatDBClientMediator createClient() {
+    public static MycatDBClientMediator createClient(MycatDataContext dataContext) {
         return new MycatDBClientMediator() {
             final IdentityHashMap<String, Object> cache = new IdentityHashMap<>();
             final AtomicBoolean cancelFlag = new AtomicBoolean(false);
@@ -44,8 +42,8 @@ public class MycatDBs {
             }
 
             @Override
-            public void cache(Identical key, String targetName, String sql, List<Object> params,Object o) {
-                 cache.put(targetName+sql,o);
+            public void cache(Identical key, String targetName, String sql, List<Object> params, Object o) {
+                cache.put(targetName + sql, o);
             }
 
             @Override
@@ -59,73 +57,80 @@ public class MycatDBs {
             }
 
             @Override
-            public UpdateRowIterator prepareUpdate(String targetName, String sql, List<Object> params) {
+            public UpdateRowIteratorResponse prepareUpdate(String targetName, String sql, List<Object> params) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public UpdateRowIterator update(String targetName, String sql) {
-                MycatUpdateResponse mycatUpdateResponse = TransactionSessionUtil.executeUpdateByReplicaName(targetName, sql, true, null);
-                return new UpdateRowIterator(mycatUpdateResponse.getUpdateCount(), mycatUpdateResponse.getLastInsertId());
+            public UpdateRowIteratorResponse update(String targetName, String sql) {
+                return dataContext.update(targetName, sql);
             }
 
             @Override
             public RowBaseIterator query(String targetName, String sql) {
-                DefaultConnection connectionByReplicaName = TransactionSessionUtil.getConnectionByReplicaName(targetName, false, null);
-                return connectionByReplicaName.executeQuery(sql);
+                return dataContext.query(targetName, sql);
             }
 
             @Override
-            public UpdateRowIterator update(String targetName, List<String> sqls) {
-                DefaultConnection connectionByReplicaName = TransactionSessionUtil.getConnectionByReplicaName(targetName, true, null);
+            public UpdateRowIteratorResponse update(String targetName, List<String> sqls) {
                 long updateCount = 0;
                 long lastInsertId = 0;
                 for (String sql : sqls) {
-                    MycatUpdateResponse mycatUpdateResponse = connectionByReplicaName.executeUpdate(sql, true);
+                    UpdateRowIteratorResponse mycatUpdateResponse = update(targetName, sql);
                     updateCount += mycatUpdateResponse.getUpdateCount();
                     lastInsertId = Math.max(mycatUpdateResponse.getLastInsertId(), lastInsertId);
                 }
-                return new UpdateRowIterator(updateCount, lastInsertId);
+                return new UpdateRowIteratorResponse(updateCount, lastInsertId, dataContext.getTransactionSession().getServerStatus());
             }
 
             @Override
             public void begin() {
-                TransactionSessionUtil.begin();
+                dataContext.getTransactionSession().begin();
             }
 
             @Override
             public void rollback() {
-                TransactionSessionUtil.rollback();
+                dataContext.getTransactionSession().rollback();
             }
 
             @Override
             public void commit() {
-                TransactionSessionUtil.commit();
+                dataContext.getTransactionSession().commit();
             }
 
             @Override
             public void setTransactionIsolation(int value) {
-                TransactionSessionUtil.setIsolation(value);
+                dataContext.getTransactionSession().setTransactionIsolation(value);
             }
 
             @Override
             public int getTransactionIsolation() {
-                return TransactionSessionUtil.getTransactionIsolation();
+                return dataContext.getTransactionSession().getTransactionIsolation();
             }
 
             @Override
             public boolean isAutocommit() {
-                return TransactionSessionUtil.isAutocommit();
+                return dataContext.isAutoCommit();
             }
 
             @Override
             public void setAutocommit(boolean autocommit) {
-                TransactionSessionUtil.setAutocommit(autocommit);
+                dataContext.setAutoCommit(autocommit);
+            }
+
+            @Override
+            public boolean isAutoCommit() {
+                return dataContext.getTransactionSession().isAutocommit();
+            }
+
+            @Override
+            public void setAutoCommit(boolean autocommit) {
+                dataContext.setAutoCommit(autocommit);
             }
 
             @Override
             public void close() {
-                TransactionSessionUtil.reset();
+
             }
 
             @Override
@@ -136,12 +141,12 @@ public class MycatDBs {
 
             @Override
             public int getServerStatus() {
-                return TransactionSessionUtil.currentTransactionSession().getServerStatus();
+                return dataContext.getTransactionSession().getServerStatus();
             }
 
             @Override
-            public AtomicBoolean cancleFlag() {
-                return cancelFlag;
+            public AtomicBoolean cancelFlag() {
+                return dataContext.getCancelFlag();
             }
         };
     }

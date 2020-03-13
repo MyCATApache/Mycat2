@@ -1,18 +1,30 @@
-package io.mycat.datasource.jdbc.transactionSession;
+package io.mycat.runtime;
 
+import io.mycat.MycatDataContext;
+import io.mycat.ThreadUsageEnum;
+import io.mycat.TransactionSession;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.TransactionSession;
+import io.mycat.datasource.jdbc.transactionSession.TransactionSessionTemplate;
 
 public class LocalTransactionSession extends TransactionSessionTemplate implements TransactionSession {
-    @Override
-    public void bind(String key, String type) {
+    public LocalTransactionSession(MycatDataContext dataContext) {
+        super(dataContext);
+    }
 
+    @Override
+    public String name() {
+        return "local";
     }
 
     @Override
     public boolean needBindThread() {
         return false;
+    }
+
+    @Override
+    public ThreadUsageEnum getThreadUsageEnum() {
+        return ThreadUsageEnum.MULTI_THREADING;
     }
 
     @Override

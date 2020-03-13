@@ -14,6 +14,11 @@
  */
 package io.mycat.bindThread;
 
+import io.mycat.MycatException;
+import io.mycat.ScheduleUtil;
+
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -34,6 +39,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     final long waitTaskTimeout;
     final TimeUnit timeoutUnit;
     private final ScheduledExecutorService check;
+    private final ExecutorService noBindingPool;
 
     long lastPollTaskTime = System.currentTimeMillis();
 
@@ -69,6 +75,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
                           }
                 //   , 1, 1, TimeUnit.MILLISECONDS
         );
+        this.noBindingPool = Executors.newFixedThreadPool(maxThread);
     }
 
     void pollTask() {
@@ -107,7 +114,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         /////////////////////////////////
         for (Map.Entry<KEY, PROCESS> entry : map.entrySet()) {
             KEY key = entry.getKey();
-            if (!key.checkOkInBind()) {
+            if (!key.isRunning()) {
                 map.remove(key);
                 entry.getValue().close();
             }
@@ -131,7 +138,28 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }) < maxThread;
     }
 
-    public boolean run(KEY key, BindThreadCallback<KEY, PROCESS> task) {
+    public void run(KEY key, BindThreadCallback<KEY, PROCESS> task) {
+            ScheduleUtil.TimerTask timerFuture = ScheduleUtil.getTimerFuture(new Closeable() {
+                @Override
+                public void close() throws IOException {
+                    task.onException(key,new MycatException("task timeout"));
+                }
+            }, waitTaskTimeout, timeoutUnit);
+                Future<?> submit = noBindingPool.submit(() -> {
+                    try {
+                        task.accept(key, null);
+                    } catch (Exception e) {
+                        task.onException(key, e);
+                        exceptionHandler.accept(e);
+                    } finally {
+                        timerFuture.setFinished();
+                        task.finallyAccept(key, null);
+
+                    }
+                });
+    }
+
+    public boolean runOnBinding(KEY key, BindThreadCallback<KEY, PROCESS> task) {
         PROCESS transactionThread = map.computeIfAbsent(key, new Function<KEY, PROCESS>() {
             @Override
             public PROCESS apply(KEY key) {
@@ -150,7 +178,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
                 return transactionThread;
             }
         });
-        if (transactionThread == null)return false;
+        if (transactionThread == null) return false;
         transactionThread.run(key, task);
         return true;
     }
@@ -161,7 +189,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         return new PengdingJob() {
             @Override
             public boolean run() {
-                return BindThreadPool.this.run(key, task);
+                return BindThreadPool.this.runOnBinding(key, task);
             }
 
             @Override

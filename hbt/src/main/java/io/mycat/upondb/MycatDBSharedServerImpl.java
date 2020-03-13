@@ -14,7 +14,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
 import com.alibaba.fastsql.support.calcite.CalciteMySqlNodeVisitor;
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.MycatRowMetaData;
 import io.mycat.beans.mycat.ResultSetBuilder;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -131,24 +131,24 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
     }
 
     @Override
-    public UpdateRowIterator update(String sql, MycatDBContext dbContext) {
-        return (UpdateRowIterator) prepare(sql, null, dbContext).plan(Collections.emptyList()).run();
+    public UpdateRowIteratorResponse update(String sql, MycatDBContext dbContext) {
+        return (UpdateRowIteratorResponse) prepare(sql, null, dbContext).plan(Collections.emptyList()).run();
     }
 
     @Override
-    public UpdateRowIterator loadData(String sql, MycatDBContext dbContext) {
+    public UpdateRowIteratorResponse loadData(String sql, MycatDBContext dbContext) {
         Iterator<RowBaseIterator> rowBaseIteratorIterator = executeSqls(sql, dbContext);
         long lastInsertId = 0;
         long updateCount = 0;
         while (rowBaseIteratorIterator.hasNext()) {
             RowBaseIterator next = rowBaseIteratorIterator.next();
-            if (next instanceof UpdateRowIterator) {
-                UpdateRowIterator next1 = (UpdateRowIterator) next;
+            if (next instanceof UpdateRowIteratorResponse) {
+                UpdateRowIteratorResponse next1 = (UpdateRowIteratorResponse) next;
                 lastInsertId += next1.getLastInsertId();
                 updateCount += next1.getUpdateCount();
             }
         }
-        return new UpdateRowIterator(updateCount, lastInsertId);
+        return new UpdateRowIteratorResponse(updateCount, lastInsertId, dbContext.getServerStatus());
     }
 
     @Override

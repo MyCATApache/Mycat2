@@ -1,7 +1,7 @@
 package io.mycat.upondb;
 
 import io.mycat.api.collector.RowBaseIterator;
-import io.mycat.api.collector.UpdateRowIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 
 import java.util.Iterator;
 import java.util.List;
@@ -17,9 +17,9 @@ public interface MycatDBSharedServer {
 
     RowBaseIterator query(String sql, MycatDBContext dbContext);
 
-    UpdateRowIterator update(String sql, MycatDBContext dbContext);
+    UpdateRowIteratorResponse update(String sql, MycatDBContext dbContext);
 
-    UpdateRowIterator loadData(String sql, MycatDBContext dbContext);
+    UpdateRowIteratorResponse loadData(String sql, MycatDBContext dbContext);
 
     RowBaseIterator executeRel(String text, MycatDBContext dbContext);
 

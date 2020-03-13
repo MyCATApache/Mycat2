@@ -291,4 +291,9 @@ public abstract class ProxyReactorThread<T extends Session> extends ReactorEnvTh
     public void setPrepareStop(boolean prepareStop) {
         this.prepareStop = prepareStop;
     }
+
+    @Override
+    public void wakeup() {
+        selector.wakeup();
+    }
 }

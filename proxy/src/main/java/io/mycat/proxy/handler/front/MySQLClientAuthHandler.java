@@ -14,7 +14,7 @@
  */
 package io.mycat.proxy.handler.front;
 
-import io.mycat.beans.mysql.MySQLAutoCommit;
+import io.mycat.MycatUser;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.MySQLPayloadWriter;
 import io.mycat.beans.mysql.MySQLVersion;
@@ -30,7 +30,6 @@ import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.proxy.session.MycatSessionManager;
-import io.mycat.proxy.session.MycatUser;
 import io.mycat.util.CachingSha2PasswordPlugin;
 import io.mycat.util.MysqlNativePasswordPluginUtil;
 import io.mycat.util.StringUtil;
@@ -140,7 +139,7 @@ public class MySQLClientAuthHandler implements NIOHandler<MycatSession> {
             mycat.setUser(user);
             mycat.setSchema(database);
             mycat.setServerCapabilities(auth.getCapabilities());
-            mycat.setAutoCommit(MySQLAutoCommit.ON);
+            mycat.setAutoCommit(true);
             mycat.setIsolation(MySQLIsolation.READ_UNCOMMITTED);
             mycat.setCharset(characterSet);
             finished = true;

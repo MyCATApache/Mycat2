@@ -16,6 +16,7 @@
 package io.mycat.client;
 
 import io.mycat.MycatConfig;
+import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.logTip.MycatLogger;
@@ -71,12 +72,12 @@ public enum ClientRuntime {
     }
 
 
-    public MycatClient login(String username, String password) {
+    public MycatClient login(MycatDataContext dataContext) {
         return new MycatClient() {
             private RuntimeInfo runtime = Objects.requireNonNull(runtimeInfo);
             private String defaultSchemaName = ClientRuntime.INSTANCE.getDefaultSchema();
             private TransactionType transactionType;
-            private final MycatDBClientApi db = MycatDBs.createClient();
+            private final MycatDBClientApi db = MycatDBs.createClient(dataContext);
             ///////////////////////////////////////////////
 
             @Override
@@ -144,22 +145,6 @@ public enum ClientRuntime {
             private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
                 return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain());
             }
-
-            @Override
-            public String getSchema() {
-                return db.getSchema();
-            }
-
-            @Override
-            public void begin() {
-                db.begin();
-            }
-
-            @Override
-            public void rollback() {
-                db.rollback();
-            }
-
             @Override
             public void useSchema(String schemaName) {
                 if (schemaName != null) {
@@ -168,41 +153,6 @@ public enum ClientRuntime {
                 } else {
                     LOGGER.warn("use null schema");
                 }
-            }
-
-            @Override
-            public void commit() {
-                db.commit();
-            }
-
-            @Override
-            public void setTransactionIsolation(int value) {
-                db.setTransactionIsolation(value);
-            }
-
-            @Override
-            public int getTransactionIsolation() {
-                return db.getTransactionIsolation();
-            }
-
-            @Override
-            public boolean isAutocommit() {
-                return db.isAutocommit();
-            }
-
-            @Override
-            public long getMaxRow() {
-                return db.getMaxRow();
-            }
-
-            @Override
-            public void setMaxRow(long value) {
-                db.setMaxRow(value);
-            }
-
-            @Override
-            public void setAutocommit(boolean autocommit) {
-                db.setAutocommit(autocommit);
             }
 
             @Override

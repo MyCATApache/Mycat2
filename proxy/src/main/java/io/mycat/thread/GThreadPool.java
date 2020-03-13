@@ -12,16 +12,18 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.datasource.jdbc.thread;
+package io.mycat.thread;
 
 import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.bindThread.BindThreadPool;
+import io.mycat.config.ServerConfig;
 import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+
 /**
  * @author Junwen Chen
  **/
@@ -35,4 +37,11 @@ public class GThreadPool<KEY extends BindThreadKey> extends BindThreadPool<KEY, 
         bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
   }
 
+  public GThreadPool(int maxPengdingLimit, long waitTaskTimeout, TimeUnit timeoutUnit, int minThread, int maxThread) {
+    super(maxPengdingLimit, waitTaskTimeout, timeoutUnit, minThread, maxThread, bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
+  }
+
+  public GThreadPool(ServerConfig.Worker worker) {
+    super(worker.getMaxPengdingLimit(), worker.getWaitTaskTimeout(), TimeUnit.valueOf(worker.getTimeUnit()), worker.getMinThread(), worker.getMaxThread(),  bindThreadPool -> new GThread( bindThreadPool), (e) -> LOGGER.error("", e));
+  }
 }
