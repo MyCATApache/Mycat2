@@ -38,8 +38,8 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     final int maxThread;
     final long waitTaskTimeout;
     final TimeUnit timeoutUnit;
-    private final ScheduledExecutorService check;
     private final ExecutorService noBindingPool;
+    private final ScheduledFuture<?> schedule;
 
     long lastPollTaskTime = System.currentTimeMillis();
 
@@ -60,28 +60,21 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
                 maxPengdingLimit < 0 ? 65535 : maxPengdingLimit);
         this.processFactory = processFactory;
         this.exceptionHandler = exceptionHandler;
-        this.check = Executors.newScheduledThreadPool(1);
-        this.check.submit(new Runnable() {
-                              @Override
-                              public void run() {
-                                  while (true) {
-                                      try {
-                                          pollTask();
-                                      } catch (Exception e) {
-                                          e.printStackTrace();
-                                      }
-                                  }
-                              }
-                          }
-                //   , 1, 1, TimeUnit.MILLISECONDS
-        );
+       this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+            try {
+                pollTask();
+            }catch (Exception e){
+                exceptionHandler.accept(e);
+            }
+        }, 0, 1, TimeUnit.NANOSECONDS);
+        //   , 1, 1, TimeUnit.MILLISECONDS
         this.noBindingPool = Executors.newFixedThreadPool(maxThread);
     }
 
     void pollTask() {
         PROCESS process = null;
         try {
-            process = idleList.poll(this.waitTaskTimeout, this.timeoutUnit);
+            process = idleList.poll(0, this.timeoutUnit);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -90,7 +83,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }
         PengdingJob poll = null;
         try {
-            while ((poll = pending.poll(this.waitTaskTimeout, this.timeoutUnit)) != null) {
+            while ((poll = pending.poll(0, this.timeoutUnit)) != null) {
                 if (!poll.run()) {
                     break;
                 }
