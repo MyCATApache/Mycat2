@@ -112,18 +112,52 @@ public enum MycatCore {
         TimerConfig timer = mycatConfig.getCluster().getTimer();
         NIOAcceptor acceptor = new NIOAcceptor(reactorManager);
 
-        long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay()) + TimeUnit.SECONDS.toMillis(1);
-        Thread.sleep(wait);
-        acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
 
-        HashMap<String,Function<MycatDataContext,TransactionSession>> transcationFactoryMap  = new HashMap<>();
+        HashMap<String, Function<MycatDataContext, TransactionSession>> transcationFactoryMap = new HashMap<>();
 
         transcationFactoryMap.put("local", mycatDataContext -> new LocalTransactionSession(mycatDataContext));
-        transcationFactoryMap.put("xa", mycatDataContext -> new JTATransactionSession(mycatDataContext,()->new UserTransactionImp()));
+        transcationFactoryMap.put("xa", mycatDataContext -> new JTATransactionSession(mycatDataContext, () -> new UserTransactionImp()));
         transcationFactoryMap.put("proxy", mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
         MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap, mycatConfig.getInterceptor().getTransactionType());
+
+
+        long wait = TimeUnit.valueOf(timer.getTimeUnit()).toMillis(timer.getInitialDelay()) + TimeUnit.SECONDS.toMillis(1);
+        Thread.sleep(wait);
+        acceptor.startServerChannel(serverConfig.getIp(), serverConfig.getPort());
+        initFrontSessionChecker(mycatConfig, reactorManager);
+
         LOGGER.info("mycat starts successful");
+    }
+
+    private void initFrontSessionChecker(MycatConfig mycatConfig, ReactorThreadManager reactorManager) {
+        TimerConfig frontSessionChecker = mycatConfig.getServer().getTimer();
+        if (frontSessionChecker.getPeriod() > 0) {
+            ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+                try {
+                    for (MycatReactorThread thread : reactorManager.getList()) {
+                        thread.addNIOJob(new NIOJob() {
+                            @Override
+                            public void run(ReactorEnvThread reactor) throws Exception {
+                                thread.getFrontManager().check();
+                            }
+
+                            @Override
+                            public void stop(ReactorEnvThread reactor, Exception reason) {
+
+                            }
+
+                            @Override
+                            public String message() {
+                                return "frontSessionChecker";
+                            }
+                        });
+                    }
+                }catch (Exception e){
+                    LOGGER.error("{}",e);
+                }
+            }, frontSessionChecker.getInitialDelay(), frontSessionChecker.getPeriod(), TimeUnit.valueOf(frontSessionChecker.getTimeUnit()));
+        }
     }
 
     private void idleConnectCheck(MycatConfig mycatConfig, ReactorThreadManager reactorManager) {

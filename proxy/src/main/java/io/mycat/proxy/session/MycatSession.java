@@ -550,4 +550,9 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
             ioThread.addNIOJob(delayedNioJobs.pollFirst());
         }
     }
+
+    @Override
+    public boolean checkOpen() {
+        return super.checkOpen()||dataContext.isRunning();
+    }
 }

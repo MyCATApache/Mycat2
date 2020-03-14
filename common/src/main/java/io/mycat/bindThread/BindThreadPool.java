@@ -66,7 +66,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
             }catch (Exception e){
                 exceptionHandler.accept(e);
             }
-        }, 0, 1, TimeUnit.NANOSECONDS);
+        }, 1, 1, TimeUnit.MILLISECONDS);
         //   , 1, 1, TimeUnit.MILLISECONDS
         this.noBindingPool = Executors.newFixedThreadPool(maxThread);
     }

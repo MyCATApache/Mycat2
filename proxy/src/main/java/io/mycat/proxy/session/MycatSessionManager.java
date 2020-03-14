@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -30,6 +30,7 @@ import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.function.Function;
 
 /**
@@ -40,64 +41,86 @@ import java.util.function.Function;
  **/
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
-  final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
-  final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
-  private final Function<MycatSession,CommandDispatcher> commandDispatcher;
-  public MycatSessionManager(Function<MycatSession,CommandDispatcher> function) {
-    this.commandDispatcher = function;
-  }
+    final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
+    final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
+    private final Function<MycatSession, CommandDispatcher> commandDispatcher;
 
-
-  @Override
-
-  public List<MycatSession> getAllSessions() {
-    return new ArrayList<>(mycatSessions);
-  }
-
-  @Override
-  public int currentSessionCount() {
-    return mycatSessions.size();
-  }
-
-  /**
-   * 调用该方法的时候 mycat session已经关闭了
-   */
-  @Override
-  public void removeSession(MycatSession mycat, boolean normal, String reason) {
-    try {
-      MycatMonitor.onCloseMycatSession(mycat, normal, reason);
-      mycatSessions.remove(mycat);
-      mycat.channel().close();
-    } catch (Exception e) {
-      LOGGER.error("{}", e);
+    public MycatSessionManager(Function<MycatSession, CommandDispatcher> function) {
+        this.commandDispatcher = function;
     }
-  }
 
 
-  @Override
-  public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
-      Selector nioSelector, SocketChannel frontChannel) throws IOException {
-    MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler(this);
-    MycatSession mycat = new MycatSession(SessionManager.nextSessionId(), bufPool,
-        mySQLClientAuthHandler, this);
+    @Override
 
-
-    //用于monitor监控获取session
-    SessionThread thread = (SessionThread) Thread.currentThread();
-    thread.setCurSession(mycat);
-    mySQLClientAuthHandler.setMycatSession(mycat);
-    try {
-      mycat.register(nioSelector, frontChannel, SelectionKey.OP_READ);
-      MycatMonitor.onNewMycatSession(mycat);
-      mySQLClientAuthHandler.sendAuthPackge();
-      this.mycatSessions.add(mycat);
-    } catch (Exception e) {
-      MycatMonitor.onAuthHandlerWriteException(mycat, e);
-      mycat.close(false, e);
+    public List<MycatSession> getAllSessions() {
+        return new ArrayList<>(mycatSessions);
     }
-  }
 
-  public void initCommandDispatcher(MycatSession session){
-    session.setCommandHandler(commandDispatcher.apply(session));
-  }
+    @Override
+    public int currentSessionCount() {
+        return mycatSessions.size();
+    }
+
+    /**
+     * 调用该方法的时候 mycat session已经关闭了
+     */
+    @Override
+    public void removeSession(MycatSession mycat, boolean normal, String reason) {
+        try {
+            MycatMonitor.onCloseMycatSession(mycat, normal, reason);
+            mycatSessions.remove(mycat);
+            mycat.channel().close();
+        } catch (Exception e) {
+            LOGGER.error("{}", e);
+        }
+    }
+
+
+    @Override
+    public void acceptNewSocketChannel(Object keyAttachement, BufferPool bufPool,
+                                       Selector nioSelector, SocketChannel frontChannel) throws IOException {
+        MySQLClientAuthHandler mySQLClientAuthHandler = new MySQLClientAuthHandler(this);
+        MycatSession mycat = new MycatSession(SessionManager.nextSessionId(), bufPool,
+                mySQLClientAuthHandler, this);
+
+
+        //用于monitor监控获取session
+        SessionThread thread = (SessionThread) Thread.currentThread();
+        thread.setCurSession(mycat);
+        mySQLClientAuthHandler.setMycatSession(mycat);
+        try {
+            mycat.register(nioSelector, frontChannel, SelectionKey.OP_READ);
+            MycatMonitor.onNewMycatSession(mycat);
+            mySQLClientAuthHandler.sendAuthPackge();
+            this.mycatSessions.add(mycat);
+        } catch (Exception e) {
+            MycatMonitor.onAuthHandlerWriteException(mycat, e);
+            mycat.close(false, e);
+        }
+    }
+
+    @Override
+    public void check() {
+        LOGGER.info("MycatSessionManager is checking");
+        ListIterator<MycatSession> iterator = mycatSessions.listIterator();
+        while (iterator.hasNext()) {
+            MycatSession next = iterator.next();
+            if (next == null) {
+                iterator.remove();
+            } else {
+                try {
+                    if (!next.checkOpen()) {
+                        next.close(false, "MycatSessionManager check");
+                        LOGGER.error("未关闭连接:{}",next);
+                    }
+                }catch (Exception e){
+                    LOGGER.error("{}",e);
+                }
+            }
+        }
+    }
+
+    public void initCommandDispatcher(MycatSession session) {
+        session.setCommandHandler(commandDispatcher.apply(session));
+    }
 }
