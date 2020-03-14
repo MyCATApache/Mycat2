@@ -60,7 +60,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
             },
   ]
   sqls: [
-  {name: explain,sql: 'EXPLAIN {statement}' ,command: explain}, #explain一定要写库名
+  {name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL}, #explain一定要写库名
   {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: plan},
   {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
   {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
