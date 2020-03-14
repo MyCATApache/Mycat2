@@ -2,6 +2,8 @@ package io.mycat.hbt;
 
 import io.mycat.hbt.ast.base.Literal;
 import io.mycat.hbt.ast.base.*;
+import io.mycat.hbt.ast.modify.MergeModify;
+import io.mycat.hbt.ast.modify.ModifyFromSql;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.hbt.parser.CallExpr;
 import io.mycat.hbt.parser.ParenthesesExpr;
@@ -238,6 +240,13 @@ public class SchemaConvertor {
                 case EXPLAIN: {
                     Schema schema = transforSchema(((CallExpr) (parseNode)).getArgs().getExprs().get(0));
                     return new CommandSchema(Op.EXPLAIN, schema);
+                }
+
+                case MODIFY_FROM_SQL:{
+                  return   new ModifyFromSql(exprList.get(0).toString(),exprList.get(1).toString());
+                }
+                case MERGE_MODIFY:{
+                    return new MergeModify(exprList.stream().map(i -> (ModifyFromSql) transforSchema(i)).collect(Collectors.toList()));
                 }
                 default: {
                     throw new UnsupportedOperationException();

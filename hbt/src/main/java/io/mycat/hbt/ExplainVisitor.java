@@ -375,7 +375,9 @@ public class ExplainVisitor implements NodeVisitor {
         append("(");
         append(targetName);
         append(",");
+        append("'");
         append(sql);
+        append("'");
         append(")");
     }
 
