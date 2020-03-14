@@ -180,7 +180,7 @@ public enum ClientRuntime {
                         for (Map.Entry<Map<String, Set<String>>, List<TableInfo>> mapListEntry : this.runtime.tableToItem.entrySet()) {
                             Set<String> tableConfigs = mapListEntry.getKey().get(stringCollectionEntry.getKey());
                             Collection<String> currentTables = stringCollectionEntry.getValue();
-                            if (tableConfigs.containsAll(currentTables)) {
+                            if (tableConfigs != null && tableConfigs.containsAll(currentTables)) {
                                 List<TableInfo> tableInfo = mapListEntry.getValue();
                                 if (tableInfo != null) {
                                     for (TableInfo info : tableInfo) {
@@ -227,11 +227,12 @@ public enum ClientRuntime {
             private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
                 return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain());
             }
+
             @Override
             public void useSchema(String schemaName) {
                 if (schemaName != null) {
                     db.useSchema(schemaName);
-                    dataContext.useShcema( schemaName);
+                    dataContext.useShcema(schemaName);
                 } else {
                     LOGGER.warn("use null schema");
                 }
@@ -245,12 +246,12 @@ public enum ClientRuntime {
 
             @Override
             public void useTransactionType(TransactionType transactionType) {
-            dataContext.switchTransaction(transactionType.getName());
+                dataContext.switchTransaction(transactionType.getName());
             }
 
             @Override
             public String getDefaultSchema() {
-         return   dataContext.getDefaultSchema();
+                return dataContext.getDefaultSchema();
             }
 
             @Override
@@ -437,7 +438,7 @@ public enum ClientRuntime {
         for (PatternRootConfig.TextItemConfig textItemConfig : sqls) {
             itemMap.put(noTablesPatternBuilder.addRule(textItemConfig.getSql()), textItemConfig);
         }
-        Supplier<GPattern> noTablesPattern = ()->noTablesPatternBuilder.createGroupPattern();
+        Supplier<GPattern> noTablesPattern = () -> noTablesPatternBuilder.createGroupPattern();
 
 
         Map<Map<String, Set<String>>, List<TableInfo>> tableMap = new ConcurrentHashMap<>();
@@ -448,12 +449,12 @@ public enum ClientRuntime {
                 map.put(tablesPatternBuilder.addRule(sql.getSql()), sql);
             }
             List<TableInfo> tableInfos1 = tableMap.computeIfAbsent(getTableMap(schema), stringSetMap -> new CopyOnWriteArrayList<>());
-            tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder(),()->tablesPatternBuilder.createGroupPattern()));
+            tableInfos1.add(new TableInfo(map, schema.getDefaultHanlder(), () -> tablesPatternBuilder.createGroupPattern()));
         }
         GPatternIdRecorderImpl gPatternIdRecorder = new GPatternIdRecorderImpl(false);
         TableCollectorBuilder tableCollectorBuilder = new TableCollectorBuilder(gPatternIdRecorder, (Map) getTableMap(schemas));
         final GPatternBuilder tableCollectorPatternBuilder = new GPatternBuilder(0);
-        runtimeInfo = new RuntimeInfo(()-> tableCollectorPatternBuilder.createGroupPattern(tableCollectorBuilder.create()),itemMap, tableMap, defaultHanlder,noTablesPattern);
+        runtimeInfo = new RuntimeInfo(() -> tableCollectorPatternBuilder.createGroupPattern(tableCollectorBuilder.create()), itemMap, tableMap, defaultHanlder, noTablesPattern);
         this.transactionType = TransactionType.parse(patternRootConfig.getTransactionType());
         this.defaultSchema = patternRootConfig.getDefaultSchema();
     }
