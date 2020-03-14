@@ -10,18 +10,14 @@ public class ConcurrencyTesting {
     public static void main(String[] args) {
         AtomicLong counter = new AtomicLong(0);
 
-       for (int i = 0;i<10;i++){
+       for (int i = 0;i<1000;i++){
             new Thread(() -> {
                 try {
                     while (true) {
                         try (Connection mySQLConnection = getMySQLConnection()) {
-                            mySQLConnection.setAutoCommit(false);
                             try (Statement statement = mySQLConnection.createStatement()) {
-                                statement.executeUpdate(String.format(
-                                        "INSERT INTO `db1`.`travelrecord` (`id`) VALUES ('%s'); ",
-                                        Long.valueOf(counter.getAndIncrement()).toString()));
+                                statement.execute("select 1");
                             }
-                            mySQLConnection.commit();
                         } catch (Exception e) {
                             e.printStackTrace();
                         }

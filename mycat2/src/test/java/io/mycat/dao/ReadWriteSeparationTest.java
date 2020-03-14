@@ -34,7 +34,7 @@ public class ReadWriteSeparationTest {
             try (Statement statement = connection.createStatement()) {
                 ResultSet resultSet = statement.executeQuery("select * from db1.company");
                 String string = TestUtil.getString(resultSet);
-                Assert.assertEquals("(1,Intel,1),(2,IBM,2),(3,Dell,3)", string);
+                Assert.assertEquals("(1,Intel,1)(2,IBM,2)(3,Dell,3)", string);
                 // proxy target:defaultDs2,sql:select * from db1.company,transaction:false,isolation:REPEATED_READ,master:false,balance:null
             }
             connection.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);

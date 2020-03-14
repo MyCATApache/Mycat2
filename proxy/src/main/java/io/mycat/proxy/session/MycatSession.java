@@ -14,10 +14,7 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.MycatDataContext;
-import io.mycat.MycatDataContextEnum;
-import io.mycat.MycatException;
-import io.mycat.MycatUser;
+import io.mycat.*;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -168,6 +165,11 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
 
     @Override
     public void close(boolean normal, String hint) {
+        try {
+            dataContext.close();
+        }catch (Exception e){
+            LOGGER.error("", e);
+        }
         if (!normal) {
             assert hint != null;
             setLastMessage(hint);
@@ -232,6 +234,18 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     @Override
     public Queue<ByteBuffer> writeQueue() {
         return writeQueue;
+    }
+
+    ByteBuffer lastWritePacket;
+
+    @Override
+    public ByteBuffer lastWritePacket() {
+        return lastWritePacket;
+    }
+
+    @Override
+    public void setLastWritePacket(ByteBuffer buffer) {
+        this.lastWritePacket = buffer;
     }
 
     @Override
@@ -515,5 +529,19 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     @Override
     public boolean isWrapperFor(Class<?> iface) {
         return unwrap(iface) != null;
+    }
+
+    public boolean isIOThreadMode() {
+        TransactionSession transactionSession = dataContext.getTransactionSession();
+        if (transactionSession == null) return true;
+        ThreadUsageEnum threadUsageEnum = transactionSession.getThreadUsageEnum();
+        switch (threadUsageEnum) {
+            case THIS_THREADING:
+                return true;
+            case BINDING_THREADING:
+            case MULTI_THREADING:
+                return false;
+        }
+        return false;
     }
 }

@@ -203,7 +203,7 @@ public class MySQLTaskUtil {
                 if (!inTransaction) {
                     return SET_AUTOCOMMIT_OFF;
                 } else {
-                    throw new UnsupportedOperationException();
+                   return SET_AUTOCOMMIT_ON_BEGIN;
                 }
             }
         }

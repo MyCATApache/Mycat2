@@ -102,7 +102,12 @@ public class JdbcLib {
 //    }
 
     public static void block(MycatSession mycat, Consumer<MycatSession> consumer) {
-        consumer.accept(mycat);
+        if (!mycat.isIOThreadMode()){
+            mycat.getDataContext().block(()->consumer.accept(mycat));
+        }else {
+            consumer.accept(mycat);
+        }
+
 //        JdbcRuntime.INSTANCE.run(mycat, new GProcess() {
 //            @Override
 //            public void accept(BindThreadKey key) {

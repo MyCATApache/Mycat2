@@ -20,6 +20,7 @@ import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import lombok.SneakyThrows;
 
 import java.sql.*;
 
@@ -35,26 +36,22 @@ public class DefaultConnection implements AutoCloseable {
     private volatile boolean isClosed = false;
     protected final ConnectionManager connectionManager;
 
+    @SneakyThrows
     public DefaultConnection(Connection connection, JdbcDataSource dataSource,
-                             boolean autocommit,
+                             Boolean autocommit,
                              int transactionIsolation, boolean readOnly, ConnectionManager connectionManager) {
         this.connection = connection;
         this.jdbcDataSource = dataSource;
         this.connectionManager = connectionManager;
-        try {
-            if (!autocommit) {
-                connection.setAutoCommit(false);
-            }
-            connection.setReadOnly(readOnly);
-            connection.setTransactionIsolation(transactionIsolation);
-        } catch (SQLException e) {
-            LOGGER.error("", e);
-            throw new MycatException(e);
+        if (autocommit != null) {
+            connection.setAutoCommit(autocommit);
         }
+        connection.setReadOnly(readOnly);
+        connection.setTransactionIsolation(transactionIsolation);
     }
 
 
-    public UpdateRowIteratorResponse executeUpdate(String sql, boolean needGeneratedKeys,int serverStatus) {
+    public UpdateRowIteratorResponse executeUpdate(String sql, boolean needGeneratedKeys, int serverStatus) {
         try (Statement statement = connection.createStatement()) {
             statement.executeUpdate(sql,
                     needGeneratedKeys ? Statement.RETURN_GENERATED_KEYS : Statement.NO_GENERATED_KEYS);

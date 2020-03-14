@@ -7,6 +7,8 @@ import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.transactionSession.TransactionSessionTemplate;
 
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
+
 public class LocalTransactionSession extends TransactionSessionTemplate implements TransactionSession {
     public LocalTransactionSession(MycatDataContext dataContext) {
         super(dataContext);
@@ -15,11 +17,6 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
     @Override
     public String name() {
         return "local";
-    }
-
-    @Override
-    public boolean needBindThread() {
-        return false;
     }
 
     @Override
@@ -50,7 +47,7 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
                         return absractConnection;
                     } else {
                         return JdbcRuntime.INSTANCE
-                                .getConnection(jdbcDataSource, autocommit, transactionIsolation, readOnly);
+                                .getConnection(jdbcDataSource, true, TRANSACTION_REPEATABLE_READ, false);
                     }
                 });
     }

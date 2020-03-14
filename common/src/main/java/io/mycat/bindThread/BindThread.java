@@ -70,7 +70,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
                         processJob(exception, callback);
                     }
                     boolean bind = false;
-                    if (this.key != null && this.key.isRunning() && !(bind = this.key.continueBind())) {
+                    if (this.key != null && this.key.isRunning() && !(bind = this.key.continueBindThreadIfTransactionNeed())) {
                         recycleTransactionThread();
                     } else if (this.key == null && bind) {
                         throw new RuntimeException("unknown state");
@@ -102,7 +102,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
     }
 
     public void recycleTransactionThread() {
-        if (!this.key.continueBind()) {
+        if (!this.key.continueBindThreadIfTransactionNeed()) {
             manager.map.remove(this.key);
             this.key = null;
             if (!manager.idleList.offer(this)) {
@@ -120,7 +120,7 @@ public abstract class BindThread<KEY extends BindThreadKey, PROCESS extends Bind
 
     public void close() {
 //    super.close();
-        this.interrupt();
+        //this.interrupt();
     }
 
 //  public AutocommitConnection getAutocommitConnection(JdbcDataSource dataSource) {

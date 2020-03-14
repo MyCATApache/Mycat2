@@ -585,6 +585,7 @@ public class ContextRunner {
                     if (tasks.size() != 1) throw new IllegalArgumentException();
                     String[] strings = checkThenGetOne(tasks);
                     return () -> {
+                        MycatDataContext dataContext = session.getDataContext();
                         MySQLTaskUtil.proxyBackendByTargetName(session, strings[0], strings[1],
                                 MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
                                 session.getIsolation(), details.executeType.isMaster(), balance);

@@ -5,6 +5,7 @@ import io.mycat.TransactionSession;
 import io.mycat.TransactionSessionRunner;
 import io.mycat.config.ServerConfig;
 import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.session.ServerTransactionSessionRunner;
 import io.mycat.thread.GThreadPool;
 
 import java.util.HashMap;
@@ -34,7 +35,7 @@ public enum MycatDataContextSupport {
     }
 
     public TransactionSessionRunner createRunner(MycatSession session) {
-        return new ServerTransactionSessionRunnerImpl(transcationFactoryMap, gThreadPool, session);
+        return new ServerTransactionSessionRunner(transcationFactoryMap, gThreadPool, session);
     }
 
     public MycatDataContext createDataContext(MycatSession session) {

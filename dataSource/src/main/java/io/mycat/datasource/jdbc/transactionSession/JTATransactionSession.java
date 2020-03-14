@@ -67,7 +67,7 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
                         return absractConnection;
                     } else {
                         return JdbcRuntime.INSTANCE
-                                .getConnection(jdbcDataSource, autocommit, transactionIsolation,readOnly);
+                                .getConnection(jdbcDataSource, null, transactionIsolation,readOnly);
                     }
                 });
     }
@@ -79,8 +79,12 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
     }
 
     @Override
-    public boolean needBindThread() {
-        return isInTransaction();
+    @SneakyThrows
+    public void close() {
+        if (isInTransaction()) {
+            userTransaction.setRollbackOnly();
+        }
+        super.close();
     }
 
     @Override

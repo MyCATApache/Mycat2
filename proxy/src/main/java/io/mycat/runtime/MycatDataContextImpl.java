@@ -43,7 +43,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     private boolean inTransaction = false;
 
     private MycatUser user;
-    private TransactionSession transactionSession;
+    private TransactionSession transactionSession = new ProxyTransactionSession(this);
     private TransactionSessionRunner runner;
     private final AtomicBoolean cancelFlag = new AtomicBoolean(false);
 
@@ -267,6 +267,20 @@ public class MycatDataContextImpl implements MycatDataContext {
     public RowBaseIterator query(String targetName, String sql) {
         DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
         return defaultConnection.executeQuery(sql);
+    }
+
+    @Override
+    public void close() {
+        if (transactionSession!=null){
+            transactionSession.check();
+            transactionSession.close();
+        }
+        cancelFlag.set(true);
+    }
+
+    @Override
+    public void block(Runnable runnable) {
+        runner.block(this,runnable);
     }
 
 }

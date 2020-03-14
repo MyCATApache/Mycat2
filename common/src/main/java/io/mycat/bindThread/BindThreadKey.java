@@ -23,5 +23,5 @@ public interface BindThreadKey {
 
     boolean isRunning();
 
-    boolean continueBind();
+    boolean continueBindThreadIfTransactionNeed();
 }

@@ -2,11 +2,14 @@ package io.mycat.runtime;
 
 import io.mycat.MycatDataContext;
 import io.mycat.ThreadUsageEnum;
-import io.mycat.TransactionSession;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.transactionSession.TransactionSessionTemplate;
+import lombok.SneakyThrows;
 
-public class ProxyTransactionSession extends TransactionSessionTemplate implements TransactionSession {
+import java.sql.Connection;
+import java.util.Map;
+import java.util.Set;
+
+public class ProxyTransactionSession extends LocalTransactionSession {
     public ProxyTransactionSession(MycatDataContext dataContext) {
         super(dataContext);
     }
@@ -14,11 +17,6 @@ public class ProxyTransactionSession extends TransactionSessionTemplate implemen
     @Override
     public String name() {
         return "proxy";
-    }
-
-    @Override
-    public boolean needBindThread() {
-        return false;
     }
 
     @Override
@@ -42,7 +40,17 @@ public class ProxyTransactionSession extends TransactionSessionTemplate implemen
     }
 
     @Override
-    protected DefaultConnection callBackConnection(String jdbcDataSource, boolean autocommit, int transactionIsolation, boolean readOnly) {
-        throw new UnsupportedOperationException();
+    @SneakyThrows
+    public void check() {
+        Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
+        for (Map.Entry<String, DefaultConnection> entry : entries) {
+            DefaultConnection value = entry.getValue();
+            Connection rawConnection = value.getRawConnection();
+            if(!rawConnection.getAutoCommit()){
+                rawConnection.rollback();
+            }
+            value.close();
+        }
+        updateConnectionMap.clear();
     }
 }

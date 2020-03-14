@@ -98,7 +98,7 @@ public class GRuntimeTest {
             }
 
             @Override
-            public boolean continueBind() {
+            public boolean continueBindThreadIfTransactionNeed() {
                 return false;
             }
 

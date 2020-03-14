@@ -15,10 +15,13 @@
 
 package io.mycat.beans.mycat;
 
+import lombok.Getter;
+
 /**
  * @author jamie12221
  * date 2020-01-09 23:18
  **/
+@Getter
 public enum TransactionType {
     PROXY_TRANSACTION_TYPE("proxy"),
     JDBC_TRANSACTION_TYPE("xa"),

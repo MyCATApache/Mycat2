@@ -100,7 +100,9 @@ public interface MycatDataContext extends Wrapper,SessionOpt {
     public RowBaseIterator query(String targetName, String sql) ;
 
     @Override
-   default boolean continueBind(){
+   default boolean continueBindThreadIfTransactionNeed(){
         return isInTransaction();
     }
+   void close();
+   void block(Runnable runnable);
 }

@@ -45,15 +45,16 @@ public interface TransactionSession {
 
     public int getServerStatus();
 
-    void onEndOfResponse();
-
     boolean isReadOnly();
 
     public void setReadOnly(boolean readOnly);
 
-    boolean needBindThread();
 
     int getTransactionIsolation();
 
     ThreadUsageEnum getThreadUsageEnum();
+
+    void check();
+
+    void close();
 }

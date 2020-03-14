@@ -15,12 +15,13 @@
 
 package io.mycat.client;
 
+import io.mycat.MycatDataContext;
 import io.mycat.beans.mycat.TransactionType;
 
 /**
  * @author Junwen Chen
  **/
-public interface MycatClient {
+public interface MycatClient extends MycatDataContext {
     public Context analysis(String sql) ;
     public void useSchema(String schemaName);
     public TransactionType getTransactionType();

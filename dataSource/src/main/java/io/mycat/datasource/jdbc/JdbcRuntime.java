@@ -59,7 +59,7 @@ public enum JdbcRuntime {
         connectionManager.removeDatasource(jdbcDataSourceName);
     }
 
-    public DefaultConnection getConnection(String name, boolean autocommit, int transactionIsolation, boolean readOnly) {
+    public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly) {
         return connectionManager.getConnection(name, autocommit, transactionIsolation, readOnly);
     }
 

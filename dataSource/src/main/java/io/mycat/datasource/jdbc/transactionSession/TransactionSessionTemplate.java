@@ -4,9 +4,12 @@ import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import lombok.SneakyThrows;
 
+import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
@@ -21,9 +24,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public void setAutocommit(boolean autocommit) {
-        if (isInTransaction() && autocommit) {
-            throw new IllegalArgumentException("is in transcation");
-        }
         dataContext.setAutoCommit( autocommit);
     }
 
@@ -62,7 +62,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     @Override
     public <T> T getConnection(
             String jdbcDataSource) {
-        if (!isAutocommit() && !isInTransaction()) {
+        if (!isAutocommit()) {
             begin();
         }
         return(T) callBackConnection(jdbcDataSource,isAutocommit(),getTransactionIsolation() , isReadOnly());
@@ -90,16 +90,13 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         this.updateConnectionMap.forEach((key, value) -> value.setReadyOnly(readOnly));
     }
 
-    public boolean isInTranscation() {
-        return dataContext.isInTransaction();
-    }
-
 
     private void setInTranscation(boolean inTranscation) {
         this.dataContext.setInTransaction(inTranscation);
     }
 
     public void close() {
+        check();
         for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
             DefaultConnection value = stringDefaultConnectionEntry.getValue();
             if (value != null) {
@@ -109,20 +106,24 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
         updateConnectionMap.clear();
     }
 
-    public void onEndOfResponse() {
-        if (!isInTransaction()) {
-            for (Map.Entry<String, DefaultConnection> stringDefaultConnectionEntry : updateConnectionMap.entrySet()) {
-                DefaultConnection value = stringDefaultConnectionEntry.getValue();
-                if (value != null) {
-                    value.close();
+    public int getTransactionIsolation() {
+        return dataContext.getIsolation().getJdbcValue();
+    }
+
+    @Override
+    @SneakyThrows
+    public void check() {
+        if (!isInTransaction()){
+            Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
+            for (Map.Entry<String, DefaultConnection> entry : entries) {
+                Connection rawConnection = entry.getValue().getRawConnection();
+                if (!rawConnection.getAutoCommit()){
+                    rawConnection.rollback();
                 }
+                rawConnection.close();
             }
             updateConnectionMap.clear();
         }
-    }
-
-    public int getTransactionIsolation() {
-        return dataContext.getIsolation().getJdbcValue();
     }
 
     public void setTransactionIsolation(int transactionIsolation) {

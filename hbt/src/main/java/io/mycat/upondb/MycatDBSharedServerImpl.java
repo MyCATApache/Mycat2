@@ -203,7 +203,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         boolean ddl = sqlStatement instanceof SQLSelectStatement || sqlStatement instanceof MySqlInsertStatement
                 || sqlStatement instanceof MySqlUpdateStatement || sqlStatement instanceof MySqlDeleteStatement;
         if (ddl) {
-            return prepare(sql, null, null, dbContext);
+            return prepare(sql, null, sqlStatement, dbContext);
         }
         if (sqlStatement instanceof SQLCommitStatement) return commit(sql, dbContext);
         if (sqlStatement instanceof SQLRollbackStatement) return (rollback(sql, dbContext));

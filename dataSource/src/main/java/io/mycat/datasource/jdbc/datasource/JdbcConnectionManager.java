@@ -58,7 +58,7 @@ public class JdbcConnectionManager implements ConnectionManager {
         return getConnection(name, true, Connection.TRANSACTION_REPEATABLE_READ,false);
     }
 
-    public DefaultConnection getConnection(String name, boolean autocommit,
+    public DefaultConnection getConnection(String name, Boolean autocommit,
                                            int transactionIsolation, boolean readOnly) {
         JdbcDataSource key = dataSourceMap.get(name);
         if (key.counter.updateAndGet(operand -> {

@@ -1,27 +1,29 @@
-package io.mycat.runtime;
+package io.mycat.proxy.session;
 
-import io.mycat.MycatDataContext;
-import io.mycat.SessionOpt;
-import io.mycat.TransactionSession;
-import io.mycat.TransactionSessionRunner;
+import io.mycat.*;
 import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
 import io.mycat.proxy.handler.MycatSessionWriteHandler;
-import io.mycat.proxy.session.MycatSession;
+import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.thread.GThreadPool;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
-public class ServerTransactionSessionRunnerImpl implements TransactionSessionRunner {
+/**
+ * @MySQLProxyServerSession
+ * @MySQLServerSession
+ */
+public class ServerTransactionSessionRunner implements TransactionSessionRunner {
     final Map<String, Function<MycatDataContext, TransactionSession>> map;
     final MycatSession session;
     private final GThreadPool threadPool;
 
-    public ServerTransactionSessionRunnerImpl(Map<String, Function<MycatDataContext, TransactionSession>> map, GThreadPool threadPool,MycatSession session) {
+    public ServerTransactionSessionRunner(Map<String, Function<MycatDataContext, TransactionSession>> map, GThreadPool threadPool, MycatSession session) {
         this.map = map;
         this.threadPool = threadPool;
         this.session = session;
@@ -53,7 +55,7 @@ public class ServerTransactionSessionRunnerImpl implements TransactionSessionRun
             }
 
             @Override
-            public boolean continueBind() {
+            public boolean continueBindThreadIfTransactionNeed() {
                 return false;
             }
         }, new BindThreadCallback() {
@@ -101,10 +103,17 @@ public class ServerTransactionSessionRunnerImpl implements TransactionSessionRun
                     newTransactionSession.setTransactionIsolation(transactionSession.getTransactionIsolation());
 
                     container.setTransactionSession(newTransactionSession);
+                    transactionSession = newTransactionSession;
                 }
             }
         }
-        switch (transactionSession.getThreadUsageEnum()) {
+        ThreadUsageEnum threadUsageEnum = transactionSession.getThreadUsageEnum();
+        run(container, runner, threadUsageEnum);
+        return;
+    }
+
+    private void run(MycatDataContext container, BindThreadCallback runner, ThreadUsageEnum threadUsageEnum) {
+        switch (threadUsageEnum) {
             case THIS_THREADING:
                 try {
                     runner.accept(container, null);
@@ -126,7 +135,12 @@ public class ServerTransactionSessionRunnerImpl implements TransactionSessionRun
 
     @Override
     public void run(MycatDataContext mycatDataContext, Runnable runnable) {
-        run(mycatDataContext, new BindThreadCallback() {
+        run(mycatDataContext, getRunner(mycatDataContext, runnable));
+    }
+
+    @NotNull
+    private BindThreadCallback getRunner(MycatDataContext mycatDataContext, Runnable runnable) {
+        return new BindThreadCallback() {
             @Override
             public void accept(BindThreadKey key, BindThread context) {
                 runnable.run();
@@ -140,8 +154,10 @@ public class ServerTransactionSessionRunnerImpl implements TransactionSessionRun
                         writeHandler.onLastPacket(session);
                         break;
                     case PROXY:
+                        writeHandler.onLastPacket(session);
                         break;
                 }
+                mycatDataContext.getTransactionSession().check();
             }
 
             @Override
@@ -149,6 +165,15 @@ public class ServerTransactionSessionRunnerImpl implements TransactionSessionRun
                 session.setLastMessage(e);
                 session.writeErrorEndPacketBySyncInProcessError();
             }
-        });
+        };
+    }
+
+    public void block(MycatDataContext mycatDataContext, Runnable runnable) {
+        if(Thread.currentThread() instanceof ReactorEnvThread){
+          run(mycatDataContext,getRunner(mycatDataContext,runnable),ThreadUsageEnum.MULTI_THREADING);
+            return;
+        }else {
+            run(mycatDataContext,runnable);
+        }
     }
 }
