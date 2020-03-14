@@ -111,7 +111,7 @@ public enum MycatHandler implements NIOHandler<MycatSession> {
      * @param session the session
      */
     public void onClear(MycatSession session) {
-        session.onHandlerFinishedClear();
+        session.resetPacket();
         MycatMonitor.onMycatHandlerClear(session);
     }
 

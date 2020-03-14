@@ -4,7 +4,6 @@ import io.mycat.*;
 import io.mycat.bindThread.BindThread;
 import io.mycat.bindThread.BindThreadCallback;
 import io.mycat.bindThread.BindThreadKey;
-import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.reactor.ReactorEnvThread;
 import io.mycat.thread.GThreadPool;
 import org.jetbrains.annotations.NotNull;
@@ -148,16 +147,8 @@ public class ServerTransactionSessionRunner implements TransactionSessionRunner 
 
             @Override
             public void finallyAccept(BindThreadKey key, BindThread context) {
-                MycatSessionWriteHandler writeHandler = session.getWriteHandler();
-                switch (writeHandler.getType()) {
-                    case SERVER:
-                        writeHandler.onLastPacket(session);
-                        break;
-                    case PROXY:
-                        writeHandler.onLastPacket(session);
-                        break;
-                }
                 mycatDataContext.getTransactionSession().check();
+                session.runDelayedNioJob();
             }
 
             @Override

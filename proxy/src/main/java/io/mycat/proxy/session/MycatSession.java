@@ -14,7 +14,10 @@
  */
 package io.mycat.proxy.session;
 
-import io.mycat.*;
+import io.mycat.MycatDataContext;
+import io.mycat.MycatDataContextEnum;
+import io.mycat.MycatException;
+import io.mycat.MycatUser;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.mysql.packet.MySQLPacket;
 import io.mycat.beans.mysql.packet.MySQLPacketSplitter;
@@ -31,6 +34,8 @@ import io.mycat.proxy.handler.MycatSessionWriteHandler;
 import io.mycat.proxy.handler.NIOHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.FrontMySQLPacketResolver;
+import io.mycat.proxy.reactor.MycatReactorThread;
+import io.mycat.proxy.reactor.NIOJob;
 import io.mycat.proxy.reactor.SessionThread;
 import io.mycat.runtime.MycatDataContextSupport;
 import io.mycat.util.CharsetUtil;
@@ -40,6 +45,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayDeque;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
@@ -73,6 +80,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     private MycatSessionWriteHandler writeHandler = WriteHandler.INSTANCE;
     private final FrontMySQLPacketResolver frontResolver;
     private byte packetId = 0;
+    private final ArrayDeque<NIOJob> delayedNioJobs = new ArrayDeque<>();
 
     private boolean gracefulShutdowning = false;
 
@@ -167,7 +175,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     public void close(boolean normal, String hint) {
         try {
             dataContext.close();
-        }catch (Exception e){
+        } catch (Exception e) {
             LOGGER.error("", e);
         }
         if (!normal) {
@@ -193,7 +201,7 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
         } catch (Exception e) {
             LOGGER.error("", e);
         }
-        onHandlerFinishedClear();
+        resetPacket();
         if (this.getMySQLSession() != null) {
             this.getMySQLSession().close(normal, hint);
         }
@@ -406,12 +414,8 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     public void resetPacket() {
-        frontResolver.reset();
-        BufferPool bufPool = this.getIOThread().getBufPool();
-        for (ByteBuffer byteBuffer : writeQueue) {
-            bufPool.recycle(byteBuffer);
-        }
-        writeQueue.clear();
+        resetCurrentProxyPayload();
+        writeHandler.onClear(this);
     }
 
     @Override
@@ -532,16 +536,18 @@ public final class MycatSession extends AbstractSession<MycatSession> implements
     }
 
     public boolean isIOThreadMode() {
-        TransactionSession transactionSession = dataContext.getTransactionSession();
-        if (transactionSession == null) return true;
-        ThreadUsageEnum threadUsageEnum = transactionSession.getThreadUsageEnum();
-        switch (threadUsageEnum) {
-            case THIS_THREADING:
-                return true;
-            case BINDING_THREADING:
-            case MULTI_THREADING:
-                return false;
+        return Thread.currentThread() == this.getIOThread();
+    }
+
+    public void addDelayedNioJob(NIOJob runnable) {
+        Objects.requireNonNull(runnable);
+        delayedNioJobs.addLast(runnable);
+    }
+
+    public void runDelayedNioJob() {
+        MycatReactorThread ioThread = getIOThread();
+        while (!delayedNioJobs.isEmpty()) {
+            ioThread.addNIOJob(delayedNioJobs.pollFirst());
         }
-        return false;
     }
 }

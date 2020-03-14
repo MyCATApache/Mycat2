@@ -119,7 +119,7 @@ public enum MycatCore {
         HashMap<String,Function<MycatDataContext,TransactionSession>> transcationFactoryMap  = new HashMap<>();
 
         transcationFactoryMap.put("local", mycatDataContext -> new LocalTransactionSession(mycatDataContext));
-        transcationFactoryMap.put("xa", mycatDataContext -> new JTATransactionSession(mycatDataContext,new UserTransactionImp()));
+        transcationFactoryMap.put("xa", mycatDataContext -> new JTATransactionSession(mycatDataContext,()->new UserTransactionImp()));
         transcationFactoryMap.put("proxy", mycatDataContext -> new ProxyTransactionSession(mycatDataContext));
 
         MycatDataContextSupport.INSTANCE.init(mycatConfig.getServer().getWorker(), transcationFactoryMap, mycatConfig.getInterceptor().getTransactionType());

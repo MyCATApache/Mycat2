@@ -408,7 +408,7 @@ public enum MySQLPacketExchanger {
     /**
      * 代理模式前端写入处理器
      */
-    public enum WriteHandler implements MycatSessionWriteHandler {
+    public static enum WriteHandler implements MycatSessionWriteHandler {
         INSTANCE;
 
         @Override
@@ -458,8 +458,8 @@ public enum MySQLPacketExchanger {
         }
 
         @Override
-        public void onLastPacket(MycatSession session)  {
-
+        public void onClear(MycatSession session) {
+            session.currentProxyBuffer().reset();
         }
 
         @Override

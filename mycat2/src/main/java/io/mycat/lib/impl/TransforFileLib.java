@@ -30,34 +30,36 @@ public class TransforFileLib {
                 } catch (IOException e) {
                     session.setLastMessage(e);
                     session.writeErrorEndPacketBySyncInProcessError();
-                    writeHandler.onException(session,e);
-                    session.getCurNIOHandler().onException(session,e);
+                    writeHandler.onException(session, e);
+                    session.getCurNIOHandler().onException(session, e);
                 }
             }
         };
     }
-    public static void saveToFile(String filePath,boolean eof,MycatResultSetResponse<byte[]> resultSetResponse) throws IOException {
+
+    public static void saveToFile(String filePath, boolean eof, MycatResultSetResponse<byte[]> resultSetResponse) throws IOException {
         int columnCount = resultSetResponse.columnCount();
         byte packetId = 1;
         byte[] bytes = MySQLPacketUtil.generateMySQLPacket(packetId++, MySQLPacketUtil.generateResultSetCount(columnCount));
-        RandomAccessFile file = new RandomAccessFile(filePath,"rw");
+        RandomAccessFile file = new RandomAccessFile(filePath, "rw");
         file.write(bytes);
         Iterator columnDefIterator = resultSetResponse.columnDefIterator();
-        while (columnDefIterator.hasNext()){
+        while (columnDefIterator.hasNext()) {
             byte[] next = (byte[]) columnDefIterator.next();
-            file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,next));
+            file.write(MySQLPacketUtil.generateMySQLPacket(packetId++, next));
         }
-        if (eof){
-            file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,MySQLPacketUtil.generateEof(0,0)));
+        if (eof) {
+            file.write(MySQLPacketUtil.generateMySQLPacket(packetId++, MySQLPacketUtil.generateEof(0, 0)));
         }
         Iterator rowIterator = resultSetResponse.rowIterator();
-        while (rowIterator.hasNext()){
+        while (rowIterator.hasNext()) {
             byte[] next = (byte[]) rowIterator.next();
-            file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,next));
+            file.write(MySQLPacketUtil.generateMySQLPacket(packetId++, next));
         }
-        file.write( MySQLPacketUtil.generateMySQLPacket(packetId++,MySQLPacketUtil.generateEof(0,0)));
+        file.write(MySQLPacketUtil.generateMySQLPacket(packetId++, MySQLPacketUtil.generateEof(0, 0)));
         file.close();
     }
+
     /**
      * 前端写入处理器
      */
@@ -106,20 +108,21 @@ public class TransforFileLib {
 
         @Override
         public void onException(MycatSession session, Exception e) {
-            if (fileChannel!=null){
+            onClear(session);
+            MycatMonitor.onMycatServerWriteException(session, e);
+
+        }
+
+        @Override
+        public void onClear(MycatSession session) {
+            session.resetPacket();
+            if (fileChannel != null) {
                 try {
                     fileChannel.close();
                 } catch (IOException e1) {
 
                 }
             }
-            MycatMonitor.onMycatServerWriteException(session, e);
-            session.resetPacket();
-        }
-
-        @Override
-        public void onLastPacket(MycatSession session) {
-
         }
 
         @Override

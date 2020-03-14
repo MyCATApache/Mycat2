@@ -25,13 +25,7 @@ public interface MycatSessionWriteHandler {
      */
     void onException(MycatSession session, Exception e);
 
-
-    /**
-     * 在线程结束的时候发送,用于IO线程和worker线程交换报文
-     *
-     * @param session
-     */
-    void onLastPacket(MycatSession session);
+    void onClear(MycatSession session);
 
     WriteType getType();
 

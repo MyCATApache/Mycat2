@@ -24,6 +24,7 @@ import io.mycat.logTip.MycatLoggerFactory;
 import lombok.SneakyThrows;
 
 import javax.transaction.UserTransaction;
+import java.util.function.Supplier;
 
 /**
  * @author Junwen Chen
@@ -32,30 +33,44 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
 
     private static final MycatLogger LOGGER = MycatLoggerFactory
             .getLogger(JTATransactionSession.class);
-    private final UserTransaction userTransaction;
+    private final Supplier<UserTransaction> userTransactionProvider;
+    private UserTransaction userTransaction;
+    private Thread bindThread;
 
 
-    public JTATransactionSession(MycatDataContext dataContext,UserTransaction userTransaction) {
+    public JTATransactionSession(MycatDataContext dataContext, Supplier<UserTransaction> userTransactionProvider) {
         super(dataContext);
-        this.userTransaction = userTransaction;
+        this.userTransactionProvider = userTransactionProvider;
     }
 
     @Override
     @SneakyThrows
     protected void callBackBegin() {
+        this.bindThread = Thread.currentThread();
+        userTransaction = userTransactionProvider.get();
         userTransaction.begin();
     }
 
     @Override
     @SneakyThrows
     protected void callBackCommit() {
-        userTransaction.commit();
+        if (bindThread != Thread.currentThread()) {
+            throw new AssertionError();
+        }
+        this.userTransaction.commit();
+        this.userTransaction = null;
+        this.bindThread = null;
     }
 
     @Override
     @SneakyThrows
     protected void callBackRollback() {
-        userTransaction.rollback();
+        if (bindThread != Thread.currentThread()) {
+            throw new AssertionError();
+        }
+        this.userTransaction.rollback();
+        this.userTransaction = null;
+        this.bindThread = null;
     }
 
     @Override
@@ -66,8 +81,8 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
                     if (absractConnection != null && !absractConnection.isClosed()) {
                         return absractConnection;
                     } else {
-                        return JdbcRuntime.INSTANCE
-                                .getConnection(jdbcDataSource, null, transactionIsolation,readOnly);
+                        return JdbcRuntime.INSTANCE//jta不使用连接本身的autocommit开启事务
+                                .getConnection(jdbcDataSource, null, transactionIsolation, readOnly);
                     }
                 });
     }
@@ -81,8 +96,10 @@ public class JTATransactionSession extends TransactionSessionTemplate implements
     @Override
     @SneakyThrows
     public void close() {
-        if (isInTransaction()) {
-            userTransaction.setRollbackOnly();
+        if (isInTransaction() && userTransaction != null) {
+            this.userTransaction.setRollbackOnly();
+            this.userTransaction = null;
+            this.bindThread = null;
         }
         super.close();
     }
