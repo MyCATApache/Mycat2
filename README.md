@@ -410,7 +410,7 @@ groupItem:
 ##### 插入SQL
 
 ```yaml
-{sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
+{sql: 'insert {any}',command: execute, tags: {executeType: INSERT,getMetaData: true,needTransaction: true }},
 ```
 
 
@@ -418,7 +418,7 @@ groupItem:
 ##### 更新SQL
 
 ```yaml
-{sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
+{sql: 'update {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true ,needTransaction: true }},
 ```
 
 
@@ -426,7 +426,7 @@ groupItem:
 ##### 删除SQL
 
 ```yaml
-{sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }}
+{sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,getMetaData: true,needTransaction: true  }}
 ```
 
 
@@ -618,7 +618,7 @@ needTransaction:true|false
 
 
 
-metaData:true|false
+getMetaData:true|false
 
 true的时候不需要配置targets,自动根据sql路由
 
