@@ -11,6 +11,7 @@ qq群:332702697
 [![Creative Commons License](https://i.creativecommons.org/l/by-sa/4.0/88x31.png)](http://creativecommons.org/licenses/by-sa/4.0/)
 This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 International License](http://creativecommons.org/licenses/by-sa/4.0/).
 
+开发日志: <https://github.com/MyCATApache/Mycat2/blob/master/doc/101-todo-history-list.md>
 项目地址:<https://github.com/MyCATApache/Mycat2>
 
 
@@ -19,7 +20,8 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 可用分支https://github.com/MyCATApache/Mycat2/tree/0.6-2020-2-13
 
-正在实现loaddata与预处理
+
+正在实现HBT相关,loaddata与预处理
 
 
 
