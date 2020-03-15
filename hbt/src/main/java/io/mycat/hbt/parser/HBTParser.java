@@ -63,7 +63,7 @@ public class HBTParser {
     public ParseNode expression() {
         ParseNode right = primary();
         Precedence next = null;
-        while ((next = operators.get(lexer.tokenString())) != null) {
+        while ((next = operators.get(lexer.tokenString())) != null&&!lexer.isEOF()) {
             right = doShift(right, next.value);
         }
         return right;
