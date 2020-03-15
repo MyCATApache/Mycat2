@@ -65,6 +65,7 @@ https://github.com/MyCATApache/Mycat2/commit/86df5c18bb5bfeb2608c3f952175f6dcb93
 
 1. HBT能提供对实际执行计划输出功能
 其中explain输出底层的迭代器的字段类型,用于调试时候能看到每个语法节点的类型
+
 https://github.com/MyCATApache/Mycat2/commit/cc3ec77b1b075c4616bd096362370b8c3530fec8
 https://github.com/MyCATApache/Mycat2/commit/7c0349a97a71dfcd12134713ec3ab9daf9ceefd3
 
