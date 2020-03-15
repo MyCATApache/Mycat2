@@ -59,7 +59,7 @@ HBT功能相关
 ##### 2020.3.9 -> 2020.3.15开发日志
 https://github.com/MyCATApache/Mycat2/commit/86df5c18bb5bfeb2608c3f952175f6dcb93371dd
 
-1.HBT能提供对HBT 实际执行计划explain功能
+1.HBT能提供对实际执行计划输出功能
 其中explain输出底层的迭代器的字段类型,用于调试时候能看到每个语法节点的类型
 https://github.com/MyCATApache/Mycat2/commit/cc3ec77b1b075c4616bd096362370b8c3530fec8
 https://github.com/MyCATApache/Mycat2/commit/7c0349a97a71dfcd12134713ec3ab9daf9ceefd3
@@ -80,6 +80,9 @@ https://github.com/MyCATApache/Mycat2/commit/f3189bb071cb7514695b357b72c5e49e0d3
 
 3.添加前端异常连接检测,IO超时检查(辅助测试,辅助释放资源)
 https://github.com/MyCATApache/Mycat2/commit/78b6103b4497c0a1ea7f3922ebe1a7dab1fd80d8
+
+4.@wangzihaogithub提交简单的数据源读取写入代码
+https://github.com/MyCATApache/Mycat2/commit/51b98bf63428e0341827f017db045fb0afccc30d
 
 待完善任务
 1.绑定事务的线程池优化,浪费一个监控线程维护等待的事务
