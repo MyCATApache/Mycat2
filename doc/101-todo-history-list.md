@@ -69,9 +69,8 @@ https://github.com/MyCATApache/Mycat2/commit/cc3ec77b1b075c4616bd096362370b8c353
 https://github.com/MyCATApache/Mycat2/commit/7c0349a97a71dfcd12134713ec3ab9daf9ceefd3
 
 2. 重构mycat 2.0 NIO框架以便支持3种线程事务模式(事务与线程绑定,非绑定,reactor),为支持更多事务框架做支持,两种写入模式(透传,自定义报文写入)
-修改原因:
 
-使用不同的技术实现HBT功能后发现mycat内部的状态过于分散,难以维护
+修改原因: 使用不同的技术实现HBT功能后发现mycat内部的状态过于分散,难以维护
 
 mycat2.0使用多种SQL以及事务处理工具完成像数据库一样的功能,每种工具有它们特殊的执行环境,它们之间有类似的变量,
 在mycat2.0以proxy为中心+插件(jdbc等模块)的架构下,变量的修改,以及线程之间的交互,报文写入的代码分散,若不进行重构,将难以维护.
