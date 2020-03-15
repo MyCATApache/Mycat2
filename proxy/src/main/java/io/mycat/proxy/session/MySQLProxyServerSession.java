@@ -246,6 +246,7 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
         ByteBuffer[] packetContainer = session.packetContainer();
         MySQLPacketSplitter packetSplitter = session.packetSplitter();
         long writed;
+        session.updateLastActiveTime();
         do {
             writed = 0;
             if (byteBuffers.isEmpty()) {

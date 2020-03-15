@@ -27,10 +27,8 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Function;
 
 /**
@@ -42,7 +40,7 @@ import java.util.function.Function;
 public class MycatSessionManager implements FrontSessionManager<MycatSession> {
 
     final static MycatLogger LOGGER = MycatLoggerFactory.getLogger(AbstractSession.class);
-    final LinkedList<MycatSession> mycatSessions = new LinkedList<>();
+    final ConcurrentLinkedDeque<MycatSession> mycatSessions = new ConcurrentLinkedDeque<>();
     private final Function<MycatSession, CommandDispatcher> commandDispatcher;
 
     public MycatSessionManager(Function<MycatSession, CommandDispatcher> function) {
@@ -102,7 +100,7 @@ public class MycatSessionManager implements FrontSessionManager<MycatSession> {
     @Override
     public void check() {
         LOGGER.info("MycatSessionManager is checking");
-        ListIterator<MycatSession> iterator = mycatSessions.listIterator();
+        Iterator<MycatSession> iterator = mycatSessions.iterator();
         while (iterator.hasNext()) {
             MycatSession next = iterator.next();
             if (next == null) {
