@@ -1,19 +1,24 @@
 /**
  * Copyright (C) <2020>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
 package io.mycat.bindThread;
 
+import io.mycat.MycatException;
+import io.mycat.ScheduleUtil;
+
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -33,12 +38,13 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     final int maxThread;
     final long waitTaskTimeout;
     final TimeUnit timeoutUnit;
-    private final ScheduledExecutorService check;
+    private final ExecutorService noBindingPool;
+    private final ScheduledFuture<?> schedule;
 
     long lastPollTaskTime = System.currentTimeMillis();
 
-    public boolean isBind(KEY key){
-       return map.containsKey(key);
+    public boolean isBind(KEY key) {
+        return map.containsKey(key);
     }
 
     public BindThreadPool(int maxPengdingLimit, long waitTaskTimeout,
@@ -54,27 +60,21 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
                 maxPengdingLimit < 0 ? 65535 : maxPengdingLimit);
         this.processFactory = processFactory;
         this.exceptionHandler = exceptionHandler;
-        this.check = Executors.newScheduledThreadPool(1);
-        this.check.submit(new Runnable() {
-                              @Override
-                              public void run() {
-                                  while (true) {
-                                      try {
-                                          pollTask();
-                                      } catch (Exception e) {
-                                          e.printStackTrace();
-                                      }
-                                  }
-                              }
-                          }
-                //   , 1, 1, TimeUnit.MILLISECONDS
-        );
+       this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
+            try {
+                pollTask();
+            }catch (Exception e){
+                exceptionHandler.accept(e);
+            }
+        }, 1, 1, TimeUnit.MILLISECONDS);
+        //   , 1, 1, TimeUnit.MILLISECONDS
+        this.noBindingPool = Executors.newFixedThreadPool(maxThread);
     }
 
     void pollTask() {
         PROCESS process = null;
         try {
-            process = idleList.poll(this.waitTaskTimeout, this.timeoutUnit);
+            process = idleList.poll(0, this.timeoutUnit);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -83,7 +83,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }
         PengdingJob poll = null;
         try {
-            while ((poll = pending.poll(this.waitTaskTimeout, this.timeoutUnit)) != null) {
+            while ((poll = pending.poll(0, this.timeoutUnit)) != null) {
                 if (!poll.run()) {
                     break;
                 }
@@ -101,13 +101,13 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
             if (l > 60) {
                 tryDecThread();
             }
-        }else {
+        } else {
             lastPollTaskTime = System.currentTimeMillis();
         }
         /////////////////////////////////
         for (Map.Entry<KEY, PROCESS> entry : map.entrySet()) {
             KEY key = entry.getKey();
-            if (!key.checkOkInBind()){
+            if (!key.isRunning()) {
                 map.remove(key);
                 entry.getValue().close();
             }
@@ -131,23 +131,47 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         }) < maxThread;
     }
 
-    public boolean run(KEY key, BindThreadCallback<KEY, PROCESS> task) {
-        PROCESS transactionThread = map.get(key);
-        if (transactionThread == null) {
-            transactionThread = idleList.poll();
-            if (transactionThread == null) {
-                if (tryIncThreadCount()) {
-                    transactionThread = processFactory.apply(this);
-                    transactionThread.start();
-                } else {
-                    if (!pending.offer(createPengdingTask(key, task))) {
-                        task.onException(key, new Exception("max pending job limit"));
-                    }
-                    return false;
+    public void run(KEY key, BindThreadCallback<KEY, PROCESS> task) {
+            ScheduleUtil.TimerTask timerFuture = ScheduleUtil.getTimerFuture(new Closeable() {
+                @Override
+                public void close() throws IOException {
+                    task.onException(key,new MycatException("task timeout"));
                 }
+            }, waitTaskTimeout, timeoutUnit);
+                Future<?> submit = noBindingPool.submit(() -> {
+                    try {
+                        task.accept(key, null);
+                    } catch (Exception e) {
+                        task.onException(key, e);
+                        exceptionHandler.accept(e);
+                    } finally {
+                        timerFuture.setFinished();
+                        task.finallyAccept(key, null);
+
+                    }
+                });
+    }
+
+    public boolean runOnBinding(KEY key, BindThreadCallback<KEY, PROCESS> task) {
+        PROCESS transactionThread = map.computeIfAbsent(key, new Function<KEY, PROCESS>() {
+            @Override
+            public PROCESS apply(KEY key) {
+                PROCESS transactionThread = idleList.poll();
+                if (transactionThread == null) {
+                    if (tryIncThreadCount()) {
+                        transactionThread = processFactory.apply(BindThreadPool.this);
+                        transactionThread.start();
+                    } else {
+                        if (!pending.offer(createPengdingTask(key, task))) {
+                            task.onException(key, new Exception("max pending job limit"));
+                        }
+                        return null;
+                    }
+                }
+                return transactionThread;
             }
-        }
-        map.put(key, transactionThread);
+        });
+        if (transactionThread == null) return false;
         transactionThread.run(key, task);
         return true;
     }
@@ -158,7 +182,7 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
         return new PengdingJob() {
             @Override
             public boolean run() {
-                return BindThreadPool.this.run(key, task);
+                return BindThreadPool.this.runOnBinding(key, task);
             }
 
             @Override

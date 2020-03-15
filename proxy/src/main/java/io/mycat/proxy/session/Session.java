@@ -14,6 +14,7 @@
  */
 package io.mycat.proxy.session;
 
+import io.mycat.Wrapper;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.handler.NIOHandler;
@@ -28,7 +29,7 @@ import java.text.MessageFormat;
 /**
  * @author jamie12221 chen junwen date 2019-05-10 21:13 Session
  **/
-public interface Session<T extends Session> {
+public interface Session<T extends Session> extends Wrapper {
    static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(Session.class);
   /**
    * 通道

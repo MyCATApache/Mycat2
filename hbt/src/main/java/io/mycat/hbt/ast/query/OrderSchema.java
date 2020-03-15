@@ -20,7 +20,6 @@ import io.mycat.hbt.ast.base.OrderItem;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,11 +34,6 @@ public class OrderSchema extends Schema {
         super(Op.ORDER);
         this.schema = schema;
         this.orders = fields;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
     }
 
     public Schema getSchema() {

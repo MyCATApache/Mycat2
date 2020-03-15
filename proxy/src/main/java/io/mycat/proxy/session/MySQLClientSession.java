@@ -490,4 +490,14 @@ public class MySQLClientSession extends
   public boolean isRequestSuccess() {
     return requestSuccess;
   }
+
+  @Override
+  public <T> T unwrap(Class<T> iface) throws Exception {
+    return null;
+  }
+
+  @Override
+  public boolean isWrapperFor(Class<?> iface) throws Exception {
+    return false;
+  }
 }

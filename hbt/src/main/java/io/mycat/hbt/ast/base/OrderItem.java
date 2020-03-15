@@ -14,7 +14,6 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.ast.Direction;
 import lombok.Builder;
 import lombok.Data;
 

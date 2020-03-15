@@ -29,6 +29,7 @@ public class ServerConfig {
     private String handlerName;
     private Worker worker = new Worker();
     private BufferPoolConfig bufferPool= new BufferPoolConfig();
+    private TimerConfig timer = new TimerConfig(3,3,TimeUnit.SECONDS.name());
 
     @Data
     public static class Worker {
@@ -44,4 +45,6 @@ public class ServerConfig {
         String poolName;
         Map<String,String> args = new HashMap<>();
     }
+
+
 }

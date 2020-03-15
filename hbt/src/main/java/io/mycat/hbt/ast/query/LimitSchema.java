@@ -19,9 +19,6 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
-import java.util.Collections;
-import java.util.List;
-
 /**
  * @author jamie12221
  **/
@@ -44,11 +41,6 @@ public class LimitSchema extends Schema {
 
     public Number getLimit() {
         return limit;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schema.fields());
     }
 
     public Schema getSchema() {

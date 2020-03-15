@@ -14,25 +14,28 @@
  */
 package io.mycat;
 
+import io.mycat.api.collector.RowBaseIterator;
+import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.beans.mycat.TransactionType;
 import io.mycat.beans.mysql.MySQLFieldsType;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
-import io.mycat.calcite.MycatCalciteContext;
-import io.mycat.calcite.metadata.MetadataManager;
-import io.mycat.calcite.prepare.MycatPlan;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
-import io.mycat.datasource.jdbc.datasource.TransactionSessionUtil;
-import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.lib.impl.JdbcLib;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.metadata.MetadataManager;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
-import io.mycat.sqldb.SqldbRepl;
+import io.mycat.resultset.TextResultSetResponse;
+import io.mycat.runtime.TransactionSessionUtil;
+import io.mycat.upondb.MycatDBClientApi;
+import io.mycat.upondb.MycatDBClientMediator;
+import io.mycat.upondb.MycatDBs;
+import io.mycat.upondb.PrepareObject;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -65,7 +68,8 @@ public class ContextRunner {
 
     //inst command
     public static final String ERROR = "error";
-    public static final String EXPLAIN = "explain";
+    public static final String EXPLAIN = "explainSQL";
+    public static final String EXPLAIN_HBT = "explainPlan";
     public static final String DISTRIBUTED_QUERY = ("distributedQuery");
     public static final String EXECUTE_PLAN = ("plan");
     public static final String USE_STATEMENT = ("useStatement");
@@ -74,16 +78,18 @@ public class ContextRunner {
     public static final String SET_TRANSACTION_ISOLATION = ("setTransactionIsolation");
     public static final String ROLLBACK = ("rollback");
     public static final String EXECUTE = ("execute");
+    public static final String MYCAT_DB = ("mycatdb");
     //    public static final String PASS = ("pass");
     //    public static final String SET_TRANSACTION_TYPE = ("setTransactionType");
     public static final String ON_XA = ("onXA");
     public static final String OFF_XA = ("offXA");
     public static final String SET_AUTOCOMMIT_OFF = ("setAutoCommitOff");
     public static final String SET_AUTOCOMMIT_ON = ("setAutoCommitOn");
+
     static final ConcurrentHashMap<String, Command> COMMANDS;
 
     public static void run(MycatClient client, Context analysis, MycatSession session) {
-        Command command = Objects.requireNonNull(COMMANDS.getOrDefault(analysis.getCommand(), ERROR_COMMAND));
+        Command command = Objects.requireNonNull(COMMANDS.getOrDefault(analysis.getCommand().toLowerCase(), ERROR_COMMAND));
         Runnable apply = command.apply(client, analysis, session);
         apply.run();
     }
@@ -143,6 +149,7 @@ public class ContextRunner {
     static {
         COMMANDS = new ConcurrentHashMap<>();
         COMMANDS.put(ERROR, ERROR_COMMAND);
+
         /**
          * 参数:statement
          */
@@ -158,7 +165,27 @@ public class ContextRunner {
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
                 return () -> {
-                    writePlan(session, "explain statement");
+                    writePlan(session, "explainSql statement");
+                };
+            }
+        });
+
+        /**
+         * 参数:statement
+         */
+        COMMANDS.put(EXPLAIN, new Command() {
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                String sql = context.getVariable("statement");
+                Context analysis = client.analysis(sql);
+                Command command = COMMANDS.get(analysis.getCommand());
+                return command.explain(client, analysis, session);
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    writePlan(session, "explainSql statement");
                 };
             }
         });
@@ -175,12 +202,15 @@ public class ContextRunner {
                         explain = explain.substring(0, explain.length() - 1);
                     }
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-                    MycatPlan query = SqldbRepl.INSTANCE.query(defaultSchema, explain);
-                    TextResultSetResponse connection = new TextResultSetResponse(query.run(MycatCalciteContext.INSTANCE.create()).get());
+                    MycatDBClientMediator client1 = MycatDBs.createClient(session.unwrap(MycatDataContext.class));
+                    client1.useSchema(defaultSchema);
+                    RowBaseIterator query = client1.query(explain);
+                    TextResultSetResponse connection = new TextResultSetResponse(query);
                     SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
-                    TransactionSessionUtil.afterDoAction();//移除已经关闭的连接,
+                    client1.recycleResource();//移除已经关闭的连接,
                 });
             }
+
 
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
@@ -189,92 +219,112 @@ public class ContextRunner {
                 String command = context.getExplain();
 
                 return () -> block(session, mycat -> {
-                    MycatPlan query = SqldbRepl.INSTANCE.query(defaultSchema, command);
-                    List<String> explain = query.explain();
+                    MycatDBClientMediator client1 = MycatDBs.createClient(session.unwrap(MycatDataContext.class));
+                    client1.useSchema(defaultSchema);
+                    PrepareObject prepare = client1.prepare(command);
+                    List<String> explain = prepare.plan(Collections.emptyList()).explain();
                     writePlan(session, explain);
                 });
             }
         });
-//
-//        /**
-//         * 参数:接收的sql
-//         */
-//        COMMANDS.put(EXECUTE_PLAN, new Command() {
-//            @Override
-//            public Runnable apply(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder()
-//                                    .defaultSchema(connection.getRootSchema()).build();
-//                            DesRelNodeHandler desRelNodeHandler = new DesRelNodeHandler(config);
-//                            RelRunner runner = connection.unwrap(RelRunner.class);
-//                            String explain = context.getExplain();
-//                            PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(explain));
-//                            LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-//                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery()))});
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
-//                    });
-//                };
-//            }
-//
-//            @Override
-//            public Runnable explain(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
-//                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
-//                    });
-//                    return;
-//                };
-//            }
-//        });
 
         /**
          * 参数:接收的sql
          */
-//        COMMANDS.put(EXECUTE_PLAN, new Command() {
-//            @Override
-//            public Runnable apply(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder()
-//                                    .defaultSchema(connection.getRootSchema()).build();
-//                            DesRelNodeHandler desRelNodeHandler = new DesRelNodeHandler(config);
-//                            RelRunner runner = connection.unwrap(RelRunner.class);
-//                            String explain = context.getExplain();
-//                            PreparedStatement prepare = runner.prepare(desRelNodeHandler.handle(explain));
-//                            LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
-//                            writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(new JdbcRowBaseIteratorImpl(prepare, prepare.executeQuery()))});
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
-//                    });
-//                };
-//            }
-//
-//            @Override
-//            public Runnable explain(MycatClient client, Context context, MycatSession session) {
-//                return () -> {
-//                    block(session, mycat -> {
-//                        try (CalciteConnection connection = CalciteEnvironment.INSTANCE.getConnection(MetadataManager.INSTANCE);) {
-//                            connection.setSchema(client.getDefaultSchema());
-//                            final FrameworkConfig config = Frameworks.newConfigBuilder().defaultSchema(connection.getRootSchema()).build();
-//                            writePlan(session, RelOptUtil.toString(new DesRelNodeHandler(config).handle(context.getExplain())));
-//                            TransactionSessionUtil.afterDoAction();
-//                        }
-//                    });
-//                    return;
-//                };
-//            }
-//        });
+        COMMANDS.put(MYCAT_DB, new Command() {
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
+                        String explain = context.getExplain();
+                        MycatDBClientApi mycatDb = client.getMycatDb();
+                        Iterator<RowBaseIterator> rowBaseIteratorIterator = mycatDb.executeSqls(explain);
+                        ArrayList<MycatResponse> responses = new ArrayList<>();
+                        while (rowBaseIteratorIterator.hasNext()) {
+                            RowBaseIterator next = rowBaseIteratorIterator.next();
+                            if (next instanceof UpdateRowIteratorResponse) {
+                                UpdateRowIteratorResponse next1 = (UpdateRowIteratorResponse) next;
+                                next.next();
+                                responses.add(new UpdateRowIteratorResponse((int) next1.getUpdateCount(), next1.getLastInsertId(), mycatDb.getServerStatus()));
+                            } else {
+                                TextResultSetResponse next1 = new TextResultSetResponse(next);
+                                responses.add(next1);
+                            }
+                        }
+                        SQLExecuterWriter.writeToMycatSession(mycat, responses);
+                        mycatDb.recycleResource();//移除已经关闭的连接,
+                    });
+                };
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
+                        MycatDBClientApi mycatDb = client.getMycatDb();
+                        writePlan(session, mycatDb.explain(context.getExplain()));
+                        mycatDb.recycleResource();//移除已经关闭的连接,
+                    });
+                    return;
+                };
+            }
+        });
+
+        /**
+         * 参数:接收的sql
+         */
+        COMMANDS.put(EXECUTE_PLAN, new Command() {
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
+                        String explain = context.getExplain();
+                        MycatDBClientApi mycatDb = client.getMycatDb();
+                        RowBaseIterator rowBaseIterator = mycatDb.executeRel(explain);
+                        TextResultSetResponse connection = new TextResultSetResponse(rowBaseIterator);
+                        SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
+                        mycatDb.recycleResource();//移除已经关闭的连接,
+                    });
+                };
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
+                        MycatDBClientApi mycatDb = client.getMycatDb();
+                        RowBaseIterator rowBaseIterator = mycatDb.executeRel(context.getExplain());
+                        SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)});
+                        mycatDb.recycleResource();//移除已经关闭的连接,
+                    });
+                    return;
+                };
+            }
+        });
+
+        /**
+         * 参数:接收的sql
+         */
+        COMMANDS.put(EXPLAIN_HBT, new Command() {
+            @Override
+            public Runnable apply(MycatClient client, Context context, MycatSession session) {
+                return () -> {
+                    block(session, mycat -> {
+                        MycatDBClientApi mycatDb = client.getMycatDb();
+                        String explain = context.getExplain();
+                        RowBaseIterator rowBaseIterator = mycatDb.executeRel(explain);
+                        SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{new TextResultSetResponse(rowBaseIterator)});
+                        mycatDb.recycleResource();//移除已经关闭的连接,
+                    });
+                };
+            }
+
+            @Override
+            public Runnable explain(MycatClient client, Context context, MycatSession session) {
+                throw new UnsupportedOperationException();
+            }
+
+        });
 
         /**
          * 参数:SCHEMA_NAME
@@ -448,8 +498,8 @@ public class ContextRunner {
                             }
                         case JDBC_TRANSACTION_TYPE:
                             block(session, mycat -> {
-                                TransactionSessionUtil.rollback();
-                                session.setInTranscation(false);
+                                TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+                                transactionSession.rollback();
                                 LOGGER.debug("session id:{} action: rollback from xa", session.sessionId());
                                 mycat.writeOkEndPacket();
                             });
@@ -488,7 +538,8 @@ public class ContextRunner {
                             }
                         case JDBC_TRANSACTION_TYPE:
                             block(session, mycat -> {
-                                TransactionSessionUtil.commit();
+                                TransactionSession transactionSession = session.getDataContext().getTransactionSession();
+                                transactionSession.commit();
                                 LOGGER.debug("session id:{} action: commit from xa", session.sessionId());
                                 session.setInTranscation(false);
                                 mycat.writeOkEndPacket();
@@ -534,18 +585,20 @@ public class ContextRunner {
                     if (tasks.size() != 1) throw new IllegalArgumentException();
                     String[] strings = checkThenGetOne(tasks);
                     return () -> {
+                        MycatDataContext dataContext = session.getDataContext();
                         MySQLTaskUtil.proxyBackendByTargetName(session, strings[0], strings[1],
-                                MySQLTaskUtil.TransactionSyncType.create(session.getAutoCommit(), session.isInTransaction()),
+                                MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
                                 session.getIsolation(), details.executeType.isMaster(), balance);
                     };
                 } else {
                     return () -> {
                         block(session, mycat -> {
+                                    TransactionSession transactionSession = session.getDataContext().getTransactionSession();
                                     if (needStartTransaction) {
                                         LOGGER.debug("session id:{} startTransaction", session.sessionId());
                                         // TransactionSessionUtil.reset();
-                                        TransactionSessionUtil.setIsolation(isolation.getJdbcValue());
-                                        TransactionSessionUtil.begin();
+                                        transactionSession.setTransactionIsolation(isolation.getJdbcValue());
+                                        transactionSession.begin();
                                         session.setInTranscation(true);
                                     }
 //                                    else if (!session.isInTransaction()) {
@@ -556,15 +609,16 @@ public class ContextRunner {
                                         case QUERY_MASTER:
                                         case QUERY: {
                                             Map<String, List<String>> backendTableInfos = details.targets;
+
                                             String[] infos = checkThenGetOne(backendTableInfos);
-                                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(infos[0], infos[1]));
+                                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession,infos[0], infos[1]));
                                             return;
                                         }
 
                                         case INSERT:
                                         case UPDATE:
 //                                        case BROADCAST_UPDATE:
-                                            writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(tasks, true));
+                                            writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession,tasks, true));
                                             return;
                                     }
                                     throw new IllegalArgumentException();
@@ -580,6 +634,10 @@ public class ContextRunner {
                 return () -> writePlan(session, getDetails(context, session.isInTransaction(), metaData).toExplain());
             }
         });
+        for (Map.Entry<String, Command> stringCommandEntry : COMMANDS.entrySet()) {
+            COMMANDS.put(stringCommandEntry.getKey().toLowerCase(), stringCommandEntry.getValue());
+        }
+
     }
 
     @NotNull

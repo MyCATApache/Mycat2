@@ -48,8 +48,9 @@ public abstract class ReactorEnvThread extends Thread implements SessionThread {
    */
   public void addNIOJob(NIOJob job) {
     pendingJobs.offer(job);
+    wakeup();
   }
-
+ public abstract void wakeup();
 
   protected void processNIOJob() {
     NIOJob nioJob = null;

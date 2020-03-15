@@ -31,6 +31,7 @@ public class MycatConfig {
     PlugRootConfig plug = new PlugRootConfig();
     ServerConfig server = new ServerConfig();
     List<String> packageNameList = new ArrayList<>();
+    boolean debug;
 
     public static void main(String[] args) {
         MycatConfig mycatConfig = new MycatConfig();

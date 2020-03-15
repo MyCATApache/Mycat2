@@ -22,14 +22,12 @@ import io.mycat.beans.mysql.packet.ProxyBuffer;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.proxy.callback.TaskCallBack;
-import io.mycat.proxy.handler.MycatHandler.MycatSessionWriteHandler;
 import io.mycat.proxy.monitor.MycatMonitor;
 import io.mycat.proxy.packet.MySQLPacketCallback;
 import io.mycat.proxy.packet.MySQLPacketResolver;
 import io.mycat.proxy.packet.MySQLPayloadType;
 import io.mycat.proxy.session.MySQLClientSession;
 import io.mycat.proxy.session.MycatSession;
-import io.mycat.util.DumpUtil;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -410,7 +408,7 @@ public enum MySQLPacketExchanger {
     /**
      * 代理模式前端写入处理器
      */
-    private enum WriteHandler implements MycatSessionWriteHandler {
+    public static enum WriteHandler implements MycatSessionWriteHandler {
         INSTANCE;
 
         @Override
@@ -457,6 +455,16 @@ public enum MySQLPacketExchanger {
         @Override
         public void onException(MycatSession session, Exception e) {
             onExceptionClearCloseInResponse(session, e);
+        }
+
+        @Override
+        public void onClear(MycatSession session) {
+            session.currentProxyBuffer().reset();
+        }
+
+        @Override
+        public WriteType getType() {
+            return WriteType.PROXY;
         }
     }
 

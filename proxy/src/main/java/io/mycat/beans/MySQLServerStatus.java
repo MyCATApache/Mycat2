@@ -26,7 +26,7 @@ import java.nio.charset.Charset;
  *
  * @author jamie12221 date 2019-05-10 13:21
  **/
-public final class MySQLServerStatus {
+public class MySQLServerStatus {
 
   private String lastMessage;
   private int affectedRows;

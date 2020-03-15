@@ -17,20 +17,28 @@ package io.mycat.hbt.ast.query;
 import io.mycat.hbt.Op;
 import io.mycat.hbt.ast.base.Node;
 import io.mycat.hbt.ast.base.NodeVisitor;
+import lombok.Builder;
 import lombok.Data;
 
 /**
  * @author jamie12221
  **/
 @Data
+@Builder
 public class FieldType extends Node {
     final String id;
     final String type;
+    final boolean nullable;
+    final Integer precision;
+    final Integer scale;
 
-    public FieldType(String id, String type) {
+    public FieldType(String id, String type,boolean columnNullable,Integer precision,Integer scale) {
         super(Op.FIELD_SCHEMA);
         this.id = id;
         this.type = type;
+        this.nullable = columnNullable;
+        this.precision = precision;
+        this.scale = scale;
     }
 
     @Override

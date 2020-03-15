@@ -27,9 +27,14 @@ public enum Op {
     MINUS_DISTINCT("minusDistinct"),
     INTERSECT_DISTINCT("intersectDistinct"),
     INTERSECT_ALL("intersectAll"),
-//    ORDER_ITEM("orderItem"),
+    //    ORDER_ITEM("orderItem"),
     //relational operators
-    FROM("from"),
+    FROM_TABLE("fromTable"),
+    MERGE_MODIFY("mergeModify"),
+    MODIFY_FROM_SQL("modifyFromSql"),
+    FROM_SQL("fromSql"),
+    FROM_REL_TO_SQL("fromRelToSql"),
+    FILTER_FROM_TABLE("filterFromTable"),
     MAP("map"),
     FILTER("filter"),
     LIMIT("limit"),
@@ -37,7 +42,7 @@ public enum Op {
     GROUP("groupBy"),
     TABLE("table"),
     DISTINCT("distinct"),
-    RENAME("reName"),
+    RENAME("rename"),
     INNER_JOIN("innerJoin"),
     LEFT_JOIN("leftJoin"),
     CORRELATE_INNER_JOIN("correlateInnerJoin"),
@@ -46,8 +51,7 @@ public enum Op {
     FULL_JOIN("fillJoin"),
     SEMI_JOIN("semiJoin"),
     ANTI_JOIN("antiJoin"),
-//    CORRELATE("correlate"),
-
+    //    CORRELATE("correlate"),
     // types
     SCHEMA("schema"),
     FIELD_SCHEMA("fieldSchema"),
@@ -58,8 +62,7 @@ public enum Op {
     PROPERTY("property"),
 
     //debug
-    DESCRIBE("describe"),
-    DUMP("dump"),
+    EXPLAIN("explain"),
 
     // operators
     DOT("dot"),
@@ -69,17 +72,18 @@ public enum Op {
     LT("lt"),
     GTE("gte"),
     LTE("lte"),
-    PLUS("plus"),
+    ADD("add"),
     MINUS("minus"),
     AND("and"),
     OR("or"),
     NOT("not"),
-    AS_COLUMNNAME("asColumnName"),
+    AS_COLUMN_NAME("as"),
     CAST("cast"),
     FUN("fun"),
     REF("ref"),
-    AggregateCall("aggregateCall"),
+    AGGREGATE_CALL("aggregateCall"),
     REGULAR("regular"),
+    PARAM("param"),
     ;
 
     String fun;

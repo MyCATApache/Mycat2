@@ -17,18 +17,12 @@ package io.mycat.datasource.jdbc;
 
 import io.mycat.MycatConfig;
 import io.mycat.MycatException;
-import io.mycat.bindThread.BindThread;
-import io.mycat.bindThread.BindThreadCallback;
-import io.mycat.bindThread.BindThreadKey;
+import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.config.ClusterRootConfig;
 import io.mycat.config.DatasourceRootConfig;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
-import io.mycat.datasource.jdbc.datasource.JTATransactionSessionImpl;
 import io.mycat.datasource.jdbc.datasource.JdbcConnectionManager;
-import io.mycat.datasource.jdbc.datasource.TransactionSession;
 import io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider;
-import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
-import io.mycat.datasource.jdbc.thread.GThreadPool;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.plug.PlugRuntime;
@@ -39,7 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 
 /**
  * @author Junwen Chen
@@ -47,10 +45,11 @@ import java.util.function.Consumer;
 public enum JdbcRuntime {
     INSTANCE;
     private final MycatLogger LOGGER = MycatLoggerFactory.getLogger(JdbcRuntime.class);
-    private GThreadPool gThreadPool;
     private JdbcConnectionManager connectionManager;
     private MycatConfig config;
     private DatasourceProvider datasourceProvider;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(1);
+
 
     public void addDatasource(DatasourceRootConfig.DatasourceConfig key) {
         connectionManager.addDatasource(key);
@@ -60,12 +59,12 @@ public enum JdbcRuntime {
         connectionManager.removeDatasource(jdbcDataSourceName);
     }
 
-    public DefaultConnection getConnection(String name) {
-        return connectionManager.getConnection(name);
+    public DefaultConnection getConnection(String name, Boolean autocommit, int transactionIsolation, boolean readOnly) {
+        return connectionManager.getConnection(name, autocommit, transactionIsolation, readOnly);
     }
 
-    public DefaultConnection getConnection(String name, boolean autocommit, int transactionIsolation) {
-        return connectionManager.getConnection(name, autocommit, transactionIsolation);
+    public DefaultConnection getConnection(String name) {
+        return connectionManager.getConnection(name, true, TRANSACTION_REPEATABLE_READ, false);
     }
 
     public void closeConnection(DefaultConnection connection) {
@@ -86,7 +85,7 @@ public enum JdbcRuntime {
                 throw new MycatException("can not load datasourceProvider:{}", config.getDatasource().getDatasourceProviderClass());
             }
             connectionManager = new JdbcConnectionManager(this.datasourceProvider);
-            gThreadPool = new GThreadPool(this);
+
 
             for (DatasourceRootConfig.DatasourceConfig datasource : config.getDatasource().getDatasources()) {
                 if (datasource.isJdbcType()) {
@@ -102,25 +101,23 @@ public enum JdbcRuntime {
                     }
                 }
             }
+
         }
     }
 
+
     private void putHeartFlow(String replicaName, String datasource) {
+
         ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
-                gThreadPool.run(() -> false, new BindThreadCallback() {
-                    @Override
-                    public void accept(BindThreadKey key, BindThread context) {
+                executorService.submit(()->{
+                    try{
                         heartbeat(heartBeatStrategy);
-                    }
-
-                    @Override
-                    public void onException(BindThreadKey key, Exception e) {
+                    }catch (Exception e){
                         heartBeatStrategy.onException(e);
                     }
                 });
-
             }
 
             private void heartbeat(HeartBeatStrategy heartBeatStrategy) {
@@ -128,7 +125,7 @@ public enum JdbcRuntime {
                 try {
                     connection = getConnection(datasource);
                     List<Map<String, Object>> resultList;
-                    try (JdbcRowBaseIteratorImpl iterator = connection
+                    try (RowBaseIterator iterator = connection
                             .executeQuery(heartBeatStrategy.getSql())) {
                         resultList = iterator.getResultSetMap();
                     }
@@ -146,17 +143,8 @@ public enum JdbcRuntime {
         });
     }
 
-
-    public TransactionSession createTransactionSession() {
-        return new JTATransactionSessionImpl(datasourceProvider.createUserTransaction());
-    }
-
     public DatasourceProvider getDatasourceProvider() {
         return datasourceProvider;
-    }
-
-    public <K extends BindThreadKey, T extends BindThreadCallback> boolean run(K key, T processTask) {
-        return gThreadPool.run(key, processTask);
     }
 
     public int getMaxThread() {
@@ -175,7 +163,4 @@ public enum JdbcRuntime {
         return config.getServer().getWorker().getMaxPengdingLimit();
     }
 
-    public boolean isBindingInTransaction(BindThreadKey key) {
-        return gThreadPool.isBind(key);
-    }
 }

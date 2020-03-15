@@ -1,4 +1,4 @@
-//package io.mycat.describer;
+//package io.mycat.parser;
 //
 //import com.google.common.collect.BiMap;
 //import com.google.common.collect.ImmutableList;
@@ -9,8 +9,8 @@
 //import io.mycat.hbt.QueryOp;
 //import io.mycat.hbt.ast.AggregateCall;
 //import io.mycat.hbt.ast.base.*;
-//import io.mycat.hbt.ast.query.FieldType;
-//import io.mycat.hbt.ast.query.SetOpSchema;
+//import io.mycat.hbt.ast.querySQL.FieldType;
+//import io.mycat.hbt.ast.querySQL.SetOpSchema;
 //import org.apache.calcite.adapter.java.ReflectiveSchema;
 //import org.apache.calcite.plan.RelOptTable;
 //import org.apache.calcite.plan.RelOptUtil;
@@ -49,7 +49,7 @@
 //import java.util.concurrent.TimeUnit;
 //import java.util.stream.Collectors;
 //
-//import static io.mycat.DesRelNodeHandler.dump;
+//import static io.mycat.DesRelNodeHandler.dumpColumnInfo;
 //import static io.mycat.DesRelNodeHandler.parse2SyntaxAst;
 //import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 //import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
@@ -80,8 +80,8 @@
 //    }
 //
 //    private ParseNode getParseNode(String text) {
-//        Describer describer = new Describer(text);
-//        return describer.expression();
+//        Describer parser = new Describer(text);
+//        return parser.expression();
 //    }
 //
 //    @Test
@@ -226,7 +226,7 @@
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}])\n" +
 //                "  LogicalValues(type=[RecordType(INTEGER 1)], tuples=[[{ 2 }, { 2 }]])\n", toString(relNode));
-//        Assert.assertEquals("(2)\n", dump(relNode));
+//        Assert.assertEquals("(2)\n", dumpColumnInfo(relNode));
 //
 //        String dsl = toDSL(relNode);
 //        Assert.assertEquals("group(valuesSchema(fields(fieldType(`1`,`int`)),table(literal(2),literal(2))),keys(regular(`1`)),aggregating())", dsl);
@@ -245,23 +245,23 @@
 //    }
 //
 //    @Test
-//    public void from() throws IOException {
-//        String text = "from(db1,travelrecord)";
+//    public void fromTable() throws IOException {
+//        String text = "fromTable(db1,travelrecord)";
 //        RelNode relNode;
 //        ParseNode expression = getParseNode(text);
 //        Assert.assertEquals(text, expression.toString());
 //        String s = getS(expression);
-//        Assert.assertEquals("from(id(\"db1\"),id(\"travelrecord\"))", s);
+//        Assert.assertEquals("fromTable(id(\"db1\"),id(\"travelrecord\"))", s);
 //
-//        Assert.assertEquals("FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])", from(id("db1"), id("travelrecord")).toString());
+//        Assert.assertEquals("FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])", fromTable(id("db1"), id("travelrecord")).toString());
 //
-//        Schema select = from("db1", "travelrecord");
+//        Schema select = fromTable("db1", "travelrecord");
 //        Assert.assertEquals("FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])", select.toString());
 //
 //        Assert.assertEquals("LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(select)));
 //
 //        String dsl = toDSL(relNode);
-//        Assert.assertEquals("from(`db1`,`travelrecord`)", dsl);
+//        Assert.assertEquals("fromTable(`db1`,`travelrecord`)", dsl);
 //    }
 //
 //    @Test
@@ -280,36 +280,36 @@
 //    @Test
 //    public void selectUnionAll() throws IOException {
 //        RelNode relNode;
-//        Schema select = unionAll(from("db1", "travelrecord"), from("db1", "travelrecord"));
+//        Schema select = unionAll(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord"));
 //        Assert.assertEquals("SetOpSchema(op=UNION_ALL,list=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])])", select.toString());
 //
-//        String text = "from(db1,travelrecord) unionAll  from(\"db1\", \"travelrecord\")";
+//        String text = "fromTable(db1,travelrecord) unionAll  fromTable(\"db1\", \"travelrecord\")";
 //        String s = getS(parse2SyntaxAst(text));
-//        Assert.assertEquals("unionAll(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord\")))", s);
+//        Assert.assertEquals("unionAll(fromTable(id(\"db1\"),id(\"travelrecord\")),fromTable(id(\"db1\"),id(\"travelrecord\")))", s);
 //
 //        Assert.assertEquals("LogicalUnion(all=[true])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(select)));
 //
 //        String dsl = toDSL(relNode = toRelNode(select));
-//        Assert.assertEquals("unionAll(from(`db1`,`travelrecord`),from(`db1`,`travelrecord`))", dsl);
+//        Assert.assertEquals("unionAll(fromTable(`db1`,`travelrecord`),fromTable(`db1`,`travelrecord`))", dsl);
 //    }
 //
 //    @Test
 //    public void selectUnionDistinct() throws IOException {
 //        RelNode relNode;
-//        Schema select = unionDistinct(from("db1", "travelrecord"), from("db1", "travelrecord"));
+//        Schema select = unionDistinct(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord"));
 //        Assert.assertEquals("SetOpSchema(op=UNION_DISTINCT,list=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])])", select.toString());
 //
-//        String text = "from(db1,travelrecord) unionDistinct  from(\"db1\", \"travelrecord\")";
-//        Assert.assertEquals("unionDistinct(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
+//        String text = "fromTable(db1,travelrecord) unionDistinct  fromTable(\"db1\", \"travelrecord\")";
+//        Assert.assertEquals("unionDistinct(fromTable(id(\"db1\"),id(\"travelrecord\")),fromTable(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalUnion(all=[false])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(select)));
 //
 //        String dsl = toDSL(relNode = toRelNode(select));
-//        Assert.assertEquals("unionDistinct(from(`db1`,`travelrecord`),from(`db1`,`travelrecord`))", dsl);
+//        Assert.assertEquals("unionDistinct(fromTable(`db1`,`travelrecord`),fromTable(`db1`,`travelrecord`))", dsl);
 //
 //
 //    }
@@ -320,212 +320,212 @@
 //
 //    @Test
 //    public void selectProjectFrom() throws IOException {
-//        String text = "from(db1,travelrecord).rename(id)";
+//        String text = "fromTable(db1,travelrecord).rename(id)";
 //        RelNode relNode;
 //        String s = getS(parse2SyntaxAst(text));
-//        Assert.assertEquals("rename(from(id(\"db1\"),id(\"travelrecord\")),id(\"id\"))", s);
+//        Assert.assertEquals("rename(fromTable(id(\"db1\"),id(\"travelrecord\")),id(\"id\"))", s);
 //
-//        Schema select = projectNamed(from("db1", "travelrecord"), "1", "2");
+//        Schema select = projectNamed(fromTable("db1", "travelrecord"), "1", "2");
 //        Assert.assertEquals("ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), columnNames=[1, 2], fieldSchemaList=[])", select.toString());
 //
 //        String dsl = toDSL(relNode = toRelNode(select));
-//        Assert.assertEquals("map(from(`db1`,`travelrecord`),as(`id`,`1`),as(`user_id`,`2`))", dsl);
+//        Assert.assertEquals("map(fromTable(`db1`,`travelrecord`),as(`id`,`1`),as(`user_id`,`2`))", dsl);
 //
-//        select = projectNamed(from("db1", "travelrecord"));
+//        select = projectNamed(fromTable("db1", "travelrecord"));
 //        Assert.assertEquals("ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), columnNames=[], fieldSchemaList=[])", select.toString());
 //
 //        dsl = toDSL(relNode = toRelNode(select));
-//        Assert.assertEquals("from(`db1`,`travelrecord`)", dsl);
+//        Assert.assertEquals("fromTable(`db1`,`travelrecord`)", dsl);
 //    }
 //
 //    @Test
 //    public void selectExceptDistinct() throws IOException {
 //        RelNode relNode;
-//        Schema select = exceptDistinct(from("db1", "travelrecord"), from("db1", "travelrecord"));
+//        Schema select = exceptDistinct(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord"));
 //        Assert.assertEquals("SetOpSchema(op=EXCEPT_DISTINCT,list=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])])", select.toString());
 //
-//        String text = "from(db1,travelrecord) exceptDistinct  from(db1,travelrecord)";
-//        Assert.assertEquals("exceptDistinct(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
+//        String text = "fromTable(db1,travelrecord) exceptDistinct  fromTable(db1,travelrecord)";
+//        Assert.assertEquals("exceptDistinct(fromTable(id(\"db1\"),id(\"travelrecord\")),fromTable(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalMinus(all=[false])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(select)));
 //
 //        String dsl = toDSL(relNode = toRelNode(select));
-//        Assert.assertEquals("exceptDistinct(from(`db1`,`travelrecord`),from(`db1`,`travelrecord`))", dsl);
+//        Assert.assertEquals("exceptDistinct(fromTable(`db1`,`travelrecord`),fromTable(`db1`,`travelrecord`))", dsl);
 //    }
 //
 //    @Test
 //    public void selectExceptAll() throws IOException {
 //        RelNode relNode;
-//        Schema select = exceptAll(from("db1", "travelrecord"), from("db1", "travelrecord"));
+//        Schema select = exceptAll(fromTable("db1", "travelrecord"), fromTable("db1", "travelrecord"));
 //        Assert.assertEquals("SetOpSchema(op=EXCEPT_ALL,list=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)])])", select.toString());
 //
-//        String text = "from(db1,travelrecord) exceptAll  from(\"db1\", \"travelrecord\")";
-//        Assert.assertEquals("exceptAll(from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
+//        String text = "fromTable(db1,travelrecord) exceptAll  fromTable(\"db1\", \"travelrecord\")";
+//        Assert.assertEquals("exceptAll(fromTable(id(\"db1\"),id(\"travelrecord\")),fromTable(id(\"db1\"),id(\"travelrecord\")))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalMinus(all=[true])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(select)));
 //
 //        String dsl = toDSL(relNode = toRelNode(select));
-//        Assert.assertEquals("exceptAll(from(`db1`,`travelrecord`),from(`db1`,`travelrecord`))", dsl);
+//        Assert.assertEquals("exceptAll(fromTable(`db1`,`travelrecord`),fromTable(`db1`,`travelrecord`))", dsl);
 //    }
 //
 //    @Test
 //    public void selectFromOrder() throws IOException {
 //        RelNode relNode;
-//        Schema schema = orderBy(from("db1", "travelrecord"), order("id", "ASC"), order("user_id", "DESC"));
+//        Schema schema = orderBy(fromTable("db1", "travelrecord"), order("id", "ASC"), order("user_id", "DESC"));
 //        Assert.assertEquals("OrderSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), orders=[OrderItem(columnName=Identifier(value=id), direction=ASC), OrderItem(columnName=Identifier(value=user_id), direction=DESC)])", schema.toString());
 //
-//        String text = "orderBy(from(db1,travelrecord),order(id,ASC), order(user_id,DESC))";
-//        Assert.assertEquals("orderBy(from(id(\"db1\"),id(\"travelrecord\")),order(id(\"id\"),id(\"asc\")),order(id(\"user_id\"),id(\"desc\")))", getS(parse2SyntaxAst(text)));
+//        String text = "orderBy(fromTable(db1,travelrecord),order(id,ASC), order(user_id,DESC))";
+//        Assert.assertEquals("orderBy(fromTable(id(\"db1\"),id(\"travelrecord\")),order(id(\"id\"),id(\"asc\")),order(id(\"user_id\"),id(\"desc\")))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalSort(sort0=[$0], sort1=[$1], dir0=[ASC], dir1=[DESC])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
 //
 //        String dsl = toDSL(relNode = toRelNode(schema));
-//        Assert.assertEquals("orderBy(from(`db1`,`travelrecord`),order(`id`,`ASC`),order(`user_id`,`DESC`))", dsl);
+//        Assert.assertEquals("orderBy(fromTable(`db1`,`travelrecord`),order(`id`,`ASC`),order(`user_id`,`DESC`))", dsl);
 //    }
 //
 //    @Test
 //    public void selectFromLimit() throws IOException {
 //        RelNode relNode;
-//        Schema schema = limit(from("db1", "travelrecord"), 1, 1000);
+//        Schema schema = limit(fromTable("db1", "travelrecord"), 1, 1000);
 //        Assert.assertEquals("LimitSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), offset=Literal(value=1), limit=Literal(value=1000))", schema.toString());
 //
-//        String text = "limit(from(db1,travelrecord),order(id,ASC), order(user_id,DESC),1,1000)";
-//        Assert.assertEquals("limit(from(id(\"db1\"),id(\"travelrecord\")),order(id(\"id\"),id(\"asc\")),order(id(\"user_id\"),id(\"desc\")),literal(1),literal(1000))", getS(parse2SyntaxAst(text)));
+//        String text = "limit(fromTable(db1,travelrecord),order(id,ASC), order(user_id,DESC),1,1000)";
+//        Assert.assertEquals("limit(fromTable(id(\"db1\"),id(\"travelrecord\")),order(id(\"id\"),id(\"asc\")),order(id(\"user_id\"),id(\"desc\")),literal(1),literal(1000))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalSort(offset=[1], fetch=[1000])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
 //
 //        String dsl = toDSL(relNode = toRelNode(schema));
-//        Assert.assertEquals("limit(from(`db1`,`travelrecord`),1,1000)", dsl);
+//        Assert.assertEquals("limit(fromTable(`db1`,`travelrecord`),1,1000)", dsl);
 //    }
 //
 //    @Test
 //    public void selectFromGroupByKey() throws IOException {
 //        RelNode relNode;
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[])", schema.toString());
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
 //
 //        String dsl = toDSL(relNode = toRelNode(schema));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating())", dsl);
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating())", dsl);
 //    }
 //
 //    @Test
 //    public void selectFromGroupByKeyCount() throws IOException {
 //        RelNode relNode;
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(count("id")));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(count("id")));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='count', alias='count(id)', operands=[Identifier(value=id)]])", schema.toString());
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)), aggregating(count(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(count(id(\"id\"))))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)), aggregating(count(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(count(id(\"id\"))))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT($0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(schema)));
 //
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`count(id)`)))", toDSL(relNode));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`count(id)`)))", toDSL(relNode));
 //    }
 //
 //    @Test
 //    public void selectFromGroupByKeyCountStar() throws IOException {
 //        RelNode relNode;
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(count()));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(count()));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='count', alias='count()', operands=[]])", schema.toString());
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)), aggregating(countStar()))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(countStar()))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)), aggregating(countStar()))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(countStar()))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count()=[COUNT()])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(schema)));
 //
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`),`count()`)))", toDSL(relNode));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`),`count()`)))", toDSL(relNode));
 //    }
 //
 //
 //    @Test
 //    public void selectFromGroupByKeyCountDistinct() throws IOException {
 //        RelNode relNode;
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(distinct(count("id"))));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(distinct(count("id"))));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='count', distinct=true, alias='count(id)', operands=[Identifier(value=id)]])", schema.toString());
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(distinct(as(call(`count`,`id`),`count(id)`))))", toDSL(relNode = toRelNode(schema)));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(distinct(as(call(`count`,`id`),`count(id)`))))", toDSL(relNode = toRelNode(schema)));
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)), aggregating(count(id).distinct()))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(distinct(count(id(\"id\")))))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)), aggregating(count(id).distinct()))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(distinct(count(id(\"id\")))))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT(DISTINCT $0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(schema)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT($0)])\n" +
-//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(all(distinct(count("id"))))))));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`count(id)`)))", toDSL(relNode));
+//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(all(distinct(count("id"))))))));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`count(id)`)))", toDSL(relNode));
 //
 //
 ////        Assert.assertEquals("LogicalAggregate(group=[{0}], asName=[COUNT($0)])\n" +
-////                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(from("db1", "travelrecord"), keys(regular(id("id"))),
+////                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(fromTable("db1", "travelrecord"), keys(regular(id("id"))),
 ////                aggregating((as(count("id"), "asName")))))));
-////        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`asName`)))", toDSL(relNode));
+////        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`asName`)))", toDSL(relNode));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT($0)])\n" +
-//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(from("db1", "travelrecord"), keys(regular(id("id"))),
+//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(fromTable("db1", "travelrecord"), keys(regular(id("id"))),
 //                aggregating((approximate(count("id"))))))));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(approximate(as(call(`count`,`id`),`count(id)`))))", toDSL(relNode));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(approximate(as(call(`count`,`id`),`count(id)`))))", toDSL(relNode));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT($0)])\n" +
-//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(from("db1", "travelrecord"), keys(regular(id("id"))),
+//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(fromTable("db1", "travelrecord"), keys(regular(id("id"))),
 //                aggregating((exact(count("id"))))))));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`count(id)`)))", toDSL(relNode));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`count`,`id`),`count(id)`)))", toDSL(relNode));
 //
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT($0) FILTER $2])\n" +
 //                "  LogicalProject(id=[$0], user_id=[$1], $f2=[=($0, 1)])\n" +
-//                "    LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(from("db1", "travelrecord"), keys(regular(id("id"))),
+//                "    LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(fromTable("db1", "travelrecord"), keys(regular(id("id"))),
 //                aggregating((filter(count("id"), eq(id("id"), literal(1)))))))));
-//        Assert.assertEquals("group(map(from(`db1`,`travelrecord`),as(`id`,`id`),as(`user_id`,`user_id`),as(eq(`id`,literal(1)),`$f2`)),keys(regular(`id`)),aggregating(filter(as(call(`count`,`id`),`count(id)`),`$f2`)))", toDSL(relNode));
+//        Assert.assertEquals("group(map(fromTable(`db1`,`travelrecord`),as(`id`,`id`),as(`user_id`,`user_id`),as(eq(`id`,literal(1)),`$f2`)),keys(regular(`id`)),aggregating(filter(as(call(`count`,`id`),`count(id)`),`$f2`)))", toDSL(relNode));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT($0)])\n" +
-//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(from("db1", "travelrecord"), keys(regular(id("id"))),
+//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(fromTable("db1", "travelrecord"), keys(regular(id("id"))),
 //                aggregating((ignoreNulls(count("id"))))))));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(ignoreNulls(as(call(`count`,`id`),`count(id)`))))", toDSL(relNode));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(ignoreNulls(as(call(`count`,`id`),`count(id)`))))", toDSL(relNode));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], count(id)=[COUNT($0) WITHIN GROUP ([0 DESC])])\n" +
-//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(from("db1", "travelrecord"), keys(regular(id("id"))),
+//                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(group(fromTable("db1", "travelrecord"), keys(regular(id("id"))),
 //                aggregating((orderBy(count("id"), order("id", "DESC"))))))));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(sort(as(call(`count`,`id`),`count(id)`),order(id,desc))))", toDSL(relNode));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(sort(as(call(`count`,`id`),`count(id)`),order(id,desc))))", toDSL(relNode));
 //
 //    }
 //
 //    @Test
 //    public void selectFromGroupByKeyFirst() throws IOException {
 //        RelNode relNode;
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(first("id")));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(first("id")));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='first', alias='first(id)', operands=[Identifier(value=id)]])", schema.toString());
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)), aggregating(first(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(first(id(\"id\"))))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)), aggregating(first(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(first(id(\"id\"))))", getS(parse2SyntaxAst(text)));
 //
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], first(id)=[FIRST_VALUE($0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(schema)));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`first`,`id`),`first(id)`)))", toDSL(relNode));
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`first`,`id`),`first(id)`)))", toDSL(relNode));
 //
 //    }
 //
 //    @Test
 //    public void selectFromGroupByKeyLast() throws IOException {
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(last("id")));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(last("id")));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='last', alias='last(id)', operands=[Identifier(value=id)]])", schema.toString());
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)), aggregating(last(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(last(id(\"id\"))))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)), aggregating(last(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(last(id(\"id\"))))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], last(id)=[LAST_VALUE($0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
@@ -535,14 +535,14 @@
 //
 //    @Test
 //    public void selectFromGroupByKeyMax() throws IOException {
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(max("id")));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(max("id")));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='max', alias='max(id)', operands=[Identifier(value=id)]])", schema.toString());
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)), aggregating(max(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(max(id(\"id\"))))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)), aggregating(max(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(max(id(\"id\"))))", getS(parse2SyntaxAst(text)));
 //
-//        String text2 = "from(db1,travelrecord).group(keys(regular(id)),aggregating(max(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(max(id(\"id\"))))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).group(keys(regular(id)),aggregating(max(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(max(id(\"id\"))))", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], max(id)=[MAX($0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
@@ -550,11 +550,11 @@
 //
 //    @Test
 //    public void selectFromGroupByKeyMin() throws IOException {
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(min("id")));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(min("id")));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='min', alias='min(id)', operands=[Identifier(value=id)]])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).group(keys(regular(id)),aggregating(min(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(min(id(\"id\"))))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).group(keys(regular(id)),aggregating(min(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(min(id(\"id\"))))", getS(parse2SyntaxAst(text2)));
 //
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], min(id)=[MIN($0)])\n" +
@@ -563,11 +563,11 @@
 //
 //    @Test
 //    public void selectUpperFrom() throws IOException {
-//        Schema schema = map(from("db1", "travelrecord"), upper("id"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[upper(Identifier(value=id))])", schema.toString());
+//        Schema schema = map(fromTable("db1", "travelrecord"), upper("id"));
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[upper(Identifier(value=id))])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).map(upper(id))";
-//        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),upper(id(\"id\")))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).map(upper(id))";
+//        Assert.assertEquals("map(fromTable(id(\"db1\"),id(\"travelrecord\")),upper(id(\"id\")))", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("LogicalProject($f0=[UPPER($0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
@@ -575,11 +575,11 @@
 //
 //    @Test
 //    public void selectLowerFrom() throws IOException {
-//        Schema schema = map(from("db1", "travelrecord"), lower("id"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[lower(Identifier(value=id))])", schema.toString());
+//        Schema schema = map(fromTable("db1", "travelrecord"), lower("id"));
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[lower(Identifier(value=id))])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).map(lower(id))";
-//        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),lower(id(\"id\")))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).map(lower(id))";
+//        Assert.assertEquals("map(fromTable(id(\"db1\"),id(\"travelrecord\")),lower(id(\"id\")))", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("LogicalProject($f0=[LOWER($0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
@@ -587,29 +587,29 @@
 //
 //    @Test
 //    public void selectMidFrom() throws IOException {
-//        Schema schema = map(from("db1", "travelrecord"), mid("id", 1));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[mid(Identifier(value=id),Literal(value=1))])", schema.toString());
+//        Schema schema = map(fromTable("db1", "travelrecord"), mid("id", 1));
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[mid(Identifier(value=id),Literal(value=1))])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).map(mid(id))";
-//        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),mid(id(\"id\")))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).map(mid(id))";
+//        Assert.assertEquals("map(fromTable(id(\"db1\"),id(\"travelrecord\")),mid(id(\"id\")))", getS(parse2SyntaxAst(text2)));
 //    }
 //
 //    @Test
 //    public void selectLenFrom() throws IOException {
-//        Schema schema = map(from("db1", "travelrecord"), len("id"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[len(Identifier(value=id))])", schema.toString());
+//        Schema schema = map(fromTable("db1", "travelrecord"), len("id"));
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[len(Identifier(value=id))])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).map(len(id))";
-//        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),len(id(\"id\")))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).map(len(id))";
+//        Assert.assertEquals("map(fromTable(id(\"db1\"),id(\"travelrecord\")),len(id(\"id\")))", getS(parse2SyntaxAst(text2)));
 //    }
 //
 //    @Test
 //    public void selectRoundFrom() throws IOException {
-//        Schema schema = map(from("db1", "travelrecord"), round("id", 2));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[round(Identifier(value=id),Literal(value=2))])", schema.toString());
+//        Schema schema = map(fromTable("db1", "travelrecord"), round("id", 2));
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[round(Identifier(value=id),Literal(value=2))])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).map(round(id,2))";
-//        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),round(id(\"id\"),literal(2)))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).map(round(id,2))";
+//        Assert.assertEquals("map(fromTable(id(\"db1\"),id(\"travelrecord\")),round(id(\"id\"),literal(2)))", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("LogicalProject($f0=[ROUND($0, 2)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
@@ -617,54 +617,54 @@
 //
 //    @Test
 //    public void selectNowFrom() throws IOException {
-//        Schema schema = map(from("db1", "travelrecord"), now());
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[now()])", schema.toString());
+//        Schema schema = map(fromTable("db1", "travelrecord"), now());
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[now()])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).map(now())";
-//        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),now())", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).map(now())";
+//        Assert.assertEquals("map(fromTable(id(\"db1\"),id(\"travelrecord\")),now())", getS(parse2SyntaxAst(text2)));
 //
 //
 //    }
 //
 //    @Test
 //    public void selectFormatFrom() throws IOException {
-//        Schema schema = map(from("db1", "travelrecord"), format(now(), "YYYY-MM-DD"));
-//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), expr=[format(now(),Literal(value=YYYY-MM-DD))])", schema.toString());
+//        Schema schema = map(fromTable("db1", "travelrecord"), format(now(), "YYYY-MM-DD"));
+//        Assert.assertEquals("MapSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), convertRexNode=[format(now(),Literal(value=YYYY-MM-DD))])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).map(format(now(),'YYYY-MM-DD'))";
-//        Assert.assertEquals("map(from(id(\"db1\"),id(\"travelrecord\")),format(now(),literal(\"YYYY-MM-DD\")))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).map(format(now(),'YYYY-MM-DD'))";
+//        Assert.assertEquals("map(fromTable(id(\"db1\"),id(\"travelrecord\")),format(now(),literal(\"YYYY-MM-DD\")))", getS(parse2SyntaxAst(text2)));
 //
 //    }
 //
 //    @Test
 //    public void filterIn() throws IOException {
 //        RelNode relNode;
-//        Schema schema = filter(from("db1", "travelrecord"), in("id", 1, 2));
+//        Schema schema = filter(fromTable("db1", "travelrecord"), in("id", 1, 2));
 //        Assert.assertEquals("FilterSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), exprs=[or(eq(Identifier(value=id),Literal(value=1)),eq(Identifier(value=id),Literal(value=2)))])", schema.toString());
 //
-//        String text2 = "from(db1,travelrecord).filter(in(id,1,2))";
-//        Assert.assertEquals("filter(from(id(\"db1\"),id(\"travelrecord\")),in(id(\"id\"),literal(1),literal(2)))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).filter(in(id,1,2))";
+//        Assert.assertEquals("filter(fromTable(id(\"db1\"),id(\"travelrecord\")),in(id(\"id\"),literal(1),literal(2)))", getS(parse2SyntaxAst(text2)));
 //
 //
 //        Assert.assertEquals("LogicalFilter(condition=[OR(=($0, 1), =($0, 2))])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(schema)));
-//        Assert.assertEquals("filter(from(`db1`,`travelrecord`),or(eq(`id`,literal(1)),eq(`id`,literal(2))))", toDSL(relNode));
+//        Assert.assertEquals("filter(fromTable(`db1`,`travelrecord`),or(eq(`id`,literal(1)),eq(`id`,literal(2))))", toDSL(relNode));
 //    }
 //
 //
 //    @Test
 //    public void filterBetween() throws IOException {
 //        RelNode relNode;
-//        Schema schema = filter(from("db1", "travelrecord"), between("id", 1, 4));
+//        Schema schema = filter(fromTable("db1", "travelrecord"), between("id", 1, 4));
 //        Assert.assertEquals("FilterSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), exprs=[and(gte(Identifier(value=id),Literal(value=1)),lte(Identifier(value=id),Literal(value=4)))])", schema.toString());
 //
 //
-//        String text2 = "from(db1,travelrecord).filter(between(id,1,4))";
-//        Assert.assertEquals("filter(from(id(\"db1\"),id(\"travelrecord\")),between(id(\"id\"),literal(1),literal(4)))", getS(parse2SyntaxAst(text2)));
+//        String text2 = "fromTable(db1,travelrecord).filter(between(id,1,4))";
+//        Assert.assertEquals("filter(fromTable(id(\"db1\"),id(\"travelrecord\")),between(id(\"id\"),literal(1),literal(4)))", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("LogicalFilter(condition=[AND(>=($0, 1), <=($0, 4))])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(schema)));
-//        Assert.assertEquals("filter(from(`db1`,`travelrecord`),and(gte(`id`,literal(1)),lte(`id`,literal(4))))", toDSL(relNode));
+//        Assert.assertEquals("filter(fromTable(`db1`,`travelrecord`),and(gte(`id`,literal(1)),lte(`id`,literal(4))))", toDSL(relNode));
 //    }
 //
 //    @Test
@@ -675,8 +675,8 @@
 //        String text2 = "isnull(id)";
 //        Assert.assertEquals("isnull(id(\"id\"))", getS(parse2SyntaxAst(text2)));
 //
-//        Expr expr = isnull(literal(1));
-//        Assert.assertEquals("IS NULL(1)", toString(toRexNode(expr)));
+//        Expr convertRexNode = isnull(literal(1));
+//        Assert.assertEquals("IS NULL(1)", toString(toRexNode(convertRexNode)));
 //    }
 //
 //    @Test
@@ -690,8 +690,8 @@
 //
 //    @Test
 //    public void testNullif() throws IOException {
-//        Expr expr = nullif("id", "default");
-//        Assert.assertEquals("nullif(Identifier(value=id),Literal(value=default))", expr.toString());
+//        Expr convertRexNode = nullif("id", "default");
+//        Assert.assertEquals("nullif(Identifier(value=id),Literal(value=default))", convertRexNode.toString());
 //
 //        String text2 = "nullif(id)";
 //        Assert.assertEquals("nullif(id(\"id\"))", getS(parse2SyntaxAst(text2)));
@@ -701,8 +701,8 @@
 //
 //    @Test
 //    public void testIsNotNull() throws IOException {
-//        Expr expr = isnotnull("id");
-//        Assert.assertEquals("isnotnull(Identifier(value=id))", expr.toString());
+//        Expr convertRexNode = isnotnull("id");
+//        Assert.assertEquals("isnotnull(Identifier(value=id))", convertRexNode.toString());
 //
 //        String text2 = "isnotnull(id)";
 //        Assert.assertEquals("isnotnull(id(\"id\"))", getS(parse2SyntaxAst(text2)));
@@ -713,52 +713,52 @@
 //
 //    @Test
 //    public void testInteger() throws IOException {
-//        Expr expr = literal(1);
+//        Expr convertRexNode = literal(1);
 //        RexNode rexNode;
-//        Assert.assertEquals("Literal(value=1)", expr.toString());
+//        Assert.assertEquals("Literal(value=1)", convertRexNode.toString());
 //
 //        String text2 = "1";
 //        Assert.assertEquals("literal(1)", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("1", toString(rexNode = toRexNode(literal(Integer.valueOf(1)))));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=1)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testLong() throws IOException {
-//        Expr expr = literal(1L);
+//        Expr convertRexNode = literal(1L);
 //        RexNode rexNode;
 //
-//        Assert.assertEquals("Literal(value=1)", expr.toString());
+//        Assert.assertEquals("Literal(value=1)", convertRexNode.toString());
 //        String text2 = "1";
 //        Assert.assertEquals("literal(1)", getS(parse2SyntaxAst(text2)));
 //
 //        Assert.assertEquals("1", toString(rexNode = toRexNode(literal(Long.valueOf(1)))));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=1)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testFloat() throws IOException {
-//        Expr expr = literal(Float.MAX_VALUE);
+//        Expr convertRexNode = literal(Float.MAX_VALUE);
 //        RexNode rexNode;
 //
-//        Assert.assertEquals("Literal(value=3.4028234663852886E+38)", expr.toString());
+//        Assert.assertEquals("Literal(value=3.4028234663852886E+38)", convertRexNode.toString());
 //        String text2 = String.valueOf(Float.MAX_VALUE);
 //        Assert.assertEquals("literal(3.4028235E+38)", getS(parse2SyntaxAst(text2)));
 //        Assert.assertEquals("1.0:DECIMAL(2, 1)", toString(rexNode = toRexNode(literal(Float.valueOf(1)))));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=1.0)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testId() throws IOException {
-//        Expr expr = id("id");
-//        Assert.assertEquals("Identifier(value=id)", expr.toString());
+//        Expr convertRexNode = id("id");
+//        Assert.assertEquals("Identifier(value=id)", convertRexNode.toString());
 //
 //        String text2 = "id";
 //        Assert.assertEquals("id(\"id\")", getS(parse2SyntaxAst(text2)));
@@ -766,8 +766,8 @@
 //
 //    @Test
 //    public void testString() throws IOException {
-//        Expr expr = literal("str");
-//        Assert.assertEquals("Literal(value=str)", expr.toString());
+//        Expr convertRexNode = literal("str");
+//        Assert.assertEquals("Literal(value=str)", convertRexNode.toString());
 //
 //        String text2 = "'str'";
 //        Assert.assertEquals("literal(\"str\")", getS(parse2SyntaxAst(text2)));
@@ -775,14 +775,14 @@
 //        RexNode rexNode = toRexNode(literal("str"));
 //        Assert.assertEquals("'str'", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=str)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testTime() throws IOException {
-//        Expr expr = literal(time("00:09:00"));
-//        Assert.assertEquals("Literal(value=00:09)", expr.toString());
+//        Expr convertRexNode = literal(time("00:09:00"));
+//        Assert.assertEquals("Literal(value=00:09)", convertRexNode.toString());
 //
 //        String text2 = "time('00:09:00')";
 //        Assert.assertEquals("time(literal(\"00:09:00\"))", getS(parse2SyntaxAst(text2)));
@@ -790,21 +790,21 @@
 //        RexNode rexNode = toRexNode(timeLiteral("00:09:00"));
 //        Assert.assertEquals("00:09:00", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=00:09)", expr1.toString());
 //    }
 //
 //    @Test
 //    public void testDate() throws IOException {
-//        Expr expr = literal(date("2019-11-17"));
-//        Assert.assertEquals("Literal(value=2019-11-17)", expr.toString());
+//        Expr convertRexNode = literal(date("2019-11-17"));
+//        Assert.assertEquals("Literal(value=2019-11-17)", convertRexNode.toString());
 //
 //        String text2 = "date('2019-11-17')";
 //        Assert.assertEquals("date(literal(\"2019-11-17\"))", getS(parse2SyntaxAst(text2)));
 //        RexNode rexNode = toRexNode(dateLiteral("2019-11-17"));
 //        Assert.assertEquals("2019-11-17", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=2019-11-17)", expr1.toString());
 //    }
 //
@@ -814,9 +814,9 @@
 //
 //        LocalDateTime now = LocalDateTime.parse("2019-11-22T12:12:03");
 //        String text = now.toString();
-//        Expr expr = literal(timeStamp(text));
+//        Expr convertRexNode = literal(timeStamp(text));
 //        Assert.assertEquals("Literal(value=" + text +
-//                ")", expr.toString());
+//                ")", convertRexNode.toString());
 //
 //        String text2 = "timeStamp('" +
 //                text +
@@ -827,7 +827,7 @@
 //        RexNode rexNode = toRexNode(timeStampLiteral(text));
 //        Assert.assertEquals("2019-11-22 12:12:03", toString(rexNode));
 //
-//        Expr expr1 = getExpr(rexNode);
+//        Expr expr1 = convertRexNode(rexNode);
 //        Assert.assertEquals("Literal(value=" +
 //                text +
 //                ")", expr1.toString());
@@ -835,9 +835,9 @@
 //
 //    @Test
 //    public void testMinus() throws IOException {
-//        Expr expr = minus(id("id"), literal(1));
+//        Expr convertRexNode = minus(id("id"), literal(1));
 //        RexNode rexNode;
-//        Assert.assertEquals("minus(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Assert.assertEquals("minus(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id-1";
 //        Assert.assertEquals("minus(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -848,8 +848,8 @@
 //
 //    @Test
 //    public void testEqual() throws IOException {
-//        Expr expr = eq(id("id"), literal(1));
-//        Assert.assertEquals("eq(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = eq(id("id"), literal(1));
+//        Assert.assertEquals("eq(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id=1";
 //        Assert.assertEquals("eq(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -859,24 +859,24 @@
 //
 //    @Test
 //    public void testAnd() throws IOException {
-//        Expr expr = and(literal(1), literal(1));
-//        Assert.assertEquals("and(Literal(value=1),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = and(literal(1), literal(1));
+//        Assert.assertEquals("and(Literal(value=1),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "1 and 1";
 //        Assert.assertEquals("and(literal(1),literal(1))", getS(parse2SyntaxAst(text2)));
 //
-//        Assert.assertEquals("AND(1, 1)", toString(toRexNode(expr)));
+//        Assert.assertEquals("AND(1, 1)", toString(toRexNode(convertRexNode)));
 //    }
 //
 //    @Test
 //    public void testor() throws IOException {
-//        Expr expr = or(literal(1), literal(1));
-//        Assert.assertEquals("or(Literal(value=1),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = or(literal(1), literal(1));
+//        Assert.assertEquals("or(Literal(value=1),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "1 or 1";
 //        Assert.assertEquals("or(literal(1),literal(1))", getS(parse2SyntaxAst(text2)));
 //
-//        Assert.assertEquals("OR(1, 1)", toString(toRexNode(expr)));
+//        Assert.assertEquals("OR(1, 1)", toString(toRexNode(convertRexNode)));
 //    }
 //
 //    @Test
@@ -889,8 +889,8 @@
 //
 //    @Test
 //    public void testNot() throws IOException {
-//        Expr expr = not(literal(1));
-//        Assert.assertEquals("not(Literal(value=1))", expr.toString());
+//        Expr convertRexNode = not(literal(1));
+//        Assert.assertEquals("not(Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "not(1 = 1)";
 //        Assert.assertEquals("not(eq(literal(1),literal(1)))", getS(parse2SyntaxAst(text2)));
@@ -901,8 +901,8 @@
 //
 //    @Test
 //    public void testNotEqual() throws IOException {
-//        Expr expr = ne(id("id"), literal(1));
-//        Assert.assertEquals("ne(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = ne(id("id"), literal(1));
+//        Assert.assertEquals("ne(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id <> 1";
 //        Assert.assertEquals("ne(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -912,8 +912,8 @@
 //
 //    @Test
 //    public void testGreaterThan() throws IOException {
-//        Expr expr = gt(id("id"), literal(1));
-//        Assert.assertEquals("gt(Identifier(value=id),Literal(value=1))", expr.toString());
+//        Expr convertRexNode = gt(id("id"), literal(1));
+//        Assert.assertEquals("gt(Identifier(value=id),Literal(value=1))", convertRexNode.toString());
 //
 //        String text2 = "id > 1";
 //        Assert.assertEquals("gt(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -923,8 +923,8 @@
 //
 //    @Test
 //    public void testGreaterThanEqual() throws IOException {
-//        Expr expr = gte(id("id"), literal(true));
-//        Assert.assertEquals("gte(Identifier(value=id),Literal(value=true))", expr.toString());
+//        Expr convertRexNode = gte(id("id"), literal(true));
+//        Assert.assertEquals("gte(Identifier(value=id),Literal(value=true))", convertRexNode.toString());
 //
 //        String text2 = "id >= 1";
 //        Assert.assertEquals("gte(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -934,8 +934,8 @@
 //
 //    @Test
 //    public void testLessThan() throws IOException {
-//        Expr expr = lt(id("id"), literal(true));
-//        Assert.assertEquals("lt(Identifier(value=id),Literal(value=true))", expr.toString());
+//        Expr convertRexNode = lt(id("id"), literal(true));
+//        Assert.assertEquals("lt(Identifier(value=id),Literal(value=true))", convertRexNode.toString());
 //
 //        String text2 = "id < 1";
 //        Assert.assertEquals("lt(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -945,8 +945,8 @@
 //
 //    @Test
 //    public void testLessThanEqual() throws IOException {
-//        Expr expr = lte(id("id"), literal(true));
-//        Assert.assertEquals("lte(Identifier(value=id),Literal(value=true))", expr.toString());
+//        Expr convertRexNode = lte(id("id"), literal(true));
+//        Assert.assertEquals("lte(Identifier(value=id),Literal(value=true))", convertRexNode.toString());
 //
 //        String text2 = "id <= 1";
 //        Assert.assertEquals("lte(id(\"id\"),literal(1))", getS(parse2SyntaxAst(text2)));
@@ -957,44 +957,44 @@
 //    @Test
 //    public void testAsColumnName() throws IOException {
 //        RelNode relNode;
-//        Expr expr = as(literal(1), id("column"));
-//        Assert.assertEquals("asColumnName(Literal(value=1),Identifier(value=column))", expr.toString());
+//        Expr convertRexNode = as(literal(1), id("column"));
+//        Assert.assertEquals("asColumnName(Literal(value=1),Identifier(value=column))", convertRexNode.toString());
 //
 //        String text2 = "1 as column";
 //        Assert.assertEquals("as(literal(1),id(\"column\"))", getS(parse2SyntaxAst(text2)));
 //
-//        Schema map = map(from("db1", "travelrecord"), as(id("user_id"), id("id")), as(literal(1), id("column")));
+//        Schema map = map(fromTable("db1", "travelrecord"), as(id("user_id"), id("id")), as(literal(1), id("column")));
 //        Assert.assertEquals("LogicalProject(id=[$1], column=[1])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(relNode = toRelNode(map)));
 //
-//        Assert.assertEquals("map(from(`db1`,`travelrecord`),as(`user_id`,`id`),as(literal(1),`column`))", toDSL(relNode));
+//        Assert.assertEquals("map(fromTable(`db1`,`travelrecord`),as(`user_id`,`id`),as(literal(1),`column`))", toDSL(relNode));
 //    }
 //
 //    @Test
 //    public void testCast() throws IOException {
 //        RexNode rexNode;
-//        Expr expr = cast(literal(1), id("float"));
-//        Assert.assertEquals("cast(Literal(value=1),Identifier(value=float))", expr.toString());
+//        Expr convertRexNode = cast(literal(1), id("float"));
+//        Assert.assertEquals("cast(Literal(value=1),Identifier(value=float))", convertRexNode.toString());
 //
 //        String text2 = "cast(1,float)";
 //        Assert.assertEquals("cast(literal(1),id(\"float\"))", getS(parse2SyntaxAst(text2)));
 //
-//        Assert.assertEquals("1:FLOAT", toString(rexNode = toRexNode(expr)));
+//        Assert.assertEquals("1:FLOAT", toString(rexNode = toRexNode(convertRexNode)));
 //        Assert.assertEquals("Literal(value=1)", toDSL(rexNode));
 //
-//        Assert.assertEquals("map(from(`db1`,`travelrecord`),as(cast(`id`,`float`),`id`))", toDSL(toRelNode(map((from("db1", "travelrecord")), cast(id("id"), id("float"))))));
+//        Assert.assertEquals("map(fromTable(`db1`,`travelrecord`),as(cast(`id`,`float`),`id`))", toDSL(toRelNode(map((fromTable("db1", "travelrecord")), cast(id("id"), id("float"))))));
 //    }
 //
 //    @Test
 //    public void testInnerJoin() throws IOException, SQLException {
 //
 //        Schema schema = innerJoin(eq(id("id0"), id("id")),
-//                from("db1", "travelrecord"),
-//                projectNamed(from("db1", "travelrecord2"), "id0", "user_id0"));
+//                fromTable("db1", "travelrecord"),
+//                projectNamed(fromTable("db1", "travelrecord2"), "id0", "user_id0"));
 //        Assert.assertEquals("JoinSchema(type=INNER_JOIN, schemas=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id0, user_id0], fieldSchemaList=[])], condition=eq(Identifier(value=id0),Identifier(value=id)))", schema.toString());
 //
-//        String text2 = "innerJoin(table.id = table2.id , from(db1,travelrecord),from(db1,travelrecord2))";
-//        Assert.assertEquals("innerJoin(eq(dot(id(\"table\"),id(\"id\")),dot(id(\"table2\"),id(\"id\"))),from(id(\"db1\"),id(\"travelrecord\")),from(id(\"db1\"),id(\"travelrecord2\")))",
+//        String text2 = "innerJoin(table.id = table2.id , fromTable(db1,travelrecord),fromTable(db1,travelrecord2))";
+//        Assert.assertEquals("innerJoin(eq(dot(id(\"table\"),id(\"id\")),dot(id(\"table2\"),id(\"id\"))),fromTable(id(\"db1\"),id(\"travelrecord\")),fromTable(id(\"db1\"),id(\"travelrecord2\")))",
 //                getS(parse2SyntaxAst(text2)));
 //
 //        RelNode relNode = toRelNode(schema);
@@ -1002,16 +1002,16 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //
-//        Assert.assertEquals("join(innerJoin,eq(`id`,`id0`),from(`db1`,`travelrecord`),map(from(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)))",
+//        Assert.assertEquals("join(innerJoin,eq(`id`,`id0`),fromTable(`db1`,`travelrecord`),map(fromTable(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)))",
 //                toDSL(relNode));
 //
 //    }
 //
 //    @Test
 //    public void testLeftJoin() throws IOException {
-//        Schema schema = leftJoin(eq(id("id"), id("id2")), from("db1", "travelrecord"), projectNamed(from("db1", "travelrecord2"), "id2", "user_id2"));
+//        Schema schema = leftJoin(eq(id("id"), id("id2")), fromTable("db1", "travelrecord"), projectNamed(fromTable("db1", "travelrecord2"), "id2", "user_id2"));
 //        Assert.assertEquals("JoinSchema(type=LEFT_JOIN, schemas=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id2, user_id2], fieldSchemaList=[])], condition=eq(Identifier(value=id),Identifier(value=id2)))", schema.toString());
 //
 //        RelNode relNode = toRelNode(schema);
@@ -1019,12 +1019,12 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id2=[$0], user_id2=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
 //    public void testRightJoin() throws IOException {
-//        Schema schema = rightJoin(eq(id("id"), id("id0")), from("db1", "travelrecord"), projectNamed(from("db1", "travelrecord2"), "id0", "user_id0"));
+//        Schema schema = rightJoin(eq(id("id"), id("id0")), fromTable("db1", "travelrecord"), projectNamed(fromTable("db1", "travelrecord2"), "id0", "user_id0"));
 //        Assert.assertEquals("JoinSchema(type=RIGHT_JOIN, schemas=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id0, user_id0], fieldSchemaList=[])], condition=eq(Identifier(value=id),Identifier(value=id0)))", schema.toString());
 //
 //        RelNode relNode = toRelNode(schema);
@@ -1032,12 +1032,12 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
 //    public void testFullJoin() throws IOException {
-//        Schema schema = fullJoin(eq(id("id0"), id("id")), from("db1", "travelrecord"), projectNamed(from("db1", "travelrecord2"), "id0", "user_id0"));
+//        Schema schema = fullJoin(eq(id("id0"), id("id")), fromTable("db1", "travelrecord"), projectNamed(fromTable("db1", "travelrecord2"), "id0", "user_id0"));
 //        Assert.assertEquals("JoinSchema(type=FULL_JOIN, schemas=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id0, user_id0], fieldSchemaList=[])], condition=eq(Identifier(value=id0),Identifier(value=id)))", schema.toString());
 //
 //
@@ -1046,12 +1046,12 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
 //    public void testSemiJoin() throws IOException {
-//        Schema schema = semiJoin(eq(id("id0"), id("id")), from("db1", "travelrecord"), projectNamed(from("db1", "travelrecord2"), "id0", "user_id0"));
+//        Schema schema = semiJoin(eq(id("id0"), id("id")), fromTable("db1", "travelrecord"), projectNamed(fromTable("db1", "travelrecord2"), "id0", "user_id0"));
 //        Assert.assertEquals("JoinSchema(type=SEMI_JOIN, schemas=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id0, user_id0], fieldSchemaList=[])], condition=eq(Identifier(value=id0),Identifier(value=id)))", schema.toString());
 //
 //
@@ -1060,14 +1060,14 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
 //    public void testAntiJoin() throws IOException {
 //        Schema schema = antiJoin(eq(id("id0"), id("id")),
-//                from("db1", "travelrecord"),
-//                projectNamed(from("db1", "travelrecord2"), "id0", "user_id0"));
+//                fromTable("db1", "travelrecord"),
+//                projectNamed(fromTable("db1", "travelrecord2"), "id0", "user_id0"));
 //        Assert.assertEquals("JoinSchema(type=ANTI_JOIN, schemas=[FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id0, user_id0], fieldSchemaList=[])], condition=eq(Identifier(value=id0),Identifier(value=id)))", schema.toString());
 //
 //        RelNode relNode = toRelNode(schema);
@@ -1075,14 +1075,14 @@
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 //                "  LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
+//        dumpColumnInfo(relNode);
 //    }
 //
 //    @Test
 //    public void testCorrelateInnerJoin() throws IOException {
 //        Schema correlate = correlateInnerJoin(id("t"), keys(id("id")),
-//                from("db1", "travelrecord"),
-//                filter(projectNamed(from("db1", "travelrecord2"), "id0", "user_id0"),
+//                fromTable("db1", "travelrecord"),
+//                filter(projectNamed(fromTable("db1", "travelrecord2"), "id0", "user_id0"),
 //                        eq(ref("t", "id"), id("id0"))));
 //        RelNode relNode = toRelNode(correlate);
 //        Assert.assertEquals("LogicalCorrelate(correlation=[$cor0], joinType=[inner], requiredColumns=[{0}])\n" +
@@ -1090,15 +1090,15 @@
 //                "  LogicalFilter(condition=[=($cor0.id, $0)])\n" +
 //                "    LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "      LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
-//        Assert.assertEquals("correlateInnerJoin(`$cor0`,keys(`id`),from(`db1`,`travelrecord`),filter(map(from(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)),eq(ref(`$cor0`,`id`),`id0`)))", toDSL(relNode));
+//        dumpColumnInfo(relNode);
+//        Assert.assertEquals("correlateInnerJoin(`$cor0`,keys(`id`),fromTable(`db1`,`travelrecord`),filter(map(fromTable(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)),eq(ref(`$cor0`,`id`),`id0`)))", toDSL(relNode));
 //    }
 //
 //    @Test
 //    public void testCorrelateLeftJoin() throws IOException {
 //        Schema correlate = correlateLeftJoin(id("t"), keys(id("id")),
-//                from("db1", "travelrecord"),
-//                filter(projectNamed(from("db1", "travelrecord2"), "id0", "user_id0"),
+//                fromTable("db1", "travelrecord"),
+//                filter(projectNamed(fromTable("db1", "travelrecord2"), "id0", "user_id0"),
 //                        eq(ref("t", "id"), id("id0"))));
 //        RelNode relNode = toRelNode(correlate);
 //        Assert.assertEquals("LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{0}])\n" +
@@ -1106,35 +1106,35 @@
 //                "  LogicalFilter(condition=[=($cor0.id, $0)])\n" +
 //                "    LogicalProject(id0=[$0], user_id0=[$1])\n" +
 //                "      LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-//        dump(relNode);
-//        Assert.assertEquals("correlateLeftJoin(`$cor0`,keys(`id`),from(`db1`,`travelrecord`),filter(map(from(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)),eq(ref(`$cor0`,`id`),`id0`)))", toDSL(relNode));
+//        dumpColumnInfo(relNode);
+//        Assert.assertEquals("correlateLeftJoin(`$cor0`,keys(`id`),fromTable(`db1`,`travelrecord`),filter(map(fromTable(`db1`,`travelrecord2`),as(`id`,`id0`),as(`user_id`,`user_id0`)),eq(ref(`$cor0`,`id`),`id0`)))", toDSL(relNode));
 //    }
 //
 ////    @Test
 ////    public void testCorrelateLeftJoCorrelateSchemain() throws IOException {
-////        Schema schema = correlateLeftJoin(eq(ref("t","id"), id("id")), correlate(from("db1", "travelrecord"),"t"), projectNamed(from("db1", "travelrecord2"),"id0","user_id0"));
-////        Assert.assertEquals("JoinSchema(type=CORRELATE_LEFT_JOIN, schemas=[CorrelateSchema(from=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), refName=t), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id0, user_id0], fieldSchemaList=[])], condition=eq(ref(Identifier(value=t),Identifier(value=id)),Identifier(value=id)))", schema.toString());
+////        Schema schema = correlateLeftJoin(eq(ref("t","id"), id("id")), correlate(fromTable("db1", "travelrecord"),"t"), projectNamed(fromTable("db1", "travelrecord2"),"id0","user_id0"));
+////        Assert.assertEquals("JoinSchema(type=CORRELATE_LEFT_JOIN, schemas=[CorrelateSchema(fromTable=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), refName=t), ProjectSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord2)]), columnNames=[id0, user_id0], fieldSchemaList=[])], condition=eq(ref(Identifier(value=t),Identifier(value=id)),Identifier(value=id)))", schema.toString());
 ////
 ////        RelNode relNode = toRelNode(schema);
 ////        Assert.assertEquals("LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{}])\n" +
 ////                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 ////                "  LogicalFilter(condition=[=($cor0.id, $0)])\n" +
 ////                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
-////        dump(relNode);
+////        dumpColumnInfo(relNode);
 ////
-////        Assert.assertEquals("projectNamed(join(correlateLeftJoin,correlate(as(from(`db1`,`travelrecord`),`$cor0`)),as(filter(from(`db1`,`travelrecord2`),eq(dot(`$cor0`,`id`),`id`)),`t1`)),`id`,`user_id`,`id0`,`user_id0`)", toDSL(relNode));
+////        Assert.assertEquals("projectNamed(join(correlateLeftJoin,correlate(as(fromTable(`db1`,`travelrecord`),`$cor0`)),as(filter(fromTable(`db1`,`travelrecord2`),eq(dot(`$cor0`,`id`),`id`)),`t1`)),`id`,`user_id`,`id0`,`user_id0`)", toDSL(relNode));
 ////        relNode = toRelNode(schema);
 ////        Assert.assertEquals("LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{}])\n" +
 ////                "  LogicalTableScan(table=[[db1, travelrecord]])\n" +
 ////                "  LogicalFilter(condition=[=($cor0.id, $0)])\n" +
 ////                "    LogicalTableScan(table=[[db1, travelrecord2]])\n", toString(relNode));
 ////
-////        schema = map(correlateInnerJoin(correlate(from("db1", "travelrecord"),"t"), from("db1", "travelrecord2")), ref("t", "id"));
+////        schema = map(correlateInnerJoin(correlate(fromTable("db1", "travelrecord"),"t"), fromTable("db1", "travelrecord2")), ref("t", "id"));
 ////        relNode = toRelNode(schema);
-////        Assert.assertEquals("projectNamed(join(correlateLeftJoin,correlate(as(from(`db1`,`travelrecord`),`$cor0`)),as(filter(from(`db1`,`travelrecord2`),eq(dot(`$cor0`,`id`),`id`)),`t1`)),`id`,`user_id`,`id0`,`user_id0`)", toDSL(relNode));
+////        Assert.assertEquals("projectNamed(join(correlateLeftJoin,correlate(as(fromTable(`db1`,`travelrecord`),`$cor0`)),as(filter(fromTable(`db1`,`travelrecord2`),eq(dot(`$cor0`,`id`),`id`)),`t1`)),`id`,`user_id`,`id0`,`user_id0`)", toDSL(relNode));
 ////
 ////
-////        dump(relNode);
+////        dumpColumnInfo(relNode);
 ////
 ////    }
 //
@@ -1149,7 +1149,7 @@
 //
 //
 //
-//        Schema schema = getSchema(relNode);
+//        Schema schema = convertRelNode(relNode);
 //        String sb = toString(schema);
 //        System.out.println(sb);
 //        System.out.println(schema.toString());
@@ -1158,36 +1158,36 @@
 //    private String toString(Schema schema) {
 //        ExplainVisitor explainVisitor = new ExplainVisitor();
 //        schema.accept(explainVisitor);
-//        return explainVisitor.getSb();
+//        return explainVisitor.getString();
 //    }
 //
 //    private String toDSL(RelNode relNode) {
-//        return toString(getSchema(relNode));
+//        return toString(convertRelNode(relNode));
 //    }
 //
 //    private String toDSL(RexNode rexNode) {
-//        return getExpr(rexNode).toString();
+//        return convertRexNode(rexNode).toString();
 //    }
 //
-//    private List<Expr> getExpr(List<RexNode> rexNodes) {
-//        return rexNodes.stream().map(i -> getExpr(i)).collect(Collectors.toList());
+//    private List<Expr> convertRexNode(List<RexNode> rexNodes) {
+//        return rexNodes.stream().map(i -> convertRexNode(i)).collect(Collectors.toList());
 //    }
 //
 //    @Test
 //    public void selectFromGroupByKeyAvg() throws IOException {
 //        RelNode relNode;
-//        Schema schema = group(from("db1", "travelrecord"), keys(regular(id("id"))), aggregating(avg("id")));
+//        Schema schema = group(fromTable("db1", "travelrecord"), keys(regular(id("id"))), aggregating(avg("id")));
 //        Assert.assertEquals("GroupSchema(schema=FromSchema(names=[Identifier(value=db1), Identifier(value=travelrecord)]), keys=[GroupItem(exprs=[Identifier(value=id)])], exprs=[AggregateCall(function='avg', alias='avg(id)', operands=[Identifier(value=id)]])", schema.toString());
 //
-//        String text = "group(from(db1,travelrecord),keys(regular(id)), aggregating(avg(id)))";
-//        Assert.assertEquals("group(from(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(avg(id(\"id\"))))", getS(parse2SyntaxAst(text)));
+//        String text = "group(fromTable(db1,travelrecord),keys(regular(id)), aggregating(avg(id)))";
+//        Assert.assertEquals("group(fromTable(id(\"db1\"),id(\"travelrecord\")),keys(regular(id(\"id\"))),aggregating(avg(id(\"id\"))))", getS(parse2SyntaxAst(text)));
 //
 //        Assert.assertEquals("LogicalAggregate(group=[{0}], avg(id)=[AVG($0)])\n" +
 //                "  LogicalTableScan(table=[[db1, travelrecord]])\n", toString(toRelNode(schema)));
 //
 //
 //        String dsl = toDSL(relNode = toRelNode(schema));
-//        Assert.assertEquals("group(from(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`avg`,`id`),`avg(id)`)))", dsl);
+//        Assert.assertEquals("group(fromTable(`db1`,`travelrecord`),keys(regular(`id`)),aggregating(as(call(`avg`,`id`),`avg(id)`)))", dsl);
 //    }
 //
 

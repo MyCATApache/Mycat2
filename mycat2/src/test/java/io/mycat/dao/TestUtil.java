@@ -1,12 +1,10 @@
 package io.mycat.dao;
 
 import com.mysql.cj.jdbc.MysqlDataSource;
-import io.mycat.DesRelNodeHandler;
+import io.mycat.hbt.TextConvertor;
 import lombok.SneakyThrows;
 import org.mariadb.jdbc.MariaDbDataSource;
 
-import java.io.CharArrayWriter;
-import java.io.PrintWriter;
 import java.sql.*;
 import java.util.Properties;
 
@@ -32,6 +30,7 @@ public class TestUtil {
 
         return DriverManager.getConnection(url, properties);
     }
+
     @SneakyThrows
     public static Connection getMariaDBConnection() {
         String username = "root";
@@ -81,9 +80,7 @@ public class TestUtil {
     }
 
     public static String getString(ResultSet resultSet) throws SQLException {
-        CharArrayWriter writer = new CharArrayWriter(8192);
-        DesRelNodeHandler.dump(resultSet, false, new PrintWriter(writer));
-        return writer.toString();
+        return TextConvertor.dump(resultSet).replaceAll("\r","").replaceAll("\n","");
     }
 
 }

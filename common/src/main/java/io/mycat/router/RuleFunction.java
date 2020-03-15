@@ -95,8 +95,4 @@ public abstract class RuleFunction {
     public Map<String, String> getRanges() {
         return ranges;
     }
-
-    public List<List<NodeIndexRange>> dataDistribution() {
-        return null;
-    }
 }

@@ -55,11 +55,11 @@ public class JdbcConnectionManager implements ConnectionManager {
     }
 
     public DefaultConnection getConnection(String name) {
-        return getConnection(name, true, Connection.TRANSACTION_REPEATABLE_READ);
+        return getConnection(name, true, Connection.TRANSACTION_REPEATABLE_READ,false);
     }
 
-    public DefaultConnection getConnection(String name, boolean autocommit,
-                                           int transactionIsolation) {
+    public DefaultConnection getConnection(String name, Boolean autocommit,
+                                           int transactionIsolation, boolean readOnly) {
         JdbcDataSource key = dataSourceMap.get(name);
         if (key.counter.updateAndGet(operand -> {
             if (operand < key.getMaxCon()) {
@@ -68,7 +68,7 @@ public class JdbcConnectionManager implements ConnectionManager {
             return operand;
         }) < key.getMaxCon()) {
             try {
-                return new DefaultConnection(key.dataSource.getConnection(), key, autocommit, transactionIsolation, this);
+                return new DefaultConnection(key.dataSource.getConnection(), key, autocommit, transactionIsolation,readOnly, this);
             } catch (SQLException e) {
                 key.counter.decrementAndGet();
                 throw new MycatException(e);
@@ -96,4 +96,6 @@ public class JdbcConnectionManager implements ConnectionManager {
     public Map<String, JdbcDataSource> getDatasourceInfo() {
         return Collections.unmodifiableMap(dataSourceMap);
     }
+
+
 }

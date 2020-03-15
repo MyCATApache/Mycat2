@@ -21,7 +21,7 @@ public interface MycatUpdateResponse extends MycatResponse {
     return MycatResultSetType.UPDATEOK;
   }
 
-  int getUpdateCount();
+  long getUpdateCount();
 
   long getLastInsertId();
 

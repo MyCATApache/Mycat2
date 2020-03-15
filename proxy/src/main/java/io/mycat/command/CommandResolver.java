@@ -67,7 +67,6 @@ public class CommandResolver {
           byte[] bytes = curPacket.readEOFStringBytes();
           mycat.resetCurrentProxyPayload();
           commandHandler.handleQuery(bytes, mycat);
-          MycatMonitor.onQueryCommandEnd(mycat);
           break;
         }
         case MySQLCommandType.COM_INIT_DB: {

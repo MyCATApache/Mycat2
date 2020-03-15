@@ -4,6 +4,11 @@ import io.mycat.beans.mycat.MycatRowMetaData;
 
 import java.io.Closeable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author jamie12221
  *  date 2019-05-22 01:17
@@ -50,4 +55,22 @@ public interface RowBaseIterator extends Closeable {
   Object getObject(int columnIndex);
 
   BigDecimal getBigDecimal(int columnIndex);
+
+  public default List<Map<String, Object>> getResultSetMap() {
+    return getResultSetMap(this);
+  }
+
+  public default List<Map<String, Object>> getResultSetMap(RowBaseIterator iterator) {
+    MycatRowMetaData metaData = iterator.metaData();
+    int columnCount = metaData.getColumnCount();
+    List<Map<String, Object>> resultList = new ArrayList<>();
+    while (iterator.next()) {
+      HashMap<String, Object> row = new HashMap<>(columnCount);
+      for (int i = 1; i <= columnCount; i++) {
+        row.put(metaData.getColumnName(i), iterator.getObject(i));
+      }
+      resultList.add(row);
+    }
+    return resultList;
+  }
 }

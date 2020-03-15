@@ -16,7 +16,8 @@ package io.mycat.calcite;
 
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.calcite.metadata.SimpleColumnInfo;
+import io.mycat.calcite.resultset.CalciteRowMetaData;
+import io.mycat.queryCondition.SimpleColumnInfo;
 import io.mycat.util.MycatRowMetaDataImpl;
 import io.mycat.util.SQL2ResultSetUtil;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -168,7 +169,7 @@ public class CalciteConvertors {
             int precision = mycatRowMetaData.getPrecision(i);
             int scale = mycatRowMetaData.getScale(i);
             JDBCType jdbcType = JDBCType.valueOf(columnType);
-            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, mycatRowMetaData.isNull(i)));
+            list.add(new SimpleColumnInfo(columnName, columnType, precision, scale, jdbcType, mycatRowMetaData.isNullable(i)));
         }
         return list;
     }
@@ -195,7 +196,7 @@ public class CalciteConvertors {
 //                }
 //                if (info == null) {
 //                    schemaColumnMetaMap.remove(tableName);
-//                    LOGGER.error("can not fetch {}.{} column info from datasource,may be failure to build targetTable", schemaName, tableName);
+//                    LOGGER.error("can not fetch {}.{} column info fromTable datasource,may be failure to build targetTable", schemaName, tableName);
 //                }else {
 //                    schemaColumnMetaMap.get(schemaName).put(tableName, info);
 //                }

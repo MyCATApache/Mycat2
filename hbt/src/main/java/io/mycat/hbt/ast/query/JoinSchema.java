@@ -22,7 +22,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,14 +41,6 @@ public class JoinSchema extends Schema {
         this.left = left;
         this.right = right;
         this.condition = condition;
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        ArrayList<FieldType> list = new ArrayList<>();
-        list.addAll(left.fields());
-        list.addAll(right.fields());
-        return list;
     }
 
     public List<Schema> getSchemas() {

@@ -20,7 +20,6 @@ import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,12 +33,6 @@ public class SetOpSchema extends Schema {
         super(op);
         this.schemas = new ArrayList<>(schemas);
     }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(schemas.get(0).fields());
-    }
-
     @Override
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);

@@ -1,7 +1,7 @@
 package io.mycat.lib;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.lib.impl.InserParser;
+import io.mycat.router.util.InserParser;
 import org.junit.Assert;
 import org.junit.Test;
 

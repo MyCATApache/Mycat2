@@ -1,0 +1,6 @@
+BuildTime  2020-01-10 09:06:35
+GitVersion   20f22f947c60665debb02fed8e205fd9b3580858
+MavenVersion 0.5-SNAPSHOP
+GitUrl https://github.com/MyCATApache/Mycat2.git
+MyCatSite http://www.mycat.io/
+QQGroup 332702697
