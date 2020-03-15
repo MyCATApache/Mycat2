@@ -63,12 +63,12 @@ HBT功能相关
 ##### 2020.3.9 -> 2020.3.15开发日志
 https://github.com/MyCATApache/Mycat2/commit/86df5c18bb5bfeb2608c3f952175f6dcb93371dd
 
-1.HBT能提供对实际执行计划输出功能
+1. HBT能提供对实际执行计划输出功能
 其中explain输出底层的迭代器的字段类型,用于调试时候能看到每个语法节点的类型
 https://github.com/MyCATApache/Mycat2/commit/cc3ec77b1b075c4616bd096362370b8c3530fec8
 https://github.com/MyCATApache/Mycat2/commit/7c0349a97a71dfcd12134713ec3ab9daf9ceefd3
 
-2.重构mycat 2.0 NIO框架以便支持3种线程事务模式(事务与线程绑定,非绑定,reactor),为支持更多事务框架做支持,两种写入模式(透传,自定义报文写入)
+2. 重构mycat 2.0 NIO框架以便支持3种线程事务模式(事务与线程绑定,非绑定,reactor),为支持更多事务框架做支持,两种写入模式(透传,自定义报文写入)
 修改原因:
 
 使用不同的技术实现HBT功能后发现mycat内部的状态过于分散,难以维护
@@ -82,16 +82,17 @@ mycat2.0使用多种SQL以及事务处理工具完成像数据库一样的功能
 
 https://github.com/MyCATApache/Mycat2/commit/f3189bb071cb7514695b357b72c5e49e0d3b130f
 
-3.添加前端异常连接检测,IO超时检查(辅助测试,辅助释放资源)
+3. 添加前端异常连接检测,IO超时检查(辅助测试,辅助释放资源)
 https://github.com/MyCATApache/Mycat2/commit/78b6103b4497c0a1ea7f3922ebe1a7dab1fd80d8
 
-4.@wangzihaogithub提交简单的数据源读取写入代码
+4. @wangzihaogithub提交简单的数据源读取写入代码
 https://github.com/MyCATApache/Mycat2/commit/51b98bf63428e0341827f017db045fb0afccc30d
 
 待完善任务
-1.绑定事务的线程池优化,浪费一个监控线程维护等待的事务
-2.绑定事务线程与多线程报文写入方式优雅实现
-3.完善自定义报文缓存写入,已有原型,未整合
+
+1. 绑定事务的线程池优化,浪费一个监控线程维护等待的事务
+2. 绑定事务线程与多线程报文写入方式优雅实现
+3. 完善自定义报文缓存写入,已有原型,未整合
 
 
 
