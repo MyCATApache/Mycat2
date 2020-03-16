@@ -21,7 +21,6 @@ import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,22 +28,17 @@ import java.util.List;
  **/
 @Data
 public class ValuesSchema extends Schema {
-    private final List<Literal> values;
+    private final List<Object> values;
     private final List<FieldType> fieldNames;
 
-    public ValuesSchema(List<FieldType> fieldNames, List<Literal> values) {
-        super(Op.VALUES);
+    public ValuesSchema(List<FieldType> fieldNames, List<Object> values) {
+        super(Op.TABLE);
         this.fieldNames = fieldNames;
         this.values = values;
     }
 
     public ValuesSchema(List<FieldType> fieldNames, Literal... values) {
         this(fieldNames, Arrays.asList(values));
-    }
-
-    @Override
-    public List<FieldType> fields() {
-        return Collections.unmodifiableList(fieldNames);
     }
 
     @Override

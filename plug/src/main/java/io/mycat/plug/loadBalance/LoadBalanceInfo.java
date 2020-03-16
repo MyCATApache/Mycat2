@@ -25,4 +25,5 @@ package io.mycat.plug.loadBalance;
  */
 public interface LoadBalanceInfo {
     String getName();
+    int maxRequestCount();
 }

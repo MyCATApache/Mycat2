@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2020>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -37,8 +37,8 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
 
     long lastPollTaskTime = System.currentTimeMillis();
 
-    public boolean isBind(KEY key){
-       return map.containsKey(key);
+    public boolean isBind(KEY key) {
+        return map.containsKey(key);
     }
 
     public BindThreadPool(int maxPengdingLimit, long waitTaskTimeout,
@@ -101,13 +101,13 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
             if (l > 60) {
                 tryDecThread();
             }
-        }else {
+        } else {
             lastPollTaskTime = System.currentTimeMillis();
         }
         /////////////////////////////////
         for (Map.Entry<KEY, PROCESS> entry : map.entrySet()) {
             KEY key = entry.getKey();
-            if (!key.checkOkInBind()){
+            if (!key.checkOkInBind()) {
                 map.remove(key);
                 entry.getValue().close();
             }
@@ -132,22 +132,25 @@ public class BindThreadPool<KEY extends BindThreadKey, PROCESS extends BindThrea
     }
 
     public boolean run(KEY key, BindThreadCallback<KEY, PROCESS> task) {
-        PROCESS transactionThread = map.get(key);
-        if (transactionThread == null) {
-            transactionThread = idleList.poll();
-            if (transactionThread == null) {
-                if (tryIncThreadCount()) {
-                    transactionThread = processFactory.apply(this);
-                    transactionThread.start();
-                } else {
-                    if (!pending.offer(createPengdingTask(key, task))) {
-                        task.onException(key, new Exception("max pending job limit"));
+        PROCESS transactionThread = map.computeIfAbsent(key, new Function<KEY, PROCESS>() {
+            @Override
+            public PROCESS apply(KEY key) {
+                PROCESS transactionThread = idleList.poll();
+                if (transactionThread == null) {
+                    if (tryIncThreadCount()) {
+                        transactionThread = processFactory.apply(BindThreadPool.this);
+                        transactionThread.start();
+                    } else {
+                        if (!pending.offer(createPengdingTask(key, task))) {
+                            task.onException(key, new Exception("max pending job limit"));
+                        }
+                        return null;
                     }
-                    return false;
                 }
+                return transactionThread;
             }
-        }
-        map.put(key, transactionThread);
+        });
+        if (transactionThread == null)return false;
         transactionThread.run(key, task);
         return true;
     }

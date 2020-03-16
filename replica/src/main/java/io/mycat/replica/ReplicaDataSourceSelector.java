@@ -34,6 +34,7 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     protected final String name;
     protected final ConcurrentHashMap<String, PhysicsInstanceImpl> datasourceMap = new ConcurrentHashMap<>();
     protected final BalanceType balanceType;
+    private final int maxRequestCount;
     protected final ReplicaSwitchType switchType;
     protected final ReplicaType type;
     protected final LoadBalanceStrategy defaultReadLoadBalanceStrategy;
@@ -44,11 +45,12 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     private final static boolean DEFAULT_SELECT_AS_READ = true;
     private final static boolean DEFAULT_ALIVE = false;
 
-    public ReplicaDataSourceSelector(String name, BalanceType balanceType, ReplicaType type,
+    public ReplicaDataSourceSelector(String name, BalanceType balanceType, ReplicaType type, int maxRequestCount,
                                      ReplicaSwitchType switchType, LoadBalanceStrategy defaultReadLoadBalanceStrategy,
                                      LoadBalanceStrategy defaultWriteLoadBalanceStrategy) {
         this.name = name;
         this.balanceType = balanceType;
+        this.maxRequestCount = maxRequestCount;
         this.switchType = switchType;
         this.type = type;
         this.defaultReadLoadBalanceStrategy = defaultReadLoadBalanceStrategy;
@@ -56,7 +58,17 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
         Objects.requireNonNull(balanceType, "balanceType is null");
     }
 
-    private static List<PhysicsInstanceImpl> getDataSource(Collection<PhysicsInstanceImpl> datasourceList) {
+    /**
+     * @param datasourceList
+     * @return
+     */
+    private List<PhysicsInstanceImpl> getDataSource(Collection<PhysicsInstanceImpl> datasourceList) {
+        int max = this.maxRequestCount();
+        if (max < Integer.MAX_VALUE) {
+            if (max <= datasourceList.stream().mapToInt(i -> i.getSessionCounter()).sum()) {
+                return Collections.emptyList();
+            }
+        }
         if (datasourceList.isEmpty()) return Collections.emptyList();
         List<PhysicsInstanceImpl> result = datasourceList.stream().filter(mySQLDatasource -> mySQLDatasource.isAlive() && mySQLDatasource
                 .asSelectRead()).collect(Collectors.toList());
@@ -186,6 +198,11 @@ public class ReplicaDataSourceSelector implements LoadBalanceInfo {
     @Override
     public String getName() {
         return this.name;
+    }
+
+    @Override
+    public int maxRequestCount() {
+        return maxRequestCount;
     }
 
 

@@ -14,10 +14,10 @@
  */
 package io.mycat;
 
+import io.mycat.beans.mycat.JdbcRowBaseIterator;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatUpdateResponse;
-import io.mycat.datasource.jdbc.resultset.JdbcRowBaseIteratorImpl;
 import io.mycat.datasource.jdbc.resultset.TextResultSetResponse;
 import io.mycat.proxy.session.MycatSession;
 import lombok.SneakyThrows;
@@ -27,7 +27,9 @@ import java.nio.ByteBuffer;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 public class SQLExecuterWriter {
 
@@ -35,7 +37,7 @@ public class SQLExecuterWriter {
     public static void executeQuery(MycatSession session, Connection connection, String sql) {
         Statement statement = connection.createStatement();
         ResultSet resultSet = statement.executeQuery(sql);
-        JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);
+        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(statement, resultSet);
         writeToMycatSession(session, new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)});
     }
 
@@ -48,16 +50,18 @@ public class SQLExecuterWriter {
 
     @NotNull
     public static MycatResponse[] getMycatResponses(Statement statement, ResultSet resultSet) {
-        JdbcRowBaseIteratorImpl jdbcRowBaseIterator = new JdbcRowBaseIteratorImpl(statement, resultSet);
+        JdbcRowBaseIterator jdbcRowBaseIterator = new JdbcRowBaseIterator(statement, resultSet);
         return new MycatResponse[]{new TextResultSetResponse(jdbcRowBaseIterator)};
     }
-
     public static void writeToMycatSession(MycatSession session, final MycatResponse... sqlExecuters) {
-        if (sqlExecuters.length == 0) {
+        writeToMycatSession(session, Arrays.asList(sqlExecuters));
+    }
+    public static void writeToMycatSession(MycatSession session, final List<MycatResponse> sqlExecuters) {
+        if (sqlExecuters.size() == 0) {
             session.writeOkEndPacket();
             return;
         }
-        final MycatResponse endSqlExecuter = sqlExecuters[sqlExecuters.length - 1];
+        final MycatResponse endSqlExecuter = sqlExecuters.get(sqlExecuters.size() - 1);
         try {
             for (MycatResponse sqlExecuter : sqlExecuters) {
                 try (MycatResponse resultSet = sqlExecuter) {

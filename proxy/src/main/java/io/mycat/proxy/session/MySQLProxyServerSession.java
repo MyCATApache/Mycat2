@@ -122,13 +122,13 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
                     counter++;
                 }
             }
-            if (counter >= 4){
-                this.close(false,"can not response data");
+            if (counter >= 4) {
+                this.close(false, "can not response data");
             }
         } catch (IOException e) {
             LOGGER.error("", e);
-        }finally {
-            close(false,"writeErrorEndPacketBySyncInProcessError");
+        } finally {
+            close(false, "writeErrorEndPacketBySyncInProcessError");
         }
     }
 
@@ -182,10 +182,13 @@ public interface MySQLProxyServerSession<T extends Session<T>> extends MySQLServ
             session.change2WriteOpts();
             return;
         }
-        boolean lastPacket = byteBuffers.peek() == END_PACKET;
+        boolean lastPacket = byteBuffers.peek() == END_PACKET;//同时这个包后面还有一个真正结束的报文
         if (!lastPacket) {
             session.change2WriteOpts();
         } else {
+            if (byteBuffers.size() != 2) {
+                throw new AssertionError();
+            }
             byteBuffers.remove();
             while (writeMySQLPacket(session, byteBuffers)) {
 

@@ -33,6 +33,9 @@ public enum PartitionRuleFunctionManager {
         }
         return (RuleFunction) clz.getDeclaredConstructor().newInstance();
     }
+    public static ColumnJoinerRuleFunction createColumnJoinerRuleFunction(String name, String clazz) throws Exception {
+        return new ColumnJoinerRuleFunction(name,createFunction(name,clazz));
+    }
 
     public static RuleFunction getRuleAlgorithm(SharingFuntionRootConfig.ShardingFuntion funtion)
             throws Exception {
@@ -53,5 +56,13 @@ public enum PartitionRuleFunctionManager {
             throw new RuntimeException(e);
         }
     }
-
+    public ColumnJoinerRuleFunction getColumnJoinerRuleFunction(String name, String clazz, Map<String, String> properties, Map<String, String> ranges) {
+        try {
+            RuleFunction function = createFunction(name, clazz);
+            function.callInit(properties == null ? Collections.emptyMap() : properties, ranges == null ? Collections.emptyMap() : ranges);
+            return new ColumnJoinerRuleFunction(name,function);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

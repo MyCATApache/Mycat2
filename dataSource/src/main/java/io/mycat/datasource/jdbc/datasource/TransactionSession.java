@@ -14,14 +14,14 @@
  */
 package io.mycat.datasource.jdbc.datasource;
 
-import io.mycat.beans.mysql.MySQLServerStatusFlags;
-
-import java.util.List;
-
 /**
  * @author Junwen Chen
  **/
 public interface TransactionSession {
+
+    default void bind(String key, String type){
+
+    }
 
     void setTransactionIsolation(int transactionIsolation);
 
@@ -33,29 +33,23 @@ public interface TransactionSession {
 
     boolean isInTransaction();
 
-    void beforeDoAction();
-
-    void afterDoAction();
-
     void setAutocommit(boolean autocommit);
 
     boolean isAutocommit();
 
     DefaultConnection getConnection(String jdbcDataSource);
-    DefaultConnection getDisposableConnection(String jdbcDataSource);
-    DisposQueryConnection getDisposableConnection(List<String> jdbcDataSourceList);
 
     void reset();
 
-    default public int getServerStatus() {
-        int serverStatus = 0;
-        if (isAutocommit()) {
-            serverStatus |= MySQLServerStatusFlags.AUTO_COMMIT;
-        }
-        if (isInTransaction()) {
-            serverStatus |= MySQLServerStatusFlags.IN_TRANSACTION;
-        }
-        return serverStatus;
-    }
+    public int getServerStatus();
 
+    void onEndOfResponse();
+
+    boolean isReadOnly();
+
+    public void setReadOnly(boolean readOnly);
+
+    boolean needBindThread();
+
+    int getTransactionIsolation();
 }

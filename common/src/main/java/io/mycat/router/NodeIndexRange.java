@@ -22,7 +22,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
+/**
+ * @author cjw
+ */
 @Value
 public final class NodeIndexRange {
     public final int nodeIndex;
@@ -52,6 +56,18 @@ public final class NodeIndexRange {
         longRangeList.sort(Comparator.comparing(x -> x.valueStart));
         return longRangeList;
     }
+
+    public static Map<String, String>  from(List<List<NodeIndexRange>> lists){
+        lists = lists.stream().sorted(Comparator.comparing(x->x.get(0).valueStart)).sorted().collect(Collectors.toList());
+    return lists.stream().flatMap(k -> k.stream())
+                .collect(Collectors.groupingBy(i -> String.valueOf(i.nodeIndex), Collectors.mapping(x -> x.valueStart + "-" + x.valueEnd, Collectors.joining(","))));/**/
+    }
+
+    /**
+     *
+     * @param ranges
+     * @return
+     */
     public static List<List<NodeIndexRange>> getSplitLongRanges(Map<String, String> ranges) {
         ArrayList<List<NodeIndexRange>> lists = new ArrayList<>();
         for (Entry<String, String> entry : ranges.entrySet()) {
@@ -67,8 +83,7 @@ public final class NodeIndexRange {
             }
             lists.add(longRangeList);
         }
-
-        return lists;
+        return lists.stream().sorted(Comparator.comparing(x->x.get(0).valueStart)).sorted().collect(Collectors.toList());
     }
     public long getSize() {
         return this.valueEnd - this.valueStart + 1;
