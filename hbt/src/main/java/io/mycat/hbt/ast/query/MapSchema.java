@@ -14,11 +14,12 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -26,6 +27,7 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class MapSchema extends Schema {
     private final Schema schema;
     private final List<Expr> expr;

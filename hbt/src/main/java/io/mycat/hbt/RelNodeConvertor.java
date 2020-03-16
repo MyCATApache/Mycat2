@@ -17,6 +17,7 @@ package io.mycat.hbt;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.table.MycatSQLTableScan;
 import io.mycat.calcite.table.MycatTransientSQLTable;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
@@ -273,7 +274,7 @@ public class RelNodeConvertor {
         LogicalAggregate relNode1 = (LogicalAggregate) relNode;
         Schema schema = convertRelNode(relNode1.getInput());
         Aggregate.Group groupType = relNode1.getGroupType();
-        return new GroupSchema(schema, getGroupItems(relNode1), getAggCallList(relNode1.getInput(), relNode1.getAggCallList()));
+        return new GroupBySchema(schema, getGroupItems(relNode1), getAggCallList(relNode1.getInput(), relNode1.getAggCallList()));
     }
 
     private static List<AggregateCall> getAggCallList(RelNode org, List<org.apache.calcite.rel.core.AggregateCall> aggCallList) {
@@ -284,18 +285,18 @@ public class RelNodeConvertor {
         List<String> fieldNames = inputRel.getRowType().getFieldNames();
         RelDataType type = call.getType();
         String alias = call.getName();
-        String aggeName = HBTCalciteSupport.INSTANCE.getAggFunctionName(call.getAggregation());
+        String ageName = HBTCalciteSupport.INSTANCE.getAggFunctionName(call.getAggregation());
         List<Expr> argList = call.getArgList().stream().map(i -> new Identifier(fieldNames.get(i))).collect(Collectors.toList());
         boolean distinct = call.isDistinct();
         boolean approximate = call.isApproximate();
         boolean ignoreNulls = call.ignoreNulls();
         Expr filter = call.hasFilter() ? new Identifier(inputRel.getRowType().getFieldNames().get(call.filterArg)) : null;
         List<OrderItem> orderby = getOrderby(inputRel, call.getCollation());
-        return new AggregateCall(aggeName, argList).alias(alias).ignoreNulls(ignoreNulls).approximate(approximate).distinct(distinct).filter(filter).orderBy(orderby);
+        return new AggregateCall(ageName, argList).alias(alias).ignoreNulls(ignoreNulls).approximate(approximate).distinct(distinct).filter(filter).orderBy(orderby);
     }
 
-    private static List<GroupItem> getGroupItems(LogicalAggregate aggregate) {
-        List<GroupItem> list = new ArrayList<>();
+    private static List<GroupKey> getGroupItems(LogicalAggregate aggregate) {
+        List<GroupKey> list = new ArrayList<>();
         List<String> fieldNames = aggregate.getInput().getRowType().getFieldNames();
         final ImmutableList<ImmutableBitSet> groupSets = aggregate.getGroupSets();
         for (ImmutableBitSet set : groupSets) {
@@ -303,7 +304,7 @@ public class RelNodeConvertor {
             for (Integer integer : set) {
                 arrayList.add(new Identifier(fieldNames.get(integer)));
             }
-            list.add(new GroupItem(arrayList));
+            list.add(new GroupKey(arrayList));
         }
         return list;
     }

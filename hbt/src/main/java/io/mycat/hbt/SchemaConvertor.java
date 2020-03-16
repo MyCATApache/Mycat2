@@ -1,5 +1,6 @@
 package io.mycat.hbt;
 
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.Literal;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.modify.MergeModify;
@@ -90,9 +91,6 @@ public class SchemaConvertor {
     }
 
 
-    public FieldType fieldType(String id, String type) {
-        return new FieldType(id, type, true, null, null);
-    }
 
     public List<FieldType> fields(ParseNode fields) {
         CallExpr callExpr = (CallExpr) fields;
@@ -189,7 +187,7 @@ public class SchemaConvertor {
                     CallExpr keys = (CallExpr) exprList.get(1);
                     Schema schema = transforSchema(source);
                     List<AggregateCall> aggregating = Collections.emptyList();
-                    List<GroupItem> groupkeys = keys(keys);
+                    List<GroupKey> groupkeys = keys(keys);
                     switch (size) {
                         case 2: {
                             break;
@@ -297,8 +295,8 @@ public class SchemaConvertor {
 
 
     @NotNull
-    public Schema groupBy(Schema schema, List<GroupItem> groupkeys, List<AggregateCall> aggregating) {
-        return new GroupSchema(schema, groupkeys, aggregating);
+    public Schema groupBy(Schema schema, List<GroupKey> groupkeys, List<AggregateCall> aggregating) {
+        return new GroupBySchema(schema, groupkeys, aggregating);
     }
 
     @NotNull
@@ -395,20 +393,20 @@ public class SchemaConvertor {
         return new AggregateCall(callExpr.getName(), alias, collect, distinct, approximate, ignoreNulls, filterExpr, orderBy.stream().map(i -> getOrderItem(i)).collect(Collectors.toList()));
     }
 
-    public List<GroupItem> keys(CallExpr keys) {
+    public List<GroupKey> keys(CallExpr keys) {
         List<ParseNode> exprs = keys.getArgs().getExprs();
         return exprs.stream().map(i -> getGroupItem(i)).collect(Collectors.toList());
     }
 
-    public GroupItem getGroupItem(ParseNode parseNode) {
+    public GroupKey getGroupItem(ParseNode parseNode) {
         CallExpr groupKey = (CallExpr) parseNode;
         List<Expr> collect = groupKey.getArgs().getExprs().stream().map(i -> transforExpr(i)).collect(Collectors.toList());
         return groupkey(collect);
     }
 
 
-    public GroupItem groupkey(List<Expr> exprs) {
-        return new GroupItem(exprs);
+    public GroupKey groupkey(List<Expr> exprs) {
+        return new GroupKey(exprs);
     }
 
     public OrderItem getOrderItem(ParseNode parseNode) {

@@ -87,11 +87,9 @@ public enum HBTCalciteSupport {
 
         sqlAggFunctionMap.put("avg", SqlStdOperatorTable.AVG);
         sqlAggFunctionMap.put("count", SqlStdOperatorTable.COUNT);
-        sqlAggFunctionMap.put("first", SqlStdOperatorTable.FIRST_VALUE);
-        sqlAggFunctionMap.put("last", SqlStdOperatorTable.LAST_VALUE);
         sqlAggFunctionMap.put("max", SqlStdOperatorTable.MAX);
         sqlAggFunctionMap.put("min", SqlStdOperatorTable.MIN);
-
+        sqlAggFunctionMap.put("sum", SqlStdOperatorTable.SUM);
 
         sqlOperatorMap.put("eq", SqlStdOperatorTable.EQUALS);
         sqlOperatorMap.put("ne", SqlStdOperatorTable.NOT_EQUALS);

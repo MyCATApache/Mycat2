@@ -1,11 +1,13 @@
 package io.mycat.hbt.ast.modify;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 @Getter
+@EqualsAndHashCode
 public class MergeModify extends Schema {
     private final Iterable<ModifyFromSql> list;
 

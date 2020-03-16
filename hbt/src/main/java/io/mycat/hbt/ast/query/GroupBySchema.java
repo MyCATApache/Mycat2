@@ -14,35 +14,41 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.HBTOp;
-import io.mycat.hbt.ast.base.Node;
+import io.mycat.hbt.ast.HBTOp;
+import io.mycat.hbt.ast.base.AggregateCall;
+import io.mycat.hbt.ast.base.GroupKey;
 import io.mycat.hbt.ast.base.NodeVisitor;
-import lombok.Builder;
+import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import java.util.List;
 
 /**
  * @author jamie12221
  **/
 @Data
-@Builder
-public class FieldType extends Node {
-    final String id;
-    final String type;
-    final boolean nullable;
-    final Integer precision;
-    final Integer scale;
+@EqualsAndHashCode(callSuper = true)
+public class GroupBySchema extends Schema {
+    private final Schema schema;
+    private final List<GroupKey> keys;
+    private final List<AggregateCall> exprs;
 
-    public FieldType(String id, String type,boolean columnNullable,Integer precision,Integer scale) {
-        super(HBTOp.FIELD_SCHEMA);
-        this.id = id;
-        this.type = type;
-        this.nullable = columnNullable;
-        this.precision = precision;
-        this.scale = scale;
+    public GroupBySchema(Schema schema, List<GroupKey> keys, List<AggregateCall> exprs) {
+        super(HBTOp.GROUP);
+        this.schema = schema;
+        this.keys = keys;
+        this.exprs = exprs;
     }
+
+    public Schema getSchema() {
+        return schema;
+    }
+
 
     @Override
     public void accept(NodeVisitor visitor) {
         visitor.visit(this);
     }
 }
+

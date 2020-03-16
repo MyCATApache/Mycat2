@@ -3,7 +3,7 @@ package io.mycat.hbt;
 import io.mycat.api.collector.AbstractObjectRowIterator;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.hbt.ast.query.FieldType;
+import io.mycat.hbt.ast.base.FieldType;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,7 +55,7 @@ private ColumnInfoRowMetaData(){
     }
 
     private  static void addColumnInfo(ArrayList<FieldType> objects, String isAutoIncrement, String varchar, BiFunction<MycatRowMetaData, Integer, Object> getter) {
-        objects.add(FieldType.builder().id(isAutoIncrement).type(varchar).build());
+        objects.add(FieldType.builder().columnName(isAutoIncrement).columnType(varchar).build());
         GETTERS.add(getter);
     }
 

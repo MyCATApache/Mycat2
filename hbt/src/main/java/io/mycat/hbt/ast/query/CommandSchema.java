@@ -1,12 +1,14 @@
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 
 @Getter
+@EqualsAndHashCode(callSuper = true)
 public class CommandSchema extends Schema {
     private final Schema schema;
 

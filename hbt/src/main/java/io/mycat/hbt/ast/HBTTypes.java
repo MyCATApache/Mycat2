@@ -1,4 +1,4 @@
-package io.mycat.hbt;
+package io.mycat.hbt.ast;
 
 public enum  HBTTypes {
     Bool,

@@ -26,6 +26,7 @@ import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.rules.PushDownLogicTable;
 import io.mycat.calcite.table.MycatLogicTable;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.metadata.LogicTable;
@@ -59,7 +60,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.builder;
-import static io.mycat.hbt.HBTOp.*;
+import static io.mycat.hbt.ast.HBTOp.*;
 
 /**
  * @author jamie12221
@@ -122,7 +123,7 @@ public class HBTQueryConvertor {
                 case ORDER:
                     return order((OrderSchema) input);
                 case GROUP:
-                    return group((GroupSchema) input);
+                    return group((GroupBySchema) input);
                 case TABLE:
                     return values((AnonyTableSchema) input);
                 case DISTINCT:
@@ -327,16 +328,16 @@ public class HBTQueryConvertor {
         }
     }
 
-    private RelNode group(GroupSchema input) {
+    private RelNode group(GroupBySchema input) {
         relBuilder.push(handle(input.getSchema()));
         RelBuilder.GroupKey groupKey = groupItemListToRex(input.getKeys());
         return relBuilder.aggregate(groupKey, toAggregateCall(input.getExprs()))
                 .build();
     }
 
-    private RelBuilder.GroupKey groupItemListToRex(List<GroupItem> keys) {
+    private RelBuilder.GroupKey groupItemListToRex(List<GroupKey> keys) {
         ImmutableList.Builder<ImmutableList<RexNode>> builder = builder();
-        for (GroupItem key : keys) {
+        for (GroupKey key : keys) {
             List<RexNode> nodes = toRex(key.getExprs());
             builder.add(ImmutableList.copyOf(nodes));
         }
@@ -554,7 +555,7 @@ public class HBTQueryConvertor {
             boolean nullable = fieldSchema.isNullable();
             Integer precision = fieldSchema.getPrecision();
             Integer scale = fieldSchema.getScale();
-            builder.add(fieldSchema.getId(), toType(fieldSchema.getType(), nullable, precision, scale));
+            builder.add(fieldSchema.getColumnName(), toType(fieldSchema.getColumnType(), nullable, precision, scale));
         }
         return builder.build();
     }

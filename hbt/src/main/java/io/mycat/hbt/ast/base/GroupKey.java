@@ -12,14 +12,10 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.hbt.ast.query;
+package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.HBTOp;
-import io.mycat.hbt.ast.base.AggregateCall;
-import io.mycat.hbt.ast.base.GroupItem;
-import io.mycat.hbt.ast.base.NodeVisitor;
-import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
@@ -27,26 +23,12 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
-public class GroupSchema extends Schema {
-    private final Schema schema;
-    private final List<GroupItem> keys;
-    private final List<AggregateCall> exprs;
+@EqualsAndHashCode
+public class GroupKey {
+    private final List<Expr> exprs;
 
-    public GroupSchema(Schema schema, List<GroupItem> keys, List<AggregateCall> exprs) {
-        super(HBTOp.GROUP);
-        this.schema = schema;
-        this.keys = keys;
+    public GroupKey(List<Expr> exprs) {
         this.exprs = exprs;
     }
 
-    public Schema getSchema() {
-        return schema;
-    }
-
-
-    @Override
-    public void accept(NodeVisitor visitor) {
-        visitor.visit(this);
-    }
 }
-

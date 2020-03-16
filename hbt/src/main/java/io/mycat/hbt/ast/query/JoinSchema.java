@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
@@ -55,7 +55,7 @@ public class JoinSchema extends Schema {
     @Override
     public String toString() {
         return "JoinSchema(" +
-                "type=" + op +
+                "columnType=" + op +
                 ", schemas=" + getSchemas() +
                 ", condition=" + condition +
                 ')';

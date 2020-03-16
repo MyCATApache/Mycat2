@@ -16,14 +16,16 @@ package io.mycat.hbt.ast.modify;
 
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-import static io.mycat.hbt.HBTOp.MODIFY_FROM_SQL;
+import static io.mycat.hbt.ast.HBTOp.MODIFY_FROM_SQL;
 
 /**
  * @author jamie12221
  **/
 @Getter
+@EqualsAndHashCode
 public class ModifyFromSql extends Schema {
     private final String targetName;
     private final String sql;

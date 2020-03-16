@@ -14,11 +14,13 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
+import io.mycat.hbt.ast.base.FieldType;
 import io.mycat.hbt.ast.base.Literal;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class AnonyTableSchema extends Schema {
     private final List<Object> values;
     private final List<FieldType> fieldNames;

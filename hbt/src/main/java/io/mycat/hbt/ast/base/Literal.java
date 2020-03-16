@@ -14,8 +14,9 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -24,6 +25,7 @@ import java.math.BigInteger;
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode
 public class Literal extends Expr {
     final Object value;
 

@@ -1,7 +1,7 @@
 package io.mycat.hbt;
 
 import io.mycat.beans.mycat.MycatRowMetaData;
-import io.mycat.hbt.ast.query.FieldType;
+import io.mycat.hbt.ast.base.FieldType;
 
 import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class HbtRowMetaData implements MycatRowMetaData {
 
     @Override
     public String getColumnName(int column) {
-        return fieldTypeList.get(column).getId();
+        return fieldTypeList.get(column).getColumnName();
     }
 
     @Override
@@ -75,7 +75,7 @@ public class HbtRowMetaData implements MycatRowMetaData {
 
     @Override
     public int getColumnType(int column) {
-        String type = fieldTypeList.get(column).getType();
+        String type = fieldTypeList.get(column).getColumnType();
         return Objects.requireNonNull(HBTCalciteSupport.INSTANCE.getSqlTypeName(type)).getJdbcOrdinal();
     }
 

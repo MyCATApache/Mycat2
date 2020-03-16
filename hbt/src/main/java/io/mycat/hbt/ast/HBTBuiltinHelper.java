@@ -1,4 +1,4 @@
-package io.mycat.hbt;
+package io.mycat.hbt.ast;
 
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
@@ -10,7 +10,6 @@ import java.util.List;
 
 public interface HBTBuiltinHelper {
 
-
     default public String Bool() {
         return SqlTypeName.BOOLEAN.getName();
     }
@@ -19,11 +18,9 @@ public interface HBTBuiltinHelper {
         return SqlTypeName.TINYINT.getName();
     }
 
-
     default public String Smallint() {
         return SqlTypeName.SMALLINT.getName();
     }
-
 
     default public String Integer() {
         return SqlTypeName.INTEGER.getName();
@@ -33,16 +30,13 @@ public interface HBTBuiltinHelper {
         return SqlTypeName.BIGINT.getName();
     }
 
-
     default public String Decimal() {
         return SqlTypeName.DECIMAL.getName();
     }
 
-
     default public String Float() {
         return SqlTypeName.FLOAT.getName();
     }
-
 
     default public String Real() {
         return SqlTypeName.REAL.getName();
@@ -51,7 +45,6 @@ public interface HBTBuiltinHelper {
     default public String Double() {
         return SqlTypeName.DOUBLE.getName();
     }
-
 
     default public String Date() {
         return SqlTypeName.DATE.getName();
@@ -69,26 +62,21 @@ public interface HBTBuiltinHelper {
         return SqlTypeName.TIMESTAMP.getName();
     }
 
-
     default public String TimestampWithLocalTimeZone() {
         return SqlTypeName.TIMESTAMP_WITH_LOCAL_TIME_ZONE.getName();
     }
-
 
     default public String IntervalYear() {
         return SqlTypeName.INTERVAL_YEAR.getName();
     }
 
-
     default public String IntervalYearMonth() {
         return SqlTypeName.INTERVAL_YEAR_MONTH.getName();
     }
 
-
     default public String IntervalMonth() {
         return SqlTypeName.INTERVAL_MONTH.getName();
     }
-
 
     default public String IntervalDay() {
         return SqlTypeName.INTERVAL_DAY.getName();
@@ -102,7 +90,6 @@ public interface HBTBuiltinHelper {
         return SqlTypeName.INTERVAL_DAY_MINUTE.getName();
     }
 
-
     default public String IntervalDaySecond() {
         return SqlTypeName.INTERVAL_DAY_SECOND.getName();
     }
@@ -110,7 +97,6 @@ public interface HBTBuiltinHelper {
     default public String IntervalHour() {
         return SqlTypeName.INTERVAL_HOUR.getName();
     }
-
 
     default public String IntervalHourMinute() {
         return SqlTypeName.INTERVAL_HOUR_MINUTE.getName();
@@ -120,36 +106,29 @@ public interface HBTBuiltinHelper {
         return SqlTypeName.INTERVAL_MINUTE.getName();
     }
 
-
     default public String IntervalMinuteSecond() {
         return SqlTypeName.INTERVAL_MINUTE_SECOND.getName();
     }
-
 
     default public String IntervalSecond() {
         return SqlTypeName.INTERVAL_SECOND.getName();
     }
 
-
     default public String Char() {
         return SqlTypeName.CHAR.getName();
     }
-
 
     default public String Varchar() {
         return SqlTypeName.VARCHAR.getName();
     }
 
-
     default public String Binary() {
         return SqlTypeName.BINARY.getName();
     }
 
-
     default public String Varbinary() {
         return SqlTypeName.VARBINARY.getName();
     }
-
 
     default public String Null() {
         return SqlTypeName.NULL.getName();
@@ -158,8 +137,13 @@ public interface HBTBuiltinHelper {
     default public FieldType fieldType(String columnName, HBTTypes columnType, boolean columnNullable) {
         return new FieldType(columnName, columnType.getName(), columnNullable, null, null);
     }
+
     default public FieldType fieldType(String columnName, String columnType, boolean columnNullable) {
         return new FieldType(columnName, columnType, columnNullable, null, null);
+    }
+
+    default public FieldType fieldType(String columnName, String columnType, boolean columnNullable, Integer precision, Integer scale) {
+        return new FieldType(columnName, columnType, columnNullable, precision, scale);
     }
 
     default public Schema set(List<FieldType> fieldTypes, List<Object> values) {
@@ -192,8 +176,8 @@ public interface HBTBuiltinHelper {
     }
 
     @NotNull
-    default Schema groupBy(Schema schema, List<GroupItem> groupkeys, List<AggregateCall> aggregating) {
-        return new GroupSchema(schema, groupkeys, aggregating);
+    default Schema groupBy(Schema schema, List<GroupKey> groupkeys, List<AggregateCall> aggregating) {
+        return new GroupBySchema(schema, groupkeys, aggregating);
     }
 
     @NotNull

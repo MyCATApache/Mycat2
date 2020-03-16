@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

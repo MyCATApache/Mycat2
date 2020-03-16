@@ -14,19 +14,35 @@
  */
 package io.mycat.hbt.ast.base;
 
+import io.mycat.hbt.ast.HBTOp;
+import lombok.Builder;
 import lombok.Data;
-
-import java.util.List;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
 @Data
-public class GroupItem {
-    private final List<Expr> exprs;
+@Builder
+@EqualsAndHashCode
+public class FieldType extends Node {
+    final String columnName;
+    final String columnType;
+    final boolean nullable;
+    final Integer precision;
+    final Integer scale;
 
-    public GroupItem( List<Expr> exprs) {
-        this.exprs = exprs;
+    public FieldType(String id, String type,boolean columnNullable,Integer precision,Integer scale) {
+        super(HBTOp.FIELD_SCHEMA);
+        this.columnName = id;
+        this.columnType = type;
+        this.nullable = columnNullable;
+        this.precision = precision;
+        this.scale = scale;
     }
 
+    @Override
+    public void accept(NodeVisitor visitor) {
+        visitor.visit(this);
+    }
 }

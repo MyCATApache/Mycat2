@@ -14,6 +14,7 @@
  */
 package io.mycat.hbt;
 
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.modify.MergeModify;
 import io.mycat.hbt.ast.modify.ModifyFromSql;
@@ -94,9 +95,9 @@ public class ExplainVisitor implements NodeVisitor {
 
 
     @Override
-    public void visit(GroupSchema groupSchema) {
+    public void visit(GroupBySchema groupSchema) {
         List<AggregateCall> exprs = groupSchema.getExprs();
-        List<GroupItem> keys = groupSchema.getKeys();
+        List<GroupKey> keys = groupSchema.getKeys();
         Schema schema = groupSchema.getSchema();
         writeSchema(schema, "groupBy");
         append("keys(");
@@ -112,11 +113,11 @@ public class ExplainVisitor implements NodeVisitor {
     }
 
 
-    private void groupKey(List<GroupItem> keys) {
+    private void groupKey(List<GroupKey> keys) {
         int size = keys.size();
         int lastIndex = keys.size() - 1;
         for (int i = 0; i < size; i++) {
-            GroupItem key = keys.get(i);
+            GroupKey key = keys.get(i);
             append("groupKey(");
             joinNode(key.getExprs());
             append(")");
@@ -164,8 +165,8 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(FieldType fieldSchema) {
-        String id = fieldSchema.getId();
-        String type = fieldSchema.getType();
+        String id = fieldSchema.getColumnName();
+        String type = fieldSchema.getColumnType();
         boolean nullable = fieldSchema.isNullable();
         Integer precision = fieldSchema.getPrecision();
         Integer scale = fieldSchema.getScale();

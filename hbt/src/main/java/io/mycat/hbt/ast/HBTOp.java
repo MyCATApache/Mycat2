@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
-package io.mycat.hbt;
+package io.mycat.hbt.ast;
 
 /**
  * @author jamie12221
@@ -48,7 +48,7 @@ public enum HBTOp {
     CORRELATE_INNER_JOIN("correlateInnerJoin"),
     CORRELATE_LEFT_JOIN("correlateLeftJoin"),
     RIGHT_JOIN("rightJoin"),
-    FULL_JOIN("fillJoin"),
+    FULL_JOIN("fullJoin"),
     SEMI_JOIN("semiJoin"),
     ANTI_JOIN("antiJoin"),
     //    CORRELATE("correlate"),
@@ -58,7 +58,7 @@ public enum HBTOp {
 
     //atoms
     LITERAL("literal"),
-    IDENTIFIER("id"),
+    IDENTIFIER("columnName"),
     PROPERTY("property"),
 
     //debug

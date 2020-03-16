@@ -2,6 +2,9 @@ package io.mycat.hbt;
 
 
 import io.mycat.calcite.prepare.MycatHbtCalcitePrepareObject;
+import io.mycat.hbt.ast.HBTBuiltinHelper;
+import io.mycat.hbt.ast.HBTOp;
+import io.mycat.hbt.ast.HBTTypes;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.JoinSchema;
 import io.mycat.hbt.ast.query.RenameSchema;
@@ -19,7 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static io.mycat.hbt.HBTOp.CORRELATE_INNER_JOIN;
+import static io.mycat.hbt.ast.HBTOp.CORRELATE_INNER_JOIN;
 
 
 public class HBTBaseTest implements HBTBuiltinHelper {
@@ -95,17 +98,7 @@ public class HBTBaseTest implements HBTBuiltinHelper {
 
     }
 
-    @SneakyThrows
-    public void testDumpResultSet(Schema schema, String resultset) {
-        HBTRunners hbtRunners = new HBTRunners(clientMediator);
-        Assert.assertEquals(resultset.replaceAll("\r","").replaceAll("\n","").trim(), TextConvertor.dumpResultSet(hbtRunners.run(schema)).replaceAll("\r","").replaceAll("\n","").trim());
-    }
 
-    @SneakyThrows
-    public void testDumpResultSetColumn(Schema schema, String resultset) {
-        HBTRunners hbtRunners = new HBTRunners(clientMediator);
-        Assert.assertEquals(resultset.replaceAll("\r","").replaceAll("\n","").trim(), TextConvertor.dumpResultSet(hbtRunners.run(schema)).replaceAll("\r","").replaceAll("\n","").trim());
-    }
     @Test
     public void selectDistinctWithoutFrom() throws IOException {
         String sugar = "fromTable(db1,travelrecord) unionDistinct  fromTable(`db1`, `travelrecord`)";
@@ -417,8 +410,8 @@ public class HBTBaseTest implements HBTBuiltinHelper {
     }
 
 
-    private GroupItem groupKey(List<Expr> exprList) {
-        return new GroupItem(exprList);
+    private GroupKey groupKey(List<Expr> exprList) {
+        return new GroupKey(exprList);
     }
 
     private void testText(String sugarText, String desugarText, Schema schema) {
@@ -446,5 +439,16 @@ public class HBTBaseTest implements HBTBuiltinHelper {
         HBTParser hbtParser = new HBTParser(text);
         SchemaConvertor schemaConvertor = new SchemaConvertor();
         return schemaConvertor.transforSchema(hbtParser.statement());
+    }
+    @SneakyThrows
+    public void testDumpResultSet(Schema schema, String resultset) {
+        HBTRunners hbtRunners = new HBTRunners(clientMediator);
+        Assert.assertEquals(resultset.replaceAll("\r","").replaceAll("\n","").trim(), TextConvertor.dumpResultSet(hbtRunners.run(schema)).replaceAll("\r","").replaceAll("\n","").trim());
+    }
+
+    @SneakyThrows
+    public void testDumpResultSetColumn(Schema schema, String resultset) {
+        HBTRunners hbtRunners = new HBTRunners(clientMediator);
+        Assert.assertEquals(resultset.replaceAll("\r","").replaceAll("\n","").trim(), TextConvertor.dumpResultSet(hbtRunners.run(schema)).replaceAll("\r","").replaceAll("\n","").trim());
     }
 }

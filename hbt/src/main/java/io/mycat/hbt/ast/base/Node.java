@@ -14,11 +14,13 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
+@EqualsAndHashCode
 public abstract class Node {
     public final HBTOp op;
 

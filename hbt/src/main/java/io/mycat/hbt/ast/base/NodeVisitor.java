@@ -24,7 +24,7 @@ import io.mycat.hbt.ast.query.*;
 public interface NodeVisitor {
     void visit(MapSchema mapSchema);
 
-    void visit(GroupSchema groupSchema);
+    void visit(GroupBySchema groupSchema);
 
     void visit(LimitSchema limitSchema);
 

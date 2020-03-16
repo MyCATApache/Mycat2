@@ -14,7 +14,8 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.List;
  * @author jamie12221
  **/
 @Getter
+@EqualsAndHashCode
 public class AggregateCall extends Node {
     private final String function;
     private final String alias; // may be null

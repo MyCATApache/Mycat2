@@ -14,24 +14,24 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.HBTOp;
+import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * @author jamie12221
  **/
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class CorrelateSchema extends Schema {
     private final Schema left;
     private final Schema right;
-    private HBTOp op;
     private String refName;
 
     public CorrelateSchema(HBTOp op, String refName, Schema left, Schema right) {
         super(op);
-        this.op = op;
         this.left = left;
         this.right = right;
         this.refName = refName;
