@@ -1,6 +1,6 @@
 package io.mycat.hbt.ast.modify;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Getter;
@@ -10,7 +10,7 @@ public class MergeModify extends Schema {
     private final Iterable<ModifyFromSql> list;
 
     public MergeModify(Iterable<ModifyFromSql> list) {
-        super(Op.MERGE_MODIFY);
+        super(HBTOp.MERGE_MODIFY);
         this.list = list;
     }
 

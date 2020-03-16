@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import lombok.Data;
 
 /**
@@ -22,7 +22,7 @@ import lombok.Data;
  **/
 @Data
 public abstract class Schema extends Node  {
-    public Schema(Op op) {
+    public Schema(HBTOp op) {
         super(op);
     }
 }

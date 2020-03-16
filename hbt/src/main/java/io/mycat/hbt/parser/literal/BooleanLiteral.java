@@ -21,4 +21,9 @@ public class BooleanLiteral implements Literal {
     public BooleanLiteral copy() {
         return this;
     }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
+    }
 }

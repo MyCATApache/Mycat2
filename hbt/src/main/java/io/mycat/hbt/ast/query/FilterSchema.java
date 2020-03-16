@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
@@ -29,7 +29,7 @@ public class FilterSchema extends Schema {
     private final Expr exprs;
 
     public FilterSchema(Schema schema, Expr exprs) {
-        super(Op.FILTER);
+        super(HBTOp.FILTER);
         this.schema = schema;
         this.exprs = exprs;
     }

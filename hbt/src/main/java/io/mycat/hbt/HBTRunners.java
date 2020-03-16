@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class HBTRunners implements HBTRunner {
-    final  MycatDBContext dbContext;
+    final private MycatDBContext dbContext;
 
     public HBTRunners(MycatDBContext dbContext) {
         this.dbContext = dbContext;
@@ -39,9 +39,14 @@ public class HBTRunners implements HBTRunner {
         SchemaConvertor schemaConvertor = new SchemaConvertor();
         Schema originSchema = schemaConvertor.transforSchema(statement);
 
-        MycatHbtPrepareObject prepareObject = complieHBT(null, 0, dbContext, originSchema);
+        MycatHbtPrepareObject prepareObject = complieHBT(null, 0, originSchema);
 
         return prepareObject.plan(Collections.emptyList()).run();
+    }
+
+    @Override
+    public RowBaseIterator run(Schema schema) {
+        return complieHBT(null,0,schema).plan(Collections.emptyList()).run();
     }
 
 
@@ -51,17 +56,17 @@ public class HBTRunners implements HBTRunner {
         if (parseNodes.size() != 1) {
             throw new UnsupportedOperationException();
         }
-        return complieHBT(parseNodes.get(0), id, hbtParser.getParamCount(), dbContext);
+        return complieHBT(parseNodes.get(0), id, hbtParser.getParamCount());
     }
 
-    public MycatHbtPrepareObject complieHBT(ParseNode parseNode, Long id, int paramCount, MycatDBContext dbContext) {
+    private MycatHbtPrepareObject complieHBT(ParseNode parseNode, Long id, int paramCount) {
         SchemaConvertor schemaConvertor = new SchemaConvertor();
         Schema originSchema = schemaConvertor.transforSchema(parseNode);
-        return complieHBT(id, paramCount, dbContext, originSchema);
+        return complieHBT(id, paramCount, originSchema);
     }
 
     @NotNull
-    private MycatHbtPrepareObject complieHBT(Long id, int paramCount, MycatDBContext dbContext, Schema originSchema) {
+    private MycatHbtPrepareObject complieHBT(Long id, int paramCount, Schema originSchema) {
         MycatHbtPrepareObject prepareObject = null;
         switch (originSchema.getOp()) {
             case MODIFY_FROM_SQL: {
@@ -76,7 +81,8 @@ public class HBTRunners implements HBTRunner {
                 break;
             }
             case EXPLAIN: {
-                return explain(id, paramCount, dbContext, (CommandSchema) originSchema);
+                CommandSchema commandSchema = (CommandSchema) originSchema;
+                return explain(id, paramCount,commandSchema.getSchema() );
             }
             default:
                 prepareObject = new MycatHbtCalcitePrepareObject(id, paramCount, originSchema, dbContext);
@@ -85,8 +91,8 @@ public class HBTRunners implements HBTRunner {
     }
 
 
-    private MycatHbtPrepareObject explain(Long id, int paramCount, MycatDBContext dbContext, CommandSchema originSchema) {
-        MycatHbtPrepareObject innerPrepareObject = complieHBT(id, paramCount, dbContext, originSchema.getSchema());
+    private MycatHbtPrepareObject explain(Long id, int paramCount, Schema schema) {
+        MycatHbtPrepareObject innerPrepareObject = complieHBT(id, paramCount, schema);
         return new MycatHbtPrepareObject(id, paramCount) {
 
             @Override

@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.Node;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import lombok.Builder;
@@ -33,7 +33,7 @@ public class FieldType extends Node {
     final Integer scale;
 
     public FieldType(String id, String type,boolean columnNullable,Integer precision,Integer scale) {
-        super(Op.FIELD_SCHEMA);
+        super(HBTOp.FIELD_SCHEMA);
         this.id = id;
         this.type = type;
         this.nullable = columnNullable;

@@ -7,7 +7,7 @@ import java.util.Objects;
 public class RowIteratorUtil {
     public static String dumpColumnInfo(RowBaseIterator iterator) {
         StringBuilder sb = new StringBuilder();
-        MycatRowMetaData mycatRowMetaData = iterator.metaData();
+        MycatRowMetaData mycatRowMetaData = iterator.getMetaData();
         int columnCount = mycatRowMetaData.getColumnCount();
 
         while (iterator.next()) {

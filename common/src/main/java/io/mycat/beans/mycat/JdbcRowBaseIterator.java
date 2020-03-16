@@ -51,7 +51,7 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
     }
 
     @Override
-    public MycatRowMetaData metaData() {
+    public MycatRowMetaData getMetaData() {
         try {
             return new JdbcRowMetaData(resultSet.getMetaData());
         } catch (Exception e) {
@@ -76,7 +76,9 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
             LOGGER.error("", e);
         }
         try {
-            statement.close();
+            if (statement != null) {
+                statement.close();
+            }
         } catch (Exception e) {
             LOGGER.error("", e);
         }
@@ -241,7 +243,6 @@ public class JdbcRowBaseIterator implements RowBaseIterator {
             throw new MycatException(e);
         }
     }
-
 
 
 }

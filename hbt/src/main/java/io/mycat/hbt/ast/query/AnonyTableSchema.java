@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.Literal;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
@@ -27,17 +27,17 @@ import java.util.List;
  * @author jamie12221
  **/
 @Data
-public class ValuesSchema extends Schema {
+public class AnonyTableSchema extends Schema {
     private final List<Object> values;
     private final List<FieldType> fieldNames;
 
-    public ValuesSchema(List<FieldType> fieldNames, List<Object> values) {
-        super(Op.TABLE);
+    public AnonyTableSchema(List<FieldType> fieldNames, List<Object> values) {
+        super(HBTOp.TABLE);
         this.fieldNames = fieldNames;
         this.values = values;
     }
 
-    public ValuesSchema(List<FieldType> fieldNames, Literal... values) {
+    public AnonyTableSchema(List<FieldType> fieldNames, Literal... values) {
         this(fieldNames, Arrays.asList(values));
     }
 

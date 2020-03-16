@@ -98,7 +98,7 @@ public class InserParser extends AbstractStringRowIterator {
     public static void main(String[] args) throws IOException {
         Iterator<String> iterator = Files.lines(Paths.get("d:/show_databases.sql")).iterator();
         InserParser inserParser = new InserParser(iterator);
-        MycatRowMetaData rowMetaData = inserParser.metaData();
+        MycatRowMetaData rowMetaData = inserParser.getMetaData();
         System.out.println(rowMetaData);
         int columnCount = rowMetaData.getColumnCount();
         Object[] row = new Object[columnCount];

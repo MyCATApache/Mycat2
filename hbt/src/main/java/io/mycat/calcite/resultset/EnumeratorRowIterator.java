@@ -17,7 +17,7 @@ public class EnumeratorRowIterator extends AbstractObjectRowIterator {
     }
 
     @Override
-    public MycatRowMetaData metaData() {
+    public MycatRowMetaData getMetaData() {
         return mycatRowMetaData;
     }
 

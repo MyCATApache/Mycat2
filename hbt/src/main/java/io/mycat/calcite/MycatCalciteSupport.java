@@ -179,7 +179,7 @@ public enum MycatCalciteSupport implements Context {
     }
 
     public String convertToHBTText(Schema schema) {
-        return   TextConvertor.dump(schema);
+        return   TextConvertor.dumpExplain(schema);
     }
 
 

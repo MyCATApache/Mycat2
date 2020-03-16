@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -28,7 +28,7 @@ public class Literal extends Expr {
     final Object value;
 
     public Literal(Object value) {
-        super(Op.LITERAL);
+        super(HBTOp.LITERAL);
         if (value instanceof Double) {
             this.value = BigDecimal.valueOf((Double) value);
         } else if (value instanceof Float) {

@@ -147,7 +147,7 @@ public class ExplainVisitor implements NodeVisitor {
 
     @Override
     public void visit(SetOpSchema setOpSchema) {
-        Op op = setOpSchema.getOp();
+        HBTOp op = setOpSchema.getOp();
         append(op.getFun());
         enter();
         append("(");
@@ -238,13 +238,13 @@ public class ExplainVisitor implements NodeVisitor {
         if (expr instanceof Fun) {
             Fun fun = (Fun) expr;
             functionName = (fun.getFunctionName());
-        } else if (expr.op == Op.AS_COLUMN_NAME) {
+        } else if (expr.op == HBTOp.AS_COLUMN_NAME) {
             functionName = ("as");
-        } else if (expr.op == Op.CAST) {
+        } else if (expr.op == HBTOp.CAST) {
             functionName = ("cast");
-        } else if (expr.op == Op.DOT) {
+        } else if (expr.op == HBTOp.DOT) {
             functionName = ("dot");
-        } else if (expr.op == Op.REF) {
+        } else if (expr.op == HBTOp.REF) {
             functionName = ("ref");
         } else {
             throw new UnsupportedOperationException();
@@ -267,7 +267,7 @@ public class ExplainVisitor implements NodeVisitor {
 
 
     @Override
-    public void visit(ValuesSchema valuesSchema) {
+    public void visit(AnonyTableSchema valuesSchema) {
         append("table(");
         append("fields(");
         joinNode(valuesSchema.getFieldNames());
@@ -336,7 +336,6 @@ public class ExplainVisitor implements NodeVisitor {
         final List<OrderItem> orderKeys = aggregateCall.getOrderKeys(); // may be empty, never null
         String res = function + "(" + operands.stream().map(i -> getExprString(i)).collect(Collectors.joining(",")) + ")";
         append(res);
-        append(")");
         res = "";
         if (alias != null) {
             res += ".alias(" + alias + ")";

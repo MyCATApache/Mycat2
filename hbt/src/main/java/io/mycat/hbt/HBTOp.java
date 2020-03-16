@@ -17,7 +17,7 @@ package io.mycat.hbt;
 /**
  * @author jamie12221
  **/
-public enum Op {
+public enum HBTOp {
     //SET OPERATORS
     UNION_DISTINCT("unionDistinct"),
     UNION_ALL("unionAll"),
@@ -88,7 +88,7 @@ public enum Op {
 
     String fun;
 
-    Op(String fun) {
+    HBTOp(String fun) {
         this.fun = fun;
     }
 

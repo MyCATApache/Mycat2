@@ -21,11 +21,10 @@ import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.PreComputationSQLTable;
 import io.mycat.metadata.LogicTable;
-import io.mycat.upondb.Components;
-import io.mycat.upondb.MycatDBClientBased;
-import io.mycat.upondb.MycatDBContext;
+import io.mycat.upondb.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.adapter.java.ReflectiveSchema;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.Linq4j;
@@ -48,6 +47,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Program;
 
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * @author Junwen Chen
@@ -85,7 +85,14 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     }
 
     public SchemaPlus getRootSchema() {
-        SchemaPlus component = uponDBContext.getUponDBSharedServer().getComponent(Components.SCHEMA, aByte -> getSchema(uponDBContext));
+        MycatDBSharedServer uponDBSharedServer = uponDBContext.getUponDBSharedServer();
+        Function<Byte, SchemaPlus> function = new Function<Byte, SchemaPlus>() {
+            @Override
+            public SchemaPlus apply(Byte aByte) {
+                return getSchema(uponDBContext);
+            }
+        };
+        SchemaPlus component = uponDBSharedServer.getComponent(Components.SCHEMA,function);
         return component;
     }
 
@@ -136,8 +143,8 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
 
     public static SchemaPlus getSchema(MycatDBClientBased based) {
         SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();
-        Map<String, Map<String, LogicTable>> logicTableMap = based.config();
-        for (Map.Entry<String, Map<String, LogicTable>> stringConcurrentHashMapEntry : logicTableMap.entrySet()) {
+        MycatDBClientBasedConfig config = based.config();
+        for (Map.Entry<String, Map<String, LogicTable>> stringConcurrentHashMapEntry : config.getLogicTables().entrySet()) {
             SchemaPlus schemaPlus = plus.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
             for (Map.Entry<String, LogicTable> entry : stringConcurrentHashMapEntry.getValue().entrySet()) {
                 LogicTable logicTable = entry.getValue();
@@ -145,6 +152,7 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
                 schemaPlus.add(entry.getKey(), mycatLogicTable);
             }
         }
+        config.getReflectiveSchemas().forEach((key, value) -> plus.add(key, new ReflectiveSchema(value)));
         return plus;
     }
 

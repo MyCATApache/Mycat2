@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
@@ -30,7 +30,7 @@ public class RenameSchema extends Schema {
     private List<String> alias;
 
     public RenameSchema(Schema schema, List<String> alias) {
-        super(Op.RENAME);
+        super(HBTOp.RENAME);
         this.schema = schema;
         this.alias = alias;
     }

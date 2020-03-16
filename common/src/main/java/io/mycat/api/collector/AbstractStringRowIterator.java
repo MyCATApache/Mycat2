@@ -34,7 +34,7 @@ public abstract class AbstractStringRowIterator implements RowBaseIterator {
     }
 
     @Override
-    public MycatRowMetaData metaData() {
+    public MycatRowMetaData getMetaData() {
         return mycatRowMetaData;
     }
 

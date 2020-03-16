@@ -33,7 +33,7 @@ public abstract class AbstractMycatResultSetResponse implements MycatResultSetRe
 
   @Override
   public int columnCount() {
-    return iterator.metaData().getColumnCount();
+    return iterator.getMetaData().getColumnCount();
   }
 
   @Override
@@ -51,7 +51,7 @@ public abstract class AbstractMycatResultSetResponse implements MycatResultSetRe
       public byte[] next() {
         return MySQLPacketUtil
             .generateColumnDefPayload(
-                iterator.metaData(),
+                iterator.getMetaData(),
                 index++);
       }
     };

@@ -33,7 +33,7 @@ public class MysqlSingleDataNodeResultSetResponse implements MycatResultSetRespo
 
   @Override
   public int columnCount() {
-    return rowBaseIterator.metaData().getColumnCount();
+    return rowBaseIterator.getMetaData().getColumnCount();
   }
 
   @Override
@@ -51,7 +51,7 @@ public class MysqlSingleDataNodeResultSetResponse implements MycatResultSetRespo
       public byte[] next() {
         return MySQLPacketUtil
             .generateColumnDefPayload(
-                MysqlSingleDataNodeResultSetResponse.this.rowBaseIterator.metaData(),
+                MysqlSingleDataNodeResultSetResponse.this.rowBaseIterator.getMetaData(),
                 index++);
       }
     };

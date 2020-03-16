@@ -21,7 +21,7 @@ public class RowIteratorToInsertSQL implements Iterator<String> {
     public RowIteratorToInsertSQL(String tableName, RowBaseIterator iterator, int batchSize) {
         this.tableName = tableName;
         this.iterator = iterator;
-        this.metaData = iterator.metaData();
+        this.metaData = iterator.getMetaData();
         this.batchSize = batchSize;
         this.columnCount = this.metaData.getColumnCount();
         StringJoiner joiner = new StringJoiner("`,`", "INSERT INTO " + tableName + " (`", "`) VALUES ");

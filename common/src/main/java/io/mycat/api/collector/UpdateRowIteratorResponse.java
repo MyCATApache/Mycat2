@@ -25,7 +25,7 @@ public class UpdateRowIteratorResponse implements RowBaseIterator, MycatUpdateRe
     }
 
     @Override
-    public MycatRowMetaData metaData() {
+    public MycatRowMetaData getMetaData() {
         return UpdateRowMetaData.INSTANCE;
     }
 

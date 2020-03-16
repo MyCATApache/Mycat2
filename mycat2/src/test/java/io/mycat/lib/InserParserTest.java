@@ -17,7 +17,7 @@ public class InserParserTest {
     @Test
     public void test() throws Exception {
         InserParser inserParser = new InserParser("/sql/show_databases.sql");
-        MycatRowMetaData rowMetaData = inserParser.metaData();
+        MycatRowMetaData rowMetaData = inserParser.getMetaData();
         Assert.assertEquals("SCHEMATA", rowMetaData.getTableName(1));
         Assert.assertEquals(1, rowMetaData.getColumnCount());
         Assert.assertEquals(JDBCType.VARCHAR, JDBCType.valueOf(rowMetaData.getColumnType(1)));
@@ -43,7 +43,7 @@ public class InserParserTest {
     @Test
     public void testEmptyRow() throws Exception {
         InserParser inserParser = new InserParser("/sql/show_databases_empty.sql");
-        MycatRowMetaData rowMetaData = inserParser.metaData();
+        MycatRowMetaData rowMetaData = inserParser.getMetaData();
         Assert.assertEquals("SCHEMATA", rowMetaData.getTableName(1));
         Assert.assertEquals(1, rowMetaData.getColumnCount());
         Assert.assertEquals(JDBCType.VARCHAR, JDBCType.valueOf(rowMetaData.getColumnType(1)));
@@ -53,7 +53,7 @@ public class InserParserTest {
     @Test
     public void test2() throws Exception {
         InserParser inserParser = new InserParser("/sql/travelrecord.sql");
-        MycatRowMetaData rowMetaData = inserParser.metaData();
+        MycatRowMetaData rowMetaData = inserParser.getMetaData();
         Assert.assertEquals("travelrecord", rowMetaData.getTableName(1));
         Assert.assertEquals(7, rowMetaData.getColumnCount());
         Assert.assertEquals(JDBCType.BIGINT, JDBCType.valueOf(rowMetaData.getColumnType(1)));
@@ -87,7 +87,7 @@ public class InserParserTest {
     @Test
     public void test3() throws Exception {
         InserParser inserParser = new InserParser("/sql/travelrecord2.sql");
-        MycatRowMetaData rowMetaData = inserParser.metaData();
+        MycatRowMetaData rowMetaData = inserParser.getMetaData();
         Assert.assertEquals("travelrecord", rowMetaData.getTableName(1));
         Assert.assertEquals(7, rowMetaData.getColumnCount());
         Assert.assertEquals(JDBCType.BIGINT, JDBCType.valueOf(rowMetaData.getColumnType(1)));

@@ -1,4 +1,4 @@
-package io.mycat.describer;
+package io.mycat.hbt;
 
 public class Db1 {
     public final Travelrecord[] travelrecord = {

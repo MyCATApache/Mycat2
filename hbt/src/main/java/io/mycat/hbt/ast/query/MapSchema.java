@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
@@ -31,7 +31,7 @@ public class MapSchema extends Schema {
     private final List<Expr> expr;
 
     public MapSchema(Schema schema, List<Expr> expr) {
-        super(Op.MAP);
+        super(HBTOp.MAP);
         this.schema = schema;
         this.expr = expr;
     }

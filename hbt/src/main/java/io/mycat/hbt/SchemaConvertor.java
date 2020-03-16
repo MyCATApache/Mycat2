@@ -19,10 +19,10 @@ import java.util.stream.Collectors;
 public class SchemaConvertor {
     private int index = 0;
     private final List<Object> params;
-    static final Map<String, Op> map = new HashMap<>();
+    static final Map<String, HBTOp> map = new HashMap<>();
 
     static {
-        for (Op value : Op.values()) {
+        for (HBTOp value : HBTOp.values()) {
             map.put(value.getFun().toLowerCase(), value);
         }
     }
@@ -112,7 +112,7 @@ public class SchemaConvertor {
             CallExpr node = (CallExpr) parseNode;
             String name = node.getName().toLowerCase();
             List<ParseNode> exprList = node.getArgs().getExprs();
-            Op op = map.get(name);
+            HBTOp op = map.get(name);
             if (op == null) {
                 System.err.println(name);
             }
@@ -239,7 +239,7 @@ public class SchemaConvertor {
                 }
                 case EXPLAIN: {
                     Schema schema = transforSchema(((CallExpr) (parseNode)).getArgs().getExprs().get(0));
-                    return new CommandSchema(Op.EXPLAIN, schema);
+                    return new CommandSchema(HBTOp.EXPLAIN, schema);
                 }
 
                 case MODIFY_FROM_SQL:{
@@ -271,12 +271,12 @@ public class SchemaConvertor {
     }
 
     @NotNull
-    public Schema correlate(Op op, String refName, Schema leftschema, Schema rightschema) {
+    public Schema correlate(HBTOp op, String refName, Schema leftschema, Schema rightschema) {
         return new CorrelateSchema(op, refName, leftschema, rightschema);
     }
 
     @NotNull
-    public Schema join(Op op, Expr expr, Schema left, Schema right) {
+    public Schema join(HBTOp op, Expr expr, Schema left, Schema right) {
         return new JoinSchema(op, expr, left, right);
     }
 
@@ -292,7 +292,7 @@ public class SchemaConvertor {
 
     @NotNull
     public Schema table(List<FieldType> fields, List<Object> values) {
-        return new ValuesSchema(fields, values);
+        return new AnonyTableSchema(fields, values);
     }
 
 
@@ -326,7 +326,7 @@ public class SchemaConvertor {
     }
 
     @NotNull
-    public Schema set(Op op, List<Schema> collect) {
+    public Schema set(HBTOp op, List<Schema> collect) {
         return new SetOpSchema(op, collect);
     }
 

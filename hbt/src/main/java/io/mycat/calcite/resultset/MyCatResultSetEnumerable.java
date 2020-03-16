@@ -66,7 +66,7 @@ public class MyCatResultSetEnumerable<T> extends AbstractEnumerable<T> {
             RowBaseIterator currentrs;
 
             public T current() {
-                final int columnCount = currentrs.metaData().getColumnCount();
+                final int columnCount = currentrs.getMetaData().getColumnCount();
                 Object[] res = new Object[columnCount];
                 for (int i = 0, j = 1; i < columnCount; i++, j++) {
                     Object object = currentrs.getObject(j);

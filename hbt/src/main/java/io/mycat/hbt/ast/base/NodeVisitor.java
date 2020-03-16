@@ -42,7 +42,7 @@ public interface NodeVisitor {
 
     void visit(Expr expr);
 
-    void visit(ValuesSchema valuesSchema);
+    void visit(AnonyTableSchema valuesSchema);
 
     void visit(JoinSchema corJoinSchema);
 

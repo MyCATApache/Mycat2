@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
@@ -27,7 +27,7 @@ public class DistinctSchema extends Schema {
     private final Schema schema;
 
     public DistinctSchema(Schema schema) {
-        super(Op.DISTINCT);
+        super(HBTOp.DISTINCT);
         this.schema = schema;
     }
 

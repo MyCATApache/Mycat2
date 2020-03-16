@@ -57,7 +57,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
         };
     }
 
-    private RelNode getRelNode(List<Object> params) {
+    public RelNode getRelNode(List<Object> params) {
         MycatCalcitePlanner planner1 = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
         HBTQueryConvertor hbtConvertor = new HBTQueryConvertor( params,mycatCalciteDataContext);
 

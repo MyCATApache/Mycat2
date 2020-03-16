@@ -3,7 +3,6 @@ package io.mycat.upondb;
 import io.mycat.Identical;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
-import io.mycat.metadata.LogicTable;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,7 @@ public interface MycatDBClientBased {
 
     MycatDBSharedServer getUponDBSharedServer();
 
-    Map<String, Map<String, LogicTable>> config();
+    MycatDBClientBasedConfig config();
 
     Map<String, Object> variables();
 

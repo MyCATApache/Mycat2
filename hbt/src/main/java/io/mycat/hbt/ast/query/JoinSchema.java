@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.Expr;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
@@ -36,7 +36,7 @@ public class JoinSchema extends Schema {
     private final Schema left;
     private final Schema right;
 
-    public JoinSchema(Op op, Expr condition,Schema left,Schema right) {
+    public JoinSchema(HBTOp op, Expr condition, Schema left, Schema right) {
         super(op);
         this.left = left;
         this.right = right;

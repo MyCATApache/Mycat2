@@ -18,7 +18,7 @@ import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Getter;
 
-import static io.mycat.hbt.Op.MODIFY_FROM_SQL;
+import static io.mycat.hbt.HBTOp.MODIFY_FROM_SQL;
 
 /**
  * @author jamie12221

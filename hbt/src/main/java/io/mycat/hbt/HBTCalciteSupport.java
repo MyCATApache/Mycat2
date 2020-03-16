@@ -54,7 +54,7 @@ public enum HBTCalciteSupport {
     }
 
     public SqlTypeName getSqlTypeName(String name) {
-        return Objects.requireNonNull(typeMap.get(name),name);
+        return Objects.requireNonNull(typeMap.get(name),""+name);
     }
 
     public String getSqlTypeName(SqlTypeName name) {

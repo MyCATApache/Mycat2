@@ -19,7 +19,6 @@ import com.alibaba.fastsql.sql.ast.SQLStatement;
 import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
 import com.alibaba.fastsql.sql.optimizer.rules.TypeInference;
-import com.alibaba.fastsql.support.calcite.CalciteMySqlNodeVisitor;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -60,7 +59,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.ImmutableList.builder;
-import static io.mycat.hbt.Op.*;
+import static io.mycat.hbt.HBTOp.*;
 
 /**
  * @author jamie12221
@@ -72,7 +71,6 @@ public class HBTQueryConvertor {
     private int paramIndex = 0;
     private final List<Object> params;
     private MycatCalciteDataContext context;
-    private final Map<String, RelDataType> targetRelDataType = new HashMap<>();
 
     public HBTQueryConvertor(MycatCalciteDataContext context) {
         this(Collections.emptyList(), context);
@@ -126,7 +124,7 @@ public class HBTQueryConvertor {
                 case GROUP:
                     return group((GroupSchema) input);
                 case TABLE:
-                    return values((ValuesSchema) input);
+                    return values((AnonyTableSchema) input);
                 case DISTINCT:
                     return distinct((DistinctSchema) input);
                 case UNION_ALL:
@@ -179,7 +177,7 @@ public class HBTQueryConvertor {
         String sql = input.getSql();
         List<FieldType> fieldTypes = input.getFieldTypes();
         RelDataType relDataType;
-        if (true) {
+        if (fieldTypes == null) {
             MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(context);
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             sqlStatement.accept(new TypeInference());
@@ -190,7 +188,6 @@ public class HBTQueryConvertor {
                 }
             });
             SchemaPlus rootSchema = context.getRootSchema();
-            CalciteMySqlNodeVisitor calciteMySqlNodeVisitor = new CalciteMySqlNodeVisitor();
             SqlNode parse = planner.parse(sql);
             parse =  parse.accept(new SqlShuttle() {
                 @Override
@@ -208,7 +205,7 @@ public class HBTQueryConvertor {
             parse = planner.validate(parse);
             relDataType = planner.convert(parse).getRowType();
         } else {
-            relDataType = toType(input.getFieldTypes());
+            relDataType = toType(fieldTypes);
         }
         return relBuilder.makeBySql(targetName, relDataType, sql);
     }
@@ -285,7 +282,7 @@ public class HBTQueryConvertor {
     }
 
 
-    private JoinRelType joinOp(Op op) {
+    private JoinRelType joinOp(HBTOp op) {
         switch (op) {
             case INNER_JOIN:
                 return JoinRelType.INNER;
@@ -392,7 +389,7 @@ public class HBTQueryConvertor {
         return relBuilder.push(handle(input.getSchema())).filter(toRex(input.getExpr())).build();
     }
 
-    private RelNode values(ValuesSchema input) {
+    private RelNode values(AnonyTableSchema input) {
         return relBuilder.values(toType(input.getFieldNames()), input.getValues().toArray()).build();
     }
 
@@ -441,7 +438,7 @@ public class HBTQueryConvertor {
     }
 
     private RexNode toRex(Expr node) {
-        Op op = node.getOp();
+        HBTOp op = node.getOp();
         switch (op) {
             case IDENTIFIER: {
                 String value = ((Identifier) node).getValue();
@@ -458,13 +455,14 @@ public class HBTQueryConvertor {
                         if (indexOf > -1) {
                             return relBuilder.field(joinCount, i, indexOf);
                         }else {
-                            char c = value.charAt(value.length() - 1);
-                            if(Character.isDigit(c)){
-                                value = value.substring(value.length() - 1);
-                                return relBuilder.field(Integer.parseInt(String.valueOf(c)));
-                            }else {
-                                throw new UnsupportedOperationException();
-                            }
+//                            char c = value.charAt(value.length() - 1);
+//                            if(Character.isDigit(c)){
+//                                value = value.substring(value.length() - 1);
+//                                return relBuilder.field(Integer.parseInt(String.valueOf(c)));
+//                            }else {
+//                                throw new UnsupportedOperationException();
+//                            }
+                            continue;
                         }
                     }
                     throw new UnsupportedOperationException();

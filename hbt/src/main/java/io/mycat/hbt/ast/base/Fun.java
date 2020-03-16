@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import lombok.Data;
 
 import java.util.List;
@@ -28,7 +28,7 @@ public class Fun extends Expr {
     final String functionName;
 
     public Fun(String functionName,List<Expr> nodes) {
-        super(Op.FUN, nodes);
+        super(HBTOp.FUN, nodes);
         this.functionName = functionName;
     }
 

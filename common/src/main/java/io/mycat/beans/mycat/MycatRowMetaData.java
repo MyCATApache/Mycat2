@@ -66,20 +66,21 @@ public interface MycatRowMetaData {
             String schemaName = getSchemaName(i);
             String tableName = getTableName(i);
             String columnName = getColumnName(i);
+            boolean nullable = isNullable(i);
             int columnType = getColumnType(i);
 
-            info.put("schemaName", schemaName);
-            info.put("tableName", tableName);
+//            info.put("schemaName", schemaName);
+//            info.put("tableName", tableName);
             info.put("columnName", columnName);
             info.put("columnType", columnType);
-
+            info.put("nullable", columnType);
             list.add(info);
 
             String columnLabel = getColumnLabel(i);
 
             boolean autoIncrement = isAutoIncrement(i);
             boolean caseSensitive = isCaseSensitive(i);
-            boolean nullable = isNullable(i);
+
             boolean signed = isSigned(i);
             int columnDisplaySize = getColumnDisplaySize(i);
             int precision = getPrecision(i);

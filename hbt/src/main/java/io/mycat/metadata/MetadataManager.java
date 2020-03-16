@@ -460,6 +460,6 @@ public enum MetadataManager {
         }
     }
 
-    public ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> getLogicTableMap() {
-        return logicTableMap;
+    public Map<String,Map<String, LogicTable>> getLogicTableMap() {
+        return (Map)logicTableMap;
     }}

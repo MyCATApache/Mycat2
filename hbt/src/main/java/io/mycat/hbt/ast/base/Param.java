@@ -1,10 +1,10 @@
 package io.mycat.hbt.ast.base;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 
 public class Param extends Expr {
     public Param() {
-        super(Op.PARAM);
+        super(HBTOp.PARAM);
     }
 
     @Override

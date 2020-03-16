@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.OrderItem;
 import io.mycat.hbt.ast.base.Schema;
@@ -31,7 +31,7 @@ public class OrderSchema extends Schema {
     private final List<OrderItem> orders;
 
     public OrderSchema(Schema schema, List<OrderItem> fields) {
-        super(Op.ORDER);
+        super(HBTOp.ORDER);
         this.schema = schema;
         this.orders = fields;
     }

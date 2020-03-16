@@ -37,7 +37,7 @@ public class TextResultSetResponse extends AbstractMycatResultSetResponse {
   @Override
   public Iterator<byte[]> rowIterator() {
     final RowBaseIterator rowBaseIterator = iterator;
-    final MycatRowMetaData mycatRowMetaData = rowBaseIterator.metaData();
+    final MycatRowMetaData mycatRowMetaData = rowBaseIterator.getMetaData();
     final TextConvertor convertor = TextConvertorImpl.INSTANCE;
     final int columnCount = mycatRowMetaData.getColumnCount();
 

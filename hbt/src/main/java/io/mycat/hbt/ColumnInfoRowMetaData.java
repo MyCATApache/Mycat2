@@ -67,7 +67,7 @@ private ColumnInfoRowMetaData(){
             int index = 1;
 
             @Override
-            public MycatRowMetaData metaData() {
+            public MycatRowMetaData getMetaData() {
                 return ColumnInfoRowMetaData.INSTANCE;
             }
 

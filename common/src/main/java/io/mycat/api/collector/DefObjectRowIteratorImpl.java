@@ -11,7 +11,7 @@ public class DefObjectRowIteratorImpl extends AbstractObjectRowIterator {
     final DefMycatRowMetaData mycatRowMetaData  ;
     final Iterator<Object[]> iterator ;
     @Override
-    public MycatRowMetaData metaData() {
+    public MycatRowMetaData getMetaData() {
         return mycatRowMetaData;
     }
 

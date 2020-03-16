@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.AggregateCall;
 import io.mycat.hbt.ast.base.GroupItem;
 import io.mycat.hbt.ast.base.NodeVisitor;
@@ -33,7 +33,7 @@ public class GroupSchema extends Schema {
     private final List<AggregateCall> exprs;
 
     public GroupSchema(Schema schema, List<GroupItem> keys, List<AggregateCall> exprs) {
-        super(Op.GROUP);
+        super(HBTOp.GROUP);
         this.schema = schema;
         this.keys = keys;
         this.exprs = exprs;

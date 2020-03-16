@@ -4,7 +4,6 @@ import io.mycat.Identical;
 import io.mycat.MycatDataContext;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
-import io.mycat.metadata.LogicTable;
 import io.mycat.metadata.MetadataManager;
 
 import java.util.Collections;
@@ -19,7 +18,6 @@ public class MycatDBs {
     public static MycatDBClientMediator createClient(MycatDataContext dataContext) {
         return new MycatDBClientMediator() {
             final IdentityHashMap<String, Object> cache = new IdentityHashMap<>();
-            final AtomicBoolean cancelFlag = new AtomicBoolean(false);
 
             @Override
             public MycatDBSharedServer getUponDBSharedServer() {
@@ -27,8 +25,9 @@ public class MycatDBs {
             }
 
             @Override
-            public Map<String, Map<String, LogicTable>> config() {
-                return (Map) MetadataManager.INSTANCE.getLogicTableMap();
+            public MycatDBClientBasedConfig config() {
+                MycatDBClientBasedConfig mycatDBClientBasedConfig = new MycatDBClientBasedConfig(MetadataManager.INSTANCE.getLogicTableMap(), null);
+                return mycatDBClientBasedConfig ;
             }
 
             @Override

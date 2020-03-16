@@ -14,7 +14,7 @@
  */
 package io.mycat.hbt.ast.query;
 
-import io.mycat.hbt.Op;
+import io.mycat.hbt.HBTOp;
 import io.mycat.hbt.ast.base.NodeVisitor;
 import io.mycat.hbt.ast.base.Schema;
 import lombok.Data;
@@ -29,7 +29,7 @@ import java.util.List;
 public class SetOpSchema extends Schema {
     final List<Schema> schemas;
 
-    public SetOpSchema(Op op, List<Schema> schemas) {
+    public SetOpSchema(HBTOp op, List<Schema> schemas) {
         super(op);
         this.schemas = new ArrayList<>(schemas);
     }

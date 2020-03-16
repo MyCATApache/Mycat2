@@ -16,7 +16,7 @@ import java.util.Map;
  **/
 public interface RowBaseIterator extends Closeable {
 
-  MycatRowMetaData metaData();
+  MycatRowMetaData getMetaData();
 
   boolean next();
 
@@ -61,7 +61,7 @@ public interface RowBaseIterator extends Closeable {
   }
 
   public default List<Map<String, Object>> getResultSetMap(RowBaseIterator iterator) {
-    MycatRowMetaData metaData = iterator.metaData();
+    MycatRowMetaData metaData = iterator.getMetaData();
     int columnCount = metaData.getColumnCount();
     List<Map<String, Object>> resultList = new ArrayList<>();
     while (iterator.next()) {
