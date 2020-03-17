@@ -54,7 +54,7 @@ public enum HBTOp {
     //    CORRELATE("correlate"),
     // types
     SCHEMA("schema"),
-    FIELD_SCHEMA("fieldSchema"),
+    FIELD_TYPE("fieldType"),
 
     //atoms
     LITERAL("literal"),

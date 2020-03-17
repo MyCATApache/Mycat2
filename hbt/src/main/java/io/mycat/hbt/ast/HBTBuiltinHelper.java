@@ -208,7 +208,9 @@ public interface HBTBuiltinHelper {
         return new SetOpSchema(op, collect);
     }
 
-
+    default OrderItem order(String identifier, String direction) {
+        return new OrderItem(identifier, Direction.parse(direction));
+    }
     default OrderItem order(String identifier, Direction direction) {
         return new OrderItem(identifier, direction);
     }

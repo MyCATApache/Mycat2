@@ -36,7 +36,7 @@ HBT在Mycat2中表现为关系表达式领域驱动语言(Relation DSL).
 
 
 
-## HBT表达式
+## 基本HBT代数表达式
 
 
 
@@ -90,7 +90,19 @@ table(fields(fieldType(id,int)),values(1,2,3))
 
 #### fieldType
 
-字段信息,三种构造方式
+##### 列类型
+
+列名
+
+列类型
+
+可空
+
+精度
+
+小数位数
+
+##### 三种构造方式
 
 ```java
 fieldType(String columnName, String columnType)
@@ -106,7 +118,7 @@ fieldType(String columnName, String columnType, boolean columnNullable,Integer p
 
 #### 字段类型(不区分大小写)
 
-| 名称    | precision(精度) - scale(小数点后的位数) | java类型 |
+| 名称    | precision(精度) - scale(小数位数) | java类型 |
 | ------- | ----------------- |--|
 | Bool  |       no-no             |boolean|
 | Tinyint |         no-no          |byte|
@@ -127,27 +139,13 @@ fieldType(String columnName, String columnType, boolean columnNullable,Integer p
 |   Binary |               no-no   |byte[]|
 |   Varbinary |          no-no        |byte[]|
 
-以下类型未正式支持
-| 名称    | precision(精度) - scale(小数点后的位数) | java类型 |
-| ------- | ----------------- |--|
-|   IntervalYear      |       no-no            ||
-|   IntervalYearMonth      |    no-no               ||
-|   IntervalMonth      |       no-no            ||
-|   IntervalDay      |       no-no,yes-no             ||
-|   IntervalDayHour      |        no-no,yes-no           ||
-|   IntervalDayMinute      |      no-no,yes-no             ||
-|   IntervalDaySecond      |       no-no,yes-no            ||
-|   IntervalHour    |           no-no,yes-no        ||
-|   IntervalHourMinute    |       no-no,yes-no            ||
-|   IntervalMinute   |          no-no,yes-no         ||
-|   IntervalMinuteSecond  |        no-no,yes-no           ||
-|   IntervalSecond |             no-no,yes-no      ||
-
 
 
 #### 语法辅助
 
 ###### fields
+
+列类型列表
 
 多个fieldType组成
 
@@ -320,7 +318,7 @@ filter(fromTable("db1", "travelrecord"), eq(new Identifier("id"), new Literal(1)
 
 ##### exceptDistinct
 
-除,结果集去重
+除,去重
 
 
 
@@ -449,41 +447,6 @@ groupKey(`id`,`id2`)
 
 
 
-额外构建参数,需要规则甚至执行器配合,不推荐使用,不在HBT的目标之内
-
-
-| 参数      | 描述                                                 |
-| ----------- | ---------------------------------------------------- |
-| distinct    |如果distinct存在, 则聚合前进行distinct运算过滤,默认不开启                                               |
-| approximate |   不同函数不同,默认不开启,用于特殊函数                                             |
-| ignoreNulls |    如果ignoreNulls存在,则聚合前使用布尔表达式过滤,优化器会用自动添加Order表达式,默认不开启                                             |
-| filter      | 如果filter存在,则聚合前使用布尔表达式过滤,优化器会用自动添加Order表达式,默认不开启 |
-| orderKeys| 如果orderKeys存在,则聚合前先排序,优化器会用自动添加filter表达式,默认不开启 |
-| alias| 为聚合函数对应的列设置别名,默认不开启 |
-
-
-
-完整构建语法样例
-
-text
-
-```SQL
-fromTable(db1,travelrecord)
-.groupBy(keys(groupKey(`columnName`)),aggregating(avg(`columnName`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))
-```
-
-
-
-java
-
-```java
-groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(id(("columnName"))))),
-                Arrays.asList(new AggregateCall("avg", Arrays.asList(id(("columnName")))).alias("a").distinct().approximate().ignoreNulls().filter(literal(true))
-                        .orderBy(Arrays.asList(order("user_id", Direction.DESC)))))
-```
-
-
-
 ##### avg
 
 | 名称     | 类型 | 参数数量 | 参数            |
@@ -491,6 +454,7 @@ groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(i
 | avg | rel  | 1        | 列名标识符 |
 
 扩展型聚合函数,会被优化器转换成sum()/count()
+
 输入值要求是数字类型
 
 
@@ -501,6 +465,7 @@ groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(i
 | count | rel  | 任意        | 多个列名标识符或无 |
 
 当有多个列名标识符作为参数的时候,,返回其值不为null 的输入行数
+
 无参的时候返回输入的行数
 
 
@@ -519,16 +484,17 @@ groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(i
 | min | rel  | 1        | 列名标识符 |
 
 输入值要求是数字类型
+
 返回所有输入值中的最小值
 
 
 ##### sum
 | 名称     | 类型 | 参数数量 | 参数            |
 | -------- | ---- | -------- | --------------- |
-| sim | rel  | 1        | 列名标识符 |
-
+| sum | rel  | 1        | 列名标识符 |
 
 输入值要求是数字类型
+
 返回所有输入值的数值总和
 
 
@@ -566,37 +532,484 @@ groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(i
 
 
 
+### Join
+
+Join操作
+
 ### innerJoin
 
-在表中存在至少一个匹配时，INNER JOIN 关键字返回行。
+inner join
+
+内连接
+
+在表中存在至少一个匹配时，返回行。
 
 
 
 ### leftJoin
 
-LEFT JOIN 关键字会从左表 (table_name1) 那里返回所有的行，即使在右表 (table_name2) 中没有匹配的行。
+left outer Join
+
+左连接
+
+从左表返回所有的行，即使在右表中没有匹配的行。
 
 
 
 ### rightJoin
 
+right outer Join
+
+右连接
+
+从右表返回所有的行，即使在左表中没有匹配的行
+
 
 
 ### fullJoin
+
+full outer Join
+
+全连接
+
+只要其中某个表存在匹配,就会返回行
 
 
 
 ### semiJoin
 
+left semi join
+
+半连接,左半连接
+
+当条件成立时,返回左表的行
+
 
 
 ### antiJoin
 
+anti semi join
 
+反连接,反半连接
+
+当条件不成立时,返回左表的行
+
+
+
+##### 文本
+
+| 名称                                           | 类型 | 参数数量 | 参数                              |
+| ---------------------------------------------- | ---- | -------- | --------------------------------- |
+| innerJoin,leftJoin,rightJoin,semiJoin,antiJoin | rel  | 三个     | 条件:布尔表达式,左数据源,右数据源 |
+
+
+
+
+
+```sql
+//innerJoin
+//leftJoin
+//rightJoin
+//semiJoin
+//antiJoin
+innerJoin(`id0` = `id`,fromTable(db1,travelrecord)
+          .map(`id` as `id0`),fromTable(db1,travelrecord))
+```
+
+
+
+java
+
+```java
+new JoinSchema(HBTOp.INNER_JOIN,
+                eq(id("id0"), id("id"))
+                , map(fromTable("db1", "travelrecord"), Arrays.asList(as(new Identifier("id"), new Identifier("id0")))),
+                fromTable("db1", "travelrecord")
+```
+
+
+
+
+
+### 列名冲突
+
+两个数据源中字段名相同的情况下,使用as表达式建立别名后,才可以在条件里正确使用
+
+
+
+### 行类型变更
+
+join操作后,行类型是左数据源+右数据源的列,
+
+比如上述的
+
+`fromTable(db1,travelrecord).map(id as id0)`,`fromTable(db1,travelrecord)`
+
+行类型分别是`(id0)`,`(id,user_id)`
+
+innerJoin操作后变为`(id0,id,user_id)`
+
+
+
+### OrderBy
+
+对数据源排序
+
+| 名称    | 类型 | 参数数量    | 参数             |
+| ------- | ---- | ----------- | ---------------- |
+| OrderBy | rel  | 1+order数量 | 数据源,多个order |
+
+
+
+文本
+
+```sql
+fromTable(db1,travelrecord).orderBy(order(id,ASC), order(user_id,DESC))
+
+orderBy(fromTable(db1,travelrecord),order(id,ASC), order(user_id,DESC))
+```
+
+
+
+java
+
+```java
+orderBy(fromTable("db1", "travelrecord"), Arrays.asList(order("id", Direction.ASC), order("user_id", Direction.DESC)))
+```
+
+
+
+#### 语法辅助
+
+order(列名,asc或者desc,不区分大小写)
+
+
+
+### limit
+
+要数据源返回的行的一部分
+
+| 名称  | 类型 | 参数数量        | 参数                |
+| ----- | ---- | --------------- | ------------------- |
+| limit | rel  | 1+多个order数量 | 数据源,offset,limit |
+
+
+
+文本
+
+```sql
+fromTable(db1,travelrecord).limit(1,2)
+limit(fromTable(db1,travelrecord),1,2)
+```
+
+
+
+java
+
+```
+limit(fromTable("db1", "travelrecord"), 1, 2)
+```
+
+
+
+## HBT-扩展表达式
+
+### fromSql
+
+sql作为数据源
+
+| 名称    | 类型 | 参数数量 | 参数   |
+| ------- | ---- | -------- | ------ |
+| fromSql | rel  | 2或3     | 见下面 |
+
+三个参数
+
+
+
+1.列类型信息
+
+2.查询目标名字
+
+3.任意sql,返回的结果集的类型必须与给出的列类型一致
+
+```sql
+fromSql(fields(fieldType(`id`,`integer`),fieldType(`user_id`,`integer`),targetName,'select * from db1.travelrecord')
+```
+
+
+
+两个参数
+
+2.查询目标名字
+
+3.sql,自动推导列信息,暂时,sql只能配置在元数据配置的dataNode中的表名
+
+```sql
+fromSql(targetName,'select * from db1.travelrecord')
+```
+
+
+
+### filterFromTable
+
+1.强调可下推的谓词
+
+2.避免逻辑表与物理表耦合
+
+| 名称            | 类型 | 参数数量 | 参数                                 |
+| --------------- | ---- | -------- | ------------------------------------ |
+| filterFromTable | rel  | 3        | 布尔表达式,逻辑库标识符,逻辑表标识符 |
+
+
+
+等价
+
+```sql
+filterFromTable(`id` = 1,db1,travelrecord)//强调可下推
+<=>
+fromTable(`id` = 1,db1,travelrecord).filter(`id` = 1)//不强调下推
+```
+
+
+
+下推
+
+```
+filterFromTable(`id` = 1,db1,travelrecord)//经过上下文分析生成查询的目标和查询的SQL
+=>
+fromSql('targetName','select * from db1.travelrecord where `id` = 1')//可能的SQL
+```
+
+
+
+文本
+
+```sql
+filterFromTable(`id` = 1,db1,travelrecord)
+filterFromTable(`id` = 1 or `id` = 2 ...,db1,travelrecord)
+filterFromTable(1<= `id` and `id` <= 10000,db1,travelrecord)
+```
+
+
+
+  布尔表达式必须是简单的形式,不支持任何计算,别名
+
+
+
+### fromRelToSql
+
+转换HBT到SQL
+
+极少数转换可能会失败,即使转换成功,SQL未必是数据库支持的,转换目标方言默认是mysql
+
+| 名称         | 类型 | 参数数量 | 参数 |
+| ------------ | ---- | -------- | ---- |
+| fromRelToSql | rel  | 2        |      |
+
+
+
+文本
+
+```sql
+fromRelToSql(targetName,fromTable('db1','travelrecord').filter(`id` = 1).map(`id`))
+=>等价转换
+fromSql(targetName,'select db1.travelrecord.id from db1.travelrecord where `id` = 1')
+```
+
+
+
+### modifyFromSql
+
+向目标执行返回值不是结果集的SQL
+
+| 名称          | 类型   | 参数数量 | 参数           |
+| ------------- | ------ | -------- | -------------- |
+| modifyFromSql | update | 2        | 目标标识符,sql |
+
+执行结果
+
+updateCount
+
+lastInsertId
+
+
+
+文本
+
+```sql
+modifyFromSql(targetName,'delete db1.travelrecord1')
+```
+
+
+
+### mergeModify
+
+合拼多个modifyFromSql结果
+
+即
+
+updateCount 求和
+
+lastInsertId 取mergeModify中最大值
+
+
+
+| 名称        | 类型   | 参数数量                  | 参数          |
+| ----------- | ------ | ------------------------- | ------------- |
+| mergeModify | update | 一个或者多个modifyFromSql | modifyFromSql |
+
+
+
+文本
+
+```sql
+mergeModify(
+    modifyFromSql(targetName,'delete db1.travelrecord1'),
+    modifyFromSql(targetName,'delete db2.travelrecord1')
+    )
+```
+
+
+
+## HBT-命令表达式
+
+### explain
+
+1.显示数据源的列类型,辅助编写hbt
+
+2.显示执行计划
+
+
+
+文本
+
+```sql
+explain filterFromTable(`id` = 1,db1,travelrecord)
+```
+
+
+
+## HBT-标量表达式
+
+计算结果是一个特定数据类型的标量值的表达式
+
+
+
+## 高级用法(少数情况出现,一般不使用)
+
+### 类型
+
+以下类型未正式支持
+
+| 名称                 | precision(精度) - scale(小数点后的位数) | java类型 |
+| -------------------- | --------------------------------------- | -------- |
+| IntervalYear         | no-no                                   |          |
+| IntervalYearMonth    | no-no                                   |          |
+| IntervalMonth        | no-no                                   |          |
+| IntervalDay          | no-no,yes-no                            |          |
+| IntervalDayHour      | no-no,yes-no                            |          |
+| IntervalDayMinute    | no-no,yes-no                            |          |
+| IntervalDaySecond    | no-no,yes-no                            |          |
+| IntervalHour         | no-no,yes-no                            |          |
+| IntervalHourMinute   | no-no,yes-no                            |          |
+| IntervalMinute       | no-no,yes-no                            |          |
+| IntervalMinuteSecond | no-no,yes-no                            |          |
+| IntervalSecond       | no-no,yes-no                            |          |
+
+
+
+### 聚合函数
+
+
+
+额外构建参数,需要规则甚至执行器配合,不推荐使用,不在HBT的目标之内
+
+
+| 参数        | 描述                                                         |
+| ----------- | ------------------------------------------------------------ |
+| distinct    | 如果distinct存在, 则聚合前进行distinct运算过滤,默认不开启    |
+| approximate | 不同函数不同,默认不开启,用于特殊函数                         |
+| ignoreNulls | 如果ignoreNulls存在,则聚合前使用布尔表达式过滤,优化器会用自动添加Order表达式,默认不开启 |
+| filter      | 如果filter存在,则聚合前使用布尔表达式过滤,优化器会用自动添加Order表达式,默认不开启 |
+| orderKeys   | 如果orderKeys存在,则聚合前先排序,优化器会用自动添加filter表达式,默认不开启 |
+| alias       | 为聚合函数对应的列设置别名,默认不开启                        |
+
+
+
+完整构建语法样例
+
+text
+
+```SQL
+fromTable(db1,travelrecord)
+.groupBy(keys(groupKey(`columnName`)),aggregating(avg(`columnName`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))
+```
+
+
+
+java
+
+```java
+groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(id(("columnName"))))),
+                Arrays.asList(new AggregateCall("avg", Arrays.asList(id(("columnName")))).alias("a").distinct().approximate().ignoreNulls().filter(literal(true))
+                        .orderBy(Arrays.asList(order("user_id", Direction.DESC)))))
+```
+
+
+
+### 关联连接
+
+对应关联子查询
+
+循环获取左表的行的一个值,使用该值重新获取右表的查询,获得右表的数据源,之后进行内连接或者左连接
+
+具体执行一般实现为NestedLoops
 
 ### correlateInnerJoin
+
+关联内连接
 
 
 
 ### correlateLeftJoin
+
+关联左连接
+
+
+
+构建步骤
+
+1.组合两个数据源而成为新的数据源,并为一个数据源建立别名供第二个数据源引用
+
+```sql
+correlateInnerJoin(别名,数据源1 ,数据源2)
+correlateLeftJoin(别名,数据源1 ,数据源2)
+```
+
+2.第二个数据源引用别名的列名
+
+```sql
+ref(别名,字段)
+```
+
+
+
+3.综上
+
+text
+
+```sql
+correlateInnerJoin(`t`,
+                   table(fields(fieldType(id0,integer,false)),values(1,2,3,4)) , fromTable(`db1`,`travelrecord`).filter(ref(`t`,`id0`) = `id`)))
+```
+
+
+
+java
+
+```java
+  Schema db0 = table(Arrays.asList(fieldType("id0", "Integer",false)), Arrays.asList(1, 2, 3, 4));
+        Schema db1 = filter(fromTable("db1", "travelrecord"), eq(ref("t", "id0"), new Identifier("id")));
+        Schema schema = correlate(CORRELATE_INNER_JOIN, "t", db0, db1);
+```
 

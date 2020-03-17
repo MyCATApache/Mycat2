@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.mycat.hbt.ast.HBTOp.CORRELATE_INNER_JOIN;
+import static io.mycat.hbt.ast.HBTOp.CORRELATE_LEFT_JOIN;
 
 
 public class HBTBaseTest implements HBTBuiltinHelper {
@@ -381,7 +382,7 @@ public class HBTBaseTest implements HBTBuiltinHelper {
     }
 
     @Test
-    public void testCorrelateLeftJoCorrelateSchemain() throws IOException {
+    public void testCorrelateInnerJoCorrelateSchemain() throws IOException {
         String sugar = "correlateInnerJoin(`t`,table(fields(fieldType(id0,integer,false)),values(1,2,3,4)) , fromTable(`db1`,`travelrecord`).filter(ref(`t`,`id0`) = `id`)))";
         Schema db0 = table(Arrays.asList(fieldType("id0", HBTTypes.Integer,false)), Arrays.asList(1, 2, 3, 4));
         Schema db1 = filter(fromTable("db1", "travelrecord"), eq(ref("t", "id0"), new Identifier("id")));
@@ -392,7 +393,17 @@ public class HBTBaseTest implements HBTBuiltinHelper {
         testDumpResultSet(schema, "(1,1,10)\n" +
                 "(2,2,20)");
     }
+    @Test
+    public void testCorrelateLeftJoCorrelateSchemain() throws IOException {
+        String sugar = "correlateLeftJoin(`t`,table(fields(fieldType(id0,integer,false)),values(1,2,3,4)) , fromTable(`db1`,`travelrecord`).filter(ref(`t`,`id0`) = `id`)))";
+        Schema db0 = table(Arrays.asList(fieldType("id0", HBTTypes.Integer,false)), Arrays.asList(1, 2, 3, 4));
+        Schema db1 = filter(fromTable("db1", "travelrecord"), eq(ref("t", "id0"), new Identifier("id")));
+        Schema schema = correlate(CORRELATE_LEFT_JOIN, "t", db0, db1);
+        testText(sugar, sugar, schema);
+        testSchema(schema, "LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{0}])  LogicalValues(tuples=[[{ 1 }, { 2 }, { 3 }, { 4 }]])  LogicalFilter(condition=[=($cor0.id0, $0)])    LogicalTableScan(table=[[db1, travelrecord]])");
 
+        testDumpResultSet(schema, "(1,1,10)(2,2,20)(3,null,null)(4,null,null)");
+    }
     public static Expr ref(String corName, String fieldName) {
         return new Expr(HBTOp.REF, new Identifier(corName), new Identifier(fieldName));
     }
