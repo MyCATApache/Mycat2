@@ -10,6 +10,7 @@ import io.mycat.hbt.ast.query.JoinSchema;
 import io.mycat.hbt.ast.query.RenameSchema;
 import io.mycat.hbt.parser.HBTParser;
 import io.mycat.upondb.MycatDBClientBasedConfig;
+import io.mycat.util.SplitUtil;
 import lombok.SneakyThrows;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelNode;
@@ -261,7 +262,8 @@ public class HBTBaseTest implements HBTBuiltinHelper {
                         .orderBy(Arrays.asList(order("user_id", Direction.DESC)))));
         testText(sugar, text, schema);
 
-        testSchema(schema, "LogicalAggregate(group=[{0}], agg#0=[AVG(DISTINCT $0) WITHIN GROUP ([1 DESC]) FILTER $2])  LogicalProject(id=[$0], user_id=[$1], $f2=[true])    LogicalTableScan(table=[[db1, travelrecord]])");
+        testSchema(schema, "LogicalAggregate(group=[{0}], agg#0=[AVG(APPROXIMATE DISTINCT $0) WITHIN GROUP ([1 DESC]) FILTER $2])  LogicalProject(id=[$0], user_id=[$1], $f2=[true])    LogicalTableScan(table=[[db1, travelrecord]])\n" +
+                " ");
 
 
         testDumpResultSet(schema, "(1,1.0)(2,2.0)");
@@ -331,6 +333,16 @@ public class HBTBaseTest implements HBTBuiltinHelper {
     }
 
     @Test
+    public void filterWithIndex() throws IOException {
+        String sugar = "fromTable(db1,travelrecord).filter(`$0` = 1)";
+        String text = "filter(fromTable(db1,travelrecord),`$0` = 1)";
+        Schema schema = filter(fromTable("db1", "travelrecord"), eq(new Identifier("$0"), new Literal(1)));
+        testText(sugar, text, schema);
+        testSchema(schema, "LogicalFilter(condition=[=($0, 1)])  LogicalTableScan(table=[[db1, travelrecord]])");
+
+        testDumpResultSet(schema, "(1,10)");
+    }
+    @Test
     public void filterAndOr() throws IOException {
         String sugar = "fromTable(db1,travelrecord).filter(`id` = 1 or `id` = 2 or `id` = 3)";
         String text = "filter(fromTable(db1,travelrecord),`id` = 1 or `id` = 2 or `id` = 3 )";
@@ -380,7 +392,19 @@ public class HBTBaseTest implements HBTBuiltinHelper {
         testDumpResultSet(schema, "(1,1,10)\n" +
                 "(2,2,20)");
     }
-
+    @Test
+    public void testInnerJoinWithIndex() throws IOException {
+        String sugar = "innerJoin(`$0` = `$$0`,fromTable(db1,travelrecord),fromTable(db1,travelrecord))";
+        Schema schema = new JoinSchema(HBTOp.INNER_JOIN,
+                eq(id("$0"), id("$$0"))
+                , fromTable("db1", "travelrecord"),
+                fromTable("db1", "travelrecord")
+        );
+        testText(sugar, sugar, schema);
+        testSchema(schema, "LogicalJoin(condition=[=($0, $2)], joinType=[inner])  LogicalTableScan(table=[[db1, travelrecord]])  LogicalTableScan(table=[[db1, travelrecord]])");
+        testDumpResultSet(schema, "(1,10,1,10)\n" +
+                "(2,20,2,20)");
+    }
     @Test
     public void testCorrelateInnerJoCorrelateSchemain() throws IOException {
         String sugar = "correlateInnerJoin(`t`,table(fields(fieldType(id0,integer,false)),values(1,2,3,4)) , fromTable(`db1`,`travelrecord`).filter(ref(`t`,`id0`) = `id`)))";
@@ -454,7 +478,13 @@ public class HBTBaseTest implements HBTBuiltinHelper {
     @SneakyThrows
     public void testDumpResultSet(Schema schema, String resultset) {
         HBTRunners hbtRunners = new HBTRunners(clientMediator);
-        Assert.assertEquals(resultset.replaceAll("\r","").replaceAll("\n","").trim(), TextConvertor.dumpResultSet(hbtRunners.run(schema)).replaceAll("\r","").replaceAll("\n","").trim());
+        String trim = resultset.replaceAll("\r", "").replaceAll("\n", "").trim();
+        String trim1 = TextConvertor.dumpResultSet(hbtRunners.run(schema)).replaceAll("\r", "").replaceAll("\n", "").trim();
+        List<String> strings = Arrays.asList(SplitUtil.split(trim,")("));
+        List<String> strings1 = Arrays.asList(SplitUtil.split(trim1,")("));
+        Collections.sort(strings);
+        Collections.sort(strings1);
+        Assert.assertEquals(strings,strings1);
     }
 
     @SneakyThrows

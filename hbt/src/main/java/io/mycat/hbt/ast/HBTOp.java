@@ -62,8 +62,8 @@ public enum HBTOp {
     PROPERTY("property"),
 
     //debug
-    EXPLAIN("explain"),
-
+    EXPLAIN("explainHbt"),
+    EXPLAIN_SQL("explainSql"),
     // operators
     DOT("dot"),
     EQ("eq"),

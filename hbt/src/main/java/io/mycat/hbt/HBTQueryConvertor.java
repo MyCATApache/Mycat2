@@ -31,6 +31,7 @@ import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.metadata.LogicTable;
 import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
@@ -65,6 +66,7 @@ import static io.mycat.hbt.ast.HBTOp.*;
 /**
  * @author jamie12221
  **/
+@Log4j
 public class HBTQueryConvertor {
     private final MycatRelBuilder relBuilder;
     private final Map<String, RexCorrelVariable> correlVariableMap = new HashMap<>();
@@ -190,7 +192,7 @@ public class HBTQueryConvertor {
             });
             SchemaPlus rootSchema = context.getRootSchema();
             SqlNode parse = planner.parse(sql);
-            parse =  parse.accept(new SqlShuttle() {
+            parse = parse.accept(new SqlShuttle() {
                 @Override
                 public SqlNode visit(SqlIdentifier id) {
                     if (id.names.size() == 2) {
@@ -198,7 +200,7 @@ public class HBTQueryConvertor {
                         String table = id.names.get(1);
                         MycatLogicTable logicTable = context.getLogicTable(targetName, schema, table);
                         LogicTable table1 = logicTable.getTable();
-                        return new SqlIdentifier(Arrays.asList(table1.getSchemaName(),table1.getTableName()),SqlParserPos.ZERO);
+                        return new SqlIdentifier(Arrays.asList(table1.getSchemaName(), table1.getTableName()), SqlParserPos.ZERO);
                     }
                     return super.visit(id);
                 }
@@ -260,7 +262,7 @@ public class HBTQueryConvertor {
                 RelNode relNode = queryOp.complie(schema);
                 List<String> fieldNames = relNode.getRowType().getFieldNames();
                 if (!set.addAll(fieldNames)) {
-                    throw new UnsupportedOperationException();
+                    log.warn("dup fieldNames:" + fieldNames);
                 }
                 nodes.add(relNode);
             }
@@ -443,30 +445,46 @@ public class HBTQueryConvertor {
         switch (op) {
             case IDENTIFIER: {
                 String value = ((Identifier) node).getValue();
-                if (value.startsWith("$")) {
-                    String substring = value.substring(1, value.length());
-                    if (Character.isDigit(substring.charAt(0)) && Character.isDigit(substring.charAt(substring.length() - 1))) {
-                        return relBuilder.field(Integer.parseInt(value.substring(1)));
+                if (value.startsWith("$") && Character.isDigit(value.charAt(value.length() - 1))) {//按照下标引用
+                    String substring = value.substring(1);
+                    if (joinCount > 1) {
+                        if (substring.startsWith("$")) {
+                            return relBuilder.field(2,1,Integer.parseInt(substring.substring(1)));
+                        }
+                        return relBuilder.field(2, 0, Integer.parseInt(substring));
                     }
+                    return relBuilder.field(Integer.parseInt(substring));
                 }
                 if (joinCount > 1) {
-                    for (int i = 0; i < joinCount; i++) {
-                        List<String> fieldNames = relBuilder.peek(i).getRowType().getFieldNames();
-                        int indexOf = fieldNames.indexOf(value);
-                        if (indexOf > -1) {
-                            return relBuilder.field(joinCount, i, indexOf);
-                        }else {
-//                            char c = value.charAt(value.length() - 1);
-//                            if(Character.isDigit(c)){
-//                                value = value.substring(value.length() - 1);
-//                                return relBuilder.field(Integer.parseInt(String.valueOf(c)));
-//                            }else {
-//                                throw new UnsupportedOperationException();
-//                            }
-                            continue;
+                    try {//按照数据源查找字段
+                        for (int i = 0; i < joinCount; i++) {
+                            List<String> fieldNames = relBuilder.peek(i).getRowType().getFieldNames();
+                            int indexOf = fieldNames.indexOf(value);
+                            if (indexOf > -1) {
+                                try {
+                                    return relBuilder.field(joinCount, i, indexOf);
+                                } catch (Exception e) {
+                                    log.warn("may be a bug");
+                                    log.error(e);
+                                }
+                            }
                         }
+                    } catch (Exception e) {
+                        log.warn("may be a bug");
+                        log.error(e);
                     }
-                    throw new UnsupportedOperationException();
+
+                    try {
+                        char c = value.charAt(value.length() - 1);
+                        //按照join命名规则查找
+                        if (c == '0') {
+                            return relBuilder.field(2, 1, value);
+                        }
+                    } catch (Exception e) {
+                        log.warn("may be a bug");
+                        log.error(e);
+                    }
+                    return relBuilder.field(value);
                 } else {
                     return relBuilder.field(value);
                 }
@@ -500,7 +518,7 @@ public class HBTQueryConvertor {
                 }
             }
         }
-       // throw new UnsupportedOperationException();
+        // throw new UnsupportedOperationException();
     }
 
     private RexNode ref(Expr node) {

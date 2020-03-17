@@ -68,7 +68,7 @@ public class ContextRunner {
 
     //inst command
     public static final String ERROR = "error";
-    public static final String EXPLAIN = "explainSQL";
+    public static final String EXPLAIN = "explainSql";
     public static final String EXPLAIN_HBT = "explainPlan";
     public static final String DISTRIBUTED_QUERY = ("distributedQuery");
     public static final String EXECUTE_PLAN = ("plan");

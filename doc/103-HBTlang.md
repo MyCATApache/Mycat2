@@ -6,9 +6,11 @@ author:chenjunwen 2020-3-16
 
 <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" /></a><br />This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
 
+[TOC]
 
 
-## HBT(Human Brain Tech)
+
+## HBT(Human Brain Tech)简介
 
 HBT在Mycat2中表现为关系表达式领域驱动语言(Relation DSL).
 
@@ -36,7 +38,7 @@ HBT在Mycat2中表现为关系表达式领域驱动语言(Relation DSL).
 
 
 
-## 基本HBT代数表达式
+## 基本HBT表达式
 
 
 
@@ -105,6 +107,11 @@ table(fields(fieldType(id,int)),values(1,2,3))
 ##### 三种构造方式
 
 ```java
+fieldType(columnName,columnType)
+fieldType(columnName,columnType,columnNullable)
+fieldType(columnName,columnType,columnNullable,precision,scale)
+    
+即
 fieldType(String columnName, String columnType)
 \\columnNullable = true ,precision = null,scale = null
 
@@ -235,7 +242,7 @@ map(table(Arrays.asList(fieldType("id", "integer"), fieldType("id2", "integer"))
 | ------ | ---- | -------------------- | ------------------------------------- |
 | rename | rel  | **1+数据源的列数量** | 数据源,多个字段标识符(数据源的列数量) |
 
-map表达式的简化,对数据源全列名进行更名,该表达式属于扩展表达式
+map表达式的简化,对数据源全列名进行更名,该表达式是一个补充的表达式
 
 
 
@@ -290,7 +297,7 @@ filter(fromTable("db1", "travelrecord"), eq(new Identifier("id"), new Literal(1)
 
 ### Set
 
-集合操作
+#### 集合操作
 
 | 名称     | 类型 | 参数数量 | 参数               |
 | -------- | ---- | -------- | ------------------ |
@@ -298,53 +305,24 @@ filter(fromTable("db1", "travelrecord"), eq(new Identifier("id"), new Literal(1)
 
 
 
-##### unionAll
-
+```
+unionAll
 并
-
-
-
-##### unionDistinct
-
+unionDistinct
 并,去重
-
-
-
-##### exceptAll
-
+exceptAll
 除
-
-
-
-##### exceptDistinct
-
+exceptDistinct
 除,去重
-
-
-
-##### minusAll
-
+minusAll
 减
-
-
-
-##### minusDistinct
-
+minusDistinct
 减,去重
-
-
-
-##### intersectAll
-
+intersectAll
 交
-
-
-
-##### intersectDistinct
-
+intersectDistinct
 交,去重
-
-
+```
 
 text
 
@@ -374,7 +352,7 @@ set(HBTOp.UNION_ALL, Arrays.asList(fromTable("db1", "travelrecord"), fromTable("
 
 
 
-##### distinct
+#### distinct
 
 | 名称 | 类型 | 参数数量 | 参数       |
 | ---- | ---- | -------- | ---------- |
@@ -382,7 +360,7 @@ set(HBTOp.UNION_ALL, Arrays.asList(fromTable("db1", "travelrecord"), fromTable("
 
 
 
-去重,该表达式属于扩展表达式
+去重,该表达式是补充的表达式
 
 
 
@@ -596,7 +574,7 @@ anti semi join
 
 
 
-##### 文本
+文本
 
 | 名称                                           | 类型 | 参数数量 | 参数                              |
 | ---------------------------------------------- | ---- | -------- | --------------------------------- |
@@ -865,7 +843,7 @@ lastInsertId 取mergeModify中最大值
 ```sql
 mergeModify(
     modifyFromSql(targetName,'delete db1.travelrecord1'),
-    modifyFromSql(targetName,'delete db2.travelrecord1')
+    modifyFromSql(targetName2,'delete db2.travelrecord1')
     )
 ```
 
@@ -889,15 +867,274 @@ explain filterFromTable(`id` = 1,db1,travelrecord)
 
 
 
-## HBT-标量表达式
+## HBT-标量表达式(运算符)
 
 计算结果是一个特定数据类型的标量值的表达式
 
 
 
+| 运算符函数名 | 糖   | 描述 | 算符优先级 | 参数数量 |布尔表达式|
+| ------------ | ---- | ------ | ---- | -------- | --------|
+| eq           | =    |   	等于     | 10 | 2        | y |
+| ne           | <>,!= |  	 不等于      | 10 | 2        | y |
+| gt           | >  | 大于 | 11 | 2        | y |
+| lt           | <   | 小于       | 11 | 2        | y|
+| gte          | >=     | 大于等于 | 11 | 2        |y |
+| lte          | <=    | 小于等于 | 11 | 2        | y|
+| add          | +     | 算术加法 | 13 | 2        | n|
+| minus        | -    |  算术减法      | 13 |  2        |n |
+| and          | 无     |   逻辑与     | 6 |  2        |y |
+| or          | 无     |   逻辑或     | 5 |  2        | y |
+| not          | 无     | 逻辑非       |   无   | 1 |y |
+| as          | 无     | 别名       | 3 | 2        | n |
+| cast          | 无     |  类型转换      | 无 | 2        | n |
+| ref | 无     |    关联连接数据源引用    | 无 | 2        | n|
+
+
+上述描述的运算符都是左结合,其他情况使用函数调用
+
+当运算符参数数量为2并且具有优先级的时候可以使用中缀表达式编写文本,解析器自动完成转换为函数调用并解糖
+
+
+
+```java
+1+2 => add(1,2)
+```
+
+
+
+需要用到其他函数,请提PR
+
+
+
+支持中缀表达式编写文本的关系表达式,同理,也可以被解析器完成转换,
+
+```sql
+fromTable(db1,travelrecord) unionAll  fromTable(db1,travelrecord) 
+=>
+unionAll(fromTable(db1,travelrecord),fromTable(db1,travelrecord))
+```
+
+
+
+算符优先级都是1,左结合
+
+```sql
+unionAll,
+unionDistinct,
+exceptDistinct,
+exceptAll,
+minusAll,
+minusDistinct,
+rename,
+groupBy
+distinct,
+orderBy
+alias//仅用于聚合函数 ,
+distinct//用于关系表达式,聚合函数 ,
+approximate//仅用于聚合函数 ,
+ignoreNulls//仅用于聚合函数 ,
+filter//用于关系表达式,聚合函数 ,
+```
+
+
+
+### 类型转换与别名
+
+```
+fromTable(db1,travelrecord).map(cast(id,float) as a)
+```
+
+
+
+| 名称 | 类型 | 参数数量 | 参数                                    |
+| ---- | ---- | -------- | --------------------------------------- |
+| cast | expr | 2        | 表达式,类型标识符(不接受待求值的表达式) |
+
+
+
+| 名称 | 类型 | 参数数量 | 参数                                |
+| ---- | ---- | -------- | ----------------------------------- |
+| as   | expr | 2        | 表达式,标识符(不接受待求值的表达式) |
+
+
+
+### 内置常用函数
+
+| 名称  | 类型 | 参数数量 | 参数               |
+| ----- | ---- | -------- | ------------------ |
+| lower | expr | 1        | 表达式(字符串类型) |
+
+把参数转成小写
+
+| 名称  | 类型 | 参数数量 | 参数               |
+| ----- | ---- | -------- | ------------------ |
+| upper | expr | 1        | 表达式(字符串类型) |
+
+把参数转成大写
+
+| 名称   | 类型 | 参数数量 | 参数   |
+| ------ | ---- | -------- | ------ |
+| isnull | expr | 1        | 表达式 |
+
+表达式的结果是否null
+
+| 名称   | 类型 | 参数数量 | 参数            |
+| ------ | ---- | -------- | --------------- |
+| nullif | expr | 2        | 表达式1,表达式2 |
+
+如果两表达式的结果相同,则返回null
+
+| 名称      | 类型 | 参数数量 | 参数   |
+| --------- | ---- | -------- | ------ |
+| isnotnull | expr | 1        | 表达式 |
+
+表达式的结果是否非null
+
+
+
+
+
+## HBT-列名引用
+
+代数关系表达式中的表达式引用列名的方法以及存在的规则
+
+1.在HBT里面,一般来说,一个数据源上的列名是唯一的,不能存在相同的列名,不能同时以$开头和以数字结尾
+
+2.列表使用``包裹强调是标识符
+
+```sql
+fromTable(db1,travelrecord).filter(`id` = 1)
+```
+
+3.在涉及两个数据源的情况下,需要遇上列名相同的情况,as表达式或者rename关系表达式把其中一个数据源的列名改变,一般风格是添上0为结尾
+
+```sql
+innerJoin(`id0` = `id`,fromTable(db1,travelrecord)
+          .map(`id` as `id0`),fromTable(db1,travelrecord))
+```
+
+4.支持下标引用列名
+
+以$[0-9]格式,以下标引用第一个数据源的列名
+
+```sql
+fromTable(db1,travelrecord).filter(`$0` = 1)//引用位置0的列表,即id
+```
+
+在join关系表达式下,以$$[0-9]格式,以下标引用第二个数据源的列名
+
+```sql
+innerJoin(`$0` = `$$0`,fromTable(db1,travelrecord),fromTable(db1,travelrecord))
+```
+
+$0引用第一个数据源的id
+
+$1引用第一个数据源的user_id
+
+$$0引用第二个数据源的id
+
+$$1引用第二个数据源的user_id
+
+
+
+编译器会根据上下文判断列名是哪个数据源哪个下标,最终转换成下标表示,并解决列名冲突,在相同列名上添加0.
+
+
+
+
+
+## HBT-词法
+
+HBT词法分析就是MySQL的词法
+
+编码为UTF8
+
+不支持字符串里嵌入二进制数据,使用X'4D2AFF'这种格式描述二进制数据
+
+这里不再重复描述
+
+
+
+词法可以区分字面量和标识符,其中字面量一般就是值
+
+
+
+
+
+## HBT-语法
+
+### 基本形式
+
+语法的设计选取了函数调用语法
+
+```java
+function(arg1,arg2)
+```
+
+作为基本形式,任何语法糖都会语法分析器编译成该形式
+
+
+
+### 语法糖
+
+
+
+#### 中缀表达式语法糖
+
+在基本形式的基础上使用中缀表达式简化标量表达式的编写,尤其是and or表达式
+
+```java
+`id` = 1 and `user_id` = 2 => and(eq(`id`,1),eq(`user_id`,2))
+```
+
+
+
+#### 函数别名语法糖
+
+为解决eq,lt等函数名并不接近sql常用的运算符= >的问题
+
+语法分析器在判断它们是函数之后,会把它们的函数名指向最终的函数名
+
+
+
+#### 链式调用语法糖
+
+在基本形式的基础上使用链式调用语法减少深层括号嵌套的影响
+
+```java
+fromSql(aaaa).filter(bbbb) => filter(fromSql(aaaa),bbbb)
+```
+
+
+
+### 语法辅助(函数)
+
+用于分隔语法节点层次
+
+
+
+### 函数的参数
+
+HBT语法上使用函数调用方式,但是实际上是使用文本转换成语法树表达builder模式
+
+参数的实际含义取决于所在的函数名,参数位置
+
+例如filter的第二个参数本质上是接收语法树而非表达式的语法树的求值结果
+
+
+
+## HBT类型转换
+
+HBT无隐式的类型转换,一般使用cast显式编写
+
+对于整型数值的算术运算需要保持精度的情况,比如avg运算,请在avg的参数表达式上先转换成float等浮点类型
+
+
+
 ## 高级用法(少数情况出现,一般不使用)
 
-### 类型
+### 额外类型
 
 以下类型未正式支持
 
@@ -961,7 +1198,7 @@ groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(i
 
 对应关联子查询
 
-循环获取左表的行的一个值,使用该值重新获取右表的查询,获得右表的数据源,之后进行内连接或者左连接
+循环获取左表的行,使用该行的值作为查询用到的参数重新获取右表数据源,之后进行内连接或者左连接
 
 具体执行一般实现为NestedLoops
 
@@ -986,13 +1223,13 @@ correlateInnerJoin(别名,数据源1 ,数据源2)
 correlateLeftJoin(别名,数据源1 ,数据源2)
 ```
 
-2.第二个数据源引用别名的列名
+2.第二个数据源引用别名
 
 ```sql
 ref(别名,字段)
 ```
 
-
+实际上别名就是数据源1
 
 3.综上
 
@@ -1012,4 +1249,10 @@ java
         Schema db1 = filter(fromTable("db1", "travelrecord"), eq(ref("t", "id0"), new Identifier("id")));
         Schema schema = correlate(CORRELATE_INNER_JOIN, "t", db0, db1);
 ```
+
+
+
+## 文档更改记录
+
+2020.3.16-2020-3-17 完成文档编写 (chenjunwen)
 

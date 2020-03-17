@@ -139,26 +139,26 @@ public enum HBTCalciteSupport {
 
 
         ///////////////////////////////object/////////////////////////.
-        addOperator(".", "dot", 16, true);
-        addOperator("dot", 16, true);
+        addOperator(".", "dot", 19, true);
+        addOperator("dot", 19, true);
 
-        addOperator("+", "add", 14, true);
-        addOperator("add", 14, true);
-        addOperator("-", "minus", 14, true);
-        addOperator("minus", 14, true);
+        addOperator("+", "add", 13, true);
+        addOperator("add", 13, true);
+        addOperator("-", "minus", 13, true);
+        addOperator("minus", 13, true);
 
-        addOperator("=", "eq", 12, true);
-        addOperator("eq", 12, true);
+        addOperator("=", "eq", 10, true);
+        addOperator("eq", 10, true);
 
-        addOperator(">", "gt", 12, true);
-        addOperator("gt", 12, true);
-        addOperator(">=", "gte", 12, true);
-        addOperator("gte", 12, true);
+        addOperator(">", "gt", 11, true);
+        addOperator("gt", 11, true);
+        addOperator(">=", "gte", 11, true);
+        addOperator("gte", 11, true);
 
-        addOperator("<", "lt", 12, true);
-        addOperator("lt", 12, true);
-        addOperator("<=", "lte", 12, true);
-        addOperator("lte", 12, true);
+        addOperator("<", "lt", 11, true);
+        addOperator("lt", 11, true);
+        addOperator("<=", "lte", 11, true);
+        addOperator("lte", 11, true);
 
         ///////////////////////set/////////////////////////////////
         addOperator("unionAll", 1, true);
@@ -167,9 +167,6 @@ public enum HBTCalciteSupport {
         addOperator("exceptAll", 1, true);
         addOperator("minusAll", 1, true);
         addOperator("minusDistinct", 1, true);
-        addOperator("unionDistinct", 1, true);
-        addOperator("unionDistinct", 1, true);
-        addOperator("unionDistinct", 1, true);
         addOperator("rename", 1, true);
         addOperator("groupBy", 1, true);
         addOperator("alias", 1, true);
@@ -185,11 +182,12 @@ public enum HBTCalciteSupport {
 
 //
 //
-        addOperator("<>", "ne", 3, true);
-        addOperator("ne", 13, true);
+        addOperator("!=", "ne", 10, true);
+        addOperator("<>", "ne", 10, true);
+        addOperator("ne", 10, true);
 
-        addOperator("or", 2, true);
-        addOperator("and", 3, true);
+        addOperator("or", 5, true);
+        addOperator("and", 6, true);
         addOperator("as", 3, true);
 
     }

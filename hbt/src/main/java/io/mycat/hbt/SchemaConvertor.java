@@ -239,7 +239,10 @@ public class SchemaConvertor {
                     Schema schema = transforSchema(((CallExpr) (parseNode)).getArgs().getExprs().get(0));
                     return new CommandSchema(HBTOp.EXPLAIN, schema);
                 }
-
+                case EXPLAIN_SQL: {
+                    Schema schema = transforSchema(((CallExpr) (parseNode)).getArgs().getExprs().get(0));
+                    return new CommandSchema(HBTOp.EXPLAIN_SQL, schema);
+                }
                 case MODIFY_FROM_SQL:{
                   return   new ModifyFromSql(exprList.get(0).toString(),exprList.get(1).toString());
                 }
