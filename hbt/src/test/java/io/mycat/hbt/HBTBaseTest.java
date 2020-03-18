@@ -424,7 +424,7 @@ public class HBTBaseTest implements HBTBuiltinHelper {
         Schema db1 = filter(fromTable("db1", "travelrecord"), eq(ref("t", "id0"), new Identifier("id")));
         Schema schema = correlate(CORRELATE_LEFT_JOIN, "t", db0, db1);
         testText(sugar, sugar, schema);
-        testSchema(schema, "LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{0}])  LogicalValues(tuples=[[{ 1 }, { 2 }, { 3 }, { 4 }]])  LogicalFilter(condition=[=($cor0.id0, $0)])    LogicalTableScan(table=[[db1, travelrecord]])");
+        testSchema(schema, "LogicalCorrelate(correlation=[$cor0], joinType=[left], requiredColumns=[{0}])  LogicalValues(tuples=[[{ 1 }, { 2 }, { 3 }, { 4 }]])  LogicalFilter(condition=[=($cor0.id0, $0)], variablesSet=[[$cor0]])    LogicalTableScan(table=[[db1, travelrecord]])");
 
         testDumpResultSet(schema, "(1,1,10)(2,2,20)(3,null,null)(4,null,null)");
     }
