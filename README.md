@@ -15,6 +15,7 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 项目地址:<https://github.com/MyCATApache/Mycat2>
 
+HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlang.md>
 
 
 ## 正在进行的任务
