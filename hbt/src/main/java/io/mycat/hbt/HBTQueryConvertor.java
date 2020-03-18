@@ -389,7 +389,14 @@ public class HBTQueryConvertor {
     }
 
     private RelNode filter(FilterSchema input) {
-        return relBuilder.push(handle(input.getSchema())).filter(toRex(input.getExpr())).build();
+        relBuilder.push(handle(input.getSchema()));
+        RexNode rexNode = toRex(input.getExpr());
+        if(correlVariableMap.isEmpty()){
+            relBuilder.filter(rexNode);
+        }else {
+            relBuilder.filter(correlVariableMap.values().stream().map(i->i.id).collect(Collectors.toList()),rexNode);
+        }
+       return relBuilder.build();
     }
 
     private RelNode values(AnonyTableSchema input) {
