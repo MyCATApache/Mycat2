@@ -1,14 +1,14 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
- *
+ * <p>
  * This program is free software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * <p>
  * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
  * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * General Public License for more details.
- *
+ * <p>
  * You should have received a copy of the GNU General Public License along with this program.  If
  * not, see <http://www.gnu.org/licenses/>.
  */
@@ -48,7 +48,7 @@ import java.util.Objects;
 public final class BackendConCreateHandler implements BackendNIOHandler<MySQLClientSession> {
 
     protected final static MycatLogger LOGGER = MycatLoggerFactory
-        .getLogger(BackendConCreateHandler.class);
+            .getLogger(BackendConCreateHandler.class);
     final CommandCallBack callback;
     final String STR_CACHING_AUTH_STAGE = "FULL_AUTH";
     final MySQLDatasource datasource;
@@ -61,13 +61,13 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
     //todo
     public BackendConCreateHandler(MySQLDatasource datasource, MySQLSessionManager sessionManager,
-            MycatReactorThread curThread, CommandCallBack callback) {
+                                   MycatReactorThread curThread, CommandCallBack callback) {
         Objects.requireNonNull(datasource);
         Objects.requireNonNull(sessionManager);
         Objects.requireNonNull(callback);
         this.datasource = datasource;
         this.callback = callback;
-        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(),datasource, this, sessionManager);
+        MySQLClientSession mysql = new MySQLClientSession(SessionManager.nextSessionId(), datasource, this, sessionManager);
         mysql.setCurrentProxyBuffer(new ProxyBufferImpl(curThread.getBufPool()));
         SocketChannel channel = null;
         try {
@@ -84,11 +84,11 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
     @Override
     public void onConnect(SelectionKey curKey, MySQLClientSession mysql, boolean success,
-            Exception e) {
+                          Exception e) {
         if (success) {
             mysql.change2ReadOpts();
         } else {
-            MycatMonitor.onBackendConCreateConnectException(mysql,e);
+            MycatMonitor.onBackendConCreateConnectException(mysql, e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);
         }
@@ -106,7 +106,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
         } catch (Exception e) {
             LOGGER.error("create mysql connection error {} {}", datasource, e.getMessage());
-            MycatMonitor.onBackendConCreateReadException(mysql,e);
+            MycatMonitor.onBackendConCreateReadException(mysql, e);
             onException(mysql, e);
             callback.onFinishedException(e, this, null);
         }
@@ -115,7 +115,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
     public void handle(MySQLClientSession mysql) throws Exception {
         ProxyBuffer proxyBuffer = mysql.currentProxyBuffer().newBufferIfNeed();
         int totalPacketEndIndex = proxyBuffer.channelReadEndIndex();
-        if(!mysql.readProxyPayloadFully()){
+        if (!mysql.readProxyPayloadFully()) {
             return;
         }
         MySQLPayloadType payloadType = mysql.getPayloadType();
@@ -217,10 +217,10 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
         hs.readPayload(mysql.currentProxyPayload());
         mysql.resetCurrentProxyPayload();
         this.mysqlVersion = hs.getServerVersion();
-        this.charsetIndex = hs.getCharacterSet();
+        this.charsetIndex = hs.getCharacterSet() == -1 ? CharsetUtil.getIndex("utf8mb4") : hs.getCharacterSet();
         AuthPacket packet = new AuthPacket();
         packet.setCapabilities(serverCapabilities);
-        packet.setMaxPacketSize(32*1024*1024);
+        packet.setMaxPacketSize(32 * 1024 * 1024);
         packet.setCharacterSet((byte) charsetIndex);
         packet.setUsername(datasource.getUsername());
         this.seed = hs.getAuthPluginDataPartOne() + hs.getAuthPluginDataPartTwo();
@@ -285,7 +285,7 @@ public final class BackendConCreateHandler implements BackendNIOHandler<MySQLCli
 
     @Override
     public void onException(MySQLClientSession session, Exception e) {
-        MycatMonitor.onBackendConCreateException(session,e);
+        MycatMonitor.onBackendConCreateException(session, e);
         LOGGER.error("{}", e);
         onClear(session);
         session.close(false, e);
