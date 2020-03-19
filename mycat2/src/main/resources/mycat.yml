@@ -10,10 +10,10 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
               #提供表的字段信息,升级计划:通过已有数据库拉取该信息
           createTableSQL: |-
             CREATE TABLE `travelrecord` ( `id` bigint(20) NOT NULL,`user_id` varchar(100) CHARACTER SET utf8 DEFAULT NULL,`traveldate` date DEFAULT NULL,`fee` decimal(10,0) DEFAULT NULL,`days` int(11) DEFAULT NULL,`blob` longblob DEFAULT NULL) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-          dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: travelrecord},
-                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord2},
-                      {targetName: defaultDs ,schemaName: db1, tableName: travelrecord3},
-                      {targetName: defaultDs2 ,schemaName: db2, tableName: travelrecord}] #9999999999
+          dataNodes: [{targetName: repli ,schemaName: db1, tableName: travelrecord},
+                      {targetName: repli ,schemaName: db1, tableName: travelrecord2},
+                      {targetName: repli ,schemaName: db1, tableName: travelrecord3},
+                      {targetName: repli ,schemaName: db2, tableName: travelrecord}] #9999999999
         address:
           columns:
             - columnName: id
@@ -114,32 +114,32 @@ datasource:
                  jdbcDriverClass:, #jdbc驱动
                  instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写
                 },
-                {name: defaultDs2, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
-                 url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
+                {name: defaultDs2, ip: 0.0.0.0,port: 3307,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
+                 url: 'jdbc:mysql://127.0.0.1:3307?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
                 }
   ]
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider
   timer: {initialDelay: 1000, period: 5, timeUnit: SECONDS}
 cluster: #集群,数据源选择器,既可以mycat自行检查数据源可用也可以通过mycat提供的外部接口设置设置数据源可用信息影响如何使用数据源
-  close: true  #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
+  close: false  #关闭集群心跳,此时集群认为所有数据源都是可用的,可以通过mycat提供的外部接口设置数据源可用信息达到相同效果
   clusters: [
   {name: repli ,
-   replicaType: SINGLE_NODE , # SINGLE_NODE:单一节点 ,MASTER_SLAVE:普通主从 GARELA_CLUSTER:garela cluster
-   switchType: NOT_SWITCH , #NOT_SWITCH:不进行主从切换,SWITCH:进行主从切换
+   replicaType: MASTER_SLAVE , # SINGLE_NODE:单一节点 ,MASTER_SLAVE:普通主从 GARELA_CLUSTER:garela cluster
+   switchType: SWITCH , #NOT_SWITCH:不进行主从切换,SWITCH:进行主从切换
    readBalanceType: BALANCE_ALL  , #对于查询请求的负载均衡类型
    readBalanceName: BalanceRoundRobin , #对于查询请求的负载均衡类型
    writeBalanceName: BalanceRoundRobin ,  #对于修改请求的负载均衡类型
-   masters:[defaultDs], #主节点列表
-   replicas:[defaultDs2],#从节点列表
+   masters:[defaultDs , defaultDs2], #主节点列表,普通主从,当主失去连接后,随机选取其后的存活的数据源作为主节点
+   replicas:[ defaultDs2],#从节点列表
    maxCon:, #集群
    heartbeat:{maxRetry: 3, #心跳重试次数
-              minSwitchTimeInterval: 12000 , #最小主从切换间隔
-              heartbeatTimeout: 12000 , #心跳超时值,毫秒
+              minSwitchTimeInterval: 1 , #最小主从切换间隔
+              heartbeatTimeout: 1 , #心跳超时值,毫秒
               slaveThreshold: 0 , # mysql binlog延迟值
-              reuqestType: 'mysql' #进行心跳的方式,mysql或者jdbc两种
+              reuqestType: 'jdbc' #进行心跳的方式,mysql或者jdbc两种
    }}
   ]
-  timer: {initialDelay: 0, period: 3, timeUnit: SECONDS} #心跳定时器 initialDelay一般为0,mycat会在开启集群心跳,一个initialDelay+1秒之后开启服务器端口
+  timer: {initialDelay: 0, period: 1, timeUnit: SECONDS} #心跳定时器 initialDelay一般为0,mycat会在开启集群心跳,一个initialDelay+1秒之后开启服务器端口
 server:
   ip: 0.0.0.0
   port: 8066

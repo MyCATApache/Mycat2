@@ -19,9 +19,10 @@ public class DbConfigProvider implements ConfigProvider {
     }
 
     @Override
-    public void report(Map<String, Object> changed) {
+    public void report(MycatConfig changed) {
 
     }
+
 
     @Override
     public MycatConfig currentConfig() {

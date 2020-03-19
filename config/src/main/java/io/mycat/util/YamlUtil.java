@@ -25,7 +25,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
-import java.time.LocalTime;
 
 /**
  * Desc: yml文件的工具类
@@ -102,6 +101,6 @@ public class YamlUtil {
     }
 
     public static String getBackupFileName(String configName, int version) {
-        return configName + "-" + version + LocalTime.now();
+        return configName + "-" + version;
     }
 }

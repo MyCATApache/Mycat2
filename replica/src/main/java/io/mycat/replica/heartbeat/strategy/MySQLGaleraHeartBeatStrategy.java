@@ -17,6 +17,7 @@ package io.mycat.replica.heartbeat.strategy;
 import io.mycat.GlobalConst;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.replica.heartbeat.DatasourceState;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
 
@@ -53,8 +54,8 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
       if ("ON".equals(wsrep_connected)
           && "ON".equals(wsrep_ready)
           && "Primary".equals(wsrep_cluster_status)) {
-        datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_NORMAL);
-        datasourceStatus.setStatus(DatasourceStatus.OK_STATUS);
+        datasourceStatus.setDbSynStatus(DatasourceState.DB_SYN_NORMAL);
+        datasourceStatus.setStatus(DatasourceState.OK_STATUS);
         return;
       } else {
         LOGGER.info("found MySQL  cluster status err !!! "
@@ -62,12 +63,12 @@ public class MySQLGaleraHeartBeatStrategy extends MySQLMasterSlaveBeatStrategy {
             + " wsrep_connected: " + wsrep_connected
             + " wsrep_ready: " + wsrep_ready
         );
-        datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_ERROR);
-        datasourceStatus.setStatus(DatasourceStatus.ERROR_STATUS);
+        datasourceStatus.setDbSynStatus(DatasourceState.DB_SYN_ERROR);
+        datasourceStatus.setStatus(DatasourceState.ERROR_STATUS);
         return;
       }
     }
-    heartbeatFlow.setStatus(datasourceStatus, DatasourceStatus.OK_STATUS);
+    heartbeatFlow.setStatus(datasourceStatus, DatasourceState.OK_STATUS);
   }
 
   public MySQLGaleraHeartBeatStrategy() {

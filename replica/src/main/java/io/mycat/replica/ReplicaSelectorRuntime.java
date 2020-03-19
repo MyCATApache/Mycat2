@@ -80,6 +80,7 @@ public enum ReplicaSelectorRuntime {
         for (ClusterRootConfig.ClusterConfig replicaConfig : replicaConfigList) {
             addCluster(datasourceConfigMap, replicaConfig);
         }
+
         updateTimer(config);
     }
 
@@ -177,6 +178,7 @@ public enum ReplicaSelectorRuntime {
                                                DatasourceRootConfig.DatasourceConfig datasourceConfig,
                                                SessionCounter sessionCounter) {
         Objects.requireNonNull(selector);
+        Objects.requireNonNull(datasourceConfig);
         InstanceType instanceType = InstanceType.READ;
         switch (selector.type) {
             case SINGLE_NODE:

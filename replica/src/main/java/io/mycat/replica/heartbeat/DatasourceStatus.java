@@ -14,79 +14,27 @@
  */
 package io.mycat.replica.heartbeat;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
+import static io.mycat.replica.heartbeat.DatasourceState.DB_SYN_NORMAL;
+import static io.mycat.replica.heartbeat.DatasourceState.OK_STATUS;
+
 /**
  * @author : zhangwy
  * @version V1.0
  *
  *  date Date : 2019年05月05日 0:05
  */
+@EqualsAndHashCode
+@Data
+@ToString
 public class DatasourceStatus {
-
-  public static final int DB_SYN_ERROR = -1;
-  public static final int DB_SYN_NORMAL = 1;
-
-  public static final int OK_STATUS = 1;
-  public static final int ERROR_STATUS = -1;
-  public static final int TIMEOUT_STATUS = -2;
-  public static final int INIT_STATUS = 0;
-
   // heartbeat config
-  private int status = OK_STATUS; //心跳状态
+  private DatasourceState status = OK_STATUS; //心跳状态
   private boolean isSlaveBehindMaster = false; //同步延时
-  private int dbSynStatus = DB_SYN_NORMAL; //同步状态
-
-  public int getStatus() {
-    return status;
-  }
-
-  public void setStatus(int status) {
-    this.status = status;
-  }
-
-  public boolean isSlaveBehindMaster() {
-    return isSlaveBehindMaster;
-  }
-
-  public void setSlaveBehindMaster(boolean slaveBehindMaster) {
-    isSlaveBehindMaster = slaveBehindMaster;
-  }
-
-  public boolean isDbSynStatusNormal() {
-    return dbSynStatus == DB_SYN_NORMAL;
-  }
-
-  public void setDbSynStatus(int dbSynStatus) {
-    this.dbSynStatus = dbSynStatus;
-  }
-
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    DatasourceStatus that = (DatasourceStatus) o;
-
-    if (status != that.status) {
-      return false;
-    }
-    if (isSlaveBehindMaster != that.isSlaveBehindMaster) {
-      return false;
-    }
-    return dbSynStatus == that.dbSynStatus;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = status;
-    result = 31 * result + (isSlaveBehindMaster ? 1 : 0);
-    result = 31 * result + dbSynStatus;
-    return result;
-  }
+  private DatasourceState dbSynStatus = DB_SYN_NORMAL; //同步状态
 
   public boolean isError() {
     return !isAlive();
@@ -96,12 +44,9 @@ public class DatasourceStatus {
     return status == OK_STATUS;
   }
 
-  @Override
-  public String toString() {
-    return "DatasourceStatus{" +
-        "status=" + status +
-        ", isSlaveBehindMaster=" + isSlaveBehindMaster +
-        ", dbSynStatus=" + dbSynStatus +
-        '}';
+
+  public boolean isDbSynStatusNormal() {
+    return dbSynStatus == DB_SYN_NORMAL;
   }
+
 }

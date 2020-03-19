@@ -37,7 +37,7 @@ public class MycatSqlPlanner implements PlanRunner {
     private final RelNode relNode;
     private final MycatCalciteSQLPrepareObject prepare;
     private final MycatCalciteDataContext mycatCalciteDataContext;
-    private final Supplier<RowBaseIterator> runner;
+
 
     @SneakyThrows
     public MycatSqlPlanner(MycatCalciteSQLPrepareObject prepare, String sql, MycatDBContext uponDBContext) {
@@ -46,7 +46,6 @@ public class MycatSqlPlanner implements PlanRunner {
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
         this.relNode = CalciteRunners.complie(planner, sql);
         this.preComputationSQLTables = planner.preComputeSeq(this.relNode);
-        this.runner = CalciteRunners.run(this.mycatCalciteDataContext, preComputationSQLTables, relNode);
     }
 
     public List<String> explain() {
@@ -61,6 +60,7 @@ public class MycatSqlPlanner implements PlanRunner {
 
     @Override
     public RowBaseIterator run() {
+        Supplier<RowBaseIterator> runner = CalciteRunners.run(this.mycatCalciteDataContext, preComputationSQLTables, relNode);;
         return runner.get();
     }
 }

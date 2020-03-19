@@ -111,10 +111,10 @@ public enum JdbcRuntime {
         ReplicaSelectorRuntime.INSTANCE.putHeartFlow(replicaName, datasource, new Consumer<HeartBeatStrategy>() {
             @Override
             public void accept(HeartBeatStrategy heartBeatStrategy) {
-                executorService.submit(()->{
-                    try{
+                executorService.submit(() -> {
+                    try {
                         heartbeat(heartBeatStrategy);
-                    }catch (Exception e){
+                    } catch (Exception e) {
                         heartBeatStrategy.onException(e);
                     }
                 });
@@ -134,6 +134,8 @@ public enum JdbcRuntime {
                 } catch (Exception e) {
                     heartBeatStrategy.onException(e);
                     throw e;
+                } catch (Throwable e) {
+                    LOGGER.error("", e);
                 } finally {
                     if (connection != null) {
                         connection.close();

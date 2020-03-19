@@ -18,6 +18,8 @@ import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.replica.PhysicsInstance;
 
+import static io.mycat.replica.heartbeat.DatasourceState.*;
+
 /**
  * @author : zhangwy date Date : 2019年05月15日 21:34
  */
@@ -57,22 +59,24 @@ public abstract class HeartbeatFlow {
     this.lastSendQryTime = System.currentTimeMillis();
   }
 
-  public void setStatus(int status) {
+  public void setStatus(DatasourceState status) {
     DatasourceStatus datasourceStatus = new DatasourceStatus();
     setStatus(datasourceStatus, status);
   }
 
-  public void setStatus(DatasourceStatus datasourceStatus, int status) {
+  public void setStatus(DatasourceStatus datasourceStatus, DatasourceState status) {
     //对应的status 状态进行设置
     switch (status) {
-      case DatasourceStatus.OK_STATUS:
+      case OK_STATUS:
         setOk(datasourceStatus);
         break;
-      case DatasourceStatus.ERROR_STATUS:
+      case ERROR_STATUS:
         setError(datasourceStatus);
         break;
-      case DatasourceStatus.TIMEOUT_STATUS:
+      case TIMEOUT_STATUS:
         setTimeout(datasourceStatus);
+        break;
+      case INIT_STATUS:
         break;
     }
     updateLastReceivedQryTime();
@@ -83,7 +87,7 @@ public abstract class HeartbeatFlow {
     this.hbStatus.incrementErrorCount();
     setTaskquitDetector();
     if (this.hbStatus.getErrorCount() >= this.hbStatus.getMaxRetry()) {
-      datasourceStatus.setStatus(DatasourceStatus.ERROR_STATUS);
+      datasourceStatus.setStatus(ERROR_STATUS);
       sendDataSourceStatus(datasourceStatus);
       this.hbStatus.setErrorCount(0);
     }
@@ -92,21 +96,21 @@ public abstract class HeartbeatFlow {
   protected void setOk(DatasourceStatus datasourceStatus) {
     //对应的status 状态进行设置
     switch (this.dsStatus.getStatus()) {
-      case DatasourceStatus.INIT_STATUS:
-      case DatasourceStatus.OK_STATUS:
-        datasourceStatus.setStatus(DatasourceStatus.OK_STATUS);
+      case INIT_STATUS:
+      case OK_STATUS:
+        datasourceStatus.setStatus(OK_STATUS);
         this.hbStatus.setErrorCount(0);
         break;
-      case DatasourceStatus.ERROR_STATUS:
-        datasourceStatus.setStatus(DatasourceStatus.INIT_STATUS);
+      case ERROR_STATUS:
+        datasourceStatus.setStatus(INIT_STATUS);
         this.hbStatus.setErrorCount(0);
         break;
-      case DatasourceStatus.TIMEOUT_STATUS:
-        datasourceStatus.setStatus(DatasourceStatus.INIT_STATUS);
+      case TIMEOUT_STATUS:
+        datasourceStatus.setStatus(INIT_STATUS);
         this.hbStatus.setErrorCount(0);
         break;
       default:
-        datasourceStatus.setStatus(DatasourceStatus.OK_STATUS);
+        datasourceStatus.setStatus(OK_STATUS);
     }
     sendDataSourceStatus(datasourceStatus);
   }
@@ -115,7 +119,7 @@ public abstract class HeartbeatFlow {
     this.hbStatus.incrementErrorCount();
     setTaskquitDetector();
     if (this.hbStatus.getErrorCount() >= this.hbStatus.getMaxRetry()) {
-      datasourceStatus.setStatus(DatasourceStatus.TIMEOUT_STATUS);
+      datasourceStatus.setStatus(DatasourceState.TIMEOUT_STATUS);
       sendDataSourceStatus(datasourceStatus);
       this.hbStatus.setErrorCount(0);
     }

@@ -17,6 +17,7 @@ package io.mycat.replica.heartbeat.strategy;
 import io.mycat.GlobalConst;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import io.mycat.replica.heartbeat.DatasourceState;
 import io.mycat.replica.heartbeat.DatasourceStatus;
 import io.mycat.replica.heartbeat.HeartBeatStrategy;
 import io.mycat.replica.heartbeat.HeartbeatFlow;
@@ -47,7 +48,7 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
       if (Slave_IO_Running != null
           && Slave_IO_Running.equals(Slave_SQL_Running)
           && Slave_SQL_Running.equals("Yes")) {
-        datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_NORMAL);
+        datasourceStatus.setDbSynStatus(DatasourceState.DB_SYN_NORMAL);
         Long Behind_Master = (Long) resultResult.get("Seconds_Behind_Master");
         if (Behind_Master > heartbeatFlow.getSlaveThreshold()) {
           datasourceStatus.setSlaveBehindMaster(true);
@@ -61,20 +62,20 @@ public class MySQLMasterSlaveBeatStrategy extends HeartBeatStrategy {
             resultResult != null ? (String) resultResult.get("Last_IO_Error") : null;
         System.out.println("found MySQL master/slave Replication err !!! "
             + Last_IO_Error);
-        datasourceStatus.setDbSynStatus(DatasourceStatus.DB_SYN_ERROR);
+        datasourceStatus.setDbSynStatus(DatasourceState.DB_SYN_ERROR);
       }
     }
-    heartbeatFlow.setStatus(datasourceStatus, DatasourceStatus.OK_STATUS);
+    heartbeatFlow.setStatus(datasourceStatus, DatasourceState.OK_STATUS);
   }
 
   @Override
   public void onError(String errorMessage) {
-    heartbeatFlow.setStatus(DatasourceStatus.ERROR_STATUS);
+    heartbeatFlow.setStatus(DatasourceState.ERROR_STATUS);
   }
 
   @Override
   public void onException(Exception e) {
-    heartbeatFlow.setStatus(DatasourceStatus.ERROR_STATUS);
+    heartbeatFlow.setStatus(DatasourceState.ERROR_STATUS);
   }
 
   public MySQLMasterSlaveBeatStrategy() {

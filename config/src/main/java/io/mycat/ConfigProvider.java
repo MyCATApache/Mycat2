@@ -20,7 +20,7 @@ public interface ConfigProvider {
     void init(Map<String,String> config) throws Exception;
     void fetchConfig(String path) throws Exception;
     void fetchConfig() throws Exception;
-    void report(Map<String,Object> changed);
+    void report(MycatConfig changed);
 
     public MycatConfig currentConfig();
 }
