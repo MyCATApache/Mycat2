@@ -152,12 +152,16 @@ public class ExplainVisitor implements NodeVisitor {
         append(op.getFun());
         enter();
         append("(");
-        for (Schema schema : setOpSchema.getSchemas()) {
+        List<Schema> schemas = setOpSchema.getSchemas();
+        int size = schemas.size();
+        for (int i = 0; i < size - 1; i++) {
+            Schema schema = schemas.get(i);
             append("\n ");
             schema.accept(this);
             append(",");
         }
-
+        append("\n ");
+        schemas.get(size - 1).accept(this);
         append("\n");
         append(")");
         leave();
@@ -493,6 +497,6 @@ public class ExplainVisitor implements NodeVisitor {
 
 
     public String getString() {
-        return  sb.toString();
+        return sb.toString();
     }
 }

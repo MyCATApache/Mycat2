@@ -71,7 +71,7 @@ public class ContextRunner {
     public static final String EXPLAIN = "explainSql";
     public static final String EXPLAIN_HBT = "explainPlan";
     public static final String DISTRIBUTED_QUERY = ("distributedQuery");
-    public static final String EXECUTE_PLAN = ("plan");
+    public static final String EXECUTE_PLAN = ("executePlan");
     public static final String USE_STATEMENT = ("useStatement");
     public static final String COMMIT = ("commit");
     public static final String BEGIN = ("begin");

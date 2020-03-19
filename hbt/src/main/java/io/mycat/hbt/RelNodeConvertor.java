@@ -133,7 +133,7 @@ public class RelNodeConvertor {
         List<RelNode> inputs = join.getInputs();
         Schema left = convertRelNode(inputs.get(0));
         Schema right = convertRelNode(inputs.get(1));
-        return new JoinSchema(joinType(joinType, false), exprExplain.getExpr(condition), left, right);
+        return new JoinSchema(joinType(joinType, false), exprExplain.getExpr(condition),  right,left);
     }
 
     private static Schema getJoinLeftExpr(List<String> leftFieldNames, Schema left, List<String> list) {

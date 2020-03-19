@@ -180,7 +180,7 @@ public class HBTQueryConvertor {
         String sql = input.getSql();
         List<FieldType> fieldTypes = input.getFieldTypes();
         RelDataType relDataType;
-        if (fieldTypes == null) {
+        if (fieldTypes == null||fieldTypes.isEmpty()) {
             MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(context);
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
             sqlStatement.accept(new TypeInference());
