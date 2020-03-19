@@ -80,7 +80,7 @@ public class TestUtil {
     }
 
     public static String getString(ResultSet resultSet) throws SQLException {
-        return TextConvertor.dump(resultSet).replaceAll("\r","").replaceAll("\n","");
+        return TextConvertor.dumpResultSet(resultSet).replaceAll("\r","").replaceAll("\n","");
     }
 
 }
