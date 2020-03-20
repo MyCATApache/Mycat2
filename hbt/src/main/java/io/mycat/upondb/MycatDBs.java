@@ -71,6 +71,16 @@ public class MycatDBs {
             }
 
             @Override
+            public RowBaseIterator queryDefaultTarget(String sql) {
+                return dataContext.queryDefaultTarget(sql);
+            }
+
+            @Override
+            public UpdateRowIteratorResponse updateDefaultTarget(String sql) {
+                return null;
+            }
+
+            @Override
             public UpdateRowIteratorResponse update(String targetName, List<String> sqls) {
                 long updateCount = 0;
                 long lastInsertId = 0;

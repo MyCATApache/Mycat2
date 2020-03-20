@@ -270,6 +270,14 @@ public class MycatDataContextImpl implements MycatDataContext {
     }
 
     @Override
+    public RowBaseIterator queryDefaultTarget(String sql) {
+        MycatConfig config = RootHelper.INSTANCE.getConfigProvider().currentConfig();
+        String targetName = config.getMetadata().getPrototype().getTargetName();
+        DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
+        return defaultConnection.executeQuery(sql);
+    }
+
+    @Override
     public void close() {
         if (transactionSession!=null){
             transactionSession.check();

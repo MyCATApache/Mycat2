@@ -97,6 +97,8 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
             SQLTableSource from = queryBlock.getFrom();
             if (from != null) {
                 return complieQuery(templateSql, id, sqlStatement, dbContext);
+            } else {
+                return getPrepareObject(templateSql, dbContext);
             }
         }
         MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
@@ -111,6 +113,37 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
             function = updateHandler(schema);
         }
         return getMycatPrepareObject(dbContext, templateSql, id, sqlStatement, variantRefCount, function);
+    }
+
+    @NotNull
+    private MycatSQLPrepareObject getPrepareObject(String templateSql, MycatDBContext dbContext) {
+        return new MycatSQLPrepareObject(null,dbContext, templateSql) {
+
+            @Override
+            public MycatRowMetaData prepareParams() {
+                return null;
+            }
+
+            @Override
+            public MycatRowMetaData resultSetRowType() {
+                return null;
+            }
+
+            @Override
+            public PlanRunner plan(List<Object> params) {
+                return new PlanRunner() {
+                    @Override
+                    public List<String> explain() {
+                        return Arrays.asList("direct query sql:",templateSql);
+                    }
+
+                    @Override
+                    public RowBaseIterator run() {
+                        return dbContext.queryDefaultTarget( templateSql);
+                    }
+                };
+            }
+        };
     }
 
     @NotNull

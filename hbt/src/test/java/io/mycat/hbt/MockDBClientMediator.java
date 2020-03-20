@@ -67,6 +67,16 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     }
 
     @Override
+    public RowBaseIterator queryDefaultTarget(String sql) {
+        return null;
+    }
+
+    @Override
+    public UpdateRowIteratorResponse updateDefaultTarget(String sql) {
+        return null;
+    }
+
+    @Override
     public UpdateRowIteratorResponse update(String targetName, List<String> sqls) {
         return null;
     }

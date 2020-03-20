@@ -1,7 +1,7 @@
 /**
  * Copyright (C) <2019>  <chen junwen>
  * <p>
- * This program is free software: you can redistribute it and/or modify it under the terms of the
+ * This program is open software: you can redistribute it and/or modify it under the terms of the
  * GNU General Public License as published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
  * <p>
@@ -21,6 +21,7 @@ import io.mycat.api.collector.CollectorUtil;
 import io.mycat.api.collector.OneResultSetCollector;
 import io.mycat.beans.MySQLDatasource;
 import io.mycat.beans.mysql.packet.ErrorPacket;
+import io.mycat.boost.BoostRuntime;
 import io.mycat.buffer.BufferPool;
 import io.mycat.buffer.HeapBufferPool;
 import io.mycat.client.ClientRuntime;
@@ -49,6 +50,7 @@ import io.mycat.runtime.ProxyTransactionSession;
 import lombok.NonNull;
 import lombok.SneakyThrows;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -78,6 +80,12 @@ public enum MycatCore {
 
 
         MetadataManager.INSTANCE.load(mycatConfig);
+
+        BoostRuntime.INSTANCE.init();
+        startProxy(mycatConfig);
+    }
+
+    private void startProxy(MycatConfig mycatConfig) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, java.lang.reflect.InvocationTargetException, IOException, InterruptedException {
         ServerConfig serverConfig = mycatConfig.getServer();
 
         String bufferPoolText = Optional.ofNullable(mycatConfig.getServer()).map(i -> i.getBufferPool()).map(i -> i.getPoolName()).orElse(HeapBufferPool.class.getName());

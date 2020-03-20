@@ -29,6 +29,8 @@ public interface MycatDBClientBased {
     UpdateRowIteratorResponse update(String targetName, String sql);
 
     RowBaseIterator query(String targetName, String sql);
+    RowBaseIterator queryDefaultTarget(String sql);
+    UpdateRowIteratorResponse updateDefaultTarget( String sql);
 
     UpdateRowIteratorResponse update(String targetName, List<String> sqls);
 

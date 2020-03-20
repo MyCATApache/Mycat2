@@ -8,5 +8,6 @@ import lombok.EqualsAndHashCode;
 public class CacheConfig {
     private Duration refreshInterval;
     private Duration initialDelay;
-    private String sql;
+    private String text;
+    private String command;
 }

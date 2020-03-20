@@ -99,6 +99,8 @@ public interface MycatDataContext extends Wrapper,SessionOpt {
 
     public RowBaseIterator query(String targetName, String sql) ;
 
+    public RowBaseIterator queryDefaultTarget(String sql) ;
+
     @Override
    default boolean continueBindThreadIfTransactionNeed(){
         return isInTransaction();

@@ -1,21 +1,27 @@
 package io.mycat.lib.impl;
 
+import io.mycat.RootHelper;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatResultSetType;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 
 /**
  * @author chen junwen
  */
+@Log4j
 public class ResultSetCacheImpl implements ResultSetCacheRecorder {
     static final MycatLogger LOGGER = MycatLoggerFactory.getLogger(ResultSetCacheImpl.class);
     FileChannel channel;
@@ -26,10 +32,27 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
 
     private int startPosition;
     private int rowStartPosition;
+    private boolean deleteOnExit;
 
-    public ResultSetCacheImpl(String flie) {
+    @SneakyThrows
+    public ResultSetCacheImpl(String simpleName)throws IOException {
+        this(Files.createTempFile(Paths.get(getTmpDir()),"resultSetCache",simpleName).toString(),true);
+    }
+
+    private static String getTmpDir() {
+        String tempDirectory  = "";
         try {
-            this.flie = getFile(flie);
+            tempDirectory = RootHelper.INSTANCE.getConfigProvider().currentConfig().getServer().getTempDirectory();
+        }catch (Exception e){
+            log.warn(e);
+        }
+        return tempDirectory;
+    }
+
+    public ResultSetCacheImpl(String file,boolean deleteOnExit) {
+        this.deleteOnExit = deleteOnExit;
+        try {
+            this.flie = getFile(file);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -56,12 +79,20 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
         if (channel != null) {
             channel.force(false);
         }
+
     }
 
     @Override
     public void close() throws IOException {
         if (channel != null) {
             channel.close();
+        }
+        if (deleteOnExit){
+            if(flie.exists()){
+                if(flie.delete()) {
+                    flie.deleteOnExit();
+                }
+            }
         }
     }
 
@@ -202,6 +233,11 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
         };
     }
 
+    @Override
+    public void finalize() throws Throwable {
+        super.finalize();
+        close();
+    }
 
     static class TokenImpl implements Token {
         final int startPosition;
@@ -213,6 +249,9 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
             this.rowStartPosition = rowStartPosition;
             this.endPosition = endPosition;
         }
+    }
 
+    public File getFlie() {
+        return flie;
     }
 }

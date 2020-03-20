@@ -17,8 +17,11 @@ package io.mycat.config;
 
 import lombok.Data;
 
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Data
@@ -30,6 +33,15 @@ public class ServerConfig {
     private Worker worker = new Worker();
     private BufferPoolConfig bufferPool= new BufferPoolConfig();
     private TimerConfig timer = new TimerConfig(3,3,TimeUnit.SECONDS.name());
+    private String tempDirectory;
+
+    {
+        try {
+            tempDirectory = Paths.get(Objects.requireNonNull(ServerConfig.class.getClassLoader().getResource("")).toURI()).toString();
+        } catch (URISyntaxException e) {
+            e.printStackTrace();
+        }
+    }
 
     @Data
     public static class Worker {

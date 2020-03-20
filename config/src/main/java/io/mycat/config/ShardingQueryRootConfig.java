@@ -3,6 +3,7 @@ package io.mycat.config;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.*;
 
@@ -60,10 +61,13 @@ public class ShardingQueryRootConfig {
 
     @Data
     @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
     public static class PrototypeServer{
-        String url;
-        String user;
-        String password;
+        String url = "jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC";
+        String user = "root";
+        String password = "123456";
+        String targetName = "defaultDs";
     }
 
 }
