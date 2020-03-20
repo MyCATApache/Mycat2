@@ -355,6 +355,11 @@ public enum ClientRuntime {
             }
 
             @Override
+            public RowBaseIterator queryDefaultTarget(String sql) {
+                return dataContext.queryDefaultTarget(sql);
+            }
+
+            @Override
             public boolean continueBindThreadIfTransactionNeed() {
                 return dataContext.continueBindThreadIfTransactionNeed();
             }
