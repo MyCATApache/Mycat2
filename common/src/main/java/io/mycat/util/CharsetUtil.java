@@ -43,7 +43,7 @@ public class CharsetUtil {
   private static final Map<String, Integer> CHARSET_TO_INDEX = new HashMap<>();
 
   public static void init(String root) {
-
+    INDEX_TO_CHARSET.put(-1, "utf8mb4");//客户端连接-1跟随连接用的编码
     // index_to_charset.properties
     INDEX_TO_CHARSET.put(1, "big5");
     INDEX_TO_CHARSET.put(8, "latin1");

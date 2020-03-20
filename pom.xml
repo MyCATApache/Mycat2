@@ -18,6 +18,7 @@
     <module>replica</module>
       <module>pattern</module>
       <module>hbt</module>
+      <module>boost</module>
   </modules>
   <packaging>pom</packaging>
   <name>parent</name>
