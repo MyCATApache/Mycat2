@@ -255,15 +255,14 @@ public class HBTBaseTest implements HBTBuiltinHelper {
 
     @Test
     public void selectFromGroupByKeyAvg() throws IOException {
-        String sugar = "fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
-        String text = "groupBy(fromTable(db1,travelrecord),keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().approximate().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
+        String sugar = "fromTable(db1,travelrecord).groupBy(keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
+        String text = "groupBy(fromTable(db1,travelrecord),keys(groupKey(`id`)),aggregating(avg(`id`).alias(a).distinct().ignoreNulls().filter(true).orderBy(order(user_id,DESC))))";
         Schema schema = groupBy(fromTable("db1", "travelrecord"), Arrays.asList(groupKey(Arrays.asList(id(("id"))))),
-                Arrays.asList(new AggregateCall("avg", Arrays.asList(id(("id")))).alias("a").distinct().approximate().ignoreNulls().filter(literal(true))
+                Arrays.asList(new AggregateCall("avg", Arrays.asList(id(("id")))).alias("a").distinct().ignoreNulls().filter(literal(true))
                         .orderBy(Arrays.asList(order("user_id", Direction.DESC)))));
         testText(sugar, text, schema);
 
-        testSchema(schema, "LogicalAggregate(group=[{0}], agg#0=[AVG(APPROXIMATE DISTINCT $0) WITHIN GROUP ([1 DESC]) FILTER $2])  LogicalProject(id=[$0], user_id=[$1], $f2=[true])    LogicalTableScan(table=[[db1, travelrecord]])\n" +
-                " ");
+        testSchema(schema, "LogicalAggregate(group=[{0}], agg#0=[AVG(DISTINCT $0) WITHIN GROUP ([1 DESC]) FILTER $2])  LogicalProject(id=[$0], user_id=[$1], $f2=[true])    LogicalTableScan(table=[[db1, travelrecord]])");
 
 
         testDumpResultSet(schema, "(1,1.0)(2,2.0)");
