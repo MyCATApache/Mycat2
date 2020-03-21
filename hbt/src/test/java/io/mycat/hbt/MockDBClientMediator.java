@@ -137,6 +137,11 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     }
 
     @Override
+    public String resolveFinalTargetName(String targetName) {
+        return targetName;
+    }
+
+    @Override
     public void recycleResource() {
 
     }

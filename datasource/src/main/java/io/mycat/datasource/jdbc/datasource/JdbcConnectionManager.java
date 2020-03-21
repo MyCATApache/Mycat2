@@ -60,6 +60,7 @@ public class JdbcConnectionManager implements ConnectionManager {
 
     public DefaultConnection getConnection(String name, Boolean autocommit,
                                            int transactionIsolation, boolean readOnly) {
+        Objects.requireNonNull(name);
         JdbcDataSource key = dataSourceMap.get(name);
         if (key.counter.updateAndGet(operand -> {
             if (operand < key.getMaxCon()) {

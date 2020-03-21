@@ -383,6 +383,11 @@ public enum ClientRuntime {
             }
 
             @Override
+            public String resolveDatasourceTargetName(String targetName) {
+                return dataContext.resolveDatasourceTargetName(targetName);
+            }
+
+            @Override
             public <T> T unwrap(Class<T> iface) throws Exception {
                 return dataContext.unwrap(iface);
             }

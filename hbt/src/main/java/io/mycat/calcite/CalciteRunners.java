@@ -7,7 +7,6 @@ import io.mycat.calcite.prepare.MycatCalcitePlanner;
 import io.mycat.calcite.resultset.EnumeratorRowIterator;
 import io.mycat.calcite.table.PreComputationSQLTable;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j;
 import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.plan.RelOptUtil;
@@ -16,6 +15,8 @@ import org.apache.calcite.rel.logical.ToLogicalConverter;
 import org.apache.calcite.runtime.ArrayBindable;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.tools.RelRunners;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -24,9 +25,8 @@ import java.util.function.Supplier;
 
 import static io.mycat.calcite.prepare.MycatCalcitePlanner.toPhysical;
 
-@Log4j
 public class CalciteRunners {
-
+    private final static Logger LOGGER = LoggerFactory.getLogger(CalciteRunners.class);
     @SneakyThrows
     public static RelNode complie(MycatCalcitePlanner planner, String sql) {
         SqlNode sqlNode = planner.parse(sql);
@@ -64,14 +64,14 @@ public class CalciteRunners {
                     return new EnumeratorRowIterator(mycatRowMetaData, enumerator);
                 };
             }catch (Throwable e){
-                log.info("该关系表达式不是原生的"+relNode);
-                log.error(e);
+                LOGGER.info("该关系表达式不是原生的"+relNode);
+                LOGGER.error("",e);
             }
             PreparedStatement run = RelRunners.run(relNode);
             ResultSet resultSet = run.executeQuery();
             return ()->new JdbcRowBaseIterator(run,resultSet);
         } catch (java.lang.AssertionError | Exception e) {//实在运行不了使用原来的方法运行
-            log.error(e);
+            LOGGER.error("",e);
             throw e;
         }
     }

@@ -1,19 +1,23 @@
 package io.mycat.datasource.jdbc.transactionSession;
 
+import io.mycat.DataSourceNearness;
 import io.mycat.MycatDataContext;
 import io.mycat.TransactionSession;
 import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
+import io.mycat.replica.DataSourceNearnessImpl;
 import lombok.SneakyThrows;
 
 import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public abstract class TransactionSessionTemplate implements TransactionSession {
     protected final Map<String, DefaultConnection> updateConnectionMap = new HashMap<>();
-   final MycatDataContext dataContext;
+    protected final DataSourceNearness dataSourceNearness = new DataSourceNearnessImpl();
+    final MycatDataContext dataContext;
 
     public TransactionSessionTemplate(MycatDataContext dataContext) {
         this.dataContext = dataContext;
@@ -24,7 +28,7 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     }
 
     public void setAutocommit(boolean autocommit) {
-        dataContext.setAutoCommit( autocommit);
+        dataContext.setAutoCommit(autocommit);
     }
 
     public boolean isAutocommit() {
@@ -61,11 +65,14 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
 
     @Override
     public <T> T getConnection(
-            String jdbcDataSource) {
+            String targetName) {
         if (!isAutocommit()) {
             begin();
         }
-        return(T) callBackConnection(jdbcDataSource,isAutocommit(),getTransactionIsolation() , isReadOnly());
+
+        dataSourceNearness.setUpdate(isInTransaction());
+        String dataSourceByTargetName = Objects.requireNonNull(dataSourceNearness.getDataSourceByTargetName(targetName));
+        return (T) callBackConnection( dataSourceByTargetName, isAutocommit(), getTransactionIsolation(), isReadOnly());
     }
 
     abstract protected void callBackBegin();
@@ -104,6 +111,12 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
             }
         }
         updateConnectionMap.clear();
+        dataSourceNearness.clear();
+    }
+
+    @Override
+    public String resolveFinalTargetName(String targetName) {
+        return dataSourceNearness.getDataSourceByTargetName(targetName);
     }
 
     public int getTransactionIsolation() {
@@ -113,16 +126,17 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
     @Override
     @SneakyThrows
     public void check() {
-        if (!isInTransaction()){
+        if (!isInTransaction()) {
             Set<Map.Entry<String, DefaultConnection>> entries = updateConnectionMap.entrySet();
             for (Map.Entry<String, DefaultConnection> entry : entries) {
                 Connection rawConnection = entry.getValue().getRawConnection();
-                if (!rawConnection.getAutoCommit()){
+                if (!rawConnection.getAutoCommit()) {
                     rawConnection.rollback();
                 }
                 rawConnection.close();
             }
             updateConnectionMap.clear();
+            dataSourceNearness.clear();
         }
     }
 
@@ -139,5 +153,6 @@ public abstract class TransactionSessionTemplate implements TransactionSession {
             }
         }
         this.updateConnectionMap.clear();
+        this.dataSourceNearness.clear();
     }
 }

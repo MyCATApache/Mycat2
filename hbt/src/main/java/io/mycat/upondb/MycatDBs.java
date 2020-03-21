@@ -157,6 +157,11 @@ public class MycatDBs {
             public AtomicBoolean cancelFlag() {
                 return dataContext.getCancelFlag();
             }
+
+            @Override
+            public String resolveFinalTargetName(String targetName) {
+                return dataContext.resolveDatasourceTargetName(targetName);
+            }
         };
     }
 }

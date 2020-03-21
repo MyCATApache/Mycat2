@@ -382,8 +382,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
             visitor.setInputParameters(params);
             sqlStatement.accept(visitor);
             String sql = out.toString();
-            Iterator apply = accept.apply(schema, sql);
-            return apply;
+            return accept.apply(schema, sql);
         }, uponDBContext));
 
     }

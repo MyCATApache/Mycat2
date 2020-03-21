@@ -7,6 +7,8 @@ import io.mycat.datasource.jdbc.JdbcRuntime;
 import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.datasource.jdbc.transactionSession.TransactionSessionTemplate;
 
+import java.util.Objects;
+
 import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 
 public class LocalTransactionSession extends TransactionSessionTemplate implements TransactionSession {
@@ -41,6 +43,7 @@ public class LocalTransactionSession extends TransactionSessionTemplate implemen
 
     @Override
     protected DefaultConnection callBackConnection(String jdbcDataSource, boolean autocommit, int transactionIsolation, boolean readOnly) {
+        Objects.requireNonNull(jdbcDataSource);
         return updateConnectionMap.compute(jdbcDataSource,
                 (dataSource, absractConnection) -> {
                     if (absractConnection != null && !absractConnection.isClosed()) {

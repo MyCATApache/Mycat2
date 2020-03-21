@@ -39,7 +39,7 @@ public interface TransactionSession {
 
     boolean isAutocommit();
 
-    <T> T getConnection(String jdbcDataSource);
+    <T> T getConnection(String targetName);
 
     void reset();
 
@@ -49,7 +49,6 @@ public interface TransactionSession {
 
     public void setReadOnly(boolean readOnly);
 
-
     int getTransactionIsolation();
 
     ThreadUsageEnum getThreadUsageEnum();
@@ -57,4 +56,6 @@ public interface TransactionSession {
     void check();
 
     void close();
+
+    String resolveFinalTargetName(String targetName);
 }

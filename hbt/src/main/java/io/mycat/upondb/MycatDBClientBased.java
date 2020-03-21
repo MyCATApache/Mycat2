@@ -51,4 +51,6 @@ public interface MycatDBClientBased {
     void close();
 
     AtomicBoolean cancelFlag();
+
+   String resolveFinalTargetName(String targetName);
 }

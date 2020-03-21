@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.nio.charset.Charset;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Getter
@@ -260,7 +261,7 @@ public class MycatDataContextImpl implements MycatDataContext {
     @Override
     public UpdateRowIteratorResponse update(String targetName, String sql) {
         DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, true, null, transactionSession);
-        return defaultConnection.executeUpdate(sql,true,transactionSession.getServerStatus());
+        return defaultConnection.executeUpdate(sql, true, transactionSession.getServerStatus());
     }
 
     @Override
@@ -273,13 +274,18 @@ public class MycatDataContextImpl implements MycatDataContext {
     public RowBaseIterator queryDefaultTarget(String sql) {
         MycatConfig config = RootHelper.INSTANCE.getConfigProvider().currentConfig();
         String targetName = config.getMetadata().getPrototype().getTargetName();
-        DefaultConnection defaultConnection = TransactionSessionUtil.getDefaultConnection(targetName, false, null, transactionSession);
-        return defaultConnection.executeQuery(sql);
+        DefaultConnection connection = transactionSession.getConnection(targetName);
+        Objects.requireNonNull(connection);
+        return connection.executeQuery(sql);
+    }
+
+    public String resolveDatasourceTargetName(String targetName) {
+        return transactionSession.resolveFinalTargetName(targetName);
     }
 
     @Override
     public void close() {
-        if (transactionSession!=null){
+        if (transactionSession != null) {
             transactionSession.check();
             transactionSession.close();
         }
@@ -288,7 +294,7 @@ public class MycatDataContextImpl implements MycatDataContext {
 
     @Override
     public void block(Runnable runnable) {
-        runner.block(this,runnable);
+        runner.block(this, runnable);
     }
 
 }

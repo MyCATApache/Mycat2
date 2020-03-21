@@ -99,25 +99,25 @@ public enum ReplicaSelectorRuntime {
                 c.notifyChangeAlive(true);
             });
         } else {
-            collect.forEach(c->{
+            collect.forEach(c -> {
                 c.notifyChangeSelectRead(true);
                 c.notifyChangeAlive(true);
             });
             this.schedule = ScheduleUtil.getTimer().scheduleAtFixedRate(() -> {
-                    for (Map.Entry<String, ReplicaDataSourceSelector> stringReplicaDataSourceSelectorEntry : map.entrySet()) {
-                        for (String datasourceName : stringReplicaDataSourceSelectorEntry.getValue().datasourceMap.keySet()) {
-                            String replicaName = stringReplicaDataSourceSelectorEntry.getKey();
-                            HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(replicaName+"."+datasourceName);
-                            if (heartbeatFlow != null) {
-                                if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debug("heartbeat");
+                        for (Map.Entry<String, ReplicaDataSourceSelector> stringReplicaDataSourceSelectorEntry : map.entrySet()) {
+                            for (String datasourceName : stringReplicaDataSourceSelectorEntry.getValue().datasourceMap.keySet()) {
+                                String replicaName = stringReplicaDataSourceSelectorEntry.getKey();
+                                HeartbeatFlow heartbeatFlow = heartbeatDetectorMap.get(replicaName + "." + datasourceName);
+                                if (heartbeatFlow != null) {
+                                    if (LOGGER.isDebugEnabled()) {
+                                        LOGGER.debug("heartbeat");
+                                    }
+                                    heartbeatFlow.heartbeat();
                                 }
-                                heartbeatFlow.heartbeat();
                             }
                         }
                     }
-                }
-            , timerConfig.getInitialDelay(), timerConfig.getPeriod(), TimeUnit.valueOf(timerConfig.getTimeUnit()));
+                    , timerConfig.getInitialDelay(), timerConfig.getPeriod(), TimeUnit.valueOf(timerConfig.getTimeUnit()));
         }
     }
 
@@ -208,9 +208,9 @@ public enum ReplicaSelectorRuntime {
         LoadBalanceStrategy writeLB
                 = PlugRuntime.INSTCANE
                 .getLoadBalanceByBalanceName(replicaConfig.getWriteBalanceName());
-        int maxRequestCount = replicaConfig.getMaxCon()==null?Integer.MAX_VALUE:replicaConfig.getMaxCon();
+        int maxRequestCount = replicaConfig.getMaxCon() == null ? Integer.MAX_VALUE : replicaConfig.getMaxCon();
         ReplicaDataSourceSelector selector = registerCluster(name, balanceType,
-                replicaType, maxRequestCount,switchType, readLB, writeLB);
+                replicaType, maxRequestCount, switchType, readLB, writeLB);
 
         registerDatasource(datasourceConfigMap, selector, replicaConfig.getMasters(), true);
         registerDatasource(datasourceConfigMap, selector, replicaConfig.getReplicas(), false);
@@ -244,7 +244,7 @@ public enum ReplicaSelectorRuntime {
                                                       ReplicaSwitchType switchType, LoadBalanceStrategy readLB,
                                                       LoadBalanceStrategy writeLB) {
         return map.computeIfAbsent(replicaName,
-                s -> new ReplicaDataSourceSelector(replicaName, balanceType, type,maxRequestCount, switchType, readLB,
+                s -> new ReplicaDataSourceSelector(replicaName, balanceType, type, maxRequestCount, switchType, readLB,
                         writeLB));
     }
 //////////////////////////////////////////public read///////////////////////////////////////////////////////////////////
@@ -309,7 +309,7 @@ public enum ReplicaSelectorRuntime {
         }
         if (master) {
             return getWriteDatasourceByReplicaName(replicaName, balanceStrategy);
-        }else {
+        } else {
             return getDatasource(balanceStrategy, selector,
                     selector.defaultReadLoadBalanceStrategy, selector.getDataSourceByLoadBalacneType());
         }
@@ -362,4 +362,7 @@ public enum ReplicaSelectorRuntime {
         return strategyProvider;
     }
 
+    public boolean isReplicaName(String targetName) {
+        return map.containsKey(targetName);
+    }
 }

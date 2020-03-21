@@ -20,6 +20,7 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.MycatRelBuilder;
 import io.mycat.calcite.rules.PushDownLogicTable;
 import io.mycat.calcite.table.*;
+import io.mycat.upondb.MycatDBContext;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.jdbc.CalciteSchema;
@@ -370,13 +371,14 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
     }
 
     public List<PreComputationSQLTable> preComputeSeq(RelNode relNode) {
+        MycatDBContext uponDBContext = dataContext.getUponDBContext();
         Map<String, List<PreComputationSQLTable>> map = new HashMap<>();
         relNode.accept(new RelShuttleImpl() {
             @Override
             public RelNode visit(TableScan scan) {
                 PreComputationSQLTable unwrap = scan.getTable().unwrap(PreComputationSQLTable.class);
                 if (unwrap != null) {
-                    List<PreComputationSQLTable> preComputationSQLTables = map.computeIfAbsent(unwrap.getTargetName(), s -> new ArrayList<>(1));
+                    List<PreComputationSQLTable> preComputationSQLTables = map.computeIfAbsent(uponDBContext.resolveFinalTargetName(unwrap.getTargetName()), s -> new ArrayList<>(1));
                     preComputationSQLTables.add(unwrap);
                 }
                 return super.visit(scan);

@@ -8,7 +8,7 @@ import io.mycat.beans.mysql.MySQLServerStatusFlags;
 import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public interface MycatDataContext extends Wrapper,SessionOpt {
+public interface MycatDataContext extends Wrapper, SessionOpt {
 
     String transactionType();
 
@@ -95,16 +95,20 @@ public interface MycatDataContext extends Wrapper,SessionOpt {
 
     boolean isReadOnly();
 
-    public UpdateRowIteratorResponse update(String targetName, String sql) ;
+    public UpdateRowIteratorResponse update(String targetName, String sql);
 
-    public RowBaseIterator query(String targetName, String sql) ;
+    public RowBaseIterator query(String targetName, String sql);
 
-    public RowBaseIterator queryDefaultTarget(String sql) ;
+    public RowBaseIterator queryDefaultTarget(String sql);
 
     @Override
-   default boolean continueBindThreadIfTransactionNeed(){
+    default boolean continueBindThreadIfTransactionNeed() {
         return isInTransaction();
     }
-   void close();
-   void block(Runnable runnable);
+
+    void close();
+
+    void block(Runnable runnable);
+
+    public String resolveDatasourceTargetName(String targetName);
 }
