@@ -15,9 +15,11 @@
 package io.mycat.pattern;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import lombok.extern.log4j.Log4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -59,10 +61,11 @@ public interface GPatternDFG {
                 lastState = state;
                 GPatternToken token = (GPatternToken) format.next();
                 if ("{".equals(token.getSymbol())) {
-                    if (state == this.rootState){
-                        throw new GPatternException.NameSyntaxException("{0}","'{' name at pos 0,{不能在首位置");
+                    if (state == this.rootState) {
+                        throw new GPatternException.NameSyntaxException("{0}", "'{' name at pos 0,{不能在首位置");
                     }
-                    if (!format.hasNext()) throw new GPatternException.NameSyntaxException("'{' name ends early,没有匹配的}");
+                    if (!format.hasNext())
+                        throw new GPatternException.NameSyntaxException("'{' name ends early,没有匹配的}");
                     String name = format.next().getSymbol().trim();
                     if (lastName != null)
                         throw new GPatternException.NameAdjacentException("'{'{0}'}' '{'{1}'}' is not allowed", lastName, name);
@@ -124,6 +127,7 @@ public interface GPatternDFG {
         }
 
 
+        @Log4j
         public static class State {
             final int depth;
             public GPatternSeq nextToken;
@@ -140,7 +144,7 @@ public interface GPatternDFG {
 
             public State addState(GPatternToken next) {
                 if (name != null) {
-                    throw new GPatternException.PatternConflictException("'has {' {0} '}' but try match const token ,pos:{1} 通配符和常量分支token {2} 不能同时存在",name,depth,next.getSymbol());
+                    log.warn(MessageFormat.format("'has {' {0} '}' but try match const token", name, next.getSymbol()));
                 }
                 if (success.containsKey(next)) {
                     return success.get(next);
@@ -153,8 +157,9 @@ public interface GPatternDFG {
 
             public void addWildcard(String name, State matcher) {
                 if (!success.isEmpty()) {
-                    throw new GPatternException.PatternConflictException("'{' {0} '}' '{' {1} '}' are ambiguous", this.success, name);
+                    log.warn(MessageFormat.format("'{' {0} '}' '{' {1} '}' are ambiguous",this.success.keySet(), name));
                 }
+
                 if (this.name == null) {
                     this.name = name;
                     this.matcher = matcher;
@@ -222,6 +227,9 @@ public interface GPatternDFG {
             if (this.state == null) return false;
             DFGImpl.State orign = this.state;
             this.state = this.state.accept(token, token.getStartOffset(), token.getEndOffset(), this);
+            if (this.state == null && orign != null && orign.isEnd()&&orign.name!=null) {//通配符匹配
+                this.state = orign;
+            }
             return ((orign) != state);
         }
 

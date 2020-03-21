@@ -26,11 +26,32 @@ import java.util.Map;
  **/
 public class GPatternRuleTest {
 
-    @Test(expected = GPatternException.PatternConflictException.class)
+    @Test()
     public void test0() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT {any} ");
-        int id2 = patternBuilder.addRule("SELECT 1 ");
+        int id1 = patternBuilder.addRule("SELECT 1 ");
+        int id2 = patternBuilder.addRule("SELECT 2 {any2}");
+        int id3 = patternBuilder.addRule("SELECT  3 4");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("SELECT id");
+
+
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(0, id);
+        Assert.assertEquals("id", gPattern.toContextMap(matcher).get("any"));
+
+        GPatternMatcher matcher1 = gPattern.matcher("SELECT 1");
+        Assert.assertTrue(matcher1.acceptAll());
+        Assert.assertEquals(1, id1);
+
+        GPatternMatcher matcher2 = gPattern.matcher("SELECT 2 3");
+        Assert.assertTrue(matcher2.acceptAll());
+        Assert.assertEquals(2, id2);
+        Assert.assertEquals("3", gPattern.toContextMap(matcher).get("any2"));
+
+        GPatternMatcher matcher3 = gPattern.matcher("SELECT  3");
+        Assert.assertFalse(matcher3.acceptAll());
     }
 
     @Test
@@ -219,7 +240,7 @@ public class GPatternRuleTest {
         Assert.assertEquals("travelrecord", map.get("table2"));
     }
 
-    @Test(expected = GPatternException.PatternConflictException.class)
+    //    @Test(expected = GPatternException.PatternConflictException.class)
     public void test19() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("LIMIT {count}");
@@ -246,14 +267,20 @@ public class GPatternRuleTest {
         Assert.assertEquals(1, matcher.id());
         Assert.assertTrue(gPattern.toContextMap(matcher).isEmpty());
     }
-//warning
-//    @Test(expected = GPatternException.NameAmbiguityException.class)
-//    public void test20() {
-//        GPatternBuilder patternBuilder = new GPatternBuilder(0);
-//        int id = patternBuilder.addRule("SELECT  id FROM travelrecord LIMIT {count}");
-//        int id2 = patternBuilder.addRule("SELECT {count} FROM travelrecord LIMIT 1");
-//        GPattern gPattern = patternBuilder.createGroupPattern();
-//    }
+
+    //warning
+    //@Test(expected = GPatternException.NameAmbiguityException.class)
+//@Test(expected = GPatternException.NameAmbiguityException.class)
+    @Test()
+    public void test20() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("SELECT  id FROM travelrecord LIMIT {count2}");
+        int id2 = patternBuilder.addRule("SELECT {count} FROM travelrecord LIMIT 1");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("SELECT id FROM travelrecord LIMIT 1");
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(id, matcher.id());
+    }
 
     @Test
     public void test21() {
