@@ -17,6 +17,7 @@ public class ConcurrencyTesting {
                         try (Connection mySQLConnection = getMySQLConnection()) {
                             try (Statement statement = mySQLConnection.createStatement()) {
                                 statement.execute("select 1");
+                                statement.execute("SELECT 1  FROM db1.travelrecord");
                             }
                         } catch (Exception e) {
                             e.printStackTrace();

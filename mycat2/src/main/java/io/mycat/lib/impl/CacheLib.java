@@ -49,7 +49,7 @@ public class CacheLib {
         });
         responseRecorder.cache();
         ResultSetCacheRecorder.Token token = resultSetCacheRecorder.endRecord();
-        return new CacheFile(resultSetCacheRecorder.getFlie().toPath(), resultSetCacheRecorder, token);
+        return new CacheFile( resultSetCacheRecorder, token);
     }
 
 

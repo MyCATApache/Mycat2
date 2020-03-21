@@ -1,6 +1,7 @@
 package io.mycat.config;
 
 import lombok.Data;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,7 +12,7 @@ import java.util.Map;
 public class PatternRootConfig {
     private List<SchemaConfig> schemas = new ArrayList<>();
     private List<TextItemConfig> sqls = new ArrayList<>();
-//    private List<HandlerToSQLs> handlers = new ArrayList<>();
+    //    private List<HandlerToSQLs> handlers = new ArrayList<>();
     private Handler defaultHanlder;
     private String transactionType;
     private String defaultSchema;
@@ -30,7 +31,7 @@ public class PatternRootConfig {
 
 
     @Data
-
+    @ToString
     public static class TextItemConfig {
         String name;
         String sql;
@@ -46,10 +47,11 @@ public class PatternRootConfig {
 
     @Data
     public static class Handler {
-         List<String> hints = new ArrayList<>();
-         Map<String, String> tags;
-         String command;
-         String explain;
+        List<String> hints = new ArrayList<>();
+        Map<String, String> tags;
+        String command;
+        String explain;
+        String cache;
 //         String transactionType;
     }
 

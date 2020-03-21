@@ -101,6 +101,7 @@ public enum ClientRuntime {
                 dataContext.switchTransaction(transactionSessionType);
             }
 
+
             @Override
             public <T> T getVariable(MycatDataContextEnum name) {
                 return dataContext.getVariable(name);
@@ -190,11 +191,11 @@ public enum ClientRuntime {
                                         PatternRootConfig.TextItemConfig textItemConfig = info.map.get(matcher.id());
                                         if (textItemConfig != null) {
                                             String name = textItemConfig.getName();
-                                            return getContext(name, sql, collectionMap, map, textItemConfig);
+                                            return getContext(name, sql, collectionMap, map, textItemConfig,matcher.id(),textItemConfig.getCache()!=null);
                                         }
                                         if (info.handler != null) {
                                             String name = Objects.toString(info);
-                                            return getContext(name, sql, collectionMap, map, info.handler);
+                                            return getContext(name, sql, collectionMap, map, info.handler,null,false);
                                         }
                                     }
                                 }
@@ -208,24 +209,31 @@ public enum ClientRuntime {
                     PatternRootConfig.TextItemConfig textItemConfig = runtime.idToItem.get(matcher.id());
                     if (textItemConfig != null) {
                         String name = Objects.toString(textItemConfig);
-                        return getContext(name, sql, collectionMap, matcher.namesContext(), textItemConfig);
+                        return getContext(name, sql, collectionMap, matcher.namesContext(), textItemConfig,matcher.id(),textItemConfig.getCache()!=null);
                     }
                 }
                 if (runtimeInfo.defaultHandler != null) {
                     String name = "defaultHandler";
-                    return getContext(name, sql, collectionMap, matcher.namesContext(), runtimeInfo.defaultHandler);
+                    return getContext(name, sql, collectionMap, matcher.namesContext(), runtimeInfo.defaultHandler,null,false);
                 }
                 throw new UnsupportedOperationException();
             }
 
-            private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler) {
-                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain());
+            private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.Handler handler,Integer sqlId,
+                                       boolean cache) {
+                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,cache);
             }
 
 
             @NotNull
-            private Context getContext(String name, String sql, Map<String, Collection<String>> geTableMap, Map<String, String> namesContext, PatternRootConfig.TextItemConfig handler) {
-                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain());
+            private Context getContext(String name,
+                                       String sql,
+                                       Map<String, Collection<String>> geTableMap,
+                                       Map<String, String> namesContext,
+                                       PatternRootConfig.TextItemConfig handler,
+                                       Integer sqlId,
+                                       boolean cache) {
+                return new Context(name, sql, geTableMap, namesContext, handler.getTags(), handler.getHints(), handler.getCommand(), handler.getExplain(), sqlId,cache);
             }
 
             @Override

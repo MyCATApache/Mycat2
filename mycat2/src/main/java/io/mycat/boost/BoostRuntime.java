@@ -3,11 +3,15 @@ package io.mycat.boost;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import io.mycat.MycatConfig;
 import io.mycat.RootHelper;
 import io.mycat.ScheduleUtil;
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.beans.resultset.MycatResultSetResponse;
+import io.mycat.client.ClientRuntime;
+import io.mycat.client.Context;
+import io.mycat.client.MycatClient;
 import io.mycat.config.PatternRootConfig;
 import io.mycat.lib.impl.CacheFile;
 import io.mycat.lib.impl.CacheLib;
@@ -19,9 +23,12 @@ import io.mycat.upondb.MycatDBs;
 import io.mycat.util.StringUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -42,11 +49,14 @@ public enum BoostRuntime {
                     .build();
     public static final String DISTRIBUTED_QUERY = "distributedQuery";
     public static final String EXECUTE_PLAN = "executePlan";
+    public Set<String> getSupportCommands(){
+        return ImmutableSet.of(DISTRIBUTED_QUERY,EXECUTE_PLAN);
+    }
     final private ExecutorService executorService = Executors.newCachedThreadPool();
-    final private ConcurrentHashMap<String, Task> map = new ConcurrentHashMap<>();
+    final private ConcurrentHashMap<Integer, Task> map = new ConcurrentHashMap<>();
 
 
-    public MycatResultSetResponse getResultSetBySql(String sql){
+    public MycatResultSetResponse getResultSetBySqlId(Integer sql){
         Task task = map.get(sql);
         if (task!=null){
             return task.get();
@@ -56,65 +66,73 @@ public enum BoostRuntime {
 
     public void init() {
         map.clear();
-
-        MycatDBClientMediator client = MycatDBs.createClient(new MycatDataContextImpl(new SimpleTransactionSessionRunner()));
+        MycatDataContextImpl mycatDataContext = new MycatDataContextImpl(new SimpleTransactionSessionRunner());
+        MycatDBClientMediator db = MycatDBs.createClient(mycatDataContext);
+        MycatClient client = ClientRuntime.INSTANCE.login(mycatDataContext);
         List<CacheConfig> cacheConfigs = new ArrayList<>();
-        loadConfig(cacheConfigs);
+        loadConfig(client,cacheConfigs);
 
         ScheduledExecutorService timer = ScheduleUtil.getTimer();
 
         for (CacheConfig cacheConfig : cacheConfigs) {
-            Task task = new Task(cacheConfig) {
-                volatile CacheFile cache;
-                @Override
-                void start(CacheConfig cacheConfig) {
-
-                    timer.scheduleAtFixedRate(() -> executorService.execute(() -> cache(cacheConfig)),
-                            cacheConfig.getInitialDelay().toMillis(),
-                            cacheConfig.getRefreshInterval().toMillis(),
-                            TimeUnit.MILLISECONDS);
-                }
-
-                @Override
-                synchronized void cache(CacheConfig cacheConfig) {
-                    String command = cacheConfig.getCommand();
-                    String text = cacheConfig.getText();
-                    RowBaseIterator query = dispatcher(command, text);
-                    CacheFile cache2 = cache;
-
-                    text = text.replaceAll("[\\?\\\\/:|<>\\*]", " "); //filter ? \ / : | < > *
-                    text = text.replaceAll("\\s+", "_");
-                    cache = CacheLib.cache(() -> new TextResultSetResponse(query), text.replaceAll(" ","_"));
-                    if (cache2!=null) {
-                        cache2.close();
-                    }
-                }
-
-                private RowBaseIterator dispatcher(String command, String text) {
-                    RowBaseIterator query;
-                    switch (command) {
-                        case DISTRIBUTED_QUERY: {
-                            query = client.query(text);
-                            break;
-                        }
-                        case EXECUTE_PLAN: {
-                            query = client.executeRel(text);
-                            break;
-                        }
-                        default:
-                            throw new UnsupportedOperationException(command);
-                    }
-                    return query;
-                }
-
-                @Override
-                MycatResultSetResponse get(CacheConfig cacheConfig) {
-                    return cache.cacheResponse();
-                }
-            };
-            map.put(cacheConfig.getText(), task);
+            Task task = getTask(db, timer, cacheConfig);
+            map.put(cacheConfig.getSqlId(), task);
         }
         map.values().forEach(i -> i.start());
+    }
+
+    @NotNull
+    private BoostRuntime.Task getTask(MycatDBClientMediator db, ScheduledExecutorService timer, CacheConfig cacheConfig) {
+        return new Task(cacheConfig) {
+            volatile CacheFile cache;
+            @Override
+            void start(CacheConfig cacheConfig) {
+
+                timer.scheduleAtFixedRate(() -> executorService.execute(() -> cache(cacheConfig)),
+                        cacheConfig.getInitialDelay().toMillis(),
+                        cacheConfig.getRefreshInterval().toMillis(),
+                        TimeUnit.MILLISECONDS);
+            }
+
+            @Override
+            synchronized void cache(CacheConfig cacheConfig) {
+                String command = cacheConfig.getCommand();
+                String text = cacheConfig.getText();
+                RowBaseIterator query = dispatcher(command, text);
+                CacheFile cache2 = cache;
+
+                text = text.replaceAll("[\\?\\\\/:|<>\\*]", " "); //filter ? \ / : | < > *
+                text = text.replaceAll("\\s+", "_");
+                cache = CacheLib.cache(() -> new TextResultSetResponse(query), text.replaceAll(" ","_"));
+                if (cache2!=null) {
+                    cache2.close();
+                }
+            }
+
+            private RowBaseIterator dispatcher(String command, String text) {
+                RowBaseIterator query;
+                switch (command) {
+                    case DISTRIBUTED_QUERY: {
+                        query = db.query(text);
+                        break;
+                    }
+                    case EXECUTE_PLAN: {
+                        query = db.executeRel(text);
+                        break;
+                    }
+                    default:
+                        throw new UnsupportedOperationException(command);
+                }
+                return query;
+            }
+
+            @Override
+            MycatResultSetResponse get(CacheConfig cacheConfig) {
+                if (cache!=null) {
+                    return cache.cacheResponse();
+                }else return null;
+            }
+        };
     }
 
 
@@ -147,7 +165,7 @@ public enum BoostRuntime {
     }
 
 
-    private static void loadConfig(List<CacheConfig> cacheConfigs) {
+    private static void loadConfig(MycatClient client, List<CacheConfig> cacheConfigs) {
         MycatConfig config = RootHelper.INSTANCE.getConfigProvider().currentConfig();
         Stream<PatternRootConfig.TextItemConfig> stream1 = config.getInterceptor().getSchemas().stream().flatMap(i -> i.getSqls().stream());
         for (PatternRootConfig.TextItemConfig textItemConfig : Stream
@@ -157,6 +175,7 @@ public enum BoostRuntime {
             String command = textItemConfig.getCommand();
             CacheConfig cacheConfig = new CacheConfig();
             cacheConfig.setCommand(command);
+
             switch (command) {
                 case DISTRIBUTED_QUERY: {
                     cacheConfig.setText(textItemConfig.getSql());
@@ -169,6 +188,8 @@ public enum BoostRuntime {
                 default:
                     throw new UnsupportedOperationException(command);
             }
+            Context analysis = client.analysis(cacheConfig.getText());
+            cacheConfig.setSqlId(Objects.requireNonNull(analysis.getSqlId(),textItemConfig+" "+"sql id is null"));
 
             for (String i : KEYS_SPLITTER.split(cache)) {
                 ImmutableList<String> strings = ImmutableList.copyOf(KEY_VALUE_SPLITTER.split(i));

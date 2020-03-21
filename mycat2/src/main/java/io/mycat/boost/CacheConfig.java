@@ -10,4 +10,5 @@ public class CacheConfig {
     private Duration initialDelay;
     private String text;
     private String command;
+    private Integer sqlId;
 }

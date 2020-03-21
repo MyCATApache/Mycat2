@@ -1,6 +1,7 @@
 package io.mycat.lib.impl;
 
 import io.mycat.RootHelper;
+import io.mycat.ScheduleUtil;
 import io.mycat.beans.resultset.MycatResultSetResponse;
 import io.mycat.beans.resultset.MycatResultSetType;
 import io.mycat.logTip.MycatLogger;
@@ -17,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author chen junwen
@@ -35,21 +37,21 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
     private boolean deleteOnExit;
 
     @SneakyThrows
-    public ResultSetCacheImpl(String simpleName)throws IOException {
-        this(Files.createTempFile(Paths.get(getTmpDir()),"resultSetCache",simpleName).toString(),true);
+    public ResultSetCacheImpl(String simpleName) throws IOException {
+        this(Files.createTempFile(Paths.get(getTmpDir()), "resultSetCache", simpleName).toString(), true);
     }
 
     private static String getTmpDir() {
-        String tempDirectory  = "";
+        String tempDirectory = "";
         try {
             tempDirectory = RootHelper.INSTANCE.getConfigProvider().currentConfig().getServer().getTempDirectory();
-        }catch (Exception e){
+        } catch (Exception e) {
             log.warn(e);
         }
         return tempDirectory;
     }
 
-    public ResultSetCacheImpl(String file,boolean deleteOnExit) {
+    public ResultSetCacheImpl(String file, boolean deleteOnExit) {
         this.deleteOnExit = deleteOnExit;
         try {
             this.flie = getFile(file);
@@ -87,11 +89,15 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
         if (channel != null) {
             channel.close();
         }
-        if (deleteOnExit){
-            if(flie.exists()){
-                if(flie.delete()) {
-                    flie.deleteOnExit();
+        if (deleteOnExit) {
+            if (flie.exists()) {
+            ScheduleUtil.getTimer().scheduleWithFixedDelay(() -> {
+                try {
+                    flie.delete();
+                }catch (Exception e){
+                    LOGGER.error("",e);
                 }
+            },30,30, TimeUnit.SECONDS);
             }
         }
     }
@@ -194,9 +200,9 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
                     public ByteBuffer next() {
                         index++;
                         int length = buffer.getInt(position);
-                        int  startIndex = position + 4;
+                        int startIndex = position + 4;
                         buffer.position(startIndex);
-                        position = startIndex+ length;
+                        position = startIndex + length;
                         buffer.limit(position);
                         return buffer.slice();
                     }
@@ -217,9 +223,9 @@ public class ResultSetCacheImpl implements ResultSetCacheRecorder {
                     @Override
                     public ByteBuffer next() {
                         int length = buffer.getInt(position);
-                        int  startIndex = position + 4;
+                        int startIndex = position + 4;
                         buffer.position(startIndex);
-                        position = startIndex+ length;
+                        position = startIndex + length;
                         buffer.limit(position);
                         return buffer.slice();
                     }

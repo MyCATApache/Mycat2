@@ -4,18 +4,12 @@ import io.mycat.beans.resultset.MycatResultSetResponse;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j;
 
-import java.io.File;
-import java.nio.file.Path;
-
 @Log4j
 public class CacheFile {
-    public CacheFile(Path file, ResultSetCacheRecorder recorder, ResultSetCacheRecorder.Token token) {
-        this.file = file;
+    public CacheFile(ResultSetCacheRecorder recorder, ResultSetCacheRecorder.Token token) {
         this.recorder = recorder;
         this.token = token;
     }
-
-    Path file;
     ResultSetCacheRecorder recorder;
     ResultSetCacheRecorder.Token token;
 
@@ -27,10 +21,7 @@ public class CacheFile {
 
     public void close() {
         try {
-            File file = this.file.toFile();
-            if (file.exists() && !file.delete()) {
-                file.deleteOnExit();
-            }
+            recorder.close();
         } catch (Exception e) {
             log.error(e);
         }

@@ -41,6 +41,8 @@ public class Context {
     private List<String> hints;
     private final String command;
     private final String explain;
+    private Integer sqlId;
+    private boolean cache = false;
     private static final ConcurrentHashMap<String, Hint> HINTS = new ConcurrentHashMap<>();
     //cache
     private String res;
@@ -50,7 +52,16 @@ public class Context {
         HINTS.put(GlobalSequenceHint.INSTANCE.getName(), GlobalSequenceHint.INSTANCE);
     }
 
-    public Context(String name, String sql, Map<String, Collection<String>> tables, Map<String, String> names, Map<String, String> tags, List<String> hints, String type, String explain) {
+    public Context(String name,
+                   String sql,
+                   Map<String, Collection<String>> tables,
+                   Map<String, String> names,
+                   Map<String, String> tags,
+                   List<String> hints,
+                   String type,
+                   String explain,
+                   Integer sqlId,
+                   boolean cache) {
         this.name = name;
         this.sql = sql;
         this.tables = tables;
@@ -59,6 +70,8 @@ public class Context {
         this.hints = hints;
         this.command = type;
         this.explain = explain;
+        this.sqlId = sqlId;
+        this.cache = cache;
     }
 
     public String getExplain() {
@@ -162,6 +175,13 @@ public class Context {
         public String build() {
             return baseString;
         }
+    }
 
+    public Integer getSqlId() {
+        return sqlId;
+    }
+
+    public boolean isCache() {
+        return cache;
     }
 }
