@@ -25,7 +25,8 @@ import java.util.Map;
  * @author Junwen Chen
  **/
 public class GPatternRuleTest {
-    @Test
+
+    @Test(expected = GPatternException.PatternConflictException.class)
     public void test0() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT {any} ");
