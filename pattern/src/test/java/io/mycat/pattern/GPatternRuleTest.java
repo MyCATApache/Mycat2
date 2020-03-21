@@ -26,6 +26,13 @@ import java.util.Map;
  **/
 public class GPatternRuleTest {
     @Test
+    public void test0() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("SELECT {any} ");
+        int id2 = patternBuilder.addRule("SELECT 1 ");
+    }
+
+    @Test
     public void test() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         int id = patternBuilder.addRule("SELECT id FROM {table} LIMIT 1;");
