@@ -59,7 +59,10 @@ public interface GPatternDFG {
                 lastState = state;
                 GPatternToken token = (GPatternToken) format.next();
                 if ("{".equals(token.getSymbol())) {
-                    if (!format.hasNext()) throw new GPatternException.NameSyntaxException("'{' name ends early");
+                    if (state == this.rootState){
+                        throw new GPatternException.NameSyntaxException("{0}","'{' name at pos 0,{不能在首位置");
+                    }
+                    if (!format.hasNext()) throw new GPatternException.NameSyntaxException("'{' name ends early,没有匹配的}");
                     String name = format.next().getSymbol().trim();
                     if (lastName != null)
                         throw new GPatternException.NameAdjacentException("'{'{0}'}' '{'{1}'}' is not allowed", lastName, name);
@@ -137,7 +140,7 @@ public interface GPatternDFG {
 
             public State addState(GPatternToken next) {
                 if (name != null) {
-                    throw new GPatternException.PatternConflictException("'has {' {0} '}' but try match const token",name,next.getSymbol());
+                    throw new GPatternException.PatternConflictException("'has {' {0} '}' but try match const token ,pos:{1} 通配符和常量分支{2} 不能存在",name,depth,next.getSymbol());
                 }
                 if (success.containsKey(next)) {
                     return success.get(next);
