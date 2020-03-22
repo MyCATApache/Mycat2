@@ -15,7 +15,7 @@ import java.util.Map;
  * @author Junwen Chen
  **/
 public class DynamicMatcherInfoBuilderTest {
-    @Test(expected = GPatternException.PatternConflictException.class)
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         DynamicMatcherInfoBuilder builder = new DynamicMatcherInfoBuilder();
@@ -28,7 +28,7 @@ public class DynamicMatcherInfoBuilderTest {
 
     }
 
-    @Test(expected = GPatternException.PatternConflictException.class)
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test2() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         DynamicMatcherInfoBuilder builder = new DynamicMatcherInfoBuilder();
@@ -37,7 +37,7 @@ public class DynamicMatcherInfoBuilderTest {
         builder.build(pettern -> patternBuilder.addRule(pettern));
     }
 
-    @Test(expected = GPatternException.PatternConflictException.class)
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test3() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         DynamicMatcherInfoBuilder builder = new DynamicMatcherInfoBuilder();
@@ -46,7 +46,7 @@ public class DynamicMatcherInfoBuilderTest {
         builder.build(pettern -> patternBuilder.addRule(pettern));
     }
 
-    @Test(expected = GPatternException.PatternConflictException.class)
+    @Test(expected = GPatternException.NameSyntaxException.class)
     public void test4() {
         GPatternBuilder patternBuilder = new GPatternBuilder(0);
         DynamicMatcherInfoBuilder builder = new DynamicMatcherInfoBuilder();
