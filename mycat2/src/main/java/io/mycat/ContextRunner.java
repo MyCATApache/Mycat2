@@ -578,7 +578,7 @@ public class ContextRunner {
          * balance
          * targets
          * executeType:
-         * getMetaData:true:false
+         * metaData:true:false
          * forceProxy:true:false
          * needTransaction:true|false
          */
@@ -588,7 +588,7 @@ public class ContextRunner {
                 boolean forceProxy = "true".equalsIgnoreCase(context.getVariable("forceProxy", "false"));
                 boolean needTransactionConfig = "true".equalsIgnoreCase(context.getVariable("needTransaction", "true"));
                 boolean needStartTransaction = needTransactionConfig && (!session.isAutocommit() || session.isInTransaction());
-                boolean metaData = "true".equalsIgnoreCase(context.getVariable("getMetaData", "false"));
+                boolean metaData = "true".equalsIgnoreCase(context.getVariable("metaData", "false"));
 
                 final Details details;
                 details = getDetails(context, needStartTransaction, metaData);
@@ -648,7 +648,7 @@ public class ContextRunner {
 
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
-                boolean metaData = "true".equalsIgnoreCase(context.getVariable("getMetaData", "false"));
+                boolean metaData = "true".equalsIgnoreCase(context.getVariable("metaData", "false"));
                 return () -> writePlan(session, getDetails(context, session.isInTransaction(), metaData).toExplain());
             }
         });
