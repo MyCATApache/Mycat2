@@ -55,7 +55,7 @@ public class MycatSQLTableScan extends PreComputationSQLTable implements Scannab
     @Override
     public Enumerable<Object[]> scan(DataContext root) {
         MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
-        Enumerable<Object[]> preComputation = root1.removePreComputation(this);
+        Enumerable<Object[]> preComputation = root1.getPreComputation(this);
         if (preComputation != null) {
             return preComputation;
         }

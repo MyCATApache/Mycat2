@@ -7,17 +7,18 @@ import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.metadata.MetadataManager;
 
 import java.util.Collections;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 public class MycatDBs {
 
 
     public static MycatDBClientMediator createClient(MycatDataContext dataContext) {
         return new MycatDBClientMediator() {
-            final IdentityHashMap<String, Object> cache = new IdentityHashMap<>();
+            final HashMap<String, Object> cache = new HashMap<>();
 
             @Override
             public MycatDBSharedServer getUponDBSharedServer() {
@@ -41,8 +42,13 @@ public class MycatDBs {
             }
 
             @Override
-            public void cache(Identical key, String targetName, String sql, List<Object> params, Object o) {
-                cache.put(targetName + sql, o);
+            public <T> T getCacheCountDownByIdentity(Identical key, String targetName, String sql, List<Object> params) {
+                return null;
+            }
+
+            @Override
+            public void cache(Identical key, String targetName, String sql, List<Object> params, Supplier<Object> o) {
+                Object o1 = cache.computeIfAbsent(targetName + sql, s -> o.get());
             }
 
             @Override

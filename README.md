@@ -17,13 +17,23 @@ This work is licensed under a [Creative Commons Attribution-ShareAlike 4.0 Inter
 
 HBTlang文档: <https://github.com/MyCATApache/Mycat2/blob/master/doc/103-HBTlang.md>
 
+执行hbt的两组命令是
+
+```sql
+EXPLAIN SELECT id FROM db1.travelrecord WHERE id = 1;
+
+EXECUTE plan fromSql(repli,'SELECT `id`  FROM `db1`.`travelrecord`  WHERE `id` = 1')
+```
+
+
+
 
 ## 正在进行的任务
 
 可用分支https://github.com/MyCATApache/Mycat2/tree/0.6-2020-2-13
 
 
-正在实现HBT相关,loaddata与预处理
+实现全局表,ER表,全局序列号
 
 
 
