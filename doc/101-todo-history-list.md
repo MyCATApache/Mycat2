@@ -50,42 +50,55 @@ HBT功能相关
 
 ##### 备忘录
 
-
-
-###### 分布式写入工具
-
-1. ER表插入SQL功能
-
-2. 全局表序列号功能
+结果集缓存动态调度
 
 
 
+##### 2020.3.23 -> 2020.3.30开发计划
 
-###### 结果集缓存管理
+使用元数据配置实现全局表,可配置选择proxy/xa形式写入多个目标
 
-1. 包括启动时候执行定时任务
-2. 定期执行
-3. 特殊的SQL结果集缓存任务
-4. SQL直接返还结果集
+使用元数据配置实现ER表
+
+分布式查询命令能生成for update语句
+
+使用元数据实现全局序列号
 
 
 
-##### 2020.3.16 -> 2020.3.23开发计划
-
-计划2020-3-23 HBT语言对外公布
+##### 2020.3.16 -> 2020.3.23开发日志
 
 1. HBT支持配置基于对象生成内部表,该功能用于辅助测试
+
+   https://github.com/MyCATApache/Mycat2/blob/efe940c3dc9405e34a6a48da196d39440bdc52b5/hbt/src/main/java/io/mycat/upondb/MycatDBClientBasedConfig.java
+
 2. 提交HBT基本测试例子
+
+   https://github.com/MyCATApache/Mycat2/blob/43727229222deb735e6b43645e3c6c6e71f304b5/hbt/src/test/java/io/mycat/hbt/HBTBaseTest.java
+
 3. 输出HBT文档
-4. 实现广播写入命令(用于类似于全局表的写入操作)
-5. HBT预读，缓存，定时执行配置草稿
-6. 主从切换index文件本地更新，下次启动的时候加载
 
+   https://github.com/MyCATApache/Mycat2/blob/2c88f6e7eee4f2fc7d7a7d2720f7d2eded932849/doc/103-HBTlang.md
 
+4. 结果集缓存管理(包括启动时候执行定时任务,定期执行,结果集缓存任务,直接返还结果集)
 
+   https://github.com/MyCATApache/Mycat2/blob/3ea3824c30c01bc4510d896b93c3536de24a85c3/mycat2/src/main/java/io/mycat/boost/BoostRuntime.java
 
+5. SQL匹配器实验性支持select {any}与select 1模式混用
 
+   https://github.com/MyCATApache/Mycat2/blob/e1b265d0a661e58d435a50eda8c9c60a44568226/pattern/src/test/java/io/mycat/pattern/GPatternRuleTest.java
 
+6. 改善数据源选择的代码,为分布式查询中分片表与全局表命中同一个分片打基础,全局表未完成
+
+   https://github.com/MyCATApache/Mycat2/blob/f9bf536e39ee765b6dfaf0f819c2a12ed225020a/replica/src/main/java/io/mycat/replica/DataSourceNearnessImpl.java
+
+7. 主从切换index文件本地更新，下次启动的时候加载
+
+   https://github.com/MyCATApache/Mycat2/commit/02c6701e3f4ff55bbfc06eda259fac55c138f240
+
+   
+
+   
 
 ##### 2020.3.9 -> 2020.3.15开发日志
 https://github.com/MyCATApache/Mycat2/commit/86df5c18bb5bfeb2608c3f952175f6dcb93371dd

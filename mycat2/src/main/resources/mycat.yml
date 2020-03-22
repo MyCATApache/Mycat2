@@ -1,5 +1,5 @@
 metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免去繁琐配置,
-  prototype: {targetName: defaultDs }
+  prototype: {targetName: defaultDs } #从该数据源获取元数据,该功能未开放
   schemas:
     db1: #逻辑库名
       tables:
@@ -49,6 +49,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
               {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
               {sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }},
               {sql: 'select 1  from db1.travelrecord',command: distributedQuery, cache: 'initialDelay = 1s,refreshInterval = 15s'}
+                #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
               ],
             },
             {
@@ -63,7 +64,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   ]
   sqls: [
   {name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL}, #explain一定要写库名
-  {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan},
+  {name: hbt,sql: 'execute plan {hbt}' , explain: '{hbt}' ,command: executePlan},#执行hbt
   {name: commit,sql: 'commit',command: commit},{name: commit;,sql: 'commit;',command: commit},
   {name: begin; ,sql: 'begin',command: begin},{name: begin ,sql: 'begin;',command: begin},
   {name: rollback ,sql: 'rollback',command: rollback},{name: rollback;,sql: 'rollback;',command: rollback},
