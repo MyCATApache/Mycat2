@@ -28,16 +28,16 @@ import static io.mycat.calcite.prepare.MycatCalcitePlanner.toPhysical;
 public class CalciteRunners {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteRunners.class);
     @SneakyThrows
-    public static RelNode complie(MycatCalcitePlanner planner, String sql) {
+    public static RelNode complie(MycatCalcitePlanner planner, String sql,boolean forUpdate) {
         SqlNode sqlNode = planner.parse(sql);
         SqlNode validate = planner.validate(sqlNode);
         RelNode relNode = planner.convert(validate);
-        return complie(planner, relNode);
+        return complie(planner, relNode,forUpdate);
     }
 
-    public static RelNode complie(MycatCalcitePlanner planner, RelNode relNode) {
+    public static RelNode complie(MycatCalcitePlanner planner, RelNode relNode,boolean forUpdate) {
         RelNode relNode1 = planner.eliminateLogicTable(relNode);
-        relNode = planner.pushDownBySQL(relNode1);
+        relNode = planner.pushDownBySQL(relNode1,forUpdate);
 
         RelNode phy = toPhysical(relNode, relOptPlanner -> {
             RelOptUtil.registerDefaultRules(relOptPlanner, false, false);

@@ -229,12 +229,23 @@ public interface GPatternDFG {
             this.state = this.state.accept(token, token.getStartOffset(), token.getEndOffset(), this);
             if (this.state == null && orign != null && orign.isEnd()&&orign.name!=null) {//通配符匹配
                 this.state = orign;
+            }else if (this.state!=null&&orign!=null&&!this.state.isEnd()&&orign.isEnd()){
+                this.state = orign;
             }
             return ((orign) != state);
         }
 
         public boolean acceptAll() {
-            return state != null && state.isEnd();
+            boolean b = state != null && state.isEnd();
+            if (b){
+                if(state.name!=null){
+                   return context.map.get(state.name).start!=-1;
+                }else {
+                    return true;
+                }
+            }else {
+                return false;
+            }
         }
 
         @Override

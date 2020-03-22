@@ -29,7 +29,7 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
     private final MycatDBContext dbContext;
 
     public MycatTextUpdatePrepareObject(Long id, int variantRefCount, BiFunction<MycatTextUpdatePrepareObject, List, Iterator<TextUpdateInfo>> textUpdateInfoProvider, MycatDBContext dbContext) {
-        super(id);
+        super(id,false);
         this.variantRefCount = variantRefCount;
         this.textUpdateInfoProvider = textUpdateInfoProvider;
         this.dbContext = dbContext;

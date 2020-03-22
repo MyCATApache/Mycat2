@@ -117,7 +117,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
     @NotNull
     private MycatSQLPrepareObject getPrepareObject(String templateSql, MycatDBContext dbContext) {
-        return new MycatSQLPrepareObject(null,dbContext, templateSql) {
+        return new MycatSQLPrepareObject(null, dbContext, templateSql, false) {
 
             @Override
             public MycatRowMetaData prepareParams() {
@@ -134,12 +134,12 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
                 return new PlanRunner() {
                     @Override
                     public List<String> explain() {
-                        return Arrays.asList("direct query sql:",templateSql);
+                        return Arrays.asList("direct query sql:", templateSql);
                     }
 
                     @Override
                     public RowBaseIterator run() {
-                        return dbContext.queryDefaultTarget( templateSql);
+                        return dbContext.queryDefaultTarget(templateSql);
                     }
                 };
             }
@@ -159,8 +159,7 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
     @Override
     public RowBaseIterator query(String sql, MycatDBContext dbContext) {
-        return Objects.requireNonNull(query(sql,
-                SQLUtils.parseSingleMysqlStatement(sql), dbContext)).plan(Collections.emptyList()).run();
+        return Objects.requireNonNull(innerQueryPrepareObject(sql, dbContext)).plan(Collections.emptyList()).run();
     }
 
     @Override
@@ -232,7 +231,11 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         };
     }
 
-    private MycatSQLPrepareObject query(String sql, SQLStatement sqlStatement, MycatDBContext dbContext) {
+    public MycatSQLPrepareObject innerQueryPrepareObject(String sql, MycatDBContext dbContext) {
+        return query(sql, SQLUtils.parseSingleMysqlStatement(sql), dbContext);
+    }
+
+    public MycatSQLPrepareObject query(String sql, SQLStatement sqlStatement, MycatDBContext dbContext) {
         boolean ddl = sqlStatement instanceof SQLSelectStatement || sqlStatement instanceof MySqlInsertStatement
                 || sqlStatement instanceof MySqlUpdateStatement || sqlStatement instanceof MySqlDeleteStatement;
         if (ddl) {

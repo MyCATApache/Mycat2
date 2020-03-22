@@ -14,7 +14,7 @@ import java.util.List;
 public abstract class SimpleSQLPrepareObjectPlanner extends MycatSQLPrepareObject implements PlanRunner {
 
     public SimpleSQLPrepareObjectPlanner(MycatDBContext uponDBContext, String sql) {
-        super(null,uponDBContext, sql);
+        super(null,uponDBContext, sql,false);
     }
 
     public abstract void innerEun();

@@ -61,10 +61,10 @@ public class MycatRelBuilder extends RelBuilder {
                         new MycatRelBuilder(config.getContext(), cluster, relOptSchema));
     }
 
-    public  RelNode makeTransientSQLScan(String targetName, RelNode input) {
+    public  RelNode makeTransientSQLScan(String targetName, RelNode input,boolean forUpdate) {
         RelDataType rowType = input.getRowType();
         MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
-        MycatTransientSQLTable transientTable = new MycatTransientSQLTable(convention, input);
+        MycatTransientSQLTable transientTable = new MycatTransientSQLTable(convention, input,forUpdate);
         RelOptTable relOptTable = RelOptTableImpl.create(
                 this.getRelOptSchema(),
                 rowType,
@@ -144,6 +144,13 @@ public class MycatRelBuilder extends RelBuilder {
     }
 
 
+    /**
+     * todo for update
+     * @param targetName
+     * @param relDataType
+     * @param sql
+     * @return
+     */
     public RelNode makeBySql(String targetName,RelDataType relDataType, String sql) {
         MycatConvention convention = MycatConvention.of(targetName, MysqlSqlDialect.DEFAULT);
         MycatSQLTableScan transientTable = new MycatSQLTableScan(convention,relDataType,sql);

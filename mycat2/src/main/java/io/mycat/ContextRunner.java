@@ -22,6 +22,8 @@ import io.mycat.beans.mysql.MySQLIsolation;
 import io.mycat.beans.resultset.MycatResponse;
 import io.mycat.beans.resultset.MycatResultSet;
 import io.mycat.boost.BoostRuntime;
+import io.mycat.calcite.prepare.MycatSQLPrepareObject;
+import io.mycat.calcite.prepare.MycatSqlPlanner;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
 import io.mycat.lib.impl.JdbcLib;
@@ -33,10 +35,7 @@ import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
 import io.mycat.resultset.TextResultSetResponse;
 import io.mycat.runtime.TransactionSessionUtil;
-import io.mycat.upondb.MycatDBClientApi;
-import io.mycat.upondb.MycatDBClientMediator;
-import io.mycat.upondb.MycatDBs;
-import io.mycat.upondb.PrepareObject;
+import io.mycat.upondb.*;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -205,6 +204,24 @@ public class ContextRunner {
                     LOGGER.debug("session id:{} action: plan {}", session.sessionId(), explain);
                     MycatDBClientMediator client1 = MycatDBs.createClient(session.unwrap(MycatDataContext.class));
                     client1.useSchema(defaultSchema);
+
+                    MycatSQLPrepareObject mycatSQLPrepareObject = client1.getUponDBSharedServer().innerQueryPrepareObject(explain, client1);
+                    PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
+                    switch (client.getTransactionType()) {
+                        case PROXY_TRANSACTION_TYPE: {
+                            if ( plan instanceof MycatSqlPlanner) {
+                                MycatSqlPlanner plan1 = (MycatSqlPlanner) plan;
+                                ProxyInfo proxyInfo = plan1.tryGetProxyInfo();
+                                if (proxyInfo != null) {
+                                    MySQLTaskUtil.proxyBackendByTargetName(session, proxyInfo.getTargetName(), proxyInfo.getSql(),
+                                            MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
+                                            session.getIsolation(), proxyInfo.isForUpdate(), null);
+                                    return;
+                                }
+                            }
+                            break;
+                        }
+                    }
                     RowBaseIterator query = client1.query(explain);
                     TextResultSetResponse connection = new TextResultSetResponse(query);
                     SQLExecuterWriter.writeToMycatSession(mycat, new MycatResponse[]{connection});
@@ -612,14 +629,14 @@ public class ContextRunner {
                                             Map<String, List<String>> backendTableInfos = details.targets;
 
                                             String[] infos = checkThenGetOne(backendTableInfos);
-                                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession,infos[0], infos[1]));
+                                            writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession, infos[0], infos[1]));
                                             return;
                                         }
 
                                         case INSERT:
                                         case UPDATE:
 //                                        case BROADCAST_UPDATE:
-                                            writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession,tasks, true));
+                                            writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession, tasks, true));
                                             return;
                                     }
                                     throw new IllegalArgumentException();
@@ -638,7 +655,7 @@ public class ContextRunner {
         Set<String> supportCommands = BoostRuntime.INSTANCE.getSupportCommands();
         for (Map.Entry<String, Command> stringCommandEntry : COMMANDS.entrySet()) {
             Command value = stringCommandEntry.getValue();
-            if(supportCommands.contains(stringCommandEntry.getKey())){
+            if (supportCommands.contains(stringCommandEntry.getKey())) {
                 value = new CacheCommandWrapper(stringCommandEntry.getValue());
             }
             COMMANDS.put(stringCommandEntry.getKey().toLowerCase(), value);

@@ -25,6 +25,19 @@ import java.util.Map;
  * @author Junwen Chen
  **/
 public class GPatternRuleTest {
+    @Test()
+    public void test00() {
+        GPatternBuilder patternBuilder = new GPatternBuilder(0);
+        int id = patternBuilder.addRule("select {any} ");
+        int id1 = patternBuilder.addRule("select 1  from db1.travelrecord");
+        GPattern gPattern = patternBuilder.createGroupPattern();
+        GPatternMatcher matcher = gPattern.matcher("SELECT id FROM db1.travelrecord WHERE id = 1;");
+
+
+        Assert.assertTrue(matcher.acceptAll());
+        Assert.assertEquals(0, id);
+        Assert.assertEquals("id FROM db1.travelrecord WHERE id = 1;", gPattern.toContextMap(matcher).get("any"));
+    }
 
     @Test()
     public void test0() {
@@ -52,6 +65,7 @@ public class GPatternRuleTest {
 
         GPatternMatcher matcher3 = gPattern.matcher("SELECT  3");
         Assert.assertFalse(matcher3.acceptAll());
+
     }
 
     @Test

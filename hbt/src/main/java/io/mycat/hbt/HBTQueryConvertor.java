@@ -16,9 +16,6 @@ package io.mycat.hbt;
 
 import com.alibaba.fastsql.sql.SQLUtils;
 import com.alibaba.fastsql.sql.ast.SQLStatement;
-import com.alibaba.fastsql.sql.ast.statement.SQLExprTableSource;
-import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
-import com.alibaba.fastsql.sql.optimizer.rules.TypeInference;
 import com.google.common.collect.ImmutableList;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
@@ -30,6 +27,7 @@ import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
 import io.mycat.metadata.LogicTable;
+import io.mycat.util.MycatSqlUtil;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j;
 import org.apache.calcite.interpreter.Bindables;
@@ -45,7 +43,6 @@ import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rex.RexCorrelVariable;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlNode;
@@ -171,7 +168,7 @@ public class HBTQueryConvertor {
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
         Schema rel = input.getRel();
         RelNode handle = handle(rel);
-        return relBuilder.makeTransientSQLScan(input.getTargetName(), handle);
+        return relBuilder.makeTransientSQLScan(input.getTargetName(), handle,false);
     }
 
     @SneakyThrows
@@ -183,15 +180,7 @@ public class HBTQueryConvertor {
         if (fieldTypes == null||fieldTypes.isEmpty()) {
             MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(context);
             SQLStatement sqlStatement = SQLUtils.parseSingleMysqlStatement(sql);
-            sqlStatement.accept(new TypeInference());
-            sqlStatement.accept(new MySqlASTVisitorAdapter() {
-                @Override
-                public boolean visit(SQLExprTableSource x) {
-                    return true;
-                }
-            });
-            SchemaPlus rootSchema = context.getRootSchema();
-            SqlNode parse = planner.parse(sql);
+            SqlNode parse = planner.parse(MycatSqlUtil.getCalciteSQL(sqlStatement));
             parse = parse.accept(new SqlShuttle() {
                 @Override
                 public SqlNode visit(SqlIdentifier id) {

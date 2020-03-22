@@ -176,11 +176,11 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
         return relShuttle.visit(bestExp2);
     }
 
-    public RelNode pushDownBySQL(RelNode bestExp) {
-        return pushDownBySQL(createRelBuilder(bestExp.getCluster()), bestExp);
+    public RelNode pushDownBySQL(RelNode bestExp,boolean forUpdate) {
+        return pushDownBySQL(createRelBuilder(bestExp.getCluster()), bestExp,forUpdate);
     }
 
-    public RelNode pushDownBySQL(MycatRelBuilder relBuilder, final RelNode bestExp0) {
+    public RelNode pushDownBySQL(MycatRelBuilder relBuilder, final RelNode bestExp0,boolean forUpdate) {
         HepProgram build = new HepProgramBuilder().build();
 
         RelOptPlanner planner = new HepPlanner(build);
@@ -258,7 +258,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 if (cache.get(other) == Boolean.TRUE) {
                     List<String> strings = margeList.get(other);
                     String targetName = strings.get(0);
-                    return relBuilder.makeTransientSQLScan(targetName, other);
+                    return relBuilder.makeTransientSQLScan(targetName, other,forUpdate);
                 }
                 return super.visit(other);
             }
@@ -370,7 +370,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
 
     }
 
-    public List<PreComputationSQLTable> preComputeSeq(RelNode relNode) {
+    public DatasourceInfo preComputeSeq(RelNode relNode) {
         MycatDBContext uponDBContext = dataContext.getUponDBContext();
         Map<String, List<PreComputationSQLTable>> map = new HashMap<>();
         relNode.accept(new RelShuttleImpl() {
@@ -392,7 +392,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 preSeq.add(value.get(i));
             }
         }
-        return preSeq;
+        return new DatasourceInfo(preSeq,map);
     }
 
 

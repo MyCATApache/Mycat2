@@ -12,8 +12,8 @@ public abstract class MycatSQLPrepareObject extends PrepareObject {
 
 
 
-    public MycatSQLPrepareObject(Long id, MycatDBContext uponDBContext, String sql) {
-        super(id);
+    public MycatSQLPrepareObject(Long id, MycatDBContext uponDBContext, String sql,boolean forUpdate) {
+        super(id,forUpdate);
         this.uponDBContext = uponDBContext;
         this.sql = sql;
     }

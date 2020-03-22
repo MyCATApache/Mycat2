@@ -26,10 +26,12 @@ public class MycatTransientSQLTable extends PreComputationSQLTable
         implements TransientTable, TranslatableTable {
     private final MycatConvention convention;
     private final RelNode input;
+    private boolean forUpdate;
 
-    public MycatTransientSQLTable(MycatConvention convention, RelNode input) {
+    public MycatTransientSQLTable(MycatConvention convention, RelNode input,boolean forUpdate) {
         this.input = input;
         this.convention = convention;
+        this.forUpdate = forUpdate;
     }
 
     public String getExplainSQL() {
@@ -38,7 +40,7 @@ public class MycatTransientSQLTable extends PreComputationSQLTable
 
     public String getExplainSQL(RelNode input) {
         SqlDialect dialect = convention.dialect;
-        return MycatCalciteSupport.INSTANCE.convertToSql(input, dialect);
+        return MycatCalciteSupport.INSTANCE.convertToSql(input, dialect,forUpdate);
     }
 
     @Override

@@ -11,7 +11,7 @@ public final class MycatDelegateSQLPrepareObject extends MycatSQLPrepareObject {
     final PrepareObject prepareObject;
 
     public MycatDelegateSQLPrepareObject(Long id, MycatDBContext uponDBContext, String sql, PrepareObject prepareObject) {
-        super(id,uponDBContext, sql);
+        super(id,uponDBContext, sql,prepareObject.isForUpdate());
         this.prepareObject = prepareObject;
     }
 

@@ -44,7 +44,6 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
               tables:[ 'db1.travelrecord','db1.address'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
               sqls: [
               {sql: 'select {any}',command: distributedQuery },
-              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli,needTransaction: true}},
               {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
               {sql: 'update {any}',command: execute,tags: {executeType: UPDATE,metaData: true ,needTransaction: true }},
               {sql: 'delete {any}',command: execute,tags: {executeType: UPDATE,metaData: true,needTransaction: true  }},
@@ -104,7 +103,7 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
   {name: 'mysql SET character_set_results = NULL', sql: 'SET NAMES utf8',command: execute , tags: {targets: defaultDs,forceProxy: true}},
   {name: 'mysql SELECT @@session.autocommit', sql: 'SELECT @@session.autocommit',command: execute , tags: {targets: defaultDs,forceProxy: true}},
   ]
-  transactionType: xa #xa.proxy
+  transactionType: proxy #xa.proxy
   defaultSchema: db1
 datasource:
   datasources: [{name: defaultDs, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,
@@ -117,8 +116,8 @@ datasource:
                  jdbcDriverClass:, #jdbc驱动
                  instanceType:,#READ,WRITE,READ_WRITE ,集群信息中是主节点,则默认为读写,副本则为读,此属性可以强制指定可写
                 },
-                {name: defaultDs2, ip: 0.0.0.0,port: 3307,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
-                 url: 'jdbc:mysql://127.0.0.1:3307?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
+                {name: defaultDs2, ip: 0.0.0.0,port: 3306,user: root,password: 123456,maxCon: 10000,minCon: 0,maxRetryCount: 3,maxConnectTimeout: 10000,dbType: mysql,
+                 url: 'jdbc:mysql://127.0.0.1:3306?useUnicode=true&serverTimezone=UTC',weight: 1,initSQL: 'use db2' ,jdbcDriverClass:,instanceType:,#READ,WRITE,READ_WRITE
                 }
   ]
   datasourceProviderClass: io.mycat.datasource.jdbc.datasourceProvider.AtomikosDatasourceProvider

@@ -21,22 +21,24 @@ import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.table.PreComputationSQLTable;
 import io.mycat.upondb.MycatDBContext;
 import io.mycat.upondb.PlanRunner;
+import io.mycat.upondb.ProxyInfo;
 import io.mycat.util.Explains;
 import lombok.SneakyThrows;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.RelDataType;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
  * @author Junwen Chen
  **/
 public class MycatSqlPlanner implements PlanRunner {
-    private final List<PreComputationSQLTable> preComputationSQLTables;
     private final RelNode relNode;
     private final MycatCalciteSQLPrepareObject prepare;
     private final MycatCalciteDataContext mycatCalciteDataContext;
+    private final DatasourceInfo datasourceInfo;
 
 
     @SneakyThrows
@@ -44,14 +46,14 @@ public class MycatSqlPlanner implements PlanRunner {
         this.prepare = prepare;
         this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
-        this.relNode = CalciteRunners.complie(planner, sql);
-        this.preComputationSQLTables = planner.preComputeSeq(this.relNode);
+        this.relNode = CalciteRunners.complie(planner, sql,prepare.isForUpdate());
+        this.datasourceInfo = planner.preComputeSeq(this.relNode);
     }
 
     public List<String> explain() {
         RelDataType rowType = relNode.getRowType();
         return Explains.explain(prepare.getSql(),
-                MycatCalciteSupport.INSTANCE.convertToHBTText(preComputationSQLTables),
+                MycatCalciteSupport.INSTANCE.convertToHBTText(datasourceInfo.preSeq),
                 MycatCalciteSupport.INSTANCE.dumpMetaData(rowType),
                 MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
                 MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(this.relNode, mycatCalciteDataContext));
@@ -60,7 +62,25 @@ public class MycatSqlPlanner implements PlanRunner {
 
     @Override
     public RowBaseIterator run() {
-        Supplier<RowBaseIterator> runner = CalciteRunners.run(this.mycatCalciteDataContext, preComputationSQLTables, relNode);;
+        Supplier<RowBaseIterator> runner = CalciteRunners.run(this.mycatCalciteDataContext, datasourceInfo.preSeq, relNode);
+        ;
         return runner.get();
     }
+
+    public ProxyInfo tryGetProxyInfo() {
+        DatasourceInfo ds = this.datasourceInfo;
+        List<PreComputationSQLTable> preSeq = ds.getPreSeq();
+        Map<String, List<PreComputationSQLTable>> map = ds.getMap();
+        if (preSeq.isEmpty() && map.size() == 1) {
+            Map.Entry<String, List<PreComputationSQLTable>> next = map.entrySet().iterator().next();
+            String key = next.getKey();
+            if (next.getValue().size() == 1) {
+                PreComputationSQLTable preComputationSQLTable = next.getValue().get(0);
+                return new ProxyInfo(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(),prepare.isForUpdate());
+            }
+
+        }
+        return null;
+    }
+
 }

@@ -255,11 +255,11 @@ public enum MycatCalciteSupport implements Context {
         return calciteConnectionConfig;
     }
 
-    public String convertToSql(RelNode input, SqlDialect dialect) {
+    public String convertToSql(RelNode input, SqlDialect dialect,boolean forUpdate) {
         String sql = new MycatImplementor(dialect).implement(input).asStatement().toSqlString(dialect, false).getSql();
         sql = sql.replaceAll("\r", " ");
         sql = sql.replaceAll("\n", " ");
-        return sql;
+        return sql+(forUpdate?" for update":"");
     }
 
     public String convertToMycatRelNodeText(RelNode node,MycatCalciteDataContext dataContext) {

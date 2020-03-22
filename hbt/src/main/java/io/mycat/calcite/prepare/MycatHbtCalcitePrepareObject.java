@@ -6,7 +6,6 @@ import io.mycat.calcite.CalciteRunners;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.MycatCalciteSupport;
 import io.mycat.calcite.resultset.CalciteRowMetaData;
-import io.mycat.calcite.table.PreComputationSQLTable;
 import io.mycat.hbt.HBTQueryConvertor;
 import io.mycat.hbt.ast.base.Schema;
 import io.mycat.upondb.MycatDBContext;
@@ -22,7 +21,7 @@ import java.util.function.Supplier;
 public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     final Schema schema;
     private final MycatCalciteDataContext mycatCalciteDataContext;
-    private List<PreComputationSQLTable> preComputationSQLTables;
+    private  DatasourceInfo  datasourceInfo;
 
     public MycatHbtCalcitePrepareObject(Long id, int paramCount, Schema schema, MycatDBContext uponDBContext) {
         super(id, paramCount);
@@ -39,7 +38,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
     @Override
     public PlanRunner plan(List<Object> params) {
         RelNode relNode = getRelNode(params);
-        Supplier<RowBaseIterator> run = CalciteRunners.run(mycatCalciteDataContext, preComputationSQLTables, relNode);
+        Supplier<RowBaseIterator> run = CalciteRunners.run(mycatCalciteDataContext, datasourceInfo.preSeq, relNode);
         return new PlanRunner() {
             @Override
             public RowBaseIterator run() {
@@ -48,12 +47,13 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
 
             @Override
             public List<String> explain() {
-                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT),
-                        MycatCalciteSupport.INSTANCE.convertToHBTText(preComputationSQLTables),
+                return Explains.explain(MycatCalciteSupport.INSTANCE.convertToSql(relNode, MysqlSqlDialect.DEFAULT,false),
+                        MycatCalciteSupport.INSTANCE.convertToHBTText(datasourceInfo.preSeq),
                         MycatCalciteSupport.INSTANCE.dumpMetaData(relNode.getRowType()),
                         MycatCalciteSupport.INSTANCE.convertToHBTText(relNode, mycatCalciteDataContext),
                         MycatCalciteSupport.INSTANCE.convertToMycatRelNodeText(relNode, mycatCalciteDataContext));
             }
+
         };
     }
 
@@ -62,7 +62,7 @@ public class MycatHbtCalcitePrepareObject extends MycatHbtPrepareObject {
         HBTQueryConvertor hbtConvertor = new HBTQueryConvertor( params,mycatCalciteDataContext);
 
         RelNode handle = hbtConvertor.handle(schema);
-        this.preComputationSQLTables = planner1.preComputeSeq(handle);
+        this.datasourceInfo = planner1.preComputeSeq(handle);
         return handle;
     }
 

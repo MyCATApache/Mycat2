@@ -46,7 +46,7 @@ public class MycatCalciteSQLPrepareObject extends MycatSQLPrepareObject {
     private final MycatDBContext dataContext;
 
     public MycatCalciteSQLPrepareObject(Long id, String sql, SqlNode sqlNode, MycatRowMetaData parameterRowType, MycatRowMetaData resultSetRowType, boolean forUpdate, MycatDBContext dataContext) {
-        super(id,dataContext,sql);
+        super(id,dataContext,sql,forUpdate);
         this.sqlNode = sqlNode;
         this.parameterRowType = parameterRowType;
         this.resultSetRowType = resultSetRowType;
@@ -115,5 +115,7 @@ public class MycatCalciteSQLPrepareObject extends MycatSQLPrepareObject {
         return literal;
     }
 
-
+    public boolean isForUpdate() {
+        return forUpdate;
+    }
 }

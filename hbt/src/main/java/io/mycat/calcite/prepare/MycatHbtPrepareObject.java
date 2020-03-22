@@ -9,7 +9,7 @@ public abstract class MycatHbtPrepareObject extends PrepareObject {
 
 
     public MycatHbtPrepareObject(Long id, int paramCount) {
-        super(id);
+        super(id,false);
         this.paramCount = paramCount;
     }
 

@@ -18,13 +18,12 @@ public class LogicTable {
     private final List<BackendTableInfo> backends;
     private final List<SimpleColumnInfo> rawColumns;
     private final String createTableSQL;
-    //////////////optional/////////////////
-//        private JdbcTable jdbcTable;
-    //////////////optional/////////////////
+
     private final SimpleColumnInfo.ShardingInfo natureTableColumnInfo;
     private final SimpleColumnInfo.ShardingInfo replicaColumnInfo;
     private final SimpleColumnInfo.ShardingInfo databaseColumnInfo;
     private final SimpleColumnInfo.ShardingInfo tableColumnInfo;
+
 
 
     public LogicTable(String schemaName, String name, List<BackendTableInfo> backends, List<SimpleColumnInfo> rawColumns,

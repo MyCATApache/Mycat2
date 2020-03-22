@@ -2,6 +2,7 @@ package io.mycat.upondb;
 
 import io.mycat.api.collector.RowBaseIterator;
 import io.mycat.api.collector.UpdateRowIteratorResponse;
+import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 
 import java.util.Iterator;
 import java.util.List;
@@ -32,4 +33,5 @@ public interface MycatDBSharedServer {
     public <T> T getComponent(Byte key, Function<Byte, T> factory);
 
     public <T> T replaceComponent(Byte key, Function<Byte, T> factory);
+    public MycatSQLPrepareObject innerQueryPrepareObject(String sql, MycatDBContext dbContext);
 }
