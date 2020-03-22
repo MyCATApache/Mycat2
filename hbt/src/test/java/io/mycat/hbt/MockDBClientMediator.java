@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 @AllArgsConstructor
 public class MockDBClientMediator extends MycatDBClientMediator {
@@ -37,7 +38,12 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     }
 
     @Override
-    public void cache(Identical key, String targetName, String sql, List<Object> params, Object o) {
+    public <T> T getCacheCountDownByIdentity(Identical key, String targetName, String sql, List<Object> params) {
+        return null;
+    }
+
+    @Override
+    public void cache(Identical key, String targetName, String sql, List<Object> params, Supplier<Object> o) {
 
     }
 

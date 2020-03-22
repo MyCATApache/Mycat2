@@ -7,6 +7,7 @@ import io.mycat.api.collector.UpdateRowIteratorResponse;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 public interface MycatDBClientBased {
 
@@ -17,8 +18,8 @@ public interface MycatDBClientBased {
     Map<String, Object> variables();
 
     <T> T getCache(Identical key, String targetName, String sql, List<Object> params);
-
-    void cache(Identical key, String targetName, String sql, List<Object> params, Object o);
+    public <T> T getCacheCountDownByIdentity(Identical key, String targetName, String sql, List<Object> params);
+    void cache(Identical key, String targetName, String sql, List<Object> params, Supplier<Object> o);
 
     <T> T removeCache(Identical key, String targetName, String sql, List<Object> params);
 

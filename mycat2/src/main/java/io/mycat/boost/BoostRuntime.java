@@ -49,16 +49,18 @@ public enum BoostRuntime {
                     .build();
     public static final String DISTRIBUTED_QUERY = "distributedQuery";
     public static final String EXECUTE_PLAN = "executePlan";
-    public Set<String> getSupportCommands(){
-        return ImmutableSet.of(DISTRIBUTED_QUERY,EXECUTE_PLAN);
+
+    public Set<String> getSupportCommands() {
+        return ImmutableSet.of(DISTRIBUTED_QUERY, EXECUTE_PLAN);
     }
+
     final private ExecutorService executorService = Executors.newCachedThreadPool();
     final private ConcurrentHashMap<Integer, Task> map = new ConcurrentHashMap<>();
 
 
-    public MycatResultSetResponse getResultSetBySqlId(Integer sql){
+    public MycatResultSetResponse getResultSetBySqlId(Integer sql) {
         Task task = map.get(sql);
-        if (task!=null){
+        if (task != null) {
             return task.get();
         }
         return null;
@@ -70,7 +72,7 @@ public enum BoostRuntime {
         MycatDBClientMediator db = MycatDBs.createClient(mycatDataContext);
         MycatClient client = ClientRuntime.INSTANCE.login(mycatDataContext);
         List<CacheConfig> cacheConfigs = new ArrayList<>();
-        loadConfig(client,cacheConfigs);
+        loadConfig(client, cacheConfigs);
 
         ScheduledExecutorService timer = ScheduleUtil.getTimer();
 
@@ -85,6 +87,7 @@ public enum BoostRuntime {
     private BoostRuntime.Task getTask(MycatDBClientMediator db, ScheduledExecutorService timer, CacheConfig cacheConfig) {
         return new Task(cacheConfig) {
             volatile CacheFile cache;
+
             @Override
             void start(CacheConfig cacheConfig) {
 
@@ -103,8 +106,8 @@ public enum BoostRuntime {
 
                 text = text.replaceAll("[\\?\\\\/:|<>\\*]", " "); //filter ? \ / : | < > *
                 text = text.replaceAll("\\s+", "_");
-                cache = CacheLib.cache(() -> new TextResultSetResponse(query), text.replaceAll(" ","_"));
-                if (cache2!=null) {
+                cache = CacheLib.cache(() -> new TextResultSetResponse(query), text.replaceAll(" ", "_"));
+                if (cache2 != null) {
                     cache2.close();
                 }
             }
@@ -113,11 +116,19 @@ public enum BoostRuntime {
                 RowBaseIterator query;
                 switch (command) {
                     case DISTRIBUTED_QUERY: {
-                        query = db.query(text);
+                        try {
+                            query = db.query(text);
+                        } finally {
+                            db.recycleResource();
+                        }
                         break;
                     }
                     case EXECUTE_PLAN: {
-                        query = db.executeRel(text);
+                        try {
+                            query = db.executeRel(text);
+                        } finally {
+                            db.recycleResource();
+                        }
                         break;
                     }
                     default:
@@ -128,9 +139,9 @@ public enum BoostRuntime {
 
             @Override
             MycatResultSetResponse get(CacheConfig cacheConfig) {
-                if (cache!=null) {
+                if (cache != null) {
                     return cache.cacheResponse();
-                }else return null;
+                } else return null;
             }
         };
     }
@@ -189,7 +200,7 @@ public enum BoostRuntime {
                     throw new UnsupportedOperationException(command);
             }
             Context analysis = client.analysis(cacheConfig.getText());
-            cacheConfig.setSqlId(Objects.requireNonNull(analysis.getSqlId(),textItemConfig+" "+"sql id is null"));
+            cacheConfig.setSqlId(Objects.requireNonNull(analysis.getSqlId(), textItemConfig + " " + "sql id is null"));
 
             for (String i : KEYS_SPLITTER.split(cache)) {
                 ImmutableList<String> strings = ImmutableList.copyOf(KEY_VALUE_SPLITTER.split(i));

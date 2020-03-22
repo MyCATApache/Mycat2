@@ -123,13 +123,12 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
 
 
     public void preComputation(PreComputationSQLTable preComputationSQLTable) {
-        List<Object[]> objects = preComputationSQLTable.scan(this).toList();
         uponDBContext.cache(preComputationSQLTable, preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),
-                Collections.emptyList(),objects);
+                Collections.emptyList(),()->preComputationSQLTable.scan(this).toList());
     }
 
-    public Enumerable<Object[]> removePreComputation(PreComputationSQLTable preComputationSQLTable) {
-        Object o = uponDBContext.removeCache(preComputationSQLTable,preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),Collections.emptyList());
+    public Enumerable<Object[]> getPreComputation(PreComputationSQLTable preComputationSQLTable) {
+        Object o = uponDBContext.getCache(preComputationSQLTable,preComputationSQLTable.getTargetName(),preComputationSQLTable.getSql(),Collections.emptyList());
         if (o != null) {
             return Linq4j.asEnumerable((List<Object[]>) o);
         } else {
