@@ -98,7 +98,7 @@ public class CalciteUtls {
     public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, String targetSchema, String targetTable, String targetSchemaTable) {
         StringBuilder sqlBuilder = new StringBuilder();
         String selectItems = projectColumnList.isEmpty() ? "*" : projectColumnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
-        sqlBuilder.append(MessageFormat.format("select {0} fromTable {1}", selectItems, targetSchemaTable));
+        sqlBuilder.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
         sqlBuilder.append(getFilterSQLText(rawColumnList, targetSchema, targetTable, filters));
         return sqlBuilder.toString();
     }
