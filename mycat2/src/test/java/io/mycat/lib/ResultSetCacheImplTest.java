@@ -12,7 +12,7 @@ import java.util.Iterator;
 public class ResultSetCacheImplTest {
     @Test
     public void test() throws Exception {
-        ResultSetCacheImpl resultSetCache = new ResultSetCacheImpl("d:/tmp1");
+        ResultSetCacheImpl resultSetCache = new ResultSetCacheImpl("s");
         resultSetCache.open();
         resultSetCache.startRecordColumn(1);
         resultSetCache.addColumnDefBytes("1111".getBytes());

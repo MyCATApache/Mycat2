@@ -7,16 +7,13 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.charset.Charset;
-import java.nio.file.Files;
 import java.util.Iterator;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class CacheLibTest {
     @Test
     public void test() throws Exception {
 
-        String cacheLib = Files.createTempFile("CacheLib", Integer.valueOf(ThreadLocalRandom.current().nextInt(0, 100))
-                .toString()).toAbsolutePath().toString();
+        String cacheLib = "s";
         DefResultSet resultSet = new DefResultSet(1,33, Charset.defaultCharset());
         resultSet.addColumnDef(0,"c1",1);
         resultSet.addTextRowPayload("1");
