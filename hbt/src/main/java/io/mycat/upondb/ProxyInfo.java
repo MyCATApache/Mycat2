@@ -7,11 +7,11 @@ import lombok.Getter;
 public class ProxyInfo {
     private final String targetName;
     String sql;
-    boolean forUpdate;
+    boolean updateOpt;
 
-    public ProxyInfo(String targetName, String sql,boolean forUpdate) {
+    public ProxyInfo(String targetName, String sql,boolean updateOpt) {
         this.targetName = targetName;
         this.sql = sql;
-        this.forUpdate = forUpdate;
+        this.updateOpt = updateOpt;
     }
 }

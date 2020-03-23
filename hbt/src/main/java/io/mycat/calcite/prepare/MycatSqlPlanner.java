@@ -46,7 +46,7 @@ public class MycatSqlPlanner implements PlanRunner {
         this.prepare = prepare;
         this.mycatCalciteDataContext = MycatCalciteSupport.INSTANCE.create(uponDBContext);
         MycatCalcitePlanner planner = MycatCalciteSupport.INSTANCE.createPlanner(mycatCalciteDataContext);
-        this.relNode = CalciteRunners.complie(planner, sql,prepare.isForUpdate());
+        this.relNode = CalciteRunners.complie(planner, sql, prepare.isForUpdate());
         this.datasourceInfo = planner.preComputeSeq(this.relNode);
     }
 
@@ -76,7 +76,7 @@ public class MycatSqlPlanner implements PlanRunner {
             String key = next.getKey();
             if (next.getValue().size() == 1) {
                 PreComputationSQLTable preComputationSQLTable = next.getValue().get(0);
-                return new ProxyInfo(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(),prepare.isForUpdate());
+                return new ProxyInfo(preComputationSQLTable.getTargetName(), preComputationSQLTable.getSql(), prepare.isForUpdate());
             }
 
         }

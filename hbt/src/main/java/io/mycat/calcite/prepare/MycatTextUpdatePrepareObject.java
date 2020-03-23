@@ -16,9 +16,7 @@ import io.mycat.upondb.PrepareObject;
 import io.mycat.util.Explains;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
 
 
@@ -58,7 +56,7 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
 
             @Override
             public RowBaseIterator run() {
-                Iterator<TextUpdateInfo> iterator = textUpdateInfoProvider.apply(MycatTextUpdatePrepareObject.this, params);
+                Iterator<TextUpdateInfo> iterator = getTextUpdateInfoIterator(params);
                 return new MergeUpdateRowIterator(new Iterator<UpdateRowIteratorResponse>() {
                     @Override
                     public boolean hasNext() {
@@ -75,11 +73,26 @@ public class MycatTextUpdatePrepareObject extends PrepareObject {
         };
     }
 
+    private Iterator<TextUpdateInfo> getTextUpdateInfoIterator(List<Object> params) {
+        return textUpdateInfoProvider.apply(MycatTextUpdatePrepareObject.this, params);
+    }
+
+    public Map<String,List<String>> getRouteMap(){
+        HashMap<String,List<String>> map = new HashMap<>();
+        Iterator<TextUpdateInfo> textUpdateInfoIterator = getTextUpdateInfoIterator(Collections.emptyList());
+        while (textUpdateInfoIterator.hasNext()){
+            TextUpdateInfo next = textUpdateInfoIterator.next();
+            List<String> strings = map.computeIfAbsent(next.targetName(), (s) -> new ArrayList<>(1));
+            strings.addAll(next.sqls());
+        }
+        return map;
+    }
+
 
     @NotNull
     private MergeModify getMergeModify(List<Object> params) {
         ArrayList<ModifyFromSql> strings = new ArrayList<>();
-        Iterator<TextUpdateInfo> iterator = textUpdateInfoProvider.apply(MycatTextUpdatePrepareObject.this, params);
+        Iterator<TextUpdateInfo> iterator = getTextUpdateInfoIterator(params);
         while (iterator.hasNext()) {
             TextUpdateInfo next = iterator.next();
             String key = next.targetName();

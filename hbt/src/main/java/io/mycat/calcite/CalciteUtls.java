@@ -18,7 +18,8 @@ import com.google.common.collect.ImmutableList;
 import io.mycat.BackendTableInfo;
 import io.mycat.QueryBackendTask;
 import io.mycat.SchemaInfo;
-import io.mycat.metadata.LogicTable;
+import io.mycat.metadata.ShardingTableHandler;
+import io.mycat.metadata.TableHandler;
 import io.mycat.queryCondition.DataMappingEvaluator;
 import io.mycat.queryCondition.SimpleColumnInfo;
 import org.apache.calcite.DataContext;
@@ -46,7 +47,7 @@ import java.util.stream.Collectors;
 public class CalciteUtls {
     private final static Logger LOGGER = LoggerFactory.getLogger(CalciteUtls.class);
 
-    public static List<QueryBackendTask> getQueryBackendTasks(LogicTable table, List<RexNode> filters, int[] projects) {
+    public static List<QueryBackendTask> getQueryBackendTasks(ShardingTableHandler table, List<RexNode> filters, int[] projects) {
         List<BackendTableInfo> calculate = getBackendTableInfos(table, filters);
 
 
@@ -63,7 +64,7 @@ public class CalciteUtls {
 
     }
 
-    public static List<BackendTableInfo> getBackendTableInfos(LogicTable table, List<RexNode> filters) {
+    public static List<BackendTableInfo> getBackendTableInfos(ShardingTableHandler table, List<RexNode> filters) {
         LOGGER.info("origin  filters:{}", filters);
         DataMappingEvaluator record = new DataMappingEvaluator();
         ArrayList<RexNode> where = new ArrayList<>();
@@ -81,7 +82,7 @@ public class CalciteUtls {
     }
 
     @NotNull
-    private static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, BackendTableInfo backendTableInfo) {
+    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, BackendTableInfo backendTableInfo) {
         SchemaInfo schemaInfo = backendTableInfo.getSchemaInfo();
         String targetSchema = schemaInfo.getTargetSchema();
         String targetTable = schemaInfo.getTargetTable();
@@ -89,13 +90,17 @@ public class CalciteUtls {
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, targetSchema, targetTable, targetSchemaTable);
     }
 
-    public static String getBackendTaskSQL(LogicTable table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
+    public static String getBackendTaskSQL(ShardingTableHandler table, BackendTableInfo backendTableInfo, int[] projects, List<RexNode> filters) {
         List<SimpleColumnInfo> rawColumnList = table.getRawColumns();
         List<SimpleColumnInfo> projectColumnList = getColumnList(table, projects);
         return getBackendTaskSQL(filters, rawColumnList, projectColumnList, backendTableInfo);
     }
 
-    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList, List<SimpleColumnInfo> projectColumnList, String targetSchema, String targetTable, String targetSchemaTable) {
+    public static String getBackendTaskSQL(List<RexNode> filters, List<SimpleColumnInfo> rawColumnList,
+                                           List<SimpleColumnInfo> projectColumnList,
+                                           String targetSchema,
+                                           String targetTable,
+                                           String targetSchemaTable) {
         StringBuilder sqlBuilder = new StringBuilder();
         String selectItems = projectColumnList.isEmpty() ? "*" : projectColumnList.stream().map(i -> i.getColumnName()).map(i -> targetSchemaTable + "." + i).collect(Collectors.joining(","));
         sqlBuilder.append(MessageFormat.format("select {0} from {1}", selectItems, targetSchemaTable));
@@ -103,7 +108,7 @@ public class CalciteUtls {
         return sqlBuilder.toString();
     }
 
-    public static List<SimpleColumnInfo> getColumnList(LogicTable table, final int[] projects) {
+    public static List<SimpleColumnInfo> getColumnList(TableHandler table, final int[] projects) {
         if (projects == null) {
             return Collections.emptyList();
         } else {
@@ -128,7 +133,7 @@ public class CalciteUtls {
         return context.toSql(null, rexNode).toSqlString(MysqlSqlDialect.DEFAULT).getSql();
     }
 
-    public static boolean addOrRootFilter(LogicTable table, DataMappingEvaluator evaluator, RexNode filter) {
+    public static boolean addOrRootFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter) {
         if (filter.isA(SqlKind.OR)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();
             int size = operands.size();
@@ -143,7 +148,7 @@ public class CalciteUtls {
         return addFilter(table, evaluator, filter, false);
     }
 
-    public static boolean addFilter(LogicTable table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
+    public static boolean addFilter(ShardingTableHandler table, DataMappingEvaluator evaluator, RexNode filter, boolean or) {
         List<SimpleColumnInfo> rowOrder = table.getRawColumns();
         if (filter.isA(SqlKind.AND)) {
             List<RexNode> operands = ((RexCall) filter).getOperands();

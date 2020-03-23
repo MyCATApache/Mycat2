@@ -20,7 +20,7 @@ import io.mycat.api.collector.UpdateRowIteratorResponse;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
 import io.mycat.calcite.table.PreComputationSQLTable;
-import io.mycat.metadata.LogicTable;
+import io.mycat.metadata.TableHandler;
 import io.mycat.upondb.*;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -143,10 +143,10 @@ public class MycatCalciteDataContext implements DataContext, FrameworkConfig {
     public static SchemaPlus getSchema(MycatDBClientBased based) {
         SchemaPlus plus = CalciteSchema.createRootSchema(true).plus();
         MycatDBClientBasedConfig config = based.config();
-        for (Map.Entry<String, Map<String, LogicTable>> stringConcurrentHashMapEntry : config.getLogicTables().entrySet()) {
+        for (Map.Entry<String, Map<String, TableHandler>> stringConcurrentHashMapEntry : config.getLogicTables().entrySet()) {
             SchemaPlus schemaPlus = plus.add(stringConcurrentHashMapEntry.getKey(), new AbstractSchema());
-            for (Map.Entry<String, LogicTable> entry : stringConcurrentHashMapEntry.getValue().entrySet()) {
-                LogicTable logicTable = entry.getValue();
+            for (Map.Entry<String, TableHandler> entry : stringConcurrentHashMapEntry.getValue().entrySet()) {
+                TableHandler logicTable = entry.getValue();
                 MycatLogicTable mycatLogicTable = new MycatLogicTable(logicTable);
                 schemaPlus.add(entry.getKey(), mycatLogicTable);
             }

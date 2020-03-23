@@ -19,7 +19,7 @@ import io.mycat.QueryBackendTask;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
-import io.mycat.metadata.LogicTable;
+import io.mycat.metadata.TableHandler;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -43,13 +43,15 @@ public class MycatPhysicalTable extends MycatTableBase implements TransientTable
     }
 
     @Override
-    public LogicTable logicTable() {
+    public TableHandler logicTable() {
         return logicTable.logicTable();
     }
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        String backendTaskSQL = CalciteUtls.getBackendTaskSQL(logicTable(), backendTableInfo, projects, filters);
+        String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
+                logicTable().getRawColumns(),
+                CalciteUtls.getColumnList(logicTable(),projects), backendTableInfo);
         return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(backendTaskSQL, backendTableInfo.getTargetName()));
     }
 

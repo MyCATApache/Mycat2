@@ -26,7 +26,7 @@ import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.hbt.ast.HBTOp;
 import io.mycat.hbt.ast.base.*;
 import io.mycat.hbt.ast.query.*;
-import io.mycat.metadata.LogicTable;
+import io.mycat.metadata.TableHandler;
 import io.mycat.util.MycatSqlUtil;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j;
@@ -162,7 +162,8 @@ public class HBTQueryConvertor {
         Filter build = (Filter) relBuilder.build();
         Bindables.BindableTableScan bindableTableScan = Bindables.BindableTableScan.create(build.getCluster(), table, build.getChildExps(), TableScan.identity(table));
         relBuilder.clear();
-        return PushDownLogicTable.toPhyTable(relBuilder, bindableTableScan);
+        PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
+        return pushDownLogicTable.toPhyTable(relBuilder, bindableTableScan);
     }
 
     private RelNode fromRelToSqlSchema(FromRelToSqlSchema input) {
@@ -188,7 +189,7 @@ public class HBTQueryConvertor {
                         String schema = id.names.get(0);
                         String table = id.names.get(1);
                         MycatLogicTable logicTable = context.getLogicTable(targetName, schema, table);
-                        LogicTable table1 = logicTable.getTable();
+                        TableHandler table1 = logicTable.getTable();
                         return new SqlIdentifier(Arrays.asList(table1.getSchemaName(), table1.getTableName()), SqlParserPos.ZERO);
                     }
                     return super.visit(id);

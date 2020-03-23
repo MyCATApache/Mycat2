@@ -45,6 +45,8 @@ public interface MycatDBClientApi  {
 
     boolean isAutoCommit();
 
+    boolean isInTransaction();
+
     long getMaxRow();
 
     void setMaxRow(long value);

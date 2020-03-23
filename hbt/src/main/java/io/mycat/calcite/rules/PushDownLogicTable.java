@@ -19,6 +19,7 @@ import io.mycat.BackendTableInfo;
 import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.table.MycatLogicTable;
 import io.mycat.calcite.table.MycatPhysicalTable;
+import io.mycat.metadata.ShardingTableHandler;
 import org.apache.calcite.interpreter.Bindables;
 import org.apache.calcite.plan.*;
 import org.apache.calcite.prepare.RelOptTableImpl;
@@ -41,13 +42,13 @@ SubstitutionVisitor 物化结合
 MaterializedViewSubstitutionVisitor
  */
 public class PushDownLogicTable extends RelOptRule {
+    final HashSet<String> context = new HashSet<>();
 
-    public PushDownLogicTable(RelOptRuleOperand operand, String description) {
-        super(operand, "Push_down_rule:" + description);
+    public PushDownLogicTable() {
+        super(operand(Bindables.BindableTableScan.class, any()), "proj on filter on proj");
     }
 
-    public static final PushDownLogicTable INSTANCE_FOR_PushDownFilterLogicTable =
-            new PushDownLogicTable(operand(Bindables.BindableTableScan.class, any()), "proj on filter on proj");
+
     /**
      * @param call todo result set with order，backend
      */
@@ -60,7 +61,7 @@ public class PushDownLogicTable extends RelOptRule {
         }
     }
 
-    public static RelNode toPhyTable(RelBuilder builder, TableScan judgeObject) {
+    public RelNode toPhyTable(RelBuilder builder, TableScan judgeObject) {
         Bindables.BindableTableScan bindableTableScan;
         if (judgeObject instanceof Bindables.BindableTableScan) {
             bindableTableScan = (Bindables.BindableTableScan) judgeObject;
@@ -75,37 +76,66 @@ public class PushDownLogicTable extends RelOptRule {
 
         RelNode value = null;
         if (logicTable != null) {
-            ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
-            List<BackendTableInfo> backendTableInfos = CalciteUtls.getBackendTableInfos(logicTable.logicTable(), filters);
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-            //视图优化
-
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////
-
-            HashMap<String, List<RelNode>> bindTableGroupMapByTargetName = new HashMap<>();
-            for (BackendTableInfo backendTableInfo : backendTableInfos) {
-                String targetName = backendTableInfo.getTargetName();
-                List<RelNode> queryBackendTasksList = bindTableGroupMapByTargetName.computeIfAbsent(targetName, (s) -> new ArrayList<>());
-                queryBackendTasksList.add(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
-            }
-            HashMap<String, RelNode> relNodeGroup = new HashMap<>();
-            for (Map.Entry<String, List<RelNode>> entry : bindTableGroupMapByTargetName.entrySet()) {
-                String targetName = entry.getKey();
-                builder.pushAll(entry.getValue());
-                builder.union(true, entry.getValue().size());
-                relNodeGroup.put(targetName, builder.build());
+            switch (logicTable.getTable().getType()) {
+                case SHARDING:
+                    value = shardingTable(builder, bindableTableScan, cluster, relOptSchema, logicTable);
+                    break;
+                case GLOBAL:
+                    value = global(cluster,bindableTableScan, relOptSchema, logicTable);
+                case ER:
+                    break;
             }
 
-            if (relNodeGroup.size() == 1) {
-                value = relNodeGroup.entrySet().iterator().next().getValue();
-            } else {
-                builder.pushAll(relNodeGroup.values());
-                value = builder.union(true, relNodeGroup.size()).build();
-            }
         } else {
             value = bindableTableScan;
+        }
+        return value;
+    }
+
+    @NotNull
+    private RelNode global(RelOptCluster cluster,Bindables.BindableTableScan bindableTableScan, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
+        RelNode logicalTableScan;
+        MycatPhysicalTable mycatPhysicalTable = logicTable.getMycatGlobalPhysicalTable(context);
+        RelOptTable dataNode = RelOptTableImpl.create(
+                relOptSchema,
+                logicTable.getRowType(cluster.getTypeFactory()),//这里使用logicTable,避免类型不一致
+                mycatPhysicalTable,
+                ImmutableList.of(mycatPhysicalTable.getBackendTableInfo().getUniqueName()));
+        logicalTableScan = LogicalTableScan.create(cluster, dataNode);
+        return RelOptUtil.createProject(RelOptUtil.createFilter(logicalTableScan, bindableTableScan.filters), bindableTableScan.projects);
+    }
+
+    private RelNode shardingTable(RelBuilder builder, Bindables.BindableTableScan bindableTableScan, RelOptCluster cluster, RelOptSchema relOptSchema, MycatLogicTable logicTable) {
+        RelNode value;
+        ArrayList<RexNode> filters = new ArrayList<>(bindableTableScan.filters == null ? Collections.emptyList() : bindableTableScan.filters);
+        List<BackendTableInfo> backendTableInfos = CalciteUtls.getBackendTableInfos((ShardingTableHandler) logicTable.logicTable(), filters);
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+        //视图优化
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+
+        HashMap<String, List<RelNode>> bindTableGroupMapByTargetName = new HashMap<>();
+        for (BackendTableInfo backendTableInfo : backendTableInfos) {
+            String targetName = backendTableInfo.getTargetName();
+            List<RelNode> queryBackendTasksList = bindTableGroupMapByTargetName.computeIfAbsent(targetName, (s) -> new ArrayList<>());
+            queryBackendTasksList.add(getBindableTableScan(bindableTableScan, cluster, relOptSchema, backendTableInfo));
+        }
+        HashMap<String, RelNode> relNodeGroup = new HashMap<>();
+        context.addAll(relNodeGroup.keySet());
+        for (Map.Entry<String, List<RelNode>> entry : bindTableGroupMapByTargetName.entrySet()) {
+            String targetName = entry.getKey();
+            builder.pushAll(entry.getValue());
+            builder.union(true, entry.getValue().size());
+            relNodeGroup.put(targetName, builder.build());
+        }
+
+        if (relNodeGroup.size() == 1) {
+            value = relNodeGroup.entrySet().iterator().next().getValue();
+        } else {
+            builder.pushAll(relNodeGroup.values());
+            value = builder.union(true, relNodeGroup.size()).build();
         }
         return value;
     }

@@ -128,6 +128,11 @@ public class MockDBClientMediator extends MycatDBClientMediator {
     }
 
     @Override
+    public boolean isInTransaction() {
+        return false;
+    }
+
+    @Override
     public void setAutoCommit(boolean autocommit) {
 
     }

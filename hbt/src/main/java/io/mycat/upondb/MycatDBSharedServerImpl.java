@@ -11,6 +11,7 @@ import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlExplainStatement
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlInsertStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.ast.statement.MySqlUpdateStatement;
 import com.alibaba.fastsql.sql.dialect.mysql.visitor.MySqlASTVisitorAdapter;
+import com.alibaba.fastsql.sql.repository.SchemaObject;
 import com.alibaba.fastsql.sql.visitor.SQLASTOutputVisitor;
 import com.alibaba.fastsql.support.calcite.CalciteMySqlNodeVisitor;
 import io.mycat.api.collector.RowBaseIterator;
@@ -23,6 +24,8 @@ import io.mycat.calcite.resultset.CalciteRowMetaData;
 import io.mycat.hbt.HBTRunners;
 import io.mycat.hbt.TextUpdateInfo;
 import io.mycat.metadata.MetadataManager;
+import io.mycat.metadata.ParseContext;
+import io.mycat.metadata.TableHandler;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.apache.calcite.sql.SqlNode;
@@ -90,8 +93,8 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
 
     @NotNull
-    private MycatSQLPrepareObject prepare(String templateSql, Long id, SQLStatement sqlStatement, MycatDBContext dbContext) {
-        String schema = dbContext.getSchema();
+    public MycatSQLPrepareObject prepare(String templateSql, Long id, SQLStatement sqlStatement, MycatDBContext dbContext) {
+        String defaultSchema = dbContext.getSchema();
         if (sqlStatement instanceof SQLSelectStatement) {
             SQLSelectQueryBlock queryBlock = ((SQLSelectStatement) sqlStatement).getSelect().getQueryBlock();
             SQLTableSource from = queryBlock.getFrom();
@@ -103,16 +106,39 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
         }
         MetadataManager.INSTANCE.resolveMetadata(sqlStatement);
         int variantRefCount = getVariantRefCount(sqlStatement);
-        BiFunction<String, String, Iterator> function = null;
+        Function<ParseContext,  Iterator<TextUpdateInfo>> handler = null;
         if (sqlStatement instanceof MySqlInsertStatement) {
-            function = insertHandler(dbContext.getSchema());
-        } else if (sqlStatement instanceof MySqlUpdateStatement || sqlStatement instanceof MySqlDeleteStatement) {
-            function = updateHandler(schema);
+            MySqlInsertStatement insertStatement = (MySqlInsertStatement) sqlStatement;
+            SchemaObject schemaObject = (insertStatement).getTableSource().getSchemaObject();
+            String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i->i.getSchema()).map(i->i.getName()).orElse(defaultSchema));
+            String tableName = SQLUtils.normalize(insertStatement.getTableName().getSimpleName()).toLowerCase();
+            TableHandler logicTable = getLogicTable(schema, tableName);
+            handler   = logicTable.insertHandler();
+        } else if (sqlStatement instanceof MySqlUpdateStatement){
+            SQLExprTableSource tableSource = (SQLExprTableSource) ((MySqlUpdateStatement) sqlStatement).getTableSource();
+            SchemaObject schemaObject = tableSource.getSchemaObject();
+            String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i->i.getSchema()).map(i->i.getName()).orElse(defaultSchema));
+            String tableName = SQLUtils.normalize(((MySqlUpdateStatement) sqlStatement).getTableName().getSimpleName().toLowerCase());
+            TableHandler logicTable = getLogicTable(schema, tableName);
+            handler   = logicTable.updateHandler();
+        }else if (sqlStatement instanceof MySqlDeleteStatement){
+            SQLExprTableSource tableSource = (SQLExprTableSource) ((MySqlDeleteStatement) sqlStatement).getTableSource();
+            SchemaObject schemaObject = tableSource.getSchemaObject();
+            String schema = SQLUtils.normalize(Optional.ofNullable(schemaObject).map(i->i.getSchema()).map(i->i.getName()).orElse(defaultSchema));
+            String tableName = SQLUtils.normalize(((MySqlDeleteStatement) sqlStatement).getTableName().getSimpleName().toLowerCase());
+            TableHandler logicTable = getLogicTable(schema, tableName);
+            handler   = logicTable.deleteHandler();
         }
-        if (function == null) {
-            function = updateHandler(schema);
+        if (handler == null) {
+          throw new UnsupportedOperationException();
         }
-        return getMycatPrepareObject(dbContext, templateSql, id, sqlStatement, variantRefCount, function);
+        return getMycatPrepareObject(dbContext, templateSql, id, sqlStatement, variantRefCount, handler);
+    }
+
+    @NotNull
+    private TableHandler getLogicTable(String schema, String tableName) {
+        Map<String, Map<String, TableHandler>> logicTableMap = MetadataManager.INSTANCE.getLogicTableMap();
+        return Objects.requireNonNull(Objects.requireNonNull(logicTableMap.get(schema), "schema is not existed").get(tableName), "table is not existed");
     }
 
     @NotNull
@@ -148,7 +174,9 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
     @NotNull
     private BiFunction<String, String, Iterator> insertHandler(String defaultSchemaName) {
-        return (s, s2) -> MetadataManager.INSTANCE.getInsertInfoMap(defaultSchemaName, s2).entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
+        return (s, s2) -> {
+            return MetadataManager.INSTANCE.getInsertInfoMap(defaultSchemaName, s2).entrySet().stream().map(i -> TextUpdateInfo.create(i.getKey(), i.getValue())).iterator();
+        };
     }
 
     @NotNull
@@ -233,6 +261,12 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
 
     public MycatSQLPrepareObject innerQueryPrepareObject(String sql, MycatDBContext dbContext) {
         return query(sql, SQLUtils.parseSingleMysqlStatement(sql), dbContext);
+    }
+
+    @Override
+    public MycatTextUpdatePrepareObject innerUpdatePrepareObject(String sql, MycatDBContext dbContext) {
+        MycatDelegateSQLPrepareObject prepare = (MycatDelegateSQLPrepareObject)prepare(sql, null, dbContext);
+        return (MycatTextUpdatePrepareObject) prepare.getPrepareObject();
     }
 
     public MycatSQLPrepareObject query(String sql, SQLStatement sqlStatement, MycatDBContext dbContext) {
@@ -377,15 +411,16 @@ public class MycatDBSharedServerImpl implements MycatDBSharedServer {
             Long id,
             SQLStatement sqlStatement,
             int variantRefCount,
-            BiFunction<String, String, Iterator> accept) {
-        String schema = uponDBContext.getSchema();//因为客户端的schema会变化
+            Function<ParseContext,  Iterator<TextUpdateInfo>> accept) {
         return new MycatDelegateSQLPrepareObject(id, uponDBContext, templateSql, new MycatTextUpdatePrepareObject(id, variantRefCount, (prepareObject, params) -> {
             StringBuilder out = new StringBuilder();
             SQLASTOutputVisitor visitor = SQLUtils.createOutputVisitor(out, DbType.mysql);
             visitor.setInputParameters(params);
             sqlStatement.accept(visitor);
             String sql = out.toString();
-            return accept.apply(schema, sql);
+            ParseContext parseContext = new ParseContext();
+            parseContext.setSql(sql);
+            return accept.apply( parseContext);
         }, uponDBContext));
 
     }

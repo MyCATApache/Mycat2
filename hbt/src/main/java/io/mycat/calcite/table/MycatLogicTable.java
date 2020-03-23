@@ -16,9 +16,13 @@ package io.mycat.calcite.table;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.QueryBackendTask;
+import io.mycat.calcite.CalciteUtls;
 import io.mycat.calcite.MycatCalciteDataContext;
 import io.mycat.calcite.resultset.MyCatResultSetEnumerable;
-import io.mycat.metadata.LogicTable;
+import io.mycat.metadata.GlobalTableHandler;
+import io.mycat.metadata.LogicTableType;
+import io.mycat.metadata.ShardingTableHandler;
+import io.mycat.metadata.TableHandler;
 import lombok.Getter;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.linq4j.Enumerable;
@@ -28,10 +32,7 @@ import org.apache.calcite.rel.logical.LogicalTableScan;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.schema.TranslatableTable;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
 
@@ -40,18 +41,32 @@ import static io.mycat.calcite.CalciteUtls.getQueryBackendTasks;
  **/
 @Getter
 public class MycatLogicTable extends MycatTableBase implements TranslatableTable {
-    final LogicTable table;
-    final List<MycatPhysicalTable> dataNodes;
+    final TableHandler table;
+    final List<MycatPhysicalTable> dataNodes = new ArrayList<>();
     final Map<String, MycatPhysicalTable> dataNodeMap = new HashMap<>();
 
-    public MycatLogicTable(LogicTable table) {
-        this.table = table;
-        this.dataNodes = new ArrayList<>(table.getBackends().size());
-        for (BackendTableInfo backend : table.getBackends()) {
-            MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, backend);
-            dataNodes.add(mycatPhysicalTable);
-            dataNodeMap.put(backend.getUniqueName(), mycatPhysicalTable);
+    public MycatLogicTable(TableHandler t) {
+        this.table = t;
+
+        switch (table.getType()) {
+            case SHARDING: {
+                ShardingTableHandler table = (ShardingTableHandler) t;
+                for (BackendTableInfo backend : table.getShardingBackends()) {
+                    MycatPhysicalTable mycatPhysicalTable = new MycatPhysicalTable(this, backend);
+                    dataNodes.add(mycatPhysicalTable);
+                    dataNodeMap.put(backend.getUniqueName(), mycatPhysicalTable);
+                }
+                break;
+            }
+            case GLOBAL: {
+
+                break;
+            }
+            case ER: {
+                break;
+            }
         }
+
     }
 
     public MycatPhysicalTable getMycatPhysicalTable(String uniqueName) {
@@ -60,18 +75,41 @@ public class MycatLogicTable extends MycatTableBase implements TranslatableTable
 
 
     @Override
-    public LogicTable logicTable() {
+    public TableHandler logicTable() {
         return table;
     }
 
     @Override
     public Enumerable<Object[]> scan(DataContext root, List<RexNode> filters, int[] projects) {
-        List<QueryBackendTask> backendTasks = getQueryBackendTasks(this.table, filters, projects);
-        return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, backendTasks);
+        MycatCalciteDataContext root1 = (MycatCalciteDataContext) root;
+        switch (table.getType()) {
+            case SHARDING:
+                List<QueryBackendTask> backendTasks = getQueryBackendTasks((ShardingTableHandler) this.table, filters, projects);
+                return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, backendTasks);
+            case GLOBAL:
+                GlobalTableHandler table = (GlobalTableHandler) this.table;
+                BackendTableInfo globalBackendTableInfo =table.getGlobalBackendTableInfoForQuery(root1.getUponDBContext().isInTransaction());
+                String backendTaskSQL = CalciteUtls.getBackendTaskSQL(filters,
+                        table.getRawColumns(),
+                        CalciteUtls.getColumnList(table, projects)
+                        , globalBackendTableInfo);
+                return new MyCatResultSetEnumerable((MycatCalciteDataContext) root, new QueryBackendTask(globalBackendTableInfo.getTargetName(), backendTaskSQL));
+            case ER:
+            default:
+                throw new UnsupportedOperationException();
+        }
     }
 
     @Override
     public RelNode toRel(RelOptTable.ToRelContext context, RelOptTable relOptTable) {
-        return LogicalTableScan.create(context.getCluster(),relOptTable);
+        return LogicalTableScan.create(context.getCluster(), relOptTable);
+    }
+
+    public MycatPhysicalTable getMycatGlobalPhysicalTable(Set<String> context) {
+        if (table.getType()!= LogicTableType.GLOBAL){
+            throw new AssertionError();
+        }
+        BackendTableInfo globalBackendTableInfo = ((GlobalTableHandler)table).getMycatGlobalPhysicalBackendTableInfo(context);
+        return new MycatPhysicalTable(this, globalBackendTableInfo);
     }
 }

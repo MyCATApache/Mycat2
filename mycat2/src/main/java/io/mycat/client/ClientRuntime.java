@@ -24,7 +24,7 @@ import io.mycat.config.PatternRootConfig;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
 import io.mycat.pattern.*;
-import io.mycat.upondb.MycatDBClientApi;
+import io.mycat.upondb.MycatDBClientMediator;
 import io.mycat.upondb.MycatDBs;
 import lombok.Getter;
 import org.jetbrains.annotations.NotNull;
@@ -79,7 +79,7 @@ public enum ClientRuntime {
     public MycatClient login(MycatDataContext dataContext) {
         return new MycatClient() {
             private RuntimeInfo runtime = Objects.requireNonNull(runtimeInfo);
-            private final MycatDBClientApi db = MycatDBs.createClient(dataContext);
+            private final MycatDBClientMediator db = MycatDBs.createClient(dataContext);
 
             @Override
             public String transactionType() {
@@ -398,7 +398,7 @@ public enum ClientRuntime {
             }
 
             @Override
-            public MycatDBClientApi getMycatDb() {
+            public MycatDBClientMediator getMycatDb() {
                 return db;
             }
         };

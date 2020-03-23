@@ -1,53 +1,45 @@
 package io.mycat.metadata;
 
 import io.mycat.BackendTableInfo;
+import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.queryCondition.SimpleColumnInfo;
 import lombok.Getter;
 import lombok.NonNull;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static io.mycat.queryCondition.SimpleColumnInfo.ShardingType.*;
-
 @Getter
-public class LogicTable {
+ public class LogicTable {
+    private final LogicTableType type;
     private final String schemaName;
     private final String tableName;
-    private final List<BackendTableInfo> backends;
     private final List<SimpleColumnInfo> rawColumns;
     private final String createTableSQL;
 
-    private final SimpleColumnInfo.ShardingInfo natureTableColumnInfo;
-    private final SimpleColumnInfo.ShardingInfo replicaColumnInfo;
-    private final SimpleColumnInfo.ShardingInfo databaseColumnInfo;
-    private final SimpleColumnInfo.ShardingInfo tableColumnInfo;
-
-
-
-    public LogicTable(String schemaName, String name, List<BackendTableInfo> backends, List<SimpleColumnInfo> rawColumns,
-                      Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo, String createTableSQL) {
+    public LogicTable(LogicTableType type,String schemaName,
+                      String tableName,
+                      List<SimpleColumnInfo> rawColumns,
+                      String createTableSQL) {
+        /////////////////////////////////////////
+        this.type = type;
         this.schemaName = schemaName;
-        this.tableName = name;
-        this.backends = backends == null ? Collections.emptyList() : backends;
+        this.tableName = tableName;
         this.rawColumns = rawColumns;
         this.createTableSQL = createTableSQL;
+        /////////////////////////////////////////
 
-
-        this.natureTableColumnInfo = shardingInfo.get(NATURE_DATABASE_TABLE);
-
-        this.replicaColumnInfo = shardingInfo.get(MAP_TARGET);
-        this.databaseColumnInfo = shardingInfo.get(MAP_DATABASE);
-        this.tableColumnInfo = shardingInfo.get(MAP_TABLE);
     }
 
-    public boolean isNatureTable() {
-        return natureTableColumnInfo != null;
+    public static ShardingTableHandler createShardingTable(String schemaName, String name, List<BackendTableInfo> backends, List<SimpleColumnInfo> rawColumns,
+                                                                        Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo, String createTableSQL) {
+        LogicTable logicTable = new LogicTable(LogicTableType.SHARDING, schemaName, name, rawColumns, createTableSQL);
+        return new ShardingTable(logicTable, backends, shardingInfo);
     }
 
-
-    public List<BackendTableInfo> getBackends() {
-        return backends;
+    public static GlobalTableHandler createGlobalTable(String schemaName, String tableName, List<BackendTableInfo> backendTableInfos, List<BackendTableInfo> readOnly, LoadBalanceStrategy loadBalance, List<SimpleColumnInfo> columns, String createTableSQL) {
+        LogicTable logicTable = new LogicTable(LogicTableType.GLOBAL, schemaName, tableName, columns, createTableSQL);
+        return new GlobalTable(logicTable,backendTableInfos,readOnly,loadBalance);
     }
+
 }

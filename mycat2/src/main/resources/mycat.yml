@@ -2,7 +2,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
   prototype: {targetName: defaultDs } #从该数据源获取元数据,该功能未开放
   schemas:
     db1: #逻辑库名
-      tables:
+      shadingTables:
         travelrecord: #逻辑表名
           columns:
             - columnName: id #分片字段信息,显式提供,
@@ -31,6 +31,13 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
               map: [address]
           createTableSQL: CREATE TABLE `address1` (`id` int(11) NOT NULL,`addressname` varchar(20) DEFAULT NULL,PRIMARY KEY (`id`))
           dataNodes: [{targetName: defaultDs ,schemaName: db1, tableName: address}]
+      globalTables:
+        company:
+          createTableSQL: CREATE TABLE `company` ( `id` int(11) NOT NULL AUTO_INCREMENT,`companyname` varchar(20) DEFAULT NULL,`addressid` int(11) DEFAULT NULL,PRIMARY KEY (`id`))
+          dataNodes: [{targetName: repli ,schemaName: db1, tableName: company},
+                      {targetName: repli ,schemaName: db2, tableName: company}]
+
+
 #        comany: #普通表
 #          columns:
 #            - columnName: id
@@ -41,7 +48,7 @@ metadata: #元数据 升级计划:通过创建表的sql语句提供该信息免�
 interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以看到执行计划,查看路由
   defaultHanlder: {command: execute , tags: {targets: defaultDs,forceProxy: true}}
   schemas: [{
-              tables:[ 'db1.travelrecord','db1.address'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
+              tables:[ 'db1.travelrecord','db1.address','db1.company'],#sql中包含一个表名,注意sql中;分号,匹配规则,前缀确定唯一项,{前必须是固定的token,}后必须是固定的token,这两个token在上下文也能确定该项
               sqls: [
               {sql: 'select {any}',command: distributedQuery },
               {sql: 'insert {any}',command: execute, tags: {executeType: INSERT,metaData: true,needTransaction: true }},
@@ -51,15 +58,15 @@ interceptor: #拦截器,如果拦截不了,尝试use schema,试用explain可以�
                 #结果集缓存属性，initialDelay:mycat启动之后等待时间后预读结果,refreshInterval:刷新时间 单位d,h,m,s.仅支持distributedQuery,executePlan
               ],
             },
-            {
-              tables:[ 'db1.company'],#读写分离例子,不使用metaData进行分析,metaData: false,直接发送到targets
-              sqls: [
-              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
-              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
-              {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
-              {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
-              ],
-            },
+#            {
+#              tables:[ 'db1.company'],#读写分离例子,不使用metaData进行分析,metaData: false,直接发送到targets
+#              sqls: [
+#              {sql: 'select {any}',command: execute ,tags: {targets: repli,executeType: QUERY ,needTransaction: true}},
+#              {sql: 'select {any} for update',command: execute ,tags: {executeType: QUERY_MASTER ,targets: repli}},
+#              {sql: 'insert {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}},
+#              {sql: 'delete {any}',command: execute, tags: {executeType: UPDATE ,targets: defaultDs,needTransaction: true,}}
+#              ],
+#            },
   ]
   sqls: [
   {name: explain,sql: 'EXPLAIN {statement}' ,command: explainSQL}, #explain一定要写库名

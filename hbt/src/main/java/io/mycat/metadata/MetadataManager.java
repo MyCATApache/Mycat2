@@ -33,8 +33,11 @@ import io.mycat.MycatConfig;
 import io.mycat.MycatException;
 import io.mycat.SchemaInfo;
 import io.mycat.calcite.CalciteConvertors;
+import io.mycat.config.GlobalTableConfig;
 import io.mycat.config.ShardingQueryRootConfig;
 import io.mycat.config.SharingFuntionRootConfig;
+import io.mycat.plug.PlugRuntime;
+import io.mycat.plug.loadBalance.LoadBalanceStrategy;
 import io.mycat.queryCondition.*;
 import io.mycat.router.RuleFunction;
 import io.mycat.router.function.PartitionRuleFunctionManager;
@@ -58,7 +61,7 @@ import static io.mycat.calcite.CalciteConvertors.getColumnInfo;
 public enum MetadataManager {
     INSTANCE;
     private final Logger LOGGER = LoggerFactory.getLogger(MetadataManager.class);
-    final ConcurrentHashMap<String, ConcurrentHashMap<String, LogicTable>> logicTableMap = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<String, ConcurrentHashMap<String, TableHandler>> logicTableMap = new ConcurrentHashMap<>();
 
     private final SchemaRepository TABLE_REPOSITORY = new SchemaRepository(DbType.mysql);
 
@@ -77,7 +80,7 @@ public enum MetadataManager {
     }
 
     public void removeTable(String schemaName, String tableName) {
-        ConcurrentHashMap<String, LogicTable> stringLogicTableConcurrentHashMap = logicTableMap.get(schemaName);
+        ConcurrentHashMap<String, TableHandler> stringLogicTableConcurrentHashMap = logicTableMap.get(schemaName);
         if (stringLogicTableConcurrentHashMap != null) {
             stringLogicTableConcurrentHashMap.remove(tableName);
         }
@@ -93,12 +96,43 @@ public enum MetadataManager {
             String orignalSchemaName = entry.getKey();
             ShardingQueryRootConfig.LogicSchemaConfig value = entry.getValue();
             final String schemaName = orignalSchemaName.toLowerCase();
-            for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> e : value.getTables().entrySet()) {
+            for (Map.Entry<String, ShardingQueryRootConfig.LogicTableConfig> e : value.getShadingTables().entrySet()) {
                 String tableName = e.getKey().toLowerCase();
                 ShardingQueryRootConfig.LogicTableConfig tableConfigEntry = e.getValue();
                 addLogicTable(schemaName, tableName, tableConfigEntry, shardingQueryRootConfig.getPrototype(), getBackendTableInfos(tableConfigEntry.getDataNodes()));
             }
+
+            for (Map.Entry<String, GlobalTableConfig> e : value.getGlobalTables().entrySet()) {
+                String tableName = e.getKey().toLowerCase();
+                GlobalTableConfig tableConfigEntry = e.getValue();
+                addLogicTable2(schemaName, tableName,
+                        tableConfigEntry,
+                        shardingQueryRootConfig.getPrototype(),
+                        getBackendTableInfos(tableConfigEntry.getDataNodes()),
+                        getBackendTableInfos(tableConfigEntry.getDataNodes())
+                        );
+
+            }
+
+
         }
+    }
+
+    private void addLogicTable2(String schemaName,
+                                String orignalTableName,
+                                GlobalTableConfig tableConfigEntry,
+                                ShardingQueryRootConfig.PrototypeServer prototypeServer,
+                                List<BackendTableInfo> backendTableInfos,
+                                List<BackendTableInfo> readOnly) {
+        //////////////////////////////////////////////
+        final String tableName = orignalTableName.toLowerCase();
+        String createTableSQL = tableConfigEntry.getCreateTableSQL();
+        List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
+        //////////////////////////////////////////////
+
+        LoadBalanceStrategy loadBalance = PlugRuntime.INSTCANE.getLoadBalanceByBalanceName(tableConfigEntry.getBalance());
+
+        addLogicTable(LogicTable.createGlobalTable(schemaName, tableName, backendTableInfos,readOnly,loadBalance,columns, createTableSQL));
     }
 
 
@@ -129,10 +163,14 @@ public enum MetadataManager {
         List<SimpleColumnInfo> columns = getSimpleColumnInfos(schemaName, prototypeServer, tableName, createTableSQL);
         //////////////////////////////////////////////
 
-        List<ShardingQueryRootConfig.Column> columnMap = tableConfigEntry.getColumns();
-        Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> shardingInfo = getShardingInfo(columns, columnMap);
-        LogicTable logicTable = new LogicTable(schemaName, tableName, backends, columns, shardingInfo, createTableSQL);
-        Map<String, LogicTable> tableMap;
+        addLogicTable(LogicTable.createShardingTable(schemaName, tableName, backends, columns, getShardingInfo(columns, tableConfigEntry.getColumns()), createTableSQL));
+    }
+
+    private void addLogicTable( TableHandler logicTable) {
+        String schemaName = logicTable.getSchemaName();
+        String tableName = logicTable.getTableName();
+        String createTableSQL = logicTable.getCreateTableSQL();
+        Map<String, TableHandler> tableMap;
         tableMap = logicTableMap.computeIfAbsent(schemaName, s -> new ConcurrentHashMap<>());
         tableMap.put(tableName, logicTable);
         tableMap.put("`" + tableName + "`", logicTable);
@@ -141,7 +179,6 @@ public enum MetadataManager {
         tableMap.put(tableName, logicTable);
         tableMap.put("`" + tableName + "`", logicTable);
         accrptDDL(schemaName, createTableSQL);
-
     }
 
     private Map<SimpleColumnInfo.@NonNull ShardingType, SimpleColumnInfo.ShardingInfo> getShardingInfo(List<SimpleColumnInfo> columns, List<ShardingQueryRootConfig.Column> columnMap) {
@@ -272,12 +309,15 @@ public enum MetadataManager {
             columnList[index] = SQLUtils.normalize(column.toString()).toLowerCase();
             index++;
         }
-        LogicTable logicTable = logicTableMap.get(Objects.requireNonNull(schema)).get(tableName);
+        TableHandler logicTable = logicTableMap.get(Objects.requireNonNull(schema)).get(tableName);
         List<SQLInsertStatement.ValuesClause> valuesList = statement.getValuesList();
-        return getBackendTableInfoListMap(columnList, logicTable, valuesList);
+        if (!(logicTable instanceof ShardingTableHandler)){
+            throw new AssertionError();
+        }
+        return getBackendTableInfoListMap(columnList, (ShardingTableHandler)logicTable, valuesList);
     }
 
-    public Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> getBackendTableInfoListMap(String[] columnList, LogicTable logicTable, List<SQLInsertStatement.ValuesClause> valuesList) {
+    public Map<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> getBackendTableInfoListMap(String[] columnList, ShardingTableHandler logicTable, List<SQLInsertStatement.ValuesClause> valuesList) {
         int index;
         ArrayList<SQLInsertStatement.ValuesClause> valuesClauses = new ArrayList<>(valuesList);
         HashMap<BackendTableInfo, List<SQLInsertStatement.ValuesClause>> res = new HashMap<>(1);
@@ -353,10 +393,13 @@ public enum MetadataManager {
                     if (fail) {
                         break;
                     }
-                    LogicTable logicTable = logicTableMap.get(schemaName).get(tableName);
+                    TableHandler logicTable = logicTableMap.get(schemaName).get(tableName);
+                    if (logicTable.getType()!=LogicTableType.SHARDING){
+                        throw new AssertionError();
+                    }
                     DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
                     dataMappingEvaluator.assignment(false, equalValue.getColumn().computeAlias(), Objects.toString(equalValue.getValue()));
-                    List<BackendTableInfo> calculate = dataMappingEvaluator.calculate(logicTable);
+                    List<BackendTableInfo> calculate = dataMappingEvaluator.calculate((ShardingTableHandler) logicTable);
                     if (calculate.size() == 1) {
                         backEndTableInfos1.addAll(calculate);
                         break;
@@ -378,7 +421,7 @@ public enum MetadataManager {
                             break;
                         }
 
-                        LogicTable logicTable = logicTableMap.get(schemaName).get(tableName);
+                        ShardingTableHandler logicTable = (ShardingTableHandler)logicTableMap.get(schemaName).get(tableName);
                         DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
                         dataMappingEvaluator.assignmentRange(false, SQLUtils.normalize(rangeValue.getColumn().getColumnName()), Objects.toString(rangeValue.getBegin()), Objects.toString(rangeValue.getEnd()));
                         List<BackendTableInfo> backendTableInfos = dataMappingEvaluator.calculate(logicTable);
@@ -388,8 +431,8 @@ public enum MetadataManager {
             }
         }
         if (backEndTableInfos1.isEmpty() && schemaName != null) {
-            LogicTable logicTable = logicTableMap.get(schemaName).get(tableName);
-            backEndTableInfos1.addAll(logicTable.getBackends());
+            TableHandler logicTable = logicTableMap.get(schemaName).get(tableName);
+            backEndTableInfos1.addAll(((ShardingTableHandler)logicTable).getShardingBackends());
         }
         return new Rrs(backEndTableInfos1, table);
     }
@@ -398,7 +441,7 @@ public enum MetadataManager {
         try {
             schemaName = schemaName.toLowerCase();
             tableName = tableName.toLowerCase();
-            LogicTable logicTable = this.logicTableMap.get(schemaName).get(tableName);
+            ShardingTableHandler logicTable = (ShardingTableHandler)this.logicTableMap.get(schemaName).get(tableName);
             DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
             for (Map.Entry<String, String> entry : map.entrySet()) {
                 dataMappingEvaluator.assignment(false, entry.getKey(), entry.getValue());
@@ -414,7 +457,7 @@ public enum MetadataManager {
         try {
             schemaName = schemaName.toLowerCase();
             tableName = tableName.toLowerCase();
-            LogicTable logicTable = this.logicTableMap.get(schemaName).get(tableName);
+            ShardingTableHandler logicTable = (ShardingTableHandler)this.logicTableMap.get(schemaName).get(tableName);
             return getBackendTableInfo(partitionValue, logicTable);
         } catch (Exception e) {
             LOGGER.error("", e);
@@ -422,7 +465,7 @@ public enum MetadataManager {
         }
     }
 
-    private BackendTableInfo getBackendTableInfo(String partitionValue, LogicTable logicTable) {
+    private BackendTableInfo getBackendTableInfo(String partitionValue, ShardingTableHandler logicTable) {
         DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
         dataMappingEvaluator.assignment(false, logicTable.getNatureTableColumnInfo().getColumnInfo().getColumnName(), partitionValue);
         return dataMappingEvaluator.calculate(logicTable).get(0);
@@ -432,7 +475,7 @@ public enum MetadataManager {
         try {
             schemaName = schemaName.toLowerCase();
             tableName = tableName.toLowerCase();
-            LogicTable logicTable = this.logicTableMap.get(schemaName).get(tableName);
+            ShardingTableHandler logicTable = (ShardingTableHandler)this.logicTableMap.get(schemaName).get(tableName);
             DataMappingEvaluator dataMappingEvaluator = new DataMappingEvaluator();
             dataMappingEvaluator.assignment(false, startValue, endValue);
             return dataMappingEvaluator.calculate(logicTable);
@@ -460,6 +503,6 @@ public enum MetadataManager {
         }
     }
 
-    public Map<String,Map<String, LogicTable>> getLogicTableMap() {
+    public Map<String,Map<String, TableHandler>> getLogicTableMap() {
         return (Map)logicTableMap;
     }}

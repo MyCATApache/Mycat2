@@ -24,12 +24,16 @@ import io.mycat.beans.resultset.MycatResultSet;
 import io.mycat.boost.BoostRuntime;
 import io.mycat.calcite.prepare.MycatSQLPrepareObject;
 import io.mycat.calcite.prepare.MycatSqlPlanner;
+import io.mycat.calcite.prepare.MycatTextUpdatePrepareObject;
 import io.mycat.client.Context;
 import io.mycat.client.MycatClient;
+import io.mycat.datasource.jdbc.JdbcRuntime;
+import io.mycat.datasource.jdbc.datasource.DefaultConnection;
 import io.mycat.lib.impl.JdbcLib;
 import io.mycat.logTip.MycatLogger;
 import io.mycat.logTip.MycatLoggerFactory;
-import io.mycat.metadata.MetadataManager;
+import io.mycat.metadata.LogicTableType;
+import io.mycat.metadata.TableHandler;
 import io.mycat.proxy.ResultSetProvider;
 import io.mycat.proxy.session.MycatSession;
 import io.mycat.replica.ReplicaSelectorRuntime;
@@ -46,9 +50,6 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static io.mycat.SQLExecuterWriter.writeToMycatSession;
 
@@ -100,11 +101,19 @@ public class ContextRunner {
         ExecuteType executeType;
         Map<String, List<String>> targets;
         String balance;
+        boolean globalTableUpdate;
 
         public Details(ExecuteType executeType, Map<String, List<String>> backendTableInfos, String balance) {
             this.executeType = executeType;
             this.targets = backendTableInfos;
             this.balance = balance;
+        }
+
+        public Details(ExecuteType executeType, Map<String, List<String>> backendTableInfos, boolean globalTableUpdate) {
+            this.executeType = executeType;
+            this.targets = backendTableInfos;
+            this.globalTableUpdate = globalTableUpdate;
+            this.balance = null;
         }
 
         public List<String> toExplain() {
@@ -114,8 +123,9 @@ public class ContextRunner {
                 for (String s : stringListEntry.getValue()) {
                     list.add("target: " + stringListEntry.getKey() + " sql:" + s);
                 }
-                list.add("balance = " + balance);
             }
+            list.add("balance = " + balance);
+            list.add("globalTableUpdate = " + globalTableUpdate);
             return list;
         }
     }
@@ -209,13 +219,13 @@ public class ContextRunner {
                     PlanRunner plan = mycatSQLPrepareObject.plan(Collections.emptyList());
                     switch (client.getTransactionType()) {
                         case PROXY_TRANSACTION_TYPE: {
-                            if ( plan instanceof MycatSqlPlanner) {
+                            if (plan instanceof MycatSqlPlanner) {
                                 MycatSqlPlanner plan1 = (MycatSqlPlanner) plan;
                                 ProxyInfo proxyInfo = plan1.tryGetProxyInfo();
                                 if (proxyInfo != null) {
                                     MySQLTaskUtil.proxyBackendByTargetName(session, proxyInfo.getTargetName(), proxyInfo.getSql(),
                                             MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
-                                            session.getIsolation(), proxyInfo.isForUpdate(), null);
+                                            session.getIsolation(), proxyInfo.isUpdateOpt(), null);
                                     return;
                                 }
                             }
@@ -591,13 +601,52 @@ public class ContextRunner {
                 boolean metaData = "true".equalsIgnoreCase(context.getVariable("metaData", "false"));
 
                 final Details details;
-                details = getDetails(context, needStartTransaction, metaData);
+                details = getDetails(client, context, needStartTransaction, metaData);
                 Map<String, List<String>> tasks = details.targets;
                 String balance = details.balance;
                 ExecuteType executeType = details.executeType;
                 MySQLIsolation isolation = session.getIsolation();
 
                 LOGGER.debug("session id:{} execute :{}", session.sessionId(), details.toString());
+
+
+                if (details.globalTableUpdate & (client.getTransactionType() == TransactionType.PROXY_TRANSACTION_TYPE||forceProxy)) {
+                    return () -> block(session, (mycat -> {
+                        Map<String, List<String>> targets = details.targets;
+                        if (targets.isEmpty()) {
+                            throw new AssertionError();
+                        }
+                        int count = targets.size();
+                        String targetName = null;
+                        String sql = null;
+                        for (Map.Entry<String, List<String>> stringListEntry : targets.entrySet()) {
+                            if (count == 1) {
+                                targetName = stringListEntry.getKey();
+                                List<String> value = stringListEntry.getValue();
+                                if (value.size() != 1) {
+                                    List<String> strings = value.subList(1, value.size());
+                                    try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(stringListEntry.getKey())) {
+                                        for (String s : strings) {
+                                            connection.executeUpdate(s, true, 0);
+                                        }
+                                    }
+                                }
+                                sql = value.get(0);
+                                break;
+                            } else {
+                                try (DefaultConnection connection = JdbcRuntime.INSTANCE.getConnection(stringListEntry.getKey())) {
+                                    for (String s : stringListEntry.getValue()) {
+                                        connection.executeUpdate(s, true, 0);
+                                    }
+                                }
+                                count--;
+                            }
+                        }
+                        MySQLTaskUtil.proxyBackendByTargetName(session, targetName, sql,
+                                MySQLTaskUtil.TransactionSyncType.create(session.isAutoCommit(), session.isInTransaction()),
+                                session.getIsolation(), details.executeType.isMaster(), balance);
+                    }));
+                }
                 boolean runOnProxy = isOne(tasks) && client.getTransactionType() == TransactionType.PROXY_TRANSACTION_TYPE || forceProxy;
                 if (runOnProxy) {
                     if (tasks.size() != 1) throw new IllegalArgumentException();
@@ -619,15 +668,10 @@ public class ContextRunner {
                                         transactionSession.begin();
                                         session.setInTranscation(true);
                                     }
-//                                    else if (!session.isInTransaction()) {
-//                                        TransactionSessionUtil.reset();
-//                                    }
                                     switch (executeType) {
-//                                        case RANDOM_QUERY:
                                         case QUERY_MASTER:
                                         case QUERY: {
                                             Map<String, List<String>> backendTableInfos = details.targets;
-
                                             String[] infos = checkThenGetOne(backendTableInfos);
                                             writeToMycatSession(session, TransactionSessionUtil.executeQuery(transactionSession, infos[0], infos[1]));
                                             return;
@@ -635,7 +679,6 @@ public class ContextRunner {
 
                                         case INSERT:
                                         case UPDATE:
-//                                        case BROADCAST_UPDATE:
                                             writeToMycatSession(session, TransactionSessionUtil.executeUpdateByDatasouce(transactionSession, tasks, true));
                                             return;
                                     }
@@ -649,7 +692,7 @@ public class ContextRunner {
             @Override
             public Runnable explain(MycatClient client, Context context, MycatSession session) {
                 boolean metaData = "true".equalsIgnoreCase(context.getVariable("metaData", "false"));
-                return () -> writePlan(session, getDetails(context, session.isInTransaction(), metaData).toExplain());
+                return () -> writePlan(session, getDetails(client, context, session.isInTransaction(), metaData).toExplain());
             }
         });
         Set<String> supportCommands = BoostRuntime.INSTANCE.getSupportCommands();
@@ -663,11 +706,11 @@ public class ContextRunner {
     }
 
     @NotNull
-    private static Details getDetails(Context context, boolean needStartTransaction, boolean metaData) {
+    private static Details getDetails(MycatClient client, Context context, boolean needStartTransaction, boolean metaData) {
         String explain = context.getExplain();//触发注解解析并缓存
         Details details;
         if (metaData) {
-            details = getDetails(needStartTransaction, context);
+            details = getDetails(client, needStartTransaction, context);
         } else {
             String balance = context.getVariable(BALANCE);
             ExecuteType executeType = ExecuteType.valueOf(context.getVariable(EXECUTE_TYPE, ExecuteType.DEFAULT.name()));
@@ -746,7 +789,8 @@ public class ContextRunner {
 
     }
 
-    private static Details getDetails(boolean needStartTransaction, Context context) {
+    static Details getDetails(MycatClient client, boolean needStartTransaction, Context context) {
+        MycatDBClientMediator mycatDb = client.getMycatDb();
         Map<String, Collection<String>> tables = context.getTables();
         if (tables.size() != 1) {
             throw new UnsupportedOperationException();
@@ -757,53 +801,25 @@ public class ContextRunner {
         }
         String schemaName = next.getKey();
         String tableName = next.getValue().iterator().next();
+        TableHandler tableHandler = mycatDb.config().getTable(schemaName, tableName);
+        boolean isGlobal = tableHandler.getType() == LogicTableType.GLOBAL;
         ExecuteType executeType = ExecuteType.valueOf(context.getVariable(EXECUTE_TYPE));
         String balance = context.getVariable(BALANCE);
-//        String command = context.getExplain();
-
-        Map<String, List<String>> mid = Collections.emptyMap();
         boolean master = executeType != ExecuteType.QUERY || needStartTransaction;
-        switch (executeType) {
-            case INSERT:
-                Iterable<Map<String, List<String>>> iterable = MetadataManager.INSTANCE.routeInsert(schemaName, context.getExplain());
-                Stream<Map<String, List<String>>> stream = StreamSupport.stream(iterable.spliterator(), false);
-//                Map<String, List<String>> collect2 = stream.flatMap(i -> i.entrySet().stream())
-//                        .collect(Collectors.groupingBy(k -> k.getKey(), Collectors.flatMapping(i -> i.getValue().stream(),Collectors.toList())));JDK9
-                Map<String, List<String>> collect = stream.flatMap(i -> i.entrySet().stream())
-                        .collect(Collectors.groupingBy(k -> k.getKey(), Collectors.mapping(i -> i.getValue(), Collectors.reducing(new ArrayList<>(), (list, list2) -> {
-                            list.addAll(list2);
-                            return list;
-                        }))));
-                mid = collect;
-                break;
-            case QUERY:
-            case QUERY_MASTER:
-            case UPDATE: {
-                mid = MetadataManager.INSTANCE.rewriteSQL(schemaName, context.getExplain());
-                break;
-            }
-//            case RANDOM_QUERY: {
-//                String[] split = SplitUtil.split(context.getVariable(TARGETS), ",");
-//                int i = ThreadLocalRandom.current().nextInt(0, split.length);
-//                mid = Collections.singletonMap(split[i], command);
-//                break;
-//            }
-//            case BROADCAST_UPDATE: {
-//                context.getVariable("table");
-//                HashMap<String, String> sqls = new HashMap<>();
-//                for (String target : SplitUtil.split(context.getVariable(TARGETS), ",")) {
-//                    sqls.put(target, command);
-//                }
-//                mid = sqls;
-//                break;
-//            }
-        }
+        String explain = context.getExplain();
+        MycatTextUpdatePrepareObject mycatTextUpdatePrepareObject = mycatDb.getUponDBSharedServer().innerUpdatePrepareObject(explain, mycatDb);
+        Map<String, List<String>> routeMap = mycatTextUpdatePrepareObject.getRouteMap();
+        return new Details(executeType, resolveDataSourceName(balance, master, routeMap), isGlobal);
+    }
+
+    @NotNull
+    private static HashMap<String, List<String>> resolveDataSourceName(String balance, boolean master, Map<String, List<String>> routeMap) {
         HashMap<String, List<String>> map = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry : mid.entrySet()) {
+        for (Map.Entry<String, List<String>> entry : routeMap.entrySet()) {
             String datasourceNameByReplicaName = ReplicaSelectorRuntime.INSTANCE.getDatasourceNameByReplicaName(entry.getKey(), master, balance);
             List<String> list = map.computeIfAbsent(datasourceNameByReplicaName, s -> new ArrayList<>(1));
             list.addAll(entry.getValue());
         }
-        return new Details(executeType, map, balance);
+        return map;
     }
 }

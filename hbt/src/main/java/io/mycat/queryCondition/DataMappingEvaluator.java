@@ -16,7 +16,7 @@ package io.mycat.queryCondition;
 
 import io.mycat.BackendTableInfo;
 import io.mycat.SchemaInfo;
-import io.mycat.metadata.LogicTable;
+import io.mycat.metadata.ShardingTableHandler;
 import io.mycat.router.RuleFunction;
 import lombok.NonNull;
 
@@ -42,15 +42,15 @@ public class DataMappingEvaluator {
         return columnMap.computeIfAbsent(columnName, s -> new HashSet<>());
     }
 
-    public List<BackendTableInfo> calculate(LogicTable logicTable) {
-        if (logicTable.getNatureTableColumnInfo() != null) {
-            return getBackendTableInfosByNatureDatabaseTable(logicTable).stream().map(integer -> logicTable.getBackends().get(integer)).collect(Collectors.toList());
+    public List<BackendTableInfo> calculate(ShardingTableHandler logicTable) {
+        if (logicTable.isNatureTable()) {
+            return getBackendTableInfosByNatureDatabaseTable(logicTable).stream().map(integer -> logicTable.getShardingBackends().get(integer)).collect(Collectors.toList());
         } else {
             return getBackendTableInfosByMap(logicTable);
         }
     }
 
-    private List<BackendTableInfo> getBackendTableInfosByMap(LogicTable logicTable) {
+    private List<BackendTableInfo> getBackendTableInfosByMap(ShardingTableHandler logicTable) {
         List<String> targetSet = Collections.emptyList();
         List<String> databaseSet = Collections.emptyList();
         List<String> tableSet = Collections.emptyList();
@@ -65,7 +65,7 @@ public class DataMappingEvaluator {
         }
         List<BackendTableInfo> res = new ArrayList<>();
 
-        @NonNull List<BackendTableInfo> allBackends = logicTable.getBackends();
+        @NonNull List<BackendTableInfo> allBackends = logicTable.getShardingBackends();
 
         for (String targetName : targetSet) {
             for (String databaseName : databaseSet) {
@@ -84,13 +84,13 @@ public class DataMappingEvaluator {
         }
     }
 
-    private List<Integer> getBackendTableInfosByNatureDatabaseTable(LogicTable logicTable) {
+    private List<Integer> getBackendTableInfosByNatureDatabaseTable(ShardingTableHandler logicTable) {
         List<Integer> routeIndexSortedSet = Collections.emptyList();
         if (!columnMap.isEmpty()) {
             routeIndexSortedSet = getRouteIndexSortedSet(logicTable.getNatureTableColumnInfo());
         }
         if (routeIndexSortedSet.isEmpty()) {
-            return IntStream.range(0,logicTable.getBackends().size()).boxed().collect(Collectors.toList());
+            return IntStream.range(0,logicTable.getShardingBackends().size()).boxed().collect(Collectors.toList());
         } else {
             return routeIndexSortedSet;
         }

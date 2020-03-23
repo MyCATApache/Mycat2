@@ -139,6 +139,11 @@ public class MycatDBs {
             }
 
             @Override
+            public boolean isInTransaction() {
+                return dataContext.isInTransaction();
+            }
+
+            @Override
             public void setAutoCommit(boolean autocommit) {
                 dataContext.setAutoCommit(autocommit);
             }

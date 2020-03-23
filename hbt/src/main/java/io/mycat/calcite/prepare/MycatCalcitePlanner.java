@@ -115,28 +115,28 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 createCalciteCatalogReader(), newCluster(), MycatCalciteSupport.MycatStandardConvertletTable.INSTANCE, MycatCalciteSupport.INSTANCE.sqlToRelConverterConfig);
     }
 
-    List<RelOptRule> relOptRules = Arrays.asList(
-            FilterTableScanRule.INSTANCE,
-            ProjectTableScanRule.INSTANCE,
-            FilterSetOpTransposeRule.INSTANCE,
-            ProjectRemoveRule.INSTANCE,
-            JoinUnionTransposeRule.LEFT_UNION,
-            JoinUnionTransposeRule.RIGHT_UNION,
-            JoinExtractFilterRule.INSTANCE,
-            JoinPushTransitivePredicatesRule.INSTANCE,
-            AggregateUnionTransposeRule.INSTANCE,
-            AggregateUnionAggregateRule.AGG_ON_FIRST_INPUT,
-            AggregateUnionAggregateRule.AGG_ON_SECOND_INPUT,
-            AggregateUnionAggregateRule.INSTANCE,
-            AggregateProjectMergeRule.INSTANCE,//下推聚合
-            AggregateProjectPullUpConstantsRule.INSTANCE,
-            PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable
-    );
+//    List<RelOptRule> relOptRules = Arrays.asList(
+//            FilterTableScanRule.INSTANCE,
+//            ProjectTableScanRule.INSTANCE,
+//            FilterSetOpTransposeRule.INSTANCE,
+//            ProjectRemoveRule.INSTANCE,
+//            JoinUnionTransposeRule.LEFT_UNION,
+//            JoinUnionTransposeRule.RIGHT_UNION,
+//            JoinExtractFilterRule.INSTANCE,
+//            JoinPushTransitivePredicatesRule.INSTANCE,
+//            AggregateUnionTransposeRule.INSTANCE,
+//            AggregateUnionAggregateRule.AGG_ON_FIRST_INPUT,
+//            AggregateUnionAggregateRule.AGG_ON_SECOND_INPUT,
+//            AggregateUnionAggregateRule.INSTANCE,
+//            AggregateProjectMergeRule.INSTANCE,//下推聚合
+//            AggregateProjectPullUpConstantsRule.INSTANCE,
+//            PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable
+//    );
 
     public RelNode eliminateLogicTable(final RelNode bestExp) {
         RelOptCluster cluster = bestExp.getCluster();
         HepProgramBuilder hepProgramBuilder = new HepProgramBuilder();
-
+        PushDownLogicTable pushDownLogicTable = new PushDownLogicTable();
         Arrays.asList(
                 FilterProjectTransposeRule.INSTANCE,
                 Bindables.BINDABLE_TABLE_SCAN_RULE,
@@ -153,7 +153,8 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
                 AggregateUnionAggregateRule.INSTANCE,
                 AggregateProjectMergeRule.INSTANCE,
                 AggregateProjectPullUpConstantsRule.INSTANCE,
-                PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable,
+                pushDownLogicTable,
+//                PushDownLogicTable.INSTANCE_FOR_PushDownFilterLogicTable,
                 AggregateValuesRule.INSTANCE
         ).forEach(i -> hepProgramBuilder.addRuleInstance(i));
 //        hepProgramBuilder.addRuleInstance(PushDownLogicTable.INSTANCE_FOR_PushDownLogicTable);
@@ -167,7 +168,7 @@ public class MycatCalcitePlanner implements Planner, RelOptTable.ViewExpander {
             public RelNode visit(TableScan scan) {
                 MycatLogicTable unwrap = scan.getTable().unwrap(MycatLogicTable.class);
                 if (unwrap != null) {
-                    return PushDownLogicTable.toPhyTable(createRelBuilder(cluster), scan);
+                    return pushDownLogicTable.toPhyTable(createRelBuilder(cluster), scan);
                 }
                 return super.visit(scan);
             }
